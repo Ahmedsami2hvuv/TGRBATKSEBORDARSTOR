@@ -7,6 +7,7 @@ import { NotificationSettingsForm } from "./notification-settings-form";
 import { PurgeDemoDataForm } from "./purge-demo-data-form";
 import { TestPushNotificationsForm } from "./test-push-notifications-form";
 import { PricingSettingsForm } from "./pricing-settings-form";
+import { CleanupBase64Form } from "./cleanup-base64-form";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -353,7 +354,11 @@ export function SettingsBlocks({ notificationInitial }: { notificationInitial: N
         onToggle={() => setOpenId((x) => (x === "purge-demo" ? "" : "purge-demo"))}
         tone="rose"
       >
-        <PurgeDemoDataForm />
+        <div className="space-y-6">
+          <CleanupBase64Form />
+          <hr className="border-rose-100" />
+          <PurgeDemoDataForm />
+        </div>
       </Block>
     </div>
   );
