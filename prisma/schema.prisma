@@ -1,0 +1,590 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SchemaPlaceholder {
+  id        String   @id @default(cuid())
+  note      String   @default("init")
+  createdAt DateTime @default(now())
+}
+
+model Region {
+  id                      String                         @id @default(cuid())
+  name                    String
+  deliveryPrice           Decimal                        @db.Decimal(10, 2)
+  createdAt               DateTime                       @default(now())
+  updatedAt               DateTime                       @updatedAt
+  preparerShoppingDrafts  CompanyPreparerShoppingDraft[]
+  customers               Customer[]                     @relation("CustomerRegion")
+  customerPhoneProfiles   CustomerPhoneProfile[]
+  ordersCustomer          Order[]                        @relation("OrderCustomerRegion")
+  ordersSecondDestination Order[]                        @relation("OrderSecondDestinationRegion")
+  shops                   Shop[]
+}
+
+model CustomerPhoneProfile {
+  id             String   @id @default(cuid())
+  phone          String
+  regionId       String
+  locationUrl    String   @default("")
+  photoUrl       String   @default("")
+  notes          String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  landmark       String   @default("")
+  alternatePhone String?
+  region         Region   @relation(fields: [regionId], references: [id])
+
+  @@unique([phone, regionId])
+  @@index([regionId])
+}
+
+model Shop {
+  id            String         @id @default(cuid())
+  name          String
+  locationUrl   String
+  regionId      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  ownerName     String         @default("")
+  photoUrl      String         @default("")
+  phone         String         @default("")
+  customers     Customer[]
+  employees     Employee[]
+  orders        Order[]
+  preparerLinks PreparerShop[]
+  region        Region         @relation(fields: [regionId], references: [id])
+}
+
+model CompanyPreparer {
+  id                                  String                         @id @default(cuid())
+  name                                String
+  phone                               String                         @default("")
+  notes                               String                         @default("")
+  active                              Boolean                        @default(true)
+  createdAt                           DateTime                       @default(now())
+  updatedAt                           DateTime                       @updatedAt
+  telegramUserId                      String                         @default("")
+  walletEmployeeId                    String?                        @unique
+  preparerMonthlySalaryResetMode      PreparerMonthlySalaryResetMode @default(calendar_month)
+  preparerMonthlySalaryResetAt        DateTime?
+  preparerMonthlySalaryResetEveryDays Int?
+  availableForAssignment              Boolean                        @default(true)
+  lastPreparerLat                     Float?
+  lastPreparerLng                     Float?
+  lastPreparerLocationAt              DateTime?
+  orderListResetAt                    DateTime                       @default(now())
+  portalToken                         String                         @default(cuid())
+  walletEmployee                      Employee?                      @relation("CompanyPreparerWalletEmployee", fields: [walletEmployeeId], references: [id])
+  prepNotices                         CompanyPreparerPrepNotice[]
+  shoppingDrafts                      CompanyPreparerShoppingDraft[]
+  submittedOrders                     Order[]                        @relation("OrderSubmittedByPreparer")
+  recordedOrderMoneyEvents            OrderCourierMoneyEvent[]       @relation("OrderMoneyRecordedByCompanyPreparer")
+  shopLinks                           PreparerShop[]
+  authorizedBranches                  StoreBranch[]                  @relation("AuthorizedBranches")
+}
+
+model CompanyPreparerPrepNotice {
+  id          String          @id @default(cuid())
+  title       String
+  body        String          @default("")
+  preparerId  String
+  createdAt   DateTime        @default(now())
+  dismissedAt DateTime?
+  preparer    CompanyPreparer @relation(fields: [preparerId], references: [id], onDelete: Cascade)
+
+  @@index([preparerId, dismissedAt])
+}
+
+model CompanyPreparerShoppingDraft {
+  id               String                      @id @default(cuid())
+  preparerId       String?
+  status           PreparerShoppingDraftStatus @default(draft)
+  titleLine        String                      @default("")
+  rawListText      String                      @default("")
+  customerRegionId String?
+  customerPhone    String                      @default("")
+  customerName     String                      @default("")
+  customerLandmark String                      @default("")
+  orderTime        String                      @default("فوري")
+  placesCount      Int?
+  data             Json?
+  sentOrderId      String?
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+  customerRegion   Region?                     @relation(fields: [customerRegionId], references: [id])
+  preparer         CompanyPreparer?            @relation(fields: [preparerId], references: [id], onDelete: Cascade)
+
+  @@index([preparerId, status, createdAt])
+}
+
+model PreparerShop {
+  preparerId      String
+  shopId          String
+  assignedAt      DateTime        @default(now())
+  canSubmitOrders Boolean         @default(false)
+  preparer        CompanyPreparer @relation(fields: [preparerId], references: [id], onDelete: Cascade)
+  shop            Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@id([preparerId, shopId])
+  @@index([shopId])
+}
+
+model Customer {
+  id                   String                @id @default(cuid())
+  shopId               String
+  name                 String                @default("")
+  phone                String
+  customerRegionId     String?
+  customerLocationUrl  String                @default("")
+  customerLandmark     String                @default("")
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  alternatePhone       String?
+  customerDoorPhotoUrl String?
+  customerRegion       Region?               @relation("CustomerRegion", fields: [customerRegionId], references: [id])
+  shop                 Shop                  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orders               Order[]
+  webPushSubscriptions WebPushSubscription[]
+
+  @@index([shopId])
+  @@index([phone])
+}
+
+model Employee {
+  id                       String                    @id @default(cuid())
+  name                     String
+  phone                    String
+  shopId                   String
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  orderPortalToken         String                    @default(cuid())
+  walletForCompanyPreparer CompanyPreparer?          @relation("CompanyPreparerWalletEmployee")
+  shop                     Shop                      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  walletMiscEntries        EmployeeWalletMiscEntry[]
+  submittedOrders          Order[]                   @relation("OrderSubmittedByEmployee")
+  walletTransfersOut       WalletPeerTransfer[]      @relation("WalletTransferFromEmployee")
+  walletTransfersIn        WalletPeerTransfer[]      @relation("WalletTransferToEmployee")
+  webPushSubscriptions     WebPushSubscription[]
+}
+
+model StaffEmployee {
+  id              String        @id @default(cuid())
+  name            String
+  phone           String        @default("")
+  active          Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  portalToken     String        @default(cuid())
+  canManageStore  Boolean       @default(false)
+  canSubmitOrders Boolean       @default(true)
+  canViewArchived Boolean       @default(false)
+  managedBranches StoreBranch[] @relation("StaffManagedBranches")
+
+  @@index([active, createdAt])
+}
+
+model Courier {
+  id                          String                   @id @default(cuid())
+  name                        String
+  phone                       String
+  createdAt                   DateTime                 @default(now())
+  updatedAt                   DateTime                 @updatedAt
+  lastCourierLat              Float?
+  lastCourierLng              Float?
+  lastCourierLocationAt       DateTime?
+  vehicleType                 CourierVehicleType       @default(car)
+  hiddenFromReports           Boolean                  @default(false)
+  blocked                     Boolean                  @default(false)
+  mandoubTotalsResetAt        DateTime?
+  mandoubWalletCarryOverDinar Decimal                  @default(0) @db.Decimal(14, 4)
+  telegramUserId              String?                  @unique
+  availableForAssignment      Boolean                  @default(true)
+  tips                        CourierTip[]
+  miscWalletEntries           CourierWalletMiscEntry[]
+  orders                      Order[]
+  ordersEarningAccrued        Order[]                  @relation("OrderCourierEarning")
+  moneyEvents                 OrderCourierMoneyEvent[]
+  walletTransfersOut          WalletPeerTransfer[]     @relation("WalletTransferFromCourier")
+  walletTransfersIn           WalletPeerTransfer[]     @relation("WalletTransferToCourier")
+  webPushSubscriptions        WebPushSubscription[]
+}
+
+model CourierTip {
+  id          String   @id @default(cuid())
+  courierId   String
+  amountDinar Decimal  @db.Decimal(14, 4)
+  createdAt   DateTime @default(now())
+  courier     Courier  @relation(fields: [courierId], references: [id], onDelete: Cascade)
+
+  @@index([courierId])
+  @@index([createdAt])
+}
+
+model CourierWalletMiscEntry {
+  id                   String                           @id @default(cuid())
+  courierId            String
+  direction            CourierWalletMiscDirection
+  amountDinar          Decimal                          @db.Decimal(14, 4)
+  label                String
+  createdAt            DateTime                         @default(now())
+  deletedAt            DateTime?
+  deletedReason        OrderCourierMoneyDeletionReason?
+  deletedByDisplayName String?
+  courier              Courier                          @relation(fields: [courierId], references: [id])
+
+  @@index([courierId])
+  @@index([courierId, deletedAt])
+}
+
+model WalletPeerTransfer {
+  id               String                   @id @default(cuid())
+  status           WalletPeerTransferStatus @default(pending)
+  amountDinar      Decimal                  @db.Decimal(14, 4)
+  handoverLocation String
+  fromKind         WalletPeerPartyKind
+  fromCourierId    String?
+  fromEmployeeId   String?
+  toKind           WalletPeerPartyKind
+  toCourierId      String?
+  toEmployeeId     String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  respondedAt      DateTime?
+  fromCourier      Courier?                 @relation("WalletTransferFromCourier", fields: [fromCourierId], references: [id], onDelete: Restrict)
+  fromEmployee     Employee?                @relation("WalletTransferFromEmployee", fields: [fromEmployeeId], references: [id], onDelete: Restrict)
+  toCourier        Courier?                 @relation("WalletTransferToCourier", fields: [toCourierId], references: [id], onDelete: Restrict)
+  toEmployee       Employee?                @relation("WalletTransferToEmployee", fields: [toEmployeeId], references: [id], onDelete: Restrict)
+}
+
+model EmployeeWalletMiscEntry {
+  id                   String                           @id @default(cuid())
+  employeeId           String
+  direction            CourierWalletMiscDirection
+  amountDinar          Decimal                          @db.Decimal(14, 4)
+  label                String
+  createdAt            DateTime                         @default(now())
+  deletedAt            DateTime?
+  deletedReason        OrderCourierMoneyDeletionReason?
+  deletedByDisplayName String?
+  employee             Employee                         @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@index([employeeId, deletedAt])
+}
+
+model OrderCourierMoneyEvent {
+  id                          String                           @id @default(cuid())
+  orderId                     String
+  courierId                   String?
+  kind                        String
+  amountDinar                 Decimal                          @db.Decimal(14, 4)
+  expectedDinar               Decimal?                         @db.Decimal(14, 4)
+  matchesExpected             Boolean                          @default(true)
+  mismatchReason              String                           @default("")
+  mismatchNote                String                           @default("")
+  createdAt                   DateTime                         @default(now())
+  deletedAt                   DateTime?
+  deletedReason               OrderCourierMoneyDeletionReason?
+  deletedByDisplayName        String?
+  recordedByCompanyPreparerId String?
+  courier                     Courier?                         @relation(fields: [courierId], references: [id], onDelete: Restrict)
+  order                       Order                            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  recordedByCompanyPreparer   CompanyPreparer?                 @relation("OrderMoneyRecordedByCompanyPreparer", fields: [recordedByCompanyPreparerId], references: [id])
+
+  @@index([orderId])
+  @@index([courierId])
+}
+
+model Order {
+  id                                    String                   @id @default(cuid())
+  summary                               String                   @default("")
+  status                                String                   @default("pending")
+  createdAt                             DateTime                 @default(now())
+  updatedAt                             DateTime                 @updatedAt
+  shopId                                String
+  submittedByEmployeeId                 String?
+  orderType                             String                   @default("")
+  customerRegionId                      String?
+  deliveryPrice                         Decimal?                 @db.Decimal(10, 2)
+  orderSubtotal                         Decimal?                 @db.Decimal(10, 2)
+  totalAmount                           Decimal?                 @db.Decimal(10, 2)
+  customerPhone                         String                   @default("")
+  alternatePhone                        String?
+  orderNoteTime                         String?
+  imageUrl                              String?
+  submissionSource                      String                   @default("employee")
+  assignedCourierId                     String?
+  shopDoorPhotoUrl                      String?
+  orderNumber                           Int                      @unique @default(autoincrement())
+  customerLocationUrl                   String                   @default("")
+  customerLandmark                      String                   @default("")
+  customerDoorPhotoUrl                  String?
+  customerId                            String?
+  shopCostPaidAt                        DateTime?
+  customerPaymentReceivedAt             DateTime?
+  courierCashSettledAt                  DateTime?
+  voiceNoteUrl                          String?
+  adminVoiceNoteUrl                     String?
+  routeMode                             String                   @default("single")
+  adminOrderCode                        String                   @default("")
+  secondCustomerPhone                   String?
+  secondCustomerRegionId                String?
+  secondCustomerLocationUrl             String                   @default("")
+  secondCustomerLandmark                String                   @default("")
+  secondCustomerDoorPhotoUrl            String?
+  customerLocationSetByCourierAt        DateTime?
+  orderImageUploadedByName              String?
+  shopDoorPhotoUploadedByName           String?
+  customerDoorPhotoUploadedByName       String?
+  secondCustomerDoorPhotoUploadedByName String?
+  customerLocationUploadedByName        String?
+  courierEarningDinar                   Decimal?                 @db.Decimal(14, 4)
+  courierEarningForCourierId            String?
+  prepaidAll                            Boolean                  @default(false)
+  archivedAt                            DateTime?
+  submittedByCompanyPreparerId          String?
+  preparerShoppingJson                  Json?
+  courier                               Courier?                 @relation(fields: [assignedCourierId], references: [id])
+  courierEarningForCourier              Courier?                 @relation("OrderCourierEarning", fields: [courierEarningForCourierId], references: [id])
+  customer                              Customer?                @relation(fields: [customerId], references: [id])
+  customerRegion                        Region?                  @relation("OrderCustomerRegion", fields: [customerRegionId], references: [id])
+  secondCustomerRegion                  Region?                  @relation("OrderSecondDestinationRegion", fields: [secondCustomerRegionId], references: [id])
+  shop                                  Shop                     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  submittedByCompanyPreparer            CompanyPreparer?         @relation("OrderSubmittedByPreparer", fields: [submittedByCompanyPreparerId], references: [id])
+  submittedBy                           Employee?                @relation("OrderSubmittedByEmployee", fields: [submittedByEmployeeId], references: [id])
+  moneyEvents                           OrderCourierMoneyEvent[]
+
+  @@index([shopId])
+  @@index([assignedCourierId])
+  @@index([submittedByCompanyPreparerId])
+  @@index([status])
+  @@index([archivedAt])
+  @@index([customerRegionId])
+  @@index([secondCustomerRegionId])
+  @@index([routeMode])
+  @@index([customerId])
+  @@index([customerPhone])
+  @@index([submittedByEmployeeId])
+  @@index([createdAt])
+  @@index([courierEarningForCourierId])
+}
+
+model MandoubWaButtonSetting {
+  id                   String   @id @default(cuid())
+  name                 String   @default("")
+  label                String
+  iconKey              String   @default("💬")
+  templateText         String
+  recipient            String   @default("customer")
+  statusesCsv          String   @default("")
+  customerLocationRule String   @default("any")
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  visibilityScope      String   @default("all")
+
+  @@index([isActive])
+}
+
+model WebPushSubscription {
+  id         String    @id @default(cuid())
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  audience   String
+  courierId  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  employeeId String?
+  customerId String?
+  courier    Courier?  @relation(fields: [courierId], references: [id], onDelete: Cascade)
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model AppNotificationSettings {
+  id                      Int      @id
+  adminEnabled            Boolean  @default(true)
+  adminTemplateSingle     String   @default("طلب جديد بانتظار الموافقة (#{orderNumber})")
+  adminTemplateMultiple   String   @default("وصلت {count} طلبات جديدة بانتظار الموافقة")
+  adminSoundEnabled       Boolean  @default(true)
+  mandoubEnabled          Boolean  @default(true)
+  mandoubTemplateSingle   String   @default("تم إسناد طلب جديد إليك (#{orderNumber})")
+  mandoubTemplateMultiple String   @default("تم إسناد {count} طلبات جديدة إليك")
+  mandoubSoundEnabled     Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  adminSoundPreset        String   @default("beep")
+  mandoubSoundPreset      String   @default("beep")
+}
+
+model TelegramBotSession {
+  id             String   @id @default(cuid())
+  telegramUserId String   @unique
+  chatId         String
+  step           String   @default("idle")
+  orderNumber    Int?
+  payload        String   @default("")
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+}
+
+model UISystemSetting {
+  id        String   @id @default(cuid())
+  target    String
+  section   String
+  config    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([target, section])
+}
+
+model AIConfig {
+  id         String   @id @default(cuid())
+  provider   String   @default("gemini")
+  apiKey     String
+  label      String   @default("")
+  isActive   Boolean  @default(true)
+  dailyLimit Int      @default(100)
+  usedToday  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model StoreCategory {
+  id        String        @id @default(cuid())
+  name      String
+  sequence  Int           @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  active    Boolean       @default(true)
+  photoUrl  String        @default("")
+  branches  StoreBranch[]
+
+  @@index([active, sequence])
+}
+
+model StoreBranch {
+  id                   String           @id @default(cuid())
+  name                 String
+  sequence             Int              @default(0)
+  categoryId           String
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  active               Boolean          @default(true)
+  photoUrl             String           @default("")
+  parentBranchId       String?
+  authorizedPreparerId String?
+  profitMargin         Decimal          @default(0.25) @db.Decimal(10, 2)
+  authorizedPreparer   CompanyPreparer? @relation("AuthorizedBranches", fields: [authorizedPreparerId], references: [id])
+  category             StoreCategory    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  parentBranch         StoreBranch?     @relation("SubBranches", fields: [parentBranchId], references: [id], onDelete: Cascade)
+  subBranches          StoreBranch[]    @relation("SubBranches")
+  products             StoreProduct[]
+  managedStaff         StaffEmployee[]  @relation("StaffManagedBranches")
+
+  @@index([categoryId])
+  @@index([parentBranchId])
+  @@index([active, sequence])
+}
+
+model StoreProduct {
+  id            String                @id @default(cuid())
+  name          String
+  description   String                @default("")
+  sequence      Int                   @default(0)
+  purchasePrice Decimal               @db.Decimal(10, 2)
+  branchId      String
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  active        Boolean               @default(true)
+  photoUrls     String[]              @default([])
+  salePrice     Decimal               @db.Decimal(10, 2)
+  hasVariants   Boolean               @default(false)
+  variantType   String?
+  supplierId    String?
+  branch        StoreBranch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  supplier      StoreSupplier?        @relation(fields: [supplierId], references: [id])
+  variants      StoreProductVariant[]
+
+  @@index([branchId])
+  @@index([active, sequence])
+  @@index([name])
+}
+
+model StoreSupplier {
+  id           String         @id @default(cuid())
+  name         String
+  phone        String         @default("")
+  profitMargin Decimal        @default(0.25) @db.Decimal(10, 2)
+  portalToken  String         @default(cuid())
+  active       Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  products     StoreProduct[]
+}
+
+model StoreProductVariant {
+  id            String       @id @default(cuid())
+  productId     String
+  name          String
+  purchasePrice Decimal      @db.Decimal(10, 2)
+  salePrice     Decimal      @db.Decimal(10, 2)
+  active        Boolean      @default(true)
+  sequence      Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  product       StoreProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+enum CourierVehicleType {
+  car
+  bike
+}
+
+enum OrderCourierMoneyDeletionReason {
+  manual_admin
+  manual_courier
+  status_revert
+  manual_preparer
+}
+
+enum CourierWalletMiscDirection {
+  take
+  give
+}
+
+enum PreparerMonthlySalaryResetMode {
+  calendar_month
+  every_n_days
+  manual
+}
+
+enum PreparerShoppingDraftStatus {
+  draft
+  priced
+  sent
+  archived
+}
+
+enum WalletPeerTransferStatus {
+  pending
+  accepted
+  rejected
+}
+
+enum WalletPeerPartyKind {
+  courier
+  employee
+  admin
+}

@@ -1,0 +1,288 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Bright Light Base (Default) */
+  --background: #f0f4f8; 
+  --foreground: #0f172a; 
+  --surface: #ffffff;
+  --surface-muted: rgba(255, 255, 255, 0.7);
+  
+  /* Fallback accents for light mode */
+  --neon-cyan: #0284c7;
+  --neon-purple: #9333ea;
+  --neon-orange: #ea580c;
+  
+  --accent-sky: #0284c7;
+  --accent-emerald: #10b981;
+  --accent-cyan: #06b6d4;
+}
+
+.dark {
+  /* Carbon Black Base */
+  --background: #09090b; 
+  --foreground: #f8fafc; 
+  --surface: #131418;
+  --surface-muted: rgba(19, 20, 24, 0.7);
+  
+  /* Vibrant Neons from Mockup */
+  --neon-cyan: #00f3ff;
+  --neon-purple: #e028ff;
+  --neon-orange: #ff9100;
+  
+  --accent-sky: #00f3ff;
+  --accent-emerald: #10b981;
+  --accent-cyan: #06b6d4;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/**
+ * Standard Light Background
+ */
+.kse-app-bg {
+  position: relative;
+  min-height: 100vh;
+  isolation: isolate;
+  background-color: var(--background);
+  background-image: 
+    linear-gradient(rgba(2, 132, 199, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(2, 132, 199, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Dark Mode Carbon / Cyberpunk Texture Pattern */
+.dark .kse-app-bg {
+  background-color: var(--background);
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+}
+
+.dark .kse-app-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: 
+    radial-gradient(circle at 15% 50%, rgba(0, 243, 255, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 30%, rgba(224, 40, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 50% 100%, rgba(255, 145, 0, 0.05) 0%, transparent 50%);
+}
+
+.dark .kse-app-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.04;
+}
+
+.kse-app-inner {
+  position: relative;
+  z-index: 1;
+}
+
+/**
+ * Glass Profile
+ */
+.kse-glass-card {
+  border-radius: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.85); 
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.dark .kse-glass-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(19, 20, 24, 0.85); 
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.kse-glass-dark {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+}
+
+.dark .kse-glass-dark {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(9, 9, 11, 0.9);
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+}
+
+/**
+ * Dashboard Bento Grid Cards
+ */
+.neon-box {
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, rgba(255,255,255, 1) 0%, rgba(248, 250, 252, 1) 100%);
+  border: 2px solid;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.dark .neon-box {
+  background: linear-gradient(135deg, rgba(30, 40, 50, 0.9) 0%, rgba(10, 15, 20, 0.95) 100%);
+}
+
+.neon-box-cyan {
+  border-color: var(--neon-cyan);
+  box-shadow: inset 0 0 10px rgba(2, 132, 199, 0.1), 0 4px 10px rgba(2, 132, 199, 0.1);
+}
+.dark .neon-box-cyan {
+  box-shadow: inset 0 0 15px rgba(0, 243, 255, 0.2), 0 4px 20px rgba(0, 243, 255, 0.15);
+}
+
+.neon-box-purple {
+  border-color: var(--neon-purple);
+  box-shadow: inset 0 0 10px rgba(147, 51, 234, 0.1), 0 4px 10px rgba(147, 51, 234, 0.1);
+}
+.dark .neon-box-purple {
+  box-shadow: inset 0 0 15px rgba(224, 40, 255, 0.2), 0 4px 20px rgba(224, 40, 255, 0.15);
+}
+
+.neon-box-orange {
+  border-color: var(--neon-orange);
+  box-shadow: inset 0 0 10px rgba(234, 88, 12, 0.1), 0 4px 10px rgba(234, 88, 12, 0.1);
+}
+.dark .neon-box-orange {
+  box-shadow: inset 0 0 15px rgba(255, 145, 0, 0.2), 0 4px 20px rgba(255, 145, 0, 0.15);
+}
+
+/** Pill Layout on Right Side */
+.neon-pill {
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  position: relative;
+}
+.dark .neon-pill {
+  background: rgba(19, 20, 24, 0.9);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.neon-pill-cyan { border-color: rgba(2, 132, 199, 0.5); }
+.dark .neon-pill-cyan { border-color: rgba(0, 243, 255, 0.5); }
+
+.neon-pill-purple { border-color: rgba(147, 51, 234, 0.5); }
+.dark .neon-pill-purple { border-color: rgba(224, 40, 255, 0.5); }
+
+.neon-pill-orange { border-color: rgba(234, 88, 12, 0.5); }
+.dark .neon-pill-orange { border-color: rgba(255, 145, 0, 0.5); }
+
+
+/** Connection Lines for mockups */
+.neon-curved-line {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border-top: 2px solid rgba(2, 132, 199, 0.4);
+  border-right: 2px solid rgba(2, 132, 199, 0.4);
+  border-top-right-radius: 20px;
+  z-index: 0;
+}
+.dark .neon-curved-line {
+  border-top: 2px solid rgba(0, 243, 255, 0.4);
+  border-right: 2px solid rgba(0, 243, 255, 0.4);
+}
+
+/** 
+ * ==========================================
+ * FORCE DARK MODE OVERRIDES FOR LEGACY COMPONENTS
+ * ==========================================
+ * Only active when `.dark` is present on html
+ */
+.dark body input, .dark body select, .dark body textarea {
+  color: #fff !important;
+  background: rgba(255,255,255,0.05) !important;
+  border-color: rgba(255,255,255,0.2) !important;
+}
+.dark body input:focus, .dark body select:focus, .dark body textarea:focus {
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.2) !important;
+}
+
+.dark body .bg-white { 
+  background-color: rgba(15, 17, 21, 0.9) !important; 
+}
+.dark body .bg-slate-50, .dark body .bg-sky-50, .dark body .bg-emerald-50, .dark body .bg-rose-50 { 
+  background-color: rgba(22, 24, 30, 0.9) !important; 
+}
+.dark body .bg-slate-100, .dark body .bg-sky-100, .dark body .bg-emerald-100 { 
+  background-color: rgba(30, 32, 40, 0.8) !important; 
+}
+
+/* Invert dark text colors to light text for dark mode */
+.dark body .text-slate-800, .dark body .text-slate-900, .dark body .text-slate-700, 
+.dark body .text-sky-950, .dark body .text-emerald-800, .dark body .text-emerald-900,
+.dark body .text-gray-800, .dark body .text-gray-900 { 
+  color: #eef2f6 !important; 
+}
+.dark body .text-slate-600, .dark body .text-slate-500 { 
+  color: #94a3b8 !important; 
+}
+
+/* Fix harsh light borders */
+.dark body .border-slate-200, .dark body .border-slate-100, .dark body .border-slate-300,
+.dark body .border-sky-300, .dark body .border-sky-200, .dark body .border-sky-100, .dark body .border-emerald-200,
+.dark body .border-slate-400 { 
+  border-color: rgba(255, 255, 255, 0.1) !important; 
+}
+
+/* Strip harsh shadows */
+.dark body .shadow-sm, .dark body .shadow-md, .dark body .shadow-lg, .dark body .shadow {
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Animations */
+@keyframes placeholder-slide {
+  0% { transform: translateX(10%); opacity: 0.5; }
+  50% { transform: translateX(-10%); opacity: 0.9; }
+  100% { transform: translateX(10%); opacity: 0.5; }
+}
+
+.animate-placeholder::placeholder {
+  animation: placeholder-slide 3s infinite ease-in-out;
+  display: inline-block;
+  color: #1e293b !important; /* لون داكن جداً ليبرز */
+  font-weight: 900 !important;
+  opacity: 1 !important;
+  text-align: center; /* توسيط النص ليكون الذهاب والإياب متساوي */
+}
+
+/* تحسين إضافي للحقل نفسه عند وجود الحركة */
+.animate-placeholder:focus::placeholder {
+  animation: none !important;
+  transform: none !important;
+  opacity: 0.4;
+}
+
+
+
+

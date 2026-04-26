@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+:root {
+  /* خلفية أساسية بلمسة سمائية — ليست بيضاء ناصعة */
+  --background: #e8f2fa;
+  --foreground: #0f172a;
+  --surface: #f0f9ff;
+  --surface-muted: #f4f9fc;
+  --accent-sky: #0ea5e9;
+  --accent-emerald: #10b981;
+  --accent-cyan: #06b6d4;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/**
+ * خلفية فاتحة: تدرج سمائي/مائي — بدون أبيض ناصع
+ */
+.kse-app-bg {
+  position: relative;
+  min-height: 100vh;
+  isolation: isolate;
+  background: linear-gradient(
+    165deg,
+    #ddeaf6 0%,
+    #e0f2fe 24%,
+    #e8f7f2 52%,
+    #dff4f8 76%,
+    #e2eef8 100%
+  );
+}
+
+.kse-app-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 85% 55% at 100% 0%,
+      rgba(14, 165, 233, 0.18),
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse 65% 48% at 0% 100%,
+      rgba(16, 185, 129, 0.12),
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse 55% 42% at 50% 100%,
+      rgba(6, 182, 212, 0.12),
+      transparent 48%
+    );
+}
+
+.kse-app-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.kse-app-inner {
+  position: relative;
+  z-index: 1;
+}
+
+/** بطاقة مرتفعة — سطح أزرق ثلجي وليس أبيض ناصع */
+.kse-glass-card {
+  border-radius: 1rem;
+  border: 1px solid rgb(186 230 253);
+  background: linear-gradient(
+    165deg,
+    var(--surface) 0%,
+    var(--surface-muted) 100%
+  );
+  box-shadow:
+    0 4px 6px -1px rgb(14 116 144 / 0.08),
+    0 12px 32px -8px rgb(14 165 233 / 0.1);
+}
+
+/** لوح محتوى فاتح (اسم الكلاس قديم لكن المظهر فاتح) */
+.kse-glass-dark {
+  border-radius: 1rem;
+  border: 1px solid rgb(165 243 252);
+  background: rgba(240, 249, 255, 0.94);
+  box-shadow:
+    0 1px 3px rgb(14 116 144 / 0.06),
+    0 8px 24px -4px rgb(14 165 233 / 0.08);
+}
+
+/**
+ * شريط تكبير الأزرار العائمة — مسار ومقبض أوضح للفأرة (الحاسوب)
+ */
+.fab-scale-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+.fab-scale-range::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 9999px;
+  background: linear-gradient(to left, rgb(224 242 254), rgb(186 230 253));
+  border: 1px solid rgb(125 211 252);
+}
+
+.fab-scale-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -7px;
+  border-radius: 9999px;
+  background: rgb(2 132 199);
+  border: 3px solid white;
+  box-shadow: 0 2px 10px rgb(15 23 42 / 0.22);
+  cursor: grab;
+}
+
+.fab-scale-range:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+
+.fab-scale-range::-moz-range-track {
+  height: 10px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, rgb(224 242 254), rgb(186 230 253));
+  border: 1px solid rgb(125 211 252);
+}
+
+.fab-scale-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: rgb(2 132 199);
+  border: 3px solid white;
+  box-shadow: 0 2px 10px rgb(15 23 42 / 0.22);
+  cursor: grab;
+}
+
+@media (min-width: 768px) {
+  .fab-scale-range::-webkit-slider-runnable-track {
+    height: 12px;
+  }
+
+  .fab-scale-range::-webkit-slider-thumb {
+    width: 26px;
+    height: 26px;
+    margin-top: -8px;
+  }
+
+  .fab-scale-range::-moz-range-track {
+    height: 12px;
+  }
+
+  .fab-scale-range::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+}
