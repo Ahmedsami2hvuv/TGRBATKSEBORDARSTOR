@@ -13,9 +13,6 @@ export function getPublicAppUrl(): string {
   if (rail) {
     return rail.startsWith("http") ? rail.replace(/\/+$/, "") : `https://${rail}`;
   }
-<<<<<<< HEAD
+
   return "https://aboakbar.vercel.app";
-=======
-  return "https://tgrbatksebordarstor.vercel.app";
->>>>>>> b7070ca5d6d669896f97dc26039c2c78b4152e0a
 }
