@@ -9,6 +9,7 @@ import {
 } from "@/lib/order-image";
 import { ORDER_UPLOADER_ADMIN_LABEL } from "@/lib/order-uploader-label";
 import { prisma } from "@/lib/prisma";
+import { deleteFromR2 } from "@/lib/upload-storage";
 import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
 
 export type CustomerDoorPhotoState = { ok?: boolean; error?: string };
@@ -25,6 +26,7 @@ export async function uploadCustomerDoorPhotoFromView(
       customerId: true,
       customerPhone: true,
       shopId: true,
+      customerDoorPhotoUrl: true,
     },
   });
   if (!order) {
@@ -38,6 +40,9 @@ export async function uploadCustomerDoorPhotoFromView(
 
   let photoUrl: string;
   try {
+    if (order.customerDoorPhotoUrl) {
+      await deleteFromR2(order.customerDoorPhotoUrl);
+    }
     photoUrl = await saveCustomerDoorPhotoUploaded(file, MAX_ORDER_IMAGE_BYTES);
   } catch (e) {
     const code = e instanceof Error ? e.message : "";
@@ -83,15 +88,30 @@ export async function uploadShopDoorPhotoFromView(
 ): Promise<CustomerDoorPhotoState> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { id: true, shopId: true },
+    select: { id: true, shopId: true, shopDoorPhotoUrl: true },
   });
   if (!order) return { error: "الطلب غير موجود" };
 
   const file = formData.get("shopDoorPhoto");
   if (!(file instanceof File) || file.size <= 0) return { error: "اختر صورة أولاً" };
 
+  const shop = await prisma.shop.findUnique({
+    where: { id: order.shopId },
+    select: { photoUrl: true, originalPhotoUrl: true }
+  });
+
   let photoUrl: string;
   try {
+    // مسح صورة الطلب القديمة
+    if (order.shopDoorPhotoUrl) {
+      await deleteFromR2(order.shopDoorPhotoUrl);
+    }
+
+    // مسح صورة المحل الحالية إذا لم تكن هي "الأصلية"
+    if (shop?.photoUrl && shop.photoUrl !== shop.originalPhotoUrl) {
+      await deleteFromR2(shop.photoUrl);
+    }
+
     photoUrl = await saveShopDoorPhotoUploaded(file, MAX_ORDER_IMAGE_BYTES);
   } catch (e) {
     return { error: parseUploadError(e) };
@@ -105,7 +125,7 @@ export async function uploadShopDoorPhotoFromView(
     },
   });
 
-  // صورة باب المحل يجب أن تكون "صورة المحل الحالية" ليتم عرضها في جميع الطلبات (قديم/جديد).
+  // تحديث صورة المحل الحالية (هذه تصبح الصورة رقم 2)
   await prisma.shop.update({
     where: { id: order.shopId },
     data: { photoUrl },
@@ -128,7 +148,7 @@ export async function uploadOrderImageFromView(
 ): Promise<CustomerDoorPhotoState> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { id: true },
+    select: { id: true, imageUrl: true },
   });
   if (!order) return { error: "الطلب غير موجود" };
 
@@ -137,6 +157,9 @@ export async function uploadOrderImageFromView(
 
   let photoUrl: string;
   try {
+    if (order.imageUrl) {
+      await deleteFromR2(order.imageUrl);
+    }
     photoUrl = await saveOrderImageUploaded(file, MAX_ORDER_IMAGE_BYTES);
   } catch (e) {
     return { error: parseUploadError(e) };
@@ -205,6 +228,10 @@ export async function uploadCustomerLocationFromView(
 }
 
 export async function deleteOrderImageAction(orderId: string): Promise<CustomerDoorPhotoState> {
+  const existing = await prisma.order.findUnique({ where: { id: orderId }, select: { imageUrl: true } });
+  if (existing?.imageUrl) {
+    await deleteFromR2(existing.imageUrl);
+  }
   await prisma.order.update({
     where: { id: orderId },
     data: { imageUrl: null, orderImageUploadedByName: null },
@@ -214,6 +241,10 @@ export async function deleteOrderImageAction(orderId: string): Promise<CustomerD
 }
 
 export async function deleteCustomerDoorPhotoAction(orderId: string): Promise<CustomerDoorPhotoState> {
+  const existing = await prisma.order.findUnique({ where: { id: orderId }, select: { customerDoorPhotoUrl: true } });
+  if (existing?.customerDoorPhotoUrl) {
+    await deleteFromR2(existing.customerDoorPhotoUrl);
+  }
   await prisma.order.update({
     where: { id: orderId },
     data: { customerDoorPhotoUrl: null, customerDoorPhotoUploadedByName: null },
@@ -226,9 +257,13 @@ export async function deleteCustomerDoorPhotoAction(orderId: string): Promise<Cu
 export async function deleteShopDoorPhotoAction(orderId: string): Promise<CustomerDoorPhotoState> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { id: true },
+    select: { id: true, shopDoorPhotoUrl: true },
   });
   if (!order) return { error: "الطلب غير موجود" };
+
+  if (order.shopDoorPhotoUrl) {
+    await deleteFromR2(order.shopDoorPhotoUrl);
+  }
 
   await prisma.order.update({
     where: { id: orderId },
@@ -246,17 +281,34 @@ export async function deleteShopDoorPhotoAction(orderId: string): Promise<Custom
 export async function revertShopDoorPhotoToOriginal(orderId: string): Promise<CustomerDoorPhotoState> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { id: true, shopId: true, shop: { select: { photoUrl: true } } },
+    select: { id: true, shopId: true, shopDoorPhotoUrl: true, shop: { select: { photoUrl: true, originalPhotoUrl: true } } },
   });
   if (!order) return { error: "الطلب غير موجود" };
-  if (!order.shop.photoUrl) return { error: "لا توجد صورة أصلية للمحل" };
+
+  const original = order.shop.originalPhotoUrl || order.shop.photoUrl;
+  if (!original) return { error: "لا توجد صورة أصلية للمحل" };
+
+  // إذا كانت الصورة الحالية في الطلب ليست هي الأصل، نمسحها
+  if (order.shopDoorPhotoUrl && order.shopDoorPhotoUrl !== original) {
+    await deleteFromR2(order.shopDoorPhotoUrl);
+  }
+
+  // إذا كانت صورة المحل الحالية ليست هي الأصل، نمسحها
+  if (order.shop.photoUrl && order.shop.photoUrl !== original) {
+    await deleteFromR2(order.shop.photoUrl);
+  }
 
   await prisma.order.update({
     where: { id: orderId },
     data: {
-      shopDoorPhotoUrl: order.shop.photoUrl,
+      shopDoorPhotoUrl: original,
       shopDoorPhotoUploadedByName: "الأصلية",
     },
+  });
+
+  await prisma.shop.update({
+    where: { id: order.shopId },
+    data: { photoUrl: original }
   });
 
   revalidatePath(`/admin/orders/${orderId}`);

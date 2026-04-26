@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { deleteFromR2 } from "@/lib/upload-storage";
 import {
   saveStoreCategoryImageUploaded,
   saveStoreBranchImageUploaded,
@@ -23,6 +24,10 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
 
   if (photoFile && photoFile.size > 0) {
     try {
+      // مسح الصورة القديمة إذا وجد تعديل
+      if (id && photoUrl) {
+        await deleteFromR2(photoUrl);
+      }
       photoUrl = await saveStoreCategoryImageUploaded(photoFile, MAX_ORDER_IMAGE_BYTES);
     } catch (e) {
       return { error: "خطأ في رفع الصورة" };
@@ -46,6 +51,10 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
 }
 
 export async function deleteCategory(id: string) {
+  const existing = await prisma.storeCategory.findUnique({ where: { id }, select: { photoUrl: true } });
+  if (existing?.photoUrl) {
+    await deleteFromR2(existing.photoUrl);
+  }
   await prisma.storeCategory.delete({ where: { id } });
   revalidatePath("/admin/store/categories");
 }
@@ -69,6 +78,9 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
 
   if (photoFile && photoFile.size > 0) {
     try {
+      if (id && photoUrl) {
+        await deleteFromR2(photoUrl);
+      }
       photoUrl = await saveStoreBranchImageUploaded(photoFile, MAX_ORDER_IMAGE_BYTES, { removeBg });
     } catch (e) {
       return { error: "خطأ في رفع الصورة" };
@@ -80,6 +92,9 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
           const arrayBuffer = await response.arrayBuffer();
           const contentType = response.headers.get("content-type") || "image/jpeg";
           const file = new File([arrayBuffer], "branch-remote.jpg", { type: contentType });
+          if (id && photoUrl) {
+            await deleteFromR2(photoUrl);
+          }
           photoUrl = await saveStoreBranchImageUploaded(file, MAX_ORDER_IMAGE_BYTES, { removeBg });
         }
     } catch (e) {
@@ -120,6 +135,10 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
 }
 
 export async function deleteBranch(id: string) {
+  const existing = await prisma.storeBranch.findUnique({ where: { id }, select: { photoUrl: true } });
+  if (existing?.photoUrl) {
+    await deleteFromR2(existing.photoUrl);
+  }
   await prisma.storeBranch.delete({ where: { id } });
   revalidatePath("/admin/store/branches");
 }
@@ -143,6 +162,17 @@ export async function upsertProduct(_prev: any, formData: FormData): Promise<For
 
     const photoFiles = formData.getAll("photos") as File[];
     let photoUrls: string[] = JSON.parse(formData.get("currentPhotoUrls") as string || "[]");
+
+    if (id) {
+      const existing = await prisma.storeProduct.findUnique({ where: { id }, select: { photoUrls: true } });
+      if (existing) {
+        // مسح الصور التي تم حذفها من القائمة من R2
+        const removedPhotos = existing.photoUrls.filter(oldUrl => !photoUrls.includes(oldUrl));
+        for (const url of removedPhotos) {
+          await deleteFromR2(url);
+        }
+      }
+    }
 
     if (!name || !branchId) return { error: "الاسم والفرع مطلوبان" };
 
@@ -230,6 +260,12 @@ export async function upsertProduct(_prev: any, formData: FormData): Promise<For
 }
 
 export async function deleteProduct(id: string) {
+  const existing = await prisma.storeProduct.findUnique({ where: { id }, select: { photoUrls: true } });
+  if (existing?.photoUrls) {
+    for (const url of existing.photoUrls) {
+      await deleteFromR2(url);
+    }
+  }
   await prisma.storeProduct.delete({ where: { id } });
   revalidatePath("/admin/store/products");
 }

@@ -1,5 +1,5 @@
 import path from "path";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 const r2Client = process.env.R2_ACCESS_KEY_ID ? new S3Client({
   region: "auto",
@@ -21,6 +21,35 @@ export async function uploadToR2(buffer: Buffer, key: string, contentType: strin
   }));
 
   return key;
+}
+
+/**
+ * دالة لحذف الملفات من R2 لضمان عدم تراكم الصور القديمة
+ */
+export async function deleteFromR2(key: string | null | undefined) {
+  if (!r2Client || !key) return;
+
+  // إذا كان الرابط كاملاً، نستخرج الـ Key منه
+  let actualKey = key;
+  if (key.includes("http")) {
+    try {
+      const url = new URL(key);
+      actualKey = decodeURIComponent(url.pathname.startsWith("/") ? url.pathname.slice(1) : url.pathname);
+    } catch (e) {
+      console.error("Invalid URL provided to deleteFromR2:", key);
+      return;
+    }
+  }
+
+  try {
+    await r2Client.send(new DeleteObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: actualKey,
+    }));
+    console.log(`Successfully deleted from R2: ${actualKey}`);
+  } catch (error) {
+    console.error("Failed to delete from R2:", error);
+  }
 }
 
 export function getUploadsRoot(): string {

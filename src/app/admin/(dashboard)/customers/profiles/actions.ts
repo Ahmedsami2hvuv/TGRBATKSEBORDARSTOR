@@ -4,6 +4,7 @@ import {
   MAX_ORDER_IMAGE_BYTES,
   saveCustomerProfilePhotoUploaded,
 } from "@/lib/order-image";
+import { deleteFromR2 } from "@/lib/upload-storage";
 import { prisma } from "@/lib/prisma";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { revalidatePath } from "next/cache";
@@ -265,8 +266,15 @@ export async function updateCustomerPhoneProfile(
 
   let photoUrl = existing.photoUrl;
   if (removePhoto) {
+    if (existing.photoUrl) {
+      await deleteFromR2(existing.photoUrl);
+    }
     photoUrl = "";
   } else if (uploaded.photoUrl) {
+    // إذا رفعنا صورة جديدة وكان هناك صورة قديمة، نمسح القديمة
+    if (existing.photoUrl) {
+      await deleteFromR2(existing.photoUrl);
+    }
     photoUrl = uploaded.photoUrl;
   }
 
@@ -293,6 +301,16 @@ export async function deleteCustomerPhoneProfile(formData: FormData) {
   if (!id) {
     redirect("/admin/customers/profiles");
   }
+
+  const existing = await prisma.customerPhoneProfile.findUnique({
+    where: { id },
+    select: { photoUrl: true }
+  });
+
+  if (existing?.photoUrl) {
+    await deleteFromR2(existing.photoUrl);
+  }
+
   await prisma.customerPhoneProfile.delete({ where: { id } });
   revalidatePath("/admin/customers");
   revalidatePath("/admin/customers/profiles");

@@ -4,6 +4,7 @@ import {
   MAX_ORDER_IMAGE_BYTES,
   saveShopPhotoUploaded,
 } from "@/lib/order-image";
+import { deleteFromR2 } from "@/lib/upload-storage";
 import { prisma } from "@/lib/prisma";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { revalidatePath } from "next/cache";
@@ -104,6 +105,7 @@ export async function createShop(
       ownerName,
       phone: shopPhone,
       photoUrl,
+      originalPhotoUrl: photoUrl, // الصورة الأولى هي الأصلية دائماً
       locationUrl: url,
       regionId,
     },
@@ -116,7 +118,18 @@ export async function deleteShop(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
-  // طلب تأكيد قبل الحذف (يتم التعامل معه في جانب العميل عادةً، ولكن هنا نضيف حماية بسيطة)
+  const existing = await prisma.shop.findUnique({
+    where: { id },
+    select: { photoUrl: true, originalPhotoUrl: true }
+  });
+
+  if (existing) {
+    if (existing.photoUrl) await deleteFromR2(existing.photoUrl);
+    if (existing.originalPhotoUrl && existing.originalPhotoUrl !== existing.photoUrl) {
+      await deleteFromR2(existing.originalPhotoUrl);
+    }
+  }
+
   await prisma.shop.delete({ where: { id } });
   revalidatePath("/admin/shops");
 }
@@ -165,14 +178,26 @@ export async function updateShop(
   if (!region) {
     return { error: "المنطقة غير موجودة" };
   }
+
+  const existing = await prisma.shop.findUnique({
+    where: { id },
+    select: { photoUrl: true, originalPhotoUrl: true }
+  });
+
   const uploaded = await photoUrlFromShopPhotoUpload(formData);
   if (!uploaded.ok) {
     return { error: uploaded.error };
   }
-  let photoUrl = String(formData.get("photoUrlKeep") ?? "").trim();
+
+  let photoUrl = existing?.photoUrl || "";
   if (uploaded.photoUrl) {
+    // إذا كان هناك صورة حالية وهي ليست الأصلية، نمسحها قبل وضع الجديدة
+    if (existing?.photoUrl && existing.photoUrl !== existing.originalPhotoUrl) {
+      await deleteFromR2(existing.photoUrl);
+    }
     photoUrl = uploaded.photoUrl;
   }
+
   const phoneRaw = String(formData.get("phone") ?? "").trim();
   let shopPhone = "";
   if (phoneRaw) {

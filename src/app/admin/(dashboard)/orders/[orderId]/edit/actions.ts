@@ -13,7 +13,7 @@ import {
 } from "@/lib/order-image";
 import { syncOrderCourierMoneyExpectations } from "@/lib/order-courier-money-sync";
 import { prisma } from "@/lib/prisma";
-import { getUploadsRoot } from "@/lib/upload-storage";
+import { deleteFromR2, getUploadsRoot } from "@/lib/upload-storage";
 import { MAX_VOICE_NOTE_BYTES, saveVoiceNoteUploaded } from "@/lib/voice-note";
 import { parseOptionalAlfInputToDinar } from "@/lib/money-alf";
 import { ORDER_UPLOADER_ADMIN_LABEL } from "@/lib/order-uploader-label";
@@ -193,6 +193,10 @@ export async function updateOrderAdmin(
   const orderImg = formData.get("orderImage");
   if (orderImg instanceof File && orderImg.size > 0) {
     try {
+      // مسح الصورة القديمة إذا وجدت قبل رفع الجديدة
+      if (existing.imageUrl) {
+        await deleteFromR2(existing.imageUrl);
+      }
       nextImageUrl = await saveOrderImageUploaded(orderImg, MAX_ORDER_IMAGE_BYTES);
     } catch (e: any) {
       console.error("Order image upload failed:", e);
