@@ -3,43 +3,37 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": "24.x"
+    "node": "20.x"
   },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "start": "node scripts/start-production.cjs",
-    "lint": "eslint",
-    "postinstall": "prisma generate",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate deploy",
-    "db:resolve-failed-order-money-preparer": "prisma migrate resolve --rolled-back 20260325180000_order_money_event_recorded_by_preparer",
-    "db:fix-old-preparer-invoice-labels": "node scripts/fix-old-preparer-invoice-labels.cjs",
-    "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "start": "next start",
+    "lint": "next lint",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@prisma/client": "^6.19.0",
+    "@prisma/client": "^6.1.0",
     "@aws-sdk/client-s3": "^3.714.0",
     "@types/leaflet": "^1.9.16",
-    "jose": "^6.2.2",
+    "jose": "^6.0.0",
     "leaflet": "^1.9.4",
-    "next": "16.2.1",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "sharp": "^0.34.5",
+    "next": "15.1.6",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "sharp": "^0.33.5",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "@types/web-push": "^3.6.4",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.1",
-    "prisma": "^6.19.0",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "eslint": "^9.0.0",
+    "eslint-config-next": "15.1.6",
+    "prisma": "^6.1.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.0.0"
   }
 }
