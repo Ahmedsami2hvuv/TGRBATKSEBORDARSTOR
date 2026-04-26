@@ -4,12 +4,14 @@ export function getPublicAppUrl(): string {
   if (raw) {
     return raw.replace(/\/+$/, "");
   }
+  // الأولوية لـ Vercel
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL.replace(/\/+$/, "")}`;
   }
+  // ثم Railway كخيار ثانٍ
   const rail = process.env.RAILWAY_PUBLIC_DOMAIN?.trim();
   if (rail) {
     return rail.startsWith("http") ? rail.replace(/\/+$/, "") : `https://${rail}`;
   }
-  return "http://localhost:3000";
+  return "https://tgrbatksebordarstor.vercel.app";
 }
