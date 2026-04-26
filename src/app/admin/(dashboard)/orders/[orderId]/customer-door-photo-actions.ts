@@ -97,8 +97,8 @@ export async function uploadShopDoorPhotoFromView(
 
   const shop = await prisma.shop.findUnique({
     where: { id: order.shopId },
-    select: { photoUrl: true, originalPhotoUrl: true }
-  });
+    select: { photoUrl: true }
+  }) as any;
 
   let photoUrl: string;
   try {
@@ -108,7 +108,8 @@ export async function uploadShopDoorPhotoFromView(
     }
 
     // مسح صورة المحل الحالية إذا لم تكن هي "الأصلية"
-    if (shop?.photoUrl && shop.photoUrl !== shop.originalPhotoUrl) {
+    const originalPhoto = shop?.originalPhotoUrl || shop?.photoUrl;
+    if (shop?.photoUrl && shop.photoUrl !== originalPhoto) {
       await deleteFromR2(shop.photoUrl);
     }
 
@@ -281,8 +282,8 @@ export async function deleteShopDoorPhotoAction(orderId: string): Promise<Custom
 export async function revertShopDoorPhotoToOriginal(orderId: string): Promise<CustomerDoorPhotoState> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { id: true, shopId: true, shopDoorPhotoUrl: true, shop: { select: { photoUrl: true, originalPhotoUrl: true } } },
-  });
+    select: { id: true, shopId: true, shopDoorPhotoUrl: true, shop: { select: { photoUrl: true } } },
+  }) as any;
   if (!order) return { error: "الطلب غير موجود" };
 
   const original = order.shop.originalPhotoUrl || order.shop.photoUrl;

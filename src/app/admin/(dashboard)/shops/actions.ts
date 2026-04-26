@@ -105,9 +105,11 @@ export async function createShop(
       ownerName,
       phone: shopPhone,
       photoUrl,
-      originalPhotoUrl: photoUrl, // الصورة الأولى هي الأصلية دائماً
       locationUrl: url,
       regionId,
+      // نقوم بإضافة الحقل في الكائن يدوياً ليكون متوافقاً مع الـ Schema الجديد
+      // ولكن Prisma قد تتجاهله إذا لم يكن موجوداً في الـ DB فعلياً
+      ...({ originalPhotoUrl: photoUrl } as any)
     },
   });
   revalidatePath("/admin/shops");
@@ -120,13 +122,14 @@ export async function deleteShop(formData: FormData) {
 
   const existing = await prisma.shop.findUnique({
     where: { id },
-    select: { photoUrl: true, originalPhotoUrl: true }
-  });
+    select: { photoUrl: true }
+  }) as any;
 
   if (existing) {
     if (existing.photoUrl) await deleteFromR2(existing.photoUrl);
-    if (existing.originalPhotoUrl && existing.originalPhotoUrl !== existing.photoUrl) {
-      await deleteFromR2(existing.originalPhotoUrl);
+    const original = existing.originalPhotoUrl || existing.photoUrl;
+    if (original && original !== existing.photoUrl) {
+      await deleteFromR2(original);
     }
   }
 
@@ -181,8 +184,8 @@ export async function updateShop(
 
   const existing = await prisma.shop.findUnique({
     where: { id },
-    select: { photoUrl: true, originalPhotoUrl: true }
-  });
+    select: { photoUrl: true }
+  }) as any;
 
   const uploaded = await photoUrlFromShopPhotoUpload(formData);
   if (!uploaded.ok) {
@@ -192,7 +195,8 @@ export async function updateShop(
   let photoUrl = existing?.photoUrl || "";
   if (uploaded.photoUrl) {
     // إذا كان هناك صورة حالية وهي ليست الأصلية، نمسحها قبل وضع الجديدة
-    if (existing?.photoUrl && existing.photoUrl !== existing.originalPhotoUrl) {
+    const original = existing?.originalPhotoUrl || existing?.photoUrl;
+    if (existing?.photoUrl && existing.photoUrl !== original) {
       await deleteFromR2(existing.photoUrl);
     }
     photoUrl = uploaded.photoUrl;

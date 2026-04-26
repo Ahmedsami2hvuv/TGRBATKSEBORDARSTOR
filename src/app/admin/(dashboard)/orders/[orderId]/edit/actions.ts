@@ -98,6 +98,30 @@ export async function setAdminOrderCustomerLocationFromGeolocation(
   return { ok: true, locationUrl: mapsUrl };
 }
 
+export async function deleteOrderImageAdmin(orderId: string): Promise<OrderEditState> {
+  if (!(await assertAdmin())) return { error: "غير مصرّح" };
+  const existing = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { imageUrl: true }
+  });
+
+  if (existing?.imageUrl) {
+    await deleteFromR2(existing.imageUrl);
+  }
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      imageUrl: null,
+      orderImageUploadedByName: null,
+    },
+  });
+
+  revalidateAdminOrderPaths(orderId);
+  revalidatePath(`/preparer/order/${orderId}`);
+  return { ok: true };
+}
+
 async function unlinkUploadIfAny(url: string | null | undefined): Promise<void> {
   const u = url?.trim();
   if (!u || !u.startsWith("/uploads/")) return;
