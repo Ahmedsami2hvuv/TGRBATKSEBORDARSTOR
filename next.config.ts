@@ -7,7 +7,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "20mb",
     },
   },
-  // تجاهل الأخطاء أثناء الرفع لضمان استمرارية الخدمة
   typescript: {
     ignoreBuildErrors: true,
   },
