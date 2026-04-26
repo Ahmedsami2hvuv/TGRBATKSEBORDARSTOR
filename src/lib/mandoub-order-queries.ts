@@ -2,7 +2,16 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export const mandoubOrderDetailInclude = {
-  shop: { include: { region: true } },
+  shop: {
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      photoUrl: true,
+      regionId: true,
+      region: true
+    }
+  },
   customerRegion: true,
   secondCustomerRegion: true,
   submittedBy: { select: { phone: true, name: true } },

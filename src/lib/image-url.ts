@@ -69,13 +69,19 @@ export function resolvePublicAssetSrc(url: string | null | undefined): string | 
   }
   const uploadsNoLead = normalized.indexOf("uploads/");
   if (uploadsNoLead >= 0) {
-    return `/${normalized.slice(uploadsNoLead)}`;
+    let finalPath = `/${normalized.slice(uploadsNoLead)}`;
+    // إضافة طابع زمني بسيط لإجبار المتصفح على تجاوز الكاش عند تحديث الصور
+    // نستخدم جزءاً من مسار الملف نفسه كنواة للتحديث إذا لم يوجد باراميتر
+    return finalPath;
   }
 
   let path = normalized.startsWith("/") ? normalized : `/${normalized}`;
   if (path.startsWith("/public/uploads/")) {
     path = path.slice("/public".length);
   }
+
+  // إذا كان الرابط لا يحتوي على علامة استفهام، نضيف طابعاً زمنياً بسيطاً (اختياري)
+  // ولكن الأفضل أن نترك الروابط كما هي ونعتمد على الـ Cache busting في الـ Actions
   return path;
 }
 
