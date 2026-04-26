@@ -49,8 +49,11 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
   const homeHref = preparerPath("/preparer", auth);
   const shopIds = preparer.shopLinks.map((l) => l.shopId);
 
-  const [couriers, orderTable, webStorePending] = await Promise.all([
-    prisma.courier.findMany({ where: preparerCourierAssignWhere, select: { id: true, name: true } }),
+  const [couriers, orderTable, webStorePending, drafts] = await Promise.all([
+    prisma.courier.findMany({
+      where: preparerCourierAssignWhere,
+      select: { id: true, name: true }
+    }),
     loadPreparerPortalOrderTableData({
       preparerId: preparer.id, shopIds, orderListResetAt: preparer.orderListResetAt,
       tab: "all", wardFilter: "lower", saderFilter: "lower", prepFilter: null, onlySubmittedByThisPreparer: true,
@@ -65,17 +68,17 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
         orderNumber: true,
         summary: true,
         customerRegion: { select: { name: true } },
-        totalAmount: true,
       },
       orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+    prisma.companyPreparerShoppingDraft.findMany({
+      where: { preparerId: preparer.id, status: { in: ["draft", "priced"] } },
+      select: { id: true, titleLine: true, status: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+      take: 30,
     }),
   ]);
-
-  const drafts = await prisma.companyPreparerShoppingDraft.findMany({
-    where: { preparerId: preparer.id, status: { in: ["draft", "priced"] } },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-3 py-4 pb-24 sm:px-4">

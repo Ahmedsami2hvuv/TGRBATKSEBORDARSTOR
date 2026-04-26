@@ -4,28 +4,29 @@ import { notFound } from "next/navigation";
 import { CustomProductRequest } from "@/components/custom-product-request";
 import { ProductListClient } from "./product-list-client";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // تحديث الصفحة كل ساعة بدلاً من جلبها في كل ثانية
 
 export default async function BranchPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
 
-  // جلب بيانات الفرع والقسم في المكون الرئيسي لضمان ظهورها فوراً
-  const branch = await prisma.storeBranch.findUnique({
-    where: { id },
-    include: {
-      category: { select: { name: true } },
-      parentBranch: { select: { name: true } },
-      _count: { select: { products: true } }
-    }
-  });
+  // جلب البيانات بالتوازي (Parallel Data Fetching) لتقليل وقت التحميل للنصف
+  const [branch, storeSettings] = await Promise.all([
+    prisma.storeBranch.findUnique({
+      where: { id },
+      include: {
+        category: { select: { name: true } },
+        parentBranch: { select: { name: true } },
+        _count: { select: { products: true } }
+      }
+    }),
+    prisma.uISystemSetting.findUnique({
+      where: { target_section: { target: "customer", section: "store_general" } },
+      select: { config: true }
+    })
+  ]);
 
   if (!branch) return notFound();
 
-  // جلب إعدادات الخلفية
-  const storeSettings = await prisma.uISystemSetting.findUnique({
-    where: { target_section: { target: "customer", section: "store_general" } },
-    select: { config: true }
-  });
   const productBg = (storeSettings?.config as any)?.product_card_bg_url;
 
   return (

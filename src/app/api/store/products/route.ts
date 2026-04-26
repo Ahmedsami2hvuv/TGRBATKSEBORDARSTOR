@@ -1,34 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const branchId = searchParams.get("branchId");
-  const ids = searchParams.get("ids");
-
-  // السماح بجلب المنتجات إما حسب الفرع أو حسب مصفوفة معرفات (للمفضلة)
-  if (!branchId && !ids) {
-    return NextResponse.json({ error: "Missing branchId or ids" }, { status: 400 });
-  }
-
-  try {
-    const where: any = { active: true };
-
-    if (branchId) {
-      where.branchId = branchId;
-    }
-
-    if (ids) {
-      const idArray = ids.split(",").map(id => id.trim()).filter(id => id !== "");
-      if (idArray.length > 0) {
-        where.id = { in: idArray };
-      } else if (!branchId) {
-        return NextResponse.json([]);
-      }
-    }
-
-    const products = await prisma.storeProduct.findMany({
-      where,
+// دالة مخزنة لجلب المنتجات بسرعة فائقة
+const getCachedProductsByBranch = unstable_cache(
+  async (branchId: string) => {
+    return prisma.storeProduct.findMany({
+      where: { branchId, active: true },
       select: {
         id: true,
         name: true,
@@ -44,9 +22,53 @@ export async function GET(request: Request) {
           }
         }
       },
-      take: ids ? undefined : 100, // زيادة العدد لضمان ظهور كافة المنتجات
       orderBy: { sequence: "desc" },
     });
+  },
+  ["store-products-list"],
+  { revalidate: 600, tags: ["products"] } // تحديث كل 10 دقائق أو عند الطلب
+);
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const branchId = searchParams.get("branchId");
+  const ids = searchParams.get("ids");
+
+  if (!branchId && !ids) {
+    return NextResponse.json({ error: "Missing branchId or ids" }, { status: 400 });
+  }
+
+  try {
+    let products;
+
+    if (branchId && !ids) {
+      // استخدام الـ Cache للطلبات العامة للفرع (الأكثر تكراراً)
+      products = await getCachedProductsByBranch(branchId);
+    } else {
+      // جلب مباشر للمعرفات المحددة (مثل المفضلة) لأنها متغيرة جداً
+      const where: any = { active: true };
+      if (branchId) where.branchId = branchId;
+      if (ids) {
+        const idArray = ids.split(",").map(id => id.trim()).filter(Boolean);
+        if (idArray.length > 0) where.id = { in: idArray };
+      }
+
+      products = await prisma.storeProduct.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          salePrice: true,
+          description: true,
+          photoUrls: true,
+          hasVariants: true,
+          variants: {
+            select: { id: true, name: true, salePrice: true }
+          }
+        },
+        orderBy: { sequence: "desc" },
+      });
+    }
 
     const formattedProducts = products.map(p => ({
       ...p,

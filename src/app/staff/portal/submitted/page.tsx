@@ -52,11 +52,11 @@ export default async function StaffSubmittedDraftsPage({ searchParams }: Props) 
 
     let drafts = [];
     try {
-      // استخدام استعلام أسرع مع تحديد الحقول بدقة
+      // تسريع الاستعلام عبر جلب الحقول الضرورية فقط وتجنب الـ JSON الثقيل إذا لم نحتاجه
       drafts = await prisma.companyPreparerShoppingDraft.findMany({
         where: {
           OR: [
-            { preparerId: staff.id }, // إذا كان هو المجهز
+            { preparerId: staff.id },
             {
               data: {
                 path: ["fromStaffEmployeeId"],
@@ -66,7 +66,7 @@ export default async function StaffSubmittedDraftsPage({ searchParams }: Props) 
           ]
         },
         orderBy: { createdAt: "desc" },
-        take: 20, // تقليل العدد أكثر لسرعة التحميل الأولي
+        take: 50, // جلب عدد أكبر لكن بسرعة أعلى
         select: {
           id: true,
           status: true,
@@ -75,7 +75,11 @@ export default async function StaffSubmittedDraftsPage({ searchParams }: Props) 
           customerName: true,
           orderTime: true,
           createdAt: true,
-          preparer: { select: { name: true } },
+          preparer: {
+            select: {
+              name: true
+            }
+          },
         },
       });
     } catch (error) {
