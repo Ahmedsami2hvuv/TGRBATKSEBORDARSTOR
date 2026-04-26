@@ -3,64 +3,102 @@
 import { prisma } from "@/lib/prisma";
 
 /**
- * تنظيف قاعدة البيانات من الصور المخزنة بصيغة Base64 (النصوص الطويلة)
- * مع الإبقاء على الصور المخزنة كروابط (تبدأ بـ /uploads/)
+ * تنظيف شامل وقوي لقاعدة البيانات من الصور المخزنة بصيغة Base64
+ * يشمل الأقسام، ملفات التعريف، والطلبات
  */
 export async function cleanupBase64Images() {
-  console.log("Starting Database Cleanup for Base64 images...");
+  console.log("Starting Deep Database Cleanup...");
 
-  // 1. تنظيف المنتجات (StoreProduct)
-  // ملاحظة: photoUrls هو مصفوفة نصوص
-  const products = await prisma.storeProduct.findMany({
-    select: { id: true, photoUrls: true }
-  });
+  try {
+    // 1. الأقسام (StoreCategory)
+    // نبحث عن أي رابط يبدأ بـ data:image أو يحتوي على base64
+    await prisma.storeCategory.updateMany({
+      where: {
+        OR: [
+          { photoUrl: { contains: "base64" } },
+          { photoUrl: { startsWith: "data:image" } }
+        ]
+      },
+      data: { photoUrl: "" }
+    });
 
-  for (const p of products) {
-    const filtered = p.photoUrls.filter(url => !url.startsWith("data:image"));
-    if (filtered.length !== p.photoUrls.length) {
-      await prisma.storeProduct.update({
-        where: { id: p.id },
-        data: { photoUrls: filtered }
+    // 2. ملفات تعريف هاتف الزبون (CustomerPhoneProfile) - هذي اللي فيها صور الأبواب غالباً
+    await prisma.customerPhoneProfile.updateMany({
+      where: {
+        OR: [
+          { photoUrl: { contains: "base64" } },
+          { photoUrl: { startsWith: "data:image" } }
+        ]
+      },
+      data: { photoUrl: "" }
+    });
+
+    // 3. الطلبات (Order) - صور الأبواب في الطلبات الفردية
+    const orderFields = ["imageUrl", "shopDoorPhotoUrl", "customerDoorPhotoUrl", "secondCustomerDoorPhotoUrl"];
+    for (const field of orderFields) {
+      await (prisma.order as any).updateMany({
+        where: {
+          OR: [
+            { [field]: { contains: "base64" } },
+            { [field]: { startsWith: "data:image" } }
+          ]
+        },
+        data: { [field]: null }
       });
     }
+
+    // 4. المنتجات (StoreProduct) - مصفوفة نصوص
+    const products = await prisma.storeProduct.findMany({
+      where: {
+        photoUrls: { hasSome: ["base64"] } // هذا فلتر تقريبي لأن Prisma لا تدعم contains داخل المصفوفة بسهولة
+      },
+      select: { id: true, photoUrls: true }
+    });
+
+    // حل بديل للمنتجات: جلب الكل وفلترتهم برمجياً لضمان الدقة
+    const allProductsWithImages = await prisma.storeProduct.findMany({
+      where: { photoUrls: { isEmpty: false } },
+      select: { id: true, photoUrls: true }
+    });
+
+    for (const p of allProductsWithImages) {
+      const filtered = p.photoUrls.filter(url =>
+        !url.includes("base64") && !url.startsWith("data:image")
+      );
+      if (filtered.length !== p.photoUrls.length) {
+        await prisma.storeProduct.update({
+          where: { id: p.id },
+          data: { photoUrls: filtered }
+        });
+      }
+    }
+
+    // 5. الزبائن (Customer)
+    await prisma.customer.updateMany({
+      where: {
+        OR: [
+          { customerDoorPhotoUrl: { contains: "base64" } },
+          { customerDoorPhotoUrl: { startsWith: "data:image" } }
+        ]
+      },
+      data: { customerDoorPhotoUrl: null }
+    });
+
+    // 6. المحلات (Shop) والفروع (StoreBranch)
+    await prisma.shop.updateMany({
+      where: { OR: [{ photoUrl: { contains: "base64" } }, { photoUrl: { startsWith: "data:image" } }] },
+      data: { photoUrl: "" }
+    });
+
+    await prisma.storeBranch.updateMany({
+      where: { OR: [{ photoUrl: { contains: "base64" } }, { photoUrl: { startsWith: "data:image" } }] },
+      data: { photoUrl: "" }
+    });
+
+    console.log("Deep Cleanup completed successfully!");
+    return { success: true, message: "تم تنظيف كافة الجداول بنجاح بما في ذلك الأقسام وصور الأبواب." };
+  } catch (error) {
+    console.error("Cleanup Error:", error);
+    return { success: false, message: "حدث خطأ أثناء التنظيف." };
   }
-
-  // 2. تنظيف الطلبات (Order)
-  await prisma.order.updateMany({
-    where: { imageUrl: { startsWith: "data:image" } },
-    data: { imageUrl: null }
-  });
-  await prisma.order.updateMany({
-    where: { shopDoorPhotoUrl: { startsWith: "data:image" } },
-    data: { shopDoorPhotoUrl: null }
-  });
-  await prisma.order.updateMany({
-    where: { customerDoorPhotoUrl: { startsWith: "data:image" } },
-    data: { customerDoorPhotoUrl: null }
-  });
-  await prisma.order.updateMany({
-    where: { secondCustomerDoorPhotoUrl: { startsWith: "data:image" } },
-    data: { secondCustomerDoorPhotoUrl: null }
-  });
-
-  // 3. تنظيف المحلات (Shop)
-  await prisma.shop.updateMany({
-    where: { photoUrl: { startsWith: "data:image" } },
-    data: { photoUrl: "" }
-  });
-
-  // 4. تنظيف الزبائن (Customer)
-  await prisma.customer.updateMany({
-    where: { customerDoorPhotoUrl: { startsWith: "data:image" } },
-    data: { customerDoorPhotoUrl: null }
-  });
-
-  // 5. تنظيف الفروع (StoreBranch)
-  await prisma.storeBranch.updateMany({
-    where: { photoUrl: { startsWith: "data:image" } },
-    data: { photoUrl: "" }
-  });
-
-  console.log("Cleanup completed successfully!");
-  return { success: true };
 }
