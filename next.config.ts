@@ -6,14 +6,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "20mb",
     },
   },
-  // هذا السطر يخبر الخادم بتخطي أخطاء TypeScript وقت الرفع
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  // هذا السطر يتخطى أخطاء الكود الشكلية (ESLint) حتى لا توقف الرفع أيضاً
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // تم إزالة eslint و typescript لتجنب تحذيرات Vercel في النسخ الجديدة
 };
 
 export default nextConfig;
