@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push --accept-data-loss && next build",
+    "build": "prisma generate && next build",
     "start": "node scripts/start-production.cjs",
     "lint": "eslint",
     "postinstall": "prisma generate",
@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
+    "@aws-sdk/client-s3": "^3.714.0",
     "@types/leaflet": "^1.9.16",
     "jose": "^6.2.2",
     "leaflet": "^1.9.4",
