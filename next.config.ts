@@ -1,17 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   experimental: {
     serverActions: {
       bodySizeLimit: "20mb",
     },
   },
+  // تم إزالة مفتاح eslint هنا لأنه أصبح غير مدعوم في النسخ الأحدث ويسبب تنبيهاً
   typescript: {
     ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
   },
 };
 

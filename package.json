@@ -2,9 +2,6 @@
   "name": "ksebordarstor",
   "version": "0.1.0",
   "private": true,
-  "engines": {
-    "node": "22.x"
-  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
@@ -34,6 +31,6 @@
     "eslint-config-next": "latest",
     "prisma": "^6.1.0",
     "tailwindcss": "^4.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "latest"
   }
 }
