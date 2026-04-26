@@ -9,7 +9,8 @@
 3. طبّق المخطط: `npm run db:migrate` أو `npm run db:push`
 4. شغّل التطوير: `npm run dev`
 
-## Railway
+## Railway (Migrated to Vercel)
+.
 
 1. أنشئ مشروعاً جديداً واختر **Deploy from GitHub** وحدد هذا المستودع.
 2. أضف قاعدة بيانات **PostgreSQL** (خدمة منفصلة في نفس المشروع).
