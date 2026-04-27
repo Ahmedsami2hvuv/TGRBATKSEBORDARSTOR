@@ -4,34 +4,36 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export function ImportCustomersButton() {
-  const [status, setStatus] = useState<"idle" | "checking" | "confirming" | "importing">("idle");
+  const [status, setStatus] = useState<"idle" | "checking" | "confirming" | "importing" | "syncing_photos" | "resetting">("idle");
   const [foundCount, setFoundCount] = useState(0);
+  const [progress, setProgress] = useState(0);
   const router = useRouter();
 
+  async function handleReset() {
+    if (!confirm("هل أنت متأكد من مسح جميع الزبائن؟ لا يمكن التراجع!")) return;
+    setStatus("resetting");
+    try {
+      const res = await fetch("/api/admin/import/customers/reset", { method: "POST" });
+      const data = await res.json();
+      alert(data.message);
+      router.refresh();
+    } catch (e) { alert("خطأ في المسح"); }
+    setStatus("idle");
+  }
+
   async function handleCheck() {
-    console.log("Checking customers...");
     setStatus("checking");
     try {
       const res = await fetch("/api/admin/import/customers/check");
-      if (!res.ok) throw new Error("فشل الاتصال بسيرفر الفحص");
-
       const data = await res.json();
-      if (data.success) {
-        if (data.newCount === 0) {
-          alert("لا يوجد زبائن جدد للسحب.");
-          setStatus("idle");
-        } else {
-          setFoundCount(data.newCount);
-          setStatus("confirming");
-        }
+      if (data.success && data.newCount > 0) {
+        setFoundCount(data.newCount);
+        setStatus("confirming");
       } else {
-        alert("خطأ: " + data.message);
+        alert("لا يوجد زبائن جدد");
         setStatus("idle");
       }
-    } catch (err: any) {
-      alert("تعذر الاتصال بالقاعدة القديمة: " + err.message);
-      setStatus("idle");
-    }
+    } catch (e) { setStatus("idle"); }
   }
 
   async function handleImport() {
@@ -40,38 +42,58 @@ export function ImportCustomersButton() {
       const res = await fetch("/api/admin/import/customers", { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        alert(`تم استيراد ${data.customers} زبون و ${data.profiles} ملف شخصي بنجاح!`);
+        alert("تم السحب بنجاح");
         router.refresh();
-      } else {
-        alert("فشل في السحب: " + data.message);
       }
-    } catch (err) {
-      alert("حدث خطأ أثناء السحب.");
-    } finally {
-      setStatus("idle");
-    }
+    } catch (e) { alert("خطأ في السحب"); }
+    setStatus("idle");
+  }
+
+  async function handleSyncPhotos() {
+    setStatus("syncing_photos");
+    setProgress(0);
+    let offset = 0;
+    const limit = 20;
+
+    try {
+      while (true) {
+        const res = await fetch("/api/admin/import/customers/sync-photos", {
+          method: "POST",
+          body: JSON.stringify({ offset, limit })
+        });
+        const data = await res.json();
+        if (!data.success || data.done) break;
+        offset += limit;
+        setProgress(Math.min(99, progress + 10));
+      }
+      alert("اكتمل سحب صور الزبائن لـ R2");
+    } catch (e) { alert("خطأ في سحب الصور"); }
+    setStatus("idle");
+    setProgress(0);
   }
 
   return (
-    <div className="flex flex-col items-end gap-2">
-      {status === "confirming" ? (
-        <div className="bg-blue-50 border border-blue-400 p-2 rounded flex items-center gap-2 shadow-sm">
-          <span className="text-sm font-bold text-blue-800 italic">وجدنا {foundCount} سجل جديد. سحبهم؟</span>
-          <button onClick={handleImport} className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">نعم، سحب</button>
+    <div className="flex flex-col gap-3 items-end">
+      <div className="flex gap-2">
+        <button onClick={handleReset} className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-red-600">🗑️ مسح الكل</button>
+        <button onClick={handleSyncPhotos} disabled={status !== "idle"} className="bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-indigo-700">📸 سحب الصور لـ R2</button>
+        <button onClick={handleCheck} disabled={status !== "idle"} className="bg-blue-600 text-white px-5 py-2 rounded-full font-bold shadow-xl hover:bg-blue-700">
+          {status === "checking" ? "🔍 جاري الفحص..." : "استيراد الزبائن 📥"}
+        </button>
+      </div>
+
+      {status === "confirming" && (
+        <div className="bg-yellow-50 border border-yellow-400 p-3 rounded-lg flex items-center gap-3">
+          <span className="text-sm font-bold">وجدنا {foundCount} زبون جديد. سحبهم؟</span>
+          <button onClick={handleImport} className="bg-green-600 text-white px-3 py-1 rounded text-xs">نعم</button>
           <button onClick={() => setStatus("idle")} className="bg-gray-400 text-white px-3 py-1 rounded text-xs">إلغاء</button>
         </div>
-      ) : (
-        <button
-          onClick={handleCheck}
-          disabled={status !== "idle"}
-          className={`px-5 py-2 rounded-full font-bold text-white shadow-xl transition-all active:scale-90 ${
-            status === "idle" ? "bg-blue-600" : "bg-gray-400"
-          }`}
-        >
-          {status === "checking" ? "🔍 جاري الفحص..." :
-           status === "importing" ? "📥 جاري السحب..." :
-           "استيراد الزبائن (ذكي) 📥"}
-        </button>
+      )}
+
+      {status === "syncing_photos" && (
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+          <div className="bg-indigo-600 h-2.5 rounded-full transition-all" style={{ width: `${progress}%` }}></div>
+        </div>
       )}
     </div>
   );
