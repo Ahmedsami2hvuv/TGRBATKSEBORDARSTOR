@@ -2,11 +2,14 @@
 
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export function useImportShops() {
   const router = useRouter();
+  const [isPending, setIsPending] = useState(false);
 
   async function importShops() {
+    setIsPending(true);
     const promise = fetch("/api/admin/import/shops", { method: "POST" })
       .then(async (res) => {
         if (!res.ok) {
@@ -14,7 +17,8 @@ export function useImportShops() {
           throw new Error(error.message || "فشل استيراد المحلات");
         }
         return res.json();
-      });
+      })
+      .finally(() => setIsPending(false));
 
     toast.promise(promise, {
       loading: "جاري استيراد المحلات وربطها بالمناطق...",
@@ -26,5 +30,5 @@ export function useImportShops() {
     });
   }
 
-  return { importShops };
+  return { importShops, isPending };
 }

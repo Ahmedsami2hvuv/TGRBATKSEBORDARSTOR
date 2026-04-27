@@ -2,14 +2,14 @@
 
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-
-// ملاحظة: سنستخدم الـ Server Action داخل ملف منفصل لأن Prisma لا تعمل مباشرة في Client Components
-// ولكن بما أننا سنستخدم 'pg' فسنحتاج لعمل Route Handler أو Server Action حقيقي.
+import { useState } from "react";
 
 export function useImportRegions() {
   const router = useRouter();
+  const [isPending, setIsPending] = useState(false);
 
   async function importRegions() {
+    setIsPending(true);
     const promise = fetch("/api/admin/import/regions", { method: "POST" })
       .then(async (res) => {
         if (!res.ok) {
@@ -17,7 +17,8 @@ export function useImportRegions() {
           throw new Error(error.message || "فشل الاستيراد");
         }
         return res.json();
-      });
+      })
+      .finally(() => setIsPending(false));
 
     toast.promise(promise, {
       loading: "جاري استيراد المناطق من القاعدة القديمة...",
@@ -29,5 +30,5 @@ export function useImportRegions() {
     });
   }
 
-  return { importRegions };
+  return { importRegions, isPending };
 }
