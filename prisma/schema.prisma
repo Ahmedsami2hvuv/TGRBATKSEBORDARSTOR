@@ -55,7 +55,6 @@ model Shop {
   updatedAt        DateTime       @updatedAt
   ownerName        String         @default("")
   photoUrl         String         @default("")
-  originalPhotoUrl String         @default("")
   phone            String         @default("")
   customers        Customer[]
   employees        Employee[]
