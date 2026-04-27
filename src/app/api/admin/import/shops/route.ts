@@ -10,6 +10,7 @@ export async function POST() {
   try {
     await client.connect();
 
+    // جلب المحلات من القاعدة القديمة
     const res = await client.query(`
       SELECT s.name, s."locationUrl", s."ownerName", s."photoUrl", s."phone", r.name as "regionName"
       FROM "Shop" s
@@ -20,39 +21,28 @@ export async function POST() {
     let importedCount = 0;
 
     for (const oldShop of oldShops) {
-      // تعديل هام: استخدام select لتجنب طلب حقول غير موجودة تسبب انهيار البريزما
-      const exists = await prisma.shop.findFirst({
-        where: { name: oldShop.name, phone: oldShop.phone || "" },
-        select: { id: true }
-      });
+      // التحقق من وجود المحل مسبقاً بطريقة آمنة
+      const existingShops = await prisma.$queryRaw`SELECT id FROM "Shop" WHERE name = ${oldShop.name} AND phone = ${oldShop.phone || ""} LIMIT 1` as any[];
 
-      if (!exists) {
+      if (existingShops.length === 0) {
         let regionId = "";
         if (oldShop.regionName) {
-          const region = await prisma.region.findFirst({
-            where: { name: oldShop.regionName },
-            select: { id: true }
-          });
-          if (region) regionId = region.id;
+          const regions = await prisma.$queryRaw`SELECT id FROM "Region" WHERE name = ${oldShop.regionName} LIMIT 1` as any[];
+          if (regions.length > 0) regionId = regions[0].id;
         }
 
-        // إذا لم يجد منطقة، سنضعه في أول منطقة متاحة أو نتركه (لكن الجدول يتطلب regionId)
+        // إذا لم يجد منطقة، يستخدم أول منطقة متاحة
         if (!regionId) {
-           const firstRegion = await prisma.region.findFirst({ select: { id: true } });
-           if (firstRegion) regionId = firstRegion.id;
+           const firstRegions = await prisma.$queryRaw`SELECT id FROM "Region" LIMIT 1` as any[];
+           if (firstRegions.length > 0) regionId = firstRegions[0].id;
         }
 
         if (regionId) {
-          await prisma.shop.create({
-            data: {
-              name: oldShop.name,
-              locationUrl: oldShop.locationUrl || "",
-              ownerName: oldShop.ownerName || "",
-              photoUrl: oldShop.photoUrl || "",
-              phone: oldShop.phone || "",
-              regionId: regionId,
-            }
-          });
+          // إضافة المحل باستخدام الاستعلام المباشر لتجنب أخطاء الحقول المفقودة في موديل بريزما
+          await prisma.$executeRaw`
+            INSERT INTO "Shop" (id, name, "locationUrl", "ownerName", "photoUrl", "phone", "regionId", "updatedAt")
+            VALUES (${Math.random().toString(36).substr(2, 9)}, ${oldShop.name}, ${oldShop.locationUrl || ""}, ${oldShop.ownerName || ""}, ${oldShop.photoUrl || ""}, ${oldShop.phone || ""}, ${regionId}, NOW())
+          `;
           importedCount++;
         }
       }
