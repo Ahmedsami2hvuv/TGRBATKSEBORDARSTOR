@@ -93,7 +93,7 @@ export async function POST(req: Request) {
         if (newR2Url && newR2Url !== oldPhotoUrl) {
           await prisma.shop.update({
             where: { id: shop.id },
-            data: { photoUrl: newR2RUrl }
+            data: { photoUrl: newR2Url }
           });
           updatedCount++;
         }
