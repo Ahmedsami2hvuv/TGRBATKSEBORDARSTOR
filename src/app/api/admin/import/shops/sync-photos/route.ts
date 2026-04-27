@@ -6,21 +6,18 @@ import { nanoid } from "nanoid";
 
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
 
-function normalizeArabic(text: string): string {
+function normalize(text: string): string {
   if (!text) return "";
-  return text
-    .trim()
+  return text.trim()
     .replace(/[أإآ]/g, "ا")
     .replace(/ة/g, "ه")
     .replace(/ى/g, "ي")
-    .replace(/[\u064B-\u0652]/g, "")
+    .replace(/\/$/, "") // حذف السلاش في نهاية الروابط
     .toLowerCase();
 }
 
 async function migrateImage(oldUrl: string | null | undefined): Promise<string> {
   if (!oldUrl || !oldUrl.startsWith("http")) return "";
-
-  // إذا كانت الصورة مسحوبة مسبقاً على R2
   if (oldUrl.includes("r2.dev") || oldUrl.includes("pub-")) return oldUrl;
 
   try {
@@ -36,14 +33,12 @@ async function migrateImage(oldUrl: string | null | undefined): Promise<string> 
 
     const key = `shops/${nanoid(12)}.${extension}`;
     const uploadedKey = await uploadToR2(buffer, key, contentType);
-
     if (!uploadedKey) return "";
 
-    const publicUrl = (process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "https://pub-8c3866b1d40842a2818641a9675231c5.r2.dev").replace(/\/$/, "");
-    return `${publicUrl}/${uploadedKey}`;
-  } catch (e) {
-    return "";
-  }
+    const publicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, "") || "";
+    // إذا لم يوجد رابط عام، سنعتمد على أن المفتاح سيعاد استخدامه في العرض
+    return publicUrl ? `${publicUrl}/${uploadedKey}` : uploadedKey;
+  } catch (e) { return ""; }
 }
 
 export async function POST(req: Request) {
@@ -53,7 +48,6 @@ export async function POST(req: Request) {
     const offset = Number(body.offset) || 0;
     const limit = Number(body.limit) || 10;
 
-    // 1. جلب دفعة من المحلات الحالية (بدون فلترة الصور هنا لتجنب خطأ التخطي)
     const localShops = await prisma.shop.findMany({
       orderBy: { id: "asc" },
       skip: offset,
@@ -63,26 +57,29 @@ export async function POST(req: Request) {
     if (localShops.length === 0) return NextResponse.json({ success: true, updated: 0, done: true });
 
     await client.connect();
-
-    // جلب كل المحلات القديمة (بما أنها 334 فقط) في الذاكرة لمرة واحدة للمطابقة السريعة
-    const oldRes = await client.query('SELECT name, phone, "photoUrl" FROM "Shop" WHERE "photoUrl" IS NOT NULL AND "photoUrl" LIKE \'http%\'');
+    // جلب البيانات مع اللوكيشن والهاتف لضمان التطابق
+    const oldRes = await client.query('SELECT name, "locationUrl", phone, "photoUrl" FROM "Shop" WHERE "photoUrl" IS NOT NULL AND "photoUrl" != \'\'');
     const oldShops = oldRes.rows;
 
     let updatedCount = 0;
     for (const shop of localShops) {
-      // إذا كان المحل يملك صورة R2 بالفعل، نتخطاه
-      if (shop.photoUrl && (shop.photoUrl.includes("r2.dev") || shop.photoUrl.includes("pub-"))) continue;
+      // إذا كان للمحل صورة مرفوعة مسبقاً على نظام التخزين الجديد، نتخطاه
+      if (shop.photoUrl && (shop.photoUrl.includes("r2.dev") || shop.photoUrl.includes("pub-") || shop.photoUrl.startsWith("shops/"))) continue;
 
-      // البحث عن المحل القديم في القائمة التي جلبناها
-      const normalizedLocalName = normalizeArabic(shop.name);
-      const oldMatch = oldShops.find(os =>
-        normalizeArabic(os.name) === normalizedLocalName ||
-        (os.phone && os.phone === shop.phone)
-      );
+      const normName = normalize(shop.name);
+      const normLoc = normalize(shop.locationUrl || "");
+
+      // محاولة المطابقة بأكثر من وسيلة (اسم + لوكيشن) أو (هاتف) أو (اسم فقط كحل أخير)
+      const oldMatch = oldShops.find(os => {
+        const osName = normalize(os.name);
+        const osLoc = normalize(os.locationUrl || "");
+        return (osName === normName && (osLoc === normLoc || !normLoc || !osLoc)) ||
+               (os.phone && shop.phone && os.phone === shop.phone);
+      });
 
       if (oldMatch && oldMatch.photoUrl) {
         const newUrl = await migrateImage(oldMatch.photoUrl);
-        if (newUrl && !newUrl.includes(oldMatch.photoUrl)) {
+        if (newUrl) {
           await prisma.shop.update({
             where: { id: shop.id },
             data: { photoUrl: newUrl }
@@ -95,7 +92,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       updated: updatedCount,
-      done: localShops.length < limit
+      done: localShops.length < limit,
+      debug: { foundOld: oldShops.length, processed: localShops.length }
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message, updated: 0 }, { status: 500 });
