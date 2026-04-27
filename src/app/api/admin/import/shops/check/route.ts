@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { Client } from "pg";
-import { prisma } from "@/lib/prisma";
 
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
 
@@ -8,21 +7,14 @@ export async function GET() {
   const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 10000 });
   try {
     await client.connect();
-    // جلب الاسم والهاتف للمقارنة الدقيقة
-    const res = await client.query('SELECT name, phone FROM "Shop"');
-    const oldShops = res.rows;
 
-    const currentShops = await prisma.shop.findMany({ select: { name: true, phone: true } });
-
-    // فلترة بناءً على (الاسم + الهاتف) لضمان جلب الفروع المكررة بالاسم
-    const newShops = oldShops.filter(os =>
-      !currentShops.some(cs => cs.name === os.name && (cs.phone || "") === (os.phone || ""))
-    );
+    // استعلام مباشر لعد كل السجلات في جدول المحلات دون استثناء
+    const res = await client.query('SELECT COUNT(*) as total FROM "Shop"');
+    const totalCount = parseInt(res.rows[0].total);
 
     return NextResponse.json({
       success: true,
-      totalInOld: oldShops.length,
-      newCount: newShops.length
+      totalInOld: totalCount,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
