@@ -22,39 +22,38 @@ async function migrateImage(oldUrl: string | null | undefined): Promise<string> 
   } catch (e) { return ""; }
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 30000 });
   try {
+    const { offset = 0, limit = 20 } = await req.json().catch(() => ({}));
     await client.connect();
+
+    // جلب دفعة محددة فقط
     const res = await client.query(`
       SELECT s.name, s."locationUrl", s."ownerName", s."photoUrl", s."phone", r.name as "regionName"
       FROM "Shop" s
       LEFT JOIN "Region" r ON s."regionId" = r.id
-    `);
+      ORDER BY s.id
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
     const oldShops = res.rows;
+    if (oldShops.length === 0) return NextResponse.json({ success: true, count: 0, done: true });
 
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
     const regionMap = new Map(allRegions.map(r => [r.name, r.id]));
     const firstRegionId = allRegions[0]?.id || "";
 
     let importedCount = 0;
-
     for (const oldShop of oldShops) {
-      // فحص الوجود بالاسم والهاتف معاً لجلب الـ 334 كاملة
       const existing = await prisma.shop.findFirst({
-        where: {
-          name: oldShop.name,
-          phone: oldShop.phone || ""
-        },
+        where: { name: oldShop.name, phone: oldShop.phone || "" },
         select: { id: true }
       });
 
       if (!existing) {
         const targetRegionId = regionMap.get(oldShop.regionName) || firstRegionId;
-        if (!targetRegionId) continue;
-
         const newPhotoUrl = await migrateImage(oldShop.photoUrl);
-
         await prisma.$executeRaw`
           INSERT INTO "Shop" (id, name, "locationUrl", "ownerName", "photoUrl", "phone", "regionId", "updatedAt", "createdAt")
           VALUES (${nanoid(10)}, ${oldShop.name}, ${oldShop.locationUrl || ""}, ${oldShop.ownerName || ""}, ${newPhotoUrl}, ${oldShop.phone || ""}, ${targetRegionId}, NOW(), NOW())
@@ -62,7 +61,7 @@ export async function POST() {
         importedCount++;
       }
     }
-    return NextResponse.json({ success: true, count: importedCount });
+    return NextResponse.json({ success: true, count: importedCount, done: oldShops.length < limit });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   } finally {
