@@ -7,17 +7,16 @@ export function ImportShopsButton() {
   const [status, setStatus] = useState<"idle" | "loading" | "confirming">("idle");
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState("");
-  const [stats, setStats] = useState({ shops: 0, photos: 0, emps: 0 });
-  const [totalShops, setTotalShops] = useState(0);
+  const [totalInOld, setTotalInOld] = useState(0);
 
   async function handleCheck() {
     setStatus("loading");
-    setCurrentStep("جاري الفحص الدقيق...");
+    setCurrentStep("جاري فحص النواقص...");
     try {
       const res = await fetch("/api/admin/import/shops/check");
       const data = await res.json();
       if (data.success) {
-        setTotalShops(data.totalInOld);
+        setTotalInOld(data.totalInOld);
         setStatus("confirming");
       }
     } catch {
@@ -26,65 +25,63 @@ export function ImportShopsButton() {
     }
   }
 
-  async function handleImport() {
+  async function startDeepSync() {
     setStatus("loading");
     setProgress(1);
-    const newStats = { shops: 0, photos: 0, emps: 0 };
 
     try {
-      // المرحلة 1: المحلات والصور (0% - 85%)
+      // المرحلة الأولى: إكمال النقص في المحلات (0% - 30%)
       let offset = 0;
-      const limit = 10; // دفعات صغيرة لضمان رفع الصور بنجاح
+      const limit = 20;
       let isShopsDone = false;
+      let newShopsCount = 0;
 
       while (!isShopsDone) {
-        setCurrentStep(`جاري سحب المحلات ورفع الصور لـ R2 (${offset} من ${totalShops})...`);
+        setCurrentStep(`المرحلة 1: جاري إكمال المحلات الناقصة (${offset}/${totalInOld})...`);
         const res = await fetch("/api/admin/import/shops", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ offset, limit })
         });
         const data = await res.json();
-        if (!data.success) throw new Error(data.message);
-
-        newStats.shops += data.count;
-        newStats.photos += (data.photos || 0);
+        newShopsCount += data.count;
         offset += limit;
-        isShopsDone = data.done || offset >= totalShops;
-
-        setProgress(Math.min(Math.round((offset / totalShops) * 85), 85));
+        isShopsDone = data.done || offset >= totalInOld;
+        setProgress(Math.min(Math.round((offset / totalInOld) * 30), 30));
       }
 
-      // المرحلة 2: العملاء (85% - 100%)
-      setCurrentStep("جاري ربط العملاء بمحلاتهم...");
-      let empOffset = 0;
-      const empLimit = 50;
-      let isEmpDone = false;
+      // المرحلة الثانية: سحب الصور الشامل (30% - 100%)
+      setCurrentStep("المرحلة 2: جاري سحب الصور لجميع المحلات (334 محل)...");
+      let photoOffset = 0;
+      const photoLimit = 10; // دفعات صغيرة للصور
+      let isPhotosDone = false;
+      let totalPhotosSynced = 0;
 
-      while (!isEmpDone) {
-        const res = await fetch("/api/admin/import/employees", {
+      while (!isPhotosDone) {
+        setCurrentStep(`جاري رفع الصور لـ R2 (${photoOffset}/${totalInOld})...`);
+        const res = await fetch("/api/admin/import/shops/sync-photos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ offset: empOffset, limit: empLimit })
+          body: JSON.stringify({ offset: photoOffset, limit: photoLimit })
         });
         const data = await res.json();
         if (!data.success) throw new Error(data.message);
 
-        newStats.emps += data.count;
-        empOffset += empLimit;
-        isEmpDone = data.done;
-        setProgress(prev => Math.min(prev + 5, 99));
+        totalPhotosSynced += data.updated;
+        photoOffset += photoLimit;
+        isPhotosDone = data.done || photoOffset >= totalInOld;
+
+        const photoProgress = 30 + Math.min(Math.round((photoOffset / totalInOld) * 70), 70);
+        setProgress(photoProgress);
       }
 
-      setStats(newStats);
       setProgress(100);
-      setCurrentStep("🎊 اكتمل السحب الشامل بنجاح!");
-
-      alert(`✅ تم السحب بنجاح!\n\n- المحلات: ${newStats.shops}\n- الصور المرفوعة لـ R2: ${newStats.photos}\n- العملاء (أصحاب الروابط): ${newStats.emps}`);
+      setCurrentStep("🎉 اكتملت المزامنة الشاملة بنجاح!");
+      alert(`✅ تم إكمال المهمة بنجاح!\n\n- تم جلب ${newShopsCount} محل ناقص.\n- تم رفع وتأمين ${totalPhotosSynced} صورة على Cloudflare R2.`);
       window.location.reload();
 
     } catch (err: any) {
-      alert("⚠️ توقف السحب: " + err.message);
+      alert("⚠️ حدث خطأ أثناء المزامنة: " + err.message);
     } finally {
       setStatus("idle");
     }
@@ -95,39 +92,39 @@ export function ImportShopsButton() {
       <div className="flex gap-3 items-center justify-end">
         <button
           onClick={() => {
-            if(confirm("تحذير: سيتم مسح كافة المحلات والعملاء للبدء من جديد. هل أنت متأكد؟")) {
+            if(confirm("تحذير: هذا سيحذف كل المحلات والعملاء والطلبات. هل أنت متأكد؟")) {
               fetch("/api/admin/import/reset", { method: "POST" }).then(() => window.location.reload());
             }
           }}
-          className="bg-red-50 text-red-600 px-4 py-2 rounded-lg font-bold border border-red-200 hover:bg-red-100 transition-colors"
+          className="bg-red-50 text-red-600 px-4 py-2 rounded-lg font-bold border border-red-200 text-xs"
         >
           🗑️ مسح الكل
         </button>
 
         {status === "confirming" ? (
-          <button onClick={handleImport} className="bg-green-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg animate-pulse">
-            ابدأ السحب الشامل (334 محل)
+          <button onClick={startDeepSync} className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg animate-pulse">
+            بدأ المزامنة الشاملة (محلات + صور)
           </button>
         ) : (
           <button
             onClick={handleCheck}
             disabled={status === "loading"}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg hover:bg-indigo-700 disabled:bg-gray-400"
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg disabled:bg-gray-400"
           >
-            {status === "loading" ? "⏳ جاري العمل..." : "📥 سحب شامل (محلات + صور + عملاء)"}
+            {status === "loading" ? "⏳ جاري العمل..." : "🔄 مزامنة الصور والنواقص"}
           </button>
         )}
       </div>
 
       {status === "loading" && (
-        <div className="w-full bg-white p-3 rounded-xl border-2 border-indigo-100 shadow-xl animate-in zoom-in duration-300">
+        <div className="w-full bg-white p-4 rounded-xl border-2 border-indigo-100 shadow-xl animate-in fade-in zoom-in duration-300">
           <div className="flex justify-between mb-2">
-            <span className="text-[11px] font-black text-indigo-700">{currentStep}</span>
-            <span className="text-[11px] font-black text-indigo-700">{progress}%</span>
+            <span className="text-[10px] font-black text-indigo-700 tracking-tighter uppercase">{currentStep}</span>
+            <span className="text-[10px] font-black text-indigo-700">{progress}%</span>
           </div>
-          <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden border border-gray-200 p-0.5">
+          <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden border border-gray-200">
             <div
-              className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full rounded-full transition-all duration-700 ease-out"
+              className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 h-full transition-all duration-700 ease-out shadow-[0_0_15px_rgba(79,70,229,0.4)]"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
