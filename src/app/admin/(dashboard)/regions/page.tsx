@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { RegionForm } from "./region-form";
 import { RegionsList } from "./regions-list";
+import { ImportRegionsButton } from "./import-button";
 
 export const dynamic = "force-dynamic";
 
@@ -25,11 +26,14 @@ export default async function RegionsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className={ad.h1}>المناطق</h1>
-        <p className={`mt-1 ${ad.lead}`}>
-          أضف اسم كل منطقة وسعر التوصيل. استخدم البحث لتصفية القائمة.
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className={ad.h1}>المناطق</h1>
+          <p className={`mt-1 ${ad.lead}`}>
+            أضف اسم كل منطقة وسعر التوصيل. استخدم البحث لتصفية القائمة.
+          </p>
+        </div>
+        <ImportRegionsButton />
       </div>
 
       <RegionForm />

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { AddShopPanel } from "./add-shop-panel";
 import { ShopsList } from "./shops-list";
+import { ImportShopsButton } from "./import-shops-button";
 
 export const dynamic = "force-dynamic";
 
@@ -28,12 +29,15 @@ export default async function ShopsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className={ad.h1}>المحلات</h1>
-        <p className={`mt-1 ${ad.lead}`}>
-          اسم المحل، المنطقة، ورابط الموقع (خرائط أو أي رابط لوكيشن). صورة المحل تُرفَع
-          من الجهاز (التقاط أو معرض) وليست رابطاً.
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className={ad.h1}>المحلات</h1>
+          <p className={`mt-1 ${ad.lead}`}>
+            اسم المحل، المنطقة، ورابط الموقع (خرائط أو أي رابط لوكيشن). صورة المحل تُرفَع
+            من الجهاز (التقاط أو معرض) وليست رابطاً.
+          </p>
+        </div>
+        <ImportShopsButton />
       </div>
 
       <AddShopPanel regions={regionOptions} />
