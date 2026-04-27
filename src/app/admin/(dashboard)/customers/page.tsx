@@ -4,6 +4,7 @@ import { ImportCustomersButton } from "./import-customers-button";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0; // منع الكاش نهائياً
 
 export default async function AdminCustomersPage({ searchParams }: { searchParams: { q?: string } }) {
   const q = searchParams.q || "";
@@ -47,7 +48,11 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
         <div className="flex justify-between items-end">
            <div>
               <h1 className="text-3xl font-black text-gray-800">بيانات الزبائن</h1>
-              <p className="text-gray-500 text-sm">يتم عرض الزبائن الذين لديهم مواقع مسجلة، إجمالي {profilesCount.toLocaleString()} سجل مطابق.</p>
+              <div className="flex gap-2 items-center">
+                <p className="text-gray-500 text-sm">إجمالي الزبائن في القاعدة: <span className="text-blue-600 font-bold">{profilesCount.toLocaleString()}</span></p>
+                <span className="text-gray-300">|</span>
+                <p className="text-gray-500 text-sm">المعروض حالياً: <span className="text-green-600 font-bold">{profiles.length}</span></p>
+              </div>
            </div>
            <ImportCustomersButton />
         </div>
