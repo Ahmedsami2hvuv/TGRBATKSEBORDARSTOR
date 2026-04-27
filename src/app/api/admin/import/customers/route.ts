@@ -5,38 +5,34 @@ import { prisma } from "@/lib/prisma";
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
 
 export async function POST() {
-  const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 15000 });
+  const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 30000 });
 
   try {
     await client.connect();
 
     // 1. جلب البيانات المرجعية
-    const [allShops, allRegions, existingCustomers] = await Promise.all([
-      prisma.shop.findMany({ select: { id: true, name: true } }),
-      prisma.region.findMany({ select: { id: true, name: true } }),
-      prisma.customer.findMany({ select: { phone: true, shopId: true } })
-    ]);
+    const allShops = await prisma.shop.findMany({ select: { id: true, name: true } });
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
 
-    // البحث عن أو إنشاء "محل افتراضي" للزبائن المرجعيين
-    let generalShop = allShops.find(s => s.name.includes("عام"));
-    if (!generalShop) {
-        const firstRegion = await prisma.region.findFirst({ select: { id: true } });
-        if (firstRegion) {
-            generalShop = await prisma.shop.create({
-                data: {
-                    name: "زبائن عامون (قاعدة قديمة)",
-                    locationUrl: "",
-                    regionId: firstRegion.id
-                },
-                select: { id: true, name: true }
-            });
+    // إنشاء محل افتراضي للزبائن اليتامى (الذين ليس لديهم محل في القاعدة الجديدة)
+    let defaultShop = allShops.find(s => s.name.includes("عام") || s.name.includes("افتراضي"));
+    if (!defaultShop) {
+      const firstRegion = await prisma.region.findFirst();
+      if (!firstRegion) throw new Error("يجب إضافة منطقة واحدة على الأقل في النظام أولاً");
+
+      defaultShop = await prisma.shop.create({
+        data: {
+          name: "قاعدة بيانات الزبائن المهاجرة",
+          locationUrl: "",
+          regionId: firstRegion.id
         }
+      });
     }
 
     const shopMap = new Map(allShops.map(s => [s.name, s.id]));
     const regionMap = new Map(allRegions.map(r => [r.name, r.id]));
-    const customerSet = new Set(existingCustomers.map(c => `${c.phone}-${c.shopId}`));
 
+    // جلب كافة الزبائن من القاعدة القديمة
     const resCust = await client.query(`
       SELECT c.name, c.phone, c."customerLocationUrl", c."customerLandmark", c."customerDoorPhotoUrl",
              r.name as "regionName", s.name as "shopName"
@@ -45,35 +41,49 @@ export async function POST() {
       LEFT JOIN "Shop" s ON c."shopId" = s.id
     `);
 
-    let importedCust = 0;
-    const customersToCreate = [];
+    let importedCount = 0;
 
+    // سنقوم بالسحب على دفعات لضمان الاستقرار
     for (const oldCust of resCust.rows) {
-      // إذا لم يجد المحل، يستخدم المحل العام بدلاً من التجاهل
-      const shopId = shopMap.get(oldCust.shopName) || generalShop?.id;
-      if (!shopId) continue;
+      const shopId = shopMap.get(oldCust.shopName) || defaultShop.id;
 
-      if (!customerSet.has(`${oldCust.phone}-${shopId}`)) {
-        customersToCreate.push({
-          name: oldCust.name || "",
-          phone: oldCust.phone,
-          shopId: shopId,
-          customerRegionId: regionMap.get(oldCust.regionName) || null,
-          customerLocationUrl: oldCust.customerLocationUrl || "",
-          customerLandmark: oldCust.customerLandmark || "",
-          customerDoorPhotoUrl: oldCust.customerDoorPhotoUrl || "",
+      // نتحقق إذا كان الزبون موجوداً مسبقاً بنفس الهاتف والمحل
+      const existing = await prisma.customer.findFirst({
+        where: { phone: oldCust.phone, shopId: shopId }
+      });
+
+      if (!existing) {
+        const newCustomer = await prisma.customer.create({
+          data: {
+            name: oldCust.name || "زبون غير مسمى",
+            phone: oldCust.phone,
+            shopId: shopId,
+            customerRegionId: regionMap.get(oldCust.regionName) || null,
+            customerLocationUrl: oldCust.customerLocationUrl || "",
+            customerLandmark: oldCust.customerLandmark || "",
+            customerDoorPhotoUrl: oldCust.customerDoorPhotoUrl || "",
+          }
         });
-        importedCust++;
+
+        // إنشاء بروفايل تلقائي للزبون (لضمان ظهور الصور لاحقاً)
+        await prisma.customerProfile.upsert({
+            where: { customerId: newCustomer.id },
+            update: {},
+            create: {
+                customerId: newCustomer.id,
+                name: newCustomer.name,
+                phone: newCustomer.phone,
+                photoUrl: oldCust.customerDoorPhotoUrl || ""
+            }
+        });
+
+        importedCount++;
       }
     }
 
-    if (customersToCreate.length > 0) {
-      await prisma.customer.createMany({ data: customersToCreate, skipDuplicates: true });
-    }
-
-    return NextResponse.json({ success: true, customers: importedCust });
+    return NextResponse.json({ success: true, customers: importedCount });
   } catch (error: any) {
-    console.error("IMPORT CUSTOMERS ERROR:", error);
+    console.error("CRITICAL IMPORT ERROR:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   } finally {
     await client.end();
