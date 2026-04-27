@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 export function ImportRegionsButton() {
@@ -10,26 +9,26 @@ export function ImportRegionsButton() {
   const router = useRouter();
 
   async function handleCheck() {
-    console.log("Checking regions...");
     setStatus("checking");
     try {
-      const res = await fetch("/api/admin/import/regions/check");
-      if (!res.ok) throw new Error("فشل الاتصال بالخادم");
-
+      // إضافة timestamp لمنع الكاش (Cache)
+      const res = await fetch(`/api/admin/import/regions/check?t=${Date.now()}`);
       const data = await res.json();
+
       if (data.success) {
         if (data.newCount === 0) {
-          alert("لا توجد مناطق جديدة في القاعدة القديمة.");
+          alert("كل المناطق موجودة بالفعل في نظامك الحالي.");
           setStatus("idle");
         } else {
           setFoundCount(data.newCount);
           setStatus("confirming");
         }
       } else {
-        throw new Error(data.message || "حدث خطأ غير معروف");
+        alert("تنبيه: " + (data.message || "لا يمكن الوصول للقاعدة القديمة حالياً."));
+        setStatus("idle");
       }
-    } catch (err: any) {
-      alert("خطأ أثناء الفحص: " + err.message);
+    } catch (err) {
+      alert("خطأ تقني: تأكد من أنك تفتح الموقع من الرابط الأساسي aboakbar.vercel.app");
       setStatus("idle");
     }
   }
@@ -40,13 +39,13 @@ export function ImportRegionsButton() {
       const res = await fetch("/api/admin/import/regions", { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        alert(`تم سحب ${data.count} منطقة بنجاح!`);
-        router.refresh();
+        alert(`تم استيراد ${data.count} منطقة بنجاح! سيتم تحديث الصفحة الآن.`);
+        window.location.reload();
       } else {
-        throw new Error(data.message);
+        alert("فشل السحب: " + data.message);
       }
-    } catch (err: any) {
-      alert("فشل السحب: " + err.message);
+    } catch (err) {
+      alert("حدث خطأ غير متوقع.");
     } finally {
       setStatus("idle");
     }
@@ -55,17 +54,17 @@ export function ImportRegionsButton() {
   return (
     <div className="flex flex-col items-end gap-2">
       {status === "confirming" ? (
-        <div className="bg-yellow-50 border border-yellow-400 p-2 rounded flex items-center gap-2">
-          <span className="text-sm font-bold text-yellow-800">وجدنا {foundCount} منطقة جديدة. اسحب؟</span>
-          <button onClick={handleImport} className="bg-green-600 text-white px-2 py-1 rounded text-xs">نعم</button>
-          <button onClick={() => setStatus("idle")} className="bg-gray-500 text-white px-2 py-1 rounded text-xs">إلغاء</button>
+        <div className="bg-yellow-50 border-2 border-yellow-400 p-2 rounded-lg flex items-center gap-2 shadow-md">
+          <span className="text-sm font-bold text-yellow-800">وجدنا {foundCount} منطقة. هل نسحبهم؟</span>
+          <button onClick={handleImport} className="bg-green-600 text-white px-3 py-1 rounded font-bold hover:bg-green-700">نعم</button>
+          <button onClick={() => setStatus("idle")} className="bg-gray-500 text-white px-3 py-1 rounded">لا</button>
         </div>
       ) : (
         <button
           onClick={handleCheck}
           disabled={status !== "idle"}
-          className={`px-4 py-2 rounded font-bold text-white shadow-lg transition-all ${
-            status === "idle" ? "bg-indigo-600 hover:scale-105" : "bg-gray-400"
+          className={`px-5 py-2 rounded-md font-bold text-white shadow-lg transition-all active:scale-95 ${
+            status === "idle" ? "bg-indigo-600 hover:bg-indigo-700" : "bg-gray-400"
           }`}
         >
           {status === "checking" ? "🔍 جاري الفحص..." :

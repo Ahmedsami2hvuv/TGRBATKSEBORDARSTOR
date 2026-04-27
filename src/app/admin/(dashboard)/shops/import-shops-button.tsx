@@ -1,17 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export function ImportShopsButton() {
   const [status, setStatus] = useState<"idle" | "checking" | "confirming" | "importing">("idle");
   const [foundCount, setFoundCount] = useState(0);
-  const router = useRouter();
 
   async function handleCheck() {
     setStatus("checking");
     try {
-      const res = await fetch("/api/admin/import/shops/check");
+      const res = await fetch(`/api/admin/import/shops/check?t=${Date.now()}`);
       const data = await res.json();
       if (data.success) {
         if (data.newCount === 0) {
@@ -26,7 +24,7 @@ export function ImportShopsButton() {
         setStatus("idle");
       }
     } catch (err) {
-      alert("فشل الاتصال بالقاعدة القديمة.");
+      alert("فشل في فحص المحلات. تأكد من فتح الموقع من الرابط الصحيح.");
       setStatus("idle");
     }
   }
@@ -37,10 +35,10 @@ export function ImportShopsButton() {
       const res = await fetch("/api/admin/import/shops", { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        alert(`تم سحب ${data.count} محل بنجاح!`);
-        router.refresh();
+        alert(`تم سحب ${data.count} محل بنجاح! سيتم تحديث الصفحة.`);
+        window.location.reload();
       } else {
-        alert("خطأ أثناء السحب: " + data.message);
+        alert("فشل السحب: " + data.message);
       }
     } catch (err) {
       alert("حدث خطأ غير متوقع.");
@@ -52,10 +50,10 @@ export function ImportShopsButton() {
   return (
     <div className="flex flex-col items-end gap-2">
       {status === "confirming" ? (
-        <div className="bg-green-50 border border-green-500 p-2 rounded flex items-center gap-2">
+        <div className="bg-green-100 border-2 border-green-500 p-2 rounded flex items-center gap-2">
           <span className="text-sm font-bold">وجدنا {foundCount} محل. سحبهم؟</span>
-          <button onClick={handleImport} className="bg-green-600 text-white px-2 py-1 rounded text-xs">نعم</button>
-          <button onClick={() => setStatus("idle")} className="bg-gray-500 text-white px-2 py-1 rounded text-xs">إلغاء</button>
+          <button onClick={handleImport} className="bg-green-600 text-white px-3 py-1 rounded">نعم</button>
+          <button onClick={() => setStatus("idle")} className="bg-gray-500 text-white px-3 py-1 rounded">إلغاء</button>
         </div>
       ) : (
         <button
