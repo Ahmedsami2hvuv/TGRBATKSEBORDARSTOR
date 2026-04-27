@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 export function ImportCustomersButton() {
@@ -10,23 +9,27 @@ export function ImportCustomersButton() {
   const router = useRouter();
 
   async function handleCheck() {
+    console.log("Checking customers...");
     setStatus("checking");
     try {
       const res = await fetch("/api/admin/import/customers/check");
+      if (!res.ok) throw new Error("فشل الاتصال بسيرفر الفحص");
+
       const data = await res.json();
       if (data.success) {
         if (data.newCount === 0) {
-          toast.info("لا يوجد زبائن جدد للاستيراد.");
+          alert("لا يوجد زبائن جدد للسحب.");
           setStatus("idle");
         } else {
           setFoundCount(data.newCount);
           setStatus("confirming");
         }
       } else {
-        throw new Error(data.message);
+        alert("خطأ: " + data.message);
+        setStatus("idle");
       }
     } catch (err: any) {
-      toast.error("خطأ في فحص الزبائن: " + err.message);
+      alert("تعذر الاتصال بالقاعدة القديمة: " + err.message);
       setStatus("idle");
     }
   }
@@ -37,39 +40,39 @@ export function ImportCustomersButton() {
       const res = await fetch("/api/admin/import/customers", { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        toast.success(`تم سحب ${data.customers} زبون و ${data.profiles} بروفايل بنجاح!`);
+        alert(`تم استيراد ${data.customers} زبون و ${data.profiles} ملف شخصي بنجاح!`);
         router.refresh();
       } else {
-        throw new Error(data.message);
+        alert("فشل في السحب: " + data.message);
       }
-    } catch (err: any) {
-      toast.error("فشل استيراد الزبائن: " + err.message);
+    } catch (err) {
+      alert("حدث خطأ أثناء السحب.");
     } finally {
       setStatus("idle");
     }
   }
 
-  if (status === "confirming") {
-    return (
-      <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-200">
-        <span className="text-sm text-blue-700 font-bold">وجدنا حوالي {foundCount} سجل زبائن جديد. سحبهم؟</span>
-        <button onClick={handleImport} className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">نعم، استورد</button>
-        <button onClick={() => setStatus("idle")} className="bg-gray-400 text-white px-3 py-1 rounded text-xs">إلغاء</button>
-      </div>
-    );
-  }
-
   return (
-    <button
-      onClick={handleCheck}
-      disabled={status !== "idle"}
-      className={`inline-flex items-center px-4 py-2 rounded-md shadow-sm text-white text-sm font-medium ${
-        status === "idle" ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-400 cursor-not-allowed"
-      }`}
-    >
-      {status === "checking" && "جاري فحص قاعدة الزبائن... 🔍"}
-      {status === "importing" && "جاري سحب الزبائن... 📥"}
-      {status === "idle" && "استيراد الزبائن (ذكي) 📥"}
-    </button>
+    <div className="flex flex-col items-end gap-2">
+      {status === "confirming" ? (
+        <div className="bg-blue-50 border border-blue-400 p-2 rounded flex items-center gap-2 shadow-sm">
+          <span className="text-sm font-bold text-blue-800 italic">وجدنا {foundCount} سجل جديد. سحبهم؟</span>
+          <button onClick={handleImport} className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">نعم، سحب</button>
+          <button onClick={() => setStatus("idle")} className="bg-gray-400 text-white px-3 py-1 rounded text-xs">إلغاء</button>
+        </div>
+      ) : (
+        <button
+          onClick={handleCheck}
+          disabled={status !== "idle"}
+          className={`px-5 py-2 rounded-full font-bold text-white shadow-xl transition-all active:scale-90 ${
+            status === "idle" ? "bg-blue-600" : "bg-gray-400"
+          }`}
+        >
+          {status === "checking" ? "🔍 جاري الفحص..." :
+           status === "importing" ? "📥 جاري السحب..." :
+           "استيراد الزبائن (ذكي) 📥"}
+        </button>
+      )}
+    </div>
   );
 }

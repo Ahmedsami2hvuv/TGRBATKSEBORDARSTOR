@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 export function ImportShopsButton() {
@@ -16,17 +15,18 @@ export function ImportShopsButton() {
       const data = await res.json();
       if (data.success) {
         if (data.newCount === 0) {
-          toast.info("لا توجد محلات جديدة لاستيرادها.");
+          alert("لا توجد محلات جديدة للاستيراد.");
           setStatus("idle");
         } else {
           setFoundCount(data.newCount);
           setStatus("confirming");
         }
       } else {
-        throw new Error(data.message);
+        alert("خطأ: " + data.message);
+        setStatus("idle");
       }
-    } catch (err: any) {
-      toast.error("خطأ في فحص المحلات: " + err.message);
+    } catch (err) {
+      alert("فشل الاتصال بالقاعدة القديمة.");
       setStatus("idle");
     }
   }
@@ -37,39 +37,35 @@ export function ImportShopsButton() {
       const res = await fetch("/api/admin/import/shops", { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        toast.success(`تم سحب ${data.count} محل بنجاح من أصل ${foundCount}!`);
+        alert(`تم سحب ${data.count} محل بنجاح!`);
         router.refresh();
       } else {
-        throw new Error(data.message);
+        alert("خطأ أثناء السحب: " + data.message);
       }
-    } catch (err: any) {
-      toast.error("فشل استيراد المحلات: " + err.message);
+    } catch (err) {
+      alert("حدث خطأ غير متوقع.");
     } finally {
       setStatus("idle");
     }
   }
 
-  if (status === "confirming") {
-    return (
-      <div className="flex items-center gap-2 bg-green-50 p-2 rounded-lg border border-green-200">
-        <span className="text-sm text-green-700 font-bold">وجدنا {foundCount} محل جديد. سحبهم؟</span>
-        <button onClick={handleImport} className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">نعم، ابدأ</button>
-        <button onClick={() => setStatus("idle")} className="bg-gray-400 text-white px-3 py-1 rounded text-xs">إلغاء</button>
-      </div>
-    );
-  }
-
   return (
-    <button
-      onClick={handleCheck}
-      disabled={status !== "idle"}
-      className={`inline-flex items-center px-4 py-2 rounded-md shadow-sm text-white text-sm font-medium ${
-        status === "idle" ? "bg-green-600 hover:bg-green-700" : "bg-green-400 cursor-not-allowed"
-      }`}
-    >
-      {status === "checking" && "جاري فحص المحلات... 🔍"}
-      {status === "importing" && "جاري سحب المحلات... 📥"}
-      {status === "idle" && "استيراد المحلات (ذكي) 📥"}
-    </button>
+    <div className="flex flex-col items-end gap-2">
+      {status === "confirming" ? (
+        <div className="bg-green-50 border border-green-500 p-2 rounded flex items-center gap-2">
+          <span className="text-sm font-bold">وجدنا {foundCount} محل. سحبهم؟</span>
+          <button onClick={handleImport} className="bg-green-600 text-white px-2 py-1 rounded text-xs">نعم</button>
+          <button onClick={() => setStatus("idle")} className="bg-gray-500 text-white px-2 py-1 rounded text-xs">إلغاء</button>
+        </div>
+      ) : (
+        <button
+          onClick={handleCheck}
+          disabled={status !== "idle"}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold shadow-md transition-all active:scale-95"
+        >
+          {status === "checking" ? "🔍 فحص..." : status === "importing" ? "📥 سحب..." : "استيراد المحلات (ذكي)"}
+        </button>
+      )}
+    </div>
   );
 }

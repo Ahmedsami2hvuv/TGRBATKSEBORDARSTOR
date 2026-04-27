@@ -7,27 +7,29 @@ import { useRouter } from "next/navigation";
 export function ImportRegionsButton() {
   const [status, setStatus] = useState<"idle" | "checking" | "confirming" | "importing">("idle");
   const [foundCount, setFoundCount] = useState(0);
-  const [progress, setProgress] = useState(0);
   const router = useRouter();
 
   async function handleCheck() {
+    console.log("Checking regions...");
     setStatus("checking");
     try {
       const res = await fetch("/api/admin/import/regions/check");
+      if (!res.ok) throw new Error("فشل الاتصال بالخادم");
+
       const data = await res.json();
       if (data.success) {
         if (data.newCount === 0) {
-          toast.info("لا توجد مناطق جديدة لاستيرادها.");
+          alert("لا توجد مناطق جديدة في القاعدة القديمة.");
           setStatus("idle");
         } else {
           setFoundCount(data.newCount);
           setStatus("confirming");
         }
       } else {
-        throw new Error(data.message);
+        throw new Error(data.message || "حدث خطأ غير معروف");
       }
     } catch (err: any) {
-      toast.error("خطأ في الاتصال: " + err.message);
+      alert("خطأ أثناء الفحص: " + err.message);
       setStatus("idle");
     }
   }
@@ -38,40 +40,39 @@ export function ImportRegionsButton() {
       const res = await fetch("/api/admin/import/regions", { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        toast.success(`تم سحب ${data.count} منطقة بنجاح من أصل ${foundCount}!`);
+        alert(`تم سحب ${data.count} منطقة بنجاح!`);
         router.refresh();
       } else {
         throw new Error(data.message);
       }
     } catch (err: any) {
-      toast.error("فشل الاستيراد: " + err.message);
+      alert("فشل السحب: " + err.message);
     } finally {
       setStatus("idle");
-      setProgress(0);
     }
   }
 
-  if (status === "confirming") {
-    return (
-      <div className="flex items-center gap-2 bg-indigo-50 p-2 rounded-lg border border-indigo-200">
-        <span className="text-sm text-indigo-700 font-bold">تم العثور على {foundCount} منطقة جديدة. سحبهم؟</span>
-        <button onClick={handleImport} className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">نعم، اسحب الآن</button>
-        <button onClick={() => setStatus("idle")} className="bg-gray-400 text-white px-3 py-1 rounded text-xs">إلغاء</button>
-      </div>
-    );
-  }
-
   return (
-    <button
-      onClick={handleCheck}
-      disabled={status !== "idle"}
-      className={`inline-flex items-center px-4 py-2 rounded-md shadow-sm text-white text-sm font-medium ${
-        status === "idle" ? "bg-indigo-600 hover:bg-indigo-700" : "bg-indigo-400 cursor-not-allowed"
-      }`}
-    >
-      {status === "checking" && "جاري الفحص... 🔍"}
-      {status === "importing" && "جاري السحب... 📥"}
-      {status === "idle" && "استيراد المناطق (ذكي) 📥"}
-    </button>
+    <div className="flex flex-col items-end gap-2">
+      {status === "confirming" ? (
+        <div className="bg-yellow-50 border border-yellow-400 p-2 rounded flex items-center gap-2">
+          <span className="text-sm font-bold text-yellow-800">وجدنا {foundCount} منطقة جديدة. اسحب؟</span>
+          <button onClick={handleImport} className="bg-green-600 text-white px-2 py-1 rounded text-xs">نعم</button>
+          <button onClick={() => setStatus("idle")} className="bg-gray-500 text-white px-2 py-1 rounded text-xs">إلغاء</button>
+        </div>
+      ) : (
+        <button
+          onClick={handleCheck}
+          disabled={status !== "idle"}
+          className={`px-4 py-2 rounded font-bold text-white shadow-lg transition-all ${
+            status === "idle" ? "bg-indigo-600 hover:scale-105" : "bg-gray-400"
+          }`}
+        >
+          {status === "checking" ? "🔍 جاري الفحص..." :
+           status === "importing" ? "📥 جاري السحب..." :
+           "استيراد المناطق (اضغط هنا)"}
+        </button>
+      )}
+    </div>
   );
 }
