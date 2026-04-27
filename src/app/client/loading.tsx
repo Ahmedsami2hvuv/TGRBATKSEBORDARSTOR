@@ -1,21 +1,37 @@
 export default function ClientLoading() {
   return (
-    <div dir="rtl" lang="ar" className="kse-app-bg flex flex-col items-center justify-center min-h-[100vh] space-y-8 w-full text-slate-800">
-      <div className="relative w-24 h-24 flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full border-[6px] border-slate-200/50"></div>
-        <div className="absolute inset-0 rounded-full border-[6px] border-sky-600 border-t-transparent animate-spin"></div>
-        <div className="absolute inset-2 rounded-full border-[6px] border-slate-100/50"></div>
-        <div className="absolute inset-2 rounded-full border-[6px] border-sky-400 border-b-transparent animate-[spin_1.5s_linear_infinite_reverse]"></div>
-      </div>
-      
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-sky-900 animate-pulse">
+    <div dir="rtl" lang="ar" className="kse-app-bg flex flex-col items-center justify-center min-h-[100vh] space-y-8 w-full text-slate-800 p-6">
+      <div className="text-center space-y-4 w-full max-w-md">
+        <h2 className="text-2xl font-bold text-sky-900">
           جاري جلب البيانات...
         </h2>
-        <p className="text-base text-slate-600">
+
+        {/* Beautiful Gradient Progress Bar */}
+        <div className="relative w-full h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+          <div
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-sky-400 via-blue-500 to-sky-600 animate-progress-indeterminate rounded-full"
+            style={{ width: '40%' }}
+          ></div>
+        </div>
+
+        <p className="text-base text-slate-600 animate-pulse">
           الرجاء الانتظار قليلاً ريثما تكتمل العملية
         </p>
       </div>
+
+      <style jsx>{`
+        @keyframes progress-indeterminate {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(250%);
+          }
+        }
+        .animate-progress-indeterminate {
+          animation: progress-indeterminate 2s infinite linear;
+        }
+      `}</style>
     </div>
   );
 }

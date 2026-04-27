@@ -1,13 +1,37 @@
 export default function Loading() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50" dir="rtl">
-      <div className="text-center">
-        <div className="relative inline-flex">
-          <div className="h-16 w-16 rounded-full border-4 border-sky-100"></div>
-          <div className="absolute left-0 top-0 h-16 w-16 animate-spin rounded-full border-4 border-sky-600 border-t-transparent"></div>
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6" dir="rtl">
+      <div className="text-center space-y-4 w-full max-w-md">
+        <h2 className="text-2xl font-bold text-sky-900">
+          جاري تحميل البيانات...
+        </h2>
+
+        {/* Beautiful Gradient Progress Bar */}
+        <div className="relative w-full h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+          <div
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-sky-400 via-blue-500 to-sky-600 animate-progress-indeterminate rounded-full"
+            style={{ width: '40%' }}
+          ></div>
         </div>
-        <p className="mt-4 text-sm font-bold text-slate-600 animate-pulse">جاري تحميل البيانات...</p>
+
+        <p className="text-sm font-medium text-slate-500 animate-pulse">
+          يرجى الانتظار، نحن نجهز لك التجربة الأفضل
+        </p>
       </div>
+
+      <style jsx>{`
+        @keyframes progress-indeterminate {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(250%);
+          }
+        }
+        .animate-progress-indeterminate {
+          animation: progress-indeterminate 2s infinite linear;
+        }
+      `}</style>
     </div>
   );
 }

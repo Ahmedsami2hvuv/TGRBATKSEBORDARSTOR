@@ -1,13 +1,37 @@
 export default function StaffPortalLoading() {
   return (
     <div className="kse-app-bg min-h-screen flex items-center justify-center p-8 text-slate-800" dir="rtl">
-      <div className="text-center">
-        <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-sky-600 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
-          <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">جاري التحميل...</span>
+      <div className="text-center space-y-4 w-full max-w-md">
+        <h2 className="text-2xl font-bold text-sky-900">
+          جاري جلب البيانات...
+        </h2>
+
+        {/* Beautiful Gradient Progress Bar */}
+        <div className="relative w-full h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+          <div
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-sky-400 via-blue-500 to-sky-600 animate-progress-indeterminate rounded-full"
+            style={{ width: '40%' }}
+          ></div>
         </div>
-        <h2 className="mt-4 text-xl font-black text-slate-900">جاري تحميل البيانات...</h2>
-        <p className="mt-2 text-sm text-slate-500 font-bold italic">يرجى الانتظار، جاري الاتصال بالخادم</p>
+
+        <p className="text-base text-slate-500 animate-pulse">
+          يرجى الانتظار، جاري الاتصال بالخادم...
+        </p>
       </div>
+
+      <style jsx>{`
+        @keyframes progress-indeterminate {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(250%);
+          }
+        }
+        .animate-progress-indeterminate {
+          animation: progress-indeterminate 2s infinite linear;
+        }
+      `}</style>
     </div>
   );
 }

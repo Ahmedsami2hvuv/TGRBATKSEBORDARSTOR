@@ -2,21 +2,21 @@ import { ad } from "@/lib/admin-ui";
 
 export default function DashboardLoading() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-8 w-full py-12" dir="rtl">
-      {/* Spinner */}
-      <div className="relative w-24 h-24 flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full border-[6px] border-slate-100"></div>
-        <div className="absolute inset-0 rounded-full border-[6px] border-sky-600 border-t-transparent animate-spin"></div>
-        <div className="absolute inset-2 rounded-full border-[6px] border-slate-50"></div>
-        <div className="absolute inset-2 rounded-full border-[6px] border-sky-400 border-b-transparent animate-[spin_1.5s_linear_infinite_reverse]"></div>
-      </div>
-      
-      {/* Text */}
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-sky-900 animate-pulse">
+    <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-8 w-full py-12 px-6" dir="rtl">
+      <div className="text-center space-y-4 w-full max-w-md">
+        <h2 className="text-2xl font-bold text-sky-900">
           جاري جلب البيانات...
         </h2>
-        <p className="text-base text-slate-500">
+
+        {/* Beautiful Gradient Progress Bar */}
+        <div className="relative w-full h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+          <div
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-sky-400 via-blue-500 to-sky-600 animate-progress-indeterminate rounded-full"
+            style={{ width: '40%' }}
+          ></div>
+        </div>
+
+        <p className="text-base text-slate-500 animate-pulse">
           الرجاء الانتظار قليلاً ريثما تكتمل العملية
         </p>
       </div>
@@ -28,6 +28,20 @@ export default function DashboardLoading() {
         <div className="h-16 bg-slate-100 rounded-xl animate-pulse w-[90%]"></div>
         <div className="h-16 bg-slate-100 rounded-xl animate-pulse w-[85%]"></div>
       </div>
+
+      <style jsx>{`
+        @keyframes progress-indeterminate {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(250%);
+          }
+        }
+        .animate-progress-indeterminate {
+          animation: progress-indeterminate 2s infinite linear;
+        }
+      `}</style>
     </div>
   );
 }
