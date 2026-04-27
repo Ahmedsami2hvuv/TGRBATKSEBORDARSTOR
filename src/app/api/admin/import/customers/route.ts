@@ -21,12 +21,23 @@ export async function POST() {
 
     let importedCust = 0;
     for (const oldCust of resCust.rows) {
-      const shop = await prisma.shop.findFirst({ where: { name: oldCust.shopName } });
+      // تعديل لجلب المعرف فقط وتجنب الحقول المفقودة
+      const shop = await prisma.shop.findFirst({
+        where: { name: oldCust.shopName },
+        select: { id: true }
+      });
       if (!shop) continue;
 
-      const exists = await prisma.customer.findFirst({ where: { phone: oldCust.phone, shopId: shop.id } });
+      const exists = await prisma.customer.findFirst({
+        where: { phone: oldCust.phone, shopId: shop.id },
+        select: { id: true }
+      });
+
       if (!exists) {
-        const region = oldCust.regionName ? await prisma.region.findFirst({ where: { name: oldCust.regionName } }) : null;
+        const region = oldCust.regionName ? await prisma.region.findFirst({
+          where: { name: oldCust.regionName },
+          select: { id: true }
+        }) : null;
         await prisma.customer.create({
           data: {
             name: oldCust.name || "",
@@ -51,11 +62,15 @@ export async function POST() {
 
     let importedProf = 0;
     for (const oldProf of resProf.rows) {
-      const region = await prisma.region.findFirst({ where: { name: oldProf.regionName } });
+      const region = await prisma.region.findFirst({
+        where: { name: oldProf.regionName },
+        select: { id: true }
+      });
       if (!region) continue;
 
       const exists = await prisma.customerPhoneProfile.findUnique({
-        where: { phone_regionId: { phone: oldProf.phone, regionId: region.id } }
+        where: { phone_regionId: { phone: oldProf.phone, regionId: region.id } },
+        select: { id: true }
       });
 
       if (!exists) {
