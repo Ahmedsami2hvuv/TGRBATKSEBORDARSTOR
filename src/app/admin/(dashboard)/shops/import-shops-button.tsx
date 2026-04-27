@@ -7,12 +7,12 @@ export function ImportShopsButton() {
   const [status, setStatus] = useState<"idle" | "loading" | "confirming">("idle");
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState("");
+  const [stats, setStats] = useState({ shops: 0, photos: 0, emps: 0 });
   const [totalShops, setTotalShops] = useState(0);
-  const router = useRouter();
 
   async function handleCheck() {
     setStatus("loading");
-    setCurrentStep("جاري فحص البيانات...");
+    setCurrentStep("جاري الفحص الدقيق...");
     try {
       const res = await fetch("/api/admin/import/shops/check");
       const data = await res.json();
@@ -29,15 +29,16 @@ export function ImportShopsButton() {
   async function handleImport() {
     setStatus("loading");
     setProgress(1);
+    const newStats = { shops: 0, photos: 0, emps: 0 };
 
     try {
-      // المرحلة الأولى: سحب المحلات (0% - 80%)
+      // المرحلة 1: المحلات والصور (0% - 85%)
       let offset = 0;
-      const limit = 20;
+      const limit = 10; // دفعات صغيرة لضمان رفع الصور بنجاح
       let isShopsDone = false;
 
       while (!isShopsDone) {
-        setCurrentStep(`جاري سحب المحلات (${offset} من ${totalShops})...`);
+        setCurrentStep(`جاري سحب المحلات ورفع الصور لـ R2 (${offset} من ${totalShops})...`);
         const res = await fetch("/api/admin/import/shops", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -46,17 +47,19 @@ export function ImportShopsButton() {
         const data = await res.json();
         if (!data.success) throw new Error(data.message);
 
+        newStats.shops += data.count;
+        newStats.photos += (data.photos || 0);
         offset += limit;
         isShopsDone = data.done || offset >= totalShops;
-        setProgress(Math.min(Math.round((offset / totalShops) * 80), 80));
+
+        setProgress(Math.min(Math.round((offset / totalShops) * 85), 85));
       }
 
-      // المرحلة الثانية: سحب العملاء (80% - 100%)
-      setCurrentStep("جاري سحب العملاء (أصحاب الروابط) بنظام الدفعات...");
+      // المرحلة 2: العملاء (85% - 100%)
+      setCurrentStep("جاري ربط العملاء بمحلاتهم...");
       let empOffset = 0;
       const empLimit = 50;
       let isEmpDone = false;
-      let totalEmps = 0;
 
       while (!isEmpDone) {
         const res = await fetch("/api/admin/import/employees", {
@@ -67,21 +70,21 @@ export function ImportShopsButton() {
         const data = await res.json();
         if (!data.success) throw new Error(data.message);
 
-        totalEmps += data.count;
+        newStats.emps += data.count;
         empOffset += empLimit;
         isEmpDone = data.done;
-
-        // زيادة التقدم تدريجياً من 80% إلى 100%
         setProgress(prev => Math.min(prev + 5, 99));
       }
 
+      setStats(newStats);
       setProgress(100);
-      setCurrentStep("🎊 اكتمل السحب بنجاح!");
-      alert(`اكتملت العملية بنجاح!\nتم سحب المحلات والعملاء وربطهم بنجاح.`);
+      setCurrentStep("🎊 اكتمل السحب الشامل بنجاح!");
+
+      alert(`✅ تم السحب بنجاح!\n\n- المحلات: ${newStats.shops}\n- الصور المرفوعة لـ R2: ${newStats.photos}\n- العملاء (أصحاب الروابط): ${newStats.emps}`);
       window.location.reload();
 
     } catch (err: any) {
-      alert("⚠️ توقف السحب عند العملاء: " + err.message);
+      alert("⚠️ توقف السحب: " + err.message);
     } finally {
       setStatus("idle");
     }
@@ -92,39 +95,39 @@ export function ImportShopsButton() {
       <div className="flex gap-3 items-center justify-end">
         <button
           onClick={() => {
-            if(confirm("سيتم تصفير كل شيء، هل أنت متأكد؟")) {
+            if(confirm("تحذير: سيتم مسح كافة المحلات والعملاء للبدء من جديد. هل أنت متأكد؟")) {
               fetch("/api/admin/import/reset", { method: "POST" }).then(() => window.location.reload());
             }
           }}
-          className="bg-red-50 text-red-600 px-4 py-2 rounded-lg font-bold border border-red-200"
+          className="bg-red-50 text-red-600 px-4 py-2 rounded-lg font-bold border border-red-200 hover:bg-red-100 transition-colors"
         >
           🗑️ مسح الكل
         </button>
 
         {status === "confirming" ? (
-          <button onClick={handleImport} className="bg-green-600 text-white px-6 py-2 rounded-lg font-bold animate-pulse">
-            ابدأ السحب الآن
+          <button onClick={handleImport} className="bg-green-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg animate-pulse">
+            ابدأ السحب الشامل (334 محل)
           </button>
         ) : (
           <button
             onClick={handleCheck}
             disabled={status === "loading"}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg disabled:bg-gray-400"
+            className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg hover:bg-indigo-700 disabled:bg-gray-400"
           >
-            {status === "loading" ? "⏳ جاري العمل..." : "📥 سحب (محلات + عملاء)"}
+            {status === "loading" ? "⏳ جاري العمل..." : "📥 سحب شامل (محلات + صور + عملاء)"}
           </button>
         )}
       </div>
 
       {status === "loading" && (
-        <div className="w-full bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
-          <div className="flex justify-between mb-1">
-            <span className="text-[10px] font-black text-indigo-600 uppercase">{currentStep}</span>
-            <span className="text-[10px] font-black text-indigo-600">{progress}%</span>
+        <div className="w-full bg-white p-3 rounded-xl border-2 border-indigo-100 shadow-xl animate-in zoom-in duration-300">
+          <div className="flex justify-between mb-2">
+            <span className="text-[11px] font-black text-indigo-700">{currentStep}</span>
+            <span className="text-[11px] font-black text-indigo-700">{progress}%</span>
           </div>
-          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden border border-gray-200">
+          <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden border border-gray-200 p-0.5">
             <div
-              className="bg-indigo-600 h-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(79,70,229,0.5)]"
+              className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full rounded-full transition-all duration-700 ease-out"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
