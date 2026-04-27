@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { ad } from "@/lib/admin-ui";
 
+import { updateRegionAction } from "./actions";
+
 export function RegionsList({ initialRegions }: { initialRegions: any[] }) {
   const [search, setSearch] = useState("");
   const [regions, setRegions] = useState(initialRegions);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const filtered = regions.filter(r => r.name.includes(search));
 
@@ -20,10 +23,20 @@ export function RegionsList({ initialRegions }: { initialRegions: any[] }) {
   };
 
   const saveEdit = async (id: string) => {
-    // هنا يمكن إضافة استدعاء API للتحديث
-    alert("تم حفظ التعديلات محلياً (سيتم ربط الأكشن لاحقاً)");
-    setRegions(regions.map(r => r.id === id ? { ...r, name: editName, deliveryPrice: editPrice } : r));
-    setEditingId(null);
+    setLoading(true);
+    try {
+      const result = await updateRegionAction(id, editName, Number(editPrice));
+      if (result.success) {
+        setRegions(regions.map(r => r.id === id ? { ...r, name: editName, deliveryPrice: editPrice } : r));
+        setEditingId(null);
+      } else {
+        alert("فشل الحفظ: " + result.message);
+      }
+    } catch (err) {
+      alert("خطأ في الاتصال بالسيرفر");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

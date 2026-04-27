@@ -5,17 +5,17 @@ import { prisma } from "@/lib/prisma";
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
 
 export async function GET() {
-  const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 5000 });
+  const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 10000 });
   try {
     await client.connect();
-    const res = await client.query('SELECT name, phone FROM "Shop"');
+    const res = await client.query('SELECT name FROM "Shop"');
     const oldShops = res.rows;
 
-    const currentShops = await prisma.shop.findMany({ select: { name: true, phone: true } });
+    const currentShops = await prisma.shop.findMany({ select: { name: true } });
+    const currentNames = new Set(currentShops.map(s => s.name));
 
-    const newShops = oldShops.filter(os =>
-      !currentShops.some(cs => cs.name === os.name && cs.phone === os.phone)
-    );
+    // فلترة المحلات التي غير موجودة أسماؤها في القاعدة الجديدة
+    const newShops = oldShops.filter(os => !currentNames.has(os.name));
 
     return NextResponse.json({
       success: true,

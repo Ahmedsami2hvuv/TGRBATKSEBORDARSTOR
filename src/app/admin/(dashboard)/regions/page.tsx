@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
-import { ImportRegionsButton } from "./import-button"; // تصحيح الاسم هنا
+import { ImportRegionsButton } from "./import-button";
+import { RegionsList } from "./regions-list";
 
 export const dynamic = "force-dynamic";
 
@@ -19,21 +20,8 @@ export default async function RegionsPage() {
         <ImportRegionsButton />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {regions.map((region) => {
-          let displayPrice = Number(region.deliveryPrice);
-          if (displayPrice >= 1000) {
-            displayPrice = displayPrice / 1000;
-          }
-
-          return (
-            <div key={region.id} className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
-              <h3 className="font-bold text-gray-800">{region.name}</h3>
-              <p className="text-sm text-gray-500">سعر التوصيل: {displayPrice} د.ع</p>
-            </div>
-          );
-        })}
-      </div>
+      {/* عرض القائمة مع ميزة البحث والتعديل */}
+      <RegionsList initialRegions={regions} />
     </div>
   );
 }
