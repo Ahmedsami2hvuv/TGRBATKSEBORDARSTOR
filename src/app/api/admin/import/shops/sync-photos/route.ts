@@ -9,27 +9,34 @@ const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "";
 
 async function migrateImage(oldUrl: string | null | undefined): Promise<string> {
   if (!oldUrl || !oldUrl.startsWith("http")) return "";
+  // إذا كانت الصورة أصلاً مرفوعة على R2، لا نعيد رفعها
+  if (oldUrl.includes("r2.dev") || (R2_PUBLIC_URL && oldUrl.includes(R2_PUBLIC_URL))) return oldUrl;
+
   try {
     const response = await fetch(oldUrl, { signal: AbortSignal.timeout(15000) });
     if (!response.ok) return "";
     const buffer = Buffer.from(await response.arrayBuffer());
     const contentType = response.headers.get("content-type") || "image/jpeg";
     const extension = contentType.split("/")[1]?.split("+")[0] || "jpg";
-    const key = `shops/sync_${nanoid(7)}.${extension}`;
+    const key = `shops/${nanoid(12)}.${extension}`;
     const uploadedKey = await uploadToR2(buffer, key, contentType);
     return uploadedKey ? `${R2_PUBLIC_URL}/${uploadedKey}` : "";
-  } catch (e) { return ""; }
+  } catch (e) {
+    return "";
+  }
 }
 
 export async function POST(req: Request) {
   const client = new Client({ connectionString: OLD_DB_URL });
   try {
-    const { offset = 0, limit = 10 } = await req.json();
+    const body = await req.json();
+    const offset = Number(body.offset) || 0;
+    const limit = Number(body.limit) || 10;
+
     await client.connect();
 
-    // جلب دفعة من المحلات القديمة
     const res = await client.query(`
-      SELECT name, "locationUrl", "photoUrl"
+      SELECT name, "locationUrl", "photoUrl", phone
       FROM "Shop"
       ORDER BY id
       LIMIT $1 OFFSET $2
@@ -37,23 +44,23 @@ export async function POST(req: Request) {
 
     let updatedCount = 0;
     for (const oldShop of res.rows) {
-      if (!oldShop.photoUrl) continue;
+      if (!oldShop.photoUrl || !oldShop.photoUrl.startsWith("http")) continue;
 
-      // المطابقة الذكية: الاسم + اللوكيشن (تجاوز الهاتف المكرر)
+      // مطابقة مرنة (بالاسم النظيف)
       const targetShop = await prisma.shop.findFirst({
         where: {
-          name: oldShop.name,
-          locationUrl: oldShop.locationUrl || "",
+          name: oldShop.name?.trim(),
           OR: [
-            { photoUrl: "" },
-            { photoUrl: null as any }
+            { phone: oldShop.phone?.trim() || "---" },
+            { locationUrl: oldShop.locationUrl?.trim() || "---" }
           ]
         }
       });
 
-      if (targetShop) {
+      // إذا وجدنا المحل وصورته حالياً ليست على R2 (فارغة أو رابط قديم)
+      if (targetShop && (!targetShop.photoUrl || !targetShop.photoUrl.includes("r2.dev"))) {
         const newUrl = await migrateImage(oldShop.photoUrl);
-        if (newUrl) {
+        if (newUrl && newUrl !== oldShop.photoUrl) {
           await prisma.shop.update({
             where: { id: targetShop.id },
             data: { photoUrl: newUrl }
@@ -65,11 +72,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      updated: updatedCount,
+      updated: Number(updatedCount) || 0,
       done: res.rows.length < limit
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message, updated: 0 }, { status: 500 });
   } finally {
     await client.end();
   }
