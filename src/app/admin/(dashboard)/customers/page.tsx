@@ -20,7 +20,7 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
         { region: { name: { contains: q, mode: 'insensitive' } } }
       ]
     } : undefined,
-    take: 50,
+    take: 300, // زيادة عدد المعروضين إلى 300 زبون دفعة واحدة
     orderBy: { createdAt: 'desc' },
     include: {
       region: { select: { name: true } },
@@ -72,7 +72,11 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
         {profiles.map(p => {
           const stats = statsMap.get(p.phone);
           return (
-            <div key={p.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col gap-3 hover:shadow-md transition-shadow relative overflow-hidden group">
+            <Link
+              key={p.id}
+              href={`/admin/customers/info?phone=${p.phone}&id=${p.id}`}
+              className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col gap-3 hover:shadow-md transition-shadow relative overflow-hidden group cursor-pointer"
+            >
               <div className="flex justify-between items-start">
                 <div className="flex gap-2">
                    <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-[10px] font-bold border border-blue-100">
@@ -91,7 +95,7 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
               </div>
 
               <div className="text-right">
-                <p className="text-gray-500 text-xs leading-relaxed italic">
+                <p className="text-gray-500 text-xs leading-relaxed italic line-clamp-2">
                   {p.notes || "لا توجد ملاحظات مسجلة لهذا العنوان"}
                 </p>
                 {p.landmark && (
@@ -99,19 +103,20 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
                 )}
               </div>
 
+              {p.photoUrl && (
+                <div className="flex gap-1 mt-1">
+                   <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded border border-green-100 font-bold">📷 توجد صورة باب</span>
+                </div>
+              )}
+
               {p.locationUrl && (
-                <a
-                  href={p.locationUrl}
-                  target="_blank"
-                  className="absolute left-4 bottom-4 bg-gray-100 p-2 rounded-full hover:bg-blue-100 transition-colors group-hover:scale-110"
-                  title="فتح الموقع"
-                >
+                <div className="absolute left-4 bottom-4 bg-gray-100 p-2 rounded-full hover:bg-blue-100 transition-colors group-hover:scale-110">
                   📍
-                </a>
+                </div>
               )}
 
               <div className="absolute top-0 right-0 w-1 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            </div>
+            </Link>
           );
         })}
 
