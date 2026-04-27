@@ -5,21 +5,6 @@ import { uploadToR2 } from "@/lib/upload-storage";
 import { nanoid } from "nanoid";
 
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
-const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "";
-
-async function migrateImage(oldUrl: string | null | undefined): Promise<string> {
-  if (!oldUrl || !oldUrl.startsWith("http")) return "";
-  try {
-    const response = await fetch(oldUrl, { signal: AbortSignal.timeout(10000) });
-    if (!response.ok) return "";
-    const buffer = Buffer.from(await response.arrayBuffer());
-    const contentType = response.headers.get("content-type") || "image/jpeg";
-    const extension = contentType.split("/")[1]?.split("+")[0] || "jpg";
-    const key = `shops/imported_${nanoid(7)}.${extension}`;
-    const uploadedKey = await uploadToR2(buffer, key, contentType);
-    return uploadedKey ? `${R2_PUBLIC_URL}/${uploadedKey}` : "";
-  } catch (e) { return ""; }
-}
 
 export async function POST(req: Request) {
   const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 30000 });
@@ -44,25 +29,37 @@ export async function POST(req: Request) {
 
     let importedCount = 0;
     for (const oldShop of oldShops) {
-      // مطابقة ذكية:
-      // إذا وجد لوكيشن، نطابق (اسم + لوكيشن)
-      // إذا لم يوجد لوكيشن، نطابق (اسم + هاتف) لضمان جلب الفروع المفقودة
+      const cleanName = oldShop.name?.trim();
+      const cleanLocation = oldShop.locationUrl?.trim()?.replace(/\/$/, "") || "";
+      const cleanPhone = oldShop.phone?.trim() || "";
+
+      // بحث متقدم:
+      // 1. نبحث عن تطابق (الاسم + اللوكيشن المنظف)
+      // 2. إذا لم يوجد لوكيشن، نبحث عن (الاسم + الهاتف)
       const existing = await prisma.shop.findFirst({
-        where: oldShop.locationUrl
-          ? { name: oldShop.name, locationUrl: oldShop.locationUrl }
-          : { name: oldShop.name, phone: oldShop.phone || "" }
+        where: {
+          name: cleanName,
+          OR: [
+            { locationUrl: cleanLocation !== "" ? cleanLocation : undefined },
+            {
+               AND: [
+                 { locationUrl: "" },
+                 { phone: cleanPhone }
+               ]
+            }
+          ]
+        }
       });
 
       if (!existing) {
         const targetRegionId = regionMap.get(oldShop.regionName) || firstRegionId;
-        // ملاحظة: لا نسحب الصور هنا، بل في زر المزامنة المخصص للصور
         await prisma.shop.create({
           data: {
-            name: oldShop.name,
-            locationUrl: oldShop.locationUrl || "",
+            name: cleanName,
+            locationUrl: cleanLocation,
             ownerName: oldShop.ownerName || "",
-            photoUrl: "", // ستبقى فارغة ليتم جلبها عبر زر الصور
-            phone: oldShop.phone || "",
+            photoUrl: "",
+            phone: cleanPhone,
             regionId: targetRegionId,
           }
         });
