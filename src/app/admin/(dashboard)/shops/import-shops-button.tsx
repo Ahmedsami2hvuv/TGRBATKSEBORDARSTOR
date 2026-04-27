@@ -7,27 +7,41 @@ export function ImportShopsButton() {
   const [status, setStatus] = useState<"idle" | "loading">("idle");
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState("");
-  const [totalShops, setTotalShops] = useState(334); // القيمة التقريبية
+  const [report, setReport] = useState<any>(null);
   const router = useRouter();
 
-  // 1. وظيفة إكمال المحلات الناقصة فقط
+  // 1. وظيفة تقرير النواقص (فحص فقط بدون نقل)
+  async function generateMissingReport() {
+    setStatus("loading");
+    setCurrentStep("جاري فحص النواقص وإعداد التقرير...");
+    try {
+      const res = await fetch("/api/admin/import/shops/report");
+      const data = await res.json();
+      if (data.success) {
+        setReport(data);
+      } else {
+        alert("⚠️ فشل في إعداد التقرير: " + data.message);
+      }
+    } catch (err: any) {
+      alert("⚠️ خطأ: " + err.message);
+    } finally {
+      setStatus("idle");
+    }
+  }
+
+  // 2. وظيفة إكمال المحلات الناقصة
   async function importMissingShops() {
+    if(!confirm("هل أنت متأكد من جلب المحلات المكتشفة تلقائياً؟")) return;
     setStatus("loading");
     setProgress(0);
     try {
-      // فحص العدد الكلي أولاً
-      const checkRes = await fetch("/api/admin/import/shops/check");
-      const checkData = await checkRes.json();
-      const total = checkData.totalInOld || 334;
-      setTotalShops(total);
-
       let offset = 0;
       const limit = 20;
       let isDone = false;
       let newCount = 0;
 
       while (!isDone) {
-        setCurrentStep(`جاري فحص وجلب المحلات الناقصة (${offset}/${total})...`);
+        setCurrentStep(`جاري جلب المحلات الناقصة...`);
         const res = await fetch("/api/admin/import/shops", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -36,80 +50,81 @@ export function ImportShopsButton() {
         const data = await res.json();
         newCount += data.count;
         offset += limit;
-        isDone = data.done || offset >= total;
-        setProgress(Math.round((offset / total) * 100));
+        isDone = data.done || offset >= 334;
+        setProgress(Math.round((offset / 334) * 100));
       }
-
-      alert(`✅ اكتمل جلب النواقص: تم إضافة ${newCount} محل جديد.`);
+      alert(`✅ تم إضافة ${newCount} محل جديد.`);
       window.location.reload();
     } catch (err: any) {
-      alert("⚠️ خطأ في جلب النواقص: " + err.message);
+      alert("⚠️ خطأ: " + err.message);
     } finally {
       setStatus("idle");
     }
   }
 
-  // 2. وظيفة سحب وتأمين الصور لـ R2 فقط
+  // 3. وظيفة سحب الصور لـ R2
   async function syncPhotosToR2() {
     setStatus("loading");
     setProgress(0);
     try {
-      const total = 334; // نفترض فحص الكل
       let offset = 0;
       const limit = 10;
       let isDone = false;
       let totalSynced = 0;
 
       while (!isDone) {
-        setCurrentStep(`📸 جاري تأمين الصور على R2 (${offset}/${total})...`);
+        setCurrentStep(`📸 تأمين الصور على R2 (${offset}/334)...`);
         const res = await fetch("/api/admin/import/shops/sync-photos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ offset, limit })
         });
         const data = await res.json();
-        if (!data.success) throw new Error(data.message);
-
         totalSynced += data.updated;
         offset += limit;
-        isDone = data.done || offset >= total;
-        setProgress(Math.round((offset / total) * 100));
+        isDone = data.done || offset >= 334;
+        setProgress(Math.round((offset / 334) * 100));
       }
-
-      alert(`✅ اكتمل تأمين الصور: تم رفع وتحديث ${totalSynced} صورة على Cloudflare R2.`);
+      alert(`✅ اكتمل تأمين ${totalSynced} صورة على R2.`);
       window.location.reload();
     } catch (err: any) {
-      alert("⚠️ خطأ في مزامنة الصور: " + err.message);
+      alert("⚠️ خطأ: " + err.message);
     } finally {
       setStatus("idle");
     }
   }
 
   return (
-    <div className="flex flex-col gap-4 w-full max-w-lg">
+    <div className="flex flex-col gap-4 w-full">
       <div className="flex flex-wrap gap-3 items-center justify-end">
-        {/* زر النواقص */}
+        {/* زر التقرير الجديد */}
+        <button
+          onClick={generateMissingReport}
+          disabled={status === "loading"}
+          className="bg-amber-500 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-amber-600 disabled:bg-gray-400 transition-all text-sm"
+        >
+          🔍 فحص المفقودات (تقرير)
+        </button>
+
         <button
           onClick={importMissingShops}
           disabled={status === "loading"}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-blue-700 disabled:bg-gray-400 transition-all text-sm"
         >
-          📥 جلب المحلات الناقصة
+          📥 جلب النواقص
         </button>
 
-        {/* زر الصور */}
         <button
           onClick={syncPhotosToR2}
           disabled={status === "loading"}
           className="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-purple-700 disabled:bg-gray-400 transition-all text-sm"
         >
-          📸 سحب وتأمين الصور لـ R2
+          📸 سحب الصور لـ R2
         </button>
 
-        {/* زر المسح */}
         <button
           onClick={() => {
-            if(confirm("سيتم مسح كافة المحلات والعملاء، هل أنت متأكد؟")) {
+            if(confirm("سيتم مسح كافة المحلات، هل أنت متأكد؟")) {
               fetch("/api/admin/import/reset", { method: "POST" }).then(() => window.location.reload());
             }
           }}
@@ -119,6 +134,41 @@ export function ImportShopsButton() {
         </button>
       </div>
 
+      {/* نافذة التقرير */}
+      {report && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+            <div className="p-6 border-b bg-amber-50 flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-black text-amber-900">تقرير المحلات المفقودة</h3>
+                <p className="text-sm text-amber-700">تم العثور على {report.missingCount} محل في القاعدة القديمة غير موجودة حالياً.</p>
+              </div>
+              <button onClick={() => setReport(null)} className="text-amber-900 font-bold hover:scale-110 transition-transform">✖</button>
+            </div>
+
+            <div className="p-6 overflow-y-auto bg-white space-y-3">
+              {report.missingShops.length > 0 ? (
+                report.missingShops.map((shop: any, i: number) => (
+                  <div key={i} className="p-4 border rounded-xl hover:bg-slate-50 transition-colors">
+                    <div className="font-bold text-slate-900">{shop.name}</div>
+                    <div className="text-xs text-slate-500 flex gap-4 mt-1">
+                      <span>👤 {shop.owner || "غير معروف"}</span>
+                      <span>📞 {shop.phone || "بدون رقم"}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10 text-slate-500 font-bold">✅ لا توجد محلات مفقودة، كل البيانات متزامنة!</div>
+              )}
+            </div>
+
+            <div className="p-4 border-t bg-slate-50 flex justify-end">
+              <button onClick={() => setReport(null)} className="bg-slate-900 text-white px-6 py-2 rounded-xl font-bold">إغلاق</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {status === "loading" && (
         <div className="w-full bg-white p-4 rounded-xl border-2 border-indigo-100 shadow-xl animate-in fade-in zoom-in">
           <div className="flex justify-between mb-2">
@@ -126,10 +176,7 @@ export function ImportShopsButton() {
             <span className="text-xs font-black text-indigo-700">{progress}%</span>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden border border-gray-200 shadow-inner">
-            <div
-              className="bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 h-full transition-all duration-500 ease-out"
-              style={{ width: `${progress}%` }}
-            ></div>
+            <div className="bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 h-full transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div>
           </div>
         </div>
       )}
