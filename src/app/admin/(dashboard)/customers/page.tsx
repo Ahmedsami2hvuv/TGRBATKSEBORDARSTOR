@@ -20,7 +20,7 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
         { region: { name: { contains: q, mode: 'insensitive' } } }
       ]
     } : undefined,
-    take: 300, // زيادة عدد المعروضين إلى 300 زبون دفعة واحدة
+    take: 2000, // رفع الحد لعرض كافة الزبائن الـ 1200
     orderBy: { createdAt: 'desc' },
     include: {
       region: { select: { name: true } },
