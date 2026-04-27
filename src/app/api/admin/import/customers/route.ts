@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Client } from "pg";
 import { prisma } from "@/lib/prisma";
 
-const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischuJWrX@caboose.proxy.rlwy.net:46307/railway";
+const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
 
 export async function POST() {
   const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 15000 });
