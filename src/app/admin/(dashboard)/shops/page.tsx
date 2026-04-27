@@ -24,7 +24,7 @@ export default async function ShopsPage() {
     id: s.id,
     name: s.name,
     locationUrl: s.locationUrl,
-    regionName: s.region.name,
+    regionName: s.region?.name || "بدون منطقة",
   }));
 
   return (
@@ -33,8 +33,7 @@ export default async function ShopsPage() {
         <div>
           <h1 className={ad.h1}>المحلات</h1>
           <p className={`mt-1 ${ad.lead}`}>
-            اسم المحل، المنطقة، ورابط الموقع (خرائط أو أي رابط لوكيشن). صورة المحل تُرفَع
-            من الجهاز (التقاط أو معرض) وليست رابطاً.
+            إدارة المحلات وربطها بالمناطق.
           </p>
         </div>
         <ImportShopsButton />

@@ -7,7 +7,6 @@ import { CustomersPageClient } from "./customers-page-client";
 import { ImportCustomersButton } from "./import-customers-button";
 
 export const dynamic = "force-dynamic";
-// ... (the rest of the imports and metadata)
 
 export const metadata = {
   title: "بيانات الزبائن — أبو الأكبر للتوصيل",
@@ -21,10 +20,9 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
   const sp = await searchParams;
   const page = Math.max(1, parseInt(sp.page ?? "1", 10));
   const query = (sp.q ?? "").trim();
-  const pageSize = 50; // تقليل حجم الصفحة لتحسين السرعة
+  const pageSize = 50;
   const skip = (page - 1) * pageSize;
 
-  // بناء شرط البحث
   const where = query ? {
     OR: [
       { phone: { contains: query } },
@@ -34,11 +32,9 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
     ]
   } : {};
 
-  // 1. جلب العدد الإجمالي للزبائن المفلترين
   const totalItems = await prisma.customerPhoneProfile.count({ where });
   const totalPages = Math.ceil(totalItems / pageSize);
 
-  // 2. جلب قائمة الزبائن لهذه الصفحة فقط
   const profiles = await prisma.customerPhoneProfile.findMany({
     where,
     orderBy: { updatedAt: "desc" },
@@ -49,7 +45,6 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
 
   const phoneNumbers = Array.from(new Set(profiles.map(p => p.phone)));
 
-  // 3. جلب إحصائيات الطلبات لهؤلاء الزبائن فقط
   const orderStats = await prisma.order.groupBy({
     by: ["customerPhone"],
     where: { customerPhone: { in: phoneNumbers } },
@@ -69,7 +64,6 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
 
   const regionOptions = regions.map((r) => ({ id: r.id, name: r.name }));
 
-  // تحويل البيانات لشكل القائمة
   const customerRows: CustomerPhoneRowUi[] = profiles.map((p) => {
     const stats = statsMap.get(p.phone);
     return {
@@ -107,11 +101,14 @@ export default async function AdminCustomersPage({ searchParams }: Props) {
           ← الرئيسية
         </Link>
       </p>
-      <div>
-        <h1 className={ad.h1}>بيانات الزبائن</h1>
-        <p className={`mt-1 ${ad.lead}`}>
-          يتم عرض الزبائن الذين لديهم مواقع مسجلة. (إجمالي {totalItems.toLocaleString()} سجل مطابق).
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className={ad.h1}>بيانات الزبائن</h1>
+          <p className={`mt-1 ${ad.lead}`}>
+            يتم عرض الزبائن الذين لديهم مواقع مسجلة. (إجمالي {totalItems.toLocaleString()} سجل مطابق).
+          </p>
+        </div>
+        <ImportCustomersButton />
       </div>
 
       <CustomersPageClient
