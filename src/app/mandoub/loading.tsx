@@ -1,42 +1,16 @@
 export default function MandoubLoading() {
   return (
-    <div dir="rtl" lang="ar" className="kse-app-bg flex flex-col items-center justify-center min-h-[100vh] space-y-8 w-full text-slate-800 p-6">
-      <div className="text-center space-y-4 w-full max-w-md">
-        <h2 className="text-2xl font-bold text-sky-900">
-          جاري جلب البيانات...
-        </h2>
-
-        {/* Beautiful Gradient Progress Bar */}
+    <div dir="rtl" className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 space-y-6">
+      <div className="w-full max-w-md text-center space-y-4">
+        <h2 className="text-2xl font-bold text-slate-800">جاري التحميل...</h2>
         <div className="relative w-full h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner">
           <div
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-sky-400 via-blue-500 to-sky-600 animate-progress-indeterminate rounded-full"
-            style={{ width: '50%' }}
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-indigo-600 animate-[progress-indeterminate_2s_infinite_linear] rounded-full"
+            style={{ width: '40%' }}
           ></div>
         </div>
-
-        <p className="text-base text-slate-600 animate-pulse">
-          الرجاء الانتظار قليلاً ريثما تكتمل العملية
-        </p>
+        <p className="text-slate-500 animate-pulse">يرجى الانتظار، جاري تحضير المهام</p>
       </div>
-
-      <style jsx>{`
-        @keyframes progress-indeterminate {
-          0% {
-            transform: translateX(-100%);
-            width: 30%;
-          }
-          50% {
-            width: 60%;
-          }
-          100% {
-            transform: translateX(250%);
-            width: 30%;
-          }
-        }
-        .animate-progress-indeterminate {
-          animation: progress-indeterminate 2s infinite linear;
-        }
-      `}</style>
     </div>
   );
 }
