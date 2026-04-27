@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
 
 export async function POST() {
-  const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 10000 });
+  const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 15000 });
 
   try {
     await client.connect();
@@ -18,20 +18,28 @@ export async function POST() {
     const oldShops = res.rows;
 
     let importedCount = 0;
-    let skippedCount = 0;
 
     for (const oldShop of oldShops) {
+      // تعديل هام: استخدام select لتجنب طلب حقول غير موجودة تسبب انهيار البريزما
       const exists = await prisma.shop.findFirst({
-        where: { name: oldShop.name, phone: oldShop.phone || "" }
+        where: { name: oldShop.name, phone: oldShop.phone || "" },
+        select: { id: true }
       });
 
       if (!exists) {
         let regionId = "";
         if (oldShop.regionName) {
           const region = await prisma.region.findFirst({
-            where: { name: oldShop.regionName }
+            where: { name: oldShop.regionName },
+            select: { id: true }
           });
           if (region) regionId = region.id;
+        }
+
+        // إذا لم يجد منطقة، سنضعه في أول منطقة متاحة أو نتركه (لكن الجدول يتطلب regionId)
+        if (!regionId) {
+           const firstRegion = await prisma.region.findFirst({ select: { id: true } });
+           if (firstRegion) regionId = firstRegion.id;
         }
 
         if (regionId) {
@@ -46,15 +54,11 @@ export async function POST() {
             }
           });
           importedCount++;
-        } else {
-          skippedCount++;
         }
-      } else {
-        skippedCount++;
       }
     }
 
-    return NextResponse.json({ success: true, count: importedCount, skipped: skippedCount });
+    return NextResponse.json({ success: true, count: importedCount });
   } catch (error: any) {
     console.error("IMPORT SHOPS ERROR:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });

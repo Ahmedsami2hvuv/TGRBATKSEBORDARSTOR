@@ -1,52 +1,37 @@
 import { NextResponse } from "next/server";
 import { Client } from "pg";
 import { prisma } from "@/lib/prisma";
-import { uploadToR2 } from "@/lib/upload-storage";
-import { nanoid } from "nanoid";
 
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
-const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "";
-
-// دالة مساعدة لتحميل صورة من رابط ورفعها إلى R2
-async function migrateImage(oldUrl: string | null | undefined, prefix: string): Promise<string> {
-  if (!oldUrl || !oldUrl.startsWith("http")) return oldUrl || "";
-
-  // إذا كانت الصورة مسحوبة بالفعل لـ R2 لا داعي لإعادة سحبها
-  if (oldUrl.includes("r2.dev") || (R2_PUBLIC_URL && oldUrl.includes(R2_PUBLIC_URL))) {
-    return oldUrl;
-  }
-
-  try {
-    const response = await fetch(oldUrl);
-    if (!response.ok) return oldUrl; // إذا فشل التحميل نحتفظ بالرابط القديم مؤقتاً
-
-    const buffer = Buffer.from(await response.arrayBuffer());
-    const contentType = response.headers.get("content-type") || "image/jpeg";
-    const extension = contentType.split("/")[1] || "jpg";
-    const key = `imported/${prefix}_${nanoid()}.${extension}`;
-
-    const uploadedKey = await uploadToR2(buffer, key, contentType);
-    if (uploadedKey) {
-      return `${R2_PUBLIC_URL}/${uploadedKey}`;
-    }
-  } catch (e) {
-    console.error("Failed to migrate image:", oldUrl, e);
-  }
-  return oldUrl;
-}
 
 export async function POST() {
-  const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 30000 });
+  const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 15000 });
 
   try {
     await client.connect();
 
-    // جلب البيانات المرجعية
+    // 1. جلب البيانات المرجعية
     const [allShops, allRegions, existingCustomers] = await Promise.all([
       prisma.shop.findMany({ select: { id: true, name: true } }),
       prisma.region.findMany({ select: { id: true, name: true } }),
       prisma.customer.findMany({ select: { phone: true, shopId: true } })
     ]);
+
+    // البحث عن أو إنشاء "محل افتراضي" للزبائن المرجعيين
+    let generalShop = allShops.find(s => s.name.includes("عام"));
+    if (!generalShop) {
+        const firstRegion = await prisma.region.findFirst({ select: { id: true } });
+        if (firstRegion) {
+            generalShop = await prisma.shop.create({
+                data: {
+                    name: "زبائن عامون (قاعدة قديمة)",
+                    locationUrl: "",
+                    regionId: firstRegion.id
+                },
+                select: { id: true, name: true }
+            });
+        }
+    }
 
     const shopMap = new Map(allShops.map(s => [s.name, s.id]));
     const regionMap = new Map(allRegions.map(r => [r.name, r.id]));
@@ -61,18 +46,14 @@ export async function POST() {
     `);
 
     let importedCust = 0;
-    // سنقوم بمعالجة أول 50 زبون فقط في كل ضغطة إذا كان هناك صور، لضمان عدم توقف السيرفر
-    // أو سنقوم بسحب البيانات أولاً ثم عمل "مزامنة صور" لاحقاً.
-
     const customersToCreate = [];
 
     for (const oldCust of resCust.rows) {
-      const shopId = shopMap.get(oldCust.shopName);
+      // إذا لم يجد المحل، يستخدم المحل العام بدلاً من التجاهل
+      const shopId = shopMap.get(oldCust.shopName) || generalShop?.id;
       if (!shopId) continue;
 
       if (!customerSet.has(`${oldCust.phone}-${shopId}`)) {
-        // ملاحظة: لسرعة الاستيراد الأولي، سنسحب الروابط كما هي،
-        // ثم نستخدم أكشن "مزامنة الصور" لنقلها لـ R2 في الخلفية.
         customersToCreate.push({
           name: oldCust.name || "",
           phone: oldCust.phone,
@@ -80,7 +61,7 @@ export async function POST() {
           customerRegionId: regionMap.get(oldCust.regionName) || null,
           customerLocationUrl: oldCust.customerLocationUrl || "",
           customerLandmark: oldCust.customerLandmark || "",
-          customerDoorPhotoUrl: oldCust.customerDoorPhotoUrl || "", // ستبقى مؤقتاً كرابط قديم
+          customerDoorPhotoUrl: oldCust.customerDoorPhotoUrl || "",
         });
         importedCust++;
       }
@@ -90,12 +71,9 @@ export async function POST() {
       await prisma.customer.createMany({ data: customersToCreate, skipDuplicates: true });
     }
 
-    return NextResponse.json({
-      success: true,
-      customers: importedCust,
-      message: "تم سحب البيانات بنجاح. يرجى تشغيل 'مزامنة الصور' لنقل الصور لـ R2."
-    });
+    return NextResponse.json({ success: true, customers: importedCust });
   } catch (error: any) {
+    console.error("IMPORT CUSTOMERS ERROR:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   } finally {
     await client.end();
