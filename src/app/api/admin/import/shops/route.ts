@@ -44,25 +44,24 @@ export async function POST(req: Request) {
 
     let importedCount = 0;
     for (const oldShop of oldShops) {
-      // المطابقة بالاسم واللوكيشن فقط (تجاهل الهاتف تماماً للمطابقة)
-      // هذا يسمح بجلب فروع مختلفة لنفس العميل (الذي قد يملك نفس رقم الهاتف في القاعدة القديمة)
+      // مطابقة ذكية:
+      // إذا وجد لوكيشن، نطابق (اسم + لوكيشن)
+      // إذا لم يوجد لوكيشن، نطابق (اسم + هاتف) لضمان جلب الفروع المفقودة
       const existing = await prisma.shop.findFirst({
-        where: {
-          name: oldShop.name,
-          locationUrl: oldShop.locationUrl || ""
-        }
+        where: oldShop.locationUrl
+          ? { name: oldShop.name, locationUrl: oldShop.locationUrl }
+          : { name: oldShop.name, phone: oldShop.phone || "" }
       });
 
       if (!existing) {
         const targetRegionId = regionMap.get(oldShop.regionName) || firstRegionId;
-        const newPhotoUrl = await migrateImage(oldShop.photoUrl);
-
+        // ملاحظة: لا نسحب الصور هنا، بل في زر المزامنة المخصص للصور
         await prisma.shop.create({
           data: {
             name: oldShop.name,
             locationUrl: oldShop.locationUrl || "",
             ownerName: oldShop.ownerName || "",
-            photoUrl: newPhotoUrl,
+            photoUrl: "", // ستبقى فارغة ليتم جلبها عبر زر الصور
             phone: oldShop.phone || "",
             regionId: targetRegionId,
           }
