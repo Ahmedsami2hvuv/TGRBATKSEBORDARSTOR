@@ -9,7 +9,7 @@ export default function StaffPortalLoading() {
         {/* Beautiful Gradient Progress Bar */}
         <div className="relative w-full h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner">
           <div
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-sky-400 via-blue-500 to-sky-600 animate-progress-indeterminate rounded-full"
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-sky-400 via-blue-500 to-sky-600 animate-[progress-indeterminate_2s_infinite_linear] rounded-full"
             style={{ width: '40%' }}
           ></div>
         </div>
@@ -18,20 +18,6 @@ export default function StaffPortalLoading() {
           يرجى الانتظار، جاري الاتصال بالخادم...
         </p>
       </div>
-
-      <style jsx>{`
-        @keyframes progress-indeterminate {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(250%);
-          }
-        }
-        .animate-progress-indeterminate {
-          animation: progress-indeterminate 2s infinite linear;
-        }
-      `}</style>
     </div>
   );
 }
