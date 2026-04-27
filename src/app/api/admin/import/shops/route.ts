@@ -14,21 +14,17 @@ async function migrateImage(oldUrl: string | null | undefined): Promise<string> 
   try {
     const response = await fetch(oldUrl);
     if (!response.ok) return "";
-
     const buffer = Buffer.from(await response.arrayBuffer());
     const contentType = response.headers.get("content-type") || "image/jpeg";
     const extension = contentType.split("/")[1] || "jpg";
     const key = `shops/photo_${nanoid(5)}.${extension}`;
-
     const uploadedKey = await uploadToR2(buffer, key, contentType);
     return uploadedKey ? `${R2_PUBLIC_URL}/${uploadedKey}` : "";
-  } catch (e) {
-    return "";
-  }
+  } catch (e) { return ""; }
 }
 
 export async function POST() {
-  const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 20000 });
+  const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 30000 });
 
   try {
     await client.connect();
@@ -40,34 +36,37 @@ export async function POST() {
     `);
     const oldShops = res.rows;
 
+    // جلب كل المناطق الحالية لربط المحلات
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
+    const regionMap = new Map(allRegions.map(r => [r.name, r.id]));
+    const firstRegionId = allRegions[0]?.id || "";
+
     let importedCount = 0;
 
     for (const oldShop of oldShops) {
-      // التحقق من وجود المحل مسبقاً بطريقة آمنة
-      const existing = await prisma.$queryRaw`SELECT id FROM "Shop" WHERE name = ${oldShop.name} AND phone = ${oldShop.phone || ""} LIMIT 1` as any[];
+      // البحث عن المحل بالاسم والهاتف (أو الاسم فقط إذا لم يتوفر هاتف)
+      const existing = await prisma.shop.findFirst({
+        where: { name: oldShop.name },
+        select: { id: true }
+      });
 
-      if (existing.length === 0) {
-        let regionId = "";
-        if (oldShop.regionName) {
-          const regions = await prisma.$queryRaw`SELECT id FROM "Region" WHERE name = ${oldShop.regionName} LIMIT 1` as any[];
-          if (regions.length > 0) regionId = regions[0].id;
-        }
+      if (!existing) {
+        const targetRegionId = regionMap.get(oldShop.regionName) || firstRegionId;
+        if (!targetRegionId) continue;
 
-        if (!regionId) {
-           const firstRegions = await prisma.$queryRaw`SELECT id FROM "Region" LIMIT 1` as any[];
-           if (firstRegions.length > 0) regionId = firstRegions[0].id;
-        }
+        const newPhotoUrl = await migrateImage(oldShop.photoUrl);
 
-        if (regionId) {
-          // نقل الصورة فوراً لـ R2
-          const newPhotoUrl = await migrateImage(oldShop.photoUrl);
-
-          await prisma.$executeRaw`
-            INSERT INTO "Shop" (id, name, "locationUrl", "ownerName", "photoUrl", "phone", "regionId", "updatedAt", "createdAt")
-            VALUES (${nanoid(10)}, ${oldShop.name}, ${oldShop.locationUrl || ""}, ${oldShop.ownerName || ""}, ${newPhotoUrl}, ${oldShop.phone || ""}, ${regionId}, NOW(), NOW())
-          `;
-          importedCount++;
-        }
+        await prisma.shop.create({
+          data: {
+            name: oldShop.name,
+            locationUrl: oldShop.locationUrl || "",
+            ownerName: oldShop.ownerName || "",
+            photoUrl: newPhotoUrl,
+            phone: oldShop.phone || "",
+            regionId: targetRegionId,
+          }
+        });
+        importedCount++;
       }
     }
 

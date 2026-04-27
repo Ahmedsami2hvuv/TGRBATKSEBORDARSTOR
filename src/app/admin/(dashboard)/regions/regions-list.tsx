@@ -1,84 +1,67 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ad } from "@/lib/admin-ui";
-import { deleteRegion } from "./actions";
 
-export type RegionRow = {
-  id: string;
-  name: string;
-  deliveryPrice: string;
-  orderCount: number;
-};
+export function RegionsList({ initialRegions }: { initialRegions: any[] }) {
+  const [search, setSearch] = useState("");
+  const [regions, setRegions] = useState(initialRegions);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPrice, setEditPrice] = useState("");
 
-export function RegionsList({ regions }: { regions: RegionRow[] }) {
-  const [query, setQuery] = useState("");
+  const filtered = regions.filter(r => r.name.includes(search));
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return regions;
-    return regions.filter((r) => r.name.toLowerCase().includes(q));
-  }, [regions, query]);
+  const startEdit = (r: any) => {
+    setEditingId(r.id);
+    setEditName(r.name);
+    let price = Number(r.deliveryPrice);
+    setEditPrice(String(price >= 1000 ? price / 1000 : price));
+  };
+
+  const saveEdit = async (id: string) => {
+    // هنا يمكن إضافة استدعاء API للتحديث
+    alert("تم حفظ التعديلات محلياً (سيتم ربط الأكشن لاحقاً)");
+    setRegions(regions.map(r => r.id === id ? { ...r, name: editName, deliveryPrice: editPrice } : r));
+    setEditingId(null);
+  };
 
   return (
-    <div className="space-y-3">
-      <label className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
-        <span className={ad.label}>بحث في المناطق</span>
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="اكتب جزءاً من اسم المنطقة…"
-          className={`w-full max-w-md sm:ms-auto ${ad.input}`}
-        />
-      </label>
+    <div className="space-y-4">
+      <input
+        type="text"
+        placeholder="🔍 ابحث عن منطقة..."
+        className="w-full p-3 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
 
-      {filtered.length === 0 ? (
-        <p className={ad.muted}>
-          {regions.length === 0
-            ? "لا توجد مناطق بعد."
-            : "لا توجد نتائج مطابقة للبحث."}
-        </p>
-      ) : (
-        <ul className={ad.listDivide}>
-          {filtered.map((r) => (
-            <li
-              key={r.id}
-              className="flex flex-wrap items-center justify-between gap-3 py-3"
-            >
-              <div>
-                <p className={ad.listTitle}>{r.name}</p>
-                <p className={ad.listMuted}>
-                  التوصيل:{" "}
-                  <span className="tabular-nums">{r.deliveryPrice}</span>
-                  {" | "}الطلبات: <span className="tabular-nums">{r.orderCount}</span>
-                </p>
-                <Link
-                  href={`/admin/orders/tracking?q=${encodeURIComponent(r.name)}`}
-                  className="mt-1 inline-block text-xs font-bold text-sky-700 underline hover:text-sky-900"
-                >
-                  عرض الطلبات
-                </Link>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filtered.map((region) => (
+          <div key={region.id} className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm flex justify-between items-start">
+            {editingId === region.id ? (
+              <div className="flex flex-col gap-2 w-full">
+                <input value={editName} onChange={e => setEditName(e.target.value)} className="border p-1 rounded text-sm" />
+                <input value={editPrice} onChange={e => setEditPrice(e.target.value)} className="border p-1 rounded text-sm" type="number" />
+                <div className="flex gap-2">
+                  <button onClick={() => saveEdit(region.id)} className="bg-green-600 text-white px-2 py-1 rounded text-xs">حفظ</button>
+                  <button onClick={() => setEditingId(null)} className="bg-gray-400 text-white px-2 py-1 rounded text-xs">إلغاء</button>
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <Link
-                  href={`/admin/regions/${r.id}/edit`}
-                  className={`text-sm ${ad.link}`}
-                >
-                  تعديل
-                </Link>
-                <form action={deleteRegion}>
-                  <input type="hidden" name="id" value={r.id} />
-                  <button type="submit" className={ad.dangerLink}>
-                    حذف
-                  </button>
-                </form>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+            ) : (
+              <>
+                <div>
+                  <h3 className="font-bold text-gray-800">{region.name}</h3>
+                  <p className="text-sm text-gray-500">
+                    سعر التوصيل: {Number(region.deliveryPrice) >= 1000 ? Number(region.deliveryPrice) / 1000 : region.deliveryPrice} د.ع
+                  </p>
+                </div>
+                <button onClick={() => startEdit(region)} className="text-indigo-600 hover:text-indigo-800 text-sm font-bold">تعديل</button>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
