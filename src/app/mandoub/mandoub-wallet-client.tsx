@@ -256,11 +256,11 @@ export function MandoubWalletClient({
         return (
           <div key="earnings" className="grid grid-cols-2 gap-2 sm:gap-3">
             <div className="kse-glass-dark flex items-center justify-between rounded-xl border border-slate-300 bg-white px-3 py-2 shadow-sm dark:bg-slate-900/50 dark:border-slate-800">
-              <p className="text-lg font-bold text-slate-800 dark:text-slate-400 sm:text-xl">💰</p>
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm">💰 أرباحي</p>
               <p className="text-lg font-black tabular-nums text-slate-900 sm:text-2xl dark:text-slate-100">{sumEarningsStr}</p>
             </div>
             <div className="kse-glass-dark flex items-center justify-between rounded-xl border border-slate-300 bg-white px-3 py-2 shadow-sm dark:bg-slate-900/50 dark:border-slate-800">
-              <p className="text-lg font-bold text-slate-800 dark:text-slate-400 sm:text-xl">🏛️</p>
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm">🏛️ للإدارة</p>
               <p className="text-lg font-black tabular-nums text-slate-900 sm:text-2xl dark:text-slate-100">{handToAdminStr}</p>
             </div>
           </div>
@@ -269,11 +269,11 @@ export function MandoubWalletClient({
         return (
           <div key="tips" className="grid grid-cols-2 gap-2 sm:gap-3">
             <div className="kse-glass-dark flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 shadow-sm dark:bg-amber-900/20 dark:border-amber-800">
-              <p className="text-xs font-bold text-amber-900 dark:text-amber-400 sm:text-sm">🎁 اليوم</p>
+              <p className="text-[10px] font-bold text-amber-900 dark:text-amber-400 sm:text-xs">🎁 إكرامية اليوم</p>
               <p className="text-lg font-black tabular-nums text-amber-950 sm:text-2xl dark:text-amber-100">{earningsDailyStr || "0"}</p>
             </div>
             <div className="kse-glass-dark flex items-center justify-between rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 shadow-sm dark:bg-sky-900/20 dark:border-sky-800">
-              <p className="text-xs font-bold text-sky-900 dark:text-sky-400 sm:text-sm">🗓️ الشهر</p>
+              <p className="text-[10px] font-bold text-sky-900 dark:text-sky-400 sm:text-xs">🗓️ إكرامية الشهر</p>
               <p className="text-lg font-black tabular-nums text-sky-950 sm:text-2xl dark:text-sky-100">{earningsMonthlyStr || "0"}</p>
             </div>
           </div>

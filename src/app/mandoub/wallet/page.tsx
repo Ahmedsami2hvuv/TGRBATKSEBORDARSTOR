@@ -218,14 +218,14 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
   if (now < todayStart) {
     todayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
   }
-  const todayStartFinal = totalsBaseline && totalsBaseline > todayStart ? totalsBaseline : todayStart;
+  const todayStartFinal = todayStart;
 
   // بداية الشهر (يوم 1 الساعة 5 صباحاً) - مقيدة بالتصفير
   let monthlyCycleStart = new Date(now.getFullYear(), now.getMonth(), 1, 5, 0, 0, 0);
   if (now < monthlyCycleStart) {
     monthlyCycleStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 5, 0, 0, 0);
   }
-  const monthlyCycleStartFinal = totalsBaseline && totalsBaseline > monthlyCycleStart ? totalsBaseline : monthlyCycleStart;
+  const monthlyCycleStartFinal = monthlyCycleStart;
 
   let tipDailySum = new Decimal(0);
   let tipMonthlySum = new Decimal(0);
