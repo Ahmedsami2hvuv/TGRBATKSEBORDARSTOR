@@ -1,6 +1,6 @@
 "use client";
 
-import { useImportRegions } from "./import-action";
+import { useImportRegions } from "./import-regions-action";
 import { ad } from "@/lib/admin-ui";
 
 export function ImportRegionsButton() {
