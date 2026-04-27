@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
-import { ImportButton } from "./import-button";
+import { ImportRegionsButton } from "./import-button"; // تصحيح الاسم هنا
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +16,11 @@ export default async function RegionsPage() {
           <h1 className={ad.h1}>المناطق</h1>
           <p className={`mt-1 ${ad.lead}`}>إدارة مناطق التوصيل وأسعارها.</p>
         </div>
-        <ImportButton />
+        <ImportRegionsButton />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {regions.map((region) => {
-          // تصحيح السعر برمجياً أثناء العرض: إذا كان 3000 يظهر 3
           let displayPrice = Number(region.deliveryPrice);
           if (displayPrice >= 1000) {
             displayPrice = displayPrice / 1000;
