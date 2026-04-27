@@ -125,7 +125,14 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       where,
       orderBy: { createdAt: "desc" },
       include: {
-        shop: { include: { region: true } },
+        shop: {
+          select: {
+            id: true,
+            name: true,
+            photoUrl: true,
+            region: true
+          }
+        },
         customerRegion: true,
         courier: true,
         customer: true,

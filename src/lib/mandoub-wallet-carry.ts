@@ -111,7 +111,8 @@ export async function computeMandoubTipsAllTimeDinar(courierId: string): Promise
     where: {
       courierId,
       deletedAt: null,
-      label: { contains: "[إكرامية]" }
+      label: { contains: "[إكرامية]" },
+      direction: CourierWalletMiscDirection.take
     },
     _sum: { amountDinar: true }
   });

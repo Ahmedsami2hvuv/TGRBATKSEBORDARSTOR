@@ -242,7 +242,7 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
 
   // 2. حساب الإكراميات من القيود اليدوية
   for (const m of rawMisc) {
-    if (m.label.includes("[إكرامية]") && m.deletedAt == null) {
+    if (m.label.includes("[إكرامية]") && m.direction === "take" && m.deletedAt == null) {
       if (m.createdAt >= todayStartFinal) {
         tipDailySum = tipDailySum.plus(m.amountDinar);
       }
@@ -252,9 +252,9 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
     }
   }
 
-  const orderMetricsToday = computeMandoubTotalsForCourier(ordersNorm, courier.id, todayStartFinal, true);
-  const orderMetricsMonthly = computeMandoubTotalsForCourier(ordersNorm, courier.id, monthlyCycleStartFinal, true);
-  const orderMetricsBaseline = computeMandoubTotalsForCourier(ordersNorm, courier.id, totalsBaseline, true);
+  const orderMetricsToday = computeMandoubTotalsForCourier(ordersNorm, courier.id, todayStartFinal, false);
+  const orderMetricsMonthly = computeMandoubTotalsForCourier(ordersNorm, courier.id, monthlyCycleStartFinal, false);
+  const orderMetricsBaseline = computeMandoubTotalsForCourier(ordersNorm, courier.id, totalsBaseline, false);
 
   const siteRemainingNet = orderOnlySums.remainingNet;
 
