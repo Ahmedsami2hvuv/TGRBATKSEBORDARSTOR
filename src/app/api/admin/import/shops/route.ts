@@ -10,7 +10,6 @@ const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "";
 async function migrateImage(oldUrl: string | null | undefined): Promise<string> {
   if (!oldUrl || !oldUrl.startsWith("http")) return "";
   if (oldUrl.includes("r2.dev") || (R2_PUBLIC_URL && oldUrl.includes(R2_PUBLIC_URL))) return oldUrl;
-
   try {
     const response = await fetch(oldUrl);
     if (!response.ok) return "";
@@ -25,10 +24,9 @@ async function migrateImage(oldUrl: string | null | undefined): Promise<string> 
 
 export async function POST() {
   const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 30000 });
-
   try {
     await client.connect();
-
+    // جلب كل المحلات من القاعدة القديمة
     const res = await client.query(`
       SELECT s.name, s."locationUrl", s."ownerName", s."photoUrl", s."phone", r.name as "regionName"
       FROM "Shop" s
@@ -36,7 +34,7 @@ export async function POST() {
     `);
     const oldShops = res.rows;
 
-    // جلب كل المناطق الحالية لربط المحلات
+    // جلب المناطق الحالية
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
     const regionMap = new Map(allRegions.map(r => [r.name, r.id]));
     const firstRegionId = allRegions[0]?.id || "";
@@ -44,32 +42,23 @@ export async function POST() {
     let importedCount = 0;
 
     for (const oldShop of oldShops) {
-      // البحث عن المحل بالاسم والهاتف (أو الاسم فقط إذا لم يتوفر هاتف)
-      const existing = await prisma.shop.findFirst({
-        where: { name: oldShop.name },
-        select: { id: true }
-      });
+      // فحص الوجود بالاسم فقط (أكثر دقة لجلب الـ 334)
+      const existing = await prisma.$queryRaw`SELECT id FROM "Shop" WHERE name = ${oldShop.name} LIMIT 1` as any[];
 
-      if (!existing) {
+      if (existing.length === 0) {
         const targetRegionId = regionMap.get(oldShop.regionName) || firstRegionId;
         if (!targetRegionId) continue;
 
         const newPhotoUrl = await migrateImage(oldShop.photoUrl);
 
-        await prisma.shop.create({
-          data: {
-            name: oldShop.name,
-            locationUrl: oldShop.locationUrl || "",
-            ownerName: oldShop.ownerName || "",
-            photoUrl: newPhotoUrl,
-            phone: oldShop.phone || "",
-            regionId: targetRegionId,
-          }
-        });
+        // إدخال باستخدام SQL خام لتجنب خطأ originalPhotoUrl
+        await prisma.$executeRaw`
+          INSERT INTO "Shop" (id, name, "locationUrl", "ownerName", "photoUrl", "phone", "regionId", "updatedAt", "createdAt")
+          VALUES (${nanoid(10)}, ${oldShop.name}, ${oldShop.locationUrl || ""}, ${oldShop.ownerName || ""}, ${newPhotoUrl}, ${oldShop.phone || ""}, ${targetRegionId}, NOW(), NOW())
+        `;
         importedCount++;
       }
     }
-
     return NextResponse.json({ success: true, count: importedCount });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
