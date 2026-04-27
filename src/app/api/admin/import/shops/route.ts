@@ -26,7 +26,6 @@ export async function POST() {
   const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 30000 });
   try {
     await client.connect();
-    // جلب كل المحلات من القاعدة القديمة
     const res = await client.query(`
       SELECT s.name, s."locationUrl", s."ownerName", s."photoUrl", s."phone", r.name as "regionName"
       FROM "Shop" s
@@ -34,7 +33,6 @@ export async function POST() {
     `);
     const oldShops = res.rows;
 
-    // جلب المناطق الحالية
     const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
     const regionMap = new Map(allRegions.map(r => [r.name, r.id]));
     const firstRegionId = allRegions[0]?.id || "";
@@ -42,16 +40,21 @@ export async function POST() {
     let importedCount = 0;
 
     for (const oldShop of oldShops) {
-      // فحص الوجود بالاسم فقط (أكثر دقة لجلب الـ 334)
-      const existing = await prisma.$queryRaw`SELECT id FROM "Shop" WHERE name = ${oldShop.name} LIMIT 1` as any[];
+      // فحص الوجود بالاسم والهاتف معاً لجلب الـ 334 كاملة
+      const existing = await prisma.shop.findFirst({
+        where: {
+          name: oldShop.name,
+          phone: oldShop.phone || ""
+        },
+        select: { id: true }
+      });
 
-      if (existing.length === 0) {
+      if (!existing) {
         const targetRegionId = regionMap.get(oldShop.regionName) || firstRegionId;
         if (!targetRegionId) continue;
 
         const newPhotoUrl = await migrateImage(oldShop.photoUrl);
 
-        // إدخال باستخدام SQL خام لتجنب خطأ originalPhotoUrl
         await prisma.$executeRaw`
           INSERT INTO "Shop" (id, name, "locationUrl", "ownerName", "photoUrl", "phone", "regionId", "updatedAt", "createdAt")
           VALUES (${nanoid(10)}, ${oldShop.name}, ${oldShop.locationUrl || ""}, ${oldShop.ownerName || ""}, ${newPhotoUrl}, ${oldShop.phone || ""}, ${targetRegionId}, NOW(), NOW())

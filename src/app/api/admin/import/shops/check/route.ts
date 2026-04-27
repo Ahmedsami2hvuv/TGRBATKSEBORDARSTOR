@@ -8,14 +8,16 @@ export async function GET() {
   const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 10000 });
   try {
     await client.connect();
-    const res = await client.query('SELECT name FROM "Shop"');
+    // جلب الاسم والهاتف للمقارنة الدقيقة
+    const res = await client.query('SELECT name, phone FROM "Shop"');
     const oldShops = res.rows;
 
-    const currentShops = await prisma.shop.findMany({ select: { name: true } });
-    const currentNames = new Set(currentShops.map(s => s.name));
+    const currentShops = await prisma.shop.findMany({ select: { name: true, phone: true } });
 
-    // فلترة المحلات التي غير موجودة أسماؤها في القاعدة الجديدة
-    const newShops = oldShops.filter(os => !currentNames.has(os.name));
+    // فلترة بناءً على (الاسم + الهاتف) لضمان جلب الفروع المكررة بالاسم
+    const newShops = oldShops.filter(os =>
+      !currentShops.some(cs => cs.name === os.name && (cs.phone || "") === (os.phone || ""))
+    );
 
     return NextResponse.json({
       success: true,
