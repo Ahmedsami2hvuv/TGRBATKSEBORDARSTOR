@@ -31,13 +31,19 @@ export function ImportShopsButton() {
       const data = await res.json();
 
       if (data.success) {
-        alert(`تم سحب ${data.count} محل بنجاح! جاري سحب الزبائن الآن تلقائياً...`);
+        alert(`✅ تم سحب ${data.count} محل بنجاح!\nجاري سحب أصحاب الروابط (العملاء)...`);
 
-        // 2. سحب الزبائن فوراً
+        // 2. سحب الموظفين (أصحاب الروابط) فوراً
+        const resEmp = await fetch("/api/admin/import/employees", { method: "POST" });
+        const dataEmp = await resEmp.json();
+
+        alert(`✅ تم سحب ${dataEmp.count} صاحب رابط (عميل) بنجاح!\nجاري سحب الزبائن الآن...`);
+
+        // 3. سحب الزبائن
         const resCust = await fetch("/api/admin/import/customers", { method: "POST" });
         const dataCust = await resCust.json();
 
-        alert(`اكتمل السحب الشامل: تم سحب ${dataCust.customers} زبون وربطهم بمحلاتهم.`);
+        alert(`🎊 اكتمل السحب الشامل بنجاح!\n- المحلات: ${data.count}\n- العملاء (أصحاب الروابط): ${dataEmp.count}\n- الزبائن: ${dataCust.customers}`);
         window.location.reload();
       } else {
         alert("فشل سحب المحلات: " + data.message);

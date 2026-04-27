@@ -131,9 +131,9 @@ export function ShopsList({ shops }: { shops: ShopRow[] }) {
                 <div className="flex flex-wrap items-center gap-3">
                   <Link
                     href={`/admin/shops/${s.id}/employees`}
-                    className={`text-sm ${ad.link}`}
+                    className={`text-sm font-bold bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md hover:bg-indigo-100 transition-colors`}
                   >
-                    الموظفون
+                    العملاء (أصحاب الروابط)
                   </Link>
                   <Link
                     href={`/admin/shops/${s.id}/edit`}
