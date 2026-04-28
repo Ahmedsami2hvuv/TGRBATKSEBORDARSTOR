@@ -63,19 +63,21 @@ export function ImportCustomersButton() {
     setProgress(0);
     setImportedNow(0);
     const total = 1207;
+    let currentOffset = 0;
 
     try {
-      while (true) {
-        const res = await fetch("/api/admin/import/customers/sync-photos", { method: "POST" });
+      while (currentOffset < total) {
+        const res = await fetch("/api/admin/import/customers/sync-photos", { 
+          method: "POST",
+          body: JSON.stringify({ offset: currentOffset })
+        });
         const data = await res.json();
 
-        if (!data.success || (data.synced === 0 && data.skipped === 0)) break;
+        if (!data.success || data.rowsFetched === 0) break;
 
-        const currentCount = importedNow + (data.synced || 0) + (data.skipped || 0);
-        setImportedNow(prev => prev + (data.synced || 0) + (data.skipped || 0));
-        setProgress(Math.min(100, Math.round((currentCount / total) * 100)));
-
-        if (currentCount >= total) break;
+        currentOffset += data.rowsFetched;
+        setImportedNow(currentOffset);
+        setProgress(Math.min(100, Math.round((currentOffset / total) * 100)));
         router.refresh();
       }
       alert("اكتمل سحب الصور بالكامل.");
