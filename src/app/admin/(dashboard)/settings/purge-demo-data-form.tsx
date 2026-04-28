@@ -22,17 +22,26 @@ export function PurgeDemoDataForm() {
         يمكنك اختيار نوع البيانات التي تريد مسحها بدقة. هذا الإجراء خطير ولا يمكن التراجع عنه.
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <label className="flex flex-col gap-1">
-          <span className={ad.label}>ماذا تريد أن تمسح؟</span>
-          <select name="target" className={ad.input}>
-            <option value="all">كل شيء (تصفير شامل)</option>
-            <option value="orders">الطلبات فقط</option>
-            <option value="customers">الزبائن فقط</option>
-            <option value="shops">المحلات فقط</option>
-            <option value="regions">المناطق (سيحذف ما بداخلها)</option>
-          </select>
-        </label>
+      <div className="space-y-4">
+        <p className={ad.label}>حدد البيانات المراد حذفها:</p>
+        <div className="grid grid-cols-2 gap-3 bg-white p-4 rounded-xl border border-rose-100 shadow-inner">
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <input type="checkbox" name="target_orders" className="w-5 h-5 rounded border-rose-300 text-rose-600 focus:ring-rose-500" />
+            <span className="text-sm font-bold text-slate-700 group-hover:text-rose-700">📦 الطلبات</span>
+          </label>
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <input type="checkbox" name="target_customers" className="w-5 h-5 rounded border-rose-300 text-rose-600 focus:ring-rose-500" />
+            <span className="text-sm font-bold text-slate-700 group-hover:text-rose-700">👥 الزبائن والعملاء</span>
+          </label>
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <input type="checkbox" name="target_shops" className="w-5 h-5 rounded border-rose-300 text-rose-600 focus:ring-rose-500" />
+            <span className="text-sm font-bold text-slate-700 group-hover:text-rose-700">🏪 المحلات</span>
+          </label>
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <input type="checkbox" name="target_regions" className="w-5 h-5 rounded border-rose-300 text-rose-600 focus:ring-rose-500" />
+            <span className="text-sm font-bold text-slate-700 group-hover:text-rose-700">📍 المناطق</span>
+          </label>
+        </div>
 
         <label className="flex flex-col gap-1">
           <span className={ad.label}>اكتب «{CONFIRM_PHRASE}» للتأكيد</span>

@@ -98,35 +98,38 @@ export async function purgeDemoCoreData(
   }
 
   const confirm = String(formData.get("confirm") ?? "").trim();
-  const target = String(formData.get("target") ?? "all");
   const required = "مسح شامل";
 
   if (confirm !== required) {
     return { error: `اكتب «${required}» للتأكيد تماماً.` };
   }
 
+  const deleteOrders = formData.get("target_orders") === "on";
+  const deleteCustomers = formData.get("target_customers") === "on";
+  const deleteShops = formData.get("target_shops") === "on";
+  const deleteRegions = formData.get("target_regions") === "on";
+
   try {
-    if (target === "orders") {
+    if (deleteOrders) {
       await prisma.$executeRawUnsafe('TRUNCATE TABLE "OrderCourierMoneyEvent", "Order" RESTART IDENTITY CASCADE;');
-    } else if (target === "customers") {
+    }
+    if (deleteCustomers) {
       await prisma.$executeRawUnsafe('TRUNCATE TABLE "Customer", "CustomerPhoneProfile" RESTART IDENTITY CASCADE;');
-    } else if (target === "shops") {
+    }
+    if (deleteShops) {
       await prisma.$executeRawUnsafe('TRUNCATE TABLE "Shop", "Employee", "PreparerShop" RESTART IDENTITY CASCADE;');
-    } else if (target === "regions") {
+    }
+    if (deleteRegions) {
+      // حذف المناطق يقتضي تصفير كل ما هو مرتبط بها في الأغلب
       await prisma.$executeRawUnsafe('TRUNCATE TABLE "Region", "Shop", "Customer", "CustomerPhoneProfile", "Order" RESTART IDENTITY CASCADE;');
-    } else {
-      // الـ All الافتراضي
-      await prisma.$executeRawUnsafe(`
+    }
+
+    // إذا لم يتم اختيار أي شيء، نفترض المسح الشامل لكل الجداول الأساسية
+    if (!deleteOrders && !deleteCustomers && !deleteShops && !deleteRegions) {
+       await prisma.$executeRawUnsafe(`
         TRUNCATE TABLE
-          "Order",
-          "Shop",
-          "Customer",
-          "CompanyPreparer",
-          "Courier",
-          "CustomerPhoneProfile",
-          "Employee",
-          "Region",
-          "OrderCourierMoneyEvent"
+          "Order", "Shop", "Customer", "CompanyPreparer", "Courier",
+          "CustomerPhoneProfile", "Employee", "Region", "OrderCourierMoneyEvent"
         RESTART IDENTITY CASCADE;
       `);
     }
