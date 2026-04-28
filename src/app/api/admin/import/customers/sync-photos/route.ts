@@ -7,7 +7,7 @@ export async function POST() {
     const R2_DOMAIN = "pub-2f347893a77443198f121df01053c847.r2.dev";
     const OLD_BASE_URL = "https://tgrbatks-production.up.railway.app";
 
-    // 1. جلب عينة من الزبائن الذين لديهم "أي شيء" في خانة الصورة ولكنه ليس رابط R2
+    // جلب الزبائن الذين لا يزالون يملكون روابط قديمة أو روابط Base64 طويلة
     const customers = await prisma.customerPhoneProfile.findMany({
       where: {
         AND: [
@@ -16,11 +16,11 @@ export async function POST() {
           { photoUrl: { not: { contains: "broken_link" } } }
         ]
       },
-      take: 20
+      take: 15 // نعالج 15 في كل مرة لضمان عدم تجاوز الذاكرة
     });
 
     if (customers.length === 0) {
-      return NextResponse.json({ success: true, synced: 0, done: true, message: "تمت مزامنة جميع الصور!" });
+      return NextResponse.json({ success: true, synced: 0, done: true, message: "تمت المزامنة بنجاح!" });
     }
 
     let successCount = 0;
@@ -28,30 +28,31 @@ export async function POST() {
 
     for (const customer of customers) {
       try {
-        let targetUrl = customer.photoUrl;
+        let buffer: Buffer;
+        let contentType: string;
+        let ext: string;
 
-        // إذا كان الرابط نسبياً (يبدأ بـ /)، نحوله لرابط كامل للسيرفر القديم
-        if (targetUrl.startsWith("/")) {
-          targetUrl = `${OLD_BASE_URL}${targetUrl}`;
-        } else if (!targetUrl.startsWith("http")) {
-          targetUrl = `${OLD_BASE_URL}/${targetUrl}`;
+        // الحالة الأولى: الصورة هي Base64 (تبدأ بـ data:image)
+        if (customer.photoUrl.startsWith("data:image")) {
+          const base64Data = customer.photoUrl.split(",")[1];
+          contentType = customer.photoUrl.split(";")[0].split(":")[1] || "image/jpeg";
+          ext = contentType.split("/")[1] || "jpg";
+          buffer = Buffer.from(base64Data, 'base64');
         }
+        // الحالة الثانية: رابط عادي (URL)
+        else {
+          let targetUrl = customer.photoUrl;
+          if (targetUrl.startsWith("/")) targetUrl = `${OLD_BASE_URL}${targetUrl}`;
+          else if (!targetUrl.startsWith("http")) targetUrl = `${OLD_BASE_URL}/${targetUrl}`;
 
-        const response = await fetch(targetUrl);
-        if (!response.ok) {
-           // وسم الرابط كمعطل لكي لا نختاره مرة أخرى
-           await prisma.customerPhoneProfile.update({
-             where: { id: customer.id },
-             data: { photoUrl: "broken_link_" + customer.photoUrl }
-           });
-           failCount++;
-           continue;
+          const response = await fetch(targetUrl);
+          if (!response.ok) throw new Error("Failed to fetch");
+
+          const arrayBuffer = await response.arrayBuffer();
+          buffer = Buffer.from(arrayBuffer);
+          contentType = response.headers.get("content-type") || "image/jpeg";
+          ext = contentType.split("/")[1] || "jpg";
         }
-
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const contentType = response.headers.get("content-type") || "image/jpeg";
-        const ext = contentType.split("/")[1] || "jpg";
 
         const key = `customers/${customer.phone}-${customer.regionId}.${ext}`;
         const uploadedKey = await uploadToR2(buffer, key, contentType);
@@ -65,7 +66,14 @@ export async function POST() {
           successCount++;
         }
       } catch (err) {
-        console.error(`Error syncing ${customer.phone}:`, err);
+        console.error(`Error for ${customer.phone}:`, err);
+        // وسم الروابط العملاقة المعطلة لكي لا تسبب تعليق للنظام
+        if (customer.photoUrl.length > 2000) {
+           await prisma.customerPhoneProfile.update({
+             where: { id: customer.id },
+             data: { photoUrl: "broken_base64" }
+           });
+        }
         failCount++;
       }
     }
@@ -74,19 +82,12 @@ export async function POST() {
       where: {
         AND: [
           { photoUrl: { not: { contains: R2_DOMAIN } } },
-          { photoUrl: { not: "" } },
-          { photoUrl: { not: { contains: "broken_link" } } }
+          { photoUrl: { not: "" } }
         ]
       }
     });
 
-    return NextResponse.json({
-      success: true,
-      synced: successCount,
-      failed: failCount,
-      remaining: remaining,
-      done: remaining === 0
-    });
+    return NextResponse.json({ success: true, synced: successCount, failed: failCount, remaining });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
