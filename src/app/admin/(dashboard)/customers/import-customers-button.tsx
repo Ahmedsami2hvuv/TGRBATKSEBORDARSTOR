@@ -81,8 +81,7 @@ export function ImportCustomersButton() {
     let offset = 0;
     const limit = 20;
 
-    // جلب العدد الفعلي للزبائن الذين يحتاجون سحب صور
-    const totalToSync = 1200; // قيمة افتراضية تقريبية أو يمكن جلبها ديناميكياً
+    try {
       while (true) {
         const res = await fetch("/api/admin/import/customers/sync-photos", {
           method: "POST",
@@ -94,7 +93,10 @@ export function ImportCustomersButton() {
         setProgress(Math.min(100, Math.round((offset / 1200) * 100)));
       }
       alert("اكتمل سحب الصور.");
-    } catch (e) { alert("خطأ في الصور"); }
+    } catch (e) {
+      console.error(e);
+      alert("خطأ في الصور");
+    }
     setStatus("idle");
   }
 
