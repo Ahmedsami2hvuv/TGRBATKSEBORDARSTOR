@@ -1,38 +1,44 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
-  // جلب آخر 5 زبائن تم تحديث روابطهم لـ R2
-  const updatedSamples = await prisma.customerPhoneProfile.findMany({
-    where: {
-      photoUrl: {
-        contains: "r2.dev"
-      }
-    },
-    take: 5,
-    orderBy: { updatedAt: 'desc' }
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const reset = searchParams.get("reset");
+
+  if (reset === "true") {
+    // تصفير أي رابط يحتوي على r2.dev لكي يعيد النظام سحبه
+    await prisma.customerPhoneProfile.updateMany({
+      where: { photoUrl: { contains: "r2.dev" } },
+      data: { photoUrl: "" }
+    });
+
+    // أيضاً تصفير الروابط المعطلة إذا أردت محاولة سحبها مجدداً
+    await prisma.customerPhoneProfile.updateMany({
+      where: { photoUrl: { contains: "broken_link" } },
+      data: { photoUrl: "" }
+    });
+
+    return NextResponse.json({ message: "تم تصفير الروابط بنجاح! يرجى الآن ضغط 'استيراد الزبائن' لإعادة جلب الروابط الأصلية، ثم 'سحب الصور'" });
+  }
+
+  const r2Count = await prisma.customerPhoneProfile.count({
+    where: { photoUrl: { contains: "r2.dev" } }
   });
 
-  // جلب عينة من الزبائن الذين لا يزالون بروابط قديمة
-  const oldSamples = await prisma.customerPhoneProfile.findMany({
-    where: {
-      photoUrl: {
-        contains: "railway.app"
-      }
-    },
-    take: 5
+  const oldServerCount = await prisma.customerPhoneProfile.count({
+    where: { photoUrl: { contains: "railway.app" } }
   });
 
   return NextResponse.json({
-    message: "فحص حالة المزامنة",
-    updatedToR2Count: await prisma.customerPhoneProfile.count({ where: { photoUrl: { contains: "r2.dev" } } }),
-    stillOnOldServerCount: await prisma.customerPhoneProfile.count({ where: { photoUrl: { contains: "railway.app" } } }),
-    samplesInR2: updatedSamples,
-    samplesOld: oldSamples,
-    env_check: {
-      has_r2_key: !!process.env.R2_ACCESS_KEY_ID,
-      bucket_name: process.env.R2_BUCKET_NAME,
+    message: "Status Check",
+    synced_to_r2: r2Count,
+    still_on_old_server: oldServerCount,
+    env_vars_status: {
+      has_access_key: !!process.env.R2_ACCESS_KEY_ID,
+      has_secret_key: !!process.env.R2_SECRET_ACCESS_KEY,
+      bucket: process.env.R2_BUCKET_NAME,
       endpoint: process.env.R2_ENDPOINT
-    }
+    },
+    action_hint: "أضف ?reset=true للرابط لتصفير روابط R2 والبدء من جديد"
   });
 }
