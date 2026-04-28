@@ -6,7 +6,8 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 export const revalidate = 0; // منع الكاش نهائياً
 
-export default async function AdminCustomersPage({ searchParams }: { searchParams: { q?: string, page?: string } }) {
+export default async function AdminCustomersPage(props: { searchParams: Promise<{ q?: string, page?: string }> }) {
+  const searchParams = await props.searchParams;
   const q = searchParams.q || "";
   const page = parseInt(searchParams.page || "1") || 1;
   const take = 100;
@@ -144,26 +145,24 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
 
       {/* أزرار التنقل بين الصفحات */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 pt-4">
-          {page < totalPages ? (
-            <Link href={`/admin/customers?q=${q}&page=${page + 1}`} className="px-5 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 font-bold text-sm shadow-sm transition-all">
-              التالي
-            </Link>
-          ) : (
-            <span className="px-5 py-2 bg-gray-50 border border-gray-100 rounded-xl text-gray-400 font-bold text-sm cursor-not-allowed">التالي</span>
-          )}
-
-          <span className="text-sm font-bold text-gray-600 px-4">
-            صفحة {page} من {totalPages}
-          </span>
-
-          {page > 1 ? (
-            <Link href={`/admin/customers?q=${q}&page=${page - 1}`} className="px-5 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 font-bold text-sm shadow-sm transition-all">
-              السابق
-            </Link>
-          ) : (
-            <span className="px-5 py-2 bg-gray-50 border border-gray-100 rounded-xl text-gray-400 font-bold text-sm cursor-not-allowed">السابق</span>
-          )}
+        <div className="flex justify-center items-center gap-2 pt-4 flex-wrap">
+          {Array.from({ length: totalPages }).map((_, i) => {
+            const p = i + 1;
+            const isActive = page === p;
+            return (
+              <Link 
+                key={p} 
+                href={`/admin/customers?q=${q}&page=${p}`} 
+                className={`w-10 h-10 flex justify-center items-center rounded-xl font-bold text-sm shadow-sm transition-all border ${
+                  isActive 
+                    ? 'bg-blue-600 text-white border-blue-600' 
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
+                }`}
+              >
+                {p}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
