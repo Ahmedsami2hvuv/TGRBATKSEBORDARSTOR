@@ -3,21 +3,17 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST() {
   try {
-    // 1. فك ارتباط الزبائن من كافة الطلبات (للسماح بالحذف)
-    await prisma.order.updateMany({
-        data: { customerId: null }
-    });
-
-    // 2. حذف اشتراكات التنبيهات المرتبطة بالزبائن
-    await prisma.webPushSubscription.deleteMany({
-        where: { customerId: { not: null } }
-    });
-
-    // 3. حذف البروفايلات والزبائن نهائياً
-    await prisma.customerPhoneProfile.deleteMany({});
+    // حذف كل شيء بالترتيب الصحيح لكسر القيود
     await prisma.customer.deleteMany({});
+    await prisma.customerPhoneProfile.deleteMany({});
+    await prisma.orderCourierMoneyEvent.deleteMany({});
+    await prisma.order.deleteMany({});
+    await prisma.preparerShop.deleteMany({});
+    await prisma.companyPreparerShoppingDraft.deleteMany({});
+    await prisma.shop.deleteMany({});
+    await prisma.region.deleteMany({});
 
-    return NextResponse.json({ success: true, message: "تم تصفير القاعدة بنجاح. يمكنك السحب الآن." });
+    return NextResponse.json({ success: true, message: "تم تصفير كل شيء: المناطق، المحلات، والزبائن صارت 0" });
   } catch (error: any) {
     console.error("RESET ERROR:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
