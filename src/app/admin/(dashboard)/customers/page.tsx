@@ -6,22 +6,30 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 export const revalidate = 0; // منع الكاش نهائياً
 
-export default async function AdminCustomersPage({ searchParams }: { searchParams: { q?: string } }) {
+export default async function AdminCustomersPage({ searchParams }: { searchParams: { q?: string, page?: string } }) {
   const q = searchParams.q || "";
+  const page = parseInt(searchParams.page || "1") || 1;
+  const take = 100;
+  const skip = (page - 1) * take;
+
+  const whereClause = q ? {
+    OR: [
+      { phone: { contains: q, mode: 'insensitive' } },
+      { notes: { contains: q, mode: 'insensitive' } },
+      { landmark: { contains: q, mode: 'insensitive' } },
+      { region: { name: { contains: q, mode: 'insensitive' } } }
+    ]
+  } : undefined;
 
   const profilesCount = await prisma.customerPhoneProfile.count();
+  const filteredCount = await prisma.customerPhoneProfile.count({ where: whereClause as any });
+  const totalPages = Math.ceil(filteredCount / take);
 
   // جلب البروفايلات مع إحصائيات الطلبات المرتبطة بالرقم
   const profiles = await prisma.customerPhoneProfile.findMany({
-    where: q ? {
-      OR: [
-        { phone: { contains: q, mode: 'insensitive' } },
-        { notes: { contains: q, mode: 'insensitive' } },
-        { landmark: { contains: q, mode: 'insensitive' } },
-        { region: { name: { contains: q, mode: 'insensitive' } } }
-      ]
-    } : undefined,
-    take: 50, // تم تخفيض الحد إلى 50 لمنع انهيار السيرفر، يمكن استخدام البحث لإيجاد زبائن آخرين
+    where: whereClause as any,
+    take,
+    skip,
     orderBy: { createdAt: 'desc' },
     include: {
       region: { select: { name: true } },
@@ -51,7 +59,7 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
               <div className="flex gap-2 items-center">
                 <p className="text-gray-500 text-sm">إجمالي الزبائن في القاعدة: <span className="text-blue-600 font-bold">{profilesCount.toLocaleString()}</span></p>
                 <span className="text-gray-300">|</span>
-                <p className="text-gray-500 text-sm">المعروض حالياً: <span className="text-green-600 font-bold">{profiles.length}</span></p>
+                <p className="text-gray-500 text-sm">المعروض حالياً: <span className="text-green-600 font-bold">{profiles.length} (صفحة {page} من {totalPages || 1})</span></p>
               </div>
            </div>
            <ImportCustomersButton />
@@ -62,14 +70,14 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
           <Link href="/admin/customers/add" className="bg-cyan-500 text-white px-6 py-2 rounded-xl font-bold shadow-md hover:bg-cyan-600 transition-all text-sm">
             إضافة زبون مرجعي
           </Link>
-          <form className="flex-1 flex gap-2">
+          <form className="flex-1 flex gap-2" action="/admin/customers">
               <input
                 name="q"
                 defaultValue={q}
                 placeholder="بحث في كافة الزبائن رقم الهاتف، المنطقة أو..."
                 className="flex-1 bg-gray-50 border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none text-right"
               />
-              <button className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-md">بحث</button>
+              <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-md">بحث</button>
           </form>
       </div>
 
@@ -133,6 +141,31 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
           </div>
         )}
       </div>
+
+      {/* أزرار التنقل بين الصفحات */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 pt-4">
+          {page < totalPages ? (
+            <Link href={`/admin/customers?q=${q}&page=${page + 1}`} className="px-5 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 font-bold text-sm shadow-sm transition-all">
+              التالي
+            </Link>
+          ) : (
+            <span className="px-5 py-2 bg-gray-50 border border-gray-100 rounded-xl text-gray-400 font-bold text-sm cursor-not-allowed">التالي</span>
+          )}
+
+          <span className="text-sm font-bold text-gray-600 px-4">
+            صفحة {page} من {totalPages}
+          </span>
+
+          {page > 1 ? (
+            <Link href={`/admin/customers?q=${q}&page=${page - 1}`} className="px-5 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 font-bold text-sm shadow-sm transition-all">
+              السابق
+            </Link>
+          ) : (
+            <span className="px-5 py-2 bg-gray-50 border border-gray-100 rounded-xl text-gray-400 font-bold text-sm cursor-not-allowed">السابق</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
