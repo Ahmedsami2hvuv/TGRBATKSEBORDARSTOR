@@ -51,8 +51,8 @@ export function ImportCustomersButton() {
         currentOffset += data.rowsProcessed;
         setImportedNow(currentOffset);
         setProgress(Math.round((currentOffset / totalToFetch) * 100));
-        router.refresh();
       }
+      router.refresh();
       alert("اكتمل سحب البيانات بنجاح!");
     } catch (e) { alert("حدث توقف، يرجى المحاولة مرة أخرى."); }
     setStatus("idle");
@@ -78,10 +78,10 @@ export function ImportCustomersButton() {
         currentOffset += data.rowsFetched;
         setImportedNow(currentOffset);
         setProgress(Math.min(100, Math.round((currentOffset / total) * 100)));
-        router.refresh();
       }
+      router.refresh();
       alert("اكتمل سحب الصور بالكامل.");
-    } catch (e) { alert("خطأ في سحب الصور"); }
+    } catch (e: any) { alert("خطأ في سحب الصور: " + e.message); }
     setStatus("idle");
   }
 
