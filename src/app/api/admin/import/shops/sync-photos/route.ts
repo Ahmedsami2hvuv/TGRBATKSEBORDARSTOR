@@ -30,36 +30,37 @@ async function migrateImage(oldUrl: string | null | undefined): Promise<string> 
     const contentType = response.headers.get("content-type") || "image/jpeg";
     const extension = contentType.split("/")[1]?.split("+")[0] || "jpg";
 
-    const key = `shops/${nanoid(12)}.${extension}`;
+    // الرفع المباشر داخل مجلد shops
+    const fileName = `${nanoid(12)}.${extension}`;
+    const key = `shops/${fileName}`;
+
     const uploadedKey = await uploadToR2(buffer, key, contentType);
     if (!uploadedKey) return "";
 
     const publicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, "") || "https://pub-8c3866b1d40842a2818641a9675231c5.r2.dev";
-    return `${publicUrl}/${uploadedKey}`;
-  } catch (e) { return ""; }
+    return `${publicUrl}/${key}`; // نستخدم المفتاح الكامل هنا
+  } catch (e) {
+    console.error("Migration Image Error:", e);
+    return "";
+  }
 }
 
 export async function POST(req: Request) {
   const client = new Client({ connectionString: OLD_DB_URL });
   try {
-    const { offset = 0, limit = 10 } = await req.json();
-
-    // 1. إنشاء المجلد في R2 فوراً (رفع ملف وهمي)
-    if (offset === 0) {
-      await uploadToR2(Buffer.from("kse-shops-folder"), "shops/.directory_init", "text/plain");
-    }
+    const { offset = 0, limit = 20 } = await req.json();
 
     await client.connect();
 
-    // 2. جلب البيانات القديمة (نحتاج الصور فقط)
+    // جلب البيانات القديمة
     const oldRes = await client.query(`
-      SELECT name, phone, "photoUrl", "locationUrl"
+      SELECT name, phone, "photoUrl"
       FROM "Shop"
       WHERE "photoUrl" IS NOT NULL AND "photoUrl" LIKE 'http%'
     `);
     const oldShops = oldRes.rows;
 
-    // 3. جلب المحلات الحالية التي ليس لها صورة R2
+    // جلب المحلات الحالية
     const localShops = await prisma.shop.findMany({
       orderBy: { id: "asc" },
       skip: offset,
@@ -68,15 +69,12 @@ export async function POST(req: Request) {
 
     let updatedCount = 0;
     for (const shop of localShops) {
-      // تخطي إذا كان لديه صورة R2 بالفعل
-      if (shop.photoUrl && (shop.photoUrl.includes("r2.dev") || shop.photoUrl.includes("pub-") || shop.photoUrl.startsWith("shops/"))) continue;
+      // إذا كانت الصورة قد رفعت لـ R2 مسبقاً، تخطاها
+      if (shop.photoUrl && (shop.photoUrl.includes("r2.dev") || shop.photoUrl.includes("pub-"))) continue;
 
       const normName = normalize(shop.name);
-
-      // مطابقة مرنة جداً
       const match = oldShops.find(os =>
-        normalize(os.name) === normName ||
-        (os.phone && os.phone === shop.phone)
+        normalize(os.name) === normName || (os.phone && os.phone === shop.phone)
       );
 
       if (match && match.photoUrl) {
@@ -93,13 +91,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      updated: Number(updatedCount) || 0,
-      done: localShops.length < limit,
-      totalOldWithPhotos: oldShops.length
+      updated: updatedCount,
+      done: localShops.length < limit
     });
   } catch (error: any) {
-    console.error("Sync Error:", error);
-    return NextResponse.json({ success: false, message: error.message, updated: 0 }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   } finally {
     await client.end();
   }

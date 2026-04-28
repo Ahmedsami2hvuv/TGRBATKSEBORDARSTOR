@@ -8,17 +8,21 @@ export async function GET() {
   const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 5000 });
   try {
     await client.connect();
-    // فحص عدد ملفات الهواتف (البروفايلات) والزبائن
-    const resProf = await client.query('SELECT phone FROM "CustomerPhoneProfile"');
-    const oldProfiles = resProf.rows;
+    // جلب العدد الكلي من السيرفر القديم
+    const resProf = await client.query('SELECT count(*) FROM "CustomerPhoneProfile"');
+    const totalInOld = parseInt(resProf.rows[0].count);
 
-    const currentProfiles = await prisma.customerPhoneProfile.count();
-    const newCount = Math.max(0, oldProfiles.length - currentProfiles);
+    // جلب العدد الموجود حالياً في السيرفر الجديد
+    const currentCount = await prisma.customerPhoneProfile.count();
+
+    // الكمية المتبقية للسحب
+    const remaining = Math.max(0, totalInOld - currentCount);
 
     return NextResponse.json({
       success: true,
-      totalInOld: oldProfiles.length,
-      newCount: newCount
+      totalInOld: totalInOld,
+      currentCount: currentCount,
+      newCount: remaining
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });

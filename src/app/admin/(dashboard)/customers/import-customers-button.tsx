@@ -38,30 +38,38 @@ export function ImportCustomersButton() {
   async function handleImport() {
     setStatus("importing");
     setProgress(0);
-    setImportedNow(0);
 
-    // سحب الزبائن على دفعات لضمان عدم توقف السيرفر
-    let totalNeeded = foundCount;
-    let currentImported = 0;
+    // فحص العدد الحالي في القاعدة لبدء السحب منه بدقة
+    const checkRes = await fetch("/api/admin/import/customers/check");
+    const checkData = await checkRes.json();
+    let currentOffset = checkData.currentCount; // نبدأ من حيث توقفنا فعلياً في القاعدة
+    const totalToFetch = checkData.totalInOld;
+    setImportedNow(currentOffset);
 
     try {
-      while (currentImported < totalNeeded) {
-        const res = await fetch("/api/admin/import/customers", { method: "POST" });
+      while (currentOffset < totalToFetch) {
+        const res = await fetch("/api/admin/import/customers", {
+          method: "POST",
+          body: JSON.stringify({ offset: currentOffset }) // البدء من العدد الحالي الفعلي
+        });
         const data = await res.json();
 
-        if (!data.success || data.customers === 0) break;
+        if (!data.success || data.rowsProcessed === 0) break;
 
-        currentImported += data.customers;
-        setImportedNow(currentImported);
-        setProgress(Math.round((currentImported / totalNeeded) * 100));
+        // تحديث العداد بناءً على ما رجع من القاعدة فعلياً
+        setImportedNow(data.totalNowInDb);
+        setProgress(Math.round((data.totalNowInDb / totalToFetch) * 100));
 
-        // تحديث الواجهة خلف الكواليس لرؤية الزبائن الجدد
+        currentOffset += data.rowsProcessed;
+
+        // تحديث الواجهة
         router.refresh();
-
-        if (data.customers < 5) break; // توقف إذا لم يتبق شيء ذو قيمة
       }
-      alert(`اكتمل السحب! تم إضافة ${currentImported} زبون جديد.`);
-    } catch (e) { alert("حدث توقف مؤقت، يمكنك الضغط على سحب مرة أخرى للإكمال."); }
+      alert("اكتملت العملية بنجاح!");
+    } catch (e) {
+      console.error(e);
+      alert("حدث توقف مؤقت بسبب ضعف الاتصال، اضغط على استيراد مرة أخرى وسيكمل من حيث توقف تلقائياً.");
+    }
 
     setStatus("idle");
     router.refresh();
@@ -73,7 +81,8 @@ export function ImportCustomersButton() {
     let offset = 0;
     const limit = 20;
 
-    try {
+    // جلب العدد الفعلي للزبائن الذين يحتاجون سحب صور
+    const totalToSync = 1200; // قيمة افتراضية تقريبية أو يمكن جلبها ديناميكياً
       while (true) {
         const res = await fetch("/api/admin/import/customers/sync-photos", {
           method: "POST",
@@ -82,7 +91,7 @@ export function ImportCustomersButton() {
         const data = await res.json();
         if (!data.success || data.done) break;
         offset += limit;
-        setProgress(Math.min(100, (offset / foundCount) * 100));
+        setProgress(Math.min(100, Math.round((offset / 1200) * 100)));
       }
       alert("اكتمل سحب الصور.");
     } catch (e) { alert("خطأ في الصور"); }

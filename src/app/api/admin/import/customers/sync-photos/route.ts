@@ -1,116 +1,66 @@
 import { NextResponse } from "next/server";
-import { Client } from "pg";
 import { prisma } from "@/lib/prisma";
-import { uploadToR2 } from "@/lib/upload-storage";
-import { nanoid } from "nanoid";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
-const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
+// إعداد Cloudflare R2
+const r2 = new S3Client({
+  region: "auto",
+  endpoint: `https://b28d5df4bbe98bc845341bc88ff9cb13.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: "770f37021798363683a45218d6e326c7",
+    secretAccessKey: "8472465d6487e65155f9f6e696235b848039860b73e514101e18981f95180f2d",
+  },
+});
 
-async function migrateCustomerImage(oldUrl: string | null | undefined): Promise<string> {
-  if (!oldUrl || !oldUrl.startsWith("http")) return "";
-  // إذا كانت الصورة مرفوعة مسبقاً على R2 الخاص بنا، لا ترفعها مرة أخرى
-  if (oldUrl.includes("r2.dev") || oldUrl.includes("pub-")) return oldUrl;
+const BUCKET_NAME = "kseb-storage";
+const R2_PUBLIC_URL = "https://pub-2f7b4947937d4575971a8f949826a575.r2.dev";
 
+export async function POST() {
   try {
-    const response = await fetch(oldUrl, { signal: AbortSignal.timeout(20000) });
-    if (!response.ok) return "";
-    const buffer = Buffer.from(await response.arrayBuffer());
-    const contentType = response.headers.get("content-type") || "image/jpeg";
-    const extension = contentType.split("/")[1]?.split("+")[0] || "jpg";
-
-    const key = `customers/${nanoid(12)}.${extension}`;
-    const uploadedKey = await uploadToR2(buffer, key, contentType);
-
-    const publicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, "") || "https://pub-8c3866b1d40842a2818641a9675231c5.r2.dev";
-    return `${publicUrl}/${uploadedKey}`;
-  } catch (e) {
-    console.error("Fetch/Upload Error for URL:", oldUrl, e);
-    return "";
-  }
-}
-
-export async function POST(req: Request) {
-  const client = new Client({ connectionString: OLD_DB_URL });
-  try {
-    const { offset = 0, limit = 20 } = await req.json();
-
-    // التأكد من وجود المجلد في R2
-    if (offset === 0) {
-      await uploadToR2(Buffer.from("kse-customers"), "customers/.init", "text/plain");
-    }
-
-    // جلب البروفايلات التي لديها روابط صور "قديمة" (لا تحتوي على r2.dev)
-    const profiles = await prisma.customerPhoneProfile.findMany({
+    // جلب الزبائن الذين لديهم صور قديمة (تبدأ بـ http) ولم يتم رفعها بعد لـ R2
+    const customers = await prisma.customerPhoneProfile.findMany({
       where: {
-        AND: [
-          { photoUrl: { not: null } },
-          { photoUrl: { not: "" } },
-          { photoUrl: { not: { contains: "r2.dev" } } }
-        ]
+        photoUrl: { startsWith: "http" },
+        NOT: { photoUrl: { contains: "r2.dev" } }
       },
-      skip: offset,
-      take: limit,
-      orderBy: { createdAt: 'desc' }
+      take: 50 // معالجة 50 صورة في كل مرة لتجنب التوقف
     });
 
-    if (profiles.length === 0) {
-      // إذا خلصنا الصور الموجودة "أصلاً"، نبحث عن الصور المفقودة في السيرفر القديم كخطوة ثانية
-      const missingProfiles = await prisma.customerPhoneProfile.findMany({
-        where: {
-          OR: [
-             { photoUrl: null },
-             { photoUrl: "" }
-          ]
-        },
-        skip: offset,
-        take: limit
-      });
+    let syncedCount = 0;
 
-      if (missingProfiles.length === 0) return NextResponse.json({ success: true, updated: 0, done: true });
+    for (const customer of customers) {
+      try {
+        const response = await fetch(customer.photoUrl);
+        if (!response.ok) continue;
 
-      // منطق البحث في السيرفر القديم (للأمان فقط)
-      await client.connect();
-      let updatedCount = 0;
-      for (const p of missingProfiles) {
-        const oldRes = await client.query('SELECT "photoUrl" FROM "CustomerPhoneProfile" WHERE "phone" = $1 AND "photoUrl" IS NOT NULL LIMIT 1', [p.phone]);
-        const oldUrl = oldRes.rows[0]?.photoUrl;
-        if (oldUrl) {
-          const newUrl = await migrateCustomerImage(oldUrl);
-          if (newUrl) {
-            await prisma.customerPhoneProfile.update({ where: { id: p.id }, data: { photoUrl: newUrl } });
-            updatedCount++;
-          }
-        }
-      }
-      return NextResponse.json({ success: true, updated: updatedCount, done: missingProfiles.length < limit });
-    }
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const fileExt = customer.photoUrl.split('.').pop()?.split('?')[0] || "jpg";
 
-    // معالجة الروابط الموجودة حالياً ورفعها لـ R2
-    let updatedCount = 0;
-    for (const profile of profiles) {
-      if (profile.photoUrl) {
-        console.log(`Migrating existing photo for ${profile.phone}: ${profile.photoUrl}`);
-        const newUrl = await migrateCustomerImage(profile.photoUrl);
-        if (newUrl) {
-          await prisma.customerPhoneProfile.update({
-            where: { id: profile.id },
-            data: { photoUrl: newUrl }
-          });
-          updatedCount++;
-        }
+        // المسار في R2 داخل مجلد customers
+        const fileName = `customers/${customer.id}.${fileExt}`;
+
+        await r2.send(new PutObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: fileName,
+          Body: buffer,
+          ContentType: response.headers.get("content-type") || "image/jpeg",
+        }));
+
+        // تحديث الرابط في Supabase ليشير إلى R2 الجديد
+        await prisma.customerPhoneProfile.update({
+          where: { id: customer.id },
+          data: { photoUrl: `${R2_PUBLIC_URL}/${fileName}` }
+        });
+
+        syncedCount++;
+      } catch (err) {
+        console.error(`Failed to sync photo for ${customer.id}:`, err);
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      updated: updatedCount,
-      processed: profiles.length,
-      done: false
-    });
+    return NextResponse.json({ success: true, syncedCount });
   } catch (error: any) {
-    console.error("SYNC ERROR:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-  } finally {
-    try { await client.end(); } catch(e) {}
   }
 }
