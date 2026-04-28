@@ -98,32 +98,51 @@ export async function purgeDemoCoreData(
   }
 
   const confirm = String(formData.get("confirm") ?? "").trim();
+  const target = String(formData.get("target") ?? "all");
   const required = "مسح شامل";
+
   if (confirm !== required) {
     return { error: `اكتب «${required}» للتأكيد تماماً.` };
   }
 
-  // TRUNCATE مع RESTART IDENTITY يعيد تصفير autoincrement.
-  // CASCADE يحذف السجلات التابعة حتى لو كانت العلاقات فيها ON DELETE Restrict.
-  await prisma.$executeRawUnsafe(`
-    TRUNCATE TABLE
-      "Order",
-      "Shop",
-      "Customer",
-      "CompanyPreparer",
-      "Courier",
-      "CustomerPhoneProfile",
-      "Employee"
-    RESTART IDENTITY CASCADE;
-  `);
+  try {
+    if (target === "orders") {
+      await prisma.$executeRawUnsafe('TRUNCATE TABLE "OrderCourierMoneyEvent", "Order" RESTART IDENTITY CASCADE;');
+    } else if (target === "customers") {
+      await prisma.$executeRawUnsafe('TRUNCATE TABLE "Customer", "CustomerPhoneProfile" RESTART IDENTITY CASCADE;');
+    } else if (target === "shops") {
+      await prisma.$executeRawUnsafe('TRUNCATE TABLE "Shop", "Employee", "PreparerShop" RESTART IDENTITY CASCADE;');
+    } else if (target === "regions") {
+      await prisma.$executeRawUnsafe('TRUNCATE TABLE "Region", "Shop", "Customer", "CustomerPhoneProfile", "Order" RESTART IDENTITY CASCADE;');
+    } else {
+      // الـ All الافتراضي
+      await prisma.$executeRawUnsafe(`
+        TRUNCATE TABLE
+          "Order",
+          "Shop",
+          "Customer",
+          "CompanyPreparer",
+          "Courier",
+          "CustomerPhoneProfile",
+          "Employee",
+          "Region",
+          "OrderCourierMoneyEvent"
+        RESTART IDENTITY CASCADE;
+      `);
+    }
 
-  revalidatePath("/admin/settings");
-  revalidatePath("/admin/orders/pending");
-  revalidatePath("/admin/orders/tracking");
-  revalidatePath("/admin/preparers");
-  revalidatePath("/admin/couriers");
-  revalidatePath("/admin/customers");
-  revalidatePath("/mandoub");
-  revalidatePath("/preparer", "layout");
-  return { ok: true };
+    revalidatePath("/admin/settings");
+    revalidatePath("/admin/orders/pending");
+    revalidatePath("/admin/orders/tracking");
+    revalidatePath("/admin/preparers");
+    revalidatePath("/admin/couriers");
+    revalidatePath("/admin/customers");
+    revalidatePath("/admin/regions");
+    revalidatePath("/mandoub");
+    revalidatePath("/preparer", "layout");
+
+    return { ok: true };
+  } catch (e: any) {
+    return { error: "فشل المسح: " + e.message };
+  }
 }
