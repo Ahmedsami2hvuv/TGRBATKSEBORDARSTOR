@@ -78,24 +78,40 @@ export function ImportCustomersButton() {
   async function handleSyncPhotos() {
     setStatus("syncing_photos");
     setProgress(0);
-    let offset = 0;
-    const limit = 20;
+    let totalToSync = -1;
 
     try {
       while (true) {
         const res = await fetch("/api/admin/import/customers/sync-photos", {
-          method: "POST",
-          body: JSON.stringify({ offset, limit })
+          method: "POST"
         });
         const data = await res.json();
-        if (!data.success || data.done) break;
-        offset += limit;
-        setProgress(Math.min(100, Math.round((offset / 1200) * 100)));
+
+        if (!data.success) {
+          alert("خطأ: " + data.message);
+          break;
+        }
+
+        if (totalToSync === -1) {
+          totalToSync = data.remaining;
+        }
+
+        if (data.done || data.remaining === 0) {
+          setProgress(100);
+          break;
+        }
+
+        const currentDone = totalToSync - data.remaining;
+        const perc = Math.round((currentDone / totalToSync) * 100);
+        setProgress(perc);
+        setImportedNow(currentDone);
+
+        router.refresh();
       }
       alert("اكتمل سحب الصور.");
     } catch (e) {
       console.error(e);
-      alert("خطأ في الصور");
+      alert("حدث خطأ أثناء سحب الصور");
     }
     setStatus("idle");
   }

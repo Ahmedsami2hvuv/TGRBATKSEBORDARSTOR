@@ -14,40 +14,74 @@ const r2 = new S3Client({
 
 const BUCKET_NAME = "kseb-storage";
 const R2_PUBLIC_URL = "https://pub-2f7b4947937d4575971a8f949826a575.r2.dev";
+const OLD_BASE_URL = "https://kseb-order-production.up.railway.app";
 
 export async function POST() {
   try {
-    // جلب الزبائن الذين لديهم صور قديمة (تبدأ بـ http) ولم يتم رفعها بعد لـ R2
+    // 1. جلب عينة من الصور التي لم تُرفع بعد
     const customers = await prisma.customerPhoneProfile.findMany({
       where: {
-        photoUrl: { startsWith: "http" },
-        NOT: { photoUrl: { contains: "r2.dev" } }
+        photoUrl: {
+          notIn: ["", "not_found", "null"],
+          not: { contains: "r2.dev" }
+        }
       },
-      take: 50 // معالجة 50 صورة في كل مرة لتجنب التوقف
+      take: 15 // تقليل العدد لزيادة السرعة والاستقرار في كل طلب
     });
+
+    // 2. حساب المجموع الكلي للصور المتبقية للعرض في العداد
+    const remaining = await prisma.customerPhoneProfile.count({
+      where: {
+        photoUrl: {
+          notIn: ["", "not_found", "null"],
+          not: { contains: "r2.dev" }
+        }
+      }
+    });
+
+    if (customers.length === 0) {
+      return NextResponse.json({ success: true, syncedCount: 0, remaining: 0, done: true });
+    }
 
     let syncedCount = 0;
 
     for (const customer of customers) {
       try {
-        const response = await fetch(customer.photoUrl);
-        if (!response.ok) continue;
+        let finalUrl = customer.photoUrl;
 
-        const arrayBuffer = await response.arrayBuffer();
+        // تصحيح الرابط إذا كان مساراً داخلياً
+        if (finalUrl && !finalUrl.startsWith("http")) {
+          finalUrl = `${OLD_BASE_URL}${finalUrl.startsWith("/") ? "" : "/"}${finalUrl}`;
+        }
+
+        const imgRes = await fetch(finalUrl);
+
+        if (!imgRes.ok) {
+          console.log(`Image not found: ${finalUrl}`);
+          // وسم الصورة بأنها غير موجودة لكي لا يحاول النظام سحبها مجدداً
+          await prisma.customerPhoneProfile.update({
+            where: { id: customer.id },
+            data: { photoUrl: "not_found" }
+          });
+          continue;
+        }
+
+        const arrayBuffer = await imgRes.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        const fileExt = customer.photoUrl.split('.').pop()?.split('?')[0] || "jpg";
 
-        // المسار في R2 داخل مجلد customers
-        const fileName = `customers/${customer.id}.${fileExt}`;
+        // استخراج الامتداد
+        const fileExt = finalUrl.split('.').pop()?.split('?')[0] || "jpg";
+        const fileName = `customers/${customer.id}_${Date.now()}.${fileExt}`;
 
+        // الرفع إلى R2
         await r2.send(new PutObjectCommand({
           Bucket: BUCKET_NAME,
           Key: fileName,
           Body: buffer,
-          ContentType: response.headers.get("content-type") || "image/jpeg",
+          ContentType: imgRes.headers.get("content-type") || "image/jpeg",
         }));
 
-        // تحديث الرابط في Supabase ليشير إلى R2 الجديد
+        // تحديث الرابط في قاعدة البيانات
         await prisma.customerPhoneProfile.update({
           where: { id: customer.id },
           data: { photoUrl: `${R2_PUBLIC_URL}/${fileName}` }
@@ -55,12 +89,19 @@ export async function POST() {
 
         syncedCount++;
       } catch (err) {
-        console.error(`Failed to sync photo for ${customer.id}:`, err);
+        console.error(`Error syncing customer ${customer.id}:`, err);
       }
     }
 
-    return NextResponse.json({ success: true, syncedCount });
+    return NextResponse.json({
+      success: true,
+      syncedCount,
+      remaining,
+      done: remaining <= syncedCount
+    });
+
   } catch (error: any) {
+    console.error("CRITICAL SYNC ERROR:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
