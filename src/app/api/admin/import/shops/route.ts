@@ -3,16 +3,25 @@ import { Client } from "pg";
 import { prisma } from "@/lib/prisma";
 
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
+const OLD_BASE_URL = "https://tgrbatks-production.up.railway.app";
+
+function fixPhotoUrl(url: string | null): string {
+  if (!url) return "";
+  if (url.startsWith("http")) return url;
+  if (url.startsWith("/")) return `${OLD_BASE_URL}${url}`;
+  return `${OLD_BASE_URL}/${url}`;
+}
 
 export async function POST(req: Request) {
   const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 30000 });
   try {
-    const { offset = 0, limit = 5 } = await req.json().catch(() => ({}));
+    const { offset = 0, limit = 10 } = await req.json().catch(() => ({}));
     await client.connect();
 
-    // 1. جلب المحلات
+    // 1. جلب المحلات مع الـ regionId الأصلي
     const resShops = await client.query(`
-      SELECT s.id as "oldId", s.name, s."locationUrl", s."ownerName", s."photoUrl", s."phone", r.name as "regionName"
+      SELECT s.id as "oldId", s.name, s."locationUrl", s."ownerName", s."photoUrl", s."phone",
+             s."regionId", r.name as "regionName"
       FROM "Shop" s
       LEFT JOIN "Region" r ON s."regionId" = r.id
       ORDER BY s.id ASC
@@ -21,16 +30,24 @@ export async function POST(req: Request) {
 
     if (resShops.rows.length === 0) return NextResponse.json({ success: true, count: 0, done: true });
 
+    // جلب المناطق الحالية للمطابقة بالـ ID أو الاسم
     const allRegions = await prisma.region.findMany();
-    const regionMap = new Map(allRegions.map(r => [r.name, r.id]));
-    const firstRegionId = allRegions[0]?.id || "";
+    const regionIdMap = new Set(allRegions.map(r => r.id));
+    const regionNameMap = new Map(allRegions.map(r => [r.name.trim(), r.id]));
+    const fallbackRegionId = allRegions[0]?.id || "";
 
     let shopsImported = 0;
     let employeesImported = 0;
     let customersImported = 0;
 
     for (const oldShop of resShops.rows) {
-      const targetRegionId = regionMap.get(oldShop.regionName) || firstRegionId;
+      // مطابقة المنطقة بالترتيب: ID ثم Name
+      let targetRegionId = fallbackRegionId;
+      if (regionIdMap.has(oldShop.regionId)) {
+        targetRegionId = oldShop.regionId;
+      } else if (oldShop.regionName && regionNameMap.has(oldShop.regionName.trim())) {
+        targetRegionId = regionNameMap.get(oldShop.regionName.trim())!;
+      }
 
       const newShop = await prisma.shop.upsert({
         where: { id: oldShop.oldId },
@@ -39,6 +56,7 @@ export async function POST(req: Request) {
           locationUrl: oldShop.locationUrl || "",
           ownerName: oldShop.ownerName || "",
           phone: oldShop.phone || "",
+          photoUrl: fixPhotoUrl(oldShop.photoUrl),
           regionId: targetRegionId
         },
         create: {
@@ -47,12 +65,13 @@ export async function POST(req: Request) {
           locationUrl: oldShop.locationUrl || "",
           ownerName: oldShop.ownerName || "",
           phone: oldShop.phone || "",
+          photoUrl: fixPhotoUrl(oldShop.photoUrl),
           regionId: targetRegionId
         }
       });
       shopsImported++;
 
-      // 2. سحب الموظفين (Employees) - اللي يرفعون الطلبات
+      // 2. سحب الموظفين
       const resEmp = await client.query(`
         SELECT id, name, phone, "orderPortalToken"
         FROM "Employee"
@@ -79,7 +98,7 @@ export async function POST(req: Request) {
         employeesImported++;
       }
 
-      // 3. سحب الزبائن (الوجهات)
+      // 3. سحب الزبائن المرتبطين بالمحل
       const resCust = await client.query(`
         SELECT id, name, phone, "customerLocationUrl", "customerLandmark", "alternatePhone", "customerDoorPhotoUrl"
         FROM "Customer"
@@ -96,7 +115,7 @@ export async function POST(req: Request) {
             customerLocationUrl: oldCust.customerLocationUrl || "",
             customerLandmark: oldCust.customerLandmark || "",
             alternatePhone: oldCust.alternatePhone,
-            customerDoorPhotoUrl: oldCust.customerDoorPhotoUrl
+            customerDoorPhotoUrl: fixPhotoUrl(oldCust.customerDoorPhotoUrl)
           },
           create: {
             id: oldCust.id,
@@ -106,7 +125,7 @@ export async function POST(req: Request) {
             customerLocationUrl: oldCust.customerLocationUrl || "",
             customerLandmark: oldCust.customerLandmark || "",
             alternatePhone: oldCust.alternatePhone,
-            customerDoorPhotoUrl: oldCust.customerDoorPhotoUrl
+            customerDoorPhotoUrl: fixPhotoUrl(oldCust.customerDoorPhotoUrl)
           }
         });
         customersImported++;

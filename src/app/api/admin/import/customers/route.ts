@@ -10,9 +10,9 @@ export async function POST(req: Request) {
     const { offset = 0 } = await req.json().catch(() => ({ offset: 0 }));
     await client.connect();
 
-    // 1. جلب البيانات من السيرفر القديم - نركز على البروفايلات
+    // 1. جلب الزبائن مع الـ regionId الأصلي والاسم
     const res = await client.query(`
-      SELECT cpp.phone, cpp."locationUrl", cpp."photoUrl", cpp.notes, cpp.landmark, cpp."alternatePhone",
+      SELECT cpp.phone, cpp."regionId", cpp."locationUrl", cpp."photoUrl", cpp.notes, cpp.landmark, cpp."alternatePhone",
              r.name as "regionName"
       FROM "CustomerPhoneProfile" cpp
       LEFT JOIN "Region" r ON cpp."regionId" = r.id
@@ -24,76 +24,64 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, rowsProcessed: 0, done: true });
     }
 
-    // 2. ضمان وجود المناطق في القاعدة الجديدة
+    // 2. جلب المناطق الحالية لضمان الربط
     const allRegions = await prisma.region.findMany();
-    let regionMap = new Map(allRegions.map(r => [r.name, r.id]));
-
-    // إنشاء منطقة افتراضية إذا لم يوجد أي منطقة في القاعدة
-    let defaultRegionId = allRegions[0]?.id;
-    if (!defaultRegionId) {
-      const fallbackRegion = await prisma.region.upsert({
-        where: { name: "غير محدد" },
-        update: {},
-        create: { name: "غير محدد", deliveryPrice: 0 }
-      });
-      defaultRegionId = fallbackRegion.id;
-      regionMap.set(fallbackRegion.name, fallbackRegion.id);
-    }
+    const regionIdMap = new Set(allRegions.map(r => r.id));
+    const regionNameMap = new Map(allRegions.map(r => [r.name.trim(), r.id]));
 
     let addedOrUpdated = 0;
 
     for (const row of res.rows) {
-      let targetRegionId = row.regionName ? regionMap.get(row.regionName) : defaultRegionId;
+      let targetRegionId = null;
 
-      // إذا المنطقة غير موجودة، ننشئها فوراً
-      if (!targetRegionId && row.regionName) {
-        try {
-          const newReg = await prisma.region.create({
-            data: { name: row.regionName, deliveryPrice: 0 }
-          });
-          targetRegionId = newReg.id;
-          regionMap.set(row.regionName, targetRegionId);
-          console.log(`Created new region: ${row.regionName}`);
-        } catch (e) {
-          targetRegionId = defaultRegionId;
-        }
+      // محاولة 1: الربط عن طريق الـ ID (لأنك سحبت المناطق بنفس الـ ID)
+      if (regionIdMap.has(row.regionId)) {
+        targetRegionId = row.regionId;
       }
-
-      const finalRegionId = targetRegionId || defaultRegionId;
-
-      try {
-        // 3. تحديث أو إنشاء البروفايل (الزبون المرجعي)
-        await prisma.customerPhoneProfile.upsert({
-          where: {
-            phone_regionId: {
-              phone: row.phone,
-              regionId: finalRegionId
-            }
-          },
-          update: {
-            locationUrl: row.locationUrl || "",
-            photoUrl: row.photoUrl || "",
-            notes: row.notes || "",
-            landmark: row.landmark || "",
-            alternatePhone: row.alternatePhone
-          },
-          create: {
-            phone: row.phone,
-            regionId: finalRegionId,
-            locationUrl: row.locationUrl || "",
-            photoUrl: row.photoUrl || "",
-            notes: row.notes || "",
-            landmark: row.landmark || "",
-            alternatePhone: row.alternatePhone
-          }
+      // محاولة 2: الربط عن طريق الاسم
+      else if (row.regionName && regionNameMap.has(row.regionName.trim())) {
+        targetRegionId = regionNameMap.get(row.regionName.trim());
+      }
+      // محاولة 3: إنشاء المنطقة إذا لم توجد (لضمان عدم التخطي)
+      else if (row.regionName) {
+        const newReg = await prisma.region.create({
+          data: { id: row.regionId, name: row.regionName, deliveryPrice: 0 }
         });
-        addedOrUpdated++;
-      } catch (upsertError) {
-        console.error(`Error upserting customer ${row.phone}:`, upsertError);
+        targetRegionId = newReg.id;
+        regionIdMap.add(newReg.id);
+        regionNameMap.set(newReg.name.trim(), newReg.id);
       }
+
+      if (!targetRegionId) continue;
+
+      // 3. الحفظ الفعلي
+      await prisma.customerPhoneProfile.upsert({
+        where: {
+          phone_regionId: {
+            phone: row.phone,
+            regionId: targetRegionId
+          }
+        },
+        update: {
+          locationUrl: row.locationUrl || "",
+          photoUrl: row.photoUrl || "",
+          notes: row.notes || "",
+          landmark: row.landmark || "",
+          alternatePhone: row.alternatePhone
+        },
+        create: {
+          phone: row.phone,
+          regionId: targetRegionId,
+          locationUrl: row.locationUrl || "",
+          photoUrl: row.photoUrl || "",
+          notes: row.notes || "",
+          landmark: row.landmark || "",
+          alternatePhone: row.alternatePhone
+        }
+      });
+      addedOrUpdated++;
     }
 
-    // جلب العدد الكلي الحقيقي
     const totalNowInDb = await prisma.customerPhoneProfile.count();
 
     return NextResponse.json({
