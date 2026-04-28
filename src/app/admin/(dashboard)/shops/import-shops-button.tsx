@@ -29,34 +29,41 @@ export function ImportShopsButton() {
     }
   }
 
-  // 2. وظيفة إكمال المحلات الناقصة
+  // 2. وظيفة إكمال المحلات الناقصة مع زبائنها
   async function importMissingShops() {
-    if(!confirm("هل أنت متأكد من جلب المحلات المكتشفة تلقائياً؟")) return;
+    if(!confirm("سيتم جلب المحلات وكل الزبائن التابعين لها من السيرفر القديم. هل أنت متأكد؟")) return;
     setStatus("loading");
     setProgress(0);
     try {
       let offset = 0;
-      const limit = 20;
+      const limit = 5; // عدد قليل لضمان سحب الزبائن مع كل محل بدون مشاكل
       let isDone = false;
-      let newCount = 0;
+      let totalShops = 0;
+      let totalCust = 0;
 
       while (!isDone) {
-        setCurrentStep(`جاري جلب المحلات الناقصة...`);
+        setCurrentStep(`جاري سحب المحلات وزبائنها (${totalShops} محل، ${totalCust} زبون)...`);
         const res = await fetch("/api/admin/import/shops", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ offset, limit })
         });
         const data = await res.json();
-        newCount += data.count;
+
+        if (!data.success) throw new Error(data.message);
+
+        totalShops += data.shopsCount || 0;
+        totalCust += data.customersCount || 0;
+
         offset += limit;
-        isDone = data.done || offset >= 334;
-        setProgress(Math.round((offset / 334) * 100));
+        isDone = data.done || offset >= 400; // فرضاً أن المحلات بحدود 400
+        setProgress(Math.min(100, Math.round((offset / 334) * 100)));
+        router.refresh();
       }
-      alert(`✅ تم إضافة ${newCount} محل جديد.`);
+      alert(`✅ اكتملت المهمة!\nتم سحب ${totalShops} محل بنجاح.\nوتم ربط ${totalCust} زبون بمحلاتهم.`);
       window.location.reload();
     } catch (err: any) {
-      alert("⚠️ خطأ: " + err.message);
+      alert("⚠️ حدث خطأ: " + err.message);
     } finally {
       setStatus("idle");
     }
