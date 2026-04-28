@@ -21,7 +21,7 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
         { region: { name: { contains: q, mode: 'insensitive' } } }
       ]
     } : undefined,
-    take: 2000, // رفع الحد لعرض كافة الزبائن الـ 1200
+    take: 50, // تم تخفيض الحد إلى 50 لمنع انهيار السيرفر، يمكن استخدام البحث لإيجاد زبائن آخرين
     orderBy: { createdAt: 'desc' },
     include: {
       region: { select: { name: true } },
