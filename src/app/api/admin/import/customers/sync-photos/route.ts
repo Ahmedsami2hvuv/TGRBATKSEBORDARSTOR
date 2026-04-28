@@ -5,32 +5,22 @@ import { uploadToR2 } from "@/lib/upload-storage";
 export async function POST() {
   try {
     const R2_DOMAIN = "pub-2f347893a77443198f121df01053c847.r2.dev";
+    const OLD_BASE_URL = "https://tgrbatks-production.up.railway.app";
 
-    // جلب كل من لديه رابط صورة يحتاج تحديث
-    // سنقوم بجلب عينة وفلترتها برمجياً لضمان عدم حدوث خطأ في استعلام Prisma
-    const allCandidates = await prisma.customerPhoneProfile.findMany({
+    // 1. جلب عينة من الزبائن الذين لديهم "أي شيء" في خانة الصورة ولكنه ليس رابط R2
+    const customers = await prisma.customerPhoneProfile.findMany({
       where: {
-        photoUrl: {
-          not: "",
-        }
+        AND: [
+          { photoUrl: { not: { contains: R2_DOMAIN } } },
+          { photoUrl: { not: "" } },
+          { photoUrl: { not: { contains: "broken_link" } } }
+        ]
       },
-      take: 100 // نأخذ عينة كبيرة ونفلترها
+      take: 20
     });
 
-    // نختار فقط الذين لديهم روابط قديمة (تبدأ بـ http ولا تحتوي على الدومين الجديد)
-    const customers = allCandidates.filter(c =>
-      c.photoUrl &&
-      c.photoUrl.includes("railway.app") &&
-      !c.photoUrl.includes(R2_DOMAIN)
-    ).slice(0, 15); // نعالج 15 فقط في هذه الدفعة
-
     if (customers.length === 0) {
-      return NextResponse.json({
-        success: true,
-        synced: 0,
-        done: true,
-        message: "لم يتم العثور على صور تحتاج مزامنة (ربما اكتملت العملية أو الروابط غير مدعومة)"
-      });
+      return NextResponse.json({ success: true, synced: 0, done: true, message: "تمت مزامنة جميع الصور!" });
     }
 
     let successCount = 0;
@@ -38,7 +28,16 @@ export async function POST() {
 
     for (const customer of customers) {
       try {
-        const response = await fetch(customer.photoUrl);
+        let targetUrl = customer.photoUrl;
+
+        // إذا كان الرابط نسبياً (يبدأ بـ /)، نحوله لرابط كامل للسيرفر القديم
+        if (targetUrl.startsWith("/")) {
+          targetUrl = `${OLD_BASE_URL}${targetUrl}`;
+        } else if (!targetUrl.startsWith("http")) {
+          targetUrl = `${OLD_BASE_URL}/${targetUrl}`;
+        }
+
+        const response = await fetch(targetUrl);
         if (!response.ok) {
            // وسم الرابط كمعطل لكي لا نختاره مرة أخرى
            await prisma.customerPhoneProfile.update({
@@ -66,16 +65,18 @@ export async function POST() {
           successCount++;
         }
       } catch (err) {
+        console.error(`Error syncing ${customer.phone}:`, err);
         failCount++;
       }
     }
 
-    // حساب المتبقي
-    const totalRemaining = await prisma.customerPhoneProfile.count({
+    const remaining = await prisma.customerPhoneProfile.count({
       where: {
-        photoUrl: {
-          contains: "railway.app"
-        }
+        AND: [
+          { photoUrl: { not: { contains: R2_DOMAIN } } },
+          { photoUrl: { not: "" } },
+          { photoUrl: { not: { contains: "broken_link" } } }
+        ]
       }
     });
 
@@ -83,11 +84,10 @@ export async function POST() {
       success: true,
       synced: successCount,
       failed: failCount,
-      remaining: totalRemaining,
-      done: totalRemaining === 0
+      remaining: remaining,
+      done: remaining === 0
     });
   } catch (error: any) {
-    console.error("SYNC ERROR:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
