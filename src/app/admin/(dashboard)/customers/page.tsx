@@ -83,8 +83,10 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        {profiles.map(p => {
+        {profiles.map((p, index) => {
           const stats = statsMap.get(p.phone);
+          const seqNumber = filteredCount - skip - index;
+          
           return (
             <Link
               key={p.id}
@@ -92,7 +94,10 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
               className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col gap-3 hover:shadow-md transition-shadow relative overflow-hidden group cursor-pointer"
             >
               <div className="flex justify-between items-start">
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                   <div className="bg-gray-800 text-white px-2 py-1 rounded-lg text-xs font-black shadow-sm">
+                      #{seqNumber.toLocaleString()}
+                   </div>
                    <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-[10px] font-bold border border-blue-100">
                       الطلبات: {stats?._count?._all || 0}
                    </div>
