@@ -6,16 +6,16 @@ export async function POST() {
   try {
     const R2_DOMAIN = "pub-2f347893a77443198f121df01053c847.r2.dev";
 
-    // 1. جلب أي سجل صورته ليست على R2 (سواء كانت رابط قديم، أو not_found، أو مسار مكسور)
+    // 1. جلب أي سجل صورته ليست على R2
     const customers = await prisma.customerPhoneProfile.findMany({
       where: {
         AND: [
           { photoUrl: { not: { contains: R2_DOMAIN } } }, // ليست على R2
-          { photoUrl: { not: "" } },                     // وليست فارغة تماماً
-          { photoUrl: { bnest: null } }                  // وليست نل
+          { photoUrl: { not: "" } },                     // وليست فارغة
+          { photoUrl: { not: null } }                    // وليست نل (تم تصحيح الخطأ هنا)
         ]
       },
-      take: 30, // سحب 30 في كل مرة لزيادة السرعة مع الاستقرار
+      take: 30,
     });
 
     if (customers.length === 0) {
@@ -29,18 +29,11 @@ export async function POST() {
       try {
         let currentUrl = customer.photoUrl || "";
 
-        // إذا كانت "not_found" أو رابط قديم، سنحاول الوصول إليها
-        // إذا كان الرابط لا يبدأ بـ http، سنضيف الدومين القديم تلقائياً
-        if (currentUrl === "not_found") {
-           // محاولة تخمين الرابط الأصلي إذا كان مفقوداً (بناءً على الهاتف)
-           // أو يمكن تخطيها إذا لم نرد المجازفة، لكننا هنا سنحاول مع الروابط الموجودة فعلياً
-           continue;
-        }
+        if (currentUrl === "not_found") continue;
 
-        const response = await fetch(currentUrl, { method: 'GET', Buffer: true } as any);
+        const response = await fetch(currentUrl);
 
         if (!response.ok) {
-          // إذا فشل السيرفر القديم في الرد، نتركها للمحاولة القادمة أو نسمها بـ not_found_final
           console.error(`Link broken for ${customer.phone}: ${currentUrl}`);
           failCount++;
           continue;
@@ -85,7 +78,8 @@ export async function POST() {
       where: {
         AND: [
           { photoUrl: { not: { contains: R2_DOMAIN } } },
-          { photoUrl: { not: "" } }
+          { photoUrl: { not: "" } },
+          { photoUrl: { not: null } }
         ]
       }
     });
