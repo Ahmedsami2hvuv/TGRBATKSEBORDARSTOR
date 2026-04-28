@@ -6,20 +6,31 @@ export async function POST() {
   try {
     const R2_DOMAIN = "pub-2f347893a77443198f121df01053c847.r2.dev";
 
-    // 1. جلب أي سجل صورته ليست على R2
-    const customers = await prisma.customerPhoneProfile.findMany({
+    // جلب كل من لديه رابط صورة يحتاج تحديث
+    // سنقوم بجلب عينة وفلترتها برمجياً لضمان عدم حدوث خطأ في استعلام Prisma
+    const allCandidates = await prisma.customerPhoneProfile.findMany({
       where: {
-        AND: [
-          { photoUrl: { not: { contains: R2_DOMAIN } } }, // ليست على R2
-          { photoUrl: { not: "" } },                     // وليست فارغة
-          { photoUrl: { not: null } }                    // وليست نل (تم تصحيح الخطأ هنا)
-        ]
+        photoUrl: {
+          not: "",
+        }
       },
-      take: 30,
+      take: 100 // نأخذ عينة كبيرة ونفلترها
     });
 
+    // نختار فقط الذين لديهم روابط قديمة (تبدأ بـ http ولا تحتوي على الدومين الجديد)
+    const customers = allCandidates.filter(c =>
+      c.photoUrl &&
+      c.photoUrl.includes("railway.app") &&
+      !c.photoUrl.includes(R2_DOMAIN)
+    ).slice(0, 15); // نعالج 15 فقط في هذه الدفعة
+
     if (customers.length === 0) {
-      return NextResponse.json({ success: true, synced: 0, done: true, message: "كل الصور الآن موجودة على R2!" });
+      return NextResponse.json({
+        success: true,
+        synced: 0,
+        done: true,
+        message: "لم يتم العثور على صور تحتاج مزامنة (ربما اكتملت العملية أو الروابط غير مدعومة)"
+      });
     }
 
     let successCount = 0;
@@ -27,60 +38,44 @@ export async function POST() {
 
     for (const customer of customers) {
       try {
-        let currentUrl = customer.photoUrl || "";
-
-        if (currentUrl === "not_found") continue;
-
-        const response = await fetch(currentUrl);
-
+        const response = await fetch(customer.photoUrl);
         if (!response.ok) {
-          console.error(`Link broken for ${customer.phone}: ${currentUrl}`);
-          failCount++;
-          continue;
+           // وسم الرابط كمعطل لكي لا نختاره مرة أخرى
+           await prisma.customerPhoneProfile.update({
+             where: { id: customer.id },
+             data: { photoUrl: "broken_link_" + customer.photoUrl }
+           });
+           failCount++;
+           continue;
         }
 
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         const contentType = response.headers.get("content-type") || "image/jpeg";
-
-        if (!contentType.includes("image")) {
-          throw new Error("Target URL is not an image");
-        }
-
         const ext = contentType.split("/")[1] || "jpg";
-        const key = `customers/${customer.phone}-${customer.regionId}.${ext}`;
 
+        const key = `customers/${customer.phone}-${customer.regionId}.${ext}`;
         const uploadedKey = await uploadToR2(buffer, key, contentType);
 
         if (uploadedKey) {
           const publicUrl = `https://${R2_DOMAIN}/${uploadedKey}`;
-
           await prisma.customerPhoneProfile.update({
-            where: {
-              phone_regionId: {
-                phone: customer.phone,
-                regionId: customer.regionId,
-              },
-            },
+            where: { id: customer.id },
             data: { photoUrl: publicUrl },
           });
           successCount++;
-        } else {
-          failCount++;
         }
-      } catch (err: any) {
-        console.error(`Failed to sync for ${customer.phone}:`, err.message);
+      } catch (err) {
         failCount++;
       }
     }
 
-    const remaining = await prisma.customerPhoneProfile.count({
+    // حساب المتبقي
+    const totalRemaining = await prisma.customerPhoneProfile.count({
       where: {
-        AND: [
-          { photoUrl: { not: { contains: R2_DOMAIN } } },
-          { photoUrl: { not: "" } },
-          { photoUrl: { not: null } }
-        ]
+        photoUrl: {
+          contains: "railway.app"
+        }
       }
     });
 
@@ -88,11 +83,11 @@ export async function POST() {
       success: true,
       synced: successCount,
       failed: failCount,
-      remaining: remaining,
-      done: remaining === 0
+      remaining: totalRemaining,
+      done: totalRemaining === 0
     });
   } catch (error: any) {
-    console.error("CRITICAL SYNC ERROR:", error);
+    console.error("SYNC ERROR:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
