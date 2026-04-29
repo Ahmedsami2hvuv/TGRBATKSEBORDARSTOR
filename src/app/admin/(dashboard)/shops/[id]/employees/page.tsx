@@ -27,6 +27,14 @@ export default async function ShopEmployeesPage(props: any) {
     const employees = await prisma.employee.findMany({
       where: { shopId },
       orderBy: { createdAt: "desc" },
+      // حل جذري: جلب الأعمدة الموجودة فقط وتجاهل الأعمدة المفقودة في قاعدة البيانات
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        orderPortalToken: true,
+        createdAt: true,
+      }
     });
 
     const baseUrl = getPublicAppUrl();
