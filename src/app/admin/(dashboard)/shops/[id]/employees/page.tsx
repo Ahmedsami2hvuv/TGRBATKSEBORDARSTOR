@@ -27,12 +27,20 @@ export default async function ShopEmployeesPage({ params }: Props) {
   });
 
   const baseUrl = getPublicAppUrl();
-  const rows = employees.map((e) => ({
-    id: e.id,
-    name: e.name,
-    phone: e.phone,
-    orderPortalUrl: buildEmployeeOrderPortalUrl(e.id, e.orderPortalToken, baseUrl),
-  }));
+  const rows = employees.map((e) => {
+    let orderPortalUrl = "";
+    try {
+      orderPortalUrl = buildEmployeeOrderPortalUrl(e.id, e.orderPortalToken, baseUrl);
+    } catch (err) {
+      console.error("Error building order portal URL for employee:", e.id, err);
+    }
+    return {
+      id: e.id,
+      name: e.name,
+      phone: e.phone,
+      orderPortalUrl,
+    };
+  });
 
   return (
     <div className="space-y-8">
