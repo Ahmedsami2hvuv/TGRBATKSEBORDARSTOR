@@ -44,7 +44,7 @@ export async function assignPendingOrderToCourierInternal(
     },
   });
 
-  void pushNotifyCourierNewAssignment(courierId, order.orderNumber);
+  void pushNotifyCourierNewAssignment(courierId, order.orderNumber, orderId);
 
   revalidatePath("/admin/orders/pending");
   revalidatePath("/admin/couriers");
@@ -102,7 +102,7 @@ export async function transferOrderToCourierInternal(
     // - أو المندوب الحالي (المخزن سابقاً) يختلف، حتى لو كان null (حالة غير متوقعة ولكن قد تحصل)
     order.status === "pending" || order.assignedCourierId !== courierId;
   if (shouldNotifyMandoub) {
-    void pushNotifyCourierNewAssignment(courierId, order.orderNumber).catch((e) => {
+    void pushNotifyCourierNewAssignment(courierId, order.orderNumber, orderId).catch((e) => {
       console.error("[pushNotifyCourierNewAssignment] failed:", e);
     });
   }

@@ -141,89 +141,177 @@ export function OrderViewContent({
       )}
 
       <div className="mt-5 space-y-6 sm:space-y-8">
+        
+        {/* --- SENDER / SHOP --- */}
         <div className={gridInfoPhoto}>
           <div className="space-y-2">
-            <h3 className="text-lg font-bold text-emerald-800">المحل</h3>
-            {isSystemAdminOrder ? <p className="text-3xl font-black text-indigo-700 tabular-nums">{SYSTEM_ADMIN_PHONE}</p> :
+            <h3 className="text-lg font-bold text-emerald-800">
+              {order.routeMode === "double" ? "المرسل (الوجهة الأولى)" : "المحل"}
+            </h3>
+            {order.routeMode === "double" ? (
               <>
-                <p className="font-bold text-slate-900">{order.shop.name}</p>
-                <p className="text-sm font-medium"><span className="text-slate-500">المسؤول: </span><span className="font-bold text-sky-900">{order.submittedByCompanyPreparer?.name || order.submittedBy?.name || "—"}</span></p>
-                <div className="mt-2">{order.shopLocationUrl?.trim() ? <a href={order.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">فتح اللوكيشن ↗</a> : <p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن</p>}</div>
-              </>
-            }
-          </div>
-          {!isSystemAdminOrder && <div className="self-start">
-            {imgShopDoor ? <div className={squarePhotoFrame}><img src={imgShopDoor} alt="" className={squarePhotoImg} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
-            <div className="mt-2 space-y-2">
-              <AdminOrderPhotoQuick orderId={order.id} kind="shop" hasImage={!!(order.shopPhotoUrl || order.shopDoorPhotoUrl)} />
-              <ImageUploaderCaption name={order.shopDoorPhotoUploadedByName} />
-            </div>
-          </div>}
-        </div>
-
-        <div className={gridInfoPhoto}>
-          <div className="space-y-2">
-            <h3 className="text-lg font-bold text-emerald-800">الزبون</h3>
-            <p className="text-lg font-black text-slate-900">{displayCustomerName || "—"}</p>
-            <p className="text-slate-800 font-bold">{order.customerRegion?.name ?? "—"}</p>
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl font-black text-emerald-950 tabular-nums">{order.customerPhone}</span>
-                <a href={`tel:${order.customerPhone}`} className="bg-emerald-600 px-3 py-1 text-xs font-bold text-white rounded-full">اتصال 📞</a>
-              </div>
-              {(order.alternatePhone || order.secondCustomerPhone) && (
-                <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-emerald-100">
+                <p className="text-lg font-black text-slate-900">{displayCustomerName || "—"}</p>
+                <p className="text-slate-800 font-bold">{order.customerRegion?.name ?? "—"}</p>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl font-black text-emerald-950 tabular-nums">{order.customerPhone}</span>
+                    <a href={`tel:${order.customerPhone}`} className="bg-emerald-600 px-3 py-1 text-xs font-bold text-white rounded-full">اتصال 📞</a>
+                  </div>
                   {order.alternatePhone && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 mt-2">
                       <span className="text-xl font-black text-emerald-800 tabular-nums">{order.alternatePhone}</span>
                       <a href={`tel:${order.alternatePhone}`} className="bg-sky-600 px-3 py-1 text-xs font-bold text-white rounded-full">رقم ثاني 📞</a>
                     </div>
                   )}
-                  {order.secondCustomerPhone && order.secondCustomerPhone !== order.alternatePhone && (
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl font-black text-emerald-800 tabular-nums">{order.secondCustomerPhone}</span>
-                      <a href={`tel:${order.secondCustomerPhone}`} className="bg-indigo-600 px-3 py-1 text-xs font-bold text-white rounded-full">رقم ثالث 📞</a>
+                </div>
+                {order.customerLandmark?.trim() && <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark}</p>}
+                <div className="mt-2 space-y-2">
+                  {order.customerLocationUrl?.trim() ? (
+                    <div className="space-y-1">
+                      <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">لوكيشن المرسل ↗</a>
+                      <ImageUploaderCaption name={order.customerLocationUploadedByName} />
+                    </div>
+                  ) : (
+                    <div className="mt-2"><AdminCustomerLocationQuick orderId={order.id} /></div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                {isSystemAdminOrder ? <p className="text-3xl font-black text-indigo-700 tabular-nums">{SYSTEM_ADMIN_PHONE}</p> :
+                  <>
+                    <p className="font-bold text-slate-900">{order.shop.name}</p>
+                    <p className="text-sm font-medium"><span className="text-slate-500">المسؤول: </span><span className="font-bold text-sky-900">{order.submittedByCompanyPreparer?.name || order.submittedBy?.name || "—"}</span></p>
+                    <div className="mt-2">{order.shopLocationUrl?.trim() ? <a href={order.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">فتح اللوكيشن ↗</a> : <p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن</p>}</div>
+                  </>
+                }
+              </>
+            )}
+          </div>
+          <div className="self-start">
+            {order.routeMode === "double" ? (
+              <>
+                {imgCustDoor ? <div className={squarePhotoFrame}><img src={imgCustDoor} alt="" className={squarePhotoImg} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                <div className="mt-2 space-y-2">
+                  <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.customerDoorPhotoUrl} />
+                  <ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} />
+                </div>
+              </>
+            ) : (
+              !isSystemAdminOrder && (
+                <>
+                  {imgShopDoor ? <div className={squarePhotoFrame}><img src={imgShopDoor} alt="" className={squarePhotoImg} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                  <div className="mt-2 space-y-2">
+                    <AdminOrderPhotoQuick orderId={order.id} kind="shop" hasImage={!!(order.shopPhotoUrl || order.shopDoorPhotoUrl)} />
+                    <ImageUploaderCaption name={order.shopDoorPhotoUploadedByName} />
+                  </div>
+                </>
+              )
+            )}
+          </div>
+        </div>
+
+        {/* --- RECEIVER / CUSTOMER --- */}
+        <div className={gridInfoPhoto}>
+          <div className="space-y-2">
+            <h3 className="text-lg font-bold text-emerald-800">
+              {order.routeMode === "double" ? "المستلم (الوجهة الثانية)" : "الزبون"}
+            </h3>
+            {order.routeMode === "double" ? (
+              <>
+                <p className="text-slate-800 font-bold">{/* Second Customer Region */} (بحاجة لتمرير اسم المنطقة هنا)</p>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl font-black text-emerald-950 tabular-nums">{order.secondCustomerPhone || "—"}</span>
+                    {order.secondCustomerPhone && <a href={`tel:${order.secondCustomerPhone}`} className="bg-emerald-600 px-3 py-1 text-xs font-bold text-white rounded-full">اتصال 📞</a>}
+                  </div>
+                </div>
+                {order.secondCustomerLandmark?.trim() && <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.secondCustomerLandmark}</p>}
+                <div className="mt-2 space-y-2">
+                  {order.secondCustomerLocationUrl?.trim() ? (
+                    <div className="space-y-1">
+                      <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">لوكيشن المستلم ↗</a>
+                    </div>
+                  ) : null}
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-black text-slate-900">{displayCustomerName || "—"}</p>
+                <p className="text-slate-800 font-bold">{order.customerRegion?.name ?? "—"}</p>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl font-black text-emerald-950 tabular-nums">{order.customerPhone}</span>
+                    <a href={`tel:${order.customerPhone}`} className="bg-emerald-600 px-3 py-1 text-xs font-bold text-white rounded-full">اتصال 📞</a>
+                  </div>
+                  {(order.alternatePhone || order.secondCustomerPhone) && (
+                    <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-emerald-100">
+                      {order.alternatePhone && (
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl font-black text-emerald-800 tabular-nums">{order.alternatePhone}</span>
+                          <a href={`tel:${order.alternatePhone}`} className="bg-sky-600 px-3 py-1 text-xs font-bold text-white rounded-full">رقم ثاني 📞</a>
+                        </div>
+                      )}
+                      {order.secondCustomerPhone && order.secondCustomerPhone !== order.alternatePhone && (
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl font-black text-emerald-800 tabular-nums">{order.secondCustomerPhone}</span>
+                          <a href={`tel:${order.secondCustomerPhone}`} className="bg-indigo-600 px-3 py-1 text-xs font-bold text-white rounded-full">رقم ثالث 📞</a>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-            {order.customerLandmark?.trim() && <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark}</p>}
-            <div className="mt-2 space-y-2">
-              {order.customerLocationUrl?.trim() ? (
-                <div className="space-y-1">
-                  <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">لوكيشن الزبون ↗</a>
-                  <ImageUploaderCaption name={order.customerLocationUploadedByName} />
+                {order.customerLandmark?.trim() && <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark}</p>}
+                <div className="mt-2 space-y-2">
+                  {order.customerLocationUrl?.trim() ? (
+                    <div className="space-y-1">
+                      <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">لوكيشن الزبون ↗</a>
+                      <ImageUploaderCaption name={order.customerLocationUploadedByName} />
+                    </div>
+                  ) : (
+                    <div className="mt-2"><AdminCustomerLocationQuick orderId={order.id} /></div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    <AdminCustomerOrderHistory
+                      phone={order.customerPhone}
+                      regionId={order.customerRegionId}
+                      currentOrderId={order.id}
+                      customerName={order.customer?.name}
+                      customerRegionName={order.customerRegion?.name ?? null}
+                      alternatePhone={order.alternatePhone}
+                      customerLocationUrl={order.customerLocationUrl}
+                      customerLandmark={order.customerLandmark}
+                      customerProfileId={order.customerProfileId}
+                    />
+                    {order.customerProfileId ? (
+                      <Link href={`/admin/customers/profiles/${order.customerProfileId}/edit`} className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-900 shadow-sm hover:bg-slate-50 transition-colors">ملف الزبون المباشر</Link>
+                    ) : null}
+                  </div>
                 </div>
-              ) : (
-                <div className="mt-2"><AdminCustomerLocationQuick orderId={order.id} /></div>
-              )}
-              <div className="flex flex-wrap gap-2">
-                <AdminCustomerOrderHistory
-                  phone={order.customerPhone}
-                  regionId={order.customerRegionId}
-                  currentOrderId={order.id}
-                  customerName={order.customer?.name}
-                  customerRegionName={order.customerRegion?.name ?? null}
-                  alternatePhone={order.alternatePhone}
-                  customerLocationUrl={order.customerLocationUrl}
-                  customerLandmark={order.customerLandmark}
-                  customerProfileId={order.customerProfileId}
-                />
-                {order.customerProfileId ? (
-                  <Link href={`/admin/customers/profiles/${order.customerProfileId}/edit`} className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-900 shadow-sm hover:bg-slate-50 transition-colors">ملف الزبون المباشر</Link>
-                ) : null}
-              </div>
-            </div>
+              </>
+            )}
           </div>
           <div className="self-start">
-            {imgCustDoor ? <div className={squarePhotoFrame}><img src={imgCustDoor} alt="" className={squarePhotoImg} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
-            <div className="mt-2 space-y-2">
-              <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.customerDoorPhotoUrl} />
-              <ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} />
-            </div>
+            {order.routeMode === "double" ? (
+              <>
+                {imgCustDoor2 ? <div className={squarePhotoFrame}><img src={imgCustDoor2} alt="" className={squarePhotoImg} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                <div className="mt-2 space-y-2">
+                  {/* NEED SECOND CUSTOMER DOOR PHOTO UPLOADER HERE. WE'LL LEAVE IT READ ONLY FOR NOW */}
+                  <ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} />
+                </div>
+              </>
+            ) : (
+              <>
+                {imgCustDoor ? <div className={squarePhotoFrame}><img src={imgCustDoor} alt="" className={squarePhotoImg} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                <div className="mt-2 space-y-2">
+                  <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.customerDoorPhotoUrl} />
+                  <ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} />
+                </div>
+              </>
+            )}
           </div>
         </div>
+
 
         {/* قسم المندوب - مضاف حديثاً بناءً على طلبك */}
         {order.courier && (

@@ -71,13 +71,50 @@ export async function deleteCourierAction(id: string) {
 
 export async function resetCourierMandoubTotals(id: string): Promise<CourierMandoubResetState> {
   try {
+    const courier = await prisma.courier.findUnique({ where: { id } });
+    if (!courier) return { error: "المندوب غير موجود" };
+
+    const resetAt = courier.mandoubTotalsResetAt || courier.createdAt;
+    const now = new Date();
+
+    // Calculate total profit
+    const profitResult = await prisma.order.aggregate({
+      where: {
+        courierEarningForCourierId: id,
+        createdAt: { gte: resetAt, lte: now },
+      },
+      _sum: { courierEarningDinar: true },
+      _count: { id: true },
+    });
+
+    const totalProfitDinar = profitResult._sum.courierEarningDinar || 0;
+    const totalOrders = profitResult._count.id || 0;
+
+    // Create history record
+    await prisma.courierProfitHistory.create({
+      data: {
+        courierId: id,
+        periodStartAt: resetAt,
+        periodEndAt: now,
+        totalOrders,
+        totalProfitDinar,
+      }
+    });
+
+    // Reset courier
     await prisma.courier.update({
       where: { id },
-      data: { carryOverDinar: 0 }
+      data: { 
+        mandoubWalletCarryOverDinar: 0,
+        mandoubTotalsResetAt: now
+      }
     });
+
     revalidatePath("/admin/couriers");
+    revalidatePath("/admin/reports");
     return { success: true };
   } catch (e) {
+    console.error(e);
     return { error: "فشل تصفير الحساب" };
   }
 }

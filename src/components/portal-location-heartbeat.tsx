@@ -36,7 +36,20 @@ type PreparerProps = {
   children: React.ReactNode;
 };
 
-export type PortalLocationHeartbeatProps = MandoubProps | PreparerProps;
+type EmployeeProps = {
+  variant: "employee";
+  e: string;
+  exp: string;
+  s: string;
+  children: React.ReactNode;
+};
+
+type StaffProps = {
+  variant: "staff";
+  children: React.ReactNode;
+};
+
+export type PortalLocationHeartbeatProps = MandoubProps | PreparerProps | EmployeeProps | StaffProps;
 
 /**
  * القفل يعتمد فقط على هذه الجلسة في المتصفح:
@@ -72,6 +85,28 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
             lat,
             lng,
           }),
+        });
+        return r.ok;
+      }
+      if (p.variant === "employee") {
+        const r = await fetch("/api/employee/location", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            e: p.e,
+            ...(p.exp.trim() ? { exp: p.exp.trim() } : {}),
+            s: p.s,
+            lat,
+            lng,
+          }),
+        });
+        return r.ok;
+      }
+      if (p.variant === "staff") {
+        const r = await fetch("/api/staff/location", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lat, lng }),
         });
         return r.ok;
       }

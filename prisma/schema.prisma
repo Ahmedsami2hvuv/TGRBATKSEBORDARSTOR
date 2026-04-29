@@ -47,20 +47,20 @@ model CustomerPhoneProfile {
 }
 
 model Shop {
-  id               String         @id @default(cuid())
-  name             String
-  locationUrl      String
-  regionId         String
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  ownerName        String         @default("")
-  photoUrl         String         @default("")
-  phone            String         @default("")
-  customers        Customer[]
-  employees        Employee[]
-  orders           Order[]
-  preparerLinks    PreparerShop[]
-  region           Region         @relation(fields: [regionId], references: [id])
+  id            String         @id @default(cuid())
+  name          String
+  locationUrl   String
+  regionId      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  ownerName     String         @default("")
+  photoUrl      String         @default("")
+  phone         String         @default("")
+  customers     Customer[]
+  employees     Employee[]
+  orders        Order[]
+  preparerLinks PreparerShop[]
+  region        Region         @relation(fields: [regionId], references: [id])
 }
 
 model CompanyPreparer {
@@ -166,6 +166,9 @@ model Employee {
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
   orderPortalToken         String                    @default(cuid())
+  lastEmployeeLat          Float?
+  lastEmployeeLng          Float?
+  lastEmployeeLocationAt   DateTime?
   walletForCompanyPreparer CompanyPreparer?          @relation("CompanyPreparerWalletEmployee")
   shop                     Shop                      @relation(fields: [shopId], references: [id], onDelete: Cascade)
   walletMiscEntries        EmployeeWalletMiscEntry[]
@@ -186,6 +189,9 @@ model StaffEmployee {
   canManageStore  Boolean       @default(false)
   canSubmitOrders Boolean       @default(true)
   canViewArchived Boolean       @default(false)
+  lastStaffLat    Float?
+  lastStaffLng    Float?
+  lastStaffLocationAt DateTime?
   managedBranches StoreBranch[] @relation("StaffManagedBranches")
 
   @@index([active, createdAt])
@@ -214,6 +220,7 @@ model Courier {
   moneyEvents                 OrderCourierMoneyEvent[]
   walletTransfersOut          WalletPeerTransfer[]     @relation("WalletTransferFromCourier")
   walletTransfersIn           WalletPeerTransfer[]     @relation("WalletTransferToCourier")
+  profitHistories             CourierProfitHistory[]
   webPushSubscriptions        WebPushSubscription[]
 }
 
@@ -588,4 +595,19 @@ enum WalletPeerPartyKind {
   courier
   employee
   admin
+}
+
+model CourierProfitHistory {
+  id               String   @id @default(cuid())
+  courierId        String
+  periodStartAt    DateTime
+  periodEndAt      DateTime
+  totalOrders      Int
+  totalProfitDinar Decimal  @db.Decimal(14, 4)
+  createdAt        DateTime @default(now())
+
+  courier Courier @relation(fields: [courierId], references: [id], onDelete: Cascade)
+
+  @@index([courierId])
+  @@index([createdAt])
 }

@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import path from "path";
+import sharp from "sharp";
 
 const r2Client = (typeof process !== 'undefined' && process.env.R2_ACCESS_KEY_ID) ? new S3Client({
   region: "auto",
@@ -12,12 +13,31 @@ const r2Client = (typeof process !== 'undefined' && process.env.R2_ACCESS_KEY_ID
 
 export async function uploadToR2(buffer: Buffer, key: string, contentType: string) {
   if (!r2Client) return null;
+  
+  let finalBuffer = buffer;
+  let finalContentType = contentType;
+
+  if (contentType.startsWith("image/") && !contentType.includes("gif")) {
+    try {
+      finalBuffer = await sharp(buffer)
+        .resize({ width: 1200, withoutEnlargement: true })
+        .jpeg({ quality: 80 })
+        .toBuffer();
+      finalContentType = "image/jpeg";
+      if (!key.endsWith(".jpg") && !key.endsWith(".jpeg")) {
+        key = key.replace(/\.[^/.]+$/, "") + ".jpg";
+      }
+    } catch (e) {
+      console.warn("Failed to compress image:", e);
+    }
+  }
+
   try {
     await r2Client.send(new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME,
       Key: key,
-      Body: buffer,
-      ContentType: contentType,
+      Body: finalBuffer,
+      ContentType: finalContentType,
     }));
     return key;
   } catch (error) {

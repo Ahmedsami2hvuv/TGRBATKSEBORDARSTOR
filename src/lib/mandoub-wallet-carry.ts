@@ -52,8 +52,14 @@ export async function computeMandoubAdminTotalAllTimeDinar(courierId: string): P
   const sader = (sumOrderSader._sum.amountDinar ?? new Decimal(0)).plus(sumMiscGive._sum.amountDinar ?? new Decimal(0));
   const transfers = sumTransfersToAdmin._sum.amountDinar ?? new Decimal(0);
 
-  // الخصم يتم من ذمة الإدارة هنا: نخصم الأرباح (التوصيل) ونخصم الإكراميات أيضاً لأنها ملك المندوب
-  return ward.minus(sader).minus(earnings).minus(tips).minus(transfers);
+  const tipsTakeRes = await prisma.courierWalletMiscEntry.aggregate({
+    where: { courierId, deletedAt: null, direction: CourierWalletMiscDirection.take, label: { contains: "[إكرامية]" } },
+    _sum: { amountDinar: true }
+  });
+  const tipsTakeDinar = tipsTakeRes._sum.amountDinar ?? new Decimal(0);
+
+  // الخصم يتم من ذمة الإدارة هنا: نخصم الأرباح (التوصيل) ونخصم الإكراميات التي نوعها take لأنها تزيد الوارد. أما give فمخصومة مسبقاً من الصادر.
+  return ward.minus(sader).minus(earnings).minus(tipsTakeDinar).minus(transfers);
 }
 
 /** متبقي المحفظة (الكاش الفعلي من الطلبات) - لا يتأثر بالتحويلات للإدارة */
@@ -111,8 +117,7 @@ export async function computeMandoubTipsAllTimeDinar(courierId: string): Promise
     where: {
       courierId,
       deletedAt: null,
-      label: { contains: "[إكرامية]" },
-      direction: CourierWalletMiscDirection.take
+      label: { contains: "[إكرامية]" }
     },
     _sum: { amountDinar: true }
   });

@@ -11,6 +11,7 @@ export type CourierMapPoint = {
   lat: number;
   lng: number;
   updatedAt: string | null;
+  type: "courier" | "preparer" | "staff" | "employee";
 };
 
 export function CouriersMapClient({ points }: { points: CourierMapPoint[] }) {
@@ -35,11 +36,29 @@ export function CouriersMapClient({ points }: { points: CourierMapPoint[] }) {
 
       const markers: ReturnType<typeof L.circleMarker>[] = [];
       for (const p of points) {
+        let color = "#0369a1"; // courier (blue)
+        let fillColor = "#38bdf8";
+        let typeLabel = "مندوب";
+        
+        if (p.type === "preparer") {
+          color = "#b45309"; // amber
+          fillColor = "#fbbf24";
+          typeLabel = "مجهز";
+        } else if (p.type === "staff") {
+          color = "#4d7c0f"; // lime
+          fillColor = "#a3e635";
+          typeLabel = "موظف إدارة";
+        } else if (p.type === "employee") {
+          color = "#be185d"; // pink
+          fillColor = "#f472b6";
+          typeLabel = "موظف محل";
+        }
+
         const m = L.circleMarker([p.lat, p.lng], {
           radius: 11,
-          color: "#0369a1",
+          color,
           weight: 2,
-          fillColor: "#38bdf8",
+          fillColor,
           fillOpacity: 0.85,
         }).addTo(map);
         const when = p.updatedAt
@@ -50,7 +69,7 @@ export function CouriersMapClient({ points }: { points: CourierMapPoint[] }) {
           : "—";
         m.bindPopup(
           `<div dir="rtl" style="min-width:140px;font-family:system-ui,sans-serif">
-            <strong>${escapeHtml(p.name)}</strong><br/>
+            <strong>${escapeHtml(p.name)}</strong> <span style="font-size:11px;background:#eee;padding:2px 4px;border-radius:4px">${typeLabel}</span><br/>
             <span style="font-size:12px;opacity:.85">${escapeHtml(p.phone)}</span><br/>
             <span style="font-size:11px;color:#64748b">آخر تحديث: ${escapeHtml(when)}</span>
           </div>`,

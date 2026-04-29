@@ -159,6 +159,7 @@ export async function pushNotifyAdminsPresenceChange(input: {
 export async function pushNotifyCourierNewAssignment(
   courierId: string,
   orderNumber: number,
+  orderId?: string
 ): Promise<void> {
   const courier = await prisma.courier.findUnique({
     where: { id: courierId },
@@ -197,7 +198,8 @@ export async function pushNotifyCourierNewAssignment(
     where: { audience: "mandoub", courierId },
     select: { id: true, endpoint: true, p256dh: true, auth: true },
   });
-  const url = buildDelegatePortalUrl(courierId, getPublicAppUrl());
+  const path = orderId ? `/mandoub/order/${orderId}` : "/mandoub";
+  const url = buildDelegatePortalUrl(courierId, getPublicAppUrl(), path);
   await sendToSubscriptions(subs, {
     title: "لوحة المندوب — طلب جديد",
     body,

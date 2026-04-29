@@ -39,11 +39,12 @@ function timingSafeSigEqual(s: string, expectedHex: string): boolean {
  * رابط لوحة المندوب دائم: `?c=<courierId>&s=<hmac>` فقط.
  * الروابط القديمة التي تحتوي `exp` ما زالت تعمل (نفس التوقيع السابق، دون فحص انتهاء الصلاحية).
  */
-export function buildDelegatePortalUrl(courierId: string, baseUrl: string): string {
+export function buildDelegatePortalUrl(courierId: string, baseUrl: string, path?: string): string {
   const secret = getSecret();
   const sig = hmacSha256Hex(secret, courierId);
   const root = baseUrl.replace(/\/+$/, "");
-  const u = new URL("/mandoub", `${root}/`);
+  const basePath = path ? (path.startsWith("/") ? path : `/${path}`) : "/mandoub";
+  const u = new URL(basePath, `${root}/`);
   u.searchParams.set("c", courierId);
   u.searchParams.set("s", sig);
   return u.toString();

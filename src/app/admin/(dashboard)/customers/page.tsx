@@ -3,6 +3,7 @@ import { ad } from "@/lib/admin-ui";
 import { ImportCustomersButton } from "./import-customers-button";
 import Link from "next/link";
 
+import { CustomerSearchInput } from "./customer-search-input";
 export const dynamic = "force-dynamic";
 export const revalidate = 0; // منع الكاش نهائياً
 
@@ -67,19 +68,15 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
         </div>
       </div>
 
+
       <div className="flex gap-2 items-center bg-white p-4 rounded-2xl shadow-sm border border-blue-50">
           <Link href="/admin/customers/add" className="bg-cyan-500 text-white px-6 py-2 rounded-xl font-bold shadow-md hover:bg-cyan-600 transition-all text-sm">
             إضافة زبون مرجعي
           </Link>
-          <form className="flex-1 flex gap-2" action="/admin/customers">
-              <input
-                name="q"
-                defaultValue={q}
-                placeholder="بحث في كافة الزبائن رقم الهاتف، المنطقة أو..."
-                className="flex-1 bg-gray-50 border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none text-right"
-              />
-              <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-md">بحث</button>
-          </form>
+          <div className="flex-1 flex gap-2">
+              <CustomerSearchInput defaultValue={q} />
+              <button type="button" className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-md">بحث</button>
+          </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4">

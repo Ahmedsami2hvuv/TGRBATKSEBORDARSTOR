@@ -596,55 +596,6 @@ export function AdminCreateOrderForm({
             </div>
           ) : null}
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1.5 text-base sm:text-lg">
-              <span className={`${ad.label} text-base sm:text-lg`}>نوع الطلب</span>
-              <input
-                name="orderType"
-                required
-                className={`${ad.input} min-h-[52px] text-lg sm:text-xl`}
-                placeholder="مثال: مستلزمات / مستندات / طلب خاص"
-                value={orderType}
-                onChange={(e) => setOrderType(e.target.value)}
-              />
-            </label>
-            <label className="flex flex-col gap-1.5 text-base sm:text-lg">
-              <span className={`${ad.label} text-base sm:text-lg`}>سعر الطلب</span>
-              <input
-                name="orderSubtotal"
-                required
-                className={`${ad.input} min-h-[52px] text-lg font-semibold tabular-nums sm:text-xl animate-placeholder`}
-                placeholder="اكتب السعر هنا"
-                inputMode="decimal"
-                value={orderSubtotal}
-                onChange={(e) => setOrderSubtotal(e.target.value)}
-              />
-            </label>
-          </div>
-
-          <label className="flex flex-col gap-1 text-sm">
-            <span className={ad.label}>وقت الطلب (إجباري)</span>
-            <input
-              name="orderNoteTime"
-              required
-              className={ad.input}
-              placeholder="مثال: الساعة 8 مساءً"
-              value={orderNoteTime}
-              onChange={(e) => setOrderNoteTime(e.target.value)}
-            />
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm">
-            <span className={ad.label}>ملاحظات / تفاصيل</span>
-            <textarea
-              name="summary"
-              rows={3}
-              className={ad.input}
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-            />
-          </label>
-
           <section className="space-y-3 rounded-2xl border border-sky-200 bg-sky-50/40 p-4">
             <div>
               <h2 className={ad.h2}>
@@ -716,6 +667,7 @@ export function AdminCreateOrderForm({
                 <span className={ad.label}>
                   {submissionMode === "two_faces" ? "لوكيشن المرسل" : "لوكيشن الزبون"}
                 </span>
+                <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setFirstLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-md hover:bg-sky-200 w-fit">📍 أخذ موقعي الحالي</button>
                 <input
                   name="firstCustomerLocationUrl"
                   className={ad.input}
@@ -751,7 +703,55 @@ export function AdminCreateOrderForm({
             )}
           </section>
 
-          {submissionMode === "two_faces" && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1.5 text-base sm:text-lg">
+              <span className={`${ad.label} text-base sm:text-lg`}>نوع الطلب</span>
+              <input
+                name="orderType"
+                required
+                className={`${ad.input} min-h-[52px] text-lg sm:text-xl`}
+                placeholder="مثال: مستلزمات / مستندات / طلب خاص"
+                value={orderType}
+                onChange={(e) => setOrderType(e.target.value)}
+              />
+            </label>
+            <label className="flex flex-col gap-1.5 text-base sm:text-lg">
+              <span className={`${ad.label} text-base sm:text-lg`}>سعر الطلب</span>
+              <input
+                name="orderSubtotal"
+                required
+                className={`${ad.input} min-h-[52px] text-lg font-semibold tabular-nums sm:text-xl animate-placeholder`}
+                placeholder="اكتب السعر هنا"
+                inputMode="decimal"
+                value={orderSubtotal}
+                onChange={(e) => setOrderSubtotal(e.target.value)}
+              />
+            </label>
+          </div>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className={ad.label}>وقت الطلب (إجباري)</span>
+            <input
+              name="orderNoteTime"
+              required
+              className={ad.input}
+              placeholder="مثال: الساعة 8 مساءً"
+              value={orderNoteTime}
+              onChange={(e) => setOrderNoteTime(e.target.value)}
+            />
+          </label>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className={ad.label}>صورة الطلب</span>
+              <input name="orderImage" type="file" accept="image/*" className={ad.input} />
+            </label>
+            <ClientVoiceNoteField title="ملاحظة صوتية" wrapperClassName="" />
+          </div>
+        </>
+      )}
+
+      {submissionMode === "two_faces" && (
             <section className="space-y-3 rounded-2xl border border-violet-200 bg-violet-50/40 p-4">
               <h2 className={ad.h2}>المستلم (الوجهة الثانية)</h2>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -766,22 +766,40 @@ export function AdminCreateOrderForm({
               ) : null}
               <div className="grid gap-3 sm:grid-cols-2">
                 <input name="secondCustomerLocationUrl" className={ad.input} value={secondLocationUrl} onChange={(e) => setSecondLocationUrl(e.target.value)} placeholder="لوكيشن المستلم" />
+                <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setSecondLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-md hover:bg-violet-200 w-fit mt-1">📍 أخذ موقعي الحالي</button>
                 <input name="secondCustomerLandmark" className={ad.input} value={secondLandmark} onChange={(e) => setSecondLandmark(e.target.value)} placeholder="نقطة دالة مستلم" />
               </div>
+            
+              <label className="flex flex-col gap-1 text-sm">
+                <span className={ad.label}>صورة باب المستلم</span>
+                <input
+                  name="secondCustomerDoorPhoto"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className={ad.input}
+                  onChange={(e) => { if (e.target.files?.[0]) setSecondSavedDoorPhotoUrl(null); }}
+                />
+              </label>
+              {secondSavedDoorPhotoUrl && (
+                <img src={secondSavedDoorPhotoUrl} alt="" className="mt-2 max-h-44 w-full rounded-md object-contain border" />
+              )}
             </section>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className={ad.label}>صورة الطلب</span>
-              <input name="orderImage" type="file" accept="image/*" className={ad.input} />
-            </label>
-            <ClientVoiceNoteField title="ملاحظة صوتية" wrapperClassName="" />
-          </div>
-        </>
-      )}
 
-      {state.error ? <p className={ad.error}>{state.error}</p> : null}
+          <label className="flex flex-col gap-1 text-sm">
+            <span className={ad.label}>ملاحظات / تفاصيل</span>
+            <textarea
+              name="summary"
+              rows={3}
+              className={ad.input}
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+            />
+          </label>
+
+          {state.error ? <p className={ad.error}>{state.error}</p> : null}
 
       <button type="submit" className={ad.btnPrimary} disabled={!canSubmit || pending}>
         {pending ? "جارٍ التنفيذ..." : (submissionMode === "prep_draft" ? "إرسال طلب التجهيز" : "إنشاء الطلب")}

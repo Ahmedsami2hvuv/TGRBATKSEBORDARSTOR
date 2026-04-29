@@ -77,10 +77,10 @@ export async function bulkUpdateOrdersStatus(
   if (targetStatus === "assigned" && courierId) {
     const updatedOrders = await prisma.order.findMany({
       where: { id: { in: orderIds } },
-      select: { orderNumber: true }
+      select: { id: true, orderNumber: true }
     });
     for (const o of updatedOrders) {
-      void pushNotifyCourierNewAssignment(courierId, o.orderNumber);
+      void pushNotifyCourierNewAssignment(courierId, o.orderNumber, o.id);
     }
   }
 
