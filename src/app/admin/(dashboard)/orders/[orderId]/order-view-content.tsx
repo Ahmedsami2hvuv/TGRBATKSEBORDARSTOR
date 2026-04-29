@@ -95,6 +95,8 @@ export function OrderViewContent({
     || order.submittedBy?.phone?.trim()
     || (order.submissionSource === "admin_portal" ? SYSTEM_ADMIN_PHONE : order.shop?.phone?.trim() || "");
 
+  const parsedShoppingJson = typeof order.preparerShoppingJson === 'string' ? JSON.parse(order.preparerShoppingJson) : order.preparerShoppingJson;
+
   return (
     <div className={`kse-glass-dark relative mt-4 border p-4 pb-24 text-base leading-relaxed sm:p-5 sm:pb-32 ${orderStatusStartStripeClass(order.status)} ${order.prepaidAll ? "border-emerald-300 bg-gradient-to-b from-emerald-50 to-teal-50" : isReversePickup ? "border-violet-400 bg-violet-100" : `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}`}`} dir="rtl">
 
@@ -108,7 +110,7 @@ export function OrderViewContent({
             <div className="p-6 overflow-y-auto max-h-[80vh]">
               <AdminPricingPanel
                 orderId={order.id}
-                initialData={order.preparerShoppingJson}
+                initialData={parsedShoppingJson}
                 orderSummary={order.summary}
                 shops={[]}
                 preparers={preparers}
@@ -364,11 +366,11 @@ export function OrderViewContent({
       <div className="mt-6 border-t border-sky-100 pt-5">
         <p className="text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">قائمة المواد والملاحظات</p>
 
-        {order.submissionSource === "web_store" && order.preparerShoppingJson?.webStoreCart && (
+        {order.submissionSource === "web_store" && parsedShoppingJson?.webStoreCart && (
           <div className="mb-4 space-y-2">
             <p className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-100 w-fit">تفاصيل السلة (المتجر)</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {order.preparerShoppingJson.webStoreCart.map((item: any, idx: number) => (
+              {parsedShoppingJson.webStoreCart.map((item: any, idx: number) => (
                 <div key={idx} className="flex justify-between items-center p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
                   <div className="flex flex-col">
                     <span className="text-sm font-black text-slate-900">{item.name}</span>

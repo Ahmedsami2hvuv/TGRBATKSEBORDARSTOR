@@ -269,8 +269,8 @@ export default async function AdminOrderViewPage({ params }: Props) {
     shopDoorPhotoUploadedByName: order.shopDoorPhotoUploadedByName || null,
     customerDoorPhotoUploadedByName: order.customerDoorPhotoUploadedByName || null,
     secondCustomerDoorPhotoUploadedByName: order.secondCustomerDoorPhotoUploadedByName || null,
-    voiceNoteUrl: order.voiceNoteUrl || null,
-    adminVoiceNoteUrl: order.adminVoiceNoteUrl || null,
+    voiceNoteUrl: order.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${order.id}/voice` : (order.voiceNoteUrl || null),
+    adminVoiceNoteUrl: order.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${order.id}/admin-voice` : (order.adminVoiceNoteUrl || null),
     shopDoorPhotoUrl: order.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${order.id}/shopDoor` : (order.shopDoorPhotoUrl || null),
     customerDoorPhotoUrl: customerDoorPhotoUrlEffective,
     customerLandmark: customerLandmarkEffective || "",
@@ -289,7 +289,7 @@ export default async function AdminOrderViewPage({ params }: Props) {
       phone: order.shop?.phone ?? "",
       ownerName: order.shop?.ownerName ?? "",
     },
-    shopPhotoUrl: order.shop?.photoUrl?.startsWith("data:") ? `/api/image/shop/${order.shop?.id ?? order.shopId}/photo` : (order.shop?.photoUrl || ""),
+    shopPhotoUrl: (order.shop?.photoUrl?.startsWith("data:") ? `/api/image/shop/${order.shop?.id ?? order.shopId}/photo` : order.shop?.photoUrl) || "",
     shopLocationUrl: order.shop?.locationUrl ?? "",
     customerLocationUrl: customerLocationUrlEffective || "",
     customerLocationUploadedByName: order.customerLocationUploadedByName || null,
@@ -308,7 +308,7 @@ export default async function AdminOrderViewPage({ params }: Props) {
     submittedByCompanyPreparer: order.submittedByCompanyPreparer
       ? { name: order.submittedByCompanyPreparer.name, phone: order.submittedByCompanyPreparer.phone }
       : null,
-    preparerShoppingJson: order.preparerShoppingJson ? JSON.parse(JSON.stringify(order.preparerShoppingJson)) : null,
+    preparerShoppingJson: order.preparerShoppingJson ? JSON.stringify(order.preparerShoppingJson) : null,
   };
 
   return (
