@@ -166,6 +166,30 @@ export function OrderDetailSection({
             </div>
             <div className="max-w-[12rem] self-start">{customerDoorDisplay ? <div className={squarePhotoFrame}><img src={imgSrc(customerDoorDisplay)!} alt="" className={squarePhotoCover} /></div> : <p className="text-xs text-slate-400">لا توجد صورة باب</p>}<div className="mt-2"><MandoubQuickDoorCapture orderId={order.id} nextUrl={nextUrl} auth={auth} /></div></div>
           </div>
+          {order.routeMode === "double" && (
+            <div key="receiver" className={`${gridInfoPhoto} mt-6 pt-6 border-t border-sky-100`} style={blockStyle}>
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-emerald-800">المستلم (الوجهة الثانية)</h3>
+                <p className="text-slate-800">{order.secondCustomerRegion?.name ?? "—"}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-mono font-bold text-slate-900">{contactLine(order.secondCustomerPhone || "")}</p>
+                  {order.secondCustomerPhone && <a href={`tel:${order.secondCustomerPhone}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white shadow-sm">📞</a>}
+                </div>
+                <div className="mt-2">
+                  {order.secondCustomerLocationUrl?.trim() ? (
+                    <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن المستلم ↗</a>
+                  ) : (
+                    <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" />
+                  )}
+                </div>
+              </div>
+              <div className="max-w-[12rem] self-start">
+                <p className="text-xs text-slate-400 mb-2">باب المستلم</p>
+                {/* Future: Second door photo upload if needed */}
+              </div>
+            </div>
+          )}
+          </>
         );
       case "price_details":
         return (

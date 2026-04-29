@@ -25,10 +25,12 @@ export function MandoubUploadLocationInline({
   orderId,
   auth,
   nextUrl,
+  target = "first",
 }: {
   orderId: string;
   auth: { c: string; exp: string; s: string };
   nextUrl: string;
+  target?: "first" | "second";
 }) {
   const [state, formAction, pending] = useActionState(
     setMandoubCustomerLocationFromGeolocation,
@@ -98,6 +100,7 @@ export function MandoubUploadLocationInline({
         fd.set("s", auth.s);
         fd.set("lat", String(pos.coords.latitude));
         fd.set("lng", String(pos.coords.longitude));
+        fd.set("target", target);
         formAction(fd);
       },
       (err) => {

@@ -8,41 +8,58 @@ export type CourierFormState = {
   success?: boolean;
 };
 
-export type CourierMandoubResetState = {
-  error?: string;
-  success?: boolean;
-};
-
 export async function createCourier(state: CourierFormState, formData: FormData): Promise<CourierFormState> {
   const name = formData.get("name") as string;
   const phone = formData.get("phone") as string;
-  const password = formData.get("password") as string;
+  const telegramUserIdRaw = formData.get("telegramUserId") as string;
+  const telegramUserId = telegramUserIdRaw?.trim() || null;
+  const vehicleTypeRaw = formData.get("vehicleType") as string;
+  const vehicleType = vehicleTypeRaw === "bike" ? "bike" : "car";
 
   try {
+    // التحقق من وجود رقم الهاتف مسبقاً
+    const existingPhone = await prisma.courier.findFirst({ where: { phone } });
+    if (existingPhone) return { error: "رقم الهاتف هذا مسجل لمندوب آخر بالفعل." };
+
+    // التحقق من وجود معرف تيليجرام مسبقاً (إذا تم إدخاله)
+    if (telegramUserId) {
+      const existingTelegram = await prisma.courier.findUnique({ where: { telegramUserId } });
+      if (existingTelegram) return { error: "معرف التيليجرام هذا مستخدم من قبل مندوب آخر." };
+    }
+
     await prisma.courier.create({
-      data: { name, phone, password }
+      data: { name, phone, telegramUserId, vehicleType }
     });
+
     revalidatePath("/admin/couriers");
     return { success: true };
-  } catch (e) {
-    return { error: "فشل إضافة المندوب" };
+  } catch (e: any) {
+    console.error("CREATE COURIER ERROR:", e);
+    // التحقق من أخطاء Prisma المحددة
+    if (e.code === 'P2002') {
+       return { error: "فشل الإضافة: يوجد بيانات مكررة (الهاتف أو التيليجرام)." };
+    }
+    return { error: "حدث خطأ غير متوقع: " + (e.message || "فشل إضافة المندوب") };
   }
 }
 
 export async function updateCourier(id: string, state: CourierFormState, formData: FormData): Promise<CourierFormState> {
   const name = formData.get("name") as string;
   const phone = formData.get("phone") as string;
-  const password = formData.get("password") as string;
+  const telegramUserIdRaw = formData.get("telegramUserId") as string;
+  const telegramUserId = telegramUserIdRaw?.trim() || null;
+  const vehicleTypeRaw = formData.get("vehicleType") as string;
+  const vehicleType = vehicleTypeRaw === "bike" ? "bike" : "car";
 
   try {
     await prisma.courier.update({
       where: { id },
-      data: { name, phone, password }
+      data: { name, phone, telegramUserId, vehicleType }
     });
     revalidatePath("/admin/couriers");
     return { success: true };
-  } catch (e) {
-    return { error: "فشل تحديث البيانات" };
+  } catch (e: any) {
+    return { error: "فشل تحديث البيانات: " + (e.message || "تأكد من عدم تكرار الهاتف أو التيليجرام") };
   }
 }
 
@@ -55,7 +72,7 @@ export async function deleteCourierAction(id: string) {
     if (hasOrders) {
       await prisma.courier.update({
         where: { id },
-        data: { isBlocked: true }
+        data: { blocked: true } // تصحيح اسم الحقل من isBlocked إلى blocked بناءً على الـ Schema
       });
       revalidatePath("/admin/couriers");
       return { success: true, message: "تم تعطيل المندوب بنجاح (لا يمكن حذفه لوجود طلبات)." };
@@ -69,52 +86,19 @@ export async function deleteCourierAction(id: string) {
   }
 }
 
-export async function resetCourierMandoubTotals(id: string): Promise<CourierMandoubResetState> {
+export async function resetCourierMandoubTotals(id: string) {
   try {
-    const courier = await prisma.courier.findUnique({ where: { id } });
-    if (!courier) return { error: "المندوب غير موجود" };
-
-    const resetAt = courier.mandoubTotalsResetAt || courier.createdAt;
-    const now = new Date();
-
-    // Calculate total profit
-    const profitResult = await prisma.order.aggregate({
-      where: {
-        courierEarningForCourierId: id,
-        createdAt: { gte: resetAt, lte: now },
-      },
-      _sum: { courierEarningDinar: true },
-      _count: { id: true },
-    });
-
-    const totalProfitDinar = profitResult._sum.courierEarningDinar || 0;
-    const totalOrders = profitResult._count.id || 0;
-
-    // Create history record
-    await prisma.courierProfitHistory.create({
-      data: {
-        courierId: id,
-        periodStartAt: resetAt,
-        periodEndAt: now,
-        totalOrders,
-        totalProfitDinar,
-      }
-    });
-
-    // Reset courier
     await prisma.courier.update({
       where: { id },
       data: { 
         mandoubWalletCarryOverDinar: 0,
-        mandoubTotalsResetAt: now
+        mandoubTotalsResetAt: new Date()
       }
     });
 
     revalidatePath("/admin/couriers");
-    revalidatePath("/admin/reports");
     return { success: true };
   } catch (e) {
-    console.error(e);
     return { error: "فشل تصفير الحساب" };
   }
 }

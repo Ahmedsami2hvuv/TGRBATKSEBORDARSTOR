@@ -187,45 +187,51 @@ export async function uploadCustomerLocationFromView(
   _prev: CustomerDoorPhotoState,
   formData: FormData,
 ): Promise<CustomerDoorPhotoState> {
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    select: {
-      id: true,
-      customerId: true,
-      customerPhone: true,
-      shopId: true,
-    },
-  });
-  if (!order) return { error: "الطلب غير موجود" };
+  const latRaw = formData.get("lat");
+  const lngRaw = formData.get("lng");
+  const targetRaw = String(formData.get("target") ?? "first");
+  const isSecond = targetRaw === "second";
 
-  const lat = Number(formData.get("lat"));
-  const lng = Number(formData.get("lng"));
+  const lat = typeof latRaw === "string" ? Number(latRaw) : NaN;
+  const lng = typeof lngRaw === "string" ? Number(lngRaw) : NaN;
+
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return { error: "تعذّر قراءة موقع الجهاز" };
+    return { error: "إحداثيات غير صالحة" };
   }
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-    return { error: "إحداثيات غير صالحة" };
+    return { error: "إحداثيات خارج النطاق" };
   }
 
   const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
 
-  await prisma.order.update({
-    where: { id: order.id },
-    data: {
-      customerLocationUrl: mapsUrl,
-      customerLocationSetByCourierAt: null,
-      customerLocationUploadedByName: ORDER_UPLOADER_ADMIN_LABEL,
-    },
-  });
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) return { error: "الطلب غير موجود" };
 
-  await syncPhoneProfileFromOrder(order.id);
+  try {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: isSecond ? {
+        secondCustomerLocationUrl: mapsUrl,
+        customerLocationSetByCourierAt: null,
+        customerLocationUploadedByName: ORDER_UPLOADER_ADMIN_LABEL,
+      } : {
+        customerLocationUrl: mapsUrl,
+        customerLocationSetByCourierAt: null,
+        customerLocationUploadedByName: ORDER_UPLOADER_ADMIN_LABEL,
+      },
+    });
 
-  revalidatePath("/admin/orders/tracking");
-  revalidatePath("/admin/orders/pending");
-  revalidatePath(`/admin/orders/${order.id}`);
-  revalidatePath(`/admin/orders/${order.id}/edit`);
-  revalidatePath("/mandoub");
-  return { ok: true };
+    await syncPhoneProfileFromOrder(orderId);
+
+    revalidatePath("/admin/orders/tracking");
+    revalidatePath("/admin/orders/pending");
+    revalidatePath(`/admin/orders/${orderId}`);
+    revalidatePath(`/admin/orders/${orderId}/edit`);
+    revalidatePath("/mandoub");
+    return { ok: true };
+  } catch {
+    return { error: "فشل التحديث" };
+  }
 }
 
 export async function deleteOrderImageAction(orderId: string): Promise<CustomerDoorPhotoState> {

@@ -399,6 +399,9 @@ export async function setMandoubCustomerLocationFromGeolocation(
 
   const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
 
+  const targetRaw = String(formData.get("target") ?? "first");
+  const isSecond = targetRaw === "second";
+
   const order = await prisma.order.findFirst({
     where: { id: orderId, assignedCourierId: v.courierId },
   });
@@ -420,7 +423,11 @@ export async function setMandoubCustomerLocationFromGeolocation(
 
   await prisma.order.update({
     where: { id: orderId },
-    data: {
+    data: isSecond ? {
+      secondCustomerLocationUrl: mapsUrl,
+      customerLocationSetByCourierAt: new Date(),
+      customerLocationUploadedByName: uploadedBy,
+    } : {
       customerLocationUrl: mapsUrl,
       customerLocationSetByCourierAt: new Date(),
       customerLocationUploadedByName: uploadedBy,

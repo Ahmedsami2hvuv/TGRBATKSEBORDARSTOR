@@ -231,8 +231,11 @@ export function OrderViewContent({
                   {order.secondCustomerLocationUrl?.trim() ? (
                     <div className="space-y-1">
                       <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">لوكيشن المستلم ↗</a>
+                      <ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} />
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="mt-2"><AdminCustomerLocationQuick orderId={order.id} target="second" /></div>
+                  )}
                 </div>
               </>
             ) : (

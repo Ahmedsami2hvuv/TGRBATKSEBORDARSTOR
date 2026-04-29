@@ -16,7 +16,7 @@ function IconMapPin() {
   );
 }
 
-export function AdminCustomerLocationQuick({ orderId }: { orderId: string }) {
+export function AdminCustomerLocationQuick({ orderId, target = "first" }: { orderId: string; target?: "first" | "second" }) {
   const [state, formAction, pending] = useActionState(
     uploadCustomerLocationFromView.bind(null, orderId),
     initial,
@@ -54,6 +54,7 @@ export function AdminCustomerLocationQuick({ orderId }: { orderId: string }) {
     <form ref={formRef} action={formAction} className="mt-2 flex flex-wrap items-center gap-2">
       <input ref={latRef} type="hidden" name="lat" />
       <input ref={lngRef} type="hidden" name="lng" />
+      <input type="hidden" name="target" value={target} />
       <button
         type="button"
         disabled={pending || locating}

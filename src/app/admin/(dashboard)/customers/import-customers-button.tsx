@@ -91,7 +91,7 @@ export function ImportCustomersButton() {
       const res = await fetch("/api/admin/import/customers/clean-urls", { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        alert(`تم التنظيف بنجاح!\nالزبائن المعدلين: ${data.customerUpdates}\nالطلبيات المعدلة: ${data.orderUpdates}`);
+        alert(`تم التنظيف بنجاح!\nصور أساسية رُفعت: ${data.profileUpdates}\nالزبائن المعدلين: ${data.customerUpdates}\nالطلبيات المعدلة: ${data.orderUpdates}`);
         router.refresh();
       } else {
         alert("حدث خطأ: " + data.message);
