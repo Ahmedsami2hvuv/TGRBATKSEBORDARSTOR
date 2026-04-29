@@ -1,25 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ad } from "@/lib/admin-ui";
 import { deleteEmployee, renewEmployeeOrderPortalToken } from "./actions";
-import {
-  buildShopStaffOrderShareMessage,
-  whatsappAppUrl,
-} from "@/lib/whatsapp";
 
 export type EmployeeRow = {
   id: string;
   name: string;
   phone: string;
   orderPortalUrl: string;
+  whatsappLink: string; // الرابط جاهز من الخادم
 };
 
 export function EmployeesList({
   shopId,
-  shopName,
-  locationUrl,
   employees,
 }: {
   shopId: string;
@@ -29,100 +24,83 @@ export function EmployeesList({
 }) {
   const [query, setQuery] = useState("");
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return employees;
-    return employees.filter(
-      (e) =>
-        e.name.toLowerCase().includes(q) ||
-        e.phone.toLowerCase().includes(q),
-    );
-  }, [employees, query]);
+  const filtered = (employees || []).filter(
+    (e) =>
+      e.name.toLowerCase().includes(query.toLowerCase()) ||
+      e.phone.toLowerCase().includes(query.toLowerCase()),
+  );
 
   return (
     <div className="space-y-3">
-      <label className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
-        <span className={ad.label}>بحث في الموظفين</span>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between bg-slate-50 p-3 rounded-xl">
+        <span className="text-sm font-bold text-slate-600">بحث في الموظفين:</span>
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="اسم أو رقم…"
-          className={`w-full max-w-md sm:ms-auto ${ad.input}`}
+          placeholder="ابحث بالاسم أو الرقم..."
+          className="w-full max-w-xs rounded-lg border border-slate-200 p-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
         />
-      </label>
+      </div>
 
       {filtered.length === 0 ? (
-        <p className={ad.muted}>
-          {employees.length === 0
-            ? "لا يوجد موظفون بعد."
-            : "لا توجد نتائج."}
-        </p>
+        <p className="py-10 text-center text-slate-400">لا توجد نتائج مطابقة.</p>
       ) : (
-        <ul className={ad.listDivide}>
-          {filtered.map((e) => {
-            const shareText = buildShopStaffOrderShareMessage({
-              shopName,
-              locationUrl,
-              employeeName: e.name,
-              orderPortalUrl: e.orderPortalUrl,
-            });
-            return (
-              <li
-                key={e.id}
-                className="flex flex-wrap items-start justify-between gap-3 py-3"
-              >
-                <div>
-                  <p className={ad.listTitle}>{e.name}</p>
-                  <p className={`${ad.listMuted} tabular-nums`}>{e.phone}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
+        <ul className="divide-y divide-slate-100">
+          {filtered.map((e) => (
+            <li key={e.id} className="py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-black text-slate-800 text-lg">{e.name}</p>
+                <p className="text-slate-500 font-mono text-sm">{e.phone}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {e.whatsappLink !== "#" ? (
                     <a
-                      href={whatsappAppUrl(e.phone, shareText)}
-                      title="واتساب: رسالة تحتوي رابط إدخال الطلب لموظف المحل"
-                      className="inline-flex items-center rounded-lg bg-gradient-to-r from-emerald-400 to-emerald-500 px-3 py-1.5 text-xs font-bold text-slate-900 shadow-md ring-1 ring-emerald-300/50 transition hover:from-emerald-300 hover:to-emerald-400"
+                      href={e.whatsappLink}
+                      className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700 transition-colors"
                     >
-                      واتساب: رابط الطلب لموظف المحل
+                      <span>💬</span> إرسال الرابط للواتساب
                     </a>
+                  ) : (
+                    <span className="text-[10px] text-rose-500 bg-rose-50 px-2 py-1 rounded">⚠️ الرابط غير جاهز</span>
+                  )}
+
+                  {e.orderPortalUrl ? (
                     <a
                       href={e.orderPortalUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      title="صفحة إدخال الطلب — يعبّيها موظف المحل؛ الزبون هو مستلم التوصيل"
-                      className="inline-flex items-center rounded-lg border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-800 transition hover:bg-sky-100"
+                      className="inline-flex items-center gap-2 rounded-lg bg-sky-100 px-3 py-1.5 text-[11px] font-bold text-sky-700 hover:bg-sky-200 transition-colors"
                     >
-                      فتح رابط الطلب (موظف المحل)
+                      <span>🔗</span> فتح الرابط المباشر
                     </a>
-                  </div>
+                  ) : null}
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Link
-                    href={`/admin/shops/${shopId}/employees/${e.id}/edit`}
-                    className={ad.btnDark}
-                  >
-                    تعديل
-                  </Link>
-                  <form action={renewEmployeeOrderPortalToken} className="inline">
-                    <input type="hidden" name="id" value={e.id} />
-                    <input type="hidden" name="shopId" value={shopId} />
-                    <button
-                      type="submit"
-                      className="inline-flex items-center rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-900 transition hover:bg-amber-100"
-                      title="تجديد الرابط: إبطال كل الروابط السابقة لهذا الموظف"
-                    >
-                      تجديد رابط الطلب
-                    </button>
-                  </form>
-                  <form action={deleteEmployee} className="inline">
-                    <input type="hidden" name="id" value={e.id} />
-                    <input type="hidden" name="shopId" value={shopId} />
-                    <button type="submit" className={ad.btnDanger}>
-                      حذف
-                    </button>
-                  </form>
-                </div>
-              </li>
-            );
-          })}
+              </div>
+
+              <div className="flex items-center gap-2 border-t pt-3 sm:border-0 sm:pt-0">
+                <Link
+                  href={`/admin/shops/${shopId}/employees/${e.id}/edit`}
+                  className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-900"
+                >
+                  تعديل
+                </Link>
+                <form action={renewEmployeeOrderPortalToken}>
+                  <input type="hidden" name="id" value={e.id} />
+                  <input type="hidden" name="shopId" value={shopId} />
+                  <button type="submit" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-100">
+                    تجديد
+                  </button>
+                </form>
+                <form action={deleteEmployee} onSubmit={(ev) => !confirm("حذف الموظف؟") && ev.preventDefault()}>
+                  <input type="hidden" name="id" value={e.id} />
+                  <input type="hidden" name="shopId" value={shopId} />
+                  <button type="submit" className="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-100">
+                    حذف
+                  </button>
+                </form>
+              </div>
+            </li>
+          ))}
         </ul>
       )}
     </div>
