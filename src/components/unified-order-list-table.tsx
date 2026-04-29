@@ -5,6 +5,7 @@ import type { MandoubRow } from "@/app/mandoub/mandoub-order-table";
 import { OrderTypeLine } from "@/components/order-type-line";
 import { formatBaghdadDateFriendly, getBaghdadDateString, formatBaghdadDateTime } from "@/lib/baghdad-time";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
 
 /** مكون مشغل الصوت المصغر */
 function MiniAudioPlayer({ url }: { url: string }) {
@@ -394,8 +395,8 @@ export function UnifiedOrderListTable({
                         </span>
                         {o.customerPhone && (
                           <div className="flex items-center gap-1.5">
-                            <a href={`tel:${o.customerPhone}`} className="size-7 flex items-center justify-center rounded-full bg-sky-600 text-white shadow-sm hover:scale-110 transition-transform">📞</a>
-                            <a href={`https://wa.me/${o.customerPhone?.replace(/\D/g,'')}`} target="_blank" className="size-7 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm hover:scale-110 transition-transform">💬</a>
+                            <a href={telHref(o.customerPhone)} className="size-7 flex items-center justify-center rounded-full bg-sky-600 text-white shadow-sm hover:scale-110 transition-transform">📞</a>
+                            <a href={whatsappMeUrl(o.customerPhone)} target="_blank" className="size-7 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm hover:scale-110 transition-transform">💬</a>
                           </div>
                         )}
 
@@ -405,8 +406,8 @@ export function UnifiedOrderListTable({
                               {o.alternatePhone || o.secondCustomerPhone}
                             </span>
                             <div className="flex items-center gap-1.5">
-                              <a href={`tel:${o.alternatePhone || o.secondCustomerPhone}`} className="size-6 flex items-center justify-center rounded-full bg-violet-600 text-white shadow-sm hover:scale-110 transition-transform">📞</a>
-                              <a href={`https://wa.me/${(o.alternatePhone || o.secondCustomerPhone)?.replace(/\D/g,'')}`} target="_blank" className="size-6 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm hover:scale-110 transition-transform">💬</a>
+                              <a href={telHref(o.alternatePhone || o.secondCustomerPhone)} className="size-6 flex items-center justify-center rounded-full bg-violet-600 text-white shadow-sm hover:scale-110 transition-transform">📞</a>
+                              <a href={whatsappMeUrl(o.alternatePhone || o.secondCustomerPhone)} target="_blank" className="size-6 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm hover:scale-110 transition-transform">💬</a>
                             </div>
                           </div>
                         )}

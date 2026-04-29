@@ -36,25 +36,31 @@ export function normalizePhoneDigits(raw: string): string {
   let d = digitsOnly(raw);
   if (!d) return "";
 
+  // إزالة الأصفار الدولية البادئة
   while (d.startsWith("00")) {
     d = d.slice(2);
   }
 
   const cc = defaultCountryDigits();
 
-  if (d.startsWith(cc)) {
+  // إذا كان الرقم يبدأ بكود الدولة مسبقاً (مثل 96477...)
+  if (d.startsWith(cc) && d.length >= 12) {
     return d;
   }
 
+  // معالجة أرقام العراق
   if (cc === "964") {
+    // إذا بدأ بـ 07 (11 رقم) نحذف الـ 0 ونضيف 964
     if (d.length === 11 && d.startsWith("07")) {
       return cc + d.slice(1);
     }
+    // إذا بدأ بـ 7 (10 أرقام) نضيف 964 مباشرة
     if (d.length === 10 && d.startsWith("7")) {
       return cc + d;
     }
   }
 
+  // لأي دولة أخرى أو إذا كان الطول كبيراً نفترض أنه يحتوي الكود
   if (d.length >= 11) {
     return d;
   }
