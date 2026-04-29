@@ -108,6 +108,7 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
           </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-4">
         {Array.from(groupedProfiles.values()).map((group, index) => {
           const stats = statsMap.get(group.phone);
           const seqNumber = filteredCount - skip - index; // Not exact anymore, but a good indicator
