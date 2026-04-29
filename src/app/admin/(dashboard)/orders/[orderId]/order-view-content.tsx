@@ -37,6 +37,26 @@ const STATUS_AR: Record<string, string> = {
 
 const SYSTEM_ADMIN_PHONE = "07733921568";
 
+/** بيانات JSON للتسعير/المتجر — قد تكون نصاً غير صالح أو شكلاً غير متوقع بعد التخزين */
+function parsePreparerShoppingJson(raw: unknown): Record<string, unknown> | null {
+  if (raw == null) return null;
+  if (Array.isArray(raw)) return { products: raw } as Record<string, unknown>;
+  if (typeof raw === "object") return raw as Record<string, unknown>;
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    if (!t) return null;
+    try {
+      const v = JSON.parse(t) as unknown;
+      if (Array.isArray(v)) return { products: v } as Record<string, unknown>;
+      if (typeof v === "object" && v !== null) return v as Record<string, unknown>;
+      return null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 type OrderViewModel = {
   id: string; orderNumber: number; status: string; orderType: string; summary: string;
   customerPhone: string; routeMode: "single" | "double"; adminOrderCode: string;
@@ -95,7 +115,7 @@ export function OrderViewContent({
     || order.submittedBy?.phone?.trim()
     || (order.submissionSource === "admin_portal" ? SYSTEM_ADMIN_PHONE : order.shop?.phone?.trim() || "");
 
-  const parsedShoppingJson = typeof order.preparerShoppingJson === 'string' ? JSON.parse(order.preparerShoppingJson) : order.preparerShoppingJson;
+  const parsedShoppingJson = parsePreparerShoppingJson(order.preparerShoppingJson);
 
   return (
     <div className={`kse-glass-dark relative mt-4 border p-4 pb-24 text-base leading-relaxed sm:p-5 sm:pb-32 ${orderStatusStartStripeClass(order.status)} ${order.prepaidAll ? "border-emerald-300 bg-gradient-to-b from-emerald-50 to-teal-50" : isReversePickup ? "border-violet-400 bg-violet-100" : `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}`}`} dir="rtl">
@@ -366,11 +386,14 @@ export function OrderViewContent({
       <div className="mt-6 border-t border-sky-100 pt-5">
         <p className="text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">قائمة المواد والملاحظات</p>
 
-        {order.submissionSource === "web_store" && parsedShoppingJson?.webStoreCart && (
+        {order.submissionSource === "web_store" &&
+          parsedShoppingJson &&
+          Array.isArray(parsedShoppingJson.webStoreCart) &&
+          (parsedShoppingJson.webStoreCart as unknown[]).length > 0 && (
           <div className="mb-4 space-y-2">
             <p className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-100 w-fit">تفاصيل السلة (المتجر)</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {parsedShoppingJson.webStoreCart.map((item: any, idx: number) => (
+              {(parsedShoppingJson.webStoreCart as any[]).map((item: any, idx: number) => (
                 <div key={idx} className="flex justify-between items-center p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
                   <div className="flex flex-col">
                     <span className="text-sm font-black text-slate-900">{item.name}</span>
