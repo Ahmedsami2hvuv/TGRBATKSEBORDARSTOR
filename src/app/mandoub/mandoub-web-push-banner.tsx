@@ -57,8 +57,8 @@ export function MandoubWebPushBanner({ auth }: { auth: Auth }) {
   const label =
     perm === "granted" ? "مفعلة" : perm === "denied" ? "مرفوضة من المتصفح" : "غير مفعلة";
 
-  // إضافة: إخفاء الشريط بالكامل إذا كانت الإشعارات مفعلة بنجاح
-  if (perm === "granted" && vapidConfigured !== false) {
+  // إخفاء الشريط بالكامل إذا كانت الإشعارات مفعلة بنجاح
+  if (perm === "granted") {
     return null;
   }
 
