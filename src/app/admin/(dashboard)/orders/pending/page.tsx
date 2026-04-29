@@ -49,10 +49,10 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     where: { status: "pending", submissionSource: { not: "company_preparer" } },
     orderBy: { createdAt: "desc" },
     include: {
-      shop: { include: { region: true } },
-      submittedBy: true,
-      customerRegion: true,
-      customer: true,
+      shop: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
+      submittedBy: { select: { id: true, name: true } },
+      customerRegion: { select: { id: true, name: true } },
+      customer: { select: { id: true, customerLocationUrl: true } },
       moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true } },
     },
   });
@@ -62,11 +62,11 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     where: { status: "pending", submissionSource: "company_preparer" },
     orderBy: { createdAt: "desc" },
     include: {
-      shop: { include: { region: true } },
-      submittedBy: true,
-      submittedByCompanyPreparer: true,
-      customerRegion: true,
-      customer: true,
+      shop: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
+      submittedBy: { select: { id: true, name: true } },
+      submittedByCompanyPreparer: { select: { id: true, name: true } },
+      customerRegion: { select: { id: true, name: true } },
+      customer: { select: { id: true, customerLocationUrl: true } },
       moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true } },
     },
   });
