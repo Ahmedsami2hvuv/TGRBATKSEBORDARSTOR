@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { AdminOrderMoneyEvents } from "./admin-order-money-events";
 import { OrderViewContent } from "./order-view-content";
+import { AdminOrderErrorUI } from "./error-ui";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import {
   applyMandoubWaTemplate,
@@ -35,82 +36,107 @@ export async function generateMetadata({ params }: Props) {
 export default async function AdminOrderViewPage({ params }: Props) {
   const { orderId } = await params;
 
-  const [order, preparers, waButtonSettings] = await Promise.all([
-    prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        shop: true,
-        customerRegion: true,
-        secondCustomerRegion: true,
-        courier: true,
-        customer: true,
-        submittedBy: true,
-        submittedByCompanyPreparer: true,
-        moneyEvents: {
-          orderBy: { createdAt: "asc" },
-          include: {
-            courier: { select: { name: true } },
-            recordedByCompanyPreparer: { select: { name: true } },
+  let order, preparers, waButtonSettings;
+  try {
+    [order, preparers, waButtonSettings] = await Promise.all([
+      prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          shop: true,
+          customerRegion: true,
+          secondCustomerRegion: true,
+          courier: true,
+          customer: true,
+          submittedBy: true,
+          submittedByCompanyPreparer: true,
+          moneyEvents: {
+            orderBy: { createdAt: "asc" },
+            include: {
+              courier: { select: { name: true } },
+              recordedByCompanyPreparer: { select: { name: true } },
+            },
           },
         },
-      },
-    }),
-    prisma.companyPreparer.findMany({
-      where: { active: true },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true }
-    }),
-    prisma.mandoubWaButtonSetting.findMany({
-      where: { isActive: true },
-      orderBy: { updatedAt: "desc" },
-    }),
-  ]);
+      }),
+      prisma.companyPreparer.findMany({
+        where: { active: true },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true }
+      }),
+      prisma.mandoubWaButtonSetting.findMany({
+        where: { isActive: true },
+        orderBy: { updatedAt: "desc" },
+      }),
+    ]);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : "";
+    console.error(`[AdminOrderViewPage] Failed to fetch order ${orderId}:`, {
+      error: errorMessage,
+      stack: errorStack,
+      orderId,
+      timestamp: new Date().toISOString(),
+    });
+    return <AdminOrderErrorUI orderId={orderId} error={`${errorMessage}\n\nStack: ${errorStack}`} />;
+  }
 
   if (!order) {
     notFound();
   }
 
   const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
-  const customerPhoneProfile =
-    customerPhoneNorm && order.customerRegionId
-      ? await prisma.customerPhoneProfile.findUnique({
-          where: {
-            phone_regionId: {
-              phone: customerPhoneNorm,
-              regionId: order.customerRegionId,
+  let customerPhoneProfile = null;
+  try {
+    customerPhoneProfile =
+      customerPhoneNorm && order.customerRegionId
+        ? await prisma.customerPhoneProfile.findUnique({
+            where: {
+              phone_regionId: {
+                phone: customerPhoneNorm,
+                regionId: order.customerRegionId,
+              },
             },
-          },
-          select: {
-            id: true,
-            photoUrl: true,
-            locationUrl: true,
-            landmark: true,
-            alternatePhone: true,
-          },
-        })
-      : null;
+            select: {
+              id: true,
+              photoUrl: true,
+              locationUrl: true,
+              landmark: true,
+              alternatePhone: true,
+            },
+          })
+        : null;
+  } catch (error) {
+    console.warn(`[AdminOrderViewPage] Failed to fetch customer phone profile for ${orderId}:`, error);
+    customerPhoneProfile = null;
+  }
 
   const secondPhoneNorm = order.secondCustomerPhone?.trim()
     ? normalizeIraqMobileLocal11(order.secondCustomerPhone)
     : null;
-  const secondCustomerPhoneProfile =
-    secondPhoneNorm && order.secondCustomerRegionId
-      ? await prisma.customerPhoneProfile.findUnique({
-          where: {
-            phone_regionId: {
-              phone: secondPhoneNorm,
-              regionId: order.secondCustomerRegionId,
+  let secondCustomerPhoneProfile = null;
+  try {
+    secondCustomerPhoneProfile =
+      secondPhoneNorm && order.secondCustomerRegionId
+        ? await prisma.customerPhoneProfile.findUnique({
+            where: {
+              phone_regionId: {
+                phone: secondPhoneNorm,
+                regionId: order.secondCustomerRegionId,
+              },
             },
-          },
-          select: {
-            id: true,
-            photoUrl: true,
-            locationUrl: true,
-            landmark: true,
-            alternatePhone: true,
-          },
-        })
-      : null;
+            select: {
+              id: true,
+              photoUrl: true,
+              locationUrl: true,
+              landmark: true,
+              alternatePhone: true,
+            },
+          })
+        : null;
+  } catch (error) {
+    console.warn(`[AdminOrderViewPage] Failed to fetch second customer phone profile for ${orderId}:`, error);
+    secondCustomerPhoneProfile = null;
+  }
 
   const getCustomerDoorUrl = () => {
     if (order.customerDoorPhotoUrl?.trim()?.startsWith("data:")) return `/api/image/order/${order.id}/customerDoor`;
@@ -176,7 +202,7 @@ export default async function AdminOrderViewPage({ params }: Props) {
   const adminMoneyEvents = order.moneyEvents.map((e) => ({
     id: e.id,
     kind: e.kind,
-    amountDinar: Number(e.amountDinar),
+    amountDinar: Number(e.amountDinar ?? 0),
     expectedDinar: e.expectedDinar != null ? Number(e.expectedDinar) : null,
     matchesExpected: e.matchesExpected,
     mismatchReason: e.mismatchReason,
@@ -312,17 +338,29 @@ export default async function AdminOrderViewPage({ params }: Props) {
       if (order.preparerShoppingJson == null) return null;
       try {
         return JSON.stringify(order.preparerShoppingJson);
-      } catch {
+      } catch (error) {
+        console.warn(`[AdminOrderViewPage] Failed to stringify preparerShoppingJson for ${orderId}:`, error);
         return null;
       }
     })(),
   };
 
-  // Deep clean all objects before passing to Client Components to prevent serialization errors
-  const safeView = JSON.parse(JSON.stringify(view));
-  const safeMoneyEvents = JSON.parse(JSON.stringify(adminMoneyEvents));
-  const safePreparers = JSON.parse(JSON.stringify(preparers));
-  const safeWaButtons = JSON.parse(JSON.stringify(adminCustomWaButtons));
+  // Safe JSON serialization with error handling
+  let safeView, safeMoneyEvents, safePreparers, safeWaButtons;
+  try {
+    safeView = JSON.parse(JSON.stringify(view));
+    safeMoneyEvents = JSON.parse(JSON.stringify(adminMoneyEvents));
+    safePreparers = JSON.parse(JSON.stringify(preparers));
+    safeWaButtons = JSON.parse(JSON.stringify(adminCustomWaButtons));
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`[AdminOrderViewPage] Serialization failed for order ${orderId}:`, {
+      error: errorMessage,
+      viewKeys: Object.keys(view),
+      timestamp: new Date().toISOString(),
+    });
+    return <AdminOrderErrorUI orderId={orderId} error={`فشل في تحويل البيانات: ${errorMessage}`} />;
+  }
 
   return (
     <div className="space-y-4">
