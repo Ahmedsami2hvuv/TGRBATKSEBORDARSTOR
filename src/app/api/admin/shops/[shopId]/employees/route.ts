@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { buildEmployeeOrderPortalUrl } from "@/lib/employee-order-portal-link";
+import { buildEmployeeChatGreeting, whatsappAppUrl } from "@/lib/whatsapp";
+import { getPublicAppUrl } from "@/lib/app-url";
 
 export async function GET(
   request: Request,
@@ -7,6 +10,7 @@ export async function GET(
 ) {
   try {
     const { shopId } = await params;
+    const baseUrl = getPublicAppUrl();
 
     // جلب بيانات المحل مع موظفيه
     const shop = await prisma.shop.findUnique({
@@ -34,13 +38,26 @@ export async function GET(
       );
     }
 
+    // توليد الروابط على السيرفر لضمان صحة التوقيع الرقمي
+    const employeesWithLinks = shop.employees.map((emp) => {
+      const orderPortalUrl = buildEmployeeOrderPortalUrl(emp.id, emp.orderPortalToken, baseUrl);
+      const greeting = buildEmployeeChatGreeting({ employeeName: emp.name });
+      const whatsappLink = whatsappAppUrl(emp.phone, greeting);
+
+      return {
+        ...emp,
+        orderPortalUrl,
+        whatsappLink
+      };
+    });
+
     return NextResponse.json({
       shop: {
         id: shop.id,
         name: shop.name,
         locationUrl: shop.locationUrl,
       },
-      employees: shop.employees,
+      employees: employeesWithLinks,
     });
   } catch (error) {
     console.error("API Error:", error);

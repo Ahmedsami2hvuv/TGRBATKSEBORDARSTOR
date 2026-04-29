@@ -6,8 +6,6 @@ import { useEffect, useState } from "react";
 import { ad } from "@/lib/admin-ui";
 import { AddEmployeePanel } from "./add-employee-panel";
 import { EmployeesList, type EmployeeRow } from "./employees-list";
-import { buildEmployeeOrderPortalUrl } from "@/lib/employee-order-portal-link";
-import { buildEmployeeChatGreeting, whatsappAppUrl } from "@/lib/whatsapp";
 
 export default function ShopEmployeesPage() {
   const params = useParams();
@@ -17,8 +15,6 @@ export default function ShopEmployeesPage() {
   const [error, setError] = useState<string | null>(null);
   const [shop, setShop] = useState<{ id: string; name: string; locationUrl: string } | null>(null);
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://aboakbar.vercel.app";
 
   useEffect(() => {
     async function fetchData() {
@@ -33,20 +29,8 @@ export default function ShopEmployeesPage() {
 
         setShop(data.shop);
 
-        // تحويل بيانات الموظفين إلى الصيغة المطلوبة
-        const rows: EmployeeRow[] = data.employees.map((emp: any) => {
-          const orderPortalUrl = buildEmployeeOrderPortalUrl(emp.id, emp.orderPortalToken, baseUrl);
-          const greeting = buildEmployeeChatGreeting({ employeeName: emp.name });
-          const whatsappLink = whatsappAppUrl(emp.phone, greeting);
-          return {
-            id: emp.id,
-            name: emp.name,
-            phone: emp.phone,
-            orderPortalUrl,
-            whatsappLink,
-          };
-        });
-        setEmployees(rows);
+        // نستخدم الروابط التي تم توليدها على السيرفر مباشرة لضمان صحة التوقيع
+        setEmployees(data.employees);
       } catch (err: any) {
         console.error(err);
         setError(err.message || "حدث خطأ غير متوقع");
@@ -58,7 +42,7 @@ export default function ShopEmployeesPage() {
     if (shopId) {
       fetchData();
     }
-  }, [shopId, baseUrl]);
+  }, [shopId]);
 
   if (loading) {
     return (
