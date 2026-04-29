@@ -18,6 +18,99 @@ import { withReversePickupPrefix } from "@/lib/order-type-flags";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
 export type ClientOrderState = { error?: string; ok?: boolean };
+export type EmployeePreparationState = { error?: string; ok?: boolean; draftId?: string; preparerName?: string };
+
+export async function submitEmployeePreparationDraft(
+  _prev: EmployeePreparationState,
+  formData: FormData,
+): Promise<EmployeePreparationState> {
+  try {
+    const e = String(formData.get("e") ?? "").trim();
+    const exp = String(formData.get("exp") ?? "").trim();
+    const sig = String(formData.get("s") ?? "").trim();
+    const v = verifyEmployeeOrderPortalQuery(e, exp, sig);
+
+    if (!v.ok) {
+      return { error: "الرابط غير صالح أو منتهٍ." };
+    }
+
+    const submitter = await prisma.employee.findUnique({
+      where: { id: v.employeeId },
+      select: { id: true, name: true, shopId: true, orderPortalToken: true },
+    });
+
+    if (!submitter || submitter.orderPortalToken !== v.token) {
+      return { error: "الموظف غير موجود أو الرابط غير صالح." };
+    }
+
+    const titleLine = String(formData.get("titleLine") ?? "").trim();
+    const rawListText = String(formData.get("rawListText") ?? "").trim();
+    const productsCsv = String(formData.get("productsCsv") ?? "").trim();
+    const customerRegionId = String(formData.get("customerRegionId") ?? "").trim();
+    const customerPhone = String(formData.get("customerPhone") ?? "").trim();
+    const customerName = String(formData.get("customerName") ?? "").trim();
+    const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
+    const orderTime = String(formData.get("orderTime") ?? "").trim();
+
+    if (!titleLine || !productsCsv || !customerRegionId || !orderTime) {
+      return { error: "بيانات ناقصة." };
+    }
+
+    const phoneLocal = normalizeIraqMobileLocal11(customerPhone);
+    if (!phoneLocal) return { error: "رقم الهاتف غير صحيح." };
+
+    const region = await prisma.region.findUnique({
+      where: { id: customerRegionId },
+      select: { id: true },
+    });
+    if (!region) return { error: "المنطقة غير صالحة." };
+
+    // البحث عن مجهز للمحل
+    const shopLink = await prisma.preparerShop.findFirst({
+      where: { shopId: submitter.shopId },
+      include: { preparer: true },
+    });
+
+    const lines = productsCsv.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const products = lines.map(line => ({ line, buyAlf: null, sellAlf: null }));
+
+    const draft = await prisma.companyPreparerShoppingDraft.create({
+      data: {
+        preparerId: shopLink?.preparerId ?? null,
+        status: "draft",
+        titleLine,
+        rawListText,
+        customerRegionId: region.id,
+        customerPhone: phoneLocal,
+        customerName,
+        customerLandmark,
+        orderTime,
+        data: {
+          version: 1,
+          products,
+          fromEmployeeId: submitter.id,
+          fromEmployeeName: submitter.name,
+        },
+      },
+    });
+
+    if (shopLink?.preparerId) {
+      await prisma.companyPreparerPrepNotice.create({
+        data: {
+          preparerId: shopLink.preparerId,
+          title: "طلب تجهيز جديد",
+          body: `طلب جديد من ${submitter.name} لمحل ${submitter.shopId}`,
+        },
+      }).catch(() => null);
+    }
+
+    revalidatePath("/admin/orders/pending");
+    return { ok: true, draftId: draft.id, preparerName: shopLink?.preparer?.name };
+  } catch (err: any) {
+    console.error("Prep Draft Error:", err);
+    return { error: "فشل إنشاء طلب التجهيز: " + (err.message || "خطأ داخلي") };
+  }
+}
 
 /** اسم الدالة submitOrder مطلوب ليتطابق مع الاستدعاء في الكلاينت */
 export async function submitOrder(
