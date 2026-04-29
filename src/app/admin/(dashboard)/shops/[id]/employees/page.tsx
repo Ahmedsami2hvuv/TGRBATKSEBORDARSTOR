@@ -47,7 +47,7 @@ export default async function ShopEmployeesPage({ params }: Props) {
         <p className={`mt-1 ${ad.lead}`}>
           <span className="font-semibold text-slate-900">{shop.name}</span>
           <span className="text-emerald-600"> · </span>
-          {shop.region.name}
+          {shop.region?.name || "منطقة غير محددة"}
         </p>
       </div>
 

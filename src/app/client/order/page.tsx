@@ -77,8 +77,9 @@ export default async function ClientOrderPage({ searchParams }: Props) {
   }
 
   const shop = employee.shop;
-  const shopDeliveryAlf =
-    Number(shop.region.deliveryPrice.toString()) / ALF_PER_DINAR;
+  const shopDeliveryAlf = shop.region
+    ? Number(shop.region.deliveryPrice.toString()) / ALF_PER_DINAR
+    : 0;
   const editRaw = String(sp.edit ?? "").trim();
   const editOrderNumber = Number.parseInt(editRaw, 10);
   const isEditMode = Number.isInteger(editOrderNumber) && editOrderNumber > 0;

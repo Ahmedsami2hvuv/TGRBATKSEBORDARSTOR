@@ -621,33 +621,38 @@ export function OrderFabDock(props: OrderFabDockProps) {
     setCustomWaPick(null);
   };
 
-  const contactMenuPos = contactMenu === "wa" ? positions.wa : contactMenu === "tel" ? positions.tel : null;
+  const contactMenuPos = isExpanded ? positions.wa : (contactMenu === "wa" ? positions.wa : (contactMenu === "tel" ? positions.tel : null));
   /** ارتفاع تقريبي لقائمة واتساب/اتصال */
   const MENU_H = usePreparerTriple ? 148 : hasCust2 ? 148 : 96;
   const showMenuAbove =
-    contactMenuPos != null && contactMenuPos.top > MENU_H + fabSize + 16;
+    contactMenuPos != null && contactMenuPos.top > MENU_H + fabSize + 20;
+
+  // إذا كانت القائمة مفتوحة من زر "المهام"، نرفعها قليلاً فوق الأزرار المتراصة
   const menuTop = contactMenuPos
-    ? showMenuAbove
-      ? contactMenuPos.top - MENU_H - 8
-      : contactMenuPos.top + fabSize + 8
+    ? isExpanded
+        ? contactMenuPos.top - (MENU_H / 2) - 100 // وضعها في منتصف المسافة تقريباً فوق الأزرار
+        : (showMenuAbove ? contactMenuPos.top - MENU_H - 8 : contactMenuPos.top + fabSize + 8)
     : 0;
-  const menuLeft = contactMenuPos ? Math.max(8, contactMenuPos.left - 36) : 0;
+
+  const menuLeft = contactMenuPos ? Math.max(8, contactMenuPos.left - 130) : 0;
 
   /** أعلى من زرّ الفاب حتى لا تُغطّي الأزرار القائمة بعد سحبات متكرّرة (كان dragZ يتجاوز z القائمة) */
   const fabZ = Math.min(dragZ, 99);
 
   /** قائمة عميل / زبون / زبون2 لقوالب الواتساب المخصصة */
-  const CUSTOM_PICK_H = hasCust2 ? 248 : 208;
-  const customPickFabId = customWaPick ? `cwa:${customWaPick.btn.id}` : null;
+  const CUSTOM_PICK_H = hasCust2 ? 200 : 160;
+  const customPickFabId = customWaPick ? (isExpanded ? "wa" : `cwa:${customWaPick.btn.id}`) : null;
   const customPickPos = customPickFabId ? positions[customPickFabId] : null;
   const showCustomPickAbove =
-    customPickPos != null && customPickPos.top > CUSTOM_PICK_H + fabSize + 16;
+    customPickPos != null && customPickPos.top > CUSTOM_PICK_H + fabSize + 20;
+
   const customPickMenuTop = customPickPos
-    ? showCustomPickAbove
-      ? customPickPos.top - CUSTOM_PICK_H - 8
-      : customPickPos.top + fabSize + 8
+    ? isExpanded
+        ? customPickPos.top - (CUSTOM_PICK_H / 2) - 120
+        : (showCustomPickAbove ? customPickPos.top - CUSTOM_PICK_H - 8 : customPickPos.top + fabSize + 8)
     : 0;
-  const customPickMenuLeft = customPickPos ? Math.max(8, customPickPos.left - 58) : 0;
+
+  const customPickMenuLeft = customPickPos ? Math.max(8, customPickPos.left - 130) : 0;
 
   /** فوق أزرار الأموال العائمة (z≈1200–1210 في `mandoub-order-money-float-dock`) وتحت نافذة التأكيد (z≈1300). */
   return (
@@ -659,7 +664,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
         contactShadeReady ? (
           <button
             type="button"
-            className="pointer-events-auto fixed inset-0 z-[999] cursor-default touch-manipulation bg-black/20 backdrop-blur-[1px]"
+            className="pointer-events-auto fixed inset-0 z-[999] cursor-default touch-manipulation bg-black/40 backdrop-blur-[2px]"
             aria-label="إغلاق القائمة"
             onClick={dismissContactOverlay}
           />
