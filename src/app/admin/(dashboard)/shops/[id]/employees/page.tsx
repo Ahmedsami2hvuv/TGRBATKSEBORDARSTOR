@@ -1,51 +1,93 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ad } from "@/lib/admin-ui";
 import { AddEmployeePanel } from "./add-employee-panel";
 import { EmployeesList, type EmployeeRow } from "./employees-list";
 import { buildEmployeeOrderPortalUrl } from "@/lib/employee-order-portal-link";
 import { buildEmployeeChatGreeting, whatsappAppUrl } from "@/lib/whatsapp";
 
-export const dynamic = "force-dynamic";
+export default function ShopEmployeesPage() {
+  const params = useParams();
+  const shopId = params.id as string;
 
-type Props = {
-  params: Promise<{ id: string }>;
-};
-
-export default async function ShopEmployeesPage({ params }: Props) {
-  const { id: shopId } = await params;
-
-  // جلب بيانات المحل مع موظفيه
-  const shop = await prisma.shop.findUnique({
-    where: { id: shopId },
-    include: {
-      employees: {
-        orderBy: { name: "asc" },
-      },
-    },
-  });
-
-  if (!shop) {
-    notFound();
-  }
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [shop, setShop] = useState<{ id: string; name: string; locationUrl: string } | null>(null);
+  const [employees, setEmployees] = useState<EmployeeRow[]>([]);
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://aboakbar.vercel.app";
 
-  // تحضير البيانات للـ Client Component مع إضافة روابط واتساب
-  const rows: EmployeeRow[] = shop.employees.map((emp) => {
-    const orderPortalUrl = buildEmployeeOrderPortalUrl(emp.id, emp.orderPortalToken, baseUrl);
-    const greeting = buildEmployeeChatGreeting({ employeeName: emp.name });
-    const whatsappLink = whatsappAppUrl(emp.phone, greeting);
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const res = await fetch(`/api/admin/shops/${shopId}/employees`);
+        const data = await res.json();
 
-    return {
-      id: emp.id,
-      name: emp.name,
-      phone: emp.phone,
-      orderPortalUrl,
-      whatsappLink,
-    };
-  });
+        if (!res.ok) {
+          throw new Error(data.error || "فشل تحميل البيانات");
+        }
+
+        setShop(data.shop);
+
+        // تحويل بيانات الموظفين إلى الصيغة المطلوبة
+        const rows: EmployeeRow[] = data.employees.map((emp: any) => {
+          const orderPortalUrl = buildEmployeeOrderPortalUrl(emp.id, emp.orderPortalToken, baseUrl);
+          const greeting = buildEmployeeChatGreeting({ employeeName: emp.name });
+          const whatsappLink = whatsappAppUrl(emp.phone, greeting);
+          return {
+            id: emp.id,
+            name: emp.name,
+            phone: emp.phone,
+            orderPortalUrl,
+            whatsappLink,
+          };
+        });
+        setEmployees(rows);
+      } catch (err: any) {
+        console.error(err);
+        setError(err.message || "حدث خطأ غير متوقع");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (shopId) {
+      fetchData();
+    }
+  }, [shopId, baseUrl]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">جاري تحميل بيانات الموظفين...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !shop) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center max-w-md">
+          <div className="text-5xl mb-4">❌</div>
+          <h2 className="text-xl font-bold text-rose-600 mb-2">حدث خطأ</h2>
+          <p className="text-slate-600 mb-4">{error || "البيانات غير متوفرة"}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700"
+          >
+            إعادة المحاولة
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -78,7 +120,7 @@ export default async function ShopEmployeesPage({ params }: Props) {
 
       <section className={ad.section}>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <h2 className={ad.h2}>قائمة العملاء ({rows.length})</h2>
+          <h2 className={ad.h2}>قائمة العملاء ({employees.length})</h2>
           <Link
             href={`/admin/shops/${shop.id}/edit`}
             className="text-sm font-medium text-sky-700 underline hover:text-sky-900"
@@ -90,7 +132,7 @@ export default async function ShopEmployeesPage({ params }: Props) {
           shopId={shop.id}
           shopName={shop.name}
           locationUrl={shop.locationUrl}
-          employees={rows}
+          employees={employees}
         />
       </section>
     </div>
