@@ -263,40 +263,40 @@ export default async function AdminOrderViewPage({ params }: Props) {
     secondCustomerLandmark: secondCustomerLandmarkEffective,
     secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrlEffective,
     secondCustomerRegion: order.secondCustomerRegion ? { name: order.secondCustomerRegion.name } : null,
-    orderNoteTime: order.orderNoteTime,
-    imageUrl: order.imageUrl?.startsWith("data:") ? `/api/image/order/${order.id}/image` : order.imageUrl,
-    orderImageUploadedByName: order.orderImageUploadedByName,
-    shopDoorPhotoUploadedByName: order.shopDoorPhotoUploadedByName,
-    customerDoorPhotoUploadedByName: order.customerDoorPhotoUploadedByName,
-    secondCustomerDoorPhotoUploadedByName: order.secondCustomerDoorPhotoUploadedByName,
-    voiceNoteUrl: order.voiceNoteUrl,
-    adminVoiceNoteUrl: order.adminVoiceNoteUrl,
-    shopDoorPhotoUrl: order.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${order.id}/shopDoor` : order.shopDoorPhotoUrl,
+    orderNoteTime: order.orderNoteTime || null,
+    imageUrl: order.imageUrl?.startsWith("data:") ? `/api/image/order/${order.id}/image` : (order.imageUrl || null),
+    orderImageUploadedByName: order.orderImageUploadedByName || null,
+    shopDoorPhotoUploadedByName: order.shopDoorPhotoUploadedByName || null,
+    customerDoorPhotoUploadedByName: order.customerDoorPhotoUploadedByName || null,
+    secondCustomerDoorPhotoUploadedByName: order.secondCustomerDoorPhotoUploadedByName || null,
+    voiceNoteUrl: order.voiceNoteUrl || null,
+    adminVoiceNoteUrl: order.adminVoiceNoteUrl || null,
+    shopDoorPhotoUrl: order.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${order.id}/shopDoor` : (order.shopDoorPhotoUrl || null),
     customerDoorPhotoUrl: customerDoorPhotoUrlEffective,
-    customerLandmark: customerLandmarkEffective,
+    customerLandmark: customerLandmarkEffective || "",
     orderSubtotal:
       order.orderSubtotal != null ? formatDinarAsAlfWithUnit(order.orderSubtotal) : null,
     deliveryPrice:
       order.deliveryPrice != null ? formatDinarAsAlfWithUnit(order.deliveryPrice) : null,
     totalAmount:
       order.totalAmount != null ? formatDinarAsAlfWithUnit(order.totalAmount) : null,
-    submissionSource: order.submissionSource,
-    createdAt: order.createdAt,
-    prepaidAll: order.prepaidAll,
+    submissionSource: order.submissionSource || "unknown",
+    createdAt: order.createdAt.toISOString(),
+    prepaidAll: order.prepaidAll || false,
     reversePickup: isReversePickupOrderType(order.orderType),
     shop: {
       name: order.shop?.name ?? "",
       phone: order.shop?.phone ?? "",
       ownerName: order.shop?.ownerName ?? "",
     },
-    shopPhotoUrl: order.shop?.photoUrl?.startsWith("data:") ? `/api/image/shop/${order.shop?.id ?? order.shopId}/photo` : order.shop?.photoUrl,
+    shopPhotoUrl: order.shop?.photoUrl?.startsWith("data:") ? `/api/image/shop/${order.shop?.id ?? order.shopId}/photo` : (order.shop?.photoUrl || ""),
     shopLocationUrl: order.shop?.locationUrl ?? "",
-    customerLocationUrl: customerLocationUrlEffective,
-    customerLocationUploadedByName: order.customerLocationUploadedByName,
+    customerLocationUrl: customerLocationUrlEffective || "",
+    customerLocationUploadedByName: order.customerLocationUploadedByName || null,
     customerRegion: order.customerRegion
       ? { name: order.customerRegion.name }
       : null,
-    customerRegionId: order.customerRegionId,
+    customerRegionId: order.customerRegionId || null,
     customerProfileId: customerPhoneProfile?.id ?? null,
     courier: order.courier
       ? { name: order.courier.name, phone: order.courier.phone }
@@ -308,7 +308,7 @@ export default async function AdminOrderViewPage({ params }: Props) {
     submittedByCompanyPreparer: order.submittedByCompanyPreparer
       ? { name: order.submittedByCompanyPreparer.name, phone: order.submittedByCompanyPreparer.phone }
       : null,
-    preparerShoppingJson: order.preparerShoppingJson,
+    preparerShoppingJson: order.preparerShoppingJson || null,
   };
 
   return (

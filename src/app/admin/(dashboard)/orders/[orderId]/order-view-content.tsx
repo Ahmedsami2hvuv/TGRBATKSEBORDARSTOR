@@ -49,7 +49,7 @@ type OrderViewModel = {
   shopDoorPhotoUploadedByName: string | null; customerDoorPhotoUrl: string | null;
   customerDoorPhotoUploadedByName: string | null; customerLandmark: string;
   orderSubtotal: string | null; deliveryPrice: string | null; totalAmount: string | null;
-  submissionSource: string; createdAt: Date; prepaidAll: boolean; reversePickup: boolean;
+  submissionSource: string; createdAt: string; prepaidAll: boolean; reversePickup: boolean;
   shop: { name: string; phone: string; ownerName: string };
   shopPhotoUrl: string; shopLocationUrl: string; customerLocationUrl: string;
   customerLocationUploadedByName: string | null; customerRegion: { name: string } | null;
