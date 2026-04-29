@@ -311,6 +311,12 @@ export default async function AdminOrderViewPage({ params }: Props) {
     preparerShoppingJson: order.preparerShoppingJson ? JSON.stringify(order.preparerShoppingJson) : null,
   };
 
+  // Deep clean all objects before passing to Client Components to prevent serialization errors
+  const safeView = JSON.parse(JSON.stringify(view));
+  const safeMoneyEvents = JSON.parse(JSON.stringify(adminMoneyEvents));
+  const safePreparers = JSON.parse(JSON.stringify(preparers));
+  const safeWaButtons = JSON.parse(JSON.stringify(adminCustomWaButtons));
+
   return (
     <div className="space-y-4">
       <p className={ad.muted}>
@@ -324,11 +330,11 @@ export default async function AdminOrderViewPage({ params }: Props) {
           تفاصيل للقراءة فقط — للتعديل استخدم زر «تعديل الطلب».
         </p>
       </div>
-      <OrderViewContent order={view} preparers={preparers} customWaButtons={adminCustomWaButtons} />
+      <OrderViewContent order={safeView} preparers={safePreparers} customWaButtons={safeWaButtons} />
       <AdminOrderMoneyEvents
         orderNumber={order.orderNumber}
         nextPath={`/admin/orders/${order.id}`}
-        events={adminMoneyEvents}
+        events={safeMoneyEvents}
       />
     </div>
   );
