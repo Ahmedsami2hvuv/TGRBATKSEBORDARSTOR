@@ -147,51 +147,53 @@ export function OrderDetailSection({
         );
       case "customer_info":
         return (
-          <div key="customer" className={gridInfoPhoto} style={blockStyle}>
-            <div className="space-y-2">
-              <h3 className="text-lg font-bold text-emerald-800">الزبون</h3>
-              <p className="text-slate-800">{order.customerRegion?.name ?? "—"}</p>
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-mono font-bold text-slate-900">{contactLine(order.customerPhone)}</p>
-                <a href={`tel:${order.customerPhone}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white shadow-sm">📞</a>
-              </div>
-              {mergedAlternate && (
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="font-mono text-sm font-bold text-slate-600">رقم ثانٍ: {mergedAlternate}</p>
-                  <a href={`tel:${mergedAlternate}`} className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-500 text-white shadow-sm">📞</a>
-                </div>
-              )}
-              {mergedLandmark && <p className="mt-1 text-sm font-medium text-slate-800">أقرب نقطة: {mergedLandmark}</p>}
-              <div className="mt-2">{mergedCustomerLocationUrl ? <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن الزبون ↗</a> : <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} />}</div>
-            </div>
-            <div className="max-w-[12rem] self-start">{customerDoorDisplay ? <div className={squarePhotoFrame}><img src={imgSrc(customerDoorDisplay)!} alt="" className={squarePhotoCover} /></div> : <p className="text-xs text-slate-400">لا توجد صورة باب</p>}<div className="mt-2"><MandoubQuickDoorCapture orderId={order.id} nextUrl={nextUrl} auth={auth} /></div></div>
-          </div>
-          {order.routeMode === "double" && (
-            <div key="receiver" className={`${gridInfoPhoto} mt-6 pt-6 border-t border-sky-100`} style={blockStyle}>
+          <div key="customer_parent" className="space-y-6">
+            <div key="customer" className={gridInfoPhoto} style={blockStyle}>
               <div className="space-y-2">
-                <h3 className="text-lg font-bold text-emerald-800">المستلم (الوجهة الثانية)</h3>
-                <p className="text-slate-800">{order.secondCustomerRegion?.name ?? "—"}</p>
+                <h3 className="text-lg font-bold text-emerald-800">الزبون</h3>
+                <p className="text-slate-800">{order.customerRegion?.name ?? "—"}</p>
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-mono font-bold text-slate-900">{contactLine(order.secondCustomerPhone || "")}</p>
-                  {order.secondCustomerPhone && <a href={`tel:${order.secondCustomerPhone}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white shadow-sm">📞</a>}
+                  <p className="font-mono font-bold text-slate-900">{contactLine(order.customerPhone)}</p>
+                  <a href={`tel:${order.customerPhone}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white shadow-sm">📞</a>
                 </div>
-                <div className="mt-2">
-                  {order.secondCustomerLocationUrl?.trim() ? (
-                    <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن المستلم ↗</a>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" />
-                    </div>
-                  )}
-                </div>
+                {mergedAlternate && (
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <p className="font-mono text-sm font-bold text-slate-600">رقم ثانٍ: {mergedAlternate}</p>
+                    <a href={`tel:${mergedAlternate}`} className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-500 text-white shadow-sm">📞</a>
+                  </div>
+                )}
+                {mergedLandmark && <p className="mt-1 text-sm font-medium text-slate-800">أقرب نقطة: {mergedLandmark}</p>}
+                <div className="mt-2">{mergedCustomerLocationUrl ? <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن الزبون ↗</a> : <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} />}</div>
               </div>
-              <div className="max-w-[12rem] self-start">
-                <p className="text-xs text-slate-400 mb-2">باب المستلم</p>
-                {/* Future: Second door photo upload if needed */}
-              </div>
+              <div className="max-w-[12rem] self-start">{customerDoorDisplay ? <div className={squarePhotoFrame}><img src={imgSrc(customerDoorDisplay)!} alt="" className={squarePhotoCover} /></div> : <p className="text-xs text-slate-400">لا توجد صورة باب</p>}<div className="mt-2"><MandoubQuickDoorCapture orderId={order.id} nextUrl={nextUrl} auth={auth} /></div></div>
             </div>
-          )}
-          </>
+
+            {order.routeMode === "double" && (
+              <div key="receiver" className={`${gridInfoPhoto} mt-6 pt-6 border-t border-sky-100`} style={blockStyle}>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-bold text-emerald-800">المستلم (الوجهة الثانية)</h3>
+                  <p className="text-slate-800">{order.secondCustomerRegion?.name ?? "—"}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-mono font-bold text-slate-900">{contactLine(order.secondCustomerPhone || "")}</p>
+                    {order.secondCustomerPhone && <a href={`tel:${order.secondCustomerPhone}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white shadow-sm">📞</a>}
+                  </div>
+                  <div className="mt-2">
+                    {order.secondCustomerLocationUrl?.trim() ? (
+                      <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن المستلم ↗</a>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="max-w-[12rem] self-start">
+                  <p className="text-xs text-slate-400 mb-2 font-bold">باب المستلم</p>
+                  <div className="aspect-square flex items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white text-xs font-bold text-slate-400">قريباً</div>
+                </div>
+              </div>
+            )}
+          </div>
         );
       case "price_details":
         return (
