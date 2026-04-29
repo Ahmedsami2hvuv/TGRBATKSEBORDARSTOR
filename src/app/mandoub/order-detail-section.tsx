@@ -179,7 +179,9 @@ export function OrderDetailSection({
                   {order.secondCustomerLocationUrl?.trim() ? (
                     <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن المستلم ↗</a>
                   ) : (
-                    <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" />
+                    <div className="flex flex-col gap-2">
+                      <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" />
+                    </div>
                   )}
                 </div>
               </div>

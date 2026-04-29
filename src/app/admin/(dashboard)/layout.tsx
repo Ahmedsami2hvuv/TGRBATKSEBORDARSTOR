@@ -13,8 +13,6 @@ export default async function AdminDashboardLayout({
 }) {
   const pendingInitialCount = await prisma.order.count({ where: { status: "pending" } });
   return (
-    <PortalLocationHeartbeat variant="staff">
-      <AdminShell pendingInitialCount={pendingInitialCount}>{children}</AdminShell>
-    </PortalLocationHeartbeat>
+    <AdminShell pendingInitialCount={pendingInitialCount}>{children}</AdminShell>
   );
 }
