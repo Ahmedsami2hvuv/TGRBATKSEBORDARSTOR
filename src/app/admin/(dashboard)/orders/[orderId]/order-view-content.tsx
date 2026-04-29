@@ -124,7 +124,7 @@ export function OrderViewContent({
       <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto]">
         <div>
           <h2 className="text-xl font-black text-slate-900 sm:text-2xl">رقم الطلب <span className="tabular-nums text-sky-800">#{order.orderNumber}</span></h2>
-          <p className="text-xs font-black text-sky-700 mt-1 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 w-fit">تاريخ الرفع للنظام: {formatBaghdadDateTime(order.createdAt)}</p>
+          <p className="text-xs font-black text-sky-700 mt-1 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 w-fit">تاريخ الرفع للنظام: {formatBaghdadDateTime(new Date(order.createdAt))}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Link href={`/admin/orders/${order.id}/edit`} className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm">تعديل البيانات</Link>
             <button onClick={() => setPricingOpen(true)} className="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition-colors"><span>💰</span> تعديل التسعير</button>
