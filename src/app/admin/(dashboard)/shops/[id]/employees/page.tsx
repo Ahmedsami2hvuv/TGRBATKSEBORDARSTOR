@@ -59,7 +59,7 @@ export default async function ShopEmployeesPage({ params }: Props) {
           <EmployeesList
             shopId={shopId}
             shopName={shop.name}
-            locationUrl={shop.locationUrl}
+            locationUrl={shop.locationUrl || ""}
             employees={rows}
           />
         </div>
