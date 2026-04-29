@@ -49,6 +49,35 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
 
   const statsMap = new Map(orderStats.map(s => [s.customerPhone, s]));
 
+  // تجميع الزبائن حسب رقم الهاتف
+  const groupedProfiles = new Map<string, {
+    phone: string;
+    regions: {
+      id: string;
+      regionId: string;
+      name: string;
+      notes: string;
+      landmark: string;
+      photoUrl: string;
+      locationUrl: string;
+    }[];
+  }>();
+
+  for (const p of profiles) {
+    if (!groupedProfiles.has(p.phone)) {
+      groupedProfiles.set(p.phone, { phone: p.phone, regions: [] });
+    }
+    groupedProfiles.get(p.phone)!.regions.push({
+      id: p.id,
+      regionId: p.regionId,
+      name: p.region?.name || 'غير محدد',
+      notes: p.notes,
+      landmark: p.landmark,
+      photoUrl: p.photoUrl,
+      locationUrl: p.locationUrl
+    });
+  }
+
   return (
     <div className="space-y-6 pb-20">
       <div className="flex flex-col gap-1">
@@ -79,64 +108,68 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
           </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        {profiles.map((p, index) => {
-          const stats = statsMap.get(p.phone);
-          const seqNumber = filteredCount - skip - index;
+        {Array.from(groupedProfiles.values()).map((group, index) => {
+          const stats = statsMap.get(group.phone);
+          const seqNumber = filteredCount - skip - index; // Not exact anymore, but a good indicator
           
           return (
-            <Link
-              key={p.id}
-              href={`/admin/customers/info?phone=${p.phone}&id=${p.id}`}
-              className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col gap-3 hover:shadow-md transition-shadow relative overflow-hidden group cursor-pointer"
+            <div
+              key={group.phone}
+              className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col gap-3 hover:shadow-md transition-shadow relative overflow-hidden"
             >
               <div className="flex justify-between items-start">
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2 items-center flex-wrap">
                    <div className="bg-gray-800 text-white px-2 py-1 rounded-lg text-xs font-black shadow-sm">
                       #{seqNumber.toLocaleString()}
                    </div>
                    <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-[10px] font-bold border border-blue-100">
-                      الطلبات: {stats?._count?._all || 0}
+                      إجمالي الطلبات: {stats?._count?._all || 0}
                    </div>
                    <div className="bg-purple-50 text-purple-700 px-3 py-1 rounded-lg text-[10px] font-bold border border-purple-100">
                       مجموع الأسعار: {Number(stats?._sum?.totalAmount || 0).toLocaleString()}
                    </div>
                 </div>
                 <div className="flex flex-col items-end gap-1">
-                   <span className="text-lg font-black text-gray-800 tracking-tighter">{p.phone}</span>
-                   <span className="bg-gray-100 text-gray-600 px-3 py-0.5 rounded text-[10px] font-bold border">
-                      {p.region?.name || 'غير محدد'}
-                   </span>
+                   <span className="text-xl font-black text-gray-800 tracking-tighter" dir="ltr">{group.phone}</span>
                 </div>
               </div>
 
-              <div className="text-right">
-                <p className="text-gray-500 text-xs leading-relaxed italic line-clamp-2">
-                  {p.notes || "لا توجد ملاحظات مسجلة لهذا العنوان"}
-                </p>
-                {p.landmark && (
-                  <p className="text-[10px] text-blue-500 font-bold mt-1">📍 {p.landmark}</p>
-                )}
+              <div className="mt-2">
+                <p className="text-xs font-bold text-gray-500 mb-2">المناطق المسجلة للزبون (انقر للدخول لتفاصيل المنطقة):</p>
+                <div className="flex flex-wrap gap-2">
+                  {group.regions.map(r => (
+                    <Link
+                      key={r.id}
+                      href={`/admin/customers/info?phone=${group.phone}&regionId=${r.regionId}`}
+                      className="bg-gray-50 border border-gray-200 px-3 py-2 rounded-xl hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm transition-all flex flex-col items-center min-w-[100px]"
+                    >
+                      <span className="font-bold text-sm text-gray-800">{r.name}</span>
+                      <div className="flex gap-2 text-xs mt-1">
+                         {r.photoUrl && <span title="توجد صورة باب">📷</span>}
+                         {r.locationUrl && <span title="موقع GPS">📍</span>}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
 
-              {p.photoUrl && (
-                <div className="flex gap-1 mt-1">
-                   <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded border border-green-100 font-bold">📷 توجد صورة باب</span>
+              {group.regions.length === 1 && group.regions[0].notes && (
+                <div className="text-right mt-2 bg-yellow-50 p-2 rounded-lg text-xs text-yellow-800">
+                  <span className="font-bold">ملاحظات: </span> {group.regions[0].notes}
                 </div>
               )}
-
-              {p.locationUrl && (
-                <div className="absolute left-4 bottom-4 bg-gray-100 p-2 rounded-full hover:bg-blue-100 transition-colors group-hover:scale-110">
-                  📍
+              {group.regions.length === 1 && group.regions[0].landmark && (
+                <div className="text-right mt-1 text-[10px] text-blue-500 font-bold">
+                  📍 {group.regions[0].landmark}
                 </div>
               )}
 
               <div className="absolute top-0 right-0 w-1 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            </Link>
+            </div>
           );
         })}
 
-        {profiles.length === 0 && (
+        {groupedProfiles.size === 0 && (
           <div className="bg-white p-20 text-center rounded-3xl border-2 border-dashed border-gray-200">
             <div className="text-5xl mb-4">🔍</div>
             <h3 className="text-xl font-bold text-gray-400 italic">لا يوجد نتائج تطابق بحثك أو القاعدة فارغة</h3>

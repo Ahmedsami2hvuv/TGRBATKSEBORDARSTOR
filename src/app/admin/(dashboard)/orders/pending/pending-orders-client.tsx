@@ -38,6 +38,7 @@ export type PendingOrderRow = {
   customerDoorPhotoUrl: string;
   totalAmount: string | null;
   deliveryPrice: string | null;
+  rawDeliveryPriceDinar: number | null;
   submittedByName: string | null;
   submissionLabel: string | null;
   customerLocationUrl: string;
@@ -149,6 +150,7 @@ export function AdminPricingPanel({
   initialPreparerIds?: string[];
   shops?: { id: string; name: string }[];
   preparers?: { id: string; name: string }[];
+  rawDeliveryPriceDinar?: number | null;
   onSuccess?: () => void;
 }) {
   const findPreparerName = (id: string | null | undefined) => {
@@ -191,6 +193,12 @@ export function AdminPricingPanel({
 
   const bound = updateOrderPricingByAdmin.bind(null, orderId);
   const [state, formAction, pending] = useActionState(bound, {} as any);
+
+  // حساب سعر التوصيل بالألف من السعر الخام بالدينار، أو من initialData إذا توفر
+  const deliveryAlfVal = useMemo(() => {
+    if (rawDeliveryPriceDinar != null) return rawDeliveryPriceDinar / 1000;
+    return Number(initialData?.deliveryAlf || 0);
+  }, [rawDeliveryPriceDinar, initialData?.deliveryAlf]);
 
   // منطق الحفظ التلقائي
   useEffect(() => {
@@ -274,9 +282,8 @@ export function AdminPricingPanel({
       return acc + (parseFloat(normalizeNumerals(val)) || 0);
     }, 0);
     const extra = calculateExtraAlfFromPlacesCount(placesCount);
-    const delivery = Number(initialData?.deliveryAlf || 0);
-    return { subtotal: sumSell + extra, total: sumSell + extra + delivery };
-  }, [products, placesCount, initialData?.deliveryAlf]);
+    return { subtotal: sumSell + extra, total: sumSell + extra + deliveryAlfVal };
+  }, [products, placesCount, deliveryAlfVal]);
 
   const allProductsPriced = useMemo(() => {
     return products.length > 0 && products.every(p => {
@@ -418,7 +425,7 @@ export function AdminPricingPanel({
       <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded-xl border border-amber-200 text-center shadow-inner">
         <div className="col-span-3 pb-2"><select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="w-full rounded-lg border border-amber-200 p-2 text-xs font-black outline-none bg-amber-50/50">{[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n} محلات</option>)}</select></div>
         <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-100"><p className="text-[8px] font-bold text-emerald-600">المنتجات</p><p className="text-xs font-black font-mono">{totals.subtotal} ألف</p></div>
-        <div className="p-2 bg-sky-50 rounded-lg border border-sky-100"><p className="text-[8px] font-bold text-sky-600">توصيل</p><p className="text-xs font-black font-mono">{initialData?.deliveryAlf || "—"} ألف</p></div>
+        <div className="p-2 bg-sky-50 rounded-lg border border-sky-100"><p className="text-[8px] font-bold text-sky-600">توصيل</p><p className="text-xs font-black font-mono">{deliveryAlfVal > 0 ? deliveryAlfVal : "—"} ألف</p></div>
         <div className="p-2 bg-violet-600 text-white rounded-lg shadow-md border border-violet-700"><p className="text-[8px] font-bold">المجموع</p><p className="text-sm font-black font-mono">{totals.total} ألف</p></div>
       </div>
 
@@ -633,7 +640,7 @@ export function PendingOrdersClient({
               </div>
               {!isDraftMode && <div className="hidden sm:flex items-start" onClick={(e) => e.stopPropagation()}><RejectButton orderId={o.id} /></div>}
             </div>
-            {pricingOpen && <div className="p-4 border-t-2 border-amber-300 bg-amber-50/40" onClick={e => e.stopPropagation()}><AdminPricingPanel orderId={o.id} initialData={o.preparerShoppingJson} isDraft={isDraftMode} initialPreparerIds={o.assignedPreparerIds} orderSummary={o.summary} shops={shops} preparers={preparers} onSuccess={() => { setPricingOpenId(null); isDraftMode && router.refresh(); }} /></div>}
+            {pricingOpen && <div className="p-4 border-t-2 border-amber-300 bg-amber-50/40" onClick={e => e.stopPropagation()}><AdminPricingPanel orderId={o.id} initialData={o.preparerShoppingJson} isDraft={isDraftMode} initialPreparerIds={o.assignedPreparerIds} orderSummary={o.summary} shops={shops} preparers={preparers} rawDeliveryPriceDinar={o.rawDeliveryPriceDinar} onSuccess={() => { setPricingOpenId(null); isDraftMode && router.refresh(); }} /></div>}
             {assignOpen && !isDraftMode && <div className="p-4 border-t-2 border-emerald-300 bg-emerald-50/40 shadow-inner" onClick={e => e.stopPropagation()}><PendingAssignPanel orderId={o.id} couriers={couriers} customerPhone={o.customerPhone} customerAlternatePhone={o.customerAlternatePhone} defaultCustomerLocationUrl={o.customerLocationUrl} defaultCustomerLandmark={o.customerLandmark} defaultCustomerDoorPhotoUrl={o.customerDoorPhotoUrl} /></div>}
           </div>
         );
