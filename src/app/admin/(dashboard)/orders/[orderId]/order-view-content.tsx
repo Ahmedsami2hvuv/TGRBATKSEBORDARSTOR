@@ -43,6 +43,7 @@ type OrderViewModel = {
   alternatePhone: string | null; secondCustomerPhone: string | null;
   secondCustomerLocationUrl: string; secondCustomerLandmark: string;
   secondCustomerDoorPhotoUrl: string | null; secondCustomerDoorPhotoUploadedByName: string | null;
+  secondCustomerRegion: { name: string } | null;
   orderNoteTime: string | null; imageUrl: string | null; orderImageUploadedByName: string | null;
   voiceNoteUrl: string | null; adminVoiceNoteUrl: string | null; shopDoorPhotoUrl: string | null;
   shopDoorPhotoUploadedByName: string | null; customerDoorPhotoUrl: string | null;
@@ -219,7 +220,7 @@ export function OrderViewContent({
             </h3>
             {order.routeMode === "double" ? (
               <>
-                <p className="text-slate-800 font-bold">{/* Second Customer Region */} (بحاجة لتمرير اسم المنطقة هنا)</p>
+                <p className="text-slate-800 font-bold">{order.secondCustomerRegion?.name ?? "—"}</p>
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl font-black text-emerald-950 tabular-nums">{order.secondCustomerPhone || "—"}</span>

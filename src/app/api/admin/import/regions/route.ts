@@ -30,7 +30,7 @@ export async function POST() {
         await prisma.region.create({
           data: {
             name: oldReg.name,
-            deliveryPrice: Math.floor(oldReg.deliveryPrice / 1000), // تحويل 3000 إلى 3
+            deliveryPrice: oldReg.deliveryPrice, // حفظ القيمة بالدينار الكامل (مثلاً 3000)
           }
         });
         importedCount++;

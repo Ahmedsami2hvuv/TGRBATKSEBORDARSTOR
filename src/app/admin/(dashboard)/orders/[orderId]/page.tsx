@@ -41,6 +41,7 @@ export default async function AdminOrderViewPage({ params }: Props) {
       include: {
         shop: true,
         customerRegion: true,
+        secondCustomerRegion: true,
         courier: true,
         customer: true,
         submittedBy: true,
@@ -261,6 +262,7 @@ export default async function AdminOrderViewPage({ params }: Props) {
     secondCustomerLocationUrl: secondCustomerLocationUrlEffective,
     secondCustomerLandmark: secondCustomerLandmarkEffective,
     secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrlEffective,
+    secondCustomerRegion: order.secondCustomerRegion ? { name: order.secondCustomerRegion.name } : null,
     orderNoteTime: order.orderNoteTime,
     imageUrl: order.imageUrl?.startsWith("data:") ? `/api/image/order/${order.id}/image` : order.imageUrl,
     orderImageUploadedByName: order.orderImageUploadedByName,
