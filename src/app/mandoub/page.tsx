@@ -237,6 +237,18 @@ export default async function MandoubPage({ searchParams }: Props) {
     noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,
     noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
     createdAt: o.createdAt,
+    // بيانات الوصول السريع
+    audioUrl: o.audioUrl,
+    summary: o.summary,
+    shopPhone: o.shop.phone || o.submittedBy?.phone || o.submittedByCompanyPreparer?.phone,
+    alternatePhone: o.alternatePhone,
+    secondCustomerPhone: o.secondCustomerPhone,
+    shopLocationUrl: o.shop.locationUrl,
+    customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl,
+    secondCustomerLocationUrl: o.secondCustomerLocationUrl,
+    shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
+    customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl,
+    routeMode: o.routeMode as any,
   }));
 
   const searchFields: MandoubOrderSearchFields[] = filteredByTab.map((o) => ({

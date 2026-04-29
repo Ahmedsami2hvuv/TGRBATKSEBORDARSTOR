@@ -1,9 +1,49 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import type { MandoubRow } from "@/app/mandoub/mandoub-order-table";
 import { OrderTypeLine } from "@/components/order-type-line";
 import { formatBaghdadDateFriendly, getBaghdadDateString, formatBaghdadDateTime } from "@/lib/baghdad-time";
+import { resolvePublicAssetSrc } from "@/lib/image-url";
+
+/** مكون مشغل الصوت المصغر */
+function MiniAudioPlayer({ url }: { url: string }) {
+  const [playing, setPlaying] = useState(false);
+  const fullUrl = resolvePublicAssetSrc(url);
+  return (
+    <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+      <button
+        onClick={() => {
+          const audio = document.getElementById(`audio-${url}`) as HTMLAudioElement;
+          if (playing) audio.pause(); else audio.play();
+          setPlaying(!playing);
+        }}
+        className="flex size-6 items-center justify-center rounded-full bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:scale-90 transition-all"
+      >
+        {playing ? "⏸" : "▶️"}
+      </button>
+      <audio id={`audio-${url}`} src={fullUrl!} onEnded={() => setPlaying(false)} className="hidden" />
+      <div className="w-8 h-1 bg-amber-200 rounded-full overflow-hidden">
+        <div className={`h-full bg-amber-500 ${playing ? 'animate-pulse w-full' : 'w-0'}`} />
+      </div>
+    </div>
+  );
+}
+
+/** مكون نافذة الصورة المنبثقة */
+function ImageModal({ url, title, onClose }: { url: string, title: string, onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-200" onClick={onClose}>
+      <div className="relative max-w-lg w-full bg-white rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="p-3 border-b flex justify-between items-center bg-slate-50">
+          <span className="font-bold text-slate-800 text-sm">{title}</span>
+          <button onClick={onClose} className="size-8 flex items-center justify-center rounded-full bg-slate-200 text-slate-600 font-bold">✕</button>
+        </div>
+        <img src={resolvePublicAssetSrc(url)!} alt={title} className="w-full h-auto max-h-[70vh] object-contain bg-slate-100" />
+      </div>
+    </div>
+  );
+}
 
 type Props = {
   rows: MandoubRow[];
@@ -54,6 +94,9 @@ export function UnifiedOrderListTable({
   hideShortIdInBadgeCol,
   renderInShopNameCol,
 }: Props) {
+  const [modalImg, setModalImg] = useState<{ url: string, title: string } | null>(null);
+  const [showNotes, setShowNotes] = useState<string | null>(null);
+
   let lastDateStr = "";
 
   // نعدل colCount ليكون +1 بسبب إضافة عمود التاريخ
@@ -248,9 +291,63 @@ export function UnifiedOrderListTable({
                             {o.assignedCourierName}
                           </div>
                         ) : null}
-                        <span className={`inline-block rounded-md ${o.shopNameHighlightClass}`}>
-                          {o.shopName}
-                        </span>
+
+                        <div className="relative inline-block group">
+                          <span className={`inline-block rounded-md ${o.shopNameHighlightClass}`}>
+                            {o.shopName}
+                          </span>
+
+                          {/* مثلث البصمة الصوتية والملاحظات */}
+                          <div className="flex items-center gap-2 mt-1">
+                            {o.audioUrl && <MiniAudioPlayer url={o.audioUrl} />}
+                            {o.summary && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setShowNotes(showNotes === o.id ? null : o.id); }}
+                                className="flex size-5 items-center justify-center rounded bg-sky-100 text-sky-600 hover:bg-sky-200 transition-colors"
+                                title="ملاحظات الطلب"
+                              >
+                                📝
+                              </button>
+                            )}
+                          </div>
+
+                          {showNotes === o.id && o.summary && (
+                            <div className="absolute top-full right-0 z-50 mt-2 w-64 rounded-xl border border-sky-200 bg-white p-3 shadow-2xl animate-in fade-in zoom-in-95 text-xs font-bold text-slate-800 leading-relaxed whitespace-pre-wrap">
+                              <div className="mb-1 border-b pb-1 text-sky-700">ملاحظات الطلب:</div>
+                              {o.summary}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* أزرار الاتصال واللوكيشن من الخارج */}
+                        <div className="mt-2 flex flex-wrap gap-1.5" onClick={e => e.stopPropagation()}>
+                           {/* اتصال للزبون 1 */}
+                           <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1 border border-slate-200">
+                              <span className="text-[10px] font-black text-slate-500 mr-1">الزبون:</span>
+                              <a href={`tel:${o.customerPhone}`} className="size-6 flex items-center justify-center rounded-full bg-sky-600 text-white shadow-sm hover:scale-110 transition-transform">📞</a>
+                              <a href={`https://wa.me/${o.customerPhone?.replace(/\D/g,'')}`} target="_blank" className="size-6 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm hover:scale-110 transition-transform">💬</a>
+                              {o.customerLocationUrl && <a href={o.customerLocationUrl} target="_blank" className="size-6 flex items-center justify-center rounded-full bg-rose-500 text-white shadow-sm hover:scale-110 transition-transform">📍</a>}
+                              {o.customerDoorPhotoUrl && <button onClick={() => setModalImg({ url: o.customerDoorPhotoUrl!, title: "باب الزبون" })} className="size-6 flex items-center justify-center rounded-full bg-amber-500 text-white shadow-sm hover:scale-110 transition-transform">🚪</button>}
+                           </div>
+
+                           {/* اتصال للزبون 2 (إن وجد) */}
+                           {(o.alternatePhone || o.secondCustomerPhone) && (
+                             <div className="flex items-center gap-1 rounded-lg bg-violet-50 p-1 border border-violet-100">
+                               <span className="text-[10px] font-black text-violet-500 mr-1">بديل:</span>
+                               <a href={`tel:${o.alternatePhone || o.secondCustomerPhone}`} className="size-6 flex items-center justify-center rounded-full bg-violet-600 text-white shadow-sm hover:scale-110 transition-transform">📞</a>
+                               <a href={`https://wa.me/${(o.alternatePhone || o.secondCustomerPhone)?.replace(/\D/g,'')}`} target="_blank" className="size-6 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm hover:scale-110 transition-transform">💬</a>
+                               {o.secondCustomerLocationUrl && <a href={o.secondCustomerLocationUrl} target="_blank" className="size-6 flex items-center justify-center rounded-full bg-rose-500 text-white shadow-sm hover:scale-110 transition-transform">📍</a>}
+                             </div>
+                           )}
+
+                           {/* اتصال للعميل (المحل) */}
+                           <div className="flex items-center gap-1 rounded-lg bg-amber-50 p-1 border border-amber-100">
+                              <span className="text-[10px] font-black text-amber-600 mr-1">العميل:</span>
+                              {o.shopPhone && <a href={`tel:${o.shopPhone}`} className="size-6 flex items-center justify-center rounded-full bg-sky-600 text-white shadow-sm hover:scale-110 transition-transform">📞</a>}
+                              {o.shopLocationUrl && <a href={o.shopLocationUrl} target="_blank" className="size-6 flex items-center justify-center rounded-full bg-rose-500 text-white shadow-sm hover:scale-110 transition-transform">📍</a>}
+                              {o.shopDoorPhotoUrl && <button onClick={() => setModalImg({ url: o.shopDoorPhotoUrl!, title: "باب العميل" })} className="size-6 flex items-center justify-center rounded-full bg-amber-500 text-white shadow-sm hover:scale-110 transition-transform">🚪</button>}
+                           </div>
+                        </div>
                         {/* علامات الصادر والوارد المالية "من الخارج" */}
                         <div className="mt-1 flex flex-wrap gap-1">
                           {o.wardMismatchType === "deficit" && (
@@ -316,6 +413,13 @@ export function UnifiedOrderListTable({
           )}
         </tbody>
       </table>
+      {modalImg && (
+        <ImageModal
+          url={modalImg.url}
+          title={modalImg.title}
+          onClose={() => setModalImg(null)}
+        />
+      )}
     </div>
   );
 }

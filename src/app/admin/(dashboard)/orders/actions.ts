@@ -276,24 +276,53 @@ export async function assignPendingOrderToCourier(
   const courierId = String(formData.get("courierId") ?? "").trim();
   const customerLocationUrl = String(formData.get("customerLocationUrl") ?? "").trim();
   const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
+  const customerAlternatePhone = String(formData.get("customerAlternatePhone") ?? "").trim();
   const directReceipt = formData.get("directReceipt") === "on";
+  const doorPhotoFile = formData.get("doorPhoto") as File | null;
 
   if (!orderId || !courierId) return { error: "بيانات ناقصة" };
 
-  await prisma.order.update({
-    where: { id: orderId },
-    data: {
-      assignedCourierId: courierId,
-      status: directReceipt ? "delivering" : "assigned",
-      customerPaymentReceivedAt: directReceipt ? new Date() : null,
-      customerLocationUrl,
-      customerLandmark,
-    },
-  });
+  try {
+    let doorPhotoUrl: string | undefined = undefined;
+    if (doorPhotoFile && doorPhotoFile.size > 0) {
+      if (doorPhotoFile.size > MAX_ORDER_IMAGE_BYTES) {
+        return { error: "صورة الباب كبيرة جداً (الحد الأقصى 5 ميجا)" };
+      }
+      doorPhotoUrl = await saveCustomerDoorPhotoUploaded(doorPhotoFile);
+    }
 
-  revalidatePath("/admin/orders/pending");
-  revalidatePath(`/admin/orders/${orderId}`);
-  return { ok: true };
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        assignedCourierId: courierId,
+        status: directReceipt ? "delivering" : "assigned",
+        customerPaymentReceivedAt: directReceipt ? new Date() : null,
+        customerLocationUrl: customerLocationUrl || undefined,
+        customerLandmark: customerLandmark || undefined,
+        alternatePhone: customerAlternatePhone || undefined,
+        customerDoorPhotoUrl: doorPhotoUrl || undefined,
+      },
+    });
+
+    // مزامنة البيانات مع بروفايل الهاتف لضمان ظهورها في الطلبات القادمة لهذا الزبون
+    if (updatedOrder.customerPhone) {
+        await syncPhoneProfileFromOrder(updatedOrder.id);
+    }
+
+    // إرسال إشعار للمندوب
+    try {
+        await pushNotifyCourierNewAssignment(courierId, updatedOrder.orderNumber);
+    } catch (e) {
+        console.error("Failed to push notify courier:", e);
+    }
+
+    revalidatePath("/admin/orders/pending");
+    revalidatePath(`/admin/orders/${orderId}`);
+    return { ok: true };
+  } catch (e: any) {
+    console.error("Error in assignPendingOrderToCourier:", e);
+    return { error: "حدث خطأ أثناء الإسناد: " + (e.message || "خطأ غير معروف") };
+  }
 }
 
 export async function rejectPendingOrder(

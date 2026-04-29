@@ -478,31 +478,74 @@ export function PendingAssignPanel({
   const [state, formAction, pending] = useActionState(bound, {} as AssignOrderState);
   if (couriers.length === 0) return <p className="p-3 bg-amber-50 text-amber-900 rounded-lg text-sm font-bold border border-amber-200 text-center">⚠️ لا يوجد مندوبون مسجلون.</p>;
   const inputClass = "w-full rounded-xl border border-slate-200 p-2.5 text-xs font-mono outline-none text-left bg-white focus:ring-2 focus:ring-emerald-300";
+  const labelClass = "text-[11px] font-bold text-slate-500 mb-1 block pr-1";
+
   return (
-    <form action={formAction} encType="multipart/form-data" className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 shadow-inner text-right" dir="rtl">
+    <form action={formAction} encType="multipart/form-data" className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 shadow-inner text-right" dir="rtl">
       <input type="hidden" name="orderId" value={orderId} />
-      <p className="text-sm font-black text-emerald-900 border-b border-emerald-100 pb-2">📦 إسناد فوري للمندوب</p>
-      <div className="grid grid-cols-1 gap-2 rounded-lg border border-emerald-200 bg-white/80 p-2 text-[11px] font-bold">
-        <p><span className="text-slate-500">الزبون:</span> <span className="font-mono text-emerald-800">{customerPhone}</span></p>
-        {customerAlternatePhone && <p><span className="text-slate-500">بديل:</span> <span className="font-mono text-emerald-800">{customerAlternatePhone}</span></p>}
-      </div>
-      <OrderStatusRadioGroup name="courierId" defaultValue="" required legend="اختر المندوب المتوفر" options={couriers.map((c) => ({ value: c.id, label: c.name }))} />
-
-      <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-emerald-200 shadow-sm">
-        <input type="checkbox" id="direct-receipt" name="directReceipt" className="h-4 w-4 rounded border-emerald-400" />
-        <label htmlFor="direct-receipt" className="text-[11px] font-black text-emerald-950 cursor-pointer select-none">
-          استلام مباشر للمندوب (تخطي الموافقة) ⚡
-        </label>
+      <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
+        <p className="text-sm font-black text-emerald-900">📦 إسناد فوري للمندوب</p>
+        <span className="text-[10px] font-bold text-slate-500">الزبون: {customerPhone}</span>
       </div>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-bold text-slate-700">رابط اللوكيشن الرسمي</span>
-        <textarea name="customerLocationUrl" rows={2} defaultValue={defaultCustomerLocationUrl} className={inputClass} dir="ltr" placeholder="https://google.com/maps/..." />
-      </label>
-      {state.error && <p className="text-xs text-rose-600 font-bold p-2 bg-rose-50 rounded-lg border border-rose-200">{state.error}</p>}
-      <button type="submit" disabled={pending} className="w-full rounded-xl bg-emerald-600 py-3.5 text-sm font-black text-white shadow-lg active:scale-95 disabled:opacity-50 transition-all hover:bg-emerald-700">
-        {pending ? "جارٍ الإسناد..." : "✅ موافقة وإرسال للمندوب"}
-      </button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* العمود الأول: المندوب والخيارات */}
+        <div className="space-y-3">
+          <OrderStatusRadioGroup name="courierId" defaultValue="" required legend="اختر المندوب المتوفر" options={couriers.map((c) => ({ value: c.id, label: c.name }))} />
+
+          <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-emerald-200 shadow-sm">
+            <input type="checkbox" id="direct-receipt" name="directReceipt" className="h-4 w-4 rounded border-emerald-400" />
+            <label htmlFor="direct-receipt" className="text-[11px] font-black text-emerald-950 cursor-pointer select-none">
+              استلام مباشر للمندوب (تخطي الموافقة) ⚡
+            </label>
+          </div>
+
+          <div className="space-y-1">
+             <label className={labelClass}>رقم ثانٍ / بديل</label>
+             <input type="text" name="customerAlternatePhone" defaultValue={customerAlternatePhone} className={inputClass} placeholder="07XXXXXXXX" />
+          </div>
+
+          <div className="space-y-1">
+             <label className={labelClass}>أقرب نقطة دالة</label>
+             <input type="text" name="customerLandmark" defaultValue={defaultCustomerLandmark} className={inputClass} style={{ textAlign: 'right' }} placeholder="مثال: قرب صيدلية السلام" />
+          </div>
+        </div>
+
+        {/* العمود الثاني: اللوكيشن والصورة */}
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <label className={labelClass}>رابط اللوكيشن الرسمي (GPS)</label>
+            <textarea name="customerLocationUrl" rows={3} defaultValue={defaultCustomerLocationUrl} className={inputClass} dir="ltr" placeholder="https://maps.app.goo.gl/..." />
+          </div>
+
+          <div className="space-y-1">
+            <label className={labelClass}>صورة باب الزبون</label>
+            <div className="flex flex-col gap-2 rounded-xl border border-dashed border-emerald-300 bg-white p-3">
+              {defaultCustomerDoorPhotoUrl ? (
+                <div className="relative group aspect-video w-full overflow-hidden rounded-lg border border-emerald-100">
+                  <img src={resolvePublicAssetSrc(defaultCustomerDoorPhotoUrl)!} alt="صورة الباب" className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-[10px] text-white font-bold">تغيير الصورة بالأسفل</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="aspect-video w-full flex items-center justify-center bg-slate-50 rounded-lg text-[10px] text-slate-400 font-bold border border-slate-100">
+                  لا توجد صورة حالياً
+                </div>
+              )}
+              <input type="file" name="doorPhoto" accept="image/*" className="text-[10px] file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {state.error && <p className="text-xs text-rose-600 font-bold p-2 bg-rose-50 rounded-lg border border-rose-200">⚠️ {state.error}</p>}
+
+      <div className="pt-2">
+        <button type="submit" disabled={pending} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-800 py-4 text-sm font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-emerald-950">
+          {pending ? "جارٍ معالجة البيانات..." : "✅ موافقة وإرسال للمندوب 🚀"}
+        </button>
+      </div>
     </form>
   );
 }

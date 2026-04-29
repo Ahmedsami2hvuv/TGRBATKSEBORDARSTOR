@@ -51,6 +51,18 @@ export type MandoubRow = {
   /** لم يتم تسجيل أي صادر (مهم للاستلام) */
   noSaderRecorded?: boolean;
   createdAt?: Date | string;
+  /** ميزات الوصول السريع من خارج الطلب */
+  audioUrl?: string | null;
+  summary?: string | null;
+  shopPhone?: string | null;
+  alternatePhone?: string | null;
+  secondCustomerPhone?: string | null;
+  shopLocationUrl?: string | null;
+  customerLocationUrl?: string | null;
+  secondCustomerLocationUrl?: string | null;
+  shopDoorPhotoUrl?: string | null;
+  customerDoorPhotoUrl?: string | null;
+  routeMode?: "single" | "double";
 };
 
 function buildOrderDetailHref(
