@@ -47,7 +47,7 @@ export default async function AdminOrderViewPage({ params }: Props) {
           secondCustomerRegion: true,
           courier: true,
           customer: true,
-          submittedBy: true,
+          submittedBy: { select: { id: true, name: true, phone: true } },
           submittedByCompanyPreparer: true,
           moneyEvents: {
             orderBy: { createdAt: "asc" },

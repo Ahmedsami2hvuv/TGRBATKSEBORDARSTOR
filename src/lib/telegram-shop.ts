@@ -266,7 +266,7 @@ async function formatEmployeeMenu(employeeId: string): Promise<{
 } | null> {
   const emp = await prisma.employee.findUnique({
     where: { id: employeeId },
-    include: { shop: { select: { id: true, name: true } } },
+    select: { id: true, name: true, phone: true, shop: { select: { id: true, name: true } } },
   });
   if (!emp) return null;
   const base = getPublicAppUrl();

@@ -48,7 +48,7 @@ export default async function EditOrderPage({ params }: Props) {
       shop: true,
       customerRegion: true,
       courier: true,
-      submittedBy: true,
+      submittedBy: { select: { id: true, name: true, phone: true } },
       submittedByCompanyPreparer: true,
       customer: true,
       moneyEvents: {
