@@ -347,6 +347,8 @@ export type OrderFabDockProps = {
   customerAlternatePhone?: string;
   /** رقم مجهز الشركة — يفعّل قائمة واتساب/اتصال: محل، زبون، مجهز */
   preparerPhone?: string;
+  /** رابط تعديل الطلب (للإدارة) ليصبح عائماً */
+  editUrl?: string;
   customWaButtons?: Array<{
     id: string;
     label: string;
@@ -369,12 +371,14 @@ export function OrderFabDock(props: OrderFabDockProps) {
     customerPhone,
     customerAlternatePhone,
     preparerPhone,
+    editUrl,
     customWaButtons,
     hideWhenPreparerEditOpen = false,
     hideAllButtons = false,
   } = props;
 
   const [preparerEditOpen, setPreparerEditOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     if (!hideWhenPreparerEditOpen) return;
@@ -537,6 +541,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
     if (Date.now() < overlayDismissGuardUntilRef.current) return;
     setContactMenu(null);
     setCustomWaPick(null);
+    setIsExpanded(false);
   }, []);
 
   const movePosition = useCallback((id: string, pos: Pos) => {
@@ -650,11 +655,11 @@ export function OrderFabDock(props: OrderFabDockProps) {
       className={`pointer-events-none fixed inset-0 z-[1240] ${hideShell ? "hidden" : ""}`}
       style={{ paddingInlineStart: "max(0px, env(safe-area-inset-left))" }}
     >
-      {contactMenu || customWaPick ? (
+      {contactMenu || customWaPick || isExpanded ? (
         contactShadeReady ? (
           <button
             type="button"
-            className="pointer-events-auto fixed inset-0 z-[999] cursor-default touch-manipulation bg-black/15"
+            className="pointer-events-auto fixed inset-0 z-[999] cursor-default touch-manipulation bg-black/20 backdrop-blur-[1px]"
             aria-label="إغلاق القائمة"
             onClick={dismissContactOverlay}
           />
@@ -937,6 +942,64 @@ export function OrderFabDock(props: OrderFabDockProps) {
         </div>
       ) : null}
 
+      {isExpanded && positions.wa && (
+        <div
+          className="pointer-events-auto fixed z-[1000] flex flex-col items-end gap-3 transition-all animate-in slide-in-from-bottom-4 duration-300"
+          style={{
+            left: positions.wa.left - 4,
+            bottom: window.innerHeight - positions.wa.top + 12,
+          }}
+        >
+          {editUrl && (
+            <a
+              href={editUrl}
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-sky-600 px-4 py-2 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
+            >
+              <span>📝</span>
+              <span>تعديل الطلب</span>
+            </a>
+          )}
+
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => {
+                setContactMenu("wa");
+                overlayDismissGuardUntilRef.current = Date.now() + 420;
+              }}
+              className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-emerald-600 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
+            >
+              <IconWa className="h-5 w-5" />
+              <span>مراسلة واتساب</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setContactMenu("tel");
+                overlayDismissGuardUntilRef.current = Date.now() + 420;
+              }}
+              className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-sky-500 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
+            >
+              <IconPhone className="h-5 w-5" />
+              <span>اتصال هاتفي</span>
+            </button>
+
+            {(customWaButtons ?? []).map((btn) => (
+              <button
+                key={btn.id}
+                onClick={() => {
+                  setCustomWaPick({ btn });
+                  overlayDismissGuardUntilRef.current = Date.now() + 420;
+                }}
+                className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-violet-600 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
+              >
+                <span className="text-lg">{btn.iconKey || "💬"}</span>
+                <span>{btn.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {positions.wa ? (
         <DraggableFab
           fabId="wa"
@@ -945,83 +1008,37 @@ export function OrderFabDock(props: OrderFabDockProps) {
           onPositionMove={movePosition}
           onDragEndPersist={persistPosition}
           zIndex={fabZ}
-          title="واتساب — عميل، زبون، زبون2 (إن وُجد) — اضغط مطولاً لضبط حجم الأزرار"
-          className="bg-emerald-600 text-white hover:bg-emerald-700"
+          title="أزرار التواصل — اضغط مطولاً لضبط حجم الأزرار"
+          className={`${isExpanded ? "bg-rose-500" : "bg-indigo-600"} text-white shadow-2xl transition-colors duration-300`}
           onTap={() => {
-            setCustomWaPick(null);
-            setContactMenu((m) => {
-              const next = m === "wa" ? null : "wa";
-              if (next) overlayDismissGuardUntilRef.current = Date.now() + 420;
-              return next;
-            });
-          }}
-          onLongPress={openScalePanel}
-        >
-          <span className="pointer-events-none flex h-full w-full flex-col items-center justify-center rounded-full text-white">
-            <IconWa style={{ width: iconPx, height: iconPx }} className="shrink-0" />
-          </span>
-        </DraggableFab>
-      ) : null}
-
-      {positions.tel ? (
-        <DraggableFab
-          fabId="tel"
-          position={positions.tel}
-          fabSize={fabSize}
-          onPositionMove={movePosition}
-          onDragEndPersist={persistPosition}
-          zIndex={fabZ}
-          title="اتصال — عميل، زبون، زبون2 (إن وُجد) — اضغط مطولاً لضبط حجم الأزرار"
-          className="bg-sky-600 text-white hover:bg-sky-700"
-          onTap={() => {
-            setCustomWaPick(null);
-            setContactMenu((m) => {
-              const next = m === "tel" ? null : "tel";
-              if (next) overlayDismissGuardUntilRef.current = Date.now() + 420;
-              return next;
-            });
-          }}
-          onLongPress={openScalePanel}
-        >
-          <span className="pointer-events-none flex h-full w-full flex-col items-center justify-center rounded-full text-white">
-            <IconPhone style={{ width: iconPx, height: iconPx }} className="shrink-0" />
-          </span>
-        </DraggableFab>
-      ) : null}
-
-      {(customWaButtons ?? []).map((btn) => {
-        const fabId = `cwa:${btn.id}`;
-        const pos = positions[fabId];
-        if (!pos) return null;
-        const menuOpenHere = customWaPick?.btn.id === btn.id;
-        const emojiPx = Math.max(12, Math.round(fabSize * 0.38));
-        return (
-          <DraggableFab
-            key={fabId}
-            fabId={fabId}
-            position={pos}
-            fabSize={fabSize}
-            onPositionMove={movePosition}
-            onDragEndPersist={persistPosition}
-            zIndex={fabZ}
-            title={`${btn.label} — اضغط مطولاً لضبط حجم الأزرار`}
-            className="bg-violet-600 text-white hover:bg-violet-700"
-            onTap={() => {
+            if (isExpanded) {
+              setIsExpanded(false);
               setContactMenu(null);
+              setCustomWaPick(null);
+            } else {
+              setIsExpanded(true);
               overlayDismissGuardUntilRef.current = Date.now() + 420;
-              setCustomWaPick({ btn });
-            }}
-            onLongPress={openScalePanel}
-          >
-            <span
-              className="pointer-events-none flex h-full w-full items-center justify-center rounded-full font-black text-white"
-              style={{ fontSize: emojiPx }}
-            >
-              {btn.iconKey || "💬"}
-            </span>
-          </DraggableFab>
-        );
-      })}
+            }
+          }}
+          onLongPress={openScalePanel}
+        >
+          <div className="flex items-center justify-center">
+            {isExpanded ? (
+              <svg className="h-8 w-8 animate-in spin-in-90 duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-0.5">
+                <div className="flex gap-1">
+                  <div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>
+                  <div className="h-2 w-2 rounded-full bg-white animate-pulse delay-75"></div>
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-tighter">المهام</span>
+              </div>
+            )}
+          </div>
+        </DraggableFab>
+      ) : null}
     </div>
   );
 }

@@ -394,6 +394,7 @@ export function OrderViewContent({
         customerPhone={order.customerPhone}
         customerAlternatePhone={order.alternatePhone ?? undefined}
         customWaButtons={customWaButtons}
+        editUrl={`/admin/orders/${order.id}/edit`}
       />
     </div>
   );

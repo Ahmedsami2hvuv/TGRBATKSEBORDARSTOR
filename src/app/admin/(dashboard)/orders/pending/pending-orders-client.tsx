@@ -21,6 +21,7 @@ import { OrderStatusRadioGroup } from "@/components/order-status-radio-group";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
 import { calculateAutoSellPrice } from "@/lib/auto-pricing";
 import { normalizeNumerals } from "@/lib/money-alf";
+import { resolvePublicAssetSrc } from "@/lib/image-url";
 
 export type PendingOrderRow = {
   id: string;
