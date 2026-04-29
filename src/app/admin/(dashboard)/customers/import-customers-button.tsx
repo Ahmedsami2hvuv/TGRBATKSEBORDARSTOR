@@ -85,10 +85,28 @@ export function ImportCustomersButton() {
     setStatus("idle");
   }
 
+  async function handleCleanUrls() {
+    setStatus("checking");
+    try {
+      const res = await fetch("/api/admin/import/customers/clean-urls", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        alert(`تم التنظيف بنجاح!\nالزبائن المعدلين: ${data.customerUpdates}\nالطلبيات المعدلة: ${data.orderUpdates}`);
+        router.refresh();
+      } else {
+        alert("حدث خطأ: " + data.message);
+      }
+    } catch (e) {
+      alert("خطأ في الاتصال");
+    }
+    setStatus("idle");
+  }
+
   return (
     <div className="flex flex-col gap-2 items-end">
       <div className="flex gap-2">
         <button onClick={handleReset} className="bg-red-100 text-red-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-red-200 transition-colors">🗑️ مسح</button>
+        <button onClick={handleCleanUrls} disabled={status !== "idle"} className="bg-emerald-600 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-lg hover:bg-emerald-700">🧹 تنظيف الروابط الطويلة</button>
         <button onClick={handleSyncPhotos} disabled={status !== "idle"} className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg hover:bg-indigo-700">📸 سحب الصور</button>
         <button onClick={handleCheck} disabled={status !== "idle"} className="bg-blue-600 text-white px-5 py-2 rounded-xl font-bold shadow-xl hover:bg-blue-700 transition-all active:scale-95">
           {status === "checking" ? "🔍 فحص..." : status === "importing" ? "📥 جاري السحب..." : "استيراد الزبائن 📥"}
