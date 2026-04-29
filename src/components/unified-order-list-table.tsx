@@ -292,61 +292,42 @@ export function UnifiedOrderListTable({
                           </div>
                         ) : null}
 
-                        <div className="relative inline-block group">
-                          <span className={`inline-block rounded-md ${o.shopNameHighlightClass}`}>
-                            {o.shopName}
-                          </span>
+                        <div className="flex items-center gap-2">
+                          <div className="relative inline-block group">
+                            <span className={`inline-block rounded-md px-1.5 py-0.5 font-bold ${o.shopNameHighlightClass}`}>
+                              {o.shopName}
+                            </span>
 
-                          {/* مثلث البصمة الصوتية والملاحظات */}
-                          <div className="flex items-center gap-2 mt-1">
-                            {o.audioUrl && <MiniAudioPlayer url={o.audioUrl} />}
-                            {o.summary && (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); setShowNotes(showNotes === o.id ? null : o.id); }}
-                                className="flex size-5 items-center justify-center rounded bg-sky-100 text-sky-600 hover:bg-sky-200 transition-colors"
-                                title="ملاحظات الطلب"
-                              >
-                                📝
-                              </button>
+                            {/* مثلث البصمة الصوتية والملاحظات */}
+                            <div className="flex items-center gap-2 mt-1">
+                              {o.audioUrl && <MiniAudioPlayer url={o.audioUrl} />}
+                              {o.summary && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setShowNotes(showNotes === o.id ? null : o.id); }}
+                                  className="flex size-5 items-center justify-center rounded bg-sky-100 text-sky-600 hover:bg-sky-200 transition-colors"
+                                  title="ملاحظات الطلب"
+                                >
+                                  📝
+                                </button>
+                              )}
+                            </div>
+
+                            {showNotes === o.id && o.summary && (
+                              <div className="absolute top-full right-0 z-50 mt-2 w-64 rounded-xl border border-sky-200 bg-white p-3 shadow-2xl animate-in fade-in zoom-in-95 text-xs font-bold text-slate-800 leading-relaxed whitespace-pre-wrap">
+                                <div className="mb-1 border-b pb-1 text-sky-700">ملاحظات الطلب:</div>
+                                {o.summary}
+                              </div>
                             )}
                           </div>
 
-                          {showNotes === o.id && o.summary && (
-                            <div className="absolute top-full right-0 z-50 mt-2 w-64 rounded-xl border border-sky-200 bg-white p-3 shadow-2xl animate-in fade-in zoom-in-95 text-xs font-bold text-slate-800 leading-relaxed whitespace-pre-wrap">
-                              <div className="mb-1 border-b pb-1 text-sky-700">ملاحظات الطلب:</div>
-                              {o.summary}
+                          {/* أزرار العميل (المحل) المختصرة */}
+                          {(o.shopPhone || o.shopLocationUrl || o.shopDoorPhotoUrl) && (
+                            <div className="flex items-center gap-1 border-r pr-2 mr-1 border-slate-200" onClick={e => e.stopPropagation()}>
+                               {o.shopPhone && <a href={`tel:${o.shopPhone}`} title="اتصال بالعميل" className="size-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-sky-600 hover:text-white transition-all shadow-sm">📞</a>}
+                               {o.shopLocationUrl && <a href={o.shopLocationUrl} target="_blank" title="موقع العميل" className="size-6 flex items-center justify-center rounded-full bg-slate-100 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm">📍</a>}
+                               {o.shopDoorPhotoUrl && <button onClick={() => setModalImg({ url: o.shopDoorPhotoUrl!, title: "باب العميل" })} title="صورة باب العميل" className="size-6 flex items-center justify-center rounded-full bg-slate-100 text-amber-500 hover:bg-amber-500 hover:text-white transition-all shadow-sm">🚪</button>}
                             </div>
                           )}
-                        </div>
-
-                        {/* أزرار الاتصال واللوكيشن من الخارج */}
-                        <div className="mt-2 flex flex-wrap gap-1.5" onClick={e => e.stopPropagation()}>
-                           {/* اتصال للزبون 1 */}
-                           <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1 border border-slate-200">
-                              <span className="text-[10px] font-black text-slate-500 mr-1">الزبون:</span>
-                              <a href={`tel:${o.customerPhone}`} className="size-6 flex items-center justify-center rounded-full bg-sky-600 text-white shadow-sm hover:scale-110 transition-transform">📞</a>
-                              <a href={`https://wa.me/${o.customerPhone?.replace(/\D/g,'')}`} target="_blank" className="size-6 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm hover:scale-110 transition-transform">💬</a>
-                              {o.customerLocationUrl && <a href={o.customerLocationUrl} target="_blank" className="size-6 flex items-center justify-center rounded-full bg-rose-500 text-white shadow-sm hover:scale-110 transition-transform">📍</a>}
-                              {o.customerDoorPhotoUrl && <button onClick={() => setModalImg({ url: o.customerDoorPhotoUrl!, title: "باب الزبون" })} className="size-6 flex items-center justify-center rounded-full bg-amber-500 text-white shadow-sm hover:scale-110 transition-transform">🚪</button>}
-                           </div>
-
-                           {/* اتصال للزبون 2 (إن وجد) */}
-                           {(o.alternatePhone || o.secondCustomerPhone) && (
-                             <div className="flex items-center gap-1 rounded-lg bg-violet-50 p-1 border border-violet-100">
-                               <span className="text-[10px] font-black text-violet-500 mr-1">بديل:</span>
-                               <a href={`tel:${o.alternatePhone || o.secondCustomerPhone}`} className="size-6 flex items-center justify-center rounded-full bg-violet-600 text-white shadow-sm hover:scale-110 transition-transform">📞</a>
-                               <a href={`https://wa.me/${(o.alternatePhone || o.secondCustomerPhone)?.replace(/\D/g,'')}`} target="_blank" className="size-6 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm hover:scale-110 transition-transform">💬</a>
-                               {o.secondCustomerLocationUrl && <a href={o.secondCustomerLocationUrl} target="_blank" className="size-6 flex items-center justify-center rounded-full bg-rose-500 text-white shadow-sm hover:scale-110 transition-transform">📍</a>}
-                             </div>
-                           )}
-
-                           {/* اتصال للعميل (المحل) */}
-                           <div className="flex items-center gap-1 rounded-lg bg-amber-50 p-1 border border-amber-100">
-                              <span className="text-[10px] font-black text-amber-600 mr-1">العميل:</span>
-                              {o.shopPhone && <a href={`tel:${o.shopPhone}`} className="size-6 flex items-center justify-center rounded-full bg-sky-600 text-white shadow-sm hover:scale-110 transition-transform">📞</a>}
-                              {o.shopLocationUrl && <a href={o.shopLocationUrl} target="_blank" className="size-6 flex items-center justify-center rounded-full bg-rose-500 text-white shadow-sm hover:scale-110 transition-transform">📍</a>}
-                              {o.shopDoorPhotoUrl && <button onClick={() => setModalImg({ url: o.shopDoorPhotoUrl!, title: "باب العميل" })} className="size-6 flex items-center justify-center rounded-full bg-amber-500 text-white shadow-sm hover:scale-110 transition-transform">🚪</button>}
-                           </div>
                         </div>
                         {/* علامات الصادر والوارد المالية "من الخارج" */}
                         <div className="mt-1 flex flex-wrap gap-1">
@@ -379,19 +360,57 @@ export function UnifiedOrderListTable({
                       </div>
                     </td>
                     <td
-                      className={`max-w-[12rem] px-2 py-2.5 text-sm sm:max-w-[16rem] sm:text-base ${
+                      className={`max-w-[12rem] px-2 py-2.5 text-sm sm:max-w-[16rem] sm:text-base align-top ${
                         o.reversePickup ? "font-bold text-violet-900" : "text-slate-700"
                       }`}
                     >
-                      {o.regionLine}
+                      <div className="flex flex-col gap-1.5">
+                        <span>{o.regionLine}</span>
+                        {/* أزرار اللوكيشن والصور من الخارج (للزبون) */}
+                        <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                           {o.customerLocationUrl && (
+                             <a href={o.customerLocationUrl} target="_blank" title="موقع الزبون" className="size-7 flex items-center justify-center rounded-full bg-rose-100 text-rose-600 shadow-sm hover:bg-rose-500 hover:text-white transition-all">📍</a>
+                           )}
+                           {o.customerDoorPhotoUrl && (
+                             <button onClick={() => setModalImg({ url: o.customerDoorPhotoUrl!, title: "صورة الباب" })} title="صورة الباب" className="size-7 flex items-center justify-center rounded-full bg-amber-100 text-amber-600 shadow-sm hover:bg-amber-500 hover:text-white transition-all">🚪</button>
+                           )}
+
+                           {/* لوكيشن المستلم في الوجهتين */}
+                           {o.routeMode === "double" && o.secondCustomerLocationUrl && (
+                             <a href={o.secondCustomerLocationUrl} target="_blank" title="موقع المستلم" className="size-7 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 shadow-sm hover:bg-violet-600 hover:text-white transition-all border border-violet-200">📍</a>
+                           )}
+                        </div>
+                      </div>
                     </td>
                     <td className="max-w-[10rem] px-2 py-2.5 text-sm text-slate-800 sm:text-base">
                       <OrderTypeLine orderType={o.orderType} />
                     </td>
                     <td className="px-2 py-2.5 font-mono tabular-nums text-slate-900">{o.priceStr}</td>
                     <td className="px-2 py-2.5 font-mono tabular-nums text-cyan-700">{o.delStr}</td>
-                    <td className="px-2 py-2.5 font-mono text-sm tabular-nums text-slate-700 sm:text-base">
-                      {o.customerPhone || "—"}
+                    <td className="px-2 py-2.5 align-top" onClick={e => e.stopPropagation()}>
+                      <div className="flex flex-col gap-1.5">
+                        <span className="font-mono text-sm tabular-nums text-slate-700 sm:text-base">
+                          {o.customerPhone || "—"}
+                        </span>
+                        {o.customerPhone && (
+                          <div className="flex items-center gap-1.5">
+                            <a href={`tel:${o.customerPhone}`} className="size-7 flex items-center justify-center rounded-full bg-sky-600 text-white shadow-sm hover:scale-110 transition-transform">📞</a>
+                            <a href={`https://wa.me/${o.customerPhone?.replace(/\D/g,'')}`} target="_blank" className="size-7 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm hover:scale-110 transition-transform">💬</a>
+                          </div>
+                        )}
+
+                        {(o.alternatePhone || o.secondCustomerPhone) && (
+                          <div className="mt-1 flex flex-col gap-1 border-t border-slate-100 pt-1.5">
+                            <span className="font-mono text-[10px] font-bold text-violet-600">
+                              {o.alternatePhone || o.secondCustomerPhone}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <a href={`tel:${o.alternatePhone || o.secondCustomerPhone}`} className="size-6 flex items-center justify-center rounded-full bg-violet-600 text-white shadow-sm hover:scale-110 transition-transform">📞</a>
+                              <a href={`https://wa.me/${(o.alternatePhone || o.secondCustomerPhone)?.replace(/\D/g,'')}`} target="_blank" className="size-6 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm hover:scale-110 transition-transform">💬</a>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-2 py-2.5 text-sm text-slate-600 sm:text-base">{o.timeLine}</td>
                     <td className="px-2 py-2.5 text-xs text-slate-500 sm:text-sm">

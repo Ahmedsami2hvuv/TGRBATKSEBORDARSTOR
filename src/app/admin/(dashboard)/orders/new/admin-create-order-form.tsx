@@ -34,6 +34,7 @@ type CustomerPrefill = {
   customerLocationUrl: string;
   customerLandmark: string;
   customerDoorPhotoUrl: string | null;
+  alternatePhone: string | null;
 };
 
 type RegionHit = { id: string; name: string; deliveryPrice: string };
@@ -74,17 +75,21 @@ export function AdminCreateOrderForm({
   const [summary, setSummary] = useState("");
 
   const [firstPhone, setFirstPhone] = useState("");
+  const [firstAlternatePhone, setFirstAlternatePhone] = useState("");
   const [firstRegionId, setFirstRegionId] = useState("");
   const [firstLocationUrl, setFirstLocationUrl] = useState("");
   const [firstLandmark, setFirstLandmark] = useState("");
 
   const [secondPhone, setSecondPhone] = useState("");
+  const [secondAlternatePhone, setSecondAlternatePhone] = useState("");
   const [secondRegionId, setSecondRegionId] = useState("");
   const [secondLocationUrl, setSecondLocationUrl] = useState("");
   const [secondLandmark, setSecondLandmark] = useState("");
 
   const [firstSavedDoorPhotoUrl, setFirstSavedDoorPhotoUrl] = useState<string | null>(null);
   const [secondSavedDoorPhotoUrl, setSecondSavedDoorPhotoUrl] = useState<string | null>(null);
+  const [firstRawDoorPhotoUrl, setFirstRawDoorPhotoUrl] = useState<string | null>(null);
+  const [secondRawDoorPhotoUrl, setSecondRawDoorPhotoUrl] = useState<string | null>(null);
   const [firstPrefillApplied, setFirstPrefillApplied] = useState(false);
   const [firstPrefill, setFirstPrefill] = useState<CustomerPrefill | null>(null);
   const [secondPrefill, setSecondPrefill] = useState<CustomerPrefill | null>(null);
@@ -118,10 +123,12 @@ export function AdminCreateOrderForm({
       setSelectedEmployeeId("");
       setFirstSavedDoorPhotoUrl(null);
       setFirstPhone(ADMIN_PHONE_ONE_FACE_LOCAL);
+      setFirstAlternatePhone("");
       setFirstRegionId("");
       setFirstLocationUrl("");
       setFirstLandmark("");
       setSecondPhone("");
+      setSecondAlternatePhone("");
       setSecondRegionId("");
       setSecondLocationUrl("");
       setSecondLandmark("");
@@ -132,10 +139,12 @@ export function AdminCreateOrderForm({
       setFirstSavedDoorPhotoUrl(null);
       setSecondSavedDoorPhotoUrl(null);
       setFirstPhone("");
+      setFirstAlternatePhone("");
       setFirstRegionId("");
       setFirstLocationUrl("");
       setFirstLandmark("");
       setSecondPhone("");
+      setSecondAlternatePhone("");
       setSecondRegionId("");
       setSecondLocationUrl("");
       setSecondLandmark("");
@@ -145,10 +154,12 @@ export function AdminCreateOrderForm({
       setFirstSavedDoorPhotoUrl(null);
       setSecondSavedDoorPhotoUrl(null);
       setFirstPhone("");
+      setFirstAlternatePhone("");
       setFirstRegionId("");
       setFirstLocationUrl("");
       setFirstLandmark("");
       setSecondPhone("");
+      setSecondAlternatePhone("");
       setSecondRegionId("");
       setSecondLocationUrl("");
       setSecondLandmark("");
@@ -239,9 +250,11 @@ export function AdminCreateOrderForm({
   }
 
   useEffect(() => {
-    setFirstPrefill(null);
-    setFirstPrefillLoading(false);
-    if (!firstPhone.trim() || !firstRegionId.trim()) return;
+    if (!firstPhone.trim() || !firstRegionId.trim()) {
+      setFirstPrefill(null);
+      setFirstPrefillLoading(false);
+      return;
+    }
 
     let active = true;
     const timer = window.setTimeout(() => {
@@ -256,7 +269,7 @@ export function AdminCreateOrderForm({
         setFirstPrefill(profile);
         setFirstPrefillLoading(false);
       })();
-    }, 280);
+    }, 400); // زيادة بسيطة في التأخير لمنع التكرار
 
     return () => {
       active = false;
@@ -265,9 +278,11 @@ export function AdminCreateOrderForm({
   }, [firstPhone, firstRegionId, submissionMode, shopId]);
 
   useEffect(() => {
-    setSecondPrefill(null);
-    setSecondPrefillLoading(false);
-    if (!secondPhone.trim() || !secondRegionId.trim()) return;
+    if (!secondPhone.trim() || !secondRegionId.trim()) {
+      setSecondPrefill(null);
+      setSecondPrefillLoading(false);
+      return;
+    }
 
     let active = true;
     const timer = window.setTimeout(() => {
@@ -278,7 +293,7 @@ export function AdminCreateOrderForm({
         setSecondPrefill(profile);
         setSecondPrefillLoading(false);
       })();
-    }, 280);
+    }, 400);
 
     return () => {
       active = false;
@@ -286,13 +301,14 @@ export function AdminCreateOrderForm({
     };
   }, [secondPhone, secondRegionId]);
 
-  useEffect(() => {
-    if (!firstPrefill) setFirstSavedDoorPhotoUrl(null);
-  }, [firstPrefill]);
+  // إزالة التصفير التلقائي للصورة عند تغيير الـ prefill لأنه يسبب مسح الصورة التي اخترناها للتو
+  // useEffect(() => {
+  //   if (!firstPrefill) setFirstSavedDoorPhotoUrl(null);
+  // }, [firstPrefill]);
 
-  useEffect(() => {
-    if (!secondPrefill) setSecondSavedDoorPhotoUrl(null);
-  }, [secondPrefill]);
+  // useEffect(() => {
+  //   if (!secondPrefill) setSecondSavedDoorPhotoUrl(null);
+  // }, [secondPrefill]);
 
   useEffect(() => {
     if (!firstPrefill) setFirstPrefillApplied(false);
@@ -400,6 +416,8 @@ export function AdminCreateOrderForm({
       <input type="hidden" name="adminSubmissionMode" value={submissionMode} />
       <input type="hidden" name="routeMode" value={routeMode} />
       <input type="hidden" name="linkedCustomerId" value={selectedEmployeeId} />
+      <input type="hidden" name="firstExistingDoorPhotoUrl" value={firstRawDoorPhotoUrl || ""} />
+      <input type="hidden" name="secondExistingDoorPhotoUrl" value={secondRawDoorPhotoUrl || ""} />
 
       <div className="rounded-xl border border-sky-200 bg-white/70 p-3">
         <p className="text-sm font-bold text-slate-800">نوع المسار / الطلب</p>
@@ -623,6 +641,17 @@ export function AdminCreateOrderForm({
                   required
                 />
               </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className={ad.label}>الرقم الثاني (إن وجد)</span>
+                <input
+                  name="firstCustomerAlternatePhone"
+                  className={ad.input}
+                  value={firstAlternatePhone}
+                  onChange={(e) => setFirstAlternatePhone(e.target.value)}
+                  inputMode="numeric"
+                  placeholder="رقم إضافي..."
+                />
+              </label>
               <RegionSearchPicker
                 fieldName="firstCustomerRegionId"
                 label={submissionMode === "two_faces" ? "منطقة المرسل" : "منطقة الزبون"}
@@ -638,25 +667,67 @@ export function AdminCreateOrderForm({
             ) : null}
 
             {firstPrefill ? (
-              <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
-                <p className="font-bold">هذا الرقم لديه بيانات محفوظة.</p>
+              <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900 shadow-sm transition-all animate-in fade-in slide-in-from-top-1">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="space-y-1 flex-1">
+                    <p className="font-bold text-emerald-800 flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      بيانات محفوظة لهذا الرقم:
+                    </p>
+                    <p className="text-xs">المنطقة: <span className="font-semibold">{regions.find(r => r.id === firstPrefill.customerRegionId)?.name || 'غير معروفة'}</span></p>
+                    <p className="text-xs italic text-slate-600">أقرب نقطة: {firstPrefill.customerLandmark || 'لا يوجد'}</p>
+
+                    {firstPrefill.customerLocationUrl && (
+                      <a
+                        href={firstPrefill.customerLocationUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] text-blue-600 hover:underline flex items-center gap-1 mt-1 font-bold"
+                      >
+                        📍 فتح الموقع المحفوظ (Google Maps)
+                      </a>
+                    )}
+
+                    {firstPrefill.alternatePhone && (
+                      <p className="text-xs text-blue-700 font-bold bg-blue-100/50 px-2 py-0.5 rounded-md w-fit mt-1 border border-blue-200">
+                        الرقم الثاني: {firstPrefill.alternatePhone}
+                      </p>
+                    )}
+                  </div>
+                  {firstPrefill.customerDoorPhotoUrl ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <img
+                        src={doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl) || ""}
+                        className="h-24 w-24 rounded-md object-cover border-2 border-emerald-300 shadow-md bg-white"
+                        alt="صورة الباب"
+                      />
+                      <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1 rounded">صورة الباب</span>
+                    </div>
+                  ) : (
+                    <div className="h-24 w-24 rounded-md bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center">
+                       <span className="text-[9px] text-slate-400">لا توجد صورة</span>
+                    </div>
+                  )}
+                </div>
                 <button
                   type="button"
-                  className="mt-2 rounded-lg border border-emerald-400 bg-white px-3 py-1.5 text-xs font-bold hover:bg-emerald-100"
+                  className="mt-3 w-full rounded-lg border border-emerald-500 bg-emerald-600 px-3 py-2.5 text-xs font-black text-white hover:bg-emerald-700 shadow-md transition-all active:scale-[0.98]"
                   onClick={() => {
                     setFirstPhone(firstPrefill.phone);
                     setFirstRegionId(firstPrefill.customerRegionId ?? "");
                     setFirstLocationUrl(firstPrefill.customerLocationUrl ?? "");
                     setFirstLandmark(firstPrefill.customerLandmark ?? "");
+                    setFirstAlternatePhone(firstPrefill.alternatePhone ?? "");
                     setFirstSavedDoorPhotoUrl(doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl));
+                    setFirstRawDoorPhotoUrl(firstPrefill.customerDoorPhotoUrl);
                     setFirstPrefillApplied(true);
                   }}
                 >
-                  استخدم التفاصيل المحفوظة
+                  تطبيق كافة التفاصيل المحفوظة الآن
                 </button>
                 {firstPrefillApplied ? (
-                  <p className="mt-2 text-xs font-medium text-emerald-800">
-                    تم تحميل التفاصيل المحفوظة.
+                  <p className="mt-2 text-[11px] font-bold text-emerald-800 bg-emerald-200/50 p-1 rounded text-center">
+                    ✅ تم تحميل كافة التفاصيل (بما في ذلك الصورة والرقم الثاني)
                   </p>
                 ) : null}
               </div>
@@ -759,11 +830,74 @@ export function AdminCreateOrderForm({
                   <span className={ad.label}>رقم المستلم</span>
                   <input name="secondCustomerPhone" className={ad.input} value={secondPhone} onChange={(e) => setSecondPhone(e.target.value)} required />
                 </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className={ad.label}>الرقم الثاني للمستلم (إن وجد)</span>
+                  <input
+                    name="secondCustomerAlternatePhone"
+                    className={ad.input}
+                    value={secondAlternatePhone}
+                    onChange={(e) => setSecondAlternatePhone(e.target.value)}
+                    inputMode="numeric"
+                    placeholder="رقم إضافي..."
+                  />
+                </label>
                 <RegionSearchPicker fieldName="secondCustomerRegionId" label="منطقة المستلم" required value={secondRegionId} onValueChange={setSecondRegionId} regionsLookup={regions} />
               </div>
               {secondPrefillLoading ? (
                 <p className="text-xs text-slate-500">جارٍ البحث عن بيانات محفوظة...</p>
               ) : null}
+              {secondPrefill && (
+                <div className="rounded-xl border border-violet-300 bg-violet-50 p-3 text-sm text-violet-900 shadow-sm transition-all animate-in fade-in slide-in-from-top-1">
+                   <div className="flex justify-between items-start gap-3">
+                    <div className="space-y-1 flex-1">
+                      <p className="font-bold text-violet-800">بيانات محفوظة للمستلم:</p>
+                      <p className="text-xs">المنطقة: <span className="font-semibold">{regions.find(r => r.id === secondPrefill.customerRegionId)?.name || 'غير معروفة'}</span></p>
+                      <p className="text-xs italic">أقرب نقطة: {secondPrefill.customerLandmark || 'لا يوجد'}</p>
+
+                      {secondPrefill.customerLocationUrl && (
+                        <a href={secondPrefill.customerLocationUrl} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 hover:underline flex items-center gap-1 mt-1 font-bold">
+                          📍 الموقع المحفوظ للمستلم
+                        </a>
+                      )}
+
+                      {secondPrefill.alternatePhone && (
+                        <p className="text-xs text-blue-700 font-bold bg-blue-100/50 px-2 py-0.5 rounded-md w-fit mt-1 border border-blue-200">
+                          الرقم الثاني: {secondPrefill.alternatePhone}
+                        </p>
+                      )}
+                    </div>
+                    {secondPrefill.customerDoorPhotoUrl ? (
+                      <div className="flex flex-col items-center gap-1">
+                        <img
+                          src={doorPhotoUrlForDisplay(secondPrefill.customerDoorPhotoUrl) || ""}
+                          className="h-20 w-20 rounded-md object-cover border-2 border-violet-200 shadow-md bg-white"
+                          alt="صورة الباب"
+                        />
+                         <span className="text-[9px] font-black text-violet-700 bg-violet-100 px-1 rounded">صورة الباب</span>
+                      </div>
+                    ) : (
+                      <div className="h-20 w-20 rounded-md bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center">
+                         <span className="text-[9px] text-slate-400">لا توجد صورة</span>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="mt-3 w-full rounded-lg border border-violet-500 bg-violet-600 px-3 py-2 text-xs font-black text-white hover:bg-violet-700 shadow-md transition-all active:scale-[0.98]"
+                    onClick={() => {
+                      setSecondPhone(secondPrefill.phone);
+                      setSecondRegionId(secondPrefill.customerRegionId ?? "");
+                      setSecondLocationUrl(secondPrefill.customerLocationUrl ?? "");
+                      setSecondLandmark(secondPrefill.customerLandmark ?? "");
+                      setSecondAlternatePhone(secondPrefill.alternatePhone ?? "");
+                      setSecondSavedDoorPhotoUrl(doorPhotoUrlForDisplay(secondPrefill.customerDoorPhotoUrl));
+                      setSecondRawDoorPhotoUrl(secondPrefill.customerDoorPhotoUrl);
+                    }}
+                  >
+                    تطبيق تفاصيل المستلم
+                  </button>
+                </div>
+              )}
               <div className="grid gap-3 sm:grid-cols-2">
                 <input name="secondCustomerLocationUrl" className={ad.input} value={secondLocationUrl} onChange={(e) => setSecondLocationUrl(e.target.value)} placeholder="لوكيشن المستلم" />
                 <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setSecondLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-md hover:bg-violet-200 w-fit mt-1">📍 أخذ موقعي الحالي</button>

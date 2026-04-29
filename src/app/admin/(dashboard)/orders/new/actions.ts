@@ -73,8 +73,9 @@ async function upsertCustomerByPhone(opts: {
   locationUrl?: string;
   landmark?: string;
   doorPhotoUrl?: string | null;
+  alternatePhone?: string | null;
 }): Promise<{ id: string }> {
-  const { shopId, phone, regionId, locationUrl, landmark, doorPhotoUrl } = opts;
+  const { shopId, phone, regionId, locationUrl, landmark, doorPhotoUrl, alternatePhone } = opts;
 
   const existing = await prisma.customer.findFirst({
     where: { shopId, phone },
@@ -85,6 +86,7 @@ async function upsertCustomerByPhone(opts: {
     customerLocationUrl: locationUrl ?? "",
     customerLandmark: landmark ?? "",
     customerDoorPhotoUrl: doorPhotoUrl ?? null,
+    alternatePhone: alternatePhone || null,
   };
 
   if (existing) {
@@ -202,11 +204,13 @@ export async function createAdminOrder(
   const orderNoteTime = String(formData.get("orderNoteTime") ?? "").trim();
 
   const firstPhoneRaw = String(formData.get("firstCustomerPhone") ?? "").trim();
+  const firstAlternatePhone = String(formData.get("firstCustomerAlternatePhone") ?? "").trim();
   const firstRegionIdRaw = String(formData.get("firstCustomerRegionId") ?? "").trim();
   const firstLocationUrl = String(formData.get("firstCustomerLocationUrl") ?? "").trim();
   const firstLandmark = String(formData.get("firstCustomerLandmark") ?? "").trim();
 
   const secondPhoneRaw = String(formData.get("secondCustomerPhone") ?? "").trim();
+  const secondAlternatePhone = String(formData.get("secondCustomerAlternatePhone") ?? "").trim();
   const secondRegionIdRaw = String(formData.get("secondCustomerRegionId") ?? "").trim();
   const secondLocationUrl = String(formData.get("secondCustomerLocationUrl") ?? "").trim();
   const secondLandmark = String(formData.get("secondCustomerLandmark") ?? "").trim();
@@ -249,9 +253,12 @@ export async function createAdminOrder(
   const secondDoor = formData.get("secondCustomerDoorPhoto");
   const voice = formData.get("voiceNote");
 
+  const firstExistingDoorUrl = String(formData.get("firstExistingDoorPhotoUrl") ?? "").trim();
+  const secondExistingDoorUrl = String(formData.get("secondExistingDoorPhotoUrl") ?? "").trim();
+
   let imageUrl: string | null = null;
-  let firstDoorUrl: string | null = null;
-  let secondDoorUrl: string | null = null;
+  let firstDoorUrl: string | null = firstExistingDoorUrl || null;
+  let secondDoorUrl: string | null = secondExistingDoorUrl || null;
   let voiceNoteUrl: string | null = null;
 
   try {
@@ -270,6 +277,7 @@ export async function createAdminOrder(
     locationUrl: firstLocationUrl,
     landmark: firstLandmark,
     doorPhotoUrl: firstDoorUrl,
+    alternatePhone: firstAlternatePhone,
   });
 
   if (routeMode === "double" && secondPhone && secondRegionId) {
@@ -280,6 +288,7 @@ export async function createAdminOrder(
       locationUrl: secondLocationUrl,
       landmark: secondLandmark,
       doorPhotoUrl: secondDoorUrl,
+      alternatePhone: secondAlternatePhone,
     });
   }
 
@@ -310,6 +319,7 @@ export async function createAdminOrder(
       orderType,
       orderNoteTime,
       customerPhone: firstPhone,
+      alternatePhone: firstAlternatePhone || null,
       customerRegionId: firstRegionIdRaw,
       customerLocationUrl: firstLocationUrl,
       customerLandmark: firstLandmark,

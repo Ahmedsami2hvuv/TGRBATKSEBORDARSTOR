@@ -12,6 +12,7 @@ export type ShopEmployeeRow = {
   shopId: string;
   name: string;
   phone: string;
+  portalUrl?: string;
 };
 
 /**
@@ -70,18 +71,30 @@ export function ShopEmployeeQuickPick({
         {shopEmployees.map((emp) => {
           const isSelected = recipientKind === "employee" && selectedEmployeeId === emp.id;
           return (
-            <button
-              key={emp.id}
-              type="button"
-              className={`rounded-xl border px-3 py-2 text-sm font-bold transition ${
-                isSelected
-                  ? "border-sky-600 bg-sky-600 text-white shadow-md"
-                  : "border-sky-300 bg-sky-50 text-sky-950 hover:bg-sky-100"
-              }`}
-              onClick={() => onPickEmployee(emp)}
-            >
-              {emp.name || "بدون اسم"} — {emp.phone}
-            </button>
+            <div key={emp.id} className="flex items-center gap-1">
+              <button
+                type="button"
+                className={`rounded-xl border px-3 py-2 text-sm font-bold transition ${
+                  isSelected
+                    ? "border-sky-600 bg-sky-600 text-white shadow-md"
+                    : "border-sky-300 bg-sky-50 text-sky-950 hover:bg-sky-100"
+                }`}
+                onClick={() => onPickEmployee(emp)}
+              >
+                {emp.name || "بدون اسم"} — {emp.phone}
+              </button>
+              {isSelected && emp.portalUrl && (
+                <a
+                  href={emp.portalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl border border-sky-600 bg-white px-2.5 py-2 text-sky-600 shadow-sm hover:bg-sky-50"
+                  title="فتح رابط العميل"
+                >
+                  🔗 فتح الرابط
+                </a>
+              )}
+            </div>
           );
         })}
       </div>

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import { prisma } from "@/lib/prisma";
 import { AdminCreateOrderForm } from "./admin-create-order-form";
+import { buildEmployeeOrderPortalUrl } from "@/lib/employee-order-portal-link";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +12,13 @@ export const metadata = {
 };
 
 export default async function AdminCreateOrderPage() {
+  const headerList = await headers();
+  const host = headerList.get("host") || "";
+  const protocol = host.includes("localhost") ? "http" : "https";
+  const baseUrl = `${protocol}://${host}`;
+
   // جلب المحلات، المناطق، الزبائن (للملء التلقائي)، والموظفين (كأزرار سريعة)، والمجهزين (لطلبات التجهيز)
-  const [shops, regions, employees, preparers] = await Promise.all([
+  const [shops, regions, employeesRaw, preparers] = await Promise.all([
     prisma.shop.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true, regionId: true, locationUrl: true },
@@ -26,6 +33,7 @@ export default async function AdminCreateOrderPage() {
         shopId: true,
         name: true,
         phone: true,
+        orderPortalToken: true,
       },
       orderBy: { name: "asc" },
     }),
@@ -35,6 +43,14 @@ export default async function AdminCreateOrderPage() {
       select: { id: true, name: true, availableForAssignment: true },
     }),
   ]);
+
+  const employees = employeesRaw.map((e) => ({
+    id: e.id,
+    shopId: e.shopId,
+    name: e.name,
+    phone: e.phone,
+    portalUrl: buildEmployeeOrderPortalUrl(e.id, e.orderPortalToken, baseUrl),
+  }));
 
   return (
     <div className="space-y-4">

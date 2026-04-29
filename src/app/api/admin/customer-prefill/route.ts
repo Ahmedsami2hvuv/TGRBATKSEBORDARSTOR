@@ -31,6 +31,7 @@ export async function GET(request: Request) {
         customerLocationUrl: true,
         customerLandmark: true,
         customerDoorPhotoUrl: true,
+        alternatePhone: true,
       },
     });
   }
@@ -45,6 +46,7 @@ export async function GET(request: Request) {
         locationUrl: true,
         landmark: true,
         photoUrl: true,
+        alternatePhone: true,
       },
     });
 
@@ -59,6 +61,7 @@ export async function GET(request: Request) {
         customerLocationUrl: phoneProfile.locationUrl ?? "",
         customerLandmark: phoneProfile.landmark ?? "",
         customerDoorPhotoUrl: phoneProfile.photoUrl?.trim() ? phoneProfile.photoUrl : null,
+        alternatePhone: phoneProfile.alternatePhone,
       };
     }
   }
