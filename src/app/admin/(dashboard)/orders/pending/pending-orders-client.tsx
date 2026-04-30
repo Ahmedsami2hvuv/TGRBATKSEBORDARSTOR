@@ -689,13 +689,13 @@ export function PendingOrdersClient({
                     {o.voiceNoteUrl && (
                       <div className="bg-sky-50 p-2 rounded-lg border border-sky-100">
                         <p className="text-[9px] font-bold text-sky-700 mb-1">🎤 بصمة الزبون:</p>
-                        <VoiceNoteAudio url={o.voiceNoteUrl} />
+                        <VoiceNoteAudio src={resolvePublicAssetSrc(o.voiceNoteUrl) || ""} />
                       </div>
                     )}
                     {o.adminVoiceNoteUrl && (
                       <div className="bg-amber-50 p-2 rounded-lg border border-amber-100">
                         <p className="text-[9px] font-bold text-amber-700 mb-1">🎧 ملاحظة الإدارة الصوتية:</p>
-                        <VoiceNoteAudio url={o.adminVoiceNoteUrl} />
+                        <VoiceNoteAudio src={resolvePublicAssetSrc(o.adminVoiceNoteUrl) || ""} />
                       </div>
                     )}
                   </div>

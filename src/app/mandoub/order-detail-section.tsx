@@ -220,13 +220,13 @@ export function OrderDetailSection({
                   {order.voiceNoteUrl && (
                     <div className="flex flex-col gap-1">
                       <span className="text-[10px] font-bold text-amber-700">بصمة الزبون/المحل:</span>
-                      <VoiceNoteAudio src={order.voiceNoteUrl} />
+                      <VoiceNoteAudio src={resolvePublicAssetSrc(order.voiceNoteUrl) || ""} />
                     </div>
                   )}
                   {order.adminVoiceNoteUrl && (
                     <div className="flex flex-col gap-1">
                       <span className="text-[10px] font-bold text-amber-700">بصمة الإدارة:</span>
-                      <VoiceNoteAudio src={order.adminVoiceNoteUrl} />
+                      <VoiceNoteAudio src={resolvePublicAssetSrc(order.adminVoiceNoteUrl) || ""} />
                     </div>
                   )}
                 </div>
