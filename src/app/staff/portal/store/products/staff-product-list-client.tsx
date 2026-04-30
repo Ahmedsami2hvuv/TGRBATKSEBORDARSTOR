@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { upsertProduct, deleteProduct } from "../../../../admin/(dashboard)/store/actions";
 import { compressImageFileForUpload } from "@/lib/client-image-compress";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export function StaffProductListClient({
   initialProducts,
@@ -21,6 +23,11 @@ export function StaffProductListClient({
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   // مراقبة معطيات البحث لفتح نموذج التعديل تلقائياً
   useEffect(() => {
@@ -108,13 +115,25 @@ export function StaffProductListClient({
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pr-10 pl-4 py-3 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500 font-bold"
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2">🔍</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2">
+            <DynamicIcon icon={icons?.ui_search} className="w-5 h-5 opacity-40" fallback={<span>🔍</span>} />
+          </span>
         </div>
         <button
           onClick={() => { setEditing(null); setShowForm(!showForm); }}
-          className="w-full md:w-auto px-10 py-3 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 shadow-lg active:scale-95 transition-all"
+          className="w-full md:w-auto px-10 py-3 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
         >
-          {showForm ? "✕ إغلاق" : "+ إضافة منتج جديد"}
+          {showForm ? (
+            <>
+              <DynamicIcon icon={icons?.ui_close} className="w-5 h-5 brightness-0 invert" fallback={<span>✕</span>} />
+              إغلاق
+            </>
+          ) : (
+            <>
+              <DynamicIcon icon={icons?.ui_add} className="w-5 h-5 brightness-0 invert" fallback={<span>+</span>} />
+              إضافة منتج جديد
+            </>
+          )}
         </button>
       </div>
 
@@ -197,11 +216,11 @@ export function StaffProductListClient({
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
         {filteredProducts.map((p) => (
           <div key={p.id} className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-transparent hover:border-emerald-200 transition-all overflow-hidden flex flex-col group">
-            <div className="relative aspect-square bg-slate-50">
+            <div className="relative aspect-square bg-slate-50 flex items-center justify-center">
               {p.photoUrls?.[0] ? (
                 <img src={p.photoUrls[0]} className="w-full h-full object-contain" alt="" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-slate-200 text-5xl">📦</div>
+                <DynamicIcon icon={icons?.ui_box} className="w-16 h-16 text-slate-200 opacity-50" fallback={<span className="text-5xl">📦</span>} />
               )}
             </div>
             <div className="p-4 flex-1 flex flex-col">

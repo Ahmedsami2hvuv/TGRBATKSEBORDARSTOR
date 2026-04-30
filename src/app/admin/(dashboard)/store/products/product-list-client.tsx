@@ -5,17 +5,21 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { upsertProduct, deleteProduct } from "../actions";
 import { compressImageFileForUpload } from "@/lib/client-image-compress";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export function ProductListClient({
   initialProducts,
   branches,
   defaultBranchId,
-  productCardBgUrl
+  productCardBgUrl,
+  icons
 }: {
   initialProducts: any[],
   branches: any[],
   defaultBranchId?: string,
-  productCardBgUrl?: string
+  productCardBgUrl?: string,
+  icons: GlobalIconsConfig | null
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -337,7 +341,9 @@ export function ProductListClient({
       <div className="flex flex-col xl:flex-row gap-4 justify-between items-center bg-white p-4 rounded-3xl border border-slate-100 shadow-sm transition-all">
         <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto">
           <div className="relative flex-1 min-w-[200px]">
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+              <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-4 h-4" />
+            </span>
             <input
               type="text"
               placeholder="ابحث عن منتج..."
@@ -359,17 +365,22 @@ export function ProductListClient({
              <button
                 onClick={handleImportUrl}
                 disabled={importLoading}
-                className="bg-violet-600 text-white px-4 py-2 rounded-xl text-[10px] font-black hover:bg-violet-700 transition disabled:opacity-50 min-w-[80px]"
+                className="bg-violet-600 text-white px-4 py-2 rounded-xl text-[10px] font-black hover:bg-violet-700 transition disabled:opacity-50 min-w-[80px] flex items-center justify-center gap-1.5"
              >
                 {importLoading ? (
                   <span className="flex items-center gap-1">
                     ⏳ {totalToImport > 0 ? `${importProgress}/${totalToImport}` : "..."}
                   </span>
-                ) : "⚡ سحب ذكي"}
+                ) : (
+                  <>
+                    <DynamicIcon iconKey="ui_flash" config={icons} fallback="⚡" className="w-3 h-3" />
+                    سحب ذكي
+                  </>
+                )}
              </button>
           </div>
           <label className="flex-1 md:flex-none px-6 py-3 bg-violet-600 text-white font-black rounded-2xl hover:bg-violet-700 transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2 text-xs">
-            <span>🖼️</span>
+            <DynamicIcon iconKey="ui_image" config={icons} fallback="🖼️" className="w-4 h-4" />
             إضافة متعددة
             <input type="file" multiple accept="image/*" className="hidden" onChange={handleBulkPhotoSelect} />
           </label>
@@ -378,9 +389,14 @@ export function ProductListClient({
               setEditing(null);
               setShowForm(!showForm);
             }}
-            className="flex-1 md:flex-none px-8 py-3 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95 text-xs"
+            className="flex-1 md:flex-none px-8 py-3 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95 text-xs flex items-center justify-center gap-2"
           >
-            {showForm ? "✕ إغلاق" : "+ إضافة منتج"}
+            {showForm ? "✕ إغلاق" : (
+              <>
+                <DynamicIcon iconKey="ui_plus" config={icons} fallback="+" className="w-4 h-4" />
+                إضافة منتج
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -481,9 +497,9 @@ export function ProductListClient({
                                 </div>
                                 <button
                                     onClick={() => setBulkFiles(bulkFiles.filter((_, i) => i !== idx))}
-                                    className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition"
+                                    className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition flex items-center justify-center"
                                 >
-                                    🗑️
+                                    <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-4 h-4" />
                                 </button>
                             </div>
                         ))}
@@ -771,7 +787,9 @@ export function ProductListClient({
                   className="relative z-10 w-full h-full object-contain transition-transform duration-700 group-hover:scale-110"
                 />
               ) : (
-                <div className="relative z-10 w-full h-full flex items-center justify-center text-slate-300 text-5xl">📦</div>
+                <div className="relative z-10 w-full h-full flex items-center justify-center text-slate-300 text-5xl">
+                  <DynamicIcon iconKey="ui_box" config={icons} fallback="📦" className="w-16 h-16 opacity-20" />
+                </div>
               )}
               <div className="absolute bottom-3 right-3 z-20 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[9px] font-black text-emerald-600 shadow-sm">
                 {p.branch?.name || "عام"}
@@ -796,24 +814,28 @@ export function ProductListClient({
                     setShowForm(true);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="p-2 bg-sky-50 text-sky-700 rounded-xl text-[10px] font-black hover:bg-sky-100 transition-colors"
+                  className="p-2 bg-sky-50 text-sky-700 rounded-xl text-[10px] font-black hover:bg-sky-100 transition-colors flex items-center justify-center"
                   title="تعديل"
                 >
-                  ✏️
+                  <DynamicIcon iconKey="ui_edit" config={icons} fallback="✏️" className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => handleToggleActive(p)}
-                  className={`p-2 rounded-xl text-[10px] font-black transition-colors ${p.active ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}
+                  className={`p-2 rounded-xl text-[10px] font-black transition-colors flex items-center justify-center ${p.active ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}
                   title={p.active ? "إخفاء" : "إظهار"}
                 >
-                  {p.active ? "👁️" : "🕶️"}
+                  {p.active ? (
+                    <DynamicIcon iconKey="ui_eye_off" config={icons} fallback="👁️" className="w-3.5 h-3.5" />
+                  ) : (
+                    <DynamicIcon iconKey="ui_eye" config={icons} fallback="🕶️" className="w-3.5 h-3.5" />
+                  )}
                 </button>
                 <button
                   onClick={() => setConfirmDelete(p.id)}
-                  className="p-2 bg-rose-50 text-rose-700 rounded-xl text-[10px] font-black hover:bg-rose-100 transition-colors"
+                  className="p-2 bg-rose-50 text-rose-700 rounded-xl text-[10px] font-black hover:bg-rose-100 transition-colors flex items-center justify-center"
                   title="حذف"
                 >
-                  🗑️
+                  <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>

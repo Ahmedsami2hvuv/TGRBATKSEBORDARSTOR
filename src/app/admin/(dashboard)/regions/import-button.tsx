@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
-export function ImportRegionsButton() {
+export function ImportRegionsButton({ icons }: { icons: GlobalIconsConfig | null }) {
   const [status, setStatus] = useState<"idle" | "checking" | "confirming" | "importing">("idle");
   const [foundCount, setFoundCount] = useState(0);
   const router = useRouter();
@@ -63,12 +65,16 @@ export function ImportRegionsButton() {
         <button
           onClick={handleCheck}
           disabled={status !== "idle"}
-          className={`px-5 py-2 rounded-md font-bold text-white shadow-lg transition-all active:scale-95 ${
+          className={`px-5 py-2 rounded-md font-bold text-white shadow-lg transition-all active:scale-95 flex items-center gap-2 ${
             status === "idle" ? "bg-indigo-600 hover:bg-indigo-700" : "bg-gray-400"
           }`}
         >
-          {status === "checking" ? "🔍 جاري الفحص..." :
-           status === "importing" ? "📥 جاري السحب..." :
+          {status === "checking" ? <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-4 h-4" /> :
+           status === "importing" ? <DynamicIcon iconKey="ui_download" config={icons} fallback="📥" className="w-4 h-4" /> :
+           <DynamicIcon iconKey="ui_download" config={icons} fallback="📥" className="w-4 h-4" />}
+
+          {status === "checking" ? "جاري الفحص..." :
+           status === "importing" ? "جاري السحب..." :
            "استيراد المناطق (اضغط هنا)"}
         </button>
       )}

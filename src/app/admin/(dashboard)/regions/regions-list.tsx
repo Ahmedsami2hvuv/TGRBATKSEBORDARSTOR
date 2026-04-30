@@ -5,20 +5,15 @@ import { ad } from "@/lib/admin-ui";
 
 import { updateRegionAction } from "./actions";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
 
-export function RegionsList({ initialRegions }: { initialRegions: any[] }) {
+export function RegionsList({ initialRegions, icons }: { initialRegions: any[], icons: GlobalIconsConfig | null }) {
   const [search, setSearch] = useState("");
   const [regions, setRegions] = useState(initialRegions);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [loading, setLoading] = useState(false);
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
 
   const filtered = regions.filter(r => r.name.includes(search));
 
@@ -67,14 +62,17 @@ export function RegionsList({ initialRegions }: { initialRegions: any[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center gap-4">
+      <div className="flex justify-between items-center gap-4 relative">
         <input
           type="text"
-          placeholder="🔍 ابحث عن منطقة..."
-          className="flex-1 p-3 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+          placeholder="ابحث عن منطقة..."
+          className="flex-1 p-3 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none pr-10"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+           <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-5 h-5" />
+        </div>
         <button
           onClick={runFix}
           disabled={loading}

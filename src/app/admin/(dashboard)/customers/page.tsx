@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { ImportCustomersButton } from "./import-customers-button";
 import Link from "next/link";
+import { getGlobalIcons } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 import { CustomerSearchInput } from "./customer-search-input";
 export const dynamic = "force-dynamic";
@@ -14,16 +16,12 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
   const take = 100;
   const skip = (page - 1) * take;
 
-  const whereClause = q ? {
-    OR: [
-      { phone: { contains: q, mode: 'insensitive' } },
-      { notes: { contains: q, mode: 'insensitive' } },
-      { landmark: { contains: q, mode: 'insensitive' } },
-      { region: { name: { contains: q, mode: 'insensitive' } } }
-    ]
-  } : undefined;
+  const [profilesCount, icons] = await Promise.all([
+    prisma.customerPhoneProfile.count(),
+    getGlobalIcons()
+  ]);
 
-  const profilesCount = await prisma.customerPhoneProfile.count();
+  const whereClause = q ? {
   const filteredCount = await prisma.customerPhoneProfile.count({ where: whereClause as any });
   const totalPages = Math.ceil(filteredCount / take);
 
@@ -93,18 +91,25 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
                 <p className="text-gray-500 text-sm">المعروض حالياً: <span className="text-green-600 font-bold">{profiles.length} (صفحة {page} من {totalPages || 1})</span></p>
               </div>
            </div>
-           <ImportCustomersButton />
+           <ImportCustomersButton icons={icons} />
         </div>
       </div>
 
 
       <div className="flex gap-2 items-center bg-white p-4 rounded-2xl shadow-sm border border-blue-50">
-          <Link href="/admin/customers/add" className="bg-cyan-500 text-white px-6 py-2 rounded-xl font-bold shadow-md hover:bg-cyan-600 transition-all text-sm">
+          <Link href="/admin/customers/add" className="bg-cyan-500 text-white px-6 py-2 rounded-xl font-bold shadow-md hover:bg-cyan-600 transition-all text-sm flex items-center gap-2">
+            <DynamicIcon iconKey="ui_plus" config={icons} fallback="+" className="w-4 h-4" />
             إضافة زبون مرجعي
           </Link>
-          <div className="flex-1 flex gap-2">
+          <div className="flex-1 flex gap-2 relative">
               <CustomerSearchInput defaultValue={q} />
-              <button type="button" className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-md">بحث</button>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-5 h-5" />
+              </div>
+              <button type="button" className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-md flex items-center gap-2">
+                <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-4 h-4" />
+                بحث
+              </button>
           </div>
       </div>
 
@@ -146,8 +151,8 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
                     >
                       <span className="font-bold text-sm text-gray-800">{r.name}</span>
                       <div className="flex gap-2 text-xs mt-1">
-                         {r.photoUrl && <span title="توجد صورة باب">📷</span>}
-                         {r.locationUrl && <span title="موقع GPS">📍</span>}
+                         {r.photoUrl && <span title="توجد صورة باب"><DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="w-3.5 h-3.5" /></span>}
+                         {r.locationUrl && <span title="موقع GPS"><DynamicIcon iconKey="ui_location" config={icons} fallback="📍" className="w-3.5 h-3.5" /></span>}
                       </div>
                     </Link>
                   ))}
@@ -160,8 +165,8 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
                 </div>
               )}
               {group.regions.length === 1 && group.regions[0].landmark && (
-                <div className="text-right mt-1 text-[10px] text-blue-500 font-bold">
-                  📍 {group.regions[0].landmark}
+                <div className="text-right mt-1 text-[10px] text-blue-500 font-bold flex items-center gap-1">
+                  <DynamicIcon iconKey="ui_location" config={icons} fallback="📍" className="w-3 h-3" /> {group.regions[0].landmark}
                 </div>
               )}
 

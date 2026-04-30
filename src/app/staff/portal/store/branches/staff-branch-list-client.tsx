@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { upsertBranch, deleteBranch } from "@/app/admin/(dashboard)/store/actions";
 import { compressImageFileForUpload } from "@/lib/client-image-compress";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export function StaffBranchListClient({
   initialBranches,
@@ -22,6 +24,11 @@ export function StaffBranchListClient({
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const filteredBranches = initialBranches.filter(b =>
     b.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -57,7 +64,9 @@ export function StaffBranchListClient({
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
         <div className="relative w-full md:w-96">
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+            <DynamicIcon icon={icons?.ui_search} className="w-4 h-4" fallback={<span>🔍</span>} />
+          </span>
           <input
             type="text"
             placeholder="بحث في الأفرع..."
@@ -72,16 +81,27 @@ export function StaffBranchListClient({
               setEditing(null);
               setShowForm(!showForm);
             }}
-            className="flex-1 md:flex-none px-6 py-2 bg-violet-600 text-white font-black rounded-xl hover:bg-violet-700 transition shadow-lg"
+            className="flex-1 md:flex-none px-6 py-2 bg-violet-600 text-white font-black rounded-xl hover:bg-violet-700 transition shadow-lg flex items-center justify-center gap-2"
           >
-            {showForm ? "إغلاق ✕" : "+ إضافة فرع"}
+            {showForm ? (
+              <>
+                إغلاق
+                <DynamicIcon icon={icons?.ui_close} className="w-4 h-4 brightness-0 invert" fallback={<span>✕</span>} />
+              </>
+            ) : (
+              <>
+                <DynamicIcon icon={icons?.ui_add} className="w-4 h-4 brightness-0 invert" fallback={<span>+</span>} />
+                إضافة فرع
+              </>
+            )}
           </button>
           {defaultCategoryId && (
              <Link
                 href={`/staff/portal/store/products?categoryId=${defaultCategoryId}&${authQ}`}
-                className="flex-1 md:flex-none px-6 py-2 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 transition shadow-lg text-center"
+                className="flex-1 md:flex-none px-6 py-2 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 transition shadow-lg text-center flex items-center justify-center gap-2"
              >
-                + إدارة المنتجات
+                <DynamicIcon icon={icons?.ui_box} className="w-4 h-4 brightness-0 invert" fallback={<span>📦</span>} />
+                إدارة المنتجات
              </Link>
           )}
         </div>
@@ -204,11 +224,11 @@ export function StaffBranchListClient({
               href={`/staff/portal/store/products?branchId=${br.id}&${authQ}`}
               className="flex-1 block"
             >
-              <div className="relative aspect-square mb-3 overflow-hidden rounded-[1.5rem] bg-slate-50">
+              <div className="relative aspect-square mb-3 overflow-hidden rounded-[1.5rem] bg-slate-50 flex items-center justify-center">
                 {br.photoUrl ? (
                   <img src={br.photoUrl} alt={br.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-4xl">🌿</div>
+                  <DynamicIcon icon={icons?.ui_shop} className="w-12 h-12 text-slate-200" fallback={<span className="text-4xl">🌿</span>} />
                 )}
               </div>
               <div className="text-center px-2">
@@ -219,7 +239,10 @@ export function StaffBranchListClient({
                 <div className="flex items-center justify-center gap-1.5 mt-0.5">
                     <p className="text-[9px] text-slate-400 font-bold">تسلسل: {br.sequence}</p>
                     <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-                    <p className="text-[9px] text-emerald-600 font-black">📦 {br._count?.products || 0}</p>
+                    <p className="text-[9px] text-emerald-600 font-black flex items-center gap-1">
+                      <DynamicIcon icon={icons?.ui_box} className="w-2.5 h-2.5" fallback={<span>📦</span>} />
+                      {br._count?.products || 0}
+                    </p>
                 </div>
               </div>
             </Link>

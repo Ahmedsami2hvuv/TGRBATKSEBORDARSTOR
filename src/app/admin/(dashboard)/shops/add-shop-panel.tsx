@@ -4,8 +4,9 @@ import { useState } from "react";
 import { ad } from "@/lib/admin-ui";
 import { ShopForm } from "./shop-form";
 import type { AdminRegionOption } from "@/components/admin-region-search-picker";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
 
-export function AddShopPanel({ regions }: { regions: AdminRegionOption[] }) {
+export function AddShopPanel({ regions, icons }: { regions: AdminRegionOption[]; icons: GlobalIconsConfig | null }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -18,7 +19,7 @@ export function AddShopPanel({ regions }: { regions: AdminRegionOption[] }) {
         <section className={ad.section}>
           <h2 className={ad.h2}>إضافة محل</h2>
           <div className="mt-4">
-            <ShopForm regions={regions} />
+            <ShopForm regions={regions} icons={icons} />
           </div>
         </section>
       ) : null}

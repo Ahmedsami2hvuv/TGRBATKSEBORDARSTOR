@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ad } from "@/lib/admin-ui";
 import { deleteShop } from "./actions";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
 
 export type ShopRow = {
   id: string;
@@ -14,14 +14,9 @@ export type ShopRow = {
   regionName: string;
 };
 
-export function ShopsList({ shops }: { shops: ShopRow[] }) {
+export function ShopsList({ shops, icons }: { shops: ShopRow[]; icons: GlobalIconsConfig | null }) {
   const [query, setQuery] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
 
   async function copyLocation(url: string, id: string) {
     try {

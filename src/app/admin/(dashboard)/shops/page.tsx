@@ -3,16 +3,20 @@ import { ad } from "@/lib/admin-ui";
 import { AddShopPanel } from "./add-shop-panel";
 import { ShopsList } from "./shops-list";
 import { ImportShopsButton } from "./import-shops-button";
+import { getGlobalIcons } from "@/lib/icon-settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function ShopsPage() {
   // جلب البيانات مع تأمين ضد الأخطاء
-  const regions = await prisma.region.findMany({ orderBy: { name: "asc" } }).catch(() => []);
-  const shops = await prisma.shop.findMany({
-    include: { region: true },
-    orderBy: { createdAt: "desc" },
-  }).catch(() => []);
+  const [regions, shops, icons] = await Promise.all([
+    prisma.region.findMany({ orderBy: { name: "asc" } }).catch(() => []),
+    prisma.shop.findMany({
+      include: { region: true },
+      orderBy: { createdAt: "desc" },
+    }).catch(() => []),
+    getGlobalIcons(),
+  ]);
 
   const regionOptions = regions.map((r) => ({ id: r.id, name: r.name }));
 
@@ -35,11 +39,11 @@ export default async function ShopsPage() {
         <ImportShopsButton />
       </div>
 
-      <AddShopPanel regions={regionOptions} />
+      <AddShopPanel regions={regionOptions} icons={icons} />
 
       <section className={ad.section}>
         <h2 className={`mb-1 ${ad.h2}`}>القائمة ({rows.length})</h2>
-        <ShopsList shops={rows} />
+        <ShopsList shops={rows} icons={icons} />
       </section>
     </div>
   );

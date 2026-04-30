@@ -20,6 +20,8 @@ import { extractPhoneNumberFromText, parseSiteOrderMessage } from "@/lib/site-or
 import { parseFlexibleOrderLines } from "@/lib/flexible-order-parse";
 import { normalizeRegionNameForMatch } from "@/lib/region-name-normalize";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
 
 type ShopOpt = { id: string; name: string; regionId: string; locationUrl: string };
 type RegionOpt = { id: string; name: string };
@@ -55,11 +57,13 @@ export function AdminCreateOrderForm({
   regions,
   employees,
   preparers,
+  icons,
 }: {
   shops: ShopOpt[];
   regions: RegionOpt[];
   employees: EmployeeOpt[];
   preparers: Array<{ id: string; name: string; availableForAssignment: boolean }>;
+  icons?: GlobalIconsConfig;
 }) {
   const [state, formAction, pending] = useActionState(createAdminOrder, initialState);
 
@@ -684,7 +688,7 @@ export function AdminCreateOrderForm({
                         rel="noreferrer"
                         className="text-[10px] text-blue-600 hover:underline flex items-center gap-1 mt-1 font-bold"
                       >
-                        📍 فتح الموقع المحفوظ (Google Maps)
+                        <DynamicIcon icon={icons?.ui_location} fallback="📍" width={12} height={12} /> فتح الموقع المحفوظ (Google Maps)
                       </a>
                     )}
 
@@ -726,8 +730,8 @@ export function AdminCreateOrderForm({
                   تطبيق كافة التفاصيل المحفوظة الآن
                 </button>
                 {firstPrefillApplied ? (
-                  <p className="mt-2 text-[11px] font-bold text-emerald-800 bg-emerald-200/50 p-1 rounded text-center">
-                    ✅ تم تحميل كافة التفاصيل (بما في ذلك الصورة والرقم الثاني)
+                  <p className="mt-2 text-[11px] font-bold text-emerald-800 bg-emerald-200/50 p-1 rounded text-center flex items-center justify-center gap-1">
+                    <DynamicIcon icon={icons?.ui_success} fallback="✅" width={12} height={12} /> تم تحميل كافة التفاصيل (بما في ذلك الصورة والرقم الثاني)
                   </p>
                 ) : null}
               </div>
@@ -738,7 +742,9 @@ export function AdminCreateOrderForm({
                 <span className={ad.label}>
                   {submissionMode === "two_faces" ? "لوكيشن المرسل" : "لوكيشن الزبون"}
                 </span>
-                <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setFirstLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-md hover:bg-sky-200 w-fit">📍 أخذ موقعي الحالي</button>
+                <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setFirstLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-md hover:bg-sky-200 w-fit flex items-center gap-1">
+                  <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> أخذ موقعي الحالي
+                </button>
                 <input
                   name="firstCustomerLocationUrl"
                   className={ad.input}
@@ -856,7 +862,7 @@ export function AdminCreateOrderForm({
 
                       {secondPrefill.customerLocationUrl && (
                         <a href={secondPrefill.customerLocationUrl} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 hover:underline flex items-center gap-1 mt-1 font-bold">
-                          📍 الموقع المحفوظ للمستلم
+                          <DynamicIcon icon={icons?.ui_location} fallback="📍" width={12} height={12} /> الموقع المحفوظ للمستلم
                         </a>
                       )}
 
@@ -900,7 +906,9 @@ export function AdminCreateOrderForm({
               )}
               <div className="grid gap-3 sm:grid-cols-2">
                 <input name="secondCustomerLocationUrl" className={ad.input} value={secondLocationUrl} onChange={(e) => setSecondLocationUrl(e.target.value)} placeholder="لوكيشن المستلم" />
-                <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setSecondLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-md hover:bg-violet-200 w-fit mt-1">📍 أخذ موقعي الحالي</button>
+                <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setSecondLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-md hover:bg-violet-200 w-fit mt-1 flex items-center gap-1">
+                  <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> أخذ موقعي الحالي
+                </button>
                 <input name="secondCustomerLandmark" className={ad.input} value={secondLandmark} onChange={(e) => setSecondLandmark(e.target.value)} placeholder="نقطة دالة مستلم" />
               </div>
             

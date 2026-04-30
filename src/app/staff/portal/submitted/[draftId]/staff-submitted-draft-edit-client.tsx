@@ -3,6 +3,8 @@
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { updateStaffPreparationDraft, type StaffDraftEditState } from "../../actions";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 type RegionHit = { id: string; name: string; deliveryPrice: string };
 
@@ -64,6 +66,11 @@ export function StaffSubmittedDraftEditClient({
   const [selected, setSelected] = useState<RegionHit | null>(
     draft.customerRegion ? { ...draft.customerRegion } : null,
   );
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const canEdit = draft.status !== "sent" && draft.status !== "archived";
 
@@ -112,7 +119,10 @@ export function StaffSubmittedDraftEditClient({
   return (
     <div className="space-y-4">
       <header className="kse-glass-dark rounded-2xl border border-sky-200 p-5">
-        <h1 className="text-xl font-black text-slate-900">تعديل الطلب المرفوع</h1>
+        <h1 className="text-xl font-black text-slate-900 flex items-center gap-2">
+          <DynamicIcon icon={icons?.ui_edit} className="w-5 h-5" fallback={<span>✏️</span>} />
+          تعديل الطلب المرفوع
+        </h1>
         <p className="mt-1 text-sm text-slate-600">
           الموظف: <span className="font-black text-sky-900">{staffName}</span> — المجهّز:{" "}
           <span className="font-black text-slate-900">{draft.preparer?.name ?? "غير معروف"}</span>
@@ -123,7 +133,8 @@ export function StaffSubmittedDraftEditClient({
       </header>
 
       {!canEdit ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950 flex items-center gap-2">
+          <DynamicIcon icon={icons?.ui_warning} className="w-4 h-4" fallback={<span>⚠️</span>} />
           هذه المسودة لا يمكن تعديلها حالياً (تم إرسالها أو أرشفتها).
         </p>
       ) : null}
@@ -238,15 +249,30 @@ export function StaffSubmittedDraftEditClient({
           />
         </label>
 
-        {state.error ? <p className="mt-3 text-sm font-semibold text-rose-700">{state.error}</p> : null}
-        {state.ok ? <p className="mt-3 text-sm font-semibold text-emerald-800">تم حفظ التعديلات.</p> : null}
+        {state.error ? (
+          <p className="mt-3 text-sm font-semibold text-rose-700 flex items-center gap-1">
+            <DynamicIcon icon={icons?.ui_error} className="w-4 h-4" fallback={<span>❌</span>} />
+            {state.error}
+          </p>
+        ) : null}
+        {state.ok ? (
+          <p className="mt-3 text-sm font-semibold text-emerald-800 flex items-center gap-1">
+            <DynamicIcon icon={icons?.ui_success} className="w-4 h-4" fallback={<span>✅</span>} />
+            تم حفظ التعديلات.
+          </p>
+        ) : null}
 
         <button
           type="submit"
           disabled={pending || !canEdit}
-          className="mt-4 w-full rounded-xl bg-gradient-to-r from-emerald-600 to-sky-600 px-4 py-3 text-sm font-black text-white disabled:opacity-60"
+          className="mt-4 w-full rounded-xl bg-gradient-to-r from-emerald-600 to-sky-600 px-4 py-3 text-sm font-black text-white disabled:opacity-60 flex items-center justify-center gap-2"
         >
-          {pending ? "جارٍ الحفظ..." : "حفظ التعديلات"}
+          {pending ? "جارٍ الحفظ..." : (
+            <>
+              <DynamicIcon icon={icons?.ui_success} className="w-4 h-4 brightness-0 invert" fallback={<span>✅</span>} />
+              حفظ التعديلات
+            </>
+          )}
         </button>
       </form>
     </div>

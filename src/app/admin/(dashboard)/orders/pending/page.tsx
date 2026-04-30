@@ -14,6 +14,7 @@ import {
   sumDeliveryInFromOrderMoneyEvents,
   sumPickupOutFromOrderMoneyEvents,
 } from "@/lib/mandoub-money";
+import { getGlobalIcons } from "@/lib/icon-settings";
 import { PendingOrdersClient, type PendingOrderRow } from "./pending-orders-client";
 
 export const dynamic = "force-dynamic";
@@ -36,42 +37,37 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
   const assignOrder = (sp.assignOrder ?? "").trim();
 
   // جلب كافة المسودات النشطة مع المناطق
-  const allActiveDrafts = await prisma.companyPreparerShoppingDraft.findMany({
-    where: { status: { in: ["draft", "priced"] } },
-    include: {
+  const [allActiveDrafts, newOrders, preparedOrders, couriers, shops, preparers, icons] = await Promise.all([
+    prisma.companyPreparerShoppingDraft.findMany({
+      where: { status: { in: ["draft", "priced"] } },
+      include: {
         preparer: { select: { id: true, name: true } },
-        customerRegion: { select: { id: true, name: true, deliveryPrice: true } } // تأكدنا من تضمين المنطقة هنا
-    }
-  });
-
-  // 1. الطلبات الجديدة
-  const newOrders = await prisma.order.findMany({
-    where: { status: "pending", submissionSource: { not: "company_preparer" } },
-    orderBy: { createdAt: "desc" },
-    include: {
-      shop: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
-      submittedBy: { select: { id: true, name: true } },
-      customerRegion: { select: { id: true, name: true } },
-      customer: { select: { id: true, customerLocationUrl: true, customerLandmark: true, customerDoorPhotoUrl: true, alternatePhone: true } },
-      moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true } },
-    },
-  });
-
-  // 2. طلبات مكتملة التجهيز
-  const preparedOrders = await prisma.order.findMany({
-    where: { status: "pending", submissionSource: "company_preparer" },
-    orderBy: { createdAt: "desc" },
-    include: {
-      shop: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
-      submittedBy: { select: { id: true, name: true } },
-      submittedByCompanyPreparer: { select: { id: true, name: true } },
-      customerRegion: { select: { id: true, name: true } },
-      customer: { select: { id: true, customerLocationUrl: true, customerLandmark: true, customerDoorPhotoUrl: true, alternatePhone: true } },
-      moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true } },
-    },
-  });
-
-  const [couriers, shops, preparers] = await Promise.all([
+        customerRegion: { select: { id: true, name: true, deliveryPrice: true } }
+      }
+    }),
+    prisma.order.findMany({
+      where: { status: "pending", submissionSource: { not: "company_preparer" } },
+      orderBy: { createdAt: "desc" },
+      include: {
+        shop: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
+        submittedBy: { select: { id: true, name: true } },
+        customerRegion: { select: { id: true, name: true } },
+        customer: { select: { id: true, customerLocationUrl: true, customerLandmark: true, customerDoorPhotoUrl: true, alternatePhone: true } },
+        moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true } },
+      },
+    }),
+    prisma.order.findMany({
+      where: { status: "pending", submissionSource: "company_preparer" },
+      orderBy: { createdAt: "desc" },
+      include: {
+        shop: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
+        submittedBy: { select: { id: true, name: true } },
+        submittedByCompanyPreparer: { select: { id: true, name: true } },
+        customerRegion: { select: { id: true, name: true } },
+        customer: { select: { id: true, customerLocationUrl: true, customerLandmark: true, customerDoorPhotoUrl: true, alternatePhone: true } },
+        moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true } },
+      },
+    }),
     prisma.courier.findMany({
       where: courierAssignableWhere,
       orderBy: { name: "asc" },
@@ -82,7 +78,8 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       where: { active: true },
       orderBy: { name: "asc" },
       select: { id: true, name: true }
-    })
+    }),
+    getGlobalIcons(),
   ]);
 
   const mapOrderToRow = (o: any): PendingOrderRow => {
@@ -223,7 +220,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
       {activeTab === "new" && (
         <div className="space-y-4">
-          <PendingOrdersClient orders={newRows} couriers={couriers} shops={shops} preparers={preparers} initialAssignOrderId={activeTab === 'new' ? assignOrder : null} />
+          <PendingOrdersClient orders={newRows} couriers={couriers} shops={shops} preparers={preparers} icons={icons} initialAssignOrderId={activeTab === 'new' ? assignOrder : null} />
         </div>
       )}
 
@@ -233,7 +230,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
             <p className="text-center py-12 text-slate-400">لا توجد مسودات قيد التجهيز حالياً.</p>
           ) : (
             <div className="grid gap-3">
-              <PendingOrdersClient orders={groupedDraftRows} couriers={couriers} shops={shops} preparers={preparers} isDraftMode />
+              <PendingOrdersClient orders={groupedDraftRows} couriers={couriers} shops={shops} preparers={preparers} icons={icons} isDraftMode />
             </div>
           )}
         </div>
@@ -241,7 +238,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
       {activeTab === "completed" && (
         <div className="space-y-4">
-          <PendingOrdersClient orders={preparedRows} couriers={couriers} shops={shops} preparers={preparers} initialAssignOrderId={activeTab === 'completed' ? assignOrder : null} />
+          <PendingOrdersClient orders={preparedRows} couriers={couriers} shops={shops} preparers={preparers} icons={icons} initialAssignOrderId={activeTab === 'completed' ? assignOrder : null} />
         </div>
       )}
     </div>

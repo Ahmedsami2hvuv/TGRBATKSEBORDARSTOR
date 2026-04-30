@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { UnifiedOrderListTable } from "@/components/unified-order-list-table";
 import { whatsappMeUrl } from "@/lib/whatsapp";
 import { ad } from "@/lib/admin-ui";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export function StaffArchivedClient({ rows }: { rows: any[] }) {
   const [q, setQ] = useState("");
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const filtered = useMemo(() => {
     if (!q.trim()) return rows;
@@ -21,13 +28,18 @@ export function StaffArchivedClient({ rows }: { rows: any[] }) {
 
   return (
     <div className="space-y-4">
-      <input
-        type="search"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="بحث برقم الطلب، المحل، الهاتف، المنطقة..."
-        className="w-full rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm text-slate-800 shadow-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-      />
+      <div className="relative">
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+          <DynamicIcon icon={icons?.ui_search} className="w-4 h-4" fallback={<span>🔍</span>} />
+        </div>
+        <input
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="بحث برقم الطلب، المحل، الهاتف، المنطقة..."
+          className="w-full rounded-xl border border-sky-200 bg-white pr-10 pl-4 py-3 text-sm text-slate-800 shadow-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 font-bold"
+        />
+      </div>
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
         <UnifiedOrderListTable
           rows={filtered}
@@ -53,11 +65,12 @@ export function StaffArchivedClient({ rows }: { rows: any[] }) {
                     href={whatsappMeUrl(row.customerPhone, "مرحباً، نرجو تقييم خدمة التوصيل الخاص بطلبكم من أبو الأكبر للتوصيل. رأيكم يهمنا جداً لتطوير الخدمة.")}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-1 flex items-center justify-center rounded-md border border-amber-400 bg-amber-50 px-2 py-1 text-[10px] font-black text-amber-700 shadow-sm transition hover:bg-amber-100 whitespace-nowrap"
+                    className="mt-1 flex items-center justify-center gap-1 rounded-md border border-amber-400 bg-amber-50 px-2 py-1 text-[10px] font-black text-amber-700 shadow-sm transition hover:bg-amber-100 whitespace-nowrap"
                     onClick={(e) => e.stopPropagation()}
                     title="المندوب رفع لوكيشن - أرسل طلب تقييم عبر الواتساب"
                   >
-                    ⭐ طلب تقييم
+                    <DynamicIcon icon={icons?.ui_star} className="w-3 h-3" fallback={<span>⭐</span>} />
+                    طلب تقييم
                   </a>
                 );
              }

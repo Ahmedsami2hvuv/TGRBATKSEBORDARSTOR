@@ -5,7 +5,7 @@ import { useActionState, useMemo, useState, useEffect } from "react";
 import { ad } from "@/lib/admin-ui";
 import { buildStaffEmployeeShareMessage, whatsappAppUrl } from "@/lib/whatsapp";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { GlobalIconsConfig, getGlobalIcons } from "@/lib/icon-settings";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
 import {
   createStaffEmployee,
   deleteStaffEmployee,
@@ -28,14 +28,9 @@ type Row = {
 
 const initial: StaffEmployeeActionState = {};
 
-export function StaffEmployeesManager({ initialEmployees }: { initialEmployees: Row[] }) {
+export function StaffEmployeesManager({ initialEmployees, icons }: { initialEmployees: Row[], icons: GlobalIconsConfig | null }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -55,7 +50,7 @@ export function StaffEmployeesManager({ initialEmployees }: { initialEmployees: 
       <div className="flex flex-wrap gap-3">
         {!open ? (
           <button type="button" onClick={() => setOpen(true)} className={`${ad.btnPrimary} flex items-center gap-2`}>
-            <DynamicIcon config={icons?.ui_add} fallback="➕" className="w-4 h-4" />
+            <DynamicIcon iconKey="ui_plus" config={icons} fallback="➕" className="w-4 h-4" />
             إنشاء موظف جديد
           </button>
         ) : null}
@@ -159,7 +154,7 @@ export function StaffEmployeesManager({ initialEmployees }: { initialEmployees: 
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded-lg border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-800 transition hover:bg-sky-100"
                     >
-                      <DynamicIcon config={icons?.ui_external_link} fallback="↗" className="w-4 h-4" />
+                      <DynamicIcon iconKey="ui_external_link" config={icons} fallback="↗" className="w-4 h-4" />
                       فتح رابط الموظف
                     </a>
                     <a
@@ -173,14 +168,14 @@ export function StaffEmployeesManager({ initialEmployees }: { initialEmployees: 
                       className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-400 to-emerald-500 px-3 py-1.5 text-xs font-black text-slate-900 shadow-md ring-1 ring-emerald-300/50 transition hover:from-emerald-300 hover:to-emerald-400"
                       title="واتساب: إرسال رابط الموظف"
                     >
-                      <DynamicIcon config={icons?.ui_whatsapp} fallback="💬" className="w-4 h-4" />
+                      <DynamicIcon iconKey="ui_whatsapp" config={icons} fallback="💬" className="w-4 h-4" />
                       إرسال عبر واتساب
                     </a>
                     <Link
                       href={`/admin/employees/${e.id}/edit`}
                       className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 transition hover:bg-slate-50"
                     >
-                      <DynamicIcon config={icons?.ui_edit} fallback="✏️" className="w-3.5 h-3.5" />
+                      <DynamicIcon iconKey="ui_edit" config={icons} fallback="✏️" className="w-3.5 h-3.5" />
                       تعديل الموظف
                     </Link>
                   </div>
@@ -194,7 +189,7 @@ export function StaffEmployeesManager({ initialEmployees }: { initialEmployees: 
                       className="inline-flex items-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-900 hover:bg-violet-100 disabled:opacity-60"
                       title="تجديد الرابط: إبطال كل الروابط السابقة لهذا الموظف"
                     >
-                      <DynamicIcon config={icons?.ui_refresh} fallback="🔄" className="w-3.5 h-3.5" />
+                      <DynamicIcon iconKey="ui_refresh" config={icons} fallback="🔄" className="w-3.5 h-3.5" />
                       تجديد رابط الموظف
                     </button>
                   </form>
@@ -216,7 +211,7 @@ export function StaffEmployeesManager({ initialEmployees }: { initialEmployees: 
                       disabled={deletePending}
                       className="inline-flex items-center gap-2 rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-900 hover:bg-rose-100 disabled:opacity-60"
                     >
-                      <DynamicIcon config={icons?.ui_delete} fallback="🗑️" className="w-3.5 h-3.5" />
+                      <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-3.5 h-3.5" />
                       حذف
                     </button>
                   </form>

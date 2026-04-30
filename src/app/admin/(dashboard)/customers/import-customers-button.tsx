@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
-export function ImportCustomersButton() {
+export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | null }) {
   const [status, setStatus] = useState<"idle" | "checking" | "confirming" | "importing" | "syncing_photos" | "resetting">("idle");
   const [foundCount, setFoundCount] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -105,11 +107,21 @@ export function ImportCustomersButton() {
   return (
     <div className="flex flex-col gap-2 items-end">
       <div className="flex gap-2">
-        <button onClick={handleReset} className="bg-red-100 text-red-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-red-200 transition-colors">🗑️ مسح</button>
-        <button onClick={handleCleanUrls} disabled={status !== "idle"} className="bg-emerald-600 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-lg hover:bg-emerald-700">🧹 تنظيف الروابط الطويلة</button>
-        <button onClick={handleSyncPhotos} disabled={status !== "idle"} className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg hover:bg-indigo-700">📸 سحب الصور</button>
-        <button onClick={handleCheck} disabled={status !== "idle"} className="bg-blue-600 text-white px-5 py-2 rounded-xl font-bold shadow-xl hover:bg-blue-700 transition-all active:scale-95">
-          {status === "checking" ? "🔍 فحص..." : status === "importing" ? "📥 جاري السحب..." : "استيراد الزبائن 📥"}
+        <button onClick={handleReset} className="bg-red-100 text-red-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-red-200 transition-colors flex items-center gap-1">
+          <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-3.5 h-3.5" /> مسح
+        </button>
+        <button onClick={handleCleanUrls} disabled={status !== "idle"} className="bg-emerald-600 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-lg hover:bg-emerald-700 flex items-center gap-1">
+          <DynamicIcon iconKey="ui_settings" config={icons} fallback="🧹" className="w-3.5 h-3.5" /> تنظيف الروابط
+        </button>
+        <button onClick={handleSyncPhotos} disabled={status !== "idle"} className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg hover:bg-indigo-700 flex items-center gap-1">
+          <DynamicIcon iconKey="ui_camera" config={icons} fallback="📸" className="w-3.5 h-3.5" /> سحب الصور
+        </button>
+        <button onClick={handleCheck} disabled={status !== "idle"} className="bg-blue-600 text-white px-5 py-2 rounded-xl font-bold shadow-xl hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2">
+          {status === "checking" ? <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-4 h-4" /> :
+           status === "importing" ? <DynamicIcon iconKey="ui_download" config={icons} fallback="📥" className="w-4 h-4" /> :
+           <DynamicIcon iconKey="ui_download" config={icons} fallback="📥" className="w-4 h-4" />}
+
+          {status === "checking" ? "فحص..." : status === "importing" ? "جاري السحب..." : "استيراد الزبائن"}
         </button>
       </div>
 

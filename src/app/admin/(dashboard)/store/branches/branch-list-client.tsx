@@ -12,12 +12,14 @@ export function BranchListClient({
   branchesPromise,
   categoriesPromise,
   preparersPromise,
-  defaultCategoryId
+  defaultCategoryId,
+  icons
 }: {
   branchesPromise: Promise<any[]>,
   categoriesPromise: Promise<any[]>,
   preparersPromise: Promise<any[]>,
-  defaultCategoryId?: string
+  defaultCategoryId?: string,
+  icons: GlobalIconsConfig | null
 }) {
   const initialBranches = use(branchesPromise);
   const categories = use(categoriesPromise);
@@ -28,11 +30,6 @@ export function BranchListClient({
   const [editing, setEditing] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
 
   // --- FAB Drag State ---
   const [fabPos, setFabPos] = useState({ x: 32, y: 96 }); // Distance from bottom-right

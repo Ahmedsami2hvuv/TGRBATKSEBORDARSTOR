@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { BranchListClient } from "./branch-list-client";
 import Link from "next/link";
-import { Suspense } from "react";
+import { getGlobalIcons } from "@/lib/icon-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +49,8 @@ export default async function BranchesPage(props: {
     take: 500
   });
 
+  const icons = await getGlobalIcons();
+
   return (
     <div className="p-6 space-y-6" dir="rtl">
       {/* هذا الجزء سيظهر فوراً */}
@@ -76,6 +78,7 @@ export default async function BranchesPage(props: {
         categoriesPromise={categoriesPromise}
         preparersPromise={preparersPromise}
         defaultCategoryId={categoryId}
+        icons={icons}
       />
     </div>
   );

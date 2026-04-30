@@ -2,13 +2,17 @@ import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { ImportRegionsButton } from "./import-button";
 import { RegionsList } from "./regions-list";
+import { getGlobalIcons } from "@/lib/icon-settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function RegionsPage() {
-  const regions = await prisma.region.findMany({
-    orderBy: { name: "asc" },
-  });
+  const [regions, icons] = await Promise.all([
+    prisma.region.findMany({
+      orderBy: { name: "asc" },
+    }),
+    getGlobalIcons()
+  ]);
 
   return (
     <div className="space-y-8">
@@ -22,11 +26,11 @@ export default async function RegionsPage() {
           </div>
           <p className={`mt-1 ${ad.lead}`}>إدارة مناطق التوصيل وأسعارها.</p>
         </div>
-        <ImportRegionsButton />
+        <ImportRegionsButton icons={icons} />
       </div>
 
       {/* عرض القائمة مع ميزة البحث والتعديل */}
-      <RegionsList initialRegions={regions} />
+      <RegionsList initialRegions={regions} icons={icons} />
     </div>
   );
 }

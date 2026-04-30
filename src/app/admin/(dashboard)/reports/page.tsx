@@ -1,23 +1,16 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { ad } from "@/lib/admin-ui";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { getGlobalIcons } from "@/lib/icon-settings";
 
-export default function ReportsHubPage() {
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
+export default async function ReportsHubPage() {
+  const icons = await getGlobalIcons();
 
   return (
     <div className="space-y-6" dir="rtl">
       <p className={ad.muted}>
         <Link href="/admin" className={`${ad.link} flex items-center gap-1`}>
-          <DynamicIcon icon={icons?.ui_chevron_down} fallback="←" className="w-3 h-3 rotate-90" /> الرئيسية
+          <DynamicIcon iconKey="ui_chevron_down" config={icons} fallback="←" className="w-3 h-3 rotate-90" /> الرئيسية
         </Link>
       </p>
       <div>
@@ -40,7 +33,7 @@ export default function ReportsHubPage() {
               </p>
             </div>
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-500 text-2xl text-white shadow-lg">
-              <DynamicIcon icon={icons?.ui_tasks} fallback="📋" className="w-6 h-6" />
+              <DynamicIcon iconKey="ui_tasks" config={icons} fallback="📋" className="w-6 h-6" />
             </div>
           </div>
         </Link>
@@ -58,7 +51,7 @@ export default function ReportsHubPage() {
               </p>
             </div>
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-2xl text-white shadow-lg">
-              <DynamicIcon icon={icons?.ui_print} fallback="🧾" className="w-6 h-6" />
+              <DynamicIcon iconKey="ui_print" config={icons} fallback="🧾" className="w-6 h-6" />
             </div>
           </div>
         </Link>
@@ -76,7 +69,7 @@ export default function ReportsHubPage() {
               </p>
             </div>
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 text-2xl text-white shadow-lg">
-              <DynamicIcon icon={icons?.wallet_earnings} fallback="💰" className="w-6 h-6" />
+              <DynamicIcon iconKey="wallet_earnings" config={icons} fallback="💰" className="w-6 h-6" />
             </div>
           </div>
         </Link>
@@ -94,7 +87,7 @@ export default function ReportsHubPage() {
               </p>
             </div>
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 text-2xl text-white shadow-lg">
-              <DynamicIcon icon={icons?.ui_chart} fallback="📊" className="w-6 h-6" />
+              <DynamicIcon iconKey="ui_chart" config={icons} fallback="📊" className="w-6 h-6" />
             </div>
           </div>
         </Link>

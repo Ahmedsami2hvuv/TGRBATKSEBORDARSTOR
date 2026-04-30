@@ -4,6 +4,7 @@ import { ad } from "@/lib/admin-ui";
 import { StaffEmployeesManager } from "./staff-employees-manager";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { buildStaffEmployeePortalUrl } from "@/lib/staff-employee-portal-link";
+import { getGlobalIcons } from "@/lib/icon-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -12,16 +13,23 @@ export const metadata = {
 };
 
 export default async function AdminEmployeesHubPage() {
-  const employees = await prisma.staffEmployee.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 300,
-  });
+  const [employees, icons] = await Promise.all([
+    prisma.staffEmployee.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 300,
+    }),
+    getGlobalIcons()
+  ]);
+
   const baseUrl = getPublicAppUrl();
   const rows = employees.map((e) => ({
     id: e.id,
     name: e.name,
     phone: e.phone,
     active: e.active,
+    canSubmitOrders: e.canSubmitOrders,
+    canViewArchived: e.canViewArchived,
+    canManageStore: e.canManageStore,
     createdAt: e.createdAt,
     portalUrl: buildStaffEmployeePortalUrl(e.id, e.portalToken, baseUrl),
   }));
@@ -45,7 +53,7 @@ export default async function AdminEmployeesHubPage() {
       </header>
 
       <section className={ad.section}>
-        <StaffEmployeesManager initialEmployees={rows} />
+        <StaffEmployeesManager initialEmployees={rows} icons={icons} />
       </section>
     </div>
   );

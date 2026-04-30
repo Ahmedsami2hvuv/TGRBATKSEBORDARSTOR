@@ -72,7 +72,10 @@ export function StaffPreparationClient({ staffName, auth, preparers }: any) {
 
   if (state.ok) return (
     <div className="kse-glass-dark rounded-2xl border border-emerald-300 p-6 text-center shadow-lg animate-in zoom-in">
-      <h2 className="text-xl font-black text-emerald-800">✅ تم الإرسال بنجاح</h2>
+      <h2 className="text-xl font-black text-emerald-800 flex items-center justify-center gap-2">
+        <DynamicIcon icon={icons?.ui_success} className="w-6 h-6" fallback={<span>✅</span>} />
+        تم الإرسال بنجاح
+      </h2>
       <p className="mt-2 text-sm font-bold text-slate-600">تم توجيه القائمة للمجهزين: <br/><span className="text-emerald-700">{state.preparerName}</span></p>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
         <Link href={`/staff/portal?se=${auth.se}&exp=${auth.exp}&s=${auth.s}`} className="inline-flex justify-center rounded-xl bg-slate-900 px-6 py-2.5 text-white font-bold hover:bg-slate-800">
@@ -95,8 +98,16 @@ export function StaffPreparationClient({ staffName, auth, preparers }: any) {
       <section className="kse-glass-dark rounded-2xl border border-violet-200 p-5 shadow-sm">
         <h2 className="text-base font-black text-violet-950 mb-3">1) لصق الرسالة (واتساب أو موقع)</h2>
         <textarea value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={6} className={`${inputClass} font-mono text-xs`} placeholder="الصق هنا..." />
-        <button type="button" onClick={runSmartParse} className="mt-3 w-full rounded-xl bg-violet-600 py-3 text-sm font-black text-white shadow-md hover:bg-violet-700">تحليل البيانات استخراج</button>
-        {parseError && <p className="mt-2 text-xs font-bold text-rose-600">⚠️ {parseError}</p>}
+        <button type="button" onClick={runSmartParse} className="mt-3 w-full rounded-xl bg-violet-600 py-3 text-sm font-black text-white shadow-md hover:bg-violet-700 flex items-center justify-center gap-2">
+          <DynamicIcon icon={icons?.ui_flash} className="w-4 h-4" fallback={<span>⚡</span>} />
+          تحليل البيانات استخراج
+        </button>
+        {parseError && (
+          <p className="mt-2 text-xs font-bold text-rose-600 flex items-center gap-1">
+            <DynamicIcon icon={icons?.ui_error} className="w-3 h-3" fallback={<span>⚠️</span>} />
+            {parseError}
+          </p>
+        )}
       </section>
 
       {products.length > 0 && (
@@ -160,8 +171,13 @@ export function StaffPreparationClient({ staffName, auth, preparers }: any) {
           </div>
           <input name="orderTime" value={orderTime} onChange={e => setOrderTime(e.target.value)} placeholder="وقت الطلب" className={inputClass} required />
 
-          <button type="submit" disabled={pending || !selected || selectedPreparerIds.length === 0} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-sky-600 py-4 text-white font-black shadow-xl disabled:opacity-50 mt-4">
-             {pending ? "جاري الإرسال..." : "✅ تحويل الطلب للمجهز الآن"}
+          <button type="submit" disabled={pending || !selected || selectedPreparerIds.length === 0} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-sky-600 py-4 text-white font-black shadow-xl disabled:opacity-50 mt-4 flex items-center justify-center gap-2">
+             {pending ? "جاري الإرسال..." : (
+               <>
+                 <DynamicIcon icon={icons?.ui_success} className="w-5 h-5 brightness-0 invert" fallback={<span>✅</span>} />
+                 تحويل الطلب للمجهز الآن
+               </>
+             )}
           </button>
         </form>
       )}

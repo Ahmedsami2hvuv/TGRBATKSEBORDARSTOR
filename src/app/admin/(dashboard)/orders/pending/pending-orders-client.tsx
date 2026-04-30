@@ -76,13 +76,15 @@ export function AssignToPreparerPanel({
   preparers,
   isDraft,
   initialPreparerIds = [],
-  onSuccess
+  onSuccess,
+  icons
 }: {
   orderId: string;
   preparers: { id: string; name: string }[];
   isDraft?: boolean;
   initialPreparerIds?: string[];
   onSuccess?: () => void;
+  icons?: GlobalIconsConfig;
 }) {
   const [selectedPreparers, setSelectedPreparers] = useState<string[]>(initialPreparerIds);
   const bound = assignOrderToPreparer.bind(null);
@@ -113,8 +115,13 @@ export function AssignToPreparerPanel({
         ))}
       </div>
       {state.error && <p className="text-xs text-rose-600 font-bold p-2 bg-rose-50 rounded-lg border border-rose-200">{state.error}</p>}
-      <button type="submit" disabled={pending || selectedPreparers.length === 0} className="w-full rounded-xl bg-sky-600 py-3.5 text-sm font-black text-white shadow-lg active:scale-95 disabled:opacity-50 transition-all hover:bg-sky-700">
-        {pending ? "جارٍ الإسناد..." : initialPreparerIds.length > 0 ? "✅ تحديث المجهزين" : `✅ إسناد إلى ${selectedPreparers.length} مجهز`}
+      <button type="submit" disabled={pending || selectedPreparers.length === 0} className="w-full rounded-xl bg-sky-600 py-3.5 text-sm font-black text-white shadow-lg active:scale-95 disabled:opacity-50 transition-all hover:bg-sky-700 flex items-center justify-center gap-2">
+        {pending ? "جارٍ الإسناد..." : (
+          <>
+            <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} />
+            {initialPreparerIds.length > 0 ? "تحديث المجهزين" : `إسناد إلى ${selectedPreparers.length} مجهز`}
+          </>
+        )}
       </button>
     </form>
   );
@@ -139,7 +146,7 @@ function DeleteFullOrderButton({ id, isDraft, onSuccess, icons }: { id: string, 
   }
   return (
     <button type="button" onClick={() => setConfirm(true)} className="flex items-center gap-1 text-rose-600 hover:bg-rose-600 hover:text-white px-3 py-1.5 rounded-xl border-2 border-rose-600 transition-all text-[11px] font-black bg-white shadow-sm active:scale-95">
-      <DynamicIcon icon={icons?.admin_delete} fallback="🗑️" /> مسح الطلب
+      <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={12} height={12} /> مسح الطلب
     </button>
   );
 }
@@ -583,6 +590,7 @@ export function PendingOrdersClient({
   preparers = [],
   initialAssignOrderId,
   isDraftMode,
+  icons: initialIcons,
 }: {
   orders: PendingOrderRow[];
   couriers: { id: string; name: string }[];
@@ -590,17 +598,20 @@ export function PendingOrdersClient({
   preparers?: { id: string; name: string }[];
   initialAssignOrderId?: string | null;
   isDraftMode?: boolean;
+  icons?: GlobalIconsConfig | null;
 }) {
   const router = useRouter();
   const [assignOpenId, setAssignOpenId] = useState<string | null>(() => (initialAssignOrderId && orders.some((o) => o.id === initialAssignOrderId)) ? initialAssignOrderId : null);
   const [prepOpenId, setPrepOpenId] = useState<string | null>(null);
   const [pricingOpenId, setPricingOpenId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(initialIcons || null);
 
   useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
+    if (!initialIcons) {
+      getGlobalIcons().then(setIcons);
+    }
+  }, [initialIcons]);
 
   const [bulkState, bulkAction, bulkPending] = useActionState(bulkUpdateOrdersStatus, {} as BulkOrdersState);
   const [targetStatus, setTargetStatus] = useState<string>("pending");
@@ -683,7 +694,7 @@ export function PendingOrdersClient({
               <div className="flex sm:flex-col gap-2 border-sky-100 sm:border-e sm:pe-2" onClick={e => e.stopPropagation()}>
                 {!isDraftMode && <label className="h-10 w-10 flex items-center justify-center rounded-xl border border-sky-200 bg-white/80 cursor-pointer shadow-sm"><input type="checkbox" checked={selected.has(o.id)} onChange={() => toggleOne(o.id)} className="h-5 w-5 rounded border-sky-300" /></label>}
                 <button type="button" onClick={() => { setPricingOpenId(pricingOpen ? null : o.id); setAssignOpenId(null); setPrepOpenId(null); }} className={`h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm transition-all ${pricingOpen ? "bg-amber-600 text-white border-amber-700 ring-2 ring-amber-200" : "bg-white text-amber-600 border-amber-200 hover:bg-amber-50"}`}>
-                  <DynamicIcon icon={icons?.admin_pricing} fallback="💰" />
+                  <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={18} height={18} />
                 </button>
                 {!isDraftMode && <button type="button" onClick={() => { setAssignOpenId(assignOpen ? null : o.id); setPricingOpenId(null); setPrepOpenId(null); }} className={`h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm transition-all ${assignOpen ? "bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-200" : "bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"}`}><CheckIcon icons={icons} /></button>}
               </div>
@@ -691,7 +702,9 @@ export function PendingOrdersClient({
                 <div className="flex items-center gap-2">
                   <span className="bg-sky-100 text-sky-900 px-2 py-0.5 rounded-md font-black text-xs tabular-nums">{isDraftMode ? "مسودة" : `#${o.orderNumber}`}</span>
                   {o.submissionLabel === "طلب متجر" && (
-                    <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-black text-[10px] border border-amber-200 shadow-sm animate-pulse">🛒 طلب متجر</span>
+                    <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-black text-[10px] border border-amber-200 shadow-sm animate-pulse flex items-center gap-1">
+                      <DynamicIcon icon={icons?.store_cart} fallback="🛒" width={12} height={12} /> طلب متجر
+                    </span>
                   )}
                   <p className="font-black text-slate-900 leading-snug">{o.shopCustomerLabel || o.shopName?.trim() || "—"}</p>
                 </div>

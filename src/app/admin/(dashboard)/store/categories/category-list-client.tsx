@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { upsertCategory, deleteCategory } from "../actions";
 import { compressImageFileForUpload } from "@/lib/client-image-compress";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
-export function CategoryListClient({ categoriesPromise }: { categoriesPromise: Promise<any[]> }) {
+export function CategoryListClient({ categoriesPromise, icons }: { categoriesPromise: Promise<any[]>; icons: GlobalIconsConfig | null }) {
   const initialCategories = use(categoriesPromise);
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
@@ -158,7 +160,9 @@ export function CategoryListClient({ categoriesPromise }: { categoriesPromise: P
       {/* Header & Search */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-3xl border border-slate-100 shadow-sm transition-all">
         <div className="relative w-full md:w-96">
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+            <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-4 h-4" />
+          </span>
           <input
             type="text"
             placeholder="ابحث عن قسم رئيسي..."
@@ -171,18 +175,28 @@ export function CategoryListClient({ categoriesPromise }: { categoriesPromise: P
           <button
             onClick={handleSmartImport}
             disabled={isImporting}
-            className="flex-1 md:flex-none px-6 py-3 bg-violet-600 text-white font-black rounded-2xl hover:bg-violet-700 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+            className="flex-1 md:flex-none px-6 py-3 bg-violet-600 text-white font-black rounded-2xl hover:bg-violet-700 transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {isImporting ? "⏳ جاري السحب..." : "⚡ سحب ذكي للقسم"}
+            {isImporting ? "⏳ جاري السحب..." : (
+              <>
+                <DynamicIcon iconKey="ui_flash" config={icons} fallback="⚡" className="w-4 h-4" />
+                سحب ذكي للقسم
+              </>
+            )}
           </button>
           <button
             onClick={() => {
               setEditing(null);
               setShowForm(!showForm);
             }}
-            className="flex-1 md:flex-none px-8 py-3 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95"
+            className="flex-1 md:flex-none px-8 py-3 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
           >
-            {showForm ? "✕" : "+ إضافة قسم"}
+            {showForm ? "✕" : (
+              <>
+                <DynamicIcon iconKey="ui_plus" config={icons} fallback="+" className="w-4 h-4" />
+                إضافة قسم
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -206,7 +220,9 @@ export function CategoryListClient({ categoriesPromise }: { categoriesPromise: P
                     {branch.selectedPhoto ? (
                       <img src={URL.createObjectURL(branch.selectedPhoto)} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-3xl">🖼️</span>
+                      <span className="text-3xl">
+                        <DynamicIcon iconKey="ui_image" config={icons} fallback="🖼️" className="w-8 h-8" />
+                      </span>
                     )}
                     <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer text-white text-[10px] font-black">
                       اختر صورة
@@ -243,9 +259,9 @@ export function CategoryListClient({ categoriesPromise }: { categoriesPromise: P
                       newImportData.branches = newImportData.branches.filter((_, i) => i !== idx);
                       setImportData(newImportData);
                     }}
-                    className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition"
+                    className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition flex items-center justify-center"
                   >
-                    🗑️
+                    <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-4 h-4" />
                   </button>
                 </div>
               ))}
@@ -254,9 +270,10 @@ export function CategoryListClient({ categoriesPromise }: { categoriesPromise: P
             <div className="p-8 bg-slate-50 border-t flex gap-4">
               <button
                 onClick={startBulkExecution}
-                className="flex-1 py-4 bg-violet-600 text-white font-black rounded-2xl hover:bg-violet-700 shadow-xl shadow-violet-100 transition-all active:scale-95"
+                className="flex-1 py-4 bg-violet-600 text-white font-black rounded-2xl hover:bg-violet-700 shadow-xl shadow-violet-100 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
-                🚀 ابدأ سحب المنتجات لـ ({importData.branches.length}) أفرع
+                <DynamicIcon iconKey="ui_rocket" config={icons} fallback="🚀" className="w-5 h-5" />
+                ابدأ سحب المنتجات لـ ({importData.branches.length}) أفرع
               </button>
               <button
                 onClick={() => setImportData(null)}
@@ -365,7 +382,9 @@ export function CategoryListClient({ categoriesPromise }: { categoriesPromise: P
                 {cat.photoUrl ? (
                   <img src={cat.photoUrl} alt={cat.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-5xl">📂</div>
+                  <div className="w-full h-full flex items-center justify-center text-5xl">
+                    <DynamicIcon iconKey="ui_folder" config={icons} fallback="📂" className="w-16 h-16 opacity-20" />
+                  </div>
                 )}
               </div>
               <h3 className="font-black text-slate-900 text-center text-lg group-hover:text-violet-600 transition-colors line-clamp-1">{cat.name}</h3>
@@ -380,24 +399,28 @@ export function CategoryListClient({ categoriesPromise }: { categoriesPromise: P
                   setShowForm(true);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="p-2 bg-sky-50 text-sky-700 rounded-xl text-[10px] font-black hover:bg-sky-100 transition-colors"
+                className="p-2 bg-sky-50 text-sky-700 rounded-xl text-[10px] font-black hover:bg-sky-100 transition-colors flex items-center justify-center"
                 title="تعديل"
               >
-                ✏️
+                <DynamicIcon iconKey="ui_edit" config={icons} fallback="✏️" className="w-3 h-3" />
               </button>
               <button
                 onClick={() => handleToggleActive(cat)}
-                className={`p-2 rounded-xl text-[10px] font-black transition-colors ${cat.active ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}
+                className={`p-2 rounded-xl text-[10px] font-black transition-colors flex items-center justify-center ${cat.active ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}
                 title={cat.active ? "إخفاء من المتجر" : "إظهار في المتجر"}
               >
-                {cat.active ? "👁️" : "🕶️"}
+                {cat.active ? (
+                  <DynamicIcon iconKey="ui_eye_off" config={icons} fallback="👁️" className="w-3 h-3" />
+                ) : (
+                  <DynamicIcon iconKey="ui_eye" config={icons} fallback="🕶️" className="w-3 h-3" />
+                )}
               </button>
               <button
                 onClick={() => setConfirmDelete(cat.id)}
-                className="p-2 bg-rose-50 text-rose-700 rounded-xl text-[10px] font-black hover:bg-rose-100 transition-colors"
+                className="p-2 bg-rose-50 text-rose-700 rounded-xl text-[10px] font-black hover:bg-rose-100 transition-colors flex items-center justify-center"
                 title="حذف نهائي"
               >
-                🗑️
+                <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-3 h-3" />
               </button>
             </div>
 

@@ -4,13 +4,17 @@ import { useActionState, useRef, useState } from "react";
 import { ad } from "@/lib/admin-ui";
 import { createShop, type ShopFormState } from "./actions";
 import { AdminRegionSearchPicker, type AdminRegionOption } from "@/components/admin-region-search-picker";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 const initial: ShopFormState = {};
 
 export function ShopForm({
   regions,
+  icons,
 }: {
   regions: AdminRegionOption[];
+  icons: GlobalIconsConfig | null;
 }) {
   const [state, formAction, pending] = useActionState(createShop, initial);
   
@@ -89,7 +93,7 @@ export function ShopForm({
                 shopPhotoRef.current?.click();
               }}
             >
-              📷 كاميرا
+              <DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="w-4 h-4" /> كاميرا
             </button>
             <button
               type="button"
@@ -99,7 +103,7 @@ export function ShopForm({
                 shopPhotoRef.current?.click();
               }}
             >
-              🖼 معرض
+              <DynamicIcon iconKey="ui_image" config={icons} fallback="🖼" className="w-4 h-4" /> معرض
             </button>
           </div>
           {shopPhotoName ? (

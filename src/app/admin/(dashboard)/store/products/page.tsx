@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { ProductListClient } from "./product-list-client";
 import Link from "next/link";
+import { getGlobalIcons } from "@/lib/icon-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,8 @@ export default async function ProductsPage(props: { searchParams: Promise<{ bran
   const q = searchParams?.q || "";
   const page = parseInt(searchParams?.page || "1");
   const pageSize = 30; // تقليل عدد العناصر في الصفحة الواحدة لتسريع التحميل
+
+  const icons = await getGlobalIcons();
 
   try {
     const whereClause: any = {
@@ -159,6 +162,7 @@ export default async function ProductsPage(props: { searchParams: Promise<{ bran
           branches={branches}
           defaultBranchId={branchId}
           productCardBgUrl={productCardBgUrl}
+          icons={icons}
         />
 
         {/* Simple Pagination */}

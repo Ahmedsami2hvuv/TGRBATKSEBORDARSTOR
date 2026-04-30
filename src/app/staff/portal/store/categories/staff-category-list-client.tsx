@@ -1,15 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { upsertCategory, deleteCategory } from "@/app/admin/(dashboard)/store/actions";
 import { compressImageFileForUpload } from "@/lib/client-image-compress";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export function StaffCategoryListClient({ initialCategories, authQ }: { initialCategories: any[], authQ: string }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const filteredCategories = initialCategories.filter(c =>
     c.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -43,7 +50,9 @@ export function StaffCategoryListClient({ initialCategories, authQ }: { initialC
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
         <div className="relative w-full md:w-96">
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+            <DynamicIcon icon={icons?.ui_search} className="w-4 h-4" fallback={<span>🔍</span>} />
+          </span>
           <input
             type="text"
             placeholder="بحث عن قسم..."
@@ -57,9 +66,19 @@ export function StaffCategoryListClient({ initialCategories, authQ }: { initialC
             setEditing(null);
             setShowForm(!showForm);
           }}
-          className="w-full md:w-auto px-6 py-2 bg-violet-600 text-white font-black rounded-xl hover:bg-violet-700 transition shadow-lg"
+          className="w-full md:w-auto px-6 py-2 bg-violet-600 text-white font-black rounded-xl hover:bg-violet-700 transition shadow-lg flex items-center justify-center gap-2"
         >
-          {showForm ? "إغلاق النموذج ✕" : "+ إضافة قسم جديد"}
+          {showForm ? (
+            <>
+              إغلاق النموذج
+              <DynamicIcon icon={icons?.ui_close} className="w-4 h-4 brightness-0 invert" fallback={<span>✕</span>} />
+            </>
+          ) : (
+            <>
+              <DynamicIcon icon={icons?.ui_add} className="w-4 h-4 brightness-0 invert" fallback={<span>+</span>} />
+              إضافة قسم جديد
+            </>
+          )}
         </button>
       </div>
 
@@ -129,11 +148,11 @@ export function StaffCategoryListClient({ initialCategories, authQ }: { initialC
               href={`/staff/portal/store/branches?categoryId=${cat.id}&${authQ}`}
               className="flex-1 block"
             >
-              <div className="relative aspect-square mb-3 overflow-hidden rounded-[1.5rem] bg-slate-50">
+              <div className="relative aspect-square mb-3 overflow-hidden rounded-[1.5rem] bg-slate-50 flex items-center justify-center">
                 {cat.photoUrl ? (
                   <img src={cat.photoUrl} alt={cat.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-4xl">📁</div>
+                  <DynamicIcon icon={icons?.ui_package} className="w-12 h-12 text-slate-200" fallback={<span className="text-4xl">📁</span>} />
                 )}
               </div>
               <h3 className="font-black text-slate-900 text-center group-hover:text-violet-600 transition-colors line-clamp-1 px-2">{cat.name}</h3>
