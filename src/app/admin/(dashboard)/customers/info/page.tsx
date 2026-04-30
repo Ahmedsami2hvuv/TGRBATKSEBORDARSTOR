@@ -10,7 +10,7 @@ import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { CustomerOrdersBulkTable } from "../orders/customer-orders-bulk-table";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { normalizeAdminShopName } from "@/lib/admin-ui-helpers"; // Added if needed, or check if it exists
+import { normalizeAdminShopName } from "@/lib/admin-order-from-admin-constants";
 
 export const dynamic = "force-dynamic";
 
