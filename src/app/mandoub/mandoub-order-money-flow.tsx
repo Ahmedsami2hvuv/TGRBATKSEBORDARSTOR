@@ -473,7 +473,7 @@ export function MandoubOrderMoneyFlow({
   );
 }
 
-function PickupMoneyForm({
+export function PickupMoneyForm({
   orderId,
   auth,
   nextUrl,
@@ -687,7 +687,7 @@ function PickupMoneyForm({
   );
 }
 
-function DeliveryMoneyForm({
+export function DeliveryMoneyForm({
   orderId,
   auth,
   nextUrl,

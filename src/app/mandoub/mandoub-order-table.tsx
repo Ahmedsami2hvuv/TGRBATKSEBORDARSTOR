@@ -7,6 +7,10 @@ import {
   type MandoubBulkStatusState,
 } from "./actions";
 import { UnifiedOrderListTable } from "@/components/unified-order-list-table";
+import { PickupMoneyForm, DeliveryMoneyForm } from "./mandoub-order-money-flow";
+import { submitMandoubDeliveryMoney, submitMandoubPickupMoney, type MandoubCashState } from "./cash-actions";
+import { dinarDecimalToAlfInputString } from "@/lib/money-alf";
+import { createPortal } from "react-dom";
 
 export type MandoubRow = {
   id: string;
@@ -41,8 +45,12 @@ export type MandoubRow = {
   assignedCourierId?: string | null;
   /** سعر الطلب (بدون توصيل) بالدينار */
   orderSubtotalDinar?: number | null;
+  /** سعر الطلب الكلي (مع التوصيل) بالدينار */
+  totalAmountDinar?: number | null;
   /** مجموع ما تم دفعه للعميل بالدينار */
   pickupSumDinar?: number;
+  /** مجموع ما تم استلامه من الزبون بالدينار */
+  deliverySumDinar?: number;
   /** تنبيهات مالية */
   wardMismatchType?: "excess" | "deficit" | null;
   saderMismatchType?: "excess" | "deficit" | null;
@@ -86,6 +94,7 @@ function buildOrderDetailHref(
 }
 
 const initialBulk: MandoubBulkStatusState = {};
+const initialCash: MandoubCashState = {};
 
 export function MandoubOrderTable({
   rows,
@@ -107,6 +116,18 @@ export function MandoubOrderTable({
     bulkSetMandoubOrdersStatus,
     initialBulk,
   );
+  const [pickupOrder, setPickupOrder] = useState<MandoubRow | null>(null);
+  const [deliveryOrder, setDeliveryOrder] = useState<MandoubRow | null>(null);
+
+  const [pickupState, pickupAction, pickupPending] = useActionState(
+    submitMandoubPickupMoney,
+    initialCash,
+  );
+  const [deliveryState, deliveryAction, deliveryPending] = useActionState(
+    submitMandoubDeliveryMoney,
+    initialCash,
+  );
+
   const rowIds = useMemo(() => rows.map((r) => r.id), [rows]);
   const allSelected = rowIds.length > 0 && rowIds.every((id) => selectedIds.has(id));
 
@@ -253,7 +274,127 @@ export function MandoubOrderTable({
         selectedAriaPrefix="تحديد الطلب"
         showStatusDotInSelectCol={false}
         renderOrderIdBadge={() => null}
+        renderBelowOrderId={(o) => {
+          if (o.orderStatus === "assigned") {
+            return (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPickupOrder(o);
+                }}
+                className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-emerald-100 shadow-sm transition hover:bg-emerald-50 active:scale-90 p-1.5"
+                title="تم الاستلام (تسجيل دفع للعميل)"
+              >
+                <img
+                  src="https://img.icons8.com/fluency/64/wallet.png"
+                  alt="استلام"
+                  className="w-full h-full object-contain"
+                />
+              </button>
+            );
+          }
+          if (o.orderStatus === "delivering") {
+            return (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeliveryOrder(o);
+                }}
+                className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-rose-100 shadow-sm transition hover:bg-rose-50 active:scale-90 p-1.5"
+                title="تم التسليم (تسجيل استلام من الزبون)"
+              >
+                <img
+                  src="https://img.icons8.com/fluency/64/delivery.png"
+                  alt="تسليم"
+                  className="w-full h-full object-contain"
+                />
+              </button>
+            );
+          }
+          return null;
+        }}
       />
+
+      {pickupOrder &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm overflow-y-auto sm:p-6">
+            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-2xl bg-white p-5 shadow-2xl" dir="rtl">
+              <div className="mb-4 flex items-center justify-between border-b pb-3">
+                <h3 className="text-lg font-bold text-slate-900">تسجيل استلام - طلب #{pickupOrder.shortId}</h3>
+                <button
+                  onClick={() => setPickupOrder(null)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
+                >
+                  ✕
+                </button>
+              </div>
+              <PickupMoneyForm
+                orderId={pickupOrder.id}
+                auth={auth}
+                nextUrl={`/mandoub?tab=${tab}&q=${qSearch}`}
+                expectedAlfHint={pickupOrder.orderSubtotalDinar != null ? dinarDecimalToAlfInputString(pickupOrder.orderSubtotalDinar) : ""}
+                remainingAlfHint={
+                  pickupOrder.orderSubtotalDinar != null
+                    ? dinarDecimalToAlfInputString(pickupOrder.orderSubtotalDinar - (pickupOrder.pickupSumDinar || 0))
+                    : ""
+                }
+                advanceToDelivering={true}
+                pickupRemainingDinar={
+                  pickupOrder.orderSubtotalDinar != null ? pickupOrder.orderSubtotalDinar - (pickupOrder.pickupSumDinar || 0) : null
+                }
+                pickupSumDinar={pickupOrder.pickupSumDinar || 0}
+                orderSubtotalDinar={pickupOrder.orderSubtotalDinar}
+                formAction={pickupAction}
+                pending={pickupPending}
+                error={pickupState.error}
+                onClose={() => setPickupOrder(null)}
+              />
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {deliveryOrder &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm overflow-y-auto sm:p-6">
+            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-2xl bg-white p-5 shadow-2xl" dir="rtl">
+              <div className="mb-4 flex items-center justify-between border-b pb-3">
+                <h3 className="text-lg font-bold text-slate-900">تسجيل تسليم - طلب #{deliveryOrder.shortId}</h3>
+                <button
+                  onClick={() => setDeliveryOrder(null)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
+                >
+                  ✕
+                </button>
+              </div>
+              <DeliveryMoneyForm
+                orderId={deliveryOrder.id}
+                auth={auth}
+                nextUrl={`/mandoub?tab=${tab}&q=${qSearch}`}
+                expectedAlfHint={deliveryOrder.totalAmountDinar != null ? dinarDecimalToAlfInputString(deliveryOrder.totalAmountDinar) : ""}
+                remainingAlfHint={
+                  deliveryOrder.totalAmountDinar != null
+                    ? dinarDecimalToAlfInputString(deliveryOrder.totalAmountDinar - (deliveryOrder.deliverySumDinar || 0))
+                    : ""
+                }
+                advanceToDelivered={true}
+                deliveryRemainingDinar={
+                  deliveryOrder.totalAmountDinar != null ? deliveryOrder.totalAmountDinar - (deliveryOrder.deliverySumDinar || 0) : null
+                }
+                deliverySumDinar={deliveryOrder.deliverySumDinar || 0}
+                totalAmountDinar={deliveryOrder.totalAmountDinar}
+                formAction={deliveryAction}
+                pending={deliveryPending}
+                error={deliveryState.error}
+                onClose={() => setDeliveryOrder(null)}
+                missingCustomerLocation={!deliveryOrder.hasCustomerLocation}
+              />
+            </div>
+          </div>,
+          document.body,
+        )}
 
       {selectedIds.size > 0 ? (
         <form
