@@ -86,9 +86,9 @@ export default function ShopEmployeesPage() {
         <p className={`mt-1 ${ad.lead}`}>
           هؤلاء هم موظفوك الذين يملكون صلاحية رفع طلبات التوصيل إلى النظام عبر روابط خاصة.
         </p>
-        {shop.locationUrl ? (
+        {shop.locationUrl?.trim().length > 5 ? (
           <a
-            href={shop.locationUrl}
+            href={shop.locationUrl.trim()}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-2 inline-flex text-sm font-bold text-emerald-700 underline"
