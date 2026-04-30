@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react";
 import type { MandoubRow } from "@/app/mandoub/mandoub-order-table";
 import { OrderTypeLine } from "@/components/order-type-line";
 import { formatBaghdadDateFriendly, getBaghdadDateString, formatBaghdadDateTime } from "@/lib/baghdad-time";
@@ -97,6 +97,17 @@ export function UnifiedOrderListTable({
 }: Props) {
   const [modalImg, setModalImg] = useState<{ url: string, title: string } | null>(null);
   const [showNotes, setShowNotes] = useState<string | null>(null);
+  const [activeCallId, setActiveCallId] = useState<string | null>(null);
+  const [activeMsgId, setActiveMsgId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setActiveCallId(null);
+      setActiveMsgId(null);
+    };
+    window.addEventListener("click", handleGlobalClick);
+    return () => window.removeEventListener("click", handleGlobalClick);
+  }, []);
 
   let lastDateStr = "";
 
@@ -322,9 +333,8 @@ export function UnifiedOrderListTable({
                           </div>
 
                           {/* أزرار العميل (المحل) المختصرة */}
-                          {(o.shopPhone || o.shopLocationUrl || o.shopDoorPhotoUrl) && (
+                          {(o.shopLocationUrl || o.shopDoorPhotoUrl) && (
                             <div className="flex items-center gap-1 border-r pr-2 mr-1 border-slate-200" onClick={e => e.stopPropagation()}>
-                               {o.shopPhone && <a href={`tel:${o.shopPhone}`} title="اتصال بالعميل" className="size-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-sky-600 hover:text-white transition-all shadow-sm">📞</a>}
                                {o.shopLocationUrl && <a href={o.shopLocationUrl} target="_blank" title="موقع العميل" className="size-6 flex items-center justify-center rounded-full bg-slate-100 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm">📍</a>}
                                {o.shopDoorPhotoUrl && <button onClick={() => setModalImg({ url: o.shopDoorPhotoUrl!, title: "باب العميل" })} title="صورة باب العميل" className="size-6 flex items-center justify-center rounded-full bg-slate-100 text-amber-500 hover:bg-amber-500 hover:text-white transition-all shadow-sm">🚪</button>}
                             </div>
@@ -389,25 +399,81 @@ export function UnifiedOrderListTable({
                     <td className="px-2 py-2.5 font-mono tabular-nums text-slate-900">{o.priceStr}</td>
                     <td className="px-2 py-2.5 font-mono tabular-nums text-cyan-700">{o.delStr}</td>
                     <td className="px-2 py-2.5 align-top" onClick={e => e.stopPropagation()}>
-                      <div className="flex flex-col gap-1.5">
-                        <span className="font-mono text-sm tabular-nums text-slate-700 sm:text-base">
+                      <div className="flex flex-col gap-2">
+                        <span className="font-mono text-sm tabular-nums text-slate-700 sm:text-base font-bold">
                           {o.customerPhone || "—"}
                         </span>
-                        {o.customerPhone && (
-                          <div className="flex items-center gap-1.5">
-                            <a href={telHref(o.customerPhone)} className="size-7 flex items-center justify-center rounded-full bg-sky-600 text-white shadow-sm hover:scale-110 transition-transform">📞</a>
-                            <a href={whatsappMeUrl(o.customerPhone)} target="_blank" className="size-7 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm hover:scale-110 transition-transform">💬</a>
-                          </div>
-                        )}
 
-                        {(o.alternatePhone || o.secondCustomerPhone) && (
-                          <div className="mt-1 flex flex-col gap-1 border-t border-slate-100 pt-1.5">
-                            <span className="font-mono text-[10px] font-bold text-violet-600">
-                              {o.alternatePhone || o.secondCustomerPhone}
-                            </span>
-                            <div className="flex items-center gap-1.5">
-                              <a href={telHref(o.alternatePhone || o.secondCustomerPhone)} className="size-6 flex items-center justify-center rounded-full bg-violet-600 text-white shadow-sm hover:scale-110 transition-transform">📞</a>
-                              <a href={whatsappMeUrl(o.alternatePhone || o.secondCustomerPhone)} target="_blank" className="size-6 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm hover:scale-110 transition-transform">💬</a>
+                        {(o.shopPhone || o.customerPhone || o.alternatePhone || o.secondCustomerPhone) && (
+                          <div className="flex items-center gap-3">
+                            {/* زر الاتصال */}
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveCallId(activeCallId === o.id ? null : o.id);
+                                  setActiveMsgId(null);
+                                }}
+                                className={`size-9 flex items-center justify-center rounded-full text-white shadow-md hover:scale-110 transition-transform ${activeCallId === o.id ? 'bg-sky-700 ring-2 ring-sky-300' : 'bg-sky-600'}`}
+                                title="خيارات الاتصال"
+                              >
+                                📞
+                              </button>
+                              {activeCallId === o.id && (
+                                <div className="absolute top-full right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95">
+                                  <div className="bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 border-b">إجراء اتصال بـ:</div>
+                                  {o.shopPhone && (
+                                    <a href={telHref(o.shopPhone)} className="flex items-center gap-2 px-3 py-2.5 text-xs font-black text-slate-700 hover:bg-sky-50 transition-colors">
+                                      <span className="size-6 flex items-center justify-center rounded bg-sky-100 text-sky-600">🏢</span> عميل
+                                    </a>
+                                  )}
+                                  {o.customerPhone && (
+                                    <a href={telHref(o.customerPhone)} className="flex items-center gap-2 px-3 py-2.5 text-xs font-black text-slate-700 hover:bg-sky-50 transition-colors border-t border-slate-50">
+                                      <span className="size-6 flex items-center justify-center rounded bg-emerald-100 text-emerald-600">👤</span> زبون
+                                    </a>
+                                  )}
+                                  {(o.alternatePhone || o.secondCustomerPhone) && (
+                                    <a href={telHref(o.alternatePhone || o.secondCustomerPhone)} className="flex items-center gap-2 px-3 py-2.5 text-xs font-black text-slate-700 hover:bg-sky-50 transition-colors border-t border-slate-50">
+                                      <span className="size-6 flex items-center justify-center rounded bg-violet-100 text-violet-600">👥</span> زبون 2
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* زر المراسلة */}
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveMsgId(activeMsgId === o.id ? null : o.id);
+                                  setActiveCallId(null);
+                                }}
+                                className={`size-9 flex items-center justify-center rounded-full text-white shadow-md hover:scale-110 transition-transform ${activeMsgId === o.id ? 'bg-emerald-700 ring-2 ring-emerald-300' : 'bg-emerald-600'}`}
+                                title="خيارات المراسلة"
+                              >
+                                💬
+                              </button>
+                              {activeMsgId === o.id && (
+                                <div className="absolute top-full right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95">
+                                  <div className="bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 border-b">بدء مراسلة مع:</div>
+                                  {o.shopPhone && (
+                                    <a href={whatsappMeUrl(o.shopPhone)} target="_blank" className="flex items-center gap-2 px-3 py-2.5 text-xs font-black text-slate-700 hover:bg-emerald-50 transition-colors">
+                                      <span className="size-6 flex items-center justify-center rounded bg-sky-100 text-sky-600">🏢</span> عميل
+                                    </a>
+                                  )}
+                                  {o.customerPhone && (
+                                    <a href={whatsappMeUrl(o.customerPhone)} target="_blank" className="flex items-center gap-2 px-3 py-2.5 text-xs font-black text-slate-700 hover:bg-emerald-50 transition-colors border-t border-slate-50">
+                                      <span className="size-6 flex items-center justify-center rounded bg-emerald-100 text-emerald-600">👤</span> زبون
+                                    </a>
+                                  )}
+                                  {(o.alternatePhone || o.secondCustomerPhone) && (
+                                    <a href={whatsappMeUrl(o.alternatePhone || o.secondCustomerPhone)} target="_blank" className="flex items-center gap-2 px-3 py-2.5 text-xs font-black text-slate-700 hover:bg-emerald-50 transition-colors border-t border-slate-50">
+                                      <span className="size-6 flex items-center justify-center rounded bg-violet-100 text-violet-600">👥</span> زبون 2
+                                    </a>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}

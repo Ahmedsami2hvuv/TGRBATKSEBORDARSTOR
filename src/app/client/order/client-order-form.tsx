@@ -156,7 +156,13 @@ function ClientOrderFormInner({
     }
   }, [state.error]);
 
-  const custDelAlf = selected ? Number(selected.deliveryPrice) / ALF_PER_DINAR : NaN;
+  const rawCustDelPrice = selected ? Number(selected.deliveryPrice) : NaN;
+  // إذا كان السعر أقل من 100 (مثلاً 3 أو 5)، نعتبره "ألف" ونستخدمه مباشرة.
+  // إذا كان أكبر (مثلاً 3000)، نقسمه على 1000 لنحصل على قيمة "الألف".
+  const custDelAlf = !Number.isNaN(rawCustDelPrice)
+    ? (rawCustDelPrice < 100 ? rawCustDelPrice : rawCustDelPrice / ALF_PER_DINAR)
+    : NaN;
+
   const normalizedPrice = orderPrice.replace(/,/g, ".").trim();
   const hasOrderPrice = normalizedPrice.length > 0;
   const parsedPrice = hasOrderPrice ? parseFloat(normalizedPrice) : NaN;

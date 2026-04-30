@@ -151,14 +151,8 @@ export async function submitOrder(
     const subtotal = new Decimal(subtotalNum);
 
     // جلب بيانات الموظف والمحل
-    const submitter = await prisma.employee.findUnique({
-      where: { id: v.employeeId },
-      select: { id: true, name: true, shopId: true, orderPortalToken: true, shop: { select: { id: true, photoUrl: true, region: { select: { deliveryPrice: true } } } } }
-    });
-
-    if (!submitter || submitter.orderPortalToken !== v.token) {
-      return { error: "الموظف غير موجود أو الرابط غير صالح" };
-    }
+    const shopDeliveryPrice = submitter.shop.region.deliveryPrice.toNumber();
+    const shopDel = shopDeliveryPrice < 100 ? shopDeliveryPrice * 1000 : shopDeliveryPrice;
 
     const custRegion = await prisma.region.findUnique({
       where: { id: customerRegionId },
@@ -166,7 +160,10 @@ export async function submitOrder(
     });
     if (!custRegion) return { error: "المنطقة غير صالحة" };
 
-    const delivery = Decimal.max(submitter.shop.region.deliveryPrice, custRegion.deliveryPrice);
+    const custDeliveryPrice = custRegion.deliveryPrice.toNumber();
+    const custDel = custDeliveryPrice < 100 ? custDeliveryPrice * 1000 : custDeliveryPrice;
+
+    const delivery = new Decimal(Math.max(shopDel, custDel));
     const total = subtotal.plus(delivery);
 
     // الصور والصوت (تعطيل مؤقت للفحص إذا استمر العطل)

@@ -39,15 +39,43 @@ export function RegionsList({ initialRegions }: { initialRegions: any[] }) {
     }
   };
 
+  const runFix = async () => {
+    if (!confirm("هل تريد حقاً تصحيح كافة الأسعار التالفة في قاعدة البيانات؟ سيتم تحويل القيم مثل 3 أو 0.003 إلى 3000.")) return;
+    setLoading(true);
+    try {
+      const { fixAllDatabaseDeliveryPrices } = await import("./actions");
+      const result = await fixAllDatabaseDeliveryPrices();
+      if (result.success) {
+        alert("تم إصلاح البيانات بنجاح. يرجى تحديث الصفحة.");
+        window.location.reload();
+      } else {
+        alert("فشل الإصلاح: " + result.message);
+      }
+    } catch (err) {
+      alert("خطأ في الاتصال");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <input
-        type="text"
-        placeholder="🔍 ابحث عن منطقة..."
-        className="w-full p-3 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <div className="flex justify-between items-center gap-4">
+        <input
+          type="text"
+          placeholder="🔍 ابحث عن منطقة..."
+          className="flex-1 p-3 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <button
+          onClick={runFix}
+          disabled={loading}
+          className="px-4 py-3 bg-rose-600 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-rose-700 disabled:opacity-50"
+        >
+          {loading ? "جاري الإصلاح..." : "🛠️ إصلاح كافة الأسعار"}
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((region) => (
