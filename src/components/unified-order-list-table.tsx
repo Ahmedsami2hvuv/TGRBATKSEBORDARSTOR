@@ -356,10 +356,10 @@ export function UnifiedOrderListTable({
                           </div>
 
                         {/* أزرار العميل (المحل) المختصرة */}
-                        {(o.shopLocationUrl || o.shopDoorPhotoUrl) && (
+                        {(o.shopLocationUrl?.trim() || o.shopDoorPhotoUrl?.trim()) && (
                           <div className="flex items-center gap-1 border-r pr-2 mr-1 border-slate-200" onClick={e => e.stopPropagation()}>
-                             {o.shopLocationUrl && <a href={o.shopLocationUrl} target="_blank" title="موقع المحل" className="size-6 flex items-center justify-center rounded-full bg-slate-100 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm">📍</a>}
-                             {o.shopDoorPhotoUrl && <button onClick={() => setModalImg({ url: o.shopDoorPhotoUrl!, title: "باب المحل" })} title="صورة باب المحل" className="size-6 flex items-center justify-center rounded-full bg-slate-100 text-amber-500 hover:bg-amber-500 hover:text-white transition-all shadow-sm">🚪</button>}
+                             {o.shopLocationUrl?.trim() && <a href={o.shopLocationUrl.trim()} target="_blank" title="موقع المحل" className="size-6 flex items-center justify-center rounded-full bg-slate-100 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm">📍</a>}
+                             {o.shopDoorPhotoUrl?.trim() && <button onClick={() => setModalImg({ url: o.shopDoorPhotoUrl!.trim(), title: "باب المحل" })} title="صورة باب المحل" className="size-6 flex items-center justify-center rounded-full bg-slate-100 text-amber-500 hover:bg-amber-500 hover:text-white transition-all shadow-sm">🚪</button>}
                           </div>
                         )}
                         </div>
@@ -402,16 +402,16 @@ export function UnifiedOrderListTable({
                         <span>{o.regionLine}</span>
                         {/* أزرار اللوكيشن والصور من الخارج (للزبون) */}
                         <div className="flex flex-wrap items-center gap-1.5 mt-1" onClick={e => e.stopPropagation()}>
-                           {o.customerLocationUrl && (
-                             <a href={o.customerLocationUrl} target="_blank" title="موقع الزبون" className="size-8 flex items-center justify-center rounded-full bg-rose-100 text-rose-600 shadow-md hover:bg-rose-500 hover:text-white transition-all border-2 border-white">📍</a>
+                           {o.customerLocationUrl?.trim() && (
+                             <a href={o.customerLocationUrl.trim()} target="_blank" title="موقع الزبون" className="size-8 flex items-center justify-center rounded-full bg-rose-100 text-rose-600 shadow-md hover:bg-rose-500 hover:text-white transition-all border-2 border-white">📍</a>
                            )}
-                           {o.customerDoorPhotoUrl && (
-                             <button onClick={() => setModalImg({ url: o.customerDoorPhotoUrl!, title: "صورة الباب" })} title="صورة الباب" className="size-8 flex items-center justify-center rounded-full bg-amber-100 text-amber-600 shadow-md hover:bg-amber-500 hover:text-white transition-all border-2 border-white">🚪</button>
+                           {o.customerDoorPhotoUrl?.trim() && (
+                             <button onClick={() => setModalImg({ url: o.customerDoorPhotoUrl!.trim(), title: "صورة الباب" })} title="صورة الباب" className="size-8 flex items-center justify-center rounded-full bg-amber-100 text-amber-600 shadow-md hover:bg-amber-500 hover:text-white transition-all border-2 border-white">🚪</button>
                            )}
 
                            {/* لوكيشن المستلم في الوجهتين */}
-                           {o.routeMode === "double" && o.secondCustomerLocationUrl && (
-                             <a href={o.secondCustomerLocationUrl} target="_blank" title="موقع المستلم" className="size-8 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 shadow-md hover:bg-violet-600 hover:text-white transition-all border-2 border-violet-200">📍</a>
+                           {o.routeMode === "double" && o.secondCustomerLocationUrl?.trim() && (
+                             <a href={o.secondCustomerLocationUrl.trim()} target="_blank" title="موقع المستلم" className="size-8 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 shadow-md hover:bg-violet-600 hover:text-white transition-all border-2 border-violet-200">📍</a>
                            )}
                         </div>
                       </div>
@@ -545,7 +545,7 @@ export function UnifiedOrderListTable({
                             )}
 
                             {/* زر صورة الباب */}
-                            {(o.shopDoorPhotoUrl || o.customerDoorPhotoUrl) && (
+                            {(o.shopDoorPhotoUrl?.trim() || o.customerDoorPhotoUrl?.trim() || (o as any).secondCustomerDoorPhotoUrl?.trim()) && (
                               <div className="relative">
                                 <button
                                   onClick={(e) => {
@@ -563,20 +563,28 @@ export function UnifiedOrderListTable({
                                 {activeDoorId === o.id && (
                                   <CenterModal title="عرض صورة الباب لـ:" onClose={() => setActiveDoorId(null)}>
                                     <div className="flex flex-col gap-1">
-                                      {o.shopDoorPhotoUrl && (
+                                      {o.shopDoorPhotoUrl?.trim() && (
                                         <button
-                                          onClick={() => { setModalImg({ url: o.shopDoorPhotoUrl!, title: "هذه صورة باب العميل (المحل)" }); setActiveDoorId(null); }}
+                                          onClick={() => { setModalImg({ url: o.shopDoorPhotoUrl!.trim(), title: "هذه صورة باب العميل (المحل)" }); setActiveDoorId(null); }}
                                           className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
                                         >
                                           <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> عميل (المحل)
                                         </button>
                                       )}
-                                      {o.customerDoorPhotoUrl && (
+                                      {o.customerDoorPhotoUrl?.trim() && (
                                         <button
-                                          onClick={() => { setModalImg({ url: o.customerDoorPhotoUrl!, title: "هذه صورة باب الزبون" }); setActiveDoorId(null); }}
+                                          onClick={() => { setModalImg({ url: o.customerDoorPhotoUrl!.trim(), title: "هذه صورة باب الزبون" }); setActiveDoorId(null); }}
                                           className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
                                         >
                                           <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> زبون
+                                        </button>
+                                      )}
+                                      {(o as any).secondCustomerDoorPhotoUrl?.trim() && (
+                                        <button
+                                          onClick={() => { setModalImg({ url: (o as any).secondCustomerDoorPhotoUrl!.trim(), title: "هذه صورة باب الزبون 2 / المستلم" }); setActiveDoorId(null); }}
+                                          className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
+                                        >
+                                          <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> زبون 2 / مستلم
                                         </button>
                                       )}
                                     </div>
