@@ -201,6 +201,18 @@ export async function loadPreparerPortalOrderTableData(args: {
       pickupComplete,
       orderSubtotalDinar,
       pickupSumDinar,
+
+      // Unified fast-access fields
+      audioUrl: o.audioUrl,
+      preparerAudioUrl: o.preparerAudioUrl,
+      adminAudioUrl: o.adminAudioUrl,
+      shopLocationUrl: o.shopLocationUrl,
+      customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl,
+      secondCustomerLocationUrl: o.secondCustomerLocationUrl,
+      shopDoorPhotoUrl: o.shopDoorPhotoUrl,
+      customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl,
+      secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
+      routeMode: o.routeMode as "single" | "double",
     };
   });
 

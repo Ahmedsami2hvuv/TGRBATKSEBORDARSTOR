@@ -117,6 +117,7 @@ export function UnifiedOrderListTable({
   const [activeMsgId, setActiveMsgId] = useState<string | null>(null);
   const [activeLocId, setActiveLocId] = useState<string | null>(null);
   const [activeDoorId, setActiveDoorId] = useState<string | null>(null);
+  const [activeAudioId, setActiveAudioId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleGlobalClick = () => {
@@ -124,6 +125,7 @@ export function UnifiedOrderListTable({
       setActiveMsgId(null);
       setActiveLocId(null);
       setActiveDoorId(null);
+      setActiveAudioId(null);
     };
     window.addEventListener("click", handleGlobalClick);
     return () => window.removeEventListener("click", handleGlobalClick);
@@ -330,11 +332,8 @@ export function UnifiedOrderListTable({
                               {o.shopName}
                             </span>
 
-                            {/* مثلث البصمة الصوتية والملاحظات */}
+                            {/* ملاحظات الطلب */}
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                              {o.audioUrl && <MiniAudioPlayer url={o.audioUrl} />}
-                              {o.preparerAudioUrl && <MiniAudioPlayer url={o.preparerAudioUrl} />}
-                              {o.adminAudioUrl && <MiniAudioPlayer url={o.adminAudioUrl} />}
                               {o.summary && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setShowNotes(showNotes === o.id ? null : o.id); }}
@@ -355,8 +354,8 @@ export function UnifiedOrderListTable({
                             )}
                           </div>
 
-                        {/* أزرار العميل (المحل) المختصرة (لوكيشن وصور) */}
-                        {(o.shopLocationUrl?.trim() || o.customerLocationUrl?.trim() || o.secondCustomerLocationUrl?.trim() || o.shopDoorPhotoUrl?.trim() || o.customerDoorPhotoUrl?.trim() || (o as any).secondCustomerDoorPhotoUrl?.trim()) && (
+                        {/* أزرار العميل (المحل) المختصرة (لوكيشن وصور وبصمات) */}
+                        {(o.shopLocationUrl?.trim() || o.customerLocationUrl?.trim() || o.secondCustomerLocationUrl?.trim() || o.shopDoorPhotoUrl?.trim() || o.customerDoorPhotoUrl?.trim() || (o as any).secondCustomerDoorPhotoUrl?.trim() || o.audioUrl?.trim() || (o as any).preparerAudioUrl?.trim() || (o as any).adminAudioUrl?.trim()) && (
                           <div className="flex items-center gap-1 border-r pr-2 mr-1 border-slate-200" onClick={e => e.stopPropagation()}>
                              {/* زر اللوكيشن الموحد */}
                              {(o.shopLocationUrl?.trim() || o.customerLocationUrl?.trim() || o.secondCustomerLocationUrl?.trim()) && (
@@ -365,7 +364,7 @@ export function UnifiedOrderListTable({
                                    onClick={(e) => {
                                      e.stopPropagation();
                                      setActiveLocId(activeLocId === o.id ? null : o.id);
-                                     setActiveCallId(null); setActiveMsgId(null); setActiveDoorId(null);
+                                     setActiveCallId(null); setActiveMsgId(null); setActiveDoorId(null); setActiveAudioId(null);
                                    }}
                                    title="مواقع الـ GPS (المحل والزبون)"
                                    className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeLocId === o.id ? 'bg-rose-600 text-white' : 'bg-slate-100 text-rose-500 hover:bg-rose-500 hover:text-white'}`}
@@ -402,7 +401,7 @@ export function UnifiedOrderListTable({
                                    onClick={(e) => {
                                      e.stopPropagation();
                                      setActiveDoorId(activeDoorId === o.id ? null : o.id);
-                                     setActiveCallId(null); setActiveMsgId(null); setActiveLocId(null);
+                                     setActiveCallId(null); setActiveMsgId(null); setActiveLocId(null); setActiveAudioId(null);
                                    }}
                                    title="صور الأبواب (المحل والزبون)"
                                    className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeDoorId === o.id ? 'bg-amber-600 text-white' : 'bg-slate-100 text-amber-500 hover:bg-amber-500 hover:text-white'}`}
@@ -436,6 +435,53 @@ export function UnifiedOrderListTable({
                                          >
                                            <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> باب الزبون 2 / مستلم
                                          </button>
+                                       )}
+                                     </div>
+                                   </CenterModal>
+                                 )}
+                               </div>
+                             )}
+
+                             {/* زر البصمات الصوتية الموحد */}
+                             {(o.audioUrl?.trim() || (o as any).preparerAudioUrl?.trim() || (o as any).adminAudioUrl?.trim()) && (
+                               <div className="relative">
+                                 <button
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     setActiveAudioId(activeAudioId === o.id ? null : o.id);
+                                     setActiveCallId(null); setActiveMsgId(null); setActiveLocId(null); setActiveDoorId(null);
+                                   }}
+                                   title="البصمات الصوتية المرفقة"
+                                   className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeAudioId === o.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-indigo-500 hover:bg-indigo-500 hover:text-white'}`}
+                                 >
+                                   🎤
+                                 </button>
+                                 {activeAudioId === o.id && (
+                                   <CenterModal title="تشغيل البصمة الصوتية لـ:" onClose={() => setActiveAudioId(null)}>
+                                     <div className="flex flex-col gap-1">
+                                       {o.audioUrl && o.audioUrl.trim().length > 5 && (
+                                         <div className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-slate-100 hover:bg-indigo-50 transition-colors">
+                                            <div className="flex items-center gap-3 font-black text-slate-700">
+                                              <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> بصمة المحل
+                                            </div>
+                                            <MiniAudioPlayer url={o.audioUrl.trim()} />
+                                         </div>
+                                       )}
+                                       {(o as any).preparerAudioUrl && (o as any).preparerAudioUrl.trim().length > 5 && (
+                                         <div className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-slate-100 hover:bg-indigo-50 transition-colors">
+                                            <div className="flex items-center gap-3 font-black text-slate-700">
+                                              <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">📦</span> بصمة التجهيز
+                                            </div>
+                                            <MiniAudioPlayer url={(o as any).preparerAudioUrl.trim()} />
+                                         </div>
+                                       )}
+                                       {(o as any).adminAudioUrl && (o as any).adminAudioUrl.trim().length > 5 && (
+                                         <div className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-slate-100 hover:bg-indigo-50 transition-colors">
+                                            <div className="flex items-center gap-3 font-black text-slate-700">
+                                              <span className="size-10 flex items-center justify-center rounded-full bg-rose-100 text-rose-600 text-xl">👑</span> بصمة الإدارة
+                                            </div>
+                                            <MiniAudioPlayer url={(o as any).adminAudioUrl.trim()} />
+                                         </div>
                                        )}
                                      </div>
                                    </CenterModal>

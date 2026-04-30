@@ -39,7 +39,18 @@ export default async function StaffArchivedDayPage({
       archivedAt: { gte: range.gte, lt: range.lt }
     },
     orderBy: { orderNumber: "desc" },
-    include: { shop: true, customerRegion: true, courier: true, customer: { select: { customerLocationUrl: true, name: true } } }
+    include: {
+      shop: true,
+      customerRegion: true,
+      courier: true,
+      customer: {
+        select: {
+          customerLocationUrl: true,
+          customerDoorPhotoUrl: true,
+          name: true
+        }
+      }
+    }
   });
 
   const rows = archivedOrders.map(o => {
@@ -71,7 +82,19 @@ export default async function StaffArchivedDayPage({
       hasCustomerLocation: !!(o.customerLocationUrl || o.customer?.customerLocationUrl),
       hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
       prepaidAll: o.prepaidAll,
-      createdAt: o.createdAt
+      createdAt: o.createdAt,
+
+      // Unified fast-access fields
+      audioUrl: o.audioUrl,
+      preparerAudioUrl: o.preparerAudioUrl,
+      adminAudioUrl: o.adminAudioUrl,
+      shopLocationUrl: o.shopLocationUrl,
+      customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl,
+      secondCustomerLocationUrl: o.secondCustomerLocationUrl,
+      shopDoorPhotoUrl: o.shopDoorPhotoUrl,
+      customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl,
+      secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
+      routeMode: o.routeMode as "single" | "double",
     };
   });
 

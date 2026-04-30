@@ -37,6 +37,16 @@ export type TrackingTableRow = {
   /** لم يتم تسجيل أي صادر (مهم للاستلام) */
   noSaderRecorded?: boolean;
   createdAt?: Date | string;
+  // بيانات الوصول السريع
+  audioUrl?: string | null;
+  adminAudioUrl?: string | null;
+  shopPhone?: string | null;
+  shopLocationUrl?: string | null;
+  customerLocationUrl?: string | null;
+  secondCustomerLocationUrl?: string | null;
+  shopDoorPhotoUrl?: string | null;
+  customerDoorPhotoUrl?: string | null;
+  secondCustomerDoorPhotoUrl?: string | null;
 };
 
 function AssignCheckLink({ orderId }: { orderId: string }) {

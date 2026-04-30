@@ -66,9 +66,9 @@ export function EmployeesList({
                 <p className="font-black text-slate-800 text-lg">{emp.name}</p>
                 <p className="text-slate-500 font-mono text-sm">{emp.phone}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {emp.whatsappLink !== "#" ? (
+                  {emp.whatsappLink && emp.whatsappLink.trim().length > 10 ? (
                     <a
-                      href={emp.whatsappLink}
+                      href={emp.whatsappLink.trim()}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700 transition-colors"
@@ -80,9 +80,9 @@ export function EmployeesList({
                       ⚠️ الرابط غير جاهز (رقم غير صالح)
                     </span>
                   )}
-                  {emp.orderPortalUrl && (
+                  {emp.orderPortalUrl && emp.orderPortalUrl.trim().length > 5 && (
                     <a
-                      href={emp.orderPortalUrl}
+                      href={emp.orderPortalUrl.trim()}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded-lg bg-sky-100 px-3 py-1.5 text-[11px] font-bold text-sky-700 hover:bg-sky-200 transition-colors"
@@ -90,12 +90,14 @@ export function EmployeesList({
                       <span>🔗</span> فتح الرابط المباشر
                     </a>
                   )}
-                  <button
-                    onClick={() => copyToClipboard(emp.orderPortalUrl, emp.id)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
-                  >
-                    {copiedId === emp.id ? "✅ تم النسخ" : "📋 نسخ الرابط"}
-                  </button>
+                  {emp.orderPortalUrl && emp.orderPortalUrl.trim().length > 5 && (
+                    <button
+                      onClick={() => copyToClipboard(emp.orderPortalUrl, emp.id)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                    >
+                      {copiedId === emp.id ? "✅ تم النسخ" : "📋 نسخ الرابط"}
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2 border-t pt-3 sm:border-0 sm:pt-0">

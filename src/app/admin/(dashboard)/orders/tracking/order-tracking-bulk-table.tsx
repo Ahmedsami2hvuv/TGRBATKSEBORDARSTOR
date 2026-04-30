@@ -98,6 +98,16 @@ export function OrderTrackingBulkTable({
           noWardRecorded: r.noWardRecorded,
           noSaderRecorded: r.noSaderRecorded,
           createdAt: r.createdAt,
+          // بيانات الوصول السريع
+          audioUrl: r.audioUrl,
+          adminAudioUrl: r.adminAudioUrl,
+          shopPhone: r.shopPhone,
+          shopLocationUrl: r.shopLocationUrl,
+          customerLocationUrl: r.customerLocationUrl,
+          secondCustomerLocationUrl: r.secondCustomerLocationUrl,
+          shopDoorPhotoUrl: r.shopDoorPhotoUrl,
+          customerDoorPhotoUrl: r.customerDoorPhotoUrl,
+          secondCustomerDoorPhotoUrl: r.secondCustomerDoorPhotoUrl,
         };
       }),
     [rows],

@@ -261,6 +261,16 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,
       noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
       createdAt: o.createdAt,
+      // بيانات الوصول السريع
+      audioUrl: o.voiceNoteUrl,
+      adminAudioUrl: o.adminVoiceNoteUrl,
+      shopPhone: o.shop.phone,
+      shopLocationUrl: o.shop.locationUrl,
+      customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl,
+      secondCustomerLocationUrl: o.secondCustomerLocationUrl,
+      shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
+      customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl,
+      secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
     };
   });
 

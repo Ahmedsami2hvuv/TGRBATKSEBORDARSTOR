@@ -249,7 +249,7 @@ export default async function MandoubPage({ searchParams }: Props) {
     shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
     customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl,
     routeMode: o.routeMode as any,
-    preparerAudioUrl: null, // لم يتم إضافة الحقل بعد في Prisma كحقل منفصل ولكن نستخدم voiceNoteUrl حالياً
+    preparerAudioUrl: (o.preparerShoppingJson as any)?.preparerAudioUrl || null,
     adminAudioUrl: o.adminVoiceNoteUrl,
   }));
 
