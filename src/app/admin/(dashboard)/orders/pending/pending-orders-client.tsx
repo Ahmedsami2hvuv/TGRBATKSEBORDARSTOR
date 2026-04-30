@@ -22,6 +22,7 @@ import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
 import { calculateAutoSellPrice } from "@/lib/auto-pricing";
 import { normalizeNumerals } from "@/lib/money-alf";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { VoiceNoteAudio } from "@/components/voice-note-audio";
 
 export type PendingOrderRow = {
   id: string;
@@ -44,6 +45,8 @@ export type PendingOrderRow = {
   submissionLabel: string | null;
   customerLocationUrl: string;
   customerLandmark: string;
+  voiceNoteUrl?: string | null;
+  adminVoiceNoteUrl?: string | null;
   hasCustomerLocation: boolean;
   hasCourierUploadedLocation: boolean;
   reversePickup?: boolean;
@@ -680,6 +683,24 @@ export function PendingOrdersClient({
                   {o.totalAmount != null && <span className="text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 tabular-nums">{o.totalAmount}</span>}
                 </div>
                 <p className="text-[10px] text-slate-400 font-medium">{o.customerOrderTime}</p>
+
+                {(o.voiceNoteUrl || o.adminVoiceNoteUrl) && (
+                  <div className="pt-2 flex flex-col gap-2" onClick={e => e.stopPropagation()}>
+                    {o.voiceNoteUrl && (
+                      <div className="bg-sky-50 p-2 rounded-lg border border-sky-100">
+                        <p className="text-[9px] font-bold text-sky-700 mb-1">🎤 بصمة الزبون:</p>
+                        <VoiceNoteAudio url={o.voiceNoteUrl} />
+                      </div>
+                    )}
+                    {o.adminVoiceNoteUrl && (
+                      <div className="bg-amber-50 p-2 rounded-lg border border-amber-100">
+                        <p className="text-[9px] font-bold text-amber-700 mb-1">🎧 ملاحظة الإدارة الصوتية:</p>
+                        <VoiceNoteAudio url={o.adminVoiceNoteUrl} />
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {isDraftMode && <p className="text-[10px] font-black text-sky-700 bg-sky-50 p-1.5 rounded-lg border border-sky-100 w-fit mt-2 shadow-sm tracking-tight">المجهز: {o.submittedByName || "—"}</p>}
               </div>
               {!isDraftMode && <div className="hidden sm:flex items-start" onClick={(e) => e.stopPropagation()}><RejectButton orderId={o.id} /></div>}
