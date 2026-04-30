@@ -12,21 +12,18 @@ function MiniAudioPlayer({ url }: { url: string }) {
   const [playing, setPlaying] = useState(false);
   const fullUrl = resolvePublicAssetSrc(url);
   return (
-    <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+    <div className="flex items-center" onClick={e => e.stopPropagation()}>
       <button
         onClick={() => {
           const audio = document.getElementById(`audio-${url}`) as HTMLAudioElement;
           if (playing) audio.pause(); else audio.play();
           setPlaying(!playing);
         }}
-        className="flex size-6 items-center justify-center rounded-full bg-amber-500 text-white shadow-sm hover:bg-amber-600 active:scale-90 transition-all"
+        className="flex size-7 items-center justify-center rounded-full bg-amber-500 text-white shadow-md hover:bg-amber-600 active:scale-90 transition-all border-2 border-white"
       >
-        {playing ? "⏸" : "▶️"}
+        {playing ? <span className="text-[10px]">⏸</span> : <span className="text-[10px] mr-[-1px]">▶️</span>}
       </button>
       <audio id={`audio-${url}`} src={fullUrl!} onEnded={() => setPlaying(false)} className="hidden" />
-      <div className="w-8 h-1 bg-amber-200 rounded-full overflow-hidden">
-        <div className={`h-full bg-amber-500 ${playing ? 'animate-pulse w-full' : 'w-0'}`} />
-      </div>
     </div>
   );
 }
@@ -334,14 +331,14 @@ export function UnifiedOrderListTable({
                             </span>
 
                             {/* مثلث البصمة الصوتية والملاحظات */}
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                               {o.audioUrl && <MiniAudioPlayer url={o.audioUrl} />}
                               {o.preparerAudioUrl && <MiniAudioPlayer url={o.preparerAudioUrl} />}
                               {o.adminAudioUrl && <MiniAudioPlayer url={o.adminAudioUrl} />}
                               {o.summary && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setShowNotes(showNotes === o.id ? null : o.id); }}
-                                  className="flex size-5 items-center justify-center rounded bg-sky-100 text-sky-600 hover:bg-sky-200 transition-colors"
+                                  className="flex size-7 items-center justify-center rounded-full bg-sky-100 text-sky-600 hover:bg-sky-200 transition-colors border-2 border-white shadow-sm"
                                   title="ملاحظات الطلب"
                                 >
                                   📝
@@ -404,17 +401,17 @@ export function UnifiedOrderListTable({
                       <div className="flex flex-col gap-1.5">
                         <span>{o.regionLine}</span>
                         {/* أزرار اللوكيشن والصور من الخارج (للزبون) */}
-                        <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1" onClick={e => e.stopPropagation()}>
                            {o.customerLocationUrl && (
-                             <a href={o.customerLocationUrl} target="_blank" title="موقع الزبون" className="size-7 flex items-center justify-center rounded-full bg-rose-100 text-rose-600 shadow-sm hover:bg-rose-500 hover:text-white transition-all">📍</a>
+                             <a href={o.customerLocationUrl} target="_blank" title="موقع الزبون" className="size-8 flex items-center justify-center rounded-full bg-rose-100 text-rose-600 shadow-md hover:bg-rose-500 hover:text-white transition-all border-2 border-white">📍</a>
                            )}
                            {o.customerDoorPhotoUrl && (
-                             <button onClick={() => setModalImg({ url: o.customerDoorPhotoUrl!, title: "صورة الباب" })} title="صورة الباب" className="size-7 flex items-center justify-center rounded-full bg-amber-100 text-amber-600 shadow-sm hover:bg-amber-500 hover:text-white transition-all">🚪</button>
+                             <button onClick={() => setModalImg({ url: o.customerDoorPhotoUrl!, title: "صورة الباب" })} title="صورة الباب" className="size-8 flex items-center justify-center rounded-full bg-amber-100 text-amber-600 shadow-md hover:bg-amber-500 hover:text-white transition-all border-2 border-white">🚪</button>
                            )}
 
                            {/* لوكيشن المستلم في الوجهتين */}
                            {o.routeMode === "double" && o.secondCustomerLocationUrl && (
-                             <a href={o.secondCustomerLocationUrl} target="_blank" title="موقع المستلم" className="size-7 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 shadow-sm hover:bg-violet-600 hover:text-white transition-all border border-violet-200">📍</a>
+                             <a href={o.secondCustomerLocationUrl} target="_blank" title="موقع المستلم" className="size-8 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 shadow-md hover:bg-violet-600 hover:text-white transition-all border-2 border-violet-200">📍</a>
                            )}
                         </div>
                       </div>

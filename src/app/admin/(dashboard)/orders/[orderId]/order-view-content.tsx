@@ -120,6 +120,21 @@ export function OrderViewContent({
   return (
     <div className={`kse-glass-dark relative mt-4 border p-4 pb-24 text-base leading-relaxed sm:p-5 sm:pb-32 ${orderStatusStartStripeClass(order.status)} ${order.prepaidAll ? "border-emerald-300 bg-gradient-to-b from-emerald-50 to-teal-50" : isReversePickup ? "border-violet-400 bg-violet-100" : `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}`}`} dir="rtl">
 
+      {/* بصمات الصوت في بداية الصفحة بتنسيق مرتب */}
+      {(voiceSrc || adminVoiceSrc) && (
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {voiceSrc && (
+            <div className="rounded-2xl border-2 border-amber-100 bg-white p-3 shadow-sm">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-black text-amber-600 flex items-center gap-1"><span>🗣️</span> بصمة الزبون (المحل)</span>
+              </div>
+              <VoiceNoteAudio src={voiceSrc} streamKey={`${order.id}-voice`} className="w-full" />
+            </div>
+          )}
+          <AdminVoiceNoteSection variant="standalone" orderId={order.id} defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl} />
+        </div>
+      )}
+
       {pricingOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border-2 border-amber-400">
@@ -156,12 +171,6 @@ export function OrderViewContent({
         <div className="flex flex-shrink-0 flex-wrap items-center gap-2"><span className={`rounded-full px-3 py-1.5 text-xs font-bold ${statusBadgeClass}`}>{STATUS_AR[order.status] ?? order.status}</span></div>
       </div>
 
-      {(voiceSrc || adminVoiceSrc) && (
-        <div className="mt-4 space-y-3 rounded-xl border border-sky-200 bg-sky-50/70 p-3">
-          {voiceSrc && <div><p className="text-xs font-semibold text-violet-900">بصمة العميل</p><VoiceNoteAudio src={voiceSrc} streamKey={`${order.id}-voice`} className="mt-2 w-full" /></div>}
-          <AdminVoiceNoteSection variant="standalone" orderId={order.id} defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl} />
-        </div>
-      )}
 
       <div className="mt-5 space-y-6 sm:space-y-8">
         

@@ -290,19 +290,23 @@ export function AdminVoiceNoteSection({
   );
 
   const inner = (
-    <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
-      <span className={ad.label}>بصمة الإدارة</span>
+    <div className="rounded-2xl border-2 border-sky-100 bg-white p-3 shadow-sm">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-xs font-black text-sky-600 flex items-center gap-1"><span>🎧</span> بصمة الإدارة (النظام)</span>
+        {src ? <DeleteAdminVoiceNoteButton orderId={orderId} /> : null}
+      </div>
+
       {src ? (
-        <div className="mt-3 space-y-2">
+        <div className="mb-3">
           <VoiceNoteAudio
             src={src}
             streamKey={`${orderId}-admin-voice`}
-            className="w-full max-w-md rounded-lg"
+            className="w-full"
           />
-          <DeleteAdminVoiceNoteButton orderId={orderId} />
         </div>
       ) : null}
-      <div className="mt-3">{controls}</div>
+
+      <div className="flex flex-col gap-2">{controls}</div>
     </div>
   );
 
