@@ -355,20 +355,20 @@ export function UnifiedOrderListTable({
                           </div>
 
                         {/* أزرار العميل (المحل) المختصرة (لوكيشن وصور وبصمات) */}
-                        {((o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 5) ||
-                          (o.customerLocationUrl?.trim() && o.customerLocationUrl.trim().length > 5) ||
-                          (o.secondCustomerLocationUrl?.trim() && o.secondCustomerLocationUrl.trim().length > 5) ||
-                          (o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 5) ||
-                          (o.customerDoorPhotoUrl?.trim() && o.customerDoorPhotoUrl.trim().length > 5) ||
-                          (o.secondCustomerDoorPhotoUrl?.trim() && o.secondCustomerDoorPhotoUrl.trim().length > 5) ||
-                          (o.audioUrl?.trim() && o.audioUrl.trim().length > 5) ||
-                          (o.preparerAudioUrl?.trim() && o.preparerAudioUrl.trim().length > 5) ||
-                          (o.adminAudioUrl?.trim() && o.adminAudioUrl.trim().length > 5)) && (
+                        {((o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
+                          (o.customerLocationUrl?.trim() && o.customerLocationUrl.trim().length > 2) ||
+                          (o.secondCustomerLocationUrl?.trim() && o.secondCustomerLocationUrl.trim().length > 2) ||
+                          (o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 2) ||
+                          (o.customerDoorPhotoUrl?.trim() && o.customerDoorPhotoUrl.trim().length > 2) ||
+                          (o.secondCustomerDoorPhotoUrl?.trim() && o.secondCustomerDoorPhotoUrl.trim().length > 2) ||
+                          (o.audioUrl?.trim() && o.audioUrl.trim().length > 2) ||
+                          (o.preparerAudioUrl?.trim() && o.preparerAudioUrl.trim().length > 2) ||
+                          (o.adminAudioUrl?.trim() && o.adminAudioUrl.trim().length > 2)) && (
                           <div className="flex items-center gap-1 border-r pr-2 mr-1 border-slate-200" onClick={e => e.stopPropagation()}>
                              {/* زر اللوكيشن الموحد */}
-                             {((o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 5) ||
-                              (o.customerLocationUrl?.trim() && o.customerLocationUrl.trim().length > 5) ||
-                              (o.secondCustomerLocationUrl?.trim() && o.secondCustomerLocationUrl.trim().length > 5)) && (
+                             {((o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
+                              (o.customerLocationUrl?.trim() && o.customerLocationUrl.trim().length > 2) ||
+                              (o.secondCustomerLocationUrl?.trim() && o.secondCustomerLocationUrl.trim().length > 2)) && (
                                <div className="relative">
                                  <button
                                    onClick={(e) => {
@@ -384,20 +384,23 @@ export function UnifiedOrderListTable({
                                  {activeLocId === o.id && (
                                    <CenterModal title="فتح الموقع الجغرافي لـ:" onClose={() => setActiveLocId(null)}>
                                      <div className="flex flex-col gap-1">
-                                       {o.shopLocationUrl && o.shopLocationUrl.trim().length > 5 && (
+                                       {o.shopLocationUrl && o.shopLocationUrl.trim().length > 2 && (
                                          <a href={o.shopLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
                                            <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> موقع العميل (المحل)
                                          </a>
                                        )}
-                                       {o.customerLocationUrl && o.customerLocationUrl.trim().length > 5 && (
+                                       {o.customerLocationUrl && o.customerLocationUrl.trim().length > 2 && (
                                          <a href={o.customerLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
                                            <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> موقع الزبون
                                          </a>
                                        )}
-                                       {o.secondCustomerLocationUrl && o.secondCustomerLocationUrl.trim().length > 5 && (
+                                       {o.secondCustomerLocationUrl && o.secondCustomerLocationUrl.trim().length > 2 && (
                                          <a href={o.secondCustomerLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
                                            <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> موقع الزبون 2 / مستلم
                                          </a>
+                                       )}
+                                       {(!o.shopLocationUrl || o.shopLocationUrl.trim().length <= 2) && (!o.customerLocationUrl || o.customerLocationUrl.trim().length <= 2) && (
+                                         <div className="p-4 text-center text-slate-500 font-bold">لا توجد روابط مواقع متوفرة لهذا الطلب</div>
                                        )}
                                      </div>
                                    </CenterModal>
@@ -405,9 +408,9 @@ export function UnifiedOrderListTable({
                                </div>
                              )}
 
-                             {((o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 5) ||
-                               (o.customerDoorPhotoUrl?.trim() && o.customerDoorPhotoUrl.trim().length > 5) ||
-                               (o.secondCustomerDoorPhotoUrl?.trim() && o.secondCustomerDoorPhotoUrl.trim().length > 5)) && (
+                             {((o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 2) ||
+                               (o.customerDoorPhotoUrl?.trim() && o.customerDoorPhotoUrl.trim().length > 2) ||
+                               (o.secondCustomerDoorPhotoUrl?.trim() && o.secondCustomerDoorPhotoUrl.trim().length > 2)) && (
                                <div className="relative">
                                  <button
                                    onClick={(e) => {
@@ -424,7 +427,7 @@ export function UnifiedOrderListTable({
                                  {activeDoorId === o.id && (
                                    <CenterModal title="عرض صورة الباب لـ:" onClose={() => setActiveDoorId(null)}>
                                      <div className="flex flex-col gap-1">
-                                       {o.shopDoorPhotoUrl && o.shopDoorPhotoUrl.trim().length > 5 && (
+                                       {o.shopDoorPhotoUrl && o.shopDoorPhotoUrl.trim().length > 2 && (
                                          <button
                                            onClick={() => { setModalImg({ url: o.shopDoorPhotoUrl!.trim(), title: "هذه صورة باب العميل (المحل)" }); setActiveDoorId(null); }}
                                            className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
@@ -432,7 +435,7 @@ export function UnifiedOrderListTable({
                                            <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> باب العميل (المحل)
                                          </button>
                                        )}
-                                       {o.customerDoorPhotoUrl && o.customerDoorPhotoUrl.trim().length > 5 && (
+                                       {o.customerDoorPhotoUrl && o.customerDoorPhotoUrl.trim().length > 2 && (
                                          <button
                                            onClick={() => { setModalImg({ url: o.customerDoorPhotoUrl!.trim(), title: "هذه صورة باب الزبون" }); setActiveDoorId(null); }}
                                            className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
@@ -440,7 +443,7 @@ export function UnifiedOrderListTable({
                                            <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> باب الزبون
                                          </button>
                                        )}
-                                       {o.secondCustomerDoorPhotoUrl && o.secondCustomerDoorPhotoUrl.trim().length > 5 && (
+                                       {o.secondCustomerDoorPhotoUrl && o.secondCustomerDoorPhotoUrl.trim().length > 2 && (
                                          <button
                                            onClick={() => { setModalImg({ url: o.secondCustomerDoorPhotoUrl!.trim(), title: "هذه صورة باب الزبون 2 / المستلم" }); setActiveDoorId(null); }}
                                            className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
@@ -455,9 +458,9 @@ export function UnifiedOrderListTable({
                              )}
 
                              {/* زر البصمات الصوتية الموحد */}
-                             {((o.audioUrl?.trim() && o.audioUrl.trim().length > 5) ||
-                               (o.preparerAudioUrl?.trim() && o.preparerAudioUrl.trim().length > 5) ||
-                               (o.adminAudioUrl?.trim() && o.adminAudioUrl.trim().length > 5)) && (
+                             {((o.audioUrl?.trim() && o.audioUrl.trim().length > 2) ||
+                               (o.preparerAudioUrl?.trim() && o.preparerAudioUrl.trim().length > 2) ||
+                               (o.adminAudioUrl?.trim() && o.adminAudioUrl.trim().length > 2)) && (
                                <div className="relative">
                                  <button
                                    onClick={(e) => {
@@ -473,7 +476,7 @@ export function UnifiedOrderListTable({
                                  {activeAudioId === o.id && (
                                    <CenterModal title="تشغيل البصمة الصوتية لـ:" onClose={() => setActiveAudioId(null)}>
                                      <div className="flex flex-col gap-1">
-                                       {o.audioUrl && o.audioUrl.trim().length > 5 && (
+                                       {o.audioUrl && o.audioUrl.trim().length > 2 && (
                                          <div className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-slate-100 hover:bg-indigo-50 transition-colors">
                                             <div className="flex items-center gap-3 font-black text-slate-700">
                                               <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> بصمة المحل
@@ -481,7 +484,7 @@ export function UnifiedOrderListTable({
                                             <MiniAudioPlayer url={o.audioUrl.trim()} />
                                          </div>
                                        )}
-                                       {o.preparerAudioUrl && o.preparerAudioUrl.trim().length > 5 && (
+                                       {o.preparerAudioUrl && o.preparerAudioUrl.trim().length > 2 && (
                                          <div className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-slate-100 hover:bg-indigo-50 transition-colors">
                                             <div className="flex items-center gap-3 font-black text-slate-700">
                                               <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">📦</span> بصمة التجهيز
@@ -489,7 +492,7 @@ export function UnifiedOrderListTable({
                                             <MiniAudioPlayer url={o.preparerAudioUrl.trim()} />
                                          </div>
                                        )}
-                                       {o.adminAudioUrl && o.adminAudioUrl.trim().length > 5 && (
+                                       {o.adminAudioUrl && o.adminAudioUrl.trim().length > 2 && (
                                          <div className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-slate-100 hover:bg-indigo-50 transition-colors">
                                             <div className="flex items-center gap-3 font-black text-slate-700">
                                               <span className="size-10 flex items-center justify-center rounded-full bg-rose-100 text-rose-600 text-xl">👑</span> بصمة الإدارة
