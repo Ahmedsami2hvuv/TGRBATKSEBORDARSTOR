@@ -31,16 +31,35 @@ function MiniAudioPlayer({ url }: { url: string }) {
   );
 }
 
+/** مكون الحاوية المركزية للنوافذ المنبثقة */
+function CenterModal({ title, onClose, children }: { title: string, onClose: () => void, children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+      <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+          <span className="font-bold text-slate-800">{title}</span>
+          <button onClick={onClose} className="size-10 flex items-center justify-center rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 transition-colors">✕</button>
+        </div>
+        <div className="p-2">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** مكون نافذة الصورة المنبثقة */
 function ImageModal({ url, title, onClose }: { url: string, title: string, onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-200" onClick={onClose}>
-      <div className="relative max-w-lg w-full bg-white rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="p-3 border-b flex justify-between items-center bg-slate-50">
-          <span className="font-bold text-slate-800 text-sm">{title}</span>
-          <button onClick={onClose} className="size-8 flex items-center justify-center rounded-full bg-slate-200 text-slate-600 font-bold">✕</button>
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose}>
+      <div className="relative max-w-2xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+          <span className="font-bold text-slate-800 text-base">{title}</span>
+          <button onClick={onClose} className="size-10 flex items-center justify-center rounded-full bg-slate-200 text-slate-600 font-bold hover:bg-slate-300 transition-all">✕</button>
         </div>
-        <img src={resolvePublicAssetSrc(url)!} alt={title} className="w-full h-auto max-h-[70vh] object-contain bg-slate-100" />
+        <div className="p-1 bg-slate-200">
+           <img src={resolvePublicAssetSrc(url)!} alt={title} className="w-full h-auto max-h-[75vh] object-contain rounded-2xl shadow-inner" />
+        </div>
       </div>
     </div>
   );
@@ -99,11 +118,15 @@ export function UnifiedOrderListTable({
   const [showNotes, setShowNotes] = useState<string | null>(null);
   const [activeCallId, setActiveCallId] = useState<string | null>(null);
   const [activeMsgId, setActiveMsgId] = useState<string | null>(null);
+  const [activeLocId, setActiveLocId] = useState<string | null>(null);
+  const [activeDoorId, setActiveDoorId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleGlobalClick = () => {
       setActiveCallId(null);
       setActiveMsgId(null);
+      setActiveLocId(null);
+      setActiveDoorId(null);
     };
     window.addEventListener("click", handleGlobalClick);
     return () => window.removeEventListener("click", handleGlobalClick);
@@ -325,10 +348,11 @@ export function UnifiedOrderListTable({
                             </div>
 
                             {showNotes === o.id && o.summary && (
-                              <div className="absolute top-full right-0 z-50 mt-2 w-64 rounded-xl border border-sky-200 bg-white p-3 shadow-2xl animate-in fade-in zoom-in-95 text-xs font-bold text-slate-800 leading-relaxed whitespace-pre-wrap">
-                                <div className="mb-1 border-b pb-1 text-sky-700">ملاحظات الطلب:</div>
-                                {o.summary}
-                              </div>
+                              <CenterModal title="ملاحظات الطلب" onClose={() => setShowNotes(null)}>
+                                <div className="text-base font-bold text-slate-800 leading-relaxed whitespace-pre-wrap p-2">
+                                  {o.summary}
+                                </div>
+                              </CenterModal>
                             )}
                           </div>
 
@@ -404,8 +428,7 @@ export function UnifiedOrderListTable({
                           {o.customerPhone || "—"}
                         </span>
 
-                        {(o.shopPhone || o.customerPhone || o.alternatePhone || o.secondCustomerPhone) && (
-                          <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
                             {/* زر الاتصال */}
                             <div className="relative">
                               <button
@@ -413,31 +436,34 @@ export function UnifiedOrderListTable({
                                   e.stopPropagation();
                                   setActiveCallId(activeCallId === o.id ? null : o.id);
                                   setActiveMsgId(null);
+                                  setActiveLocId(null);
+                                  setActiveDoorId(null);
                                 }}
-                                className={`size-9 flex items-center justify-center rounded-full text-white shadow-md hover:scale-110 transition-transform ${activeCallId === o.id ? 'bg-sky-700 ring-2 ring-sky-300' : 'bg-sky-600'}`}
+                                className={`size-10 flex items-center justify-center rounded-full text-white shadow-md hover:scale-110 transition-transform ${activeCallId === o.id ? 'bg-sky-700 ring-2 ring-sky-300' : 'bg-sky-600'}`}
                                 title="خيارات الاتصال"
                               >
                                 📞
                               </button>
                               {activeCallId === o.id && (
-                                <div className="absolute top-full right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95">
-                                  <div className="bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 border-b">إجراء اتصال بـ:</div>
-                                  {o.shopPhone && (
-                                    <a href={telHref(o.shopPhone)} className="flex items-center gap-2 px-3 py-2.5 text-xs font-black text-slate-700 hover:bg-sky-50 transition-colors">
-                                      <span className="size-6 flex items-center justify-center rounded bg-sky-100 text-sky-600">🏢</span> عميل
-                                    </a>
-                                  )}
-                                  {o.customerPhone && (
-                                    <a href={telHref(o.customerPhone)} className="flex items-center gap-2 px-3 py-2.5 text-xs font-black text-slate-700 hover:bg-sky-50 transition-colors border-t border-slate-50">
-                                      <span className="size-6 flex items-center justify-center rounded bg-emerald-100 text-emerald-600">👤</span> زبون
-                                    </a>
-                                  )}
-                                  {(o.alternatePhone || o.secondCustomerPhone) && (
-                                    <a href={telHref(o.alternatePhone || o.secondCustomerPhone)} className="flex items-center gap-2 px-3 py-2.5 text-xs font-black text-slate-700 hover:bg-sky-50 transition-colors border-t border-slate-50">
-                                      <span className="size-6 flex items-center justify-center rounded bg-violet-100 text-violet-600">👥</span> زبون 2
-                                    </a>
-                                  )}
-                                </div>
+                                <CenterModal title="إجراء اتصال بـ:" onClose={() => setActiveCallId(null)}>
+                                  <div className="flex flex-col gap-1">
+                                    {o.shopPhone && (
+                                      <a href={telHref(o.shopPhone)} className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-sky-50 transition-colors rounded-xl border border-slate-100">
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> عميل (المحل)
+                                      </a>
+                                    )}
+                                    {o.customerPhone && (
+                                      <a href={telHref(o.customerPhone)} className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-sky-50 transition-colors rounded-xl border border-slate-100">
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> زبون
+                                      </a>
+                                    )}
+                                    {(o.alternatePhone || o.secondCustomerPhone) && (
+                                      <a href={telHref(o.alternatePhone || o.secondCustomerPhone)} className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-sky-50 transition-colors rounded-xl border border-slate-100">
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> زبون 2
+                                      </a>
+                                    )}
+                                  </div>
+                                </CenterModal>
                               )}
                             </div>
 
@@ -448,35 +474,118 @@ export function UnifiedOrderListTable({
                                   e.stopPropagation();
                                   setActiveMsgId(activeMsgId === o.id ? null : o.id);
                                   setActiveCallId(null);
+                                  setActiveLocId(null);
+                                  setActiveDoorId(null);
                                 }}
-                                className={`size-9 flex items-center justify-center rounded-full text-white shadow-md hover:scale-110 transition-transform ${activeMsgId === o.id ? 'bg-emerald-700 ring-2 ring-emerald-300' : 'bg-emerald-600'}`}
+                                className={`size-10 flex items-center justify-center rounded-full text-white shadow-md hover:scale-110 transition-transform ${activeMsgId === o.id ? 'bg-emerald-700 ring-2 ring-emerald-300' : 'bg-emerald-600'}`}
                                 title="خيارات المراسلة"
                               >
                                 💬
                               </button>
                               {activeMsgId === o.id && (
-                                <div className="absolute top-full right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95">
-                                  <div className="bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 border-b">بدء مراسلة مع:</div>
-                                  {o.shopPhone && (
-                                    <a href={whatsappMeUrl(o.shopPhone)} target="_blank" className="flex items-center gap-2 px-3 py-2.5 text-xs font-black text-slate-700 hover:bg-emerald-50 transition-colors">
-                                      <span className="size-6 flex items-center justify-center rounded bg-sky-100 text-sky-600">🏢</span> عميل
-                                    </a>
-                                  )}
-                                  {o.customerPhone && (
-                                    <a href={whatsappMeUrl(o.customerPhone)} target="_blank" className="flex items-center gap-2 px-3 py-2.5 text-xs font-black text-slate-700 hover:bg-emerald-50 transition-colors border-t border-slate-50">
-                                      <span className="size-6 flex items-center justify-center rounded bg-emerald-100 text-emerald-600">👤</span> زبون
-                                    </a>
-                                  )}
-                                  {(o.alternatePhone || o.secondCustomerPhone) && (
-                                    <a href={whatsappMeUrl(o.alternatePhone || o.secondCustomerPhone)} target="_blank" className="flex items-center gap-2 px-3 py-2.5 text-xs font-black text-slate-700 hover:bg-emerald-50 transition-colors border-t border-slate-50">
-                                      <span className="size-6 flex items-center justify-center rounded bg-violet-100 text-violet-600">👥</span> زبون 2
-                                    </a>
-                                  )}
-                                </div>
+                                <CenterModal title="بدء مراسلة واتساب مع:" onClose={() => setActiveMsgId(null)}>
+                                  <div className="flex flex-col gap-1">
+                                    {o.shopPhone && (
+                                      <a href={whatsappMeUrl(o.shopPhone)} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-emerald-50 transition-colors rounded-xl border border-slate-100">
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> عميل (المحل)
+                                      </a>
+                                    )}
+                                    {o.customerPhone && (
+                                      <a href={whatsappMeUrl(o.customerPhone)} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-emerald-50 transition-colors rounded-xl border border-slate-100">
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> زبون
+                                      </a>
+                                    )}
+                                    {(o.alternatePhone || o.secondCustomerPhone) && (
+                                      <a href={whatsappMeUrl(o.alternatePhone || o.secondCustomerPhone)} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-emerald-50 transition-colors rounded-xl border border-slate-100">
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> زبون 2
+                                      </a>
+                                    )}
+                                  </div>
+                                </CenterModal>
                               )}
                             </div>
-                          </div>
-                        )}
+
+                            {/* زر اللوكيشن */}
+                            {(o.shopLocationUrl || o.customerLocationUrl || o.secondCustomerLocationUrl) && (
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveLocId(activeLocId === o.id ? null : o.id);
+                                    setActiveCallId(null);
+                                    setActiveMsgId(null);
+                                    setActiveDoorId(null);
+                                  }}
+                                  className={`size-10 flex items-center justify-center rounded-full text-white shadow-md hover:scale-110 transition-transform ${activeLocId === o.id ? 'bg-rose-700 ring-2 ring-rose-300' : 'bg-rose-600'}`}
+                                  title="خيارات الموقع (GPS)"
+                                >
+                                  📍
+                                </button>
+                                {activeLocId === o.id && (
+                                  <CenterModal title="فتح الموقع الجغرافي لـ:" onClose={() => setActiveLocId(null)}>
+                                    <div className="flex flex-col gap-1">
+                                      {o.shopLocationUrl && (
+                                        <a href={o.shopLocationUrl} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100">
+                                          <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> عميل (المحل)
+                                        </a>
+                                      )}
+                                      {o.customerLocationUrl && (
+                                        <a href={o.customerLocationUrl} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100">
+                                          <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> زبون
+                                        </a>
+                                      )}
+                                      {o.secondCustomerLocationUrl && (
+                                        <a href={o.secondCustomerLocationUrl} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100">
+                                          <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> زبون 2 / مستلم
+                                        </a>
+                                      )}
+                                    </div>
+                                  </CenterModal>
+                                )}
+                              </div>
+                            )}
+
+                            {/* زر صورة الباب */}
+                            {(o.shopDoorPhotoUrl || o.customerDoorPhotoUrl) && (
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveDoorId(activeDoorId === o.id ? null : o.id);
+                                    setActiveCallId(null);
+                                    setActiveMsgId(null);
+                                    setActiveLocId(null);
+                                  }}
+                                  className={`size-10 flex items-center justify-center rounded-full text-white shadow-md hover:scale-110 transition-transform ${activeDoorId === o.id ? 'bg-amber-700 ring-2 ring-amber-300' : 'bg-amber-600'}`}
+                                  title="صور أبواب الزبائن"
+                                >
+                                  🚪
+                                </button>
+                                {activeDoorId === o.id && (
+                                  <CenterModal title="عرض صورة الباب لـ:" onClose={() => setActiveDoorId(null)}>
+                                    <div className="flex flex-col gap-1">
+                                      {o.shopDoorPhotoUrl && (
+                                        <button
+                                          onClick={() => { setModalImg({ url: o.shopDoorPhotoUrl!, title: "هذه صورة باب العميل (المحل)" }); setActiveDoorId(null); }}
+                                          className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
+                                        >
+                                          <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> عميل (المحل)
+                                        </button>
+                                      )}
+                                      {o.customerDoorPhotoUrl && (
+                                        <button
+                                          onClick={() => { setModalImg({ url: o.customerDoorPhotoUrl!, title: "هذه صورة باب الزبون" }); setActiveDoorId(null); }}
+                                          className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
+                                        >
+                                          <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> زبون
+                                        </button>
+                                      )}
+                                    </div>
+                                  </CenterModal>
+                                )}
+                              </div>
+                            )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-2 py-2.5 text-sm text-slate-600 sm:text-base">{o.timeLine}</td>

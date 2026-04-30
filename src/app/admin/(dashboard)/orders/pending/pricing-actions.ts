@@ -249,7 +249,20 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
     }
   } else {
     shop = originalOrder!.shop;
-    deliveryDinar = originalOrder!.deliveryPrice || new Decimal(0);
+    // Attempt to recover delivery price if it's missing or zero in the main column
+    const existingPrice = originalOrder!.deliveryPrice;
+    const jsonDeliveryAlf = (originalOrder!.preparerShoppingJson as any)?.deliveryAlf;
+
+    if (existingPrice && !existingPrice.isZero()) {
+      deliveryDinar = existingPrice;
+    } else if (jsonDeliveryAlf != null && jsonDeliveryAlf > 0) {
+      deliveryDinar = new Decimal(jsonDeliveryAlf).mul(ALF_PER_DINAR);
+    } else {
+      // Fallback to region data
+      const shopRegionPrice = shop?.region?.deliveryPrice || new Decimal(0);
+      const custRegionPrice = customerRegion?.deliveryPrice || new Decimal(0);
+      deliveryDinar = Decimal.max(shopRegionPrice, custRegionPrice);
+    }
   }
 
   const totalDinar = subtotalDinar.plus(deliveryDinar);
@@ -368,6 +381,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
         where: { id: orderId },
         data: {
           orderSubtotal: subtotalDinar,
+          deliveryPrice: deliveryDinar,
           totalAmount: totalDinar,
           summary: summaryCombined,
           preparerShoppingJson: {
