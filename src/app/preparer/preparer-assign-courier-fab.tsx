@@ -7,6 +7,8 @@ import {
   assignOrderByPreparer,
   type PreparerActionState,
 } from "./actions";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 const assignInitial: PreparerActionState = {};
 
@@ -29,6 +31,11 @@ export function PreparerAssignCourierFab({
   );
   const prevPending = useRef(false);
   const [editPanelOpen, setEditPanelOpen] = useState(false);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   useEffect(() => {
     const onEvt = (e: Event) => {
@@ -68,11 +75,16 @@ export function PreparerAssignCourierFab({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="pointer-events-auto flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-white bg-emerald-600 text-2xl font-black text-white shadow-xl ring-2 ring-emerald-300/80 transition hover:bg-emerald-700 hover:ring-emerald-400"
+          className="pointer-events-auto flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-white bg-emerald-600 text-2xl font-black text-white shadow-xl ring-2 ring-emerald-300/80 transition hover:bg-emerald-700 hover:ring-emerald-400 p-3.5"
           title="إسناد أو تحويل لمندوب"
           aria-expanded={open}
         >
-          🚚
+          <DynamicIcon
+            iconKey="preparer_delegate"
+            config={icons}
+            className="w-full h-full"
+            fallback={<span>🚚</span>}
+          />
         </button>
       </div>
 

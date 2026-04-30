@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useRef, type ChangeEvent } from "react";
+import { useActionState, useEffect, useRef, useState, type ChangeEvent } from "react";
 import { assignFileToInput, compressImageFileForUpload } from "@/lib/client-image-compress";
 import { preparerPath } from "@/lib/preparer-portal-nav";
 import { updatePreparerOrderFields, type PreparerActionState } from "./actions";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 const initial: PreparerActionState = {};
 
@@ -23,6 +25,11 @@ export function PreparerOrderEditForm({
 }) {
   const [state, formAction, pending] = useActionState(updatePreparerOrderFields, initial);
   const formRef = useRef<HTMLFormElement>(null);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   async function onPickImageFile(e: ChangeEvent<HTMLInputElement>) {
     const input = e.target;
@@ -47,9 +54,14 @@ export function PreparerOrderEditForm({
   if (state?.ok) {
     return (
       <div className="kse-glass-dark rounded-2xl border border-emerald-300 p-8 text-center">
-        <p className="text-4xl" aria-hidden>
-          ✓
-        </p>
+        <div className="flex justify-center mb-4">
+          <DynamicIcon
+            iconKey="ui_success"
+            config={icons}
+            className="h-12 w-12 text-emerald-600"
+            fallback={<span className="text-4xl">✓</span>}
+          />
+        </div>
         <h2 className="mt-3 text-xl font-bold text-emerald-800">تم حفظ التعديلات</h2>
         <div className="mt-5 flex flex-col gap-2">
           <Link

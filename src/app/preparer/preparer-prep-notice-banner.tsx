@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { dismissCompanyPreparerPrepNotice } from "./actions";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 type Notice = { id: string; title: string; body: string };
 
@@ -18,6 +20,11 @@ export function PreparerPrepNoticeBanner({
   preparationHref: string;
 }) {
   const [state, formAction, pending] = useActionState(dismissCompanyPreparerPrepNotice, initial);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   if (notices.length === 0) return null;
 
@@ -32,7 +39,15 @@ export function PreparerPrepNoticeBanner({
           className="flex flex-col gap-2 rounded-xl border border-violet-300 bg-gradient-to-l from-violet-50 to-white px-3 py-2.5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3"
         >
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-violet-900">🔔 طلب تجهيز من الإدارة</p>
+            <div className="flex items-center gap-1.5">
+              <DynamicIcon
+                iconKey="ui_notification"
+                config={icons}
+                className="h-3.5 w-3.5 text-violet-600"
+                fallback={<span>🔔</span>}
+              />
+              <p className="text-xs font-bold text-violet-900">طلب تجهيز من الإدارة</p>
+            </div>
             <p className="mt-0.5 text-sm font-semibold text-slate-900">{n.title}</p>
             {n.body.trim() ? (
               <p className="mt-1 text-xs leading-relaxed text-slate-600">{n.body}</p>

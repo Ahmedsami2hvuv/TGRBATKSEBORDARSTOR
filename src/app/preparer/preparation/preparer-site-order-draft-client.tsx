@@ -8,6 +8,8 @@ import { parseFlexibleOrderLines } from "@/lib/flexible-order-parse";
 import { extractPhoneNumberFromText, parseSiteOrderMessage } from "@/lib/site-order-parse";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { normalizeRegionNameForMatch } from "@/lib/region-name-normalize";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 type RegionHit = { id: string; name: string; deliveryPrice: string };
 
@@ -47,6 +49,11 @@ export function PreparerSiteOrderDraftClient({
   const [selected, setSelected] = useState<RegionHit | null>(null);
   const [regionGate, setRegionGate] = useState<"idle" | "need_pick" | "ready">("idle");
   const [showSlowSavingHint, setShowSlowSavingHint] = useState(false);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   useEffect(() => {
     if (q.trim().length < 2) {
@@ -179,7 +186,14 @@ export function PreparerSiteOrderDraftClient({
   if (state.ok && state.draftId) {
     return (
       <div className="kse-glass-dark rounded-2xl border border-emerald-300 p-8 text-center shadow-sm">
-        <p className="text-4xl" aria-hidden>✓</p>
+        <div className="flex justify-center">
+          <DynamicIcon
+            iconKey="ui_success"
+            config={icons}
+            className="h-12 w-12 text-emerald-600"
+            fallback={<span className="text-4xl">✓</span>}
+          />
+        </div>
         <h2 className="mt-3 text-xl font-bold text-emerald-800">تمت إضافة الطلب</h2>
         <div className="mt-5 flex flex-col gap-2">
           <Link href={preparerPath(`/preparer/preparation/draft/${state.draftId}`, auth)} className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-black text-white">فتح الطلب للتسعير</Link>

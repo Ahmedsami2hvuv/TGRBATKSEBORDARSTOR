@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { updateStoreProductPrice } from "../../actions";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 export function PricingListClient({
   branch,
@@ -13,6 +15,11 @@ export function PricingListClient({
   auth: { p: string; exp: string; s: string };
 }) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   async function handlePriceChange(productId: string, purchasePrice: string) {
     if (!purchasePrice || isNaN(Number(purchasePrice))) return;
@@ -41,6 +48,7 @@ export function PricingListClient({
           product={p}
           loading={loadingId === p.id}
           onSave={(price) => handlePriceChange(p.id, price)}
+          icons={icons}
         />
       ))}
       {products.length === 0 && (
@@ -52,10 +60,11 @@ export function PricingListClient({
   );
 }
 
-function ProductPricingCard({ product, loading, onSave }: {
+function ProductPricingCard({ product, loading, onSave, icons }: {
   product: any;
   loading: boolean;
   onSave: (price: string) => void;
+  icons: GlobalIconsConfig | null;
 }) {
   const [purchasePrice, setPurchasePrice] = useState(product.purchasePrice.toString());
   const hasChanged = purchasePrice !== product.purchasePrice.toString();
@@ -66,7 +75,14 @@ function ProductPricingCard({ product, loading, onSave }: {
         {product.image ? (
           <img src={product.image} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
+          <div className="w-full h-full flex items-center justify-center">
+            <DynamicIcon
+              iconKey="ui_box"
+              config={icons}
+              className="h-8 w-8 text-slate-300"
+              fallback={<span className="text-2xl">📦</span>}
+            />
+          </div>
         )}
       </div>
 

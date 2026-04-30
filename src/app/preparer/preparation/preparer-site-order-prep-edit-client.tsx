@@ -8,6 +8,8 @@ import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
 import type { PreparerShoppingPayloadV1 } from "@/lib/preparer-shopping-payload";
 import { updatePreparerShoppingOrder, type PreparerActionState } from "../actions";
 import { preparerPath } from "@/lib/preparer-portal-nav";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 const initial: PreparerActionState = {};
 
@@ -72,6 +74,11 @@ export function PreparerSiteOrderPrepEditClient({
   const [selectedPriceIndex, setSelectedPriceIndex] = useState<number | null>(null);
   const [pricingLinesText, setPricingLinesText] = useState("");
   const [pricingErr, setPricingErr] = useState<string | null>(null);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const shop = shops.find((s) => s.id === shopId) ?? shops[0];
   const regionDeliveryAlf = initialData.customerRegionDeliveryDinar / ALF_PER_DINAR;
@@ -139,9 +146,14 @@ export function PreparerSiteOrderPrepEditClient({
   if (state.ok) {
     return (
       <div className="kse-glass-dark rounded-2xl border border-emerald-300 p-8 text-center shadow-sm">
-        <p className="text-4xl" aria-hidden>
-          ✓
-        </p>
+        <div className="flex justify-center">
+          <DynamicIcon
+            iconKey="ui_success"
+            config={icons}
+            className="h-12 w-12 text-emerald-600"
+            fallback={<span className="text-4xl">✓</span>}
+          />
+        </div>
         <h2 className="mt-3 text-xl font-bold text-emerald-800">تم تحديث الطلب #{orderNumber}</h2>
         <p className="mt-2 text-sm text-slate-700">تم حفظ الأسعار الجديدة وتحديث أثرها المالي تلقائياً.</p>
         <div className="mt-5 flex flex-col gap-2">

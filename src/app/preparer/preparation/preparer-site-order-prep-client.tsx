@@ -15,6 +15,8 @@ import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
 import type { PreparerShoppingPayloadV1 } from "@/lib/preparer-shopping-payload";
 import { normalizeRegionNameForMatch } from "@/lib/region-name-normalize";
 import { calculateAutoSellPrice } from "@/lib/auto-pricing";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 /** سطر واحد = شراء فقط (الموقع يحسب البيع)؛ سطران = شراء ثم بيع يدوي. */
 function parseTwoLinePricing(line: string, raw: string): { buy: string; sell: string } | null {
@@ -107,6 +109,11 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
   const [deleteMode, setDeleteMode] = useState(false);
   /** idle → بعد التحليل؛ need_pick → يجب اختيار المنطقة قبل عرض المنتجات؛ ready → يمكن التسعير */
   const [regionGate, setRegionGate] = useState<"idle" | "need_pick" | "ready">("idle");
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   useEffect(() => {
     if (q.trim().length < 2) {
@@ -369,9 +376,14 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
     return (
       <div className="mx-auto max-w-lg" role="status" aria-live="polite">
         <div className="kse-glass-dark rounded-2xl border border-emerald-300 p-8 text-center shadow-sm">
-          <p className="text-4xl" aria-hidden>
-            ✓
-          </p>
+          <div className="flex justify-center">
+            <DynamicIcon
+              iconKey="ui_success"
+              config={icons}
+              className="h-12 w-12 text-emerald-600"
+              fallback={<span className="text-4xl">✓</span>}
+            />
+          </div>
           <h2 className="mt-3 text-xl font-bold text-emerald-800">تم رفع طلب التجهيز</h2>
           <p className="mt-2 text-lg font-black text-slate-900">رقم الطلب: #{state.orderNumber}</p>
           <div className="mt-5 flex flex-col gap-2">
@@ -507,7 +519,15 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
                 }}
                 className="min-h-[44px] flex-1 rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm font-black text-emerald-950 shadow-sm transition hover:bg-emerald-100"
               >
-                ➕ إضافة قائمة منتجات
+                <div className="flex items-center justify-center gap-2">
+                  <DynamicIcon
+                    iconKey="ui_add"
+                    config={icons}
+                    className="h-4 w-4"
+                    fallback={<span>➕</span>}
+                  />
+                  <span>إضافة قائمة منتجات</span>
+                </div>
               </button>
               <button
                 type="button"
@@ -522,7 +542,15 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
                     : "border-rose-300 bg-rose-50 text-rose-900 hover:bg-rose-100"
                 }`}
               >
-                🗑️ مسح منتج
+                <div className="flex items-center justify-center gap-2">
+                  <DynamicIcon
+                    iconKey="ui_delete"
+                    config={icons}
+                    className="h-4 w-4"
+                    fallback={<span>🗑️</span>}
+                  />
+                  <span>مسح منتج</span>
+                </div>
               </button>
             </div>
             {deleteMode ? (
@@ -567,7 +595,14 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
                     }`}
                   >
                     <span className={`min-w-0 flex-1 text-sm font-bold leading-snug ${priced ? "text-emerald-50" : "text-slate-900"}`}>
-                      {priced ? "✅ " : ""}
+                      {priced && (
+                        <DynamicIcon
+                          iconKey="ui_success"
+                          config={icons}
+                          className="me-1 inline-block h-4 w-4 text-emerald-300"
+                          fallback={<span>✅ </span>}
+                        />
+                      )}
                       {line}
                     </span>
                     {priced && sellShow ? (
@@ -745,7 +780,17 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
           disabled={pending || !canSubmit}
           className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-sky-600 px-4 py-3.5 text-sm font-black text-white shadow-md transition hover:from-emerald-700 hover:to-sky-700 disabled:opacity-50"
         >
-          {pending ? "جارٍ الإرسال…" : "رفع الطلب للنظام 🚀"}
+          <div className="flex items-center justify-center gap-2">
+            <span>{pending ? "جارٍ الإرسال…" : "رفع الطلب للنظام"}</span>
+            {!pending && (
+              <DynamicIcon
+                iconKey="ui_flash"
+                config={icons}
+                className="h-4 w-4"
+                fallback={<span>🚀</span>}
+              />
+            )}
+          </div>
         </button>
       </form>
     </div>
