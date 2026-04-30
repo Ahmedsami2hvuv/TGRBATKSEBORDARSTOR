@@ -504,9 +504,8 @@ export function UnifiedOrderListTable({
                              )}
                           </div>
                         )}
-}
-                        </div>
-                        {/* علامات الصادر والوارد المالية "من الخارج" */}
+                      </div>
+                      {/* علامات الصادر والوارد المالية "من الخارج" */}
                         <div className="mt-1 flex flex-wrap gap-1">
                           {o.wardMismatchType === "deficit" && (
                             <span className="rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-rose-400">
