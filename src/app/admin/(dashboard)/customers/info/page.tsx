@@ -425,7 +425,6 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
                       />
                     </a>
                   </div>
-                ) : null}
               </div>
               <p className="text-sm">
                 <Link
