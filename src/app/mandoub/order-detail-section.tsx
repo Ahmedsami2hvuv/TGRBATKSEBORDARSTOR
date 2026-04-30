@@ -243,7 +243,7 @@ export function OrderDetailSection({
 
   const layout = uiSettings?.layoutOrder && uiSettings.layoutOrder.length > 0
     ? uiSettings.layoutOrder
-    : ["shop_info", "customer_info", "price_details", "notes_summary", "money_flow"];
+    : ["notes_summary", "shop_info", "customer_info", "price_details", "money_flow"];
 
   return (
     <section

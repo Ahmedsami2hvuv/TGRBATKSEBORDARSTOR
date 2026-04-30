@@ -188,6 +188,14 @@ export default async function MandoubPage({ searchParams }: Props) {
       courierId: e.courierId ?? undefined,
     })),
   }));
+
+  // جلب ملفات تعريف الزبائن للأرقام الموجودة في القائمة لضمان توفر اللوكيشنات المرجعية والسابقة
+  const customerPhones = Array.from(new Set(activeOrders.map(o => o.customerPhone).filter(Boolean)));
+  const phoneProfiles = await prisma.customerPhoneProfile.findMany({
+    where: { phone: { in: customerPhones as string[] } },
+    select: { phone: true, regionId: true, locationUrl: true, photoUrl: true }
+  });
+
   const orderMetrics = computeMandoubTotalsForCourier(activeOrdersNorm, courier.id, totalsBaseline);
 
   // هنا نستخدم مبالغ الطلبات فقط في الواجهة الرئيسية
@@ -213,45 +221,51 @@ export default async function MandoubPage({ searchParams }: Props) {
     return o.status === tab;
   });
 
-  const tableRows: MandoubRow[] = filteredByTab.map((o) => ({
-    id: o.id,
-    shortId: String(o.orderNumber),
-    orderStatus: o.status,
-    shopName: o.shop.name,
-    shopNameHighlightClass: mandoubShopNameVividClass(o.status, o.prepaidAll),
-    regionLine: o.customerRegion?.name?.trim() || "—",
-    orderType: o.orderType || "—",
-    priceStr: o.totalAmount != null ? formatDinarAsAlf(o.totalAmount) : "—",
-    delStr: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
-    customerPhone: o.customerPhone || "—",
-    timeLine: o.orderNoteTime?.trim() || o.createdAt.toLocaleString("ar-IQ-u-nu-latn", { dateStyle: "short", timeStyle: "short" }),
-    statusAr: STATUS_AR[o.status] ?? o.status,
-    statusClass: orderStatusBadgeClassPrepaid(o.status, o.prepaidAll),
-    prepaidAll: o.prepaidAll,
-    reversePickup: isReversePickupOrderType(o.orderType),
-    hasCustomerLocation: hasCustomerLocationUrl(o.customerLocationUrl, o.customer?.customerLocationUrl),
-    hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
-    hasMoneyDeletedBadge: o.moneyEvents.some((e) => e.deletedAt && isManualDeletionReason(e.deletedReason)),
-    wardMismatchType: isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type,
-    saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
-    noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,
-    noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
-    createdAt: o.createdAt,
-    // بيانات الوصول السريع
-    audioUrl: o.voiceNoteUrl,
-    summary: o.summary,
-    shopPhone: o.shop.phone || o.submittedBy?.phone || o.submittedByCompanyPreparer?.phone,
-    alternatePhone: o.alternatePhone,
-    secondCustomerPhone: o.secondCustomerPhone,
-    shopLocationUrl: o.shop.locationUrl,
-    customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl,
-    secondCustomerLocationUrl: o.secondCustomerLocationUrl,
-    shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
-    customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl,
-    routeMode: o.routeMode as any,
-    preparerAudioUrl: (o.preparerShoppingJson as any)?.preparerAudioUrl || null,
-    adminAudioUrl: o.adminVoiceNoteUrl,
-  }));
+  const tableRows: MandoubRow[] = filteredByTab.map((o) => {
+    const profile = phoneProfiles.find(p => p.phone === o.customerPhone && p.regionId === o.customerRegionId) ||
+                    phoneProfiles.find(p => p.phone === o.customerPhone); // fallback to first matching phone if region doesn't match
+
+    return {
+      id: o.id,
+      shortId: String(o.orderNumber),
+      orderStatus: o.status,
+      shopName: o.shop.name,
+      shopNameHighlightClass: mandoubShopNameVividClass(o.status, o.prepaidAll),
+      regionLine: o.customerRegion?.name?.trim() || "—",
+      orderType: o.orderType || "—",
+      priceStr: o.totalAmount != null ? formatDinarAsAlf(o.totalAmount) : "—",
+      delStr: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
+      customerPhone: o.customerPhone || "—",
+      timeLine: o.orderNoteTime?.trim() || o.createdAt.toLocaleString("ar-IQ-u-nu-latn", { dateStyle: "short", timeStyle: "short" }),
+      statusAr: STATUS_AR[o.status] ?? o.status,
+      statusClass: orderStatusBadgeClassPrepaid(o.status, o.prepaidAll),
+      prepaidAll: o.prepaidAll,
+      reversePickup: isReversePickupOrderType(o.orderType),
+      hasCustomerLocation: hasCustomerLocationUrl(o.customerLocationUrl || profile?.locationUrl, o.customer?.customerLocationUrl),
+      hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
+      hasMoneyDeletedBadge: o.moneyEvents.some((e) => e.deletedAt && isManualDeletionReason(e.deletedReason)),
+      wardMismatchType: isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type,
+      saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
+      noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,
+      noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
+      createdAt: o.createdAt,
+      // بيانات الوصول السريع
+      audioUrl: o.voiceNoteUrl,
+      summary: o.summary,
+      shopPhone: o.shop.phone || o.submittedBy?.phone || o.submittedByCompanyPreparer?.phone,
+      alternatePhone: o.alternatePhone,
+      secondCustomerPhone: o.secondCustomerPhone,
+      shopLocationUrl: o.shop.locationUrl,
+      customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || profile?.locationUrl,
+      secondCustomerLocationUrl: o.secondCustomerLocationUrl,
+      shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
+      customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || profile?.photoUrl,
+      secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
+      routeMode: o.routeMode as any,
+      preparerAudioUrl: (o.preparerShoppingJson as any)?.preparerAudioUrl || null,
+      adminAudioUrl: o.adminVoiceNoteUrl,
+    };
+  });
 
   const searchFields: MandoubOrderSearchFields[] = filteredByTab.map((o) => ({
     id: o.id,

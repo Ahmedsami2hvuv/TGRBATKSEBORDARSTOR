@@ -62,6 +62,7 @@ export type MandoubRow = {
   secondCustomerLocationUrl?: string | null;
   shopDoorPhotoUrl?: string | null;
   customerDoorPhotoUrl?: string | null;
+  secondCustomerDoorPhotoUrl?: string | null;
   routeMode?: "single" | "double";
   /** تسجيل صوتي من العميل (المجهز) */
   preparerAudioUrl?: string | null;
