@@ -8,6 +8,7 @@ export const mandoubOrderDetailInclude = {
       name: true,
       phone: true,
       photoUrl: true,
+      locationUrl: true,
       regionId: true,
       region: true
     }
