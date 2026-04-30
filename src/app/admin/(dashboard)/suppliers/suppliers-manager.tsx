@@ -11,6 +11,8 @@ import {
   type SupplierFormState,
 } from "./actions";
 import { whatsappMeUrl } from "@/lib/whatsapp";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 const initial: SupplierFormState = {};
 
@@ -26,7 +28,7 @@ export type SupplierManagerRow = {
 
 export type ProductOption = { id: string; name: string };
 
-function AddSupplierForm() {
+function AddSupplierForm({ icons }: { icons: GlobalIconsConfig | null }) {
   const [state, formAction, pending] = useActionState(createStoreSupplier, initial);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -44,8 +46,8 @@ function AddSupplierForm() {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className={ad.btnPrimary}>
-        ➕ إضافة مورد جديد
+      <button type="button" onClick={() => setOpen(true)} className={`${ad.btnPrimary} flex items-center gap-2`}>
+        <DynamicIcon icon={icons?.ui_add} fallback="➕" className="w-4 h-4" /> إضافة مورد جديد
       </button>
     );
   }
@@ -80,7 +82,7 @@ function AddSupplierForm() {
   );
 }
 
-function SupplierCard({ row, allProducts }: { row: SupplierManagerRow; allProducts: ProductOption[] }) {
+function SupplierCard({ row, allProducts, icons }: { row: SupplierManagerRow; allProducts: ProductOption[]; icons: GlobalIconsConfig | null }) {
   const [activeTab, setActiveTab] = useState<"products" | "edit" | null>(null);
   const [uState, updateAction, uPending] = useActionState(updateStoreSupplier, initial);
   const [pState, productsAction, pPending] = useActionState(assignProductsToSupplier, initial);
@@ -104,22 +106,24 @@ function SupplierCard({ row, allProducts }: { row: SupplierManagerRow; allProduc
           </div>
 
           <div className="flex gap-2">
-             <button onClick={() => setActiveTab(activeTab === "products" ? null : "products")} className="px-4 py-2 bg-sky-50 text-sky-700 rounded-xl text-xs font-black hover:bg-sky-100 transition">
-               📦 المنتجات ({row.productIds.length})
+             <button onClick={() => setActiveTab(activeTab === "products" ? null : "products")} className="px-4 py-2 bg-sky-50 text-sky-700 rounded-xl text-xs font-black hover:bg-sky-100 transition flex items-center gap-1.5">
+               <DynamicIcon icon={icons?.ui_box} fallback="📦" className="w-3.5 h-3.5" /> المنتجات ({row.productIds.length})
              </button>
-             <button onClick={() => setActiveTab(activeTab === "edit" ? null : "edit")} className="px-4 py-2 bg-slate-50 text-slate-700 rounded-xl text-xs font-black hover:bg-slate-100 transition">
-               ⚙️ تعديل
+             <button onClick={() => setActiveTab(activeTab === "edit" ? null : "edit")} className="px-4 py-2 bg-slate-50 text-slate-700 rounded-xl text-xs font-black hover:bg-slate-100 transition flex items-center gap-1.5">
+               <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" className="w-3.5 h-3.5" /> تعديل
              </button>
              <form action={deleteAction} onSubmit={e => !confirm("حذف المورد؟") && e.preventDefault()}>
                 <input type="hidden" name="id" value={row.id} />
-                <button type="submit" disabled={dPending} className="p-2 text-rose-400 hover:text-rose-600 transition">🗑️</button>
+                <button type="submit" disabled={dPending} className="p-2 text-rose-400 hover:text-rose-600 transition">
+                  <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" className="w-5 h-5" />
+                </button>
              </form>
           </div>
         </div>
 
         <div className="mt-6 pt-6 border-t border-slate-50 flex flex-wrap items-center gap-3">
            <a href={row.portalUrl} target="_blank" className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2">
-             🌐 فتح البوابة
+             <DynamicIcon icon={icons?.ui_globe} fallback="🌐" className="w-3.5 h-3.5 text-sky-400" /> فتح البوابة
            </a>
            <button
              onClick={() => {
@@ -127,16 +131,17 @@ function SupplierCard({ row, allProducts }: { row: SupplierManagerRow; allProduc
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
              }}
-             className="bg-sky-600 text-white px-4 py-2 rounded-xl text-xs font-black"
+             className="bg-sky-600 text-white px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2"
            >
-             {copied ? "تم النسخ!" : "📋 نسخ الرابط"}
+             <DynamicIcon icon={icons?.ui_copy} fallback="📋" className="w-3.5 h-3.5" />
+             {copied ? "تم النسخ!" : "نسخ الرابط"}
            </button>
            <a
              href={whatsappMeUrl(row.phone, `رابط بوابة التسعير الخاصة بك:\n${row.portalUrl}`)}
              target="_blank"
              className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2"
            >
-             💬 واتساب
+             <DynamicIcon icon={icons?.ui_whatsapp} fallback="💬" className="w-3.5 h-3.5" /> واتساب
            </a>
         </div>
       </div>
@@ -194,12 +199,18 @@ function SupplierCard({ row, allProducts }: { row: SupplierManagerRow; allProduc
 }
 
 export function SuppliersManager({ rows, allProducts }: { rows: SupplierManagerRow[]; allProducts: ProductOption[] }) {
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
+
   return (
     <div className="space-y-8">
-      <AddSupplierForm />
+      <AddSupplierForm icons={icons} />
       <div className="grid grid-cols-1 gap-6">
         {rows.map(row => (
-          <SupplierCard key={row.id} row={row} allProducts={allProducts} />
+          <SupplierCard key={row.id} row={row} allProducts={allProducts} icons={icons} />
         ))}
         {rows.length === 0 && (
           <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 text-slate-400 font-bold">

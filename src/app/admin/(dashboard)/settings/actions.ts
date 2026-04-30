@@ -6,6 +6,16 @@ import { prisma } from "@/lib/prisma";
 import { DEFAULT_NOTIFICATION_SETTINGS } from "@/lib/notification-settings";
 import { normalizeNotificationSoundPreset } from "@/lib/notification-sound-presets";
 
+import { GlobalIconsConfig, saveGlobalIcons } from "@/lib/icon-settings";
+
+export async function saveGlobalIconsAction(config: GlobalIconsConfig) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  await saveGlobalIcons(config);
+  revalidatePath("/admin/settings");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export type NotificationSettingsFormState = {
   ok?: boolean;
   error?: string;

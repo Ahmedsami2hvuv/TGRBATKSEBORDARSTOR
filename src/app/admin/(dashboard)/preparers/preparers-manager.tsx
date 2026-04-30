@@ -13,6 +13,8 @@ import {
   type PreparerFormState,
 } from "./actions";
 import { whatsappMeUrl } from "@/lib/whatsapp";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 const initial: PreparerFormState = {};
 
@@ -38,7 +40,7 @@ export type ShopOption = { id: string; name: string };
 export type BranchOption = { id: string; name: string };
 export type CategoryOption = { id: string; name: string };
 
-function AddPreparerForm() {
+function AddPreparerForm({ icons }: { icons: GlobalIconsConfig | null }) {
   const [state, formAction, pending] = useActionState(createCompanyPreparer, initial);
   const [open, setOpen] = useState(false);
   const [key, setKey] = useState(0);
@@ -59,8 +61,8 @@ function AddPreparerForm() {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className={ad.btnPrimary}>
-        ➕ إضافة مجهز جديد
+      <button type="button" onClick={() => setOpen(true)} className={`${ad.btnPrimary} flex items-center gap-2`}>
+        <DynamicIcon icon={icons?.ui_add} fallback="➕" className="w-4 h-4" /> إضافة مجهز جديد
       </button>
     );
   }
@@ -133,11 +135,13 @@ function PreparerPortalLink({
   url,
   phone,
   preparerName,
+  icons,
 }: {
   id: string;
   url: string;
   phone: string;
   preparerName: string;
+  icons: GlobalIconsConfig | null;
 }) {
   const [copied, setCopied] = useState(false);
   const greeting = preparerName.trim() ? `مرحباً ${preparerName.trim()}،` : "مرحباً،";
@@ -153,7 +157,7 @@ function PreparerPortalLink({
         rel="noopener noreferrer"
         className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-slate-200 transition hover:bg-slate-800 active:scale-95"
       >
-        <span>🌐</span> فتح بوابة المجهز
+        <DynamicIcon icon={icons?.ui_globe} fallback="🌐" className="w-4 h-4 text-sky-400" /> فتح بوابة المجهز
       </a>
       {canWhatsApp && (
         <a
@@ -162,7 +166,7 @@ function PreparerPortalLink({
           rel="noopener noreferrer"
           className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-100 transition hover:bg-emerald-700 active:scale-95"
         >
-          <span>💬</span> واتساب
+          <DynamicIcon icon={icons?.ui_whatsapp} fallback="💬" className="w-4 h-4" /> واتساب
         </a>
       )}
       <button
@@ -176,7 +180,7 @@ function PreparerPortalLink({
           } catch {}
         }}
       >
-        <span>📋</span> {copied ? "تم النسخ!" : "نسخ الرابط"}
+        <DynamicIcon icon={icons?.ui_copy} fallback="📋" className="w-4 h-4" /> {copied ? "تم النسخ!" : "نسخ الرابط"}
       </button>
 
       <form
@@ -195,7 +199,7 @@ function PreparerPortalLink({
           type="submit"
           className="flex items-center gap-2 rounded-xl border-2 border-rose-100 bg-white px-4 py-2 text-sm font-black text-rose-600 transition hover:bg-rose-50 active:scale-95"
         >
-          <span>🔄</span> إبطال/تجديد
+          <DynamicIcon icon={icons?.ui_refresh} fallback="🔄" className="w-4 h-4" /> إبطال/تجديد
         </button>
       </form>
     </div>
@@ -209,11 +213,13 @@ function PreparerCard({
   allShops,
   allBranches,
   allCategories,
+  icons,
 }: {
   row: PreparerManagerRow;
   allShops: ShopOption[];
   allBranches: BranchOption[];
   allCategories: CategoryOption[];
+  icons: GlobalIconsConfig | null;
 }) {
   const [activeTab, setActiveTab] = useState<"salary" | "shops" | "pricing" | "edit" | null>(null);
 
@@ -276,7 +282,7 @@ function PreparerCard({
               disabled={dPending}
               className="group flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 transition-all hover:bg-rose-500 hover:text-white"
             >
-              {dPending ? "..." : "🗑️"}
+              {dPending ? "..." : <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" className="w-5 h-5" />}
             </button>
           </form>
         </div>
@@ -286,7 +292,7 @@ function PreparerCard({
         {/* Portal Links */}
         <div className="mt-8 border-t border-slate-50 pt-8">
           <p className="mb-4 text-xs font-black text-slate-400 uppercase tracking-widest">بوابة المجهز والتحكم</p>
-          <PreparerPortalLink id={row.id} url={row.portalUrl} phone={row.phone} preparerName={row.name} />
+          <PreparerPortalLink id={row.id} url={row.portalUrl} phone={row.phone} preparerName={row.name} icons={icons} />
         </div>
 
         {/* Navigation Tabs */}
@@ -299,7 +305,7 @@ function PreparerCard({
                 : "bg-amber-50 text-amber-700 hover:bg-amber-100"
             }`}
           >
-            <span className="text-2xl">💰</span>
+            <DynamicIcon icon={icons?.ui_salary} fallback="💰" className="text-2xl" />
             <span className="text-xs font-black">الراتب والمحفظة</span>
           </button>
 
@@ -311,7 +317,7 @@ function PreparerCard({
                 : "bg-sky-50 text-sky-700 hover:bg-sky-100"
             }`}
           >
-            <span className="text-2xl">🛒</span>
+            <DynamicIcon icon={icons?.ui_shops} fallback="🛒" className="text-2xl" />
             <span className="text-xs font-black">المحلات المسندة</span>
           </button>
 
@@ -323,7 +329,7 @@ function PreparerCard({
                 : "bg-violet-50 text-violet-700 hover:bg-violet-100"
             }`}
           >
-            <span className="text-2xl">🏷️</span>
+            <DynamicIcon icon={icons?.ui_tag} fallback="🏷️" className="text-2xl" />
             <span className="text-xs font-black">تسعير المتجر</span>
           </button>
 
@@ -335,7 +341,7 @@ function PreparerCard({
                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             }`}
           >
-            <span className="text-2xl">⚙️</span>
+            <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" className="text-2xl" />
             <span className="text-xs font-black">تعديل الحساب</span>
           </button>
         </div>
@@ -345,17 +351,17 @@ function PreparerCard({
       {activeTab && (
         <div className="border-t border-slate-100 bg-slate-50/50 p-6 sm:p-8 animate-in slide-in-from-top-4 duration-300">
           <div className="mb-6 flex items-center justify-between">
-            <h4 className="text-xl font-black text-slate-900">
-              {activeTab === "salary" && "💰 إدارة الراتب والمحفظة"}
-              {activeTab === "shops" && "🛒 ربط المحلات المسندة"}
-              {activeTab === "pricing" && "🏷️ تفويض أقسام وأفرع المتجر"}
-              {activeTab === "edit" && "⚙️ تعديل بيانات الحساب"}
+            <h4 className="text-xl font-black text-slate-900 flex items-center gap-2">
+              {activeTab === "salary" && <><DynamicIcon icon={icons?.ui_salary} fallback="💰" className="w-5 h-5" /> إدارة الراتب والمحفظة</>}
+              {activeTab === "shops" && <><DynamicIcon icon={icons?.ui_shops} fallback="🛒" className="w-5 h-5" /> ربط المحلات المسندة</>}
+              {activeTab === "pricing" && <><DynamicIcon icon={icons?.ui_tag} fallback="🏷️" className="w-5 h-5" /> تفويض أقسام وأفرع المتجر</>}
+              {activeTab === "edit" && <><DynamicIcon icon={icons?.ui_settings} fallback="⚙️" className="w-5 h-5" /> تعديل بيانات الحساب</>}
             </h4>
             <button
               onClick={() => setActiveTab(null)}
-              className="h-10 w-10 rounded-full bg-white text-slate-400 shadow-sm transition hover:text-slate-900"
+              className="h-10 w-10 rounded-full bg-white text-slate-400 shadow-sm transition hover:text-slate-900 flex items-center justify-center"
             >
-              ✕
+              <DynamicIcon icon={icons?.ui_close} fallback="✕" className="w-4 h-4" />
             </button>
           </div>
 
@@ -593,9 +599,15 @@ export function PreparersManager({
   allBranches: BranchOption[];
   allCategories: CategoryOption[];
 }) {
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
+
   return (
     <div className="space-y-8">
-      <AddPreparerForm />
+      <AddPreparerForm icons={icons} />
 
       <section className="space-y-4">
         <h2 className={ad.h2}>قائمة المجهزين ({rows.length})</h2>
@@ -611,6 +623,7 @@ export function PreparersManager({
               allShops={allShops}
               allBranches={allBranches}
               allCategories={allCategories}
+              icons={icons}
             />
           ))
         )}

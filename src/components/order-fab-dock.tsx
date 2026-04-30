@@ -15,6 +15,8 @@ import {
   MANDOUB_FAB_EVT_SCALE,
 } from "@/lib/mandoub-fab-bridge";
 import { PREPARER_ORDER_EDIT_PANEL_EVT } from "@/lib/preparer-edit-panel-events";
+import { DynamicIcon } from "./DynamicIcon";
+import { getGlobalIcons, type GlobalIconsConfig } from "@/lib/icon-settings";
 
 /** حجم الزر العائم — القياس الأساسي قبل مضاعفة المستخدم (واتساب / اتصال / قوالب / دفع عميل / استلام) */
 export const FAB_SIZE = 52;
@@ -379,6 +381,11 @@ export function OrderFabDock(props: OrderFabDockProps) {
 
   const [preparerEditOpen, setPreparerEditOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   useEffect(() => {
     if (!hideWhenPreparerEditOpen) return;
@@ -903,7 +910,12 @@ export function OrderFabDock(props: OrderFabDockProps) {
             }`}
             onClick={() => openCustomWaToTarget(customWaPick.btn, "shop")}
           >
-            <span aria-hidden>{customWaPick.btn.iconKey}</span>
+            <DynamicIcon
+              iconKey={customWaPick.btn.iconKey}
+              config={icons}
+              className="h-5 w-5"
+              fallback={<span aria-hidden>{customWaPick.btn.iconKey}</span>}
+            />
             <span>{shopLabel}</span>
           </button>
           <button
@@ -917,7 +929,12 @@ export function OrderFabDock(props: OrderFabDockProps) {
             }`}
             onClick={() => openCustomWaToTarget(customWaPick.btn, "customer")}
           >
-            <span aria-hidden>{customWaPick.btn.iconKey}</span>
+            <DynamicIcon
+              iconKey={customWaPick.btn.iconKey}
+              config={icons}
+              className="h-5 w-5"
+              fallback={<span aria-hidden>{customWaPick.btn.iconKey}</span>}
+            />
             <span>زبون</span>
           </button>
           {hasCust2 ? (
@@ -932,7 +949,12 @@ export function OrderFabDock(props: OrderFabDockProps) {
               }`}
               onClick={() => openCustomWaToTarget(customWaPick.btn, "customer2")}
             >
-              <span aria-hidden>{customWaPick.btn.iconKey}</span>
+              <DynamicIcon
+                iconKey={customWaPick.btn.iconKey}
+                config={icons}
+                className="h-5 w-5"
+                fallback={<span aria-hidden>{customWaPick.btn.iconKey}</span>}
+              />
               <span>زبون2</span>
             </button>
           ) : null}
@@ -960,7 +982,12 @@ export function OrderFabDock(props: OrderFabDockProps) {
               href={editUrl}
               className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-sky-600 px-4 py-2 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
             >
-              <span>📝</span>
+              <DynamicIcon
+                iconKey="ui_note"
+                config={icons}
+                className="h-5 w-5"
+                fallback={<span>📝</span>}
+              />
               <span>تعديل الطلب</span>
             </a>
           )}
@@ -973,7 +1000,12 @@ export function OrderFabDock(props: OrderFabDockProps) {
               }}
               className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-emerald-600 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
             >
-              <IconWa className="h-5 w-5" />
+              <DynamicIcon
+                iconKey="ui_whatsapp"
+                config={icons}
+                className="h-5 w-5"
+                fallback={<IconWa className="h-5 w-5" />}
+              />
               <span>مراسلة واتساب</span>
             </button>
 
@@ -984,7 +1016,12 @@ export function OrderFabDock(props: OrderFabDockProps) {
               }}
               className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-sky-500 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
             >
-              <IconPhone className="h-5 w-5" />
+              <DynamicIcon
+                iconKey="ui_call"
+                config={icons}
+                className="h-5 w-5"
+                fallback={<IconPhone className="h-5 w-5" />}
+              />
               <span>اتصال هاتفي</span>
             </button>
 
@@ -997,7 +1034,12 @@ export function OrderFabDock(props: OrderFabDockProps) {
                 }}
                 className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-violet-600 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
               >
-                <span className="text-lg">{btn.iconKey || "💬"}</span>
+                <DynamicIcon
+                  iconKey={btn.iconKey}
+                  config={icons}
+                  className="h-6 w-6"
+                  fallback={<span className="text-lg">{btn.iconKey || "💬"}</span>}
+                />
                 <span>{btn.label}</span>
               </button>
             ))}
@@ -1029,16 +1071,32 @@ export function OrderFabDock(props: OrderFabDockProps) {
         >
           <div className="flex items-center justify-center">
             {isExpanded ? (
-              <svg className="h-8 w-8 animate-in spin-in-90 duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <DynamicIcon
+                iconKey="ui_close"
+                config={icons}
+                className="h-8 w-8 animate-in spin-in-90 duration-300"
+                fallback={
+                  <svg className="h-8 w-8 animate-in spin-in-90 duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                }
+              />
             ) : (
               <div className="flex flex-col items-center justify-center gap-0.5">
-                <div className="flex gap-1">
-                  <div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>
-                  <div className="h-2 w-2 rounded-full bg-white animate-pulse delay-75"></div>
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-tighter">المهام</span>
+                <DynamicIcon
+                  iconKey="ui_tasks"
+                  config={icons}
+                  className="h-6 w-6"
+                  fallback={
+                    <div className="flex flex-col items-center justify-center gap-0.5">
+                      <div className="flex gap-1">
+                        <div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>
+                        <div className="h-2 w-2 rounded-full bg-white animate-pulse delay-75"></div>
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-tighter">المهام</span>
+                    </div>
+                  }
+                />
               </div>
             )}
           </div>

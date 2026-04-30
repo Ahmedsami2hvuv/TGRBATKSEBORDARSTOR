@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { MandoubOrderDetailPayload } from "@/lib/mandoub-order-queries";
 import { preparerPath } from "@/lib/preparer-portal-nav";
 import { dinarDecimalToAlfInputString, formatDinarAsAlf } from "@/lib/money-alf";
@@ -19,6 +20,8 @@ import { PreparerOrderMoneyFlow } from "./preparer-order-money-flow";
 import { NotesCopyButton } from "@/components/notes-copy-button";
 import { OrderTypeDetailBlock } from "@/components/order-type-line";
 import { UISectionConfig } from "@/lib/ui-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, type GlobalIconsConfig } from "@/lib/icon-settings";
 
 const STATUS_AR: Record<string, string> = {
   pending: "جديد",
@@ -81,7 +84,12 @@ export function PreparerOrderDetailSection({
   canEditPricing?: boolean;
   pricingEditHref?: string;
 }) {
-  
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
+
   const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
   const shopContactPhone = order.shop.phone?.trim() || order.submittedBy?.phone?.trim() || "";
   const customerDoorDisplay = order.customerDoorPhotoUrl?.trim() || phoneProfile?.photoUrl?.trim() || "";
@@ -230,7 +238,12 @@ export function PreparerOrderDetailSection({
           <MandoubOrderDetailActions closeHref={closeHref} />
           {canEditPricing && pricingEditHref ? (
             <Link href={pricingEditHref} className="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition-colors">
-              <span>💰</span>
+              <DynamicIcon
+                iconKey="admin_pricing"
+                config={icons}
+                className="h-4 w-4"
+                fallback={<span>💰</span>}
+              />
               <span className="mr-2">تعديل التسعير</span>
             </Link>
           ) : null}

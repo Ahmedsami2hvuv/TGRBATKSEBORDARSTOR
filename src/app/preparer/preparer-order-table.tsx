@@ -13,6 +13,8 @@ import { PickupMoneyForm } from "./preparer-order-money-flow";
 import { submitPreparerPickupMoney } from "./preparer-cash-actions";
 import { dinarDecimalToAlfInputString } from "@/lib/money-alf";
 import { createPortal } from "react-dom";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 function buildPreparerOrderDetailHref(
   auth: { p: string; exp: string; s: string },
@@ -62,6 +64,12 @@ export function PreparerOrderTable({
     submitPreparerPickupMoney,
     {},
   );
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
+
   const prevBulkPending = useRef(false);
 
   const pendingIds = useMemo(
@@ -112,8 +120,19 @@ export function PreparerOrderTable({
             onClick={() => setShowQuickSelect((v) => !v)}
             className="mb-1.5 flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-900 hover:bg-red-100"
           >
-            ⚡ تحديد سريع
-            <span className="text-red-400">{showQuickSelect ? "▲" : "▼"}</span>
+            <DynamicIcon
+              iconKey="ui_flash"
+              config={icons}
+              className="h-4 w-4"
+              fallback={<span>⚡</span>}
+            />
+            تحديد سريع
+            <DynamicIcon
+              iconKey={showQuickSelect ? "ui_chevron_up" : "ui_chevron_down"}
+              config={icons}
+              className="h-3 w-3 text-red-400"
+              fallback={<span>{showQuickSelect ? "▲" : "▼"}</span>}
+            />
           </button>
 
           {showQuickSelect && (
@@ -172,10 +191,10 @@ export function PreparerOrderTable({
               className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-emerald-100 shadow-sm transition hover:bg-emerald-50 active:scale-90 p-1.5"
               title="إسناد لمندوب"
             >
-              <img
-                src="https://img.icons8.com/external-flaticons-flat-flat-icons/64/external-delegate-project-management-flaticons-flat-flat-icons.png"
-                alt="إسناد"
-                className="w-full h-full object-contain"
+              <DynamicIcon
+                icon={icons?.preparer_delegate}
+                className="w-full h-full"
+                fallback={<span className="text-xl">👤</span>}
               />
             </button>
           );
@@ -193,10 +212,10 @@ export function PreparerOrderTable({
               className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-amber-100 shadow-sm transition hover:bg-amber-50 active:scale-90 p-1.5"
               title="تسجيل دفع"
             >
-              <img
-                src="https://img.icons8.com/fluency/64/wallet.png"
-                alt="دفع"
-                className="w-full h-full object-contain"
+              <DynamicIcon
+                icon={icons?.order_received}
+                className="w-full h-full"
+                fallback={<span className="text-xl">💵</span>}
               />
             </button>
           );
@@ -213,7 +232,7 @@ export function PreparerOrderTable({
                   onClick={() => setAssignOrder(null)}
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
                 >
-                  ✕
+                  <DynamicIcon iconKey="ui_close" config={icons} className="h-4 w-4" fallback={<span>✕</span>} />
                 </button>
               </div>
               <div className="max-h-[70vh] overflow-y-auto pt-1 px-1">
@@ -260,7 +279,7 @@ export function PreparerOrderTable({
                   onClick={() => setPayOrder(null)}
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
                 >
-                  ✕
+                  <DynamicIcon iconKey="ui_close" config={icons} className="h-4 w-4" fallback={<span>✕</span>} />
                 </button>
               </div>
               <PickupMoneyForm

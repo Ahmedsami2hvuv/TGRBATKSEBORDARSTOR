@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ad } from "@/lib/admin-ui";
 import { deleteShop } from "./actions";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 export type ShopRow = {
   id: string;
@@ -15,6 +17,11 @@ export type ShopRow = {
 export function ShopsList({ shops }: { shops: ShopRow[] }) {
   const [query, setQuery] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   async function copyLocation(url: string, id: string) {
     try {
@@ -62,7 +69,7 @@ export function ShopsList({ shops }: { shops: ShopRow[] }) {
       {duplicates.size > 0 && (
         <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-4 shadow-sm">
           <p className="flex items-center gap-2 text-sm font-black text-amber-900">
-            ⚠️ تنبيه: توجد محلات مكررة بالاسم
+            <DynamicIcon icon={icons?.ui_warning} fallback="⚠️" className="w-4 h-4" /> تنبيه: توجد محلات مكررة بالاسم
           </p>
           <p className="mt-1 text-xs text-amber-800 leading-relaxed">
             الأسماء التالية مكررة في القائمة أدناه، يفضل دمجها أو حذف المكرر منها لضمان دقة التقارير:
@@ -123,27 +130,31 @@ export function ShopsList({ shops }: { shops: ShopRow[] }) {
                   <button
                     type="button"
                     onClick={() => copyLocation(s.locationUrl, s.id)}
-                    className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-900 transition hover:bg-amber-100"
+                    className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-900 transition hover:bg-amber-100 flex items-center gap-1.5"
                   >
+                    <DynamicIcon icon={icons?.ui_copy} fallback="📋" className="w-3 h-3" />
                     {copiedId === s.id ? "تم نسخ الرابط" : "نسخ رابط المحل"}
                   </button>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <Link
                     href={`/admin/shops/${s.id}/employees`}
-                    className={`text-sm font-bold bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md hover:bg-indigo-100 transition-colors`}
+                    className={`text-sm font-bold bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md hover:bg-indigo-100 transition-colors flex items-center gap-1`}
                   >
+                    <DynamicIcon icon={icons?.ui_user} fallback="👤" className="w-3 h-3" />
                     العملاء (أصحاب الروابط)
                   </Link>
                   <Link
                     href={`/admin/shops/${s.id}/edit`}
-                    className={`text-sm ${ad.link}`}
+                    className={`text-sm ${ad.link} flex items-center gap-1`}
                   >
+                    <DynamicIcon icon={icons?.ui_edit} fallback="✏️" className="w-3 h-3" />
                     تعديل المحل
                   </Link>
                   <form action={deleteShop} onSubmit={(e) => onDeleteSubmit(e, s.name)}>
                     <input type="hidden" name="id" value={s.id} />
-                    <button type="submit" className={ad.dangerLink}>
+                    <button type="submit" className={`${ad.dangerLink} flex items-center gap-1`}>
+                      <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" className="w-3 h-3" />
                       حذف
                     </button>
                   </form>

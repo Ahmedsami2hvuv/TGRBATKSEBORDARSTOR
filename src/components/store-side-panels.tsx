@@ -3,15 +3,19 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ProductCard } from "@/app/store/product-card";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "./dynamic-icon";
 
 export function StoreSidePanels() {
   const [activePanel, setActivePanel] = useState<"cart" | "favorites" | null>(null);
   const [cart, setCart] = useState<any[]>([]);
   const [favorites, setFavorites] = useState<any[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
 
   useEffect(() => {
     setIsLoaded(true);
+    getGlobalIcons().then(setIcons);
     const loadData = async () => {
       const savedCart = JSON.parse(localStorage.getItem("kse_cart") || "[]");
       setCart(savedCart);
@@ -91,9 +95,9 @@ export function StoreSidePanels() {
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
           <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
             {activePanel === "cart" ? (
-              <><span className="text-violet-600">🛒</span> سلة التسوق</>
+              <><DynamicIcon icon={icons?.store_cart} className="text-violet-600" fallback="🛒" /> سلة التسوق</>
             ) : (
-              <><span className="text-rose-500">❤️</span> المفضلات</>
+              <><DynamicIcon icon={icons?.store_favorites} className="text-rose-500" fallback="❤️" /> المفضلات</>
             )}
           </h2>
           <button
@@ -108,7 +112,9 @@ export function StoreSidePanels() {
           {activePanel === "cart" ? (
             cart.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center">
-                <div className="text-6xl mb-4 opacity-20">🛒</div>
+                <div className="text-6xl mb-4 opacity-20">
+                  <DynamicIcon icon={icons?.store_cart} fallback="🛒" />
+                </div>
                 <p className="text-slate-500 font-bold">سلتك فارغة حالياً</p>
               </div>
             ) : (
@@ -135,7 +141,9 @@ export function StoreSidePanels() {
           ) : (
             favorites.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center">
-                <div className="text-6xl mb-4 opacity-20">❤️</div>
+                <div className="text-6xl mb-4 opacity-20">
+                  <DynamicIcon icon={icons?.store_favorites} fallback="❤️" />
+                </div>
                 <p className="text-slate-500 font-bold">قائمة المفضلات فارغة</p>
               </div>
             ) : (

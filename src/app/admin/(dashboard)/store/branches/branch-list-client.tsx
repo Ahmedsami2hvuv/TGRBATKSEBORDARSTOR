@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { upsertBranch, deleteBranch, scrapeCategoryFromUrl, scrapeProductFromUrl, createProductFromScrapedData } from "../actions";
 import { compressImageFileForUpload } from "@/lib/client-image-compress";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 export function BranchListClient({
   branchesPromise,
@@ -26,6 +28,11 @@ export function BranchListClient({
   const [editing, setEditing] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   // --- FAB Drag State ---
   const [fabPos, setFabPos] = useState({ x: 32, y: 96 }); // Distance from bottom-right
@@ -329,9 +336,9 @@ export function BranchListClient({
             <button
               onClick={handleBulkDelete}
               disabled={bulkActionLoading}
-              className="px-6 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl transition-all active:scale-95 disabled:opacity-50"
+              className="px-6 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
             >
-              {bulkActionLoading ? "جاري الحذف..." : "🗑️ حذف المحدد"}
+              {bulkActionLoading ? "جاري الحذف..." : <><DynamicIcon icon={icons?.ui_delete} fallback="🗑️" className="w-3.5 h-3.5" /> حذف المحدد</>}
             </button>
 
             <button
@@ -386,7 +393,7 @@ export function BranchListClient({
             className={`fixed z-[110] w-16 h-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center text-2xl hover:bg-indigo-700 hover:scale-110 active:scale-95 transition-transform ${isDragging ? '' : 'animate-bounce-subtle'}`}
             title={showScraper ? "إغلاق السحب" : "✨ سحب فرع ذكي (اسحب لتغيير مكاني)"}
           >
-            {showScraper ? "✕" : "✨"}
+            {showScraper ? <DynamicIcon icon={icons?.ui_close} fallback="✕" className="w-6 h-6" /> : <DynamicIcon icon={icons?.ui_flash} fallback="✨" className="w-8 h-8" />}
           </button>
 
           <button
@@ -395,16 +402,16 @@ export function BranchListClient({
               setShowForm(!showForm);
               setShowScraper(false);
             }}
-            className="flex-1 md:flex-none px-8 py-3 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95"
+            className="flex-1 md:flex-none px-8 py-3 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
           >
-            {showForm ? "✕ إغلاق" : "+ إضافة فرع"}
+            {showForm ? <><DynamicIcon icon={icons?.ui_close} fallback="✕" className="w-4 h-4" /> إغلاق</> : <><DynamicIcon icon={icons?.ui_add} fallback="+" className="w-4 h-4" /> إضافة فرع</>}
           </button>
           {defaultCategoryId && (
              <Link
                 href={`/admin/store/products?categoryId=${defaultCategoryId}`}
-                className="flex-1 md:flex-none px-8 py-3 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 transition shadow-lg shadow-emerald-100 text-center active:scale-95"
+                className="flex-1 md:flex-none px-8 py-3 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 transition shadow-lg shadow-emerald-100 text-center active:scale-95 flex items-center justify-center gap-2"
              >
-                📦 المنتجات
+                <DynamicIcon icon={icons?.ui_box} fallback="📦" className="w-4 h-4" /> المنتجات
              </Link>
           )}
         </div>
@@ -734,24 +741,24 @@ export function BranchListClient({
                   setShowForm(true);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="p-2 bg-sky-50 text-sky-700 rounded-xl text-[10px] font-black hover:bg-sky-100 transition-colors"
+                className="p-2 bg-sky-50 text-sky-700 rounded-xl text-[10px] font-black hover:bg-sky-100 transition-colors flex items-center justify-center"
                 title="تعديل"
               >
-                ✏️
+                <DynamicIcon icon={icons?.ui_edit} fallback="✏️" className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => handleToggleActive(br)}
-                className={`p-2 rounded-xl text-[10px] font-black transition-colors ${br.active ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}
+                className={`p-2 rounded-xl text-[10px] font-black transition-colors flex items-center justify-center ${br.active ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}
                 title={br.active ? "إخفاء من المتجر" : "إظهار في المتجر"}
               >
-                {br.active ? "👁️" : "🕶️"}
+                <DynamicIcon icon={br.active ? icons?.ui_visibility_on : icons?.ui_visibility_off} fallback={br.active ? "👁️" : "🕶️"} className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setConfirmDelete(br.id)}
-                className="p-2 bg-rose-50 text-rose-700 rounded-xl text-[10px] font-black hover:bg-rose-100 transition-colors"
+                className="p-2 bg-rose-50 text-rose-700 rounded-xl text-[10px] font-black hover:bg-rose-100 transition-colors flex items-center justify-center"
                 title="حذف نهائي"
               >
-                🗑️
+                <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" className="w-3.5 h-3.5" />
               </button>
             </div>
 

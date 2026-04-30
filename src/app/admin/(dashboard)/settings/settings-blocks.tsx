@@ -8,6 +8,8 @@ import { PurgeDemoDataForm } from "./purge-demo-data-form";
 import { TestPushNotificationsForm } from "./test-push-notifications-form";
 import { PricingSettingsForm } from "./pricing-settings-form";
 import { CleanupBase64Form } from "./cleanup-base64-form";
+import { IconSettingsForm } from "./icon-settings-form";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -131,7 +133,13 @@ function Block({
   );
 }
 
-export function SettingsBlocks({ notificationInitial }: { notificationInitial: NotificationInitial }) {
+export function SettingsBlocks({
+  notificationInitial,
+  globalIcons,
+}: {
+  notificationInitial: NotificationInitial;
+  globalIcons: GlobalIconsConfig;
+}) {
   const [openId, setOpenId] = useState<string>("ui-designer");
   const [howToShopUrl, setHowToShopUrl] = useState("");
   const [productCardBgUrl, setProductCardBgUrl] = useState("");
@@ -150,6 +158,17 @@ export function SettingsBlocks({ notificationInitial }: { notificationInitial: N
 
   return (
     <div className="space-y-4">
+      <Block
+        id="icon-settings"
+        title="تغيير الأيقونات والأنيميشن 🎭"
+        subtitle="تحكم في شكل واجهة التحميل، أيقونات الاستلام والتسليم وغيرها."
+        open={openId === "icon-settings"}
+        onToggle={() => setOpenId((x) => (x === "icon-settings" ? "" : "icon-settings"))}
+        tone="sky"
+      >
+        <IconSettingsForm initial={globalIcons} />
+      </Block>
+
       {/* قسم مصمم الواجهات الجديد */}
       <Block
         id="store-settings"

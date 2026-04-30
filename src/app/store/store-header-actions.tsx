@@ -1,9 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { StoreCartIcon } from "./store-cart-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export function StoreHeaderActions() {
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
+
   const openFavorites = () => {
     window.dispatchEvent(new Event("open-favorites"));
   };
@@ -21,7 +30,7 @@ export function StoreHeaderActions() {
         className="p-2.5 text-slate-500 hover:text-rose-500 transition bg-slate-100 dark:bg-slate-800 rounded-2xl"
         title="المفضلة"
       >
-        ❤️
+        <DynamicIcon icon={icons?.store_favorites} fallback="❤️" />
       </button>
 
       <button

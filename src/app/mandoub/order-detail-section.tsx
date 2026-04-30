@@ -26,6 +26,9 @@ import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
 import { IconPhone, IconWa } from "@/components/order-fab-dock";
 import { UISectionConfig } from "@/lib/ui-settings";
 import { ADMIN_PHONE_FROM_SHOP_LOCAL } from "@/lib/admin-order-from-admin-constants";
+import { useEffect, useState as useStateReact } from "react";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المندوب",
@@ -73,6 +76,11 @@ export function OrderDetailSection({
   phoneProfile?: any;
   uiSettings?: UISectionConfig | null;
 }) {
+  const [icons, setIcons] = useStateReact<GlobalIconsConfig | null>(null);
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
+
   const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
   const isAdminPortal = order.submissionSource === "admin_portal";
   const submitterName = order.submittedByCompanyPreparer?.name?.trim() || order.submittedBy?.name?.trim() || (isAdminPortal && !order.submittedBy ? "الإدارة" : "—");
@@ -138,7 +146,7 @@ export function OrderDetailSection({
                 <p className="font-mono text-sm font-bold text-slate-700">{contactLine(shopContactPhone)}</p>
               </div>
               <p className="text-slate-800">{order.shop.region.name}</p>
-              <div className="mt-2">{order.shop.locationUrl?.trim() ? <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن المحل ↗</a> : <p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن</p>}</div>
+              <div className="mt-2">{order.shop.locationUrl?.trim() ? <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن المحل <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} /></a> : <p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن</p>}</div>
             </div>
             <div className="max-w-[12rem] self-start">
               {shopImageUrl ? <div className={squarePhotoFrame}><img src={imgSrc(shopImageUrl)!} alt="" className={squarePhotoCover} /></div> : <p className="text-xs text-slate-400">لا توجد صورة</p>}
@@ -155,16 +163,20 @@ export function OrderDetailSection({
                 <p className="text-slate-800">{order.customerRegion?.name ?? "—"}</p>
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-mono font-bold text-slate-900">{contactLine(order.customerPhone)}</p>
-                  <a href={`tel:${order.customerPhone}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white shadow-sm">📞</a>
+                  <a href={`tel:${order.customerPhone}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white shadow-sm">
+                    <DynamicIcon icon={icons?.ui_call} fallback="📞" width={14} height={14} />
+                  </a>
                 </div>
                 {mergedAlternate && (
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <p className="font-mono text-sm font-bold text-slate-600">رقم ثانٍ: {mergedAlternate}</p>
-                    <a href={`tel:${mergedAlternate}`} className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-500 text-white shadow-sm">📞</a>
+                    <a href={`tel:${mergedAlternate}`} className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-500 text-white shadow-sm">
+                      <DynamicIcon icon={icons?.ui_call} fallback="📞" width={12} height={12} />
+                    </a>
                   </div>
                 )}
                 {mergedLandmark && <p className="mt-1 text-sm font-medium text-slate-800">أقرب نقطة: {mergedLandmark}</p>}
-                <div className="mt-2">{mergedCustomerLocationUrl ? <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن الزبون ↗</a> : <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} />}</div>
+                <div className="mt-2">{mergedCustomerLocationUrl ? <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن الزبون <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} /></a> : <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} />}</div>
               </div>
               <div className="max-w-[12rem] self-start">{customerDoorDisplay ? <div className={squarePhotoFrame}><img src={imgSrc(customerDoorDisplay)!} alt="" className={squarePhotoCover} /></div> : <p className="text-xs text-slate-400">لا توجد صورة باب</p>}<div className="mt-2"><MandoubQuickDoorCapture orderId={order.id} nextUrl={nextUrl} auth={auth} /></div></div>
             </div>
@@ -176,11 +188,15 @@ export function OrderDetailSection({
                   <p className="text-slate-800">{order.secondCustomerRegion?.name ?? "—"}</p>
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-mono font-bold text-slate-900">{contactLine(order.secondCustomerPhone || "")}</p>
-                    {order.secondCustomerPhone && <a href={`tel:${order.secondCustomerPhone}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white shadow-sm">📞</a>}
+                    {order.secondCustomerPhone && (
+                      <a href={`tel:${order.secondCustomerPhone}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white shadow-sm">
+                        <DynamicIcon icon={icons?.ui_call} fallback="📞" width={14} height={14} />
+                      </a>
+                    )}
                   </div>
                   <div className="mt-2">
                     {order.secondCustomerLocationUrl?.trim() ? (
-                      <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن المستلم ↗</a>
+                      <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن المستلم <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} /></a>
                     ) : (
                       <div className="flex flex-col gap-2">
                         <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" />
@@ -213,19 +229,25 @@ export function OrderDetailSection({
       case "notes_summary":
         return (
           <div key="notes" className="mt-6 border-t border-sky-100 pt-5" style={blockStyle}>
-            <p className="text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">ملاحظات وقائمة المواد</p>
+            <p className="flex items-center gap-1.5 text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">
+              <DynamicIcon icon={icons?.ui_note} fallback="📝" width={14} height={14} /> ملاحظات وقائمة المواد
+            </p>
             <div className="flex flex-col gap-3">
               {(order.voiceNoteUrl || order.adminVoiceNoteUrl) && (
                 <div className="flex flex-col gap-2 rounded-xl border-2 border-amber-100 bg-amber-50/20 p-3">
                   {order.voiceNoteUrl && (
                     <div className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-amber-700">بصمة الزبون/المحل:</span>
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-amber-700">
+                        <DynamicIcon icon={icons?.ui_audio} fallback="🎤" width={10} height={10} /> بصمة الزبون/المحل:
+                      </span>
                       <VoiceNoteAudio src={resolvePublicAssetSrc(order.voiceNoteUrl) || ""} />
                     </div>
                   )}
                   {order.adminVoiceNoteUrl && (
                     <div className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-amber-700">بصمة الإدارة:</span>
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-amber-700">
+                        <DynamicIcon icon={icons?.ui_audio} fallback="🎤" width={10} height={10} /> بصمة الإدارة:
+                      </span>
                       <VoiceNoteAudio src={resolvePublicAssetSrc(order.adminVoiceNoteUrl) || ""} />
                     </div>
                   )}

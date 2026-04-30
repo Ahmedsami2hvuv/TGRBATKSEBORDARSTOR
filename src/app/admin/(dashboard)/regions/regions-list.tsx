@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ad } from "@/lib/admin-ui";
 
 import { updateRegionAction } from "./actions";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 export function RegionsList({ initialRegions }: { initialRegions: any[] }) {
   const [search, setSearch] = useState("");
@@ -12,6 +14,11 @@ export function RegionsList({ initialRegions }: { initialRegions: any[] }) {
   const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [loading, setLoading] = useState(false);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const filtered = regions.filter(r => r.name.includes(search));
 
@@ -71,9 +78,9 @@ export function RegionsList({ initialRegions }: { initialRegions: any[] }) {
         <button
           onClick={runFix}
           disabled={loading}
-          className="px-4 py-3 bg-rose-600 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-rose-700 disabled:opacity-50"
+          className="px-4 py-3 bg-rose-600 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-rose-700 disabled:opacity-50 flex items-center gap-2"
         >
-          {loading ? "جاري الإصلاح..." : "🛠️ إصلاح كافة الأسعار"}
+          {loading ? "جاري الإصلاح..." : <><DynamicIcon icon={icons?.ui_settings} fallback="🛠️" className="w-4 h-4" /> إصلاح كافة الأسعار</>}
         </button>
       </div>
 
@@ -97,7 +104,10 @@ export function RegionsList({ initialRegions }: { initialRegions: any[] }) {
                     سعر التوصيل: {Number(region.deliveryPrice) >= 1000 ? Number(region.deliveryPrice) / 1000 : region.deliveryPrice} د.ع
                   </p>
                 </div>
-                <button onClick={() => startEdit(region)} className="text-indigo-600 hover:text-indigo-800 text-sm font-bold">تعديل</button>
+                <button onClick={() => startEdit(region)} className="text-indigo-600 hover:text-indigo-800 text-sm font-bold flex items-center gap-1">
+                  <DynamicIcon icon={icons?.ui_edit} fallback="تعديل" className="w-3.5 h-3.5" />
+                  تعديل
+                </button>
               </>
             )}
           </div>

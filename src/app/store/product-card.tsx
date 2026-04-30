@@ -2,14 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { AddToCartButton } from "./add-to-cart-button";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export function ProductCard({ product, bgUrl: initialBgUrl }: { product: any, bgUrl?: string }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
 
   useEffect(() => {
+    getGlobalIcons().then(setIcons);
     const favorites = JSON.parse(localStorage.getItem("kse_favorites") || "[]");
     setIsFavorite(favorites.includes(product.id));
 
@@ -59,7 +63,10 @@ export function ProductCard({ product, bgUrl: initialBgUrl }: { product: any, bg
           className="absolute top-3 left-3 z-20 w-8 h-8 md:w-10 md:h-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-md transition-transform hover:scale-110 active:scale-95"
         >
           <span className={`text-lg md:text-xl ${isFavorite ? "text-rose-500" : "text-slate-300"}`}>
-            {isFavorite ? "❤️" : "🤍"}
+            <DynamicIcon
+              icon={isFavorite ? icons?.store_favorites : icons?.store_favorites_empty}
+              fallback={isFavorite ? "❤️" : "🤍"}
+            />
           </span>
         </button>
 
@@ -84,7 +91,9 @@ export function ProductCard({ product, bgUrl: initialBgUrl }: { product: any, bg
               className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-110 relative z-10 p-2"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center relative z-10 opacity-20 text-3xl md:text-5xl">📦</div>
+            <div className="w-full h-full flex items-center justify-center relative z-10 opacity-20 text-3xl md:text-5xl">
+              <DynamicIcon icon={icons?.ui_package} fallback="📦" />
+            </div>
           )}
         </div>
 
@@ -170,7 +179,12 @@ export function ProductCard({ product, bgUrl: initialBgUrl }: { product: any, bg
                       isFavorite ? "bg-rose-50 dark:bg-rose-900/20 text-rose-500" : "bg-slate-50 dark:bg-slate-800 text-slate-300"
                     }`}
                   >
-                    <span className="text-2xl">{isFavorite ? "❤️" : "🤍"}</span>
+                    <span className="text-2xl">
+                      <DynamicIcon
+                        icon={isFavorite ? icons?.store_favorites : icons?.store_favorites_empty}
+                        fallback={isFavorite ? "❤️" : "🤍"}
+                      />
+                    </span>
                   </button>
                 </div>
 

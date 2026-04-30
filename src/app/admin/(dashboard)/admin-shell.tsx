@@ -7,6 +7,8 @@ import { logout } from "./actions";
 import { AdminLiveSearchInput } from "./live-search-input";
 import { adminSidebarTiles, tileHref } from "@/lib/admin-nav";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { GlobalIconsConfig, getGlobalIcons } from "@/lib/icon-settings";
 
 function navItemActive(pathname: string, href: string): boolean {
   const base = href.split("#")[0] ?? href;
@@ -23,7 +25,12 @@ export function AdminShell({
 }) {
   const [navOpen, setNavOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(pendingInitialCount);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const pathname = usePathname() ?? "";
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   useEffect(() => {
     // We optionally closenavOpen on resize if needed, but since CSS handles lg breakpoint via lg:translate-x-0, we don't strictly need this unless we want to reset it.
@@ -67,7 +74,9 @@ export function AdminShell({
             : `flex items-center gap-3 px-3 w-full h-12 rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all`
         }
       >
-        <span className="text-xl shrink-0" aria-hidden>🏠</span>
+        <span className="text-xl shrink-0" aria-hidden>
+          <DynamicIcon config={icons?.ui_home} fallback="🏠" className="w-6 h-6" />
+        </span>
         <span className="leading-snug font-medium text-sm block">الرئيسية</span>
       </Link>
       <p className="mt-5 px-3 text-[11px] font-bold tracking-wider text-sky-700 dark:text-[#00f3ff] block">الأقسام</p>
@@ -90,7 +99,7 @@ export function AdminShell({
               }
             >
               <span className="text-xl shrink-0 relative flex justify-center items-center">
-                {tile.emoji}
+                <DynamicIcon config={icons?.[tile.iconKey]} className="w-6 h-6" />
                 {showPendingBadge ? (
                   <span className="absolute -top-2 -right-2 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-orange-600 px-1 py-0.5 text-[10px] font-black leading-none text-white shadow-[0_0_10px_orange]">
                     {pendingCount > 99 ? "99+" : pendingCount}

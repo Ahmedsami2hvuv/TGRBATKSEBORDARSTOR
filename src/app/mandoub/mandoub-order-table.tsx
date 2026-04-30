@@ -11,6 +11,8 @@ import { PickupMoneyForm, DeliveryMoneyForm } from "./mandoub-order-money-flow";
 import { submitMandoubDeliveryMoney, submitMandoubPickupMoney, type MandoubCashState } from "./cash-actions";
 import { dinarDecimalToAlfInputString } from "@/lib/money-alf";
 import { createPortal } from "react-dom";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export type MandoubRow = {
   id: string;
@@ -127,6 +129,11 @@ export function MandoubOrderTable({
     submitMandoubDeliveryMoney,
     initialCash,
   );
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const rowIds = useMemo(() => rows.map((r) => r.id), [rows]);
   const allSelected = rowIds.length > 0 && rowIds.every((id) => selectedIds.has(id));
@@ -204,11 +211,14 @@ export function MandoubOrderTable({
               value={qSearch}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="بحث — محل، رقم، هاتف…"
-              className="h-[40px] w-full rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+              className="h-[40px] w-full rounded-xl border border-sky-200 bg-white pl-10 pr-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
               dir="rtl"
               autoComplete="off"
               enterKeyHint="search"
             />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-400 pointer-events-none">
+              <DynamicIcon icon={icons?.ui_search} fallback="🔍" width={18} height={18} />
+            </div>
           </div>
         </div>
 
@@ -286,10 +296,10 @@ export function MandoubOrderTable({
                 className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-emerald-100 shadow-sm transition hover:bg-emerald-50 active:scale-90 p-1.5"
                 title="تم الاستلام (تسجيل دفع للعميل)"
               >
-                <img
-                  src="https://img.icons8.com/fluency/64/wallet.png"
-                  alt="استلام"
-                  className="w-full h-full object-contain"
+                <DynamicIcon
+                  icon={icons?.order_received}
+                  className="w-full h-full"
+                  fallback={<span className="text-xl">💵</span>}
                 />
               </button>
             );
@@ -305,10 +315,10 @@ export function MandoubOrderTable({
                 className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-rose-100 shadow-sm transition hover:bg-rose-50 active:scale-90 p-1.5"
                 title="تم التسليم (تسجيل استلام من الزبون)"
               >
-                <img
-                  src="https://img.icons8.com/fluency/64/delivery.png"
-                  alt="تسليم"
-                  className="w-full h-full object-contain"
+                <DynamicIcon
+                  icon={icons?.order_delivered}
+                  className="w-full h-full"
+                  fallback={<span className="text-xl">🚚</span>}
                 />
               </button>
             );

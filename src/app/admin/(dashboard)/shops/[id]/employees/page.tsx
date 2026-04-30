@@ -7,6 +7,8 @@ import { ad } from "@/lib/admin-ui";
 import { AddEmployeePanel } from "./add-employee-panel";
 import { EmployeesList, type EmployeeRow } from "./employees-list";
 import { DeliveryLoading } from "@/components/delivery-loading";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export default function ShopEmployeesPage() {
   const params = useParams();
@@ -16,6 +18,11 @@ export default function ShopEmployeesPage() {
   const [error, setError] = useState<string | null>(null);
   const [shop, setShop] = useState<{ id: string; name: string; locationUrl: string } | null>(null);
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -57,7 +64,9 @@ export default function ShopEmployeesPage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center max-w-md">
-          <div className="text-5xl mb-4">❌</div>
+          <div className="text-5xl mb-4">
+            <DynamicIcon icon={icons?.ui_error} fallback="❌" />
+          </div>
           <h2 className="text-xl font-bold text-rose-600 mb-2">حدث خطأ</h2>
           <p className="text-slate-600 mb-4">{error || "البيانات غير متوفرة"}</p>
           <button

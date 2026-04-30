@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ad } from "@/lib/admin-ui";
 import { deleteEmployee, renewEmployeeOrderPortalToken } from "./actions";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export type EmployeeRow = {
   id: string;
@@ -26,6 +28,11 @@ export function EmployeesList({
 }) {
   const [query, setQuery] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const filtered = employees.filter(
     (e) =>
@@ -73,7 +80,7 @@ export function EmployeesList({
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700 transition-colors"
                     >
-                      <span>💬</span> إرسال الرابط للواتساب
+                      <DynamicIcon icon={icons?.ui_whatsapp} fallback={<span>💬</span>} /> إرسال الرابط للواتساب
                     </a>
                   ) : (
                     <span className="text-[10px] text-rose-500 bg-rose-50 px-2 py-1 rounded">
@@ -87,7 +94,7 @@ export function EmployeesList({
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded-lg bg-sky-100 px-3 py-1.5 text-[11px] font-bold text-sky-700 hover:bg-sky-200 transition-colors"
                     >
-                      <span>🔗</span> فتح الرابط المباشر
+                      <DynamicIcon icon={icons?.ui_link} fallback={<span>🔗</span>} /> فتح الرابط المباشر
                     </a>
                   )}
                   {emp.orderPortalUrl && emp.orderPortalUrl.trim().length > 5 && (
@@ -95,7 +102,7 @@ export function EmployeesList({
                       onClick={() => copyToClipboard(emp.orderPortalUrl, emp.id)}
                       className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
                     >
-                      {copiedId === emp.id ? "✅ تم النسخ" : "📋 نسخ الرابط"}
+                      {copiedId === emp.id ? "✅ تم النسخ" : <><DynamicIcon icon={icons?.ui_copy} fallback={<span>📋</span>} /> نسخ الرابط</>}
                     </button>
                   )}
                 </div>

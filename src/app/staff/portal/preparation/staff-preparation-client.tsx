@@ -6,6 +6,8 @@ import { extractPhoneNumberFromText, parseSiteOrderMessage } from "@/lib/site-or
 import { parseFlexibleOrderLines } from "@/lib/flexible-order-parse";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { submitStaffPreparationDraft, type StaffPrepState } from "../actions";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 const inputClass = "w-full rounded-xl border border-sky-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100";
 
@@ -23,6 +25,11 @@ export function StaffPreparationClient({ staffName, auth, preparers }: any) {
 
   // حالة تحديد المجهزين كـ مصفوفة
   const [selectedPreparerIds, setSelectedPreparerIds] = useState<string[]>([]);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const togglePreparer = (id: string) => {
     setSelectedPreparerIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -121,10 +128,10 @@ export function StaffPreparationClient({ staffName, auth, preparers }: any) {
                   >
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? 'bg-emerald-500' : 'bg-slate-100'}`}>
                       {isSelected ? (
-                        <img
-                          src="https://img.icons8.com/external-flaticons-flat-flat-icons/64/external-delegate-project-management-flaticons-flat-flat-icons.png"
-                          alt="selected"
-                          className="w-6 h-6 object-contain brightness-0 invert"
+                        <DynamicIcon
+                          icon={icons?.preparer_delegate}
+                          className="w-6 h-6 brightness-0 invert"
+                          fallback={<span className="text-xl">👤</span>}
                         />
                       ) : (
                         <div className="w-3 h-3 rounded-full bg-slate-300" />

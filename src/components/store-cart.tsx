@@ -9,6 +9,8 @@ import {
   type StoreCartItem,
 } from "@/lib/store-cart";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "./dynamic-icon";
 
 export function AddVariantToCartButton({ variantId }: { variantId: string }) {
   const [added, setAdded] = useState(false);
@@ -39,6 +41,11 @@ export function AddVariantToCartButton({ variantId }: { variantId: string }) {
 
 export function StoreCartMiniLink() {
   const [count, setCount] = useState(0);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   useEffect(() => {
     const update = () => {
@@ -59,7 +66,7 @@ export function StoreCartMiniLink() {
       href="/store/checkout"
       className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50"
     >
-      <span aria-hidden>🛒</span>
+      <DynamicIcon icon={icons?.store_cart} fallback="🛒" />
       السلة
       <span className="rounded-lg bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-900 tabular-nums">
         {count}

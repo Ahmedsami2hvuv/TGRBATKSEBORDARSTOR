@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ad } from "@/lib/admin-ui";
 import { CustomerPhoneRows, type CustomerPhoneRowUi } from "./customer-phone-rows";
 import { CustomerProfileUpsertForm } from "./profiles/customer-profile-upsert-form";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { GlobalIconsConfig, getGlobalIcons } from "@/lib/icon-settings";
 
 type RegionOption = { id: string; name: string };
 type ProfileRow = {
@@ -38,7 +40,12 @@ export function CustomersPageClient({
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(initialQuery);
   const [showProfiles, setShowProfiles] = useState(false);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const formSectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   // تحديث البحث عند ضغط Enter أو الضغط على زر البحث
   const handleSearch = (e: React.FormEvent) => {
@@ -84,8 +91,9 @@ export function CustomersPageClient({
             <button
               type="button"
               onClick={() => setShowProfiles((v) => !v)}
-              className={`${ad.btnPrimary} shadow-md`}
+              className={`${ad.btnPrimary} flex items-center gap-2 shadow-md`}
             >
+              <DynamicIcon config={icons?.ui_user_add} fallback={showProfiles ? "" : "👤➕"} className="w-4 h-4" />
               {showProfiles ? "إخفاء الإضافة" : "إضافة زبون مرجعي"}
             </button>
           </div>
@@ -102,7 +110,8 @@ export function CustomersPageClient({
               className={`${ad.input} mt-1`}
             />
           </label>
-          <button type="submit" className={`${ad.btnDark} mt-auto h-[42px]`}>
+          <button type="submit" className={`${ad.btnDark} mt-auto h-[42px] flex items-center gap-2`}>
+            <DynamicIcon config={icons?.ui_search} fallback="بحث" className="w-4 h-4" />
             بحث
           </button>
         </form>
@@ -180,10 +189,16 @@ export function CustomersPageClient({
                         <td className="py-2 pe-2 font-mono tabular-nums">{p.phone}</td>
                         <td className="py-2">{p.regionName}</td>
                         <td className="py-2">
-                          {p.locationUrl ? <span className="text-emerald-600">✔ موجود</span> : "—"}
+                          {p.locationUrl ? (
+                            <span className="text-emerald-600 flex items-center gap-1">
+                              <DynamicIcon config={icons?.ui_success} fallback="✔" className="w-4 h-4" />
+                              موجود
+                            </span>
+                          ) : "—"}
                         </td>
                         <td className="py-2">
-                          <Link href={`/admin/customers/profiles/${p.id}/edit`} className={ad.link}>
+                          <Link href={`/admin/customers/profiles/${p.id}/edit`} className={`${ad.link} flex items-center gap-1`}>
+                            <DynamicIcon config={icons?.ui_edit} fallback="تعديل" className="w-3.5 h-3.5" />
                             تعديل
                           </Link>
                         </td>

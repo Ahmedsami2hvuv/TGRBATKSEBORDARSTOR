@@ -23,6 +23,8 @@ import { calculateAutoSellPrice } from "@/lib/auto-pricing";
 import { normalizeNumerals } from "@/lib/money-alf";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { VoiceNoteAudio } from "@/components/voice-note-audio";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export type PendingOrderRow = {
   id: string;
@@ -56,12 +58,14 @@ export type PendingOrderRow = {
   assignedPreparerIds: string[];
 };
 
-function CheckIcon() {
+function CheckIcon({ icons }: { icons: GlobalIconsConfig | null }) {
   return (
-    <img
-      src="https://img.icons8.com/external-flaticons-flat-flat-icons/64/external-delegate-project-management-flaticons-flat-flat-icons.png"
-      alt="إسناد"
-      className="h-6 w-6 object-contain"
+    <DynamicIcon
+      icon={icons?.preparer_delegate}
+      className="h-6 w-6"
+      fallback={
+        <div className="h-6 w-6" />
+      }
     />
   );
 }
@@ -117,7 +121,7 @@ export function AssignToPreparerPanel({
 }
 
 /** زر حذف الطلب بالكامل مع طلب تأكيد */
-function DeleteFullOrderButton({ id, isDraft, onSuccess }: { id: string, isDraft: boolean, onSuccess?: () => void }) {
+function DeleteFullOrderButton({ id, isDraft, onSuccess, icons }: { id: string, isDraft: boolean, onSuccess?: () => void, icons: GlobalIconsConfig | null }) {
   const bound = deleteOrderPermanently.bind(null);
   const [state, formAction, pending] = useActionState(bound, {} as any);
   const [confirm, setConfirm] = useState(false);
@@ -133,7 +137,11 @@ function DeleteFullOrderButton({ id, isDraft, onSuccess }: { id: string, isDraft
       </form>
     );
   }
-  return <button type="button" onClick={() => setConfirm(true)} className="flex items-center gap-1 text-rose-600 hover:bg-rose-600 hover:text-white px-3 py-1.5 rounded-xl border-2 border-rose-600 transition-all text-[11px] font-black bg-white shadow-sm active:scale-95">🗑️ مسح الطلب</button>;
+  return (
+    <button type="button" onClick={() => setConfirm(true)} className="flex items-center gap-1 text-rose-600 hover:bg-rose-600 hover:text-white px-3 py-1.5 rounded-xl border-2 border-rose-600 transition-all text-[11px] font-black bg-white shadow-sm active:scale-95">
+      <DynamicIcon icon={icons?.admin_delete} fallback="🗑️" /> مسح الطلب
+    </button>
+  );
 }
 
 /** لوحة تسعير إدارية ذكية تدعم الإضافة الجماعية والتسعير التلقائي والحفظ التلقائي */
@@ -156,6 +164,7 @@ export function AdminPricingPanel({
   preparers?: { id: string; name: string }[];
   rawDeliveryPriceDinar?: number | null;
   onSuccess?: () => void;
+  icons: GlobalIconsConfig | null;
 }) {
   const findPreparerName = (id: string | null | undefined) => {
     return preparers.find((p) => p.id === id)?.name ?? null;
@@ -308,10 +317,12 @@ export function AdminPricingPanel({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200 pb-4">
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm font-black text-amber-900 flex items-center gap-2 ml-2">
-            <span className="text-xl">💰</span> {isDraft ? "تجهيز وتسعير المسودة" : "تعديل تسعير الطلب"}
+            <span className="text-xl">
+              <DynamicIcon icon={icons?.admin_pricing} fallback="💰" />
+            </span> {isDraft ? "تجهيز وتسعير المسودة" : "تعديل تسعير الطلب"}
             {isSaving && <span className="text-[9px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded animate-pulse">جاري الحفظ التلقائي...</span>}
           </p>
-          <DeleteFullOrderButton id={orderId} isDraft={Boolean(isDraft)} onSuccess={onSuccess} />
+          <DeleteFullOrderButton id={orderId} isDraft={Boolean(isDraft)} onSuccess={onSuccess} icons={icons} />
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={() => setShowReassign(!showReassign)} className="rounded-xl bg-slate-800 text-white px-3 py-1.5 text-[10px] font-black shadow-sm transition hover:bg-black">{isDraft ? "➕ إضافة مجهز" : "🔄 تغيير المجهز"}</button>
@@ -585,6 +596,11 @@ export function PendingOrdersClient({
   const [prepOpenId, setPrepOpenId] = useState<string | null>(null);
   const [pricingOpenId, setPricingOpenId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const [bulkState, bulkAction, bulkPending] = useActionState(bulkUpdateOrdersStatus, {} as BulkOrdersState);
   const [targetStatus, setTargetStatus] = useState<string>("pending");
@@ -666,8 +682,10 @@ export function PendingOrdersClient({
             <div className={`flex flex-col sm:flex-row gap-3 p-3 cursor-pointer ${pricingOpen ? "bg-amber-50/20" : ""}`} onClick={() => isDraftMode ? setPricingOpenId(pricingOpen ? null : o.id) : router.push(`/admin/orders/${o.id}`)}>
               <div className="flex sm:flex-col gap-2 border-sky-100 sm:border-e sm:pe-2" onClick={e => e.stopPropagation()}>
                 {!isDraftMode && <label className="h-10 w-10 flex items-center justify-center rounded-xl border border-sky-200 bg-white/80 cursor-pointer shadow-sm"><input type="checkbox" checked={selected.has(o.id)} onChange={() => toggleOne(o.id)} className="h-5 w-5 rounded border-sky-300" /></label>}
-                <button type="button" onClick={() => { setPricingOpenId(pricingOpen ? null : o.id); setAssignOpenId(null); setPrepOpenId(null); }} className={`h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm transition-all ${pricingOpen ? "bg-amber-600 text-white border-amber-700 ring-2 ring-amber-200" : "bg-white text-amber-600 border-amber-200 hover:bg-amber-50"}`}>💰</button>
-                {!isDraftMode && <button type="button" onClick={() => { setAssignOpenId(assignOpen ? null : o.id); setPricingOpenId(null); setPrepOpenId(null); }} className={`h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm transition-all ${assignOpen ? "bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-200" : "bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"}`}><CheckIcon /></button>}
+                <button type="button" onClick={() => { setPricingOpenId(pricingOpen ? null : o.id); setAssignOpenId(null); setPrepOpenId(null); }} className={`h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm transition-all ${pricingOpen ? "bg-amber-600 text-white border-amber-700 ring-2 ring-amber-200" : "bg-white text-amber-600 border-amber-200 hover:bg-amber-50"}`}>
+                  <DynamicIcon icon={icons?.admin_pricing} fallback="💰" />
+                </button>
+                {!isDraftMode && <button type="button" onClick={() => { setAssignOpenId(assignOpen ? null : o.id); setPricingOpenId(null); setPrepOpenId(null); }} className={`h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm transition-all ${assignOpen ? "bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-200" : "bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"}`}><CheckIcon icons={icons} /></button>}
               </div>
               <div className="flex-1 text-right space-y-1">
                 <div className="flex items-center gap-2">
@@ -705,7 +723,7 @@ export function PendingOrdersClient({
               </div>
               {!isDraftMode && <div className="hidden sm:flex items-start" onClick={(e) => e.stopPropagation()}><RejectButton orderId={o.id} /></div>}
             </div>
-            {pricingOpen && <div className="p-4 border-t-2 border-amber-300 bg-amber-50/40" onClick={e => e.stopPropagation()}><AdminPricingPanel orderId={o.id} initialData={o.preparerShoppingJson} isDraft={isDraftMode} initialPreparerIds={o.assignedPreparerIds} orderSummary={o.summary} shops={shops} preparers={preparers} rawDeliveryPriceDinar={o.rawDeliveryPriceDinar} onSuccess={() => { setPricingOpenId(null); isDraftMode && router.refresh(); }} /></div>}
+            {pricingOpen && <div className="p-4 border-t-2 border-amber-300 bg-amber-50/40" onClick={e => e.stopPropagation()}><AdminPricingPanel orderId={o.id} initialData={o.preparerShoppingJson} isDraft={isDraftMode} initialPreparerIds={o.assignedPreparerIds} orderSummary={o.summary} shops={shops} preparers={preparers} rawDeliveryPriceDinar={o.rawDeliveryPriceDinar} onSuccess={() => { setPricingOpenId(null); isDraftMode && router.refresh(); }} icons={icons} /></div>}
             {assignOpen && !isDraftMode && <div className="p-4 border-t-2 border-emerald-300 bg-emerald-50/40 shadow-inner" onClick={e => e.stopPropagation()}><PendingAssignPanel orderId={o.id} couriers={couriers} customerPhone={o.customerPhone} customerAlternatePhone={o.customerAlternatePhone} defaultCustomerLocationUrl={o.customerLocationUrl} defaultCustomerLandmark={o.customerLandmark} defaultCustomerDoorPhotoUrl={o.customerDoorPhotoUrl} /></div>}
           </div>
         );

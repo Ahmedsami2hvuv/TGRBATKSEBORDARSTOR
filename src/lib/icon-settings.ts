@@ -1,0 +1,303 @@
+import { prisma } from "./prisma";
+
+export type IconConfig = {
+  url: string;
+  type: 'image' | 'lottie' | 'svg' | 'emoji';
+  width?: number;
+  height?: number;
+};
+
+export type GlobalIconsConfig = Record<string, IconConfig>;
+
+const DEFAULT_ICONS: GlobalIconsConfig = {
+  "loading_main": {
+    url: "https://lottiefiles.com/free-animation/searching-for-profile-aE1tZl9PC3",
+    type: "lottie"
+  },
+  "order_received": {
+    url: "💵",
+    type: "emoji"
+  },
+  "order_delivered": {
+    url: "🚚",
+    type: "emoji"
+  },
+  "preparer_delegate": {
+    url: "👤",
+    type: "emoji"
+  },
+  "admin_pricing": {
+    url: "💰",
+    type: "emoji"
+  },
+  "admin_delete": {
+    url: "🗑️",
+    type: "emoji"
+  },
+  "store_cart": {
+    url: "🛒",
+    type: "emoji"
+  },
+  "store_favorites": {
+    url: "❤️",
+    type: "emoji"
+  },
+  "store_favorites_empty": {
+    url: "🤍",
+    type: "emoji"
+  },
+  "ui_whatsapp": {
+    url: "💬",
+    type: "emoji"
+  },
+  "ui_link": {
+    url: "🔗",
+    type: "emoji"
+  },
+  "ui_copy": {
+    url: "📋",
+    type: "emoji"
+  },
+  "ui_error": {
+    url: "❌",
+    type: "emoji"
+  },
+  "ui_package": {
+    url: "📦",
+    type: "emoji"
+  },
+  "ui_edit": {
+    url: "✏️",
+    type: "emoji"
+  },
+  "ui_delete": {
+    url: "🗑️",
+    type: "emoji"
+  },
+  "ui_visibility_on": {
+    url: "👁️",
+    type: "emoji"
+  },
+  "ui_visibility_off": {
+    url: "🕶️",
+    type: "emoji"
+  },
+  "ui_success": {
+    url: "✅",
+    type: "emoji"
+  },
+  "ui_warning": {
+    url: "⚠️",
+    type: "emoji"
+  },
+  "ui_search": {
+    url: "🔍",
+    type: "emoji"
+  },
+  "ui_location": {
+    url: "📍",
+    type: "emoji"
+  },
+  "ui_user": {
+    url: "👤",
+    type: "emoji"
+  },
+  "ui_home": {
+    url: "🏠",
+    type: "emoji"
+  },
+  "ui_time": {
+    url: "🕒",
+    type: "emoji"
+  },
+  "wallet_out": {
+    url: "📤",
+    type: "emoji"
+  },
+  "wallet_in": {
+    url: "📥",
+    type: "emoji"
+  },
+  "wallet_pending": {
+    url: "🔄",
+    type: "emoji"
+  },
+  "wallet_remain": {
+    url: "💰",
+    type: "emoji"
+  },
+  "wallet_cash": {
+    url: "💵",
+    type: "emoji"
+  },
+  "wallet_earnings": {
+    url: "💰",
+    type: "emoji"
+  },
+  "wallet_admin": {
+    url: "🏛️",
+    type: "emoji"
+  },
+  "wallet_tips_daily": {
+    url: "🎁",
+    type: "emoji"
+  },
+  "wallet_tips_monthly": {
+    url: "🗓️",
+    type: "emoji"
+  },
+  "ui_alert": {
+    url: "🚨",
+    type: "emoji"
+  },
+  "ui_number": {
+    url: "🔢",
+    type: "emoji"
+  },
+  "ui_call": {
+    url: "📞",
+    type: "emoji"
+  },
+  "ui_close": {
+    url: "✕",
+    type: "emoji"
+  },
+  "ui_external_link": {
+    url: "↗",
+    type: "emoji"
+  },
+  "ui_audio": {
+    url: "🎤",
+    type: "emoji"
+  },
+  "ui_note": {
+    url: "📝",
+    type: "emoji"
+  },
+  "ui_tasks": {
+    url: "📋",
+    type: "emoji"
+  },
+  "ui_flash": {
+    url: "⚡",
+    type: "emoji"
+  },
+  "ui_chevron_up": {
+    url: "▲",
+    type: "emoji"
+  },
+  "ui_chevron_down": {
+    url: "▼",
+    type: "emoji"
+  },
+  "ui_add": {
+    url: "➕",
+    type: "emoji"
+  },
+  "ui_box": {
+    url: "📦",
+    type: "emoji"
+  },
+  "ui_settings": {
+    url: "⚙️",
+    type: "emoji"
+  },
+  "ui_globe": {
+    url: "🌐",
+    type: "emoji"
+  },
+  "ui_chart": {
+    url: "📊",
+    type: "emoji"
+  },
+  "ui_print": {
+    url: "🖨️",
+    type: "emoji"
+  },
+  "ui_refresh": {
+    url: "🔄",
+    type: "emoji"
+  },
+  "ui_tag": {
+    url: "🏷️",
+    type: "emoji"
+  },
+  "ui_salary": {
+    url: "💰",
+    type: "emoji"
+  },
+  "ui_shops": {
+    url: "🏪",
+    type: "emoji"
+  },
+  "ui_inbox": {
+    url: "📥",
+    type: "emoji"
+  },
+  "ui_announcement": {
+    url: "📣",
+    type: "emoji"
+  },
+  "ui_user_add": {
+    url: "👤➕",
+    type: "emoji"
+  },
+  "ui_users": {
+    url: "👥",
+    type: "emoji"
+  },
+  "ui_courier": {
+    url: "🏍️",
+    type: "emoji"
+  },
+  "ui_map": {
+    url: "🗺️",
+    type: "emoji"
+  },
+  "ui_preparer": {
+    url: "👨‍🍳",
+    type: "emoji"
+  },
+  "ui_supplier": {
+    url: "🍎",
+    type: "emoji"
+  },
+  "ui_employee": {
+    url: "🧑‍💼",
+    type: "emoji"
+  },
+  "ui_ai": {
+    url: "🤖",
+    type: "emoji"
+  },
+  "ui_notification": {
+    url: "🔔",
+    type: "emoji"
+  }
+};
+
+export async function getGlobalIcons(): Promise<GlobalIconsConfig> {
+  try {
+    const setting = await prisma.uISystemSetting.findUnique({
+      where: {
+        target_section: { target: "global", section: "icons" }
+      }
+    });
+
+    if (!setting) return DEFAULT_ICONS;
+    return { ...DEFAULT_ICONS, ...(setting.config as GlobalIconsConfig) };
+  } catch (e) {
+    console.error("Failed to fetch global icons:", e);
+    return DEFAULT_ICONS;
+  }
+}
+
+export async function saveGlobalIcons(config: GlobalIconsConfig) {
+  return await prisma.uISystemSetting.upsert({
+    where: {
+      target_section: { target: "global", section: "icons" }
+    },
+    update: { config: config as any },
+    create: { target: "global", section: "icons", config: config as any }
+  });
+}

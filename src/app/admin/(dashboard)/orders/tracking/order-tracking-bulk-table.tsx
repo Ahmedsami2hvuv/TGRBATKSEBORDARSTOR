@@ -11,6 +11,8 @@ import { UnifiedOrderListTable } from "@/components/unified-order-list-table";
 import type { MandoubRow } from "@/app/mandoub/mandoub-order-table";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { mandoubShopNameVividClass } from "@/lib/order-status-style";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 const STATUS_UI: Record<string, { ar: string; dot: string }> = {
   pending: { ar: "جديد", dot: "bg-red-500 ring-2 ring-red-200/70" },
@@ -57,6 +59,11 @@ export function OrderTrackingBulkTable({
   const [targetStatus, setTargetStatus] = useState<string>("assigned");
   const [courierId, setCourierId] = useState<string>("");
   const [assignOrder, setAssignOrder] = useState<MandoubRow | null>(null);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const needsCourier =
     targetStatus === "assigned" ||
@@ -353,10 +360,12 @@ export function OrderTrackingBulkTable({
               className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-emerald-100 shadow-sm transition hover:bg-emerald-50 active:scale-90 p-1.5"
               title="إسناد سريع"
             >
-              <img
-                src="https://img.icons8.com/external-flaticons-flat-flat-icons/64/external-delegate-project-management-flaticons-flat-flat-icons.png"
-                alt="إسناد"
+              <DynamicIcon
+                icon={icons?.preparer_delegate}
                 className="w-full h-full object-contain"
+                fallback={
+                  <div className="w-full h-full" />
+                }
               />
             </button>
           );
