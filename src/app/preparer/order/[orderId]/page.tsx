@@ -9,6 +9,8 @@ import type { MandoubOrderDetailPayload } from "@/lib/mandoub-order-queries";
 import { mandoubOrderDetailInclude } from "@/lib/mandoub-order-queries";
 import Link from "next/link";
 
+import { getGlobalIcons } from "@/lib/icon-settings";
+
 export const dynamic = "force-dynamic";
 
 type Props = {
@@ -107,6 +109,8 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
   const auth = { p: p!, exp: exp!, s: s! };
   const homeHref = preparerPath("/preparer", auth);
 
+  const icons = await getGlobalIcons();
+
   // إخفاء الأرقام الحساسة في Client Component (لن تُستخدم هناك)
   const safeOrder: MandoubOrderDetailPayload = {
     ...order,
@@ -167,6 +171,7 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
         secondPhoneProfile={safeSecondPhoneProfile}
         canEditPricing={canEditPricing}
         pricingEditHref={pricingEditHref}
+        icons={icons}
       />
 
       {canAssign && (

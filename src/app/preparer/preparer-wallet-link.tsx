@@ -1,20 +1,15 @@
 import Link from "next/link";
 import { preparerPath } from "@/lib/preparer-portal-nav";
-import { useEffect, useState } from "react";
-import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 
 export function PreparerWalletLink({
   auth,
+  icons,
 }: {
   auth: { p: string; exp: string; s: string };
+  icons?: GlobalIconsConfig | null;
 }) {
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
-
   return (
     <Link
       href={preparerPath("/preparer/wallet", auth)}

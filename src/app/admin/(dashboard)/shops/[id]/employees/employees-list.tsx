@@ -20,19 +20,16 @@ export function EmployeesList({
   shopName,
   locationUrl,
   employees,
+  icons,
 }: {
   shopId: string;
   shopName: string;
   locationUrl: string;
   employees: EmployeeRow[];
+  icons: GlobalIconsConfig | null;
 }) {
   const [query, setQuery] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
 
   const filtered = employees.filter(
     (e) =>

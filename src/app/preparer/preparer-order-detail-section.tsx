@@ -21,7 +21,7 @@ import { NotesCopyButton } from "@/components/notes-copy-button";
 import { OrderTypeDetailBlock } from "@/components/order-type-line";
 import { UISectionConfig } from "@/lib/ui-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { getGlobalIcons, type GlobalIconsConfig } from "@/lib/icon-settings";
+import { type GlobalIconsConfig } from "@/lib/icon-settings";
 
 const STATUS_AR: Record<string, string> = {
   pending: "جديد",
@@ -81,15 +81,10 @@ export function PreparerOrderDetailSection({
   phoneProfile?: PhoneProfileFallback;
   secondPhoneProfile?: PhoneProfileFallback;
   uiSettings?: UISectionConfig | null;
+  icons?: GlobalIconsConfig | null;
   canEditPricing?: boolean;
   pricingEditHref?: string;
 }) {
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
-
   const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
   const shopContactPhone = order.shop.phone?.trim() || order.submittedBy?.phone?.trim() || "";
   const customerDoorDisplay = order.customerDoorPhotoUrl?.trim() || phoneProfile?.photoUrl?.trim() || "";

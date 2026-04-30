@@ -15,6 +15,7 @@ import { OrderDetailSection } from "../../order-detail-section";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { MandoubPresenceToggle } from "../../mandoub-presence-toggle";
 import { getUISettings } from "@/lib/ui-settings";
+import { getGlobalIcons } from "@/lib/icon-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -143,7 +144,10 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
   );
 
   // جلب إعدادات الستايل لقسم تفاصيل الطلب
-  const uiSettings = await getUISettings("mandoub", "order_details");
+  const [uiSettings, icons] = await Promise.all([
+    getUISettings("mandoub", "order_details"),
+    getGlobalIcons()
+  ]);
 
   return (
     <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-base leading-relaxed text-slate-800">
@@ -180,6 +184,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
           viewerCourierId={v.courierId}
           phoneProfile={customerPhoneProfile ?? undefined}
           uiSettings={uiSettings}
+          icons={icons}
         />
       </div>
     </div>

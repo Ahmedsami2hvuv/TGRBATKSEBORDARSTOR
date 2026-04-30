@@ -22,6 +22,14 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
   ]);
 
   const whereClause = q ? {
+    OR: [
+      { phone: { contains: q, mode: 'insensitive' } },
+      { notes: { contains: q, mode: 'insensitive' } },
+      { landmark: { contains: q, mode: 'insensitive' } },
+      { region: { name: { contains: q, mode: 'insensitive' } } }
+    ]
+  } : undefined;
+
   const filteredCount = await prisma.customerPhoneProfile.count({ where: whereClause as any });
   const totalPages = Math.ceil(filteredCount / take);
 

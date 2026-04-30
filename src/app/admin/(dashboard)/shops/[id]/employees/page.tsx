@@ -1,84 +1,60 @@
-"use client";
-
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { AddEmployeePanel } from "./add-employee-panel";
 import { EmployeesList, type EmployeeRow } from "./employees-list";
-import { DeliveryLoading } from "@/components/delivery-loading";
-import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { buildEmployeeOrderPortalUrl } from "@/lib/employee-order-portal-link";
+import { buildEmployeeChatGreeting, whatsappAppUrl } from "@/lib/whatsapp";
+import { getPublicAppUrl } from "@/lib/app-url";
 
-export default function ShopEmployeesPage() {
-  const params = useParams();
-  const shopId = params.id as string;
+export const dynamic = "force-dynamic";
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [shop, setShop] = useState<{ id: string; name: string; locationUrl: string } | null>(null);
-  const [employees, setEmployees] = useState<EmployeeRow[]>([]);
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+export default async function ShopEmployeesPage(props: { params: Promise<{ id: string }> }) {
+  const { id: shopId } = await props.params;
+  const baseUrl = getPublicAppUrl();
 
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
+  const [shop, icons] = await Promise.all([
+    prisma.shop.findUnique({
+      where: { id: shopId },
+      select: {
+        id: true,
+        name: true,
+        locationUrl: true,
+        employees: {
+          orderBy: { name: "asc" },
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            orderPortalToken: true,
+          },
+        },
+      },
+    }),
+    getGlobalIcons()
+  ]);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        const res = await fetch(`/api/admin/shops/${shopId}/employees`);
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || "فشل تحميل البيانات");
-        }
-
-        setShop(data.shop);
-
-        // نستخدم الروابط التي تم توليدها على السيرفر مباشرة لضمان صحة التوقيع
-        setEmployees(data.employees);
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message || "حدث خطأ غير متوقع");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (shopId) {
-      fetchData();
-    }
-  }, [shopId]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <DeliveryLoading message="جاري تحميل بيانات الموظفين..." />
-      </div>
-    );
+  if (!shop) {
+    notFound();
   }
 
-  if (error || !shop) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center max-w-md">
-          <div className="text-5xl mb-4">
-            <DynamicIcon iconKey="ui_error" config={icons} fallback="❌" className="w-16 h-16 mx-auto" />
-          </div>
-          <h2 className="text-xl font-bold text-rose-600 mb-2">حدث خطأ</h2>
-          <p className="text-slate-600 mb-4">{error || "البيانات غير متوفرة"}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700"
-          >
-            إعادة المحاولة
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // توليد الروابط على السيرفر لضمان صحة التوقيع الرقمي
+  const employeesWithLinks: EmployeeRow[] = shop.employees.map((emp) => {
+    const orderPortalUrl = buildEmployeeOrderPortalUrl(emp.id, emp.orderPortalToken, baseUrl);
+    const greeting = buildEmployeeChatGreeting({ employeeName: emp.name });
+    const whatsappLink = whatsappAppUrl(emp.phone, greeting);
+
+    return {
+      id: emp.id,
+      name: emp.name,
+      phone: emp.phone,
+      orderPortalUrl,
+      whatsappLink
+    };
+  });
 
   return (
     <div className="space-y-6">
@@ -114,7 +90,7 @@ export default function ShopEmployeesPage() {
 
       <section className={ad.section}>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <h2 className={ad.h2}>قائمة العملاء ({employees.length})</h2>
+          <h2 className={ad.h2}>قائمة العملاء ({employeesWithLinks.length})</h2>
           <Link
             href={`/admin/shops/${shop.id}/edit`}
             className="text-sm font-medium text-sky-700 underline hover:text-sky-900"
@@ -126,7 +102,8 @@ export default function ShopEmployeesPage() {
           shopId={shop.id}
           shopName={shop.name}
           locationUrl={shop.locationUrl}
-          employees={employees}
+          employees={employeesWithLinks}
+          icons={icons}
         />
       </section>
     </div>

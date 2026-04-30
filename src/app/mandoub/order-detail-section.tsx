@@ -26,8 +26,7 @@ import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
 import { IconPhone, IconWa } from "@/components/order-fab-dock";
 import { UISectionConfig } from "@/lib/ui-settings";
 import { ADMIN_PHONE_FROM_SHOP_LOCAL } from "@/lib/admin-order-from-admin-constants";
-import { useEffect, useState as useStateReact } from "react";
-import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 
 const STATUS_AR: Record<string, string> = {
@@ -75,12 +74,8 @@ export function OrderDetailSection({
   viewerCourierId?: string;
   phoneProfile?: any;
   uiSettings?: UISectionConfig | null;
+  icons?: GlobalIconsConfig | null;
 }) {
-  const [icons, setIcons] = useStateReact<GlobalIconsConfig | null>(null);
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
-
   const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
   const isAdminPortal = order.submissionSource === "admin_portal";
   const submitterName = order.submittedByCompanyPreparer?.name?.trim() || order.submittedBy?.name?.trim() || (isAdminPortal && !order.submittedBy ? "الإدارة" : "—");
