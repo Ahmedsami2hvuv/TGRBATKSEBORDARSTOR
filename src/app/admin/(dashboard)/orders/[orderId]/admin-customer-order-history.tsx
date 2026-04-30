@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { DeliveryLoading } from "@/components/delivery-loading";
 
 type RegionOption = {
   id: string | null;
@@ -171,7 +172,11 @@ export function AdminCustomerOrderHistory({
                   ))}
                 </div>
               )}
-              {loading && <p className="text-sm text-slate-600">جاري التحميل...</p>}
+              {loading && (
+                <div className="py-8">
+                  <DeliveryLoading message="جاري استرجاع طلبات الزبون..." />
+                </div>
+              )}
               {error && <p className="text-sm font-semibold text-rose-600">خطأ: {error}</p>}
               {!loading && !error && orders !== null && (
                 <div className="space-y-4">

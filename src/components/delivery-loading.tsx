@@ -13,13 +13,13 @@ export function DeliveryLoading({ message = "جاري التحميل..." }: { me
 
         {/* السيارة (تتسابق) */}
         <div className="absolute bottom-1 left-0 text-3xl animate-car-race delay-0 z-10">
-          🚗
+          <div style={{ transform: 'scaleX(-1)', display: 'inline-block' }}>🚗</div>
           <div className="absolute -bottom-1 left-1 w-6 h-1 bg-black/10 blur-[2px] rounded-full"></div>
         </div>
 
         {/* الدراجة (تتسابق) */}
         <div className="absolute bottom-1 left-0 text-3xl animate-bike-race delay-150 z-20">
-          🏍️
+          <div style={{ transform: 'scaleX(-1)', display: 'inline-block' }}>🏍️</div>
           <div className="absolute -bottom-1 left-1 w-5 h-1 bg-black/10 blur-[2px] rounded-full"></div>
         </div>
       </div>

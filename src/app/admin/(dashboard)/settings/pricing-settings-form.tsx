@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { DeliveryLoading } from "@/components/delivery-loading";
 
 type PricingConfig = {
   meat_keywords: string[];
@@ -58,7 +59,13 @@ export function PricingSettingsForm() {
     }
   };
 
-  if (loading || !config) return <div className="p-8 text-center font-bold">جاري التحميل...</div>;
+  if (loading || !config) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <DeliveryLoading message="جاري تحميل إعدادات التسعير..." />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" dir="rtl">

@@ -1,4 +1,4 @@
-import { ad } from "@/lib/admin-ui";
+import { DeliveryLoading } from "@/components/delivery-loading";
 
 export default function DashboardLoading() {
   return (
@@ -8,17 +8,7 @@ export default function DashboardLoading() {
           جاري جلب البيانات...
         </h2>
 
-        {/* Beautiful Gradient Progress Bar */}
-        <div className="relative w-full h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-          <div
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-sky-400 via-blue-500 to-sky-600 animate-[progress-indeterminate_2s_infinite_linear] rounded-full"
-            style={{ width: '40%' }}
-          ></div>
-        </div>
-
-        <p className="text-base text-slate-500 animate-pulse">
-          الرجاء الانتظار قليلاً ريثما تكتمل العملية
-        </p>
+        <DeliveryLoading message="الرجاء الانتظار قليلاً ريثما تكتمل العملية" />
       </div>
 
       {/* Skeleton placeholders to hint at loading content */}

@@ -355,13 +355,13 @@ export function UnifiedOrderListTable({
                             )}
                           </div>
 
-                          {/* أزرار العميل (المحل) المختصرة */}
-                          {(o.shopLocationUrl || o.shopDoorPhotoUrl) && (
-                            <div className="flex items-center gap-1 border-r pr-2 mr-1 border-slate-200" onClick={e => e.stopPropagation()}>
-                               {o.shopLocationUrl && <a href={o.shopLocationUrl} target="_blank" title="موقع العميل" className="size-6 flex items-center justify-center rounded-full bg-slate-100 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm">📍</a>}
-                               {o.shopDoorPhotoUrl && <button onClick={() => setModalImg({ url: o.shopDoorPhotoUrl!, title: "باب العميل" })} title="صورة باب العميل" className="size-6 flex items-center justify-center rounded-full bg-slate-100 text-amber-500 hover:bg-amber-500 hover:text-white transition-all shadow-sm">🚪</button>}
-                            </div>
-                          )}
+                        {/* أزرار العميل (المحل) المختصرة */}
+                        {(o.shopLocationUrl || o.shopDoorPhotoUrl) && (
+                          <div className="flex items-center gap-1 border-r pr-2 mr-1 border-slate-200" onClick={e => e.stopPropagation()}>
+                             {o.shopLocationUrl && <a href={o.shopLocationUrl} target="_blank" title="موقع المحل" className="size-6 flex items-center justify-center rounded-full bg-slate-100 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm">📍</a>}
+                             {o.shopDoorPhotoUrl && <button onClick={() => setModalImg({ url: o.shopDoorPhotoUrl!, title: "باب المحل" })} title="صورة باب المحل" className="size-6 flex items-center justify-center rounded-full bg-slate-100 text-amber-500 hover:bg-amber-500 hover:text-white transition-all shadow-sm">🚪</button>}
+                          </div>
+                        )}
                         </div>
                         {/* علامات الصادر والوارد المالية "من الخارج" */}
                         <div className="mt-1 flex flex-wrap gap-1">
