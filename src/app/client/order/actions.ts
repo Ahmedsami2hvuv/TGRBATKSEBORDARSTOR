@@ -127,6 +127,25 @@ export async function submitOrder(
       return { error: "الرابط غير صالح أو منتهٍ. اطلب رابطاً جديداً." };
     }
 
+    const submitter = await prisma.employee.findUnique({
+      where: { id: v.employeeId },
+      select: {
+        id: true,
+        shopId: true,
+        orderPortalToken: true,
+        shop: {
+          select: {
+            photoUrl: true,
+            region: { select: { deliveryPrice: true } },
+          },
+        },
+      },
+    });
+
+    if (!submitter || submitter.orderPortalToken !== v.token) {
+      return { error: "الموظف غير موجود أو الرابط غير صالح." };
+    }
+
     const orderType = String(formData.get("orderType") ?? "").trim();
     const orderSubtotalRaw = String(formData.get("orderSubtotal") ?? "").trim();
     const customerPhone = String(formData.get("customerPhone") ?? "").trim();
@@ -166,11 +185,17 @@ export async function submitOrder(
     const delivery = new Decimal(Math.max(shopDel, custDel));
     const total = subtotal.plus(delivery);
 
-    // الصور والصوت (تعطيل مؤقت للفحص إذا استمر العطل)
+    // الصور والصوت
     let imageUrl: string | null = null;
     const imageFile = formData.get("orderImage");
     if (imageFile instanceof File && imageFile.size > 0) {
       imageUrl = await saveOrderImageUploaded(imageFile, MAX_ORDER_IMAGE_BYTES).catch(() => null);
+    }
+
+    let voiceNoteUrl: string | null = null;
+    const voiceFile = formData.get("voiceNote");
+    if (voiceFile instanceof File && voiceFile.size > 0) {
+      voiceNoteUrl = await saveVoiceNoteUploaded(voiceFile, MAX_VOICE_NOTE_BYTES).catch(() => null);
     }
 
     // إنشاء/تحديث العميل بأمان (تجنب الحقول التي قد لا تكون موجودة في DB)
@@ -219,6 +244,7 @@ export async function submitOrder(
       customerPhone: phoneLocal,
       orderNoteTime: orderTime.trim(),
       imageUrl,
+      voiceNoteUrl,
       shopDoorPhotoUrl: submitter.shop.photoUrl,
       submissionSource: "customer_via_employee_link",
       submittedByEmployeeId: submitter.id,

@@ -46,6 +46,7 @@ export function ClientVoiceNoteField({
   const [recording, setRecording] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [recordingId, setRecordingId] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -101,6 +102,7 @@ export function ClientVoiceNoteField({
 
   const startRecording = async () => {
     setError(null);
+    setRecordingId((prev) => prev + 1);
     /** إطلاق أي ميكروفون أو مسجّل معلّق من جلسة سابقة (مهم بعد التنقّل أو إلغاء جزئي) */
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
@@ -266,7 +268,7 @@ export function ClientVoiceNoteField({
       </div>
       {error ? <p className="text-sm font-medium text-rose-700">{error}</p> : null}
       {previewBlob && !recording ? (
-        <VoiceNotePreviewBlob blob={previewBlob} className={`${inputClass} max-w-full`} />
+        <VoiceNotePreviewBlob key={`preview-${recordingId}`} blob={previewBlob} className={`${inputClass} max-w-full`} />
       ) : null}
       <p className="text-xs text-slate-500">
         أقصى مدة <strong className="text-slate-700">10 ثوانٍ</strong>. يُرفَع مع الطلب ويستمع له المندوب والإدارة.
