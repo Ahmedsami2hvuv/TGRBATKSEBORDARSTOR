@@ -192,7 +192,8 @@ export function PreparerOrderTable({
               title="إسناد لمندوب"
             >
               <DynamicIcon
-                icon={icons?.preparer_delegate}
+                iconKey="preparer_delegate"
+                config={icons}
                 className="w-full h-full"
                 fallback={<span className="text-xl">👤</span>}
               />
@@ -213,7 +214,8 @@ export function PreparerOrderTable({
               title="تسجيل دفع"
             >
               <DynamicIcon
-                icon={icons?.order_received}
+                iconKey="order_received"
+                config={icons}
                 className="w-full h-full"
                 fallback={<span className="text-xl">💵</span>}
               />

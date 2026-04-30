@@ -158,6 +158,14 @@ const DEFAULT_ICONS: GlobalIconsConfig = {
     url: "📞",
     type: "emoji"
   },
+  "ui_play": {
+    url: "▶️",
+    type: "emoji"
+  },
+  "ui_pause": {
+    url: "⏸",
+    type: "emoji"
+  },
   "ui_close": {
     url: "✕",
     type: "emoji"
@@ -168,6 +176,10 @@ const DEFAULT_ICONS: GlobalIconsConfig = {
   },
   "ui_audio": {
     url: "🎤",
+    type: "emoji"
+  },
+  "ui_shop": {
+    url: "🏢",
     type: "emoji"
   },
   "ui_note": {
@@ -270,8 +282,48 @@ const DEFAULT_ICONS: GlobalIconsConfig = {
     url: "🤖",
     type: "emoji"
   },
+  "ui_admin_crown": {
+    url: "👑",
+    type: "emoji"
+  },
   "ui_notification": {
     url: "🔔",
+    type: "emoji"
+  },
+  "ui_wallet": {
+    url: "👛",
+    type: "emoji"
+  },
+  "ui_star": {
+    url: "⭐",
+    type: "emoji"
+  },
+  "ui_camera": {
+    url: "📷",
+    type: "emoji"
+  },
+  "ui_gallery": {
+    url: "🖼️",
+    type: "emoji"
+  },
+  "ui_undo": {
+    url: "↩️",
+    type: "emoji"
+  },
+  "finance_deficit": {
+    url: "🔴",
+    type: "emoji"
+  },
+  "finance_excess": {
+    url: "🟢",
+    type: "emoji"
+  },
+  "finance_sader_deficit": {
+    url: "📉",
+    type: "emoji"
+  },
+  "finance_sader_excess": {
+    url: "📈",
     type: "emoji"
   }
 };

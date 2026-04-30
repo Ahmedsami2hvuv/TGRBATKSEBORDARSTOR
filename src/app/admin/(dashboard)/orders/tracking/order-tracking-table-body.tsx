@@ -9,6 +9,9 @@ import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { EditPencilLink } from "./edit-pencil-link";
 import { AdminPricingPanel } from "../pending/pending-orders-client";
 import { isTodayBaghdad, formatBaghdadDateFriendly, getBaghdadDateString } from "@/lib/baghdad-time";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { useEffect, useState, Fragment } from "react";
 
 export type TrackingTableRow = {
   id: string;
@@ -67,6 +70,11 @@ function AssignCheckLink({ orderId }: { orderId: string }) {
 export function OrderTrackingTableBody({ rows }: { rows: TrackingTableRow[] }) {
   const router = useRouter();
   const [pricingOpenId, setPricingOpenId] = useState<string | null>(null);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   if (rows.length === 0) {
     return (
@@ -123,7 +131,7 @@ export function OrderTrackingTableBody({ rows }: { rows: TrackingTableRow[] }) {
                     }`}
                     title="تعديل الأسعار"
                   >
-                    <span className="text-lg">💰</span>
+                    <DynamicIcon iconKey="wallet_cash" config={icons} fallback="💰" className="w-5 h-5" />
                   </button>
                 </div>
               </td>
@@ -140,28 +148,33 @@ export function OrderTrackingTableBody({ rows }: { rows: TrackingTableRow[] }) {
                   </div>
                   <div className="flex flex-col gap-0.5">
                     {o.wardMismatchType === "deficit" && (
-                      <span className="whitespace-nowrap rounded bg-rose-600 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm ring-1 ring-rose-400">
-                        🔴 نقص بالوارد
+                      <span className="whitespace-nowrap rounded bg-rose-600 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm ring-1 ring-rose-400 flex items-center gap-1">
+                        <DynamicIcon iconKey="finance_deficit" config={icons} fallback="🔴" className="w-2.5 h-2.5" />
+                        نقص بالوارد
                       </span>
                     )}
                     {o.wardMismatchType === "excess" && (
-                      <span className="whitespace-nowrap rounded bg-emerald-600 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm ring-1 ring-emerald-400">
-                        🟢 زيادة بالوارد
+                      <span className="whitespace-nowrap rounded bg-emerald-600 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm ring-1 ring-emerald-400 flex items-center gap-1">
+                        <DynamicIcon iconKey="finance_excess" config={icons} fallback="🟢" className="w-2.5 h-2.5" />
+                        زيادة بالوارد
                       </span>
                     )}
                     {o.saderMismatchType === "deficit" && (
-                      <span className="whitespace-nowrap rounded bg-orange-500 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm ring-1 ring-orange-300">
-                        📉 نقص بالصادر
+                      <span className="whitespace-nowrap rounded bg-orange-500 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm ring-1 ring-orange-300 flex items-center gap-1">
+                        <DynamicIcon iconKey="finance_sader_deficit" config={icons} fallback="📉" className="w-2.5 h-2.5" />
+                        نقص بالصادر
                       </span>
                     )}
                     {o.saderMismatchType === "excess" && (
-                      <span className="whitespace-nowrap rounded bg-sky-500 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm ring-1 ring-sky-300">
-                        📈 زيادة بالصادر
+                      <span className="whitespace-nowrap rounded bg-sky-500 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm ring-1 ring-sky-300 flex items-center gap-1">
+                        <DynamicIcon iconKey="finance_sader_excess" config={icons} fallback="📈" className="w-2.5 h-2.5" />
+                        زيادة بالصادر
                       </span>
                     )}
                     {o.orderStatus === "delivered" && o.noWardRecorded && (
-                      <span className="whitespace-nowrap rounded bg-slate-950 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm ring-1 ring-slate-600 animate-pulse">
-                        ⚠️ بدون وارد
+                      <span className="whitespace-nowrap rounded bg-slate-950 px-1.5 py-0.5 text-[9px] font-black text-white shadow-sm ring-1 ring-slate-600 animate-pulse flex items-center gap-1">
+                        <DynamicIcon iconKey="ui_warning" config={icons} fallback="⚠️" className="w-2.5 h-2.5" />
+                        بدون وارد
                       </span>
                     )}
                   </div>

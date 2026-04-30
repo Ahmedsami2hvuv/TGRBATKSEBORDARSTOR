@@ -2,6 +2,8 @@
 
 import { createPortal } from "react-dom";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 import {
   submitMandoubDeliveryMoney,
   submitMandoubPickupMoney,
@@ -172,9 +174,17 @@ export function MandoubOrderMoneyFlow({
     setDeliveryAdvanceToDelivered(false);
   };
 
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
+
   return (
     <div className="mt-6 space-y-4 border-t border-sky-200 pt-5">
-      <h3 className="text-lg font-bold text-slate-900">الصادر والوارد</h3>
+      <h3 className="flex items-center gap-1.5 text-lg font-bold text-slate-900">
+        <DynamicIcon icon={icons?.ui_chart} fallback="📊" width={20} height={20} />
+        الصادر والوارد
+      </h3>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {showPickupBtn ? (
@@ -187,7 +197,8 @@ export function MandoubOrderMoneyFlow({
             }}
             className="flex min-h-[56px] items-center justify-center gap-2 rounded-xl bg-emerald-700 font-black text-white shadow-sm transition hover:bg-emerald-800"
           >
-            💸 دفع للعميل (صادر)
+            <DynamicIcon icon={icons?.wallet_cash} fallback="💸" width={24} height={24} />
+            دفع للعميل (صادر)
           </button>
         ) : null}
 
@@ -202,7 +213,8 @@ export function MandoubOrderMoneyFlow({
             }}
             className="flex min-h-[56px] items-center justify-center gap-2 rounded-xl bg-red-700 font-black text-white shadow-sm transition hover:bg-red-800"
           >
-            🫴 اخذت من الزبون (وارد)
+            <DynamicIcon icon={icons?.ui_inbox} fallback="🫴" width={24} height={24} />
+            اخذت من الزبون (وارد)
           </button>
         ) : null}
       </div>
@@ -278,8 +290,14 @@ export function MandoubOrderMoneyFlow({
       {(pickupOpen && !pickupAdvanceToDelivering) || (deliveryOpen && !deliveryAdvanceToDelivered) ? (
         <div className="rounded-2xl border-2 border-slate-300 bg-slate-50 p-4 shadow-inner">
           <div className="mb-3 flex items-center justify-between border-b border-slate-200 pb-2">
-            <span className="text-sm font-bold text-slate-600">تسجيل الحركة المالية</span>
-            <button onClick={closePanels} className="text-xs font-black text-rose-700 underline">إغلاق اللوحة ✕</button>
+            <span className="flex items-center gap-2 text-sm font-bold text-slate-600">
+              <DynamicIcon icon={pickupOpen ? icons?.order_received : icons?.order_delivered} className="w-4 h-4" fallback="💰" />
+              تسجيل الحركة المالية ({pickupOpen ? "صادر" : "وارد"})
+            </span>
+            <button onClick={closePanels} className="flex items-center gap-1 text-xs font-black text-rose-700 underline">
+              <DynamicIcon iconKey="ui_close" config={icons} className="w-3 h-3" fallback="✕" />
+              إغلاق اللوحة
+            </button>
           </div>
           {pickupOpen ? (
             <PickupMoneyForm
@@ -431,9 +449,9 @@ export function MandoubOrderMoneyFlow({
                       <button
                         type="submit"
                         disabled={deletePending}
-                        className="min-h-[52px] min-w-[3.8rem] rounded-xl border-2 border-rose-400 bg-white py-3 text-base font-black text-rose-900 shadow-sm transition hover:bg-rose-50 disabled:opacity-60"
+                        className="flex min-h-[52px] min-w-[3.8rem] items-center justify-center rounded-xl border-2 border-rose-400 bg-white py-3 text-base font-black text-rose-900 shadow-sm transition hover:bg-rose-50 disabled:opacity-60"
                       >
-                        🗑️
+                        <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={20} height={20} />
                       </button>
                     </form>
                   ) : !deleted ? (
@@ -451,7 +469,24 @@ export function MandoubOrderMoneyFlow({
                           ? "border-amber-400 bg-amber-50 text-amber-700"
                           : "border-rose-400 bg-rose-50 text-rose-700"
                     }`}>
-                      <span>{!hasMismatch ? "✅ مطابق" : diff > 0 ? "⚠️ زيادة" : "🚨 نقص"}</span>
+                      <span className="flex items-center gap-1">
+                        {!hasMismatch ? (
+                          <>
+                            <DynamicIcon icon={icons?.ui_success} fallback="✅" width={10} height={10} />
+                            مطابق
+                          </>
+                        ) : diff > 0 ? (
+                          <>
+                            <DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={10} height={10} />
+                            زيادة
+                          </>
+                        ) : (
+                          <>
+                            <DynamicIcon icon={icons?.ui_alert} fallback="🚨" width={10} height={10} />
+                            نقص
+                          </>
+                        )}
+                      </span>
                       {hasMismatch && (
                         <span className="mt-0.5 tabular-nums">
                           ({diff > 0 ? "+" : ""}{formatDinarAsAlfWithUnit(Math.abs(diff))})

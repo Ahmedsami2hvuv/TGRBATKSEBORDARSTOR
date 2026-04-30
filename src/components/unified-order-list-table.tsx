@@ -1,5 +1,5 @@
-"use client";
-
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { Fragment, useState, useEffect } from "react";
 import type { MandoubRow } from "@/app/mandoub/mandoub-order-table";
 import { OrderTypeLine } from "@/components/order-type-line";
@@ -118,6 +118,11 @@ export function UnifiedOrderListTable({
   const [activeLocId, setActiveLocId] = useState<string | null>(null);
   const [activeDoorId, setActiveDoorId] = useState<string | null>(null);
   const [activeAudioId, setActiveAudioId] = useState<string | null>(null);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   useEffect(() => {
     const handleGlobalClick = () => {
@@ -340,7 +345,7 @@ export function UnifiedOrderListTable({
                                   className="flex size-7 items-center justify-center rounded-full bg-sky-100 text-sky-600 hover:bg-sky-200 transition-colors border-2 border-white shadow-sm"
                                   title="ملاحظات الطلب"
                                 >
-                                  📝
+                                  <DynamicIcon iconKey="ui_note" config={icons} fallback="📝" className="w-3.5 h-3.5" />
                                 </button>
                               )}
                             </div>
@@ -379,7 +384,7 @@ export function UnifiedOrderListTable({
                                    title="مواقع الـ GPS (المحل والزبون)"
                                    className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeLocId === o.id ? 'bg-rose-600 text-white' : 'bg-slate-100 text-rose-500 hover:bg-rose-500 hover:text-white'}`}
                                  >
-                                   📍
+                                   <DynamicIcon iconKey="ui_location" config={icons} fallback="📍" className="w-3.5 h-3.5" />
                                  </button>
                                  {activeLocId === o.id && (
                                    <CenterModal title="فتح الموقع الجغرافي لـ:" onClose={() => setActiveLocId(null)}>
@@ -421,7 +426,7 @@ export function UnifiedOrderListTable({
                                    title="صور الأبواب (المحل والزبون)"
                                    className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeDoorId === o.id ? 'bg-amber-600 text-white' : 'bg-slate-100 text-amber-500 hover:bg-amber-500 hover:text-white'}`}
                                  >
-                                   🚪
+                                   <DynamicIcon iconKey="ui_camera" config={icons} fallback="🚪" className="w-3.5 h-3.5" />
                                  </button>
 
                                  {activeDoorId === o.id && (
@@ -471,7 +476,7 @@ export function UnifiedOrderListTable({
                                    title="البصمات الصوتية المرفقة"
                                    className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeAudioId === o.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-indigo-500 hover:bg-indigo-500 hover:text-white'}`}
                                  >
-                                   🎤
+                                   <DynamicIcon iconKey="ui_audio" config={icons} fallback="🎤" className="w-3.5 h-3.5" />
                                  </button>
                                  {activeAudioId === o.id && (
                                    <CenterModal title="تشغيل البصمة الصوتية لـ:" onClose={() => setActiveAudioId(null)}>
@@ -511,28 +516,33 @@ export function UnifiedOrderListTable({
                       {/* علامات الصادر والوارد المالية "من الخارج" */}
                         <div className="mt-1 flex flex-wrap gap-1">
                           {o.wardMismatchType === "deficit" && (
-                            <span className="rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-rose-400">
-                              🔴 نقص بالوارد
+                            <span className="rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-rose-400 flex items-center gap-1">
+                              <DynamicIcon iconKey="finance_deficit" config={icons} fallback="🔴" className="w-2.5 h-2.5" />
+                              نقص بالوارد
                             </span>
                           )}
                           {o.wardMismatchType === "excess" && (
-                            <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-emerald-400">
-                              🟢 زيادة بالوارد
+                            <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-emerald-400 flex items-center gap-1">
+                              <DynamicIcon iconKey="finance_excess" config={icons} fallback="🟢" className="w-2.5 h-2.5" />
+                              زيادة بالوارد
                             </span>
                           )}
                           {o.saderMismatchType === "deficit" && (
-                            <span className="rounded bg-orange-500 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-orange-300">
-                              📉 نقص بالصادر
+                            <span className="rounded bg-orange-500 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-orange-300 flex items-center gap-1">
+                              <DynamicIcon iconKey="finance_sader_deficit" config={icons} fallback="📉" className="w-2.5 h-2.5" />
+                              نقص بالصادر
                             </span>
                           )}
                           {o.saderMismatchType === "excess" && (
-                            <span className="rounded bg-sky-500 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-sky-300">
-                              📈 زيادة بالصادر
+                            <span className="rounded bg-sky-500 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-sky-300 flex items-center gap-1">
+                              <DynamicIcon iconKey="finance_sader_excess" config={icons} fallback="📈" className="w-2.5 h-2.5" />
+                              زيادة بالصادر
                             </span>
                           )}
                           {o.orderStatus === "delivered" && o.noWardRecorded && (
-                            <span className="rounded bg-slate-950 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-slate-600 animate-pulse">
-                              ⚠️ بدون وارد
+                            <span className="rounded bg-slate-950 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-slate-600 animate-pulse flex items-center gap-1">
+                              <DynamicIcon iconKey="ui_warning" config={icons} fallback="⚠️" className="w-2.5 h-2.5" />
+                              بدون وارد
                             </span>
                           )}
                         </div>
@@ -576,7 +586,7 @@ export function UnifiedOrderListTable({
                                 className={`size-10 flex items-center justify-center rounded-full text-white shadow-md hover:scale-110 transition-transform ${activeCallId === o.id ? 'bg-sky-700 ring-2 ring-sky-300' : 'bg-sky-600'}`}
                                 title="خيارات الاتصال"
                               >
-                                📞
+                                <DynamicIcon iconKey="ui_call" config={icons} fallback="📞" className="w-5 h-5" />
                               </button>
                               {activeCallId === o.id && (
                                 <CenterModal title="إجراء اتصال بـ:" onClose={() => setActiveCallId(null)}>
@@ -614,7 +624,7 @@ export function UnifiedOrderListTable({
                                 className={`size-10 flex items-center justify-center rounded-full text-white shadow-md hover:scale-110 transition-transform ${activeMsgId === o.id ? 'bg-emerald-700 ring-2 ring-emerald-300' : 'bg-emerald-600'}`}
                                 title="خيارات المراسلة"
                               >
-                                💬
+                                <DynamicIcon iconKey="ui_whatsapp" config={icons} fallback="💬" className="w-5 h-5" />
                               </button>
                               {activeMsgId === o.id && (
                                 <CenterModal title="بدء مراسلة واتساب مع:" onClose={() => setActiveMsgId(null)}>

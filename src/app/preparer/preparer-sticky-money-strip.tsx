@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { preparerPath } from "@/lib/preparer-portal-nav";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 type Summary = {
   wardStr: string;
@@ -19,6 +21,11 @@ export function PreparerStickyMoneyStrip() {
   const s = sp.get("s") ?? "";
   const [data, setData] = useState<Summary | null>(null);
   const [failed, setFailed] = useState(false);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   useEffect(() => {
     if (!p || !exp || !s) {
@@ -71,7 +78,15 @@ export function PreparerStickyMoneyStrip() {
           className="flex min-w-[4.75rem] max-w-[33%] flex-1 shrink-0 flex-col rounded-lg border-2 border-red-500 bg-red-50/95 px-1.5 py-1.5 text-center shadow-sm ring-red-300/30 transition hover:ring-2 sm:min-w-0 sm:max-w-none sm:px-2 sm:py-2"
           title="ما استُلم من الزبون (وارد) — حركات الطلبات لمحلاتك"
         >
-          <span className="text-[9px] font-bold leading-tight text-red-900 sm:text-[10px]">الوارد</span>
+          <div className="flex items-center justify-center gap-1">
+            <DynamicIcon
+              iconKey="wallet_in"
+              config={icons}
+              className="h-3 w-3 text-red-700"
+              fallback={null}
+            />
+            <span className="text-[9px] font-bold leading-tight text-red-900 sm:text-[10px]">الوارد</span>
+          </div>
           <span className="mt-0.5 block text-sm font-black tabular-nums leading-none text-red-800 sm:text-base">
             {ward}
           </span>
@@ -81,7 +96,15 @@ export function PreparerStickyMoneyStrip() {
           className="flex min-w-[4.75rem] max-w-[33%] flex-1 shrink-0 flex-col rounded-lg border-2 border-emerald-600 bg-emerald-50/95 px-1.5 py-1.5 text-center shadow-sm ring-emerald-300/30 transition hover:ring-2 sm:min-w-0 sm:max-w-none sm:px-2 sm:py-2"
           title="ما دُفع للعميل (صادر) — حركات الطلبات لمحلاتك"
         >
-          <span className="text-[9px] font-bold leading-tight text-emerald-900 sm:text-[10px]">الصادر</span>
+          <div className="flex items-center justify-center gap-1">
+            <DynamicIcon
+              iconKey="wallet_out"
+              config={icons}
+              className="h-3 w-3 text-emerald-700"
+              fallback={null}
+            />
+            <span className="text-[9px] font-bold leading-tight text-emerald-900 sm:text-[10px]">الصادر</span>
+          </div>
           <span className="mt-0.5 block text-sm font-black tabular-nums leading-none text-emerald-800 sm:text-base">
             {sader}
           </span>
@@ -91,7 +114,15 @@ export function PreparerStickyMoneyStrip() {
           className="flex min-w-[4.75rem] max-w-[33%] flex-1 shrink-0 flex-col rounded-lg border-2 border-blue-600 bg-blue-50/95 px-1.5 py-1.5 text-center shadow-sm ring-blue-300/30 transition hover:ring-2 sm:min-w-0 sm:max-w-none sm:px-2 sm:py-2"
           title="وارد − صادر — تفاصيل محفظتك في «محفظتي»"
         >
-          <span className="text-[9px] font-bold leading-tight text-blue-900 sm:text-[10px]">المتبقي</span>
+          <div className="flex items-center justify-center gap-1">
+            <DynamicIcon
+              iconKey="wallet_remain"
+              config={icons}
+              className="h-3 w-3 text-blue-700"
+              fallback={null}
+            />
+            <span className="text-[9px] font-bold leading-tight text-blue-900 sm:text-[10px]">المتبقي</span>
+          </div>
           <span className="mt-0.5 block text-sm font-black tabular-nums leading-none text-blue-800 sm:text-base">
             {remain}
           </span>

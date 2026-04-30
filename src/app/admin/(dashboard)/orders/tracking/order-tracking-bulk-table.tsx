@@ -361,7 +361,8 @@ export function OrderTrackingBulkTable({
               title="إسناد سريع"
             >
               <DynamicIcon
-                icon={icons?.preparer_delegate}
+                iconKey="preparer_delegate"
+                config={icons}
                 className="w-full h-full object-contain"
                 fallback={
                   <div className="w-full h-full" />

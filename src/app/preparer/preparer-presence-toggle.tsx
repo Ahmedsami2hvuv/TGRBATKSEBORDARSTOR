@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { setPreparerPresenceFromForm, type PreparerActionState } from "./actions";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 const initial: PreparerActionState = {};
 
@@ -15,6 +17,11 @@ export function PreparerPresenceToggle({
 }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(setPreparerPresenceFromForm, initial);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   useEffect(() => {
     if (state.ok) router.refresh();
@@ -34,7 +41,7 @@ export function PreparerPresenceToggle({
       <button
         type="submit"
         disabled={pending}
-        className={`inline-flex h-8 w-full shrink-0 items-center justify-center rounded-lg px-2.5 text-[11px] font-black shadow-sm ring-1 transition sm:h-9 sm:w-auto sm:px-3 sm:text-xs ${
+        className={`flex h-8 w-full shrink-0 items-center justify-center gap-1.5 rounded-lg px-2.5 text-[11px] font-black shadow-sm ring-1 transition sm:h-9 sm:w-auto sm:px-3 sm:text-xs ${
           availableForAssignment
             ? "bg-emerald-600 text-white ring-emerald-400 hover:bg-emerald-700"
             : "bg-slate-500 text-white ring-slate-400 hover:bg-slate-600"
@@ -45,7 +52,19 @@ export function PreparerPresenceToggle({
             : "غير متاح — اضغط لإعلان التوفر"
         }
       >
-        {pending ? "…" : availableForAssignment ? "✓ متاح للإسناد" : "⏸ غير متاح"}
+        {pending ? (
+          "…"
+        ) : (
+          <>
+            <DynamicIcon
+              iconKey={availableForAssignment ? "ui_success" : "wallet_pending"}
+              config={icons}
+              className="h-3.5 w-3.5"
+              fallback={<span>{availableForAssignment ? "✓" : "⏸"}</span>}
+            />
+            {availableForAssignment ? "متاح للإسناد" : "غير متاح"}
+          </>
+        )}
       </button>
     </form>
   );

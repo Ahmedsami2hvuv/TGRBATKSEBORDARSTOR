@@ -139,7 +139,10 @@ export function OrderDetailSection({
         return (
           <div key="shop" className={gridInfoPhoto} style={blockStyle}>
             <div className="space-y-2">
-              <h3 className="text-lg font-bold text-emerald-800">المحل</h3>
+              <h3 className="flex items-center gap-1.5 text-lg font-bold text-emerald-800">
+                <DynamicIcon icon={icons?.ui_shops} fallback="🏠" width={20} height={20} />
+                المحل
+              </h3>
               <p className="font-bold text-slate-900">{order.shop.name}</p>
               <p className="text-sm font-medium"><span className="text-slate-500">المسؤول: </span><span className="font-bold text-sky-900">{submitterName}</span></p>
               <div className="flex flex-wrap items-center gap-2">
@@ -159,7 +162,10 @@ export function OrderDetailSection({
           <div key="customer_parent" className="space-y-6">
             <div key="customer" className={gridInfoPhoto} style={blockStyle}>
               <div className="space-y-2">
-                <h3 className="text-lg font-bold text-emerald-800">الزبون</h3>
+                <h3 className="flex items-center gap-1.5 text-lg font-bold text-emerald-800">
+                  <DynamicIcon icon={icons?.ui_user} fallback="👤" width={20} height={20} />
+                  الزبون
+                </h3>
                 <p className="text-slate-800">{order.customerRegion?.name ?? "—"}</p>
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-mono font-bold text-slate-900">{contactLine(order.customerPhone)}</p>
@@ -184,7 +190,10 @@ export function OrderDetailSection({
             {order.routeMode === "double" && (
               <div key="receiver" className={`${gridInfoPhoto} mt-6 pt-6 border-t border-sky-100`} style={blockStyle}>
                 <div className="space-y-2">
-                  <h3 className="text-lg font-bold text-emerald-800">المستلم (الوجهة الثانية)</h3>
+                  <h3 className="flex items-center gap-1.5 text-lg font-bold text-emerald-800">
+                    <DynamicIcon icon={icons?.ui_users} fallback="👥" width={20} height={20} />
+                    المستلم (الوجهة الثانية)
+                  </h3>
                   <p className="text-slate-800">{order.secondCustomerRegion?.name ?? "—"}</p>
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-mono font-bold text-slate-900">{contactLine(order.secondCustomerPhone || "")}</p>
@@ -223,7 +232,12 @@ export function OrderDetailSection({
               {!hideSubtotalInfo && (<div className="space-y-3 pt-2"><div className="flex justify-between items-center"><span className="text-sm font-bold text-slate-600">السعر:</span><span className="font-black text-slate-900 tabular-nums">{order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)} ألف` : "—"}</span></div><div className="flex justify-between items-center"><span className="text-sm font-bold text-slate-600">توصيل:</span><span className="font-black text-slate-900 tabular-nums">{order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)} ألف` : "—"}</span></div></div>)}
               <div className="rounded-xl border-2 border-violet-500/30 bg-violet-50/10 p-4 shadow-sm"><p className="text-xs font-black text-violet-900 uppercase tracking-widest mb-1">الكلي</p><p className="font-mono text-3xl font-black text-violet-950 tabular-nums">{order.totalAmount != null ? formatDinarAsAlfWithUnit(order.totalAmount) : "—"}</p></div>
             </div>
-            <div className="max-w-[12rem] self-start"><p className="mb-2 text-sm font-bold text-slate-700">صورة الطلبية</p>{order.imageUrl ? <div className={squarePhotoFrame}><img src={imgSrc(order.imageUrl)!} alt="" className={squarePhotoContain} /></div> : <div className="aspect-square flex items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white text-xs font-bold text-slate-400">لا يوجد صورة</div>}<div className="mt-2"><MandoubOrderImageQuick orderId={order.id} nextUrl={nextUrl} auth={auth} /></div></div>
+            <div className="max-w-[12rem] self-start">
+              <p className="flex items-center gap-1 mb-2 text-sm font-bold text-slate-700">
+                <DynamicIcon icon={icons?.ui_package} fallback="📦" width={14} height={14} />
+                صورة الطلبية
+              </p>
+              {order.imageUrl ? <div className={squarePhotoFrame}><img src={imgSrc(order.imageUrl)!} alt="" className={squarePhotoContain} /></div> : <div className="aspect-square flex items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white text-xs font-bold text-slate-400">لا يوجد صورة</div>}<div className="mt-2"><MandoubOrderImageQuick orderId={order.id} nextUrl={nextUrl} auth={auth} /></div></div>
           </div>
         );
       case "notes_summary":

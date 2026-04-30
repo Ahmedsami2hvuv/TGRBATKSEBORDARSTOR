@@ -5,38 +5,66 @@ import { GlobalIconsConfig, IconConfig } from "@/lib/icon-settings";
 import { saveGlobalIconsAction } from "./actions";
 
 const ICON_KEYS = [
-  { id: "loading_main", label: "واجهة التحميل الرئيسية (Loading)" },
-  { id: "order_received", label: "أيقونة استلام الطلب (Received)" },
-  { id: "order_delivered", label: "أيقونة توصيل الطلب (Delivered)" },
-  { id: "preparer_delegate", label: "أيقونة المجهز/التفويض" },
-  { id: "admin_pricing", label: "أيقونة التسعير الإداري" },
-  { id: "admin_delete", label: "أيقونة المسح الإداري" },
-  { id: "store_cart", label: "أيقونة سلة المتجر" },
-  { id: "store_favorites", label: "أيقونة مفضلة المتجر (ممتلئ)" },
-  { id: "store_favorites_empty", label: "أيقونة مفضلة المتجر (فارغ)" },
+  { id: "loading_main", label: "واجهة التحميل الرئيسية (Loading Animation)" },
+  { id: "order_received", label: "أيقونة استلام الطلب" },
+  { id: "order_delivered", label: "أيقونة توصيل الطلب" },
+  { id: "ui_whatsapp", label: "أيقونة واتساب" },
+  { id: "ui_call", label: "أيقونة الاتصال" },
+  { id: "ui_location", label: "أيقونة الموقع/الخريطة" },
+  { id: "ui_search", label: "أيقونة البحث" },
+  { id: "ui_user", label: "أيقونة المستخدم/العميل" },
+  { id: "ui_courier", label: "أيقونة المندوب" },
+  { id: "ui_preparer", label: "أيقونة المجهز" },
+  { id: "ui_shop", label: "أيقونة المحل" },
   { id: "ui_package", label: "أيقونة الطرد/المنتج" },
-  { id: "ui_edit", label: "أيقونة التعديل" },
-  { id: "ui_delete", label: "أيقونة الحذف العامة" },
-  { id: "ui_visibility_on", label: "أيقونة العرض (العين)" },
-  { id: "ui_visibility_off", label: "أيقونة الإخفاء" },
+  { id: "ui_note", label: "أيقونة الملاحظات 📝" },
+  { id: "ui_camera", label: "أيقونة الكاميرا/صورة الباب 🚪" },
+  { id: "ui_audio", label: "أيقونة البصمة الصوتية 🎤" },
+  { id: "wallet_cash", label: "أيقونة الكاش/الأموال" },
+  { id: "wallet_earnings", label: "أيقونة الأرباح" },
+  { id: "finance_deficit", label: "تنبيه نقص الوارد 🔴" },
+  { id: "finance_excess", label: "تنبيه زيادة الوارد 🟢" },
+  { id: "finance_sader_deficit", label: "تنبيه نقص الصادر 📉" },
+  { id: "finance_sader_excess", label: "تنبيه زيادة الصادر 📈" },
   { id: "ui_success", label: "أيقونة النجاح ✅" },
+  { id: "ui_error", label: "أيقونة الخطأ ❌" },
   { id: "ui_warning", label: "أيقونة التحذير ⚠️" },
-  { id: "ui_search", label: "أيقونة البحث 🔍" },
-  { id: "ui_location", label: "أيقونة الموقع 📍" },
-  { id: "ui_user", label: "أيقونة المستخدم 👤" },
-  { id: "ui_home", label: "أيقونة الصفحة الرئيسية 🏠" },
-  { id: "ui_time", label: "أيقونة الوقت 🕒" },
+  { id: "ui_notification", label: "أيقونة الإشعارات" },
+  { id: "ui_settings", label: "أيقونة الإعدادات" },
+  { id: "ui_edit", label: "أيقونة التعديل" },
+  { id: "ui_delete", label: "أيقونة الحذف" },
+  { id: "ui_print", label: "أيقونة الطباعة" },
+  { id: "ui_refresh", label: "أيقونة التحديث" },
+  { id: "ui_ai", label: "أيقونة الذكاء الاصطناعي" },
+  { id: "ui_external_link", label: "أيقونة الرابط الخارجي ↗" },
+  { id: "ui_shops", label: "أيقونة المحلات (القائمة)" },
+  { id: "ui_map", label: "أيقونة الخريطة العامة" },
 ];
 
 export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
   const [icons, setIcons] = useState<GlobalIconsConfig>(initial);
   const [loading, setLoading] = useState(false);
 
+  const smartDetectType = (url: string): 'image' | 'lottie' | 'svg' | 'emoji' => {
+    if (!url) return 'image';
+    if (url.includes('lottiefiles.com') || url.includes('.json')) return 'lottie';
+    if (url.startsWith('<svg')) return 'svg';
+    if (url.length <= 4) return 'emoji'; // غالباً ايموجي
+    return 'image';
+  };
+
   const updateIcon = (key: string, field: keyof IconConfig, value: any) => {
-    setIcons((prev) => ({
-      ...prev,
-      [key]: { ...(prev[key] || { url: "", type: "image" }), [field]: value },
-    }));
+    setIcons((prev) => {
+      const current = prev[key] || { url: "", type: "image" };
+      const next = { ...current, [field]: value };
+
+      // إذا قام بتغيير الرابط، نحاول تخمين النوع تلقائياً
+      if (field === 'url') {
+        next.type = smartDetectType(value);
+      }
+
+      return { ...prev, [key]: next };
+    });
   };
 
   const handleSave = async () => {

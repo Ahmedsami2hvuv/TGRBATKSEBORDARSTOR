@@ -201,8 +201,11 @@ export function MandoubOrderTable({
               onClick={() => setShowQuickSelect((v) => !v)}
               className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-900 hover:bg-red-100"
             >
-              ⚡ تحديد سريع
-              <span className="text-red-400">{showQuickSelect ? "▲" : "▼"}</span>
+              <DynamicIcon iconKey="ui_flash" config={icons} className="w-3.5 h-3.5" fallback="⚡" />
+              تحديد سريع
+              <span className="text-red-400">
+                <DynamicIcon iconKey={showQuickSelect ? "ui_chevron_up" : "ui_chevron_down"} config={icons} fallback={showQuickSelect ? "▲" : "▼"} className="w-3 h-3" />
+              </span>
             </button>
           )}
           <div className="min-w-0 flex-1 relative">
@@ -337,7 +340,7 @@ export function MandoubOrderTable({
                   onClick={() => setPickupOrder(null)}
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
                 >
-                  ✕
+                  <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-4 h-4" />
                 </button>
               </div>
               <PickupMoneyForm
@@ -376,7 +379,7 @@ export function MandoubOrderTable({
                   onClick={() => setDeliveryOrder(null)}
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
                 >
-                  ✕
+                  <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-4 h-4" />
                 </button>
               </div>
               <DeliveryMoneyForm
@@ -454,7 +457,7 @@ export function MandoubOrderTable({
                 onClick={() => setSelectedIds(new Set())}
                 className="min-h-[44px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
               >
-                ✕
+                <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-4 h-4" />
               </button>
             </div>
           </div>

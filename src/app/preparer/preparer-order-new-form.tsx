@@ -5,6 +5,8 @@ import { useActionState, useEffect, useRef, useState, type ChangeEvent } from "r
 import { assignFileToInput, compressImageFileForUpload } from "@/lib/client-image-compress";
 import { preparerPath } from "@/lib/preparer-portal-nav";
 import { submitPreparerOrder, type PreparerActionState } from "./actions";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 const initial: PreparerActionState = {};
 
@@ -28,6 +30,11 @@ export function PreparerOrderNewForm({
   const [shopQuery, setShopQuery] = useState(shop?.name ?? "");
   const [shopPickerOpen, setShopPickerOpen] = useState(false);
   const [shopError, setShopError] = useState<string | null>(null);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const shopHits =
     shopQuery.trim().length < 2
@@ -77,9 +84,14 @@ export function PreparerOrderNewForm({
   if (state?.ok) {
     return (
       <div className="kse-glass-dark rounded-2xl border border-emerald-300 p-8 text-center">
-        <p className="text-4xl" aria-hidden>
-          ✓
-        </p>
+        <div className="flex justify-center mb-3">
+          <DynamicIcon
+            iconKey="ui_success"
+            config={icons}
+            className="h-16 w-16 text-emerald-600"
+            fallback={<span className="text-4xl">✓</span>}
+          />
+        </div>
         <h2 className="mt-3 text-xl font-bold text-emerald-800">تم رفع الطلب</h2>
         <div className="mt-5 flex flex-col gap-2">
           <Link
@@ -217,9 +229,15 @@ export function PreparerOrderNewForm({
           <button
             type="button"
             onClick={copyNotesToClipboard}
-            className="shrink-0 rounded-xl border border-sky-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-sky-50"
+            className="flex items-center gap-1.5 shrink-0 rounded-xl border border-sky-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-sky-50"
             title="نسخ محتوى الملاحظات"
           >
+            <DynamicIcon
+              iconKey="ui_copy"
+              config={icons}
+              className="h-3.5 w-3.5 text-slate-500"
+              fallback={null}
+            />
             نسخ
           </button>
         </div>

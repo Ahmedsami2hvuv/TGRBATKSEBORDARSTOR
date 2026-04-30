@@ -75,7 +75,7 @@ export function AdminShell({
         }
       >
         <span className="text-xl shrink-0" aria-hidden>
-          <DynamicIcon config={icons?.ui_home} fallback="🏠" className="w-6 h-6" />
+          <DynamicIcon iconKey="ui_home" config={icons} fallback="🏠" className="w-6 h-6" />
         </span>
         <span className="leading-snug font-medium text-sm block">الرئيسية</span>
       </Link>
@@ -99,7 +99,7 @@ export function AdminShell({
               }
             >
               <span className="text-xl shrink-0 relative flex justify-center items-center">
-                <DynamicIcon config={icons?.[tile.iconKey]} className="w-6 h-6" />
+                <DynamicIcon iconKey={tile.iconKey} config={icons} className="w-6 h-6" />
                 {showPendingBadge ? (
                   <span className="absolute -top-2 -right-2 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-orange-600 px-1 py-0.5 text-[10px] font-black leading-none text-white shadow-[0_0_10px_orange]">
                     {pendingCount > 99 ? "99+" : pendingCount}

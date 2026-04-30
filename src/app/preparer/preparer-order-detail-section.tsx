@@ -134,12 +134,58 @@ export function PreparerOrderDetailSection({
         return (
           <div key="shop" className={gridInfoPhoto} style={blockStyle}>
             <div className="min-w-0 space-y-2 text-base sm:space-y-3 sm:text-lg">
-              <h3 className="text-lg font-bold text-emerald-800 sm:text-xl">المحل</h3>
+              <div className="flex items-center gap-2">
+                <DynamicIcon
+                  iconKey="ui_shops"
+                  config={icons}
+                  className="h-5 w-5 text-emerald-600"
+                  fallback={null}
+                />
+                <h3 className="text-lg font-bold text-emerald-800 sm:text-xl">المحل</h3>
+              </div>
               <p className="font-bold leading-snug text-slate-900">{order.shop.name}</p>
-              <p className="text-sm font-medium leading-snug text-slate-800"><span className="text-slate-500">موظف المحل: </span>{order.submittedBy?.name?.trim() || "—"}</p>
-              <p className="text-slate-800">{order.shop.region.name}</p>
-              <p className="font-mono tabular-nums text-slate-900">{shopContactPhone || "—"}</p>
-              <div className="mt-2">{order.shop.locationUrl?.trim() ? <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن المحل ↗</a> : <p className="text-xs font-bold text-amber-800 sm:text-sm">لا يوجد لوكيشن للمحل</p>}</div>
+              <div className="flex items-center gap-1.5 text-sm font-medium leading-snug text-slate-800">
+                <DynamicIcon
+                  iconKey="ui_user"
+                  config={icons}
+                  className="h-3.5 w-3.5 text-slate-400"
+                  fallback={null}
+                />
+                <span className="text-slate-500">موظف المحل: </span>{order.submittedBy?.name?.trim() || "—"}
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-800">
+                <DynamicIcon
+                  iconKey="ui_location"
+                  config={icons}
+                  className="h-3.5 w-3.5 text-slate-400"
+                  fallback={null}
+                />
+                {order.shop.region.name}
+              </div>
+              <div className="flex items-center gap-1.5 font-mono tabular-nums text-slate-900">
+                <DynamicIcon
+                  iconKey="ui_call"
+                  config={icons}
+                  className="h-3.5 w-3.5 text-slate-400"
+                  fallback={null}
+                />
+                {shopContactPhone || "—"}
+              </div>
+              <div className="mt-2">
+                {order.shop.locationUrl?.trim() ? (
+                  <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>
+                    <DynamicIcon
+                      iconKey="ui_external_link"
+                      config={icons}
+                      className="ml-1.5 h-3.5 w-3.5"
+                      fallback={null}
+                    />
+                    فتح لوكيشن المحل
+                  </a>
+                ) : (
+                  <p className="text-xs font-bold text-amber-800 sm:text-sm">لا يوجد لوكيشن للمحل</p>
+                )}
+              </div>
             </div>
             <div className="min-w-0 w-full max-w-[12rem] shrink-0 self-start justify-self-stretch sm:max-w-none">
               <p className="mb-1.5 text-sm font-bold text-slate-700 sm:mb-2 sm:text-lg">صورة المحل</p>
@@ -151,18 +197,97 @@ export function PreparerOrderDetailSection({
         return (
           <div key="customer" className={gridInfoPhoto} style={blockStyle}>
             <div className="min-w-0 space-y-2 text-base sm:space-y-3 sm:text-lg">
-              <h3 className="text-lg font-bold text-emerald-800 sm:text-xl">الزبون</h3>
-              <p className="text-slate-800">{order.customerRegion?.name ?? "—"}</p>
+              <div className="flex items-center gap-2">
+                <DynamicIcon
+                  iconKey="ui_user"
+                  config={icons}
+                  className="h-5 w-5 text-emerald-600"
+                  fallback={null}
+                />
+                <h3 className="text-lg font-bold text-emerald-800 sm:text-xl">الزبون</h3>
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-800">
+                <DynamicIcon
+                  iconKey="ui_location"
+                  config={icons}
+                  className="h-3.5 w-3.5 text-slate-400"
+                  fallback={null}
+                />
+                {order.customerRegion?.name ?? "—"}
+              </div>
               {visibleCustomerPhone ? (
-                <p className="font-mono tabular-nums text-slate-900">محمي</p>
+                <div className="flex items-center gap-1.5 font-mono tabular-nums text-slate-900">
+                  <DynamicIcon
+                    iconKey="ui_call"
+                    config={icons}
+                    className="h-3.5 w-3.5 text-slate-400"
+                    fallback={null}
+                  />
+                  محمي
+                </div>
               ) : null}
               {visibleMergedAlternate ? (
-                <p className="mt-1 font-mono tabular-nums text-slate-900">محمي</p>
+                <div className="mt-1 flex items-center gap-1.5 font-mono tabular-nums text-slate-900">
+                  <DynamicIcon
+                    iconKey="ui_call"
+                    config={icons}
+                    className="h-3.5 w-3.5 text-slate-400"
+                    fallback={null}
+                  />
+                  محمي
+                </div>
               ) : null}
-              {mergedLandmark ? (<p className="mt-1 text-sm font-medium leading-relaxed text-slate-800">أقرب نقطة دالة: {mergedLandmark}</p>) : null}
-              <div className="mt-2 space-y-2">{mergedCustomerLocationUrl ? (<div className="space-y-1"><div className="flex flex-wrap items-center gap-2"><a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن الزبون ↗</a>{order.customerLocationSetByCourierAt ? (<span className="inline-flex max-w-full items-center rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-950">لوكيشن مرفوع من المندوب (GPS)</span>) : null}</div><ImageUploaderCaption name={order.customerLocationUploadedByName} /></div>) : null}{!mergedCustomerLocationUrl ? (<p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن للزبون بعد</p>) : null}</div>
+              {mergedLandmark ? (
+                <div className="mt-1 flex items-start gap-1.5 text-sm font-medium leading-relaxed text-slate-800">
+                  <DynamicIcon
+                    iconKey="ui_note"
+                    config={icons}
+                    className="mt-1 h-3.5 w-3.5 text-slate-400"
+                    fallback={null}
+                  />
+                  <span>أقرب نقطة دالة: {mergedLandmark}</span>
+                </div>
+              ) : null}
+              <div className="mt-2 space-y-2">
+                {mergedCustomerLocationUrl ? (
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>
+                        <DynamicIcon
+                          iconKey="ui_external_link"
+                          config={icons}
+                          className="ml-1.5 h-3.5 w-3.5"
+                          fallback={null}
+                        />
+                        فتح لوكيشن الزبون
+                      </a>
+                      {order.customerLocationSetByCourierAt ? (
+                        <span className="inline-flex max-w-full items-center rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-950">
+                          لوكيشن مرفوع من المندوب (GPS)
+                        </span>
+                      ) : null}
+                    </div>
+                    <ImageUploaderCaption name={order.customerLocationUploadedByName} />
+                  </div>
+                ) : null}
+                {!mergedCustomerLocationUrl ? (
+                  <p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن للزبون بعد</p>
+                ) : null}
+              </div>
             </div>
-            <div className="min-w-0 self-start"><p className="mb-2 text-base font-bold text-slate-700 sm:text-lg">صورة باب الزبون</p>{customerDoorDisplay && imgSrc(customerDoorDisplay) ? (<div><div className={squarePhotoFrame}><img src={imgSrc(customerDoorDisplay)!} alt="" className={squarePhotoCover} /></div><ImageUploaderCaption name={customerDoorCaptionName} /></div>) : <p className="text-base text-slate-400">لم تُرفع بعد</p>}</div>
+            <div className="min-w-0 self-start">
+              <p className="mb-2 text-base font-bold text-slate-700 sm:text-lg">صورة باب الزبون</p>
+              {customerDoorDisplay && imgSrc(customerDoorDisplay) ? (
+                <div>
+                  <div className={squarePhotoFrame}>
+                    <img src={imgSrc(customerDoorDisplay)!} alt="" className={squarePhotoCover} />
+                  </div>
+                  <ImageUploaderCaption name={customerDoorCaptionName} />
+                </div>
+              ) : (
+                <p className="text-base text-slate-400">لم تُرفع بعد</p>
+              )}
+            </div>
           </div>
         );
       case "price_details":
@@ -170,14 +295,93 @@ export function PreparerOrderDetailSection({
           <div key="pricing" className={`${gridInfoPhoto} mt-6`} style={blockStyle}>
             <div className="min-w-0 space-y-4 rounded-xl border border-sky-100 bg-sky-50/50 p-4 sm:space-y-5 sm:p-5">
               <div className="grid grid-cols-1 gap-4 xs:grid-cols-2">
-                <div><p className="text-sm font-bold text-slate-700 sm:text-base">نوع</p><div className="mt-1"><OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-violet-950 bg-violet-100 px-2 py-1 rounded-lg text-xl sm:text-2xl ring-2 ring-violet-400/80 shadow-sm" restClassName="text-xl font-black leading-snug sm:text-2xl text-slate-900" /></div></div>
-                {order.orderNoteTime && (<div><p className="text-sm font-bold text-slate-700 sm:text-base">وقت الطلب</p><p className="mt-1 text-lg font-black text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200 inline-block">{order.orderNoteNoteTime}</p></div>)}
+                <div>
+                  <div className="flex items-center gap-1.5 text-sm font-bold text-slate-700 sm:text-base">
+                    <DynamicIcon
+                      iconKey="ui_package"
+                      config={icons}
+                      className="h-4 w-4 text-slate-500"
+                      fallback={null}
+                    />
+                    <span>نوع</span>
+                  </div>
+                  <div className="mt-1">
+                    <OrderTypeDetailBlock
+                      orderType={order.orderType}
+                      prefixClassName="font-black text-violet-950 bg-violet-100 px-2 py-1 rounded-lg text-xl sm:text-2xl ring-2 ring-violet-400/80 shadow-sm"
+                      restClassName="text-xl font-black leading-snug sm:text-2xl text-slate-900"
+                    />
+                  </div>
+                </div>
+                {order.orderNoteTime && (
+                  <div>
+                    <div className="flex items-center gap-1.5 text-sm font-bold text-slate-700 sm:text-base">
+                      <DynamicIcon
+                        iconKey="ui_time"
+                        config={icons}
+                        className="h-4 w-4 text-slate-500"
+                        fallback={null}
+                      />
+                      <span>وقت الطلب</span>
+                    </div>
+                    <p className="mt-1 text-lg font-black text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200 inline-block">
+                      {order.orderNoteNoteTime}
+                    </p>
+                  </div>
+                )}
               </div>
-              <div><p className="mt-1 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">{order.orderSubtotal != null ? `سعر${formatDinarAsAlf(order.orderSubtotal)}ألف` : "سعر—"}</p></div>
-              <div><p className="mt-1 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">{order.deliveryPrice != null ? `التوصيل${formatDinarAsAlf(order.deliveryPrice)}ألف` : "التوصيل—"}</p></div>
-              <div className="rounded-lg border border-violet-500/55 bg-violet-500/35 px-3 py-3 sm:px-5 sm:py-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)]"><p className="text-sm font-bold text-violet-950 sm:text-base">الكلي</p><p className="mt-1 font-mono text-2xl font-black tabular-nums text-violet-950 sm:text-3xl">{order.totalAmount != null ? formatDinarAsAlf(order.totalAmount) : "—"}</p></div>
+              <div>
+                <div className="flex items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
+                  <DynamicIcon
+                    iconKey="wallet_cash"
+                    config={icons}
+                    className="h-5 w-5 text-slate-400"
+                    fallback={null}
+                  />
+                  {order.orderSubtotal != null ? `سعر${formatDinarAsAlf(order.orderSubtotal)}ألف` : "سعر—"}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
+                  <DynamicIcon
+                    iconKey="ui_courier"
+                    config={icons}
+                    className="h-5 w-5 text-slate-400"
+                    fallback={null}
+                  />
+                  {order.deliveryPrice != null ? `التوصيل${formatDinarAsAlf(order.deliveryPrice)}ألف` : "التوصيل—"}
+                </div>
+              </div>
+              <div className="rounded-lg border border-violet-500/55 bg-violet-500/35 px-3 py-3 sm:px-5 sm:py-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)]">
+                <div className="flex items-center gap-1.5 text-sm font-bold text-violet-950 sm:text-base">
+                  <DynamicIcon
+                    iconKey="wallet_remain"
+                    config={icons}
+                    className="h-4 w-4"
+                    fallback={null}
+                  />
+                  <span>الكلي</span>
+                </div>
+                <p className="mt-1 font-mono text-2xl font-black tabular-nums text-violet-950 sm:text-3xl">
+                  {order.totalAmount != null ? formatDinarAsAlf(order.totalAmount) : "—"}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0 w-full max-w-[12rem] shrink-0 self-start justify-self-stretch sm:max-w-none"><p className="mb-1.5 text-sm font-bold text-slate-700 sm:mb-2 sm:text-lg">صورة الطلبية</p>{order.imageUrl?.trim() && imgSrc(order.imageUrl) ? (<div><div className={squarePhotoFrame}><img src={imgSrc(order.imageUrl)!} alt="" className={squarePhotoContain} /></div><ImageUploaderCaption name={order.orderImageUploadedByName} /></div>) : <div className="flex aspect-square items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/90 px-2 text-center text-sm font-medium text-slate-500">لا توجد صورة طلبية بعد</div>}</div>
+            <div className="min-w-0 w-full max-w-[12rem] shrink-0 self-start justify-self-stretch sm:max-w-none">
+              <p className="mb-1.5 text-sm font-bold text-slate-700 sm:mb-2 sm:text-lg">صورة الطلبية</p>
+              {order.imageUrl?.trim() && imgSrc(order.imageUrl) ? (
+                <div>
+                  <div className={squarePhotoFrame}>
+                    <img src={imgSrc(order.imageUrl)!} alt="" className={squarePhotoContain} />
+                  </div>
+                  <ImageUploaderCaption name={order.orderImageUploadedByName} />
+                </div>
+              ) : (
+                <div className="flex aspect-square items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/90 px-2 text-center text-sm font-medium text-slate-500">
+                  لا توجد صورة طلبية بعد
+                </div>
+              )}
+            </div>
           </div>
         );
       case "notes_summary":

@@ -1,11 +1,14 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   adminSidebarTiles,
   tileHref,
   type AdminTile,
 } from "@/lib/admin-nav";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 function HubMenuButton() {
   return (
@@ -22,22 +25,22 @@ function HubMenuButton() {
   );
 }
 
-function NeonBox({ t, colorClass, sizeClass }: { t: AdminTile | undefined; colorClass: string; sizeClass?: string }) {
+function NeonBox({ t, colorClass, sizeClass, icons }: { t: AdminTile | undefined; colorClass: string; sizeClass?: string; icons: GlobalIconsConfig | null }) {
   if (!t) return null;
   return (
     <Link
       href={tileHref(t)}
       className={`neon-box ${colorClass} ${sizeClass ?? ''} p-5 md:p-6 flex flex-col justify-center items-center text-center group`}
     >
-      <span className="text-4xl md:text-5xl drop-shadow-md transition-transform group-hover:scale-110 mb-3" aria-hidden>
-        {t.emoji}
-      </span>
+      <div className="text-4xl md:text-5xl drop-shadow-md transition-transform group-hover:scale-110 mb-3" aria-hidden>
+        <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-12 h-12 md:w-16 md:h-16" />
+      </div>
       <span className="text-base md:text-lg font-bold text-slate-800 dark:text-[#eef2f6] tracking-wide">{t.label}</span>
     </Link>
   );
 }
 
-function NeonPill({ t, colorClass }: { t: AdminTile | undefined; colorClass: string }) {
+function NeonPill({ t, colorClass, icons }: { t: AdminTile | undefined; colorClass: string; icons: GlobalIconsConfig | null }) {
   if (!t) return null;
   return (
     <div className="relative group w-[280px] flex justify-end items-center mb-5">
@@ -46,13 +49,20 @@ function NeonPill({ t, colorClass }: { t: AdminTile | undefined; colorClass: str
       
       <Link href={tileHref(t)} className={`neon-pill ${colorClass} w-full p-3 pl-6 pr-4 flex justify-between items-center z-10 hover:scale-105`}>
         <span className="font-bold text-slate-800 dark:text-slate-200 text-[15px]">{t.label}</span>
-        <span className="text-3xl drop-shadow-sm group-hover:scale-110 transition-transform" aria-hidden>{t.emoji}</span>
+        <div className="text-3xl drop-shadow-sm group-hover:scale-110 transition-transform" aria-hidden>
+          <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-8 h-8" />
+        </div>
       </Link>
     </div>
   );
 }
 
 export function AdminHubDashboard() {
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
+
   const tiles = adminSidebarTiles();
   const bySlug = Object.fromEntries(tiles.map(t => [t.slug, t]));
   const usedSlugs = new Set([
@@ -74,10 +84,10 @@ export function AdminHubDashboard() {
           {/* Top Row: Huge Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8 xl:h-[220px]">
             {/* الطلبات الجديدة - Giant Cyan */}
-            <NeonBox t={bySlug["new-orders"]} colorClass="neon-box-cyan" sizeClass="h-full py-8 xl:py-4" />
+            <NeonBox t={bySlug["new-orders"]} colorClass="neon-box-cyan" sizeClass="h-full py-8 xl:py-4" icons={icons} />
             
             {/* تتبع الطلبات - Giant Purple */}
-            <NeonBox t={bySlug["order-tracking"]} colorClass="neon-box-purple" sizeClass="h-full py-8 xl:py-4" />
+            <NeonBox t={bySlug["order-tracking"]} colorClass="neon-box-purple" sizeClass="h-full py-8 xl:py-4" icons={icons} />
           </div>
 
           {/* Bottom Row: 3 Columns */}
@@ -85,13 +95,13 @@ export function AdminHubDashboard() {
             
             {/* Col 1: Small Stacked Cards */}
             <div className="flex flex-col gap-6 lg:gap-8 h-full">
-              <NeonBox t={bySlug["archived-orders"]} colorClass="neon-box-cyan" sizeClass="flex-1 min-h-[100px]" />
-              <NeonBox t={bySlug["rejected-orders"]} colorClass="neon-box-orange" sizeClass="flex-1 min-h-[100px]" />
+              <NeonBox t={bySlug["archived-orders"]} colorClass="neon-box-cyan" sizeClass="flex-1 min-h-[100px]" icons={icons} />
+              <NeonBox t={bySlug["rejected-orders"]} colorClass="neon-box-orange" sizeClass="flex-1 min-h-[100px]" icons={icons} />
             </div>
 
-            <NeonBox t={bySlug["store"]} colorClass="neon-box-cyan" sizeClass="h-full min-h-[220px]" />
+            <NeonBox t={bySlug["store"]} colorClass="neon-box-cyan" sizeClass="h-full min-h-[220px]" icons={icons} />
 
-            <NeonBox t={bySlug["reports"]} colorClass="neon-box-purple" sizeClass="h-full min-h-[220px]" />
+            <NeonBox t={bySlug["reports"]} colorClass="neon-box-purple" sizeClass="h-full min-h-[220px]" icons={icons} />
           </div>
           
           {/* Generic grid for remaining tiles not in mockup */}
@@ -101,7 +111,9 @@ export function AdminHubDashboard() {
                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                    {leftover.map(t => (
                       <Link key={t.slug} href={tileHref(t)} className="neon-box neon-box-cyan p-3 lg:p-4 flex flex-col items-center justify-center gap-2">
-                         <span className="text-2xl">{t.emoji}</span>
+                         <div className="text-2xl">
+                           <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-6 h-6" />
+                         </div>
                          <span className="text-xs text-slate-700 dark:text-slate-300 font-semibold">{t.label}</span>
                       </Link>
                    ))}
@@ -123,11 +135,11 @@ export function AdminHubDashboard() {
             <div className="hidden lg:block absolute right-0 top-16 h-[380px] w-16 border-r-2 border-y-2 border-[rgba(0,243,255,0.15)] rounded-r-full -z-10" />
 
             <div className="flex flex-col w-[280px] relative z-10">
-               <NeonPill t={bySlug["shops"]} colorClass="neon-pill-cyan" />
-               <NeonPill t={bySlug["couriers"]} colorClass="neon-pill-cyan" />
-               <NeonPill t={bySlug["preparers"]} colorClass="neon-pill-cyan" />
-               <NeonPill t={bySlug["employees"]} colorClass="neon-pill-cyan" />
-               <NeonPill t={bySlug["regions"]} colorClass="neon-pill-cyan" />
+               <NeonPill t={bySlug["shops"]} colorClass="neon-pill-cyan" icons={icons} />
+               <NeonPill t={bySlug["couriers"]} colorClass="neon-pill-cyan" icons={icons} />
+               <NeonPill t={bySlug["preparers"]} colorClass="neon-pill-cyan" icons={icons} />
+               <NeonPill t={bySlug["employees"]} colorClass="neon-pill-cyan" icons={icons} />
+               <NeonPill t={bySlug["regions"]} colorClass="neon-pill-cyan" icons={icons} />
             </div>
             
         </div>

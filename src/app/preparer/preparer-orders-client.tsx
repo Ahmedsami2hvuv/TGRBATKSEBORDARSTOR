@@ -8,6 +8,8 @@ import {
 } from "@/lib/mandoub-order-smart-filter";
 import type { MandoubRow } from "@/app/mandoub/mandoub-order-table";
 import { PreparerOrderTable } from "./preparer-order-table";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 export function PreparerOrdersSection({
   allRows,
@@ -27,6 +29,11 @@ export function PreparerOrdersSection({
   couriersForBulkAssign?: { id: string; name: string }[];
 }) {
   const [query, setQuery] = useState(initialQuery);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   useEffect(() => {
     setQuery(initialQuery);
@@ -47,15 +54,23 @@ export function PreparerOrdersSection({
           الطلبات
         </h2>
         <div
-          className="order-1 flex w-full flex-row items-stretch gap-2 sm:order-2 sm:max-w-2xl sm:flex-1"
+          className="order-1 relative flex w-full flex-row items-stretch gap-2 sm:order-2 sm:max-w-2xl sm:flex-1"
           dir="rtl"
         >
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <DynamicIcon
+              iconKey="ui_search"
+              config={icons}
+              className="h-4 w-4 text-slate-400"
+              fallback={null}
+            />
+          </div>
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="بحث — محل، رقم، هاتف…"
-            className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-sky-200 bg-white px-3 py-2 text-base text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 sm:min-h-[48px] sm:text-lg"
+            className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-sky-200 bg-white pr-9 pl-3 py-2 text-base text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 sm:min-h-[48px] sm:text-lg"
             dir="rtl"
             autoComplete="off"
             enterKeyHint="search"

@@ -8,16 +8,10 @@ import {
   setMandoubCustomerLocationFromGeolocation,
   type MandoubEditCustomerState,
 } from "./actions";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 const initial: MandoubEditCustomerState = {};
-
-function IconMapPin() {
-  return (
-    <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-    </svg>
-  );
-}
 
 /**
  * عندما يوجد لوكيشن للزبون: مسح الرابط أو استبداله بموقع GPS الحالي (بعد تأكيد).
@@ -44,6 +38,11 @@ export function MandoubLocationManageButtons({
   const [locating, setLocating] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmReplace, setConfirmReplace] = useState(false);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -192,7 +191,16 @@ export function MandoubLocationManageButtons({
             }`}
             title="استبدال الرابط الحالي بموقعك GPS — يطلب إذن الموقع"
           >
-            <IconMapPin />
+            <DynamicIcon
+              iconKey="ui_gps"
+              config={icons}
+              className="h-5 w-5 shrink-0"
+              fallback={
+                <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                </svg>
+              }
+            />
             {locating
               ? "جارٍ جلب الموقع…"
               : gpsPending

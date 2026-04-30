@@ -65,7 +65,7 @@ export default function ShopEmployeesPage() {
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center max-w-md">
           <div className="text-5xl mb-4">
-            <DynamicIcon icon={icons?.ui_error} fallback="❌" />
+            <DynamicIcon iconKey="ui_error" config={icons} fallback="❌" className="w-16 h-16 mx-auto" />
           </div>
           <h2 className="text-xl font-bold text-rose-600 mb-2">حدث خطأ</h2>
           <p className="text-slate-600 mb-4">{error || "البيانات غير متوفرة"}</p>
@@ -83,8 +83,9 @@ export default function ShopEmployeesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 text-sm">
-        <Link href="/admin/shops" className={ad.link}>
-          ← المحلات
+        <Link href="/admin/shops" className={`${ad.link} flex items-center gap-1`}>
+          <DynamicIcon iconKey="ui_shops" config={icons} fallback="←" className="w-4 h-4" />
+          المحلات
         </Link>
         <span className="text-slate-400">/</span>
         <span className="font-bold text-slate-800">{shop.name}</span>
@@ -100,9 +101,11 @@ export default function ShopEmployeesPage() {
             href={shop.locationUrl.trim()}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-2 inline-flex text-sm font-bold text-emerald-700 underline"
+            className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-emerald-700 underline"
           >
-            فتح موقع المحل على الخريطة ↗
+            <DynamicIcon iconKey="ui_map" config={icons} fallback="" className="w-4 h-4" />
+            فتح موقع المحل على الخريطة
+            <DynamicIcon iconKey="ui_external_link" config={icons} fallback="↗" className="w-3.5 h-3.5" />
           </a>
         ) : null}
       </div>

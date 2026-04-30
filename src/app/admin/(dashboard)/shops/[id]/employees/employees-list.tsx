@@ -80,7 +80,7 @@ export function EmployeesList({
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700 transition-colors"
                     >
-                      <DynamicIcon icon={icons?.ui_whatsapp} fallback={<span>💬</span>} /> إرسال الرابط للواتساب
+                      <DynamicIcon iconKey="ui_whatsapp" config={icons} fallback="💬" className="w-3.5 h-3.5" /> إرسال الرابط للواتساب
                     </a>
                   ) : (
                     <span className="text-[10px] text-rose-500 bg-rose-50 px-2 py-1 rounded">
@@ -94,7 +94,7 @@ export function EmployeesList({
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded-lg bg-sky-100 px-3 py-1.5 text-[11px] font-bold text-sky-700 hover:bg-sky-200 transition-colors"
                     >
-                      <DynamicIcon icon={icons?.ui_link} fallback={<span>🔗</span>} /> فتح الرابط المباشر
+                      <DynamicIcon iconKey="ui_link" config={icons} fallback="🔗" className="w-3.5 h-3.5" /> فتح الرابط المباشر
                     </a>
                   )}
                   {emp.orderPortalUrl && emp.orderPortalUrl.trim().length > 5 && (
@@ -102,7 +102,15 @@ export function EmployeesList({
                       onClick={() => copyToClipboard(emp.orderPortalUrl, emp.id)}
                       className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
                     >
-                      {copiedId === emp.id ? "✅ تم النسخ" : <><DynamicIcon icon={icons?.ui_copy} fallback={<span>📋</span>} /> نسخ الرابط</>}
+                      {copiedId === emp.id ? (
+                        <>
+                          <DynamicIcon iconKey="ui_success" config={icons} fallback="✅" className="w-3.5 h-3.5" /> تم النسخ
+                        </>
+                      ) : (
+                        <>
+                          <DynamicIcon iconKey="ui_copy" config={icons} fallback="📋" className="w-3.5 h-3.5" /> نسخ الرابط
+                        </>
+                      )}
                     </button>
                   )}
                 </div>
@@ -110,8 +118,9 @@ export function EmployeesList({
               <div className="flex items-center gap-2 border-t pt-3 sm:border-0 sm:pt-0">
                 <Link
                   href={`/admin/shops/${shopId}/employees/${emp.id}/edit`}
-                  className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-900"
+                  className="flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-900"
                 >
+                  <DynamicIcon iconKey="ui_edit" config={icons} fallback="" className="w-3.5 h-3.5" />
                   تعديل
                 </Link>
                 <form action={renewEmployeeOrderPortalToken}>
@@ -119,8 +128,9 @@ export function EmployeesList({
                   <input type="hidden" name="shopId" value={shopId} />
                   <button
                     type="submit"
-                    className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-100"
+                    className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-100"
                   >
+                    <DynamicIcon iconKey="ui_refresh" config={icons} fallback="" className="w-3.5 h-3.5" />
                     تجديد
                   </button>
                 </form>
@@ -129,8 +139,9 @@ export function EmployeesList({
                   <input type="hidden" name="shopId" value={shopId} />
                   <button
                     type="submit"
-                    className="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-100"
+                    className="flex items-center gap-1.5 rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-100"
                   >
+                    <DynamicIcon iconKey="ui_delete" config={icons} fallback="" className="w-3.5 h-3.5" />
                     حذف
                   </button>
                 </form>

@@ -1,6 +1,5 @@
 "use client";
 
-import { createPortal } from "react-dom";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import {
   submitPreparerDeliveryMoney,
@@ -27,6 +26,8 @@ import {
   moneyWardTotalValueClass,
 } from "@/lib/money-entry-ui";
 import { PREPARER_ORDER_EDIT_PANEL_EVT } from "@/lib/preparer-edit-panel-events";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 const initialCash: PreparerCashState = {};
 
@@ -106,6 +107,11 @@ export function PreparerOrderMoneyFlow({
   const [deliverySession, setDeliverySession] = useState(0);
   const [pickupAdvanceToDelivering, setPickupAdvanceToDelivering] = useState(false);
   const [deliveryAdvanceToDelivered, setDeliveryAdvanceToDelivered] = useState(false);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const [pickupState, pickupAction, pickupPending] = useActionState(
     submitPreparerPickupMoney,
@@ -291,10 +297,16 @@ export function PreparerOrderMoneyFlow({
               onClick={(e) => {
                 if (!window.confirm("تأكيد مسح آخر حركة مسجّلة؟")) e.preventDefault();
               }}
-              className="rounded-xl border border-rose-400 bg-rose-50 px-3 py-2 text-xs font-black text-rose-800 hover:bg-rose-100 disabled:opacity-60"
+              className="flex items-center gap-1.5 rounded-xl border border-rose-400 bg-rose-50 px-3 py-2 text-xs font-black text-rose-800 hover:bg-rose-100 disabled:opacity-60"
               title="مسح آخر حركة مسجّلة من هذا المجهز"
             >
-              🗑️ مسح آخر حركة
+              <DynamicIcon
+                iconKey="ui_delete"
+                config={icons}
+                className="h-3.5 w-3.5"
+                fallback={<span>🗑️</span>}
+              />
+              مسح آخر حركة
             </button>
           </form>
         ) : (
@@ -353,10 +365,15 @@ export function PreparerOrderMoneyFlow({
                       <button
                         type="submit"
                         disabled={deletePending}
-                        className="rounded-xl border border-rose-400 bg-rose-50 py-2 px-2 text-xs font-bold text-rose-800 hover:bg-rose-100 disabled:opacity-60"
+                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-rose-400 bg-rose-50 text-xs font-bold text-rose-800 hover:bg-rose-100 disabled:opacity-60"
                         title="حذف الحركة (Soft delete)"
                       >
-                        🗑️
+                        <DynamicIcon
+                          iconKey="ui_delete"
+                          config={icons}
+                          className="h-3.5 w-3.5"
+                          fallback={<span>🗑️</span>}
+                        />
                       </button>
                     </form>
                   ) : !deleted ? (

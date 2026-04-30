@@ -15,7 +15,7 @@ import {
   MANDOUB_FAB_EVT_SCALE,
 } from "@/lib/mandoub-fab-bridge";
 import { PREPARER_ORDER_EDIT_PANEL_EVT } from "@/lib/preparer-edit-panel-events";
-import { DynamicIcon } from "./DynamicIcon";
+import { DynamicIcon } from "./dynamic-icon";
 import { getGlobalIcons, type GlobalIconsConfig } from "@/lib/icon-settings";
 
 /** حجم الزر العائم — القياس الأساسي قبل مضاعفة المستخدم (واتساب / اتصال / قوالب / دفع عميل / استلام) */

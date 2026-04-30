@@ -1,11 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   assignFileToInput,
   compressImageForMandoubUpload,
 } from "@/lib/client-image-compress";
 import { uploadMandoubSecondCustomerDoorPhotoSubmit } from "./actions";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export function MandoubQuickDoorSecondCapture({
   orderId,
@@ -22,6 +24,11 @@ export function MandoubQuickDoorSecondCapture({
   const galInputRef = useRef<HTMLInputElement>(null);
   const [compressing, setCompressing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   const hidden = (
     <>
@@ -89,8 +96,9 @@ export function MandoubQuickDoorSecondCapture({
           type="button"
           onClick={handleCamClick}
           disabled={compressing}
-          className="inline-flex w-full items-center justify-center rounded-xl border-2 border-emerald-400 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-900 shadow-sm hover:bg-emerald-100 disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-emerald-400 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-900 shadow-sm hover:bg-emerald-100 disabled:opacity-60"
         >
+          <DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="h-5 w-5 shrink-0" />
           كاميرا الزبون 2
         </button>
       </form>
@@ -118,6 +126,7 @@ export function MandoubQuickDoorSecondCapture({
           disabled={compressing}
           className="inline-flex w-full items-center justify-center rounded-xl border-2 border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50 disabled:opacity-60"
         >
+          <DynamicIcon iconKey="ui_gallery" config={icons} fallback="🖼️" className="h-5 w-5 shrink-0" />
           معرض الزبون 2
         </button>
       </form>

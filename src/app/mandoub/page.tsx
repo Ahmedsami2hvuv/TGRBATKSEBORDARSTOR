@@ -32,6 +32,8 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { MandoubAssignmentPoller } from "./mandoub-assignment-poller";
 import { MandoubWebPushBanner } from "./mandoub-web-push-banner";
 import type { MandoubRow } from "./mandoub-order-table";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { getGlobalIcons } from "@/lib/icon-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -91,6 +93,11 @@ export default async function MandoubPage({ searchParams }: Props) {
   const sp = await searchParams;
   const cookieStore = await cookies();
 
+  const [icons, iconsResult] = await Promise.all([
+    getGlobalIcons(),
+    null // Placeholder for potential future parallel fetches
+  ]);
+
   const c = sp.c || cookieStore.get("mandoub_c")?.value;
   const s = sp.s || cookieStore.get("mandoub_s")?.value;
   const exp = sp.exp || cookieStore.get("mandoub_exp")?.value;
@@ -102,6 +109,9 @@ export default async function MandoubPage({ searchParams }: Props) {
       <div dir="rtl" lang="ar" className="kse-app-bg px-4 py-16 text-slate-800">
         <div className="kse-app-inner mx-auto max-w-md">
           <div className="kse-glass-dark rounded-2xl border border-rose-300 p-8 text-center">
+            <div className="mb-4 flex justify-center">
+              <DynamicIcon config={icons.ui_error} fallback="❌" className="w-12 h-12 text-rose-600" />
+            </div>
             <p className="text-lg font-bold text-rose-700">لا يمكن فتح لوحة المندوب</p>
             <p className="mt-2 text-sm text-slate-600">{invalidLinkMessage(v.reason)}</p>
           </div>
@@ -142,6 +152,9 @@ export default async function MandoubPage({ searchParams }: Props) {
       <div dir="rtl" lang="ar" className="kse-app-bg px-4 py-16 text-slate-800">
         <div className="kse-app-inner mx-auto max-w-md">
           <div className="kse-glass-dark rounded-2xl border border-rose-300 p-8 text-center">
+            <div className="mb-4 flex justify-center">
+              <DynamicIcon config={icons.ui_error} fallback="🚫" className="w-12 h-12 text-rose-800" />
+            </div>
             <p className="text-lg font-bold text-rose-800">الحساب معطل أو غير موجود</p>
           </div>
         </div>
@@ -313,12 +326,18 @@ export default async function MandoubPage({ searchParams }: Props) {
       <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 sm:px-4 sm:py-4 sm:text-lg">
         <header className="kse-glass-dark mb-3 flex items-center gap-2 border border-sky-200/90 px-3 py-2.5 shadow-sm">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-[#00f3ff]">أهلاً {courier.name}</p>
-            <p className="text-[10px] font-bold text-slate-500 sm:text-xs">{courier.phone}</p>
+            <div className="flex items-center gap-2">
+              <DynamicIcon config={icons.ui_user} fallback="" className="w-5 h-5 text-sky-600" />
+              <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-[#00f3ff]">أهلاً {courier.name}</p>
+            </div>
+            <p className="text-[10px] font-bold text-slate-500 sm:text-xs ms-7">{courier.phone}</p>
           </div>
           <ThemeSwitcher />
           <MandoubPresenceToggle auth={baseAuth} availableForAssignment={courier.availableForAssignment} />
-          <Link href={`/mandoub/wallet?${baseQuery.toString()}`} className="inline-flex shrink-0 items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base">المحفظة</Link>
+          <Link href={`/mandoub/wallet?${baseQuery.toString()}`} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base">
+            <DynamicIcon config={icons.ui_wallet} fallback="" className="w-5 h-5" />
+            المحفظة
+          </Link>
         </header>
 
         <MandoubWebPushBanner auth={baseAuth} />
@@ -342,7 +361,10 @@ export default async function MandoubPage({ searchParams }: Props) {
             <Link href={`/mandoub?tab=assigned&${baseQuery.toString()}`} className={tabBtnClass(tab === "assigned")}>لم يتم الاستلام</Link>
             <Link href={`/mandoub?tab=delivering&${baseQuery.toString()}`} className={tabBtnClass(tab === "delivering")}>تم الاستلام</Link>
             <Link href={`/mandoub?tab=delivered&${baseQuery.toString()}`} className={tabBtnClass(tab === "delivered")}>تم التسليم</Link>
-            <Link href={`/mandoub?tab=check&${baseQuery.toString()}`} className={tabBtnClass(isChecking)}>الفحص 🔍</Link>
+            <Link href={`/mandoub?tab=check&${baseQuery.toString()}`} className={`${tabBtnClass(isChecking)} flex items-center gap-2`}>
+              الفحص
+              <DynamicIcon config={icons.ui_search} fallback="🔍" className="w-4 h-4" />
+            </Link>
           </nav>
 
           {isChecking && (

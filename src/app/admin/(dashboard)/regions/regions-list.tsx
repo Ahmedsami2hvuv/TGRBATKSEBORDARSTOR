@@ -80,7 +80,7 @@ export function RegionsList({ initialRegions }: { initialRegions: any[] }) {
           disabled={loading}
           className="px-4 py-3 bg-rose-600 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-rose-700 disabled:opacity-50 flex items-center gap-2"
         >
-          {loading ? "جاري الإصلاح..." : <><DynamicIcon icon={icons?.ui_settings} fallback="🛠️" className="w-4 h-4" /> إصلاح كافة الأسعار</>}
+          {loading ? "جاري الإصلاح..." : <><DynamicIcon iconKey="ui_settings" config={icons} fallback="🛠️" className="w-4 h-4" /> إصلاح كافة الأسعار</>}
         </button>
       </div>
 
@@ -105,7 +105,7 @@ export function RegionsList({ initialRegions }: { initialRegions: any[] }) {
                   </p>
                 </div>
                 <button onClick={() => startEdit(region)} className="text-indigo-600 hover:text-indigo-800 text-sm font-bold flex items-center gap-1">
-                  <DynamicIcon icon={icons?.ui_edit} fallback="تعديل" className="w-3.5 h-3.5" />
+                  <DynamicIcon iconKey="ui_edit" config={icons} fallback="تعديل" className="w-3.5 h-3.5" />
                   تعديل
                 </button>
               </>

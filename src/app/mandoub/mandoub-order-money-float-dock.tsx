@@ -24,6 +24,8 @@ import {
   readMoneyFloatLayout,
   saveMoneyFloatLayout,
 } from "./mandoub-money-float-storage";
+import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 const DRAG_THRESHOLD = 8;
 const LONG_PRESS_MS = 650;
@@ -135,6 +137,7 @@ function DraggableFloatButton({
   onClick,
   onLongPress,
   disabled,
+  icon,
 }: {
   id: MoneyFloatId;
   label: string;
@@ -148,6 +151,7 @@ function DraggableFloatButton({
   onClick: () => void;
   onLongPress?: () => void;
   disabled?: boolean;
+  icon?: ReactNode;
 }) {
   const dragRef = useRef<DragState | null>(null);
   const longPressRef = useRef<number | null>(null);
@@ -247,8 +251,9 @@ function DraggableFloatButton({
         disabled={disabled}
         onClick={(ev) => ev.preventDefault()}
         style={{ fontSize: labelPx }}
-        className={`flex h-full w-full cursor-grab items-center justify-center rounded-full px-0.5 text-center font-black leading-tight shadow-lg ring-2 ring-white/30 active:cursor-grabbing disabled:opacity-50 ${className}`}
+        className={`flex h-full w-full cursor-grab flex-col items-center justify-center rounded-full px-0.5 text-center font-black leading-tight shadow-lg ring-2 ring-white/30 active:cursor-grabbing disabled:opacity-50 ${className}`}
       >
+        <div style={{ fontSize: labelPx * 1.4 }} className="mb-0.5">{icon}</div>
         {label}
       </button>
     </div>
@@ -364,7 +369,12 @@ export function MandoubOrderMoneyFloatDock(props: {
   const [positions, setPositions] = useState<Record<MoneyFloatId, MoneyFloatPos>>(() =>
     initialMoneyFloatPositions(FAB_SIZE * initialFabScale()),
   );
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const skipFabClampRef = useRef(true);
+
+  useEffect(() => {
+    getGlobalIcons().then(setIcons);
+  }, []);
 
   useEffect(() => {
     const onScale = (e: Event) => {
@@ -457,7 +467,8 @@ export function MandoubOrderMoneyFloatDock(props: {
       {statusPickedUp ? (
         <DraggableFloatButton
           id="statusBtn"
-          label={"📦\nتم\nالاستلام"}
+          label={"تم\nالاستلام"}
+          icon={<DynamicIcon icon={icons?.order_received} fallback="📦" />}
           className="whitespace-pre-line border-2 border-amber-700 bg-amber-400 text-amber-950 hover:bg-amber-500"
           pos={positions.statusBtn}
           fabSize={fabSize}
@@ -470,7 +481,8 @@ export function MandoubOrderMoneyFloatDock(props: {
       {statusDelivered ? (
         <DraggableFloatButton
           id="statusBtn"
-          label={"✓\nتم\nالتسليم"}
+          label={"تم\nالتسليم"}
+          icon={<DynamicIcon icon={icons?.order_delivered} fallback="✓" />}
           className="whitespace-pre-line border-2 border-red-900 bg-red-600 text-white hover:bg-red-700"
           pos={positions.statusBtn}
           fabSize={fabSize}
@@ -483,7 +495,8 @@ export function MandoubOrderMoneyFloatDock(props: {
       {props.showPickupBtn ? (
         <DraggableFloatButton
           id="pickupBtn"
-          label={"💸\nدفع\nللعميل"}
+          label={"دفع\nللعميل"}
+          icon={<DynamicIcon iconKey="wallet_cash" config={icons} fallback="💸" />}
           className="whitespace-pre-line bg-emerald-600 text-white hover:bg-emerald-700"
           pos={positions.pickupBtn}
           fabSize={fabSize}
@@ -497,7 +510,8 @@ export function MandoubOrderMoneyFloatDock(props: {
       {props.showDeliveryBtn ? (
         <DraggableFloatButton
           id="deliveryBtn"
-          label={"🫴\nاستلام\nمن الزبون"}
+          label={"استلام\nمن الزبون"}
+          icon={<DynamicIcon iconKey="ui_inbox" config={icons} fallback="🫴" />}
           className="whitespace-pre-line bg-red-600 text-white hover:bg-red-700"
           pos={positions.deliveryBtn}
           fabSize={fabSize}
