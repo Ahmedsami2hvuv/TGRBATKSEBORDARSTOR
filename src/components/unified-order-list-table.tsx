@@ -375,17 +375,17 @@ export function UnifiedOrderListTable({
                                  {activeLocId === o.id && (
                                    <CenterModal title="فتح الموقع الجغرافي لـ:" onClose={() => setActiveLocId(null)}>
                                      <div className="flex flex-col gap-1">
-                                       {o.shopLocationUrl?.trim() && (
+                                       {o.shopLocationUrl && o.shopLocationUrl.trim().length > 5 && (
                                          <a href={o.shopLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
                                            <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> موقع العميل (المحل)
                                          </a>
                                        )}
-                                       {o.customerLocationUrl?.trim() && (
+                                       {o.customerLocationUrl && o.customerLocationUrl.trim().length > 5 && (
                                          <a href={o.customerLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
                                            <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> موقع الزبون
                                          </a>
                                        )}
-                                       {o.secondCustomerLocationUrl?.trim() && (
+                                       {o.secondCustomerLocationUrl && o.secondCustomerLocationUrl.trim().length > 5 && (
                                          <a href={o.secondCustomerLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
                                            <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> موقع الزبون 2 / مستلم
                                          </a>
@@ -413,7 +413,7 @@ export function UnifiedOrderListTable({
                                  {activeDoorId === o.id && (
                                    <CenterModal title="عرض صورة الباب لـ:" onClose={() => setActiveDoorId(null)}>
                                      <div className="flex flex-col gap-1">
-                                       {o.shopDoorPhotoUrl?.trim() && (
+                                       {o.shopDoorPhotoUrl && o.shopDoorPhotoUrl.trim().length > 5 && (
                                          <button
                                            onClick={() => { setModalImg({ url: o.shopDoorPhotoUrl!.trim(), title: "هذه صورة باب العميل (المحل)" }); setActiveDoorId(null); }}
                                            className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
@@ -421,7 +421,7 @@ export function UnifiedOrderListTable({
                                            <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> باب العميل (المحل)
                                          </button>
                                        )}
-                                       {o.customerDoorPhotoUrl?.trim() && (
+                                       {o.customerDoorPhotoUrl && o.customerDoorPhotoUrl.trim().length > 5 && (
                                          <button
                                            onClick={() => { setModalImg({ url: o.customerDoorPhotoUrl!.trim(), title: "هذه صورة باب الزبون" }); setActiveDoorId(null); }}
                                            className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
@@ -429,7 +429,7 @@ export function UnifiedOrderListTable({
                                            <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> باب الزبون
                                          </button>
                                        )}
-                                       {(o as any).secondCustomerDoorPhotoUrl?.trim() && (
+                                       {(o as any).secondCustomerDoorPhotoUrl && (o as any).secondCustomerDoorPhotoUrl.trim().length > 5 && (
                                          <button
                                            onClick={() => { setModalImg({ url: (o as any).secondCustomerDoorPhotoUrl!.trim(), title: "هذه صورة باب الزبون 2 / المستلم" }); setActiveDoorId(null); }}
                                            className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
