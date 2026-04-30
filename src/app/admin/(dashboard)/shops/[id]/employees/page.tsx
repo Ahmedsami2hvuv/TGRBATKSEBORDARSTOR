@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ad } from "@/lib/admin-ui";
 import { AddEmployeePanel } from "./add-employee-panel";
 import { EmployeesList, type EmployeeRow } from "./employees-list";
+import { DeliveryLoading } from "@/components/delivery-loading";
 
 export default function ShopEmployeesPage() {
   const params = useParams();
@@ -47,10 +48,7 @@ export default function ShopEmployeesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">جاري تحميل بيانات الموظفين...</p>
-        </div>
+        <DeliveryLoading message="جاري تحميل بيانات الموظفين..." />
       </div>
     );
   }
