@@ -425,7 +425,6 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
                       />
                     </a>
                   </div>
-              </div>
               <p className="text-sm">
                 <Link
                   href={`/admin/customers/profiles/${profileForRegion.id}/edit`}
