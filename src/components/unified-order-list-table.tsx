@@ -336,6 +336,8 @@ export function UnifiedOrderListTable({
                             {/* مثلث البصمة الصوتية والملاحظات */}
                             <div className="flex items-center gap-2 mt-1">
                               {o.audioUrl && <MiniAudioPlayer url={o.audioUrl} />}
+                              {o.preparerAudioUrl && <MiniAudioPlayer url={o.preparerAudioUrl} />}
+                              {o.adminAudioUrl && <MiniAudioPlayer url={o.adminAudioUrl} />}
                               {o.summary && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setShowNotes(showNotes === o.id ? null : o.id); }}

@@ -63,6 +63,10 @@ export type MandoubRow = {
   shopDoorPhotoUrl?: string | null;
   customerDoorPhotoUrl?: string | null;
   routeMode?: "single" | "double";
+  /** تسجيل صوتي من العميل (المجهز) */
+  preparerAudioUrl?: string | null;
+  /** تسجيل صوتي من الإدارة */
+  adminAudioUrl?: string | null;
 };
 
 function buildOrderDetailHref(

@@ -238,7 +238,7 @@ export default async function MandoubPage({ searchParams }: Props) {
     noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
     createdAt: o.createdAt,
     // بيانات الوصول السريع
-    audioUrl: o.audioUrl,
+    audioUrl: o.voiceNoteUrl,
     summary: o.summary,
     shopPhone: o.shop.phone || o.submittedBy?.phone || o.submittedByCompanyPreparer?.phone,
     alternatePhone: o.alternatePhone,
@@ -249,6 +249,8 @@ export default async function MandoubPage({ searchParams }: Props) {
     shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
     customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl,
     routeMode: o.routeMode as any,
+    preparerAudioUrl: null, // لم يتم إضافة الحقل بعد في Prisma كحقل منفصل ولكن نستخدم voiceNoteUrl حالياً
+    adminAudioUrl: o.adminVoiceNoteUrl,
   }));
 
   const searchFields: MandoubOrderSearchFields[] = filteredByTab.map((o) => ({

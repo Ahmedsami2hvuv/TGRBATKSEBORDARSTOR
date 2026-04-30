@@ -33,6 +33,8 @@ export const mandoubOrderDetailInclude = {
       recordedByCompanyPreparer: { select: { name: true } },
     },
   },
+  voiceNoteUrl: true,
+  adminVoiceNoteUrl: true,
 } satisfies Prisma.OrderInclude;
 
 export type MandoubOrderDetailPayload = Prisma.OrderGetPayload<{

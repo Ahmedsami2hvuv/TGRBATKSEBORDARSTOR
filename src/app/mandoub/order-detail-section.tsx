@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { hasCustomerLocationUrl } from "@/lib/order-location";
+import { VoiceNoteAudio } from "@/components/voice-note-audio";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { formatBaghdadDateTime } from "@/lib/baghdad-time";
 import {
@@ -213,7 +214,25 @@ export function OrderDetailSection({
         return (
           <div key="notes" className="mt-6 border-t border-sky-100 pt-5" style={blockStyle}>
             <p className="text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">ملاحظات وقائمة المواد</p>
-            <div className="relative rounded-xl border-2 border-amber-200 bg-amber-50/30 p-4"><div className="absolute end-3 top-3"><NotesCopyButton text={order.summary ?? ""} /></div><div className="whitespace-pre-wrap text-sm font-bold text-slate-800 leading-relaxed">{order.summary || "لا توجد ملاحظات"}</div></div>
+            <div className="flex flex-col gap-3">
+              {(order.voiceNoteUrl || order.adminVoiceNoteUrl) && (
+                <div className="flex flex-col gap-2 rounded-xl border-2 border-amber-100 bg-amber-50/20 p-3">
+                  {order.voiceNoteUrl && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold text-amber-700">بصمة الزبون/المحل:</span>
+                      <VoiceNoteAudio src={order.voiceNoteUrl} />
+                    </div>
+                  )}
+                  {order.adminVoiceNoteUrl && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold text-amber-700">بصمة الإدارة:</span>
+                      <VoiceNoteAudio src={order.adminVoiceNoteUrl} />
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="relative rounded-xl border-2 border-amber-200 bg-amber-50/30 p-4"><div className="absolute end-3 top-3"><NotesCopyButton text={order.summary ?? ""} /></div><div className="whitespace-pre-wrap text-sm font-bold text-slate-800 leading-relaxed">{order.summary || "لا توجد ملاحظات"}</div></div>
+            </div>
           </div>
         );
       case "money_flow":
