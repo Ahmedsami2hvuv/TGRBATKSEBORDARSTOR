@@ -88,6 +88,7 @@ export function PreparerOrderMoneyFlow({
   auth,
   nextUrl,
   preparerId,
+  icons,
 }: {
   orderId: string;
   orderNumber: number;
@@ -101,17 +102,13 @@ export function PreparerOrderMoneyFlow({
   auth: { p: string; exp: string; s: string };
   nextUrl: string;
   preparerId: string;
+  icons?: GlobalIconsConfig | null;
 }) {
   const [pickupOpen, setPickupOpen] = useState(false);
   const [deliveryOpen, setDeliveryOpen] = useState(false);
   const [deliverySession, setDeliverySession] = useState(0);
   const [pickupAdvanceToDelivering, setPickupAdvanceToDelivering] = useState(false);
   const [deliveryAdvanceToDelivered, setDeliveryAdvanceToDelivered] = useState(false);
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
 
   const [pickupState, pickupAction, pickupPending] = useActionState(
     submitPreparerPickupMoney,

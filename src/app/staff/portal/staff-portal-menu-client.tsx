@@ -27,7 +27,8 @@ export function StaffPortalMenuClient({
             className="group w-full rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-700 py-4 text-sm font-black text-white shadow-lg transition active:scale-95 flex items-center justify-center gap-2"
           >
             <DynamicIcon
-              icon={icons?.ui_flash}
+              iconKey="ui_flash"
+              config={icons}
               className="w-5 h-5"
               fallback={<span>🚀</span>}
             />
@@ -39,7 +40,8 @@ export function StaffPortalMenuClient({
             className="group w-full rounded-2xl border-2 border-sky-400 bg-white py-4 text-sm font-black text-sky-900 shadow-sm transition hover:bg-sky-50 active:scale-95 flex items-center justify-center gap-2"
           >
             <DynamicIcon
-              icon={icons?.ui_tasks}
+              iconKey="ui_tasks"
+              config={icons}
               className="w-5 h-5"
               fallback={<span>📑</span>}
             />
@@ -54,7 +56,8 @@ export function StaffPortalMenuClient({
           className="group w-full rounded-2xl border-2 border-slate-300 bg-slate-50 py-4 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100 active:scale-95 flex items-center justify-center gap-2"
         >
           <DynamicIcon
-            icon={icons?.ui_box}
+            iconKey="ui_box"
+            config={icons}
             className="w-5 h-5 opacity-70"
             fallback={<span>📦</span>}
           />
@@ -68,7 +71,8 @@ export function StaffPortalMenuClient({
           className="group w-full rounded-2xl border-2 border-purple-400 bg-white py-4 text-sm font-black text-purple-900 shadow-sm transition hover:bg-purple-50 active:scale-95 flex items-center justify-center gap-2"
         >
           <DynamicIcon
-            icon={icons?.ui_shops}
+            iconKey="ui_shops"
+            config={icons}
             className="w-5 h-5"
             fallback={<span>🏪</span>}
           />

@@ -9,6 +9,7 @@ import { PreparerOrdersSection } from "./preparer-orders-client";
 import { PreparerPresenceToggle } from "./preparer-presence-toggle";
 import { PreparerWalletLink } from "./preparer-wallet-link";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { getGlobalIcons } from "@/lib/icon-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -116,6 +117,8 @@ export default async function PreparerHomePage({ searchParams }: Props) {
     select: { id: true, name: true },
   });
 
+  const icons = await getGlobalIcons();
+
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 text-base leading-relaxed sm:px-4 sm:py-4 sm:text-lg">
       <header className="kse-glass-dark mb-2 flex flex-wrap items-center gap-2 border border-emerald-200/90 px-3 py-2.5 shadow-sm sm:mb-3 sm:px-4">
@@ -124,7 +127,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-slate-100">مرحباً {preparer.name}</p>
         </div>
         <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
-          <PreparerPresenceToggle auth={baseAuth} availableForAssignment={preparer.availableForAssignment} />
+          <PreparerPresenceToggle auth={baseAuth} availableForAssignment={preparer.availableForAssignment} icons={icons} />
           {canSubmitAny && (
             <>
               <Link href={preparerPath("/preparer/preparation", baseAuth)} className="inline-flex items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base">تجهيز الطلبات</Link>
@@ -134,7 +137,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
               <Link href={preparerPath("/preparer/order/new", baseAuth)} className="inline-flex items-center justify-center rounded-xl border-2 border-sky-500 bg-sky-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-sky-700 sm:px-4 sm:text-base">طلب جديد</Link>
             </>
           )}
-          <PreparerWalletLink auth={baseAuth} />
+          <PreparerWalletLink auth={baseAuth} icons={icons} />
         </div>
       </header>
 
@@ -146,6 +149,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           tab="all"
           initialQuery={(sp.q ?? "").trim()}
           couriersForBulkAssign={couriersForBulkAssign}
+          icons={icons}
         />
       </section>
     </div>

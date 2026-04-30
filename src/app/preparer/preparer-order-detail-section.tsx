@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import type { MandoubOrderDetailPayload } from "@/lib/mandoub-order-queries";
 import { preparerPath } from "@/lib/preparer-portal-nav";
 import { dinarDecimalToAlfInputString, formatDinarAsAlf } from "@/lib/money-alf";
@@ -387,7 +386,7 @@ export function PreparerOrderDetailSection({
           <PreparerOrderMoneyFlow
             key="money" orderId={order.id} orderNumber={order.orderNumber} courierName={order.courier?.name?.trim() || "—"} assignedCourierId={order.assignedCourierId} orderStatus={order.status} orderSubtotalDinar={order.orderSubtotal != null ? Number(order.orderSubtotal) : null} totalAmountDinar={order.totalAmount != null ? Number(order.totalAmount) : null}
             moneyEvents={order.moneyEvents.map((e) => ({ id: e.id, kind: e.kind, amountDinar: Number(e.amountDinar), expectedDinar: e.expectedDinar != null ? Number(e.expectedDinar) : null, matchesExpected: e.matchesExpected, mismatchReason: e.mismatchReason, mismatchNote: e.mismatchNote, recordedAt: e.createdAt, deletedAt: e.deletedAt, deletedReason: e.deletedReason, deletedByDisplayName: e.deletedByDisplayName, performedByDisplayName: e.recordedByCompanyPreparer?.name?.trim() || e.courier?.name?.trim() || "—", recordedByCompanyPreparerId: e.recordedByCompanyPreparerId ?? null }))}
-            auth={auth} nextUrl={nextUrl} preparerId={preparerId}
+            auth={auth} nextUrl={nextUrl} preparerId={preparerId} icons={icons}
           />
         );
       default: return null;

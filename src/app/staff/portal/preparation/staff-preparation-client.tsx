@@ -11,7 +11,7 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 
 const inputClass = "w-full rounded-xl border border-sky-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100";
 
-export function StaffPreparationClient({ staffName, auth, preparers }: any) {
+export function StaffPreparationClient({ staffName, auth, preparers, icons }: any) {
   const [state, formAction, pending] = useActionState(submitStaffPreparationDraft, {} as StaffPrepState);
   const [pasteText, setPasteText] = useState("");
   const [parseError, setParseError] = useState<string | null>(null);
@@ -25,11 +25,6 @@ export function StaffPreparationClient({ staffName, auth, preparers }: any) {
 
   // حالة تحديد المجهزين كـ مصفوفة
   const [selectedPreparerIds, setSelectedPreparerIds] = useState<string[]>([]);
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
 
   const togglePreparer = (id: string) => {
     setSelectedPreparerIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);

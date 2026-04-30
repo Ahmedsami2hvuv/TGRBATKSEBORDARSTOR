@@ -5,6 +5,7 @@ import { StaffEmployeesManager } from "./staff-employees-manager";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { buildStaffEmployeePortalUrl } from "@/lib/staff-employee-portal-link";
 import { getGlobalIcons } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -37,8 +38,9 @@ export default async function AdminEmployeesHubPage() {
   return (
     <div className="space-y-6">
       <p className={ad.muted}>
-        <Link href="/admin" className={ad.link}>
-          ← الرئيسية
+        <Link href="/admin" className={`${ad.link} flex items-center gap-1`}>
+          <DynamicIcon iconKey="ui_arrow_right" config={icons} fallback="←" className="w-3 h-3" />
+          الرئيسية
         </Link>
       </p>
 

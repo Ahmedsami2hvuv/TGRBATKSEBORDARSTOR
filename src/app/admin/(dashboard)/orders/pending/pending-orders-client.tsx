@@ -98,14 +98,16 @@ export function AssignToPreparerPanel({
     setSelectedPreparers(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  if (preparers.length === 0) return <p className="p-3 bg-amber-50 text-amber-900 rounded-lg text-xs font-bold border border-amber-200 text-center">⚠️ لا يوجد مجهزون متاحون حالياً.</p>;
+  if (preparers.length === 0) return <p className="p-3 bg-amber-50 text-amber-900 rounded-lg text-xs font-bold border border-amber-200 text-center flex items-center justify-center gap-2"><DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={14} height={14} /> لا يوجد مجهزون متاحون حالياً.</p>;
 
   return (
     <form action={formAction} className="space-y-4 rounded-xl border border-sky-200 bg-sky-50/60 p-4 shadow-inner text-right" dir="rtl">
       <input type="hidden" name="orderId" value={orderId} />
       <input type="hidden" name="isDraft" value={String(!!isDraft)} />
       {selectedPreparers.map(id => <input key={id} type="hidden" name="preparerIds" value={id} />)}
-      <p className="text-sm font-black text-sky-900 border-b border-sky-100 pb-2 flex items-center gap-2">🛒 إسناد الطلب للمجهزين</p>
+      <p className="text-sm font-black text-sky-900 border-b border-sky-100 pb-2 flex items-center gap-2">
+        <DynamicIcon icon={icons?.ui_shop} fallback="🛒" width={16} height={16} /> إسناد الطلب للمجهزين
+      </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-2">
         {preparers.map((p) => (
           <label key={p.id} className={`flex items-center gap-2 p-2 rounded-xl border-2 transition-all cursor-pointer ${selectedPreparers.includes(p.id) ? "border-sky-600 bg-sky-100 shadow-sm" : "border-white bg-white/50 hover:border-sky-200"}`}>
@@ -332,10 +334,18 @@ export function AdminPricingPanel({
           <DeleteFullOrderButton id={orderId} isDraft={Boolean(isDraft)} onSuccess={onSuccess} icons={icons} />
         </div>
         <div className="flex gap-2">
-          <button type="button" onClick={() => setShowReassign(!showReassign)} className="rounded-xl bg-slate-800 text-white px-3 py-1.5 text-[10px] font-black shadow-sm transition hover:bg-black">{isDraft ? "➕ إضافة مجهز" : "🔄 تغيير المجهز"}</button>
-          <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="rounded-xl bg-violet-600 text-white px-3 py-1.5 text-[10px] font-black shadow-sm transition active:scale-95">➕ قائمة كاملة</button>
-          <button type="button" onClick={() => { setDeleteMode(!deleteMode); setEditingIndex(null); }} className={`rounded-xl px-3 py-1.5 text-[10px] font-black shadow-sm transition ${deleteMode ? "bg-rose-600 text-white" : "bg-white border border-rose-300 text-rose-700"}`}>{deleteMode ? "إلغاء الحذف" : "🗑️ مسح أسطر"}</button>
-        </div>
+        <button type="button" onClick={() => setShowReassign(!showReassign)} className="rounded-xl bg-slate-800 text-white px-3 py-1.5 text-[10px] font-black shadow-sm transition hover:bg-black flex items-center gap-1">
+          <DynamicIcon icon={icons?.ui_plus} fallback={isDraft ? "➕" : "🔄"} width={10} height={10} />
+          {isDraft ? "إضافة مجهز" : "تغيير المجهز"}
+        </button>
+        <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="rounded-xl bg-violet-600 text-white px-3 py-1.5 text-[10px] font-black shadow-sm transition active:scale-95 flex items-center gap-1">
+          <DynamicIcon icon={icons?.ui_plus} fallback="➕" width={10} height={10} /> قائمة كاملة
+        </button>
+        <button type="button" onClick={() => { setDeleteMode(!deleteMode); setEditingIndex(null); }} className={`rounded-xl px-3 py-1.5 text-[10px] font-black shadow-sm transition flex items-center gap-1 ${deleteMode ? "bg-rose-600 text-white" : "bg-white border border-rose-300 text-rose-700"}`}>
+          <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={10} height={10} />
+          {deleteMode ? "إلغاء الحذف" : "مسح أسطر"}
+        </button>
+      </div>
       </div>
 
       {showReassign && <div className="animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); onSuccess?.(); }} /></div>}
@@ -418,7 +428,7 @@ export function AdminPricingPanel({
                       onClick={() => deleteMode ? setProducts(products.filter((_, idx) => idx !== i)) : setEditingIndex(isEditing ? null : i)}
                       className="min-h-[32px] min-w-[32px] flex items-center justify-center rounded-lg px-2 text-sm transition-all"
                     >
-                      {deleteMode ? "❌" : priced ? "✅" : "⚙️"}
+                      {deleteMode ? <DynamicIcon icon={icons?.ui_close} fallback="❌" width={14} height={14} /> : priced ? <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> : <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" width={14} height={14} />}
                     </button>
                   </div>
                 </div>
@@ -461,16 +471,28 @@ export function AdminPricingPanel({
 
         {isDraft ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button type="submit" name="submitType" value="admin_approve" disabled={pending || !selectedShopId} className="w-full rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-900 py-4 text-[11px] font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-emerald-950">
-              {pending ? "جارٍ الحفظ..." : "✅ اعتماد المسودة لطلب إداري"}
+            <button type="submit" name="submitType" value="admin_approve" disabled={pending || !selectedShopId} className="w-full rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-900 py-4 text-[11px] font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-emerald-950 flex items-center justify-center gap-2">
+              {pending ? "جارٍ الحفظ..." : (
+                <>
+                  <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد المسودة لطلب إداري
+                </>
+              )}
             </button>
-            <button type="submit" name="submitType" value="final_send" disabled={pending || !canSubmitFinal} className="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-violet-800 py-4 text-[11px] font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-violet-950">
-              {pending ? "جارٍ الإرسال..." : "🚀 إرسال الطلب النهائي للنظام"}
+            <button type="submit" name="submitType" value="final_send" disabled={pending || !canSubmitFinal} className="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-violet-800 py-4 text-[11px] font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-violet-950 flex items-center justify-center gap-2">
+              {pending ? "جارٍ الإرسال..." : (
+                <>
+                  <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={14} height={14} /> إرسال الطلب النهائي للنظام
+                </>
+              )}
             </button>
           </div>
         ) : (
-          <button type="submit" disabled={pending} className="w-full rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-900 py-4 text-sm font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-emerald-950">
-            {pending ? "جارٍ معالجة البيانات..." : "✅ اعتماد التسعير والرفع للمندوب 🚀"}
+          <button type="submit" disabled={pending} className="w-full rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-900 py-4 text-sm font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-emerald-950 flex items-center justify-center gap-2">
+            {pending ? "جارٍ معالجة البيانات..." : (
+              <>
+                <DynamicIcon icon={icons?.ui_success} fallback="✅" width={16} height={16} /> اعتماد التسعير والرفع للمندوب <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={16} height={16} />
+              </>
+            )}
           </button>
         )}
       </form>
@@ -487,6 +509,7 @@ export function PendingAssignPanel({
   defaultCustomerLocationUrl,
   defaultCustomerLandmark,
   defaultCustomerDoorPhotoUrl,
+  icons
 }: {
   orderId: string;
   couriers: { id: string; name: string }[];
@@ -495,10 +518,11 @@ export function PendingAssignPanel({
   defaultCustomerLocationUrl: string;
   defaultCustomerLandmark: string;
   defaultCustomerDoorPhotoUrl: string;
+  icons: GlobalIconsConfig | null;
 }) {
   const bound = assignPendingOrderToCourier.bind(null);
   const [state, formAction, pending] = useActionState(bound, {} as AssignOrderState);
-  if (couriers.length === 0) return <p className="p-3 bg-amber-50 text-amber-900 rounded-lg text-sm font-bold border border-amber-200 text-center">⚠️ لا يوجد مندوبون مسجلون.</p>;
+  if (couriers.length === 0) return <p className="p-3 bg-amber-50 text-amber-900 rounded-lg text-sm font-bold border border-amber-200 text-center flex items-center justify-center gap-2"><DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={16} height={16} /> لا يوجد مندوبون مسجلون.</p>;
   const inputClass = "w-full rounded-xl border border-slate-200 p-2.5 text-xs font-mono outline-none text-left bg-white focus:ring-2 focus:ring-emerald-300";
   const labelClass = "text-[11px] font-bold text-slate-500 mb-1 block pr-1";
 
@@ -506,7 +530,9 @@ export function PendingAssignPanel({
     <form action={formAction} encType="multipart/form-data" className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 shadow-inner text-right" dir="rtl">
       <input type="hidden" name="orderId" value={orderId} />
       <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
-        <p className="text-sm font-black text-emerald-900">📦 إسناد فوري للمندوب</p>
+        <p className="text-sm font-black text-emerald-900 flex items-center gap-2">
+          <DynamicIcon icon={icons?.ui_package} fallback="📦" width={16} height={16} /> إسناد فوري للمندوب
+        </p>
         <span className="text-[10px] font-bold text-slate-500">الزبون: {customerPhone}</span>
       </div>
 
@@ -517,8 +543,8 @@ export function PendingAssignPanel({
 
           <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-emerald-200 shadow-sm">
             <input type="checkbox" id="direct-receipt" name="directReceipt" className="h-4 w-4 rounded border-emerald-400" />
-            <label htmlFor="direct-receipt" className="text-[11px] font-black text-emerald-950 cursor-pointer select-none">
-              استلام مباشر للمندوب (تخطي الموافقة) ⚡
+            <label htmlFor="direct-receipt" className="text-[11px] font-black text-emerald-950 cursor-pointer select-none flex items-center gap-1">
+              استلام مباشر للمندوب (تخطي الموافقة) <DynamicIcon icon={icons?.ui_flash} fallback="⚡" width={12} height={12} />
             </label>
           </div>
 
@@ -719,13 +745,17 @@ export function PendingOrdersClient({
                   <div className="pt-2 flex flex-col gap-2" onClick={e => e.stopPropagation()}>
                     {o.voiceNoteUrl && (
                       <div className="bg-sky-50 p-2 rounded-lg border border-sky-100">
-                        <p className="text-[9px] font-bold text-sky-700 mb-1">🎤 بصمة الزبون:</p>
+                        <p className="text-[9px] font-bold text-sky-700 mb-1 flex items-center gap-1">
+                          <DynamicIcon icon={icons?.ui_audio} fallback="🎤" width={10} height={10} /> بصمة الزبون:
+                        </p>
                         <VoiceNoteAudio src={resolvePublicAssetSrc(o.voiceNoteUrl) || ""} />
                       </div>
                     )}
                     {o.adminVoiceNoteUrl && (
                       <div className="bg-amber-50 p-2 rounded-lg border border-amber-100">
-                        <p className="text-[9px] font-bold text-amber-700 mb-1">🎧 ملاحظة الإدارة الصوتية:</p>
+                        <p className="text-[9px] font-bold text-amber-700 mb-1 flex items-center gap-1">
+                          <DynamicIcon icon={icons?.ui_audio} fallback="🎧" width={10} height={10} /> ملاحظة الإدارة الصوتية:
+                        </p>
                         <VoiceNoteAudio src={resolvePublicAssetSrc(o.adminVoiceNoteUrl) || ""} />
                       </div>
                     )}
@@ -737,7 +767,7 @@ export function PendingOrdersClient({
               {!isDraftMode && <div className="hidden sm:flex items-start" onClick={(e) => e.stopPropagation()}><RejectButton orderId={o.id} /></div>}
             </div>
             {pricingOpen && <div className="p-4 border-t-2 border-amber-300 bg-amber-50/40" onClick={e => e.stopPropagation()}><AdminPricingPanel orderId={o.id} initialData={o.preparerShoppingJson} isDraft={isDraftMode} initialPreparerIds={o.assignedPreparerIds} orderSummary={o.summary} shops={shops} preparers={preparers} rawDeliveryPriceDinar={o.rawDeliveryPriceDinar} onSuccess={() => { setPricingOpenId(null); isDraftMode && router.refresh(); }} icons={icons} /></div>}
-            {assignOpen && !isDraftMode && <div className="p-4 border-t-2 border-emerald-300 bg-emerald-50/40 shadow-inner" onClick={e => e.stopPropagation()}><PendingAssignPanel orderId={o.id} couriers={couriers} customerPhone={o.customerPhone} customerAlternatePhone={o.customerAlternatePhone} defaultCustomerLocationUrl={o.customerLocationUrl} defaultCustomerLandmark={o.customerLandmark} defaultCustomerDoorPhotoUrl={o.customerDoorPhotoUrl} /></div>}
+            {assignOpen && !isDraftMode && <div className="p-4 border-t-2 border-emerald-300 bg-emerald-50/40 shadow-inner" onClick={e => e.stopPropagation()}><PendingAssignPanel orderId={o.id} couriers={couriers} customerPhone={o.customerPhone} customerAlternatePhone={o.customerAlternatePhone} defaultCustomerLocationUrl={o.customerLocationUrl} defaultCustomerLandmark={o.customerLandmark} defaultCustomerDoorPhotoUrl={o.customerDoorPhotoUrl} icons={icons} /></div>}
           </div>
         );
       })}

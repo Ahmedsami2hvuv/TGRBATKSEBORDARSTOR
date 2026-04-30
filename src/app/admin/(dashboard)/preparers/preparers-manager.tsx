@@ -593,18 +593,14 @@ export function PreparersManager({
   allShops,
   allBranches,
   allCategories,
+  icons,
 }: {
   rows: PreparerManagerRow[];
   allShops: ShopOption[];
   allBranches: BranchOption[];
   allCategories: CategoryOption[];
+  icons: GlobalIconsConfig | null;
 }) {
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
-
   return (
     <div className="space-y-8">
       <AddPreparerForm icons={icons} />

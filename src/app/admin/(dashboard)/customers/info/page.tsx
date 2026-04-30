@@ -8,6 +8,9 @@ import { hasCustomerLocationUrl } from "@/lib/order-location";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { CustomerOrdersBulkTable } from "../orders/customer-orders-bulk-table";
+import { getGlobalIcons } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
+import { normalizeAdminShopName } from "@/lib/admin-ui-helpers"; // Added if needed, or check if it exists
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +64,9 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
   const regionIdParam = (sp.regionId ?? "").trim();
   const q = (sp.q ?? "").trim().toLowerCase();
   const phoneNorm = normalizeIraqMobileLocal11(phone) ?? phone;
+
+  // 0. Fetch global icons
+  const icons = await getGlobalIcons();
 
   // 1. جلب البيانات المرجعية (سريع جداً)
   const profiles = phoneNorm
@@ -223,7 +229,8 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
     <div className="space-y-4" dir="rtl">
       <p className={ad.muted}>
         <Link href="/admin/customers" className={ad.link}>
-          ← بيانات الزبائن
+          <DynamicIcon iconKey="ui_arrow_right" config={icons} fallback="←" className="inline-block w-3 h-3 me-1" />
+          بيانات الزبائن
         </Link>
         <span className="text-slate-400"> | </span>
         <Link href="/admin" className={ad.link}>
@@ -262,7 +269,8 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
               className={`${ad.input} mt-1`}
             />
           </label>
-          <button type="submit" className={ad.btnDark}>
+          <button type="submit" className={ad.btnDark + " flex items-center gap-2"}>
+            <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-4 h-4" />
             بحث
           </button>
         </form>
@@ -328,9 +336,10 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
           <p>
             <Link
               href={buildInfoHref(phone)}
-              className={`inline-flex min-h-[44px] items-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-50`}
+              className={`inline-flex min-h-[44px] items-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-50 gap-2`}
             >
-              ← العودة لقائمة المناطق
+              <DynamicIcon iconKey="ui_arrow_right" config={icons} fallback="←" className="w-4 h-4" />
+              العودة لقائمة المناطق
             </Link>
           </p>
 
@@ -353,15 +362,18 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
             <div className={`${ad.section} space-y-4`}>
               <h3 className={ad.h3}>البيانات المخزّنة (مرجع رقم + منطقة)</h3>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs font-semibold text-slate-500">اللوكيشن</p>
+                  <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                    <DynamicIcon iconKey="ui_location" config={icons} fallback="📍" className="w-3 h-3" />
+                    اللوكيشن
+                  </p>
                   {profileForRegion.locationUrl?.trim() ? (
                     <a
                       href={profileForRegion.locationUrl.trim()}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`${ad.link} break-all text-sm font-semibold`}
+                      className={`${ad.link} break-all text-sm font-semibold flex items-center gap-1`}
                     >
+                      <DynamicIcon iconKey="ui_external_link" config={icons} fallback="🔗" className="w-3.5 h-3.5" />
                       فتح الرابط
                     </a>
                   ) : (
@@ -369,7 +381,8 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
                   )}
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-500">
+                  <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                    <DynamicIcon iconKey="ui_map" config={icons} fallback="📍" className="w-3 h-3" />
                     أقرب نقطة دالة
                   </p>
                   <p className="text-sm text-slate-800 whitespace-pre-wrap">
@@ -377,20 +390,26 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-500">رقم ثانٍ</p>
+                  <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                    <DynamicIcon iconKey="ui_call" config={icons} fallback="📞" className="w-3 h-3" />
+                    رقم ثانٍ
+                  </p>
                   <p className="font-mono text-sm tabular-nums">
                     {profileForRegion.alternatePhone?.trim() || "—"}
                   </p>
                 </div>
                 <div className="sm:col-span-2">
-                  <p className="text-xs font-semibold text-slate-500">ملاحظات</p>
+                  <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                    <DynamicIcon iconKey="ui_note" config={icons} fallback="📝" className="w-3 h-3" />
+                    ملاحظات
+                  </p>
                   <p className="text-sm text-slate-800 whitespace-pre-wrap">
                     {profileForRegion.notes?.trim() || "—"}
                   </p>
                 </div>
-                {doorPhotoSrc ? (
                   <div className="sm:col-span-2">
-                    <p className="mb-2 text-xs font-semibold text-slate-500">
+                    <p className="mb-2 text-xs font-semibold text-slate-500 flex items-center gap-1">
+                      <DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="w-3 h-3" />
                       صورة باب
                     </p>
                     <a
@@ -411,8 +430,9 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
               <p className="text-sm">
                 <Link
                   href={`/admin/customers/profiles/${profileForRegion.id}/edit`}
-                  className={ad.link}
+                  className={ad.link + " flex items-center gap-1"}
                 >
+                  <DynamicIcon iconKey="ui_edit" config={icons} fallback="✎" className="w-3.5 h-3.5" />
                   تعديل هذا المرجع
                 </Link>
               </p>
@@ -424,14 +444,18 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
               <h3 className={ad.h3}>من آخر طلبية في هذه المنطقة</h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500">اللوكيشن</p>
+                  <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                    <DynamicIcon iconKey="ui_location" config={icons} fallback="📍" className="w-3 h-3" />
+                    اللوكيشن
+                  </p>
                   {latestOrderInRegion.customerLocationUrl?.trim() ? (
                     <a
                       href={latestOrderInRegion.customerLocationUrl.trim()}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`${ad.link} break-all text-sm font-semibold`}
+                      className={`${ad.link} break-all text-sm font-semibold flex items-center gap-1`}
                     >
+                      <DynamicIcon iconKey="ui_external_link" config={icons} fallback="🔗" className="w-3.5 h-3.5" />
                       فتح الرابط
                     </a>
                   ) : (
@@ -439,7 +463,8 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
                   )}
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-500">
+                  <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                    <DynamicIcon iconKey="ui_map" config={icons} fallback="📍" className="w-3 h-3" />
                     أقرب نقطة دالة
                   </p>
                   <p className="text-sm text-slate-800 whitespace-pre-wrap">
@@ -447,7 +472,10 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-500">رقم ثانٍ</p>
+                  <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                    <DynamicIcon iconKey="ui_call" config={icons} fallback="📞" className="w-3 h-3" />
+                    رقم ثانٍ
+                  </p>
                   <p className="font-mono text-sm tabular-nums">
                     {latestOrderInRegion.alternatePhone?.trim() || "—"}
                   </p>
@@ -458,7 +486,7 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
 
           {doorPhotoSrc && !profileForRegion && (
              <div className={`${ad.section} space-y-2`}>
-              <h3 className={ad.h3}>صورة باب الزبون</h3>
+              <h3 className={ad.h3}><DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="inline-block w-5 h-5 me-2" />صورة باب الزبون</h3>
               <a
                 href={doorPhotoSrc}
                 target="_blank"
@@ -484,7 +512,7 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
             {ordersFiltered && ordersFiltered.length === 0 ? (
               <p className="text-slate-600">لا توجد طلبات في هذه المنطقة.</p>
             ) : (
-              <CustomerOrdersBulkTable orders={tableRows} couriers={couriers} />
+              <CustomerOrdersBulkTable orders={tableRows} couriers={couriers} icons={icons} />
             )}
           </div>
         </>

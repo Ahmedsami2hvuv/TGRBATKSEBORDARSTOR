@@ -3,6 +3,8 @@ import { ad } from "@/lib/admin-ui";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 import { SuppliersManager, type SupplierManagerRow } from "./suppliers-manager";
+import { getGlobalIcons } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -11,24 +13,21 @@ export const metadata = {
 };
 
 export default async function SuppliersPage() {
-  let suppliers: any[] = [];
-  let products: any[] = [];
+  const [suppliersRes, productsRes, icons] = await Promise.all([
+    prisma.storeSupplier.findMany({
+      include: { products: { select: { id: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.storeProduct.findMany({
+      where: { active: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, description: true }
+    }),
+    getGlobalIcons()
+  ]);
 
-  try {
-    [suppliers, products] = await Promise.all([
-      prisma.storeSupplier.findMany({
-        include: { products: { select: { id: true } } },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.storeProduct.findMany({
-        where: { active: true },
-        orderBy: { name: "asc" },
-        select: { id: true, name: true, description: true }
-      })
-    ]);
-  } catch (e) {
-    console.error("Database query failed:", e);
-  }
+  const suppliers = suppliersRes || [];
+  const products = productsRes || [];
 
   const baseUrl = getPublicAppUrl();
   const rows: SupplierManagerRow[] = suppliers.map((s) => {
@@ -46,10 +45,11 @@ export default async function SuppliersPage() {
   return (
     <div className="space-y-6" dir="rtl">
       <div className="flex flex-wrap gap-2 mb-4">
-        <Link href="/admin" className={ad.navButton}>
-          ← الرئيسية
+        <Link href="/admin" className={`${ad.navButton} flex items-center gap-1`}>
+          <DynamicIcon iconKey="ui_arrow_right" config={icons} fallback="←" className="w-3 h-3" />
+          الرئيسية
         </Link>
-        <Link href="/admin/store/products" className={ad.navButton}>
+        <Link href="/admin/store/products" className={`${ad.navButton} flex items-center gap-1`}>
            المنتجات
         </Link>
       </div>
@@ -61,7 +61,7 @@ export default async function SuppliersPage() {
         </p>
       </div>
 
-      <SuppliersManager rows={rows} allProducts={products} />
+      <SuppliersManager rows={rows} allProducts={products} icons={icons} />
     </div>
   );
 }

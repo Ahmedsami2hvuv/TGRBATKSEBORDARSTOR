@@ -39,6 +39,14 @@ const ICON_KEYS = [
   { id: "ui_external_link", label: "أيقونة الرابط الخارجي ↗" },
   { id: "ui_shops", label: "أيقونة المحلات (القائمة)" },
   { id: "ui_map", label: "أيقونة الخريطة العامة" },
+  { id: "ui_arrow_right", label: "أيقونة السهم الأيسر ←" },
+  { id: "wallet", label: "أيقونة المحفظة" },
+  { id: "ui_gps", label: "أيقونة الموقع الحي (GPS)" },
+  { id: "ui_image", label: "أيقونة الصورة/المعرض" },
+  { id: "ui_eye", label: "أيقونة العين (مرئي)" },
+  { id: "ui_eye_off", label: "أيقونة العين المغلقة (مخفي)" },
+  { id: "ui_earnings", label: "أيقونة الأرباح/الدخل" },
+  { id: "ui_plus", label: "أيقونة الإضافة ➕" },
 ];
 
 export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {

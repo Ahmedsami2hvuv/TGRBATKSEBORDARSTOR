@@ -11,17 +11,14 @@ const initial: PreparerActionState = {};
 export function PreparerPresenceToggle({
   auth,
   availableForAssignment,
+  icons,
 }: {
   auth: { p: string; exp: string; s: string };
   availableForAssignment: boolean;
+  icons?: GlobalIconsConfig | null;
 }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(setPreparerPresenceFromForm, initial);
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
 
   useEffect(() => {
     if (state.ok) router.refresh();

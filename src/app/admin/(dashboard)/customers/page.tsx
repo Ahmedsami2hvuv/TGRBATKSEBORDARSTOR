@@ -88,7 +88,10 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
     <div className="space-y-6 pb-20">
       <div className="flex flex-col gap-1">
         <p className={ad.muted}>
-          <Link href="/admin" className={ad.link}>← الرئيسية</Link>
+          <Link href="/admin" className={ad.link}>
+            <DynamicIcon iconKey="ui_arrow_right" config={icons} fallback="←" className="inline-block w-3 h-3 me-1" />
+            الرئيسية
+          </Link>
         </p>
         <div className="flex justify-between items-end">
            <div>

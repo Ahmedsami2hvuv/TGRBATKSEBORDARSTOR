@@ -491,9 +491,9 @@ export function AdminCreateOrderForm({
             <button
               type="button"
               onClick={runParse}
-              className="mt-3 w-full rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-violet-700"
+              className="mt-3 w-full rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-violet-700 flex items-center justify-center gap-2"
             >
-              تحليل النص واستخراج البيانات
+              <DynamicIcon icon={icons?.ui_ai} fallback="✨" width={16} height={16} /> تحليل النص واستخراج البيانات
             </button>
             {parseError ? <p className="mt-2 text-xs font-bold text-rose-600">{parseError}</p> : null}
           </div>
@@ -715,7 +715,7 @@ export function AdminCreateOrderForm({
                 </div>
                 <button
                   type="button"
-                  className="mt-3 w-full rounded-lg border border-emerald-500 bg-emerald-600 px-3 py-2.5 text-xs font-black text-white hover:bg-emerald-700 shadow-md transition-all active:scale-[0.98]"
+                  className="mt-3 w-full rounded-lg border border-emerald-500 bg-emerald-600 px-3 py-2.5 text-xs font-black text-white hover:bg-emerald-700 shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                   onClick={() => {
                     setFirstPhone(firstPrefill.phone);
                     setFirstRegionId(firstPrefill.customerRegionId ?? "");
@@ -727,7 +727,7 @@ export function AdminCreateOrderForm({
                     setFirstPrefillApplied(true);
                   }}
                 >
-                  تطبيق كافة التفاصيل المحفوظة الآن
+                  <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> تطبيق كافة التفاصيل المحفوظة الآن
                 </button>
                 {firstPrefillApplied ? (
                   <p className="mt-2 text-[11px] font-bold text-emerald-800 bg-emerald-200/50 p-1 rounded text-center flex items-center justify-center gap-1">
@@ -889,7 +889,7 @@ export function AdminCreateOrderForm({
                   </div>
                   <button
                     type="button"
-                    className="mt-3 w-full rounded-lg border border-violet-500 bg-violet-600 px-3 py-2 text-xs font-black text-white hover:bg-violet-700 shadow-md transition-all active:scale-[0.98]"
+                    className="mt-3 w-full rounded-lg border border-violet-500 bg-violet-600 px-3 py-2 text-xs font-black text-white hover:bg-violet-700 shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                     onClick={() => {
                       setSecondPhone(secondPrefill.phone);
                       setSecondRegionId(secondPrefill.customerRegionId ?? "");
@@ -900,7 +900,7 @@ export function AdminCreateOrderForm({
                       setSecondRawDoorPhotoUrl(secondPrefill.customerDoorPhotoUrl);
                     }}
                   >
-                    تطبيق تفاصيل المستلم
+                    <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> تطبيق تفاصيل المستلم
                   </button>
                 </div>
               )}
@@ -943,8 +943,16 @@ export function AdminCreateOrderForm({
 
           {state.error ? <p className={ad.error}>{state.error}</p> : null}
 
-      <button type="submit" className={ad.btnPrimary} disabled={!canSubmit || pending}>
-        {pending ? "جارٍ التنفيذ..." : (submissionMode === "prep_draft" ? "إرسال طلب التجهيز" : "إنشاء الطلب")}
+      <button type="submit" className={`${ad.btnPrimary} flex items-center justify-center gap-2`} disabled={!canSubmit || pending}>
+        {pending ? "جارٍ التنفيذ..." : (
+          <>
+            {submissionMode === "prep_draft" ? (
+              <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={18} height={18} /> إرسال طلب التجهيز</>
+            ) : (
+              <><DynamicIcon icon={icons?.ui_plus} fallback="+" width={18} height={18} /> إنشاء الطلب</>
+            )}
+          </>
+        )}
       </button>
     </form>
   );

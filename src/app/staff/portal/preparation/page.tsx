@@ -3,6 +3,8 @@ import type { StaffEmployeePortalVerifyReason } from "@/lib/staff-employee-porta
 import { verifyStaffEmployeePortalQuery } from "@/lib/staff-employee-portal-link";
 import { prisma } from "@/lib/prisma";
 import { StaffPreparationClient } from "./staff-preparation-client";
+import { getGlobalIcons } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -37,32 +39,21 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
     );
   }
 
-  const staff = await prisma.staffEmployee.findUnique({
-    where: { id: v.staffEmployeeId },
-    select: { id: true, name: true, active: true, portalToken: true },
-  });
-
-  if (!staff || !staff.active || staff.portalToken !== v.token) {
-    return (
-      <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800">
-        <div className="kse-app-inner mx-auto max-w-md">
-          <div className="kse-glass-dark rounded-2xl border border-rose-300 p-8 text-center">
-            <p className="text-lg font-bold text-rose-700">تعذّر فتح صفحة التجهيز</p>
-            <p className="mt-2 text-sm text-slate-600">الحساب غير مفعّل أو الرابط غير صالح.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const preparers = await prisma.companyPreparer.findMany({
-    where: {
-      active: true,
-      notes: { not: { contains: "[SUPPLIER]" } },
-    },
-    select: { id: true, name: true, availableForAssignment: true },
-    orderBy: { name: "asc" },
-  });
+  const [staff, preparers, icons] = await Promise.all([
+    prisma.staffEmployee.findUnique({
+      where: { id: v.staffEmployeeId },
+      select: { id: true, name: true, active: true, portalToken: true },
+    }),
+    prisma.companyPreparer.findMany({
+      where: {
+        active: true,
+        notes: { not: { contains: "[SUPPLIER]" } },
+      },
+      select: { id: true, name: true, availableForAssignment: true },
+      orderBy: { name: "asc" },
+    }),
+    getGlobalIcons(),
+  ]);
 
   const auth = { se: sp.se ?? "", exp: sp.exp ?? "", s: sp.s ?? "" };
   const authQ = new URLSearchParams(auth).toString();
@@ -73,14 +64,16 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
         <div className="mb-4 flex flex-wrap gap-2">
           <Link
             href={`/staff/portal?${authQ}`}
-            className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100"
+            className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100 gap-2"
           >
-            ← رجوع
+            <DynamicIcon iconKey="ui_arrow_right" config={icons} fallback="←" className="w-4 h-4" />
+            رجوع
           </Link>
           <Link
             href={`/staff/portal/submitted?${authQ}`}
-            className="inline-flex items-center justify-center rounded-xl border border-violet-300 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-900 shadow-sm transition hover:bg-violet-100"
+            className="inline-flex items-center justify-center rounded-xl border border-violet-300 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-900 shadow-sm transition hover:bg-violet-100 gap-2"
           >
+            <DynamicIcon iconKey="ui_tasks" config={icons} fallback="📑" className="w-4 h-4" />
             الطلبات المرفوعة
           </Link>
         </div>
@@ -93,6 +86,7 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
             name: p.name,
             available: p.availableForAssignment,
           }))}
+          icons={icons}
         />
       </div>
     </div>

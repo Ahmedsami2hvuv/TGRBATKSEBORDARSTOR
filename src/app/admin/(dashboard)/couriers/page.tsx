@@ -31,7 +31,7 @@ export default async function AdminCouriersPage() {
     <div className="space-y-8">
       <p className={ad.muted}>
         <Link href="/admin" className={`${ad.link} flex items-center gap-1`}>
-          <DynamicIcon config={icons.ui_home} fallback="←" className="w-4 h-4" />
+          <DynamicIcon config={icons} iconKey="ui_home" fallback="←" className="w-4 h-4" />
           الرئيسية
         </Link>
       </p>
@@ -39,7 +39,7 @@ export default async function AdminCouriersPage() {
         <h1 className={ad.h1}>المندوبين</h1>
         <p className="mt-2">
           <Link href="/admin/couriers/map" className={`${ad.link} flex items-center gap-2`}>
-            <DynamicIcon config={icons.ui_map} fallback="🗺️" className="w-5 h-5" />
+            <DynamicIcon config={icons} iconKey="ui_map" fallback="🗺️" className="w-5 h-5" />
             خريطة مواقع المندوبين (آخر موقع مُبلّغ)
           </Link>
         </p>
@@ -96,7 +96,7 @@ export default async function AdminCouriersPage() {
                         href={whatsappAppUrl(c.phone, shareText)}
                         className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-1.5 text-xs font-bold text-slate-900 shadow-md ring-1 ring-amber-300/50 transition hover:from-amber-300 hover:to-amber-400"
                       >
-                        <DynamicIcon config={icons.ui_whatsapp} fallback="💬" className="w-4 h-4" />
+                        <DynamicIcon config={icons} iconKey="ui_whatsapp" fallback="💬" className="w-4 h-4" />
                         واتساب: رابط لوحة المندوب
                       </a>
                       <a
@@ -105,7 +105,7 @@ export default async function AdminCouriersPage() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 rounded-lg border border-sky-500/60 bg-sky-950/50 px-3 py-1.5 text-xs font-bold text-sky-100"
                       >
-                        <DynamicIcon config={icons.ui_external_link} fallback="↗" className="w-4 h-4" />
+                        <DynamicIcon config={icons} iconKey="ui_external_link" fallback="↗" className="w-4 h-4" />
                         معاينة اللوحة
                       </a>
                       <CourierResetButton courierId={c.id} />
@@ -116,7 +116,7 @@ export default async function AdminCouriersPage() {
                       href={`/admin/couriers/${c.id}/edit`}
                       className={`text-sm ${ad.link} flex items-center gap-1`}
                     >
-                      <DynamicIcon config={icons.ui_edit} fallback="تعديل" className="w-4 h-4" />
+                      <DynamicIcon config={icons} iconKey="ui_edit" fallback="تعديل" className="w-4 h-4" />
                       تعديل
                     </Link>
                     <CourierDeleteForm id={c.id} name={c.name} />

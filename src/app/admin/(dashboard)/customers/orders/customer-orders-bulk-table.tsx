@@ -6,6 +6,8 @@ import { useActionState, useEffect, useMemo, useState } from "react";
 import { bulkUpdateOrdersStatus, type BulkOrdersState } from "../../orders/bulk-actions";
 import { orderStatusRowClassInteractive } from "@/lib/order-status-style";
 import type { ReactNode } from "react";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 type CourierOption = { id: string; name: string };
 
@@ -23,9 +25,11 @@ type CustomerOrderRow = {
 export function CustomerOrdersBulkTable({
   orders,
   couriers,
+  icons,
 }: {
   orders: CustomerOrderRow[];
   couriers: CourierOption[];
+  icons: GlobalIconsConfig | null;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
@@ -210,7 +214,7 @@ export function CustomerOrdersBulkTable({
                     title="عرض الطلب"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    ✎
+                    <DynamicIcon iconKey="ui_edit" config={icons} fallback="✎" className="w-3.5 h-3.5" />
                   </Link>
                 </td>
                 <td className="px-2 py-2 text-center font-mono font-bold tabular-nums text-sky-900">

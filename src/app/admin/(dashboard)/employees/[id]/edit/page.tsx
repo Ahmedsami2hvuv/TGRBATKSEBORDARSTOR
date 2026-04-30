@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { updateStaffEmployeeForm } from "../../actions";
+import { getGlobalIcons } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -10,10 +12,14 @@ type Props = { params: Promise<{ id: string }> };
 
 export default async function StaffEmployeeEditPage({ params }: Props) {
   const { id } = await params;
-  const emp = await prisma.staffEmployee.findUnique({
-    where: { id },
-    include: { managedBranches: true }
-  });
+  const [emp, icons] = await Promise.all([
+    prisma.staffEmployee.findUnique({
+      where: { id },
+      include: { managedBranches: true }
+    }),
+    getGlobalIcons()
+  ]);
+
   if (!emp) notFound();
 
   const branches = await prisma.storeBranch.findMany({
@@ -23,8 +29,9 @@ export default async function StaffEmployeeEditPage({ params }: Props) {
   return (
     <div className="space-y-6">
       <p className={ad.muted}>
-        <Link href="/admin/employees" className={ad.link}>
-          ← الموظفين
+        <Link href="/admin/employees" className={`${ad.link} flex items-center gap-1`}>
+          <DynamicIcon iconKey="ui_arrow_right" config={icons} fallback="←" className="w-3 h-3" />
+          الموظفين
         </Link>
       </p>
 

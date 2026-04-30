@@ -325,6 +325,38 @@ const DEFAULT_ICONS: GlobalIconsConfig = {
   "finance_sader_excess": {
     url: "📈",
     type: "emoji"
+  },
+  "ui_arrow_right": {
+    url: "←",
+    type: "emoji"
+  },
+  "wallet": {
+    url: "👛",
+    type: "emoji"
+  },
+  "ui_gps": {
+    url: "📍",
+    type: "emoji"
+  },
+  "ui_image": {
+    url: "🖼️",
+    type: "emoji"
+  },
+  "ui_eye": {
+    url: "👁️",
+    type: "emoji"
+  },
+  "ui_eye_off": {
+    url: "🕶️",
+    type: "emoji"
+  },
+  "ui_earnings": {
+    url: "💰",
+    type: "emoji"
+  },
+  "ui_plus": {
+    url: "➕",
+    type: "emoji"
   }
 };
 

@@ -10,6 +10,7 @@ import { PricingSettingsForm } from "./pricing-settings-form";
 import { CleanupBase64Form } from "./cleanup-base64-form";
 import { IconSettingsForm } from "./icon-settings-form";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -24,18 +25,25 @@ type NotificationInitial = {
   mandoubSoundPreset: NotificationSoundPresetId;
 };
 
-function ChevronIcon({ open }: { open: boolean }) {
+function ChevronIcon({ open, icons }: { open: boolean, icons: GlobalIconsConfig }) {
   return (
-    <svg
-      className={`h-5 w-5 transition duration-200 ${open ? "rotate-180" : "rotate-0"}`}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={2.4}
-      stroke="currentColor"
-      aria-hidden
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
-    </svg>
+    <DynamicIcon
+      iconKey="ui_arrow_right"
+      config={icons}
+      className={`h-5 w-5 transition duration-200 ${open ? "-rotate-90" : "rotate-90"}`}
+      fallback={
+        <svg
+          className={`h-5 w-5 transition duration-200 ${open ? "rotate-180" : "rotate-0"}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2.4}
+          stroke="currentColor"
+          aria-hidden
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+        </svg>
+      }
+    />
   );
 }
 
@@ -46,6 +54,7 @@ function Block({
   open,
   onToggle,
   children,
+  icons,
   tone = "sky",
 }: {
   id: string;
@@ -54,6 +63,7 @@ function Block({
   open: boolean;
   onToggle: () => void;
   children: React.ReactNode;
+  icons: GlobalIconsConfig;
   tone?: "sky" | "emerald" | "amber" | "rose" | "indigo";
 }) {
   const toneClasses = useMemo(() => {
@@ -119,7 +129,7 @@ function Block({
           ) : null}
         </span>
         <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition group-hover:bg-slate-50">
-          <ChevronIcon open={open} />
+          <ChevronIcon open={open} icons={icons} />
         </span>
       </button>
 
@@ -165,6 +175,7 @@ export function SettingsBlocks({
         open={openId === "icon-settings"}
         onToggle={() => setOpenId((x) => (x === "icon-settings" ? "" : "icon-settings"))}
         tone="sky"
+        icons={globalIcons}
       >
         <IconSettingsForm initial={globalIcons} />
       </Block>
@@ -177,6 +188,7 @@ export function SettingsBlocks({
         open={openId === "store-settings"}
         onToggle={() => setOpenId((x) => (x === "store-settings" ? "" : "store-settings"))}
         tone="indigo"
+        icons={globalIcons}
       >
         <form className="space-y-4" onSubmit={async (e) => {
             e.preventDefault();
@@ -250,6 +262,7 @@ export function SettingsBlocks({
         open={openId === "ui-designer"}
         onToggle={() => setOpenId((x) => (x === "ui-designer" ? "" : "ui-designer"))}
         tone="indigo"
+        icons={globalIcons}
       >
         <Link
           href="/admin/settings/ui-designer"
@@ -268,15 +281,22 @@ export function SettingsBlocks({
             className="mt-1 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-indigo-200 bg-white text-indigo-700 shadow-sm transition group-hover:border-indigo-300 group-hover:bg-indigo-50"
             aria-hidden
           >
-            <svg
-              className="h-6 w-6 transition group-hover:-translate-x-0.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2.2}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
+            <DynamicIcon
+                iconKey="ui_arrow_right"
+                config={globalIcons}
+                className="h-6 w-6 transition group-hover:-translate-x-0.5 rotate-180"
+                fallback={
+                    <svg
+                      className="h-6 w-6 transition group-hover:-translate-x-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2.2}
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                }
+            />
           </span>
         </Link>
       </Block>
@@ -288,6 +308,7 @@ export function SettingsBlocks({
         open={openId === "pricing-config"}
         onToggle={() => setOpenId((x) => (x === "pricing-config" ? "" : "pricing-config"))}
         tone="amber"
+        icons={globalIcons}
       >
         <PricingSettingsForm />
       </Block>
@@ -299,6 +320,7 @@ export function SettingsBlocks({
         open={openId === "whatsapp"}
         onToggle={() => setOpenId((x) => (x === "whatsapp" ? "" : "whatsapp"))}
         tone="emerald"
+        icons={globalIcons}
       >
         <Link
           href="/admin/wa-buttons"
@@ -317,15 +339,22 @@ export function SettingsBlocks({
             className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-white text-emerald-700 shadow-sm transition group-hover:border-emerald-300 group-hover:bg-emerald-50"
             aria-hidden
           >
-            <svg
-              className="h-5 w-5 transition group-hover:-translate-x-0.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2.2}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
+            <DynamicIcon
+                iconKey="ui_arrow_right"
+                config={globalIcons}
+                className="h-5 w-5 transition group-hover:-translate-x-0.5 rotate-180"
+                fallback={
+                    <svg
+                      className="h-5 w-5 transition group-hover:-translate-x-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2.2}
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                }
+            />
           </span>
         </Link>
       </Block>
@@ -337,6 +366,7 @@ export function SettingsBlocks({
         open={openId === "notifications"}
         onToggle={() => setOpenId((x) => (x === "notifications" ? "" : "notifications"))}
         tone="sky"
+        icons={globalIcons}
       >
         <p className="text-sm text-slate-600">
           لإشعارات الدفع الحقيقية حتى عند إغلاق المتصفح أو التطبيق، يجب ضبط متغيرات مفاتيح VAPID على الخادم (انظر{" "}
@@ -355,6 +385,7 @@ export function SettingsBlocks({
         open={openId === "test-push"}
         onToggle={() => setOpenId((x) => (x === "test-push" ? "" : "test-push"))}
         tone="amber"
+        icons={globalIcons}
       >
         <p className="text-sm text-slate-600">
           تنبيهات «طلب جديد» أثناء فتح لوحة الإدارة قد تأتي أيضاً من تحديث الصفحة كل بضع ثوانٍ — أما عند إغلاق التبويب
@@ -372,6 +403,7 @@ export function SettingsBlocks({
         open={openId === "purge-demo"}
         onToggle={() => setOpenId((x) => (x === "purge-demo" ? "" : "purge-demo"))}
         tone="rose"
+        icons={globalIcons}
       >
         <div className="space-y-6">
           <CleanupBase64Form />

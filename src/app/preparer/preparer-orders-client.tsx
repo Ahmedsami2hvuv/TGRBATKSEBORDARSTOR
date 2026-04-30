@@ -18,6 +18,7 @@ export function PreparerOrdersSection({
   tab,
   initialQuery = "",
   couriersForBulkAssign = [],
+  icons,
 }: {
   allRows: MandoubRow[];
   searchFields: MandoubOrderSearchFields[];
@@ -27,13 +28,9 @@ export function PreparerOrdersSection({
   initialQuery?: string;
   /** مندوبون متاحون للإسناد — يفعّل التحديد المتعدد في الجدول */
   couriersForBulkAssign?: { id: string; name: string }[];
+  icons?: GlobalIconsConfig | null;
 }) {
   const [query, setQuery] = useState(initialQuery);
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
 
   useEffect(() => {
     setQuery(initialQuery);
@@ -84,6 +81,7 @@ export function PreparerOrdersSection({
         tab={tab}
         qSearch={query}
         couriers={couriersForBulkAssign}
+        icons={icons}
       />
 
       <p className={`${ad.orderListCountFooter} px-3 pb-3 sm:px-4`}>

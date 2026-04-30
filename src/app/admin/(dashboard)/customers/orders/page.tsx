@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { hasCustomerLocationUrl } from "@/lib/order-location";
 import { CustomerOrdersBulkTable } from "./customer-orders-bulk-table";
+import { getGlobalIcons } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +25,7 @@ export default async function CustomerPhoneOrdersPage({ searchParams }: Props) {
     redirect("/admin/customers");
   }
 
-  const [orders, couriers] = await Promise.all([
+  const [orders, couriers, icons] = await Promise.all([
     prisma.order.findMany({
       where: { customerPhone: phone },
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
@@ -38,13 +40,15 @@ export default async function CustomerPhoneOrdersPage({ searchParams }: Props) {
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
+    getGlobalIcons(),
   ]);
 
   return (
     <div className="space-y-4" dir="rtl">
       <p className={ad.muted}>
         <Link href="/admin/customers" className={ad.link}>
-          ← بيانات الزبائن
+          <DynamicIcon iconKey="ui_arrow_right" config={icons} fallback="←" className="inline-block w-3 h-3 me-1" />
+          بيانات الزبائن
         </Link>
         <span className="text-slate-400"> | </span>
         <Link href="/admin" className={ad.link}>
@@ -63,9 +67,10 @@ export default async function CustomerPhoneOrdersPage({ searchParams }: Props) {
         <p className="mt-2 text-sm">
           <Link
             href={`/admin/customers/info?phone=${encodeURIComponent(phone)}`}
-            className={ad.link}
+            className={ad.link + " flex items-center gap-1"}
           >
-            ← العودة إلى معلومات الزبون (المناطق والمرجعية)
+            <DynamicIcon iconKey="ui_arrow_right" config={icons} fallback="←" className="w-3.5 h-3.5" />
+            العودة إلى معلومات الزبون (المناطق والمرجعية)
           </Link>
         </p>
       </div>
@@ -103,6 +108,7 @@ export default async function CustomerPhoneOrdersPage({ searchParams }: Props) {
             };
           })}
           couriers={couriers}
+          icons={icons}
         />
       )}
 

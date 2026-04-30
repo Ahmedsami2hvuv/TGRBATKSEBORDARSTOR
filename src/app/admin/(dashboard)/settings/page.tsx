@@ -3,14 +3,18 @@ import { getOrCreateNotificationSettings } from "@/lib/notification-settings";
 import { normalizeNotificationSoundPreset } from "@/lib/notification-sound-presets";
 import { SettingsBlocks } from "./settings-blocks";
 import { getGlobalIcons } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export const metadata = {
   title: "الإعدادات — KSEBORDARSTOR",
 };
 
 export default async function SettingsPage() {
-  const notificationSettings = await getOrCreateNotificationSettings();
-  const globalIcons = await getGlobalIcons();
+  const [notificationSettings, icons] = await Promise.all([
+    getOrCreateNotificationSettings(),
+    getGlobalIcons()
+  ]);
+
   return (
     <div className="space-y-8">
       <div>
@@ -22,7 +26,7 @@ export default async function SettingsPage() {
       </div>
 
       <SettingsBlocks
-        globalIcons={globalIcons}
+        globalIcons={icons}
         notificationInitial={{
           adminEnabled: notificationSettings.adminEnabled,
           adminTemplateSingle: notificationSettings.adminTemplateSingle,

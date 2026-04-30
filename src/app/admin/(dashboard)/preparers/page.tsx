@@ -4,6 +4,8 @@ import { ad } from "@/lib/admin-ui";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 import { PreparersManager, type PreparerManagerRow } from "./preparers-manager";
+import { getGlobalIcons } from "@/lib/icon-settings";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +14,7 @@ export const metadata = {
 };
 
 export default async function PreparersPage() {
-  const [preparers, shops, branches, categories] = await Promise.all([
+  const [preparers, shops, branches, categories, icons] = await Promise.all([
     prisma.companyPreparer.findMany({
       where: {
         NOT: { notes: { contains: "[SUPPLIER]" } }
@@ -41,7 +43,8 @@ export default async function PreparersPage() {
       where: { active: true },
       orderBy: { sequence: "asc" },
       select: { id: true, name: true }
-    })
+    }),
+    getGlobalIcons()
   ]);
 
   const baseUrl = getPublicAppUrl();
@@ -67,13 +70,16 @@ export default async function PreparersPage() {
   return (
     <div className="space-y-6" dir="rtl">
       <div className="flex flex-wrap gap-2 mb-4">
-        <Link href="/admin" className={ad.navButton}>
-          ← الرئيسية
+        <Link href="/admin" className={ad.navButton + " flex items-center gap-2"}>
+          <DynamicIcon iconKey="ui_home" config={icons} fallback="←" className="w-4 h-4" />
+          الرئيسية
         </Link>
-        <Link href="/admin/shops" className={ad.navButton}>
+        <Link href="/admin/shops" className={ad.navButton + " flex items-center gap-2"}>
+          <DynamicIcon iconKey="ui_shops" config={icons} fallback="🏢" className="w-4 h-4" />
           المحلات
         </Link>
-        <Link href="/admin/prep-notices" className={ad.navButton}>
+        <Link href="/admin/prep-notices" className={ad.navButton + " flex items-center gap-2"}>
+          <DynamicIcon iconKey="ui_notification" config={icons} fallback="🔔" className="w-4 h-4" />
           إشعارات تجهيز المجهزين
         </Link>
       </div>
@@ -85,7 +91,7 @@ export default async function PreparersPage() {
         </p>
       </div>
 
-      <PreparersManager rows={rows} allShops={shops} allBranches={branches} allCategories={categories} />
+      <PreparersManager rows={rows} allShops={shops} allBranches={branches} allCategories={categories} icons={icons} />
     </div>
   );
 }

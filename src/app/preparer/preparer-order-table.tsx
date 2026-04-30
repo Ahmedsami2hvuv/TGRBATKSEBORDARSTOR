@@ -44,12 +44,14 @@ export function PreparerOrderTable({
   tab,
   qSearch,
   couriers = [],
+  icons,
 }: {
   rows: MandoubRow[];
   auth: { p: string; exp: string; s: string };
   tab: string;
   qSearch: string;
   couriers?: { id: string; name: string }[];
+  icons?: GlobalIconsConfig | null;
 }) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -64,11 +66,6 @@ export function PreparerOrderTable({
     submitPreparerPickupMoney,
     {},
   );
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-
-  useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
 
   const prevBulkPending = useRef(false);
 
