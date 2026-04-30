@@ -1,7 +1,12 @@
 "use client";
 
 import React from "react";
+import Script from "next/script";
 import { IconConfig } from "@/lib/icon-settings";
+
+function isLottieJsonUrl(url: string) {
+  return url.endsWith(".json") || url.includes("lottie.host");
+}
 
 export function DynamicIcon({
   icon,
@@ -40,7 +45,26 @@ export function DynamicIcon({
   }
 
   if (resolvedIcon.type === 'lottie') {
-    const embedUrl = resolvedIcon.url.replace("https://lottiefiles.com/", "https://embed.lottiefiles.com/");
+    const url = resolvedIcon.url;
+
+    if (isLottieJsonUrl(url)) {
+      return (
+        <>
+          <Script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" strategy="afterInteractive" />
+          <lottie-player
+            src={url}
+            background="transparent"
+            speed="1"
+            loop
+            autoplay
+            className={className}
+            style={{ width: resolvedIcon.width || width, height: resolvedIcon.height || height }}
+          />
+        </>
+      );
+    }
+
+    const embedUrl = url.replace("https://lottiefiles.com/", "https://embed.lottiefiles.com/");
     return (
       <iframe
         src={embedUrl}
