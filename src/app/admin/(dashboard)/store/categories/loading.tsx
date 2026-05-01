@@ -5,8 +5,8 @@ export default function Loading() {
     <div className="p-6 space-y-12" dir="rtl">
       {/* Centered Loading Animation */}
       <div className="flex flex-col items-center justify-center py-12">
-        <h2 className="text-2xl font-bold text-sky-900 mb-6">جاري تحميل التصنيفات...</h2>
-        <div className="w-full max-w-md">
+        <h2 className="text-3xl font-black text-sky-900 mb-6">جاري تحميل التصنيفات...</h2>
+        <div className="w-full max-w-2xl px-6">
           <DeliveryLoading message="لحظات ونعرض لك جميع التصنيفات المتاحة" />
         </div>
       </div>
