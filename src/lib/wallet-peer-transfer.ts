@@ -54,7 +54,7 @@ export async function fetchWalletInOutDisplayForCourier(
         OR: [{ fromCourierId: courierId }, { toCourierId: courierId }],
         ...(baseline ? { respondedAt: { gt: baseline } } : {}),
       },
-      select: { amountDinar: true, fromCourierId: true, toCourierId: true },
+      select: { amountDinar: true, fromCourierId: true, toCourierId: true, toKind: true },
     }),
   ]);
 
@@ -70,11 +70,14 @@ export async function fetchWalletInOutDisplayForCourier(
     }
   }
 
-  // التحويلات المقبولة
+  // التحويلات المقبولة: المبالغ غير الموجّهة للإدارة تُسجَّل أصلاً كقيود «أخذت/أعطيت»
+  // في writeLedgerEntriesForAcceptedTransfer — لا نكرّرها هنا.
+  // استثناء: تحويل المندوب للإدارة لا يُنشئ قيد «أعطيت» في المحفظة.
   for (const t of acceptedTransfers) {
     if (t.toCourierId === courierId) {
-      take = take.plus(t.amountDinar);
-    } else if (t.fromCourierId === courierId) {
+      continue;
+    }
+    if (t.fromCourierId === courierId && t.toKind === WalletPeerPartyKind.admin) {
       give = give.plus(t.amountDinar);
     }
   }
