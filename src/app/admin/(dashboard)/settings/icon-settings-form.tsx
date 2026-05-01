@@ -183,6 +183,20 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
                   />
                 </div>
 
+                {item.id === "loading_main" && (config.type === "gif" || config.type === "image") && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-black text-slate-600 whitespace-nowrap">طريقة العرض:</span>
+                    <select
+                      value={config.renderMode || "no_upscale"}
+                      onChange={(e) => updateIcon(item.id, "renderMode" as keyof IconConfig, e.target.value)}
+                      className="px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50 outline-none focus:border-sky-500"
+                    >
+                      <option value="no_upscale">بدون تكبير (أوضح)</option>
+                      <option value="fill">ملء المساحة (قد يغبش)</option>
+                    </select>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2">
                   <label className="flex-1 cursor-pointer bg-sky-50 text-sky-700 border border-sky-100 rounded-xl px-4 py-2 text-xs font-black hover:bg-sky-100 transition-all text-center flex items-center justify-center gap-2">
                     <span>{uploadingKey === item.id ? "جاري الرفع إلى R2..." : "📤 رفع ملف جديد إلى R2"}</span>

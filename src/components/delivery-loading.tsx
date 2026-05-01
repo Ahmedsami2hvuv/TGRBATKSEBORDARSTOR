@@ -13,6 +13,7 @@ export function DeliveryLoading({
   initialIcons?: GlobalIconsConfig | null;
 }) {
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(initialIcons);
+  const [iconsLoaded, setIconsLoaded] = useState(Boolean(initialIcons));
   const [mounted, setMounted] = useState(false);
   const [playerLoaded, setPlayerLoaded] = useState(false);
 
@@ -27,6 +28,9 @@ export function DeliveryLoading({
       })
       .catch(() => {
         // تجاهل فشل الجلب واستخدم الإعدادات الافتراضية الحالية
+      })
+      .finally(() => {
+        setIconsLoaded(true);
       });
 
     // التحقق من وجود المشغل مسبقاً في النافذة
@@ -41,6 +45,7 @@ export function DeliveryLoading({
 
   const isLottie = isLottieDirectAssetUrl(iconUrl) || loadingIcon?.type === 'lottie';
   const isGif = iconUrl.toLowerCase().endsWith('.gif') || loadingIcon?.type === "gif";
+  const loadingRenderMode = loadingIcon?.renderMode || "no_upscale";
   const displayUrl = getLottieDisplayUrl(iconUrl);
   const isEmbed = displayUrl.includes("/embed/");
 
@@ -58,12 +63,20 @@ export function DeliveryLoading({
         />
       )}
 
-      {(isLottie || isGif) && iconUrl ? (
+      {!iconsLoaded ? (
+        <div className="mb-8 w-full max-w-[500px] h-[350px] md:h-[450px] flex items-center justify-center bg-transparent overflow-visible relative">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 opacity-35 pointer-events-none">
+            <div className="w-24 h-24 border-8 border-sky-100 border-t-sky-600 rounded-full animate-spin"></div>
+            <p className="text-sky-900 font-bold italic text-xl">جاري تحميل الأيقونة...</p>
+          </div>
+        </div>
+      ) : (isLottie || isGif) && iconUrl ? (
         <div className="mb-8 w-full max-w-[500px] h-[350px] md:h-[450px] flex items-center justify-center bg-transparent overflow-visible relative">
           {isGif ? (
             <img
               src={iconUrl}
-              className="w-full h-full object-contain drop-shadow-md"
+              className={loadingRenderMode === "fill" ? "w-full h-full object-cover drop-shadow-md" : "max-w-full max-h-full object-contain drop-shadow-md"}
+              style={loadingRenderMode === "fill" ? undefined : { width: "auto", height: "auto" }}
               alt="Loading..."
             />
           ) : isEmbed ? (

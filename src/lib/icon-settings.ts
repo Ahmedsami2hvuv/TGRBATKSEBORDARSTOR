@@ -6,6 +6,7 @@ export type IconConfig = {
   type: 'image' | 'lottie' | 'svg' | 'emoji' | 'gif';
   width?: number;
   height?: number;
+  renderMode?: "no_upscale" | "fill";
 };
 
 export type GlobalIconsConfig = Record<string, IconConfig>;
