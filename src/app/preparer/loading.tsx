@@ -2,10 +2,9 @@ import { DeliveryLoading } from "@/components/delivery-loading";
 
 export default function PreparerLoading() {
   return (
-    <div dir="rtl" className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 space-y-6">
-      <div className="w-full max-w-2xl text-center space-y-4">
-        <h2 className="text-3xl font-black text-slate-800">جاري التحميل...</h2>
-        <DeliveryLoading message="يرجى الانتظار، جاري تحضير الطلبات" />
+    <div dir="rtl" className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 overflow-hidden">
+      <div className="w-full max-w-4xl">
+        <DeliveryLoading message="يرجى الانتظار، جاري تحضير الطلبات..." />
       </div>
     </div>
   );

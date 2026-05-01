@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { isLottieDirectAssetUrl } from "./icon-utils";
 
 export type IconConfig = {
   url: string;
@@ -9,22 +10,11 @@ export type IconConfig = {
 
 export type GlobalIconsConfig = Record<string, IconConfig>;
 
-/** روابط ملف Lottie JSON أو lottie.host — تُعرض عبر lottie-player وليس iframe */
-export function isLottieDirectAssetUrl(url: string): boolean {
-  if (!url) return false;
-  const cleanUrl = url.trim();
-  const lowerUrl = cleanUrl.toLowerCase();
-
-  return (
-    lowerUrl.endsWith(".json") ||
-    lowerUrl.includes("lottie.host") ||
-    lowerUrl.includes("assets.lottiefiles.com")
-  );
-}
+export { isLottieDirectAssetUrl };
 
 const DEFAULT_ICONS: GlobalIconsConfig = {
   "loading_main": {
-    url: "https://lottiefiles.com/free-animation/searching-for-profile-aE1tZl9PC3",
+    url: "https://lottie.host/54e33590-d50d-495c-9c99-4a0050868a2d/7vGv1DkXy9.json",
     type: "lottie"
   },
   "order_received": {

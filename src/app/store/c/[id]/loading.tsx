@@ -2,16 +2,10 @@ import { DeliveryLoading } from "@/components/delivery-loading";
 
 export default function Loading() {
   return (
-    <div className="space-y-12 py-10" dir="rtl">
-      {/* Centered Loading Animation */}
-      <div className="flex flex-col items-center justify-center">
-        <h2 className="text-3xl font-black text-sky-900 mb-6">جاري تحميل التصنيف...</h2>
-        <div className="w-full max-w-2xl px-6">
-          <DeliveryLoading message="نبحث لك عن أفضل المنتجات في هذا التصنيف" />
-        </div>
-      </div>
+    <div className="space-y-4 py-10" dir="rtl">
+      <DeliveryLoading message="نبحث لك عن أفضل المنتجات في هذا التصنيف" />
 
-      <div className="space-y-6 md:space-y-8 animate-pulse px-2 opacity-30 grayscale pointer-events-none">
+      <div className="space-y-6 md:space-y-8 animate-pulse px-2 opacity-20 grayscale pointer-events-none mt-12">
         {/* Breadcrumbs Skeleton */}
         <div className="flex gap-2 h-4 w-32 bg-slate-100 dark:bg-slate-800 rounded-full" />
 

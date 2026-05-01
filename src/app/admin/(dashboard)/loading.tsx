@@ -2,21 +2,21 @@ import { DeliveryLoading } from "@/components/delivery-loading";
 
 export default function DashboardLoading() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8 w-full py-12 px-6" dir="rtl">
-      <div className="text-center space-y-4 w-full max-w-2xl">
-        <h2 className="text-3xl font-black text-sky-900">
-          جاري جلب البيانات...
-        </h2>
-
-        <DeliveryLoading message="الرجاء الانتظار قليلاً ريثما تكتمل العملية" />
+    <div className="flex flex-col items-center justify-center min-h-[80vh] w-full py-12 px-6" dir="rtl">
+      <div className="text-center w-full max-w-4xl">
+        <DeliveryLoading message="جاري جلب بيانات لوحة التحكم..." />
       </div>
 
-      {/* Skeleton placeholders to hint at loading content */}
-      <div className="w-full max-w-4xl space-y-4 mt-8 opacity-60">
-        <div className="h-24 bg-slate-200 rounded-xl animate-pulse w-full"></div>
+      {/* Skeletons placeholders more aligned with dashboard rows */}
+      <div className="w-full max-w-5xl space-y-4 mt-4 opacity-40 px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+           <div className="h-32 bg-slate-200 rounded-2xl animate-pulse"></div>
+           <div className="h-32 bg-slate-200 rounded-2xl animate-pulse"></div>
+           <div className="h-32 bg-slate-200 rounded-2xl animate-pulse"></div>
+        </div>
+        <div className="h-16 bg-slate-100 rounded-xl animate-pulse w-full"></div>
+        <div className="h-16 bg-slate-100 rounded-xl animate-pulse w-[98%]"></div>
         <div className="h-16 bg-slate-100 rounded-xl animate-pulse w-[95%]"></div>
-        <div className="h-16 bg-slate-100 rounded-xl animate-pulse w-[90%]"></div>
-        <div className="h-16 bg-slate-100 rounded-xl animate-pulse w-[85%]"></div>
       </div>
     </div>
   );

@@ -3,71 +3,99 @@
 import React, { useEffect, useState } from "react";
 import Script from "next/script";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
-import { isLottieDirectAssetUrl, cleanIconUrl } from "@/lib/icon-utils";
+import { cleanIconUrl, isLottieDirectAssetUrl, getLottieDisplayUrl } from "@/lib/icon-utils";
 
 export function DeliveryLoading({ message = "جاري التحميل..." }: { message?: string }) {
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [playerLoaded, setPlayerLoaded] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     getGlobalIcons().then(setIcons);
+
+    // التحقق من وجود المشغل مسبقاً في النافذة
+    if (typeof window !== 'undefined' && (window as any).customElements && (window as any).customElements.get('lottie-player')) {
+      setPlayerLoaded(true);
+    }
   }, []);
 
   const loadingIcon = icons?.loading_main;
-  const iconUrl = cleanIconUrl(loadingIcon?.url || "");
+  const rawUrl = loadingIcon?.url || "";
+  const iconUrl = cleanIconUrl(rawUrl);
 
-  // إذا كان الرابط يحتوي على lottie، فهو أنيميشن 100% مهما كان الاختيار في الإعدادات
   const isLottie = isLottieDirectAssetUrl(iconUrl) || loadingIcon?.type === 'lottie';
+  const displayUrl = getLottieDisplayUrl(iconUrl);
+  const isEmbed = displayUrl.includes("/embed/");
+
+  // تجنب مشاكل Hydration في Next.js
+  if (!mounted) return null;
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 w-full min-h-[450px] bg-transparent overflow-visible">
-      <Script
-        src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"
-        strategy="afterInteractive"
-      />
+    <div className="flex flex-col items-center justify-center p-4 w-full min-h-[550px] bg-transparent overflow-visible">
+      {/* تحميل مشغل Lottie الرسمي - نحتاجه فقط إذا لم يكن embed */}
+      {!isEmbed && (
+        <Script
+          src="https://unpkg.com/@lottiefiles/lottie-player@1.5.7/dist/lottie-player.js"
+          onLoad={() => setPlayerLoaded(true)}
+          strategy="afterInteractive"
+        />
+      )}
 
-      {isLottie ? (
-        <div className="mb-8 w-full max-w-[550px] h-[400px] flex items-center justify-center bg-transparent overflow-visible">
-          <lottie-player
-            src={iconUrl}
-            background="transparent"
-            speed="1"
-            loop
-            autoplay
-            style={{ width: '100%', height: '100%', display: 'block' }}
-          />
+      {isLottie && iconUrl ? (
+        <div className="mb-8 w-full max-w-[500px] h-[350px] md:h-[450px] flex items-center justify-center bg-transparent overflow-visible relative">
+          {isEmbed ? (
+            <iframe
+              src={displayUrl}
+              className="w-full h-full border-none bg-transparent relative z-10"
+              allowFullScreen
+            />
+          ) : playerLoaded ? (
+            <div
+              className="w-full h-full flex items-center justify-center relative z-10"
+              key={iconUrl}
+              dangerouslySetInnerHTML={{
+                __html: `<lottie-player
+                  src="${iconUrl}"
+                  background="transparent"
+                  speed="1"
+                  loop
+                  autoplay
+                  style="width: 100%; height: 100%; display: block;"
+                ></lottie-player>`
+              }}
+            />
+          ) : null}
+
+          {/* طبقة تحميل احتياطية تظهر خلف الأنيميشن أو مكانه */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 opacity-20 pointer-events-none">
+             <div className="w-24 h-24 border-8 border-sky-100 border-t-sky-600 rounded-full animate-spin"></div>
+             <p className="text-sky-900 font-bold italic text-xl">جاري الاتصال...</p>
+          </div>
         </div>
       ) : loadingIcon?.type === 'image' && iconUrl ? (
         <img
           src={iconUrl}
-          className="w-48 h-48 object-contain mb-8 animate-bounce"
+          className="w-72 h-72 object-contain mb-12 animate-bounce"
           alt=""
           onError={(e) => (e.currentTarget.style.display = 'none')}
         />
       ) : (
-        /* في حال فشل كل شيء، يظهر هذا الأنيميشن البسيط بدلاً من المربع المكسور */
-        <div className="text-9xl mb-8 animate-bounce">
-          {loadingIcon?.type === 'emoji' ? iconUrl : "⏳"}
+        <div className="text-[140px] mb-12 animate-bounce drop-shadow-2xl">
+          {loadingIcon?.type === 'emoji' ? iconUrl : "🚚"}
         </div>
       )}
 
-      <div className="text-center space-y-4 px-6 relative z-10">
-        <h2 className="text-3xl md:text-4xl font-black text-sky-900 animate-pulse leading-tight">
+      <div className="text-center space-y-8 px-6 max-w-4xl relative z-10">
+        <h2 className="text-4xl md:text-7xl font-black text-sky-950 animate-pulse leading-tight tracking-tight">
           {message}
         </h2>
-        <div className="flex items-center justify-center gap-3">
-           <div className="w-3 h-3 bg-sky-500 rounded-full animate-bounce delay-75"></div>
-           <div className="w-3 h-3 bg-sky-500 rounded-full animate-bounce delay-150"></div>
-           <div className="w-3 h-3 bg-sky-500 rounded-full animate-bounce delay-300"></div>
+        <div className="flex items-center justify-center gap-5 mt-10">
+           <div className="w-6 h-6 bg-sky-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+           <div className="w-6 h-6 bg-sky-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+           <div className="w-6 h-6 bg-sky-600 rounded-full animate-bounce"></div>
         </div>
       </div>
-
-      <style jsx global>{`
-        lottie-player {
-          background: transparent !important;
-          border: none !important;
-          outline: none !important;
-        }
-      `}</style>
     </div>
   );
 }

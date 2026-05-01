@@ -2,17 +2,11 @@ import { DeliveryLoading } from "@/components/delivery-loading";
 
 export default function Loading() {
   return (
-    <div className="p-6 space-y-12" dir="rtl">
-      {/* Centered Loading Animation */}
-      <div className="flex flex-col items-center justify-center py-12">
-        <h2 className="text-3xl font-black text-sky-900 mb-6">جاري تحميل التصنيفات...</h2>
-        <div className="w-full max-w-2xl px-6">
-          <DeliveryLoading message="لحظات ونعرض لك جميع التصنيفات المتاحة" />
-        </div>
-      </div>
+    <div className="p-6 space-y-4" dir="rtl">
+      <DeliveryLoading message="لحظات ونعرض لك جميع التصنيفات المتاحة" />
 
       {/* Grid Skeleton */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 opacity-40 grayscale pointer-events-none">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 opacity-20 grayscale pointer-events-none mt-12">
         {[...Array(5)].map((_, i) => (
           <div key={i} className="bg-white p-4 rounded-[2.5rem] border border-slate-100 space-y-4">
              <div className="aspect-square bg-slate-50 animate-pulse rounded-[2rem]"></div>

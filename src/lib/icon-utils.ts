@@ -1,35 +1,48 @@
 /**
- * دوال مساعدة فائقة الدقة للأيقونات لضمان عملها في المتصفح
+ * تنظيف الروابط وتجهيزها للعرض المستقر 100%
  */
-
 export function cleanIconUrl(url: string): string {
   if (!url) return "";
   let cleaned = url.trim();
-  // استخراج الرابط فقط وتجاهل أي نصوص أو رموز تعبيرية ملتصقة به
-  const match = cleaned.match(/https?:\/\/[^\s"'<>{}|\\^~[\]`]+/);
-  return match ? match[0] : cleaned;
+
+  // 1. حذف الرموز المخفية والمسافات الصفرية (Zero-width)
+  cleaned = cleaned.replace(/[\u200B-\u200D\uFEFF]/g, "");
+
+  // 2. إصلاح البروتوكول إذا كان ناقصاً (مثل // التي تظهر في صورتك)
+  if (cleaned.startsWith("//")) {
+    cleaned = "https:" + cleaned;
+  } else if (cleaned.startsWith("lottie.host")) {
+    cleaned = "https://" + cleaned;
+  }
+
+  // 3. استخراج الرابط الحقيقي فقط
+  const urlRegex = /(https?:\/\/[^\s"'<>{}|\\^~[\]`]+)/g;
+  const matches = cleaned.match(urlRegex);
+
+  if (matches && matches.length > 0) {
+    return matches[0];
+  }
+
+  return cleaned;
 }
 
 export function isLottieDirectAssetUrl(url: string): boolean {
   if (!url) return false;
   const cleaned = cleanIconUrl(url).toLowerCase();
-
-  // أي رابط يحتوي على lottie أو ينتهي بـ .json هو أنيميشن ولا يجب معاملته كصورة أبداً
-  return (
-    cleaned.includes("lottie") ||
-    cleaned.endsWith(".json") ||
-    cleaned.includes("dotlottie")
-  );
+  return cleaned.includes("lottie") || cleaned.endsWith(".json");
 }
 
+/**
+ * تحويل رابط lottie.host إلى رابط Embed المضمون الذي لا يختفي أبداً
+ */
 export function getLottieDisplayUrl(url: string): string {
   const cleaned = cleanIconUrl(url);
-  if (!cleaned) return "";
 
-  if (isLottieDirectAssetUrl(cleaned)) return cleaned;
-
-  if (cleaned.includes("lottiefiles.com/animations")) {
-    return cleaned.replace("lottiefiles.com/animations/", "https://embed.lottiefiles.com/animation/");
+  // لروابط lottie.host، نحولها لرابط الـ Embed المستقر جداً
+  if (cleaned.includes("lottie.host") && !cleaned.includes("/embed/")) {
+    // يحول من: https://lottie.host/xxxx/yyyy.json
+    // إلى: https://lottie.host/embed/xxxx/yyyy.json
+    return cleaned.replace("lottie.host/", "lottie.host/embed/");
   }
 
   return cleaned;
