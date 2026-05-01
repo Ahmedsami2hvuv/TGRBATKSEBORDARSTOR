@@ -334,7 +334,8 @@ export default async function AdminOrderViewPage({ params }: Props) {
     submittedByCompanyPreparer: order.submittedByCompanyPreparer
       ? { name: order.submittedByCompanyPreparer.name, phone: order.submittedByCompanyPreparer.phone }
       : null,
-    preparerShoppingJson: (() => {
+                      
+      preparerShoppingJson: (() => {
       if (order.preparerShoppingJson == null) return null;
       try {
         return JSON.stringify(order.preparerShoppingJson);

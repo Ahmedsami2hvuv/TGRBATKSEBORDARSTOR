@@ -2,11 +2,7 @@
 
 import React from "react";
 import Script from "next/script";
-import { IconConfig } from "@/lib/icon-settings";
-
-function isLottieJsonUrl(url: string) {
-  return url.endsWith(".json") || url.includes("lottie.host");
-}
+import { IconConfig, isLottieDirectAssetUrl } from "@/lib/icon-settings";
 
 export function DynamicIcon({
   icon,
@@ -47,7 +43,7 @@ export function DynamicIcon({
   if (resolvedIcon.type === 'lottie') {
     const url = resolvedIcon.url;
 
-    if (isLottieJsonUrl(url)) {
+    if (isLottieDirectAssetUrl(url)) {
       return (
         <>
           <Script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" strategy="afterInteractive" />

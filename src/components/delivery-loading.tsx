@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import Script from "next/script";
+import { getGlobalIcons, GlobalIconsConfig, isLottieDirectAssetUrl } from "@/lib/icon-settings";
 
 export function DeliveryLoading({ message = "جاري التحميل..." }: { message?: string }) {
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
@@ -15,13 +16,32 @@ export function DeliveryLoading({ message = "جاري التحميل..." }: { me
   return (
     <div className="flex flex-col items-center justify-center p-8 w-full min-h-[200px] overflow-hidden">
       {loadingIcon?.type === 'lottie' ? (
-        <div className="mb-4">
-           {/* هنا يمكن إضافة مكتبة Lottie إذا كانت متوفرة، أو عرض iframe للرابط حالياً كحل ذكي */}
-           <iframe
-             src={loadingIcon.url.replace("https://lottiefiles.com/", "https://embed.lottiefiles.com/")}
-             className="w-48 h-48 border-none pointer-events-none"
-             allowFullScreen
-           />
+        <div className="mb-4 w-48 h-48 flex items-center justify-center">
+          {isLottieDirectAssetUrl(loadingIcon.url) ? (
+            <>
+              <Script
+                src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"
+                strategy="afterInteractive"
+              />
+              <lottie-player
+                src={loadingIcon.url}
+                background="transparent"
+                speed="1"
+                loop
+                autoplay
+                className="w-full h-full"
+              />
+            </>
+          ) : (
+            <iframe
+              src={loadingIcon.url.replace(
+                "https://lottiefiles.com/",
+                "https://embed.lottiefiles.com/"
+              )}
+              className="w-48 h-48 border-none pointer-events-none"
+              allowFullScreen
+            />
+          )}
         </div>
       ) : loadingIcon?.type === 'image' ? (
         <img src={loadingIcon.url} className="w-32 h-32 object-contain mb-4 animate-bounce" alt="Loading" />
