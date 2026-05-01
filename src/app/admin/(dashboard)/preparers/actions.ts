@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { isAdminSession } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
 import { CourierWalletMiscDirection } from "@prisma/client";
-import { Decimal, PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { Decimal } from "@prisma/client/runtime/library";
 import { parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import { EMPLOYEE_DAILY_SALARY_LABEL_PREFIX } from "@/lib/wallet-peer-transfer";
 import { notifyTelegramPreparerWalletEvent } from "@/lib/telegram-notify";
@@ -116,115 +116,6 @@ export async function renewCompanyPreparerPortalToken(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
   await prisma.companyPreparer.update({ where: { id }, data: { portalToken: randomUUID() } });
   revalidatePath("/admin/preparers");
-}
-
-/** ربط محلات المجهز وتفعيل محفظة الموظف — لا يمس تفويض أفرع المتجر. */
-export async function setPreparerShopLinks(_prev: PreparerFormState, formData: FormData): Promise<PreparerFormState> {
-  const denied = await requireAdmin();
-  if (denied) return denied;
-  const preparerId = String(formData.get("preparerId") ?? "").trim();
-  const shopIds = [
-    ...new Set(
-      formData
-        .getAll("shopIds")
-        .map((x) => String(x).trim())
-        .filter(Boolean),
-    ),
-  ];
-
-  if (!preparerId) return { error: "معرّف المجهز مفقود." };
-
-  const preparerExists = await prisma.companyPreparer.findFirst({
-    where: { id: preparerId },
-    select: { id: true },
-  });
-  if (!preparerExists) return { error: "المجهز غير موجود. حدّث الصفحة." };
-
-  if (shopIds.length > 0) {
-    const found = await prisma.shop.count({ where: { id: { in: shopIds } } });
-    if (found !== shopIds.length) {
-      return { error: "أحد المحلات المختارة غير موجود. حدّث الصفحة ثم أعد المحاولة." };
-    }
-  }
-
-  try {
-    await prisma.preparerShop.deleteMany({ where: { preparerId } });
-    if (shopIds.length > 0) {
-      await prisma.preparerShop.createMany({
-        data: shopIds.map((shopId) => ({
-          preparerId,
-          shopId,
-          canSubmitOrders: true,
-        })),
-      });
-    }
-
-    const cp = await prisma.companyPreparer.findUnique({
-      where: { id: preparerId },
-      select: { walletEmployeeId: true, name: true, phone: true },
-    });
-    if (cp && !cp.walletEmployeeId && shopIds.length > 0) {
-      const phoneRaw = (cp.phone ?? "").trim();
-      const phone = phoneRaw.length > 0 ? phoneRaw : `__prep_wallet__${preparerId}`;
-      const em = await prisma.employee.create({
-        data: { name: (cp.name ?? "").trim() || "مجهز", phone, shopId: shopIds[0]! },
-      });
-      try {
-        await prisma.companyPreparer.update({
-          where: { id: preparerId },
-          data: { walletEmployeeId: em.id },
-        });
-      } catch (linkErr) {
-        await prisma.employee.delete({ where: { id: em.id } }).catch(() => {});
-        throw linkErr;
-      }
-    }
-  } catch (e) {
-    console.error("setPreparerShopLinks", e);
-    if (e instanceof PrismaClientKnownRequestError) {
-      if (e.code === "P2002") {
-        return {
-          error:
-            "تعارض أثناء الحفظ (طلبان معاً). انتظر ثانية ثم أعد التأشير، أو حدّث الصفحة.",
-        };
-      }
-      if (e.code === "P2003") {
-        return { error: "بيانات غير صالحة: المجهز أو المحل غير مرتبط بشكل صحيح في قاعدة البيانات." };
-      }
-    }
-    const raw = e instanceof Error ? e.message : String(e);
-    const lower = raw.toLowerCase();
-    if (
-      lower.includes("can't reach database") ||
-      lower.includes("server has closed the connection") ||
-      lower.includes("econnrefused") ||
-      lower.includes("timeout")
-    ) {
-      return {
-        error:
-          "تعذّر الاتصال بقاعدة البيانات (انقطاع أو مهلة). جرّب بعد قليل أو تحقق من إعدادات الاستضافة (مثل Supabase / الرابط المباشر).",
-      };
-    }
-    if (lower.includes("unique constraint") || lower.includes("duplicate key")) {
-      return {
-        error:
-          "تعارض أثناء الحفظ (محل مكرر أو طلبان معاً). حدّث الصفحة ثم أعد المحاولة.",
-      };
-    }
-    if (lower.includes("prepared statement") || lower.includes("pgbouncer")) {
-      return {
-        error:
-          "إعدادات اتصال قاعدة البيانات تمنع هذه العملية (غالباً موازن الاتصالات). راجع DATABASE_URL أو استخدم الرابط المباشر غير الموازن للكتابة.",
-      };
-    }
-    if (process.env.NODE_ENV !== "production") {
-      return { error: `تعذّر الحفظ (وضع التطوير): ${raw.slice(0, 280)}` };
-    }
-    return { error: "تعذّر حفظ المحلات أو تفعيل المحفظة. تحقق أن المحل صالح وأن الاتصال بالخادم سليم." };
-  }
-
-  revalidatePath("/admin/preparers");
-  return { ok: true };
 }
 
 /** تفويض أقسام/أفرع المتجر فقط — لا يغيّر ربط المحلات. */

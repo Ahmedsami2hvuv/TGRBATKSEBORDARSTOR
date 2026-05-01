@@ -6,7 +6,6 @@ import { ad } from "@/lib/admin-ui";
 import {
   createCompanyPreparer,
   payDailySalaryForCompanyPreparer,
-  setPreparerShopLinks,
   setPreparerBranchDelegations,
   setPreparerMonthlySalaryResetConfig,
   updateCompanyPreparer,
