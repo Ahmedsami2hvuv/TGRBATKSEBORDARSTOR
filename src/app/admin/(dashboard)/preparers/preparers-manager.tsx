@@ -80,14 +80,20 @@ function PreparerShopsAutosave({
   persistRef.current = async (ids: Set<string>) => {
     setStatus("saving");
     setErrMsg(null);
-    const fd = new FormData();
-    fd.set("preparerId", preparerId);
-    for (const id of ids) fd.append("shopIds", id);
     try {
-      const r = await setPreparerShopLinks({}, fd);
-      if (r?.error) {
+      const res = await fetch("/api/admin/preparers/set-shop-links", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          preparerId,
+          shopIds: Array.from(ids),
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!res.ok || data.error) {
         setStatus("error");
-        setErrMsg(r.error);
+        setErrMsg(data.error || (res.status === 401 ? "انتهت جلسة الإدارة. سجّل الدخول من جديد." : `فشل الطلب (${res.status})`));
         setLinked(new Set(lastOkRef.current));
         return;
       }
