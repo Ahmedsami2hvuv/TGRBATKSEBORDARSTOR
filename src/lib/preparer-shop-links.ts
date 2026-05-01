@@ -38,6 +38,16 @@ function mapUnknownDbError(e: unknown): string {
   if (lower.includes("permission denied") || lower.includes("rls")) {
     return "رفض قاعدة البيانات للصلاحية (سياسات RLS أو المستخدم). تحقق من مفتاح الخدمة.";
   }
+  if (
+    lower.includes("does not exist in the current database") ||
+    lower.includes("column") && lower.includes("does not exist")
+  ) {
+    return [
+      "قاعدة البيانات أقدم من نسخة المشروع: عمود مفقود في جدول الموظفين (مثل lastEmployeeLat).",
+      "نفّذ على الخادم: npx prisma migrate deploy",
+      "أو نفّذ في محرر SQL لديك الهجرة الأخيرة التي تضيف أعمدة Employee للموقع.",
+    ].join(" ");
+  }
   return `تعذّر الحفظ: ${raw.slice(0, 220)}`;
 }
 
