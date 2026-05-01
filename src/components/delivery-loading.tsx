@@ -5,6 +5,29 @@ import Script from "next/script";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { cleanIconUrl, isLottieDirectAssetUrl, getLottieDisplayUrl } from "@/lib/icon-utils";
 
+const ICONS_CACHE_KEY = "global-icons-cache-v1";
+
+function readIconsCache(): GlobalIconsConfig | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(ICONS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? (parsed as GlobalIconsConfig) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeIconsCache(icons: GlobalIconsConfig) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(ICONS_CACHE_KEY, JSON.stringify(icons));
+  } catch {
+    // ignore cache write failures
+  }
+}
+
 export function DeliveryLoading({
   message = "جاري التحميل...",
   initialIcons = null,
@@ -12,22 +35,28 @@ export function DeliveryLoading({
   message?: string;
   initialIcons?: GlobalIconsConfig | null;
 }) {
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(initialIcons);
-  const [iconsLoaded, setIconsLoaded] = useState(Boolean(initialIcons));
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(() => initialIcons || readIconsCache());
+  const [iconsLoaded, setIconsLoaded] = useState(Boolean(initialIcons || readIconsCache()));
   const [mounted, setMounted] = useState(false);
   const [playerLoaded, setPlayerLoaded] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    if (initialIcons) {
+      writeIconsCache(initialIcons);
+    }
+
     fetch("/api/admin/settings/icons", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && typeof data === "object") {
-          setIcons(data as GlobalIconsConfig);
+          const fetchedIcons = data as GlobalIconsConfig;
+          setIcons(fetchedIcons);
+          writeIconsCache(fetchedIcons);
         }
       })
       .catch(() => {
-        // تجاهل فشل الجلب واستخدم الإعدادات الافتراضية الحالية
+        // تجاهل فشل الجلب واستمر على الكاش
       })
       .finally(() => {
         setIconsLoaded(true);
