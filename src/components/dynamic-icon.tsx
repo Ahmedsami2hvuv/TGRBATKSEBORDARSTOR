@@ -2,7 +2,8 @@
 
 import React from "react";
 import Script from "next/script";
-import { IconConfig, isLottieDirectAssetUrl } from "@/lib/icon-settings";
+import { IconConfig } from "@/lib/icon-settings";
+import { isLottieDirectAssetUrl, getLottieDisplayUrl, cleanIconUrl } from "@/lib/icon-utils";
 
 export function DynamicIcon({
   icon,
@@ -25,14 +26,16 @@ export function DynamicIcon({
 
   if (!resolvedIcon) return <>{fallback}</>;
 
+  const iconUrl = cleanIconUrl(resolvedIcon.url || "");
+
   if (resolvedIcon.type === 'emoji') {
-    return <span className={className}>{resolvedIcon.url}</span>;
+    return <span className={className}>{iconUrl}</span>;
   }
 
   if (resolvedIcon.type === 'image') {
     return (
       <img
-        src={resolvedIcon.url}
+        src={iconUrl}
         className={className}
         style={{ width: resolvedIcon.width || width, height: resolvedIcon.height || height, objectFit: 'contain' }}
         alt="icon"
@@ -41,14 +44,13 @@ export function DynamicIcon({
   }
 
   if (resolvedIcon.type === 'lottie') {
-    const url = resolvedIcon.url?.trim() || "";
-
-    if (isLottieDirectAssetUrl(url)) {
+    // إذا كان الرابط lottie.host أو ينتهي بـ .json نستخدم المشغل المباشر دائماً
+    if (isLottieDirectAssetUrl(iconUrl)) {
       return (
         <>
-          <Script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" strategy="afterInteractive" />
+          <Script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" strategy="lazyOnload" />
           <lottie-player
-            src={url}
+            src={iconUrl}
             background="transparent"
             speed="1"
             loop
@@ -60,10 +62,10 @@ export function DynamicIcon({
       );
     }
 
-    const embedUrl = url.replace("https://lottiefiles.com/", "https://embed.lottiefiles.com/");
+    // روابط lottiefiles التقليدية (Embed)
     return (
       <iframe
-        src={embedUrl}
+        src={getLottieDisplayUrl(iconUrl)}
         className={className}
         style={{ width: resolvedIcon.width || width, height: resolvedIcon.height || height, border: 'none', pointerEvents: 'none' }}
         allowFullScreen
@@ -76,7 +78,7 @@ export function DynamicIcon({
       <div
         className={className}
         style={{ width: resolvedIcon.width || width, height: resolvedIcon.height || height }}
-        dangerouslySetInnerHTML={{ __html: resolvedIcon.url }}
+        dangerouslySetInnerHTML={{ __html: iconUrl }}
       />
     );
   }

@@ -12,8 +12,14 @@ export type GlobalIconsConfig = Record<string, IconConfig>;
 /** روابط ملف Lottie JSON أو lottie.host — تُعرض عبر lottie-player وليس iframe */
 export function isLottieDirectAssetUrl(url: string): boolean {
   if (!url) return false;
-  const path = url.split("?")[0].split("#")[0];
-  return path.endsWith(".json") || url.includes("lottie.host");
+  const cleanUrl = url.trim();
+  const lowerUrl = cleanUrl.toLowerCase();
+
+  return (
+    lowerUrl.endsWith(".json") ||
+    lowerUrl.includes("lottie.host") ||
+    lowerUrl.includes("assets.lottiefiles.com")
+  );
 }
 
 const DEFAULT_ICONS: GlobalIconsConfig = {

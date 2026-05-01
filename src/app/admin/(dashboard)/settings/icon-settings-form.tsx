@@ -55,9 +55,10 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
 
   const smartDetectType = (url: string): 'image' | 'lottie' | 'svg' | 'emoji' => {
     if (!url) return 'image';
-    if (url.includes('lottiefiles.com') || url.includes('.json')) return 'lottie';
+    const lowerUrl = url.toLowerCase().trim();
+    if (lowerUrl.includes('lottiefiles.com') || lowerUrl.includes('.json') || lowerUrl.includes('lottie.host')) return 'lottie';
     if (url.startsWith('<svg')) return 'svg';
-    if (url.length <= 4) return 'emoji'; // غالباً ايموجي
+    if (url.length <= 4) return 'emoji';
     return 'image';
   };
 
