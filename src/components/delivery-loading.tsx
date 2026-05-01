@@ -2,17 +2,32 @@
 
 import React, { useEffect, useState } from "react";
 import Script from "next/script";
-import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { cleanIconUrl, isLottieDirectAssetUrl, getLottieDisplayUrl } from "@/lib/icon-utils";
 
-export function DeliveryLoading({ message = "جاري التحميل..." }: { message?: string }) {
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+export function DeliveryLoading({
+  message = "جاري التحميل...",
+  initialIcons = null,
+}: {
+  message?: string;
+  initialIcons?: GlobalIconsConfig | null;
+}) {
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(initialIcons);
   const [mounted, setMounted] = useState(false);
   const [playerLoaded, setPlayerLoaded] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    getGlobalIcons().then(setIcons);
+    fetch("/api/admin/settings/icons", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && typeof data === "object") {
+          setIcons(data as GlobalIconsConfig);
+        }
+      })
+      .catch(() => {
+        // تجاهل فشل الجلب واستخدم الإعدادات الافتراضية الحالية
+      });
 
     // التحقق من وجود المشغل مسبقاً في النافذة
     if (typeof window !== 'undefined' && (window as any).customElements && (window as any).customElements.get('lottie-player')) {
@@ -25,7 +40,7 @@ export function DeliveryLoading({ message = "جاري التحميل..." }: { me
   const iconUrl = cleanIconUrl(rawUrl);
 
   const isLottie = isLottieDirectAssetUrl(iconUrl) || loadingIcon?.type === 'lottie';
-  const isGif = iconUrl.toLowerCase().endsWith('.gif');
+  const isGif = iconUrl.toLowerCase().endsWith('.gif') || loadingIcon?.type === "gif";
   const displayUrl = getLottieDisplayUrl(iconUrl);
   const isEmbed = displayUrl.includes("/embed/");
 

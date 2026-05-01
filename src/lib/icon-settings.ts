@@ -380,11 +380,23 @@ export async function getGlobalIcons(): Promise<GlobalIconsConfig> {
 }
 
 export async function saveGlobalIcons(config: GlobalIconsConfig) {
+  const sanitized: GlobalIconsConfig = Object.fromEntries(
+    Object.entries(config || {}).map(([key, value]) => {
+      const safeValue: IconConfig = {
+        ...(value || { url: "", type: "image" }),
+      };
+      if (typeof safeValue.url === "string" && safeValue.url.startsWith("data:image/")) {
+        safeValue.url = "";
+      }
+      return [key, safeValue];
+    }),
+  );
+
   return await prisma.uISystemSetting.upsert({
     where: {
       target_section: { target: "global", section: "icons" }
     },
-    update: { config: config as any },
-    create: { target: "global", section: "icons", config: config as any }
+    update: { config: sanitized as any },
+    create: { target: "global", section: "icons", config: sanitized as any }
   });
 }

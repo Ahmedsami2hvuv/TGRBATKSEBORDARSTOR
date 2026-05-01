@@ -52,6 +52,7 @@ const ICON_KEYS = [
 export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
   const [icons, setIcons] = useState<GlobalIconsConfig>(initial);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
 
   // الحفظ التلقائي عند أي تغيير
@@ -86,6 +87,11 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
   };
 
   const updateIcon = (key: string, field: keyof IconConfig, value: any) => {
+    if (field === "url" && typeof value === "string" && value.startsWith("data:image/")) {
+      alert("يرجى رفع الملف إلى R2 عبر زر الرفع، وليس إدخال Base64 مباشرة.");
+      return;
+    }
+
     setIcons((prev) => {
       const current = prev[key] || { url: "", type: "image" };
       const next = { ...current, [field]: value };
@@ -96,7 +102,7 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
     });
   };
 
-  const handleFileChange = (key: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (key: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -105,12 +111,34 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      updateIcon(key, 'url', base64String);
-    };
-    reader.readAsDataURL(file);
+    try {
+      setUploadingKey(key);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("iconKey", key);
+
+      const res = await fetch("/api/admin/settings/icons/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data?.url) {
+        throw new Error(data?.error || "Upload failed");
+      }
+
+      updateIcon(key, "url", data.url as string);
+      if (file.type === "image/gif") {
+        updateIcon(key, "type", "gif");
+      } else if (file.type.startsWith("image/")) {
+        updateIcon(key, "type", "image");
+      }
+    } catch (error: any) {
+      alert(error?.message || "فشل رفع الملف إلى R2");
+    } finally {
+      setUploadingKey(null);
+      e.target.value = "";
+    }
   };
 
   return (
@@ -130,8 +158,8 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
             <div key={item.id} className="p-4 bg-white rounded-3xl border border-slate-200 shadow-sm space-y-4 hover:border-sky-200 transition-colors">
               <div className="flex items-center justify-between gap-2">
                 <label className="block text-sm font-black text-slate-800">{item.label}</label>
-                {config.url?.startsWith('data:') && (
-                    <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold">ملف مرفوع 📁</span>
+                {config.url?.startsWith('/uploads/') && (
+                    <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold">مخزّن في R2 ✅</span>
                 )}
               </div>
 
@@ -150,14 +178,14 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
                   <input
                     value={config.url}
                     onChange={(e) => updateIcon(item.id, "url", e.target.value)}
-                    placeholder="رابط أو Base64..."
+                    placeholder="رابط مباشر أو /uploads/... (R2)"
                     className="flex-1 px-4 py-2 rounded-xl border border-slate-300 outline-none focus:border-sky-500 font-bold text-xs bg-slate-50"
                   />
                 </div>
 
                 <div className="flex items-center gap-2">
                   <label className="flex-1 cursor-pointer bg-sky-50 text-sky-700 border border-sky-100 rounded-xl px-4 py-2 text-xs font-black hover:bg-sky-100 transition-all text-center flex items-center justify-center gap-2">
-                    <span>📤 رفع ملف جديد</span>
+                    <span>{uploadingKey === item.id ? "جاري الرفع إلى R2..." : "📤 رفع ملف جديد إلى R2"}</span>
                     <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(item.id, e)} />
                   </label>
 
