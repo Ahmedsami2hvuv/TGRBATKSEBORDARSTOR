@@ -38,10 +38,25 @@ export function DynamicIcon({
 
   const iconUrl = cleanIconUrl(resolvedIcon.url || "");
 
-  // فحص ذكي: إذا كان الرابط يحتوي على lottie، فهو أنيميشن حتماً
+  // فحص ذكي: إذا كان الرابط يحتوي على lottie أو gif، نحدد طريقة العرض
   const isLottie = isLottieDirectAssetUrl(iconUrl) || resolvedIcon.type === 'lottie';
+  const isGif = iconUrl.toLowerCase().endsWith('.gif') || resolvedIcon.type === 'gif';
   const displayUrl = getLottieDisplayUrl(iconUrl);
   const isEmbed = displayUrl.includes("/embed/");
+
+  if (isGif && iconUrl) {
+    return (
+      <img
+        src={iconUrl}
+        className={className}
+        style={{ width: resolvedIcon.width || width, height: resolvedIcon.height || height, objectFit: 'contain' }}
+        alt=""
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.display = 'none';
+        }}
+      />
+    );
+  }
 
   if (isLottie && iconUrl) {
     if (!mounted) return <div style={{ width: resolvedIcon.width || width, height: resolvedIcon.height || height }} className={className} />;

@@ -53,9 +53,10 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
   const [icons, setIcons] = useState<GlobalIconsConfig>(initial);
   const [loading, setLoading] = useState(false);
 
-  const smartDetectType = (url: string): 'image' | 'lottie' | 'svg' | 'emoji' => {
+  const smartDetectType = (url: string): 'image' | 'lottie' | 'svg' | 'emoji' | 'gif' => {
     if (!url) return 'image';
     const lowerUrl = url.toLowerCase().trim();
+    if (lowerUrl.includes('.gif')) return 'gif';
     if (lowerUrl.includes('lottiefiles.com') || lowerUrl.includes('.json') || lowerUrl.includes('lottie.host')) return 'lottie';
     if (url.startsWith('<svg')) return 'svg';
     if (url.length <= 4) return 'emoji';
@@ -67,13 +68,38 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
       const current = prev[key] || { url: "", type: "image" };
       const next = { ...current, [field]: value };
 
-      // إذا قام بتغيير الرابط، نحاول تخمين النوع تلقائياً
-      if (field === 'url') {
+      if (field === 'url' && typeof value === 'string') {
         next.type = smartDetectType(value);
       }
 
       return { ...prev, [key]: next };
     });
+  };
+
+  const handleFileChange = (key: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // التأكد من حجم الملف (اختياري - مثلاً 2 ميجا بايت كحد أقصى للـ GIF)
+    if (file.size > 2 * 1024 * 1024) {
+      alert("الملف كبير جداً، يرجى اختيار ملف أقل من 2 ميجابايت لضمان سرعة التحميل.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      const isGif = file.type === 'image/gif';
+
+      setIcons((prev) => ({
+        ...prev,
+        [key]: {
+          url: base64String,
+          type: isGif ? 'gif' : 'image'
+        }
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async () => {
@@ -99,28 +125,53 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
             <div key={item.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
               <label className="block text-sm font-black text-slate-700">{item.label}</label>
 
-              <div className="flex gap-2">
-                <select
-                  value={config.type}
-                  onChange={(e) => updateIcon(item.id, "type", e.target.value)}
-                  className="px-2 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white"
-                >
-                  <option value="image">صورة/رابط</option>
-                  <option value="lottie">Lottie (أنيميشن)</option>
-                  <option value="emoji">Emoji</option>
-                </select>
-                <input
-                  value={config.url}
-                  onChange={(e) => updateIcon(item.id, "url", e.target.value)}
-                  placeholder="ضع الرابط هنا..."
-                  className="flex-1 px-4 py-2 rounded-xl border border-slate-300 outline-none focus:border-sky-500 font-bold text-sm"
-                />
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <select
+                    value={config.type}
+                    onChange={(e) => updateIcon(item.id, "type", e.target.value)}
+                    className="px-2 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white"
+                  >
+                    <option value="image">صورة/رابط</option>
+                    <option value="gif">GIF (أنيميشن)</option>
+                    <option value="lottie">Lottie (أنيميشن)</option>
+                    <option value="emoji">Emoji</option>
+                  </select>
+                  <input
+                    value={config.url}
+                    onChange={(e) => updateIcon(item.id, "url", e.target.value)}
+                    placeholder="ضع الرابط هنا أو ارفع ملفاً..."
+                    className="flex-1 px-4 py-2 rounded-xl border border-slate-300 outline-none focus:border-sky-500 font-bold text-sm"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <label className="cursor-pointer flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2 text-xs font-black hover:bg-slate-50 transition-all text-center flex items-center justify-center gap-2 shadow-sm border-b-2 active:border-b-0 active:translate-y-[1px]">
+                    <span className="text-lg">📁</span>
+                    <span>رفع ملف من الجهاز (GIF/Image)</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(item.id, e)}
+                    />
+                  </label>
+
+                  {config.url?.startsWith('data:') && (
+                    <button
+                      onClick={() => updateIcon(item.id, "url", "")}
+                      className="text-[10px] font-black text-rose-600 hover:text-rose-700 underline underline-offset-4"
+                    >
+                      حذف الملف 🗑️
+                    </button>
+                  )}
+                </div>
               </div>
 
               {config.url && (
                 <div className="flex items-center gap-4 p-2 bg-white rounded-xl border border-dashed border-slate-300">
                   <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
-                    {config.type === 'image' && <img src={config.url} className="max-w-full max-h-full object-contain" alt="Preview" />}
+                    {(config.type === 'image' || config.type === 'gif') && <img src={config.url} className="max-w-full max-h-full object-contain" alt="Preview" />}
                     {config.type === 'emoji' && <span className="text-3xl">{config.url}</span>}
                     {config.type === 'lottie' && <span className="text-2xl">🎬</span>}
                   </div>

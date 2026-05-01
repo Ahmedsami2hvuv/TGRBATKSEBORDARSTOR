@@ -3,7 +3,7 @@ import { isLottieDirectAssetUrl } from "./icon-utils";
 
 export type IconConfig = {
   url: string;
-  type: 'image' | 'lottie' | 'svg' | 'emoji';
+  type: 'image' | 'lottie' | 'svg' | 'emoji' | 'gif';
   width?: number;
   height?: number;
 };
