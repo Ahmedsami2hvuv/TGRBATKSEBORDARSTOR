@@ -71,6 +71,8 @@ export function DeliveryLoading({
   const loadingIcon = icons?.loading_main;
   const rawUrl = loadingIcon?.url || "";
   const iconUrl = cleanIconUrl(rawUrl);
+  const loadingWidth = loadingIcon?.width && loadingIcon.width > 0 ? loadingIcon.width : 500;
+  const loadingHeight = loadingIcon?.height && loadingIcon.height > 0 ? loadingIcon.height : 350;
 
   const isLottie = isLottieDirectAssetUrl(iconUrl) || loadingIcon?.type === 'lottie';
   const isGif = iconUrl.toLowerCase().endsWith('.gif') || loadingIcon?.type === "gif";
@@ -93,9 +95,12 @@ export function DeliveryLoading({
       )}
 
       {!iconsLoaded ? (
-        <div className="mb-8 w-full max-w-[500px] h-[350px] md:h-[450px]" />
+        <div className="mb-8 w-full" style={{ maxWidth: `${loadingWidth}px`, height: `${loadingHeight}px` }} />
       ) : (isLottie || isGif) && iconUrl ? (
-        <div className="mb-8 w-full max-w-[500px] h-[350px] md:h-[450px] flex items-center justify-center bg-transparent overflow-visible relative">
+        <div
+          className="mb-8 w-full flex items-center justify-center bg-transparent overflow-visible relative"
+          style={{ maxWidth: `${loadingWidth}px`, height: `${loadingHeight}px` }}
+        >
           {isGif ? (
             <img
               src={iconUrl}
@@ -131,7 +136,11 @@ export function DeliveryLoading({
       ) : loadingIcon?.type === 'image' && iconUrl ? (
         <img
           src={iconUrl}
-          className={`w-72 h-72 object-contain mb-12 ${isGif ? '' : 'animate-bounce'}`}
+          className={`object-contain mb-12 ${isGif ? '' : 'animate-bounce'}`}
+          style={{
+            width: `${loadingIcon?.width && loadingIcon.width > 0 ? loadingIcon.width : 288}px`,
+            height: `${loadingIcon?.height && loadingIcon.height > 0 ? loadingIcon.height : 288}px`,
+          }}
           alt=""
           onError={(e) => (e.currentTarget.style.display = 'none')}
         />

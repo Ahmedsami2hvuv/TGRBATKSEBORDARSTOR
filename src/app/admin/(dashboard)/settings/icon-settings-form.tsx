@@ -102,6 +102,17 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
     });
   };
 
+  const updateIconSize = (key: string, field: "width" | "height", value: string) => {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) {
+      updateIcon(key, field as keyof IconConfig, undefined);
+      return;
+    }
+    // سقف آمن حتى لا تتكسر الواجهة بسبب أرقام ضخمة
+    const clamped = Math.max(8, Math.min(900, Math.round(n)));
+    updateIcon(key, field as keyof IconConfig, clamped);
+  };
+
   const handleFileChange = async (key: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -194,6 +205,83 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
                       <option value="no_upscale">بدون تكبير (أوضح)</option>
                       <option value="fill">ملء المساحة (قد يغبش)</option>
                     </select>
+                  </div>
+                )}
+
+                {config.type !== "emoji" && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="text-[11px] font-bold text-slate-600">
+                        العرض (px)
+                        <input
+                          type="number"
+                          min={8}
+                          max={900}
+                          value={config.width ?? ""}
+                          onChange={(e) => updateIconSize(item.id, "width", e.target.value)}
+                          placeholder="تلقائي"
+                          className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:border-sky-500 text-xs font-bold bg-white"
+                        />
+                      </label>
+                      <label className="text-[11px] font-bold text-slate-600">
+                        الارتفاع (px)
+                        <input
+                          type="number"
+                          min={8}
+                          max={900}
+                          value={config.height ?? ""}
+                          onChange={(e) => updateIconSize(item.id, "height", e.target.value)}
+                          placeholder="تلقائي"
+                          className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:border-sky-500 text-xs font-bold bg-white"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const size = item.id === "loading_main" ? 260 : 18;
+                          updateIcon(item.id, "width" as keyof IconConfig, size);
+                          updateIcon(item.id, "height" as keyof IconConfig, size);
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-[11px] font-black bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200"
+                      >
+                        صغير
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const size = item.id === "loading_main" ? 360 : 24;
+                          updateIcon(item.id, "width" as keyof IconConfig, size);
+                          updateIcon(item.id, "height" as keyof IconConfig, size);
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-[11px] font-black bg-sky-100 text-sky-700 border border-sky-200 hover:bg-sky-200"
+                      >
+                        وسط
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const size = item.id === "loading_main" ? 480 : 32;
+                          updateIcon(item.id, "width" as keyof IconConfig, size);
+                          updateIcon(item.id, "height" as keyof IconConfig, size);
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-[11px] font-black bg-violet-100 text-violet-700 border border-violet-200 hover:bg-violet-200"
+                      >
+                        كبير
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateIcon(item.id, "width" as keyof IconConfig, undefined);
+                          updateIcon(item.id, "height" as keyof IconConfig, undefined);
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-[11px] font-black bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200"
+                      >
+                        تلقائي
+                      </button>
+                    </div>
                   </div>
                 )}
 

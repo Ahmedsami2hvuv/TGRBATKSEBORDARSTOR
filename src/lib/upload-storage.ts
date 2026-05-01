@@ -69,7 +69,7 @@ export async function deleteFromR2(key: string | null | undefined) {
 export function getUploadsRoot(): string {
   const fromEnv = process.env.UPLOAD_DIR?.trim();
   if (fromEnv) return path.resolve(fromEnv);
-  return path.join(process.cwd(), "public", "uploads");
+  return path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "uploads");
 }
 
 export function uploadsAbsoluteDir(...segments: string[]): string {
