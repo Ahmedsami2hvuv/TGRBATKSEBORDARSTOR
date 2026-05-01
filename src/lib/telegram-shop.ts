@@ -6,6 +6,7 @@ import { rankRegionsByQuery } from "@/lib/arabic-region-search";
 import { resizeImageBufferForShop } from "@/lib/image-resize";
 import { MAX_ORDER_IMAGE_BYTES, saveShopPhotoFromResizedBuffer } from "@/lib/order-image";
 import { prisma } from "@/lib/prisma";
+import { ensureEmployeeLocationColumnsIfMissing } from "@/lib/db-self-heal-employee-location";
 import { getPublicAppUrl } from "@/lib/app-url";
 import {
   answerCallbackQuery,
@@ -1082,6 +1083,7 @@ export async function handleShopTelegramMessage(message: {
     if (!p.shopId || !p.phone) return true;
     const shopRow = await prisma.shop.findUnique({ where: { id: p.shopId }, select: { id: true } });
     if (!shopRow) return true;
+    await ensureEmployeeLocationColumnsIfMissing();
     await prisma.employee.create({
       data: {
         shopId: p.shopId,

@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { ensureEmployeeLocationColumnsIfMissing } from "@/lib/db-self-heal-employee-location";
 import {
   PrismaClientKnownRequestError,
   PrismaClientValidationError,
@@ -40,12 +41,12 @@ function mapUnknownDbError(e: unknown): string {
   }
   if (
     lower.includes("does not exist in the current database") ||
-    lower.includes("column") && lower.includes("does not exist")
+    (lower.includes("column") && lower.includes("does not exist"))
   ) {
     return [
-      "قاعدة البيانات أقدم من نسخة المشروع: عمود مفقود في جدول الموظفين (مثل lastEmployeeLat).",
-      "نفّذ على الخادم: npx prisma migrate deploy",
-      "أو نفّذ في محرر SQL لديك الهجرة الأخيرة التي تضيف أعمدة Employee للموقع.",
+      "لم يُضبط جدول الموظفين (Employee) تلقائياً (عمود مفقود).",
+      "جرّب إعادة نشر التطبيق، أو نفّذ: npx prisma migrate deploy",
+      "أو أضف الأعمدة يدوياً من لوحة Supabase → SQL.",
     ].join(" ");
   }
   return `تعذّر الحفظ: ${raw.slice(0, 220)}`;
@@ -78,6 +79,7 @@ export async function applyPreparerShopLinks(
   }
 
   try {
+    await ensureEmployeeLocationColumnsIfMissing();
     await prisma.preparerShop.deleteMany({ where: { preparerId: preparerIdTrim } });
     if (shopIds.length > 0) {
       await prisma.preparerShop.createMany({

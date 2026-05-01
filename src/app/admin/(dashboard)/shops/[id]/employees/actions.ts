@@ -2,6 +2,7 @@
 
 import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { ensureEmployeeLocationColumnsIfMissing } from "@/lib/db-self-heal-employee-location";
 import {
   isPlausibleWhatsAppNumber,
   normalizePhoneDigits,
@@ -34,6 +35,7 @@ export async function createEmployee(
   if (!shop) {
     return { error: "المحل غير موجود" };
   }
+  await ensureEmployeeLocationColumnsIfMissing();
   await prisma.employee.create({
     data: { name, phone, shopId },
   });
