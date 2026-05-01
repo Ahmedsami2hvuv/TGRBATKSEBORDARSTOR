@@ -51,12 +51,34 @@ const ICON_KEYS = [
 
 export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
   const [icons, setIcons] = useState<GlobalIconsConfig>(initial);
-  const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+
+  // الحفظ التلقائي عند أي تغيير
+  useEffect(() => {
+    if (!hasLoaded) {
+      setHasLoaded(true);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSaving(true);
+      try {
+        await saveGlobalIconsAction(icons);
+      } catch (e) {
+        console.error("Auto-save failed", e);
+      } finally {
+        setTimeout(() => setIsSaving(false), 800);
+      }
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [icons]);
 
   const smartDetectType = (url: string): 'image' | 'lottie' | 'svg' | 'emoji' | 'gif' => {
     if (!url) return 'image';
     const lowerUrl = url.toLowerCase().trim();
-    if (lowerUrl.includes('.gif')) return 'gif';
+    if (lowerUrl.includes('.gif') || url.startsWith('data:image/gif')) return 'gif';
     if (lowerUrl.includes('lottiefiles.com') || lowerUrl.includes('.json') || lowerUrl.includes('lottie.host')) return 'lottie';
     if (url.startsWith('<svg')) return 'svg';
     if (url.length <= 4) return 'emoji';
@@ -67,11 +89,9 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
     setIcons((prev) => {
       const current = prev[key] || { url: "", type: "image" };
       const next = { ...current, [field]: value };
-
       if (field === 'url' && typeof value === 'string') {
         next.type = smartDetectType(value);
       }
-
       return { ...prev, [key]: next };
     });
   };
@@ -80,118 +100,102 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // التأكد من حجم الملف (اختياري - مثلاً 2 ميجا بايت كحد أقصى للـ GIF)
-    if (file.size > 2 * 1024 * 1024) {
-      alert("الملف كبير جداً، يرجى اختيار ملف أقل من 2 ميجابايت لضمان سرعة التحميل.");
+    if (file.size > 3 * 1024 * 1024) {
+      alert("الملف كبير جداً (أقصى حد 3 ميجا)");
       return;
     }
 
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result as string;
-      const isGif = file.type === 'image/gif';
-
-      setIcons((prev) => ({
-        ...prev,
-        [key]: {
-          url: base64String,
-          type: isGif ? 'gif' : 'image'
-        }
-      }));
+      updateIcon(key, 'url', base64String);
     };
     reader.readAsDataURL(file);
   };
 
-  const handleSave = async () => {
-    setLoading(true);
-    try {
-      const res = await saveGlobalIconsAction(icons);
-      if (res.ok) {
-        alert("تم حفظ الإيقونات بنجاح");
-      } else {
-        alert("خطأ في الحفظ");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="relative space-y-6">
+      {/* مؤشر الحفظ التلقائي العائم */}
+      <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] transition-all duration-300 ${isSaving ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'}`}>
+        <div className="bg-slate-900 text-white px-6 py-2 rounded-full shadow-2xl flex items-center gap-3 border border-slate-700">
+          <div className="w-4 h-4 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-sm font-black">جاري حفظ التغييرات تلقائياً...</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
         {ICON_KEYS.map((item) => {
           const config = icons[item.id] || { url: "", type: "image" };
           return (
-            <div key={item.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-              <label className="block text-sm font-black text-slate-700">{item.label}</label>
+            <div key={item.id} className="p-4 bg-white rounded-3xl border border-slate-200 shadow-sm space-y-4 hover:border-sky-200 transition-colors">
+              <div className="flex items-center justify-between gap-2">
+                <label className="block text-sm font-black text-slate-800">{item.label}</label>
+                {config.url?.startsWith('data:') && (
+                    <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold">ملف مرفوع 📁</span>
+                )}
+              </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex gap-2">
                   <select
                     value={config.type}
                     onChange={(e) => updateIcon(item.id, "type", e.target.value)}
-                    className="px-2 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white"
+                    className="px-2 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-slate-50 outline-none focus:border-sky-500"
                   >
-                    <option value="image">صورة/رابط</option>
+                    <option value="image">صورة ثابتة</option>
                     <option value="gif">GIF (أنيميشن)</option>
-                    <option value="lottie">Lottie (أنيميشن)</option>
+                    <option value="lottie">Lottie (JSON)</option>
                     <option value="emoji">Emoji</option>
                   </select>
                   <input
                     value={config.url}
                     onChange={(e) => updateIcon(item.id, "url", e.target.value)}
-                    placeholder="ضع الرابط هنا أو ارفع ملفاً..."
-                    className="flex-1 px-4 py-2 rounded-xl border border-slate-300 outline-none focus:border-sky-500 font-bold text-sm"
+                    placeholder="رابط أو Base64..."
+                    className="flex-1 px-4 py-2 rounded-xl border border-slate-300 outline-none focus:border-sky-500 font-bold text-xs bg-slate-50"
                   />
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <label className="cursor-pointer flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2 text-xs font-black hover:bg-slate-50 transition-all text-center flex items-center justify-center gap-2 shadow-sm border-b-2 active:border-b-0 active:translate-y-[1px]">
-                    <span className="text-lg">📁</span>
-                    <span>رفع ملف من الجهاز (GIF/Image)</span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={(e) => handleFileChange(item.id, e)}
-                    />
+                <div className="flex items-center gap-2">
+                  <label className="flex-1 cursor-pointer bg-sky-50 text-sky-700 border border-sky-100 rounded-xl px-4 py-2 text-xs font-black hover:bg-sky-100 transition-all text-center flex items-center justify-center gap-2">
+                    <span>📤 رفع ملف جديد</span>
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(item.id, e)} />
                   </label>
 
-                  {config.url?.startsWith('data:') && (
+                  {config.url && (
                     <button
                       onClick={() => updateIcon(item.id, "url", "")}
-                      className="text-[10px] font-black text-rose-600 hover:text-rose-700 underline underline-offset-4"
+                      className="p-2 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all"
+                      title="مسح"
                     >
-                      حذف الملف 🗑️
+                      🗑️
                     </button>
                   )}
                 </div>
               </div>
 
-              {config.url && (
-                <div className="flex items-center gap-4 p-2 bg-white rounded-xl border border-dashed border-slate-300">
-                  <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
-                    {(config.type === 'image' || config.type === 'gif') && <img src={config.url} className="max-w-full max-h-full object-contain" alt="Preview" />}
-                    {config.type === 'emoji' && <span className="text-3xl">{config.url}</span>}
-                    {config.type === 'lottie' && <span className="text-2xl">🎬</span>}
-                  </div>
-                  <div className="text-[10px] text-slate-500 font-bold leading-tight">
-                    {config.type === 'lottie' ? "سيتم عرض الأنيميشن في الواجهة المخصصة" : "معاينة حية للإيقونة"}
-                  </div>
-                </div>
-              )}
+              {/* معاينة ذكية ومحسنة */}
+              <div className="h-32 bg-slate-50 rounded-2xl border border-dashed border-slate-200 flex items-center justify-center relative overflow-hidden group">
+                {config.url ? (
+                  <>
+                    {(config.type === 'image' || config.type === 'gif') && (
+                      <img src={config.url} className="max-w-full max-h-full object-contain p-2 drop-shadow-sm" alt="Preview" />
+                    )}
+                    {config.type === 'emoji' && <span className="text-5xl drop-shadow-md">{config.url}</span>}
+                    {config.type === 'lottie' && (
+                      <div className="flex flex-col items-center gap-2 text-slate-400">
+                        <span className="text-3xl">🎬</span>
+                        <span className="text-[10px] font-bold">أنيميشن Lottie (يظهر في الواجهة)</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-[10px] font-bold text-slate-300">لا توجد أيقونة مسجلة</span>
+                )}
+              </div>
             </div>
           );
         })}
       </div>
-
-      <button
-        onClick={handleSave}
-        disabled={loading}
-        className="w-full py-4 bg-sky-600 text-white font-black rounded-2xl shadow-lg hover:bg-sky-700 transition-all disabled:opacity-50"
-      >
-        {loading ? "جاري الحفظ..." : "حفظ تغييرات الإيقونات ✅"}
-      </button>
     </div>
   );
 }

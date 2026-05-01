@@ -90,17 +90,19 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
           ) : null}
         </div>
 
-        {/* Decorative Background Icon */}
-        <div className="absolute -left-10 -top-10 opacity-[0.03] grayscale pointer-events-none">
-           <DynamicIcon iconKey="ui_user" config={icons} width={200} height={200} />
+        {/* Decorative Background Icon - تظهر كعلامة مائية احترافية في الزاوية */}
+        <div className="absolute -left-12 -top-12 opacity-[0.08] pointer-events-none rotate-12 transition-all duration-700">
+           <DynamicIcon iconKey="ui_user" config={icons} width={220} height={220} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-4 space-y-6">
-           <div className="bg-sky-50/50 p-6 rounded-3xl border border-sky-100/50">
-              <h3 className="font-black text-sky-900 mb-4 flex items-center gap-2">
-                 <DynamicIcon iconKey="ui_plus" config={icons} className="w-5 h-5" />
+           <div className="bg-sky-50/50 p-6 rounded-3xl border border-sky-100/50 shadow-inner">
+              <h3 className="font-black text-sky-900 mb-4 flex items-center gap-3">
+                 <div className="bg-white p-2 rounded-xl shadow-sm border border-sky-100">
+                    <DynamicIcon iconKey="ui_plus" config={icons} className="w-6 h-6 shrink-0" />
+                 </div>
                  إضافة موظف جديد
               </h3>
               <AddEmployeePanel shopId={shop.id} />
