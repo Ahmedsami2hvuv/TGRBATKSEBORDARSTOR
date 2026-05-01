@@ -12,6 +12,10 @@ export type GlobalIconsConfig = Record<string, IconConfig>;
 
 export { isLottieDirectAssetUrl };
 
+const CLIENT_ICONS_CACHE_KEY = "kse:global-icons-cache:v1";
+const CLIENT_ICONS_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
+const SERVER_ICONS_CACHE_MAX_AGE_MS = 60 * 1000;
+
 const DEFAULT_ICONS: GlobalIconsConfig = {
   "loading_main": {
     url: "https://lottie.host/54e33590-d50d-495c-9c99-4a0050868a2d/7vGv1DkXy9.json",
@@ -363,22 +367,82 @@ const DEFAULT_ICONS: GlobalIconsConfig = {
   }
 };
 
+let clientIconsCache: GlobalIconsConfig | null = null;
+let clientIconsCacheAt = 0;
+let clientIconsPromise: Promise<GlobalIconsConfig> | null = null;
+let serverIconsCache: GlobalIconsConfig | null = null;
+let serverIconsCacheAt = 0;
+
+function mergeWithDefaults(data: unknown): GlobalIconsConfig {
+  if (!data || typeof data !== "object") {
+    return DEFAULT_ICONS;
+  }
+  return { ...DEFAULT_ICONS, ...(data as GlobalIconsConfig) };
+}
+
+function getClientCachedIcons(): GlobalIconsConfig | null {
+  const now = Date.now();
+  if (clientIconsCache && now - clientIconsCacheAt < CLIENT_ICONS_CACHE_MAX_AGE_MS) {
+    return clientIconsCache;
+  }
+  try {
+    const raw = window.sessionStorage.getItem(CLIENT_ICONS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { t?: number; data?: unknown };
+    if (!parsed || typeof parsed.t !== "number") return null;
+    if (now - parsed.t >= CLIENT_ICONS_CACHE_MAX_AGE_MS) return null;
+    const merged = mergeWithDefaults(parsed.data);
+    clientIconsCache = merged;
+    clientIconsCacheAt = parsed.t;
+    return merged;
+  } catch {
+    return null;
+  }
+}
+
+function setClientCachedIcons(data: GlobalIconsConfig) {
+  const now = Date.now();
+  clientIconsCache = data;
+  clientIconsCacheAt = now;
+  try {
+    window.sessionStorage.setItem(CLIENT_ICONS_CACHE_KEY, JSON.stringify({ t: now, data }));
+  } catch {
+    // Ignore storage failures silently (private mode/quota).
+  }
+}
+
 export async function getGlobalIcons(): Promise<GlobalIconsConfig> {
   if (typeof window !== "undefined") {
-    try {
-      const res = await fetch("/api/admin/settings/icons", {
-        method: "GET",
-        credentials: "same-origin",
-        cache: "no-store",
-      });
-      if (!res.ok) return DEFAULT_ICONS;
-      const data = (await res.json()) as GlobalIconsConfig;
-      if (!data || typeof data !== "object") return DEFAULT_ICONS;
-      return { ...DEFAULT_ICONS, ...data };
-    } catch (e) {
-      console.error("Failed to fetch global icons (client):", e);
-      return DEFAULT_ICONS;
-    }
+    const cached = getClientCachedIcons();
+    if (cached) return cached;
+    if (clientIconsPromise) return clientIconsPromise;
+
+    clientIconsPromise = (async () => {
+      try {
+        const res = await fetch("/api/admin/settings/icons", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "force-cache",
+        });
+        if (!res.ok) return DEFAULT_ICONS;
+        const data = (await res.json()) as GlobalIconsConfig;
+        const merged = mergeWithDefaults(data);
+        setClientCachedIcons(merged);
+        return merged;
+      } catch (e) {
+        console.error("Failed to fetch global icons (client):", e);
+        return DEFAULT_ICONS;
+      } finally {
+        clientIconsPromise = null;
+      }
+    })();
+
+    return clientIconsPromise;
+  }
+
+  const now = Date.now();
+  if (serverIconsCache && now - serverIconsCacheAt < SERVER_ICONS_CACHE_MAX_AGE_MS) {
+    return serverIconsCache;
   }
 
   try {
@@ -389,8 +453,10 @@ export async function getGlobalIcons(): Promise<GlobalIconsConfig> {
       }
     });
 
-    if (!setting) return DEFAULT_ICONS;
-    return { ...DEFAULT_ICONS, ...(setting.config as GlobalIconsConfig) };
+    const merged = mergeWithDefaults(setting?.config);
+    serverIconsCache = merged;
+    serverIconsCacheAt = now;
+    return merged;
   } catch (e) {
     console.error("Failed to fetch global icons:", e);
     return DEFAULT_ICONS;
@@ -412,11 +478,28 @@ export async function saveGlobalIcons(config: GlobalIconsConfig) {
     }),
   );
 
-  return await prisma.uISystemSetting.upsert({
+  const saved = await prisma.uISystemSetting.upsert({
     where: {
       target_section: { target: "global", section: "icons" }
     },
     update: { config: sanitized as any },
     create: { target: "global", section: "icons", config: sanitized as any }
   });
+
+  const merged = mergeWithDefaults(sanitized);
+  serverIconsCache = merged;
+  serverIconsCacheAt = Date.now();
+  clientIconsCache = merged;
+  clientIconsCacheAt = Date.now();
+  if (typeof window !== "undefined") {
+    try {
+      window.sessionStorage.setItem(
+        CLIENT_ICONS_CACHE_KEY,
+        JSON.stringify({ t: Date.now(), data: merged }),
+      );
+    } catch {
+      // Ignore storage failures silently.
+    }
+  }
+  return saved;
 }

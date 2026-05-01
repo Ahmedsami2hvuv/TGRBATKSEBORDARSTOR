@@ -1,11 +1,22 @@
 import type { Metadata, Viewport } from "next";
 import { Cairo } from "next/font/google";
-import { EnterSubmitGlobal } from "@/components/enter-submit-global";
-import { PwaServiceWorkerRegister } from "@/components/pwa-service-worker-register";
-import { PwaRoutePreserver } from "@/components/pwa-route-preserver";
 import { ThemeProvider } from "@/components/theme-provider";
-import GlobalAIAssistant from "@/components/GlobalAIAssistant";
+import dynamic from "next/dynamic";
 import "./globals.css";
+
+const EnterSubmitGlobal = dynamic(
+  () => import("@/components/enter-submit-global").then((m) => m.EnterSubmitGlobal),
+  { ssr: false },
+);
+const PwaServiceWorkerRegister = dynamic(
+  () => import("@/components/pwa-service-worker-register").then((m) => m.PwaServiceWorkerRegister),
+  { ssr: false },
+);
+const PwaRoutePreserver = dynamic(
+  () => import("@/components/pwa-route-preserver").then((m) => m.PwaRoutePreserver),
+  { ssr: false },
+);
+const GlobalAIAssistant = dynamic(() => import("@/components/GlobalAIAssistant"), { ssr: false });
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],

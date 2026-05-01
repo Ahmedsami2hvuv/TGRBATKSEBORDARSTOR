@@ -5,7 +5,11 @@ import { isAdminSession } from "@/lib/admin-session";
 export async function GET() {
   try {
     const icons = await getGlobalIcons();
-    return NextResponse.json(icons);
+    return NextResponse.json(icons, {
+      headers: {
+        "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
+      },
+    });
   } catch (error) {
     console.error("Failed to fetch global icons:", error);
     return NextResponse.json({ error: "Failed to fetch icons" }, { status: 500 });

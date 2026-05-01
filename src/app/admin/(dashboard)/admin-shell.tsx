@@ -66,6 +66,7 @@ export function AdminShell({
     <>
       <Link
         href="/admin"
+        prefetch={false}
         title="الرئيسية"
         onClick={() => setNavOpen(false)}
         className={
@@ -90,6 +91,7 @@ export function AdminShell({
             <Link
               key={tile.slug}
               href={href}
+              prefetch={false}
               title={tile.label}
               onClick={() => setNavOpen(false)}
               className={
