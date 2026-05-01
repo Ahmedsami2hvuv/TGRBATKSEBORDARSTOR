@@ -3,11 +3,10 @@
 import React, { useEffect, useState } from "react";
 import Script from "next/script";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
-import { isLottieDirectAssetUrl, cleanIconUrl, getLottieDisplayUrl } from "@/lib/icon-utils";
+import { isLottieDirectAssetUrl, cleanIconUrl } from "@/lib/icon-utils";
 
 export function DeliveryLoading({ message = "جاري التحميل..." }: { message?: string }) {
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-  const [scriptLoaded, setScriptLoaded] = useState(false);
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
@@ -15,64 +14,59 @@ export function DeliveryLoading({ message = "جاري التحميل..." }: { me
 
   const loadingIcon = icons?.loading_main;
   const iconUrl = cleanIconUrl(loadingIcon?.url || "");
-  const isDirectLottie = isLottieDirectAssetUrl(iconUrl);
+
+  // إذا كان الرابط يحتوي على lottie، فهو أنيميشن 100% مهما كان الاختيار في الإعدادات
+  const isLottie = isLottieDirectAssetUrl(iconUrl) || loadingIcon?.type === 'lottie';
 
   return (
-    <div className="flex flex-col items-center justify-center p-2 w-full min-h-[400px] bg-transparent">
+    <div className="flex flex-col items-center justify-center p-4 w-full min-h-[450px] bg-transparent overflow-visible">
       <Script
-        src="https://unpkg.com/@lottiefiles/lottie-player@1.5.7/dist/lottie-player.js"
+        src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"
         strategy="afterInteractive"
-        onLoad={() => setScriptLoaded(true)}
       />
 
-      {loadingIcon?.type === 'lottie' ? (
-        <div className="mb-8 w-full max-w-[500px] aspect-square flex items-center justify-center overflow-visible">
-          {isDirectLottie ? (
-            <lottie-player
-              src={iconUrl}
-              background="transparent"
-              speed="1"
-              loop
-              autoplay
-              style={{ width: '100%', height: '100%', display: 'block' }}
-            />
-          ) : (
-            <iframe
-              src={getLottieDisplayUrl(iconUrl)}
-              className="w-full h-full border-none pointer-events-none bg-transparent"
-              allowFullScreen
-            />
-          )}
+      {isLottie ? (
+        <div className="mb-8 w-full max-w-[550px] h-[400px] flex items-center justify-center bg-transparent overflow-visible">
+          <lottie-player
+            src={iconUrl}
+            background="transparent"
+            speed="1"
+            loop
+            autoplay
+            style={{ width: '100%', height: '100%', display: 'block' }}
+          />
         </div>
-      ) : loadingIcon?.type === 'image' ? (
-        <img src={iconUrl} className="w-48 h-48 object-contain mb-8 animate-bounce" alt="Loading" />
-      ) : loadingIcon?.type === 'emoji' ? (
-        <div className="text-9xl mb-8 animate-bounce">{iconUrl}</div>
+      ) : loadingIcon?.type === 'image' && iconUrl ? (
+        <img
+          src={iconUrl}
+          className="w-48 h-48 object-contain mb-8 animate-bounce"
+          alt=""
+          onError={(e) => (e.currentTarget.style.display = 'none')}
+        />
       ) : (
-        <div className="relative w-full max-w-[400px] h-32 mb-8 border-b-2 border-dashed border-slate-200">
-           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-             <div className="absolute top-1/2 left-0 w-[200%] h-1 bg-gradient-to-r from-transparent via-slate-100 to-transparent animate-road-slide"></div>
-          </div>
-          <div className="absolute bottom-1 left-0 text-5xl animate-car-race delay-0 z-10">
-            <div style={{ transform: 'scaleX(-1)', display: 'inline-block' }}>🚗</div>
-          </div>
+        /* في حال فشل كل شيء، يظهر هذا الأنيميشن البسيط بدلاً من المربع المكسور */
+        <div className="text-9xl mb-8 animate-bounce">
+          {loadingIcon?.type === 'emoji' ? iconUrl : "⏳"}
         </div>
       )}
 
-      <div className="text-center space-y-3 px-4">
-        <p className="text-2xl font-black text-sky-900 animate-pulse">{message}</p>
-        <p className="text-sm font-bold text-slate-400">يرجى الانتظار قليلاً، نحن نجهز لك البيانات...</p>
+      <div className="text-center space-y-4 px-6 relative z-10">
+        <h2 className="text-3xl md:text-4xl font-black text-sky-900 animate-pulse leading-tight">
+          {message}
+        </h2>
+        <div className="flex items-center justify-center gap-3">
+           <div className="w-3 h-3 bg-sky-500 rounded-full animate-bounce delay-75"></div>
+           <div className="w-3 h-3 bg-sky-500 rounded-full animate-bounce delay-150"></div>
+           <div className="w-3 h-3 bg-sky-500 rounded-full animate-bounce delay-300"></div>
+        </div>
       </div>
 
       <style jsx global>{`
-        @keyframes road-slide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        @keyframes car-race {
-          0% { transform: translateX(-150px); }
-          100% { transform: translateX(600px); }
+        lottie-player {
+          background: transparent !important;
+          border: none !important;
+          outline: none !important;
         }
-        .animate-road-slide { animation: road-slide 1s linear infinite; }
-        .animate-car-race { animation: car-race 2.5s ease-in-out infinite; }
-        lottie-player { background: transparent !important; }
       `}</style>
     </div>
   );

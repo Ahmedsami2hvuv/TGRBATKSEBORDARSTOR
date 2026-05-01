@@ -28,47 +28,48 @@ export function DynamicIcon({
 
   const iconUrl = cleanIconUrl(resolvedIcon.url || "");
 
-  if (resolvedIcon.type === 'emoji') {
-    return <span className={className}>{iconUrl}</span>;
-  }
+  // فحص ذكي: إذا كان الرابط يحتوي على lottie، فهو أنيميشن حتماً
+  const isLottie = isLottieDirectAssetUrl(iconUrl) || resolvedIcon.type === 'lottie';
 
-  if (resolvedIcon.type === 'image') {
+  if (isLottie && iconUrl) {
     return (
-      <img
-        src={iconUrl}
-        className={className}
-        style={{ width: resolvedIcon.width || width, height: resolvedIcon.height || height, objectFit: 'contain' }}
-        alt="icon"
-      />
-    );
-  }
-
-  if (resolvedIcon.type === 'lottie') {
-    // إذا كان الرابط lottie.host أو ينتهي بـ .json نستخدم المشغل المباشر دائماً
-    if (isLottieDirectAssetUrl(iconUrl)) {
-      return (
-        <>
-          <Script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" strategy="lazyOnload" />
+      <div className={className} style={{ width: resolvedIcon.width || width, height: resolvedIcon.height || height, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" strategy="lazyOnload" />
+        {isLottieDirectAssetUrl(iconUrl) ? (
           <lottie-player
             src={iconUrl}
             background="transparent"
             speed="1"
             loop
             autoplay
-            className={className}
-            style={{ width: resolvedIcon.width || width, height: resolvedIcon.height || height }}
+            style={{ width: '100%', height: '100%' }}
           />
-        </>
-      );
-    }
+        ) : (
+          <iframe
+            src={getLottieDisplayUrl(iconUrl)}
+            style={{ width: '100%', height: '100%', border: 'none' }}
+            allowFullScreen
+          />
+        )}
+      </div>
+    );
+  }
 
-    // روابط lottiefiles التقليدية (Embed)
+  if (resolvedIcon.type === 'emoji') {
+    return <span className={className}>{iconUrl}</span>;
+  }
+
+  if (resolvedIcon.type === 'image' && iconUrl) {
     return (
-      <iframe
-        src={getLottieDisplayUrl(iconUrl)}
+      <img
+        src={iconUrl}
         className={className}
-        style={{ width: resolvedIcon.width || width, height: resolvedIcon.height || height, border: 'none', pointerEvents: 'none' }}
-        allowFullScreen
+        style={{ width: resolvedIcon.width || width, height: resolvedIcon.height || height, objectFit: 'contain' }}
+        alt=""
+        onError={(e) => {
+          // إخفاء المربع الرمادي تماماً في حال فشل الصورة
+          (e.target as HTMLImageElement).style.display = 'none';
+        }}
       />
     );
   }
