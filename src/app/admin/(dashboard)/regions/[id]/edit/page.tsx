@@ -11,7 +11,14 @@ type Props = { params: Promise<{ id: string }> };
 
 export default async function EditRegionPage({ params }: Props) {
   const { id } = await params;
-  const region = await prisma.region.findUnique({ where: { id } });
+  const region = await prisma.region.findUnique({
+    where: { id },
+    include: {
+      waypoints: {
+        orderBy: { sortOrder: "asc" },
+      },
+    },
+  });
   if (!region) {
     notFound();
   }
@@ -34,6 +41,11 @@ export default async function EditRegionPage({ params }: Props) {
           id={region.id}
           defaultName={region.name}
           defaultPrice={priceStr}
+          defaultWaypoints={region.waypoints.map((w) => ({
+            name: w.name,
+            latitude: w.latitude,
+            longitude: w.longitude,
+          }))}
         />
       </section>
     </div>

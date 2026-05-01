@@ -4,6 +4,43 @@ import { parseAlfInputToDinarNumber } from "@/lib/money-alf";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
+type RegionWaypointInput = {
+  name?: string;
+  latitude: number;
+  longitude: number;
+};
+
+function parseWaypointsFromForm(formData: FormData): RegionWaypointInput[] {
+  const raw = String(formData.get("waypointsJson") ?? "").trim();
+  if (!raw) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("تعذّر قراءة مواقع المنطقة.");
+  }
+  if (!Array.isArray(parsed)) {
+    throw new Error("صيغة مواقع المنطقة غير صالحة.");
+  }
+  const out: RegionWaypointInput[] = [];
+  for (const item of parsed) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    const latitude = Number(row.latitude);
+    const longitude = Number(row.longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) continue;
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      continue;
+    }
+    out.push({
+      name: String(row.name ?? "").trim(),
+      latitude,
+      longitude,
+    });
+  }
+  return out;
+}
+
 export type RegionFormState = {
   error?: string;
   ok?: boolean;
@@ -36,17 +73,38 @@ export async function updateRegion(prevState: any, formData: FormData) {
   const name = formData.get("name") as string;
   const deliveryPriceStr = formData.get("deliveryPrice") as string;
   const deliveryPrice = parseAlfInputToDinarNumber(deliveryPriceStr);
+  let waypoints: RegionWaypointInput[] = [];
 
   if (!id || !name || deliveryPrice === null) {
     return { error: "يرجى ملء كافة الحقول بشكل صحيح" };
   }
+  try {
+    waypoints = parseWaypointsFromForm(formData);
+  } catch (e: any) {
+    return { error: e?.message || "بيانات المواقع غير صالحة" };
+  }
 
   try {
-    await prisma.region.update({
-      where: { id },
-      data: { name, deliveryPrice }
+    await prisma.$transaction(async (tx) => {
+      await tx.region.update({
+        where: { id },
+        data: { name, deliveryPrice },
+      });
+      await tx.regionWaypoint.deleteMany({ where: { regionId: id } });
+      if (waypoints.length > 0) {
+        await tx.regionWaypoint.createMany({
+          data: waypoints.map((w, idx) => ({
+            regionId: id,
+            name: w.name || `مدخل ${idx + 1}`,
+            latitude: w.latitude,
+            longitude: w.longitude,
+            sortOrder: idx,
+          })),
+        });
+      }
     });
     revalidatePath("/admin/regions");
+    revalidatePath(`/admin/regions/${id}/edit`);
     return { ok: true };
   } catch (e: any) {
     return { error: e.message };

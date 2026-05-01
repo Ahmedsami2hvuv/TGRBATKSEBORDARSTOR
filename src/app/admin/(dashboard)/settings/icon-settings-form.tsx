@@ -102,8 +102,13 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
     });
   };
 
+  const normalizeDigits = (value: string) =>
+    value
+      .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632))
+      .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776));
+
   const updateIconSize = (key: string, field: "width" | "height", value: string) => {
-    const n = Number(value);
+    const n = Number(normalizeDigits(value));
     if (!Number.isFinite(n) || n <= 0) {
       updateIcon(key, field as keyof IconConfig, undefined);
       return;
@@ -241,7 +246,7 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
                       <button
                         type="button"
                         onClick={() => {
-                          const size = item.id === "loading_main" ? 260 : 18;
+                          const size = item.id === "loading_main" ? 260 : 24;
                           updateIcon(item.id, "width" as keyof IconConfig, size);
                           updateIcon(item.id, "height" as keyof IconConfig, size);
                         }}
@@ -252,7 +257,7 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
                       <button
                         type="button"
                         onClick={() => {
-                          const size = item.id === "loading_main" ? 360 : 24;
+                          const size = item.id === "loading_main" ? 360 : 36;
                           updateIcon(item.id, "width" as keyof IconConfig, size);
                           updateIcon(item.id, "height" as keyof IconConfig, size);
                         }}
@@ -263,7 +268,7 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
                       <button
                         type="button"
                         onClick={() => {
-                          const size = item.id === "loading_main" ? 480 : 32;
+                          const size = item.id === "loading_main" ? 480 : 48;
                           updateIcon(item.id, "width" as keyof IconConfig, size);
                           updateIcon(item.id, "height" as keyof IconConfig, size);
                         }}

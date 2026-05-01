@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ad } from "@/lib/admin-ui";
 
@@ -106,6 +107,12 @@ export function RegionsList({ initialRegions, icons }: { initialRegions: any[], 
                   <DynamicIcon iconKey="ui_edit" config={icons} fallback="تعديل" className="w-3.5 h-3.5" />
                   تعديل
                 </button>
+                <Link
+                  href={`/admin/regions/${region.id}/edit`}
+                  className="ms-2 text-slate-600 hover:text-slate-800 text-xs font-bold"
+                >
+                  المداخل
+                </Link>
               </>
             )}
           </div>

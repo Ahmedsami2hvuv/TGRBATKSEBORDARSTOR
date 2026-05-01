@@ -24,6 +24,7 @@ import {
   mandoubShopNameVividClass,
   orderStatusBadgeClassPrepaid,
 } from "@/lib/order-status-style";
+import { haversineMeters } from "@/lib/geo-distance";
 import type { MandoubOrderSearchFields } from "@/lib/mandoub-order-smart-filter";
 import { MandoubMoneySummarySection } from "./mandoub-money-summary-section";
 import { MandoubOrdersSection } from "./mandoub-orders-client";
@@ -57,6 +58,18 @@ function normalizeDbStatus(status: string | null | undefined): string {
 function isMandoubActiveListStatus(status: string | null | undefined): boolean {
   const s = normalizeDbStatus(status);
   return s === "assigned" || s === "delivering" || s === "delivered";
+}
+
+function orderRegionCandidates(order: {
+  customerRegionId: string | null;
+  secondCustomerRegionId: string | null;
+}): string[] {
+  const out: string[] = [];
+  if (order.customerRegionId) out.push(order.customerRegionId);
+  if (order.secondCustomerRegionId && order.secondCustomerRegionId !== order.customerRegionId) {
+    out.push(order.secondCustomerRegionId);
+  }
+  return out;
 }
 
 function invalidLinkMessage(reason: DelegatePortalVerifyReason): string {
@@ -174,6 +187,53 @@ export default async function MandoubPage({ searchParams }: Props) {
     orderBy: { createdAt: "desc" },
   });
 
+  const regionIds = Array.from(
+    new Set(
+      activeOrdersRaw.flatMap((o) => orderRegionCandidates(o)),
+    ),
+  );
+  const regionWaypoints = regionIds.length
+    ? await prisma.regionWaypoint.findMany({
+        where: { regionId: { in: regionIds } },
+        orderBy: [{ regionId: "asc" }, { sortOrder: "asc" }],
+        select: { regionId: true, latitude: true, longitude: true },
+      })
+    : [];
+  const waypointsByRegion = new Map<
+    string,
+    Array<{ latitude: number; longitude: number }>
+  >();
+  for (const point of regionWaypoints) {
+    const arr = waypointsByRegion.get(point.regionId) ?? [];
+    arr.push({ latitude: point.latitude, longitude: point.longitude });
+    waypointsByRegion.set(point.regionId, arr);
+  }
+
+  const courierLat = courier.lastCourierLat;
+  const courierLng = courier.lastCourierLng;
+  const canSortByDistance = Number.isFinite(courierLat) && Number.isFinite(courierLng);
+  const deliveringDistanceByOrderId = new Map<string, number>();
+  if (canSortByDistance) {
+    for (const order of activeOrdersRaw) {
+      if (order.status !== "delivering") continue;
+      const regionCandidates = orderRegionCandidates(order);
+      let minDistance = Number.POSITIVE_INFINITY;
+      for (const regionId of regionCandidates) {
+        const points = waypointsByRegion.get(regionId) ?? [];
+        for (const p of points) {
+          const d = haversineMeters(
+            Number(courierLat),
+            Number(courierLng),
+            p.latitude,
+            p.longitude,
+          );
+          if (d < minDistance) minDistance = d;
+        }
+      }
+      deliveringDistanceByOrderId.set(order.id, minDistance);
+    }
+  }
+
   const MANDOUB_STATUS_RANK: Record<string, number> = {
     assigned: 1,
     delivering: 2,
@@ -186,6 +246,11 @@ export default async function MandoubPage({ searchParams }: Props) {
       const rA = MANDOUB_STATUS_RANK[a.status] ?? 99;
       const rB = MANDOUB_STATUS_RANK[b.status] ?? 99;
       if (rA !== rB) return rA - rB;
+      if (a.status === "delivering" && b.status === "delivering") {
+        const dA = deliveringDistanceByOrderId.get(a.id) ?? Number.POSITIVE_INFINITY;
+        const dB = deliveringDistanceByOrderId.get(b.id) ?? Number.POSITIVE_INFINITY;
+        if (dA !== dB) return dA - dB;
+      }
       return b.orderNumber - a.orderNumber;
     });
 

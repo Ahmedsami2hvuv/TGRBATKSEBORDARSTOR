@@ -413,8 +413,6 @@ function setClientCachedIcons(data: GlobalIconsConfig) {
 
 export async function getGlobalIcons(): Promise<GlobalIconsConfig> {
   if (typeof window !== "undefined") {
-    const cached = getClientCachedIcons();
-    if (cached) return cached;
     if (clientIconsPromise) return clientIconsPromise;
 
     clientIconsPromise = (async () => {
@@ -422,16 +420,20 @@ export async function getGlobalIcons(): Promise<GlobalIconsConfig> {
         const res = await fetch("/api/admin/settings/icons", {
           method: "GET",
           credentials: "same-origin",
-          cache: "force-cache",
+          cache: "no-store",
         });
-        if (!res.ok) return DEFAULT_ICONS;
+        if (!res.ok) {
+          const cached = getClientCachedIcons();
+          return cached ?? DEFAULT_ICONS;
+        }
         const data = (await res.json()) as GlobalIconsConfig;
         const merged = mergeWithDefaults(data);
         setClientCachedIcons(merged);
         return merged;
       } catch (e) {
         console.error("Failed to fetch global icons (client):", e);
-        return DEFAULT_ICONS;
+        const cached = getClientCachedIcons();
+        return cached ?? DEFAULT_ICONS;
       } finally {
         clientIconsPromise = null;
       }

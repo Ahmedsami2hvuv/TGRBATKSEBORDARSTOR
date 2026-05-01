@@ -21,12 +21,27 @@ model Region {
   deliveryPrice           Decimal                        @db.Decimal(10, 2)
   createdAt               DateTime                       @default(now())
   updatedAt               DateTime                       @updatedAt
+  waypoints               RegionWaypoint[]
   preparerShoppingDrafts  CompanyPreparerShoppingDraft[]
   customers               Customer[]                     @relation("CustomerRegion")
   customerPhoneProfiles   CustomerPhoneProfile[]
   ordersCustomer          Order[]                        @relation("OrderCustomerRegion")
   ordersSecondDestination Order[]                        @relation("OrderSecondDestinationRegion")
   shops                   Shop[]
+}
+
+model RegionWaypoint {
+  id        String   @id @default(cuid())
+  regionId  String
+  name      String   @default("")
+  latitude  Float
+  longitude Float
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  region    Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@index([regionId, sortOrder])
 }
 
 model CustomerPhoneProfile {

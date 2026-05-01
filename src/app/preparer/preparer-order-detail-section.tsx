@@ -9,7 +9,6 @@ import {
   orderStatusDetailSurfaceClass,
   orderStatusStartStripeClass,
 } from "@/lib/order-status-style";
-import { MandoubFloatingBar } from "@/app/mandoub/mandoub-floating-bar";
 import { MandoubOrderDetailActions } from "@/app/mandoub/mandoub-order-detail-actions";
 import { PreparerOrderEditPanel } from "./preparer-order-edit-panel";
 import { ImageUploaderCaption } from "@/components/image-uploader-caption";
@@ -69,6 +68,7 @@ export function PreparerOrderDetailSection({
   phoneProfile,
   secondPhoneProfile,
   uiSettings,
+  icons,
   canEditPricing,
   pricingEditHref,
 }: {
@@ -407,26 +407,6 @@ export function PreparerOrderDetailSection({
       }`}
     >
       {reversePickup ? null : null}
-      <MandoubFloatingBar
-        orderId={order.id}
-        shopPhone={shopContactPhone}
-        customerPhone={visibleCustomerPhone}
-        customerAlternatePhone={visibleMergedAlternate}
-        preparerPhone={order.submittedByCompanyPreparer?.phone ?? ""}
-        orderStatus={order.status}
-        orderNumber={order.orderNumber}
-        shopName={order.shop.name}
-        city={order.customerRegion?.name ?? ""}
-        totalPrice={order.totalAmount != null ? formatDinarAsAlf(order.totalAmount) : ""}
-        deliveryName={order.courier?.name ?? ""}
-        customerLocationUrl={mergedCustomerLocationUrl}
-        customerLandmark={mergedLandmark}
-        hasCustomerLocation={hasCustomerLocation}
-        hasCourierUploadedLocation={hasCourierUploadedLocation}
-        hideWhenPreparerEditOpen
-        hideAllButtons
-      />
-
       <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto] sm:items-start sm:gap-2">
         <div className="min-w-0">
           <h2 className="text-xl font-black text-slate-900 sm:text-2xl">رقم الطلب <span className="tabular-nums text-sky-800">#{order.orderNumber}</span></h2>
