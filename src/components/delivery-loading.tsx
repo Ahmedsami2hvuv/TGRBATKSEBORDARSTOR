@@ -12,29 +12,30 @@ export function DeliveryLoading({ message = "جاري التحميل..." }: { me
   }, []);
 
   const loadingIcon = icons?.loading_main;
+  const iconUrl = loadingIcon?.url?.trim() || "";
 
   return (
     <div className="flex flex-col items-center justify-center p-8 w-full min-h-[200px] overflow-hidden">
       {loadingIcon?.type === 'lottie' ? (
         <div className="mb-4 w-48 h-48 flex items-center justify-center">
-          {isLottieDirectAssetUrl(loadingIcon.url) ? (
+          {isLottieDirectAssetUrl(iconUrl) ? (
             <>
               <Script
                 src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"
                 strategy="afterInteractive"
               />
               <lottie-player
-                src={loadingIcon.url}
+                src={iconUrl}
                 background="transparent"
                 speed="1"
                 loop
                 autoplay
-                className="w-full h-full"
+                style={{ width: '100%', height: '100%' }}
               />
             </>
           ) : (
             <iframe
-              src={loadingIcon.url.replace(
+              src={iconUrl.replace(
                 "https://lottiefiles.com/",
                 "https://embed.lottiefiles.com/"
               )}
@@ -44,9 +45,9 @@ export function DeliveryLoading({ message = "جاري التحميل..." }: { me
           )}
         </div>
       ) : loadingIcon?.type === 'image' ? (
-        <img src={loadingIcon.url} className="w-32 h-32 object-contain mb-4 animate-bounce" alt="Loading" />
+        <img src={iconUrl} className="w-32 h-32 object-contain mb-4 animate-bounce" alt="Loading" />
       ) : loadingIcon?.type === 'emoji' ? (
-        <div className="text-6xl mb-4 animate-bounce">{loadingIcon.url}</div>
+        <div className="text-6xl mb-4 animate-bounce">{iconUrl}</div>
       ) : (
         <div className="relative w-full max-w-[300px] h-20 mb-4 border-b-2 border-dashed border-slate-200">
           {/* الطريق المنزلق */}

@@ -41,7 +41,7 @@ export function DynamicIcon({
   }
 
   if (resolvedIcon.type === 'lottie') {
-    const url = resolvedIcon.url;
+    const url = resolvedIcon.url?.trim() || "";
 
     if (isLottieDirectAssetUrl(url)) {
       return (
