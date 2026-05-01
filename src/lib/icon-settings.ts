@@ -1,4 +1,3 @@
-import { prisma } from "./prisma";
 import { isLottieDirectAssetUrl } from "./icon-utils";
 
 export type IconConfig = {
@@ -365,7 +364,25 @@ const DEFAULT_ICONS: GlobalIconsConfig = {
 };
 
 export async function getGlobalIcons(): Promise<GlobalIconsConfig> {
+  if (typeof window !== "undefined") {
+    try {
+      const res = await fetch("/api/admin/settings/icons", {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      if (!res.ok) return DEFAULT_ICONS;
+      const data = (await res.json()) as GlobalIconsConfig;
+      if (!data || typeof data !== "object") return DEFAULT_ICONS;
+      return { ...DEFAULT_ICONS, ...data };
+    } catch (e) {
+      console.error("Failed to fetch global icons (client):", e);
+      return DEFAULT_ICONS;
+    }
+  }
+
   try {
+    const { prisma } = await import("./prisma");
     const setting = await prisma.uISystemSetting.findUnique({
       where: {
         target_section: { target: "global", section: "icons" }
@@ -381,6 +398,8 @@ export async function getGlobalIcons(): Promise<GlobalIconsConfig> {
 }
 
 export async function saveGlobalIcons(config: GlobalIconsConfig) {
+  const { prisma } = await import("./prisma");
+
   const sanitized: GlobalIconsConfig = Object.fromEntries(
     Object.entries(config || {}).map(([key, value]) => {
       const safeValue: IconConfig = {

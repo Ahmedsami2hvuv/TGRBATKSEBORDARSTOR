@@ -66,6 +66,7 @@ export function OrderDetailSection({
   viewerCourierId,
   phoneProfile,
   uiSettings,
+  icons,
 }: {
   order: MandoubOrderDetailPayload;
   closeHref: string;

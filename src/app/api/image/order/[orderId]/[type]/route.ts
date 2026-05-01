@@ -7,6 +7,7 @@ export async function GET(request: NextRequest, { params }: Props) {
   const { orderId, type } = await params;
 
   let base64Data: string | null | undefined = null;
+  let expectedMimePrefix = "image/";
 
   if (type === "image") {
     const order = await prisma.order.findUnique({
@@ -32,15 +33,29 @@ export async function GET(request: NextRequest, { params }: Props) {
       select: { secondCustomerDoorPhotoUrl: true },
     });
     base64Data = order?.secondCustomerDoorPhotoUrl;
+  } else if (type === "voice") {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { voiceNoteUrl: true },
+    });
+    base64Data = order?.voiceNoteUrl;
+    expectedMimePrefix = "audio/";
+  } else if (type === "admin-voice") {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { adminVoiceNoteUrl: true },
+    });
+    base64Data = order?.adminVoiceNoteUrl;
+    expectedMimePrefix = "audio/";
   }
 
-  if (!base64Data || !base64Data.startsWith("data:image/")) {
+  if (!base64Data || !base64Data.startsWith(`data:${expectedMimePrefix}`)) {
     return new NextResponse("Not Found", { status: 404 });
   }
 
-  const matches = base64Data.match(/^data:(image\/[a-zA-Z0-9]+);base64,(.+)$/);
+  const matches = base64Data.match(/^data:([a-zA-Z0-9/+.-]+);base64,(.+)$/);
   if (!matches || matches.length !== 3) {
-    return new NextResponse("Invalid Image Format", { status: 500 });
+    return new NextResponse("Invalid Media Format", { status: 500 });
   }
 
   const mimeType = matches[1];
