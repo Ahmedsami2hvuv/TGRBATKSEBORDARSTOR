@@ -25,6 +25,7 @@ export function DeliveryLoading({ message = "جاري التحميل..." }: { me
   const iconUrl = cleanIconUrl(rawUrl);
 
   const isLottie = isLottieDirectAssetUrl(iconUrl) || loadingIcon?.type === 'lottie';
+  const isGif = iconUrl.toLowerCase().endsWith('.gif');
   const displayUrl = getLottieDisplayUrl(iconUrl);
   const isEmbed = displayUrl.includes("/embed/");
 
@@ -33,8 +34,8 @@ export function DeliveryLoading({ message = "جاري التحميل..." }: { me
 
   return (
     <div className="flex flex-col items-center justify-center p-4 w-full min-h-[550px] bg-transparent overflow-visible">
-      {/* تحميل مشغل Lottie الرسمي - نحتاجه فقط إذا لم يكن embed */}
-      {!isEmbed && (
+      {/* تحميل مشغل Lottie الرسمي - نحتاجه فقط إذا لم يكن embed أو GIF */}
+      {isLottie && !isEmbed && !isGif && (
         <Script
           src="https://unpkg.com/@lottiefiles/lottie-player@1.5.7/dist/lottie-player.js"
           onLoad={() => setPlayerLoaded(true)}
@@ -42,9 +43,15 @@ export function DeliveryLoading({ message = "جاري التحميل..." }: { me
         />
       )}
 
-      {isLottie && iconUrl ? (
+      {(isLottie || isGif) && iconUrl ? (
         <div className="mb-8 w-full max-w-[500px] h-[350px] md:h-[450px] flex items-center justify-center bg-transparent overflow-visible relative">
-          {isEmbed ? (
+          {isGif ? (
+            <img
+              src={iconUrl}
+              className="w-full h-full object-contain drop-shadow-md"
+              alt="Loading..."
+            />
+          ) : isEmbed ? (
             <iframe
               src={displayUrl}
               className="w-full h-full border-none bg-transparent relative z-10"
@@ -67,16 +74,18 @@ export function DeliveryLoading({ message = "جاري التحميل..." }: { me
             />
           ) : null}
 
-          {/* طبقة تحميل احتياطية تظهر خلف الأنيميشن أو مكانه */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 opacity-20 pointer-events-none">
-             <div className="w-24 h-24 border-8 border-sky-100 border-t-sky-600 rounded-full animate-spin"></div>
-             <p className="text-sky-900 font-bold italic text-xl">جاري الاتصال...</p>
-          </div>
+          {/* طبقة تحميل احتياطية تظهر خلف الأنيميشن أو مكانه - تظهر فقط في حالة الـ Lottie البطيء */}
+          {!isGif && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 opacity-20 pointer-events-none">
+               <div className="w-24 h-24 border-8 border-sky-100 border-t-sky-600 rounded-full animate-spin"></div>
+               <p className="text-sky-900 font-bold italic text-xl">جاري الاتصال...</p>
+            </div>
+          )}
         </div>
       ) : loadingIcon?.type === 'image' && iconUrl ? (
         <img
           src={iconUrl}
-          className="w-72 h-72 object-contain mb-12 animate-bounce"
+          className={`w-72 h-72 object-contain mb-12 ${isGif ? '' : 'animate-bounce'}`}
           alt=""
           onError={(e) => (e.currentTarget.style.display = 'none')}
         />
