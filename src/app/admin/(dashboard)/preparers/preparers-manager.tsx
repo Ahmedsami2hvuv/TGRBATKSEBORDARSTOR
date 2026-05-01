@@ -56,6 +56,7 @@ function PreparerShopsAutosave({
   const [linked, setLinked] = useState(() => new Set(linkedShopIdsInitially));
   const lastOkRef = useRef(new Set(linkedShopIdsInitially));
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const persistChainRef = useRef<Promise<void>>(Promise.resolve());
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errMsg, setErrMsg] = useState<string | null>(null);
 
@@ -75,7 +76,9 @@ function PreparerShopsAutosave({
     return allShops.filter((s) => s.name.toLowerCase().includes(q));
   }, [allShops, search]);
 
-  const persist = async (ids: Set<string>) => {
+  const persistRef = useRef<(ids: Set<string>) => Promise<void>>(async () => {});
+
+  persistRef.current = async (ids: Set<string>) => {
     setStatus("saving");
     setErrMsg(null);
     const fd = new FormData();
@@ -103,7 +106,10 @@ function PreparerShopsAutosave({
   const scheduleSave = (next: Set<string>) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      void persist(next);
+      const snapshot = new Set(next);
+      persistChainRef.current = persistChainRef.current
+        .catch(() => {})
+        .then(() => persistRef.current(snapshot));
     }, 420);
   };
 

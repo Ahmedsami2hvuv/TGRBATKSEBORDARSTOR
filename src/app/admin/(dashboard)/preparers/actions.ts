@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { isAdminSession } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
-import { CourierWalletMiscDirection } from "@prisma/client";
+import { CourierWalletMiscDirection, Prisma } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 import { parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import { EMPLOYEE_DAILY_SALARY_LABEL_PREFIX } from "@/lib/wallet-peer-transfer";
@@ -123,26 +123,49 @@ export async function setPreparerShopLinks(_prev: PreparerFormState, formData: F
   const denied = await requireAdmin();
   if (denied) return denied;
   const preparerId = String(formData.get("preparerId") ?? "").trim();
-  const shopIds = formData
-    .getAll("shopIds")
-    .map((x) => String(x).trim())
-    .filter(Boolean);
+  const shopIds = [
+    ...new Set(
+      formData
+        .getAll("shopIds")
+        .map((x) => String(x).trim())
+        .filter(Boolean),
+    ),
+  ];
 
   if (!preparerId) return { error: "معرّف المجهز مفقود." };
+
+  const preparerExists = await prisma.companyPreparer.findFirst({
+    where: { id: preparerId },
+    select: { id: true },
+  });
+  if (!preparerExists) return { error: "المجهز غير موجود. حدّث الصفحة." };
+
+  if (shopIds.length > 0) {
+    const found = await prisma.shop.count({ where: { id: { in: shopIds } } });
+    if (found !== shopIds.length) {
+      return { error: "أحد المحلات المختارة غير موجود. حدّث الصفحة ثم أعد المحاولة." };
+    }
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
       await tx.preparerShop.deleteMany({ where: { preparerId } });
-      for (const shopId of shopIds) {
-        await tx.preparerShop.create({ data: { preparerId, shopId, canSubmitOrders: true } });
+      if (shopIds.length > 0) {
+        await tx.preparerShop.createMany({
+          data: shopIds.map((shopId) => ({
+            preparerId,
+            shopId,
+            canSubmitOrders: true,
+          })),
+        });
       }
 
       const cp = await tx.companyPreparer.findUnique({ where: { id: preparerId } });
       if (cp && !cp.walletEmployeeId && shopIds.length > 0) {
         const phoneRaw = (cp.phone ?? "").trim();
-        const phone = phoneRaw.length > 0 ? phoneRaw : `prep-wallet-${preparerId.slice(-12)}`;
+        const phone = phoneRaw.length > 0 ? phoneRaw : `prep-wallet-${preparerId}`;
         const em = await tx.employee.create({
-          data: { name: cp.name, phone, shopId: shopIds[0]! },
+          data: { name: cp.name || "مجهز", phone, shopId: shopIds[0]! },
         });
         await tx.companyPreparer.update({
           where: { id: preparerId },
@@ -152,6 +175,17 @@ export async function setPreparerShopLinks(_prev: PreparerFormState, formData: F
     });
   } catch (e) {
     console.error("setPreparerShopLinks", e);
+    if (e instanceof Prisma.PrismaClientKnownRequestError) {
+      if (e.code === "P2002") {
+        return {
+          error:
+            "تعارض أثناء الحفظ (طلبان معاً). انتظر ثانية ثم أعد التأشير، أو حدّث الصفحة.",
+        };
+      }
+      if (e.code === "P2003") {
+        return { error: "بيانات غير صالحة: المجهز أو المحل غير مرتبط بشكل صحيح في قاعدة البيانات." };
+      }
+    }
     return { error: "تعذّر حفظ المحلات أو تفعيل المحفظة. تحقق أن المحل صالح وأن الاتصال بالخادم سليم." };
   }
 
