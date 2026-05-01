@@ -17,11 +17,18 @@ function payloadFor(preparerId: string, token: string): string {
   return `cprep:${preparerId}.${token}`;
 }
 
+function normalizePublicOrigin(raw: string): string {
+  const t = raw.trim().replace(/\/+$/, "");
+  if (!t) return "https://aboakbar.vercel.app";
+  if (/^https?:\/\//i.test(t)) return t;
+  return `https://${t.replace(/^\/+/, "")}`;
+}
+
 export function buildCompanyPreparerPortalUrl(preparerId: string, token: string, baseUrl: string): string {
   const secret = getSecret();
   const payload = payloadFor(preparerId, token);
   const sig = createHmac("sha256", secret).update(payload).digest("hex");
-  const root = baseUrl.replace(/\/+$/, "");
+  const root = normalizePublicOrigin(baseUrl);
   const u = new URL("/preparer", `${root}/`);
   u.searchParams.set("p", preparerId);
   u.searchParams.set("exp", token);

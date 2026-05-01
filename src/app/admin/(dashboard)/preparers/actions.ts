@@ -118,46 +118,92 @@ export async function renewCompanyPreparerPortalToken(formData: FormData) {
   revalidatePath("/admin/preparers");
 }
 
-export async function setPreparerShops(_prev: PreparerFormState, formData: FormData): Promise<PreparerFormState> {
-  const denied = await requireAdmin(); if (denied) return denied;
+/** ربط محلات المجهز وتفعيل محفظة الموظف — لا يمس تفويض أفرع المتجر. */
+export async function setPreparerShopLinks(_prev: PreparerFormState, formData: FormData): Promise<PreparerFormState> {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const preparerId = String(formData.get("preparerId") ?? "").trim();
-  const shopIds = formData.getAll("shopIds").map(x => String(x));
-  const branchIds = formData.getAll("branchIds").map(x => String(x));
-  const categoryIds = formData.getAll("categoryIds").map(x => String(x));
+  const shopIds = formData
+    .getAll("shopIds")
+    .map((x) => String(x).trim())
+    .filter(Boolean);
 
-  await prisma.$transaction(async (tx) => {
-    // تحديث المحلات
-    await tx.preparerShop.deleteMany({ where: { preparerId } });
-    for (const shopId of shopIds) await tx.preparerShop.create({ data: { preparerId, shopId, canSubmitOrders: true } });
+  if (!preparerId) return { error: "معرّف المجهز مفقود." };
 
-    // تفويض الأفرع الفردية
-    await tx.storeBranch.updateMany({
-      where: { authorizedPreparerId: preparerId },
-      data: { authorizedPreparerId: null }
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.preparerShop.deleteMany({ where: { preparerId } });
+      for (const shopId of shopIds) {
+        await tx.preparerShop.create({ data: { preparerId, shopId, canSubmitOrders: true } });
+      }
+
+      const cp = await tx.companyPreparer.findUnique({ where: { id: preparerId } });
+      if (cp && !cp.walletEmployeeId && shopIds.length > 0) {
+        const phoneRaw = (cp.phone ?? "").trim();
+        const phone = phoneRaw.length > 0 ? phoneRaw : `prep-wallet-${preparerId.slice(-12)}`;
+        const em = await tx.employee.create({
+          data: { name: cp.name, phone, shopId: shopIds[0]! },
+        });
+        await tx.companyPreparer.update({
+          where: { id: preparerId },
+          data: { walletEmployeeId: em.id },
+        });
+      }
     });
+  } catch (e) {
+    console.error("setPreparerShopLinks", e);
+    return { error: "تعذّر حفظ المحلات أو تفعيل المحفظة. تحقق أن المحل صالح وأن الاتصال بالخادم سليم." };
+  }
 
-    // تفويض أفرع الأقسام المختارة
-    if (categoryIds.length > 0) {
+  revalidatePath("/admin/preparers");
+  return { ok: true };
+}
+
+/** تفويض أقسام/أفرع المتجر فقط — لا يغيّر ربط المحلات. */
+export async function setPreparerBranchDelegations(
+  _prev: PreparerFormState,
+  formData: FormData,
+): Promise<PreparerFormState> {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+  const preparerId = String(formData.get("preparerId") ?? "").trim();
+  const branchIds = formData
+    .getAll("branchIds")
+    .map((x) => String(x).trim())
+    .filter(Boolean);
+  const categoryIds = formData
+    .getAll("categoryIds")
+    .map((x) => String(x).trim())
+    .filter(Boolean);
+
+  if (!preparerId) return { error: "معرّف المجهز مفقود." };
+
+  try {
+    await prisma.$transaction(async (tx) => {
       await tx.storeBranch.updateMany({
-        where: { categoryId: { in: categoryIds } },
-        data: { authorizedPreparerId: preparerId }
+        where: { authorizedPreparerId: preparerId },
+        data: { authorizedPreparerId: null },
       });
-    }
 
-    // تفويض الأفرع المختارة يدوياً (تأكيد)
-    if (branchIds.length > 0) {
-      await tx.storeBranch.updateMany({
-        where: { id: { in: branchIds } },
-        data: { authorizedPreparerId: preparerId }
-      });
-    }
+      if (categoryIds.length > 0) {
+        await tx.storeBranch.updateMany({
+          where: { categoryId: { in: categoryIds } },
+          data: { authorizedPreparerId: preparerId },
+        });
+      }
 
-    const cp = await tx.companyPreparer.findUnique({ where: { id: preparerId } });
-    if (cp && !cp.walletEmployeeId && shopIds.length > 0) {
-      const em = await tx.employee.create({ data: { name: cp.name, phone: cp.phone, shopId: shopIds[0]! } });
-      await tx.companyPreparer.update({ where: { id: preparerId }, data: { walletEmployeeId: em.id } });
-    }
-  });
+      if (branchIds.length > 0) {
+        await tx.storeBranch.updateMany({
+          where: { id: { in: branchIds } },
+          data: { authorizedPreparerId: preparerId },
+        });
+      }
+    });
+  } catch (e) {
+    console.error("setPreparerBranchDelegations", e);
+    return { error: "تعذّر حفظ التفويض. حاول مرة أخرى." };
+  }
+
   revalidatePath("/admin/preparers");
   return { ok: true };
 }

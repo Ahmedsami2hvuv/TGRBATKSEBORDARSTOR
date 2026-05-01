@@ -1,11 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ad } from "@/lib/admin-ui";
 import {
   createCompanyPreparer,
   payDailySalaryForCompanyPreparer,
-  setPreparerShops,
+  setPreparerShopLinks,
+  setPreparerBranchDelegations,
   setPreparerMonthlySalaryResetConfig,
   updateCompanyPreparer,
   renewCompanyPreparerPortalToken,
@@ -14,7 +16,7 @@ import {
 } from "./actions";
 import { whatsappMeUrl } from "@/lib/whatsapp";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import type { GlobalIconsConfig } from "@/lib/icon-settings";
 
 const initial: PreparerFormState = {};
 
@@ -39,6 +41,143 @@ export type PreparerManagerRow = {
 export type ShopOption = { id: string; name: string };
 export type BranchOption = { id: string; name: string };
 export type CategoryOption = { id: string; name: string };
+
+function PreparerShopsAutosave({
+  preparerId,
+  allShops,
+  linkedShopIdsInitially,
+}: {
+  preparerId: string;
+  allShops: ShopOption[];
+  linkedShopIdsInitially: string[];
+}) {
+  const router = useRouter();
+  const [search, setSearch] = useState("");
+  const [linked, setLinked] = useState(() => new Set(linkedShopIdsInitially));
+  const lastOkRef = useRef(new Set(linkedShopIdsInitially));
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [errMsg, setErrMsg] = useState<string | null>(null);
+
+  const shopLinkKey = [...linkedShopIdsInitially].sort().join("|");
+
+  useEffect(() => {
+    const s = new Set(linkedShopIdsInitially);
+    setLinked(s);
+    lastOkRef.current = s;
+    setStatus("idle");
+    setErrMsg(null);
+  }, [shopLinkKey, preparerId]);
+
+  const filteredShops = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return allShops;
+    return allShops.filter((s) => s.name.toLowerCase().includes(q));
+  }, [allShops, search]);
+
+  const persist = async (ids: Set<string>) => {
+    setStatus("saving");
+    setErrMsg(null);
+    const fd = new FormData();
+    fd.set("preparerId", preparerId);
+    for (const id of ids) fd.append("shopIds", id);
+    try {
+      const r = await setPreparerShopLinks({}, fd);
+      if (r?.error) {
+        setStatus("error");
+        setErrMsg(r.error);
+        setLinked(new Set(lastOkRef.current));
+        return;
+      }
+      lastOkRef.current = new Set(ids);
+      setStatus("saved");
+      router.refresh();
+      window.setTimeout(() => setStatus((x) => (x === "saved" ? "idle" : x)), 1600);
+    } catch {
+      setStatus("error");
+      setErrMsg("تعذّر الاتصال بالخادم.");
+      setLinked(new Set(lastOkRef.current));
+    }
+  };
+
+  const scheduleSave = (next: Set<string>) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      void persist(next);
+    }, 420);
+  };
+
+  useEffect(
+    () => () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    },
+    [],
+  );
+
+  const onToggle = (shopId: string, checked: boolean) => {
+    const next = new Set(linked);
+    if (checked) next.add(shopId);
+    else next.delete(shopId);
+    setLinked(next);
+    scheduleSave(next);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <label className="block flex-1">
+          <span className="mb-1 block text-xs font-black text-slate-400 uppercase tracking-widest">بحث عن محل</span>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="اكتب جزءاً من اسم المحل…"
+            className="h-12 w-full rounded-2xl border-2 border-slate-100 bg-white px-4 text-sm font-bold text-slate-800 outline-none focus:border-sky-500"
+            dir="rtl"
+          />
+        </label>
+        <div className="shrink-0 text-center sm:text-left">
+          {status === "saving" ? (
+            <span className="text-xs font-black text-amber-600">جارٍ الحفظ…</span>
+          ) : status === "saved" ? (
+            <span className="text-xs font-black text-emerald-600">تم الحفظ</span>
+          ) : status === "error" ? (
+            <span className="text-xs font-black text-rose-600">فشل الحفظ</span>
+          ) : (
+            <span className="text-xs font-bold text-slate-400">يُحفظ تلقائياً عند التأشير</span>
+          )}
+        </div>
+      </div>
+      {errMsg ? <p className="text-sm font-black text-rose-600">{errMsg}</p> : null}
+      {filteredShops.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm font-bold text-slate-500">
+          لا توجد محلات تطابق البحث.
+        </p>
+      ) : (
+        <div className="grid max-h-[min(70vh,520px)] grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredShops.map((s) => (
+            <label
+              key={s.id}
+              className={`flex cursor-pointer items-center justify-between rounded-2xl border-2 p-4 transition-all ${
+                linked.has(s.id)
+                  ? "border-sky-500 bg-sky-50 text-sky-900 shadow-md shadow-sky-100"
+                  : "border-slate-100 bg-white text-slate-500 hover:border-slate-200"
+              }`}
+            >
+              <span className="text-sm font-black">{s.name}</span>
+              <input
+                type="checkbox"
+                checked={linked.has(s.id)}
+                onChange={(e) => onToggle(s.id, e.target.checked)}
+                className="h-5 w-5 rounded-lg border-2 border-slate-300 text-sky-600 outline-none"
+              />
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function AddPreparerForm({ icons }: { icons: GlobalIconsConfig | null }) {
   const [state, formAction, pending] = useActionState(createCompanyPreparer, initial);
@@ -224,18 +363,16 @@ function PreparerCard({
   const [activeTab, setActiveTab] = useState<"salary" | "shops" | "pricing" | "edit" | null>(null);
 
   const [uState, updateAction, uPending] = useActionState(updateCompanyPreparer, initial);
-  const [sState, shopsAction, sPending] = useActionState(setPreparerShops, initial);
+  const [delegState, delegAction, delegPending] = useActionState(setPreparerBranchDelegations, initial);
   const [salaryState, salaryAction, salaryPending] = useActionState(payDailySalaryForCompanyPreparer, initial);
   const [resetState, resetAction, resetPending] = useActionState(setPreparerMonthlySalaryResetConfig, initial);
   const [dState, deleteAction, dPending] = useActionState(deleteCompanyPreparer, initial);
 
-  const linked = new Set(row.linkedShopIds);
-
   useEffect(() => {
-    if (uState?.ok || sState?.ok) {
+    if (uState?.ok || delegState?.ok) {
       setActiveTab(null);
     }
-  }, [uState?.ok, sState?.ok]);
+  }, [uState?.ok, delegState?.ok]);
 
   return (
     <div
@@ -447,43 +584,11 @@ function PreparerCard({
           )}
 
           {activeTab === "shops" && (
-            <form action={shopsAction} className="space-y-6">
-              <input type="hidden" name="preparerId" value={row.id} />
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {allShops.map((s) => (
-                  <label
-                    key={s.id}
-                    className={`flex cursor-pointer items-center justify-between rounded-2xl border-2 p-4 transition-all ${
-                      linked.has(s.id)
-                        ? "border-sky-500 bg-sky-50 text-sky-900 shadow-md shadow-sky-100"
-                        : "border-slate-100 bg-white text-slate-500 hover:border-slate-200"
-                    }`}
-                  >
-                    <span className="text-sm font-black">{s.name}</span>
-                    <input
-                      type="checkbox"
-                      name="shopIds"
-                      value={s.id}
-                      defaultChecked={linked.has(s.id)}
-                      className="h-5 w-5 rounded-lg border-2 border-slate-300 text-sky-600 outline-none"
-                    />
-                  </label>
-                ))}
-              </div>
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={sPending}
-                  className="h-14 rounded-2xl bg-slate-900 px-10 font-black text-white shadow-xl shadow-slate-200 transition hover:bg-slate-800 disabled:opacity-50"
-                >
-                  {sPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}
-                </button>
-              </div>
-            </form>
+            <PreparerShopsAutosave preparerId={row.id} allShops={allShops} linkedShopIdsInitially={row.linkedShopIds} />
           )}
 
           {activeTab === "pricing" && (
-            <form action={shopsAction} className="space-y-8">
+            <form action={delegAction} className="space-y-8">
               <input type="hidden" name="preparerId" value={row.id} />
 
               <div className="space-y-4">
@@ -539,12 +644,14 @@ function PreparerCard({
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={sPending}
+                  disabled={delegPending}
                   className="h-14 rounded-2xl bg-slate-900 px-10 font-black text-white shadow-xl shadow-slate-200 transition hover:bg-slate-800 disabled:opacity-50"
                 >
-                  {sPending ? "جارٍ الحفظ..." : "تأكيد التفويض"}
+                  {delegPending ? "جارٍ الحفظ..." : "تأكيد التفويض"}
                 </button>
               </div>
+              {delegState?.error ? <p className="text-sm font-black text-rose-600">{delegState.error}</p> : null}
+              {delegState?.ok ? <p className="text-sm font-black text-emerald-600">تم حفظ التفويض.</p> : null}
             </form>
           )}
 
