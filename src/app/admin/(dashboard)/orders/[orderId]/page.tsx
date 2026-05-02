@@ -13,10 +13,12 @@ import {
   splitMandoubWaTemplateVariants,
 } from "@/lib/mandoub-wa-button-template";
 import {
+  extractLatLngFromLocationInputSmart,
   matchesCustomerLocationRules,
   parseCustomerLocationRules,
 } from "@/lib/order-location";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
+import { haversineMeters } from "@/lib/geo-distance";
 const SYSTEM_ADMIN_PHONE = "07733921568";
 export const dynamic = "force-dynamic";
 
@@ -189,6 +191,33 @@ export default async function AdminOrderViewPage({ params }: Props) {
     secondCustomerPhoneProfile?.landmark?.trim() ||
     "";
 
+  async function computeSmartHint(
+    locationUrl: string,
+    regionId: string | null | undefined,
+  ): Promise<string> {
+    if (!regionId) return "";
+    const points = await prisma.regionWaypoint.findMany({
+      where: { regionId },
+      orderBy: { sortOrder: "asc" },
+      select: { name: true, latitude: true, longitude: true },
+    });
+    if (points.length === 0) return "";
+    const loc = await extractLatLngFromLocationInputSmart(locationUrl);
+    if (!loc) return "";
+    let nearest: { name: string; dist: number } | null = null;
+    for (const p of points) {
+      const dist = haversineMeters(loc.latitude, loc.longitude, p.latitude, p.longitude);
+      if (!nearest || dist < nearest.dist) nearest = { name: p.name?.trim() || "مدخل", dist };
+    }
+    if (!nearest || nearest.dist > 2500) return "";
+    return `قريب من (${nearest.name})`;
+  }
+
+  const [smartHintLine, secondSmartHintLine] = await Promise.all([
+    computeSmartHint(customerLocationUrlEffective, order.customerRegionId),
+    computeSmartHint(secondCustomerLocationUrlEffective, order.secondCustomerRegionId),
+  ]);
+
   const normalizeCustomerName = (name: string | null | undefined) => {
     const trimmed = name?.trim();
     if (!trimmed) return null;
@@ -287,6 +316,7 @@ export default async function AdminOrderViewPage({ params }: Props) {
     secondCustomerPhone: order.secondCustomerPhone,
     secondCustomerLocationUrl: secondCustomerLocationUrlEffective,
     secondCustomerLandmark: secondCustomerLandmarkEffective,
+    secondSmartHintLine: secondSmartHintLine || "",
     secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrlEffective,
     secondCustomerRegion: order.secondCustomerRegion ? { name: order.secondCustomerRegion.name } : null,
     orderNoteTime: order.orderNoteTime || null,
@@ -300,6 +330,7 @@ export default async function AdminOrderViewPage({ params }: Props) {
     shopDoorPhotoUrl: order.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${order.id}/shopDoor` : (order.shopDoorPhotoUrl || null),
     customerDoorPhotoUrl: customerDoorPhotoUrlEffective,
     customerLandmark: customerLandmarkEffective || "",
+    smartHintLine: smartHintLine || "",
     orderSubtotal:
       order.orderSubtotal != null ? formatDinarAsAlfWithUnit(order.orderSubtotal) : null,
     deliveryPrice:

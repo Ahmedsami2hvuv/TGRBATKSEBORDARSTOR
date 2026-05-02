@@ -561,11 +561,9 @@ export function UnifiedOrderListTable({
                     >
                       <div className="flex flex-col gap-1.5">
                         <span>{o.regionLine}</span>
-                        {o.smartHintLine ? (
-                          <span className="text-[11px] font-bold text-emerald-800 sm:text-xs">
-                            الاستدلال الذكي: {o.smartHintLine}
-                          </span>
-                        ) : null}
+                        <span className="text-[11px] font-bold text-emerald-800 sm:text-xs">
+                          الاستدلال الذكي: {o.smartHintLine?.trim() || "—"}
+                        </span>
                         {/* أزرار اللوكيشن والصور من الخارج (للزبون) */}
                         <div className="flex flex-wrap items-center gap-1.5 mt-1" onClick={e => e.stopPropagation()}>
                            {/* تم نقل أزرار اللوكيشن للزر الموحد بجانب اسم المحل لتقليل الازدحام */}

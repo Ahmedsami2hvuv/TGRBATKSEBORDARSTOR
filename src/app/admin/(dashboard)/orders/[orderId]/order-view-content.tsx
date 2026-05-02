@@ -62,12 +62,14 @@ type OrderViewModel = {
   customerPhone: string; routeMode: "single" | "double"; adminOrderCode: string;
   alternatePhone: string | null; secondCustomerPhone: string | null;
   secondCustomerLocationUrl: string; secondCustomerLandmark: string;
+  secondSmartHintLine?: string;
   secondCustomerDoorPhotoUrl: string | null; secondCustomerDoorPhotoUploadedByName: string | null;
   secondCustomerRegion: { name: string } | null;
   orderNoteTime: string | null; imageUrl: string | null; orderImageUploadedByName: string | null;
   voiceNoteUrl: string | null; adminVoiceNoteUrl: string | null; shopDoorPhotoUrl: string | null;
   shopDoorPhotoUploadedByName: string | null; customerDoorPhotoUrl: string | null;
   customerDoorPhotoUploadedByName: string | null; customerLandmark: string;
+  smartHintLine?: string;
   orderSubtotal: string | null; deliveryPrice: string | null; totalAmount: string | null;
   submissionSource: string; createdAt: string; prepaidAll: boolean; reversePickup: boolean;
   shop: { name: string; phone: string; ownerName: string };
@@ -196,7 +198,8 @@ export function OrderViewContent({
                     </div>
                   )}
                 </div>
-                {order.customerLandmark?.trim() && <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark}</p>}
+                <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark?.trim() || "—"}</p>
+                <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.smartHintLine?.trim() || "—"}</p>
                 <div className="mt-2 space-y-2">
                   {order.customerLocationUrl?.trim() ? (
                     <div className="space-y-1">
@@ -258,7 +261,8 @@ export function OrderViewContent({
                     {order.secondCustomerPhone && <a href={`tel:${order.secondCustomerPhone}`} className="bg-emerald-600 px-3 py-1 text-xs font-bold text-white rounded-full">اتصال 📞</a>}
                   </div>
                 </div>
-                {order.secondCustomerLandmark?.trim() && <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.secondCustomerLandmark}</p>}
+                <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.secondCustomerLandmark?.trim() || "—"}</p>
+                <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.secondSmartHintLine?.trim() || "—"}</p>
                 <div className="mt-2 space-y-2">
                   {order.secondCustomerLocationUrl?.trim() ? (
                     <div className="space-y-1">
@@ -296,7 +300,8 @@ export function OrderViewContent({
                     </div>
                   )}
                 </div>
-                {order.customerLandmark?.trim() && <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark}</p>}
+                <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark?.trim() || "—"}</p>
+                <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.smartHintLine?.trim() || "—"}</p>
                 <div className="mt-2 space-y-2">
                   {order.customerLocationUrl?.trim() ? (
                     <div className="space-y-1">
