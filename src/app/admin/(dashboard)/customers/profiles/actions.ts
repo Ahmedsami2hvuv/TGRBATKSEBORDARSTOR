@@ -147,12 +147,12 @@ export async function checkCustomerExistsByPhone(phone: string): Promise<boolean
   return !!existing;
 }
 
-export async function uploadCustomerProfilePhotoFromUrl(
+async function profilePhotoFromRemoteUrl(
   rawUrl: string,
 ): Promise<{ ok: true; photoUrl: string } | { ok: false; error: string }> {
   const imageUrl = String(rawUrl || "").trim();
   if (!imageUrl) {
-    return { ok: false, error: "أدخل رابط الصورة أولاً." };
+    return { ok: false, error: "أدخل رابط الصورة." };
   }
 
   let parsedUrl: URL;
@@ -270,12 +270,16 @@ export async function upsertCustomerPhoneProfile(
     return { error: uploaded.error };
   }
 
-  const preUploadedPhotoUrl = String(formData.get("preUploadedPhotoUrl") ?? "").trim();
+  const remoteImageUrl = String(formData.get("remoteImageUrl") ?? "").trim();
   let photoUrl = "";
   if (uploaded.photoUrl) {
     photoUrl = uploaded.photoUrl;
-  } else if (preUploadedPhotoUrl.startsWith("/uploads/")) {
-    photoUrl = preUploadedPhotoUrl;
+  } else if (remoteImageUrl) {
+    const remote = await profilePhotoFromRemoteUrl(remoteImageUrl);
+    if (!remote.ok) {
+      return { error: remote.error };
+    }
+    photoUrl = remote.photoUrl;
   }
 
   await prisma.customerPhoneProfile.create({

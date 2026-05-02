@@ -10,7 +10,6 @@ import {
 import {
   upsertCustomerPhoneProfile,
   checkCustomerExistsByPhone,
-  uploadCustomerProfilePhotoFromUrl,
   type CustomerProfileFormState,
 } from "./actions";
 
@@ -39,8 +38,6 @@ export function CustomerProfileUpsertForm({
   const [isChecking, setIsChecking] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [remotePhotoUrlInput, setRemotePhotoUrlInput] = useState("");
-  const [uploadedRemotePhotoUrl, setUploadedRemotePhotoUrl] = useState("");
-  const [isUploadingRemotePhoto, setIsUploadingRemotePhoto] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
@@ -50,8 +47,6 @@ export function CustomerProfileUpsertForm({
       setCustomerExists(false);
       setSelectedPhoto(null);
       setRemotePhotoUrlInput("");
-      setUploadedRemotePhotoUrl("");
-      setIsUploadingRemotePhoto(false);
       setDragActive(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -92,38 +87,18 @@ export function CustomerProfileUpsertForm({
       const compressed = await compressImageForMandoubUpload(file);
       assignFileToInput(photoInputRef.current!, compressed);
       setSelectedPhoto(compressed);
-      setUploadedRemotePhotoUrl("");
+      setRemotePhotoUrlInput("");
     } catch (err) {
       console.error("خطأ في ضغط الصورة:", err);
       assignFileToInput(photoInputRef.current!, file);
       setSelectedPhoto(file);
-      setUploadedRemotePhotoUrl("");
+      setRemotePhotoUrlInput("");
     }
-  };
-
-  const uploadImageUrlToStorage = async (raw: string) => {
-    const imageUrl = raw.trim();
-    if (!imageUrl || isUploadingRemotePhoto) return;
-    setIsUploadingRemotePhoto(true);
-    const res = await uploadCustomerProfilePhotoFromUrl(imageUrl);
-    if (!res.ok) {
-      alert(res.error);
-      setIsUploadingRemotePhoto(false);
-      return;
-    }
-    if (photoInputRef.current) {
-      photoInputRef.current.value = "";
-    }
-    setSelectedPhoto(null);
-    setUploadedRemotePhotoUrl(res.photoUrl);
-    setRemotePhotoUrlInput(imageUrl);
-    setIsUploadingRemotePhoto(false);
   };
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragActive(false);
-    if (isUploadingRemotePhoto) return;
 
     const droppedFile = e.dataTransfer.files?.[0];
     if (droppedFile) {
@@ -135,7 +110,11 @@ export function CustomerProfileUpsertForm({
     const plainText = e.dataTransfer.getData("text/plain")?.trim();
     const urlText = textUriList || plainText;
     if (urlText && /^https?:\/\//i.test(urlText)) {
-      await uploadImageUrlToStorage(urlText);
+      if (photoInputRef.current) {
+        photoInputRef.current.value = "";
+      }
+      setSelectedPhoto(null);
+      setRemotePhotoUrlInput(urlText.trim());
     }
   };
 
@@ -215,28 +194,19 @@ export function CustomerProfileUpsertForm({
             }}
             onDrop={handleDrop}
           >
-            <div className="space-y-3 text-sm">
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  value={remotePhotoUrlInput}
-                  onChange={(e) => setRemotePhotoUrlInput(e.target.value)}
-                  placeholder="رابط صورة مباشر (اختياري)"
-                  className={`${ad.input} flex-1 bg-white`}
-                  dir="ltr"
-                />
-                <button
-                  type="button"
-                  disabled={isUploadingRemotePhoto}
-                  onClick={() => uploadImageUrlToStorage(remotePhotoUrlInput)}
-                  className="bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60 px-4 py-2 rounded-md shadow-sm transition-colors text-sm font-medium"
-                >
-                  {isUploadingRemotePhoto ? "جاري الرفع..." : "رفع الرابط"}
-                </button>
-              </div>
-              {uploadedRemotePhotoUrl ? (
-                <p className="text-green-700 font-semibold bg-green-100 px-3 py-2 rounded-md border border-green-300">
-                  ✓ تم رفع صورة الرابط بنجاح وربطها بالنموذج.
+            <div className="space-y-2 text-sm">
+              <input
+                type="url"
+                name="remoteImageUrl"
+                value={remotePhotoUrlInput}
+                onChange={(e) => setRemotePhotoUrlInput(e.target.value)}
+                placeholder="رابط صورة مباشر (اختياري)"
+                className={`${ad.input} w-full bg-white`}
+                dir="ltr"
+              />
+              {remotePhotoUrlInput.trim() && !selectedPhoto ? (
+                <p className="text-slate-600 text-xs">
+                  يُنزَّل ويُرفَع إلى التخزين تلقائياً عند الضغط على «حفظ البيانات».
                 </p>
               ) : null}
             </div>
@@ -280,7 +250,6 @@ export function CustomerProfileUpsertForm({
             onChange={handlePhotoChange}
             className="hidden"
           />
-          <input type="hidden" name="preUploadedPhotoUrl" value={uploadedRemotePhotoUrl} />
           {selectedPhoto && (
             <div className="flex items-center gap-2 bg-green-100 text-green-700 px-3 py-2 rounded-md border border-green-300">
               <span className="text-lg">✓</span>
@@ -297,6 +266,9 @@ export function CustomerProfileUpsertForm({
                   type="button"
                   onClick={() => {
                     setRawText("");
+                    setRemotePhotoUrlInput("");
+                    setSelectedPhoto(null);
+                    if (photoInputRef.current) photoInputRef.current.value = "";
                     formRef.current?.reset();
                   }}
                   className="text-sm bg-slate-500 text-white hover:bg-slate-600 px-3 py-1 rounded-md shadow-sm transition-colors"
