@@ -18,7 +18,7 @@ import {
 } from "@/lib/mandoub-courier-event-totals";
 import { computeMandoubTotalsForCourier } from "@/lib/mandoub-courier-totals";
 import { mandoubOrderDetailInclude } from "@/lib/mandoub-order-queries";
-import { hasCustomerLocationUrl } from "@/lib/order-location";
+import { extractLatLngFromLocationInputSmart, hasCustomerLocationUrl } from "@/lib/order-location";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import {
   mandoubShopNameVividClass,
@@ -197,16 +197,16 @@ export default async function MandoubPage({ searchParams }: Props) {
     ? await prisma.regionWaypoint.findMany({
         where: { regionId: { in: regionIds } },
         orderBy: [{ regionId: "asc" }, { sortOrder: "asc" }],
-        select: { regionId: true, latitude: true, longitude: true },
+        select: { regionId: true, name: true, latitude: true, longitude: true },
       })
     : [];
   const waypointsByRegion = new Map<
     string,
-    Array<{ latitude: number; longitude: number }>
+    Array<{ name: string; latitude: number; longitude: number }>
   >();
   for (const point of regionWaypoints) {
     const arr = waypointsByRegion.get(point.regionId) ?? [];
-    arr.push({ latitude: point.latitude, longitude: point.longitude });
+    arr.push({ name: point.name, latitude: point.latitude, longitude: point.longitude });
     waypointsByRegion.set(point.regionId, arr);
   }
 
@@ -300,9 +300,58 @@ export default async function MandoubPage({ searchParams }: Props) {
     return o.status === tab;
   });
 
+  async function computeSmartHint(params: {
+    locationUrl: string;
+    fallbackLandmark?: string | null;
+    regionId?: string | null;
+  }): Promise<string | null> {
+    const fallback = String(params.fallbackLandmark ?? "").trim();
+    const regionId = params.regionId ?? null;
+    if (!regionId) return null;
+    const points = waypointsByRegion.get(regionId) ?? [];
+    if (points.length === 0) return null;
+    const customerLoc = await extractLatLngFromLocationInputSmart(params.locationUrl);
+    if (!customerLoc) return fallback ? `قريب من (${fallback})` : null;
+
+    let nearest: { name: string; distanceM: number } | null = null;
+    for (const p of points) {
+      const distanceM = haversineMeters(
+        customerLoc.latitude,
+        customerLoc.longitude,
+        p.latitude,
+        p.longitude,
+      );
+      if (!nearest || distanceM < nearest.distanceM) {
+        nearest = { name: p.name?.trim() || "مدخل", distanceM };
+      }
+    }
+    if (!nearest) return fallback ? `قريب من (${fallback})` : null;
+    if (nearest.distanceM > 2500) return null;
+    return `قريب من (${nearest.name})`;
+  }
+
+  const smartHintByOrderId = new Map<string, string | null>();
+  for (const o of filteredByTab) {
+    const profile =
+      phoneProfiles.find((p) => p.phone === o.customerPhone && p.regionId === o.customerRegionId) ||
+      phoneProfiles.find((p) => p.phone === o.customerPhone);
+    const mergedCustomerLocation =
+      o.customerLocationUrl || o.customer?.customerLocationUrl || profile?.locationUrl || "";
+    const hint = await computeSmartHint({
+      locationUrl: mergedCustomerLocation,
+      fallbackLandmark: o.customerLandmark || o.customer?.customerLandmark,
+      regionId: o.customerRegionId,
+    });
+    smartHintByOrderId.set(o.id, hint);
+  }
+
   const tableRows: MandoubRow[] = filteredByTab.map((o) => {
     const profile = phoneProfiles.find(p => p.phone === o.customerPhone && p.regionId === o.customerRegionId) ||
                     phoneProfiles.find(p => p.phone === o.customerPhone); // fallback to first matching phone if region doesn't match
+
+    const mergedCustomerLocation =
+      o.customerLocationUrl || o.customer?.customerLocationUrl || profile?.locationUrl || "";
+    const smartHintLine = smartHintByOrderId.get(o.id) ?? null;
 
     return {
       id: o.id,
@@ -311,6 +360,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       shopName: o.shop.name,
       shopNameHighlightClass: mandoubShopNameVividClass(o.status, o.prepaidAll),
       regionLine: o.customerRegion?.name?.trim() || "—",
+      smartHintLine,
       orderType: o.orderType || "—",
       priceStr: o.totalAmount != null ? formatDinarAsAlf(o.totalAmount) : "—",
       delStr: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
@@ -343,7 +393,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       alternatePhone: o.alternatePhone,
       secondCustomerPhone: o.secondCustomerPhone,
       shopLocationUrl: o.shop.locationUrl,
-      customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || profile?.locationUrl,
+      customerLocationUrl: mergedCustomerLocation,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl,
       shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
       customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || profile?.photoUrl,

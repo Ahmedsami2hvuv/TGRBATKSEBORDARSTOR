@@ -4,10 +4,12 @@ import type { DelegatePortalVerifyReason } from "@/lib/delegate-link";
 import { verifyDelegatePortalQuery } from "@/lib/delegate-link";
 import { fetchMandoubMoneySumsForCourier, fetchOrderOnlyMoneySumsForCourier } from "@/lib/mandoub-courier-event-totals";
 import { computeMandoubTotalsForCourier } from "@/lib/mandoub-courier-totals";
+import { haversineMeters } from "@/lib/geo-distance";
 import {
   findMandoubOrderForCourier,
   mandoubOrderDetailInclude,
 } from "@/lib/mandoub-order-queries";
+import { extractLatLngFromLocationInputSmart } from "@/lib/order-location";
 import { prisma } from "@/lib/prisma";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { MandoubMoneySummarySection } from "../../mandoub-money-summary-section";
@@ -129,6 +131,38 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
         })
       : null;
 
+  let smartHintLine: string | null = null;
+  if (order.customerRegionId) {
+    const regionWaypoints = await prisma.regionWaypoint.findMany({
+      where: { regionId: order.customerRegionId },
+      orderBy: { sortOrder: "asc" },
+      select: { name: true, latitude: true, longitude: true },
+    });
+    const mergedCustomerLocationUrl =
+      order.customerLocationUrl?.trim() ||
+      order.customer?.customerLocationUrl?.trim() ||
+      customerPhoneProfile?.locationUrl?.trim() ||
+      "";
+    const customerLoc = await extractLatLngFromLocationInputSmart(mergedCustomerLocationUrl);
+    if (customerLoc && regionWaypoints.length > 0) {
+      let nearest: { name: string; distanceM: number } | null = null;
+      for (const point of regionWaypoints) {
+        const distanceM = haversineMeters(
+          customerLoc.latitude,
+          customerLoc.longitude,
+          point.latitude,
+          point.longitude,
+        );
+        if (!nearest || distanceM < nearest.distanceM) {
+          nearest = { name: point.name?.trim() || "مدخل", distanceM };
+        }
+      }
+      if (nearest && nearest.distanceM <= 2500) {
+        smartHintLine = `قريب من (${nearest.name})`;
+      }
+    }
+  }
+
   const moneySums = await fetchOrderOnlyMoneySumsForCourier(v.courierId, courier.mandoubTotalsResetAt);
   const activeOrdersForTotals = await prisma.order.findMany({
     where: {
@@ -184,6 +218,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
             nextUrl={`/mandoub/order/${orderId}?${baseQuery.toString()}`}
             viewerCourierId={v.courierId}
             phoneProfile={customerPhoneProfile ?? undefined}
+            smartHintLine={smartHintLine}
             uiSettings={uiSettings}
             icons={icons}
           />
