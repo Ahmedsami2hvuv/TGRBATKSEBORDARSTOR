@@ -87,6 +87,8 @@ type Props = {
   hideLocationAlert?: boolean;
   hideShortIdInBadgeCol?: boolean;
   renderInShopNameCol?: (row: MandoubRow) => React.ReactNode;
+  hidePhoneData?: boolean;
+  hidePhoneColumn?: boolean;
 };
 
 export function UnifiedOrderListTable({
@@ -110,6 +112,8 @@ export function UnifiedOrderListTable({
   hideLocationAlert,
   hideShortIdInBadgeCol,
   renderInShopNameCol,
+  hidePhoneData = false,
+  hidePhoneColumn = false,
 }: Props) {
   const [modalImg, setModalImg] = useState<{ url: string, title: string } | null>(null);
   const [showNotes, setShowNotes] = useState<string | null>(null);
@@ -139,7 +143,7 @@ export function UnifiedOrderListTable({
   let lastDateStr = "";
 
   // نعدل colCount ليكون +1 بسبب إضافة عمود التاريخ
-  const adjustedColCount = colCount + 1;
+  const adjustedColCount = colCount + 1 - (hidePhoneColumn ? 1 : 0);
 
   return (
     <div className="overflow-x-auto">
@@ -166,7 +170,9 @@ export function UnifiedOrderListTable({
             <th className="px-2 py-3.5 font-bold text-sky-900">نوع</th>
             <th className="px-2 py-3.5 font-bold text-sky-900">السعر</th>
             <th className="px-2 py-3.5 font-bold text-sky-900">التوصيل</th>
-            <th className="px-2 py-3.5 font-bold text-sky-900">الهاتف</th>
+            {!hidePhoneColumn ? (
+              <th className="px-2 py-3.5 font-bold text-sky-900">الهاتف</th>
+            ) : null}
             <th className="px-2 py-3.5 font-bold text-sky-900">وقت</th>
             <th className="px-2 py-3.5 font-bold text-sky-900">تاريخ الرفع</th>
           </tr>
@@ -566,13 +572,15 @@ export function UnifiedOrderListTable({
                     </td>
                     <td className="px-2 py-2.5 font-mono tabular-nums text-slate-900">{o.priceStr}</td>
                     <td className="px-2 py-2.5 font-mono tabular-nums text-cyan-700">{o.delStr}</td>
-                    <td className="px-2 py-2.5 align-top" onClick={e => e.stopPropagation()}>
-                      <div className="flex flex-col gap-2">
-                        <span className="font-mono text-sm tabular-nums text-slate-700 sm:text-base font-bold">
-                          {o.customerPhone || "—"}
-                        </span>
+                    {!hidePhoneColumn ? (
+                      <td className="px-2 py-2.5 align-top" onClick={e => e.stopPropagation()}>
+                        <div className="flex flex-col gap-2">
+                          <span className="font-mono text-sm tabular-nums text-slate-700 sm:text-base font-bold">
+                            {hidePhoneData ? "مخفي" : (o.customerPhone || "—")}
+                          </span>
 
-                        <div className="flex flex-wrap items-center gap-2">
+                          {!hidePhoneData && (
+                          <div className="flex flex-wrap items-center gap-2">
                             {/* زر الاتصال */}
                             <div className="relative">
                               <button
@@ -648,9 +656,11 @@ export function UnifiedOrderListTable({
                                 </CenterModal>
                               )}
                             </div>
+                          </div>
+                          )}
                         </div>
-                      </div>
-                    </td>
+                      </td>
+                    ) : null}
                     <td className="px-2 py-2.5 text-sm text-slate-600 sm:text-base">{o.timeLine}</td>
                     <td className="px-2 py-2.5 text-xs text-slate-500 sm:text-sm">
                       {orderDate ? orderDate.toLocaleString("ar-IQ-u-nu-latn", {

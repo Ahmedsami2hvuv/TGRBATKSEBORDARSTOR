@@ -171,6 +171,7 @@ export function PreparerOrderTable({
         showStatusDotInSelectCol={false}
         hideLocationAlert={true}
         hideShortIdInBadgeCol={true}
+        hidePhoneColumn={true}
         renderInShopNameCol={(o: any) => (
           <div className="mb-1 text-[11px] font-black text-slate-400">
             #{o.shortId}
