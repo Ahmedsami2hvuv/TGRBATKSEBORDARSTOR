@@ -131,37 +131,47 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
         })
       : null;
 
-  let smartHintLine: string | null = null;
-  if (order.customerRegionId) {
+  async function computeSmartHint(
+    locationUrl: string,
+    regionId: string | null | undefined,
+  ): Promise<string> {
+    if (!regionId) return "— لا توجد منطقة مرتبطة بالطلب";
     const regionWaypoints = await prisma.regionWaypoint.findMany({
-      where: { regionId: order.customerRegionId },
+      where: { regionId },
       orderBy: { sortOrder: "asc" },
       select: { name: true, latitude: true, longitude: true },
     });
-    const mergedCustomerLocationUrl =
-      order.customerLocationUrl?.trim() ||
-      order.customer?.customerLocationUrl?.trim() ||
-      customerPhoneProfile?.locationUrl?.trim() ||
-      "";
-    const customerLoc = await extractLatLngFromLocationInputSmart(mergedCustomerLocationUrl);
-    if (customerLoc && regionWaypoints.length > 0) {
-      let nearest: { name: string; distanceM: number } | null = null;
-      for (const point of regionWaypoints) {
-        const distanceM = haversineMeters(
-          customerLoc.latitude,
-          customerLoc.longitude,
-          point.latitude,
-          point.longitude,
-        );
-        if (!nearest || distanceM < nearest.distanceM) {
-          nearest = { name: point.name?.trim() || "مدخل", distanceM };
-        }
-      }
-      if (nearest && nearest.distanceM <= 2500) {
-        smartHintLine = `قريب من (${nearest.name})`;
+    if (regionWaypoints.length === 0) return "— لا توجد مداخل محفوظة لهذه المنطقة";
+    if (!String(locationUrl || "").trim()) return "— لا يوجد لوكيشن للزبون";
+    const customerLoc = await extractLatLngFromLocationInputSmart(locationUrl);
+    if (!customerLoc) return "— تعذر قراءة إحداثيات الرابط";
+
+    let nearest: { name: string; distanceM: number } | null = null;
+    for (const point of regionWaypoints) {
+      const distanceM = haversineMeters(
+        customerLoc.latitude,
+        customerLoc.longitude,
+        point.latitude,
+        point.longitude,
+      );
+      if (!nearest || distanceM < nearest.distanceM) {
+        nearest = { name: point.name?.trim() || "مدخل", distanceM };
       }
     }
+    if (!nearest) return "— تعذر احتساب أقرب مدخل";
+    if (nearest.distanceM > 2500) return "— اللوكيشن بعيد عن مداخل المنطقة";
+    return `قريب من (${nearest.name})`;
   }
+
+  const mergedCustomerLocationUrlForHint =
+    order.customerLocationUrl?.trim() ||
+    order.customer?.customerLocationUrl?.trim() ||
+    customerPhoneProfile?.locationUrl?.trim() ||
+    "";
+  const smartHintLine = await computeSmartHint(
+    mergedCustomerLocationUrlForHint,
+    order.customerRegionId,
+  );
 
   const moneySums = await fetchOrderOnlyMoneySumsForCourier(v.courierId, courier.mandoubTotalsResetAt);
   const activeOrdersForTotals = await prisma.order.findMany({
@@ -218,7 +228,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
             nextUrl={`/mandoub/order/${orderId}?${baseQuery.toString()}`}
             viewerCourierId={v.courierId}
             phoneProfile={customerPhoneProfile ?? undefined}
-            smartHintLine={smartHintLine}
+            smartHintLine={smartHintLine || "—"}
             uiSettings={uiSettings}
             icons={icons}
           />
