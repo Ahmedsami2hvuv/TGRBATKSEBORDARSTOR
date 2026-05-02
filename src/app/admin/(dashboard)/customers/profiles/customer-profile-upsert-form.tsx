@@ -178,6 +178,26 @@ export function CustomerProfileUpsertForm({
                 ✓الرقم مقبول .
               </span>
             ) : null}
+            {!isChecking && customerExists && rawText.includes("07") ? (
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <span className="text-sm text-amber-700 font-bold bg-amber-100 px-3 py-1 rounded-md border border-amber-300 inline-block shadow-sm">
+                  ⚠️ هذا الرقم مسجل مسبقاً في النظام.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRawText("");
+                    setRemotePhotoUrlInput("");
+                    setSelectedPhoto(null);
+                    if (photoInputRef.current) photoInputRef.current.value = "";
+                    formRef.current?.reset();
+                  }}
+                  className="text-sm bg-slate-500 text-white hover:bg-slate-600 px-3 py-2 rounded-md shadow-sm transition-colors"
+                >
+                  تصفير المربع
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -255,28 +275,6 @@ export function CustomerProfileUpsertForm({
             onChange={handlePhotoChange}
             className="hidden"
           />
-          <div className="min-h-[1.25rem] mt-1">
-            {!isChecking && customerExists && rawText.includes("07") && (
-              <div className="space-y-2">
-                <span className="text-sm text-amber-700 font-bold bg-amber-100 px-3 py-1 rounded-md border border-amber-300 inline-block shadow-sm">
-                  ⚠️ هذا الرقم مسجل مسبقاً في النظام.
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRawText("");
-                    setRemotePhotoUrlInput("");
-                    setSelectedPhoto(null);
-                    if (photoInputRef.current) photoInputRef.current.value = "";
-                    formRef.current?.reset();
-                  }}
-                  className="text-sm bg-slate-500 text-white hover:bg-slate-600 px-3 py-1 rounded-md shadow-sm transition-colors"
-                >
-                  تصفير المربع
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </form>
