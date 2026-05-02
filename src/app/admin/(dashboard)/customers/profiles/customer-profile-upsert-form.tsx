@@ -175,16 +175,73 @@ export function CustomerProfileUpsertForm({
               <p className={`${ad.success} mb-0`}>تم حفظ الزبون بنجاح، الصفحة تمت إعادة تعيينها.</p>
             ) : null}
           </div>
-          <button
-            type="submit"
-            disabled={pending}
-            className={`${ad.btnPrimary} w-full sm:w-auto text-lg py-3 px-8 shadow-md`}
-          >
-            {pending ? "جارٍ الحفظ…" : "حفظ البيانات"}
-          </button>
+          <div className="flex flex-col items-stretch sm:items-end gap-2">
+            <button
+              type="submit"
+              disabled={pending}
+              className={`${ad.btnPrimary} w-full sm:w-auto text-lg py-3 px-8 shadow-md`}
+            >
+              {pending ? "جارٍ الحفظ…" : "حفظ البيانات"}
+            </button>
+            <div className="min-h-[1.25rem]">
+              {isChecking && (
+                <span className="text-sm font-bold text-sky-600 animate-pulse">جاري التحقق من الرقم...</span>
+              )}
+              {!isChecking && !customerExists && rawText.includes("07") && (
+                <span className="text-sm text-green-700 font-bold bg-green-100 px-3 py-1 rounded-md border border-green-300 inline-block shadow-sm">
+                  ✓الرقم مقبول .
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-col gap-4 p-4 bg-sky-50 rounded-xl border border-sky-200 shadow-sm">
+          <div
+            className={`rounded-xl border-2 border-dashed p-4 bg-white transition-colors ${
+              dragActive ? "border-blue-500 bg-blue-50" : "border-slate-300"
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragActive(true);
+            }}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              setDragActive(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setDragActive(false);
+            }}
+            onDrop={handleDrop}
+          >
+            <div className="space-y-3 text-sm">
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={remotePhotoUrlInput}
+                  onChange={(e) => setRemotePhotoUrlInput(e.target.value)}
+                  placeholder="رابط صورة مباشر (اختياري)"
+                  className={`${ad.input} flex-1 bg-white`}
+                  dir="ltr"
+                />
+                <button
+                  type="button"
+                  disabled={isUploadingRemotePhoto}
+                  onClick={() => uploadImageUrlToStorage(remotePhotoUrlInput)}
+                  className="bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60 px-4 py-2 rounded-md shadow-sm transition-colors text-sm font-medium"
+                >
+                  {isUploadingRemotePhoto ? "جاري الرفع..." : "رفع الرابط"}
+                </button>
+              </div>
+              {uploadedRemotePhotoUrl ? (
+                <p className="text-green-700 font-semibold bg-green-100 px-3 py-2 rounded-md border border-green-300">
+                  ✓ تم رفع صورة الرابط بنجاح وربطها بالنموذج.
+                </p>
+              ) : null}
+            </div>
+          </div>
+
           <label className="flex flex-col gap-3 text-sm font-bold text-slate-900">
             <span className="text-lg">معلومات الزبون (لصق النص هنا)</span>
             <div className="flex gap-2 items-end">
@@ -215,56 +272,6 @@ export function CustomerProfileUpsertForm({
               </div>
             </div>
           </label>
-          <div
-            className={`rounded-xl border-2 border-dashed p-4 bg-white transition-colors ${
-              dragActive ? "border-blue-500 bg-blue-50" : "border-slate-300"
-            }`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragActive(true);
-            }}
-            onDragEnter={(e) => {
-              e.preventDefault();
-              setDragActive(true);
-            }}
-            onDragLeave={(e) => {
-              e.preventDefault();
-              setDragActive(false);
-            }}
-            onDrop={handleDrop}
-          >
-            <div className="space-y-3 text-sm">
-              <p className="font-semibold text-slate-900">
-                مربع الصورة (سحب وإفلات):
-              </p>
-              <p className="text-slate-600">
-                اسحب صورة أو رابط صورة مباشر هنا. النظام ينزّل الصورة ويرفعها إلى R2 تلقائيًا.
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  value={remotePhotoUrlInput}
-                  onChange={(e) => setRemotePhotoUrlInput(e.target.value)}
-                  placeholder="مثال: https://d.ksebstor.site/assets/img/door/1770902492.jpg"
-                  className={`${ad.input} flex-1 bg-white`}
-                  dir="ltr"
-                />
-                <button
-                  type="button"
-                  disabled={isUploadingRemotePhoto}
-                  onClick={() => uploadImageUrlToStorage(remotePhotoUrlInput)}
-                  className="bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60 px-4 py-2 rounded-md shadow-sm transition-colors text-sm font-medium"
-                >
-                  {isUploadingRemotePhoto ? "جاري الرفع..." : "رفع الرابط"}
-                </button>
-              </div>
-              {uploadedRemotePhotoUrl ? (
-                <p className="text-green-700 font-semibold bg-green-100 px-3 py-2 rounded-md border border-green-300">
-                  ✓ تم رفع صورة الرابط بنجاح وربطها بالنموذج.
-                </p>
-              ) : null}
-            </div>
-          </div>
           <input
             ref={photoInputRef}
             name="photo"
@@ -280,16 +287,7 @@ export function CustomerProfileUpsertForm({
               <span className="text-sm font-medium">تم اختيار صورة: {selectedPhoto.name}</span>
             </div>
           )}
-          <div className="text-sm text-slate-600">
-            اختر صورة الباب بالضغط على "صورة" أو ألصق البيانات بالضغط على "لصق".
-          </div>
-          <div className="text-sm text-slate-600">
-            ألصق رسالة الزبون كاملة هنا، ثم اضغط حفظ. سيقوم النظام بتحليل النص وحفظ الزبون مباشرةً.
-          </div>
           <div className="min-h-[1.25rem] mt-1">
-            {isChecking && (
-              <span className="text-sm font-bold text-sky-600 animate-pulse">جاري التحقق من الرقم...</span>
-            )}
             {!isChecking && customerExists && rawText.includes("07") && (
               <div className="space-y-2">
                 <span className="text-sm text-amber-700 font-bold bg-amber-100 px-3 py-1 rounded-md border border-amber-300 inline-block shadow-sm">
@@ -306,11 +304,6 @@ export function CustomerProfileUpsertForm({
                   تصفير المربع
                 </button>
               </div>
-            )}
-            {!isChecking && !customerExists && rawText.includes("07") && (
-              <span className="text-sm text-green-700 font-bold bg-green-100 px-3 py-1 rounded-md border border-green-300 inline-block shadow-sm">
-                ✓الرقم مقبول .
-              </span>
             )}
           </div>
         </div>
