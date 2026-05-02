@@ -199,7 +199,9 @@ export function OrderViewContent({
                   )}
                 </div>
                 <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark?.trim() || "—"}</p>
-                <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.smartHintLine?.trim() || "—"}</p>
+                {!order.customerLandmark?.trim() ? (
+                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.smartHintLine?.trim() || "—"}</p>
+                ) : null}
                 <div className="mt-2 space-y-2">
                   {order.customerLocationUrl?.trim() ? (
                     <div className="space-y-1">
@@ -262,7 +264,9 @@ export function OrderViewContent({
                   </div>
                 </div>
                 <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.secondCustomerLandmark?.trim() || "—"}</p>
-                <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.secondSmartHintLine?.trim() || "—"}</p>
+                {!order.secondCustomerLandmark?.trim() ? (
+                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.secondSmartHintLine?.trim() || "—"}</p>
+                ) : null}
                 <div className="mt-2 space-y-2">
                   {order.secondCustomerLocationUrl?.trim() ? (
                     <div className="space-y-1">
@@ -301,7 +305,9 @@ export function OrderViewContent({
                   )}
                 </div>
                 <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark?.trim() || "—"}</p>
-                <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.smartHintLine?.trim() || "—"}</p>
+                {!order.customerLandmark?.trim() ? (
+                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.smartHintLine?.trim() || "—"}</p>
+                ) : null}
                 <div className="mt-2 space-y-2">
                   {order.customerLocationUrl?.trim() ? (
                     <div className="space-y-1">

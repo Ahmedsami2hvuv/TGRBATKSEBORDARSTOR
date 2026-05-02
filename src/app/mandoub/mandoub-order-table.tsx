@@ -25,6 +25,8 @@ export type MandoubRow = {
   /** فئات Tailwind لاسم المحل حسب حالة الطلب (أحمر / برتقالي / أخضر) */
   shopNameHighlightClass: string;
   regionLine: string;
+  /** أقرب نقطة دالة (يدوي/موجودة في الطلب) */
+  landmarkLine?: string | null;
   /** سطر ذكي مشتق من أقرب مدخل داخل المنطقة */
   smartHintLine?: string | null;
   orderType: string;

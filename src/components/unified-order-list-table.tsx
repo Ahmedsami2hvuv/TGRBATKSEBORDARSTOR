@@ -122,6 +122,7 @@ export function UnifiedOrderListTable({
   const [activeLocId, setActiveLocId] = useState<string | null>(null);
   const [activeDoorId, setActiveDoorId] = useState<string | null>(null);
   const [activeAudioId, setActiveAudioId] = useState<string | null>(null);
+  const [activeSmartHintId, setActiveSmartHintId] = useState<string | null>(null);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
 
   useEffect(() => {
@@ -135,6 +136,7 @@ export function UnifiedOrderListTable({
       setActiveLocId(null);
       setActiveDoorId(null);
       setActiveAudioId(null);
+      setActiveSmartHintId(null);
     };
     window.addEventListener("click", handleGlobalClick);
     return () => window.removeEventListener("click", handleGlobalClick);
@@ -374,7 +376,8 @@ export function UnifiedOrderListTable({
                           (o.secondCustomerDoorPhotoUrl?.trim() && o.secondCustomerDoorPhotoUrl.trim().length > 2) ||
                           (o.audioUrl?.trim() && o.audioUrl.trim().length > 2) ||
                           (o.preparerAudioUrl?.trim() && o.preparerAudioUrl.trim().length > 2) ||
-                          (o.adminAudioUrl?.trim() && o.adminAudioUrl.trim().length > 2)) && (
+                          (o.adminAudioUrl?.trim() && o.adminAudioUrl.trim().length > 2) ||
+                          (o.smartHintLine?.trim() && !o.smartHintLine.trim().startsWith("—"))) && (
                           <div className="flex items-center gap-1 border-r pr-2 mr-1 border-slate-200" onClick={e => e.stopPropagation()}>
                              {/* زر اللوكيشن الموحد */}
                              {((o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
@@ -516,6 +519,35 @@ export function UnifiedOrderListTable({
                                  )}
                                </div>
                              )}
+                             {/* زر الاستدلال الذكي: يظهر فقط عند وجود نص حقيقي */}
+                             {!o.landmarkLine?.trim() && o.smartHintLine?.trim() && !o.smartHintLine.trim().startsWith("—") && (
+                               <div className="relative">
+                                 <button
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     setActiveSmartHintId(activeSmartHintId === o.id ? null : o.id);
+                                     setActiveCallId(null);
+                                     setActiveMsgId(null);
+                                     setActiveLocId(null);
+                                     setActiveDoorId(null);
+                                     setActiveAudioId(null);
+                                   }}
+                                   title="الاستدلال الذكي"
+                                   className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${
+                                     activeSmartHintId === o.id
+                                       ? "bg-emerald-700 text-white"
+                                       : "bg-slate-100 text-emerald-600 hover:bg-emerald-500 hover:text-white"
+                                   }`}
+                                 >
+                                   <DynamicIcon iconKey="ui_note" config={icons} fallback="🧭" className="w-3.5 h-3.5" />
+                                 </button>
+                                 {activeSmartHintId === o.id ? (
+                                   <CenterModal title="الاستدلال الذكي" onClose={() => setActiveSmartHintId(null)}>
+                                     <div className="p-3 text-sm font-black text-slate-800">{o.smartHintLine}</div>
+                                   </CenterModal>
+                                 ) : null}
+                               </div>
+                             )}
                           </div>
                         )}
                       </div>
@@ -561,9 +593,6 @@ export function UnifiedOrderListTable({
                     >
                       <div className="flex flex-col gap-1.5">
                         <span>{o.regionLine}</span>
-                        <span className="text-[11px] font-bold text-emerald-800 sm:text-xs">
-                          الاستدلال الذكي: {o.smartHintLine?.trim() || "—"}
-                        </span>
                         {/* أزرار اللوكيشن والصور من الخارج (للزبون) */}
                         <div className="flex flex-wrap items-center gap-1.5 mt-1" onClick={e => e.stopPropagation()}>
                            {/* تم نقل أزرار اللوكيشن للزر الموحد بجانب اسم المحل لتقليل الازدحام */}

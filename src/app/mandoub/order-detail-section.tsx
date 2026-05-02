@@ -180,9 +180,11 @@ export function OrderDetailSection({
                   </div>
                 )}
                 {mergedLandmark && <p className="mt-1 text-sm font-medium text-slate-800">أقرب نقطة: {mergedLandmark}</p>}
-                <p className="mt-1 text-sm font-bold text-emerald-800">
-                  الاستدلال الذكي: {smartHintLine?.trim() || "—"}
-                </p>
+                {!mergedLandmark ? (
+                  <p className="mt-1 text-sm font-bold text-emerald-800">
+                    الاستدلال الذكي: {smartHintLine?.trim() || "—"}
+                  </p>
+                ) : null}
                 <div className="mt-2">{mergedCustomerLocationUrl ? <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن الزبون <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} /></a> : <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} />}</div>
               </div>
               <div className="max-w-[12rem] self-start">{customerDoorDisplay ? <div className={squarePhotoFrame}><img src={imgSrc(customerDoorDisplay)!} alt="" className={squarePhotoCover} /></div> : <p className="text-xs text-slate-400">لا توجد صورة باب</p>}<div className="mt-2"><MandoubQuickDoorCapture orderId={order.id} nextUrl={nextUrl} auth={auth} /></div></div>

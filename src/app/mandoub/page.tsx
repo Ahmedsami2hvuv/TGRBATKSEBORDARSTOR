@@ -363,6 +363,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       shopName: o.shop.name,
       shopNameHighlightClass: mandoubShopNameVividClass(o.status, o.prepaidAll),
       regionLine: o.customerRegion?.name?.trim() || "—",
+      landmarkLine: (o.customerLandmark || o.customer?.customerLandmark || "").trim() || null,
       smartHintLine,
       orderType: o.orderType || "—",
       priceStr: o.totalAmount != null ? formatDinarAsAlf(o.totalAmount) : "—",
