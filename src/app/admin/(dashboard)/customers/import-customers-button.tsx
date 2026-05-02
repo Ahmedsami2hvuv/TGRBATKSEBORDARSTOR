@@ -66,23 +66,38 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
     setImportedNow(0);
     const total = 1207;
     let currentOffset = 0;
+    let totalSynced = 0;
+    let totalSkipped = 0;
+    let totalErrors = 0;
+    let totalNotFoundLocal = 0;
 
     try {
       while (currentOffset < total) {
         const res = await fetch("/api/admin/import/customers/sync-photos", { 
           method: "POST",
-          body: JSON.stringify({ offset: currentOffset })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ offset: currentOffset, limit: 15 })
         });
         const data = await res.json();
 
         if (!data.success || data.rowsFetched === 0) break;
 
+        totalSynced += Number(data.synced || 0);
+        totalSkipped += Number(data.skipped || 0);
+        totalErrors += Number(data.errors || 0);
+        totalNotFoundLocal += Number(data.notFoundLocal || 0);
         currentOffset += data.rowsFetched;
         setImportedNow(currentOffset);
         setProgress(Math.min(100, Math.round((currentOffset / total) * 100)));
       }
       router.refresh();
-      alert("اكتمل سحب الصور بالكامل.");
+      alert(
+        `اكتمل سحب الصور.\n` +
+        `المرفوع إلى R2: ${totalSynced}\n` +
+        `تم تخطيه: ${totalSkipped}\n` +
+        `فشل: ${totalErrors}\n` +
+        `غير موجود محلياً: ${totalNotFoundLocal}`
+      );
     } catch (e: any) { alert("خطأ في سحب الصور: " + e.message); }
     setStatus("idle");
   }

@@ -43,21 +43,51 @@ export default async function AdminOrderViewPage({ params }: Props) {
     [order, preparers, waButtonSettings] = await Promise.all([
       prisma.order.findUnique({
         where: { id: orderId },
-        include: {
-          shop: true,
-          customerRegion: true,
-          secondCustomerRegion: true,
-          courier: true,
-          customer: true,
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          routeMode: true,
+          adminOrderCode: true,
+          orderType: true,
+          summary: true,
+          customerPhone: true,
+          alternatePhone: true,
+          secondCustomerPhone: true,
+          secondCustomerLocationUrl: true,
+          secondCustomerLandmark: true,
+          secondCustomerDoorPhotoUrl: true,
+          secondCustomerRegionId: true,
+          orderNoteTime: true,
+          imageUrl: true,
+          orderImageUploadedByName: true,
+          shopDoorPhotoUploadedByName: true,
+          customerDoorPhotoUploadedByName: true,
+          secondCustomerDoorPhotoUploadedByName: true,
+          voiceNoteUrl: true,
+          adminVoiceNoteUrl: true,
+          shopDoorPhotoUrl: true,
+          customerDoorPhotoUrl: true,
+          customerLandmark: true,
+          orderSubtotal: true,
+          deliveryPrice: true,
+          totalAmount: true,
+          submissionSource: true,
+          createdAt: true,
+          prepaidAll: true,
+          shopId: true,
+          customerRegionId: true,
+          customerLocationUrl: true,
+          customerLocationSetByCourierAt: true,
+          customerLocationUploadedByName: true,
+          preparerShoppingJson: true,
           submittedBy: { select: { id: true, name: true, phone: true } },
-          submittedByCompanyPreparer: true,
-          moneyEvents: {
-            orderBy: { createdAt: "asc" },
-            include: {
-              courier: { select: { name: true } },
-              recordedByCompanyPreparer: { select: { name: true } },
-            },
-          },
+          submittedByCompanyPreparer: { select: { id: true, name: true, phone: true } },
+          shop: { select: { id: true, name: true, phone: true, ownerName: true, photoUrl: true, locationUrl: true } },
+          customerRegion: { select: { name: true } },
+          secondCustomerRegion: { select: { name: true } },
+          courier: { select: { name: true, phone: true } },
+          customer: { select: { name: true } },
         },
       }),
       prisma.companyPreparer.findMany({
@@ -230,7 +260,16 @@ export default async function AdminOrderViewPage({ params }: Props) {
 
   const customerName = normalizeCustomerName(order.customer?.name);
 
-  const adminMoneyEvents = order.moneyEvents.map((e) => ({
+  const moneyEventsRaw = await prisma.orderMoneyEvent.findMany({
+    where: { orderId },
+    orderBy: { createdAt: "desc" },
+    take: 120,
+    include: {
+      courier: { select: { name: true } },
+      recordedByCompanyPreparer: { select: { name: true } },
+    },
+  });
+  const adminMoneyEvents = moneyEventsRaw.reverse().map((e) => ({
     id: e.id,
     kind: e.kind,
     amountDinar: Number(e.amountDinar ?? 0),
