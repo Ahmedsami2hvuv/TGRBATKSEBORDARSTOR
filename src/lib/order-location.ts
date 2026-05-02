@@ -145,8 +145,36 @@ export async function extractLatLngFromLocationInputSmart(
       },
     });
     const finalUrl = res.url || "";
-    if (!finalUrl) return null;
-    return extractLatLngFromLocationInput(finalUrl);
+    if (finalUrl) {
+      const parsedFinal = extractLatLngFromLocationInput(finalUrl);
+      if (parsedFinal) return parsedFinal;
+    }
+
+    // fallback: أحيانًا Google يرجع صفحة وسيطة بدون redirect URL واضح.
+    const body = await res.text();
+    if (!body) return null;
+
+    const decodedBody = body
+      .replace(/\\u003d/g, "=")
+      .replace(/\\u0026/g, "&")
+      .replace(/\\\//g, "/");
+
+    // 1) حاول إيجاد أي رابط خرائط داخل الـ HTML ثم حلله.
+    const mapsUrlPattern = /https?:\/\/(?:www\.)?google\.[^"'\s<>]+\/maps\/[^"'\s<>]+/gi;
+    const links = decodedBody.match(mapsUrlPattern) ?? [];
+    for (const link of links) {
+      const parsed = extractLatLngFromLocationInput(link);
+      if (parsed) return parsed;
+    }
+
+    // 2) كحل أخير: التقط أول زوج إحداثيات رقمي من الصفحة.
+    const pair = decodedBody.match(/([+-]?\d{1,2}\.\d{4,})\s*[,،]\s*([+-]?\d{1,3}\.\d{4,})/);
+    if (pair) {
+      const parsed = buildLatLng(Number(pair[1]), Number(pair[2]));
+      if (parsed) return parsed;
+    }
+
+    return null;
   } catch {
     return null;
   }
