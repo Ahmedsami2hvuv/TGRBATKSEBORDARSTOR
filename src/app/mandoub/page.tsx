@@ -103,13 +103,14 @@ type Props = {
 };
 
 export default async function MandoubPage({ searchParams }: Props) {
-  const sp = await searchParams;
-  const cookieStore = await cookies();
+  try {
+    const sp = await searchParams;
+    const cookieStore = await cookies();
 
-  const [icons, iconsResult] = await Promise.all([
-    getGlobalIcons(),
-    null // Placeholder for potential future parallel fetches
-  ]);
+    const [icons, iconsResult] = await Promise.all([
+      getGlobalIcons(),
+      null // Placeholder for potential future parallel fetches
+    ]);
 
   const c = sp.c || cookieStore.get("mandoub_c")?.value;
   const s = sp.s || cookieStore.get("mandoub_s")?.value;
@@ -390,80 +391,95 @@ export default async function MandoubPage({ searchParams }: Props) {
 
   const isChecking = tab === "check" || tab === "checkSader" || tab === "checkWard";
 
-  return (
-    <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-base leading-relaxed text-slate-800">
-      <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 sm:px-4 sm:py-4 sm:text-lg">
-        <header className="kse-glass-dark mb-3 flex items-center gap-2 border border-sky-200/90 px-3 py-2.5 shadow-sm">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <DynamicIcon config={icons.ui_user} fallback="" className="w-5 h-5 text-sky-600" />
-              <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-[#00f3ff]">أهلاً {courier.name}</p>
+    return (
+      <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-base leading-relaxed text-slate-800">
+        <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 sm:px-4 sm:py-4 sm:text-lg">
+          <header className="kse-glass-dark mb-3 flex items-center gap-2 border border-sky-200/90 px-3 py-2.5 shadow-sm">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <DynamicIcon config={icons.ui_user} fallback="" className="w-5 h-5 text-sky-600" />
+                <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-[#00f3ff]">أهلاً {courier.name}</p>
+              </div>
+              <p className="text-[10px] font-bold text-slate-500 sm:text-xs ms-7">{courier.phone}</p>
             </div>
-            <p className="text-[10px] font-bold text-slate-500 sm:text-xs ms-7">{courier.phone}</p>
-          </div>
-          <ThemeSwitcher />
-          <MandoubPresenceToggle auth={baseAuth} availableForAssignment={courier.availableForAssignment} />
-          <Link href={`/mandoub/wallet?${baseQuery.toString()}`} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base">
-            <DynamicIcon config={icons.ui_wallet} fallback="" className="w-5 h-5" />
-            المحفظة
-          </Link>
-        </header>
-
-        <MandoubWebPushBanner auth={baseAuth} />
-        <MandoubAssignmentPoller auth={baseAuth} />
-
-        <MandoubMoneySummarySection
-          totalsBaseline={totalsBaseline}
-          sumDeliveryInDinar={Number(sumDeliveryIn)}
-          sumPickupOutDinar={Number(sumPickupOut)}
-          remainingNetDinar={Number(remainingNet)}
-          sumEarningsDinar={Number(orderMetrics.sumEarnings)}
-          courierVehicleType={courier.vehicleType}
-          hrefWalletLedger={(l) => `/mandoub/wallet?${baseQuery.toString()}${l !== 'all' ? '&ledger=' + l : ''}`}
-          hideTitle hideResetText
-          showAdminBox={false}
-        />
-
-        <div className="mb-4 flex flex-col gap-3">
-          <nav className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            <Link href={`/mandoub?tab=all&${baseQuery.toString()}`} className={tabBtnClass(tab === "all")}>الكل</Link>
-            <Link href={`/mandoub?tab=assigned&${baseQuery.toString()}`} className={tabBtnClass(tab === "assigned")}>لم يتم الاستلام</Link>
-            <Link href={`/mandoub?tab=delivering&${baseQuery.toString()}`} className={tabBtnClass(tab === "delivering")}>تم الاستلام</Link>
-            <Link href={`/mandoub?tab=delivered&${baseQuery.toString()}`} className={tabBtnClass(tab === "delivered")}>تم التسليم</Link>
-            <Link href={`/mandoub?tab=check&${baseQuery.toString()}`} className={`${tabBtnClass(isChecking)} flex items-center gap-2`}>
-              الفحص
-              <DynamicIcon config={icons.ui_search} fallback="🔍" className="w-4 h-4" />
+            <ThemeSwitcher />
+            <MandoubPresenceToggle auth={baseAuth} availableForAssignment={courier.availableForAssignment} />
+            <Link href={`/mandoub/wallet?${baseQuery.toString()}`} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base">
+              <DynamicIcon config={icons.ui_wallet} fallback="" className="w-5 h-5" />
+              المحفظة
             </Link>
-          </nav>
+          </header>
 
-          {isChecking && (
-            <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-white/60 p-2 border border-sky-100 shadow-sm animate-in fade-in slide-in-from-top-1">
-              <Link href={`/mandoub?tab=checkSader&${baseQuery.toString()}`} className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${tab === "checkSader" ? "bg-emerald-600 text-white ring-2 ring-emerald-300" : "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"}`}>فحص الصادر</Link>
-              <Link href={`/mandoub?tab=checkWard&${baseQuery.toString()}`} className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${tab === "checkWard" ? "bg-rose-600 text-white ring-2 ring-rose-300" : "bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100"}`}>فحص الوارد</Link>
+          <MandoubWebPushBanner auth={baseAuth} />
+          <MandoubAssignmentPoller auth={baseAuth} />
+
+          <MandoubMoneySummarySection
+            totalsBaseline={totalsBaseline}
+            sumDeliveryInDinar={Number(sumDeliveryIn)}
+            sumPickupOutDinar={Number(sumPickupOut)}
+            remainingNetDinar={Number(remainingNet)}
+            sumEarningsDinar={Number(orderMetrics.sumEarnings)}
+            courierVehicleType={courier.vehicleType}
+            hrefWalletLedger={(l) => `/mandoub/wallet?${baseQuery.toString()}${l !== 'all' ? '&ledger=' + l : ''}`}
+            hideTitle hideResetText
+            showAdminBox={false}
+          />
+
+          <div className="mb-4 flex flex-col gap-3">
+            <nav className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              <Link href={`/mandoub?tab=all&${baseQuery.toString()}`} className={tabBtnClass(tab === "all")}>الكل</Link>
+              <Link href={`/mandoub?tab=assigned&${baseQuery.toString()}`} className={tabBtnClass(tab === "assigned")}>لم يتم الاستلام</Link>
+              <Link href={`/mandoub?tab=delivering&${baseQuery.toString()}`} className={tabBtnClass(tab === "delivering")}>تم الاستلام</Link>
+              <Link href={`/mandoub?tab=delivered&${baseQuery.toString()}`} className={tabBtnClass(tab === "delivered")}>تم التسليم</Link>
+              <Link href={`/mandoub?tab=check&${baseQuery.toString()}`} className={`${tabBtnClass(isChecking)} flex items-center gap-2`}>
+                الفحص
+                <DynamicIcon config={icons.ui_search} fallback="🔍" className="w-4 h-4" />
+              </Link>
+            </nav>
+
+            {isChecking && (
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-white/60 p-2 border border-sky-100 shadow-sm animate-in fade-in slide-in-from-top-1">
+                <Link href={`/mandoub?tab=checkSader&${baseQuery.toString()}`} className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${tab === "checkSader" ? "bg-emerald-600 text-white ring-2 ring-emerald-300" : "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"}`}>فحص الصادر</Link>
+                <Link href={`/mandoub?tab=checkWard&${baseQuery.toString()}`} className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${tab === "checkWard" ? "bg-rose-600 text-white ring-2 ring-rose-300" : "bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100"}`}>فحص الوارد</Link>
+              </div>
+            )}
+          </div>
+
+          {tab === "checkSader" && (
+            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-white/50 p-2 border border-emerald-100 animate-in fade-in slide-in-from-right-2">
+              <span className="text-xs font-bold text-slate-500 ms-1">فلترة الصادر:</span>
+              <Link href={`/mandoub?tab=checkSader&saderFilter=lower&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${saderFilter === 'lower' ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-700 border border-emerald-200'}`}>أقل من المتوقع</Link>
+              <Link href={`/mandoub?tab=checkSader&saderFilter=higher&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${saderFilter === 'higher' ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-700 border border-emerald-200'}`}>أكبر من المتوقع</Link>
             </div>
           )}
+
+          {tab === "checkWard" && (
+            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-white/50 p-2 border border-rose-100 animate-in fade-in slide-in-from-right-2">
+              <span className="text-xs font-bold text-slate-500 ms-1">فلترة الوارد:</span>
+              <Link href={`/mandoub?tab=checkWard&wardFilter=lower&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${wardFilter === 'lower' ? 'bg-rose-600 text-white' : 'bg-white text-rose-700 border border-rose-200'}`}>أقل من المتوقع</Link>
+              <Link href={`/mandoub?tab=checkWard&wardFilter=higher&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${wardFilter === 'higher' ? 'bg-rose-600 text-white' : 'bg-white text-rose-700 border border-rose-200'}`}>أكبر من المتوقع</Link>
+            </div>
+          )}
+
+          <section className="kse-glass-dark overflow-hidden border border-sky-200 shadow-sm">
+            <MandoubOrdersSection allRows={tableRows} searchFields={searchFields} auth={baseAuth} tab={tab} />
+          </section>
         </div>
-
-        {tab === "checkSader" && (
-          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-white/50 p-2 border border-emerald-100 animate-in fade-in slide-in-from-right-2">
-            <span className="text-xs font-bold text-slate-500 ms-1">فلترة الصادر:</span>
-            <Link href={`/mandoub?tab=checkSader&saderFilter=lower&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${saderFilter === 'lower' ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-700 border border-emerald-200'}`}>أقل من المتوقع</Link>
-            <Link href={`/mandoub?tab=checkSader&saderFilter=higher&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${saderFilter === 'higher' ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-700 border border-emerald-200'}`}>أكبر من المتوقع</Link>
-          </div>
-        )}
-
-        {tab === "checkWard" && (
-          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-white/50 p-2 border border-rose-100 animate-in fade-in slide-in-from-right-2">
-            <span className="text-xs font-bold text-slate-500 ms-1">فلترة الوارد:</span>
-            <Link href={`/mandoub?tab=checkWard&wardFilter=lower&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${wardFilter === 'lower' ? 'bg-rose-600 text-white' : 'bg-white text-rose-700 border border-rose-200'}`}>أقل من المتوقع</Link>
-            <Link href={`/mandoub?tab=checkWard&wardFilter=higher&${baseQuery.toString()}`} className={`rounded-lg px-2.5 py-1 text-xs font-bold ${wardFilter === 'higher' ? 'bg-rose-600 text-white' : 'bg-white text-rose-700 border border-rose-200'}`}>أكبر من المتوقع</Link>
-          </div>
-        )}
-
-        <section className="kse-glass-dark overflow-hidden border border-sky-200 shadow-sm">
-          <MandoubOrdersSection allRows={tableRows} searchFields={searchFields} auth={baseAuth} tab={tab} />
-        </section>
       </div>
-    </div>
-  );
+    );
+  } catch (error) {
+    console.error("[MandoubPage] Unexpected render error", error);
+    return (
+      <div dir="rtl" lang="ar" className="kse-app-bg px-4 py-16 text-slate-800">
+        <div className="kse-app-inner mx-auto max-w-md">
+          <div className="kse-glass-dark rounded-2xl border border-rose-300 p-8 text-center">
+            <p className="text-lg font-bold text-rose-700">تعذر فتح لوحة المندوب حالياً</p>
+            <p className="mt-2 text-sm text-slate-600">
+              صارت مشكلة داخلية مؤقتة. أعد تحميل الصفحة، وإذا استمرت تواصل مع الإدارة.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }
