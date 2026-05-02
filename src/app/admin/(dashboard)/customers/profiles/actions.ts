@@ -5,10 +5,12 @@ import {
   saveCustomerProfilePhotoUploaded,
 } from "@/lib/order-image";
 import { deleteFromR2 } from "@/lib/upload-storage";
+import { uploadToR2 } from "@/lib/upload-storage";
 import { prisma } from "@/lib/prisma";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { randomUUID } from "crypto";
 
 export type CustomerProfileFormState = { error?: string; ok?: boolean; timestamp?: number };
 
@@ -64,6 +66,22 @@ function parseLocationUrl(raw: string): { ok: true; url: string } | { ok: false;
     return { ok: false, error: "رابط اللوكيشن غير صالح" };
   }
   return { ok: true, url };
+}
+
+function inferExtFromImage(contentType: string, url: string): string {
+  const t = contentType.toLowerCase();
+  if (t.includes("png")) return "png";
+  if (t.includes("webp")) return "webp";
+  if (t.includes("jpeg") || t.includes("jpg")) return "jpg";
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+    if (pathname.endsWith(".png")) return "png";
+    if (pathname.endsWith(".webp")) return "webp";
+    if (pathname.endsWith(".jpeg") || pathname.endsWith(".jpg")) return "jpg";
+  } catch {
+    // ignore invalid URL here; validated by caller
+  }
+  return "jpg";
 }
 
 function parseCustomerReferenceText(rawText: string) {
@@ -127,6 +145,61 @@ export async function checkCustomerExistsByPhone(phone: string): Promise<boolean
     where: { phone: n },
   });
   return !!existing;
+}
+
+export async function uploadCustomerProfilePhotoFromUrl(
+  rawUrl: string,
+): Promise<{ ok: true; photoUrl: string } | { ok: false; error: string }> {
+  const imageUrl = String(rawUrl || "").trim();
+  if (!imageUrl) {
+    return { ok: false, error: "أدخل رابط الصورة أولاً." };
+  }
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(imageUrl);
+  } catch {
+    return { ok: false, error: "رابط الصورة غير صالح." };
+  }
+
+  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+    return { ok: false, error: "الرابط يجب أن يبدأ بـ http أو https." };
+  }
+
+  try {
+    const res = await fetch(parsedUrl.toString(), {
+      signal: AbortSignal.timeout(20_000),
+      headers: { "User-Agent": "Mozilla/5.0" },
+    });
+    if (!res.ok) {
+      return { ok: false, error: "تعذر جلب الصورة من الرابط." };
+    }
+
+    const contentType = (res.headers.get("content-type") || "").toLowerCase();
+    if (contentType && !contentType.startsWith("image/")) {
+      return { ok: false, error: "الرابط لا يحتوي على صورة." };
+    }
+
+    const arr = await res.arrayBuffer();
+    const buf = Buffer.from(arr);
+    if (!buf.length) {
+      return { ok: false, error: "الصورة فارغة أو تالفة." };
+    }
+    if (buf.length > MAX_ORDER_IMAGE_BYTES) {
+      return { ok: false, error: "الصورة كبيرة جداً (الحد 20 ميجابايت)." };
+    }
+
+    const ext = inferExtFromImage(contentType, parsedUrl.toString());
+    const key = `profiles/url-import-${Date.now()}-${randomUUID()}.${ext}`;
+    const uploadedKey = await uploadToR2(buf, key, contentType || "image/jpeg");
+    if (!uploadedKey) {
+      return { ok: false, error: "تعذر رفع الصورة إلى التخزين." };
+    }
+
+    return { ok: true, photoUrl: `/uploads/${uploadedKey}` };
+  } catch {
+    return { ok: false, error: "حدث خطأ أثناء تنزيل/رفع الصورة." };
+  }
 }
 
 export async function upsertCustomerPhoneProfile(
@@ -197,9 +270,12 @@ export async function upsertCustomerPhoneProfile(
     return { error: uploaded.error };
   }
 
+  const preUploadedPhotoUrl = String(formData.get("preUploadedPhotoUrl") ?? "").trim();
   let photoUrl = "";
   if (uploaded.photoUrl) {
     photoUrl = uploaded.photoUrl;
+  } else if (preUploadedPhotoUrl.startsWith("/uploads/")) {
+    photoUrl = preUploadedPhotoUrl;
   }
 
   await prisma.customerPhoneProfile.create({

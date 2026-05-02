@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Client } from "pg";
 import { prisma } from "@/lib/prisma";
-import { uploadToR2 } from "@/lib/upload-storage";
+import { r2ObjectExistsByUrl, uploadToR2 } from "@/lib/upload-storage";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
@@ -38,6 +38,7 @@ export async function POST(req: Request) {
     let skipCount = 0;
     let errorCount = 0;
     let notFoundLocalCount = 0;
+    let missingOnR2Reuploaded = 0;
 
     for (const row of res.rows) {
       const normalizedPhone = normalizeIraqMobileLocal11(String(row.phone ?? "")) || String(row.phone ?? "").trim();
@@ -55,8 +56,11 @@ export async function POST(req: Request) {
       }
 
       if (isAlreadyOnR2OrUploads(localCustomer.photoUrl)) {
-        skipCount++;
-        continue;
+        const existsOnR2 = await r2ObjectExistsByUrl(localCustomer.photoUrl);
+        if (existsOnR2) {
+          skipCount++;
+          continue;
+        }
       }
 
       try {
@@ -114,6 +118,9 @@ export async function POST(req: Request) {
             where: { id: localCustomer.id },
             data: { photoUrl: `/uploads/${uploadedKey}` },
           });
+          if (isAlreadyOnR2OrUploads(localCustomer.photoUrl)) {
+            missingOnR2Reuploaded++;
+          }
           successCount++;
         } else {
           errorCount++;
@@ -130,8 +137,9 @@ export async function POST(req: Request) {
       skipped: skipCount,
       errors: errorCount,
       notFoundLocal: notFoundLocalCount,
+      reuploadedMissingOnR2: missingOnR2Reuploaded,
       rowsFetched: res.rows.length,
-      message: `تم رفع ${successCount} صورة إلى R2. تم تخطي ${skipCount}، وفشل ${errorCount}، وغير موجود محلياً ${notFoundLocalCount}.`,
+      message: `تم رفع ${successCount} صورة إلى R2. تم تخطي ${skipCount}، وفشل ${errorCount}، وغير موجود محلياً ${notFoundLocalCount}، وأُعيد رفع ${missingOnR2Reuploaded} صورة مفقودة من R2.`,
     });
 
   } catch (error: any) {
