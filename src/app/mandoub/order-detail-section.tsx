@@ -268,7 +268,37 @@ export function OrderDetailSection({
           </div>
         );
       case "money_flow":
-        return (<MandoubOrderMoneyFlow key="money" orderId={order.id} orderNumber={order.orderNumber} courierName={order.courier?.name ?? "—"} orderStatus={order.status} missingCustomerLocation={missingCustomerLocation} canRecordMoney={order.assignedCourierId === viewerCourierId} orderSubtotalDinar={order.orderSubtotal != null ? Number(order.orderSubtotal) : null} totalAmountDinar={order.totalAmount != null ? Number(order.totalAmount) : null} deliveryPriceDinar={order.deliveryPrice != null ? Number(order.deliveryPrice) : null} courierVehicleType={order.courier?.vehicleType ?? null} courierEarningDinar={order.courierEarningDinar != null ? Number(order.courierEarningDinar) : null} moneyEvents={order.moneyEvents.map(e => ({...e, amountDinar: Number(e.amountDinar), expectedDinar: e.expectedDinar != null ? Number(e.expectedDinar) : null, performedByDisplayName: e.recordedByCompanyPreparer?.name || e.courier?.name || "—", recordedAt: e.createdAt}))} auth={auth} nextUrl={nextUrl} />);
+        return (
+          <MandoubOrderMoneyFlow
+            key="money"
+            orderId={order.id}
+            orderNumber={order.orderNumber}
+            courierName={order.courier?.name ?? "—"}
+            orderStatus={order.status}
+            missingCustomerLocation={missingCustomerLocation}
+            canRecordMoney={order.assignedCourierId === viewerCourierId}
+            orderSubtotalDinar={order.orderSubtotal != null ? Number(order.orderSubtotal) : null}
+            totalAmountDinar={order.totalAmount != null ? Number(order.totalAmount) : null}
+            moneyEvents={order.moneyEvents.map((e) => ({
+              id: e.id,
+              kind: e.kind,
+              amountDinar: Number(e.amountDinar),
+              expectedDinar: e.expectedDinar != null ? Number(e.expectedDinar) : null,
+              matchesExpected: e.matchesExpected,
+              mismatchReason: e.mismatchReason,
+              mismatchNote: e.mismatchNote,
+              recordedAt: e.createdAt.toISOString(),
+              deletedAt: e.deletedAt ? e.deletedAt.toISOString() : null,
+              deletedReason: e.deletedReason,
+              deletedByDisplayName: e.deletedByDisplayName,
+              performedByDisplayName:
+                e.recordedByCompanyPreparer?.name || e.courier?.name || "—",
+              recordedByCompanyPreparerId: e.recordedByCompanyPreparerId ?? null,
+            }))}
+            auth={auth}
+            nextUrl={nextUrl}
+          />
+        );
       default: return null;
     }
   };

@@ -324,13 +324,17 @@ export default async function MandoubPage({ searchParams }: Props) {
       hasMoneyDeletedBadge: o.moneyEvents.some((e) => e.deletedAt && isManualDeletionReason(e.deletedReason)),
       wardMismatchType: isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type,
       saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
-      pickupSumDinar: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) || 0,
-      deliverySumDinar: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) || 0,
+      pickupSumDinar: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) != null
+        ? Number(sumPickupOutFromOrderMoneyEvents(o.moneyEvents))
+        : 0,
+      deliverySumDinar: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) != null
+        ? Number(sumDeliveryInFromOrderMoneyEvents(o.moneyEvents))
+        : 0,
       orderSubtotalDinar: o.orderSubtotal != null ? Number(o.orderSubtotal) : null,
       totalAmountDinar: o.totalAmount != null ? Number(o.totalAmount) : null,
       noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,
       noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
-      createdAt: o.createdAt,
+      createdAt: o.createdAt.toISOString(),
       // بيانات الوصول السريع
       audioUrl: o.voiceNoteUrl,
       summary: o.summary,

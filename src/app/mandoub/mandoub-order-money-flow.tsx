@@ -45,8 +45,8 @@ export type MandoubMoneyEventUi = {
   matchesExpected: boolean;
   mismatchReason: string;
   mismatchNote: string;
-  recordedAt: Date;
-  deletedAt: Date | null;
+  recordedAt: Date | string;
+  deletedAt: Date | string | null;
   deletedReason: "manual_admin" | "manual_courier" | "manual_preparer" | "status_revert" | null;
   deletedByDisplayName: string | null;
   performedByDisplayName: string;

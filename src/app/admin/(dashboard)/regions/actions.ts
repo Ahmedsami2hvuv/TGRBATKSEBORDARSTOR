@@ -67,42 +67,52 @@ export async function createRegion(prevState: any, formData: FormData) {
   }
 }
 
-// الدالة المستخدمة في التعديل
+// الدالة المستخدم في التعديل
 export async function updateRegion(prevState: any, formData: FormData) {
   const id = formData.get("id") as string;
   const name = formData.get("name") as string;
   const deliveryPriceStr = formData.get("deliveryPrice") as string;
   const deliveryPrice = parseAlfInputToDinarNumber(deliveryPriceStr);
+  const skipWaypoints = String(formData.get("skipWaypoints") ?? "") === "1";
   let waypoints: RegionWaypointInput[] = [];
 
   if (!id || !name || deliveryPrice === null) {
     return { error: "يرجى ملء كافة الحقول بشكل صحيح" };
   }
-  try {
-    waypoints = parseWaypointsFromForm(formData);
-  } catch (e: any) {
-    return { error: e?.message || "بيانات المواقع غير صالحة" };
+  if (!skipWaypoints) {
+    try {
+      waypoints = parseWaypointsFromForm(formData);
+    } catch (e: any) {
+      return { error: e?.message || "بيانات المواقع غير صالحة" };
+    }
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
-      await tx.region.update({
+    if (skipWaypoints) {
+      await prisma.region.update({
         where: { id },
         data: { name, deliveryPrice },
       });
-      await tx.regionWaypoint.deleteMany({ where: { regionId: id } });
-      if (waypoints.length > 0) {
-        await tx.regionWaypoint.createMany({
-          data: waypoints.map((w, idx) => ({
-            regionId: id,
-            name: w.name || `مدخل ${idx + 1}`,
-            latitude: w.latitude,
-            longitude: w.longitude,
-            sortOrder: idx,
-          })),
+    } else {
+      await prisma.$transaction(async (tx) => {
+        await tx.region.update({
+          where: { id },
+          data: { name, deliveryPrice },
         });
-      }
-    });
+        await tx.regionWaypoint.deleteMany({ where: { regionId: id } });
+        if (waypoints.length > 0) {
+          await tx.regionWaypoint.createMany({
+            data: waypoints.map((w, idx) => ({
+              regionId: id,
+              name: w.name || `مدخل ${idx + 1}`,
+              latitude: w.latitude,
+              longitude: w.longitude,
+              sortOrder: idx,
+            })),
+          });
+        }
+      });
+    }
     revalidatePath("/admin/regions");
     revalidatePath(`/admin/regions/${id}/edit`);
     return { ok: true };
