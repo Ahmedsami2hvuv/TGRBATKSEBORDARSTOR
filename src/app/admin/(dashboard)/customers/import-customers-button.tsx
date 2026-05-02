@@ -51,8 +51,14 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
       const res = await fetch("/api/admin/import/customers/check", { signal });
       const data = await res.json();
       if (data.success) {
-        setFoundCount(data.totalInOld);
-        setStatus("confirming");
+        const missingCount = Number(data.newCount || 0);
+        if (missingCount <= 0) {
+          alert("كل الزبائن مسحوبين بالفعل، ماكو نواقص.");
+          setStatus("idle");
+        } else {
+          setFoundCount(missingCount);
+          setStatus("confirming");
+        }
       }
     } catch (e: any) {
       if (e?.name !== "AbortError") setStatus("idle");
@@ -208,9 +214,9 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
 
       {status === "confirming" && (
         <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl flex items-center gap-4 animate-in fade-in zoom-in duration-300">
-          <span className="text-xs font-bold text-blue-800">وجدنا {foundCount} زبون. هل تريد سحب بياناتهم؟</span>
+          <span className="text-xs font-bold text-blue-800">لكينا {foundCount} زبون غير مسحوبين. تريد نجيبهم هسه؟</span>
           <div className="flex gap-2">
-            <button onClick={handleImport} className="bg-blue-600 text-white px-4 py-1 rounded-lg text-xs font-bold">ابدأ السحب الآن</button>
+            <button onClick={handleImport} className="bg-blue-600 text-white px-4 py-1 rounded-lg text-xs font-bold">جيب النواقص الآن</button>
             <button onClick={() => setStatus("idle")} className="text-gray-500 text-xs">إلغاء</button>
           </div>
         </div>
