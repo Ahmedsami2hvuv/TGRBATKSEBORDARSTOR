@@ -54,19 +54,43 @@ export function extractLatLngFromLocationInput(raw: string | null | undefined): 
   const value = String(raw ?? "").trim();
   if (!value) return null;
 
-  const direct = value.match(/(-?\d+(?:\.\d+)?)\s*[,،]\s*(-?\d+(?:\.\d+)?)/);
+  const numberPattern = "([+-]?\\d+(?:\\.\\d+)?)";
+  const direct = value.match(new RegExp(`${numberPattern}\\s*[,،]\\s*${numberPattern}`));
   if (direct) {
     return buildLatLng(Number(direct[1]), Number(direct[2]));
   }
 
-  const atPattern = value.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
+  const atPattern = value.match(new RegExp(`@${numberPattern},\\s*${numberPattern}`));
   if (atPattern) {
     return buildLatLng(Number(atPattern[1]), Number(atPattern[2]));
   }
 
-  const dataPattern = value.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+  const dataPattern = value.match(new RegExp(`!3d${numberPattern}!4d${numberPattern}`));
   if (dataPattern) {
     return buildLatLng(Number(dataPattern[1]), Number(dataPattern[2]));
+  }
+
+  // صيغة Google DMS مثل: 30°26'47.6"N 48°01'24.6"E
+  const decoded = decodeURIComponent(value);
+  const dmsPattern =
+    /(\d+(?:\.\d+)?)°\s*(\d+(?:\.\d+)?)['’]\s*(\d+(?:\.\d+)?)["”]?\s*([NS]).*?(\d+(?:\.\d+)?)°\s*(\d+(?:\.\d+)?)['’]\s*(\d+(?:\.\d+)?)["”]?\s*([EW])/i;
+  const dms = decoded.match(dmsPattern);
+  if (dms) {
+    const latDeg = Number(dms[1]);
+    const latMin = Number(dms[2]);
+    const latSec = Number(dms[3]);
+    const latHem = String(dms[4]).toUpperCase();
+    const lngDeg = Number(dms[5]);
+    const lngMin = Number(dms[6]);
+    const lngSec = Number(dms[7]);
+    const lngHem = String(dms[8]).toUpperCase();
+
+    let latitude = latDeg + latMin / 60 + latSec / 3600;
+    let longitude = lngDeg + lngMin / 60 + lngSec / 3600;
+    if (latHem === "S") latitude *= -1;
+    if (lngHem === "W") longitude *= -1;
+    const result = buildLatLng(latitude, longitude);
+    if (result) return result;
   }
 
   try {
@@ -75,7 +99,7 @@ export function extractLatLngFromLocationInput(raw: string | null | undefined): 
     for (const key of queryKeys) {
       const candidate = url.searchParams.get(key);
       if (!candidate) continue;
-      const m = candidate.match(/(-?\d+(?:\.\d+)?)\s*[,،]\s*(-?\d+(?:\.\d+)?)/);
+      const m = candidate.match(new RegExp(`${numberPattern}\\s*[,،]\\s*${numberPattern}`));
       if (!m) continue;
       const result = buildLatLng(Number(m[1]), Number(m[2]));
       if (result) return result;
@@ -114,6 +138,11 @@ export async function extractLatLngFromLocationInputSmart(
       method: "GET",
       redirect: "follow",
       cache: "no-store",
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "accept-language": "en-US,en;q=0.9",
+      },
     });
     const finalUrl = res.url || "";
     if (!finalUrl) return null;
