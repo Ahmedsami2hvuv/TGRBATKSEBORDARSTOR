@@ -144,7 +144,7 @@ export function CustomerProfileUpsertForm({
     >
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-slate-100 p-4 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {state.error ? (
               <p className={`${ad.error} mb-0`} role="alert">
                 {state.error}
@@ -154,24 +154,30 @@ export function CustomerProfileUpsertForm({
               <p className={`${ad.success} mb-0`}>تم حفظ الزبون بنجاح، الصفحة تمت إعادة تعيينها.</p>
             ) : null}
           </div>
-          <div className="flex flex-col items-stretch sm:items-end gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end">
             <button
               type="submit"
               disabled={pending}
-              className={`${ad.btnPrimary} w-full sm:w-auto text-lg py-3 px-8 shadow-md`}
+              className={`${ad.btnPrimary} w-full sm:w-auto text-lg py-3 px-8 shadow-md shrink-0`}
             >
               {pending ? "جارٍ الحفظ…" : "حفظ البيانات"}
             </button>
-            <div className="min-h-[1.25rem]">
-              {isChecking && (
-                <span className="text-sm font-bold text-sky-600 animate-pulse">جاري التحقق من الرقم...</span>
-              )}
-              {!isChecking && !customerExists && rawText.includes("07") && (
-                <span className="text-sm text-green-700 font-bold bg-green-100 px-3 py-1 rounded-md border border-green-300 inline-block shadow-sm">
-                  ✓الرقم مقبول .
-                </span>
-              )}
-            </div>
+            {selectedPhoto ? (
+              <span className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-2 rounded-md border border-green-300 text-sm font-medium shrink-0">
+                <span className="text-lg leading-none">✓</span>
+                <span>تم اختيار صورة: {selectedPhoto.name}</span>
+              </span>
+            ) : null}
+            {isChecking ? (
+              <span className="text-sm font-bold text-sky-600 animate-pulse shrink-0">
+                جاري التحقق من الرقم...
+              </span>
+            ) : null}
+            {!isChecking && !customerExists && rawText.includes("07") ? (
+              <span className="text-sm text-green-700 font-bold bg-green-100 px-3 py-1 rounded-md border border-green-300 inline-block shadow-sm shrink-0">
+                ✓الرقم مقبول .
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -212,8 +218,7 @@ export function CustomerProfileUpsertForm({
             </div>
           </div>
 
-          <label className="flex flex-col gap-3 text-sm font-bold text-slate-900">
-            <span className="text-lg">معلومات الزبون (لصق النص هنا)</span>
+          <div className="flex flex-col gap-3">
             <div className="flex gap-2 items-end">
               <textarea
                 name="rawText"
@@ -224,7 +229,7 @@ export function CustomerProfileUpsertForm({
                 placeholder="مثال:&#10;المنطقة: باب عباس&#10;لكيشن الزبون: https://maps.app.goo.gl/...&#10;اقرب نقطة دالة: نهاية باب عباس&#10;رقم الهاتف: 077xxxxxxxx&#10;رقم الهاتف الآخر: 077xxxxxxxx"
                 dir="auto"
               />
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={handleChoosePhoto}
@@ -241,7 +246,7 @@ export function CustomerProfileUpsertForm({
                 </button>
               </div>
             </div>
-          </label>
+          </div>
           <input
             ref={photoInputRef}
             name="photo"
@@ -250,12 +255,6 @@ export function CustomerProfileUpsertForm({
             onChange={handlePhotoChange}
             className="hidden"
           />
-          {selectedPhoto && (
-            <div className="flex items-center gap-2 bg-green-100 text-green-700 px-3 py-2 rounded-md border border-green-300">
-              <span className="text-lg">✓</span>
-              <span className="text-sm font-medium">تم اختيار صورة: {selectedPhoto.name}</span>
-            </div>
-          )}
           <div className="min-h-[1.25rem] mt-1">
             {!isChecking && customerExists && rawText.includes("07") && (
               <div className="space-y-2">

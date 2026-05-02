@@ -26,13 +26,6 @@ export default async function NewCustomerProfilePage() {
       </div>
 
       <div className={`${ad.section} max-w-2xl mx-auto shadow-lg border-t-4 border-sky-500`}>
-        <div className="mb-6 border-b border-slate-100 pb-4">
-          <h1 className={ad.h1}>إضافة زبون مرجعي جديد</h1>
-          <p className="mt-2 text-sm text-slate-500">
-            ألصق رسالة الزبون كاملة ثم أرفق صورة الباب واضغط حفظ. سيحفظ النظام البيانات تلقائياً من النص.
-          </p>
-        </div>
-
         <CustomerProfileUpsertForm regions={regionOptions} />
       </div>
 
