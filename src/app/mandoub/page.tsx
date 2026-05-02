@@ -304,14 +304,17 @@ export default async function MandoubPage({ searchParams }: Props) {
     locationUrl: string;
     fallbackLandmark?: string | null;
     regionId?: string | null;
-  }): Promise<string | null> {
+  }): Promise<string> {
     const fallback = String(params.fallbackLandmark ?? "").trim();
     const regionId = params.regionId ?? null;
-    if (!regionId) return null;
+    if (!regionId) return "— لا توجد منطقة مرتبطة بالطلب";
     const points = waypointsByRegion.get(regionId) ?? [];
-    if (points.length === 0) return null;
+    if (points.length === 0) return "— لا توجد مداخل محفوظة لهذه المنطقة";
+    if (!String(params.locationUrl || "").trim()) {
+      return fallback ? `قريب من (${fallback})` : "— لا يوجد لوكيشن للزبون";
+    }
     const customerLoc = await extractLatLngFromLocationInputSmart(params.locationUrl);
-    if (!customerLoc) return fallback ? `قريب من (${fallback})` : null;
+    if (!customerLoc) return fallback ? `قريب من (${fallback})` : "— تعذر قراءة إحداثيات الرابط";
 
     let nearest: { name: string; distanceM: number } | null = null;
     for (const p of points) {
@@ -325,8 +328,8 @@ export default async function MandoubPage({ searchParams }: Props) {
         nearest = { name: p.name?.trim() || "مدخل", distanceM };
       }
     }
-    if (!nearest) return fallback ? `قريب من (${fallback})` : null;
-    if (nearest.distanceM > 2500) return null;
+    if (!nearest) return fallback ? `قريب من (${fallback})` : "— تعذر احتساب أقرب مدخل";
+    if (nearest.distanceM > 2500) return "— اللوكيشن بعيد عن مداخل المنطقة";
     return `قريب من (${nearest.name})`;
   }
 
@@ -351,7 +354,7 @@ export default async function MandoubPage({ searchParams }: Props) {
 
     const mergedCustomerLocation =
       o.customerLocationUrl || o.customer?.customerLocationUrl || profile?.locationUrl || "";
-    const smartHintLine = smartHintByOrderId.get(o.id) ?? null;
+    const smartHintLine = smartHintByOrderId.get(o.id) ?? "—";
 
     return {
       id: o.id,

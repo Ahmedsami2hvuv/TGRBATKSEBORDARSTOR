@@ -195,21 +195,23 @@ export default async function AdminOrderViewPage({ params }: Props) {
     locationUrl: string,
     regionId: string | null | undefined,
   ): Promise<string> {
-    if (!regionId) return "";
+    if (!regionId) return "— لا توجد منطقة مرتبطة بالطلب";
     const points = await prisma.regionWaypoint.findMany({
       where: { regionId },
       orderBy: { sortOrder: "asc" },
       select: { name: true, latitude: true, longitude: true },
     });
-    if (points.length === 0) return "";
+    if (points.length === 0) return "— لا توجد مداخل محفوظة لهذه المنطقة";
+    if (!String(locationUrl || "").trim()) return "— لا يوجد لوكيشن للزبون";
     const loc = await extractLatLngFromLocationInputSmart(locationUrl);
-    if (!loc) return "";
+    if (!loc) return "— تعذر قراءة إحداثيات الرابط";
     let nearest: { name: string; dist: number } | null = null;
     for (const p of points) {
       const dist = haversineMeters(loc.latitude, loc.longitude, p.latitude, p.longitude);
       if (!nearest || dist < nearest.dist) nearest = { name: p.name?.trim() || "مدخل", dist };
     }
-    if (!nearest || nearest.dist > 2500) return "";
+    if (!nearest) return "— تعذر احتساب أقرب مدخل";
+    if (nearest.dist > 2500) return "— اللوكيشن بعيد عن مداخل المنطقة";
     return `قريب من (${nearest.name})`;
   }
 
@@ -316,7 +318,7 @@ export default async function AdminOrderViewPage({ params }: Props) {
     secondCustomerPhone: order.secondCustomerPhone,
     secondCustomerLocationUrl: secondCustomerLocationUrlEffective,
     secondCustomerLandmark: secondCustomerLandmarkEffective,
-    secondSmartHintLine: secondSmartHintLine || "",
+    secondSmartHintLine: secondSmartHintLine || "—",
     secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrlEffective,
     secondCustomerRegion: order.secondCustomerRegion ? { name: order.secondCustomerRegion.name } : null,
     orderNoteTime: order.orderNoteTime || null,
@@ -330,7 +332,7 @@ export default async function AdminOrderViewPage({ params }: Props) {
     shopDoorPhotoUrl: order.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${order.id}/shopDoor` : (order.shopDoorPhotoUrl || null),
     customerDoorPhotoUrl: customerDoorPhotoUrlEffective,
     customerLandmark: customerLandmarkEffective || "",
-    smartHintLine: smartHintLine || "",
+    smartHintLine: smartHintLine || "—",
     orderSubtotal:
       order.orderSubtotal != null ? formatDinarAsAlfWithUnit(order.orderSubtotal) : null,
     deliveryPrice:
