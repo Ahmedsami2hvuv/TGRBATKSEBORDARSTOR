@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 
 export function ImportShopsButton() {
@@ -8,14 +9,35 @@ export function ImportShopsButton() {
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState("");
   const [report, setReport] = useState<any>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const cancelRequestedRef = useRef(false);
   const router = useRouter();
+
+  function startCancelableTask() {
+    cancelRequestedRef.current = false;
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+    return abortControllerRef.current.signal;
+  }
+
+  function finishCancelableTask() {
+    abortControllerRef.current = null;
+    cancelRequestedRef.current = false;
+  }
+
+  function handleCancelImport() {
+    cancelRequestedRef.current = true;
+    abortControllerRef.current?.abort();
+    setStatus("idle");
+    setCurrentStep("تم إلغاء العملية.");
+  }
 
   // 1. وظيفة تقرير النواقص (فحص فقط بدون نقل)
   async function generateMissingReport() {
     setStatus("loading");
     setCurrentStep("جاري فحص النواقص وإعداد التقرير...");
     try {
-      const res = await fetch("/api/admin/import/shops/report");
+      const res = await fetch("/api/admin/import/shops/report", { signal: startCancelableTask() });
       const data = await res.json();
       if (data.success) {
         setReport(data);
@@ -23,8 +45,9 @@ export function ImportShopsButton() {
         alert("⚠️ فشل في إعداد التقرير: " + data.message);
       }
     } catch (err: any) {
-      alert("⚠️ خطأ: " + err.message);
+      if (err?.name !== "AbortError") alert("⚠️ خطأ: " + err.message);
     } finally {
+      finishCancelableTask();
       setStatus("idle");
     }
   }
@@ -35,6 +58,7 @@ export function ImportShopsButton() {
     setStatus("loading");
     setProgress(0);
     try {
+      const signal = startCancelableTask();
       let offset = 0;
       const limit = 5; // عدد قليل لضمان سحب الزبائن مع كل محل بدون مشاكل
       let isDone = false;
@@ -42,9 +66,11 @@ export function ImportShopsButton() {
       let totalCust = 0;
 
       while (!isDone) {
+        if (cancelRequestedRef.current) break;
         setCurrentStep(`جاري سحب المحلات وزبائنها (${totalShops} محل، ${totalCust} زبون)...`);
         const res = await fetch("/api/admin/import/shops", {
           method: "POST",
+          signal,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ offset, limit })
         });
@@ -60,11 +86,14 @@ export function ImportShopsButton() {
         setProgress(Math.min(100, Math.round((offset / 334) * 100)));
         router.refresh();
       }
-      alert(`✅ اكتملت المهمة!\nتم سحب ${totalShops} محل بنجاح.\nوتم ربط ${totalCust} زبون بمحلاتهم.`);
-      window.location.reload();
+      if (!cancelRequestedRef.current) {
+        alert(`✅ اكتملت المهمة!\nتم سحب ${totalShops} محل بنجاح.\nوتم ربط ${totalCust} زبون بمحلاتهم.`);
+        window.location.reload();
+      }
     } catch (err: any) {
-      alert("⚠️ حدث خطأ: " + err.message);
+      if (err?.name !== "AbortError") alert("⚠️ حدث خطأ: " + err.message);
     } finally {
+      finishCancelableTask();
       setStatus("idle");
     }
   }
@@ -74,15 +103,18 @@ export function ImportShopsButton() {
     setStatus("loading");
     setProgress(0);
     try {
+      const signal = startCancelableTask();
       let offset = 0;
       const limit = 10;
       let isDone = false;
       let totalSynced = 0;
 
       while (!isDone) {
+        if (cancelRequestedRef.current) break;
         setCurrentStep(`📸 تأمين الصور على R2 (${offset}/334)...`);
         const res = await fetch("/api/admin/import/shops/sync-photos", {
           method: "POST",
+          signal,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ offset, limit })
         });
@@ -92,11 +124,14 @@ export function ImportShopsButton() {
         isDone = data.done || offset >= 334;
         setProgress(Math.round((offset / 334) * 100));
       }
-      alert(`✅ اكتمل تأمين ${totalSynced} صورة على R2.`);
-      window.location.reload();
+      if (!cancelRequestedRef.current) {
+        alert(`✅ اكتمل تأمين ${totalSynced} صورة على R2.`);
+        window.location.reload();
+      }
     } catch (err: any) {
-      alert("⚠️ خطأ: " + err.message);
+      if (err?.name !== "AbortError") alert("⚠️ خطأ: " + err.message);
     } finally {
+      finishCancelableTask();
       setStatus("idle");
     }
   }
@@ -104,6 +139,14 @@ export function ImportShopsButton() {
   return (
     <div className="flex flex-col gap-4 w-full">
       <div className="flex flex-wrap gap-3 items-center justify-end">
+        {status === "loading" && (
+          <button
+            onClick={handleCancelImport}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-red-700 transition-all text-sm"
+          >
+            إلغاء الاستيراد
+          </button>
+        )}
         {/* زر التقرير الجديد */}
         <button
           onClick={generateMissingReport}

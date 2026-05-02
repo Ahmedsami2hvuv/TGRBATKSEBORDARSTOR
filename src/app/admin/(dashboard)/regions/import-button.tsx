@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
@@ -8,13 +9,29 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 export function ImportRegionsButton({ icons }: { icons: GlobalIconsConfig | null }) {
   const [status, setStatus] = useState<"idle" | "checking" | "confirming" | "importing">("idle");
   const [foundCount, setFoundCount] = useState(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const router = useRouter();
+
+  function createSignal() {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+    return abortControllerRef.current.signal;
+  }
+
+  function clearSignal() {
+    abortControllerRef.current = null;
+  }
+
+  function handleCancelImport() {
+    abortControllerRef.current?.abort();
+    setStatus("idle");
+  }
 
   async function handleCheck() {
     setStatus("checking");
     try {
       // إضافة timestamp لمنع الكاش (Cache)
-      const res = await fetch(`/api/admin/import/regions/check?t=${Date.now()}`);
+      const res = await fetch(`/api/admin/import/regions/check?t=${Date.now()}`, { signal: createSignal() });
       const data = await res.json();
 
       if (data.success) {
@@ -29,16 +46,20 @@ export function ImportRegionsButton({ icons }: { icons: GlobalIconsConfig | null
         alert("تنبيه: " + (data.message || "لا يمكن الوصول للقاعدة القديمة حالياً."));
         setStatus("idle");
       }
-    } catch (err) {
-      alert("خطأ تقني: تأكد من أنك تفتح الموقع من الرابط الأساسي aboakbar.vercel.app");
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        alert("خطأ تقني: تأكد من أنك تفتح الموقع من الرابط الأساسي aboakbar.vercel.app");
+      }
       setStatus("idle");
+    } finally {
+      clearSignal();
     }
   }
 
   async function handleImport() {
     setStatus("importing");
     try {
-      const res = await fetch("/api/admin/import/regions", { method: "POST" });
+      const res = await fetch("/api/admin/import/regions", { method: "POST", signal: createSignal() });
       const data = await res.json();
       if (data.success) {
         alert(`تم استيراد ${data.count} منطقة بنجاح! سيتم تحديث الصفحة الآن.`);
@@ -46,15 +67,26 @@ export function ImportRegionsButton({ icons }: { icons: GlobalIconsConfig | null
       } else {
         alert("فشل السحب: " + data.message);
       }
-    } catch (err) {
-      alert("حدث خطأ غير متوقع.");
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        alert("حدث خطأ غير متوقع.");
+      }
     } finally {
+      clearSignal();
       setStatus("idle");
     }
   }
 
   return (
     <div className="flex flex-col items-end gap-2">
+      {(status === "checking" || status === "importing") && (
+        <button
+          onClick={handleCancelImport}
+          className="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-red-700"
+        >
+          إلغاء الاستيراد
+        </button>
+      )}
       {status === "confirming" ? (
         <div className="bg-yellow-50 border-2 border-yellow-400 p-2 rounded-lg flex items-center gap-2 shadow-md">
           <span className="text-sm font-bold text-yellow-800">وجدنا {foundCount} منطقة. هل نسحبهم؟</span>

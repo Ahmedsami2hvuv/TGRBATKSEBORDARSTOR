@@ -7,18 +7,23 @@ const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboo
 export async function POST(req: Request) {
   const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 30000 });
   try {
-    const { offset = 0 } = await req.json().catch(() => ({ offset: 0 }));
+    const body = await req.json().catch(() => ({} as { offset?: number; importMissingOnly?: boolean }));
+    const offset = Number(body.offset ?? 0);
+    const importMissingOnly = body.importMissingOnly !== false;
     await client.connect();
 
-    // 1. جلب الزبائن مع الـ regionId الأصلي والاسم
-    const res = await client.query(`
+    const batchLimit = importMissingOnly ? 5000 : 100;
+    const res = await client.query(
+      `
       SELECT cpp.phone, cpp."regionId", cpp."locationUrl", cpp."photoUrl", cpp.notes, cpp.landmark, cpp."alternatePhone",
              r.name as "regionName"
       FROM "CustomerPhoneProfile" cpp
       LEFT JOIN "Region" r ON cpp."regionId" = r.id
       ORDER BY cpp."createdAt" ASC
-      LIMIT 100 OFFSET $1
-    `, [offset]);
+      LIMIT $1 OFFSET $2
+    `,
+      [batchLimit, offset],
+    );
 
     if (res.rows.length === 0) {
       return NextResponse.json({ success: true, rowsProcessed: 0, done: true });
@@ -30,6 +35,18 @@ export async function POST(req: Request) {
     const regionNameMap = new Map(allRegions.map(r => [r.name.trim(), r.id]));
 
     let addedOrUpdated = 0;
+    let skippedExisting = 0;
+    let skippedNoRegion = 0;
+
+    const localKeys = new Set<string>();
+    if (importMissingOnly) {
+      const localProfiles = await prisma.customerPhoneProfile.findMany({
+        select: { phone: true, regionId: true },
+      });
+      for (const profile of localProfiles) {
+        localKeys.add(`${String(profile.phone).trim()}::${profile.regionId}`);
+      }
+    }
 
     for (const row of res.rows) {
       let targetRegionId = null;
@@ -52,34 +69,63 @@ export async function POST(req: Request) {
         regionNameMap.set(newReg.name.trim(), newReg.id);
       }
 
-      if (!targetRegionId) continue;
+      if (!targetRegionId) {
+        skippedNoRegion++;
+        continue;
+      }
 
-      // 3. الحفظ الفعلي
-      await prisma.customerPhoneProfile.upsert({
-        where: {
-          phone_regionId: {
-            phone: row.phone,
-            regionId: targetRegionId
-          }
-        },
-        update: {
-          locationUrl: row.locationUrl || "",
-          photoUrl: row.photoUrl || "",
-          notes: row.notes || "",
-          landmark: row.landmark || "",
-          alternatePhone: row.alternatePhone
-        },
-        create: {
-          phone: row.phone,
-          regionId: targetRegionId,
-          locationUrl: row.locationUrl || "",
-          photoUrl: row.photoUrl || "",
-          notes: row.notes || "",
-          landmark: row.landmark || "",
-          alternatePhone: row.alternatePhone
+      const phone = String(row.phone ?? "").trim();
+      const localKey = `${phone}::${targetRegionId}`;
+      if (importMissingOnly && localKeys.has(localKey)) {
+        skippedExisting++;
+        continue;
+      }
+
+      if (importMissingOnly) {
+        try {
+          await prisma.customerPhoneProfile.create({
+            data: {
+              phone,
+              regionId: targetRegionId,
+              locationUrl: row.locationUrl || "",
+              photoUrl: row.photoUrl || "",
+              notes: row.notes || "",
+              landmark: row.landmark || "",
+              alternatePhone: row.alternatePhone,
+            },
+          });
+          localKeys.add(localKey);
+          addedOrUpdated++;
+        } catch {
+          skippedExisting++;
         }
-      });
-      addedOrUpdated++;
+      } else {
+        await prisma.customerPhoneProfile.upsert({
+          where: {
+            phone_regionId: {
+              phone,
+              regionId: targetRegionId,
+            },
+          },
+          update: {
+            locationUrl: row.locationUrl || "",
+            photoUrl: row.photoUrl || "",
+            notes: row.notes || "",
+            landmark: row.landmark || "",
+            alternatePhone: row.alternatePhone,
+          },
+          create: {
+            phone,
+            regionId: targetRegionId,
+            locationUrl: row.locationUrl || "",
+            photoUrl: row.photoUrl || "",
+            notes: row.notes || "",
+            landmark: row.landmark || "",
+            alternatePhone: row.alternatePhone,
+          },
+        });
+        addedOrUpdated++;
+      }
     }
 
     const totalNowInDb = await prisma.customerPhoneProfile.count();
@@ -88,8 +134,10 @@ export async function POST(req: Request) {
       success: true,
       rowsProcessed: res.rows.length,
       addedOrUpdated: addedOrUpdated,
+      skippedExisting,
+      skippedNoRegion,
       totalNowInDb: totalNowInDb,
-      done: res.rows.length < 100
+      done: importMissingOnly ? true : res.rows.length < batchLimit,
     });
   } catch (error: any) {
     console.error("IMPORT ERROR:", error);

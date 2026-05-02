@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
@@ -10,7 +11,27 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
   const [foundCount, setFoundCount] = useState(0);
   const [progress, setProgress] = useState(0);
   const [importedNow, setImportedNow] = useState(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const cancelRequestedRef = useRef(false);
   const router = useRouter();
+
+  function startCancelableTask() {
+    cancelRequestedRef.current = false;
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+    return abortControllerRef.current.signal;
+  }
+
+  function finishCancelableTask() {
+    abortControllerRef.current = null;
+    cancelRequestedRef.current = false;
+  }
+
+  function handleCancelImport() {
+    cancelRequestedRef.current = true;
+    abortControllerRef.current?.abort();
+    setStatus("idle");
+  }
 
   async function handleReset() {
     if (!confirm("هل أنت متأكد من مسح جميع الزبائن؟")) return;
@@ -26,37 +47,51 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
   async function handleCheck() {
     setStatus("checking");
     try {
-      const res = await fetch("/api/admin/import/customers/check");
+      const signal = startCancelableTask();
+      const res = await fetch("/api/admin/import/customers/check", { signal });
       const data = await res.json();
       if (data.success) {
         setFoundCount(data.totalInOld);
         setStatus("confirming");
       }
-    } catch (e) { setStatus("idle"); }
+    } catch (e: any) {
+      if (e?.name !== "AbortError") setStatus("idle");
+    } finally {
+      finishCancelableTask();
+    }
   }
 
   async function handleImport() {
     setStatus("importing");
     setProgress(0);
-    let currentOffset = 0;
-    const totalToFetch = 1207;
+    setImportedNow(0);
 
     try {
-      while (currentOffset < totalToFetch) {
-        const res = await fetch("/api/admin/import/customers", {
-          method: "POST",
-          body: JSON.stringify({ offset: currentOffset })
-        });
-        const data = await res.json();
-        if (!data.success || data.rowsProcessed === 0) break;
-
-        currentOffset += data.rowsProcessed;
-        setImportedNow(currentOffset);
-        setProgress(Math.round((currentOffset / totalToFetch) * 100));
-      }
+      const signal = startCancelableTask();
+      const res = await fetch("/api/admin/import/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal,
+        body: JSON.stringify({ importMissingOnly: true }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "فشل الاستيراد");
+      setProgress(100);
+      setImportedNow(Number(data.rowsProcessed || 0));
       router.refresh();
-      alert("اكتمل سحب البيانات بنجاح!");
-    } catch (e) { alert("حدث توقف، يرجى المحاولة مرة أخرى."); }
+      alert(
+        `اكتمل سحب النواقص فقط.\n` +
+        `السجلات المقروءة: ${Number(data.rowsProcessed || 0)}\n` +
+        `المضاف: ${Number(data.addedOrUpdated || 0)}\n` +
+        `المتخطي (موجود مسبقاً): ${Number(data.skippedExisting || 0)}`
+      );
+    } catch (e: any) {
+      if (e?.name !== "AbortError") {
+        alert("حدث توقف، يرجى المحاولة مرة أخرى.");
+      }
+    } finally {
+      finishCancelableTask();
+    }
     setStatus("idle");
   }
 
@@ -64,7 +99,7 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
     setStatus("syncing_photos");
     setProgress(0);
     setImportedNow(0);
-    const total = 1207;
+    const total = foundCount > 0 ? foundCount : 5000;
     let currentOffset = 0;
     let totalSynced = 0;
     let totalSkipped = 0;
@@ -72,9 +107,12 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
     let totalNotFoundLocal = 0;
 
     try {
+      const signal = startCancelableTask();
       while (currentOffset < total) {
+        if (cancelRequestedRef.current) break;
         const res = await fetch("/api/admin/import/customers/sync-photos", { 
           method: "POST",
+          signal,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ offset: currentOffset, limit: 15 })
         });
@@ -90,15 +128,21 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
         setImportedNow(currentOffset);
         setProgress(Math.min(100, Math.round((currentOffset / total) * 100)));
       }
-      router.refresh();
-      alert(
-        `اكتمل سحب الصور.\n` +
-        `المرفوع إلى R2: ${totalSynced}\n` +
-        `تم تخطيه: ${totalSkipped}\n` +
-        `فشل: ${totalErrors}\n` +
-        `غير موجود محلياً: ${totalNotFoundLocal}`
-      );
-    } catch (e: any) { alert("خطأ في سحب الصور: " + e.message); }
+      if (!cancelRequestedRef.current) {
+        router.refresh();
+        alert(
+          `اكتمل سحب الصور.\n` +
+          `المرفوع إلى R2: ${totalSynced}\n` +
+          `تم تخطيه: ${totalSkipped}\n` +
+          `فشل: ${totalErrors}\n` +
+          `غير موجود محلياً: ${totalNotFoundLocal}`
+        );
+      }
+    } catch (e: any) {
+      if (e?.name !== "AbortError") alert("خطأ في سحب الصور: " + e.message);
+    } finally {
+      finishCancelableTask();
+    }
     setStatus("idle");
   }
 
@@ -139,6 +183,15 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
           {status === "checking" ? "فحص..." : status === "importing" ? "جاري السحب..." : "استيراد الزبائن"}
         </button>
       </div>
+
+      {(status === "checking" || status === "importing" || status === "syncing_photos") && (
+        <button
+          onClick={handleCancelImport}
+          className="bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-red-700"
+        >
+          إلغاء الاستيراد
+        </button>
+      )}
 
       {(status === "importing" || status === "syncing_photos") && (
         <div className="w-64 bg-white border p-2 rounded-lg shadow-sm">
