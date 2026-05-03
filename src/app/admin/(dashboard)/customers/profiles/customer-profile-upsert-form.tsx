@@ -9,16 +9,21 @@ import {
 } from "@/lib/client-image-compress";
 import {
   upsertCustomerPhoneProfile,
-  checkCustomerExistsByPhone,
+  getCustomerProfileFormHint,
+  type CustomerProfileFormHint,
   type CustomerProfileFormState,
 } from "./actions";
 
 const initial: CustomerProfileFormState = {};
 
-function extractPhoneFromText(rawText: string) {
-  const match = rawText.match(/07\d{9}/g) || [];
-  return match[0] ?? "";
-}
+const initialHint: CustomerProfileFormHint = {
+  canCheck: false,
+  regionResolved: false,
+  currentRegionName: null,
+  inCurrentRegion: false,
+  currentRegionMissingPhoto: false,
+  otherRegionNames: [],
+};
 
 export function CustomerProfileUpsertForm({
   regions,
@@ -34,39 +39,39 @@ export function CustomerProfileUpsertForm({
   const photoInputRef = useRef<HTMLInputElement>(null);
   
   const [rawText, setRawText] = useState("");
-  const [customerExists, setCustomerExists] = useState(false);
+  const [hint, setHint] = useState<CustomerProfileFormHint>(initialHint);
   const [isChecking, setIsChecking] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [remotePhotoUrlInput, setRemotePhotoUrlInput] = useState("");
   const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
-    if (state.ok || (state.error && state.error.includes("موجود"))) {
+    if (state.ok) {
       formRef.current?.reset();
       setRawText("");
-      setCustomerExists(false);
+      setHint(initialHint);
       setSelectedPhoto(null);
       setRemotePhotoUrlInput("");
       setDragActive(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-  }, [state.ok, state.error, state.timestamp]);
+  }, [state.ok, state.timestamp]);
 
   useEffect(() => {
     let active = true;
-    const phone = extractPhoneFromText(rawText);
-    if (phone.length >= 10) {
-      setIsChecking(true);
-      checkCustomerExistsByPhone(phone).then((exists) => {
-        if (active) {
-          setCustomerExists(exists);
-          setIsChecking(false);
-        }
-      });
-    } else {
-      setCustomerExists(false);
+    const t = rawText.trim();
+    if (!t) {
+      setHint(initialHint);
       setIsChecking(false);
+      return;
     }
+    setIsChecking(true);
+    getCustomerProfileFormHint(rawText).then((h) => {
+      if (active) {
+        setHint(h);
+        setIsChecking(false);
+      }
+    });
     return () => {
       active = false;
     };
@@ -143,8 +148,23 @@ export function CustomerProfileUpsertForm({
       className="space-y-6"
     >
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-slate-100 p-4 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex-1 min-w-0">
+        <div
+          className={
+            "sticky top-0 z-30 flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4 " +
+            "bg-slate-100 dark:bg-slate-800/95 p-4 rounded-xl border border-slate-200 dark:border-slate-600 " +
+            "shadow-sm backdrop-blur-sm"
+          }
+        >
+          <div className="shrink-0 sm:pt-0.5">
+            <button
+              type="submit"
+              disabled={pending}
+              className={`${ad.btnPrimary} w-full sm:w-auto text-lg py-3 px-8 shadow-md`}
+            >
+              {pending ? "جارٍ الحفظ…" : "حفظ البيانات"}
+            </button>
+          </div>
+          <div className="flex-1 min-w-0 flex flex-col gap-2">
             {state.error ? (
               <p className={`${ad.error} mb-0`} role="alert">
                 {state.error}
@@ -153,36 +173,70 @@ export function CustomerProfileUpsertForm({
             {state.ok ? (
               <p className={`${ad.success} mb-0`}>تم حفظ الزبون بنجاح، الصفحة تمت إعادة تعيينها.</p>
             ) : null}
-          </div>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end">
-            <button
-              type="submit"
-              disabled={pending}
-              className={`${ad.btnPrimary} w-full sm:w-auto text-lg py-3 px-8 shadow-md shrink-0`}
-            >
-              {pending ? "جارٍ الحفظ…" : "حفظ البيانات"}
-            </button>
-            {selectedPhoto ? (
-              <span className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-2 rounded-md border border-green-300 text-sm font-medium shrink-0">
-                <span className="text-lg leading-none">✓</span>
-                <span>تم اختيار صورة: {selectedPhoto.name}</span>
-              </span>
-            ) : null}
-            {isChecking ? (
-              <span className="text-sm font-bold text-sky-600 animate-pulse shrink-0">
-                جاري التحقق من الرقم...
-              </span>
-            ) : null}
-            {!isChecking && !customerExists && rawText.includes("07") ? (
-              <span className="text-sm text-green-700 font-bold bg-green-100 px-3 py-1 rounded-md border border-green-300 inline-block shadow-sm shrink-0">
-                ✓الرقم مقبول .
-              </span>
-            ) : null}
-            {!isChecking && customerExists && rawText.includes("07") ? (
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <span className="text-sm text-amber-700 font-bold bg-amber-100 px-3 py-1 rounded-md border border-amber-300 inline-block shadow-sm">
-                  ⚠️ هذا الرقم مسجل مسبقاً في النظام.
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              {selectedPhoto ? (
+                <span className="inline-flex items-center gap-2 bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 px-3 py-2 rounded-md border border-green-300 dark:border-green-700 text-sm font-medium">
+                  <span className="text-lg leading-none">✓</span>
+                  <span>تم اختيار صورة: {selectedPhoto.name}</span>
                 </span>
+              ) : null}
+              {isChecking ? (
+                <span className="text-sm font-bold text-sky-600 dark:text-sky-400 animate-pulse">
+                  جاري التحقق من الرقم والمنطقة...
+                </span>
+              ) : null}
+              {!isChecking && hint.regionNotFound ? (
+                <span className="text-sm text-amber-800 dark:text-amber-200 font-bold bg-amber-100 dark:bg-amber-950/50 px-3 py-1 rounded-md border border-amber-300 dark:border-amber-700 inline-block shadow-sm max-w-full">
+                  ⚠️ المنطقة «{hint.regionNotFound}» غير موجودة في القائمة. صحّح الاسم كما في صفحة المناطق.
+                </span>
+              ) : null}
+              {!isChecking &&
+              hint.regionResolved &&
+              hint.inCurrentRegion &&
+              hint.currentRegionMissingPhoto &&
+              !selectedPhoto &&
+              !remotePhotoUrlInput.trim() ? (
+                <span className="text-sm text-amber-800 dark:text-amber-200 font-bold bg-amber-100 dark:bg-amber-950/50 px-3 py-2 rounded-md border border-amber-300 dark:border-amber-700 inline-block shadow-sm max-w-full">
+                  هذا الزبون موجود في منطقة «{hint.currentRegionName}» لكن بلا صورة. أرفق صورة أو رابط ثم احفظ لتحديث
+                  السجل.
+                </span>
+              ) : null}
+              {!isChecking &&
+              hint.regionResolved &&
+              !hint.inCurrentRegion &&
+              hint.otherRegionNames.length > 0 ? (
+                <span className="text-sm text-sky-900 dark:text-sky-100 font-bold bg-sky-100 dark:bg-sky-950/50 px-3 py-2 rounded-md border border-sky-300 dark:border-sky-700 inline-block shadow-sm max-w-full">
+                  هذا الزبون مسجّل في منطقة/مناطق: {hint.otherRegionNames.join("، ")}. يمكنك حفظ البيانات لإضافته أيضاً
+                  إلى «{hint.currentRegionName}».
+                </span>
+              ) : null}
+              {!isChecking &&
+              hint.regionResolved &&
+              hint.inCurrentRegion &&
+              (!hint.currentRegionMissingPhoto || !!selectedPhoto || !!remotePhotoUrlInput.trim()) ? (
+                <span className="text-sm text-slate-700 dark:text-slate-200 font-bold bg-slate-200/80 dark:bg-slate-700/80 px-3 py-1 rounded-md border border-slate-300 dark:border-slate-600 inline-block shadow-sm">
+                  {hint.otherRegionNames.length > 0
+                    ? `مسجّل أيضاً في: ${hint.otherRegionNames.join("، ")}. `
+                    : ""}
+                  سيتم تحديث بيانات الزبون في «{hint.currentRegionName}» عند الحفظ.
+                </span>
+              ) : null}
+              {!isChecking &&
+              hint.regionResolved &&
+              !hint.inCurrentRegion &&
+              hint.otherRegionNames.length === 0 ? (
+                <span className="text-sm text-green-700 dark:text-green-300 font-bold bg-green-100 dark:bg-green-950/50 px-3 py-1 rounded-md border border-green-300 dark:border-green-700 inline-block shadow-sm">
+                  ✓ الرقم جديد لمنطقة «{hint.currentRegionName}».
+                </span>
+              ) : null}
+              {!isChecking && hint.canCheck && !hint.regionResolved && !hint.regionNotFound ? (
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  أدخل اسم المنطقة في السطر «المنطقة: …» لإكمال التحقق.
+                </span>
+              ) : null}
+              {!isChecking &&
+              hint.regionResolved &&
+              (hint.inCurrentRegion || hint.otherRegionNames.length > 0) ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -196,8 +250,8 @@ export function CustomerProfileUpsertForm({
                 >
                   تصفير المربع
                 </button>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
         </div>
 

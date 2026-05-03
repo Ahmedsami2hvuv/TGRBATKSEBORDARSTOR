@@ -14,6 +14,19 @@ import { randomUUID } from "crypto";
 
 export type CustomerProfileFormState = { error?: string; ok?: boolean; timestamp?: number };
 
+/** تلميحات مباشرة من الخادم لحالة الرقم والمنطقة (نفس منطق النموذج). */
+export type CustomerProfileFormHint = {
+  canCheck: boolean;
+  regionResolved: boolean;
+  /** اسم المنطقة كما كُتب في النص ولم يُعثر له تطابق */
+  regionNotFound?: string;
+  currentRegionName: string | null;
+  inCurrentRegion: boolean;
+  currentRegionMissingPhoto: boolean;
+  /** أسماء مناطق أخرى يظهر فيها الرقم حالياً */
+  otherRegionNames: string[];
+};
+
 function normalizeUrl(raw: string): string {
   const t = raw.trim();
   if (!t) return t;
@@ -138,13 +151,68 @@ function parseCustomerReferenceText(rawText: string) {
   return { regionName, locationUrl, landmark, phone, alternatePhone, notes };
 }
 
-export async function checkCustomerExistsByPhone(phone: string): Promise<boolean> {
-  const n = normalizeIraqMobileLocal11(phone);
-  if (!n) return false;
-  const existing = await prisma.customerPhoneProfile.findFirst({
-    where: { phone: n },
+const emptyHint: CustomerProfileFormHint = {
+  canCheck: false,
+  regionResolved: false,
+  currentRegionName: null,
+  inCurrentRegion: false,
+  currentRegionMissingPhoto: false,
+  otherRegionNames: [],
+};
+
+/** يحدد إن كان الرقم مسجّلاً في منطقة أخرى أو في نفس المنطقة وبدون صورة، إلخ. */
+export async function getCustomerProfileFormHint(
+  rawText: string,
+): Promise<CustomerProfileFormHint> {
+  const parsed = parseCustomerReferenceText(String(rawText ?? ""));
+  const n = normalizeIraqMobileLocal11(parsed.phone);
+  if (!n) {
+    return { ...emptyHint };
+  }
+
+  if (!parsed.regionName.trim()) {
+    return {
+      ...emptyHint,
+      canCheck: true,
+      regionResolved: false,
+    };
+  }
+
+  const region = await prisma.region.findFirst({
+    where: { name: { contains: parsed.regionName, mode: "insensitive" } },
   });
-  return !!existing;
+
+  if (!region) {
+    return {
+      ...emptyHint,
+      canCheck: true,
+      regionResolved: false,
+      regionNotFound: parsed.regionName.trim(),
+    };
+  }
+
+  const profiles = await prisma.customerPhoneProfile.findMany({
+    where: { phone: n },
+    include: { region: { select: { name: true } } },
+  });
+
+  const inCurrent = profiles.find((p) => p.regionId === region.id);
+  const otherNames = [
+    ...new Set(
+      profiles
+        .filter((p) => p.regionId !== region.id)
+        .map((p) => p.region.name),
+    ),
+  ];
+
+  return {
+    canCheck: true,
+    regionResolved: true,
+    currentRegionName: region.name,
+    inCurrentRegion: !!inCurrent,
+    currentRegionMissingPhoto: !!(inCurrent && !inCurrent.photoUrl?.trim()),
+    otherRegionNames: otherNames,
+  };
 }
 
 async function profilePhotoFromRemoteUrl(
@@ -239,13 +307,9 @@ export async function upsertCustomerPhoneProfile(
     };
   }
 
-  const existing = await prisma.customerPhoneProfile.findFirst({
-    where: { phone: n },
+  const existingInRegion = await prisma.customerPhoneProfile.findUnique({
+    where: { phone_regionId: { phone: n, regionId: region.id } },
   });
-
-  if (existing) {
-    return { error: "هذا الزبون موجود مسبقاً في النظام." };
-  }
 
   const locParsed = parseLocationUrl(parsed.locationUrl);
   if (!locParsed.ok) {
@@ -271,31 +335,50 @@ export async function upsertCustomerPhoneProfile(
   }
 
   const remoteImageUrl = String(formData.get("remoteImageUrl") ?? "").trim();
-  let photoUrl = "";
+  let photoUrl = existingInRegion?.photoUrl ?? "";
   if (uploaded.photoUrl) {
+    if (existingInRegion?.photoUrl) {
+      await deleteFromR2(existingInRegion.photoUrl);
+    }
     photoUrl = uploaded.photoUrl;
   } else if (remoteImageUrl) {
     const remote = await profilePhotoFromRemoteUrl(remoteImageUrl);
     if (!remote.ok) {
       return { error: remote.error };
     }
+    if (existingInRegion?.photoUrl) {
+      await deleteFromR2(existingInRegion.photoUrl);
+    }
     photoUrl = remote.photoUrl;
   }
 
-  await prisma.customerPhoneProfile.create({
-    data: {
-      phone: n,
-      regionId: region.id,
-      locationUrl: locParsed.url,
-      landmark: parsed.landmark.trim(),
-      photoUrl,
-      alternatePhone,
-      notes: parsed.notes.trim(),
-    },
-  });
+  if (existingInRegion) {
+    await prisma.customerPhoneProfile.update({
+      where: { id: existingInRegion.id },
+      data: {
+        locationUrl: locParsed.url,
+        landmark: parsed.landmark.trim(),
+        notes: parsed.notes.trim(),
+        alternatePhone,
+        photoUrl,
+      },
+    });
+  } else {
+    await prisma.customerPhoneProfile.create({
+      data: {
+        phone: n,
+        regionId: region.id,
+        locationUrl: locParsed.url,
+        landmark: parsed.landmark.trim(),
+        photoUrl,
+        alternatePhone,
+        notes: parsed.notes.trim(),
+      },
+    });
+  }
 
-  // لا نستدعي revalidatePath هنا لأن النموذج يعيد تعيين نفسه
-  // والمستخدم لا ينتظر إعادة تحميل الصفحة
+  revalidatePath("/admin/customers");
+  revalidatePath("/admin/customers/profiles");
   return { ok: true, timestamp: Date.now() };
 }
 
