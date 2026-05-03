@@ -185,6 +185,29 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
       </div>
 
       <div className="grid grid-cols-1 gap-4">
+        {/* أزرار التنقل بين الصفحات - أعلى النتائج */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2 pt-1 pb-3 flex-wrap">
+            {Array.from({ length: totalPages }).map((_, i) => {
+              const p = i + 1;
+              const isActive = pageSafe === p;
+              return (
+                <Link 
+                  key={p} 
+                  href={`/admin/customers?q=${q}&source=${source}&page=${p}`} 
+                  className={`w-10 h-10 flex justify-center items-center rounded-xl font-bold text-sm shadow-sm transition-all border ${
+                    isActive 
+                      ? 'bg-blue-600 text-white border-blue-600' 
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
+                  }`}
+                >
+                  {p}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
         {Array.from(groupedProfiles.values()).map((group, index) => {
           const stats = statsMap.get(group.phone);
           const seqNumber = filteredCount - skip - index; // Not exact anymore, but a good indicator
@@ -258,28 +281,6 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
         )}
       </div>
 
-      {/* أزرار التنقل بين الصفحات */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 pt-4 flex-wrap">
-          {Array.from({ length: totalPages }).map((_, i) => {
-            const p = i + 1;
-            const isActive = page === p;
-            return (
-              <Link 
-                key={p} 
-                href={`/admin/customers?q=${q}&source=${source}&page=${p}`} 
-                className={`w-10 h-10 flex justify-center items-center rounded-xl font-bold text-sm shadow-sm transition-all border ${
-                  isActive 
-                    ? 'bg-blue-600 text-white border-blue-600' 
-                    : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
-                }`}
-              >
-                {p}
-              </Link>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }

@@ -8,21 +8,35 @@ export async function GET() {
   const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 5000 });
   try {
     await client.connect();
-    // جلب العدد الكلي من السيرفر القديم
-    const resProf = await client.query('SELECT count(*) FROM "CustomerPhoneProfile"');
-    const totalInOld = parseInt(resProf.rows[0].count);
+    // جلب المفاتيح الفعلية من السيرفر القديم
+    const resProf = await client.query(`
+      SELECT phone, "regionId"
+      FROM "CustomerPhoneProfile"
+      WHERE phone IS NOT NULL AND "regionId" IS NOT NULL
+    `);
+    const totalInOld = resProf.rows.length;
 
-    // جلب العدد الموجود حالياً في السيرفر الجديد
-    const currentCount = await prisma.customerPhoneProfile.count();
+    // جلب مفاتيح السيرفر الجديد
+    const localProfiles = await prisma.customerPhoneProfile.findMany({
+      select: { phone: true, regionId: true },
+    });
+    const currentCount = localProfiles.length;
+    const localKeys = new Set(
+      localProfiles.map((p) => `${String(p.phone).trim()}|${String(p.regionId).trim()}`)
+    );
 
-    // الكمية المتبقية للسحب
-    const remaining = Math.max(0, totalInOld - currentCount);
+    // النواقص الحقيقية = مفاتيح موجودة في القديم وغير موجودة في الجديد
+    let missingExact = 0;
+    for (const row of resProf.rows) {
+      const key = `${String(row.phone).trim()}|${String(row.regionId).trim()}`;
+      if (!localKeys.has(key)) missingExact++;
+    }
 
     return NextResponse.json({
       success: true,
       totalInOld: totalInOld,
       currentCount: currentCount,
-      newCount: remaining
+      newCount: missingExact
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
