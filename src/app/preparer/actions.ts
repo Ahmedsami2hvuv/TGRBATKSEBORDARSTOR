@@ -768,12 +768,11 @@ export async function updateStoreProductPrice(
 
     const purchasePriceValue = Number(purchasePriceRaw);
 
-    // التأكد من وجود الفرع
     const branch = await prisma.storeBranch.findFirst({
-      where: { id: branchId, active: true }
+      where: { id: branchId, active: true, authorizedPreparerId: v.preparerId },
     });
 
-    if (!branch) return { error: "الفرع غير موجود." };
+    if (!branch) return { error: "الفرع غير موجود أو ليس لديك صلاحية تسعير عليه." };
 
     const profitMargin = (branch as any).profitMargin ? Number((branch as any).profitMargin) : 0.5;
     const salePriceValue = purchasePriceValue + profitMargin;
@@ -782,7 +781,7 @@ export async function updateStoreProductPrice(
     await prisma.$executeRaw`
       UPDATE "StoreProduct"
       SET "purchasePrice" = ${purchasePriceValue}, "salePrice" = ${salePriceValue}
-      WHERE "id" = ${productId}
+      WHERE "id" = ${productId} AND "branchId" = ${branchId}
     `;
 
     // إذا كان هناك متغيرات، نقوم بتحديثها أيضاً بنفس هامش الربح

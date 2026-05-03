@@ -42,10 +42,20 @@ export default async function BranchPricingPage({ params, searchParams }: Props)
     }
 
     const branchRaw = await prisma.storeBranch.findFirst({
-      where: { id: branchId, active: true },
+      where: {
+        id: branchId,
+        active: true,
+        authorizedPreparerId: v.preparerId,
+      },
     });
 
-    if (!branchRaw) return <div className="p-10 text-center font-bold text-rose-600">الفرع غير موجود</div>;
+    if (!branchRaw) {
+      return (
+        <div className="p-10 text-center font-bold text-rose-600" dir="rtl">
+          الفرع غير موجود أو ليس لديك صلاحية تسعير عليه. إن رأيته في القائمة سابقاً، تأكد أن الإدارة ربطت الفرع بحسابك.
+        </div>
+      );
+    }
 
     const productsRaw = await prisma.storeProduct.findMany({
       where: { branchId: branchRaw.id, active: true },

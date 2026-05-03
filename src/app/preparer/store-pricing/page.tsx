@@ -38,32 +38,57 @@ export default async function PreparerStorePricingPage({ searchParams }: Props) 
 
     const preparer = await prisma.companyPreparer.findFirst({
       where: { id: v.preparerId, active: true },
-      select: { id: true, portalToken: true }
+      select: {
+        id: true,
+        portalToken: true,
+        authorizedBranches: {
+          where: { active: true },
+          select: { id: true },
+        },
+      },
     });
 
     if (!preparer || preparer.portalToken !== v.token) {
       return <div className="p-20 text-center font-bold" dir="rtl">رابط غير صالح أو تم تجديده من قبل الإدارة.</div>;
     }
 
+    const baseAuth = { p: String(p ?? ""), exp: String(exp ?? ""), s: String(s ?? "") };
+
+    const allowedIds = preparer.authorizedBranches.map((b) => b.id);
+    if (allowedIds.length === 0) {
+      return (
+        <div className="kse-app-inner mx-auto max-w-4xl px-4 py-6" dir="rtl">
+          <header className="mb-8">
+            <h1 className="text-2xl font-black text-slate-900">تسعير المتجر</h1>
+            <p className="mt-2 text-slate-600 font-bold">
+              لم يتم ربط حسابك بأي فرع للتسعير. اطلب من الإدارة تعيين الفروع المسموحة لك.
+            </p>
+            <Link
+              href={preparerPath("/preparer", baseAuth)}
+              className="mt-4 inline-block px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold"
+            >
+              رجوع للرئيسية
+            </Link>
+          </header>
+        </div>
+      );
+    }
+
     const branchesRaw = await prisma.storeBranch.findMany({
       where: {
         active: true,
+        id: { in: allowedIds },
       },
       include: { category: true },
-      orderBy: { sequence: "asc" }
+      orderBy: { sequence: "asc" },
     });
 
-    // فلترة الفروع يدوياً بناءً على صلاحيات المجهز المتاحة في السيرفر حالياً
-    // بما أن الحقلauthorizedPreparerId غير موجود، سنفترض مؤقتاً عرض الفروع النشطة
-    // أو يمكننا البحث في جدول الأقسام إذا كان الربط هناك موجوداً
-    const branches = branchesRaw.map(br => ({
+    const branches = branchesRaw.map((br) => ({
       id: String(br.id),
       name: String(br.name),
       photoUrl: br.photoUrl || "",
       categoryName: br.category?.name || "عام"
     }));
-
-    const baseAuth = { p, exp, s };
 
     return (
       <div className="kse-app-inner mx-auto max-w-4xl px-4 py-6" dir="rtl">

@@ -48,9 +48,9 @@ export default async function PreparerHomePage({ searchParams }: Props) {
 
   // 2. إذا لم تكن في الرابط، نجلبها من الكوكيز
   if (!p || !s || !exp) {
-    p = p || (await cookieStore).get("preparer_p")?.value;
-    s = s || (await cookieStore).get("preparer_s")?.value;
-    exp = exp || (await cookieStore).get("preparer_exp")?.value;
+    p = p || cookieStore.get("preparer_p")?.value;
+    s = s || cookieStore.get("preparer_s")?.value;
+    exp = exp || cookieStore.get("preparer_exp")?.value;
   }
 
   const v = verifyCompanyPreparerPortalQuery(p, exp, s);
@@ -67,14 +67,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
     );
   }
 
-  // 3. إذا كانت البيانات صحيحة وفي الرابط، نحفظها في الكوكيز لضمان استمرار الدخول
-  if (sp.p && sp.s && sp.exp) {
-    const cs = await cookies();
-    const oneMonth = 30 * 24 * 60 * 60;
-    cs.set("preparer_p", sp.p, { maxAge: oneMonth, path: "/" });
-    cs.set("preparer_s", sp.s, { maxAge: oneMonth, path: "/" });
-    cs.set("preparer_exp", sp.exp, { maxAge: oneMonth, path: "/" });
-  }
+  // حفظ p/exp/s يتم في middleware (src/proxy.ts) — لا نستخدم cookies().set هنا لأن Server Components لا تدعم تعديل الكوكيز أثناء العرض.
 
   const preparer = await prisma.companyPreparer.findFirst({
     where: { id: v.preparerId, active: true },
