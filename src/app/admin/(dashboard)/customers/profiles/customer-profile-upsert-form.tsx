@@ -150,20 +150,11 @@ export function CustomerProfileUpsertForm({
       <div className="space-y-6">
         <div
           className={
-            "sticky top-0 z-30 flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4 " +
+            "sticky top-0 z-30 flex flex-col-reverse gap-3 sm:flex-row sm:items-start sm:gap-4 " +
             "bg-slate-100 dark:bg-slate-800/95 p-4 rounded-xl border border-slate-200 dark:border-slate-600 " +
             "shadow-sm backdrop-blur-sm"
           }
         >
-          <div className="shrink-0 sm:pt-0.5">
-            <button
-              type="submit"
-              disabled={pending}
-              className={`${ad.btnPrimary} w-full sm:w-auto text-lg py-3 px-8 shadow-md`}
-            >
-              {pending ? "جارٍ الحفظ…" : "حفظ البيانات"}
-            </button>
-          </div>
           <div className="flex-1 min-w-0 flex flex-col gap-2">
             {state.error ? (
               <p className={`${ad.error} mb-0`} role="alert">
@@ -252,6 +243,15 @@ export function CustomerProfileUpsertForm({
                 </button>
               ) : null}
             </div>
+          </div>
+          <div className="shrink-0 sm:pt-0.5 sm:self-start">
+            <button
+              type="submit"
+              disabled={pending}
+              className={`${ad.btnPrimary} w-full sm:w-auto text-lg py-3 px-8 shadow-md`}
+            >
+              {pending ? "جارٍ الحفظ…" : "حفظ البيانات"}
+            </button>
           </div>
         </div>
 
