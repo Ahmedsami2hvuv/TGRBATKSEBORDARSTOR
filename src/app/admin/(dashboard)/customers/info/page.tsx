@@ -412,18 +412,24 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
                       <DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="w-3 h-3" />
                       صورة باب
                     </p>
-                    <a
-                      href={doorPhotoSrc}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block"
-                    >
-                      <img
-                        src={doorPhotoSrc}
-                        alt=""
-                        className="max-h-48 max-w-xs rounded-xl border border-sky-200 object-contain"
-                      />
-                    </a>
+                    {doorPhotoSrc ? (
+                      <a
+                        href={doorPhotoSrc}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block"
+                      >
+                        <img
+                          src={doorPhotoSrc}
+                          alt=""
+                          className="max-h-48 max-w-xs rounded-xl border border-sky-200 object-contain"
+                        />
+                      </a>
+                    ) : (
+                      <p className="text-xs font-bold text-amber-700">
+                        لا توجد صورة فعلية لهذا المرجع حالياً. شغّل "سحب الصور" ثم "تنظيف الروابط".
+                      </p>
+                    )}
                   </div>
               <p className="text-sm">
                 <Link

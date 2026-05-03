@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { Client } from "pg";
+import { resolvePublicAssetSrc } from "@/lib/image-url";
 
 import { CustomerSearchInput } from "./customer-search-input";
 export const dynamic = "force-dynamic";
@@ -248,7 +249,7 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
                         {r.sourceKind === "railway" ? "ريلوي" : r.sourceKind === "orders" ? "طلبات الموقع" : "مرجعي"}
                       </span>
                       <div className="flex gap-2 text-xs mt-1">
-                         {r.photoUrl && <span title="توجد صورة باب"><DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="w-3.5 h-3.5" /></span>}
+                         {resolvePublicAssetSrc(r.photoUrl) && <span title="توجد صورة باب قابلة للعرض"><DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="w-3.5 h-3.5" /></span>}
                          {r.locationUrl && <span title="موقع GPS"><DynamicIcon iconKey="ui_location" config={icons} fallback="📍" className="w-3.5 h-3.5" /></span>}
                       </div>
                     </Link>
