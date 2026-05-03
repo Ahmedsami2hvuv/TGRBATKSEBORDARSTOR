@@ -4,45 +4,83 @@ import { ImportCustomersButton } from "./import-customers-button";
 import Link from "next/link";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { Client } from "pg";
 
 import { CustomerSearchInput } from "./customer-search-input";
 export const dynamic = "force-dynamic";
 export const revalidate = 0; // منع الكاش نهائياً
 
-export default async function AdminCustomersPage(props: { searchParams: Promise<{ q?: string, page?: string }> }) {
+const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
+type SourceFilter = "all" | "railway" | "orders" | "reference";
+
+export default async function AdminCustomersPage(props: { searchParams: Promise<{ q?: string, page?: string, source?: string }> }) {
   const searchParams = await props.searchParams;
   const q = searchParams.q || "";
+  const source = (searchParams.source || "all") as SourceFilter;
   const page = parseInt(searchParams.page || "1") || 1;
   const take = 100;
-  const skip = (page - 1) * take;
-
-  const [profilesCount, icons] = await Promise.all([
+  
+  const [allProfiles, icons, profilesCount] = await Promise.all([
+    prisma.customerPhoneProfile.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { region: { select: { name: true } } },
+    }),
+    getGlobalIcons(),
     prisma.customerPhoneProfile.count(),
-    getGlobalIcons()
   ]);
 
-  const whereClause = q ? {
-    OR: [
-      { phone: { contains: q, mode: 'insensitive' } },
-      { notes: { contains: q, mode: 'insensitive' } },
-      { landmark: { contains: q, mode: 'insensitive' } },
-      { region: { name: { contains: q, mode: 'insensitive' } } }
-    ]
-  } : undefined;
-
-  const filteredCount = await prisma.customerPhoneProfile.count({ where: whereClause as any });
-  const totalPages = Math.ceil(filteredCount / take);
-
-  // جلب البروفايلات مع إحصائيات الطلبات المرتبطة بالرقم
-  const profiles = await prisma.customerPhoneProfile.findMany({
-    where: whereClause as any,
-    take,
-    skip,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      region: { select: { name: true } },
+  // مفاتيح (phone|region) القادمة من ريلوي
+  const railwayKeys = new Set<string>();
+  try {
+    const oldClient = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 12000 });
+    await oldClient.connect();
+    const oldRes = await oldClient.query(`
+      SELECT phone, "regionId"
+      FROM "CustomerPhoneProfile"
+      WHERE phone IS NOT NULL AND "regionId" IS NOT NULL
+    `);
+    for (const row of oldRes.rows) {
+      railwayKeys.add(`${String(row.phone).trim()}|${String(row.regionId).trim()}`);
     }
+    await oldClient.end();
+  } catch (e) {
+    console.warn("[AdminCustomersPage] Could not load old railway keys:", e);
+  }
+
+  // مفاتيح (phone|region) القادمة من الطلبات المحلية
+  const orderGroup = await prisma.order.groupBy({
+    by: ["customerPhone", "customerRegionId"],
+    where: { customerPhone: { not: "" } },
   });
+  const orderKeys = new Set<string>();
+  for (const row of orderGroup) {
+    if (!row.customerPhone || !row.customerRegionId) continue;
+    orderKeys.add(`${row.customerPhone.trim()}|${row.customerRegionId.trim()}`);
+  }
+
+  const classifiedProfiles = allProfiles.map((p) => {
+    const key = `${p.phone.trim()}|${p.regionId.trim()}`;
+    let sourceKind: SourceFilter = "reference";
+    if (railwayKeys.has(key)) sourceKind = "railway";
+    else if (orderKeys.has(key)) sourceKind = "orders";
+    return { ...p, sourceKind };
+  });
+
+  const searchFiltered = q
+    ? classifiedProfiles.filter((p) => {
+        const blob = `${p.phone} ${p.notes} ${p.landmark} ${p.region?.name || ""}`.toLowerCase();
+        return blob.includes(q.toLowerCase());
+      })
+    : classifiedProfiles;
+
+  const bySourceFiltered =
+    source === "all" ? searchFiltered : searchFiltered.filter((p) => p.sourceKind === source);
+
+  const filteredCount = bySourceFiltered.length;
+  const totalPages = Math.max(1, Math.ceil(filteredCount / take));
+  const pageSafe = Math.min(Math.max(1, page), totalPages);
+  const skip = (pageSafe - 1) * take;
+  const profiles = bySourceFiltered.slice(skip, skip + take);
 
   // جلب إحصائيات الطلبات لكل رقم هاتف في القائمة الحالية
   const phones = profiles.map(p => p.phone);
@@ -61,6 +99,7 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
     regions: {
       id: string;
       regionId: string;
+      sourceKind: SourceFilter;
       name: string;
       notes: string;
       landmark: string;
@@ -76,6 +115,7 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
     groupedProfiles.get(p.phone)!.regions.push({
       id: p.id,
       regionId: p.regionId,
+      sourceKind: (p as any).sourceKind,
       name: p.region?.name || 'غير محدد',
       notes: p.notes,
       landmark: p.landmark,
@@ -99,7 +139,7 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
               <div className="flex gap-2 items-center">
                 <p className="text-gray-500 text-sm">إجمالي الزبائن في القاعدة: <span className="text-blue-600 font-bold">{profilesCount.toLocaleString()}</span></p>
                 <span className="text-gray-300">|</span>
-                <p className="text-gray-500 text-sm">المعروض حالياً: <span className="text-green-600 font-bold">{profiles.length} (صفحة {page} من {totalPages || 1})</span></p>
+                <p className="text-gray-500 text-sm">المعروض حالياً: <span className="text-green-600 font-bold">{profiles.length} (صفحة {pageSafe} من {totalPages})</span></p>
               </div>
            </div>
            <ImportCustomersButton icons={icons} />
@@ -112,8 +152,24 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
             <DynamicIcon iconKey="ui_plus" config={icons} fallback="+" className="w-4 h-4" />
             إضافة زبون مرجعي
           </Link>
+          <form method="get" className="flex items-center gap-2">
+            <input type="hidden" name="q" value={q} />
+            <select
+              name="source"
+              defaultValue={source}
+              className="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-xl text-sm font-bold"
+            >
+              <option value="all">كل المصادر</option>
+              <option value="railway">قادمين من ريلوي</option>
+              <option value="orders">قادمين من طلبات الموقع</option>
+              <option value="reference">مضافين مرجعياً</option>
+            </select>
+            <button type="submit" className="bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-bold">
+              فرز
+            </button>
+          </form>
           <div className="flex-1 flex gap-2 relative">
-              <CustomerSearchInput defaultValue={q} />
+              <CustomerSearchInput defaultValue={q} source={source} />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                 <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-5 h-5" />
               </div>
@@ -157,10 +213,13 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
                   {group.regions.map(r => (
                     <Link
                       key={r.id}
-                      href={`/admin/customers/info?phone=${group.phone}&regionId=${r.regionId}`}
+                      href={`/admin/customers/info?phone=${group.phone}&regionId=${r.regionId}&source=${source}`}
                       className="bg-gray-50 border border-gray-200 px-3 py-2 rounded-xl hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm transition-all flex flex-col items-center min-w-[100px]"
                     >
                       <span className="font-bold text-sm text-gray-800">{r.name}</span>
+                      <span className="text-[10px] font-bold text-slate-500 mt-1">
+                        {r.sourceKind === "railway" ? "ريلوي" : r.sourceKind === "orders" ? "طلبات الموقع" : "مرجعي"}
+                      </span>
                       <div className="flex gap-2 text-xs mt-1">
                          {r.photoUrl && <span title="توجد صورة باب"><DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="w-3.5 h-3.5" /></span>}
                          {r.locationUrl && <span title="موقع GPS"><DynamicIcon iconKey="ui_location" config={icons} fallback="📍" className="w-3.5 h-3.5" /></span>}
@@ -204,7 +263,7 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
             return (
               <Link 
                 key={p} 
-                href={`/admin/customers?q=${q}&page=${p}`} 
+                href={`/admin/customers?q=${q}&source=${source}&page=${p}`} 
                 className={`w-10 h-10 flex justify-center items-center rounded-xl font-bold text-sm shadow-sm transition-all border ${
                   isActive 
                     ? 'bg-blue-600 text-white border-blue-600' 

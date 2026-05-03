@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useTransition } from "react";
 
-export function CustomerSearchInput({ defaultValue }: { defaultValue: string }) {
+export function CustomerSearchInput({ defaultValue, source }: { defaultValue: string; source?: string }) {
   const router = useRouter();
   const [query, setQuery] = useState(defaultValue);
 
@@ -13,10 +13,11 @@ export function CustomerSearchInput({ defaultValue }: { defaultValue: string }) 
     const timer = setTimeout(() => {
       if (query !== defaultValue) {
         startTransition(() => {
+          const sourceParam = source && source !== "all" ? `&source=${encodeURIComponent(source)}` : "";
           if (query) {
-            router.replace(`/admin/customers?q=${encodeURIComponent(query)}`);
+            router.replace(`/admin/customers?q=${encodeURIComponent(query)}${sourceParam}`);
           } else {
-            router.replace(`/admin/customers`);
+            router.replace(sourceParam ? `/admin/customers?source=${encodeURIComponent(source!)}` : `/admin/customers`);
           }
         });
       }

@@ -74,21 +74,19 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
 
     try {
       const signal = startCancelableTask();
-      const res = await fetch("/api/admin/import/customers", {
+      const res = await fetch("/api/admin/import/customers/import-missing", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         signal,
-        body: JSON.stringify({ importMissingOnly: true }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.message || "فشل الاستيراد");
       setProgress(100);
-      setImportedNow(Number(data.rowsProcessed || 0));
+      setImportedNow(Number(data.imported || 0));
       router.refresh();
       alert(
         `اكتمل سحب النواقص فقط.\n` +
-        `السجلات المقروءة: ${Number(data.rowsProcessed || 0)}\n` +
-        `المضاف: ${Number(data.addedOrUpdated || 0)}\n` +
+        `المستورَد الجديد: ${Number(data.imported || 0)}\n` +
+        `المجموع بالقديم: ${Number(data.oldTotal || 0)}\n` +
         `المتخطي (موجود مسبقاً): ${Number(data.skippedExisting || 0)}`
       );
     } catch (e: any) {
