@@ -29,8 +29,9 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
     prisma.customerPhoneProfile.count(),
   ]);
 
-  // مفاتيح (phone|region) القادمة من ريلوي
+  // مفاتيح (phone|region) + phones القادمة من ريلوي
   const railwayKeys = new Set<string>();
+  const railwayPhones = new Set<string>();
   try {
     const oldClient = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 12000 });
     await oldClient.connect();
@@ -40,7 +41,10 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
       WHERE phone IS NOT NULL AND "regionId" IS NOT NULL
     `);
     for (const row of oldRes.rows) {
-      railwayKeys.add(`${String(row.phone).trim()}|${String(row.regionId).trim()}`);
+      const oldPhone = String(row.phone).trim();
+      const oldRegionId = String(row.regionId).trim();
+      railwayKeys.add(`${oldPhone}|${oldRegionId}`);
+      railwayPhones.add(oldPhone);
     }
     await oldClient.end();
   } catch (e) {
@@ -61,7 +65,7 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
   const classifiedProfiles = allProfiles.map((p) => {
     const key = `${p.phone.trim()}|${p.regionId.trim()}`;
     let sourceKind: SourceFilter = "reference";
-    if (railwayKeys.has(key)) sourceKind = "railway";
+    if (railwayKeys.has(key) || railwayPhones.has(p.phone.trim())) sourceKind = "railway";
     else if (orderKeys.has(key)) sourceKind = "orders";
     return { ...p, sourceKind };
   });
