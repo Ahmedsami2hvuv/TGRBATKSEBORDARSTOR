@@ -110,7 +110,7 @@ export async function POST(req: Request) {
           ext = contentType.split("/")[1] || "jpg";
         }
 
-        const key = `customers/${normalizedPhone}-${row.regionId}.${Date.now()}.${ext}`;
+        const key = `profiles/${normalizedPhone}-${row.regionId}.${Date.now()}.${ext}`;
         const uploadedKey = await uploadToR2(buffer, key, contentType);
 
         if (uploadedKey) {

@@ -25,12 +25,19 @@ if (migrate.ok) {
 }
 
 const combined = migrate.out || "";
-if (combined.includes("P3005") || /baseline an existing production database/i.test(combined)) {
+const shouldFallbackToDbPush =
+  combined.includes("P3005") ||
+  /baseline an existing production database/i.test(combined) ||
+  /statement timeout/i.test(combined) ||
+  /canceling statement due to statement timeout/i.test(combined) ||
+  /Error occurred during query execution/i.test(combined);
+
+if (shouldFallbackToDbPush) {
   console.warn(
-    "[prisma] migrate deploy: قاعدة غير فارغة أو تحتاج baseline (P3005). جاري db push لمزامنة الهيكل…",
+    "[prisma] migrate deploy failed (baseline/timeout). Falling back to db push…",
   );
   try {
-    runInherit("npx prisma db push");
+    runInherit("npx prisma db push --skip-generate");
     process.exit(0);
   } catch (e) {
     process.exit(e.status ?? 1);
