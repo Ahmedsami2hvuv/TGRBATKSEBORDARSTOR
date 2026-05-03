@@ -7,8 +7,9 @@ import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 
 export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | null }) {
-  const [status, setStatus] = useState<"idle" | "checking" | "confirming" | "importing" | "syncing_photos" | "resetting">("idle");
+  const [status, setStatus] = useState<"idle" | "checking" | "confirming" | "confirming_photos" | "importing" | "syncing_photos" | "resetting">("idle");
   const [foundCount, setFoundCount] = useState(0);
+  const [missingPhotosCount, setMissingPhotosCount] = useState(0);
   const [progress, setProgress] = useState(0);
   const [importedNow, setImportedNow] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -121,10 +122,35 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
   }
 
   async function handleSyncPhotos() {
+    setStatus("checking");
+    try {
+      const signal = startCancelableTask();
+      const checkRes = await fetch("/api/admin/import/customers/sync-photos/check", { signal });
+      const checkData = await checkRes.json();
+      if (!checkData.success) throw new Error(checkData.message || "فشل فحص الصور");
+      const missing = Number(checkData.missingPhotos || 0);
+      if (missing <= 0) {
+        alert("كل صور الزبائن مسحوبة ومرفوعة بالفعل، ماكو نواقص صور.");
+        setStatus("idle");
+        return;
+      }
+      setMissingPhotosCount(missing);
+      setStatus("confirming_photos");
+      return;
+    } catch (e: any) {
+      if (e?.name !== "AbortError") alert("خطأ بفحص الصور: " + (e?.message || ""));
+      setStatus("idle");
+      return;
+    } finally {
+      finishCancelableTask();
+    }
+  }
+
+  async function handleRunSyncPhotos() {
     setStatus("syncing_photos");
     setProgress(0);
     setImportedNow(0);
-    const total = foundCount > 0 ? foundCount : 5000;
+    const total = missingPhotosCount > 0 ? missingPhotosCount : 5000;
     let currentOffset = 0;
     let totalSynced = 0;
     let totalSkipped = 0;
@@ -236,6 +262,15 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
           <span className="text-xs font-bold text-blue-800">لكينا {foundCount} زبون غير مسحوبين. تريد نجيبهم هسه؟</span>
           <div className="flex gap-2">
             <button onClick={handleImport} className="bg-blue-600 text-white px-4 py-1 rounded-lg text-xs font-bold">جيب النواقص الآن</button>
+            <button onClick={() => setStatus("idle")} className="text-gray-500 text-xs">إلغاء</button>
+          </div>
+        </div>
+      )}
+      {status === "confirming_photos" && (
+        <div className="bg-indigo-50 border border-indigo-200 p-3 rounded-xl flex items-center gap-4 animate-in fade-in zoom-in duration-300">
+          <span className="text-xs font-bold text-indigo-800">لكينا {missingPhotosCount} صورة غير مسحوبة. تريد نسحب النواقص هسه؟</span>
+          <div className="flex gap-2">
+            <button onClick={handleRunSyncPhotos} className="bg-indigo-600 text-white px-4 py-1 rounded-lg text-xs font-bold">سحب الصور الناقصة</button>
             <button onClick={() => setStatus("idle")} className="text-gray-500 text-xs">إلغاء</button>
           </div>
         </div>
