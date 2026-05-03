@@ -130,7 +130,18 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
       if (!checkData.success) throw new Error(checkData.message || "فشل فحص الصور");
       const missing = Number(checkData.missingPhotos || 0);
       if (missing <= 0) {
-        alert("كل صور الزبائن مسحوبة ومرفوعة بالفعل، ماكو نواقص صور.");
+        const extraBase64Customers = Number(checkData.base64InCustomers || 0);
+        const extraBase64Orders = Number(checkData.base64InOrders || 0);
+        if (extraBase64Customers > 0 || extraBase64Orders > 0) {
+          alert(
+            "صور البروفايل المرجعي كلها مرفوعة، لكن لا تزال توجد صور Base64 في جداول أخرى.\n" +
+            `صور بجدول الزبائن: ${extraBase64Customers}\n` +
+            `صور بجدول الطلبيات: ${extraBase64Orders}\n` +
+            "شغّل زر تنظيف الروابط لمعالجتها."
+          );
+        } else {
+          alert("كل صور الزبائن مسحوبة ومرفوعة بالفعل، ماكو نواقص صور.");
+        }
         setStatus("idle");
         return;
       }
