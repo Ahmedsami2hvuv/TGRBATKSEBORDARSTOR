@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     const offset = Number.isFinite(offsetRaw) ? Math.max(0, offsetRaw) : 0;
     const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(300, limitRaw)) : 100;
 
-    const [oldRes, allRegions, localProfiles] = await Promise.all([
+    const [oldRes, allRegions] = await Promise.all([
       client.query(
         `
         SELECT cpp.phone, cpp."regionId", cpp."locationUrl", cpp."photoUrl", cpp.notes, cpp.landmark, cpp."alternatePhone",
@@ -29,8 +29,28 @@ export async function POST(req: Request) {
         [limit, offset]
       ),
       prisma.region.findMany(),
-      prisma.customerPhoneProfile.findMany({ select: { phone: true, regionId: true } }),
     ]);
+
+    // تحميل الموجود محلياً فقط لنفس دفعة القديم (بدلاً من كل القاعدة) لتخفيف الحمل
+    const batchPairs = oldRes.rows
+      .map((r) => ({
+        phone: String(r.phone ?? "").trim(),
+        regionId: String(r.regionId ?? "").trim(),
+      }))
+      .filter((x) => x.phone && x.regionId);
+
+    const localProfiles =
+      batchPairs.length > 0
+        ? await prisma.customerPhoneProfile.findMany({
+            where: {
+              OR: batchPairs.map((x) => ({
+                phone: x.phone,
+                regionId: x.regionId,
+              })),
+            },
+            select: { phone: true, regionId: true },
+          })
+        : [];
 
     const existingKeys = new Set(localProfiles.map((p) => `${p.phone.trim()}|${p.regionId.trim()}`));
     const regionIdMap = new Set(allRegions.map((r) => r.id));
@@ -85,7 +105,7 @@ export async function POST(req: Request) {
         },
       });
       imported++;
-      existingKeys.add(`${phone}|${targetRegionId}`);
+      existingKeys.add(`${phone}|${regionId}`);
     }
 
     return NextResponse.json({

@@ -112,7 +112,7 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
       );
     } catch (e: any) {
       if (e?.name !== "AbortError") {
-        alert("حدث توقف، يرجى المحاولة مرة أخرى.");
+        alert("حدث توقف: " + (e?.message || "يرجى المحاولة مرة أخرى."));
       }
     } finally {
       finishCancelableTask();
