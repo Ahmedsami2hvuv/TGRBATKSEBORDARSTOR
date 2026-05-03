@@ -74,20 +74,41 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
 
     try {
       const signal = startCancelableTask();
-      const res = await fetch("/api/admin/import/customers/import-missing", {
-        method: "POST",
-        signal,
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message || "فشل الاستيراد");
+      let currentOffset = 0;
+      const batchSize = 120;
+      let totalImported = 0;
+      let totalSkipped = 0;
+      const expected = foundCount > 0 ? foundCount : 5000;
+
+      while (true) {
+        if (cancelRequestedRef.current) break;
+        const res = await fetch("/api/admin/import/customers/import-missing", {
+          method: "POST",
+          signal,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ offset: currentOffset, limit: batchSize }),
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || "فشل الاستيراد");
+
+        const rowsFetched = Number(data.rowsFetched || 0);
+        totalImported += Number(data.imported || 0);
+        totalSkipped += Number(data.skippedExisting || 0);
+        currentOffset += rowsFetched;
+        setImportedNow(totalImported);
+        setProgress(Math.min(100, Math.round((currentOffset / expected) * 100)));
+
+        if (rowsFetched === 0 || data.done) break;
+      }
+
+      if (cancelRequestedRef.current) return;
+
       setProgress(100);
-      setImportedNow(Number(data.imported || 0));
       router.refresh();
       alert(
         `اكتمل سحب النواقص فقط.\n` +
-        `المستورَد الجديد: ${Number(data.imported || 0)}\n` +
-        `المجموع بالقديم: ${Number(data.oldTotal || 0)}\n` +
-        `المتخطي (موجود مسبقاً): ${Number(data.skippedExisting || 0)}`
+        `المستورَد الجديد: ${totalImported}\n` +
+        `المتخطي (موجود مسبقاً): ${totalSkipped}`
       );
     } catch (e: any) {
       if (e?.name !== "AbortError") {

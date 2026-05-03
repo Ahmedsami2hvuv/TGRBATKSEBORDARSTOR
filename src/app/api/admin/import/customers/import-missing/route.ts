@@ -4,18 +4,30 @@ import { prisma } from "@/lib/prisma";
 
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
 
-export async function POST() {
+export async function POST(req: Request) {
   const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 30000 });
   try {
     await client.connect();
 
+    // ندعم الدفعات لتجنب timeout على Vercel
+    const reqBody = await req.json().catch(() => ({}));
+    const offsetRaw = Number((reqBody as any).offset ?? 0);
+    const limitRaw = Number((reqBody as any).limit ?? 100);
+    const offset = Number.isFinite(offsetRaw) ? Math.max(0, offsetRaw) : 0;
+    const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(300, limitRaw)) : 100;
+
     const [oldRes, allRegions, localProfiles] = await Promise.all([
-      client.query(`
+      client.query(
+        `
         SELECT cpp.phone, cpp."regionId", cpp."locationUrl", cpp."photoUrl", cpp.notes, cpp.landmark, cpp."alternatePhone",
                r.name as "regionName"
         FROM "CustomerPhoneProfile" cpp
         LEFT JOIN "Region" r ON cpp."regionId" = r.id
-      `),
+        ORDER BY cpp."createdAt" ASC
+        LIMIT $1 OFFSET $2
+      `,
+        [limit, offset]
+      ),
       prisma.region.findMany(),
       prisma.customerPhoneProfile.findMany({ select: { phone: true, regionId: true } }),
     ]);
@@ -78,10 +90,12 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
+      rowsFetched: oldRes.rows.length,
       imported,
       skippedExisting,
       skippedNoRegion,
       oldTotal: oldRes.rows.length,
+      done: oldRes.rows.length < limit,
       message: `تمت مقارنة البيانات واستيراد ${imported} فقط من غير الموجود.`,
     });
   } catch (error: any) {
