@@ -7,9 +7,11 @@ import {
   compressImageForMandoubUpload,
   assignFileToInput,
 } from "@/lib/client-image-compress";
+import { toast } from "sonner";
 import {
   upsertCustomerPhoneProfile,
   getCustomerProfileFormHint,
+  fetchLegacyOrderDoorImageUrl,
   type CustomerProfileFormHint,
   type CustomerProfileFormState,
 } from "./actions";
@@ -43,6 +45,8 @@ export function CustomerProfileUpsertForm({
   const [isChecking, setIsChecking] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [remotePhotoUrlInput, setRemotePhotoUrlInput] = useState("");
+  const [legacyOrderPageUrl, setLegacyOrderPageUrl] = useState("");
+  const [legacyFetchBusy, setLegacyFetchBusy] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
@@ -52,6 +56,7 @@ export function CustomerProfileUpsertForm({
       setHint(initialHint);
       setSelectedPhoto(null);
       setRemotePhotoUrlInput("");
+      setLegacyOrderPageUrl("");
       setDragActive(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -129,6 +134,28 @@ export function CustomerProfileUpsertForm({
       setRawText(text);
     } catch (err) {
       alert('فشل في اللصق. تأكد من السماح بالوصول للحافظة أو استخدم Ctrl+V.');
+    }
+  };
+
+  const handleFetchLegacyDoor = async () => {
+    const u = legacyOrderPageUrl.trim();
+    if (!u) {
+      toast.error("أدخل رابط صفحة تفاصيل الطلب من الموقع القديم.");
+      return;
+    }
+    setLegacyFetchBusy(true);
+    try {
+      const r = await fetchLegacyOrderDoorImageUrl(u);
+      if (r.ok) {
+        setRemotePhotoUrlInput(r.imageUrl);
+        setSelectedPhoto(null);
+        if (photoInputRef.current) photoInputRef.current.value = "";
+        toast.success("تم تعبئة رابط صورة الباب في الحقل أعلاه.");
+      } else {
+        toast.error(r.error);
+      }
+    } finally {
+      setLegacyFetchBusy(false);
     }
   };
 
@@ -289,6 +316,42 @@ export function CustomerProfileUpsertForm({
                   يُنزَّل ويُرفَع إلى التخزين تلقائياً عند الضغط على «حفظ البيانات».
                 </p>
               ) : null}
+              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-3 space-y-2 dark:border-slate-600 dark:bg-slate-900/40">
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-snug">
+                  المصدر هنا هو <strong className="font-bold text-slate-700 dark:text-slate-300">الموقع القديم</strong>{" "}
+                  <a
+                    href="https://d.ksebstor.site/dashboard/home"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sky-600 underline hover:text-sky-700"
+                  >
+                    d.ksebstor.site/dashboard
+                  </a>
+                  {" "}— بعد ما يفتح المندوب الطلب هناك، ينسخ رابط شريط العنوان لصفحة «تفاصيل الطلبية» (وليس الصفحة
+                  الرئيسية). نسخ نص الصفحة لا يضم روابط الصور. إن وُضع{" "}
+                  <code className="text-[11px]">LEGACY_KSE_ORDER_PAGE_COOKIE</code> على خادم النظام الجديد، يمكن جلب رابط
+                  صورة الباب تلقائياً.
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <input
+                    type="url"
+                    value={legacyOrderPageUrl}
+                    onChange={(e) => setLegacyOrderPageUrl(e.target.value)}
+                    placeholder="https://d.ksebstor.site/dashboard/orders_status/details/13923"
+                    className={`${ad.input} w-full flex-1 bg-white text-sm`}
+                    dir="ltr"
+                    autoComplete="off"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleFetchLegacyDoor()}
+                    disabled={legacyFetchBusy}
+                    className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {legacyFetchBusy ? "جارٍ الجلب…" : "جلب صورة الباب"}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -300,7 +363,7 @@ export function CustomerProfileUpsertForm({
                 onChange={(e) => setRawText(e.target.value)}
                 rows={6}
                 className={`${ad.input} flex-1 min-h-[8rem] resize-y bg-white font-normal`}
-                placeholder="مثال:&#10;المنطقة: باب عباس&#10;لكيشن الزبون: https://maps.app.goo.gl/...&#10;اقرب نقطة دالة: نهاية باب عباس&#10;رقم الهاتف: 077xxxxxxxx&#10;رقم الهاتف الآخر: 077xxxxxxxx"
+                placeholder="مثال:&#10;المنطقة: باب عباس&#10;لكيشن الزبون: https://maps.app.goo.gl/...&#10;اقرب نقطة دالة: نهاية باب عباس&#10;رقم الهاتف: 077xxxxxxxx&#10;رقم الهاتف الآخر: 077xxxxxxxx&#10;&#10;أو الصق كامل نص صفحة تفاصيل الطلب من الموقع القديم — يُستخرج قسم «معلومات الزبون» تلقائياً."
                 dir="auto"
               />
               <div className="flex flex-col gap-2 shrink-0">

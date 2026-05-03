@@ -11,6 +11,10 @@ import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { randomUUID } from "crypto";
+import {
+  extractDoorImageUrlFromLegacyOrderHtml,
+  parseAndValidateLegacyOrderPageUrl,
+} from "@/lib/legacy-kse-order-door-extract";
 
 export type CustomerProfileFormState = { error?: string; ok?: boolean; timestamp?: number };
 
@@ -97,8 +101,19 @@ function inferExtFromImage(contentType: string, url: string): string {
   return "jpg";
 }
 
+/** من صفحة طلب الموقع القديم: إن وُجد «معلومات الزبون» نقتطعه فقط قبل التحليل. */
+function sliceLegacyOrderCustomerSection(rawText: string): string {
+  const t = rawText.replace(/\r\n/g, "\n");
+  const re =
+    /^\s*معلومات\s+الزبون\s*$(?:\n[\s\S]*?)(?=\n\s*-{3,}|\n\s*معلومات\s+الطلب\b|$)/im;
+  const m = re.exec(t);
+  if (m) return m[0].trim();
+  return rawText;
+}
+
 function parseCustomerReferenceText(rawText: string) {
-  const lines = rawText.split(/\r?\n/);
+  const scoped = sliceLegacyOrderCustomerSection(rawText);
+  const lines = scoped.split(/\r?\n/);
   let regionName = "";
   let locationUrl = "";
   let landmark = "";
@@ -139,12 +154,12 @@ function parseCustomerReferenceText(rawText: string) {
     }
   }
 
-  const allPhones = rawText.match(/07\d{9}/g) || [];
+  const allPhones = scoped.match(/07\d{9}/g) || [];
   if (!phone && allPhones[0]) phone = allPhones[0];
   if (!alternatePhone && allPhones[1] && allPhones[1] !== phone) alternatePhone = allPhones[1];
 
   if (!locationUrl) {
-    const match = rawText.match(/https?:\/\/[^"]+/i);
+    const match = scoped.match(/https?:\/\/[^"]+/i);
     if (match) locationUrl = match[0].trim();
   }
 
@@ -268,6 +283,72 @@ async function profilePhotoFromRemoteUrl(
   } catch {
     return { ok: false, error: "حدث خطأ أثناء تنزيل/رفع الصورة." };
   }
+}
+
+export type LegacyOrderDoorFetchResult =
+  | { ok: true; imageUrl: string }
+  | { ok: false; error: string };
+
+/**
+ * يجلب HTML من صفحة تفاصيل طلب على الموقع القديم d.ksebstor (لوحة dashboard)،
+ * مع Cookie جلسة من البيئة، ويستخرج رابط صورة الباب. ليس للطلبات المخزّنة في النظام الجديد.
+ */
+export async function fetchLegacyOrderDoorImageUrl(
+  orderPageUrl: string,
+): Promise<LegacyOrderDoorFetchResult> {
+  const parsedUrl = parseAndValidateLegacyOrderPageUrl(orderPageUrl);
+  if (!parsedUrl.ok) {
+    return { ok: false, error: parsedUrl.error };
+  }
+  const href = parsedUrl.href;
+
+  const cookie = process.env.LEGACY_KSE_ORDER_PAGE_COOKIE?.trim();
+  if (!cookie) {
+    return {
+      ok: false,
+      error:
+        "لم يُضبط LEGACY_KSE_ORDER_PAGE_COOKIE على الخادم. افتح صورة الباب في الموقع القديم ← يمين ← نسخ عنوان الصورة ← الصق في حقل رابط الصورة.",
+    };
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(href, {
+      redirect: "follow",
+      headers: {
+        Cookie: cookie,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(25_000),
+    });
+  } catch {
+    return {
+      ok: false,
+      error: "تعذّر الاتصال بالموقع القديم. تحقق من الرابط أو حاول لاحقاً.",
+    };
+  }
+
+  if (!res.ok) {
+    return {
+      ok: false,
+      error: `الموقع ردّ برمز ${res.status}. قد تكون جلسة الـ Cookie منتهية — حدّث LEGACY_KSE_ORDER_PAGE_COOKIE.`,
+    };
+  }
+
+  const html = await res.text();
+  const imageUrl = extractDoorImageUrlFromLegacyOrderHtml(html, href);
+  if (!imageUrl) {
+    return {
+      ok: false,
+      error:
+        "لم يُعثر على صورة باب في الصفحة. انسخ رابط الصورة يدوياً من المتصفح أو تحقق من أن الطلب يعرض صورة الباب.",
+    };
+  }
+
+  return { ok: true, imageUrl };
 }
 
 export async function upsertCustomerPhoneProfile(

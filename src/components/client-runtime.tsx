@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { Toaster } from "sonner";
 
 const EnterSubmitGlobal = dynamic(
   () => import("@/components/enter-submit-global").then((m) => m.EnterSubmitGlobal),
@@ -29,6 +30,7 @@ export function ClientRuntime({ children }: ClientRuntimeProps) {
       <PwaRoutePreserver />
       <EnterSubmitGlobal />
       {children}
+      <Toaster richColors position="top-center" dir="rtl" closeButton />
       <GlobalAIAssistant />
     </>
   );
