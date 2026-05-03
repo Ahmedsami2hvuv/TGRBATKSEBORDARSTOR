@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Client } from "pg";
 import { prisma } from "@/lib/prisma";
+import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
 
@@ -33,10 +34,12 @@ export async function POST(req: Request) {
 
     // تحميل الموجود محلياً فقط لنفس دفعة القديم (بدلاً من كل القاعدة) لتخفيف الحمل
     const batchPairs = oldRes.rows
-      .map((r) => ({
-        phone: String(r.phone ?? "").trim(),
-        regionId: String(r.regionId ?? "").trim(),
-      }))
+      .map((r) => {
+        const phoneRaw = String(r.phone ?? "").trim();
+        const regionId = String(r.regionId ?? "").trim();
+        const normalizedPhone = normalizeIraqMobileLocal11(phoneRaw) || phoneRaw;
+        return { phone: normalizedPhone, regionId };
+      })
       .filter((x) => x.phone && x.regionId);
 
     const localProfiles =
@@ -52,16 +55,20 @@ export async function POST(req: Request) {
           })
         : [];
 
-    const existingKeys = new Set(localProfiles.map((p) => `${p.phone.trim()}|${p.regionId.trim()}`));
+    const existingKeys = new Set(
+      localProfiles.map((p) => `${(normalizeIraqMobileLocal11(p.phone.trim()) || p.phone.trim())}|${p.regionId.trim()}`)
+    );
     const regionIdMap = new Set(allRegions.map((r) => r.id));
     const regionNameMap = new Map(allRegions.map((r) => [r.name.trim(), r.id]));
 
     let imported = 0;
     let skippedExisting = 0;
     let skippedNoRegion = 0;
+    const seenKeysInBatch = new Set<string>();
 
     for (const row of oldRes.rows) {
-      const phone = String(row.phone ?? "").trim();
+      const phoneRaw = String(row.phone ?? "").trim();
+      const phone = normalizeIraqMobileLocal11(phoneRaw) || phoneRaw;
       const regionId = String(row.regionId ?? "").trim();
       if (!phone || !regionId) {
         skippedNoRegion++;
@@ -69,6 +76,12 @@ export async function POST(req: Request) {
       }
 
       const key = `${phone}|${regionId}`;
+      if (seenKeysInBatch.has(key)) {
+        skippedExisting++;
+        continue;
+      }
+      seenKeysInBatch.add(key);
+
       if (existingKeys.has(key)) {
         skippedExisting++;
         continue;
@@ -105,7 +118,7 @@ export async function POST(req: Request) {
         },
       });
       imported++;
-      existingKeys.add(`${phone}|${regionId}`);
+      existingKeys.add(key);
     }
 
     return NextResponse.json({
