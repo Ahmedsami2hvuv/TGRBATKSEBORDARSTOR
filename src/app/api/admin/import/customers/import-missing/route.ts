@@ -32,31 +32,27 @@ export async function POST(req: Request) {
       prisma.region.findMany(),
     ]);
 
-    // تحميل الموجود محلياً فقط لنفس دفعة القديم (بدلاً من كل القاعدة) لتخفيف الحمل
-    const batchPairs = oldRes.rows
-      .map((r) => {
-        const phoneRaw = String(r.phone ?? "").trim();
-        const regionId = String(r.regionId ?? "").trim();
-        const normalizedPhone = normalizeIraqMobileLocal11(phoneRaw) || phoneRaw;
-        return { phone: normalizedPhone, regionId };
-      })
-      .filter((x) => x.phone && x.regionId);
+    // تحميل الموجود محلياً لنفس هواتف الدفعة فقط
+    const batchPhones = Array.from(
+      new Set(
+        oldRes.rows
+          .map((r) => normalizeIraqMobileLocal11(String(r.phone ?? "").trim()) || String(r.phone ?? "").trim())
+          .filter(Boolean)
+      )
+    );
 
     const localProfiles =
-      batchPairs.length > 0
+      batchPhones.length > 0
         ? await prisma.customerPhoneProfile.findMany({
-            where: {
-              OR: batchPairs.map((x) => ({
-                phone: x.phone,
-                regionId: x.regionId,
-              })),
-            },
+            where: { phone: { in: batchPhones } },
             select: { phone: true, regionId: true },
           })
         : [];
 
     const existingKeys = new Set(
-      localProfiles.map((p) => `${(normalizeIraqMobileLocal11(p.phone.trim()) || p.phone.trim())}|${p.regionId.trim()}`)
+      localProfiles.map(
+        (p) => `${normalizeIraqMobileLocal11(p.phone.trim()) || p.phone.trim()}|${p.regionId.trim()}`
+      )
     );
     const regionIdMap = new Set(allRegions.map((r) => r.id));
     const regionNameMap = new Map(allRegions.map((r) => [r.name.trim(), r.id]));
@@ -72,18 +68,6 @@ export async function POST(req: Request) {
       const regionId = String(row.regionId ?? "").trim();
       if (!phone || !regionId) {
         skippedNoRegion++;
-        continue;
-      }
-
-      const key = `${phone}|${regionId}`;
-      if (seenKeysInBatch.has(key)) {
-        skippedExisting++;
-        continue;
-      }
-      seenKeysInBatch.add(key);
-
-      if (existingKeys.has(key)) {
-        skippedExisting++;
         continue;
       }
 
@@ -103,6 +87,16 @@ export async function POST(req: Request) {
 
       if (!targetRegionId) {
         skippedNoRegion++;
+        continue;
+      }
+      const key = `${phone}|${targetRegionId}`;
+      if (seenKeysInBatch.has(key)) {
+        skippedExisting++;
+        continue;
+      }
+      seenKeysInBatch.add(key);
+      if (existingKeys.has(key)) {
+        skippedExisting++;
         continue;
       }
 

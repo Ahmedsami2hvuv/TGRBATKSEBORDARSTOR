@@ -11,17 +11,28 @@ export async function GET() {
     await client.connect();
     // جلب المفاتيح الفعلية من السيرفر القديم
     const resProf = await client.query(`
-      SELECT phone, "regionId"
-      FROM "CustomerPhoneProfile"
-      WHERE phone IS NOT NULL AND "regionId" IS NOT NULL
+      SELECT cpp.phone, cpp."regionId", r.name as "regionName"
+      FROM "CustomerPhoneProfile" cpp
+      LEFT JOIN "Region" r ON cpp."regionId" = r.id
+      WHERE cpp.phone IS NOT NULL AND cpp."regionId" IS NOT NULL
     `);
+    const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
+    const regionIdMap = new Set(allRegions.map((r) => String(r.id).trim()));
+    const regionNameMap = new Map(
+      allRegions.map((r) => [String(r.name).trim(), String(r.id).trim()])
+    );
     const oldKeys = new Set<string>();
     for (const row of resProf.rows) {
       const phoneRaw = String(row.phone ?? "").trim();
-      const regionId = String(row.regionId ?? "").trim();
-      if (!phoneRaw || !regionId) continue;
+      const oldRegionId = String(row.regionId ?? "").trim();
+      if (!phoneRaw || !oldRegionId) continue;
+      const regionName = String(row.regionName ?? "").trim();
+      let targetRegionId = oldRegionId;
+      if (!regionIdMap.has(oldRegionId) && regionName && regionNameMap.has(regionName)) {
+        targetRegionId = String(regionNameMap.get(regionName) ?? oldRegionId);
+      }
       const phone = normalizeIraqMobileLocal11(phoneRaw) || phoneRaw;
-      oldKeys.add(`${phone}|${regionId}`);
+      oldKeys.add(`${phone}|${targetRegionId}`);
     }
     const totalInOld = oldKeys.size;
 
