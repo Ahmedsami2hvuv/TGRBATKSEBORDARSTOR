@@ -79,6 +79,10 @@ function ProductPricingCard({ product, loading, onSave, icons }: {
   const alfInitial = dinarDecimalToAlfInputString(dinarStored);
   const [alfInput, setAlfInput] = useState(alfInitial);
 
+  useEffect(() => {
+    setAlfInput(dinarDecimalToAlfInputString(Number(product.purchasePrice) || 0));
+  }, [product.id, product.purchasePrice]);
+
   const parsed = parseAlfInputToDinarNumber(alfInput);
   const hasChanged =
     parsed != null && Math.round(parsed) !== Math.round(dinarStored);
