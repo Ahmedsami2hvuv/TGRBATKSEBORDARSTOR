@@ -797,6 +797,15 @@ function formatPatchedFieldsLabel(patchData: {
   return fields.join("، ");
 }
 
+function isMissingFieldValue(v: string | null | undefined): boolean {
+  const t = String(v ?? "").trim().toLowerCase();
+  if (!t) return true;
+  // قيم شكلية قديمة كانت تُستخدم بدل الفراغ
+  if (t === "-" || t === "—" || t === "--") return true;
+  if (t === "not_found" || t === "null" || t === "undefined") return true;
+  return false;
+}
+
 export type LegacyKseRangeStats = {
   rangeStart: number;
   rangeEnd: number;
@@ -958,9 +967,9 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
             alternatePhone: true,
           },
         });
-        const noDoorPhoto = !!(prof && !String(prof.photoUrl ?? "").trim());
-        const noLocation = !!(prof && !String(prof.locationUrl ?? "").trim());
-        const noLandmark = !!(prof && !String(prof.landmark ?? "").trim());
+        const noDoorPhoto = !!(prof && isMissingFieldValue(prof.photoUrl));
+        const noLocation = !!(prof && isMissingFieldValue(prof.locationUrl));
+        const noLandmark = !!(prof && isMissingFieldValue(prof.landmark));
         if (
           noDoorPhoto &&
           (cached.outcome === LEGACY_KSE_LOG.SKIP_ALREADY_IN_DB ||
@@ -977,10 +986,10 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
         }
         if (prof && !bypassCacheForMissingPhoto && !bypassCacheForMissingLocationOrLandmark) {
           const completed = formatCompletedFieldsLabel({
-            hasPhoto: !!String(prof.photoUrl ?? "").trim(),
-            hasLocation: !!String(prof.locationUrl ?? "").trim(),
-            hasLandmark: !!String(prof.landmark ?? "").trim(),
-            hasAlternatePhone: !!String(prof.alternatePhone ?? "").trim(),
+            hasPhoto: !isMissingFieldValue(prof.photoUrl),
+            hasLocation: !isMissingFieldValue(prof.locationUrl),
+            hasLandmark: !isMissingFieldValue(prof.landmark),
+            hasAlternatePhone: !isMissingFieldValue(prof.alternatePhone),
           });
           cachedDetail = `الزبون مسحوب سابقاً وموجود حالياً. البيانات المتوفرة: ${completed}.`;
         }
@@ -1038,7 +1047,7 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
           alternatePhone: true,
         },
       });
-      const hasPhoto = !!(existingProf?.photoUrl ?? "").trim();
+      const hasPhoto = !isMissingFieldValue(existingProf?.photoUrl);
       const doorUrl = (imp.doorImageUrl ?? "").trim();
       const parsedLegacy = parseCustomerReferenceText(imp.rawText);
       const patchData: {
@@ -1065,19 +1074,19 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
         photoUpdated = true;
       }
 
-      if (!String(existingProf?.locationUrl ?? "").trim() && parsedLegacy.locationUrl.trim()) {
+      if (isMissingFieldValue(existingProf?.locationUrl) && parsedLegacy.locationUrl.trim()) {
         const locParsed = parseLocationUrl(parsedLegacy.locationUrl.trim());
         if (locParsed.ok) {
           patchData.locationUrl = locParsed.url;
         }
       }
-      if (!String(existingProf?.landmark ?? "").trim() && parsedLegacy.landmark.trim()) {
+      if (isMissingFieldValue(existingProf?.landmark) && parsedLegacy.landmark.trim()) {
         patchData.landmark = parsedLegacy.landmark.trim();
       }
-      if (!String(existingProf?.notes ?? "").trim() && parsedLegacy.notes.trim()) {
+      if (isMissingFieldValue(existingProf?.notes) && parsedLegacy.notes.trim()) {
         patchData.notes = parsedLegacy.notes.trim();
       }
-      if (!existingProf?.alternatePhone && parsedLegacy.alternatePhone.trim()) {
+      if (isMissingFieldValue(existingProf?.alternatePhone) && parsedLegacy.alternatePhone.trim()) {
         const alt = normalizeIraqMobileLocal11(parsedLegacy.alternatePhone.trim());
         if (alt && alt !== elig.n) {
           patchData.alternatePhone = alt;
