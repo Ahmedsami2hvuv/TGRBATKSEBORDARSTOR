@@ -18,6 +18,7 @@ import {
 } from "./actions";
 
 const LEGACY_URL_AUTO_IMPORT_MS = 750;
+const LEGACY_COOKIE_SESSION_KEY = "kse_legacy_order_cookie_v1";
 
 const initial: CustomerProfileFormState = {};
 
@@ -49,11 +50,70 @@ export function CustomerProfileUpsertForm({
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [remotePhotoUrlInput, setRemotePhotoUrlInput] = useState("");
   const [legacyOrderPageUrl, setLegacyOrderPageUrl] = useState("");
+  const [legacySessionCookie, setLegacySessionCookie] = useState("");
+  const [legacyCookieStamp, setLegacyCookieStamp] = useState(0);
   const [legacyFetchBusy, setLegacyFetchBusy] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const legacyOrderPageUrlRef = useRef(legacyOrderPageUrl);
+  const legacySessionCookieRef = useRef("");
   const lastAutoImportedLegacyHref = useRef<string | null>(null);
   legacyOrderPageUrlRef.current = legacyOrderPageUrl;
+  legacySessionCookieRef.current = legacySessionCookie;
+
+  useEffect(() => {
+    try {
+      const v = sessionStorage.getItem(LEGACY_COOKIE_SESSION_KEY);
+      if (v) setLegacySessionCookie(v);
+    } catch {
+      /* وضع خاص أو منع التخزين */
+    }
+  }, []);
+
+  const persistLegacySessionCookie = () => {
+    try {
+      const t = legacySessionCookie.trim();
+      if (t) {
+        sessionStorage.setItem(LEGACY_COOKIE_SESSION_KEY, t);
+        toast.success("تم حفظ Cookie في هذا المتصفح (جلسة فقط — لا يُرسل لقاعدة بيانات).");
+      } else {
+        sessionStorage.removeItem(LEGACY_COOKIE_SESSION_KEY);
+        toast.success("تم المسح. ألصق Cookie جديداً إن احتجت.");
+      }
+      lastAutoImportedLegacyHref.current = null;
+      setLegacyCookieStamp((n) => n + 1);
+    } catch {
+      toast.error("المتصفح يمنع التخزين المحلي.");
+    }
+  };
+
+  const clearLegacySessionCookie = () => {
+    setLegacySessionCookie("");
+    try {
+      sessionStorage.removeItem(LEGACY_COOKIE_SESSION_KEY);
+    } catch {
+      /* ignore */
+    }
+    lastAutoImportedLegacyHref.current = null;
+    setLegacyCookieStamp((n) => n + 1);
+    toast.success("تم مسح Cookie المحفوظ من هذا المتصفح.");
+  };
+
+  /** عند الخروج من المربع: يحفظ تلقائياً إن تغيّر النص (بدون ما تضغط زر كل مرة). */
+  const handleLegacyCookieBlur = () => {
+    try {
+      const t = legacySessionCookie.trim();
+      if (!t) return;
+      const prev = sessionStorage.getItem(LEGACY_COOKIE_SESSION_KEY) ?? "";
+      if (t === prev) return;
+      sessionStorage.setItem(LEGACY_COOKIE_SESSION_KEY, t);
+      lastAutoImportedLegacyHref.current = null;
+      setLegacyCookieStamp((n) => n + 1);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const legacyCookieReady = legacySessionCookie.trim().length > 0;
 
   useEffect(() => {
     if (state.ok) {
@@ -112,7 +172,10 @@ export function CustomerProfileUpsertForm({
 
       setLegacyFetchBusy(true);
       try {
-        const r = await importLegacyOrderDetailsFromUrl(parsed.href);
+        const r = await importLegacyOrderDetailsFromUrl(
+          parsed.href,
+          legacySessionCookieRef.current || undefined,
+        );
         if (!r.ok) {
           toast.error(r.error);
           return;
@@ -135,7 +198,7 @@ export function CustomerProfileUpsertForm({
     }, LEGACY_URL_AUTO_IMPORT_MS);
 
     return () => window.clearTimeout(timer);
-  }, [legacyOrderPageUrl]);
+  }, [legacyOrderPageUrl, legacyCookieStamp]);
 
   const handleChoosePhoto = () => {
     photoInputRef.current?.click();
@@ -206,7 +269,10 @@ export function CustomerProfileUpsertForm({
     lastAutoImportedLegacyHref.current = null;
     setLegacyFetchBusy(true);
     try {
-      const r = await importLegacyOrderDetailsFromUrl(parsed.href);
+      const r = await importLegacyOrderDetailsFromUrl(
+        parsed.href,
+        legacySessionCookieRef.current || undefined,
+      );
       if (r.ok) {
         lastAutoImportedLegacyHref.current = parsed.href;
         setRawText(r.rawText);
@@ -244,6 +310,55 @@ export function CustomerProfileUpsertForm({
       className="space-y-6"
     >
       <div className="space-y-6">
+        <div className="rounded-xl border-2 border-amber-500 bg-gradient-to-br from-amber-50 to-orange-50/90 p-4 shadow-md dark:border-amber-400 dark:from-amber-950/50 dark:to-orange-950/30">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+            <h2 className="text-base font-black text-amber-950 dark:text-amber-100 leading-snug">
+              ① هنا تضع Cookie الموقع القديم — مرة واحدة فقط
+            </h2>
+            {legacyCookieReady ? (
+              <span className="shrink-0 inline-flex items-center rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white shadow-sm">
+                ✓ جاهز — لصق روابط طلبات متعددة بدون إعادة الخطوة
+              </span>
+            ) : (
+              <span className="shrink-0 text-xs font-bold text-amber-800 dark:text-amber-200">
+                لصق ثم اضغط «حفظ» أو اخرج من المربع ليحفظ تلقائياً
+              </span>
+            )}
+          </div>
+          <p className="mt-2 text-sm text-amber-950/90 dark:text-amber-100/90 leading-relaxed">
+            من d.ksebstor بعد تسجيل الدخول: <strong>F12</strong> → <strong>Network</strong> → اضغط طلب الصفحة (مثل رقم
+            الطلب) → <strong>Headers</strong> → انسخ قيمة <strong>Cookie</strong> كاملة والصقها في المربع أدناه.{" "}
+            <strong>نفس الكوكي يخدم كل روابط الطلبات</strong> إلى أن تنتهي الجلسة على الموقع القديم.
+          </p>
+          <textarea
+            value={legacySessionCookie}
+            onChange={(e) => setLegacySessionCookie(e.target.value)}
+            onBlur={handleLegacyCookieBlur}
+            rows={3}
+            className={`${ad.input} mt-3 w-full bg-white font-mono text-xs leading-relaxed`}
+            dir="ltr"
+            spellCheck={false}
+            autoComplete="off"
+            placeholder="مثال: PHPSESSID=xxxxxxxx; ..."
+          />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={persistLegacySessionCookie}
+              className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-black text-white shadow hover:bg-amber-700"
+            >
+              حفظ بالجلسة (هذا المتصفح فقط)
+            </button>
+            <button
+              type="button"
+              onClick={clearLegacySessionCookie}
+              className="rounded-lg border-2 border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            >
+              مسح الكوكي المحفوظ
+            </button>
+          </div>
+        </div>
+
         <div
           className={
             "sticky top-0 z-30 flex flex-col-reverse gap-3 sm:flex-row sm:items-start sm:gap-4 " +
@@ -385,34 +500,26 @@ export function CustomerProfileUpsertForm({
                   يُنزَّل ويُرفَع إلى التخزين تلقائياً عند الضغط على «حفظ البيانات».
                 </p>
               ) : null}
-              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-3 space-y-2 dark:border-slate-600 dark:bg-slate-900/40">
+              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-3 space-y-3 dark:border-slate-600 dark:bg-slate-900/40">
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed space-y-1.5">
+                  <span className="block font-bold text-slate-800 dark:text-slate-100">
+                    ② رابط الطلب من الموقع القديم (d.ksebstor)
+                  </span>
                   <span className="block">
-                    <strong className="text-slate-800 dark:text-slate-200">من الموقع القديم</strong> (
-                    <a
-                      href="https://d.ksebstor.site/dashboard/home"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sky-600 underline hover:text-sky-700"
-                    >
-                      d.ksebstor.site
-                    </a>
-                    ): الصق رابط صفحة <strong>تفاصيل الطلبية</strong> (مثل{" "}
+                    الصق رابط <strong>تفاصيل الطلبية</strong> (مثل{" "}
                     <span className="font-mono text-[11px]" dir="ltr">
                       …/orders_status/details/13923
                     </span>
-                    ) وليس الصفحة الرئيسية — بعد اللصق يُستورد <strong>تلقائياً</strong> خلال حوالي ثانية (بدون ضرورة
-                    الضغط على زر). زر <strong>«جلب بيانات الزبون»</strong> لإعادة الجلب من الرابط نفسه بعد تعديله أو
-                    إن أردت تحديث البيانات.
+                    ) — بعد ثانية يُستورد <strong>تلقائياً</strong> إن كان مربع الكوكي في الأعلى جاهزاً. زر{" "}
+                    <strong>«إعادة جلب من الرابط»</strong> لتحديث نفس الرابط.
                   </span>
                   <span className="block">
-                    النتيجة: إمّا <strong>معلومات الزبون + رابط صورة باب الزبون</strong> (يظهر في حقل الرابط أعلاه)
-                    إن وُجد في الصفحة، أو <strong>معلومات الزبون فقط</strong> إن لم تُعرض صورة باب في HTML — ويمكنك
-                    إضافة الصورة يدوياً بعدها.
+                    النتيجة: <strong>معلومات الزبون + رابط صورة باب الزبون</strong> إن وُجدت الصورة في الصفحة، أو{" "}
+                    <strong>معلومات الزبون فقط</strong>.
                   </span>
                   <span className="block text-slate-500 dark:text-slate-500">
-                    نسخ «تحديد الكل» من المتصفح لا يضم روابط الصور. الجلب من الرابط يحتاج ضبط{" "}
-                    <code className="text-[11px]">LEGACY_KSE_ORDER_PAGE_COOKIE</code> على خادم هذا النظام.
+                    نسخ «تحديد الكل» لا يضم روابط الصور. بدون الكوكي في المربع الأصفر يمكن ضبط{" "}
+                    <code className="text-[11px]">LEGACY_KSE_ORDER_PAGE_COOKIE</code> على الخادم.
                   </span>
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

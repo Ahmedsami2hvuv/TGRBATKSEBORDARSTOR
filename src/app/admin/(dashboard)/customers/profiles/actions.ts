@@ -290,16 +290,26 @@ export type LegacyOrderImportResult =
   | { ok: true; rawText: string; doorImageUrl: string | null }
   | { ok: false; error: string };
 
+const MAX_LEGACY_COOKIE_HEADER_CHARS = 14_000;
+
 async function fetchLegacyOrderPageHtml(
   href: string,
+  legacyCookieFromClient?: string | null,
 ): Promise<{ ok: true; html: string } | { ok: false; error: string }> {
-  const cookie = process.env.LEGACY_KSE_ORDER_PAGE_COOKIE?.trim();
+  const fromClient = legacyCookieFromClient?.trim() ?? "";
+  const fromEnv = process.env.LEGACY_KSE_ORDER_PAGE_COOKIE?.trim() ?? "";
+  const cookie = fromClient || fromEnv;
   if (!cookie) {
     return {
       ok: false,
       error:
-        "لم يُضبط LEGACY_KSE_ORDER_PAGE_COOKIE على الخادم. انسخ Cookie الجلسة من المتصفح بعد تسجيل الدخول على الموقع القديم (أدوات المطوّر → Network → Cookie).",
+        "لم يُجد Cookie للموقع القديم.\n\n" +
+        "الأسرع: في نفس المتصفح بعد تسجيل الدخول على d.ksebstor.site — F12 → Network → طلب للموقع → Headers → انسخ قيمة «Cookie» (بدون كلمة Cookie:) والصقها في مربع «Cookie الموقع القديم» بصفحة إضافة الزبون واحفظها بالجلسة.\n\n" +
+        "أو ضبط المتغير LEGACY_KSE_ORDER_PAGE_COOKIE على الخادم (Railway / .env) لمرة واحدة لكل الخادم.",
     };
+  }
+  if (fromClient.length > MAX_LEGACY_COOKIE_HEADER_CHARS) {
+    return { ok: false, error: "نص Cookie طويل جداً. انسخ حقل Cookie فقط من أدوات المطوّر." };
   }
 
   let res: Response;
@@ -325,7 +335,7 @@ async function fetchLegacyOrderPageHtml(
   if (!res.ok) {
     return {
       ok: false,
-      error: `الموقع ردّ برمز ${res.status}. قد تكون جلسة الـ Cookie منتهية — حدّث LEGACY_KSE_ORDER_PAGE_COOKIE.`,
+      error: `الموقع ردّ برمز ${res.status}. قد انتهت الجلسة — حدّث Cookie من المربع في الصفحة أو من المتغير على الخادم.`,
     };
   }
 
@@ -335,16 +345,18 @@ async function fetchLegacyOrderPageHtml(
 
 /**
  * يجلب صفحة تفاصيل طلب من الموقع القديم d.ksebstor ويستخرج نص «معلومات الزبون» + رابط صورة الباب إن وُجد.
+ * `legacyCookieFromClient`: اختياري — يُمرَّر من المتصفح (مثلاً من sessionStorage) ليتجاوز إعداد الخادم ويُسرّع العمل.
  */
 export async function importLegacyOrderDetailsFromUrl(
   orderPageUrl: string,
+  legacyCookieFromClient?: string | null,
 ): Promise<LegacyOrderImportResult> {
   const parsedUrl = parseAndValidateLegacyOrderPageUrl(orderPageUrl);
   if (!parsedUrl.ok) {
     return { ok: false, error: parsedUrl.error };
   }
 
-  const page = await fetchLegacyOrderPageHtml(parsedUrl.href);
+  const page = await fetchLegacyOrderPageHtml(parsedUrl.href, legacyCookieFromClient);
   if (!page.ok) {
     return { ok: false, error: page.error };
   }
