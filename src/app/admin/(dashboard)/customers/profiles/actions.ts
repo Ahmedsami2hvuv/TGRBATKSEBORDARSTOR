@@ -803,7 +803,16 @@ function isMissingFieldValue(v: string | null | undefined): boolean {
   // قيم شكلية قديمة كانت تُستخدم بدل الفراغ
   if (t === "-" || t === "—" || t === "--") return true;
   if (t === "not_found" || t === "null" || t === "undefined") return true;
+  if (t === "n/a" || t === "na" || t === "none") return true;
+  if (t.includes("لا يوجد") || t.includes("لايوجد") || t.includes("بدون")) return true;
+  if (t.includes("غير متوفر") || t.includes("غير موجود")) return true;
   return false;
+}
+
+function joinFieldLabels(labels: string[]): string {
+  if (labels.length === 0) return "";
+  if (labels.length === 1) return labels[0]!;
+  return `${labels.slice(0, -1).join("، ")} و${labels[labels.length - 1]}`;
 }
 
 export type LegacyKseRangeStats = {
@@ -1049,6 +1058,12 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
       });
       const hasPhoto = !isMissingFieldValue(existingProf?.photoUrl);
       const doorUrl = (imp.doorImageUrl ?? "").trim();
+      const missingBefore = {
+        photo: !hasPhoto,
+        location: isMissingFieldValue(existingProf?.locationUrl),
+        landmark: isMissingFieldValue(existingProf?.landmark),
+        altPhone: isMissingFieldValue(existingProf?.alternatePhone),
+      };
       const parsedLegacy = parseCustomerReferenceText(imp.rawText);
       const patchData: {
         photoUrl?: string;
@@ -1109,8 +1124,7 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
         rows.push({
           orderId,
           status: "photo_updated",
-          detail:
-            "البروفايل كان بلا صورة باب — تم تنزيل صورة الباب من صفحة الطلب وربطها بالسجل.",
+          detail: `الزبون موجود مسبقاً وكان ناقص صورة الباب — تمت إضافة صورة الباب${patchedFields && patchedFields !== "صورة الباب" ? `، وتم أيضاً تحديث: ${patchedFields.replace("صورة الباب", "").replace(/^،\s*/, "")}` : ""}.`,
         });
         continue;
       }
@@ -1130,6 +1144,13 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
         continue;
       }
 
+      const stillMissing: string[] = [];
+      if (missingBefore.location) stillMissing.push("اللوكيشن");
+      if (missingBefore.landmark) stillMissing.push("أقرب نقطة دالة");
+      if (missingBefore.photo) stillMissing.push("صورة الباب");
+      if (missingBefore.altPhone) stillMissing.push("الرقم الثاني");
+      const missingText = joinFieldLabels(stillMissing);
+
       await persistLegacyKseImportLog(orderId, LEGACY_KSE_LOG.SKIP_ALREADY_IN_DB, {
         phone: elig.n,
         regionId: elig.regionId,
@@ -1140,7 +1161,9 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
         status: "already_in_db",
         detail: hasPhoto
           ? "الزبون موجود مسبقاً وكل التفاصيل الأساسية مكتملة — لا يوجد نقص للتحديث."
-          : "الزبون موجود مسبقاً لكن لا توجد صورة باب صالحة في صفحة هذا الطلب (أو مكتوب «لا توجد صورة»).",
+          : missingText
+            ? `الزبون موجود مسبقاً لكن ما زال ناقص: ${missingText}. لم نجد قيماً صالحة لها داخل صفحة هذا الطلب.`
+            : "الزبون موجود مسبقاً لكن لا توجد صورة باب صالحة في صفحة هذا الطلب (أو مكتوب «لا توجد صورة»).",
       });
       continue;
     }
