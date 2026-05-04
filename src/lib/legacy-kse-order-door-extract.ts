@@ -125,6 +125,19 @@ function decodeBasicHtmlEntities(s: string): string {
     });
 }
 
+/** يضع رقم الاتصال من روابط tel:/sms: في النص قبل إزالة الوسوم (وإلا يبقى «اتصال» بلا أرقام). */
+function injectCommunicationHrefsAsText(html: string): string {
+  return html.replace(
+    /<a\b[^>]*?\bhref\s*=\s*["']((?:tel|sms)\s*:[^"']+)["'][^>]*>/gi,
+    (_m, href: string) => {
+      let raw = href.replace(/^tel\s*:/i, "").replace(/^sms\s*:/i, "").trim();
+      raw = decodeBasicHtmlEntities(raw.replace(/^\/\//, ""));
+      raw = raw.split(/[?;&]/)[0]?.trim() ?? "";
+      return raw ? ` ${raw} ` : " ";
+    },
+  );
+}
+
 function legacyHtmlChunkToPlainText(chunk: string): string {
   let s = chunk
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -151,13 +164,16 @@ export function extractCustomerReferenceRawTextFromLegacyOrderHtml(
   if (startIdx < 0) return null;
 
   const fromStart = html.slice(startIdx);
-  const endOrderInfo = fromStart.search(/\bمعلومات\s*الطلب\b/i);
-  const endDash = fromStart.search(/-{5,}/);
+  /** بدون \b لأن حدود الكلمات في RegExp لا تنطبق على العربية كما يُفترض. */
+  const endOrderInfo = fromStart.search(/معلومات\s*الطلب/i);
+  /** لا تقطع عند أي ----- في الصفحة (JSON/CSS…)، فقط سطر شرطات كفاصل أقسام. */
+  const endDashM = /\n[\t \u00a0]*-{5,}[\t \u00a0]*\r?\n/m.exec(fromStart);
+  const endDash = endDashM && endDashM.index > 0 ? endDashM.index : -1;
   let end = fromStart.length;
-  if (endOrderInfo > 0) end = Math.min(end, endOrderInfo);
-  if (endDash > 0) end = Math.min(end, endDash);
+  if (endOrderInfo >= 0) end = Math.min(end, endOrderInfo);
+  if (endDash >= 0) end = Math.min(end, endDash);
   const capped = Math.min(end, 18_000);
-  const slice = fromStart.slice(0, capped);
+  const slice = injectCommunicationHrefsAsText(fromStart.slice(0, capped));
   const plain = legacyHtmlChunkToPlainText(slice);
   if (plain.length < 12) return null;
   return plain;

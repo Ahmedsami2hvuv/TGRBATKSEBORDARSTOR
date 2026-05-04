@@ -106,7 +106,7 @@ function inferExtFromImage(contentType: string, url: string): string {
 function sliceLegacyOrderCustomerSection(rawText: string): string {
   const t = rawText.replace(/\r\n/g, "\n");
   const re =
-    /^\s*معلومات\s+الزبون\s*$(?:\n[\s\S]*?)(?=\n\s*-{3,}|\n\s*معلومات\s+الطلب\b|$)/im;
+    /^\s*معلومات\s+الزبون\s*$(?:\n[\s\S]*?)(?=\n\s*-{3,}|\n\s*معلومات\s+الطلب\s*$|\n\s*معلومات\s+الطلب\s*\n|$)/im;
   const m = re.exec(t);
   if (m) return m[0].trim();
   return rawText;
@@ -118,6 +118,11 @@ function normalizeDigitsToLatin(s: string): string {
   const fa = "۰۱۲۳۴۵۶۷۸۹";
   let out = "";
   for (const ch of s) {
+    const cp = ch.codePointAt(0)!;
+    if (cp >= 0xff10 && cp <= 0xff19) {
+      out += String(cp - 0xff10);
+      continue;
+    }
     const i = ar.indexOf(ch);
     if (i >= 0) {
       out += String(i);
@@ -137,9 +142,9 @@ function stripInvisibleMarks(s: string): string {
   return s.replace(/[\u200c\u200d\u200e\u200f\ufeff\u202a\u202b\u202c\u2066\u2067\u2068\u2069]/g, "");
 }
 
-/** لمسح مسافات/شرطات بين أرقام الهاتف قبل مطابقة 07xxxxxxxx */
+/** لمسح مسافات/شرطات ورموز عرض بين أرقام الهاتف قبل مطابقة 07xxxxxxxx */
 function compactForPhoneScan(s: string): string {
-  return s.replace(/[\s\u00a0\-_.]/g, "");
+  return s.replace(/[\s\u00a0\-_.\u200c\u200d\u200e\u200f\ufeff]/g, "");
 }
 
 /** أول رقم جوال عراقي يظهر في النص بأي شكل شائع (بدون اشتراط سطر «رقم الهاتف:»). */
