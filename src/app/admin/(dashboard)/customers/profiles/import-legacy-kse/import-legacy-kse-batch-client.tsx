@@ -192,13 +192,23 @@ export function ImportLegacyKseBatchClient() {
           delayMs: 0,
         });
         if (!r.ok) {
-          setLastError(r.error);
+          const errRow: LegacyKseBatchImportRow = {
+            orderId,
+            status: "error",
+            detail: r.error,
+          };
+          rowsAcc.push(errRow);
+          setLog([...rowsAcc]);
+          setLastError(`تعذر جلب الطلب #${orderId}: ${r.error} — تم التجاوز والاستمرار.`);
           setBatchProgress((p) => ({
             ...p,
             done: p.done + 1,
             failed: p.failed + 1,
           }));
-          return "failed";
+          if (i < orderIds.length - 1 && delayMs > 0) {
+            await new Promise((res) => setTimeout(res, delayMs));
+          }
+          continue;
         }
         const row = r.rows[0];
         if (row) {
