@@ -27,6 +27,29 @@ export function ImportLegacyKseBatchClient() {
   const [statsLoading, setStatsLoading] = useState(false);
   const [showCookieInput, setShowCookieInput] = useState(false);
   const [autoRun, setAutoRun] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{
+    active: boolean;
+    total: number;
+    done: number;
+    currentOrderId: number | null;
+    imported: number;
+    photoUpdated: number;
+    alreadyInDb: number;
+    cached: number;
+    skipped: number;
+    failed: number;
+  }>({
+    active: false,
+    total: 0,
+    done: 0,
+    currentOrderId: null,
+    imported: 0,
+    photoUpdated: 0,
+    alreadyInDb: 0,
+    cached: 0,
+    skipped: 0,
+    failed: 0,
+  });
   const cookieAutoSavedRef = useRef(false);
 
   const loadStats = useCallback(async () => {
@@ -142,17 +165,56 @@ export function ImportLegacyKseBatchClient() {
 
     setBusy(true);
     setLog([]);
+    setBatchProgress({
+      active: true,
+      total: orderIds.length,
+      done: 0,
+      currentOrderId: null,
+      imported: 0,
+      photoUpdated: 0,
+      alreadyInDb: 0,
+      cached: 0,
+      skipped: 0,
+      failed: 0,
+    });
     try {
-      const r = await runLegacyKseOrderDetailsBatchImport({
-        orderIds,
-        legacyCookie: effectiveCookie,
-        delayMs,
-      });
-      if (!r.ok) {
-        setLastError(r.error);
-        return "failed";
+      const rowsAcc: LegacyKseBatchImportRow[] = [];
+      for (let i = 0; i < orderIds.length; i++) {
+        const orderId = orderIds[i]!;
+        setBatchProgress((p) => ({ ...p, currentOrderId: orderId }));
+        const r = await runLegacyKseOrderDetailsBatchImport({
+          orderIds: [orderId],
+          legacyCookie: effectiveCookie,
+          delayMs: 0,
+        });
+        if (!r.ok) {
+          setLastError(r.error);
+          setBatchProgress((p) => ({
+            ...p,
+            done: p.done + 1,
+            failed: p.failed + 1,
+          }));
+          return "failed";
+        }
+        const row = r.rows[0];
+        if (row) {
+          rowsAcc.push(row);
+          setLog([...rowsAcc]);
+          setBatchProgress((p) => ({
+            ...p,
+            done: p.done + 1,
+            imported: p.imported + (row.status === "imported" ? 1 : 0),
+            photoUpdated: p.photoUpdated + (row.status === "photo_updated" ? 1 : 0),
+            alreadyInDb: p.alreadyInDb + (row.status === "already_in_db" ? 1 : 0),
+            cached: p.cached + (row.status === "cached" ? 1 : 0),
+            skipped: p.skipped + (row.status === "skipped" ? 1 : 0),
+            failed: p.failed + (row.status === "error" ? 1 : 0),
+          }));
+        }
+        if (i < orderIds.length - 1 && delayMs > 0) {
+          await new Promise((res) => setTimeout(res, delayMs));
+        }
       }
-      setLog(r.rows);
       if (effectiveCookie) setShowCookieInput(false);
       const advanced = to + 1;
       setNextId(advanced);
@@ -164,6 +226,7 @@ export function ImportLegacyKseBatchClient() {
       void loadStats();
       return "ok";
     } finally {
+      setBatchProgress((p) => ({ ...p, active: false, currentOrderId: null }));
       setBusy(false);
     }
   }, [rangeStart, rangeEnd, batchSize, delayMs, nextId, effectiveCookie, loadStats]);
@@ -416,6 +479,34 @@ export function ImportLegacyKseBatchClient() {
         )}
 
         {lastError ? <p className={ad.error}>{lastError}</p> : null}
+
+        {(batchProgress.active || batchProgress.done > 0) && batchProgress.total > 0 ? (
+          <div className="rounded-lg border border-indigo-200 bg-indigo-50/80 p-3 dark:border-indigo-800 dark:bg-indigo-950/30">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="font-bold text-indigo-900 dark:text-indigo-100">
+                تقدم الدفعة: {batchProgress.done}/{batchProgress.total}
+              </span>
+              <span className="font-mono text-indigo-700 dark:text-indigo-300">
+                {Math.round((batchProgress.done / batchProgress.total) * 100)}%
+                {batchProgress.currentOrderId ? ` — الآن: #${batchProgress.currentOrderId}` : ""}
+              </span>
+            </div>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-indigo-100 dark:bg-indigo-900/50">
+              <div
+                className="h-full rounded-full bg-indigo-600 transition-all"
+                style={{ width: `${Math.max(0, Math.min(100, (batchProgress.done / batchProgress.total) * 100))}%` }}
+              />
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] sm:grid-cols-3">
+              <span className="text-emerald-700 dark:text-emerald-300">جديد: {batchProgress.imported}</span>
+              <span className="text-teal-700 dark:text-teal-300">صورة أضيفت: {batchProgress.photoUpdated}</span>
+              <span className="text-sky-700 dark:text-sky-300">موجود مسبقاً: {batchProgress.alreadyInDb}</span>
+              <span className="text-indigo-700 dark:text-indigo-300">مخزّن/كاش: {batchProgress.cached}</span>
+              <span className="text-amber-700 dark:text-amber-300">تخطي: {batchProgress.skipped}</span>
+              <span className="text-rose-700 dark:text-rose-300">أخطاء: {batchProgress.failed}</span>
+            </div>
+          </div>
+        ) : null}
 
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
