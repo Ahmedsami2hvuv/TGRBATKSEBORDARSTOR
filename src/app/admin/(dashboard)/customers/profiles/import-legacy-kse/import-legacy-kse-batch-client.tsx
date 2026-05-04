@@ -13,6 +13,57 @@ import {
 const LEGACY_COOKIE_SESSION_KEY = "kse_legacy_order_cookie_v1";
 const CURSOR_STORAGE_KEY = "legacy_kse_import_next_id";
 
+function statusUi(status: LegacyKseBatchImportRow["status"]): {
+  label: string;
+  className: string;
+  fallbackDetail: string;
+} {
+  switch (status) {
+    case "imported":
+      return {
+        label: "تمت الإضافة",
+        className: "text-emerald-600",
+        fallbackDetail: "الزبون كان غير موجود وتمت إضافته.",
+      };
+    case "photo_updated":
+      return {
+        label: "تم تحديث الصورة",
+        className: "text-teal-600",
+        fallbackDetail: "الزبون موجود سابقاً وتمت إضافة صورة الباب الناقصة.",
+      };
+    case "already_in_db":
+      return {
+        label: "موجود مسبقاً",
+        className: "text-sky-600",
+        fallbackDetail: "الزبون موجود مسبقاً، وتم التعامل مع النواقص إن وُجدت.",
+      };
+    case "cached":
+      return {
+        label: "موجود في السجل",
+        className: "text-indigo-600",
+        fallbackDetail: "هذا الطلب تمت معالجته سابقاً وفق السجل.",
+      };
+    case "skipped":
+      return {
+        label: "تم التخطي",
+        className: "text-amber-600",
+        fallbackDetail: "تم تخطي هذا الطلب بسبب عدم توفر بيانات كافية.",
+      };
+    case "error":
+      return {
+        label: "خطأ",
+        className: "text-rose-600",
+        fallbackDetail: "حدث خطأ أثناء معالجة هذا الطلب.",
+      };
+    default:
+      return {
+        label: status,
+        className: "text-slate-600",
+        fallbackDetail: "تمت معالجة الطلب.",
+      };
+  }
+}
+
 export function ImportLegacyKseBatchClient() {
   const [rangeStart, setRangeStart] = useState(1);
   const [rangeEnd, setRangeEnd] = useState(16443);
@@ -580,28 +631,24 @@ export function ImportLegacyKseBatchClient() {
           <h2 className="mb-3 text-base font-black">نتيجة آخر دفعة</h2>
           <ul className="max-h-72 space-y-2 overflow-y-auto text-sm" dir="ltr">
             {log.map((row) => (
-              <li key={row.orderId} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50">
+              <li
+                key={row.orderId}
+                className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
+              >
+                {(() => {
+                  const ui = statusUi(row.status);
+                  return (
+                    <>
                 <span className="font-mono font-bold">#{row.orderId}</span>{" "}
-                <span
-                  className={
-                    row.status === "imported" || row.status === "photo_updated"
-                      ? "text-emerald-600"
-                      : row.status === "already_in_db"
-                        ? "text-sky-600"
-                        : row.status === "cached"
-                          ? "text-indigo-600"
-                          : row.status === "skipped"
-                            ? "text-amber-600"
-                            : "text-rose-600"
-                  }
-                >
-                  {row.status}
-                </span>
-                {row.detail ? (
+                      <span className={`${ui.className} font-bold`}>{ui.label}</span>
+                      {row.detail || ui.fallbackDetail ? (
                   <p className="mt-1 text-[13px] leading-relaxed text-slate-700 dark:text-slate-200">
-                    {row.detail}
+                          {row.detail || ui.fallbackDetail}
                   </p>
-                ) : null}
+                      ) : null}
+                    </>
+                  );
+                })()}
               </li>
             ))}
           </ul>

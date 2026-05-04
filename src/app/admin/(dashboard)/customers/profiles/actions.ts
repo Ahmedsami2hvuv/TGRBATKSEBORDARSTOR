@@ -1137,12 +1137,23 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
     const created = await prisma.customerPhoneProfile.findUnique({
       where: { phone_regionId: { phone: elig.n, regionId: elig.regionId } },
     });
+    const parsedNew = parseCustomerReferenceText(imp.rawText);
+    const importedFields = formatCompletedFieldsLabel({
+      hasPhoto: !!(imp.doorImageUrl ?? "").trim(),
+      hasLocation: !!parsedNew.locationUrl.trim(),
+      hasLandmark: !!parsedNew.landmark.trim(),
+      hasAlternatePhone: !!parsedNew.alternatePhone.trim(),
+    });
     await persistLegacyKseImportLog(orderId, LEGACY_KSE_LOG.IMPORTED_NEW, {
       phone: elig.n,
       regionId: elig.regionId,
       profileId: created?.id ?? null,
     });
-    rows.push({ orderId, status: "imported" });
+    rows.push({
+      orderId,
+      status: "imported",
+      detail: `الزبون كان غير موجود — تمت إضافته بنجاح. البيانات المسحوبة: ${importedFields}.`,
+    });
   }
 
   return { ok: true, rows };
