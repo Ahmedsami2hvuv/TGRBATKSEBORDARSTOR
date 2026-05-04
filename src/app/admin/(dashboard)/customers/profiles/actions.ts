@@ -105,8 +105,9 @@ function inferExtFromImage(contentType: string, url: string): string {
 /** من صفحة طلب الموقع القديم: إن وُجد «معلومات الزبون» نقتطعه فقط قبل التحليل. */
 function sliceLegacyOrderCustomerSection(rawText: string): string {
   const t = rawText.replace(/\r\n/g, "\n");
+  /** لا تستخدم -{3,} — أي «---» في النص (فواصل، Markdown…) يقطع قبل «رقم الهاتف». فاصل حقيقي: سطر شرطات طويل بين أسطر. */
   const re =
-    /^\s*معلومات\s+الزبون\s*$(?:\n[\s\S]*?)(?=\n\s*-{3,}|\n\s*معلومات\s+الطلب\s*$|\n\s*معلومات\s+الطلب\s*\n|$)/im;
+    /^\s*معلومات\s+الزبون\s*$(?:\n[\s\S]*?)(?=\n[\t \u00a0]*-{5,}[\t \u00a0]*\r?\n|\n\s*معلومات\s+الطلب\s*$|\n\s*معلومات\s+الطلب\s*\n|$)/im;
   const m = re.exec(t);
   if (m) return m[0].trim();
   return rawText;
@@ -172,9 +173,9 @@ function extractFirstIraqMobileLocal11FromFreeText(scoped: string): string {
 }
 
 function parseCustomerReferenceText(rawText: string) {
-  const scoped = stripInvisibleMarks(
-    sliceLegacyOrderCustomerSection(rawText).replace(/\u00a0/g, " "),
-  );
+  const tNorm = rawText.replace(/\r\n/g, "\n").replace(/\u00a0/g, " ");
+  const fullStripped = stripInvisibleMarks(tNorm);
+  const scoped = stripInvisibleMarks(sliceLegacyOrderCustomerSection(tNorm));
   const scopedNorm = normalizeDigitsToLatin(scoped);
   const scopedPhoneScan = compactForPhoneScan(scopedNorm);
   const lines = scopedNorm.split(/\r?\n/);
@@ -236,6 +237,10 @@ function parseCustomerReferenceText(rawText: string) {
 
   if (!phone) {
     phone = extractFirstIraqMobileLocal11FromFreeText(scoped);
+  }
+  /** إن قطع sliceLegacy قسم الزبون مبكراً (شرطات/فاصل)، الرقم يبقى في المربع كاملاً. */
+  if (!phone) {
+    phone = extractFirstIraqMobileLocal11FromFreeText(fullStripped);
   }
 
   if (!locationUrl) {
