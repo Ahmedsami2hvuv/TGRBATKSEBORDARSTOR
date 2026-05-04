@@ -554,7 +554,7 @@ export function CustomerProfileUpsertForm({
                 onChange={(e) => setRawText(e.target.value)}
                 rows={6}
                 className={`${ad.input} flex-1 min-h-[8rem] resize-y bg-white font-normal`}
-                placeholder="اكتب يدوياً أو الصق نصاً، أو الصق رابط تفاصيل الطلب في الحقل أعلاه فيُستورد هنا تلقائياً. إن لصقت كامل نص صفحة الطلب القديمة يُستخرج قسم «معلومات الزبون» تلقائياً."
+                placeholder="المنطقة: … ثم رقم الجوال (07XXXXXXXXX أو 7XXXXXXXXX أو +964…) في أي سطر — لا يشترط «رقم الهاتف:». أو الصق رابط الطلب أعلاه للاستيراد."
                 dir="auto"
               />
               <div className="flex flex-col gap-2 shrink-0">

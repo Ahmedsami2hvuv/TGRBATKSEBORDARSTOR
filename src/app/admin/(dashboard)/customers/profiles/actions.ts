@@ -7,7 +7,7 @@ import {
 import { deleteFromR2 } from "@/lib/upload-storage";
 import { uploadToR2 } from "@/lib/upload-storage";
 import { prisma } from "@/lib/prisma";
-import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
+import { digitsOnly, normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { randomUUID } from "crypto";
@@ -142,6 +142,30 @@ function compactForPhoneScan(s: string): string {
   return s.replace(/[\s\u00a0\-_.]/g, "");
 }
 
+/** أول رقم جوال عراقي يظهر في النص بأي شكل شائع (بدون اشتراط سطر «رقم الهاتف:»). */
+function extractFirstIraqMobileLocal11FromFreeText(scoped: string): string {
+  const d = digitsOnly(normalizeDigitsToLatin(stripInvisibleMarks(scoped)));
+  if (d.length < 10) return "";
+
+  const m07 = d.match(/07\d{9}/);
+  if (m07) return m07[0];
+
+  const m964 = d.match(/9647\d{9}/);
+  if (m964) {
+    const n = normalizeIraqMobileLocal11(m964[0]);
+    if (n) return n;
+  }
+
+  for (let i = 0; i + 10 <= d.length; i++) {
+    if (d[i] !== "7") continue;
+    if (i > 0 && d[i - 1] === "0") continue;
+    const sub = d.slice(i, i + 10);
+    const n = normalizeIraqMobileLocal11(sub);
+    if (n) return n;
+  }
+  return "";
+}
+
 function parseCustomerReferenceText(rawText: string) {
   const scoped = stripInvisibleMarks(
     sliceLegacyOrderCustomerSection(rawText).replace(/\u00a0/g, " "),
@@ -204,6 +228,10 @@ function parseCustomerReferenceText(rawText: string) {
   const allPhones = scopedPhoneScan.match(/07\d{9}/g) || [];
   if (!phone && allPhones[0]) phone = allPhones[0];
   if (!alternatePhone && allPhones[1] && allPhones[1] !== phone) alternatePhone = allPhones[1];
+
+  if (!phone) {
+    phone = extractFirstIraqMobileLocal11FromFreeText(scoped);
+  }
 
   if (!locationUrl) {
     const match = scopedNorm.match(/https?:\/\/[^"]+/i);
@@ -435,7 +463,10 @@ export async function upsertCustomerPhoneProfile(
   const parsed = parseCustomerReferenceText(rawText);
 
   if (!parsed.phone) {
-    return { error: "أدخل رقم الهاتف في النص باستخدام 'رقم الهاتف:'." };
+    return {
+      error:
+        "لم يُعثر على رقم جوال عراقي في النص. اكتب الرقم بصيغة 07XXXXXXXXX أو 7XXXXXXXXX أو 9647XXXXXXXXX، أو سطر «رقم الهاتف: …».",
+    };
   }
 
   const n = normalizeIraqMobileLocal11(parsed.phone);
