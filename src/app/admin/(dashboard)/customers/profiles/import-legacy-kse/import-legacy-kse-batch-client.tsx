@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import {
@@ -25,6 +25,8 @@ export function ImportLegacyKseBatchClient() {
   const [lastError, setLastError] = useState<string | null>(null);
   const [stats, setStats] = useState<LegacyKseRangeStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [showCookieInput, setShowCookieInput] = useState(false);
+  const cookieAutoSavedRef = useRef(false);
 
   const loadStats = useCallback(async () => {
     setStatsLoading(true);
@@ -55,6 +57,15 @@ export function ImportLegacyKseBatchClient() {
     }
   }, []);
 
+  useEffect(() => {
+    try {
+      const hasSessionCookie = !!sessionStorage.getItem(LEGACY_COOKIE_SESSION_KEY)?.trim();
+      setShowCookieInput(!hasSessionCookie);
+    } catch {
+      setShowCookieInput(true);
+    }
+  }, []);
+
   const effectiveCookie = useMemo(() => {
     const o = cookieOverride.trim();
     if (o) return o;
@@ -64,6 +75,47 @@ export function ImportLegacyKseBatchClient() {
       return "";
     }
   }, [cookieOverride]);
+
+  useEffect(() => {
+    const e = (lastError ?? "").toLowerCase();
+    if (
+      e.includes("cookie") ||
+      e.includes("انتهت الجلسة") ||
+      e.includes("ردّ برمز 401") ||
+      e.includes("ردّ برمز 403")
+    ) {
+      setShowCookieInput(true);
+    }
+  }, [lastError]);
+
+  const saveCookieForSession = () => {
+    const t = cookieOverride.trim();
+    if (!t) return;
+    try {
+      sessionStorage.setItem(LEGACY_COOKIE_SESSION_KEY, t);
+      setShowCookieInput(false);
+      setLastError(null);
+    } catch {
+      setLastError("المتصفح يمنع التخزين المحلي للكوكي.");
+    }
+  };
+
+  useEffect(() => {
+    const t = cookieOverride.trim();
+    if (!showCookieInput || !t) {
+      cookieAutoSavedRef.current = false;
+      return;
+    }
+    if (cookieAutoSavedRef.current) return;
+    try {
+      sessionStorage.setItem(LEGACY_COOKIE_SESSION_KEY, t);
+      cookieAutoSavedRef.current = true;
+      setShowCookieInput(false);
+      setLastError(null);
+    } catch {
+      setLastError("المتصفح يمنع التخزين المحلي للكوكي.");
+    }
+  }, [cookieOverride, showCookieInput]);
 
   const runBatch = useCallback(async () => {
     setLastError(null);
@@ -80,6 +132,7 @@ export function ImportLegacyKseBatchClient() {
     for (let id = from; id <= to; id++) orderIds.push(id);
 
     if (!effectiveCookie) {
+      setShowCookieInput(true);
       setLastError(
         "لا يوجد Cookie. احفظ الكوكي من صفحة «إضافة زبون مرجعي» أو الصقه في المربع أدناه.",
       );
@@ -99,6 +152,7 @@ export function ImportLegacyKseBatchClient() {
         return;
       }
       setLog(r.rows);
+      if (effectiveCookie) setShowCookieInput(false);
       const advanced = to + 1;
       setNextId(advanced);
       try {
@@ -298,18 +352,51 @@ export function ImportLegacyKseBatchClient() {
           </p>
         </div>
 
-        <label className="block text-sm">
-          <span className="font-bold">Cookie (اختياري إن وُجد محفوظ من صفحة إضافة الزبون)</span>
-          <textarea
-            value={cookieOverride}
-            onChange={(e) => setCookieOverride(e.target.value)}
-            rows={2}
-            dir="ltr"
-            placeholder="اتركه فارغاً لاستخدام الجلسة المحفوظة، أو الصق Cookie هنا"
-            className={`${ad.input} mt-1 w-full font-mono text-xs`}
-            spellCheck={false}
-          />
-        </label>
+        {!showCookieInput && effectiveCookie ? (
+          <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-100">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-bold">✓ Cookie متوفر لهذه الجلسة</span>
+              <button
+                type="button"
+                onClick={() => setShowCookieInput(true)}
+                className="rounded-md border border-emerald-600 bg-white px-2.5 py-1 text-[11px] font-bold text-emerald-800 hover:bg-emerald-50 dark:border-emerald-500 dark:bg-slate-900 dark:text-emerald-200"
+              >
+                تعديل الكوكي
+              </button>
+            </div>
+          </div>
+        ) : (
+          <label className="block text-sm">
+            <span className="font-bold">Cookie (يظهر فقط عند الحاجة)</span>
+            <textarea
+              value={cookieOverride}
+              onChange={(e) => setCookieOverride(e.target.value)}
+              rows={2}
+              dir="ltr"
+              placeholder="الصق Cookie — تُحفظ تلقائياً وتختفي الخانة مباشرة"
+              className={`${ad.input} mt-1 w-full font-mono text-xs`}
+              spellCheck={false}
+            />
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={saveCookieForSession}
+                className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-black text-white hover:bg-emerald-700"
+              >
+                حفظ الكوكي للجلسة
+              </button>
+              {effectiveCookie ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCookieInput(false)}
+                  className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold dark:border-slate-600 dark:bg-slate-900"
+                >
+                  إخفاء
+                </button>
+              ) : null}
+            </div>
+          </label>
+        )}
 
         {lastError ? <p className={ad.error}>{lastError}</p> : null}
 
@@ -324,12 +411,12 @@ export function ImportLegacyKseBatchClient() {
       </section>
 
       {log.length > 0 ? (
-        <section className="rounded-xl border border-slate-200 p-3 text-sm dark:border-slate-600">
-          <h2 className="mb-2 font-bold">نتيجة آخر دفعة</h2>
-          <ul className="max-h-64 space-y-1 overflow-y-auto font-mono text-xs" dir="ltr">
+        <section className="rounded-xl border border-slate-200 p-4 text-base dark:border-slate-600">
+          <h2 className="mb-3 text-base font-black">نتيجة آخر دفعة</h2>
+          <ul className="max-h-72 space-y-2 overflow-y-auto text-sm" dir="ltr">
             {log.map((row) => (
-              <li key={row.orderId}>
-                #{row.orderId}{" "}
+              <li key={row.orderId} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50">
+                <span className="font-mono font-bold">#{row.orderId}</span>{" "}
                 <span
                   className={
                     row.status === "imported" || row.status === "photo_updated"
@@ -345,7 +432,11 @@ export function ImportLegacyKseBatchClient() {
                 >
                   {row.status}
                 </span>
-                {row.detail ? ` — ${row.detail.slice(0, 120)}` : ""}
+                {row.detail ? (
+                  <p className="mt-1 text-[13px] leading-relaxed text-slate-700 dark:text-slate-200">
+                    {row.detail}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>
