@@ -181,15 +181,32 @@ function decodeBasicHtmlEntities(s: string): string {
     });
 }
 
-/** يضع رقم الاتصال من روابط tel:/sms: في النص قبل إزالة الوسوم (وإلا يبقى «اتصال» بلا أرقام). */
-function injectCommunicationHrefsAsText(html: string): string {
+/** يحقن href المهمة (tel/sms + روابط خرائط) داخل النص قبل إزالة الوسوم. */
+function injectImportantHrefsAsText(html: string): string {
   return html.replace(
-    /<a\b[^>]*?\bhref\s*=\s*["']((?:tel|sms)\s*:[^"']+)["'][^>]*>/gi,
-    (_m, href: string) => {
-      let raw = href.replace(/^tel\s*:/i, "").replace(/^sms\s*:/i, "").trim();
-      raw = decodeBasicHtmlEntities(raw.replace(/^\/\//, ""));
-      raw = raw.split(/[?;&]/)[0]?.trim() ?? "";
-      return raw ? ` ${raw} ` : " ";
+    /<a\b[^>]*?\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi,
+    (_m, hrefRaw: string) => {
+      const href = decodeBasicHtmlEntities(hrefRaw.replace(/^\/\//, "")).trim();
+      if (!href) return " ";
+
+      if (/^(tel|sms)\s*:/i.test(href)) {
+        let raw = href.replace(/^tel\s*:/i, "").replace(/^sms\s*:/i, "").trim();
+        raw = raw.split(/[?;&]/)[0]?.trim() ?? "";
+        return raw ? ` ${raw} ` : " ";
+      }
+
+      if (/^https?:\/\//i.test(href)) {
+        const u = href.toLowerCase();
+        const isMap =
+          u.includes("maps.app.goo.gl") ||
+          u.includes("google.com/maps") ||
+          u.includes("goo.gl/maps") ||
+          u.includes("maps.google") ||
+          u.includes("map?q=");
+        if (isMap) return ` ${href} `;
+      }
+
+      return " ";
     },
   );
 }
@@ -229,7 +246,7 @@ export function extractCustomerReferenceRawTextFromLegacyOrderHtml(
   if (endOrderInfo >= 0) end = Math.min(end, endOrderInfo);
   if (endDash >= 0) end = Math.min(end, endDash);
   const capped = Math.min(end, 18_000);
-  const slice = injectCommunicationHrefsAsText(fromStart.slice(0, capped));
+  const slice = injectImportantHrefsAsText(fromStart.slice(0, capped));
   const plain = legacyHtmlChunkToPlainText(slice);
   if (plain.length < 12) return null;
   return plain;

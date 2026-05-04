@@ -943,6 +943,8 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
     });
     if (cached && LEGACY_KSE_NO_REFETCH.has(cached.outcome)) {
       let bypassCacheForMissingPhoto = false;
+      let bypassCacheForMissingLocationOrLandmark = false;
+      let bypassCacheForRecheckNoCustomer = false;
       let cachedDetail = `سبق المسح (${cached.outcome}) — لن يُعاد الطلب من الموقع بعد تجديد الكوكي.`;
       if (cached.phone && cached.regionId) {
         const prof = await prisma.customerPhoneProfile.findUnique({
@@ -957,6 +959,8 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
           },
         });
         const noDoorPhoto = !!(prof && !String(prof.photoUrl ?? "").trim());
+        const noLocation = !!(prof && !String(prof.locationUrl ?? "").trim());
+        const noLandmark = !!(prof && !String(prof.landmark ?? "").trim());
         if (
           noDoorPhoto &&
           (cached.outcome === LEGACY_KSE_LOG.SKIP_ALREADY_IN_DB ||
@@ -964,7 +968,14 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
         ) {
           bypassCacheForMissingPhoto = true;
         }
-        if (prof && !bypassCacheForMissingPhoto) {
+        if (
+          (noLocation || noLandmark) &&
+          (cached.outcome === LEGACY_KSE_LOG.SKIP_ALREADY_IN_DB ||
+            cached.outcome === LEGACY_KSE_LOG.IMPORTED_NEW)
+        ) {
+          bypassCacheForMissingLocationOrLandmark = true;
+        }
+        if (prof && !bypassCacheForMissingPhoto && !bypassCacheForMissingLocationOrLandmark) {
           const completed = formatCompletedFieldsLabel({
             hasPhoto: !!String(prof.photoUrl ?? "").trim(),
             hasLocation: !!String(prof.locationUrl ?? "").trim(),
@@ -974,10 +985,17 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
           cachedDetail = `الزبون مسحوب سابقاً وموجود حالياً. البيانات المتوفرة: ${completed}.`;
         }
       } else if (cached.outcome === LEGACY_KSE_LOG.SKIP_NO_CUSTOMER) {
+        // بعد تحسين parser قد تنجح الطلبات التي كانت سابقاً تُصنّف skip_no_customer_html.
+        // لذلك نسمح بإعادة فحصها عند المرور عليها مجدداً.
+        bypassCacheForRecheckNoCustomer = true;
         cachedDetail =
-          "هذا الطلب لا يحتوي قسم «معلومات الزبون» في صفحة KSE، لذلك تم تخطيه سابقاً ولن يُعاد.";
+          "هذا الطلب كان مصنفاً سابقاً بلا قسم «معلومات الزبون»، وسيُعاد فحصه الآن بعد تحديث الاستخراج.";
       }
-      if (!bypassCacheForMissingPhoto) {
+      if (
+        !bypassCacheForMissingPhoto &&
+        !bypassCacheForMissingLocationOrLandmark &&
+        !bypassCacheForRecheckNoCustomer
+      ) {
         rows.push({
           orderId,
           status: "cached",
