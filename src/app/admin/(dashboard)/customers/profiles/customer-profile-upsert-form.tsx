@@ -55,6 +55,7 @@ export function CustomerProfileUpsertForm({
   const [legacyCookieStamp, setLegacyCookieStamp] = useState(0);
   const [legacyFetchBusy, setLegacyFetchBusy] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [remotePhotoPreviewBroken, setRemotePhotoPreviewBroken] = useState(false);
   const legacyOrderPageUrlRef = useRef(legacyOrderPageUrl);
   const legacySessionCookieRef = useRef("");
   const lastAutoImportedLegacyHref = useRef<string | null>(null);
@@ -205,6 +206,10 @@ export function CustomerProfileUpsertForm({
 
     return () => window.clearTimeout(timer);
   }, [legacyOrderPageUrl, legacyCookieStamp]);
+
+  useEffect(() => {
+    setRemotePhotoPreviewBroken(false);
+  }, [remotePhotoUrlInput]);
 
   const handleChoosePhoto = () => {
     photoInputRef.current?.click();
@@ -507,15 +512,37 @@ export function CustomerProfileUpsertForm({
             onDrop={handleDrop}
           >
             <div className="space-y-2 text-sm">
-              <input
-                type="url"
-                name="remoteImageUrl"
-                value={remotePhotoUrlInput}
-                onChange={(e) => setRemotePhotoUrlInput(e.target.value)}
-                placeholder="رابط صورة مباشر (اختياري — يُملأ تلقائياً بعد لصق رابط الطلب إن وُجدت صورة باب)"
-                className={`${ad.input} w-full bg-white`}
-                dir="ltr"
-              />
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+                <input
+                  type="url"
+                  name="remoteImageUrl"
+                  value={remotePhotoUrlInput}
+                  onChange={(e) => setRemotePhotoUrlInput(e.target.value)}
+                  placeholder="رابط صورة مباشر (اختياري — يُملأ تلقائياً إن وُجدت «صورة الباب» وليست «لا توجد صورة»)"
+                  className={`${ad.input} w-full flex-1 bg-white min-w-0`}
+                  dir="ltr"
+                />
+                <div
+                  className="shrink-0 flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100 dark:border-slate-600 dark:bg-slate-800"
+                  title="معاينة صورة الباب من الرابط"
+                >
+                  {remotePhotoUrlInput.trim() &&
+                  /^https?:\/\//i.test(remotePhotoUrlInput.trim()) &&
+                  !selectedPhoto &&
+                  !remotePhotoPreviewBroken ? (
+                    <img
+                      src={remotePhotoUrlInput.trim()}
+                      alt=""
+                      className="max-h-full max-w-full object-contain"
+                      onError={() => setRemotePhotoPreviewBroken(true)}
+                    />
+                  ) : (
+                    <span className="px-1 text-center text-[10px] text-slate-500 dark:text-slate-400">
+                      معاينة
+                    </span>
+                  )}
+                </div>
+              </div>
               {remotePhotoUrlInput.trim() && !selectedPhoto ? (
                 <p className="text-slate-500 text-[11px]">يُرفع مع «حفظ البيانات».</p>
               ) : null}

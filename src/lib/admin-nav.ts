@@ -17,6 +17,12 @@ export const ADMIN_TILES: AdminTile[] = [
   { slug: "reports", label: "التقارير", iconKey: "ui_chart", href: "/admin/reports" },
   { slug: "prep-notices", label: "إشعارات تجهيز المجهزين", iconKey: "ui_announcement", href: "/admin/prep-notices" },
   { slug: "new-customer-profile", label: "إضافة زبون مرجعي", iconKey: "ui_user_add", href: "/admin/customers/profiles/new" },
+  {
+    slug: "legacy-kse-profiles-batch",
+    label: "استيراد زبائن KSE (دفعات)",
+    iconKey: "ui_package",
+    href: "/admin/customers/profiles/import-legacy-kse",
+  },
   { slug: "customers", label: "بيانات الزبائن", iconKey: "ui_users", href: "/admin/customers" },
   { slug: "couriers", label: "المندوبين", iconKey: "ui_courier", href: "/admin/couriers" },
   { slug: "courier-map", label: "خريطة المندوبين", iconKey: "ui_map", href: "/admin/couriers/map" },

@@ -61,6 +61,20 @@ model CustomerPhoneProfile {
   @@index([regionId])
 }
 
+/** تتبّع استيراد صفحات طلبات الموقع القديم d.ksebstor — لاستئناف السحب بعد تجديد الكوكي وتلخيص الإحصائيات. */
+model LegacyKseOrderImportLog {
+  orderId   Int      @id
+  outcome   String   @db.VarChar(32)
+  phone     String?  @db.VarChar(20)
+  regionId  String?
+  profileId String?
+  message   String?  @db.VarChar(500)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([outcome])
+}
+
 model Shop {
   id            String         @id @default(cuid())
   name          String

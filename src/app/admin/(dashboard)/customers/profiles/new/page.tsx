@@ -19,9 +19,12 @@ export default async function NewCustomerProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 text-sm">
+      <div className="flex flex-wrap items-center gap-3 text-sm">
         <Link href="/admin/customers" className={ad.link}>
           ← رجوع لبيانات الزبائن
+        </Link>
+        <Link href="/admin/customers/profiles/import-legacy-kse" className={ad.link}>
+          استيراد دفعي من طلبات الموقع القديم (KSE)
         </Link>
       </div>
 

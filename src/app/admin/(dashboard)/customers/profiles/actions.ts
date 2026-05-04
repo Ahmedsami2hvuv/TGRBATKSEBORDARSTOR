@@ -7,6 +7,7 @@ import {
 import { deleteFromR2 } from "@/lib/upload-storage";
 import { uploadToR2 } from "@/lib/upload-storage";
 import { prisma } from "@/lib/prisma";
+import { isAdminSession } from "@/lib/admin-session";
 import { digitsOnly, normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -461,11 +462,13 @@ export async function importLegacyOrderDetailsFromUrl(
   return { ok: true, rawText, doorImageUrl };
 }
 
-export async function upsertCustomerPhoneProfile(
-  _prev: CustomerProfileFormState,
-  formData: FormData,
-): Promise<CustomerProfileFormState> {
-  const rawText = String(formData.get("rawText") ?? "").trim();
+/** منطق حفظ بروفايل الزبون المشترك (نموذج يدوي + استيراد دفعي من صفحات الطلب القديمة). */
+async function performUpsertCustomerPhoneProfile(input: {
+  rawText: string;
+  uploadedPhotoUrl: string | null;
+  remoteImageUrl: string | null;
+}): Promise<CustomerProfileFormState> {
+  const rawText = input.rawText.trim();
   if (!rawText) {
     return { error: "أدخل بيانات الزبون في المربع أعلاه ثم اضغط حفظ." };
   }
@@ -523,20 +526,15 @@ export async function upsertCustomerPhoneProfile(
     alternatePhone = alt;
   }
 
-  const uploaded = await photoFromForm(formData, "photo");
-  if (!uploaded.ok) {
-    return { error: uploaded.error };
-  }
-
-  const remoteImageUrl = String(formData.get("remoteImageUrl") ?? "").trim();
+  const remoteTrim = input.remoteImageUrl?.trim() ?? "";
   let photoUrl = existingInRegion?.photoUrl ?? "";
-  if (uploaded.photoUrl) {
+  if (input.uploadedPhotoUrl) {
     if (existingInRegion?.photoUrl) {
       await deleteFromR2(existingInRegion.photoUrl);
     }
-    photoUrl = uploaded.photoUrl;
-  } else if (remoteImageUrl) {
-    const remote = await profilePhotoFromRemoteUrl(remoteImageUrl);
+    photoUrl = input.uploadedPhotoUrl;
+  } else if (remoteTrim) {
+    const remote = await profilePhotoFromRemoteUrl(remoteTrim);
     if (!remote.ok) {
       return { error: remote.error };
     }
@@ -574,6 +572,429 @@ export async function upsertCustomerPhoneProfile(
   revalidatePath("/admin/customers");
   revalidatePath("/admin/customers/profiles");
   return { ok: true, timestamp: Date.now() };
+}
+
+export async function upsertCustomerPhoneProfile(
+  _prev: CustomerProfileFormState,
+  formData: FormData,
+): Promise<CustomerProfileFormState> {
+  const rawText = String(formData.get("rawText") ?? "").trim();
+  const uploaded = await photoFromForm(formData, "photo");
+  if (!uploaded.ok) {
+    return { error: uploaded.error };
+  }
+  const remoteImageUrl = String(formData.get("remoteImageUrl") ?? "").trim() || null;
+  return performUpsertCustomerPhoneProfile({
+    rawText,
+    uploadedPhotoUrl: uploaded.photoUrl,
+    remoteImageUrl,
+  });
+}
+
+export type LegacyKseBatchImportRow = {
+  orderId: number;
+  status: "imported" | "skipped" | "error" | "cached" | "already_in_db" | "photo_updated";
+  detail?: string;
+};
+
+/** نتائج مسجّلة في DB — لا نعيد جلب الصفحة بعد النجاح الدائم. */
+const LEGACY_KSE_LOG = {
+  IMPORTED_NEW: "imported_new",
+  /** بروفايل كان موجوداً بلا صورة باب — حُدّث من رابط صورة الباب في صفحة الطلب. */
+  PROFILE_PHOTO_FILLED: "profile_photo_filled",
+  SKIP_ALREADY_IN_DB: "skip_already_in_db",
+  SKIP_NO_CUSTOMER: "skip_no_customer_html",
+  ERROR_FETCH: "error_fetch",
+  ERROR_SAVE: "error_save",
+} as const;
+
+const LEGACY_KSE_NO_REFETCH = new Set<string>([
+  LEGACY_KSE_LOG.IMPORTED_NEW,
+  LEGACY_KSE_LOG.PROFILE_PHOTO_FILLED,
+  LEGACY_KSE_LOG.SKIP_ALREADY_IN_DB,
+  LEGACY_KSE_LOG.SKIP_NO_CUSTOMER,
+]);
+
+function classifyLegacyFetchFailure(message: string): string {
+  if (message.includes("لم يُعثر على قسم") || message.includes("معلومات الزبون")) {
+    return LEGACY_KSE_LOG.SKIP_NO_CUSTOMER;
+  }
+  return LEGACY_KSE_LOG.ERROR_FETCH;
+}
+
+async function persistLegacyKseImportLog(
+  orderId: number,
+  outcome: string,
+  fields: {
+    phone?: string | null;
+    regionId?: string | null;
+    profileId?: string | null;
+    message?: string | null;
+  },
+): Promise<void> {
+  const msg = fields.message ? fields.message.slice(0, 500) : null;
+  await prisma.legacyKseOrderImportLog.upsert({
+    where: { orderId },
+    create: {
+      orderId,
+      outcome,
+      phone: fields.phone ?? null,
+      regionId: fields.regionId ?? null,
+      profileId: fields.profileId ?? null,
+      message: msg,
+    },
+    update: {
+      outcome,
+      phone: fields.phone ?? null,
+      regionId: fields.regionId ?? null,
+      profileId: fields.profileId ?? null,
+      message: msg,
+    },
+  });
+}
+
+/** تحقق من صلاحية النص قبل الحفظ — وهل البروفايل موجود مسبقاً (ريلوي / سحب سابق). */
+async function resolveLegacyImportEligibility(rawText: string): Promise<
+  | { ok: true; n: string; regionId: string; existingProfileId: string | null }
+  | { ok: false; error: string }
+> {
+  const rawTextTrim = rawText.trim();
+  if (!rawTextTrim) {
+    return { ok: false, error: "نص فارغ." };
+  }
+
+  const parsed = parseCustomerReferenceText(rawTextTrim);
+  if (!parsed.phone) {
+    return { ok: false, error: "لا رقم جوال في النص." };
+  }
+
+  const n = normalizeIraqMobileLocal11(parsed.phone);
+  if (!n) {
+    return { ok: false, error: "رقم الجوال غير صالح." };
+  }
+
+  if (!parsed.regionName.trim()) {
+    return { ok: false, error: "لا منطقة في النص." };
+  }
+
+  const region = await prisma.region.findFirst({
+    where: { name: { contains: parsed.regionName, mode: "insensitive" } },
+  });
+  if (!region) {
+    return { ok: false, error: `المنطقة '${parsed.regionName}' غير موجودة.` };
+  }
+
+  const locParsed = parseLocationUrl(parsed.locationUrl);
+  if (!locParsed.ok) {
+    return { ok: false, error: locParsed.error };
+  }
+
+  const altRaw = parsed.alternatePhone.trim();
+  if (altRaw) {
+    const alt = normalizeIraqMobileLocal11(altRaw);
+    if (!alt) {
+      return { ok: false, error: "الرقم الثاني غير صالح." };
+    }
+    if (alt === n) {
+      return { ok: false, error: "الرقم الثاني متماثل مع الأساسي." };
+    }
+  }
+
+  const existing = await prisma.customerPhoneProfile.findUnique({
+    where: { phone_regionId: { phone: n, regionId: region.id } },
+  });
+
+  return {
+    ok: true,
+    n,
+    regionId: region.id,
+    existingProfileId: existing?.id ?? null,
+  };
+}
+
+const LEGACY_KSE_ORDER_DETAILS_BASE =
+  "https://d.ksebstor.site/dashboard/orders_status/details/";
+const LEGACY_KSE_BATCH_MAX = 15;
+const LEGACY_KSE_BATCH_DELAY_MS_DEFAULT = 400;
+
+function legacyKseOrderDetailsUrl(orderId: number): string {
+  return `${LEGACY_KSE_ORDER_DETAILS_BASE}${orderId}`;
+}
+
+export type LegacyKseRangeStats = {
+  rangeStart: number;
+  rangeEnd: number;
+  totalOrdersInRange: number;
+  ordersLogged: number;
+  neverAttempted: number;
+  /** عدد أزواج (جوال + منطقة) المختلفة كما ظهرت في الطلبات التي خُزّن لها هاتف ومنطقة في السجل. */
+  uniqueCustomersFromLoggedOrders: number;
+  importedNew: number;
+  /** بروفايل موجود سابقاً بلا صورة — أُضيفت صورة الباب من KSE. */
+  profilesPhotoFilled: number;
+  skipAlreadyInDb: number;
+  skipNoCustomer: number;
+  errorsRetryable: number;
+};
+
+/** إحصائيات نطاق أرقام الطلبات مقابل سجل السحب من KSE (للمقارنة والاستئناف بعد تجديد الكوكي). */
+export async function getLegacyKseImportRangeStats(args: {
+  rangeStart: number;
+  rangeEnd: number;
+}): Promise<{ ok: true; stats: LegacyKseRangeStats } | { ok: false; error: string }> {
+  if (!(await isAdminSession())) {
+    return { ok: false, error: "غير مصرّح." };
+  }
+
+  const start = Math.min(args.rangeStart, args.rangeEnd);
+  const end = Math.max(args.rangeStart, args.rangeEnd);
+  const totalOrdersInRange = end - start + 1;
+
+  const logs = await prisma.legacyKseOrderImportLog.findMany({
+    where: { orderId: { gte: start, lte: end } },
+    select: { outcome: true },
+  });
+
+  const ordersLogged = logs.length;
+  const neverAttempted = Math.max(0, totalOrdersInRange - ordersLogged);
+
+  let importedNew = 0;
+  let profilesPhotoFilled = 0;
+  let skipAlreadyInDb = 0;
+  let skipNoCustomer = 0;
+  let errorsRetryable = 0;
+
+  for (const r of logs) {
+    switch (r.outcome) {
+      case LEGACY_KSE_LOG.IMPORTED_NEW:
+        importedNew++;
+        break;
+      case LEGACY_KSE_LOG.PROFILE_PHOTO_FILLED:
+        profilesPhotoFilled++;
+        break;
+      case LEGACY_KSE_LOG.SKIP_ALREADY_IN_DB:
+        skipAlreadyInDb++;
+        break;
+      case LEGACY_KSE_LOG.SKIP_NO_CUSTOMER:
+        skipNoCustomer++;
+        break;
+      case LEGACY_KSE_LOG.ERROR_FETCH:
+      case LEGACY_KSE_LOG.ERROR_SAVE:
+        errorsRetryable++;
+        break;
+      default:
+        break;
+    }
+  }
+
+  const distinctRows = await prisma.$queryRaw<Array<{ count: bigint }>>`
+    SELECT COUNT(*)::bigint AS count
+    FROM (
+      SELECT DISTINCT phone, "regionId"
+      FROM "LegacyKseOrderImportLog"
+      WHERE "orderId" >= ${start}
+        AND "orderId" <= ${end}
+        AND phone IS NOT NULL
+        AND TRIM(phone) <> ''
+        AND "regionId" IS NOT NULL
+        AND TRIM("regionId") <> ''
+    ) AS t
+  `;
+  const uniqueCustomersFromLoggedOrders = Number(
+    distinctRows[0]?.count ?? 0,
+  );
+
+  return {
+    ok: true,
+    stats: {
+      rangeStart: start,
+      rangeEnd: end,
+      totalOrdersInRange,
+      ordersLogged,
+      neverAttempted,
+      uniqueCustomersFromLoggedOrders,
+      importedNew,
+      profilesPhotoFilled,
+      skipAlreadyInDb,
+      skipNoCustomer,
+      errorsRetryable,
+    },
+  };
+}
+
+/**
+ * استيراد دفعي: يجلب صفحات تفاصيل الطلب من الموقع القديم (كل طلب ↔ زبون واحد على الأغلب)
+ * ويحفظ في CustomerPhoneProfile. يختلف عن استيراد Railway (قاعدة بيانات زبائن مباشرة).
+ * يُسجّل كل طلب في LegacyKseOrderImportLog — عند تجديد الكوكي يُستأنف دون إعادة جلب الطلبات المكتملة.
+ */
+export async function runLegacyKseOrderDetailsBatchImport(args: {
+  orderIds: number[];
+  legacyCookie: string | null | undefined;
+  delayMs?: number;
+}): Promise<
+  | { ok: true; rows: LegacyKseBatchImportRow[] }
+  | { ok: false; error: string }
+> {
+  if (!(await isAdminSession())) {
+    return { ok: false, error: "غير مصرّح." };
+  }
+
+  const delayMs = Math.min(
+    3000,
+    Math.max(0, Number(args.delayMs ?? LEGACY_KSE_BATCH_DELAY_MS_DEFAULT) || 0),
+  );
+
+  const ids = [...new Set(args.orderIds)]
+    .filter((n) => Number.isInteger(n) && n > 0)
+    .slice(0, LEGACY_KSE_BATCH_MAX);
+
+  if (ids.length === 0) {
+    return { ok: false, error: "أدخل أرقام طلبات صحيحة." };
+  }
+
+  const cookie = args.legacyCookie?.trim() || null;
+  const rows: LegacyKseBatchImportRow[] = [];
+
+  for (let i = 0; i < ids.length; i++) {
+    const orderId = ids[i]!;
+    if (i > 0 && delayMs > 0) {
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+
+    const cached = await prisma.legacyKseOrderImportLog.findUnique({
+      where: { orderId },
+      select: { outcome: true, phone: true, regionId: true },
+    });
+    if (cached && LEGACY_KSE_NO_REFETCH.has(cached.outcome)) {
+      let bypassCacheForMissingPhoto = false;
+      if (cached.phone && cached.regionId) {
+        const prof = await prisma.customerPhoneProfile.findUnique({
+          where: {
+            phone_regionId: { phone: cached.phone, regionId: cached.regionId },
+          },
+          select: { photoUrl: true },
+        });
+        const noDoorPhoto = !!(prof && !String(prof.photoUrl ?? "").trim());
+        if (
+          noDoorPhoto &&
+          (cached.outcome === LEGACY_KSE_LOG.SKIP_ALREADY_IN_DB ||
+            cached.outcome === LEGACY_KSE_LOG.IMPORTED_NEW)
+        ) {
+          bypassCacheForMissingPhoto = true;
+        }
+      }
+      if (!bypassCacheForMissingPhoto) {
+        rows.push({
+          orderId,
+          status: "cached",
+          detail: `سبق المسح (${cached.outcome}) — لن يُعاد الطلب من الموقع بعد تجديد الكوكي.`,
+        });
+        continue;
+      }
+    }
+
+    const href = legacyKseOrderDetailsUrl(orderId);
+    const imp = await importLegacyOrderDetailsFromUrl(href, cookie);
+    if (!imp.ok) {
+      const outcome = classifyLegacyFetchFailure(imp.error);
+      await persistLegacyKseImportLog(orderId, outcome, { message: imp.error });
+      rows.push({
+        orderId,
+        status: outcome === LEGACY_KSE_LOG.ERROR_FETCH ? "error" : "skipped",
+        detail: imp.error,
+      });
+      continue;
+    }
+
+    const elig = await resolveLegacyImportEligibility(imp.rawText);
+    if (!elig.ok) {
+      await persistLegacyKseImportLog(orderId, LEGACY_KSE_LOG.ERROR_SAVE, {
+        message: elig.error,
+      });
+      rows.push({ orderId, status: "error", detail: elig.error });
+      continue;
+    }
+
+    if (elig.existingProfileId) {
+      const existingProf = await prisma.customerPhoneProfile.findUnique({
+        where: { id: elig.existingProfileId },
+        select: { photoUrl: true },
+      });
+      const hasPhoto = !!(existingProf?.photoUrl ?? "").trim();
+      const doorUrl = (imp.doorImageUrl ?? "").trim();
+
+      if (!hasPhoto && doorUrl) {
+        const saveExisting = await performUpsertCustomerPhoneProfile({
+          rawText: imp.rawText,
+          uploadedPhotoUrl: null,
+          remoteImageUrl: imp.doorImageUrl,
+        });
+        if (saveExisting.error) {
+          await persistLegacyKseImportLog(orderId, LEGACY_KSE_LOG.ERROR_SAVE, {
+            message: saveExisting.error,
+            phone: elig.n,
+            regionId: elig.regionId,
+          });
+          rows.push({ orderId, status: "error", detail: saveExisting.error });
+          continue;
+        }
+        await persistLegacyKseImportLog(orderId, LEGACY_KSE_LOG.PROFILE_PHOTO_FILLED, {
+          phone: elig.n,
+          regionId: elig.regionId,
+          profileId: elig.existingProfileId,
+        });
+        rows.push({
+          orderId,
+          status: "photo_updated",
+          detail:
+            "البروفايل كان بلا صورة باب — تم تنزيل صورة الباب من صفحة الطلب وربطها بالسجل.",
+        });
+        continue;
+      }
+
+      await persistLegacyKseImportLog(orderId, LEGACY_KSE_LOG.SKIP_ALREADY_IN_DB, {
+        phone: elig.n,
+        regionId: elig.regionId,
+        profileId: elig.existingProfileId,
+      });
+      rows.push({
+        orderId,
+        status: "already_in_db",
+        detail: hasPhoto
+          ? "الزبون موجود مسبقاً مع صورة باب — لم يُحدَّث."
+          : "الزبون موجود لكن صفحة الطلب لا تتضمّن رابط صورة باب صالحاً (أو «لا توجد صورة»).",
+      });
+      continue;
+    }
+
+    const save = await performUpsertCustomerPhoneProfile({
+      rawText: imp.rawText,
+      uploadedPhotoUrl: null,
+      remoteImageUrl: imp.doorImageUrl,
+    });
+
+    if (save.error) {
+      await persistLegacyKseImportLog(orderId, LEGACY_KSE_LOG.ERROR_SAVE, {
+        message: save.error,
+        phone: elig.n,
+        regionId: elig.regionId,
+      });
+      rows.push({ orderId, status: "error", detail: save.error });
+      continue;
+    }
+
+    const created = await prisma.customerPhoneProfile.findUnique({
+      where: { phone_regionId: { phone: elig.n, regionId: elig.regionId } },
+    });
+    await persistLegacyKseImportLog(orderId, LEGACY_KSE_LOG.IMPORTED_NEW, {
+      phone: elig.n,
+      regionId: elig.regionId,
+      profileId: created?.id ?? null,
+    });
+    rows.push({ orderId, status: "imported" });
+  }
+
+  return { ok: true, rows };
 }
 
 export async function updateCustomerPhoneProfile(

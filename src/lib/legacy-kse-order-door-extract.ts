@@ -56,8 +56,45 @@ export function isAllowedLegacyKseOrderPageUrl(raw: string): boolean {
   return parseAndValidateLegacyOrderPageUrl(raw).ok;
 }
 
+/** نصوص شائعة في الموقع القديم عندما لا توجد صورة باب — لا نأخذ أول &lt;img&gt; (غالباً أيقونة واتساب). */
+const NO_DOOR_PHOTO_IN_HTML =
+  /لا\s*توجد\s*صور[ةه]|لا\s*يوجد\s*صور[ةه]|بدون\s*صور[ةه]|لا\s*صور[ةه]\s*متاحة|لا\s*توجد\s*صورة\s*باب/i;
+
+function isExcludedDoorImageUrl(href: string): boolean {
+  const u = href.toLowerCase();
+  if (u.includes("whatsapp")) return true;
+  if (u.includes("wa.me")) return true;
+  if (u.includes("web.whatsapp")) return true;
+  if (u.includes("whatsapp-logo")) return true;
+  if (u.includes("wame.")) return true;
+  if (/\/icons?\/.*what/i.test(u)) return true;
+  if (u.includes("static/whatsapp")) return true;
+  if (u.endsWith(".svg") && (u.includes("what") || u.includes("phone") || u.includes("call"))) return true;
+  return false;
+}
+
+/** صور صغيرة جداً أو صنف icon — نتجاهلها كصورة باب. */
+function isLikelyUiIconImgTag(imgTag: string): boolean {
+  const t = imgTag.toLowerCase();
+  if (/\bclass\s*=\s*["'][^"']*\bicon\b/i.test(t)) return true;
+  if (/\balt\s*=\s*["'][^"']*واتس/i.test(t)) return true;
+  if (/\balt\s*=\s*["'][^"']*whatsapp/i.test(t)) return true;
+  const w = imgTag.match(/\bwidth\s*=\s*["']?(\d+)/i);
+  const h = imgTag.match(/\bheight\s*=\s*["']?(\d+)/i);
+  if (w && h) {
+    const wi = parseInt(w[1]!, 10);
+    const he = parseInt(h[1]!, 10);
+    if (Number.isFinite(wi) && Number.isFinite(he) && wi > 0 && he > 0 && wi <= 64 && he <= 64) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
- * يستخرج أول رابط صورة بعد تسمية «صورة الباب» في HTML صفحة الطلب القديمة.
+ * يستخرج رابط صورة الباب بعد «صورة الباب:» إن وُجدت صورة حقيقية.
+ * إن كان النص يقول «لا توجد صورة» قبل أي صورة باب، يُرجع null.
+ * يتجاهل أيقونات واتساب والروابط الشبيهة.
  */
 export function extractDoorImageUrlFromLegacyOrderHtml(
   html: string,
@@ -85,25 +122,44 @@ export function extractDoorImageUrlFromLegacyOrderHtml(
   if (labelMatch) {
     const from = labelMatch.index + labelMatch[0].length;
     const window = html.slice(from, from + 8000);
-    const imgRe = /<img[^>]+src\s*=\s*["']([^"']+)["'][^>]*>/gi;
+    const plainHead = window
+      .slice(0, 2500)
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ");
+    if (NO_DOOR_PHOTO_IN_HTML.test(plainHead)) {
+      return null;
+    }
+
+    const imgRe = /<img\b[^>]+>/gi;
     let m: RegExpExecArray | null;
     while ((m = imgRe.exec(window)) !== null) {
-      const href = toAbs(m[1]);
-      if (href) return href;
+      const tag = m[0];
+      if (isLikelyUiIconImgTag(tag)) continue;
+      const srcM = /\bsrc\s*=\s*["']([^"']+)["']/i.exec(tag);
+      if (!srcM) continue;
+      const href = toAbs(srcM[1]!);
+      if (!href || isExcludedDoorImageUrl(href)) continue;
+      return href;
     }
     const bg = window.match(/url\s*\(\s*["']?([^"')\s]+)["']?\s*\)/i);
     if (bg?.[1]) {
       const href = toAbs(bg[1]);
-      if (href) return href;
+      if (href && !isExcludedDoorImageUrl(href)) return href;
     }
+    /** وُجد عنوان «صورة الباب» ولم نعثر على صورة صالحة — لا نرجع لصور أخرى في الصفحة (مثل أيقونات). */
+    return null;
   }
 
-  for (const m of html.matchAll(/<img[^>]+src\s*=\s*["']([^"']+)["'][^>]*>/gi)) {
-    const raw = m[1].toLowerCase();
-    if (raw.includes("door") || raw.includes("%d8%a8%d8%a7%d8%a8")) {
-      const href = toAbs(m[1]);
-      if (href) return href;
-    }
+  for (const m of html.matchAll(/<img\b[^>]+>/gi)) {
+    const tag = m[0];
+    if (isLikelyUiIconImgTag(tag)) continue;
+    const srcM = /\bsrc\s*=\s*["']([^"']+)["']/i.exec(tag);
+    if (!srcM) continue;
+    const raw = srcM[1]!.toLowerCase();
+    if (!(raw.includes("door") || raw.includes("%d8%a8%d8%a7%d8%a8"))) continue;
+    const href = toAbs(srcM[1]!);
+    if (href && !isExcludedDoorImageUrl(href)) return href;
   }
 
   return null;
