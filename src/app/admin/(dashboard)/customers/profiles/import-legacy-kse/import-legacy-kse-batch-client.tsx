@@ -199,7 +199,7 @@ export function ImportLegacyKseBatchClient() {
     setLastError(null);
     const start = Math.min(rangeStart, rangeEnd);
     const end = Math.max(rangeStart, rangeEnd);
-    const size = Math.min(15, Math.max(1, Math.floor(batchSize)));
+    const size = Math.min(25, Math.max(1, Math.floor(batchSize)));
     const from = Math.max(start, Math.min(nextId, end));
     if (from > end) {
       setLastError("اكتمل النطاق — غيّر المؤشر أو النطاق.");
@@ -440,14 +440,14 @@ export function ImportLegacyKseBatchClient() {
             />
           </label>
           <label className="block text-sm">
-            <span className="font-bold">حجم الدفعة (حد أقصى 15)</span>
+            <span className="font-bold">حجم الدفعة (حد أقصى 25)</span>
             <input
               type="number"
               min={1}
-              max={15}
+              max={25}
               value={batchSize}
               onChange={(e) =>
-                setBatchSize(Math.min(15, Math.max(1, parseInt(e.target.value, 10) || 10)))
+                setBatchSize(Math.min(25, Math.max(1, parseInt(e.target.value, 10) || 10)))
               }
               className={`${ad.input} mt-1 w-full`}
             />

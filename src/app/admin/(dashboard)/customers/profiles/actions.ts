@@ -760,7 +760,7 @@ async function resolveLegacyImportEligibility(rawText: string): Promise<
 
 const LEGACY_KSE_ORDER_DETAILS_BASE =
   "https://d.ksebstor.site/dashboard/orders_status/details/";
-const LEGACY_KSE_BATCH_MAX = 15;
+const LEGACY_KSE_BATCH_MAX = 25;
 const LEGACY_KSE_BATCH_DELAY_MS_DEFAULT = 400;
 
 function legacyKseOrderDetailsUrl(orderId: number): string {
