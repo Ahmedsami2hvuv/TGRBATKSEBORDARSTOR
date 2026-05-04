@@ -26,6 +26,7 @@ export function ImportLegacyKseBatchClient() {
   const [stats, setStats] = useState<LegacyKseRangeStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [showCookieInput, setShowCookieInput] = useState(false);
+  const [autoRun, setAutoRun] = useState(false);
   const cookieAutoSavedRef = useRef(false);
 
   const loadStats = useCallback(async () => {
@@ -117,7 +118,7 @@ export function ImportLegacyKseBatchClient() {
     }
   }, [cookieOverride, showCookieInput]);
 
-  const runBatch = useCallback(async () => {
+  const runBatch = useCallback(async (): Promise<"ok" | "done" | "blocked" | "failed"> => {
     setLastError(null);
     const start = Math.min(rangeStart, rangeEnd);
     const end = Math.max(rangeStart, rangeEnd);
@@ -125,7 +126,7 @@ export function ImportLegacyKseBatchClient() {
     const from = Math.max(start, Math.min(nextId, end));
     if (from > end) {
       setLastError("اكتمل النطاق — غيّر المؤشر أو النطاق.");
-      return;
+      return "done";
     }
     const to = Math.min(end, from + size - 1);
     const orderIds: number[] = [];
@@ -136,7 +137,7 @@ export function ImportLegacyKseBatchClient() {
       setLastError(
         "لا يوجد Cookie. احفظ الكوكي من صفحة «إضافة زبون مرجعي» أو الصقه في المربع أدناه.",
       );
-      return;
+      return "blocked";
     }
 
     setBusy(true);
@@ -149,7 +150,7 @@ export function ImportLegacyKseBatchClient() {
       });
       if (!r.ok) {
         setLastError(r.error);
-        return;
+        return "failed";
       }
       setLog(r.rows);
       if (effectiveCookie) setShowCookieInput(false);
@@ -161,10 +162,26 @@ export function ImportLegacyKseBatchClient() {
         /* ignore */
       }
       void loadStats();
+      return "ok";
     } finally {
       setBusy(false);
     }
   }, [rangeStart, rangeEnd, batchSize, delayMs, nextId, effectiveCookie, loadStats]);
+
+  useEffect(() => {
+    if (!autoRun || busy) return;
+    let cancelled = false;
+    (async () => {
+      const status = await runBatch();
+      if (cancelled) return;
+      if (status !== "ok") {
+        setAutoRun(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [autoRun, busy, runBatch]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4">
@@ -400,14 +417,39 @@ export function ImportLegacyKseBatchClient() {
 
         {lastError ? <p className={ad.error}>{lastError}</p> : null}
 
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void runBatch()}
-          className={`${ad.btnPrimary} w-full py-3 text-base`}
-        >
-          {busy ? "جارٍ معالجة الدفعة…" : "تشغيل الدفعة التالية"}
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            disabled={busy || autoRun}
+            onClick={() => void runBatch()}
+            className={`${ad.btnPrimary} w-full py-3 text-base sm:flex-1`}
+          >
+            {busy && !autoRun ? "جارٍ معالجة الدفعة…" : "تشغيل الدفعة التالية"}
+          </button>
+          {!autoRun ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setAutoRun(true)}
+              className="w-full rounded-lg bg-emerald-600 py-3 text-base font-black text-white hover:bg-emerald-700 disabled:opacity-60 sm:w-auto sm:px-5"
+            >
+              بدء السحب التلقائي
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAutoRun(false)}
+              className="w-full rounded-lg bg-rose-600 py-3 text-base font-black text-white hover:bg-rose-700 sm:w-auto sm:px-5"
+            >
+              إيقاف السحب
+            </button>
+          )}
+        </div>
+        {autoRun ? (
+          <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+            السحب التلقائي يعمل الآن: بعد كل دفعة ينتقل تلقائياً للدفعة التالية حتى نهاية النطاق أو ظهور خطأ.
+          </p>
+        ) : null}
       </section>
 
       {log.length > 0 ? (
