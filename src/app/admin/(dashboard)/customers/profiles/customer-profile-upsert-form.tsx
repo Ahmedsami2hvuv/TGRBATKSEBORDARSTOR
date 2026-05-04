@@ -8,6 +8,7 @@ import {
   assignFileToInput,
 } from "@/lib/client-image-compress";
 import { toast } from "sonner";
+import { parseAndValidateLegacyOrderPageUrl } from "@/lib/legacy-kse-order-door-extract";
 import {
   upsertCustomerPhoneProfile,
   getCustomerProfileFormHint,
@@ -15,6 +16,8 @@ import {
   type CustomerProfileFormHint,
   type CustomerProfileFormState,
 } from "./actions";
+
+const LEGACY_URL_AUTO_IMPORT_MS = 750;
 
 const initial: CustomerProfileFormState = {};
 
@@ -48,6 +51,9 @@ export function CustomerProfileUpsertForm({
   const [legacyOrderPageUrl, setLegacyOrderPageUrl] = useState("");
   const [legacyFetchBusy, setLegacyFetchBusy] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const legacyOrderPageUrlRef = useRef(legacyOrderPageUrl);
+  const lastAutoImportedLegacyHref = useRef<string | null>(null);
+  legacyOrderPageUrlRef.current = legacyOrderPageUrl;
 
   useEffect(() => {
     if (state.ok) {
@@ -57,6 +63,7 @@ export function CustomerProfileUpsertForm({
       setSelectedPhoto(null);
       setRemotePhotoUrlInput("");
       setLegacyOrderPageUrl("");
+      lastAutoImportedLegacyHref.current = null;
       setDragActive(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -81,6 +88,54 @@ export function CustomerProfileUpsertForm({
       active = false;
     };
   }, [rawText]);
+
+  useEffect(() => {
+    const t0 = legacyOrderPageUrl.trim();
+    const parsed0 = parseAndValidateLegacyOrderPageUrl(t0);
+    if (!parsed0.ok) {
+      lastAutoImportedLegacyHref.current = null;
+      return;
+    }
+    if (lastAutoImportedLegacyHref.current === parsed0.href) {
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      const t = legacyOrderPageUrlRef.current.trim();
+      const parsed = parseAndValidateLegacyOrderPageUrl(t);
+      if (!parsed.ok || parsed.href !== parsed0.href) {
+        return;
+      }
+      if (lastAutoImportedLegacyHref.current === parsed.href) {
+        return;
+      }
+
+      setLegacyFetchBusy(true);
+      try {
+        const r = await importLegacyOrderDetailsFromUrl(parsed.href);
+        if (!r.ok) {
+          toast.error(r.error);
+          return;
+        }
+        lastAutoImportedLegacyHref.current = parsed.href;
+        setRawText(r.rawText);
+        if (r.doorImageUrl) {
+          setRemotePhotoUrlInput(r.doorImageUrl);
+          setSelectedPhoto(null);
+          if (photoInputRef.current) photoInputRef.current.value = "";
+          toast.success("استيراد تلقائي: معلومات الزبون + رابط صورة باب الزبون.");
+        } else {
+          toast.success(
+            "استيراد تلقائي: معلومات الزبون فقط (لا رابط صورة باب في الصفحة). يمكنك إضافة صورة يدوياً.",
+          );
+        }
+      } finally {
+        setLegacyFetchBusy(false);
+      }
+    }, LEGACY_URL_AUTO_IMPORT_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [legacyOrderPageUrl]);
 
   const handleChoosePhoto = () => {
     photoInputRef.current?.click();
@@ -138,24 +193,31 @@ export function CustomerProfileUpsertForm({
   };
 
   const handleImportLegacyOrder = async () => {
-    const u = legacyOrderPageUrl.trim();
+    const u = legacyOrderPageUrlRef.current.trim();
     if (!u) {
       toast.error("أدخل رابط صفحة تفاصيل الطلب من الموقع القديم.");
       return;
     }
+    const parsed = parseAndValidateLegacyOrderPageUrl(u);
+    if (!parsed.ok) {
+      toast.error(parsed.error);
+      return;
+    }
+    lastAutoImportedLegacyHref.current = null;
     setLegacyFetchBusy(true);
     try {
-      const r = await importLegacyOrderDetailsFromUrl(u);
+      const r = await importLegacyOrderDetailsFromUrl(parsed.href);
       if (r.ok) {
+        lastAutoImportedLegacyHref.current = parsed.href;
         setRawText(r.rawText);
         if (r.doorImageUrl) {
           setRemotePhotoUrlInput(r.doorImageUrl);
           setSelectedPhoto(null);
           if (photoInputRef.current) photoInputRef.current.value = "";
-          toast.success("تم جلب: معلومات الزبون + رابط صورة باب الزبون.");
+          toast.success("تم الجلب: معلومات الزبون + رابط صورة باب الزبون.");
         } else {
           toast.success(
-            "تم جلب: معلومات الزبون فقط (لم يُعثر على رابط صورة باب في الصفحة). يمكنك إرفاق صورة يدوياً أو لصق رابط الصورة.",
+            "تم الجلب: معلومات الزبون فقط (لم يُعثر على رابط صورة باب في الصفحة). يمكنك إرفاق صورة يدوياً أو لصق رابط الصورة.",
           );
         }
       } else {
@@ -314,7 +376,7 @@ export function CustomerProfileUpsertForm({
                 name="remoteImageUrl"
                 value={remotePhotoUrlInput}
                 onChange={(e) => setRemotePhotoUrlInput(e.target.value)}
-                placeholder="رابط صورة مباشر (اختياري — يُملأ تلقائياً مع «جلب بيانات الزبون» إن وُجدت صورة باب)"
+                placeholder="رابط صورة مباشر (اختياري — يُملأ تلقائياً بعد لصق رابط الطلب إن وُجدت صورة باب)"
                 className={`${ad.input} w-full bg-white`}
                 dir="ltr"
               />
@@ -339,8 +401,9 @@ export function CustomerProfileUpsertForm({
                     <span className="font-mono text-[11px]" dir="ltr">
                       …/orders_status/details/13923
                     </span>
-                    ) وليس رابط الصفحة الرئيسية، ثم اضغط <strong>«جلب بيانات الزبون»</strong> —{" "}
-                    <strong className="text-slate-800 dark:text-slate-200">ليس</strong> زر جلب صورة وحدها.
+                    ) وليس الصفحة الرئيسية — بعد اللصق يُستورد <strong>تلقائياً</strong> خلال حوالي ثانية (بدون ضرورة
+                    الضغط على زر). زر <strong>«جلب بيانات الزبون»</strong> لإعادة الجلب من الرابط نفسه بعد تعديله أو
+                    إن أردت تحديث البيانات.
                   </span>
                   <span className="block">
                     النتيجة: إمّا <strong>معلومات الزبون + رابط صورة باب الزبون</strong> (يظهر في حقل الرابط أعلاه)
@@ -368,7 +431,7 @@ export function CustomerProfileUpsertForm({
                     disabled={legacyFetchBusy}
                     className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
                   >
-                    {legacyFetchBusy ? "جارٍ الجلب…" : "جلب بيانات الزبون"}
+                    {legacyFetchBusy ? "جارٍ الجلب…" : "إعادة جلب من الرابط"}
                   </button>
                 </div>
               </div>
@@ -383,7 +446,7 @@ export function CustomerProfileUpsertForm({
                 onChange={(e) => setRawText(e.target.value)}
                 rows={6}
                 className={`${ad.input} flex-1 min-h-[8rem] resize-y bg-white font-normal`}
-                placeholder="اكتب يدوياً أو الصق نصاً (مثال أسطر المنطقة واللكيشن والهاتف)، أو استخدم رابط الطلب أعلاه ثم «جلب بيانات الزبون». إن لصقت كامل نص صفحة الطلب القديمة يُستخرج قسم «معلومات الزبون» تلقائياً."
+                placeholder="اكتب يدوياً أو الصق نصاً، أو الصق رابط تفاصيل الطلب في الحقل أعلاه فيُستورد هنا تلقائياً. إن لصقت كامل نص صفحة الطلب القديمة يُستخرج قسم «معلومات الزبون» تلقائياً."
                 dir="auto"
               />
               <div className="flex flex-col gap-2 shrink-0">
