@@ -226,6 +226,20 @@ function legacyHtmlChunkToPlainText(chunk: string): string {
   return s.trim();
 }
 
+function extractMapUrlsFromHtmlChunk(chunk: string): string[] {
+  const mapUrls: string[] = [];
+  const seen = new Set<string>();
+  const re =
+    /https?:\/\/(?:maps\.app\.goo\.gl|(?:www\.)?google\.com\/maps|goo\.gl\/maps|maps\.google\.[^\/\s"'<>]+\/maps)[^"'\s<>]*/gi;
+  for (const m of chunk.matchAll(re)) {
+    const u = decodeBasicHtmlEntities(m[0] ?? "").trim();
+    if (!u || seen.has(u)) continue;
+    seen.add(u);
+    mapUrls.push(u);
+  }
+  return mapUrls;
+}
+
 /**
  * يحوّل قسم «معلومات الزبون» من HTML صفحة الطلب إلى نص يشبه اللصق اليدوي
  * (يُمرّر لاحقاً لـ parseCustomerReferenceText / sliceLegacyOrderCustomerSection).
@@ -247,7 +261,19 @@ export function extractCustomerReferenceRawTextFromLegacyOrderHtml(
   if (endDash >= 0) end = Math.min(end, endDash);
   const capped = Math.min(end, 18_000);
   const slice = injectImportantHrefsAsText(fromStart.slice(0, capped));
-  const plain = legacyHtmlChunkToPlainText(slice);
+  let plain = legacyHtmlChunkToPlainText(slice);
+  // احتياط: أحياناً رابط اللوكيشن يكون داخل attributes/onclick ولا يظهر كنص بعد التنظيف.
+  // بما أن slice يبدأ من «معلومات الزبون»، فأي رابط خرائط فيه يعود لهذا القسم غالباً.
+  const mapUrls = extractMapUrlsFromHtmlChunk(slice);
+  if (mapUrls.length > 0) {
+    const existing = new Set(
+      Array.from(plain.matchAll(/https?:\/\/[^\s"'<>]+/gi)).map((m) => m[0]),
+    );
+    const missing = mapUrls.filter((u) => !existing.has(u));
+    if (missing.length > 0) {
+      plain = `${plain}\n${missing.join("\n")}`.trim();
+    }
+  }
   if (plain.length < 12) return null;
   return plain;
 }
