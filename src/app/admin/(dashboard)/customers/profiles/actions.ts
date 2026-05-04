@@ -12,6 +12,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { randomUUID } from "crypto";
 import {
+  extractCustomerReferenceRawTextFromLegacyOrderHtml,
   extractDoorImageUrlFromLegacyOrderHtml,
   parseAndValidateLegacyOrderPageUrl,
 } from "@/lib/legacy-kse-order-door-extract";
@@ -285,29 +286,19 @@ async function profilePhotoFromRemoteUrl(
   }
 }
 
-export type LegacyOrderDoorFetchResult =
-  | { ok: true; imageUrl: string }
+export type LegacyOrderImportResult =
+  | { ok: true; rawText: string; doorImageUrl: string | null }
   | { ok: false; error: string };
 
-/**
- * يجلب HTML من صفحة تفاصيل طلب على الموقع القديم d.ksebstor (لوحة dashboard)،
- * مع Cookie جلسة من البيئة، ويستخرج رابط صورة الباب. ليس للطلبات المخزّنة في النظام الجديد.
- */
-export async function fetchLegacyOrderDoorImageUrl(
-  orderPageUrl: string,
-): Promise<LegacyOrderDoorFetchResult> {
-  const parsedUrl = parseAndValidateLegacyOrderPageUrl(orderPageUrl);
-  if (!parsedUrl.ok) {
-    return { ok: false, error: parsedUrl.error };
-  }
-  const href = parsedUrl.href;
-
+async function fetchLegacyOrderPageHtml(
+  href: string,
+): Promise<{ ok: true; html: string } | { ok: false; error: string }> {
   const cookie = process.env.LEGACY_KSE_ORDER_PAGE_COOKIE?.trim();
   if (!cookie) {
     return {
       ok: false,
       error:
-        "لم يُضبط LEGACY_KSE_ORDER_PAGE_COOKIE على الخادم. افتح صورة الباب في الموقع القديم ← يمين ← نسخ عنوان الصورة ← الصق في حقل رابط الصورة.",
+        "لم يُضبط LEGACY_KSE_ORDER_PAGE_COOKIE على الخادم. انسخ Cookie الجلسة من المتصفح بعد تسجيل الدخول على الموقع القديم (أدوات المطوّر → Network → Cookie).",
     };
   }
 
@@ -339,16 +330,39 @@ export async function fetchLegacyOrderDoorImageUrl(
   }
 
   const html = await res.text();
-  const imageUrl = extractDoorImageUrlFromLegacyOrderHtml(html, href);
-  if (!imageUrl) {
+  return { ok: true, html };
+}
+
+/**
+ * يجلب صفحة تفاصيل طلب من الموقع القديم d.ksebstor ويستخرج نص «معلومات الزبون» + رابط صورة الباب إن وُجد.
+ */
+export async function importLegacyOrderDetailsFromUrl(
+  orderPageUrl: string,
+): Promise<LegacyOrderImportResult> {
+  const parsedUrl = parseAndValidateLegacyOrderPageUrl(orderPageUrl);
+  if (!parsedUrl.ok) {
+    return { ok: false, error: parsedUrl.error };
+  }
+
+  const page = await fetchLegacyOrderPageHtml(parsedUrl.href);
+  if (!page.ok) {
+    return { ok: false, error: page.error };
+  }
+
+  const rawText = extractCustomerReferenceRawTextFromLegacyOrderHtml(page.html);
+  if (!rawText) {
     return {
       ok: false,
       error:
-        "لم يُعثر على صورة باب في الصفحة. انسخ رابط الصورة يدوياً من المتصفح أو تحقق من أن الطلب يعرض صورة الباب.",
+        "لم يُعثر على قسم «معلومات الزبون» في الصفحة. تحقق من أن الرابط يفتح تفاصيل الطلب وأن الجلسة صحيحة.",
     };
   }
 
-  return { ok: true, imageUrl };
+  const doorImageUrl = extractDoorImageUrlFromLegacyOrderHtml(
+    page.html,
+    parsedUrl.href,
+  );
+  return { ok: true, rawText, doorImageUrl };
 }
 
 export async function upsertCustomerPhoneProfile(

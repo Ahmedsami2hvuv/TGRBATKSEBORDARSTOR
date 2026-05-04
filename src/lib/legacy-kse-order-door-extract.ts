@@ -108,3 +108,57 @@ export function extractDoorImageUrlFromLegacyOrderHtml(
 
   return null;
 }
+
+function decodeBasicHtmlEntities(s: string): string {
+  return s
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#(\d+);/g, (_, n: string) => {
+      const c = Number(n);
+      return Number.isFinite(c) && c > 0 && c < 0x110000 ? String.fromCharCode(c) : "";
+    })
+    .replace(/&#x([0-9a-f]+);/gi, (_, h: string) => {
+      const c = parseInt(h, 16);
+      return Number.isFinite(c) && c > 0 && c < 0x110000 ? String.fromCharCode(c) : "";
+    });
+}
+
+function legacyHtmlChunkToPlainText(chunk: string): string {
+  let s = chunk
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ");
+  s = s.replace(/<br\s*\/?>/gi, "\n");
+  s = s.replace(/<\/(div|p|tr|h[1-6]|li|section|table)>/gi, "\n");
+  s = s.replace(/<\/td>/gi, "\t");
+  s = s.replace(/<\/th>/gi, "\t");
+  s = s.replace(/<[^>]+>/g, " ");
+  s = decodeBasicHtmlEntities(s);
+  s = s.replace(/[ \t]+\n/g, "\n").replace(/\n[ \t]+/g, "\n");
+  s = s.replace(/\n{3,}/g, "\n\n").replace(/[ \t]{2,}/g, " ");
+  return s.trim();
+}
+
+/**
+ * يحوّل قسم «معلومات الزبون» من HTML صفحة الطلب إلى نص يشبه اللصق اليدوي
+ * (يُمرّر لاحقاً لـ parseCustomerReferenceText / sliceLegacyOrderCustomerSection).
+ */
+export function extractCustomerReferenceRawTextFromLegacyOrderHtml(
+  html: string,
+): string | null {
+  const startIdx = html.search(/معلومات\s*الزبون/i);
+  if (startIdx < 0) return null;
+
+  const fromStart = html.slice(startIdx);
+  const endOrderInfo = fromStart.search(/\bمعلومات\s*الطلب\b/i);
+  const endDash = fromStart.search(/-{5,}/);
+  let end = fromStart.length;
+  if (endOrderInfo > 0) end = Math.min(end, endOrderInfo);
+  if (endDash > 0) end = Math.min(end, endDash);
+  const capped = Math.min(end, 18_000);
+  const slice = fromStart.slice(0, capped);
+  const plain = legacyHtmlChunkToPlainText(slice);
+  if (plain.length < 12) return null;
+  return plain;
+}

@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import {
   upsertCustomerPhoneProfile,
   getCustomerProfileFormHint,
-  fetchLegacyOrderDoorImageUrl,
+  importLegacyOrderDetailsFromUrl,
   type CustomerProfileFormHint,
   type CustomerProfileFormState,
 } from "./actions";
@@ -137,7 +137,7 @@ export function CustomerProfileUpsertForm({
     }
   };
 
-  const handleFetchLegacyDoor = async () => {
+  const handleImportLegacyOrder = async () => {
     const u = legacyOrderPageUrl.trim();
     if (!u) {
       toast.error("أدخل رابط صفحة تفاصيل الطلب من الموقع القديم.");
@@ -145,12 +145,19 @@ export function CustomerProfileUpsertForm({
     }
     setLegacyFetchBusy(true);
     try {
-      const r = await fetchLegacyOrderDoorImageUrl(u);
+      const r = await importLegacyOrderDetailsFromUrl(u);
       if (r.ok) {
-        setRemotePhotoUrlInput(r.imageUrl);
-        setSelectedPhoto(null);
-        if (photoInputRef.current) photoInputRef.current.value = "";
-        toast.success("تم تعبئة رابط صورة الباب في الحقل أعلاه.");
+        setRawText(r.rawText);
+        if (r.doorImageUrl) {
+          setRemotePhotoUrlInput(r.doorImageUrl);
+          setSelectedPhoto(null);
+          if (photoInputRef.current) photoInputRef.current.value = "";
+          toast.success("تم جلب: معلومات الزبون + رابط صورة باب الزبون.");
+        } else {
+          toast.success(
+            "تم جلب: معلومات الزبون فقط (لم يُعثر على رابط صورة باب في الصفحة). يمكنك إرفاق صورة يدوياً أو لصق رابط الصورة.",
+          );
+        }
       } else {
         toast.error(r.error);
       }
@@ -307,7 +314,7 @@ export function CustomerProfileUpsertForm({
                 name="remoteImageUrl"
                 value={remotePhotoUrlInput}
                 onChange={(e) => setRemotePhotoUrlInput(e.target.value)}
-                placeholder="رابط صورة مباشر (اختياري)"
+                placeholder="رابط صورة مباشر (اختياري — يُملأ تلقائياً مع «جلب بيانات الزبون» إن وُجدت صورة باب)"
                 className={`${ad.input} w-full bg-white`}
                 dir="ltr"
               />
@@ -317,20 +324,33 @@ export function CustomerProfileUpsertForm({
                 </p>
               ) : null}
               <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-3 space-y-2 dark:border-slate-600 dark:bg-slate-900/40">
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-snug">
-                  المصدر هنا هو <strong className="font-bold text-slate-700 dark:text-slate-300">الموقع القديم</strong>{" "}
-                  <a
-                    href="https://d.ksebstor.site/dashboard/home"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sky-600 underline hover:text-sky-700"
-                  >
-                    d.ksebstor.site/dashboard
-                  </a>
-                  {" "}— بعد ما يفتح المندوب الطلب هناك، ينسخ رابط شريط العنوان لصفحة «تفاصيل الطلبية» (وليس الصفحة
-                  الرئيسية). نسخ نص الصفحة لا يضم روابط الصور. إن وُضع{" "}
-                  <code className="text-[11px]">LEGACY_KSE_ORDER_PAGE_COOKIE</code> على خادم النظام الجديد، يمكن جلب رابط
-                  صورة الباب تلقائياً.
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed space-y-1.5">
+                  <span className="block">
+                    <strong className="text-slate-800 dark:text-slate-200">من الموقع القديم</strong> (
+                    <a
+                      href="https://d.ksebstor.site/dashboard/home"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sky-600 underline hover:text-sky-700"
+                    >
+                      d.ksebstor.site
+                    </a>
+                    ): الصق رابط صفحة <strong>تفاصيل الطلبية</strong> (مثل{" "}
+                    <span className="font-mono text-[11px]" dir="ltr">
+                      …/orders_status/details/13923
+                    </span>
+                    ) وليس رابط الصفحة الرئيسية، ثم اضغط <strong>«جلب بيانات الزبون»</strong> —{" "}
+                    <strong className="text-slate-800 dark:text-slate-200">ليس</strong> زر جلب صورة وحدها.
+                  </span>
+                  <span className="block">
+                    النتيجة: إمّا <strong>معلومات الزبون + رابط صورة باب الزبون</strong> (يظهر في حقل الرابط أعلاه)
+                    إن وُجد في الصفحة، أو <strong>معلومات الزبون فقط</strong> إن لم تُعرض صورة باب في HTML — ويمكنك
+                    إضافة الصورة يدوياً بعدها.
+                  </span>
+                  <span className="block text-slate-500 dark:text-slate-500">
+                    نسخ «تحديد الكل» من المتصفح لا يضم روابط الصور. الجلب من الرابط يحتاج ضبط{" "}
+                    <code className="text-[11px]">LEGACY_KSE_ORDER_PAGE_COOKIE</code> على خادم هذا النظام.
+                  </span>
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <input
@@ -344,11 +364,11 @@ export function CustomerProfileUpsertForm({
                   />
                   <button
                     type="button"
-                    onClick={() => void handleFetchLegacyDoor()}
+                    onClick={() => void handleImportLegacyOrder()}
                     disabled={legacyFetchBusy}
                     className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
                   >
-                    {legacyFetchBusy ? "جارٍ الجلب…" : "جلب صورة الباب"}
+                    {legacyFetchBusy ? "جارٍ الجلب…" : "جلب بيانات الزبون"}
                   </button>
                 </div>
               </div>
@@ -363,7 +383,7 @@ export function CustomerProfileUpsertForm({
                 onChange={(e) => setRawText(e.target.value)}
                 rows={6}
                 className={`${ad.input} flex-1 min-h-[8rem] resize-y bg-white font-normal`}
-                placeholder="مثال:&#10;المنطقة: باب عباس&#10;لكيشن الزبون: https://maps.app.goo.gl/...&#10;اقرب نقطة دالة: نهاية باب عباس&#10;رقم الهاتف: 077xxxxxxxx&#10;رقم الهاتف الآخر: 077xxxxxxxx&#10;&#10;أو الصق كامل نص صفحة تفاصيل الطلب من الموقع القديم — يُستخرج قسم «معلومات الزبون» تلقائياً."
+                placeholder="اكتب يدوياً أو الصق نصاً (مثال أسطر المنطقة واللكيشن والهاتف)، أو استخدم رابط الطلب أعلاه ثم «جلب بيانات الزبون». إن لصقت كامل نص صفحة الطلب القديمة يُستخرج قسم «معلومات الزبون» تلقائياً."
                 dir="auto"
               />
               <div className="flex flex-col gap-2 shrink-0">
