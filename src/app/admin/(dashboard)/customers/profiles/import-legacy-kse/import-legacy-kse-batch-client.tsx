@@ -26,6 +26,7 @@ export function ImportLegacyKseBatchClient() {
   const [stats, setStats] = useState<LegacyKseRangeStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [showCookieInput, setShowCookieInput] = useState(false);
+  const [cookieEditMode, setCookieEditMode] = useState(false);
   const [autoRun, setAutoRun] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{
     active: boolean;
@@ -117,6 +118,7 @@ export function ImportLegacyKseBatchClient() {
     if (!t) return;
     try {
       sessionStorage.setItem(LEGACY_COOKIE_SESSION_KEY, t);
+      setCookieEditMode(false);
       setShowCookieInput(false);
       setLastError(null);
     } catch {
@@ -126,7 +128,7 @@ export function ImportLegacyKseBatchClient() {
 
   useEffect(() => {
     const t = cookieOverride.trim();
-    if (!showCookieInput || !t) {
+    if (!showCookieInput || !t || cookieEditMode) {
       cookieAutoSavedRef.current = false;
       return;
     }
@@ -134,12 +136,13 @@ export function ImportLegacyKseBatchClient() {
     try {
       sessionStorage.setItem(LEGACY_COOKIE_SESSION_KEY, t);
       cookieAutoSavedRef.current = true;
+      setCookieEditMode(false);
       setShowCookieInput(false);
       setLastError(null);
     } catch {
       setLastError("المتصفح يمنع التخزين المحلي للكوكي.");
     }
-  }, [cookieOverride, showCookieInput]);
+  }, [cookieOverride, showCookieInput, cookieEditMode]);
 
   const runBatch = useCallback(async (): Promise<"ok" | "done" | "blocked" | "failed"> => {
     setLastError(null);
@@ -156,6 +159,7 @@ export function ImportLegacyKseBatchClient() {
     for (let id = from; id <= to; id++) orderIds.push(id);
 
     if (!effectiveCookie) {
+      setCookieEditMode(false);
       setShowCookieInput(true);
       setLastError(
         "لا يوجد Cookie. احفظ الكوكي من صفحة «إضافة زبون مرجعي» أو الصقه في المربع أدناه.",
@@ -438,7 +442,10 @@ export function ImportLegacyKseBatchClient() {
               <span className="font-bold">✓ Cookie متوفر لهذه الجلسة</span>
               <button
                 type="button"
-                onClick={() => setShowCookieInput(true)}
+                onClick={() => {
+                  setCookieEditMode(true);
+                  setShowCookieInput(true);
+                }}
                 className="rounded-md border border-emerald-600 bg-white px-2.5 py-1 text-[11px] font-bold text-emerald-800 hover:bg-emerald-50 dark:border-emerald-500 dark:bg-slate-900 dark:text-emerald-200"
               >
                 تعديل الكوكي
@@ -465,10 +472,25 @@ export function ImportLegacyKseBatchClient() {
               >
                 حفظ الكوكي للجلسة
               </button>
+              {cookieEditMode ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCookieEditMode(false);
+                    setShowCookieInput(false);
+                  }}
+                  className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold dark:border-slate-600 dark:bg-slate-900"
+                >
+                  إلغاء
+                </button>
+              ) : null}
               {effectiveCookie ? (
                 <button
                   type="button"
-                  onClick={() => setShowCookieInput(false)}
+                  onClick={() => {
+                    setCookieEditMode(false);
+                    setShowCookieInput(false);
+                  }}
                   className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold dark:border-slate-600 dark:bg-slate-900"
                 >
                   إخفاء
