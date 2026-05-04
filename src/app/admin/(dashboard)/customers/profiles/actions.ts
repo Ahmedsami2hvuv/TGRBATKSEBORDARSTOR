@@ -767,6 +767,36 @@ function legacyKseOrderDetailsUrl(orderId: number): string {
   return `${LEGACY_KSE_ORDER_DETAILS_BASE}${orderId}`;
 }
 
+function formatCompletedFieldsLabel(input: {
+  hasPhoto: boolean;
+  hasLocation: boolean;
+  hasLandmark: boolean;
+  hasAlternatePhone: boolean;
+}): string {
+  const fields: string[] = ["رقم الهاتف", "المنطقة"];
+  if (input.hasPhoto) fields.push("صورة الباب");
+  if (input.hasLocation) fields.push("اللوكيشن");
+  if (input.hasLandmark) fields.push("أقرب نقطة دالة");
+  if (input.hasAlternatePhone) fields.push("رقم ثاني");
+  return fields.join("، ");
+}
+
+function formatPatchedFieldsLabel(patchData: {
+  photoUrl?: string;
+  locationUrl?: string;
+  landmark?: string;
+  notes?: string;
+  alternatePhone?: string | null;
+}): string {
+  const fields: string[] = [];
+  if (patchData.photoUrl) fields.push("صورة الباب");
+  if (patchData.locationUrl) fields.push("اللوكيشن");
+  if (patchData.landmark) fields.push("أقرب نقطة دالة");
+  if (patchData.alternatePhone) fields.push("الرقم الثاني");
+  if (patchData.notes) fields.push("الملاحظات");
+  return fields.join("، ");
+}
+
 export type LegacyKseRangeStats = {
   rangeStart: number;
   rangeEnd: number;
@@ -913,12 +943,18 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
     });
     if (cached && LEGACY_KSE_NO_REFETCH.has(cached.outcome)) {
       let bypassCacheForMissingPhoto = false;
+      let cachedDetail = `سبق المسح (${cached.outcome}) — لن يُعاد الطلب من الموقع بعد تجديد الكوكي.`;
       if (cached.phone && cached.regionId) {
         const prof = await prisma.customerPhoneProfile.findUnique({
           where: {
             phone_regionId: { phone: cached.phone, regionId: cached.regionId },
           },
-          select: { photoUrl: true },
+          select: {
+            photoUrl: true,
+            locationUrl: true,
+            landmark: true,
+            alternatePhone: true,
+          },
         });
         const noDoorPhoto = !!(prof && !String(prof.photoUrl ?? "").trim());
         if (
@@ -928,12 +964,24 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
         ) {
           bypassCacheForMissingPhoto = true;
         }
+        if (prof && !bypassCacheForMissingPhoto) {
+          const completed = formatCompletedFieldsLabel({
+            hasPhoto: !!String(prof.photoUrl ?? "").trim(),
+            hasLocation: !!String(prof.locationUrl ?? "").trim(),
+            hasLandmark: !!String(prof.landmark ?? "").trim(),
+            hasAlternatePhone: !!String(prof.alternatePhone ?? "").trim(),
+          });
+          cachedDetail = `الزبون مسحوب سابقاً وموجود حالياً. البيانات المتوفرة: ${completed}.`;
+        }
+      } else if (cached.outcome === LEGACY_KSE_LOG.SKIP_NO_CUSTOMER) {
+        cachedDetail =
+          "هذا الطلب لا يحتوي قسم «معلومات الزبون» في صفحة KSE، لذلك تم تخطيه سابقاً ولن يُعاد.";
       }
       if (!bypassCacheForMissingPhoto) {
         rows.push({
           orderId,
           status: "cached",
-          detail: `سبق المسح (${cached.outcome}) — لن يُعاد الطلب من الموقع بعد تجديد الكوكي.`,
+          detail: cachedDetail,
         });
         continue;
       }
@@ -1019,6 +1067,7 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
       }
 
       if (Object.keys(patchData).length > 0) {
+        const patchedFields = formatPatchedFieldsLabel(patchData);
         await prisma.customerPhoneProfile.update({
           where: { id: elig.existingProfileId },
           data: patchData,
@@ -1039,16 +1088,17 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
         continue;
       }
       if (Object.keys(patchData).length > 0) {
+        const patchedFields = formatPatchedFieldsLabel(patchData);
         await persistLegacyKseImportLog(orderId, LEGACY_KSE_LOG.SKIP_ALREADY_IN_DB, {
           phone: elig.n,
           regionId: elig.regionId,
           profileId: elig.existingProfileId,
-          message: "تم تحديث الحقول الناقصة (لوكيشن/نقطة/ملاحظات/رقم ثانوي) من صفحة الطلب.",
+          message: `تم تحديث النواقص: ${patchedFields || "حقول إضافية"} من صفحة الطلب.`,
         });
         rows.push({
           orderId,
           status: "already_in_db",
-          detail: "الزبون موجود مسبقاً — تم إكمال الحقول الناقصة من صفحة الطلب.",
+          detail: `الزبون كان موجوداً — تم إكمال النقص: ${patchedFields || "حقول إضافية"}.`,
         });
         continue;
       }
@@ -1062,8 +1112,8 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
         orderId,
         status: "already_in_db",
         detail: hasPhoto
-          ? "الزبون موجود مسبقاً مع صورة باب — لم يُحدَّث."
-          : "الزبون موجود لكن صفحة الطلب لا تتضمّن رابط صورة باب صالحاً (أو «لا توجد صورة»).",
+          ? "الزبون موجود مسبقاً وكل التفاصيل الأساسية مكتملة — لا يوجد نقص للتحديث."
+          : "الزبون موجود مسبقاً لكن لا توجد صورة باب صالحة في صفحة هذا الطلب (أو مكتوب «لا توجد صورة»).",
       });
       continue;
     }
