@@ -112,9 +112,43 @@ function sliceLegacyOrderCustomerSection(rawText: string): string {
   return rawText;
 }
 
+/** تحويل الأرقام العربية/الفارسية إلى لاتينية ليطابق 07xxxxxxxx بعد الاستيراد من HTML. */
+function normalizeDigitsToLatin(s: string): string {
+  const ar = "٠١٢٣٤٥٦٧٨٩";
+  const fa = "۰۱۲۳۴۵۶۷۸۹";
+  let out = "";
+  for (const ch of s) {
+    const i = ar.indexOf(ch);
+    if (i >= 0) {
+      out += String(i);
+      continue;
+    }
+    const j = fa.indexOf(ch);
+    if (j >= 0) {
+      out += String(j);
+      continue;
+    }
+    out += ch;
+  }
+  return out;
+}
+
+function stripInvisibleMarks(s: string): string {
+  return s.replace(/[\u200c\u200d\u200e\u200f\ufeff\u202a\u202b\u202c\u2066\u2067\u2068\u2069]/g, "");
+}
+
+/** لمسح مسافات/شرطات بين أرقام الهاتف قبل مطابقة 07xxxxxxxx */
+function compactForPhoneScan(s: string): string {
+  return s.replace(/[\s\u00a0\-_.]/g, "");
+}
+
 function parseCustomerReferenceText(rawText: string) {
-  const scoped = sliceLegacyOrderCustomerSection(rawText);
-  const lines = scoped.split(/\r?\n/);
+  const scoped = stripInvisibleMarks(
+    sliceLegacyOrderCustomerSection(rawText).replace(/\u00a0/g, " "),
+  );
+  const scopedNorm = normalizeDigitsToLatin(scoped);
+  const scopedPhoneScan = compactForPhoneScan(scopedNorm);
+  const lines = scopedNorm.split(/\r?\n/);
   let regionName = "";
   let locationUrl = "";
   let landmark = "";
@@ -125,6 +159,7 @@ function parseCustomerReferenceText(rawText: string) {
   for (const line of lines) {
     const t = line.trim();
     if (!t) continue;
+    const tPhones = compactForPhoneScan(t);
 
     if (/^المنطق[ةه]?\s*:/i.test(t) || /^منطقة\s*:/i.test(t)) {
       regionName = t.split(/المنطق[ةه]?\s*:\s*|منطقة\s*:\s*/i)[1]?.trim() ?? "";
@@ -140,13 +175,24 @@ function parseCustomerReferenceText(rawText: string) {
       continue;
     }
     if (/^رقم الهاتف الأ[خ]ر\s*:/i.test(t) || /^رقم الهاتف الثاني\s*:/i.test(t) || /^رقم هاتف ثان\s*:/i.test(t) || /^رقم هاتف اخر\s*:/i.test(t) || /^رقم اخر\s*:/i.test(t) || /^رقم هاتف ثانٍ\s*:/i.test(t)) {
-      const match = t.match(/07\d{9}/g);
+      const match = tPhones.match(/07\d{9}/g);
       if (match) alternatePhone = match[0];
       continue;
     }
-    if (/^رقم الهاتف\s*:/i.test(t) || /^الهاتف\s*:/i.test(t) || /^الرقم\s*:/i.test(t)) {
-      const match = t.match(/07\d{9}/g);
+    const colon = "[:：]";
+    if (
+      new RegExp(`^رقم\\s*الهاتف\\s*${colon}`, "i").test(t) ||
+      new RegExp(`^الهاتف\\s*${colon}`, "i").test(t) ||
+      new RegExp(`^الرقم\\s*${colon}`, "i").test(t) ||
+      new RegExp(`^رقم\\s*العميل\\s*${colon}`, "i").test(t)
+    ) {
+      const match = tPhones.match(/07\d{9}/g);
       if (match) phone = match[0];
+      continue;
+    }
+    if (/رقم\s*الهاتف\s*[:：]/i.test(t) && !/أخر|ثان|اخر|ثانٍ/i.test(t)) {
+      const match = tPhones.match(/07\d{9}/g);
+      if (match && !phone) phone = match[0];
       continue;
     }
     if (/^ملاحظات\s*:/i.test(t) || /^ملاحظه\s*:/i.test(t)) {
@@ -155,12 +201,12 @@ function parseCustomerReferenceText(rawText: string) {
     }
   }
 
-  const allPhones = scoped.match(/07\d{9}/g) || [];
+  const allPhones = scopedPhoneScan.match(/07\d{9}/g) || [];
   if (!phone && allPhones[0]) phone = allPhones[0];
   if (!alternatePhone && allPhones[1] && allPhones[1] !== phone) alternatePhone = allPhones[1];
 
   if (!locationUrl) {
-    const match = scoped.match(/https?:\/\/[^"]+/i);
+    const match = scopedNorm.match(/https?:\/\/[^"]+/i);
     if (match) locationUrl = match[0].trim();
   }
 
