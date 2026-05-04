@@ -149,6 +149,23 @@ function compactForPhoneScan(s: string): string {
   return s.replace(/[\s\u00a0\-_.\u200c\u200d\u200e\u200f\ufeff]/g, "");
 }
 
+function extractAllUrlsFromText(s: string): string[] {
+  return Array.from(s.matchAll(/https?:\/\/[^\s"'<>]+/gi)).map((m) => m[0]!);
+}
+
+function isLikelyLocationUrl(url: string): boolean {
+  const u = url.toLowerCase();
+  if (/\.(jpg|jpeg|png|webp|gif|svg)(\?|$)/i.test(u)) return false;
+  if (u.includes("/assets/img/door/")) return false;
+  if (u.includes("maps.app.goo.gl")) return true;
+  if (u.includes("google.com/maps")) return true;
+  if (u.includes("goo.gl/maps")) return true;
+  if (u.includes("maps.google")) return true;
+  if (u.includes("location")) return true;
+  if (u.includes("map")) return true;
+  return false;
+}
+
 /** أول رقم جوال عراقي يظهر في النص بأي شكل شائع (بدون اشتراط سطر «رقم الهاتف:»). */
 function extractFirstIraqMobileLocal11FromFreeText(scoped: string): string {
   const d = digitsOnly(normalizeDigitsToLatin(stripInvisibleMarks(scoped)));
@@ -186,23 +203,47 @@ function parseCustomerReferenceText(rawText: string) {
   let phone = "";
   let alternatePhone = "";
   let notes = "";
+  let expectLocationOnNextLine = false;
+  let expectLandmarkOnNextLine = false;
 
   for (const line of lines) {
     const t = line.trim();
     if (!t) continue;
     const tPhones = compactForPhoneScan(t);
 
+    if (expectLocationOnNextLine) {
+      const m = t.match(/https?:\/\/[^\s"'<>]+/i);
+      if (m && !locationUrl) {
+        locationUrl = m[0].trim();
+      }
+      expectLocationOnNextLine = false;
+    }
+    if (expectLandmarkOnNextLine) {
+      if (!landmark && !/^رقم\s*الهاتف|^الهاتف|^الرقم/i.test(t)) {
+        landmark = t.trim();
+      }
+      expectLandmarkOnNextLine = false;
+    }
+
     if (/^المنطق[ةه]?\s*:/i.test(t) || /^منطقة\s*:/i.test(t)) {
       regionName = t.split(/المنطق[ةه]?\s*:\s*|منطقة\s*:\s*/i)[1]?.trim() ?? "";
       continue;
     }
-    if (/^لكيشن الزبون\s*:/i.test(t) || /^اللوكيشن\s*:/i.test(t) || /^الموقع\s*:/i.test(t) || /^لكيشن\s*:/i.test(t)) {
-      const match = t.match(/https?:\/\/[^"]+/i);
+    const locationLabelMatch =
+      /^(?:لكيشن\s*الزبون|لوكيشن\s*الزبون|اللوكيشن|الموقع|لكيشن)\s*[:：]?\s*(.*)$/i.exec(t);
+    if (locationLabelMatch) {
+      const after = locationLabelMatch[1]?.trim() ?? "";
+      const match = after.match(/https?:\/\/[^\s"'<>]+/i);
       if (match) locationUrl = match[0].trim();
+      else expectLocationOnNextLine = true;
       continue;
     }
-    if (/^اقرب نقطة دال[ةه]?\s*:/i.test(t) || /^نقطة دال[ةه]?\s*:/i.test(t) || /^دال[ةه]?\s*:/i.test(t)) {
-      landmark = t.split(/اقرب نقطة دال[ةه]?\s*:\s*|نقطة دال[ةه]?\s*:\s*|دال[ةه]?\s*:\s*/i)[1]?.trim() ?? "";
+    const landmarkLabelMatch =
+      /^(?:ا?قرب\s*نقطة\s*دال[ةه]?|نقطة\s*دال[ةه]?|دال[ةه]?|علامة)\s*[:：]?\s*(.*)$/i.exec(t);
+    if (landmarkLabelMatch) {
+      const after = landmarkLabelMatch[1]?.trim() ?? "";
+      if (after) landmark = after;
+      else expectLandmarkOnNextLine = true;
       continue;
     }
     if (/^رقم الهاتف الأ[خ]ر\s*:/i.test(t) || /^رقم الهاتف الثاني\s*:/i.test(t) || /^رقم هاتف ثان\s*:/i.test(t) || /^رقم هاتف اخر\s*:/i.test(t) || /^رقم اخر\s*:/i.test(t) || /^رقم هاتف ثانٍ\s*:/i.test(t)) {
@@ -245,8 +286,13 @@ function parseCustomerReferenceText(rawText: string) {
   }
 
   if (!locationUrl) {
-    const match = scopedNorm.match(/https?:\/\/[^"]+/i);
-    if (match) locationUrl = match[0].trim();
+    const urls = extractAllUrlsFromText(scopedNorm);
+    const preferred = urls.find((u) => isLikelyLocationUrl(u));
+    if (preferred) {
+      locationUrl = preferred.trim();
+    } else if (urls[0]) {
+      locationUrl = urls[0].trim();
+    }
   }
 
   return { regionName, locationUrl, landmark, phone, alternatePhone, notes };
@@ -918,26 +964,67 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
     if (elig.existingProfileId) {
       const existingProf = await prisma.customerPhoneProfile.findUnique({
         where: { id: elig.existingProfileId },
-        select: { photoUrl: true },
+        select: {
+          photoUrl: true,
+          locationUrl: true,
+          landmark: true,
+          notes: true,
+          alternatePhone: true,
+        },
       });
       const hasPhoto = !!(existingProf?.photoUrl ?? "").trim();
       const doorUrl = (imp.doorImageUrl ?? "").trim();
+      const parsedLegacy = parseCustomerReferenceText(imp.rawText);
+      const patchData: {
+        photoUrl?: string;
+        locationUrl?: string;
+        landmark?: string;
+        notes?: string;
+        alternatePhone?: string | null;
+      } = {};
 
+      let photoUpdated = false;
       if (!hasPhoto && doorUrl) {
-        const saveExisting = await performUpsertCustomerPhoneProfile({
-          rawText: imp.rawText,
-          uploadedPhotoUrl: null,
-          remoteImageUrl: imp.doorImageUrl,
-        });
-        if (saveExisting.error) {
+        const remote = await profilePhotoFromRemoteUrl(doorUrl);
+        if (!remote.ok) {
           await persistLegacyKseImportLog(orderId, LEGACY_KSE_LOG.ERROR_SAVE, {
-            message: saveExisting.error,
+            message: remote.error,
             phone: elig.n,
             regionId: elig.regionId,
           });
-          rows.push({ orderId, status: "error", detail: saveExisting.error });
+          rows.push({ orderId, status: "error", detail: remote.error });
           continue;
         }
+        patchData.photoUrl = remote.photoUrl;
+        photoUpdated = true;
+      }
+
+      if (!String(existingProf?.locationUrl ?? "").trim() && parsedLegacy.locationUrl.trim()) {
+        const locParsed = parseLocationUrl(parsedLegacy.locationUrl.trim());
+        if (locParsed.ok) {
+          patchData.locationUrl = locParsed.url;
+        }
+      }
+      if (!String(existingProf?.landmark ?? "").trim() && parsedLegacy.landmark.trim()) {
+        patchData.landmark = parsedLegacy.landmark.trim();
+      }
+      if (!String(existingProf?.notes ?? "").trim() && parsedLegacy.notes.trim()) {
+        patchData.notes = parsedLegacy.notes.trim();
+      }
+      if (!existingProf?.alternatePhone && parsedLegacy.alternatePhone.trim()) {
+        const alt = normalizeIraqMobileLocal11(parsedLegacy.alternatePhone.trim());
+        if (alt && alt !== elig.n) {
+          patchData.alternatePhone = alt;
+        }
+      }
+
+      if (Object.keys(patchData).length > 0) {
+        await prisma.customerPhoneProfile.update({
+          where: { id: elig.existingProfileId },
+          data: patchData,
+        });
+      }
+      if (photoUpdated) {
         await persistLegacyKseImportLog(orderId, LEGACY_KSE_LOG.PROFILE_PHOTO_FILLED, {
           phone: elig.n,
           regionId: elig.regionId,
@@ -948,6 +1035,20 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
           status: "photo_updated",
           detail:
             "البروفايل كان بلا صورة باب — تم تنزيل صورة الباب من صفحة الطلب وربطها بالسجل.",
+        });
+        continue;
+      }
+      if (Object.keys(patchData).length > 0) {
+        await persistLegacyKseImportLog(orderId, LEGACY_KSE_LOG.SKIP_ALREADY_IN_DB, {
+          phone: elig.n,
+          regionId: elig.regionId,
+          profileId: elig.existingProfileId,
+          message: "تم تحديث الحقول الناقصة (لوكيشن/نقطة/ملاحظات/رقم ثانوي) من صفحة الطلب.",
+        });
+        rows.push({
+          orderId,
+          status: "already_in_db",
+          detail: "الزبون موجود مسبقاً — تم إكمال الحقول الناقصة من صفحة الطلب.",
         });
         continue;
       }
