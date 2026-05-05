@@ -226,23 +226,31 @@ export default async function AdminOrderViewPage({ params }: Props) {
     regionId: string | null | undefined,
   ): Promise<string> {
     if (!regionId) return "— لا توجد منطقة مرتبطة بالطلب";
-    const points = await prisma.regionWaypoint.findMany({
-      where: { regionId },
-      orderBy: { sortOrder: "asc" },
-      select: { name: true, latitude: true, longitude: true },
-    });
-    if (points.length === 0) return "— لا توجد مداخل محفوظة لهذه المنطقة";
-    if (!String(locationUrl || "").trim()) return "— لا يوجد لوكيشن للزبون";
-    const loc = await extractLatLngFromLocationInputSmart(locationUrl);
-    if (!loc) return "— تعذر قراءة إحداثيات الرابط";
-    let nearest: { name: string; dist: number } | null = null;
-    for (const p of points) {
-      const dist = haversineMeters(loc.latitude, loc.longitude, p.latitude, p.longitude);
-      if (!nearest || dist < nearest.dist) nearest = { name: p.name?.trim() || "مدخل", dist };
+    try {
+      const points = await prisma.regionWaypoint.findMany({
+        where: { regionId },
+        orderBy: { sortOrder: "asc" },
+        select: { name: true, latitude: true, longitude: true },
+      });
+      if (points.length === 0) return "— لا توجد مداخل محفوظة لهذه المنطقة";
+      if (!String(locationUrl || "").trim()) return "— لا يوجد لوكيشن للزبون";
+      const loc = await extractLatLngFromLocationInputSmart(locationUrl);
+      if (!loc) return "— تعذر قراءة إحداثيات الرابط";
+      let nearest: { name: string; dist: number } | null = null;
+      for (const p of points) {
+        const dist = haversineMeters(loc.latitude, loc.longitude, p.latitude, p.longitude);
+        if (!nearest || dist < nearest.dist) nearest = { name: p.name?.trim() || "مدخل", dist };
+      }
+      if (!nearest) return "— تعذر احتساب أقرب مدخل";
+      if (nearest.dist > 2500) return "— اللوكيشن بعيد عن مداخل المنطقة";
+      return `قريب من (${nearest.name})`;
+    } catch (error) {
+      console.warn(`[AdminOrderViewPage] Failed to compute smart hint for ${orderId}:`, {
+        regionId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return "— تعذّر احتساب أقرب مدخل حالياً";
     }
-    if (!nearest) return "— تعذر احتساب أقرب مدخل";
-    if (nearest.dist > 2500) return "— اللوكيشن بعيد عن مداخل المنطقة";
-    return `قريب من (${nearest.name})`;
   }
 
   const [smartHintLine, secondSmartHintLine] = await Promise.all([
