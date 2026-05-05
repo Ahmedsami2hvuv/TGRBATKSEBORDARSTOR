@@ -1,4 +1,4 @@
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 
 export const dynamic = "force-dynamic";
 
@@ -6,7 +6,7 @@ export const metadata = {
   title: "استيراد دفعي من طلبات KSE القديمة — أبو الأكبر",
 };
 
-const ImportLegacyKseBatchClient = dynamic(
+const ImportLegacyKseBatchClient = nextDynamic(
   () =>
     import("./import-legacy-kse-batch-client").then(
       (m) => m.ImportLegacyKseBatchClient,
