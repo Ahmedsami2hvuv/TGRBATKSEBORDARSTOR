@@ -7,7 +7,6 @@ export default function GlobalError({
   error: { message?: string; digest?: string };
   reset: () => void;
 }) {
-  // ملاحظة: نُتعمد عدم عرض `error.digest` حتى لا تظهر الكتابات العشوائية للمستخدم.
   return (
     <div className="min-h-screen bg-white">
       <div className="mx-auto flex max-w-2xl flex-col items-center justify-center px-4 py-16 text-center">
@@ -29,6 +28,9 @@ export default function GlobalError({
 
           {error?.message ? (
             <p className="mt-4 text-xs text-slate-500 font-mono break-words">{error.message}</p>
+          ) : null}
+          {error?.digest ? (
+            <p className="mt-2 text-[11px] text-slate-400 font-mono break-all">digest: {error.digest}</p>
           ) : null}
         </div>
       </div>

@@ -11,7 +11,14 @@ export default async function AdminDashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pendingInitialCount = await prisma.order.count({ where: { status: "pending" } });
+  let pendingInitialCount = 0;
+  try {
+    pendingInitialCount = await prisma.order.count({ where: { status: "pending" } });
+  } catch (error) {
+    console.warn("[AdminDashboardLayout] Failed to read pending orders count:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
   return (
     <AdminShell pendingInitialCount={pendingInitialCount}>{children}</AdminShell>
   );
