@@ -192,109 +192,78 @@ function extractFirstIraqMobileLocal11FromFreeText(scoped: string): string {
 
 function parseCustomerReferenceText(rawText: string) {
   const tNorm = rawText.replace(/\r\n/g, "\n").replace(/\u00a0/g, " ");
-  const fullStripped = stripInvisibleMarks(tNorm);
-  const scoped = stripInvisibleMarks(sliceLegacyOrderCustomerSection(tNorm));
-  const scopedNorm = normalizeDigitsToLatin(scoped);
-  const scopedPhoneScan = compactForPhoneScan(scopedNorm);
-  const lines = scopedNorm.split(/\r?\n/);
-  let regionName = "";
-  let locationUrl = "";
-  let landmark = "";
-  let phone = "";
-  let alternatePhone = "";
-  let notes = "";
-  let expectLocationOnNextLine = false;
-  let expectLandmarkOnNextLine = false;
+  const fullStripped = normalizeDigitsToLatin(stripInvisibleMarks(tNorm));
 
-  for (const line of lines) {
-    const t = line.trim();
-    if (!t) continue;
-    const tPhones = compactForPhoneScan(t);
-
-    if (expectLocationOnNextLine) {
-      const m = t.match(/https?:\/\/[^\s"'<>]+/i);
-      if (m && !locationUrl) {
-        locationUrl = m[0].trim();
-      }
-      expectLocationOnNextLine = false;
-    }
-    if (expectLandmarkOnNextLine) {
-      if (!landmark && !/^رقم\s*الهاتف|^الهاتف|^الرقم/i.test(t)) {
-        landmark = t.trim();
-      }
-      expectLandmarkOnNextLine = false;
-    }
-
-    if (/^المنطق[ةه]?\s*:/i.test(t) || /^منطقة\s*:/i.test(t)) {
-      regionName = t.split(/المنطق[ةه]?\s*:\s*|منطقة\s*:\s*/i)[1]?.trim() ?? "";
-      continue;
-    }
-    const locationLabelMatch =
-      /^(?:لكيشن\s*الزبون|لوكيشن\s*الزبون|اللوكيشن|الموقع|لكيشن)\s*[:：]?\s*(.*)$/i.exec(t);
-    if (locationLabelMatch) {
-      const after = locationLabelMatch[1]?.trim() ?? "";
-      const match = after.match(/https?:\/\/[^\s"'<>]+/i);
-      if (match) locationUrl = match[0].trim();
-      else expectLocationOnNextLine = true;
-      continue;
-    }
-    const landmarkLabelMatch =
-      /^(?:ا?قرب\s*نقط[ةه]\s*دال[ةه]?|نقط[ةه]\s*دال[ةه]?|دال[ةه]?|علامة)\s*[:：]?\s*(.*)$/i.exec(t);
-    if (landmarkLabelMatch) {
-      const after = landmarkLabelMatch[1]?.trim() ?? "";
-      if (after) landmark = after;
-      else expectLandmarkOnNextLine = true;
-      continue;
-    }
-    if (/^رقم الهاتف الأ[خ]ر\s*:/i.test(t) || /^رقم الهاتف الثاني\s*:/i.test(t) || /^رقم هاتف ثان\s*:/i.test(t) || /^رقم هاتف اخر\s*:/i.test(t) || /^رقم اخر\s*:/i.test(t) || /^رقم هاتف ثانٍ\s*:/i.test(t)) {
-      const match = tPhones.match(/07\d{9}/g);
-      if (match) alternatePhone = match[0];
-      continue;
-    }
-    const colon = "[:：]";
-    if (
-      new RegExp(`^رقم\\s*الهاتف\\s*${colon}`, "i").test(t) ||
-      new RegExp(`^الهاتف\\s*${colon}`, "i").test(t) ||
-      new RegExp(`^الرقم\\s*${colon}`, "i").test(t) ||
-      new RegExp(`^رقم\\s*العميل\\s*${colon}`, "i").test(t)
-    ) {
-      const match = tPhones.match(/07\d{9}/g);
-      if (match) phone = match[0];
-      continue;
-    }
-    if (/رقم\s*الهاتف\s*[:：]/i.test(t) && !/أخر|ثان|اخر|ثانٍ/i.test(t)) {
-      const match = tPhones.match(/07\d{9}/g);
-      if (match && !phone) phone = match[0];
-      continue;
-    }
-    if (/^ملاحظات\s*:/i.test(t) || /^ملاحظه\s*:/i.test(t)) {
-      notes = t.split(/ملاحظات\s*:\s*|ملاحظه\s*:\s*/i)[1]?.trim() ?? "";
-      continue;
-    }
+  // نأخذ فقط بلوك "معلومات الزبون" حتى لا نخلط مع "معلومات العميل".
+  const startCandidates = Array.from(fullStripped.matchAll(/معلومات\s*الزبون\s*[:：]?/gi))
+    .map((m) => m.index ?? -1)
+    .filter((n) => n >= 0);
+  let scoped = sliceLegacyOrderCustomerSection(fullStripped);
+  if (startCandidates.length > 0) {
+    const start = startCandidates[0]!;
+    const tail = fullStripped.slice(start);
+    const endM = /(?:\n\s*معلومات\s*الطلب\b|\n[\t \u00a0]*-{5,}[\t \u00a0]*\n)/i.exec(tail);
+    scoped = (endM ? tail.slice(0, endM.index) : tail).trim();
   }
 
-  const allPhones = scopedPhoneScan.match(/07\d{9}/g) || [];
-  if (!phone && allPhones[0]) phone = allPhones[0];
-  if (!alternatePhone && allPhones[1] && allPhones[1] !== phone) alternatePhone = allPhones[1];
+  const lines = scoped.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const getLabeledValue = (re: RegExp): string => {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]!;
+      const m = re.exec(line);
+      if (!m) continue;
+      const v = (m[1] ?? "").trim();
+      if (v) return v;
+      const next = lines[i + 1]?.trim() ?? "";
+      if (next && !/^(المنطق[ةه]?|منطقة|لكيشن|لوكيشن|اقرب|نقط[ةه]|رقم)/i.test(next)) return next;
+      return "";
+    }
+    return "";
+  };
+
+  const regionName =
+    getLabeledValue(/^(?:المنطق[ةه]?|منطقة)\s*[:：]?\s*(.*)$/i);
+
+  let locationUrl = getLabeledValue(
+    /^(?:لكيشن\s*(?:الزبون|العميل)?|لوكيشن\s*(?:الزبون|العميل)?|اللوكيشن|الموقع)\s*[:：]?\s*(.*)$/i,
+  );
+  {
+    const m = locationUrl.match(/https?:\/\/[^\s"'<>]+/i);
+    locationUrl = m ? m[0].trim() : "";
+  }
+  if (!locationUrl) {
+    const map = extractAllUrlsFromText(scoped).find((u) => isLikelyLocationUrl(u));
+    if (map) locationUrl = map.trim();
+  }
+
+  const landmark = getLabeledValue(
+    /^(?:ا?قرب\s*نقط[ةه]\s*دال[ةه]?|نقط[ةه]\s*دال[ةه]?|دال[ةه]?|علامة)\s*[:：]?\s*(.*)$/i,
+  );
+
+  const phoneLine =
+    getLabeledValue(/^(?:رقم\s*الهاتف|الهاتف|الرقم|رقم\s*العميل)\s*[:：]?\s*(.*)$/i);
+  const altPhoneLine =
+    getLabeledValue(/^(?:رقم\s*الهاتف\s*الأ[خخ]ر|رقم\s*الهاتف\s*الثاني|رقم\s*هاتف\s*ثان(?:ٍ)?|رقم\s*هاتف\s*اخر|رقم\s*اخر)\s*[:：]?\s*(.*)$/i);
+
+  let phone = "";
+  let alternatePhone = "";
+  const phoneFromLabel = compactForPhoneScan(phoneLine).match(/07\d{9}/);
+  if (phoneFromLabel?.[0]) phone = phoneFromLabel[0];
+  const altFromLabel = compactForPhoneScan(altPhoneLine).match(/07\d{9}/);
+  if (altFromLabel?.[0]) alternatePhone = altFromLabel[0];
 
   if (!phone) {
     phone = extractFirstIraqMobileLocal11FromFreeText(scoped);
   }
-  /** إن قطع sliceLegacy قسم الزبون مبكراً (شرطات/فاصل)، الرقم يبقى في المربع كاملاً. */
   if (!phone) {
     phone = extractFirstIraqMobileLocal11FromFreeText(fullStripped);
   }
-
-  if (!locationUrl) {
-    const urls = extractAllUrlsFromText(scopedNorm);
-    const preferred = urls.find((u) => isLikelyLocationUrl(u));
-    if (preferred) {
-      locationUrl = preferred.trim();
-    } else if (urls[0]) {
-      locationUrl = urls[0].trim();
-    }
+  if (!alternatePhone) {
+    const allPhones = compactForPhoneScan(scoped).match(/07\d{9}/g) || [];
+    if (allPhones[1] && allPhones[1] !== phone) alternatePhone = allPhones[1];
   }
 
+  const notes = getLabeledValue(/^(?:ملاحظات|ملاحظه)\s*[:：]?\s*(.*)$/i);
   return { regionName, locationUrl, landmark, phone, alternatePhone, notes };
 }
 
