@@ -247,8 +247,26 @@ function extractMapUrlsFromHtmlChunk(chunk: string): string[] {
 export function extractCustomerReferenceRawTextFromLegacyOrderHtml(
   html: string,
 ): string | null {
-  const startIdx = html.search(/معلومات\s*الزبون/i);
-  if (startIdx < 0) return null;
+  const starts = Array.from(html.matchAll(/معلومات\s*الزبون/gi)).map((m) => m.index ?? -1).filter((n) => n >= 0);
+  if (starts.length === 0) return null;
+
+  // بعض الصفحات تحتوي «معلومات الزبون» في القائمة الجانبية أيضاً.
+  // نختار الظهور الذي يحتوي غالباً حقول الزبون الحقيقية (رقم/منطقة/لكيشن) قربه.
+  let startIdx = starts[0]!;
+  let bestScore = -1;
+  for (const idx of starts) {
+    const w = html.slice(idx, idx + 60_000);
+    let score = 0;
+    if (/رقم\s*(?:الهاتف|العميل)\s*[:：]/i.test(w)) score += 5;
+    if (/المنطق[ةه]?\s*[:：]/i.test(w)) score += 3;
+    if (/لكيشن\s*(?:الزبون|العميل)\s*[:：]/i.test(w)) score += 3;
+    if (/اقرب\s*نقط[ةه]\s*دال[ةه]?\s*[:：]/i.test(w)) score += 2;
+    if (/https?:\/\/(?:maps\.app\.goo\.gl|(?:www\.)?google\.com\/maps|goo\.gl\/maps)/i.test(w)) score += 2;
+    if (score > bestScore) {
+      bestScore = score;
+      startIdx = idx;
+    }
+  }
 
   const fromStart = html.slice(startIdx);
   /** بدون \b لأن حدود الكلمات في RegExp لا تنطبق على العربية كما يُفترض. */
@@ -259,7 +277,8 @@ export function extractCustomerReferenceRawTextFromLegacyOrderHtml(
   let end = fromStart.length;
   if (endOrderInfo >= 0) end = Math.min(end, endOrderInfo);
   if (endDash >= 0) end = Math.min(end, endDash);
-  const capped = Math.min(end, 18_000);
+  // نرفع السقف لتجنب قصّ مبكر في الصفحات الطويلة.
+  const capped = Math.min(end, 90_000);
   const slice = injectImportantHrefsAsText(fromStart.slice(0, capped));
   let plain = legacyHtmlChunkToPlainText(slice);
   // احتياط: أحياناً رابط اللوكيشن يكون داخل attributes/onclick ولا يظهر كنص بعد التنظيف.

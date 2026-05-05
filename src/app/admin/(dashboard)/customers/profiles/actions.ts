@@ -239,7 +239,7 @@ function parseCustomerReferenceText(rawText: string) {
       continue;
     }
     const landmarkLabelMatch =
-      /^(?:ا?قرب\s*نقطة\s*دال[ةه]?|نقطة\s*دال[ةه]?|دال[ةه]?|علامة)\s*[:：]?\s*(.*)$/i.exec(t);
+      /^(?:ا?قرب\s*نقط[ةه]\s*دال[ةه]?|نقط[ةه]\s*دال[ةه]?|دال[ةه]?|علامة)\s*[:：]?\s*(.*)$/i.exec(t);
     if (landmarkLabelMatch) {
       const after = landmarkLabelMatch[1]?.trim() ?? "";
       if (after) landmark = after;
