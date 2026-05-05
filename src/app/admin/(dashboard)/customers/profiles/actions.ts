@@ -933,6 +933,7 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
     if (cached && LEGACY_KSE_NO_REFETCH.has(cached.outcome)) {
       let bypassCacheForMissingPhoto = false;
       let bypassCacheForMissingLocationOrLandmark = false;
+      let bypassCacheForMissingAltPhone = false;
       let bypassCacheForRecheckNoCustomer = false;
       let cachedDetail = `سبق المسح (${cached.outcome}) — لن يُعاد الطلب من الموقع بعد تجديد الكوكي.`;
       if (cached.phone && cached.regionId) {
@@ -950,21 +951,23 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
         const noDoorPhoto = !!(prof && isMissingFieldValue(prof.photoUrl));
         const noLocation = !!(prof && isMissingFieldValue(prof.locationUrl));
         const noLandmark = !!(prof && isMissingFieldValue(prof.landmark));
-        if (
-          noDoorPhoto &&
-          (cached.outcome === LEGACY_KSE_LOG.SKIP_ALREADY_IN_DB ||
-            cached.outcome === LEGACY_KSE_LOG.IMPORTED_NEW)
-        ) {
+        const noAltPhone = !!(prof && isMissingFieldValue(prof.alternatePhone));
+        // أي سجل موجود وعليه نقص فعلي يجب أن يُعاد فحصه مهما كانت نتيجة السحب السابقة.
+        if (noDoorPhoto) {
           bypassCacheForMissingPhoto = true;
         }
-        if (
-          (noLocation || noLandmark) &&
-          (cached.outcome === LEGACY_KSE_LOG.SKIP_ALREADY_IN_DB ||
-            cached.outcome === LEGACY_KSE_LOG.IMPORTED_NEW)
-        ) {
+        if (noLocation || noLandmark) {
           bypassCacheForMissingLocationOrLandmark = true;
         }
-        if (prof && !bypassCacheForMissingPhoto && !bypassCacheForMissingLocationOrLandmark) {
+        if (noAltPhone) {
+          bypassCacheForMissingAltPhone = true;
+        }
+        if (
+          prof &&
+          !bypassCacheForMissingPhoto &&
+          !bypassCacheForMissingLocationOrLandmark &&
+          !bypassCacheForMissingAltPhone
+        ) {
           const completed = formatCompletedFieldsLabel({
             hasPhoto: !isMissingFieldValue(prof.photoUrl),
             hasLocation: !isMissingFieldValue(prof.locationUrl),
@@ -972,6 +975,14 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
             hasAlternatePhone: !isMissingFieldValue(prof.alternatePhone),
           });
           cachedDetail = `الزبون مسحوب سابقاً وموجود حالياً. البيانات المتوفرة: ${completed}.`;
+        } else if (prof) {
+          const missing: string[] = [];
+          if (noLocation) missing.push("اللوكيشن");
+          if (noLandmark) missing.push("أقرب نقطة دالة");
+          if (noDoorPhoto) missing.push("صورة الباب");
+          if (noAltPhone) missing.push("الرقم الثاني");
+          cachedDetail =
+            `الزبون موجود لكن ناقص: ${joinFieldLabels(missing)}. سيُعاد فحص الطلب لتكميل النواقص.`;
         }
       } else if (cached.outcome === LEGACY_KSE_LOG.SKIP_NO_CUSTOMER) {
         // بعد تحسين parser قد تنجح الطلبات التي كانت سابقاً تُصنّف skip_no_customer_html.
@@ -983,6 +994,7 @@ export async function runLegacyKseOrderDetailsBatchImport(args: {
       if (
         !bypassCacheForMissingPhoto &&
         !bypassCacheForMissingLocationOrLandmark &&
+        !bypassCacheForMissingAltPhone &&
         !bypassCacheForRecheckNoCustomer
       ) {
         rows.push({
