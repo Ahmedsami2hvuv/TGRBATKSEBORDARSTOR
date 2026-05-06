@@ -526,16 +526,6 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
             />
           </label>
           <label className="block text-sm">
-            <span className="font-bold">توقف تلقائي عند رقم طلب (خاص بهذه النافذة)</span>
-            <input
-              type="number"
-              min={1}
-              value={stopAtOrder}
-              onChange={(e) => setStopAtOrder(parseInt(e.target.value, 10) || Math.max(rangeStart, rangeEnd))}
-              className={`${ad.input} mt-1 w-full`}
-            />
-          </label>
-          <label className="block text-sm">
             <span className="font-bold">حجم الدفعة (حد أقصى 25)</span>
             <input
               type="number"
@@ -588,7 +578,20 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
               ضبط المؤشر = بداية النطاق
             </button>
           </div>
+          <label className="mt-3 block text-sm">
+            <span className="font-bold">آخر طلب تتوقف عنده هذه النافذة</span>
+            <input
+              type="number"
+              min={1}
+              value={stopAtOrder}
+              onChange={(e) =>
+                setStopAtOrder(parseInt(e.target.value, 10) || Math.max(rangeStart, rangeEnd))
+              }
+              className={`${ad.input} mt-1 w-full`}
+            />
+          </label>
           <p className="mt-2 text-xs text-slate-500">
+            نعم: إذا كان «إلى رقم طلب» = 16443 و«آخر طلب تتوقف عنده» = 7000، السحب يتوقف عند 7000.
             يُحفظ المؤشر في المتصفح لتكملة الاستيراد لاحقاً.
           </p>
         </div>
