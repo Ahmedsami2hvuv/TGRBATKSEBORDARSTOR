@@ -62,6 +62,7 @@ export function OrderTrackingBulkTable({
   const [orderDetailHref, setOrderDetailHref] = useState<string | null>(null);
   const [cachedOrderHrefs, setCachedOrderHrefs] = useState<string[]>([]);
   const [loadedOrderHrefs, setLoadedOrderHrefs] = useState<Record<string, boolean>>({});
+  const [preloadQueue, setPreloadQueue] = useState<string[]>([]);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
 
   useEffect(() => {
@@ -128,18 +129,34 @@ export function OrderTrackingBulkTable({
 
   useEffect(() => {
     if (rowDetailHrefs.length === 0) return;
-    setCachedOrderHrefs((prev) => {
+    setPreloadQueue((prev) => {
       const seen = new Set(prev);
+      const cached = new Set(cachedOrderHrefs);
       const next = [...prev];
       for (const href of rowDetailHrefs) {
-        if (!seen.has(href)) {
+        if (!seen.has(href) && !cached.has(href)) {
           seen.add(href);
           next.push(href);
         }
       }
       return next;
     });
-  }, [rowDetailHrefs, router]);
+  }, [rowDetailHrefs, cachedOrderHrefs]);
+
+  useEffect(() => {
+    if (preloadQueue.length === 0) return;
+    if (orderDetailHref && !loadedOrderHrefs[orderDetailHref]) return;
+    const nextHref = preloadQueue.find((href) => !cachedOrderHrefs.includes(href));
+    if (!nextHref) {
+      setPreloadQueue([]);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setCachedOrderHrefs((prev) => (prev.includes(nextHref) ? prev : [...prev, nextHref]));
+      setPreloadQueue((prev) => prev.filter((href) => href !== nextHref));
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [preloadQueue, cachedOrderHrefs, orderDetailHref, loadedOrderHrefs]);
 
   const openOrderModal = (href: string) => {
     if (!orderDetailHref) {
@@ -147,6 +164,7 @@ export function OrderTrackingBulkTable({
     }
     setOrderDetailHref(href);
     setCachedOrderHrefs((prev) => (prev.includes(href) ? prev : [...prev, href]));
+    setPreloadQueue((prev) => prev.filter((h) => h !== href));
   };
 
   const closeOrderModal = () => {
