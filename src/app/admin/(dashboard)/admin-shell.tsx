@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { logout } from "./actions";
 import { AdminLiveSearchInput } from "./live-search-input";
 import { adminSidebarTiles, tileHref } from "@/lib/admin-nav";
@@ -33,10 +33,10 @@ export function AdminShell({
   const pathname = usePathname() ?? "";
 
   const sidebarMinWidth = 240;
-  const sidebarMaxWidth = 520;
   const dragThreshold = 7; // px
   const mobileDefaultOpenWidth = Math.min(420, Math.max(320, viewportWidth || 420));
   const NAV_WIDTH_STORAGE_KEY = "kse:admin:navWidth";
+  const maxSidebarWidth = Math.max(sidebarMinWidth, (viewportWidth || 1200) - 8);
 
   useEffect(() => {
     const mql = window.matchMedia("(min-width: 1024px)");
@@ -81,7 +81,12 @@ export function AdminShell({
     }
   }, [navWidth]);
 
+  useEffect(() => {
+    if (navWidth > maxSidebarWidth) setNavWidth(maxSidebarWidth);
+  }, [maxSidebarWidth, navWidth]);
+
   const isCompact = navWidth <= 260;
+  const isWide = navWidth >= 430;
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
@@ -128,9 +133,9 @@ export function AdminShell({
     let resizeStarted = false;
 
     const maxWidth = clamp(
-      Math.min(sidebarMaxWidth, viewportWidth ? viewportWidth - 12 : sidebarMaxWidth),
+      maxSidebarWidth,
       sidebarMinWidth,
-      sidebarMaxWidth,
+      maxSidebarWidth,
     );
 
     const onMove = (ev: PointerEvent) => {
@@ -172,71 +177,9 @@ export function AdminShell({
 
   const effectiveNavOpen = isLg ? true : navOpen;
 
-  const NavLinks = () => (
-    <>
-      <Link
-        href="/admin"
-        prefetch={false}
-        title="الرئيسية"
-        onClick={() => setNavOpen(false)}
-        className={
-          navItemActive(pathname, "/admin")
-            ? `flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-3 px-3"} w-full h-11 rounded-xl bg-sky-100 dark:bg-[#002a3a] border border-sky-400 dark:border-[#00f3ff] text-sky-700 dark:text-[#00f3ff] shadow-sm dark:shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all`
-            : `flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-3 px-3"} w-full h-11 rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all`
-        }
-      >
-        <span className="text-xl shrink-0" aria-hidden>
-          <DynamicIcon iconKey="ui_home" config={icons} fallback="🏠" className="w-6 h-6" />
-        </span>
-        {isCompact ? null : <span className="leading-snug font-medium text-sm block">الرئيسية</span>}
-      </Link>
-      {isCompact ? null : (
-        <p className="mt-4 px-3 text-[11px] font-bold tracking-wider text-sky-700 dark:text-[#00f3ff] block">الأقسام</p>
-      )}
-      
-      <div className="mt-4 flex flex-col gap-2">
-        {adminSidebarTiles().map((tile) => {
-          const href = tileHref(tile);
-          const active = navItemActive(pathname, href);
-          const showPendingBadge = tile.slug === "new-orders" && pendingCount > 0;
-          return (
-            <Link
-              key={tile.slug}
-              href={href}
-              prefetch={false}
-              title={tile.label}
-              onClick={() => setNavOpen(false)}
-              className={
-                active
-                  ? `flex items-center ${
-                      isCompact ? "gap-0 px-2 justify-center" : "gap-3 px-3"
-                    } w-full h-11 rounded-xl bg-purple-100 dark:bg-[#1e102a] border border-purple-400 dark:border-[#e028ff] text-purple-700 dark:text-[#e028ff] shadow-sm dark:shadow-[0_0_15px_rgba(224,40,255,0.4)] transition-all relative`
-                  : `flex items-center ${
-                      isCompact ? "gap-0 px-2 justify-center" : "gap-3 px-3"
-                    } w-full h-11 rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all relative`
-              }
-            >
-              <span className="text-xl shrink-0 relative flex justify-center items-center">
-                <DynamicIcon iconKey={tile.iconKey} config={icons} className="w-6 h-6" />
-                {showPendingBadge ? (
-                  <span className="absolute -top-2 -right-2 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-orange-600 px-1 py-0.5 text-[10px] font-black leading-none text-white shadow-[0_0_10px_orange]">
-                    {pendingCount > 99 ? "99+" : pendingCount}
-                  </span>
-                ) : null}
-              </span>
-              {isCompact ? null : (
-                <span className="leading-snug font-medium text-sm text-slate-700 dark:text-slate-200 block">{tile.label}</span>
-              )}
-            </Link>
-          );
-        })}
-      </div>
-    </>
-  );
-
   return (
     <div
-      className={`kse-app-bg min-h-screen flex text-slate-900 dark:text-slate-100 flex-col lg:flex-row ${
+      className={`kse-app-bg min-h-screen flex text-slate-900 dark:text-slate-100 flex-col ${
         !isLg && navOpen ? "overflow-hidden" : ""
       } lg:overflow-visible`}
     >
@@ -262,12 +205,12 @@ export function AdminShell({
       {/* Sidebar */}
       <aside
         className={`
-          fixed z-[120] flex flex-col border-e border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)]
+          fixed z-[160] flex flex-col border-e border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)]
           bg-white/95 dark:bg-[#09090b]/95 shadow-[4px_0_20px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_20px_rgba(0,0,0,0.8)]
           backdrop-blur-md ${isResizing ? "transition-none" : "transition-[width,transform] duration-200 ease-out"}
           inset-y-0 start-0 w-72
           ${effectiveNavOpen ? "translate-x-0 pointer-events-auto" : "translate-x-full pointer-events-none"}
-          lg:static lg:inset-auto lg:translate-x-0 lg:transform-none lg:pointer-events-auto
+          lg:inset-y-0 lg:start-0 lg:translate-x-0 lg:pointer-events-auto
         `}
         style={{ width: navWidth }}
       >
@@ -286,8 +229,67 @@ export function AdminShell({
             <span className="text-black font-black text-xs">OR</span>
           </div>
         </div>
-        <nav className="flex flex-1 flex-col overflow-y-auto px-3 py-4 gap-1">
-          <NavLinks />
+        <nav className="flex flex-1 overflow-y-auto px-3 py-4">
+          <div className={`w-full ${isWide ? "grid grid-cols-2 gap-2" : "flex flex-col gap-2"}`}>
+            <div className={isWide ? "col-span-2" : ""}>
+              <Link
+                href="/admin"
+                prefetch={false}
+                title="الرئيسية"
+                onClick={() => setNavOpen(false)}
+                className={
+                  navItemActive(pathname, "/admin")
+                    ? `flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-3 px-3"} w-full h-11 rounded-xl bg-sky-100 dark:bg-[#002a3a] border border-sky-400 dark:border-[#00f3ff] text-sky-700 dark:text-[#00f3ff] shadow-sm dark:shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all`
+                    : `flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-3 px-3"} w-full h-11 rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all`
+                }
+              >
+                <span className="text-xl shrink-0" aria-hidden>
+                  <DynamicIcon iconKey="ui_home" config={icons} fallback="🏠" className="w-6 h-6" />
+                </span>
+                {isCompact ? null : <span className="leading-snug font-medium text-sm block">الرئيسية</span>}
+              </Link>
+            </div>
+            {isCompact ? null : (
+              <p className={`px-3 text-[11px] font-bold tracking-wider text-sky-700 dark:text-[#00f3ff] block ${isWide ? "col-span-2 mt-2" : "mt-2"}`}>
+                الأقسام
+              </p>
+            )}
+            {adminSidebarTiles().map((tile) => {
+              const href = tileHref(tile);
+              const active = navItemActive(pathname, href);
+              const showPendingBadge = tile.slug === "new-orders" && pendingCount > 0;
+              return (
+                <Link
+                  key={tile.slug}
+                  href={href}
+                  prefetch={false}
+                  title={tile.label}
+                  onClick={() => setNavOpen(false)}
+                  className={
+                    active
+                      ? `flex items-center ${
+                          isCompact ? "gap-0 px-2 justify-center" : "gap-3 px-3"
+                        } w-full h-11 rounded-xl bg-purple-100 dark:bg-[#1e102a] border border-purple-400 dark:border-[#e028ff] text-purple-700 dark:text-[#e028ff] shadow-sm dark:shadow-[0_0_15px_rgba(224,40,255,0.4)] transition-all relative`
+                      : `flex items-center ${
+                          isCompact ? "gap-0 px-2 justify-center" : "gap-3 px-3"
+                        } w-full h-11 rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all relative`
+                  }
+                >
+                  <span className="text-xl shrink-0 relative flex justify-center items-center">
+                    <DynamicIcon iconKey={tile.iconKey} config={icons} className="w-6 h-6" />
+                    {showPendingBadge ? (
+                      <span className="absolute -top-2 -right-2 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-orange-600 px-1 py-0.5 text-[10px] font-black leading-none text-white shadow-[0_0_10px_orange]">
+                        {pendingCount > 99 ? "99+" : pendingCount}
+                      </span>
+                    ) : null}
+                  </span>
+                  {isCompact ? null : (
+                    <span className="leading-snug font-medium text-sm text-slate-700 dark:text-slate-200 block">{tile.label}</span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
         </nav>
         <div className="border-t border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] p-2">
           <form action={logout}>
