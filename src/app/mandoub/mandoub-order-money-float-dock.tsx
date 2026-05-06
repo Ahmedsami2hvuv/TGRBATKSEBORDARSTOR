@@ -27,7 +27,8 @@ import {
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 
-const DRAG_THRESHOLD = 8;
+// لمس الهاتف يهتز غالباً عدة بكسلات؛ رفع العتبة يقلل ضياع النقرة.
+const DRAG_THRESHOLD = 16;
 const LONG_PRESS_MS = 650;
 const Z_BTN = 1200;
 const Z_PANEL = 1210;

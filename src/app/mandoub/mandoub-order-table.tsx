@@ -182,16 +182,41 @@ export function MandoubOrderTable({
     });
   }, [rowDetailHrefs, router]);
 
+  const openOrderModal = (href: string) => {
+    if (!orderDetailHref) {
+      window.history.pushState({ orderModalOpen: true }, "", window.location.href);
+    }
+    setOrderDetailHref(href);
+    setCachedOrderHrefs((prev) => (prev.includes(href) ? prev : [...prev, href]));
+  };
+
+  const closeOrderModal = () => {
+    if (!orderDetailHref) return;
+    if (window.history.state?.orderModalOpen) {
+      window.history.back();
+      return;
+    }
+    setOrderDetailHref(null);
+  };
+
+  useEffect(() => {
+    const onPopState = () => {
+      setOrderDetailHref((prev) => (prev ? null : prev));
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type === "ORDER_MODAL_CLOSE") {
-        setOrderDetailHref(null);
+        closeOrderModal();
       }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, []);
+  }, [orderDetailHref]);
 
   function toggleOne(id: string) {
     setSelectedIds((prev) => {
@@ -320,8 +345,7 @@ export function MandoubOrderTable({
         onToggleOne={toggleOne}
         onOpenRow={(id) => {
           const href = buildOrderDetailHref(auth, tab, qSearch, id);
-          setOrderDetailHref(href);
-          setCachedOrderHrefs((prev) => (prev.includes(href) ? prev : [...prev, href]));
+          openOrderModal(href);
         }}
         selectAllTitle="تحديد الكل"
         selectAllAriaLabel="تحديد كل الطلبات الظاهرة"
@@ -456,7 +480,7 @@ export function MandoubOrderTable({
           <div className={`fixed inset-0 z-[120] ${orderDetailHref ? "" : "pointer-events-none"}`}>
             <div
               className={`absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity ${orderDetailHref ? "opacity-100" : "opacity-0"}`}
-              onClick={() => setOrderDetailHref(null)}
+              onClick={closeOrderModal}
             />
             <div
               className={`absolute inset-0 flex items-center justify-center transition-opacity ${orderDetailHref ? "opacity-100" : "opacity-0"}`}
@@ -467,7 +491,7 @@ export function MandoubOrderTable({
                   <div className="font-black text-slate-900">عرض الطلب</div>
                   <button
                     type="button"
-                    onClick={() => setOrderDetailHref(null)}
+                    onClick={closeOrderModal}
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
                     aria-label="إغلاق نافذة الطلب"
                   >

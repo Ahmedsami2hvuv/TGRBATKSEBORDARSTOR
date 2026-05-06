@@ -316,6 +316,30 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
     };
   }, [autoRun, busy, runBatch]);
 
+  const openNestedWindow = (href: string) => {
+    if (!nestedHref) {
+      window.history.pushState({ nestedModalOpen: true }, "", window.location.href);
+    }
+    setNestedHref(href);
+  };
+
+  const closeNestedWindow = () => {
+    if (!nestedHref) return;
+    if (window.history.state?.nestedModalOpen) {
+      window.history.back();
+      return;
+    }
+    setNestedHref(null);
+  };
+
+  useEffect(() => {
+    const onPopState = () => {
+      setNestedHref((prev) => (prev ? null : prev));
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
   const handleClose = () => {
     if (onClose) {
       onClose();
@@ -341,7 +365,7 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
         {nestedHref ? (
           <div
             className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-2 sm:p-4 backdrop-blur-sm"
-            onClick={() => setNestedHref(null)}
+            onClick={closeNestedWindow}
           >
             <div
               className="relative h-[95vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl"
@@ -349,7 +373,7 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
             >
               <button
                 type="button"
-                onClick={() => setNestedHref(null)}
+                onClick={closeNestedWindow}
                 className="absolute left-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                 aria-label="إغلاق نافذة الصفحة"
               >
@@ -363,14 +387,14 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
         <nav className="mt-8 flex flex-wrap gap-3 text-sm">
           <button
             type="button"
-            onClick={() => setNestedHref("/admin/customers/profiles/new")}
+            onClick={() => openNestedWindow("/admin/customers/profiles/new")}
             className={ad.link}
           >
             ← إضافة زبون (يدوي / رابط واحد)
           </button>
           <button
             type="button"
-            onClick={() => setNestedHref("/admin/customers/profiles/import")}
+            onClick={() => openNestedWindow("/admin/customers/profiles/import")}
             className={ad.link}
           >
             استيراد SQL
