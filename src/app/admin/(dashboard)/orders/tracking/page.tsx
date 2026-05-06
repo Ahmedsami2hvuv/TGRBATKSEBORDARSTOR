@@ -233,6 +233,9 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       `${normalizeIraqMobileLocal11(o.customerPhone) ?? ""}_${o.customerRegionId ?? ""}`,
     );
 
+    const pickupSum = sumPickupOutFromOrderMoneyEvents(o.moneyEvents);
+    const deliverySum = sumDeliveryInFromOrderMoneyEvents(o.moneyEvents);
+
     return {
       id: o.id,
       orderNumber: o.orderNumber,
@@ -260,6 +263,8 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
       noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,
       noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
+      pickupSumDinar: pickupSum != null ? Number(pickupSum) : null,
+      deliverySumDinar: deliverySum != null ? Number(deliverySum) : null,
       createdAt: o.createdAt,
       // بيانات الوصول السريع
       audioUrl: o.voiceNoteUrl,

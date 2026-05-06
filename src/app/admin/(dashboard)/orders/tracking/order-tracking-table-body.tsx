@@ -32,6 +32,10 @@ export type TrackingTableRow = {
   hasCourierUploadedLocation: boolean;
   preparerShoppingJson?: any;
   summary: string;
+  /** مجموع الصادر (دفع للعميل) بالدينار — لعرضه "من الخارج" */
+  pickupSumDinar?: number | null;
+  /** مجموع الوارد (استلام من الزبون) بالدينار — لعرضه "من الخارج" */
+  deliverySumDinar?: number | null;
   // تنبيهات مالية
   wardMismatchType?: "excess" | "deficit" | null;
   saderMismatchType?: "excess" | "deficit" | null;

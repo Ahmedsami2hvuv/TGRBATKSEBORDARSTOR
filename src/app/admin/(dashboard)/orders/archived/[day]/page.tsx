@@ -108,6 +108,8 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
     ),
     summary: o.summary,
     preparerShoppingJson: o.preparerShoppingJson,
+    pickupSumDinar: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) != null ? Number(sumPickupOutFromOrderMoneyEvents(o.moneyEvents)) : null,
+    deliverySumDinar: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) != null ? Number(sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)) : null,
     wardMismatchType: isWardMismatch(
       o.status,
       o.totalAmount,

@@ -67,42 +67,34 @@ function MoneyMiniBadges({ row }: { row: MandoubRow }) {
   // المطلوب: تظهر "من الخارج" فقط عند تم التسليم
   if (row.orderStatus !== "delivered") return null;
 
-  const pickup = row.pickupSumDinar ?? 0; // صادر المندوب
-  const delivery = row.deliverySumDinar ?? 0; // وارد المندوب
-  const preparerSader = row.orderSubtotalDinar ?? null; // صادر المجهز (سعر الطلب بدون التوصيل)
-  const preparerWard = row.totalAmountDinar ?? null; // وارد المجهز (السعر الكلي)
+  const pickup = row.pickupSumDinar ?? null; // صادر المندوب
+  const delivery = row.deliverySumDinar ?? null; // وارد المندوب
+
+  const showPickup = pickup != null && Number.isFinite(pickup) && pickup > 0;
+  const showDelivery = delivery != null && Number.isFinite(delivery) && delivery > 0;
+
+  // لا نعرض أي رقم إذا لم توجد حركة فعلية
+  if (!showPickup && !showDelivery) return null;
 
   const pillBase =
     "inline-flex items-center justify-center rounded px-1 py-0.5 text-[10px] font-black leading-none tabular-nums ring-1 shadow-sm";
 
   return (
     <div className="absolute -top-2.5 -right-2 flex flex-wrap items-center gap-1" dir="rtl">
-      <span
-        className={`${pillBase} bg-emerald-50 text-emerald-700 ring-emerald-200`}
-        title="صادر المندوب"
-      >
-        {formatDinarAsAlf(pickup)}
-      </span>
-      <span
-        className={`${pillBase} bg-rose-50 text-rose-700 ring-rose-200`}
-        title="وارد المندوب"
-      >
-        {formatDinarAsAlf(delivery)}
-      </span>
-      {preparerSader != null && preparerSader > 0 ? (
+      {showPickup ? (
         <span
-          className={`${pillBase} bg-sky-50 text-sky-700 ring-sky-200`}
-          title="صادر المجهز"
+          className={`${pillBase} bg-emerald-50 text-emerald-700 ring-emerald-200`}
+          title="صادر المندوب"
         >
-          {formatDinarAsAlf(preparerSader)}
+          {formatDinarAsAlf(pickup)}
         </span>
       ) : null}
-      {preparerWard != null && preparerWard > 0 ? (
+      {showDelivery ? (
         <span
-          className={`${pillBase} bg-amber-50 text-amber-800 ring-amber-200`}
-          title="وارد المجهز"
+          className={`${pillBase} bg-rose-50 text-rose-700 ring-rose-200`}
+          title="وارد المندوب"
         >
-          {formatDinarAsAlf(preparerWard)}
+          {formatDinarAsAlf(delivery)}
         </span>
       ) : null}
     </div>
