@@ -48,7 +48,7 @@ export function ImportRegionsButton({ icons }: { icons: GlobalIconsConfig | null
       }
     } catch (err: any) {
       if (err?.name !== "AbortError") {
-        alert("خطأ تقني: تأكد من أنك تفتح الموقع من الرابط الأساسي aboakbar.vercel.app");
+        alert("خطأ تقني: تأكد من أنك تفتح الموقع من الرابط الأساسي aboakbr.com");
       }
       setStatus("idle");
     } finally {

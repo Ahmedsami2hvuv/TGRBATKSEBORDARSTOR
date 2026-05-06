@@ -19,7 +19,7 @@ function payloadFor(preparerId: string, token: string): string {
 
 function normalizePublicOrigin(raw: string): string {
   const t = raw.trim().replace(/\/+$/, "");
-  if (!t) return "https://aboakbar.vercel.app";
+  if (!t) return "https://aboakbr.com";
   if (/^https?:\/\//i.test(t)) return t;
   return `https://${t.replace(/^\/+/, "")}`;
 }
