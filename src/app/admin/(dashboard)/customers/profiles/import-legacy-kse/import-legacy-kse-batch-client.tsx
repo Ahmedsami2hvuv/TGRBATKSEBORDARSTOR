@@ -64,7 +64,11 @@ function statusUi(status: LegacyKseBatchImportRow["status"]): {
   }
 }
 
-export function ImportLegacyKseBatchClient() {
+type ImportLegacyKseBatchClientProps = {
+  onClose?: () => void;
+};
+
+export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClientProps) {
   const [rangeStart, setRangeStart] = useState(1);
   const [rangeEnd, setRangeEnd] = useState(16443);
   const [batchSize, setBatchSize] = useState(10);
@@ -311,18 +315,38 @@ export function ImportLegacyKseBatchClient() {
     };
   }, [autoRun, busy, runBatch]);
 
-  return (
-    <div className="mx-auto max-w-3xl space-y-6 p-4">
-      <nav className="text-sm flex flex-wrap gap-3">
-        <Link href="/admin/customers/profiles/new" className={ad.link}>
-          ← إضافة زبون (يدوي / رابط واحد)
-        </Link>
-        <Link href="/admin/customers/profiles/import" className={ad.link}>
-          استيراد SQL
-        </Link>
-      </nav>
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      if (typeof window !== "undefined") {
+        window.history.back();
+      }
+    }
+  };
 
-      <header className="space-y-2">
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-2 sm:p-4">
+      <div className="relative mx-auto max-h-[95vh] w-full max-w-3xl space-y-6 overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl dark:bg-slate-900">
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute left-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          aria-label="إغلاق"
+        >
+          ×
+        </button>
+
+        <nav className="mt-8 flex flex-wrap gap-3 text-sm">
+          <Link href="/admin/customers/profiles/new" className={ad.link}>
+            ← إضافة زبون (يدوي / رابط واحد)
+          </Link>
+          <Link href="/admin/customers/profiles/import" className={ad.link}>
+            استيراد SQL
+          </Link>
+        </nav>
+
+        <header className="space-y-2">
         <div className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-950 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-100">
           <strong>أين الصفحة؟</strong> من القائمة الجانبية للوحة الإدارة اختر{" "}
           <strong>«استيراد زبائن KSE (دفعات)»</strong> — أو الرابط المباشر:{" "}
@@ -630,30 +654,27 @@ export function ImportLegacyKseBatchClient() {
         <section className="rounded-xl border border-slate-200 p-4 text-base dark:border-slate-600">
           <h2 className="mb-3 text-base font-black">نتيجة آخر دفعة</h2>
           <ul className="max-h-72 space-y-2 overflow-y-auto text-sm" dir="ltr">
-            {log.map((row) => (
-              <li
-                key={row.orderId}
-                className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
-              >
-                {(() => {
-                  const ui = statusUi(row.status);
-                  return (
-                    <>
-                <span className="font-mono font-bold">#{row.orderId}</span>{" "}
-                      <span className={`${ui.className} font-bold`}>{ui.label}</span>
-                      {row.detail || ui.fallbackDetail ? (
-                  <p className="mt-1 text-[13px] leading-relaxed text-slate-700 dark:text-slate-200">
-                          {row.detail || ui.fallbackDetail}
-                  </p>
-                      ) : null}
-                    </>
-                  );
-                })()}
-              </li>
-            ))}
+            {log.map((row) => {
+              const ui = statusUi(row.status);
+              return (
+                <li
+                  key={row.orderId}
+                  className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50"
+                >
+                  <span className="font-mono font-bold">#{row.orderId}</span>{" "}
+                  <span className={`${ui.className} font-bold`}>{ui.label}</span>
+                  {row.detail || ui.fallbackDetail ? (
+                    <p className="mt-1 text-[13px] leading-relaxed text-slate-700 dark:text-slate-200">
+                      {row.detail || ui.fallbackDetail}
+                    </p>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         </section>
       ) : null}
+      </div>
     </div>
   );
 }
