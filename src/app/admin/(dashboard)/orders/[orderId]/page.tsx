@@ -26,13 +26,17 @@ type Props = { params: Promise<{ orderId: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const { orderId } = await params;
-  const o = await prisma.order.findUnique({
-    where: { id: orderId },
-    select: { orderNumber: true },
-  });
-  return {
-    title: o ? `طلب #${o.orderNumber} — أبو الأكبر للتوصيل` : "طلب — أبو الأكبر للتوصيل",
-  };
+  try {
+    const o = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { orderNumber: true },
+    });
+    return {
+      title: o ? `طلب #${o.orderNumber} — أبو الأكبر للتوصيل` : "طلب — أبو الأكبر للتوصيل",
+    };
+  } catch {
+    return { title: "طلب — أبو الأكبر للتوصيل" };
+  }
 }
 
 export default async function AdminOrderViewPage({ params }: Props) {
@@ -268,15 +272,24 @@ export default async function AdminOrderViewPage({ params }: Props) {
 
   const customerName = normalizeCustomerName(order.customer?.name);
 
-  const moneyEventsRaw = await prisma.orderMoneyEvent.findMany({
-    where: { orderId },
-    orderBy: { createdAt: "desc" },
-    take: 120,
-    include: {
-      courier: { select: { name: true } },
-      recordedByCompanyPreparer: { select: { name: true } },
-    },
-  });
+  let moneyEventsRaw: Awaited<
+    ReturnType<typeof prisma.orderCourierMoneyEvent.findMany>
+  > = [];
+  try {
+    moneyEventsRaw = await prisma.orderCourierMoneyEvent.findMany({
+      where: { orderId },
+      orderBy: { createdAt: "desc" },
+      take: 120,
+      include: {
+        courier: { select: { name: true } },
+        recordedByCompanyPreparer: { select: { name: true } },
+      },
+    });
+  } catch (error) {
+    console.warn(`[AdminOrderViewPage] Failed to fetch money events for ${orderId}:`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
   const adminMoneyEvents = moneyEventsRaw.reverse().map((e) => ({
     id: e.id,
     kind: e.kind,
