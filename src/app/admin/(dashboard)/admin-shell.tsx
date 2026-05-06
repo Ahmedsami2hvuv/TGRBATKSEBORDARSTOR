@@ -220,7 +220,7 @@ export function AdminShell({
           backdrop-blur-md ${isResizing ? "transition-none" : "transition-[width,transform] duration-200 ease-out"}
           inset-y-0 start-0 w-72
           ${effectiveNavOpen ? "translate-x-0 pointer-events-auto" : "translate-x-full pointer-events-none"}
-          lg:inset-y-0 lg:start-0 lg:translate-x-0 lg:pointer-events-auto
+          lg:inset-y-0 lg:start-0
         `}
         style={{ width: navWidth }}
       >
