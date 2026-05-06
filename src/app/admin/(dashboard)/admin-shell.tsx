@@ -86,7 +86,6 @@ export function AdminShell({
   }, [maxSidebarWidth, navWidth]);
 
   const isCompact = navWidth <= 260;
-  const isWide = navWidth >= 430;
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
@@ -175,7 +174,7 @@ export function AdminShell({
     window.addEventListener("pointercancel", onUp);
   };
 
-  const effectiveNavOpen = isLg ? true : navOpen;
+  const effectiveNavOpen = navOpen;
 
   return (
     <div
@@ -186,13 +185,24 @@ export function AdminShell({
       <button
         type="button"
         onClick={() => setNavOpen((o) => !o)}
-        className="fixed start-4 top-4 z-[140] flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 bg-[#09090b] text-[#00f3ff] shadow-[0_0_10px_rgba(0,243,255,0.2)] lg:hidden"
+        className="fixed start-4 top-4 z-[170] flex h-10 min-w-10 items-center justify-center gap-2 rounded-xl border border-slate-700 bg-[#09090b] px-2 text-[#00f3ff] shadow-[0_0_10px_rgba(0,243,255,0.2)]"
+        title={navOpen ? "إخفاء القائمة" : "إظهار القائمة"}
       >
-        <span className="sr-only">القائمة</span>
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
+        <span className="sr-only">{navOpen ? "إخفاء القائمة" : "إظهار القائمة"}</span>
+        <span className="text-sm font-black">{navOpen ? "✕" : "☰"}</span>
+        <span className="hidden md:inline text-xs font-bold">{navOpen ? "إخفاء" : "القائمة"}</span>
       </button>
+
+      {navOpen ? (
+        <button
+          type="button"
+          onClick={() => setNavOpen(false)}
+          className="fixed start-4 top-16 z-[170] hidden h-8 items-center justify-center rounded-lg border border-slate-300 bg-white/90 px-2 text-xs font-bold text-slate-700 shadow-sm dark:border-white/20 dark:bg-[#0f1115]/90 dark:text-slate-200 lg:flex"
+          title="إخفاء القائمة"
+        >
+          إخفاء
+        </button>
+      ) : null}
 
       {/* Mobile overlay backdrop (closes on click) */}
       {!isLg && navOpen ? (
@@ -230,8 +240,8 @@ export function AdminShell({
           </div>
         </div>
         <nav className="flex flex-1 overflow-y-auto px-3 py-4">
-          <div className={`w-full ${isWide ? "grid grid-cols-2 gap-2" : "flex flex-col gap-2"}`}>
-            <div className={isWide ? "col-span-2" : ""}>
+          <div className="flex w-full flex-wrap items-start content-start gap-2">
+            <div>
               <Link
                 href="/admin"
                 prefetch={false}
@@ -239,18 +249,18 @@ export function AdminShell({
                 onClick={() => setNavOpen(false)}
                 className={
                   navItemActive(pathname, "/admin")
-                    ? `flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-3 px-3"} w-full h-11 rounded-xl bg-sky-100 dark:bg-[#002a3a] border border-sky-400 dark:border-[#00f3ff] text-sky-700 dark:text-[#00f3ff] shadow-sm dark:shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all`
-                    : `flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-3 px-3"} w-full h-11 rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all`
+                    ? `inline-flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"} h-9 rounded-xl bg-sky-100 dark:bg-[#002a3a] border border-sky-400 dark:border-[#00f3ff] text-sky-700 dark:text-[#00f3ff] shadow-sm dark:shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all`
+                    : `inline-flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"} h-9 rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all`
                 }
               >
                 <span className="text-xl shrink-0" aria-hidden>
                   <DynamicIcon iconKey="ui_home" config={icons} fallback="🏠" className="w-6 h-6" />
                 </span>
-                {isCompact ? null : <span className="leading-snug font-medium text-sm block">الرئيسية</span>}
+                {isCompact ? null : <span className="leading-snug font-medium text-xs block whitespace-nowrap">الرئيسية</span>}
               </Link>
             </div>
             {isCompact ? null : (
-              <p className={`px-3 text-[11px] font-bold tracking-wider text-sky-700 dark:text-[#00f3ff] block ${isWide ? "col-span-2 mt-2" : "mt-2"}`}>
+              <p className="basis-full mt-2 px-1 text-[11px] font-bold tracking-wider text-sky-700 dark:text-[#00f3ff] block">
                 الأقسام
               </p>
             )}
@@ -267,12 +277,12 @@ export function AdminShell({
                   onClick={() => setNavOpen(false)}
                   className={
                     active
-                      ? `flex items-center ${
-                          isCompact ? "gap-0 px-2 justify-center" : "gap-3 px-3"
-                        } w-full h-11 rounded-xl bg-purple-100 dark:bg-[#1e102a] border border-purple-400 dark:border-[#e028ff] text-purple-700 dark:text-[#e028ff] shadow-sm dark:shadow-[0_0_15px_rgba(224,40,255,0.4)] transition-all relative`
-                      : `flex items-center ${
-                          isCompact ? "gap-0 px-2 justify-center" : "gap-3 px-3"
-                        } w-full h-11 rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all relative`
+                      ? `inline-flex items-center ${
+                          isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"
+                        } h-9 rounded-xl bg-purple-100 dark:bg-[#1e102a] border border-purple-400 dark:border-[#e028ff] text-purple-700 dark:text-[#e028ff] shadow-sm dark:shadow-[0_0_15px_rgba(224,40,255,0.4)] transition-all relative`
+                      : `inline-flex items-center ${
+                          isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"
+                        } h-9 rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all relative`
                   }
                 >
                   <span className="text-xl shrink-0 relative flex justify-center items-center">
@@ -284,7 +294,7 @@ export function AdminShell({
                     ) : null}
                   </span>
                   {isCompact ? null : (
-                    <span className="leading-snug font-medium text-sm text-slate-700 dark:text-slate-200 block">{tile.label}</span>
+                    <span className="leading-snug font-medium text-xs text-slate-700 dark:text-slate-200 block whitespace-nowrap">{tile.label}</span>
                   )}
                 </Link>
               );

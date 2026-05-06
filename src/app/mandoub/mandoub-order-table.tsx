@@ -124,9 +124,6 @@ export function MandoubOrderTable({
   );
   const [pickupOrder, setPickupOrder] = useState<MandoubRow | null>(null);
   const [deliveryOrder, setDeliveryOrder] = useState<MandoubRow | null>(null);
-  const [orderDetailHref, setOrderDetailHref] = useState<string | null>(null);
-  const [cachedOrderHrefs, setCachedOrderHrefs] = useState<string[]>([]);
-  const [loadedOrderHrefs, setLoadedOrderHrefs] = useState<Record<string, boolean>>({});
 
   const [pickupState, pickupAction, pickupPending] = useActionState(
     submitMandoubPickupMoney,
@@ -167,20 +164,11 @@ export function MandoubOrderTable({
   }, [rowIds]);
 
   useEffect(() => {
-    // نحمل الطلبات الظاهرة مرة واحدة فقط، والجديد يضاف بدون إعادة تحميل القديم.
     if (rowDetailHrefs.length === 0) return;
-    setCachedOrderHrefs((prev) => {
-      const seen = new Set(prev);
-      const next = [...prev];
-      for (const href of rowDetailHrefs) {
-        if (!seen.has(href)) {
-          seen.add(href);
-          next.push(href);
-        }
-      }
-      return next;
-    });
-  }, [rowDetailHrefs]);
+    for (const href of rowDetailHrefs) {
+      router.prefetch(href);
+    }
+  }, [rowDetailHrefs, router]);
 
   function toggleOne(id: string) {
     setSelectedIds((prev) => {
@@ -307,11 +295,7 @@ export function MandoubOrderTable({
         allSelected={allSelected}
         onToggleAll={toggleAll}
         onToggleOne={toggleOne}
-        onOpenRow={(id) => {
-          const href = buildOrderDetailHref(auth, tab, qSearch, id);
-          setOrderDetailHref(href);
-          setCachedOrderHrefs((prev) => (prev.includes(href) ? prev : [...prev, href]));
-        }}
+        onOpenRow={(id) => router.push(buildOrderDetailHref(auth, tab, qSearch, id))}
         selectAllTitle="تحديد الكل"
         selectAllAriaLabel="تحديد كل الطلبات الظاهرة"
         selectedTitle="تحديد"
@@ -435,52 +419,6 @@ export function MandoubOrderTable({
                 onClose={() => setDeliveryOrder(null)}
                 missingCustomerLocation={!deliveryOrder.hasCustomerLocation}
               />
-            </div>
-          </div>,
-          document.body,
-        )}
-
-      {cachedOrderHrefs.length > 0 &&
-        createPortal(
-          <div className={`fixed inset-0 z-[120] ${orderDetailHref ? "" : "pointer-events-none"}`}>
-            <div
-              className={`absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity ${orderDetailHref ? "opacity-100" : "opacity-0"}`}
-              onClick={() => setOrderDetailHref(null)}
-            />
-            <div
-              className={`absolute inset-0 flex items-center justify-center p-3 transition-opacity ${orderDetailHref ? "opacity-100" : "opacity-0"}`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-                <div className="flex items-center justify-between border-b bg-slate-50 px-4 py-3">
-                  <div className="font-black text-slate-900">عرض الطلب</div>
-                  <button
-                    type="button"
-                    onClick={() => setOrderDetailHref(null)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
-                    aria-label="إغلاق نافذة الطلب"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div className="relative h-[90vh] w-full bg-white">
-                  {cachedOrderHrefs.map((href) => (
-                    <iframe
-                      key={href}
-                      title={`صفحة الطلب داخل نافذة ${href}`}
-                      src={href}
-                      loading="eager"
-                      onLoad={() => setLoadedOrderHrefs((prev) => ({ ...prev, [href]: true }))}
-                      className={`absolute inset-0 h-full w-full border-0 bg-white transition-opacity ${orderDetailHref === href ? "opacity-100" : "pointer-events-none opacity-0"}`}
-                    />
-                  ))}
-                  {orderDetailHref && !loadedOrderHrefs[orderDetailHref] ? (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-sm font-bold text-slate-700">
-                      جارٍ تحميل الطلب...
-                    </div>
-                  ) : null}
-                </div>
-              </div>
             </div>
           </div>,
           document.body,
