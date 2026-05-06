@@ -4,7 +4,6 @@ import { ad } from "@/lib/admin-ui";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { buildDelegatePortalUrl } from "@/lib/delegate-link";
 import { buildCourierShareMessage, whatsappAppUrl } from "@/lib/whatsapp";
-import { deleteCourierAction } from "./actions";
 import { CourierForm } from "./courier-form";
 import { CourierDeleteForm } from "./courier-delete-form";
 import { CourierResetButton } from "./courier-reset-button";
