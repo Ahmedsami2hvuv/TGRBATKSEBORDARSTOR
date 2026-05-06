@@ -109,6 +109,7 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
     failed: 0,
   });
   const cookieAutoSavedRef = useRef(false);
+  const nextIdRef = useRef(1);
 
   const loadStats = useCallback(async () => {
     setStatsLoading(true);
@@ -137,12 +138,19 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
       const s = localStorage.getItem(CURSOR_STORAGE_KEY);
       if (s) {
         const n = parseInt(s, 10);
-        if (Number.isFinite(n) && n > 0) setNextId(n);
+        if (Number.isFinite(n) && n > 0) {
+          nextIdRef.current = n;
+          setNextId(n);
+        }
       }
     } catch {
       /* ignore */
     }
   }, []);
+
+  useEffect(() => {
+    nextIdRef.current = nextId;
+  }, [nextId]);
 
   useEffect(() => {
     try {
@@ -207,12 +215,13 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
   }, [cookieOverride, showCookieInput, cookieEditMode]);
 
   const runBatch = useCallback(async (): Promise<"ok" | "done" | "blocked" | "failed"> => {
+    if (busy) return "failed";
     setLastError(null);
     const start = Math.min(rangeStart, rangeEnd);
     const end = Math.max(rangeStart, rangeEnd);
     const stopAt = Math.min(end, Math.max(start, stopAtOrder || end));
     const size = Math.min(25, Math.max(1, Math.floor(batchSize)));
-    const from = Math.max(start, Math.min(nextId, stopAt));
+    const from = Math.max(start, Math.min(nextIdRef.current, stopAt));
     if (from > stopAt) {
       setLastError(`توقّف السحب عند آخر طلب محدد لهذه النافذة: ${stopAt}.`);
       return "done";
@@ -294,6 +303,7 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
       }
       if (effectiveCookie) setShowCookieInput(false);
       const advanced = to + 1;
+      nextIdRef.current = advanced;
       setNextId(advanced);
       try {
         localStorage.setItem(CURSOR_STORAGE_KEY, String(advanced));
@@ -306,7 +316,7 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
       setBatchProgress((p) => ({ ...p, active: false, currentOrderId: null }));
       setBusy(false);
     }
-  }, [rangeStart, rangeEnd, stopAtOrder, batchSize, delayMs, nextId, effectiveCookie, loadStats]);
+  }, [busy, rangeStart, rangeEnd, stopAtOrder, batchSize, delayMs, effectiveCookie, loadStats]);
 
   useEffect(() => {
     if (!autoRun || busy) return;
@@ -560,12 +570,17 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
               type="number"
               min={1}
               value={nextId}
-              onChange={(e) => setNextId(parseInt(e.target.value, 10) || 1)}
+              onChange={(e) => {
+                const n = parseInt(e.target.value, 10) || 1;
+                nextIdRef.current = n;
+                setNextId(n);
+              }}
               className={`${ad.input} w-32`}
             />
             <button
               type="button"
               onClick={() => {
+                nextIdRef.current = rangeStart;
                 setNextId(rangeStart);
                 try {
                   localStorage.setItem(CURSOR_STORAGE_KEY, String(rangeStart));
