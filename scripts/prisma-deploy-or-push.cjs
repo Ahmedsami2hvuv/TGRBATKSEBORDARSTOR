@@ -4,9 +4,13 @@
  */
 const { execSync } = require("node:child_process");
 
-function runCapture(cmd) {
+function runCapture(cmd, extraEnv = {}) {
   try {
-    execSync(cmd, { encoding: "utf8", stdio: ["inherit", "pipe", "pipe"] });
+    execSync(cmd, {
+      encoding: "utf8",
+      stdio: ["inherit", "pipe", "pipe"],
+      env: { ...process.env, ...extraEnv },
+    });
     return { ok: true, out: "" };
   } catch (e) {
     const stdout = e.stdout ? String(e.stdout) : "";
@@ -15,21 +19,44 @@ function runCapture(cmd) {
   }
 }
 
-function runInherit(cmd) {
-  execSync(cmd, { stdio: "inherit" });
+function runInherit(cmd, extraEnv = {}) {
+  execSync(cmd, { stdio: "inherit", env: { ...process.env, ...extraEnv } });
 }
 
-const migrate = runCapture("npx prisma migrate deploy");
+function hasPoolerTimeoutIssue(text) {
+  return (
+    /unknown config parameter.*transaction_timeout/i.test(text) ||
+    /schema_connector::error.*transaction_timeout/i.test(text)
+  );
+}
+
+function useDirectUrlEnv() {
+  const direct = process.env.DIRECT_URL;
+  if (!direct) return null;
+  return { DATABASE_URL: direct };
+}
+
+let migrate = runCapture("npx prisma migrate deploy");
 if (migrate.ok) {
   process.exit(0);
 }
 
-const combined = migrate.out || "";
+let combined = migrate.out || "";
+const directEnv = useDirectUrlEnv();
+
+if (hasPoolerTimeoutIssue(combined) && directEnv) {
+  console.warn("[prisma] pooler config issue detected. Retrying migrate deploy via DIRECT_URL…");
+  migrate = runCapture("npx prisma migrate deploy", directEnv);
+  if (migrate.ok) process.exit(0);
+  combined = migrate.out || "";
+}
+
 const shouldFallbackToDbPush =
   combined.includes("P3005") ||
   /baseline an existing production database/i.test(combined) ||
   /statement timeout/i.test(combined) ||
   /canceling statement due to statement timeout/i.test(combined) ||
+  hasPoolerTimeoutIssue(combined) ||
   /Error occurred during query execution/i.test(combined);
 
 if (shouldFallbackToDbPush) {
@@ -37,7 +64,8 @@ if (shouldFallbackToDbPush) {
     "[prisma] migrate deploy failed (baseline/timeout). Falling back to db push…",
   );
   try {
-    runInherit("npx prisma db push --skip-generate");
+    if (directEnv) runInherit("npx prisma db push --skip-generate", directEnv);
+    else runInherit("npx prisma db push --skip-generate");
     process.exit(0);
   } catch (e) {
     process.exit(e.status ?? 1);
