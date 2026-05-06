@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 
@@ -10,6 +11,9 @@ export const MANDOUB_ORDER_EDIT_TOGGLE = "mandoub-order-edit-toggle";
 
 export function MandoubOrderDetailActions({ closeHref }: { closeHref: string }) {
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const modalOnly = searchParams.get("view") === "modal";
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
@@ -17,13 +21,30 @@ export function MandoubOrderDetailActions({ closeHref }: { closeHref: string }) 
 
   return (
     <div className="flex flex-shrink-0 flex-wrap items-center justify-start gap-2">
-      <Link
-        href={closeHref}
-        className="flex items-center gap-2 rounded-xl border border-sky-300 bg-white px-4 py-2 text-base font-bold text-sky-900 shadow-sm transition hover:bg-sky-50"
-      >
-        <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-4 h-4" />
-        إغلاق الطلب
-      </Link>
+      {modalOnly ? (
+        <button
+          type="button"
+          onClick={() => {
+            if (window.parent && window.parent !== window) {
+              window.parent.postMessage({ type: "ORDER_MODAL_CLOSE" }, window.location.origin);
+              return;
+            }
+            router.push(closeHref);
+          }}
+          className="flex items-center gap-2 rounded-xl border border-sky-300 bg-white px-4 py-2 text-base font-bold text-sky-900 shadow-sm transition hover:bg-sky-50"
+        >
+          <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-4 h-4" />
+          إغلاق الطلب
+        </button>
+      ) : (
+        <Link
+          href={closeHref}
+          className="flex items-center gap-2 rounded-xl border border-sky-300 bg-white px-4 py-2 text-base font-bold text-sky-900 shadow-sm transition hover:bg-sky-50"
+        >
+          <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-4 h-4" />
+          إغلاق الطلب
+        </Link>
+      )}
       <button
         type="button"
         onClick={() => {

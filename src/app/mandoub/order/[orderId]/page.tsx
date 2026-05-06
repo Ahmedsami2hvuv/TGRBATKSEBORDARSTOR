@@ -44,6 +44,7 @@ type Props = {
     tab?: string;
     q?: string;
     loc?: string;
+    view?: string;
   }>;
 };
 
@@ -51,6 +52,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
   try {
     const { orderId } = await params;
     const sp = await searchParams;
+    const modalOnly = sp.view === "modal";
     const cookieStore = await cookies();
 
   // محاولة القراءة من الرابط أو الكوكيز
@@ -197,35 +199,39 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
     return (
       <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-base leading-relaxed text-slate-800">
         <div className="kse-app-inner mx-auto max-w-6xl px-3 py-4 pb-24 text-base sm:px-4 sm:text-lg">
-          <header className="kse-glass-dark mb-3 flex items-center gap-2 border border-sky-200/90 px-3 py-2.5 shadow-sm">
-            <Link href={`/mandoub?${baseQuery.toString()}`} className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200">
-              <svg className="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
-            </Link>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-[#00f3ff]">{courier.name}</p>
-              <p className="text-[10px] font-bold text-slate-500 sm:text-xs">{courier.phone}</p>
-            </div>
-            <ThemeSwitcher />
-            <MandoubPresenceToggle auth={baseAuth} availableForAssignment={courier.availableForAssignment} />
-            <Link href={`/mandoub/wallet?${baseQuery.toString()}`} className="inline-flex shrink-0 items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base">المحفظة</Link>
-          </header>
+          {!modalOnly ? (
+            <>
+              <header className="kse-glass-dark mb-3 flex items-center gap-2 border border-sky-200/90 px-3 py-2.5 shadow-sm">
+                <Link href={`/mandoub?${baseQuery.toString()}`} className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200">
+                  <svg className="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+                </Link>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-[#00f3ff]">{courier.name}</p>
+                  <p className="text-[10px] font-bold text-slate-500 sm:text-xs">{courier.phone}</p>
+                </div>
+                <ThemeSwitcher />
+                <MandoubPresenceToggle auth={baseAuth} availableForAssignment={courier.availableForAssignment} />
+                <Link href={`/mandoub/wallet?${baseQuery.toString()}`} className="inline-flex shrink-0 items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base">المحفظة</Link>
+              </header>
 
-          <MandoubMoneySummarySection
-            totalsBaseline={courier.mandoubTotalsResetAt}
-            sumDeliveryInDinar={Number(moneySums.sumDeliveryIn)}
-            sumPickupOutDinar={Number(moneySums.sumPickupOut)}
-            remainingNetDinar={Number(moneySums.remainingNet)}
-            sumEarningsDinar={Number(orderMetrics.sumEarnings)}
-            courierVehicleType={courier.vehicleType}
-            hrefWalletLedger={(l) => `/mandoub/wallet?${baseQuery.toString()}${l !== 'all' ? '&ledger=' + l : ''}`}
-            hideTitle hideResetText
-          />
+              <MandoubMoneySummarySection
+                totalsBaseline={courier.mandoubTotalsResetAt}
+                sumDeliveryInDinar={Number(moneySums.sumDeliveryIn)}
+                sumPickupOutDinar={Number(moneySums.sumPickupOut)}
+                remainingNetDinar={Number(moneySums.remainingNet)}
+                sumEarningsDinar={Number(orderMetrics.sumEarnings)}
+                courierVehicleType={courier.vehicleType}
+                hrefWalletLedger={(l) => `/mandoub/wallet?${baseQuery.toString()}${l !== 'all' ? '&ledger=' + l : ''}`}
+                hideTitle hideResetText
+              />
+            </>
+          ) : null}
 
           <OrderDetailSection
             order={order}
             closeHref={`/mandoub?${baseQuery.toString()}`}
             auth={baseAuth}
-            nextUrl={`/mandoub/order/${orderId}?${baseQuery.toString()}`}
+            nextUrl={`/mandoub/order/${orderId}?${baseQuery.toString()}${modalOnly ? "&view=modal" : ""}`}
             viewerCourierId={v.courierId}
             phoneProfile={customerPhoneProfile ?? undefined}
             smartHintLine={smartHintLine || "—"}

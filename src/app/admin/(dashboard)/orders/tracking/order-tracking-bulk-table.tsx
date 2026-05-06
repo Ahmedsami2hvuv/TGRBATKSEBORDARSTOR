@@ -74,7 +74,7 @@ export function OrderTrackingBulkTable({
     targetStatus === "delivered";
 
   const selectedIdsArr = useMemo(() => Array.from(selected), [selected]);
-  const rowDetailHrefs = useMemo(() => rows.map((r) => `/admin/orders/${r.id}`), [rows]);
+  const rowDetailHrefs = useMemo(() => rows.map((r) => `/admin/orders/${r.id}?view=modal`), [rows]);
   const unifiedRows: MandoubRow[] = useMemo(
     () =>
       rows.map((r) => {
@@ -140,6 +140,17 @@ export function OrderTrackingBulkTable({
       return next;
     });
   }, [rowDetailHrefs, router]);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === "ORDER_MODAL_CLOSE") {
+        setOrderDetailHref(null);
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
 
   function toggleOne(id: string) {
     setSelected((prev) => {
@@ -364,7 +375,7 @@ export function OrderTrackingBulkTable({
         onToggleAll={toggleAll}
         onToggleOne={toggleOne}
         onOpenRow={(id) => {
-          const href = `/admin/orders/${id}`;
+          const href = `/admin/orders/${id}?view=modal`;
           setOrderDetailHref(href);
           setCachedOrderHrefs((prev) => (prev.includes(href) ? prev : [...prev, href]));
         }}
@@ -456,10 +467,10 @@ export function OrderTrackingBulkTable({
             onClick={() => setOrderDetailHref(null)}
           />
           <div
-            className={`absolute inset-0 flex items-center justify-center p-3 transition-opacity ${orderDetailHref ? "opacity-100" : "opacity-0"}`}
+            className={`absolute inset-0 flex items-center justify-center transition-opacity ${orderDetailHref ? "opacity-100" : "opacity-0"}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="relative h-full w-full overflow-hidden bg-white">
               <div className="flex items-center justify-between border-b bg-slate-50 px-4 py-3">
                 <div className="font-black text-slate-900">عرض الطلب</div>
                 <button
@@ -471,7 +482,7 @@ export function OrderTrackingBulkTable({
                   ✕
                 </button>
               </div>
-              <div className="relative h-[90vh] w-full bg-white">
+              <div className="relative h-[calc(100vh-57px)] w-full bg-white">
                 {cachedOrderHrefs.map((href) => (
                   <iframe
                     key={href}

@@ -96,6 +96,7 @@ function buildOrderDetailHref(
   if (auth.s) p.set("s", auth.s);
   p.set("tab", tab);
   if (q.trim()) p.set("q", q.trim());
+  p.set("view", "modal");
   return `/mandoub/order/${orderId}?${p.toString()}`;
 }
 
@@ -180,6 +181,17 @@ export function MandoubOrderTable({
       return next;
     });
   }, [rowDetailHrefs, router]);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === "ORDER_MODAL_CLOSE") {
+        setOrderDetailHref(null);
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
 
   function toggleOne(id: string) {
     setSelectedIds((prev) => {
@@ -447,10 +459,10 @@ export function MandoubOrderTable({
               onClick={() => setOrderDetailHref(null)}
             />
             <div
-              className={`absolute inset-0 flex items-center justify-center p-3 transition-opacity ${orderDetailHref ? "opacity-100" : "opacity-0"}`}
+              className={`absolute inset-0 flex items-center justify-center transition-opacity ${orderDetailHref ? "opacity-100" : "opacity-0"}`}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+              <div className="relative h-full w-full overflow-hidden bg-white">
                 <div className="flex items-center justify-between border-b bg-slate-50 px-4 py-3">
                   <div className="font-black text-slate-900">عرض الطلب</div>
                   <button
@@ -462,7 +474,7 @@ export function MandoubOrderTable({
                     ✕
                   </button>
                 </div>
-                <div className="relative h-[90vh] w-full bg-white">
+                <div className="relative h-[calc(100vh-57px)] w-full bg-white">
                   {cachedOrderHrefs.map((href) => (
                     <iframe
                       key={href}

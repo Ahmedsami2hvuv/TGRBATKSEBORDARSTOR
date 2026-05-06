@@ -59,7 +59,7 @@ function useDragPersist(
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (e.button !== 0) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       dragRef.current = {
         startX: e.clientX,
@@ -181,7 +181,7 @@ function DraggableFloatButton({
       }}
       title="اسحب للتحريك — يُحفظ المكان لكل الطلبات — اضغط مطولاً لضبط حجم الأزرار"
       onPointerDownCapture={(e) => {
-        if (e.button !== 0) return;
+        if (e.pointerType === "mouse" && e.button !== 0) return;
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
         longPressFiredRef.current = false;
         dragRef.current = {

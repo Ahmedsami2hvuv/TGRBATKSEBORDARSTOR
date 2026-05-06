@@ -22,7 +22,10 @@ import { haversineMeters } from "@/lib/geo-distance";
 const SYSTEM_ADMIN_PHONE = "07733921568";
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ orderId: string }> };
+type Props = {
+  params: Promise<{ orderId: string }>;
+  searchParams: Promise<{ view?: string }>;
+};
 
 export async function generateMetadata({ params }: Props) {
   const { orderId } = await params;
@@ -39,8 +42,10 @@ export async function generateMetadata({ params }: Props) {
   }
 }
 
-export default async function AdminOrderViewPage({ params }: Props) {
+export default async function AdminOrderViewPage({ params, searchParams }: Props) {
   const { orderId } = await params;
+  const sp = await searchParams;
+  const modalOnly = sp.view === "modal";
 
   let order, preparers, waButtonSettings;
   try {
@@ -454,6 +459,14 @@ export default async function AdminOrderViewPage({ params }: Props) {
       timestamp: new Date().toISOString(),
     });
     return <AdminOrderErrorUI orderId={orderId} error={`فشل في تحويل البيانات: ${errorMessage}`} />;
+  }
+
+  if (modalOnly) {
+    return (
+      <div className="space-y-4">
+        <OrderViewContent order={safeView} preparers={safePreparers} customWaButtons={safeWaButtons} />
+      </div>
+    );
   }
 
   return (
