@@ -70,6 +70,7 @@ type ImportLegacyKseBatchClientProps = {
 export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClientProps) {
   const [rangeStart, setRangeStart] = useState(1);
   const [rangeEnd, setRangeEnd] = useState(16443);
+  const [stopAtOrder, setStopAtOrder] = useState(16443);
   const [batchSize, setBatchSize] = useState(10);
   const [delayMs, setDelayMs] = useState(400);
   const [nextId, setNextId] = useState(1);
@@ -125,6 +126,11 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
   useEffect(() => {
     void loadStats();
   }, [loadStats]);
+
+  useEffect(() => {
+    // افتراضياً: التوقف عند نهاية النطاق الحالي
+    setStopAtOrder(Math.max(rangeStart, rangeEnd));
+  }, [rangeStart, rangeEnd]);
 
   useEffect(() => {
     try {
@@ -204,13 +210,14 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
     setLastError(null);
     const start = Math.min(rangeStart, rangeEnd);
     const end = Math.max(rangeStart, rangeEnd);
+    const stopAt = Math.min(end, Math.max(start, stopAtOrder || end));
     const size = Math.min(25, Math.max(1, Math.floor(batchSize)));
-    const from = Math.max(start, Math.min(nextId, end));
-    if (from > end) {
-      setLastError("اكتمل النطاق — غيّر المؤشر أو النطاق.");
+    const from = Math.max(start, Math.min(nextId, stopAt));
+    if (from > stopAt) {
+      setLastError(`توقّف السحب عند آخر طلب محدد لهذه النافذة: ${stopAt}.`);
       return "done";
     }
-    const to = Math.min(end, from + size - 1);
+    const to = Math.min(stopAt, from + size - 1);
     const orderIds: number[] = [];
     for (let id = from; id <= to; id++) orderIds.push(id);
 
@@ -299,7 +306,7 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
       setBatchProgress((p) => ({ ...p, active: false, currentOrderId: null }));
       setBusy(false);
     }
-  }, [rangeStart, rangeEnd, batchSize, delayMs, nextId, effectiveCookie, loadStats]);
+  }, [rangeStart, rangeEnd, stopAtOrder, batchSize, delayMs, nextId, effectiveCookie, loadStats]);
 
   useEffect(() => {
     if (!autoRun || busy) return;
@@ -515,6 +522,16 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
               min={1}
               value={rangeEnd}
               onChange={(e) => setRangeEnd(parseInt(e.target.value, 10) || 1)}
+              className={`${ad.input} mt-1 w-full`}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="font-bold">توقف تلقائي عند رقم طلب (خاص بهذه النافذة)</span>
+            <input
+              type="number"
+              min={1}
+              value={stopAtOrder}
+              onChange={(e) => setStopAtOrder(parseInt(e.target.value, 10) || Math.max(rangeStart, rangeEnd))}
               className={`${ad.input} mt-1 w-full`}
             />
           </label>
