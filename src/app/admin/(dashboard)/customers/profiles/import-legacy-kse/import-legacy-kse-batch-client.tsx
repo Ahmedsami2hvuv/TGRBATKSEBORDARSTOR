@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import {
   runLegacyKseOrderDetailsBatchImport,
@@ -83,6 +82,8 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
   const [showCookieInput, setShowCookieInput] = useState(false);
   const [cookieEditMode, setCookieEditMode] = useState(false);
   const [autoRun, setAutoRun] = useState(false);
+  // فتح روابط داخل نفس "النافذة" بدل التنقل لصفحة جديدة
+  const [nestedHref, setNestedHref] = useState<string | null>(null);
   const [batchProgress, setBatchProgress] = useState<{
     active: boolean;
     total: number;
@@ -337,13 +338,43 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
           ×
         </button>
 
+        {nestedHref ? (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-2 sm:p-4 backdrop-blur-sm"
+            onClick={() => setNestedHref(null)}
+          >
+            <div
+              className="relative h-[95vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setNestedHref(null)}
+                className="absolute left-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                aria-label="إغلاق نافذة الصفحة"
+              >
+                ×
+              </button>
+              <iframe title="صفحة داخل نافذة" src={nestedHref} className="h-full w-full border-0 bg-white" />
+            </div>
+          </div>
+        ) : null}
+
         <nav className="mt-8 flex flex-wrap gap-3 text-sm">
-          <Link href="/admin/customers/profiles/new" className={ad.link}>
+          <button
+            type="button"
+            onClick={() => setNestedHref("/admin/customers/profiles/new")}
+            className={ad.link}
+          >
             ← إضافة زبون (يدوي / رابط واحد)
-          </Link>
-          <Link href="/admin/customers/profiles/import" className={ad.link}>
+          </button>
+          <button
+            type="button"
+            onClick={() => setNestedHref("/admin/customers/profiles/import")}
+            className={ad.link}
+          >
             استيراد SQL
-          </Link>
+          </button>
         </nav>
 
         <header className="space-y-2">

@@ -34,7 +34,6 @@ export function AdminShell({
   const pathname = usePathname() ?? "";
 
   const sidebarMinWidth = 240;
-  const sidebarCloseThreshold = 130; // when dragging far left
   const dragThreshold = 7; // px
   const mobileDefaultOpenWidth = Math.min(420, Math.max(320, viewportWidth || 420));
 
@@ -110,7 +109,6 @@ export function AdminShell({
     const wasNavOpen = navOpen;
     const startX = e.clientX;
     let resizeStarted = false;
-    let closedByThreshold = false;
 
     const maxWidth = viewportWidth || 420;
 
@@ -132,15 +130,6 @@ export function AdminShell({
         }
       }
 
-      if (ev.clientX < sidebarCloseThreshold) {
-        closedByThreshold = true;
-        setIsResizing(false);
-        setNavOpen(false);
-        setNavWidth(sidebarMinWidth);
-        cleanup();
-        return;
-      }
-
       const next = clamp(ev.clientX, sidebarMinWidth, maxWidth);
       setNavWidth(next);
     };
@@ -153,12 +142,16 @@ export function AdminShell({
           setNavOpen(true);
           setNavWidth(clamp(mobileDefaultOpenWidth, sidebarMinWidth, maxWidth));
         } else {
-          if (navWidth <= sidebarMinWidth + 10) setNavOpen(false);
-          else setNavWidth(sidebarMinWidth);
+          // Keep sidebar open; only toggle width.
+          setNavWidth((w) =>
+            w <= sidebarMinWidth + 10
+              ? clamp(mobileDefaultOpenWidth, sidebarMinWidth, maxWidth)
+              : sidebarMinWidth,
+          );
         }
         return;
       }
-      if (!closedByThreshold) setIsResizing(false);
+      setIsResizing(false);
     };
 
     const cleanup = () => {
@@ -264,7 +257,9 @@ export function AdminShell({
         type="button"
         onPointerDown={handleMobileResizePointerDown}
         onKeyDown={handleMobileToggleByKey}
-        className="fixed top-4 z-[110] flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 bg-[#09090b] text-[#00f3ff] shadow-[0_0_10px_rgba(0,243,255,0.2)] lg:hidden touch-none select-none"
+        className={`fixed top-4 z-[110] flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 bg-[#09090b] text-[#00f3ff] shadow-[0_0_10px_rgba(0,243,255,0.2)] lg:hidden touch-none select-none ${
+          navOpen ? "z-[130]" : ""
+        }`}
         style={
           !isLg && navOpen
             ? { left: Math.max(12, navWidth - 20) }

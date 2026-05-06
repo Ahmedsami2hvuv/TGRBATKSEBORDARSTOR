@@ -59,6 +59,7 @@ export function OrderTrackingBulkTable({
   const [targetStatus, setTargetStatus] = useState<string>("assigned");
   const [courierId, setCourierId] = useState<string>("");
   const [assignOrder, setAssignOrder] = useState<MandoubRow | null>(null);
+  const [orderDetailHref, setOrderDetailHref] = useState<string | null>(null);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
 
   useEffect(() => {
@@ -342,7 +343,7 @@ export function OrderTrackingBulkTable({
         allSelected={allSelected}
         onToggleAll={toggleAll}
         onToggleOne={toggleOne}
-        onOpenRow={(id) => router.push(`/admin/orders/${id}`)}
+        onOpenRow={(id) => setOrderDetailHref(`/admin/orders/${id}`)}
         selectAllTitle="تحديد الكل"
         selectAllAriaLabel="تحديد كل الطلبات الظاهرة"
         selectedTitle="تحديد"
@@ -423,6 +424,31 @@ export function OrderTrackingBulkTable({
           </div>
         </div>
       )}
+
+      {orderDetailHref ? (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/50 p-3 backdrop-blur-sm"
+          onClick={() => setOrderDetailHref(null)}
+        >
+          <div
+            className="relative w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b bg-slate-50 px-4 py-3">
+              <div className="font-black text-slate-900">عرض الطلب</div>
+              <button
+                type="button"
+                onClick={() => setOrderDetailHref(null)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
+                aria-label="إغلاق نافذة الطلب"
+              >
+                ✕
+              </button>
+            </div>
+            <iframe title="صفحة الطلب داخل نافذة" src={orderDetailHref} className="h-[90vh] w-full border-0 bg-white" />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

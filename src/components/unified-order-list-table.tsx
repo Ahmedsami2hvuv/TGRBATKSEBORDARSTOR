@@ -6,6 +6,7 @@ import { OrderTypeLine } from "@/components/order-type-line";
 import { formatBaghdadDateFriendly, getBaghdadDateString, formatBaghdadDateTime } from "@/lib/baghdad-time";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
+import { formatDinarAsAlf } from "@/lib/money-alf";
 
 /** مكون مشغل الصوت المصغر */
 function MiniAudioPlayer({ url }: { url: string }) {
@@ -58,6 +59,52 @@ function ImageModal({ url, title, onClose }: { url: string, title: string, onClo
            <img src={resolvePublicAssetSrc(url)!} alt={title} className="w-full h-auto max-h-[75vh] object-contain rounded-2xl shadow-inner" />
         </div>
       </div>
+    </div>
+  );
+}
+
+function MoneyMiniBadges({ row }: { row: MandoubRow }) {
+  // المطلوب: تظهر "من الخارج" فقط عند تم التسليم
+  if (row.orderStatus !== "delivered") return null;
+
+  const pickup = row.pickupSumDinar ?? 0; // صادر المندوب
+  const delivery = row.deliverySumDinar ?? 0; // وارد المندوب
+  const preparerSader = row.orderSubtotalDinar ?? null; // صادر المجهز (سعر الطلب بدون التوصيل)
+  const preparerWard = row.totalAmountDinar ?? null; // وارد المجهز (السعر الكلي)
+
+  const pillBase =
+    "inline-flex items-center justify-center rounded px-1 py-0.5 text-[10px] font-black leading-none tabular-nums ring-1 shadow-sm";
+
+  return (
+    <div className="absolute -top-2.5 -right-2 flex flex-wrap items-center gap-1" dir="rtl">
+      <span
+        className={`${pillBase} bg-emerald-50 text-emerald-700 ring-emerald-200`}
+        title="صادر المندوب"
+      >
+        {formatDinarAsAlf(pickup)}
+      </span>
+      <span
+        className={`${pillBase} bg-rose-50 text-rose-700 ring-rose-200`}
+        title="وارد المندوب"
+      >
+        {formatDinarAsAlf(delivery)}
+      </span>
+      {preparerSader != null && preparerSader > 0 ? (
+        <span
+          className={`${pillBase} bg-sky-50 text-sky-700 ring-sky-200`}
+          title="صادر المجهز"
+        >
+          {formatDinarAsAlf(preparerSader)}
+        </span>
+      ) : null}
+      {preparerWard != null && preparerWard > 0 ? (
+        <span
+          className={`${pillBase} bg-amber-50 text-amber-800 ring-amber-200`}
+          title="وارد المجهز"
+        >
+          {formatDinarAsAlf(preparerWard)}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -341,8 +388,13 @@ export function UnifiedOrderListTable({
 
                         <div className="flex items-center gap-2">
                           <div className="relative inline-block group">
-                            <span className={`inline-block rounded-md px-1.5 py-0.5 font-bold ${o.shopNameHighlightClass}`}>
-                              {o.shopName}
+                            <span className="relative inline-block">
+                              <span
+                                className={`inline-block rounded-md px-1.5 py-0.5 font-bold ${o.shopNameHighlightClass}`}
+                              >
+                                {o.shopName}
+                              </span>
+                              <MoneyMiniBadges row={o} />
                             </span>
 
                             {/* ملاحظات الطلب */}
