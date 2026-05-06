@@ -413,7 +413,7 @@ export function UnifiedOrderListTable({
                           </div>
 
                         {/* أزرار العميل (المحل) المختصرة (لوكيشن وصور وبصمات) */}
-                        {((( !isDoubleRoute && o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
+                        {(( !isDoubleRoute && o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
                           (o.customerLocationUrl?.trim() && o.customerLocationUrl.trim().length > 2) ||
                           (o.secondCustomerLocationUrl?.trim() && o.secondCustomerLocationUrl.trim().length > 2) ||
                           (!isDoubleRoute && o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 2) ||
@@ -425,7 +425,7 @@ export function UnifiedOrderListTable({
                           (o.smartHintLine?.trim() && !o.smartHintLine.trim().startsWith("—"))) && (
                           <div className="flex items-center gap-1 border-r pr-2 mr-1 border-slate-200" onClick={e => e.stopPropagation()}>
                              {/* زر اللوكيشن الموحد */}
-                             {((( !isDoubleRoute && o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
+                             {(( !isDoubleRoute && o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
                               (o.customerLocationUrl?.trim() && o.customerLocationUrl.trim().length > 2) ||
                               (o.secondCustomerLocationUrl?.trim() && o.secondCustomerLocationUrl.trim().length > 2)) && (
                                <div className="relative">
@@ -467,7 +467,7 @@ export function UnifiedOrderListTable({
                                </div>
                              )}
 
-                             {((( !isDoubleRoute && o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 2) ||
+                             {(( !isDoubleRoute && o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 2) ||
                                (o.customerDoorPhotoUrl?.trim() && o.customerDoorPhotoUrl.trim().length > 2) ||
                                (o.secondCustomerDoorPhotoUrl?.trim() && o.secondCustomerDoorPhotoUrl.trim().length > 2)) && (
                                <div className="relative">
