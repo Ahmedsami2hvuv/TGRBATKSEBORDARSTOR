@@ -10,6 +10,7 @@ import { PreparerPresenceToggle } from "./preparer-presence-toggle";
 import { PreparerWalletLink } from "./preparer-wallet-link";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getGlobalIcons } from "@/lib/icon-settings";
+import { PortalWalletPrefetch } from "@/components/portal-wallet-prefetch";
 
 export const dynamic = "force-dynamic";
 
@@ -88,6 +89,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
   }
 
   const baseAuth = { p: p!, exp: exp || "", s: s! };
+  const walletHref = preparerPath("/preparer/wallet", baseAuth);
   const shopIds = preparer.shopLinks.map((l) => l.shopId);
   const canSubmitAny = preparer.shopLinks.some((l) => l.canSubmitOrders);
   const canPriceStore = preparer.authorizedBranches.length > 0;
@@ -133,6 +135,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           <PreparerWalletLink auth={baseAuth} icons={icons} />
         </div>
       </header>
+      <PortalWalletPrefetch href={walletHref} />
 
       <section className="kse-glass-dark overflow-hidden border border-sky-200 shadow-sm dark:border-slate-800">
         <PreparerOrdersSection

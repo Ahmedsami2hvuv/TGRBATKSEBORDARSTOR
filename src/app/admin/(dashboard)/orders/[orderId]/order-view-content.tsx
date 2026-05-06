@@ -110,6 +110,7 @@ export function OrderViewContent({
 
   const isReversePickup = order.reversePickup || isReversePickupOrderType(order.orderType);
   const isSystemAdminOrder = isAdminShopName(order.shop.name) || order.submissionSource === "admin_portal";
+  const isDoubleRoute = order.routeMode === "double";
 
   const statusBadgeClass = order.prepaidAll ? orderStatusBadgeClassPrepaid(order.status, true) : orderStatusBadgeClass(order.status);
 
@@ -120,7 +121,7 @@ export function OrderViewContent({
   const parsedShoppingJson = parsePreparerShoppingJson(order.preparerShoppingJson);
 
   return (
-    <div className={`kse-glass-dark relative mt-4 border p-4 pb-24 text-base leading-relaxed sm:p-5 sm:pb-32 ${orderStatusStartStripeClass(order.status)} ${order.prepaidAll ? "border-emerald-300 bg-gradient-to-b from-emerald-50 to-teal-50" : isReversePickup ? "border-violet-400 bg-violet-100" : `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}`}`} dir="rtl">
+    <div className={`kse-glass-dark relative mt-4 border p-4 pb-24 text-base leading-relaxed sm:p-5 sm:pb-32 ${orderStatusStartStripeClass(order.status)} ${order.prepaidAll ? "border-emerald-300 bg-gradient-to-b from-emerald-50 to-teal-50" : isReversePickup ? "border-violet-400 bg-violet-100" : isDoubleRoute ? "border-fuchsia-300 bg-gradient-to-b from-fuchsia-50 to-violet-50" : `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}`}`} dir="rtl">
 
       {/* بصمات الصوت في بداية الصفحة بتنسيق مرتب */}
       {(voiceSrc || adminVoiceSrc) && (
@@ -159,6 +160,11 @@ export function OrderViewContent({
       )}
 
       {isReversePickup && <div className="mb-4 rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-bold text-violet-950">تنبيه طلب عكسي</div>}
+      {isDoubleRoute && (
+        <div className="mb-4 inline-flex rounded-xl border border-fuchsia-300 bg-fuchsia-100 px-3 py-1.5 text-sm font-black text-fuchsia-900">
+          وجهتين
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto]">
         <div>
@@ -436,7 +442,7 @@ export function OrderViewContent({
         storageKey="adminFab_v1"
         orderId={order.id}
         shopPhone={submitterPhone}
-        shopLabel="المحل"
+        shopLabel={isDoubleRoute ? "المرسل" : "المحل"}
         customerPhone={order.customerPhone}
         customerAlternatePhone={order.alternatePhone ?? undefined}
         customWaButtons={customWaButtons}

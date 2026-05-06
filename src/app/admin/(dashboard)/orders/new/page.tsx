@@ -5,6 +5,7 @@ import { AdminCreateOrderForm } from "./admin-create-order-form";
 import { buildEmployeeOrderPortalUrl } from "@/lib/employee-order-portal-link";
 import { headers } from "next/headers";
 import { getGlobalIcons } from "@/lib/icon-settings";
+import { courierAssignableWhere } from "@/lib/courier-assignable";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export default async function AdminCreateOrderPage() {
   const baseUrl = `${protocol}://${host}`;
 
   // جلب المحلات، المناطق، الزبائن (للملء التلقائي)، والموظفين (كأزرار سريعة)، والمجهزين (لطلبات التجهيز)
-  const [shops, regions, employeesRaw, preparers, icons] = await Promise.all([
+  const [shops, regions, employeesRaw, preparers, couriers, icons] = await Promise.all([
     prisma.shop.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true, regionId: true, locationUrl: true },
@@ -42,6 +43,11 @@ export default async function AdminCreateOrderPage() {
       where: { active: true },
       orderBy: { name: "asc" },
       select: { id: true, name: true, availableForAssignment: true },
+    }),
+    prisma.courier.findMany({
+      where: courierAssignableWhere,
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
     }),
     getGlobalIcons(),
   ]);
@@ -72,6 +78,7 @@ export default async function AdminCreateOrderPage() {
         regions={regions}
         employees={employees}
         preparers={preparers}
+        couriers={couriers}
         icons={icons}
       />
     </div>

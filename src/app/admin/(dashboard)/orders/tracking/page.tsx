@@ -29,7 +29,9 @@ export const metadata = {
 function formatShopWithCustomer(
   shopName: string,
   customerName: string | null | undefined,
+  routeMode?: string | null,
 ): string {
+  if (routeMode === "double") return "وجهتين";
   const shop = normalizeAdminShopName(shopName) || "—";
   const cust = customerName?.trim();
   if (!cust) return shop;
@@ -241,7 +243,7 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       orderNumber: o.orderNumber,
       orderStatus: o.status,
       assignedCourierId: o.assignedCourierId ?? null,
-      shopCustomerLabel: formatShopWithCustomer(o.shop.name, o.customer?.name),
+      shopCustomerLabel: formatShopWithCustomer(o.shop.name, o.customer?.name, o.routeMode),
       regionName: o.customerRegion?.name ?? o.shop.region.name,
       orderType: o.orderType || "—",
       routeModeLabel: o.routeMode === "double" ? "وجهتين" : "",

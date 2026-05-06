@@ -93,7 +93,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       id: o.id,
       orderNumber: o.orderNumber,
       routeMode: o.routeMode === "double" ? "double" : "single",
-      shopName: normalizeAdminShopName(o.shop.name),
+      shopName: o.routeMode === "double" ? "وجهتين" : normalizeAdminShopName(o.shop.name),
       regionName: o.customerRegion?.name ?? "—",
       orderType: o.orderType?.trim() ? o.orderType : "—",
       customerOrderTime: customerOrderTimeLabel(o.orderNoteTime),

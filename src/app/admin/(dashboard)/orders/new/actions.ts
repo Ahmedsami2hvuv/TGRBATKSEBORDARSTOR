@@ -25,6 +25,7 @@ import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { PreparerShoppingDraftStatus } from "@prisma/client";
 import { isAdminSession } from "@/lib/admin-session";
 import { ADMIN_OFFICE_LABEL, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
+import { courierAssignableWhere } from "@/lib/courier-assignable";
 
 export type AdminCreateOrderState = { ok?: boolean; error?: string; draftIds?: string[] };
 
@@ -305,16 +306,27 @@ export async function createAdminOrder(
   const total = new Decimal(subtotalParsed.value).plus(delivery);
 
   const submittedByEmployeeId = String(formData.get("linkedCustomerId") ?? "").trim() || null;
+  const assignedCourierRaw = String(formData.get("assignedCourierId") ?? "").trim();
+  let assignedCourierId: string | null = null;
+  if (assignedCourierRaw) {
+    const courier = await prisma.courier.findFirst({
+      where: { ...courierAssignableWhere, id: assignedCourierRaw },
+      select: { id: true },
+    });
+    if (!courier) return { error: "المندوب المختار غير متاح للإسناد حالياً." };
+    assignedCourierId = courier.id;
+  }
 
   const order = await prisma.order.create({
     data: {
       shopId: targetShopId,
       customerId: firstCustomerRow.id,
-      status: "pending",
+      status: assignedCourierId ? "assigned" : "pending",
       routeMode,
       adminOrderCode,
       submissionSource: "admin_portal",
       submittedByEmployeeId,
+      assignedCourierId,
       summary,
       orderType,
       orderNoteTime,

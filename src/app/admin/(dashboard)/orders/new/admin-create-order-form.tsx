@@ -57,12 +57,14 @@ export function AdminCreateOrderForm({
   regions,
   employees,
   preparers,
+  couriers,
   icons,
 }: {
   shops: ShopOpt[];
   regions: RegionOpt[];
   employees: EmployeeOpt[];
   preparers: Array<{ id: string; name: string; availableForAssignment: boolean }>;
+  couriers: Array<{ id: string; name: string }>;
   icons?: GlobalIconsConfig;
 }) {
   const [state, formAction, pending] = useActionState(createAdminOrder, initialState);
@@ -77,6 +79,7 @@ export function AdminCreateOrderForm({
   const [orderSubtotal, setOrderSubtotal] = useState("");
   const [orderNoteTime, setOrderNoteTime] = useState("");
   const [summary, setSummary] = useState("");
+  const [assignedCourierId, setAssignedCourierId] = useState("");
 
   const [firstPhone, setFirstPhone] = useState("");
   const [firstAlternatePhone, setFirstAlternatePhone] = useState("");
@@ -410,7 +413,18 @@ export function AdminCreateOrderForm({
        <div className="rounded-2xl border border-emerald-300 bg-white p-6 text-center shadow-lg">
          <h2 className="text-xl font-black text-emerald-800">تمت العملية بنجاح</h2>
          <p className="mt-2 text-sm text-slate-700">تم {submissionMode === "prep_draft" ? "إرسال طلب التجهيز للمجهز" : "إنشاء الطلب"} بنجاح.</p>
-         <button onClick={() => window.location.reload()} className="mt-6 rounded-xl bg-slate-900 px-6 py-2 text-sm font-bold text-white shadow-sm hover:bg-slate-800 transition">إضافة طلب آخر</button>
+         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+           <button onClick={() => window.location.reload()} className="rounded-xl bg-slate-900 px-6 py-2 text-sm font-bold text-white shadow-sm hover:bg-slate-800 transition">إضافة طلب آخر</button>
+           <a href="/admin/orders/tracking" className="rounded-xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100">
+             فتح تتبع الطلبات
+           </a>
+           <a href="/admin/orders/pending" className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100">
+             فتح الطلبات الجديدة
+           </a>
+           <a href="/admin" className="rounded-xl border border-violet-300 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-900 shadow-sm transition hover:bg-violet-100">
+             القائمة الرئيسية
+           </a>
+         </div>
        </div>
      );
   }
@@ -825,6 +839,26 @@ export function AdminCreateOrderForm({
             </label>
             <ClientVoiceNoteField title="ملاحظة صوتية" wrapperClassName="" />
           </div>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className={ad.label}>إسناد تلقائي لمندوب (اختياري)</span>
+            <select
+              name="assignedCourierId"
+              className={ad.select}
+              value={assignedCourierId}
+              onChange={(e) => setAssignedCourierId(e.target.value)}
+            >
+              <option value="">بدون إسناد (يبقى ضمن الطلبات الجديدة)</option>
+              {couriers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <span className="text-[11px] text-slate-500">
+              إذا اخترت مندوب، الطلب ينحفظ بإسناد مباشر. إذا تركته فارغ، يروح لقائمة الطلبات الجديدة.
+            </span>
+          </label>
         </>
       )}
 

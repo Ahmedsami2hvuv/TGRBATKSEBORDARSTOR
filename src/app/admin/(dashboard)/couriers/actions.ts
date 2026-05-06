@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 export type CourierFormState = {
   error?: string;
   success?: boolean;
+  message?: string;
 };
 
 export async function createCourier(state: CourierFormState, formData: FormData): Promise<CourierFormState> {
@@ -63,26 +64,53 @@ export async function updateCourier(id: string, state: CourierFormState, formDat
   }
 }
 
-export async function deleteCourierAction(id: string) {
+export async function deleteCourierAction(
+  _state: CourierFormState,
+  formData: FormData,
+): Promise<CourierFormState> {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return { error: "معرّف المندوب غير صالح." };
+
   try {
-    const hasOrders = await prisma.order.findFirst({
-      where: { OR: [{ courierEarningForCourierId: id }, { courierId: id }] }
-    });
-
-    if (hasOrders) {
-      await prisma.courier.update({
-        where: { id },
-        data: { blocked: true } // تصحيح اسم الحقل من isBlocked إلى blocked بناءً على الـ Schema
+    await prisma.$transaction(async (tx) => {
+      // Preserve historical records while removing this courier account.
+      await tx.order.updateMany({
+        where: { assignedCourierId: id },
+        data: { assignedCourierId: null },
       });
-      revalidatePath("/admin/couriers");
-      return { success: true, message: "تم تعطيل المندوب بنجاح (لا يمكن حذفه لوجود طلبات)." };
-    }
 
-    await prisma.courier.delete({ where: { id } });
+      await tx.order.updateMany({
+        where: { courierEarningForCourierId: id },
+        data: { courierEarningForCourierId: null },
+      });
+
+      await tx.orderCourierMoneyEvent.updateMany({
+        where: { courierId: id },
+        data: { courierId: null },
+      });
+
+      await tx.walletPeerTransfer.updateMany({
+        where: { fromCourierId: id },
+        data: { fromCourierId: null },
+      });
+
+      await tx.walletPeerTransfer.updateMany({
+        where: { toCourierId: id },
+        data: { toCourierId: null },
+      });
+
+      await tx.courierWalletMiscEntry.deleteMany({
+        where: { courierId: id },
+      });
+
+      await tx.courier.delete({
+        where: { id },
+      });
+    });
     revalidatePath("/admin/couriers");
-    return { success: true, message: "تم حذف المندوب بنجاح." };
-  } catch (error) {
-    return { success: false, message: "حدث خطأ أثناء الحذف." };
+    return { success: true, message: "تم حذف حساب المندوب نهائيًا." };
+  } catch (error: any) {
+    return { error: error?.message || "حدث خطأ أثناء حذف الحساب نهائيًا." };
   }
 }
 

@@ -122,6 +122,7 @@ export function OrderTrackingBulkTable({
           shopDoorPhotoUrl: r.shopDoorPhotoUrl,
           customerDoorPhotoUrl: r.customerDoorPhotoUrl,
           secondCustomerDoorPhotoUrl: r.secondCustomerDoorPhotoUrl,
+          routeMode: r.routeModeLabel === "وجهتين" ? "double" : "single",
         };
       }),
     [rows],
