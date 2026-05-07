@@ -123,6 +123,18 @@ export function BranchListClient({
   const [showScraper, setShowScraper] = useState(false);
   const [importSessions, setImportSessions] = useState<any[]>([]);
   const [shouldRemoveBg, setShouldRemoveBg] = useState(true);
+  const createEmptySession = () => ({
+    id: (Date.now() + Math.random()).toString(),
+    url: "",
+    manualImage: null,
+    manualImageUrl: null,
+    status: "idle",
+    progress: 0,
+    total: 0,
+    branchData: null,
+    branchId: null,
+    error: null,
+  });
 
   async function handleBulkImageUpload(files: FileList) {
     const newSessions = [];
@@ -131,16 +143,10 @@ export function BranchListClient({
         const compressed = await compressImageFileForUpload(file);
         if (compressed) {
             newSessions.push({
+                ...createEmptySession(),
                 id: (Date.now() + Math.random() + i).toString(),
-                url: "",
                 manualImage: compressed,
                 manualImageUrl: URL.createObjectURL(compressed),
-                status: 'idle',
-                progress: 0,
-                total: 0,
-                branchData: null,
-                branchId: null,
-                error: null
             });
         }
     }
@@ -165,11 +171,7 @@ export function BranchListClient({
     // إذا كان هذا هو السطر الأخير وتم إدخال رابط، افتح سطراً جديداً
     const sessionIndex = importSessions.findIndex(s => s.id === id);
     if (sessionIndex === importSessions.length - 1 && url.trim() !== "") {
-        setImportSessions(prev => [...prev, {
-            id: (Date.now() + Math.random()).toString(),
-            url: "", manualImage: null, manualImageUrl: null,
-            status: 'idle', progress: 0, total: 0, branchData: null, branchId: null, error: null
-        }]);
+        setImportSessions(prev => [...prev, createEmptySession()]);
     }
 
     // بدء الفحص التلقائي إذا كان الرابط يبدو صالحاً
@@ -379,6 +381,9 @@ export function BranchListClient({
                 return;
               }
               setShowScraper(!showScraper);
+              if (!showScraper) {
+                setImportSessions(prev => (prev.length === 0 ? [createEmptySession()] : prev));
+              }
               setShowForm(false);
             }}
             style={{
@@ -441,25 +446,20 @@ export function BranchListClient({
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 pt-0 space-y-4 custom-scrollbar">
-                {/* Big Upload Area - Appears when list is empty */}
+                {/* Empty state: start with URL first, image is optional */}
                 {importSessions.length === 0 && (
-                    <div
-                        onClick={() => document.getElementById('bulk-image-input-main')?.click()}
-                        className="mb-6 p-12 border-4 border-dashed border-indigo-200 rounded-[3rem] bg-indigo-50/50 hover:bg-indigo-50 hover:border-indigo-400 transition-all cursor-pointer flex flex-col items-center justify-center gap-4 group"
-                    >
-                        <div className="w-20 h-20 bg-white rounded-full shadow-lg flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">📸</div>
+                    <div className="mb-6 p-8 border-2 border-dashed border-indigo-200 rounded-[2rem] bg-indigo-50/50 flex flex-col items-center justify-center gap-4">
+                        <div className="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center text-3xl">🔗</div>
                         <div className="text-center">
-                            <h3 className="text-xl font-black text-indigo-900">ابدأ باختيار صور الأفرع</h3>
-                            <p className="text-sm text-indigo-500 font-bold mt-1">اضغط هنا لاختيار صورة أو عدة صور معاً</p>
+                            <h3 className="text-xl font-black text-indigo-900">ابدأ بوضع رابط الفرع</h3>
+                            <p className="text-sm text-indigo-500 font-bold mt-1">الصورة اختيارية، النظام يسحب صورة الفرع تلقائياً من الموقع.</p>
                         </div>
-                        <input
-                            id="bulk-image-input-main"
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => e.target.files && handleBulkImageUpload(e.target.files)}
-                        />
+                        <button
+                          onClick={() => setImportSessions([createEmptySession()])}
+                          className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black hover:bg-indigo-700 transition-colors"
+                        >
+                          ➕ إضافة أول فرع
+                        </button>
                     </div>
                 )}
 
@@ -557,6 +557,17 @@ export function BranchListClient({
                         </div>
                     </div>
                 ))}
+
+                {importSessions.length > 0 && (
+                  <div className="flex justify-center pt-2">
+                    <button
+                      onClick={() => setImportSessions(prev => [...prev, createEmptySession()])}
+                      className="px-6 py-2 bg-white border border-indigo-200 text-indigo-700 rounded-xl text-xs font-black hover:bg-indigo-50 transition-colors"
+                    >
+                      ➕ إضافة فرع آخر
+                    </button>
+                  </div>
+                )}
             </div>
 
             <div className="p-8 border-t flex justify-center bg-slate-50 shrink-0">
