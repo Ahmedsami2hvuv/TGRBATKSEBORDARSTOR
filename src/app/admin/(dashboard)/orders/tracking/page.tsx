@@ -276,7 +276,7 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl,
       shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
-      customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl,
+      customerDoorPhotoUrl: o.customer?.customerDoorPhotoUrl || o.customerDoorPhotoUrl,
       secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
     };
   });

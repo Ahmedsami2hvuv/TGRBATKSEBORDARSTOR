@@ -80,6 +80,9 @@ export default async function EditOrderPage({ params }: Props) {
       : null;
 
   const getCustomerDoorUrl = () => {
+    const fromCustomer = order.customer?.customerDoorPhotoUrl?.trim();
+    if (fromCustomer?.startsWith("data:")) return null;
+    if (fromCustomer) return fromCustomer;
     if (order.customerDoorPhotoUrl?.trim()?.startsWith("data:")) return `/api/image/order/${order.id}/customerDoor`;
     if (order.customerDoorPhotoUrl?.trim()) return order.customerDoorPhotoUrl;
     if (customerPhoneProfile?.photoUrl?.trim()?.startsWith("data:")) return `/api/image/customerPhoneProfile/${customerPhoneProfile.id}/photo`;

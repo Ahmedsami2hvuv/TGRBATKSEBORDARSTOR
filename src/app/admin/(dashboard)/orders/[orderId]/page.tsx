@@ -96,7 +96,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
           customerRegion: { select: { name: true } },
           secondCustomerRegion: { select: { name: true } },
           courier: { select: { name: true, phone: true } },
-          customer: { select: { name: true } },
+          customer: { select: { name: true, customerDoorPhotoUrl: true } },
         },
       }),
       prisma.companyPreparer.findMany({
@@ -180,6 +180,9 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
   }
 
   const getCustomerDoorUrl = () => {
+    const fromCustomer = order.customer?.customerDoorPhotoUrl?.trim();
+    if (fromCustomer?.startsWith("data:")) return null;
+    if (fromCustomer) return fromCustomer;
     if (order.customerDoorPhotoUrl?.trim()?.startsWith("data:")) return `/api/image/order/${order.id}/customerDoor`;
     if (order.customerDoorPhotoUrl?.trim()) return order.customerDoorPhotoUrl;
     if (customerPhoneProfile?.photoUrl?.trim()?.startsWith("data:")) return `/api/image/customerPhoneProfile/${customerPhoneProfile.id}/photo`;

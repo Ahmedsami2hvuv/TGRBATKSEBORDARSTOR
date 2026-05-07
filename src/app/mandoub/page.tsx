@@ -401,7 +401,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       customerLocationUrl: mergedCustomerLocation,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl,
       shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
-      customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || profile?.photoUrl,
+      customerDoorPhotoUrl: o.customer?.customerDoorPhotoUrl || profile?.photoUrl || o.customerDoorPhotoUrl,
       secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
       routeMode: o.routeMode as any,
       preparerAudioUrl: (o.preparerShoppingJson as any)?.preparerAudioUrl || null,

@@ -92,7 +92,7 @@ export default async function StaffArchivedDayPage({
       customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl,
       shopDoorPhotoUrl: o.shopDoorPhotoUrl,
-      customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl,
+      customerDoorPhotoUrl: o.customer?.customerDoorPhotoUrl || o.customerDoorPhotoUrl,
       secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
       routeMode: o.routeMode as "single" | "double",
     };

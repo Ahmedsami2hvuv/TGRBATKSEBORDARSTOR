@@ -101,7 +101,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       summary: o.summary,
       customerPhone: o.customerPhone,
       customerAlternatePhone: o.secondCustomerPhone?.trim() || o.alternatePhone?.trim() || o.customer?.alternatePhone?.trim() || "",
-      customerDoorPhotoUrl: resolvePublicAssetSrc(o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl) ?? "",
+      customerDoorPhotoUrl: resolvePublicAssetSrc(o.customer?.customerDoorPhotoUrl || o.customerDoorPhotoUrl) ?? "",
       totalAmount: o.totalAmount != null ? formatDinarAsAlfWithUnit(o.totalAmount) : null,
       deliveryPrice: o.deliveryPrice != null ? formatDinarAsAlfWithUnit(o.deliveryPrice) : null,
       rawDeliveryPriceDinar: o.deliveryPrice != null ? Number(o.deliveryPrice) : null,
