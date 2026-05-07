@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-link";
 import { preparerCourierAssignWhere } from "@/lib/courier-assignable";
@@ -11,6 +10,7 @@ import { PreparerSiteOrderDraftClient } from "./preparer-site-order-draft-client
 import { whatsappMeUrl } from "@/lib/whatsapp";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
+import { ModalAwareNavButton } from "@/components/modal-aware-nav-button";
 
 export const dynamic = "force-dynamic";
 
@@ -85,9 +85,9 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     <div className="kse-app-inner mx-auto max-w-6xl px-3 py-4 pb-24 sm:px-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex gap-2">
-          <Link href={homeHref} className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100">
+          <ModalAwareNavButton href={homeHref} className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100">
             ← الطلبات
-          </Link>
+          </ModalAwareNavButton>
           <FullscreenWalletLauncher href={preparerPath("/preparer/order/new", auth)} className="inline-flex items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100" title="طلب يدوي">
             ➕ طلب يدوي
           </FullscreenWalletLauncher>

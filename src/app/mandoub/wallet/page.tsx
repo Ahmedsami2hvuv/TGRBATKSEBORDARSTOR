@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { WalletPeerPartyKind } from "@prisma/client";
 import type { DelegatePortalVerifyReason } from "@/lib/delegate-link";
@@ -36,6 +35,7 @@ import {
 } from "../mandoub-wallet-client";
 import { getUISettings } from "@/lib/ui-settings";
 import { computeCourierDeliveryEarningDinar } from "@/lib/courier-earnings";
+import { MandoubWalletBackButton } from "./mandoub-wallet-back-button";
 
 export const dynamic = "force-dynamic";
 
@@ -355,12 +355,7 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
                 {formatDinarAsAlf(monthlySalaryTotal)}
               </div>
             </div>
-            <Link
-              href={hrefMain}
-              className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border-2 border-sky-500 bg-sky-600 px-5 text-center text-base font-black text-white shadow-sm transition hover:bg-sky-700"
-            >
-              رجوع
-            </Link>
+            <MandoubWalletBackButton hrefMain={hrefMain} />
           </div>
         </header>
 

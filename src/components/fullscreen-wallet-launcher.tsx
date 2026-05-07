@@ -60,6 +60,17 @@ export function FullscreenWalletLauncher({
     return () => window.removeEventListener("popstate", onPopState);
   }, [open]);
 
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === "WALLET_MODAL_CLOSE") {
+        closeModal();
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [closeModal]);
+
   return (
     <>
       <button type="button" onClick={openModal} className={className} title={title}>

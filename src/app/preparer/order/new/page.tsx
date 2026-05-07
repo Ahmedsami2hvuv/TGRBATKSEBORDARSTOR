@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-link";
 import { ALF_PER_DINAR } from "@/lib/money-alf";
 import { preparerPath } from "@/lib/preparer-portal-nav";
 import { prisma } from "@/lib/prisma";
 import { PreparerClientOrderForm } from "../../preparer-client-order-form";
+import { ModalAwareNavButton } from "@/components/modal-aware-nav-button";
 
 export const dynamic = "force-dynamic";
 
@@ -92,9 +92,9 @@ export default async function PreparerOrderNewPage({ searchParams }: Props) {
   return (
     <div className="kse-app-inner mx-auto max-w-lg px-3 py-4 pb-24 sm:px-4">
       <p className="mb-3 text-sm">
-        <Link href={homeHref} className="font-bold text-sky-800 hover:underline">
+        <ModalAwareNavButton href={homeHref} className="font-bold text-sky-800 hover:underline">
           ← الطلبات
-        </Link>
+        </ModalAwareNavButton>
       </p>
       <header className="kse-glass-dark mb-4 rounded-2xl border border-sky-200/90 p-4 shadow-sm">
         <h1 className="text-xl font-black text-slate-900">طلب جديد</h1>
