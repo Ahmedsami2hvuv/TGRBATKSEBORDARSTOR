@@ -4,7 +4,15 @@ import { useState, useEffect } from "react";
 import { ProductCardLazy } from "@/components/product-card-lazy";
 import { ProductCardSkeleton } from "@/components/product-card-skeleton";
 
-export function ProductListClient({ branchId, productBg }: { branchId: string, productBg?: string }) {
+export function ProductListClient({
+  branchId,
+  productBg,
+  productBgOpacity,
+}: {
+  branchId: string,
+  productBg?: string,
+  productBgOpacity?: number,
+}) {
   const [products, setProducts] = useState<any[]>([]);
   const [visibleCount, setVisibleCount] = useState(8); // نعرض 8 فقط في البداية لسرعة الرندر
   const [loading, setLoading] = useState(true);
@@ -71,7 +79,7 @@ export function ProductListClient({ branchId, productBg }: { branchId: string, p
     <div className="space-y-10">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         {displayProducts.map((p) => (
-          <ProductCardLazy key={p.id} product={p} bgUrl={productBg} />
+          <ProductCardLazy key={p.id} product={p} bgUrl={productBg} bgOpacityPercent={productBgOpacity} />
         ))}
       </div>
 

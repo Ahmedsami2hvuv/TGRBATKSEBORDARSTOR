@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { ClientOrderForm } from "./client-order-form";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { PortalLocationHeartbeat } from "@/components/portal-location-heartbeat";
 
 export const dynamic = "force-dynamic";
 
@@ -98,27 +97,25 @@ export default async function ClientOrderPage(props: Props) {
       : 0;
 
     return (
-      <PortalLocationHeartbeat variant="employee" e={sp.e!} exp={sp.exp!} s={sp.s!}>
-        <div className="kse-app-bg relative min-h-screen px-4 py-8 pb-16 text-slate-800">
-          <div className="absolute top-4 left-4 z-50">
-            <ThemeSwitcher />
-          </div>
-          <div className="kse-app-inner">
-            <ClientOrderForm
-              shopName={shop.name}
-              employeeName={employee.name}
-              photoUrl={shop.photoUrl}
-              shopRegionName={shop.region?.name || "غير محددة"}
-              shopDeliveryAlf={shopDeliveryAlf}
-              e={sp.e!}
-              exp={sp.exp!}
-              sig={sp.s!}
-              viewerName=""
-              initialOrder={null}
-            />
-          </div>
+      <div className="kse-app-bg relative min-h-screen px-4 py-8 pb-16 text-slate-800">
+        <div className="absolute top-4 left-4 z-50">
+          <ThemeSwitcher />
         </div>
-      </PortalLocationHeartbeat>
+        <div className="kse-app-inner">
+          <ClientOrderForm
+            shopName={shop.name}
+            employeeName={employee.name}
+            photoUrl={shop.photoUrl}
+            shopRegionName={shop.region?.name || "غير محددة"}
+            shopDeliveryAlf={shopDeliveryAlf}
+            e={sp.e!}
+            exp={sp.exp!}
+            sig={sp.s!}
+            viewerName=""
+            initialOrder={null}
+          />
+        </div>
+      </div>
     );
   } catch (error: any) {
     return (

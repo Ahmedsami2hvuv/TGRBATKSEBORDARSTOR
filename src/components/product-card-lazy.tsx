@@ -3,7 +3,15 @@
 import { useState, useEffect } from "react";
 import { AddToCartButton } from "@/app/store/add-to-cart-button";
 
-export function ProductCardLazy({ product, bgUrl }: { product: any, bgUrl?: string }) {
+export function ProductCardLazy({
+  product,
+  bgUrl,
+  bgOpacityPercent,
+}: {
+  product: any,
+  bgUrl?: string,
+  bgOpacityPercent?: number,
+}) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -46,6 +54,9 @@ export function ProductCardLazy({ product, bgUrl }: { product: any, bgUrl?: stri
   };
 
   const photo = product.photoUrls?.[0];
+  const normalizedBgOpacity = Number.isFinite(Number(bgOpacityPercent))
+    ? Math.min(1, Math.max(0, Number(bgOpacityPercent) / 100))
+    : 0.4;
 
   return (
     <>
@@ -64,7 +75,14 @@ export function ProductCardLazy({ product, bgUrl }: { product: any, bgUrl?: stri
 
         {/* حاوية الصورة - ثابتة الأبعاد لضمان ظهور النصوص فوراً */}
         <div className="relative aspect-square overflow-hidden bg-slate-100 dark:bg-slate-800/50">
-          {bgUrl && <img src={bgUrl} className="absolute inset-0 w-full h-full object-cover z-0 opacity-40" alt="" />}
+          {bgUrl && (
+            <img
+              src={bgUrl}
+              className="absolute inset-0 w-full h-full object-cover z-0"
+              style={{ opacity: normalizedBgOpacity }}
+              alt=""
+            />
+          )}
 
           {!imageLoaded && photo && (
              <div className="absolute inset-0 flex items-center justify-center z-10">

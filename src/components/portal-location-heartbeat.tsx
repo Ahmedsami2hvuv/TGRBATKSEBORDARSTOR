@@ -18,7 +18,7 @@ const GEO_OPTS_CHECK: PositionOptions = {
   timeout: 10_000,
 };
 
-const LOCK_MESSAGE = "نزل البرده وشغل الموقع (اللكيشن) وبعدها انقر على زر الفحص";
+const LOCK_MESSAGE = "للمتابعة انقر على زر الفحص";
 
 type MandoubProps = {
   variant: "mandoub";

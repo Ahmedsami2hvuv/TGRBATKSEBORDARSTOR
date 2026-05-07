@@ -153,7 +153,8 @@ export async function submitOrder(
     const orderTime = String(formData.get("orderTime") ?? "").trim();
     const notes = String(formData.get("notes") ?? "").trim();
     const customerNameRaw = String(formData.get("customerName") ?? "").trim();
-    const customerLocationUrl = String(formData.get("customerLocationUrl") ?? "").trim();
+    // تم تعطيل لوكيشن الزبون نهائياً في بوابة العميل.
+    const customerLocationUrl = "";
     const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
     const prepaidAll = formData.get("prepaidAll") === "on";
     const reversePickup = formData.get("reversePickup") === "on";

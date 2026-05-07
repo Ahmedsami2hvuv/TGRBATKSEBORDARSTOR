@@ -11,6 +11,7 @@ import { CleanupBase64Form } from "./cleanup-base64-form";
 import { IconSettingsForm } from "./icon-settings-form";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { WhatsappTemplateSettingsForm } from "./whatsapp-template-settings-form";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -146,13 +147,16 @@ function Block({
 export function SettingsBlocks({
   notificationInitial,
   globalIcons,
+  employeeShareTemplate,
 }: {
   notificationInitial: NotificationInitial;
   globalIcons: GlobalIconsConfig;
+  employeeShareTemplate: string;
 }) {
   const [openId, setOpenId] = useState<string>("ui-designer");
   const [howToShopUrl, setHowToShopUrl] = useState("");
   const [productCardBgUrl, setProductCardBgUrl] = useState("");
+  const [productCardBgOpacity, setProductCardBgOpacity] = useState(40);
   const [loading, setLoading] = useState(false);
 
   useMemo(() => {
@@ -162,6 +166,11 @@ export function SettingsBlocks({
         .then((data) => {
           setHowToShopUrl(data.how_to_shop_url || "");
           setProductCardBgUrl(data.product_card_bg_url || "");
+          setProductCardBgOpacity(
+            Number.isFinite(Number(data.product_card_bg_opacity))
+              ? Math.min(100, Math.max(0, Math.round(Number(data.product_card_bg_opacity))))
+              : 40
+          );
         });
     }
   }, [openId]);
@@ -203,6 +212,11 @@ export function SettingsBlocks({
                 const data = await res.json();
                 if (data.ok) {
                   setProductCardBgUrl(data.product_card_bg_url);
+                  setProductCardBgOpacity(
+                    Number.isFinite(Number(data.product_card_bg_opacity))
+                      ? Math.min(100, Math.max(0, Math.round(Number(data.product_card_bg_opacity))))
+                      : 40
+                  );
                   alert("تم الحفظ بنجاح");
                 }
             } finally {
@@ -232,16 +246,43 @@ export function SettingsBlocks({
             </div>
           </div>
 
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <label className="text-sm font-bold text-slate-700">شدة ظهور خلفية المنتج</label>
+              <span className="text-xs font-black text-violet-700 bg-violet-50 px-2 py-1 rounded-lg border border-violet-100">
+                {productCardBgOpacity}%
+              </span>
+            </div>
+            <input
+              type="range"
+              name="product_card_bg_opacity"
+              min={0}
+              max={100}
+              step={1}
+              value={productCardBgOpacity}
+              onChange={(e) => setProductCardBgOpacity(Number(e.target.value))}
+              className="w-full accent-violet-600"
+            />
+            <p className="text-xs font-bold text-slate-500">
+              0% تعني بدون خلفية، و100% تعني الخلفية قوية جدًا.
+            </p>
+          </div>
+
           {productCardBgUrl && (
             <div className="p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200 flex items-center gap-4">
               <div>
                 <p className="text-xs font-bold text-slate-400 mb-2">الخلفية الحالية:</p>
                 <div className="w-24 h-24 rounded-xl overflow-hidden border bg-white shadow-inner">
-                  <img src={productCardBgUrl} className="w-full h-full object-cover" alt="Preview" />
+                  <img
+                    src={productCardBgUrl}
+                    className="w-full h-full object-cover transition-opacity duration-150"
+                    style={{ opacity: productCardBgOpacity / 100 }}
+                    alt="Preview"
+                  />
                 </div>
               </div>
               <div className="text-xs text-slate-500 font-bold">
-                سيتم استبدال هذه الصورة عند رفع ملف جديد والحفظ.
+                المعاينة هنا فورية حسب السلايدر. سيتم استبدال هذه الصورة عند رفع ملف جديد والحفظ.
               </div>
             </div>
           )}
@@ -322,41 +363,44 @@ export function SettingsBlocks({
         tone="emerald"
         icons={globalIcons}
       >
-        <Link
-          href="/admin/wa-buttons"
-          className="group relative flex items-start justify-between gap-4 rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm outline-none transition hover:-translate-y-[1px] hover:border-emerald-300 hover:bg-gradient-to-b hover:from-emerald-50/70 hover:to-white hover:shadow-md focus-visible:ring-2 focus-visible:ring-emerald-300/60 sm:p-5"
-        >
-          <div className="min-w-0">
-            <p className="font-extrabold text-slate-900">أزرار واتساب</p>
-            <p className="mt-1 text-sm leading-relaxed text-slate-600">
-              تعريف أزرار المندوب ثم نصوص الرسائل (من «النماذج») حسب حالة الطلب ولوكيشن الزبون.
-            </p>
-            <p className="mt-2 text-xs font-bold text-emerald-700 transition group-hover:text-emerald-800">
-              فتح الصفحة
-            </p>
-          </div>
-          <span
-            className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-white text-emerald-700 shadow-sm transition group-hover:border-emerald-300 group-hover:bg-emerald-50"
-            aria-hidden
+        <div className="space-y-4">
+          <WhatsappTemplateSettingsForm initialTemplate={employeeShareTemplate} />
+          <Link
+            href="/admin/wa-buttons"
+            className="group relative flex items-start justify-between gap-4 rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm outline-none transition hover:-translate-y-[1px] hover:border-emerald-300 hover:bg-gradient-to-b hover:from-emerald-50/70 hover:to-white hover:shadow-md focus-visible:ring-2 focus-visible:ring-emerald-300/60 sm:p-5"
           >
-            <DynamicIcon
-                iconKey="ui_arrow_right"
-                config={globalIcons}
-                className="h-5 w-5 transition group-hover:-translate-x-0.5 rotate-180"
-                fallback={
-                    <svg
-                      className="h-5 w-5 transition group-hover:-translate-x-0.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2.2}
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                    </svg>
-                }
-            />
-          </span>
-        </Link>
+            <div className="min-w-0">
+              <p className="font-extrabold text-slate-900">أزرار واتساب</p>
+              <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                تعريف أزرار المندوب ثم نصوص الرسائل (من «النماذج») حسب حالة الطلب ولوكيشن الزبون.
+              </p>
+              <p className="mt-2 text-xs font-bold text-emerald-700 transition group-hover:text-emerald-800">
+                فتح الصفحة
+              </p>
+            </div>
+            <span
+              className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-white text-emerald-700 shadow-sm transition group-hover:border-emerald-300 group-hover:bg-emerald-50"
+              aria-hidden
+            >
+              <DynamicIcon
+                  iconKey="ui_arrow_right"
+                  config={globalIcons}
+                  className="h-5 w-5 transition group-hover:-translate-x-0.5 rotate-180"
+                  fallback={
+                      <svg
+                        className="h-5 w-5 transition group-hover:-translate-x-0.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2.2}
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                      </svg>
+                  }
+              />
+            </span>
+          </Link>
+        </div>
       </Block>
 
       <Block

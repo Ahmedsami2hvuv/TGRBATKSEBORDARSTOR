@@ -7,8 +7,12 @@ import { EmployeesList, type EmployeeRow } from "./employees-list";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { buildEmployeeOrderPortalUrl } from "@/lib/employee-order-portal-link";
-import { buildEmployeeChatGreeting, whatsappAppUrl } from "@/lib/whatsapp";
+import { whatsappAppUrl } from "@/lib/whatsapp";
 import { getPublicAppUrl } from "@/lib/app-url";
+import {
+  getEmployeeWhatsappShareTemplate,
+  renderEmployeeWhatsappShareTemplate,
+} from "@/lib/whatsapp-template-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +20,7 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
   const { id: shopId } = await props.params;
   const baseUrl = getPublicAppUrl();
 
-  const [shop, icons] = await Promise.all([
+  const [shop, icons, employeeShareTemplate] = await Promise.all([
     prisma.shop.findUnique({
       where: { id: shopId },
       select: {
@@ -34,7 +38,8 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
         },
       },
     }),
-    getGlobalIcons()
+    getGlobalIcons(),
+    getEmployeeWhatsappShareTemplate(),
   ]);
 
   if (!shop) {
@@ -44,8 +49,14 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
   // توليد الروابط على السيرفر لضمان صحة التوقيع الرقمي
   const employeesWithLinks: EmployeeRow[] = shop.employees.map((emp) => {
     const orderPortalUrl = buildEmployeeOrderPortalUrl(emp.id, emp.orderPortalToken, baseUrl);
-    const greeting = buildEmployeeChatGreeting({ employeeName: emp.name });
-    const whatsappLink = whatsappAppUrl(emp.phone, greeting);
+    const message = renderEmployeeWhatsappShareTemplate({
+      template: employeeShareTemplate,
+      customerName: emp.name,
+      shopName: shop.name,
+      customerLink: orderPortalUrl,
+      shopLocation: shop.locationUrl,
+    });
+    const whatsappLink = whatsappAppUrl(emp.phone, message);
 
     return {
       id: emp.id,

@@ -28,6 +28,7 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
   if (!branch) return notFound();
 
   const productBg = (storeSettings?.config as any)?.product_card_bg_url;
+  const productBgOpacity = (storeSettings?.config as any)?.product_card_bg_opacity;
 
   return (
     <div className="space-y-6 md:space-y-10 pb-10 px-2" dir="rtl">
@@ -79,7 +80,7 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
         </h2>
 
         {/* 4. قائمة المنتجات - تحمل في الخلفية وتظهر النصوص فوراً */}
-        <ProductListClient branchId={id} productBg={productBg} />
+        <ProductListClient branchId={id} productBg={productBg} productBgOpacity={productBgOpacity} />
       </div>
     </div>
   );

@@ -4,15 +4,17 @@ import { normalizeNotificationSoundPreset } from "@/lib/notification-sound-prese
 import { SettingsBlocks } from "./settings-blocks";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { getEmployeeWhatsappShareTemplate } from "@/lib/whatsapp-template-settings";
 
 export const metadata = {
   title: "الإعدادات — KSEBORDARSTOR",
 };
 
 export default async function SettingsPage() {
-  const [notificationSettings, icons] = await Promise.all([
+  const [notificationSettings, icons, employeeShareTemplate] = await Promise.all([
     getOrCreateNotificationSettings(),
-    getGlobalIcons()
+    getGlobalIcons(),
+    getEmployeeWhatsappShareTemplate(),
   ]);
 
   return (
@@ -27,6 +29,7 @@ export default async function SettingsPage() {
 
       <SettingsBlocks
         globalIcons={icons}
+        employeeShareTemplate={employeeShareTemplate}
         notificationInitial={{
           adminEnabled: notificationSettings.adminEnabled,
           adminTemplateSingle: notificationSettings.adminTemplateSingle,

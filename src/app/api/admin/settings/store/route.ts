@@ -21,6 +21,10 @@ export async function POST(req: Request) {
   const how_to_shop_url = formData.get("how_to_shop_url") as string;
   const product_card_bg_file = formData.get("product_card_bg_file") as File;
   let product_card_bg_url = formData.get("product_card_bg_url") as string;
+  const rawOpacity = Number(formData.get("product_card_bg_opacity"));
+  const product_card_bg_opacity = Number.isFinite(rawOpacity)
+    ? Math.min(100, Math.max(0, Math.round(rawOpacity)))
+    : 40;
 
   // إذا تم رفع ملف جديد، نقوم بمعالجته وحفظه
   if (product_card_bg_file && product_card_bg_file.size > 0) {
@@ -40,7 +44,8 @@ export async function POST(req: Request) {
   const config = {
     ...(current?.config as any || {}),
     how_to_shop_url,
-    product_card_bg_url
+    product_card_bg_url,
+    product_card_bg_opacity,
   };
 
   await prisma.uISystemSetting.upsert({
@@ -51,5 +56,5 @@ export async function POST(req: Request) {
     create: { target: "customer", section: "store_general", config }
   });
 
-  return NextResponse.json({ ok: true, product_card_bg_url });
+  return NextResponse.json({ ok: true, product_card_bg_url, product_card_bg_opacity });
 }

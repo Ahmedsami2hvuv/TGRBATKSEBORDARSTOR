@@ -5,6 +5,7 @@ import { isAdminSession } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_NOTIFICATION_SETTINGS } from "@/lib/notification-settings";
 import { normalizeNotificationSoundPreset } from "@/lib/notification-sound-presets";
+import { saveEmployeeWhatsappShareTemplate } from "@/lib/whatsapp-template-settings";
 
 import { GlobalIconsConfig, saveGlobalIcons } from "@/lib/icon-settings";
 
@@ -21,6 +22,11 @@ export type NotificationSettingsFormState = {
   error?: string;
 };
 
+export type WhatsappTemplateSettingsState = {
+  ok?: boolean;
+  error?: string;
+};
+
 function formString(formData: FormData, key: string): string {
   const v = formData.get(key);
   return typeof v === "string" ? v.trim() : "";
@@ -28,6 +34,23 @@ function formString(formData: FormData, key: string): string {
 
 function formBool(formData: FormData, key: string): boolean {
   return formData.get(key) === "on";
+}
+
+export async function saveWhatsappTemplateSettings(
+  _prev: WhatsappTemplateSettingsState,
+  formData: FormData,
+): Promise<WhatsappTemplateSettingsState> {
+  if (!(await isAdminSession())) {
+    return { error: "غير مصرّح." };
+  }
+  const employeeShareTemplate = formString(formData, "employeeShareTemplate");
+  if (!employeeShareTemplate) {
+    return { error: "يرجى كتابة نص الرسالة." };
+  }
+  await saveEmployeeWhatsappShareTemplate(employeeShareTemplate);
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin/shops");
+  return { ok: true };
 }
 
 export async function saveNotificationSettings(

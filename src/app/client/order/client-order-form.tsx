@@ -72,7 +72,6 @@ function ClientOrderFormInner({
   const regionSearchRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const locationImageInputRef = useRef<HTMLInputElement>(null);
 
   const [q, setQ] = useState(initialOrder?.customerRegion.name ?? "");
   const [hits, setHits] = useState<RegionHit[]>([]);
@@ -87,7 +86,6 @@ function ClientOrderFormInner({
   const [alternatePhone, setAlternatePhone] = useState(initialOrder?.alternatePhone ?? "");
   const [orderTime, setOrderTime] = useState(initialOrder?.orderTime ?? "");
   const [notes, setNotes] = useState(initialOrder?.notes ?? "");
-  const [customerLocationUrl, setCustomerLocationUrl] = useState(initialOrder?.customerLocationUrl ?? "");
   const [customerLandmark, setCustomerLandmark] = useState(initialOrder?.customerLandmark ?? "");
   const [prepaidAll, setPrepaidAll] = useState(initialOrder?.prepaidAll ?? false);
   const [reversePickup, setReversePickup] = useState(
@@ -98,7 +96,6 @@ function ClientOrderFormInner({
   const [showNoPriceConfirm, setShowNoPriceConfirm] = useState(false);
   const [allowNoPriceSubmit, setAllowNoPriceSubmit] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [locationImagePreview, setLocationImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (q.trim().length < 2) {
@@ -230,17 +227,6 @@ function ClientOrderFormInner({
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleLocationImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLocationImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -440,69 +426,6 @@ function ClientOrderFormInner({
                 <span className="text-sm font-bold text-slate-600 px-1">رقم ثاني للزبون (اختياري)</span>
                 <input name="alternatePhone" value={alternatePhone} onChange={(e) => setAlternatePhone(e.target.value)} inputMode="numeric" className={`${inputClass} font-mono tabular-nums`} placeholder="07XXXXXXXXX" />
               </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-bold text-slate-600 px-1 flex items-center gap-2">
-                  <span className="text-lg">📍</span>
-                  رابط الموقع (Google Maps)
-                </span>
-                <div className="relative group">
-                  <input
-                    name="customerLocationUrl"
-                    value={customerLocationUrl}
-                    onChange={(e) => setCustomerLocationUrl(e.target.value)}
-                    className={`${inputClass} pr-10`}
-                    placeholder="انسخ رابط اللوكيشن هنا..."
-                  />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg className="h-5 w-5 text-sky-500 opacity-50 group-focus-within:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                </div>
-              </label>
-
-              <div className="space-y-3">
-                <span className="text-sm font-bold text-slate-600 px-1 flex items-center gap-2">
-                  <span className="text-lg">🏠</span>
-                  صورة الموقع / الدار (اختياري)
-                </span>
-
-                {!locationImagePreview ? (
-                  <button
-                    type="button"
-                    onClick={() => locationImageInputRef.current?.click()}
-                    className="w-full flex items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-sky-200 bg-white py-4 text-sky-700 transition hover:bg-sky-50 hover:border-sky-300"
-                  >
-                    <span className="text-xl">📸</span>
-                    <span className="text-sm font-black">إضافة صورة للموقع</span>
-                  </button>
-                ) : (
-                  <div className="relative group">
-                    <img src={locationImagePreview} alt="Location" className="w-full h-48 object-cover rounded-2xl border-2 border-sky-100 shadow-sm" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLocationImagePreview(null);
-                        if (locationImageInputRef.current) locationImageInputRef.current.value = "";
-                      }}
-                      className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-rose-500 text-white shadow-lg flex items-center justify-center font-bold"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                )}
-
-                <input
-                  ref={locationImageInputRef}
-                  type="file"
-                  name="customerDoorPhoto"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleLocationImageChange}
-                />
-                <p className="text-[10px] text-slate-400 text-center">تساعد هذه الصورة المندوب في الوصول للعنوان بدقة</p>
-              </div>
 
               <label className="flex flex-col gap-1.5">
                 <span className="text-sm font-bold text-slate-600 px-1">أقرب نقطة دالة</span>

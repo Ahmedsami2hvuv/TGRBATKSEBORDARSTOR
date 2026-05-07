@@ -5,7 +5,15 @@ import { AddToCartButton } from "./add-to-cart-button";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 
-export function ProductCard({ product, bgUrl: initialBgUrl }: { product: any, bgUrl?: string }) {
+export function ProductCard({
+  product,
+  bgUrl: initialBgUrl,
+  bgOpacityPercent,
+}: {
+  product: any,
+  bgUrl?: string,
+  bgOpacityPercent?: number,
+}) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
@@ -40,6 +48,9 @@ export function ProductCard({ product, bgUrl: initialBgUrl }: { product: any, bg
   const photos = product.photoUrls && product.photoUrls.length > 0 ? product.photoUrls : [""];
   const currentPrice = selectedVariant ? Number(selectedVariant.salePrice) : Number(product.salePrice);
   const currentName = selectedVariant ? `${product.name} (${selectedVariant.name})` : product.name;
+  const normalizedBgOpacity = Number.isFinite(Number(bgOpacityPercent))
+    ? Math.min(1, Math.max(0, Number(bgOpacityPercent) / 100))
+    : 0.4;
 
   const productForCart = {
     ...product,
@@ -75,7 +86,8 @@ export function ProductCard({ product, bgUrl: initialBgUrl }: { product: any, bg
           {initialBgUrl && (
             <img
               src={initialBgUrl}
-              className="absolute inset-0 w-full h-full object-cover z-0 opacity-100"
+              className="absolute inset-0 w-full h-full object-cover z-0"
+              style={{ opacity: normalizedBgOpacity }}
               alt=""
               loading="lazy"
               decoding="async"
@@ -140,7 +152,14 @@ export function ProductCard({ product, bgUrl: initialBgUrl }: { product: any, bg
 
             <div className="overflow-y-auto flex-1 pb-10">
               <div className="relative aspect-square md:aspect-video bg-slate-50 dark:bg-slate-800/50 overflow-hidden">
-                {initialBgUrl && <img src={initialBgUrl} className="absolute inset-0 w-full h-full object-cover z-0 opacity-30" alt="" />}
+                {initialBgUrl && (
+                  <img
+                    src={initialBgUrl}
+                    className="absolute inset-0 w-full h-full object-cover z-0"
+                    style={{ opacity: normalizedBgOpacity }}
+                    alt=""
+                  />
+                )}
                 <img
                   src={photos[activePhotoIndex]}
                   className="w-full h-full object-contain relative z-10 p-4"
