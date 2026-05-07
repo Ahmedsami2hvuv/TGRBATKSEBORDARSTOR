@@ -399,8 +399,8 @@ export function MandoubWalletClient({
                 {transferTargetEmployees.map(em => <option key={em.id} value={em.id}>{em.name} ({em.shopName})</option>)}
               </select>
             )}
-            <input name={transferOpen ? "handoverLocation" : "label"} required placeholder={transferOpen ? "مكان التسليم..." : "اسم المعاملة..."} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 p-3 rounded-xl font-bold text-sm shadow-inner" />
             <input name="amountAlf" required inputMode="decimal" placeholder="المبلغ..." className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 p-3 rounded-xl font-black text-xl text-center shadow-inner" />
+            <input name={transferOpen ? "handoverLocation" : "label"} required placeholder={transferOpen ? "مكان التسليم..." : "اسم المعاملة..."} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 p-3 rounded-xl font-bold text-sm shadow-inner" />
             <button type="submit" disabled={createPending || miscSubmitPending} className="w-full rounded-xl bg-indigo-600 py-4 text-base font-black text-white shadow-lg">إتمام العملية</button>
           </form>
         )}
