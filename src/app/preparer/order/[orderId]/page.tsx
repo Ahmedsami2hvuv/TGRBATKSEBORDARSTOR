@@ -7,8 +7,6 @@ import { PreparerAssignCourierFab } from "../../preparer-assign-courier-fab";
 import { PreparerOrderDetailSection } from "../../preparer-order-detail-section";
 import type { MandoubOrderDetailPayload } from "@/lib/mandoub-order-queries";
 import { mandoubOrderDetailInclude } from "@/lib/mandoub-order-queries";
-import Link from "next/link";
-
 import { getGlobalIcons } from "@/lib/icon-settings";
 
 export const dynamic = "force-dynamic";
@@ -155,12 +153,6 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
 
   return (
     <div className="kse-app-inner mx-auto max-w-lg px-3 py-4 pb-24 sm:px-4">
-      <div className="mb-4">
-        <Link href={homeHref} className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100">
-          ← الطلبات
-        </Link>
-      </div>
-
       <PreparerOrderDetailSection
         order={safeOrder}
         closeHref={homeHref}
