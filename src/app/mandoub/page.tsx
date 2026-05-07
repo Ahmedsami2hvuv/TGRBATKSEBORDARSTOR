@@ -17,8 +17,8 @@ import {
   fetchOrderOnlyMoneySumsForCourier,
 } from "@/lib/mandoub-courier-event-totals";
 import { computeMandoubTotalsForCourier } from "@/lib/mandoub-courier-totals";
-import { mandoubOrderDetailInclude } from "@/lib/mandoub-order-queries";
-import { extractLatLngFromLocationInputSmart, hasCustomerLocationUrl } from "@/lib/order-location";
+import { mandoubOrderListInclude } from "@/lib/mandoub-order-queries";
+import { extractLatLngFromLocationInput, hasCustomerLocationUrl } from "@/lib/order-location";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import {
   mandoubShopNameVividClass,
@@ -185,8 +185,9 @@ export default async function MandoubPage({ searchParams }: Props) {
         { courierEarningForCourierId: courier.id },
       ],
     },
-    include: mandoubOrderDetailInclude,
+    include: mandoubOrderListInclude,
     orderBy: { createdAt: "desc" },
+    take: 150,
   });
 
   const regionIds = Array.from(
@@ -301,11 +302,11 @@ export default async function MandoubPage({ searchParams }: Props) {
     return o.status === tab;
   });
 
-  async function computeSmartHint(params: {
+  function computeSmartHint(params: {
     locationUrl: string;
     fallbackLandmark?: string | null;
     regionId?: string | null;
-  }): Promise<string> {
+  }): string {
     const fallback = String(params.fallbackLandmark ?? "").trim();
     const regionId = params.regionId ?? null;
     if (!regionId) return "— لا توجد منطقة مرتبطة بالطلب";
@@ -314,7 +315,7 @@ export default async function MandoubPage({ searchParams }: Props) {
     if (!String(params.locationUrl || "").trim()) {
       return fallback ? `قريب من (${fallback})` : "— لا يوجد لوكيشن للزبون";
     }
-    const customerLoc = await extractLatLngFromLocationInputSmart(params.locationUrl);
+    const customerLoc = extractLatLngFromLocationInput(params.locationUrl);
     if (!customerLoc) return fallback ? `قريب من (${fallback})` : "— تعذر قراءة إحداثيات الرابط";
 
     let nearest: { name: string; distanceM: number } | null = null;
@@ -334,14 +335,20 @@ export default async function MandoubPage({ searchParams }: Props) {
     return `قريب من (${nearest.name})`;
   }
 
+  const phoneProfilesByKey = new Map<string, (typeof phoneProfiles)[number]>();
+  const phoneProfilesByPhone = new Map<string, (typeof phoneProfiles)[number]>();
+  for (const profile of phoneProfiles) {
+    const key = `${profile.phone}::${profile.regionId ?? ""}`;
+    if (!phoneProfilesByKey.has(key)) phoneProfilesByKey.set(key, profile);
+    if (!phoneProfilesByPhone.has(profile.phone)) phoneProfilesByPhone.set(profile.phone, profile);
+  }
+
   const smartHintByOrderId = new Map<string, string | null>();
   for (const o of filteredByTab) {
-    const profile =
-      phoneProfiles.find((p) => p.phone === o.customerPhone && p.regionId === o.customerRegionId) ||
-      phoneProfiles.find((p) => p.phone === o.customerPhone);
+    const profile = phoneProfilesByKey.get(`${o.customerPhone}::${o.customerRegionId ?? ""}`) ?? phoneProfilesByPhone.get(o.customerPhone);
     const mergedCustomerLocation =
       o.customerLocationUrl || o.customer?.customerLocationUrl || profile?.locationUrl || "";
-    const hint = await computeSmartHint({
+    const hint = computeSmartHint({
       locationUrl: mergedCustomerLocation,
       fallbackLandmark: o.customerLandmark || o.customer?.customerLandmark,
       regionId: o.customerRegionId,
@@ -350,8 +357,9 @@ export default async function MandoubPage({ searchParams }: Props) {
   }
 
   const tableRows: MandoubRow[] = filteredByTab.map((o) => {
-    const profile = phoneProfiles.find(p => p.phone === o.customerPhone && p.regionId === o.customerRegionId) ||
-                    phoneProfiles.find(p => p.phone === o.customerPhone); // fallback to first matching phone if region doesn't match
+    const profile =
+      phoneProfilesByKey.get(`${o.customerPhone}::${o.customerRegionId ?? ""}`) ??
+      phoneProfilesByPhone.get(o.customerPhone); // fallback to first matching phone if region doesn't match
 
     const mergedCustomerLocation =
       o.customerLocationUrl || o.customer?.customerLocationUrl || profile?.locationUrl || "";

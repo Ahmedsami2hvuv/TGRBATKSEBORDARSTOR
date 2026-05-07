@@ -36,6 +36,53 @@ export const mandoubOrderDetailInclude = {
   },
 } satisfies Prisma.OrderInclude;
 
+// Lightweight include for list/table pages to reduce query cost.
+export const mandoubOrderListInclude = {
+  shop: {
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      photoUrl: true,
+      locationUrl: true,
+      regionId: true,
+      region: true,
+    },
+  },
+  customerRegion: true,
+  secondCustomerRegion: true,
+  submittedBy: { select: { phone: true, name: true } },
+  submittedByCompanyPreparer: { select: { phone: true, name: true } },
+  customer: {
+    select: {
+      id: true,
+      customerDoorPhotoUrl: true,
+      customerLocationUrl: true,
+      customerLandmark: true,
+      alternatePhone: true,
+    },
+  },
+  courier: { select: { name: true, phone: true, vehicleType: true } },
+  moneyEvents: {
+    where: { deletedAt: null },
+    orderBy: { createdAt: "asc" as const },
+    select: {
+      id: true,
+      kind: true,
+      amountDinar: true,
+      expectedDinar: true,
+      matchesExpected: true,
+      mismatchReason: true,
+      mismatchNote: true,
+      deletedAt: true,
+      deletedReason: true,
+      createdAt: true,
+      courierId: true,
+      recordedByCompanyPreparerId: true,
+    },
+  },
+} satisfies Prisma.OrderInclude;
+
 export type MandoubOrderDetailPayload = Prisma.OrderGetPayload<{
   include: typeof mandoubOrderDetailInclude;
 }>;

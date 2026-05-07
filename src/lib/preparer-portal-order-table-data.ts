@@ -5,7 +5,7 @@ import {
   sumDeliveryInFromOrderMoneyEvents,
 } from "@/lib/mandoub-money";
 import { isManualDeletionReason, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
-import { mandoubOrderDetailInclude } from "@/lib/mandoub-order-queries";
+import { mandoubOrderListInclude } from "@/lib/mandoub-order-queries";
 import type { MandoubOrderSearchFields } from "@/lib/mandoub-order-smart-filter";
 import { hasCustomerLocationUrl } from "@/lib/order-location";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
@@ -99,7 +99,7 @@ export async function loadPreparerPortalOrderTableData(args: {
             // تحسين: جلب الطلبات الحديثة فقط لتقليل الضغط
             createdAt: { gte: orderListResetAt },
           },
-          include: mandoubOrderDetailInclude,
+          include: mandoubOrderListInclude,
           orderBy: { createdAt: "desc" },
           take: 100, // حد أقصى للسرعة
         });

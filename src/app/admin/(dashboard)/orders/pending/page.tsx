@@ -43,11 +43,14 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       include: {
         preparer: { select: { id: true, name: true } },
         customerRegion: { select: { id: true, name: true, deliveryPrice: true } }
-      }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 250,
     }),
     prisma.order.findMany({
       where: { status: "pending", submissionSource: { not: "company_preparer" } },
       orderBy: { createdAt: "desc" },
+      take: 200,
       include: {
         shop: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
         submittedBy: { select: { id: true, name: true } },
@@ -59,6 +62,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     prisma.order.findMany({
       where: { status: "pending", submissionSource: "company_preparer" },
       orderBy: { createdAt: "desc" },
+      take: 200,
       include: {
         shop: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
         submittedBy: { select: { id: true, name: true } },
