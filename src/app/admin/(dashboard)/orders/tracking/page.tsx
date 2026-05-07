@@ -127,13 +127,16 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
     prisma.order.findMany({
       where,
       orderBy: { createdAt: "desc" },
+      take: 80, // تقليل العدد لضمان سرعة التحميل وتجنب الـ Timeout
       include: {
         shop: {
           select: {
             id: true,
             name: true,
             photoUrl: true,
-            region: true
+            region: true,
+            phone: true, // أضفنا الرقم هنا بدلاً من الاعتماد على fetch لاحقاً إن وجد
+            locationUrl: true // أضفنا اللوكيشن هنا
           }
         },
         customerRegion: true,
@@ -273,8 +276,8 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       // بيانات الوصول السريع
       audioUrl: resolvePublicAssetSrc(o.voiceNoteUrl) || null,
       adminAudioUrl: resolvePublicAssetSrc(o.adminVoiceNoteUrl) || null,
-      shopPhone: o.shop.phone,
-      shopLocationUrl: o.shop.locationUrl,
+      shopPhone: o.shop.phone || "",
+      shopLocationUrl: o.shop.locationUrl || "",
       customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl,
       shopDoorPhotoUrl: resolvePublicAssetSrc(o.shopDoorPhotoUrl || o.shop.photoUrl) || null,

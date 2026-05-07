@@ -48,58 +48,75 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
   const sp = await searchParams;
   const modalOnly = sp.view === "modal";
 
-  let order, preparers, waButtonSettings;
+  let order;
   try {
-    [order, preparers, waButtonSettings] = await Promise.all([
-      prisma.order.findUnique({
-        where: { id: orderId },
-        select: {
-          id: true,
-          orderNumber: true,
-          status: true,
-          routeMode: true,
-          adminOrderCode: true,
-          orderType: true,
-          summary: true,
-          customerPhone: true,
-          alternatePhone: true,
-          secondCustomerPhone: true,
-          secondCustomerLocationUrl: true,
-          secondCustomerLandmark: true,
-          secondCustomerDoorPhotoUrl: true,
-          secondCustomerRegionId: true,
-          orderNoteTime: true,
-          imageUrl: true,
-          orderImageUploadedByName: true,
-          shopDoorPhotoUploadedByName: true,
-          customerDoorPhotoUploadedByName: true,
-          secondCustomerDoorPhotoUploadedByName: true,
-          voiceNoteUrl: true,
-          adminVoiceNoteUrl: true,
-          shopDoorPhotoUrl: true,
-          customerDoorPhotoUrl: true,
-          customerLandmark: true,
-          orderSubtotal: true,
-          deliveryPrice: true,
-          totalAmount: true,
-          submissionSource: true,
-          createdAt: true,
-          prepaidAll: true,
-          shopId: true,
-          customerRegionId: true,
-          customerLocationUrl: true,
-          customerLocationSetByCourierAt: true,
-          customerLocationUploadedByName: true,
-          preparerShoppingJson: true,
-          submittedBy: { select: { id: true, name: true, phone: true } },
-          submittedByCompanyPreparer: { select: { id: true, name: true, phone: true } },
-          shop: { select: { id: true, name: true, phone: true, ownerName: true, photoUrl: true, locationUrl: true } },
-          customerRegion: { select: { name: true } },
-          secondCustomerRegion: { select: { name: true } },
-          courier: { select: { name: true, phone: true } },
-          customer: { select: { name: true, customerDoorPhotoUrl: true } },
-        },
-      }),
+    order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        routeMode: true,
+        adminOrderCode: true,
+        orderType: true,
+        summary: true,
+        customerPhone: true,
+        alternatePhone: true,
+        secondCustomerPhone: true,
+        secondCustomerLocationUrl: true,
+        secondCustomerLandmark: true,
+        secondCustomerDoorPhotoUrl: true,
+        secondCustomerRegionId: true,
+        orderNoteTime: true,
+        imageUrl: true,
+        orderImageUploadedByName: true,
+        shopDoorPhotoUploadedByName: true,
+        customerDoorPhotoUploadedByName: true,
+        secondCustomerDoorPhotoUploadedByName: true,
+        voiceNoteUrl: true,
+        adminVoiceNoteUrl: true,
+        shopDoorPhotoUrl: true,
+        customerDoorPhotoUrl: true,
+        customerLandmark: true,
+        orderSubtotal: true,
+        deliveryPrice: true,
+        totalAmount: true,
+        submissionSource: true,
+        createdAt: true,
+        prepaidAll: true,
+        shopId: true,
+        customerRegionId: true,
+        customerLocationUrl: true,
+        customerLocationSetByCourierAt: true,
+        customerLocationUploadedByName: true,
+        preparerShoppingJson: true,
+        submittedBy: { select: { id: true, name: true, phone: true } },
+        submittedByCompanyPreparer: { select: { id: true, name: true, phone: true } },
+        shop: { select: { id: true, name: true, phone: true, ownerName: true, photoUrl: true, locationUrl: true } },
+        customerRegion: { select: { name: true } },
+        secondCustomerRegion: { select: { name: true } },
+        courier: { select: { name: true, phone: true } },
+        customer: { select: { name: true, customerDoorPhotoUrl: true } },
+      },
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`[AdminOrderViewPage] Failed to fetch order ${orderId}:`, error);
+    return <AdminOrderErrorUI orderId={orderId} error={`خطأ في قاعدة البيانات: ${errorMessage}`} />;
+  }
+
+  if (!order) {
+    notFound();
+  }
+
+  // نجلب البيانات الإضافية الآن بشكل متوازٍ لتسريع الصفحة
+  let preparers = [], waButtonSettings = [], customerPhoneProfile = null, secondCustomerPhoneProfile = null;
+
+  const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
+  const secondPhoneNorm = order.secondCustomerPhone?.trim() ? normalizeIraqMobileLocal11(order.secondCustomerPhone) : null;
+
+  try {
+    const [p, w, cp, scp] = await Promise.all([
       prisma.companyPreparer.findMany({
         where: { active: true },
         orderBy: { name: "asc" },
@@ -109,75 +126,21 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
         where: { isActive: true },
         orderBy: { updatedAt: "desc" },
       }),
+      customerPhoneNorm && order.customerRegionId ? prisma.customerPhoneProfile.findUnique({
+        where: { phone_regionId: { phone: customerPhoneNorm, regionId: order.customerRegionId } },
+        select: { id: true, photoUrl: true, locationUrl: true, landmark: true, alternatePhone: true },
+      }) : Promise.resolve(null),
+      secondPhoneNorm && order.secondCustomerRegionId ? prisma.customerPhoneProfile.findUnique({
+        where: { phone_regionId: { phone: secondPhoneNorm, regionId: order.secondCustomerRegionId } },
+        select: { id: true, photoUrl: true, locationUrl: true, landmark: true, alternatePhone: true },
+      }) : Promise.resolve(null),
     ]);
+    preparers = p;
+    waButtonSettings = w;
+    customerPhoneProfile = cp;
+    secondCustomerPhoneProfile = scp;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : "";
-    console.error(`[AdminOrderViewPage] Failed to fetch order ${orderId}:`, {
-      error: errorMessage,
-      stack: errorStack,
-      orderId,
-      timestamp: new Date().toISOString(),
-    });
-    return <AdminOrderErrorUI orderId={orderId} error={`${errorMessage}\n\nStack: ${errorStack}`} />;
-  }
-
-  if (!order) {
-    notFound();
-  }
-
-  const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
-  let customerPhoneProfile = null;
-  try {
-    customerPhoneProfile =
-      customerPhoneNorm && order.customerRegionId
-        ? await prisma.customerPhoneProfile.findUnique({
-            where: {
-              phone_regionId: {
-                phone: customerPhoneNorm,
-                regionId: order.customerRegionId,
-              },
-            },
-            select: {
-              id: true,
-              photoUrl: true,
-              locationUrl: true,
-              landmark: true,
-              alternatePhone: true,
-            },
-          })
-        : null;
-  } catch (error) {
-    console.warn(`[AdminOrderViewPage] Failed to fetch customer phone profile for ${orderId}:`, error);
-    customerPhoneProfile = null;
-  }
-
-  const secondPhoneNorm = order.secondCustomerPhone?.trim()
-    ? normalizeIraqMobileLocal11(order.secondCustomerPhone)
-    : null;
-  let secondCustomerPhoneProfile = null;
-  try {
-    secondCustomerPhoneProfile =
-      secondPhoneNorm && order.secondCustomerRegionId
-        ? await prisma.customerPhoneProfile.findUnique({
-            where: {
-              phone_regionId: {
-                phone: secondPhoneNorm,
-                regionId: order.secondCustomerRegionId,
-              },
-            },
-            select: {
-              id: true,
-              photoUrl: true,
-              locationUrl: true,
-              landmark: true,
-              alternatePhone: true,
-            },
-          })
-        : null;
-  } catch (error) {
-    console.warn(`[AdminOrderViewPage] Failed to fetch second customer phone profile for ${orderId}:`, error);
-    secondCustomerPhoneProfile = null;
+    console.warn(`[AdminOrderViewPage] Partial data fetch failure for ${orderId}:`, error);
   }
 
   const getCustomerDoorUrl = () => {

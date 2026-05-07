@@ -1,9 +1,6 @@
 /**
  * مسارات من `public/` (صور، صوت، …) للعرض داخل المتصفح.
  * تُبقى نسبية من جذر الموقع (`/uploads/...`) — تُخدم من `app/uploads/[[...path]]/route.ts` أو من `public/uploads`.
- *
- * عند تخزين رابط مطلق قديم (`https://localhost/...` أو نطاق نشر سابق) نحوّل مسارات `/uploads/`
- * إلى مسار نسبي حتى يُحمّل الملف من **الموقع الحالي** (إصلاح صور مكسورة على Railway وغيره).
  */
 export function resolvePublicAssetSrc(url: string | null | undefined): string | null {
   if (!url?.trim()) return null;
@@ -11,83 +8,63 @@ export function resolvePublicAssetSrc(url: string | null | undefined): string | 
   const normalized = raw.replace(/\\/g, "/");
   if (raw.startsWith("data:")) return raw;
 
-  const normalizedLower = normalized.toLowerCase();
-  const encodedUploadsAt = normalizedLower.indexOf("%2fuploads%2f");
-  if (encodedUploadsAt >= 0) {
-    const encodedPart = normalized.slice(encodedUploadsAt);
+  const folderPatterns = /^\/?(customers|profiles|orders|shops|branches|categories|products|voice-notes|attachments)\//i;
+
+  // 1. التعامل مع الروابط المطلقة (http/https)
+  if (normalized.startsWith("http://") || normalized.startsWith("https://") || normalized.startsWith("//")) {
     try {
-      const decoded = decodeURIComponent(encodedPart);
-      const at = decoded.toLowerCase().indexOf("/uploads/");
-      if (at >= 0) return decoded.slice(at);
+      const urlObj = new URL(normalized.startsWith("//") ? `https:${normalized}` : normalized);
+      const decodedPath = decodeURIComponent(urlObj.pathname).replace(/\\/g, "/");
+
+      // إذا كان الرابط يحتوي على /uploads/ مسبقاً
+      const uploadsAt = decodedPath.toLowerCase().indexOf("/uploads/");
+      if (uploadsAt >= 0) {
+        return `${decodedPath.slice(uploadsAt)}${urlObj.search}`;
+      }
+
+      // إذا كان الرابط يشير لمجلد معروف مباشرة
+      if (folderPatterns.test(decodedPath)) {
+        const match = decodedPath.match(folderPatterns);
+        if (match) {
+          const startAt = decodedPath.indexOf(match[1]);
+          return `/uploads/${decodedPath.slice(startAt)}${urlObj.search}`;
+        }
+      }
+
+      // دعم الصور في جذر الموقع
+      if (/\.(jpg|jpeg|png|webp|gif|svg)$/i.test(decodedPath) && decodedPath.split('/').length <= 2) {
+        return `/uploads${decodedPath}${urlObj.search}`;
+      }
+
+      return normalized;
     } catch {
-      // ignore decode failures and continue with other strategies
+      return normalized;
     }
   }
 
-  if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
-    try {
-      const parsed = new URL(normalized);
-      const decodedPath = decodeURIComponent(parsed.pathname).replace(/\\/g, "/");
-      if (decodedPath.startsWith("/uploads/")) {
-        return `${decodedPath}${parsed.search}`;
-      }
-      const inPath = decodedPath.toLowerCase().indexOf("/uploads/");
-      if (inPath >= 0) {
-        return `${decodedPath.slice(inPath)}${parsed.search}`;
-      }
-      // دعم روابط قديمة مخزنة بدون /uploads (مثل /customers/... أو /profiles/...)
-      // هذه يجب أن تمر من route الصور المحلي: /uploads/[[...path]]
-      if (/^\/(customers|profiles|orders|shops|branches|categories|products|voice-notes)\//i.test(decodedPath)) {
-        return `/uploads${decodedPath}${parsed.search}`;
-      }
-    } catch {
-      return null;
-    }
-    return normalized;
+  // 2. التعامل مع الروابط النسبية
+  let path = normalized;
+
+  // إذا كان يبدأ بـ /uploads/ أو uploads/
+  if (path.toLowerCase().startsWith("/uploads/")) return path;
+  if (path.toLowerCase().startsWith("uploads/")) return `/${path}`;
+
+  // إزالة /public/ إذا وجدت في البداية
+  if (path.toLowerCase().startsWith("/public/")) path = path.slice(7);
+  if (path.toLowerCase().startsWith("public/")) path = path.slice(6);
+
+  // إذا كان المسار يبدأ بمجلد معروف (مع أو بدون /)
+  if (folderPatterns.test(path)) {
+    const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+    return `/uploads/${cleanPath}`;
   }
 
-  if (normalized.startsWith("//")) {
-    try {
-      const parsed = new URL(`https:${normalized}`);
-      const decodedPath = decodeURIComponent(parsed.pathname).replace(/\\/g, "/");
-      if (decodedPath.startsWith("/uploads/")) {
-        return `${decodedPath}${parsed.search}`;
-      }
-      const inPath = decodedPath.toLowerCase().indexOf("/uploads/");
-      if (inPath >= 0) {
-        return `${decodedPath.slice(inPath)}${parsed.search}`;
-      }
-    } catch {
-      return null;
-    }
-    return `https:${normalized}`;
+  // إذا كان مجرد اسم ملف في جذر الصور
+  if (/\.(jpg|jpeg|png|webp|gif|svg)$/i.test(path) && !path.includes("/")) {
+    return `/uploads/${path}`;
   }
 
-  // دعم صيغ قديمة/غير قياسية مثل:
-  // - uploads/...
-  // - public/uploads/...
-  // - C:/.../public/uploads/...
-  // - https://old-host/.../uploads/...
-  const uploadsAt = normalized.indexOf("/uploads/");
-  if (uploadsAt >= 0) {
-    return normalized.slice(uploadsAt);
-  }
-  const uploadsNoLead = normalized.indexOf("uploads/");
-  if (uploadsNoLead >= 0) {
-    let finalPath = `/${normalized.slice(uploadsNoLead)}`;
-    // إضافة طابع زمني بسيط لإجبار المتصفح على تجاوز الكاش عند تحديث الصور
-    // نستخدم جزءاً من مسار الملف نفسه كنواة للتحديث إذا لم يوجد باراميتر
-    return finalPath;
-  }
-
-  let path = normalized.startsWith("/") ? normalized : `/${normalized}`;
-  if (path.startsWith("/public/uploads/")) {
-    path = path.slice("/public".length);
-  }
-
-  // إذا كان الرابط لا يحتوي على علامة استفهام، نضيف طابعاً زمنياً بسيطاً (اختياري)
-  // ولكن الأفضل أن نترك الروابط كما هي ونعتمد على الـ Cache busting في الـ Actions
-  return path;
+  return path.startsWith("/") ? path : `/${path}`;
 }
 
 /** اسم متوافق مع الكود القديم — نفس `resolvePublicAssetSrc`. */

@@ -24,12 +24,17 @@ function normalizeIncomingKey(originalKey: string): string {
   }
 
   const lowered = key.toLowerCase();
+
+  // إذا جاء الرابط بصيغة /uploads/customers/xxx سنبقي فقط customers/xxx
   const uploadsAt = lowered.indexOf("/uploads/");
   if (uploadsAt >= 0) {
     key = key.slice(uploadsAt + "/uploads/".length);
   } else if (lowered.startsWith("uploads/")) {
     key = key.slice("uploads/".length);
   }
+
+  // إذا جاء الرابط بصيغة /customers/xxx (بدون uploads) سنعتبره هو الـ Key
+  // وهذا سيحل مشكلة الروابط المخزنة خطأ في الداتابيز
 
   return key.replace(/^\/+/, "");
 }
