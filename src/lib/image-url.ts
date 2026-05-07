@@ -35,6 +35,11 @@ export function resolvePublicAssetSrc(url: string | null | undefined): string | 
       if (inPath >= 0) {
         return `${decodedPath.slice(inPath)}${parsed.search}`;
       }
+      // دعم روابط قديمة مخزنة بدون /uploads (مثل /customers/... أو /profiles/...)
+      // هذه يجب أن تمر من route الصور المحلي: /uploads/[[...path]]
+      if (/^\/(customers|profiles|orders|shops|branches|categories|products|voice-notes)\//i.test(decodedPath)) {
+        return `/uploads${decodedPath}${parsed.search}`;
+      }
     } catch {
       return null;
     }
