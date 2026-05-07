@@ -13,12 +13,33 @@ const r2Client = process.env.R2_ACCESS_KEY_ID ? new S3Client({
 
 export const runtime = "nodejs";
 
+function normalizeIncomingKey(originalKey: string): string {
+  let key = (originalKey || "").trim().replace(/^\/+/, "");
+  if (!key) return "";
+
+  try {
+    key = decodeURIComponent(key);
+  } catch {
+    // ignore invalid encoding and continue with original value
+  }
+
+  const lowered = key.toLowerCase();
+  const uploadsAt = lowered.indexOf("/uploads/");
+  if (uploadsAt >= 0) {
+    key = key.slice(uploadsAt + "/uploads/".length);
+  } else if (lowered.startsWith("uploads/")) {
+    key = key.slice("uploads/".length);
+  }
+
+  return key.replace(/^\/+/, "");
+}
+
 function buildCandidateKeys(originalKey: string): string[] {
-  const key = (originalKey || "").trim().replace(/^\/+/, "");
+  const key = normalizeIncomingKey(originalKey);
   if (!key) return [];
 
+  const out = new Set<string>([key]);
   const lower = key.toLowerCase();
-  const candidates = [key];
 
   const extMap: Record<string, string[]> = {
     ".jpeg": [".jpg", ".png", ".webp"],
@@ -28,14 +49,35 @@ function buildCandidateKeys(originalKey: string): string[] {
   };
 
   const matchedExt = Object.keys(extMap).find((ext) => lower.endsWith(ext));
-  if (!matchedExt) return candidates;
-
-  const base = key.slice(0, key.length - matchedExt.length);
-  for (const alt of extMap[matchedExt]) {
-    candidates.push(`${base}${alt}`);
+  if (matchedExt) {
+    const base = key.slice(0, key.length - matchedExt.length);
+    for (const alt of extMap[matchedExt]) {
+      out.add(`${base}${alt}`);
+    }
   }
 
-  return candidates;
+  // fallback قوي: إذا الرابط يشير لمجلد غلط، جرّب نفس اسم الملف داخل مجلدات الصور الأساسية
+  const slash = key.lastIndexOf("/");
+  const fileName = slash >= 0 ? key.slice(slash + 1) : key;
+  if (fileName) {
+    const folders = ["customers", "profiles", "orders", "shops", "branches"];
+    for (const folder of folders) {
+      out.add(`${folder}/${fileName}`);
+    }
+  }
+
+  const more = [...out];
+  for (const c of more) {
+    const cLower = c.toLowerCase();
+    const m = Object.keys(extMap).find((ext) => cLower.endsWith(ext));
+    if (!m) continue;
+    const base = c.slice(0, c.length - m.length);
+    for (const alt of extMap[m]) {
+      out.add(`${base}${alt}`);
+    }
+  }
+
+  return [...out];
 }
 
 export async function GET(
