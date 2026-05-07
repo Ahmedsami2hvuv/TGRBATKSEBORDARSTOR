@@ -42,7 +42,3 @@ export function resolvePublicAssetSrc(url: string | null | undefined): string | 
 export function resolvePublicImageSrc(url: string | null | undefined): string | null {
  return resolvePublicAssetSrc(url);
 }
-
-export function resolvePublicImageSrc(url: string | null | undefined): string | null {
- return resolvePublicAssetSrc(url);
-}
