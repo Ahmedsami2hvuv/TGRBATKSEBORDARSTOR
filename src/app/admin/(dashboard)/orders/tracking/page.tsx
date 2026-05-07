@@ -16,6 +16,7 @@ import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { routeModeOrFromQuery } from "@/lib/admin-super-search";
 import { formatDinarAsAlf } from "@/lib/money-alf";
 import { normalizeAdminShopName } from "@/lib/admin-order-from-admin-constants";
+import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { OrderTrackingSearch } from "./order-tracking-search";
 import { type TrackingTableRow } from "./order-tracking-table-body";
 import { OrderTrackingBulkTable } from "./order-tracking-bulk-table";
@@ -270,18 +271,19 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       deliverySumDinar: deliverySum != null ? Number(deliverySum) : null,
       createdAt: o.createdAt,
       // بيانات الوصول السريع
-      audioUrl: o.voiceNoteUrl,
-      adminAudioUrl: o.adminVoiceNoteUrl,
+      audioUrl: resolvePublicAssetSrc(o.voiceNoteUrl) || null,
+      adminAudioUrl: resolvePublicAssetSrc(o.adminVoiceNoteUrl) || null,
       shopPhone: o.shop.phone,
       shopLocationUrl: o.shop.locationUrl,
       customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl,
-      shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
-      customerDoorPhotoUrl:
+      shopDoorPhotoUrl: resolvePublicAssetSrc(o.shopDoorPhotoUrl || o.shop.photoUrl) || null,
+      customerDoorPhotoUrl: resolvePublicAssetSrc(
         phoneProfile?.photoUrl ||
         o.customer?.customerDoorPhotoUrl ||
         o.customerDoorPhotoUrl,
-      secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
+      ) || null,
+      secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(o.secondCustomerDoorPhotoUrl) || null,
     };
   });
 

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
+import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { AdminOrderMoneyEvents } from "./admin-order-money-events";
 import { OrderViewContent } from "./order-view-content";
 import { AdminOrderErrorUI } from "./error-ui";
@@ -387,18 +388,18 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
     secondCustomerLocationUrl: secondCustomerLocationUrlEffective,
     secondCustomerLandmark: secondCustomerLandmarkEffective,
     secondSmartHintLine: secondSmartHintLine || "—",
-    secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrlEffective,
+    secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(secondCustomerDoorPhotoUrlEffective),
     secondCustomerRegion: order.secondCustomerRegion ? { name: order.secondCustomerRegion.name } : null,
     orderNoteTime: order.orderNoteTime || null,
-    imageUrl: order.imageUrl?.startsWith("data:") ? `/api/image/order/${order.id}/image` : (order.imageUrl || null),
+    imageUrl: resolvePublicAssetSrc(order.imageUrl?.startsWith("data:") ? `/api/image/order/${order.id}/image` : (order.imageUrl || null)),
     orderImageUploadedByName: order.orderImageUploadedByName || null,
     shopDoorPhotoUploadedByName: order.shopDoorPhotoUploadedByName || null,
     customerDoorPhotoUploadedByName: order.customerDoorPhotoUploadedByName || null,
     secondCustomerDoorPhotoUploadedByName: order.secondCustomerDoorPhotoUploadedByName || null,
-    voiceNoteUrl: order.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${order.id}/voice` : (order.voiceNoteUrl || null),
-    adminVoiceNoteUrl: order.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${order.id}/admin-voice` : (order.adminVoiceNoteUrl || null),
-    shopDoorPhotoUrl: order.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${order.id}/shopDoor` : (order.shopDoorPhotoUrl || null),
-    customerDoorPhotoUrl: customerDoorPhotoUrlEffective,
+    voiceNoteUrl: resolvePublicAssetSrc(order.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${order.id}/voice` : (order.voiceNoteUrl || null)),
+    adminVoiceNoteUrl: resolvePublicAssetSrc(order.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${order.id}/admin-voice` : (order.adminVoiceNoteUrl || null)),
+    shopDoorPhotoUrl: resolvePublicAssetSrc(order.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${order.id}/shopDoor` : (order.shopDoorPhotoUrl || null)),
+    customerDoorPhotoUrl: resolvePublicAssetSrc(customerDoorPhotoUrlEffective),
     customerLandmark: customerLandmarkEffective || "",
     smartHintLine: smartHintLine || "—",
     orderSubtotal:
@@ -416,7 +417,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
       phone: order.shop?.phone ?? "",
       ownerName: order.shop?.ownerName ?? "",
     },
-    shopPhotoUrl: (order.shop?.photoUrl?.startsWith("data:") ? `/api/image/shop/${order.shop?.id ?? order.shopId}/photo` : order.shop?.photoUrl) || "",
+    shopPhotoUrl: resolvePublicAssetSrc((order.shop?.photoUrl?.startsWith("data:") ? `/api/image/shop/${order.shop?.id ?? order.shopId}/photo` : order.shop?.photoUrl) || ""),
     shopLocationUrl: order.shop?.locationUrl ?? "",
     customerLocationUrl: customerLocationUrlEffective || "",
     customerLocationUploadedByName: order.customerLocationUploadedByName || null,
