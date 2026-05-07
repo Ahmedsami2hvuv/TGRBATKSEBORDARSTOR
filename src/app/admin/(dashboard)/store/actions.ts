@@ -404,6 +404,49 @@ export async function scrapeCategoryFromUrl(url: string) {
                 return String(value || "").split("?")[0].split("#")[0].replace(/\/+$/, "");
             }
         };
+        const resolveImageUrl = (value: string) => {
+            try {
+                return new URL(value, new URL(url).origin).toString();
+            } catch {
+                return value;
+            }
+        };
+        const pickBestImageFromChunk = (chunk: string): string => {
+            const imgTagRegex = /<img[^>]*>/gi;
+            const srcRegex = /(?:src|data-src|data-original)=["']([^"']+)["']/i;
+            const classRegex = /class=["']([^"']+)["']/i;
+            const badUrlRegex = /(facebook|logo|icon|social|avatar|favicon|sprite)/i;
+
+            let best = "";
+            let bestScore = -9999;
+            const tags = Array.from(chunk.matchAll(imgTagRegex));
+
+            for (const t of tags) {
+                const tag = t[0] || "";
+                const srcMatch = tag.match(srcRegex);
+                if (!srcMatch?.[1]) continue;
+
+                const raw = srcMatch[1].trim();
+                const abs = resolveImageUrl(raw);
+                const cls = (tag.match(classRegex)?.[1] || "").toLowerCase();
+                const lower = abs.toLowerCase();
+
+                let score = 0;
+                if (/(default-img|product-img|img-responsive|category)/i.test(cls)) score += 120;
+                if (lower.includes("/category/")) score += 90;
+                if (lower.includes("/products/") || lower.includes("/item/")) score += 40;
+                if (/\.(jpg|jpeg|png|webp)(\?|$)/i.test(lower)) score += 20;
+                if (/\.svg(\?|$)/i.test(lower)) score -= 40;
+                if (badUrlRegex.test(lower)) score -= 260;
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = abs;
+                }
+            }
+
+            return bestScore > -100 ? best : "";
+        };
 
         // 2. استخراج صورة الفرع - أولاً من نفس بطاقة الفرع المطابق للرابط
         let branchImageUrl = "";
@@ -416,12 +459,9 @@ export async function scrapeCategoryFromUrl(url: string) {
             const href = anchor[1] || "";
             if (normalizePathname(href) !== targetPath) continue;
             const anchorHtml = anchor[0] || "";
-
-            const imgInsideAnchor = anchorHtml.match(
-                /<(?:img|source)[^>]*(?:src|data-src|data-original)=["']([^"']+)["'][^>]*>/i
-            );
-            if (imgInsideAnchor?.[1]) {
-                branchImageUrl = imgInsideAnchor[1];
+            const inAnchor = pickBestImageFromChunk(anchorHtml);
+            if (inAnchor) {
+                branchImageUrl = inAnchor;
                 break;
             }
 
@@ -431,11 +471,9 @@ export async function scrapeCategoryFromUrl(url: string) {
                 const start = Math.max(0, linkIndex - 1200);
                 const end = Math.min(html.length, linkIndex + 1200);
                 const searchWindow = html.substring(start, end);
-                const imgNearAnchor = searchWindow.match(
-                    /<(?:img|source)[^>]*(?:src|data-src|data-original)=["']([^"']+)["'][^>]*>/i
-                );
-                if (imgNearAnchor?.[1]) {
-                    branchImageUrl = imgNearAnchor[1];
+                const nearAnchor = pickBestImageFromChunk(searchWindow);
+                if (nearAnchor) {
+                    branchImageUrl = nearAnchor;
                     break;
                 }
             }
