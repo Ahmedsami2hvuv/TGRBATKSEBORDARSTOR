@@ -126,7 +126,13 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           <PreparerPresenceToggle auth={baseAuth} availableForAssignment={preparer.availableForAssignment} icons={icons} />
           {canSubmitAny && (
             <>
-              <Link href={preparerPath("/preparer/preparation", baseAuth)} className="inline-flex items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base">تجهيز الطلبات</Link>
+              <FullscreenWalletLauncher
+                href={preparerPath("/preparer/preparation", baseAuth)}
+                className="inline-flex items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base"
+                title="تجهيز الطلبات"
+              >
+                تجهيز الطلبات
+              </FullscreenWalletLauncher>
               {canPriceStore && (
                 <Link href={preparerPath("/preparer/store-pricing", baseAuth)} className="inline-flex items-center justify-center rounded-xl border-2 border-emerald-500 bg-emerald-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-emerald-700 sm:px-4 sm:text-base">تسعير المتجر</Link>
               )}
