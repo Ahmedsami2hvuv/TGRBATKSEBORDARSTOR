@@ -2,7 +2,6 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import type { MandoubRow } from "@/app/mandoub/mandoub-order-table";
 import {
   bulkAssignOrdersByPreparer,
@@ -62,6 +61,10 @@ export function PreparerOrderTable({
   );
   const [payOrder, setPayOrder] = useState<MandoubRow | null>(null);
   const [assignOrder, setAssignOrder] = useState<MandoubRow | null>(null);
+  const [orderDetailHref, setOrderDetailHref] = useState<string | null>(null);
+  const [cachedOrderHrefs, setCachedOrderHrefs] = useState<string[]>([]);
+  const [loadedOrderHrefs, setLoadedOrderHrefs] = useState<Record<string, boolean>>({});
+  const [preloadQueue, setPreloadQueue] = useState<string[]>([]);
   const [payState, payAction, payPending] = useActionState(
     submitPreparerPickupMoney,
     {},
@@ -72,6 +75,10 @@ export function PreparerOrderTable({
   const pendingIds = useMemo(
     () => rows.filter((r) => isAssignableBeforeCourierReceipt(r.orderStatus)).map((r) => r.id),
     [rows],
+  );
+  const rowDetailHrefs = useMemo(
+    () => rows.map((r) => buildPreparerOrderDetailHref(auth, tab, qSearch, r.id)),
+    [rows, auth, tab, qSearch],
   );
 
   const showBulkRow = couriers.length > 0 && pendingIds.length > 0;
@@ -101,6 +108,63 @@ export function PreparerOrderTable({
 
   const prepQuickBtn =
     "min-h-[38px] shrink-0 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-red-950 hover:bg-red-50 sm:text-xs";
+
+  useEffect(() => {
+    const onPopState = () => {
+      setOrderDetailHref((prev) => (prev ? null : prev));
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useEffect(() => {
+    if (rowDetailHrefs.length === 0) return;
+    setPreloadQueue((prev) => {
+      const seen = new Set(prev);
+      const cached = new Set(cachedOrderHrefs);
+      const next = [...prev];
+      for (const href of rowDetailHrefs) {
+        if (!seen.has(href) && !cached.has(href)) {
+          seen.add(href);
+          next.push(href);
+        }
+      }
+      return next;
+    });
+  }, [rowDetailHrefs, cachedOrderHrefs]);
+
+  useEffect(() => {
+    if (preloadQueue.length === 0) return;
+    if (orderDetailHref && !loadedOrderHrefs[orderDetailHref]) return;
+    const nextHref = preloadQueue.find((href) => !cachedOrderHrefs.includes(href));
+    if (!nextHref) {
+      setPreloadQueue([]);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setCachedOrderHrefs((prev) => (prev.includes(nextHref) ? prev : [...prev, nextHref]));
+      setPreloadQueue((prev) => prev.filter((href) => href !== nextHref));
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [preloadQueue, cachedOrderHrefs, orderDetailHref, loadedOrderHrefs]);
+
+  const openOrderModal = (href: string) => {
+    if (!orderDetailHref) {
+      window.history.pushState({ preparerOrderModalOpen: true }, "", window.location.href);
+    }
+    setOrderDetailHref(href);
+    setCachedOrderHrefs((prev) => (prev.includes(href) ? prev : [...prev, href]));
+    setPreloadQueue((prev) => prev.filter((h) => h !== href));
+  };
+
+  const closeOrderModal = () => {
+    if (!orderDetailHref) return;
+    if (window.history.state?.preparerOrderModalOpen) {
+      window.history.back();
+      return;
+    }
+    setOrderDetailHref(null);
+  };
 
   return (
     <div>
@@ -164,7 +228,7 @@ export function PreparerOrderTable({
         allSelected={allPendingSelected}
         onToggleAll={toggleAllPending}
         onToggleOne={toggleOne}
-        onOpenRow={(id) => router.push(buildPreparerOrderDetailHref(auth, tab, qSearch, id))}
+        onOpenRow={(id) => openOrderModal(buildPreparerOrderDetailHref(auth, tab, qSearch, id))}
         selectAllTitle="تحديد الكل"
         selectAllAriaLabel="تحديد الكل"
         selectedTitle="تحديد"
@@ -310,6 +374,52 @@ export function PreparerOrderTable({
                 currentCourierId={payOrder.assignedCourierId}
                 orderStatus={payOrder.orderStatus}
               />
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {cachedOrderHrefs.length > 0 &&
+        createPortal(
+          <div className={`fixed inset-0 z-[120] ${orderDetailHref ? "" : "pointer-events-none"}`}>
+            <div
+              className={`absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity ${orderDetailHref ? "opacity-100" : "opacity-0"}`}
+              onClick={closeOrderModal}
+            />
+            <div
+              className={`absolute inset-0 flex items-center justify-center transition-opacity ${orderDetailHref ? "opacity-100" : "opacity-0"}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative h-full w-full overflow-hidden bg-white">
+                <div className="flex items-center justify-between border-b bg-slate-50 px-4 py-3">
+                  <div className="font-black text-slate-900">عرض الطلب</div>
+                  <button
+                    type="button"
+                    onClick={closeOrderModal}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    aria-label="إغلاق نافذة الطلب"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="relative h-[calc(100vh-57px)] w-full bg-white">
+                  {cachedOrderHrefs.map((href) => (
+                    <iframe
+                      key={href}
+                      title={`صفحة طلب المجهز داخل نافذة ${href}`}
+                      src={href}
+                      loading="eager"
+                      onLoad={() => setLoadedOrderHrefs((prev) => ({ ...prev, [href]: true }))}
+                      className={`absolute inset-0 h-full w-full border-0 bg-white transition-opacity ${orderDetailHref === href ? "opacity-100" : "pointer-events-none opacity-0"}`}
+                    />
+                  ))}
+                  {orderDetailHref && !loadedOrderHrefs[orderDetailHref] ? (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-sm font-bold text-slate-700">
+                      جارٍ تحميل الطلب...
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             </div>
           </div>,
           document.body,

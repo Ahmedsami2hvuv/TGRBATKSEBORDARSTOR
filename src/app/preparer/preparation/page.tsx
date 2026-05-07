@@ -10,6 +10,7 @@ import { PreparerOrdersSection } from "../preparer-orders-client";
 import { PreparerSiteOrderDraftClient } from "./preparer-site-order-draft-client";
 import { whatsappMeUrl } from "@/lib/whatsapp";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 
 export const dynamic = "force-dynamic";
 
@@ -87,9 +88,9 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
           <Link href={homeHref} className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100">
             ← الطلبات
           </Link>
-          <Link href={preparerPath("/preparer/order/new", auth)} className="inline-flex items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100">
+          <FullscreenWalletLauncher href={preparerPath("/preparer/order/new", auth)} className="inline-flex items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100" title="طلب يدوي">
             ➕ طلب يدوي
-          </Link>
+          </FullscreenWalletLauncher>
         </div>
         <ThemeSwitcher />
       </div>
@@ -103,9 +104,10 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
             <p className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200 w-fit">طلبات بانتظار التسعير (من المتجر) 🛒</p>
             {webStorePending.map((o) => (
               <div key={o.id} className="relative group">
-                <Link
+                <FullscreenWalletLauncher
                   href={preparerPath(`/preparer/order/${o.id}`, auth)}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50/30 p-3 hover:border-amber-400 hover:bg-amber-100/50 transition-all shadow-sm active:scale-[0.99] dark:bg-slate-900 dark:border-amber-900/20"
+                  className="flex w-full flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50/30 p-3 hover:border-amber-400 hover:bg-amber-100/50 transition-all shadow-sm active:scale-[0.99] dark:bg-slate-900 dark:border-amber-900/20"
+                  title={`طلب رقم ${o.orderNumber}`}
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-black text-slate-900 dark:text-slate-100">طلب رقم #{o.orderNumber} - {o.customerRegion?.name || "منطقة غير محددة"}</p>
@@ -114,7 +116,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
                   <div className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-sm group-hover:bg-amber-600">
                     تسعير الطلب 💰
                   </div>
-                </Link>
+                </FullscreenWalletLauncher>
               </div>
             ))}
           </div>
@@ -127,9 +129,10 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
           <div className="mt-3 space-y-2">
             {drafts.map((d) => (
               <div key={d.id} className="relative group">
-                <Link
+                <FullscreenWalletLauncher
                   href={preparerPath(`/preparer/preparation/draft/${d.id}`, auth)}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-3 hover:border-violet-300 hover:bg-violet-50/30 transition-all shadow-sm active:scale-[0.99] dark:bg-slate-900 dark:border-slate-800"
+                  className="flex w-full flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-3 hover:border-violet-300 hover:bg-violet-50/30 transition-all shadow-sm active:scale-[0.99] dark:bg-slate-900 dark:border-slate-800"
+                  title="فتح / تسعير المسودة"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-black text-slate-900 dark:text-slate-100">{d.titleLine || "—"}</p>
@@ -142,7 +145,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
                   <div className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white shadow-sm group-hover:bg-violet-700">
                     فتح / تسعير
                   </div>
-                </Link>
+                </FullscreenWalletLauncher>
               </div>
             ))}
           </div>
