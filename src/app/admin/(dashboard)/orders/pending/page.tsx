@@ -82,8 +82,37 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     getGlobalIcons(),
   ]);
 
+  const draftsBySentOrderId = new Map<string, typeof allActiveDrafts>();
+  const draftsByCustomerPhone = new Map<string, typeof allActiveDrafts>();
+  const draftsGroupedByKey = new Map<string, typeof allActiveDrafts>();
+
+  for (const draft of allActiveDrafts) {
+    if (draft.sentOrderId) {
+      const list = draftsBySentOrderId.get(draft.sentOrderId) ?? [];
+      list.push(draft);
+      draftsBySentOrderId.set(draft.sentOrderId, list);
+    }
+
+    const phoneKey = draft.customerPhone?.trim() ?? "";
+    if (phoneKey) {
+      const list = draftsByCustomerPhone.get(phoneKey) ?? [];
+      list.push(draft);
+      draftsByCustomerPhone.set(phoneKey, list);
+    }
+
+    const draftData = (draft.data as any) || {};
+    const groupId = typeof draftData.groupId === "string" ? draftData.groupId.trim() : "";
+    const titleKey = draft.titleLine?.trim() ?? "";
+    const groupingKey = groupId || `${phoneKey}::${titleKey}`;
+    const groupedList = draftsGroupedByKey.get(groupingKey) ?? [];
+    groupedList.push(draft);
+    draftsGroupedByKey.set(groupingKey, groupedList);
+  }
+
   const mapOrderToRow = (o: any): PendingOrderRow => {
-    const relatedDrafts = allActiveDrafts.filter(d => d.sentOrderId === o.id || (d.customerPhone === o.customerPhone && d.status === "draft"));
+    const sentRelatedDrafts = draftsBySentOrderId.get(o.id) ?? [];
+    const phoneRelatedDrafts = (draftsByCustomerPhone.get(o.customerPhone) ?? []).filter((d) => d.status === "draft");
+    const relatedDrafts = [...sentRelatedDrafts, ...phoneRelatedDrafts];
     const assignedPreparerIds = Array.from(new Set([
         ...(o.submittedByCompanyPreparerId ? [o.submittedByCompanyPreparerId] : []),
         ...relatedDrafts.map(d => d.preparerId)
@@ -131,13 +160,9 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     if (processedDraftIds.has(d.id)) continue;
 
     const draftData = (d.data as any) || {};
-    const groupId = draftData.groupId;
-
-    const related = allActiveDrafts.filter(other => {
-        const otherData = (other.data as any) || {};
-        if (groupId && otherData.groupId === groupId) return true;
-        return other.customerPhone === d.customerPhone && other.titleLine === d.titleLine;
-    });
+    const groupId = typeof draftData.groupId === "string" ? draftData.groupId.trim() : "";
+    const fallbackGroupKey = `${d.customerPhone?.trim() ?? ""}::${d.titleLine?.trim() ?? ""}`;
+    const related = draftsGroupedByKey.get(groupId || fallbackGroupKey) ?? [d];
 
     related.forEach(r => processedDraftIds.add(r.id));
 
