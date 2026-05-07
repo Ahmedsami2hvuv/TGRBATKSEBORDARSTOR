@@ -152,7 +152,7 @@ export async function submitPreparerPickupMoney(
   }
 
   const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
-  if (!parsed.ok) return { error: "أدخل المبلغ بالألف بشكل صحيح." };
+  if (!parsed.ok) return { error: "أدخل المبلغ  بشكل صحيح." };
   const amountDinar = new Decimal(parsed.value);
   if (amountDinar.lte(0)) return { error: "أدخل مبلغاً أكبر من صفر." };
 
@@ -259,7 +259,7 @@ export async function submitPreparerDeliveryMoney(
   }
 
   const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
-  if (!parsed.ok) return { error: "أدخل المبلغ بالألف بشكل صحيح." };
+  if (!parsed.ok) return { error: "أدخل المبلغ  بشكل صحيح." };
   const amountDinar = new Decimal(parsed.value);
   if (amountDinar.lte(0)) return { error: "أدخل مبلغاً أكبر من صفر." };
 

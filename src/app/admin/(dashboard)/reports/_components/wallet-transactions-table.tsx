@@ -99,7 +99,7 @@ export function WalletTransactionsTable({ rows }: { rows: WalletTxnReportRow[] }
         </tbody>
       </table>
       <p className={`border-t border-sky-100 px-3 py-2 text-xs ${ad.muted}`}>
-        المبالغ المعروضة بالألف. موجب (+) = وارد للمحفظة، سالب (-) = صادر. انقر على معاملات الطلبات لفتحها.
+        المبالغ المعروضة . موجب (+) = وارد للمحفظة، سالب (-) = صادر. انقر على معاملات الطلبات لفتحها.
       </p>
     </div>
   );

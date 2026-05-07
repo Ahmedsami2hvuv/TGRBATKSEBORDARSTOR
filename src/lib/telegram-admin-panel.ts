@@ -253,7 +253,7 @@ function formatOrdersListMessage(
     return (
       `🔢 <b>#${o.orderNumber}</b> — ${escapeTelegramHtml(o.status)} — ` +
       `${escapeTelegramHtml(o.shopName)}\n` +
-      `   📞 ${escapeTelegramHtml(o.customerPhone)} · 💰 ${escapeTelegramHtml(alf)} الف`
+      `   📞 ${escapeTelegramHtml(o.customerPhone)} · 💰 ${escapeTelegramHtml(alf)} `
     );
   });
   return header + lines.join("\n\n");
@@ -453,7 +453,7 @@ async function renderAdminSection(slug: string): Promise<{ text: string; keyboar
         return { text: "<b>المناطق</b>\n\nلا يوجد مناطق.", keyboard: backOnlyKeyboard() };
       }
       const lines = rows.map(
-        (r) => `• ${escapeTelegramHtml(r.name)} — توصيل ${escapeTelegramHtml(formatDinarAsAlf(r.deliveryPrice))} الف`,
+        (r) => `• ${escapeTelegramHtml(r.name)} — توصيل ${escapeTelegramHtml(formatDinarAsAlf(r.deliveryPrice))} `,
       );
       return {
         text: `<b>المناطق</b>\n\n${lines.join("\n")}`,

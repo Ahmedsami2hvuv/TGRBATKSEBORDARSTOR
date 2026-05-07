@@ -405,11 +405,11 @@ export function AdminPricingPanel({
       <div className="grid gap-2 bg-emerald-50 p-3 rounded-xl border-2 border-emerald-200">
         <div className="flex justify-between items-center">
           <span className="text-xs font-black text-emerald-900">المجموع الفرعي:</span>
-          <span className="text-xs font-black text-emerald-900">{totals.subtotal.toFixed(2)} ألف</span>
+          <span className="text-xs font-black text-emerald-900">{totals.subtotal.toFixed(2)} </span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-xs font-black text-emerald-900">المجموع الكلي:</span>
-          <span className="text-xs font-black text-emerald-900">{totals.total.toFixed(2)} ألف</span>
+          <span className="text-xs font-black text-emerald-900">{totals.total.toFixed(2)} </span>
         </div>
       </div>
 

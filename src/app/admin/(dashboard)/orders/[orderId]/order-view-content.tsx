@@ -152,6 +152,7 @@ export function OrderViewContent({
                 orderSummary={order.summary}
                 shops={[]}
                 preparers={preparers}
+                rawDeliveryPriceDinar={order.deliveryPrice != null ? Number(order.deliveryPrice) : null}
                 onSuccess={() => { setPricingOpen(false); window.location.reload(); }}
               />
             </div>
@@ -393,8 +394,8 @@ export function OrderViewContent({
               {order.orderNoteTime && <div><p className="text-sm font-bold text-slate-700 mb-1">وقت الطلب</p><p className="text-sm font-black text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md border border-indigo-200 inline-block">{order.orderNoteTime}</p></div>}
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div><p className="text-xs font-bold text-slate-500">سعر البضاعة</p><p className="font-mono text-lg font-black text-slate-900">{order.orderSubtotal || "0"} ألف</p></div>
-              <div><p className="text-xs font-bold text-slate-500">التوصيل</p><p className="font-mono text-lg font-black text-slate-900">{order.deliveryPrice || "0"} ألف</p></div>
+              <div><p className="text-xs font-bold text-slate-500">سعر البضاعة</p><p className="font-mono text-lg font-black text-slate-900">{order.orderSubtotal || "0"} </p></div>
+              <div><p className="text-xs font-bold text-slate-500">التوصيل</p><p className="font-mono text-lg font-black text-slate-900">{order.deliveryPrice || "0"} </p></div>
             </div>
             <div className="rounded-lg border-2 border-violet-500/30 bg-violet-500/10 p-3 shadow-sm"><p className="text-xs font-black text-violet-900 mb-1">المبلغ الكلي</p><p className="font-mono text-3xl font-black text-violet-950 tabular-nums">{order.totalAmount || "—"}</p></div>
           </div>

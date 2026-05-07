@@ -84,7 +84,7 @@ export default async function PreparationProfitsPage({ searchParams }: Props) {
       </form>
 
       <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-slate-900">
-        <p className="text-sm font-bold">الربح التقديري الكلي (بالألف): {totalProfitAlf.toFixed(2)}</p>
+        <p className="text-sm font-bold">الربح التقديري الكلي : {totalProfitAlf.toFixed(2)}</p>
         <p className="text-xs text-slate-600">≈ {formatDinarAsAlf(totalDinar)} دينار</p>
       </div>
 
@@ -95,7 +95,7 @@ export default async function PreparationProfitsPage({ searchParams }: Props) {
               <th className="px-3 py-2 text-start font-bold">رقم</th>
               <th className="px-3 py-2 text-start font-bold">محل</th>
               <th className="px-3 py-2 text-start font-bold">مجهز</th>
-              <th className="px-3 py-2 text-start font-bold">ربح (ألف)</th>
+              <th className="px-3 py-2 text-start font-bold">ربح </th>
               <th className="px-3 py-2 text-start font-bold">تاريخ</th>
             </tr>
           </thead>

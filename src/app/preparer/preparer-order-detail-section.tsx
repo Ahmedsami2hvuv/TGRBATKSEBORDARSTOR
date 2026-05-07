@@ -332,7 +332,7 @@ export function PreparerOrderDetailSection({
                     className="h-5 w-5 text-slate-400"
                     fallback={null}
                   />
-                  {order.orderSubtotal != null ? `سعر${formatDinarAsAlf(order.orderSubtotal)}ألف` : "سعر—"}
+                  {order.orderSubtotal != null ? `سعر${formatDinarAsAlf(order.orderSubtotal)}` : "سعر—"}
                 </div>
               </div>
               <div>
@@ -343,7 +343,7 @@ export function PreparerOrderDetailSection({
                     className="h-5 w-5 text-slate-400"
                     fallback={null}
                   />
-                  {order.deliveryPrice != null ? `التوصيل${formatDinarAsAlf(order.deliveryPrice)}ألف` : "التوصيل—"}
+                  {order.deliveryPrice != null ? `التوصيل${formatDinarAsAlf(order.deliveryPrice)}` : "التوصيل—"}
                 </div>
               </div>
               <div className="rounded-lg border border-violet-500/55 bg-violet-500/35 px-3 py-3 sm:px-5 sm:py-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)]">

@@ -103,7 +103,7 @@ export function RegionEditForm({
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>سعر التوصيل (بالألف)</span>
+          <span className={ad.label}>سعر التوصيل </span>
           <input
             name="deliveryPrice"
             type="text"

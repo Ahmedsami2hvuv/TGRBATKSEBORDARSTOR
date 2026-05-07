@@ -186,7 +186,7 @@ export function ProductCardLazy({
               {product.name}
             </button>
             <div className="text-xs md:text-lg font-black text-violet-600 dark:text-violet-400 shrink-0">
-              {(currentPrice / 1000).toLocaleString()} ألف
+              {(currentPrice / 1000).toLocaleString()} 
             </div>
           </div>
           <p className="text-[10px] md:text-sm text-slate-500 dark:text-slate-400 font-bold mb-3 md:mb-6 line-clamp-2 h-7 md:h-10 text-right">
@@ -262,7 +262,7 @@ export function ProductCardLazy({
                   <div className="text-right flex-1">
                     <h2 className="text-2xl md:text-4xl font-black text-slate-900 dark:text-white">{currentName}</h2>
                     <p className="text-violet-600 dark:text-violet-400 font-black text-xl md:text-2xl mt-2">
-                      {(currentPrice / 1000).toLocaleString()} ألف
+                      {(currentPrice / 1000).toLocaleString()} 
                     </p>
                   </div>
                   <button
@@ -290,7 +290,7 @@ export function ProductCardLazy({
                           }`}
                         >
                           {v.name}
-                          <span className="block text-[10px] opacity-80">{(Number(v.salePrice) / 1000).toLocaleString()} ألف</span>
+                          <span className="block text-[10px] opacity-80">{(Number(v.salePrice) / 1000).toLocaleString()} </span>
                         </button>
                       ))}
                     </div>

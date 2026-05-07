@@ -54,13 +54,13 @@ export function RegionForm() {
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className={ad.label}>سعر التوصيل (بالألف)</span>
+            <span className={ad.label}>سعر التوصيل </span>
             <input
               name="deliveryPrice"
               type="text"
               inputMode="decimal"
               required
-              placeholder="مثال: 3 أو 3.5 ألف"
+              placeholder="مثال: 3 أو 3.5 "
               className={ad.input}
               value={deliveryPrice}
               onChange={(e) => setDeliveryPrice(e.target.value)}

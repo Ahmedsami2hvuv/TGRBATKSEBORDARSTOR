@@ -214,13 +214,13 @@ export function PreparerOrderNewForm({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-bold text-slate-800">سعر الطلب (بالألف) — اختياري</span>
+        <span className="text-sm font-bold text-slate-800">سعر الطلب  — اختياري</span>
         <input name="orderSubtotal" className="rounded-xl border border-sky-200 px-3 py-2.5 text-sm animate-placeholder" placeholder="اكتب السعر هنا" />
       </label>
 
       <p className="text-xs text-slate-500">
-        أقل أجر توصيل من منطقة المحل (بالألف، للمرجع):{" "}
-        {shop ? `${shop.deliveryAlf.toFixed(2)} ألف` : "—"}
+        أقل أجر توصيل من منطقة المحل (، للمرجع):{" "}
+        {shop ? `${shop.deliveryAlf.toFixed(2)} ` : "—"}
       </p>
 
       <label className="flex flex-col gap-1">

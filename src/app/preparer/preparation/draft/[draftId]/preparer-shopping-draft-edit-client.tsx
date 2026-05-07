@@ -373,7 +373,7 @@ export function PreparerShoppingDraftEditClient({
     if (selectedPriceIndex == null) return;
     const lines = pricingLinesText.split(/\r?\n/).map((x) => x.replace(/,/g, ".").trim()).filter(Boolean);
     if (lines.length === 0) {
-      setPricingErr("اكتب سعر الشراء (بالألف).");
+      setPricingErr("اكتب سعر الشراء .");
       return;
     }
     const buy = parseFloat(lines[0]!);
@@ -611,7 +611,7 @@ export function PreparerShoppingDraftEditClient({
                         <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">📝 اضغط للتسعير التلقائي</span>
                     )
                 ) : priced ? (
-                    <span className={`font-mono text-xs font-black ${isOthers ? "text-slate-500" : "text-emerald-400"}`}>{p.buyAlf} ألف (شراء)</span>
+                    <span className={`font-mono text-xs font-black ${isOthers ? "text-slate-500" : "text-emerald-400"}`}>{p.buyAlf}  (شراء)</span>
                 ) : (
                     <span className="text-[10px] text-slate-400">📝 اضغط للتسعير</span>
                 )}
@@ -662,7 +662,7 @@ export function PreparerShoppingDraftEditClient({
                           }}
                           className="px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded text-[10px] font-black"
                         >
-                          {h.buyAlf} ألف
+                          {h.buyAlf} 
                         </button>
                       ))}
                     </div>
@@ -686,7 +686,7 @@ export function PreparerShoppingDraftEditClient({
                   ) : (
                     <div className="bg-indigo-50 p-3 rounded-2xl border-2 border-indigo-200 animate-in slide-in-from-top-2 duration-300">
                       <div className="flex items-center justify-between mb-3 px-1">
-                        <span className="text-xs font-black text-indigo-900">اختر الكسر لـ {tempBasePrice} ألف:</span>
+                        <span className="text-xs font-black text-indigo-900">اختر الكسر لـ {tempBasePrice} :</span>
                         <button type="button" onClick={() => setTempBasePrice(null)} className="text-[10px] font-bold text-indigo-600 bg-white px-2 py-1 rounded-lg border border-indigo-200 shadow-sm">تغيير الرقم</button>
                       </div>
                       <div className="grid grid-cols-4 gap-2">
@@ -738,7 +738,7 @@ export function PreparerShoppingDraftEditClient({
                   value={pricingLinesText}
                   onChange={(e) => setPricingLinesText(e.target.value)}
                   className={`${inputClass} text-center font-black text-lg`}
-                  placeholder="سعر الشراء بالألف"
+                  placeholder="سعر الشراء "
                   inputMode="decimal"
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPricingPanel(); } }}
                 />

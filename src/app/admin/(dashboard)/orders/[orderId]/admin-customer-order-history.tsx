@@ -250,11 +250,11 @@ export function AdminCustomerOrderHistory({
                             </div>
                             <div className="rounded-xl bg-white p-3 shadow-sm">
                               <p className="text-xs uppercase text-slate-500">المبلغ الكلي</p>
-                              <p className="text-sm font-bold text-slate-900">{item.totalAmount != null ? `${item.totalAmount} ألف` : "—"}</p>
+                              <p className="text-sm font-bold text-slate-900">{item.totalAmount != null ? `${item.totalAmount} ` : "—"}</p>
                             </div>
                             <div className="rounded-xl bg-white p-3 shadow-sm">
                               <p className="text-xs uppercase text-slate-500">التوصيل</p>
-                              <p className="text-sm font-bold text-slate-900">{item.deliveryPrice != null ? `${item.deliveryPrice} ألف` : "—"}</p>
+                              <p className="text-sm font-bold text-slate-900">{item.deliveryPrice != null ? `${item.deliveryPrice} ` : "—"}</p>
                             </div>
                           </div>
                           <div className="mt-3 grid gap-3 sm:grid-cols-2">

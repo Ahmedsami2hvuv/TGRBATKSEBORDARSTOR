@@ -320,7 +320,7 @@ function ClientOrderFormInner({
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-bold text-slate-600 px-1">سعر الطلب (بالألف)</span>
+              <span className="text-sm font-bold text-slate-600 px-1">سعر الطلب </span>
               <input ref={orderPriceRef} name="orderSubtotal" inputMode="decimal" value={orderPrice} onChange={(e) => setOrderPrice(e.target.value)} className={`${inputClass} font-mono tabular-nums text-lg font-black animate-placeholder ${isPriceErr ? inputErrorClass : ""}`} placeholder="اكتب السعر هنا" />
             </label>
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, Fragment } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { orderStatusRowClassInteractive } from "@/lib/order-status-style";
 import { OrderTypeLine } from "@/components/order-type-line";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
@@ -11,7 +11,6 @@ import { AdminPricingPanel } from "../pending/pending-orders-client";
 import { isTodayBaghdad, formatBaghdadDateFriendly, getBaghdadDateString } from "@/lib/baghdad-time";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
-import { useEffect, useState, Fragment } from "react";
 
 export type TrackingTableRow = {
   id: string;
@@ -221,6 +220,7 @@ export function OrderTrackingTableBody({ rows }: { rows: TrackingTableRow[] }) {
                       orderId={o.id}
                       initialData={o.preparerShoppingJson}
                       orderSummary={o.summary}
+                      icons={icons}
                       onSuccess={() => setPricingOpenId(null)}
                     />
                   </div>

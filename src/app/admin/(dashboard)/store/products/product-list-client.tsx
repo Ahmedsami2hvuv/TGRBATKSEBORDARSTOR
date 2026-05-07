@@ -474,7 +474,7 @@ export function ProductListClient({
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-emerald-600 mr-2">سعر الشراء (ألف)</label>
+                                        <label className="text-[10px] font-black text-emerald-600 mr-2">سعر الشراء </label>
                                         <input
                                             type="number"
                                             value={item.purchasePrice}

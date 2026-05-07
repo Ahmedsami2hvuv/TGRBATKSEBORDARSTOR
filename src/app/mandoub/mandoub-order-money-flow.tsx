@@ -599,7 +599,7 @@ export function PickupMoneyForm({
 
   return (
     <div className="space-y-3">
-      <p className="font-bold text-emerald-950">اكتب المبلغ الذي سلّمته للعميل (بالألف)</p>
+      <p className="font-bold text-emerald-950">اكتب المبلغ الذي سلّمته للعميل </p>
       {!advanceToDelivering ? (
         <p className="text-[11px] font-medium text-emerald-800/90">
           تسجيل صادر فقط — دون تغيير حالة الطلب.
@@ -876,7 +876,7 @@ export function DeliveryMoneyForm({
 
   return (
     <div className="space-y-3">
-      <p className="font-bold text-red-950">اكتب المبلغ الذي استلمته من الزبون (بالألف)</p>
+      <p className="font-bold text-red-950">اكتب المبلغ الذي استلمته من الزبون </p>
       {!advanceToDelivered ? (
         <p className="text-[11px] font-medium text-red-800/90">
           تسجيل وارد فقط — دون تغيير حالة الطلب.

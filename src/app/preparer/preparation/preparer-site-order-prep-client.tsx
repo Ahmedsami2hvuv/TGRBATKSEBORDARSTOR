@@ -281,13 +281,13 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
     const line = products[selectedPriceIndex]!;
     const parsed = parseTwoLinePricing(line, pricingLinesText);
     if (!parsed) {
-      setPricingErr("اكتب سعر الشراء (بالألف).");
+      setPricingErr("اكتب سعر الشراء .");
       return;
     }
     const bn = parseFloat(parsed.buy.replace(/,/g, "."));
     const sn = parseFloat(parsed.sell.replace(/,/g, "."));
     if (!Number.isFinite(bn) || !Number.isFinite(sn) || bn < 0 || sn < 0) {
-      setPricingErr("تأكد أن الأرقام صالحة (بالألف).");
+      setPricingErr("تأكد أن الأرقام صالحة .");
       return;
     }
     const i = selectedPriceIndex;
@@ -646,7 +646,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
                   }}
                   rows={2}
                   dir="ltr"
-                  placeholder={"سعر الشراء (بالألف)"}
+                  placeholder={"سعر الشراء "}
                   className={`${inputClass} mt-2 font-mono text-base tabular-nums leading-relaxed text-center`}
                   inputMode="decimal"
                   autoFocus
@@ -699,7 +699,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
           </div>
           {placesCount != null ? (
             <p className="mt-2 text-xs text-slate-700 font-bold">
-              إضافة تجهيز: <span className="tabular-nums">{calculateExtraAlfFromPlacesCount(placesCount)} ألف</span>
+              إضافة تجهيز: <span className="tabular-nums">{calculateExtraAlfFromPlacesCount(placesCount)} </span>
             </p>
           ) : null}
         </section>

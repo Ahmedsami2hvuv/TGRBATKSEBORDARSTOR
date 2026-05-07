@@ -92,7 +92,7 @@ export default async function BranchPricingPage({ params, searchParams }: Props)
           </div>
           <h1 className="text-2xl font-black text-slate-900">تسعير {branch.name}</h1>
           <p className="text-[10px] text-slate-400 font-bold mt-1">
-            أدخل السعر بالألف (مثلاً 2 يعني 2000 د.ع، و2.25 يعني 2250 د.ع).
+            أدخل السعر  (مثلاً 2 يعني 2000 د.ع، و2.25 يعني 2250 د.ع).
           </p>
         </header>
 

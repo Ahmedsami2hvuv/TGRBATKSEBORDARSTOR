@@ -48,7 +48,7 @@ import { normalizeIraqMobileLocal11, telHref, whatsappMeUrl } from "@/lib/whatsa
 type CourierMainKeyboardKind = "main" | "orders" | "wallet";
 
 function alfLine(label: string, value: string): string {
-  return `${label} ${value} الف`;
+  return `${label} ${value} `;
 }
 
 function courierDirLabel(kind: string): string {
@@ -678,9 +678,9 @@ export async function buildCourierWalletTelegramText(
       const amt = formatDinarAsAlf(new Decimal(l.amountDinar));
       const dt = new Date(l.createdAt).toLocaleString("ar-IQ-u-nu-latn", { dateStyle: "medium", timeStyle: "short" });
       if (l.source === "order") {
-        return `• ${dir}: ${amt} الف\n  طلب #${l.orderNumber} — ${escapeTelegramHtml(l.shopName)}\n  ${dt}`;
+        return `• ${dir}: ${amt} \n  طلب #${l.orderNumber} — ${escapeTelegramHtml(l.shopName)}\n  ${dt}`;
       }
-      return `• ${dir}: ${amt} الف\n  ${escapeTelegramHtml(l.miscLabel ?? "—")}\n  ${dt}`;
+      return `• ${dir}: ${amt} \n  ${escapeTelegramHtml(l.miscLabel ?? "—")}\n  ${dt}`;
     })
     .join("\n");
 
@@ -697,16 +697,16 @@ export async function buildCourierWalletTelegramText(
   const keyboard: TelegramInlineKeyboard = {
     inline_keyboard: [
       [
-        tabBtn("remain_site", `متبقي من الموقع: ${remainSiteValue} الف`),
-        tabBtn("wallet_in", `وارد: ${walletInValue} الف`),
-        tabBtn("wallet_out", `صادر: ${walletOutValue} الف`),
+        tabBtn("remain_site", `متبقي من الموقع: ${remainSiteValue} `),
+        tabBtn("wallet_in", `وارد: ${walletInValue} `),
+        tabBtn("wallet_out", `صادر: ${walletOutValue} `),
       ],
       [
-        tabBtn("earnings", `أرباحي: ${earningsValue} الف`),
+        tabBtn("earnings", `أرباحي: ${earningsValue} `),
         tabBtn("transfers", "تحويلات معلّقة"),
-        tabBtn("handover_admin", `يسلم للإدارة: ${handToAdminValue} الف`),
+        tabBtn("handover_admin", `يسلم للإدارة: ${handToAdminValue} `),
       ],
-      [tabBtn("remain_wallet", `متبقي المحفظة: ${walletRemainValue} الف`), tabBtn("all", "الكل")],
+      [tabBtn("remain_wallet", `متبقي المحفظة: ${walletRemainValue} `), tabBtn("all", "الكل")],
       [{ text: "🏠 الرئيسية", callback_data: "co_main" }],
       [
         { text: "◀️ السابق", callback_data: `co_wallet_${tab}_${Math.max(0, page - 1)}` },
@@ -797,9 +797,9 @@ async function beginCourierPickupAmountStep(
   const res = await sendTelegramMessageWithForceReply(
     chatId,
     `<b>💳 استلام الطلب — طلب #${orderNumber}</b>\n` +
-      `المتوقع تقريباً: <b>${escapeTelegramHtml(expectedAlf)}</b> ألف\n\n` +
-      `أرسل المبلغ الذي دفعته للعميل <b>بالألف</b> (ردّ على هذه الرسالة):`,
-    { placeholder: "بالألف" },
+      `المتوقع تقريباً: <b>${escapeTelegramHtml(expectedAlf)}</b> \n\n` +
+      `أرسل المبلغ الذي دفعته للعميل <b></b> (ردّ على هذه الرسالة):`,
+    { placeholder: "" },
   );
   if (!res.ok || res.messageId == null) return;
   await upsertCourierSession(
@@ -820,9 +820,9 @@ async function beginCourierDeliveryAmountStep(
   const res = await sendTelegramMessageWithForceReply(
     chatId,
     `<b>💸 استلام من الزبون — طلب #${orderNumber}</b>\n` +
-      `المتوقع تقريباً: <b>${escapeTelegramHtml(expectedAlf)}</b> ألف\n\n` +
-      `أرسل المبلغ الذي استلمته من الزبون <b>بالألف</b> (ردّ على هذه الرسالة):`,
-    { placeholder: "بالألف" },
+      `المتوقع تقريباً: <b>${escapeTelegramHtml(expectedAlf)}</b> \n\n` +
+      `أرسل المبلغ الذي استلمته من الزبون <b></b> (ردّ على هذه الرسالة):`,
+    { placeholder: "" },
   );
   if (!res.ok || res.messageId == null) return;
   await upsertCourierSession(
@@ -1463,15 +1463,15 @@ export async function processCourierTelegramSessionMessage(
     if (!parsed.ok) {
       await sendTelegramMessageWithForceReply(
         chatId,
-        "❌ المبلغ غير صالح. أدخل رقماً بالألف (ردّ على هذه الرسالة):",
-        { placeholder: "بالألف" },
+        "❌ المبلغ غير صالح. أدخل رقماً  (ردّ على هذه الرسالة):",
+        { placeholder: "" },
       );
       return true;
     }
     const amountDinar = new Decimal(parsed.value);
     if (amountDinar.lt(0)) {
       await sendTelegramMessageWithForceReply(chatId, "❌ المبلغ لا يمكن أن يكون سالباً.", {
-        placeholder: "بالألف",
+        placeholder: "",
       });
       return true;
     }
@@ -1562,15 +1562,15 @@ export async function processCourierTelegramSessionMessage(
     if (!parsed.ok) {
       await sendTelegramMessageWithForceReply(
         chatId,
-        "❌ المبلغ غير صالح. أدخل رقماً بالألف (ردّ على هذه الرسالة):",
-        { placeholder: "بالألف" },
+        "❌ المبلغ غير صالح. أدخل رقماً  (ردّ على هذه الرسالة):",
+        { placeholder: "" },
       );
       return true;
     }
     const amountDinar = new Decimal(parsed.value);
     if (amountDinar.lt(0)) {
       await sendTelegramMessageWithForceReply(chatId, "❌ المبلغ لا يمكن أن يكون سالباً.", {
-        placeholder: "بالألف",
+        placeholder: "",
       });
       return true;
     }

@@ -183,7 +183,7 @@ async function startTextEdit(orderNumber: number, field: string, ctx: WebhookCon
 
   switch (field) {
     case "type": prompt = "أرسل نوع الطلب الجديد (مثلاً: ملابس، طرد…):"; break;
-    case "price": prompt = "أرسل سعر الطلب الجديد بالألف (مثلاً: 25.5):"; break;
+    case "price": prompt = "أرسل سعر الطلب الجديد  (مثلاً: 25.5):"; break;
     case "phone": prompt = "أرسل رقم الهاتف الجديد (11 رقم):"; break;
     case "summary": prompt = "أرسل ملاحظات الطلب الجديدة:"; break;
     case "location_url": prompt = "أرسل رابط الموقع الجديد (خرائط جوجل):"; break;
@@ -219,7 +219,7 @@ async function handleTextEditInput(step: string, on: number, txt: string, uid: s
       }
       case "edit_price": {
         const p = parseAlfInputToDinarDecimalRequired(txt);
-        if (!p.ok) { await sendTelegramHtmlToChat(ctx.chatId, "❌ مبلغ غير صالح. أرسل الرقم بالألف (مثلاً 10.5)."); break; }
+        if (!p.ok) { await sendTelegramHtmlToChat(ctx.chatId, "❌ مبلغ غير صالح. أرسل الرقم  (مثلاً 10.5)."); break; }
         const oldSub = order.orderSubtotal || new Decimal(0);
         const oldDel = order.deliveryPrice || new Decimal(0);
         const newSub = new Decimal(p.value);

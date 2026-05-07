@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { parseAlfInputToDinarNumber } from "@/lib/money-alf";
 import { prisma } from "@/lib/prisma";
@@ -17,10 +17,10 @@ function parseWaypointsFromForm(formData: FormData): RegionWaypointInput[] {
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error("تعذّر قراءة مواقع المنطقة.");
+    throw new Error("ØªØ¹Ø°Ù‘Ø± Ù‚Ø±Ø§Ø¡Ø© Ù…ÙˆØ§Ù‚Ø¹ Ø§Ù„Ù…Ù†Ø·Ù‚Ø©.");
   }
   if (!Array.isArray(parsed)) {
-    throw new Error("صيغة مواقع المنطقة غير صالحة.");
+    throw new Error("ØµÙŠØºØ© Ù…ÙˆØ§Ù‚Ø¹ Ø§Ù„Ù…Ù†Ø·Ù‚Ø© ØºÙŠØ± ØµØ§Ù„Ø­Ø©.");
   }
   const out: RegionWaypointInput[] = [];
   for (const item of parsed) {
@@ -46,14 +46,14 @@ export type RegionFormState = {
   ok?: boolean;
 };
 
-// الدالة المستخدمة في إضافة منطقة جديدة
+// Ø§Ù„Ø¯Ø§Ù„Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…Ø© ÙÙŠ Ø¥Ø¶Ø§ÙØ© Ù…Ù†Ø·Ù‚Ø© Ø¬Ø¯ÙŠØ¯Ø©
 export async function createRegion(prevState: any, formData: FormData) {
   const name = formData.get("name") as string;
   const deliveryPriceStr = formData.get("deliveryPrice") as string;
   const deliveryPrice = parseAlfInputToDinarNumber(deliveryPriceStr);
 
   if (!name || deliveryPrice === null) {
-    return { error: "يرجى ملء كافة الحقول بشكل صحيح" };
+    return { error: "ÙŠØ±Ø¬Ù‰ Ù…Ù„Ø¡ ÙƒØ§ÙØ© Ø§Ù„Ø­Ù‚ÙˆÙ„ Ø¨Ø´ÙƒÙ„ ØµØ­ÙŠØ­" };
   }
 
   try {
@@ -67,7 +67,7 @@ export async function createRegion(prevState: any, formData: FormData) {
   }
 }
 
-// الدالة المستخدم في التعديل
+// Ø§Ù„Ø¯Ø§Ù„Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ÙÙŠ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„
 export async function updateRegion(prevState: any, formData: FormData) {
   const id = formData.get("id") as string;
   const name = formData.get("name") as string;
@@ -77,13 +77,13 @@ export async function updateRegion(prevState: any, formData: FormData) {
   let waypoints: RegionWaypointInput[] = [];
 
   if (!id || !name || deliveryPrice === null) {
-    return { error: "يرجى ملء كافة الحقول بشكل صحيح" };
+    return { error: "ÙŠØ±Ø¬Ù‰ Ù…Ù„Ø¡ ÙƒØ§ÙØ© Ø§Ù„Ø­Ù‚ÙˆÙ„ Ø¨Ø´ÙƒÙ„ ØµØ­ÙŠØ­" };
   }
   if (!skipWaypoints) {
     try {
       waypoints = parseWaypointsFromForm(formData);
     } catch (e: any) {
-      return { error: e?.message || "بيانات المواقع غير صالحة" };
+      return { error: e?.message || "Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…ÙˆØ§Ù‚Ø¹ ØºÙŠØ± ØµØ§Ù„Ø­Ø©" };
     }
   }
 
@@ -104,7 +104,7 @@ export async function updateRegion(prevState: any, formData: FormData) {
           await tx.regionWaypoint.createMany({
             data: waypoints.map((w, idx) => ({
               regionId: id,
-              name: w.name || `مدخل ${idx + 1}`,
+              name: w.name || `Ù…Ø¯Ø®Ù„ ${idx + 1}`,
               latitude: w.latitude,
               longitude: w.longitude,
               sortOrder: idx,
@@ -121,10 +121,10 @@ export async function updateRegion(prevState: any, formData: FormData) {
   }
 }
 
-// الدالة المستخدمة في القائمة السريعة
+// Ø§Ù„Ø¯Ø§Ù„Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…Ø© ÙÙŠ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø³Ø±ÙŠØ¹Ø©
 export async function updateRegionAction(id: string, name: string, price: number) {
   try {
-    // نعتبر السعر القادم من الواجهة دائماً بـ "الألف" ونحوله للدينار
+    // Ù†Ø¹ØªØ¨Ø± Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ù‚Ø§Ø¯Ù… Ù…Ù† Ø§Ù„ÙˆØ§Ø¬Ù‡Ø© Ø¯Ø§Ø¦Ù…Ø§Ù‹ Ø¨Ù€ "Ø§Ù„Ø£Ù„Ù" ÙˆÙ†Ø­ÙˆÙ„Ù‡ Ù„Ù„Ø¯ÙŠÙ†Ø§Ø±
     const dinarPrice = price * 1000;
 
     await prisma.region.update({
@@ -141,15 +141,15 @@ export async function updateRegionAction(id: string, name: string, price: number
   }
 }
 
-// دالة لإصلاح كافة الأسعار التالفة في قاعدة البيانات
+// Ø¯Ø§Ù„Ø© Ù„Ø¥ØµÙ„Ø§Ø­ ÙƒØ§ÙØ© Ø§Ù„Ø£Ø³Ø¹Ø§Ø± Ø§Ù„ØªØ§Ù„ÙØ© ÙÙŠ Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª
 export async function fixAllDatabaseDeliveryPrices() {
   try {
-    // 1. إصلاح المناطق
+    // 1. Ø¥ØµÙ„Ø§Ø­ Ø§Ù„Ù…Ù†Ø§Ø·Ù‚
     const regions = await prisma.region.findMany();
     for (const r of regions) {
       const p = Number(r.deliveryPrice);
       if (p > 0 && p < 1000) {
-        // إذا كان السعر 3 أو 0.003 مثلاً، نحوله إلى 3000
+        // Ø¥Ø°Ø§ ÙƒØ§Ù† Ø§Ù„Ø³Ø¹Ø± 3 Ø£Ùˆ 0.003 Ù…Ø«Ù„Ø§Ù‹ØŒ Ù†Ø­ÙˆÙ„Ù‡ Ø¥Ù„Ù‰ 3000
         const correctedPrice = p < 1 ? p * 1000000 : p * 1000;
         await prisma.region.update({
           where: { id: r.id },
@@ -158,7 +158,7 @@ export async function fixAllDatabaseDeliveryPrices() {
       }
     }
 
-    // 2. إصلاح الطلبات المعلقة التي تأثرت بالخطأ
+    // 2. Ø¥ØµÙ„Ø§Ø­ Ø§Ù„Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ù…Ø¹Ù„Ù‚Ø© Ø§Ù„ØªÙŠ ØªØ£Ø«Ø±Øª Ø¨Ø§Ù„Ø®Ø·Ø£
     const orders = await prisma.order.findMany({
       where: {
         status: "pending",
@@ -181,3 +181,4 @@ export async function fixAllDatabaseDeliveryPrices() {
     return { success: false, message: error.message };
   }
 }
+

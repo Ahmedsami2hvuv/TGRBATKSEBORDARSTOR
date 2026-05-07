@@ -1,5 +1,5 @@
 /**
- * مطابقة لـ main.py: calculate_extra(places_count) — بالألف
+ * مطابقة لـ main.py: calculate_extra(places_count) — 
  * محلان أو أقل: 0، ثم 3→1، 4→2، …، 10+→8
  */
 export function calculateExtraAlfFromPlacesCount(placesCount: number): number {

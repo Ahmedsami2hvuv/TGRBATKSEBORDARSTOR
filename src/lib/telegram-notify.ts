@@ -15,7 +15,7 @@ import { buildCompanyPreparerPortalUrl } from "./company-preparer-portal-link";
 import { buildDelegatePortalUrl } from "./delegate-link";
 
 function alfLine(label: string, value: string): string {
-  return `${label} ${escapeTelegramHtml(value)} الف`;
+  return `${label} ${escapeTelegramHtml(value)} `;
 }
 
 function formatOrderBodyLines(input: {

@@ -263,7 +263,7 @@ export function PreparerSiteOrderPrepEditClient({
         </div>
         {placesCount != null ? (
           <p className="mt-2 text-xs text-slate-700">
-            إضافة تجهيز: <strong>{calculateExtraAlfFromPlacesCount(placesCount)} ألف</strong>
+            إضافة تجهيز: <strong>{calculateExtraAlfFromPlacesCount(placesCount)} </strong>
           </p>
         ) : null}
         <p className="mt-3 text-xs text-slate-500">

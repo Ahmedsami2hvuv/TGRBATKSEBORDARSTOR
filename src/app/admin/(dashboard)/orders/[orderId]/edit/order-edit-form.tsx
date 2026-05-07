@@ -496,7 +496,7 @@ export function OrderEditForm({
 
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>سعر الطلب بالألف (بدون التوصيل)</span>
+          <span className={ad.label}>سعر الطلب  (بدون التوصيل)</span>
           <input
             name="orderSubtotal"
             value={orderSubtotal}
@@ -505,7 +505,7 @@ export function OrderEditForm({
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>التوصيل (بالألف)</span>
+          <span className={ad.label}>التوصيل </span>
           <input
             name="deliveryPrice"
             value={deliveryPrice}
@@ -514,7 +514,7 @@ export function OrderEditForm({
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>المجموع (بالألف)</span>
+          <span className={ad.label}>المجموع </span>
           <input
             name="totalAmount"
             value={totalAmount}

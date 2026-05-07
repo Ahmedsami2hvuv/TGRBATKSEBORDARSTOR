@@ -398,9 +398,9 @@ export function AdminPricingPanel({
 
       <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded-xl border border-amber-200 text-center shadow-inner">
         <div className="col-span-3 pb-2"><select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="w-full rounded-lg border border-amber-200 p-2 text-xs font-black outline-none bg-amber-50/50">{[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n} محلات</option>)}</select></div>
-        <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-100"><p className="text-[8px] font-bold text-emerald-600">المنتجات</p><p className="text-xs font-black font-mono">{totals.subtotal} ألف</p></div>
-        <div className="p-2 bg-sky-50 rounded-lg border border-sky-100"><p className="text-[8px] font-bold text-sky-600">توصيل</p><p className="text-xs font-black font-mono">{initialData?.deliveryAlf || "—"} ألف</p></div>
-        <div className="p-2 bg-violet-600 text-white rounded-lg border border-violet-700 shadow-md"><p className="text-[8px] font-bold">المجموع</p><p className="text-sm font-black font-mono">{totals.total} ألف</p></div>
+        <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-100"><p className="text-[8px] font-bold text-emerald-600">المنتجات</p><p className="text-xs font-black font-mono">{totals.subtotal} </p></div>
+        <div className="p-2 bg-sky-50 rounded-lg border border-sky-100"><p className="text-[8px] font-bold text-sky-600">توصيل</p><p className="text-xs font-black font-mono">{initialData?.deliveryAlf || "—"} </p></div>
+        <div className="p-2 bg-violet-600 text-white rounded-lg border border-violet-700 shadow-md"><p className="text-[8px] font-bold">المجموع</p><p className="text-sm font-black font-mono">{totals.total} </p></div>
       </div>
 
       <form action={formAction} className="space-y-3">

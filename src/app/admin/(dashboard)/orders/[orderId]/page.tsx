@@ -9,467 +9,161 @@ import { OrderViewContent } from "./order-view-content";
 import { AdminOrderErrorUI } from "./error-ui";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import {
-  applyMandoubWaTemplate,
-  parseStatusesCsv,
-  splitMandoubWaTemplateVariants,
+ applyMandoubWaTemplate,
+ parseStatusesCsv,
+ splitMandoubWaTemplateVariants,
 } from "@/lib/mandoub-wa-button-template";
 import {
-  extractLatLngFromLocationInputSmart,
-  matchesCustomerLocationRules,
-  parseCustomerLocationRules,
+ extractLatLngFromLocationInputSmart,
+ matchesCustomerLocationRules,
+ parseCustomerLocationRules,
 } from "@/lib/order-location";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { haversineMeters } from "@/lib/geo-distance";
+
 const SYSTEM_ADMIN_PHONE = "07733921568";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  params: Promise<{ orderId: string }>;
-  searchParams: Promise<{ view?: string }>;
+ params: Promise<{ orderId: string }>;
+ searchParams: Promise<{ view?: string }>;
 };
 
-export async function generateMetadata({ params }: Props) {
-  const { orderId } = await params;
-  try {
-    const o = await prisma.order.findUnique({
-      where: { id: orderId },
-      select: { orderNumber: true },
-    });
-    return {
-      title: o ? `طلب #${o.orderNumber} — أبو الأكبر للتوصيل` : "طلب — أبو الأكبر للتوصيل",
-    };
-  } catch {
-    return { title: "طلب — أبو الأكبر للتوصيل" };
-  }
+async function computeSmartHint(locationUrl: string, regionId: string | null): Promise<string> {
+ if (!regionId || !locationUrl.trim()) return "—";
+ try {
+ const points = await prisma.regionWaypoint.findMany({
+ where: { regionId },
+ orderBy: { sortOrder: "asc" },
+ select: { name: true, latitude: true, longitude: true },
+ });
+ if (points.length === 0) return "—";
+ const loc = await extractLatLngFromLocationInputSmart(locationUrl);
+ if (!loc) return "—";
+ let nearest = null;
+ for (const p of points) {
+ const dist = haversineMeters(loc.latitude, loc.longitude, p.latitude, p.longitude);
+ if (!nearest || dist < nearest.dist) nearest = { name: p.name, dist };
+ }
+ return nearest && nearest.dist < 2500 ? `قريب من (${nearest.name})` : "—";
+ } catch { return "—"; }
 }
 
 export default async function AdminOrderViewPage({ params, searchParams }: Props) {
-  const { orderId } = await params;
-  const sp = await searchParams;
-  const modalOnly = sp.view === "modal";
+ const { orderId } = await params;
+ const sp = await searchParams;
+ const modalOnly = sp.view === "modal";
 
-  let order;
-  try {
-    order = await prisma.order.findUnique({
-      where: { id: orderId },
-      select: {
-        id: true,
-        orderNumber: true,
-        status: true,
-        routeMode: true,
-        adminOrderCode: true,
-        orderType: true,
-        summary: true,
-        customerPhone: true,
-        alternatePhone: true,
-        secondCustomerPhone: true,
-        secondCustomerLocationUrl: true,
-        secondCustomerLandmark: true,
-        secondCustomerDoorPhotoUrl: true,
-        secondCustomerRegionId: true,
-        orderNoteTime: true,
-        imageUrl: true,
-        orderImageUploadedByName: true,
-        shopDoorPhotoUploadedByName: true,
-        customerDoorPhotoUploadedByName: true,
-        secondCustomerDoorPhotoUploadedByName: true,
-        voiceNoteUrl: true,
-        adminVoiceNoteUrl: true,
-        shopDoorPhotoUrl: true,
-        customerDoorPhotoUrl: true,
-        customerLandmark: true,
-        orderSubtotal: true,
-        deliveryPrice: true,
-        totalAmount: true,
-        submissionSource: true,
-        createdAt: true,
-        prepaidAll: true,
-        shopId: true,
-        customerRegionId: true,
-        customerLocationUrl: true,
-        customerLocationSetByCourierAt: true,
-        customerLocationUploadedByName: true,
-        preparerShoppingJson: true,
-        submittedBy: { select: { id: true, name: true, phone: true } },
-        submittedByCompanyPreparer: { select: { id: true, name: true, phone: true } },
-        shop: { select: { id: true, name: true, phone: true, ownerName: true, photoUrl: true, locationUrl: true } },
-        customerRegion: { select: { name: true } },
-        secondCustomerRegion: { select: { name: true } },
-        courier: { select: { name: true, phone: true } },
-        customer: { select: { name: true, customerDoorPhotoUrl: true } },
-      },
-    });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`[AdminOrderViewPage] Failed to fetch order ${orderId}:`, error);
-    return <AdminOrderErrorUI orderId={orderId} error={`خطأ في قاعدة البيانات: ${errorMessage}`} />;
-  }
+ const order = await prisma.order.findUnique({
+ where: { id: orderId },
+ include: {
+ submittedBy: { select: { name: true, phone: true } },
+ submittedByCompanyPreparer: { select: { name: true, phone: true } },
+ shop: { select: { id: true, name: true, phone: true, ownerName: true, photoUrl: true, locationUrl: true } },
+ customerRegion: { select: { name: true } },
+ secondCustomerRegion: { select: { name: true } },
+ courier: { select: { name: true, phone: true } },
+ customer: { select: { name: true, customerDoorPhotoUrl: true } },
+ },
+ });
 
-  if (!order) {
-    notFound();
-  }
+ if (!order) notFound();
 
-  // نجلب البيانات الإضافية الآن بشكل متوازٍ لتسريع الصفحة
-  let preparers = [], waButtonSettings = [], customerPhoneProfile = null, secondCustomerPhoneProfile = null;
+ // جلب البيانات الملحقة
+ const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
+ const secondPhoneNorm = order.secondCustomerPhone ? normalizeIraqMobileLocal11(order.secondCustomerPhone) : null;
 
-  const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
-  const secondPhoneNorm = order.secondCustomerPhone?.trim() ? normalizeIraqMobileLocal11(order.secondCustomerPhone) : null;
+ const [preparers, waButtonSettings, customerProfile, secondProfile, moneyEventsRaw] = await Promise.all([
+ prisma.companyPreparer.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
+ prisma.mandoubWaButtonSetting.findMany({ where: { isActive: true }, orderBy: { updatedAt: "desc" } }),
+ customerPhoneNorm && order.customerRegionId ? prisma.customerPhoneProfile.findUnique({
+ where: { phone_regionId: { phone: customerPhoneNorm, regionId: order.customerRegionId } }
+ }) : Promise.resolve(null),
+ secondPhoneNorm && order.secondCustomerRegionId ? prisma.customerPhoneProfile.findUnique({
+ where: { phone_regionId: { phone: secondPhoneNorm, regionId: order.secondCustomerRegionId } }
+ }) : Promise.resolve(null),
+ prisma.orderCourierMoneyEvent.findMany({
+ where: { orderId, deletedAt: null },
+ orderBy: { createdAt: "desc" },
+ include: { courier: { select: { name: true } }, recordedByCompanyPreparer: { select: { name: true } } }
+ })
+ ]);
 
-  try {
-    const [p, w, cp, scp] = await Promise.all([
-      prisma.companyPreparer.findMany({
-        where: { active: true },
-        orderBy: { name: "asc" },
-        select: { id: true, name: true }
-      }),
-      prisma.mandoubWaButtonSetting.findMany({
-        where: { isActive: true },
-        orderBy: { updatedAt: "desc" },
-      }),
-      customerPhoneNorm && order.customerRegionId ? prisma.customerPhoneProfile.findUnique({
-        where: { phone_regionId: { phone: customerPhoneNorm, regionId: order.customerRegionId } },
-        select: { id: true, photoUrl: true, locationUrl: true, landmark: true, alternatePhone: true },
-      }) : Promise.resolve(null),
-      secondPhoneNorm && order.secondCustomerRegionId ? prisma.customerPhoneProfile.findUnique({
-        where: { phone_regionId: { phone: secondPhoneNorm, regionId: order.secondCustomerRegionId } },
-        select: { id: true, photoUrl: true, locationUrl: true, landmark: true, alternatePhone: true },
-      }) : Promise.resolve(null),
-    ]);
-    preparers = p;
-    waButtonSettings = w;
-    customerPhoneProfile = cp;
-    secondCustomerPhoneProfile = scp;
-  } catch (error) {
-    console.warn(`[AdminOrderViewPage] Partial data fetch failure for ${orderId}:`, error);
-  }
+ const customerLocationUrlEffective = order.customerLocationUrl || customerProfile?.locationUrl || "";
+ const secondCustomerLocationUrlEffective = order.secondCustomerLocationUrl || secondProfile?.locationUrl || "";
 
-  const getCustomerDoorUrl = () => {
-    // 1. الأولوية لصورة الباب المسجلة في الطلب نفسه (سواء R2 أو API أو Base64)
-    const fromOrder = order.customerDoorPhotoUrl?.trim();
-    if (fromOrder) {
-      if (fromOrder.startsWith("data:")) return `/api/image/order/${order.id}/customerDoor`;
-      return fromOrder;
-    }
+ const [smartHintLine, secondSmartHintLine] = await Promise.all([
+ computeSmartHint(customerLocationUrlEffective, order.customerRegionId),
+ computeSmartHint(secondCustomerLocationUrlEffective, order.secondCustomerRegionId),
+ ]);
 
-    // 2. إذا لم توجد، نأخذها من ملف الزبون المرتبط
-    const fromCustomer = order.customer?.customerDoorPhotoUrl?.trim();
-    if (fromCustomer) {
-      if (fromCustomer.startsWith("data:")) return null; // لا يمكننا جلب Base64 الخاص بالزبون عبر رابط الطلب بسهولة هنا
-      return fromCustomer;
-    }
+ const submitterPhone = order.submittedByCompanyPreparer?.phone || order.submittedBy?.phone ||
+ (order.submissionSource === "admin_portal" ? SYSTEM_ADMIN_PHONE : order.shop?.phone || "");
 
-    // 3. الأولوية الأخيرة لبروفايل رقم الهاتف
-    const fromProfile = customerPhoneProfile?.photoUrl?.trim();
-    if (fromProfile) {
-      if (fromProfile.startsWith("data:")) return `/api/image/customerPhoneProfile/${customerPhoneProfile.id}/photo`;
-      return fromProfile;
-    }
+ const getCustomerDoorUrl = () => {
+ if (order.customerDoorPhotoUrl) return order.customerDoorPhotoUrl.startsWith("data:") ? `/api/image/order/${order.id}/customerDoor` : order.customerDoorPhotoUrl;
+ if (customerProfile?.photoUrl) return customerProfile.photoUrl.startsWith("data:") ? `/api/image/customerPhoneProfile/${customerProfile.id}/photo` : customerProfile.photoUrl;
+ return order.customer?.customerDoorPhotoUrl || null;
+ };
 
-    return null;
-  };
-  const customerDoorPhotoUrlEffective: string | null = getCustomerDoorUrl();
+ const view = {
+ ...order,
+ imageUrl: resolvePublicAssetSrc(order.imageUrl?.startsWith("data:") ? `/api/image/order/${order.id}/image` : order.imageUrl),
+ voiceNoteUrl: resolvePublicAssetSrc(order.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${order.id}/voice` : order.voiceNoteUrl),
+ adminVoiceNoteUrl: resolvePublicAssetSrc(order.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${order.id}/admin-voice` : order.adminVoiceNoteUrl),
+ shopDoorPhotoUrl: resolvePublicAssetSrc(order.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${order.id}/shopDoor` : (order.shopDoorPhotoUrl || order.shop?.photoUrl)),
+ customerDoorPhotoUrl: resolvePublicAssetSrc(getCustomerDoorUrl()),
+ secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(order.secondCustomerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${order.id}/secondCustomerDoor` : order.secondCustomerDoorPhotoUrl),
+ shopPhotoUrl: resolvePublicAssetSrc(order.shop?.photoUrl?.startsWith("data:") ? `/api/image/shop/${order.shopId}/photo` : order.shop?.photoUrl),
+ orderSubtotal: order.orderSubtotal != null ? formatDinarAsAlfWithUnit(order.orderSubtotal) : null,
+ deliveryPrice: order.deliveryPrice != null ? formatDinarAsAlfWithUnit(order.deliveryPrice) : null,
+ totalAmount: order.totalAmount != null ? formatDinarAsAlfWithUnit(order.totalAmount) : null,
+ createdAt: order.createdAt.toISOString(),
+ reversePickup: isReversePickupOrderType(order.orderType),
+ smartHintLine,
+ secondSmartHintLine,
+ customerLandmark: order.customerLandmark || customerProfile?.landmark || "",
+ alternatePhone: order.alternatePhone || customerProfile?.alternatePhone || null,
+ customerLocationUrl: customerLocationUrlEffective,
+ customerProfileId: customerProfile?.id || null,
+ preparerShoppingJson: order.preparerShoppingJson ? JSON.stringify(order.preparerShoppingJson) : null,
+ };
 
-  const getSecondCustomerDoorUrl = () => {
-    if (order.secondCustomerDoorPhotoUrl?.trim()?.startsWith("data:")) return `/api/image/order/${order.id}/secondCustomerDoor`;
-    if (order.secondCustomerDoorPhotoUrl?.trim()) return order.secondCustomerDoorPhotoUrl;
-    if (secondCustomerPhoneProfile?.photoUrl?.trim()?.startsWith("data:")) return `/api/image/customerPhoneProfile/${secondCustomerPhoneProfile.id}/photo`;
-    return secondCustomerPhoneProfile?.photoUrl?.trim() || null;
-  };
-  const secondCustomerDoorPhotoUrlEffective: string | null = getSecondCustomerDoorUrl();
+ const adminMoneyEvents = moneyEventsRaw.reverse().map(e => ({
+ ...e,
+ amountDinar: Number(e.amountDinar),
+ expectedDinar: e.expectedDinar != null ? Number(e.expectedDinar) : null,
+ recordedAt: e.createdAt.toISOString(),
+ performedByDisplayName: e.recordedByCompanyPreparer?.name || e.courier?.name || "—",
+ }));
 
-  const submitterPhone =
-    order.submittedByCompanyPreparer?.phone?.trim() ||
-    order.submittedBy?.phone?.trim() ||
-    (order.submissionSource === "admin_portal" ? SYSTEM_ADMIN_PHONE : order.shop?.phone?.trim() || "");
+ const adminCustomWaButtons = waButtonSettings.flatMap(r => {
+ const vars = {
+ clientshop: order.shop?.name || "",
+ city: order.customerRegion?.name || "",
+ total_price: view.totalAmount || "",
+ location_url: customerLocationUrlEffective,
+ order_number: String(order.orderNumber),
+ customer_phone: order.customerPhone,
+ shop_phone: submitterPhone,
+ };
+ const messages = splitMandoubWaTemplateVariants(r.templateText || "").map(t => applyMandoubWaTemplate(t, vars));
+ return messages.length > 0 ? [{ id: r.id, label: r.label, iconKey: r.iconKey, messages }] : [];
+ });
 
-  // fallback: لوكيشن الزبون من CustomerPhoneProfile
-  const customerLocationUrlEffective =
-    order.customerLocationUrl?.trim() ||
-    customerPhoneProfile?.locationUrl?.trim() ||
-    "";
+ const safeView = JSON.parse(JSON.stringify(view));
+ const safeMoneyEvents = JSON.parse(JSON.stringify(adminMoneyEvents));
+ const safePreparers = JSON.parse(JSON.stringify(preparers));
+ const safeWaButtons = JSON.parse(JSON.stringify(adminCustomWaButtons));
 
-  // fallback: أقرب نقطة دالة من CustomerPhoneProfile
-  const customerLandmarkEffective =
-    order.customerLandmark?.trim() ||
-    customerPhoneProfile?.landmark?.trim() ||
-    "";
-
-  // fallback: الرقم الثاني من CustomerPhoneProfile
-  const alternatePhoneEffective =
-    order.alternatePhone?.trim() ||
-    customerPhoneProfile?.alternatePhone?.trim() ||
-    null;
-
-  // fallback: لوكيشن الوجهة الثانية من CustomerPhoneProfile
-  const secondCustomerLocationUrlEffective =
-    order.secondCustomerLocationUrl?.trim() ||
-    secondCustomerPhoneProfile?.locationUrl?.trim() ||
-    "";
-
-  // fallback: أقرب نقطة دالة للوجهة الثانية
-  const secondCustomerLandmarkEffective =
-    order.secondCustomerLandmark?.trim() ||
-    secondCustomerPhoneProfile?.landmark?.trim() ||
-    "";
-
-  async function computeSmartHint(
-    locationUrl: string,
-    regionId: string | null | undefined,
-  ): Promise<string> {
-    if (!regionId) return "— لا توجد منطقة مرتبطة بالطلب";
-    try {
-      const points = await prisma.regionWaypoint.findMany({
-        where: { regionId },
-        orderBy: { sortOrder: "asc" },
-        select: { name: true, latitude: true, longitude: true },
-      });
-      if (points.length === 0) return "— لا توجد مداخل محفوظة لهذه المنطقة";
-      if (!String(locationUrl || "").trim()) return "— لا يوجد لوكيشن للزبون";
-      const loc = await extractLatLngFromLocationInputSmart(locationUrl);
-      if (!loc) return "— تعذر قراءة إحداثيات الرابط";
-      let nearest: { name: string; dist: number } | null = null;
-      for (const p of points) {
-        const dist = haversineMeters(loc.latitude, loc.longitude, p.latitude, p.longitude);
-        if (!nearest || dist < nearest.dist) nearest = { name: p.name?.trim() || "مدخل", dist };
-      }
-      if (!nearest) return "— تعذر احتساب أقرب مدخل";
-      if (nearest.dist > 2500) return "— اللوكيشن بعيد عن مداخل المنطقة";
-      return `قريب من (${nearest.name})`;
-    } catch (error) {
-      console.warn(`[AdminOrderViewPage] Failed to compute smart hint for ${orderId}:`, {
-        regionId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return "— تعذّر احتساب أقرب مدخل حالياً";
-    }
-  }
-
-  const [smartHintLine, secondSmartHintLine] = await Promise.all([
-    computeSmartHint(customerLocationUrlEffective, order.customerRegionId),
-    computeSmartHint(secondCustomerLocationUrlEffective, order.secondCustomerRegionId),
-  ]);
-
-  const normalizeCustomerName = (name: string | null | undefined) => {
-    const trimmed = name?.trim();
-    if (!trimmed) return null;
-    const banned = ["العميل", "اسم العميل", "اسم الزبون"];
-    if (banned.includes(trimmed)) return null;
-    return trimmed;
-  };
-
-  const customerName = normalizeCustomerName(order.customer?.name);
-
-  let moneyEventsRaw: Awaited<
-    ReturnType<typeof prisma.orderCourierMoneyEvent.findMany>
-  > = [];
-  try {
-    moneyEventsRaw = await prisma.orderCourierMoneyEvent.findMany({
-      where: { orderId },
-      orderBy: { createdAt: "desc" },
-      take: 120,
-      include: {
-        courier: { select: { name: true } },
-        recordedByCompanyPreparer: { select: { name: true } },
-      },
-    });
-  } catch (error) {
-    console.warn(`[AdminOrderViewPage] Failed to fetch money events for ${orderId}:`, {
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
-  const adminMoneyEvents = moneyEventsRaw.reverse().map((e) => ({
-    id: e.id,
-    kind: e.kind,
-    amountDinar: Number(e.amountDinar ?? 0),
-    expectedDinar: e.expectedDinar != null ? Number(e.expectedDinar) : null,
-    matchesExpected: e.matchesExpected,
-    mismatchReason: e.mismatchReason,
-    mismatchNote: e.mismatchNote,
-    recordedAt: e.createdAt.toISOString(),
-    deletedAt: e.deletedAt?.toISOString() ?? null,
-    deletedReason: e.deletedReason,
-    deletedByDisplayName: e.deletedByDisplayName,
-    performedByDisplayName:
-      e.recordedByCompanyPreparer?.name?.trim() || e.courier?.name?.trim() || "—",
-    recordedByCompanyPreparerId: e.recordedByCompanyPreparerId ?? null,
-  }));
-
-  const adminCustomWaButtons = waButtonSettings.flatMap((r) => {
-    try {
-      const scopes = (r.visibilityScope ?? "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const canSeeAdmin =
-        scopes.length === 0 ||
-        scopes.includes("all") ||
-        scopes.includes("admin") ||
-        scopes.includes("mandoub");
-      if (!canSeeAdmin) return [];
-
-      const statuses = parseStatusesCsv(r.statusesCsv ?? "");
-      if (statuses.length > 0 && !statuses.includes(order.status)) return [];
-
-      const locRules = parseCustomerLocationRules(r.customerLocationRule ?? "any");
-      const hasCustomerLocation = Boolean(customerLocationUrlEffective);
-      const hasCourierUploadedLocation = Boolean(order.customerLocationSetByCourierAt);
-      if (!matchesCustomerLocationRules(locRules, hasCustomerLocation, hasCourierUploadedLocation)) return [];
-
-      const vars = {
-        clientshop: order.shop?.name ?? "",
-        city: order.customerRegion?.name ?? "",
-        total_price: order.totalAmount != null ? formatDinarAsAlfWithUnit(order.totalAmount) : "",
-        delivery: order.courier?.name ?? "",
-        location_url: customerLocationUrlEffective,
-        landmark: customerLandmarkEffective,
-        order_number: String(order.orderNumber),
-        customer_phone: order.customerPhone ?? "",
-        customer_phone2: alternatePhoneEffective ?? "",
-        shop_phone: submitterPhone,
-      };
-
-      const messages = splitMandoubWaTemplateVariants(r.templateText ?? "").map((t) =>
-        applyMandoubWaTemplate(t, vars),
-      );
-      if (messages.length === 0) return [];
-
-      return [
-        {
-          id: r.id,
-          label: r.label ?? "",
-          iconKey: r.iconKey ?? "💬",
-          messages,
-        },
-      ];
-    } catch (error) {
-      console.error("Failed to build adminCustomWaButtons", {
-        buttonId: r.id,
-        error,
-      });
-      return [];
-    }
-  });
-
-  const view = {
-    id: order.id,
-    orderNumber: order.orderNumber,
-    status: order.status,
-    routeMode: (order.routeMode === "double" ? "double" : "single") as
-      | "single"
-      | "double",
-    adminOrderCode: order.adminOrderCode,
-    orderType: order.orderType,
-    summary: order.summary,
-    customerPhone: order.customerPhone,
-    alternatePhone: alternatePhoneEffective,
-    secondCustomerPhone: order.secondCustomerPhone,
-    secondCustomerLocationUrl: secondCustomerLocationUrlEffective,
-    secondCustomerLandmark: secondCustomerLandmarkEffective,
-    secondSmartHintLine: secondSmartHintLine || "—",
-    secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(secondCustomerDoorPhotoUrlEffective),
-    secondCustomerRegion: order.secondCustomerRegion ? { name: order.secondCustomerRegion.name } : null,
-    orderNoteTime: order.orderNoteTime || null,
-    imageUrl: resolvePublicAssetSrc(order.imageUrl?.startsWith("data:") ? `/api/image/order/${order.id}/image` : (order.imageUrl || null)),
-    orderImageUploadedByName: order.orderImageUploadedByName || null,
-    shopDoorPhotoUploadedByName: order.shopDoorPhotoUploadedByName || null,
-    customerDoorPhotoUploadedByName: order.customerDoorPhotoUploadedByName || null,
-    secondCustomerDoorPhotoUploadedByName: order.secondCustomerDoorPhotoUploadedByName || null,
-    voiceNoteUrl: resolvePublicAssetSrc(order.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${order.id}/voice` : (order.voiceNoteUrl || null)),
-    adminVoiceNoteUrl: resolvePublicAssetSrc(order.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${order.id}/admin-voice` : (order.adminVoiceNoteUrl || null)),
-    shopDoorPhotoUrl: resolvePublicAssetSrc(order.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${order.id}/shopDoor` : (order.shopDoorPhotoUrl || null)),
-    customerDoorPhotoUrl: resolvePublicAssetSrc(customerDoorPhotoUrlEffective),
-    customerLandmark: customerLandmarkEffective || "",
-    smartHintLine: smartHintLine || "—",
-    orderSubtotal:
-      order.orderSubtotal != null ? formatDinarAsAlfWithUnit(order.orderSubtotal) : null,
-    deliveryPrice:
-      order.deliveryPrice != null ? formatDinarAsAlfWithUnit(order.deliveryPrice) : null,
-    totalAmount:
-      order.totalAmount != null ? formatDinarAsAlfWithUnit(order.totalAmount) : null,
-    submissionSource: order.submissionSource || "unknown",
-    createdAt: order.createdAt.toISOString(),
-    prepaidAll: order.prepaidAll || false,
-    reversePickup: isReversePickupOrderType(order.orderType),
-    shop: {
-      name: order.shop?.name ?? "",
-      phone: order.shop?.phone ?? "",
-      ownerName: order.shop?.ownerName ?? "",
-    },
-    shopPhotoUrl: resolvePublicAssetSrc((order.shop?.photoUrl?.startsWith("data:") ? `/api/image/shop/${order.shop?.id ?? order.shopId}/photo` : order.shop?.photoUrl) || ""),
-    shopLocationUrl: order.shop?.locationUrl ?? "",
-    customerLocationUrl: customerLocationUrlEffective || "",
-    customerLocationUploadedByName: order.customerLocationUploadedByName || null,
-    customerRegion: order.customerRegion
-      ? { name: order.customerRegion.name }
-      : null,
-    customerRegionId: order.customerRegionId || null,
-    customerProfileId: customerPhoneProfile?.id ?? null,
-    courier: order.courier
-      ? { name: order.courier.name, phone: order.courier.phone }
-      : null,
-    customer: customerName ? { name: customerName } : null,
-    submittedBy: order.submittedBy
-      ? { name: order.submittedBy.name, phone: order.submittedBy.phone }
-      : null,
-    submittedByCompanyPreparer: order.submittedByCompanyPreparer
-      ? { name: order.submittedByCompanyPreparer.name, phone: order.submittedByCompanyPreparer.phone }
-      : null,
-                      
-      preparerShoppingJson: (() => {
-      if (order.preparerShoppingJson == null) return null;
-      try {
-        return JSON.stringify(order.preparerShoppingJson);
-      } catch (error) {
-        console.warn(`[AdminOrderViewPage] Failed to stringify preparerShoppingJson for ${orderId}:`, error);
-        return null;
-      }
-    })(),
-  };
-
-  // Safe JSON serialization with error handling
-  let safeView, safeMoneyEvents, safePreparers, safeWaButtons;
-  try {
-    safeView = JSON.parse(JSON.stringify(view));
-    safeMoneyEvents = JSON.parse(JSON.stringify(adminMoneyEvents));
-    safePreparers = JSON.parse(JSON.stringify(preparers));
-    safeWaButtons = JSON.parse(JSON.stringify(adminCustomWaButtons));
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`[AdminOrderViewPage] Serialization failed for order ${orderId}:`, {
-      error: errorMessage,
-      viewKeys: Object.keys(view),
-      timestamp: new Date().toISOString(),
-    });
-    return <AdminOrderErrorUI orderId={orderId} error={`فشل في تحويل البيانات: ${errorMessage}`} />;
-  }
-
-  if (modalOnly) {
-    return (
-      <div className="space-y-4">
-        <OrderViewContent order={safeView} preparers={safePreparers} customWaButtons={safeWaButtons} />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <p className={ad.muted}>
-        <Link href="/admin/orders/tracking" className={ad.link}>
-          ← تتبع الطلبات
-        </Link>
-      </p>
-      <div>
-        <h1 className={ad.h1}>عرض الطلب #{order.orderNumber}</h1>
-        <p className={`mt-1 ${ad.lead}`}>
-          تفاصيل للقراءة فقط — للتعديل استخدم زر «تعديل الطلب».
-        </p>
-      </div>
-      <OrderViewContent order={safeView} preparers={safePreparers} customWaButtons={safeWaButtons} />
-      <AdminOrderMoneyEvents
-        orderNumber={order.orderNumber}
-        nextPath={`/admin/orders/${order.id}`}
-        events={safeMoneyEvents}
-      />
-    </div>
-  );
+ return (
+ <div className="space-y-4">
+ <p className={ad.muted}>
+ <Link href="/admin/orders/tracking" className={ad.link}>← تتبع الطلبات</Link>
+ </p>
+ <h1 className={ad.h1}>عرض الطلب #{order.orderNumber}</h1>
+ <OrderViewContent order={safeView} preparers={safePreparers} customWaButtons={safeWaButtons} />
+ <AdminOrderMoneyEvents orderNumber={order.orderNumber} nextPath={`/admin/orders/${order.id}`} events={safeMoneyEvents} />
+ </div>
+ );
 }

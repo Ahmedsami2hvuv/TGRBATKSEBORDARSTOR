@@ -104,7 +104,7 @@ export function PreparerOrderEditForm({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-bold text-slate-800">سعر الطلب (بالألف)</span>
+        <span className="text-sm font-bold text-slate-800">سعر الطلب </span>
         <input
           name="orderSubtotal"
           defaultValue={defaults.orderSubtotalAlf}

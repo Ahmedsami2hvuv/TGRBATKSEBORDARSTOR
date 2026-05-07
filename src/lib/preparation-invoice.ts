@@ -8,7 +8,7 @@ export type InvoiceProductLine = {
 };
 
 function fmtAlf(n: number): string {
-  // استخدام التنسيق المطلوب (أرقام فقط أو مع كسر بسيط بدون كلمة ألف إذا كان ممكناً، لكن المعتمد حالياً هو formatDinarAsAlf)
+  // استخدام التنسيق المطلوب (أرقام فقط أو مع كسر بسيط بدون كلمة  إذا كان ممكناً، لكن المعتمد حالياً هو formatDinarAsAlf)
   // لتلبية طلب المستخدم "مثروم نص ك 9" سنقوم بإرجاع الرقم فقط إذا كان صحيحاً
   if (Number.isInteger(n)) return String(n);
   return String(n);

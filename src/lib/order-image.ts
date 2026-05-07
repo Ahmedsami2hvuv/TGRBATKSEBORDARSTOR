@@ -1,4 +1,4 @@
-import { resizeImageBufferForShop } from "@/lib/image-resize";
+﻿import { resizeImageBufferForShop } from "@/lib/image-resize";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { uploadToR2 } from "@/lib/upload-storage";
@@ -115,7 +115,7 @@ async function detectSolidBackgroundColor(buffer: Buffer): Promise<{ r: number; 
 
     const inlierThresh = 35;
     const inliers = pts.filter(p => dist(p) <= inlierThresh).length;
-    // إذا أغلب نقاط الأطراف متقاربة → خلفية "لون واحد" غالباً، حتى لو بيها ضغط JPEG
+    // Ø¥Ø°Ø§ Ø£ØºÙ„Ø¨ Ù†Ù‚Ø§Ø· Ø§Ù„Ø£Ø·Ø±Ø§Ù Ù…ØªÙ‚Ø§Ø±Ø¨Ø© â†’ Ø®Ù„ÙÙŠØ© "Ù„ÙˆÙ† ÙˆØ§Ø­Ø¯" ØºØ§Ù„Ø¨Ø§Ù‹ØŒ Ø­ØªÙ‰ Ù„Ùˆ Ø¨ÙŠÙ‡Ø§ Ø¶ØºØ· JPEG
     if (inliers >= 6) return { r: med.r, g: med.g, b: med.b };
     return null;
   } catch {
@@ -136,9 +136,9 @@ async function tryColorKeyBackgroundRemoval(buffer: Buffer): Promise<Buffer | nu
     const ch = info.channels;
     if (ch < 4) return null;
 
-    // Soft alpha: نحول القرب من لون الخلفية إلى شفافية تدريجية لتفادي حواف "مكسّرة"
-    const inner = 18; // داخلها يعتبر خلفية غالباً
-    const outer = 95; // خارجها يعتبر منتج غالباً
+    // Soft alpha: Ù†Ø­ÙˆÙ„ Ø§Ù„Ù‚Ø±Ø¨ Ù…Ù† Ù„ÙˆÙ† Ø§Ù„Ø®Ù„ÙÙŠØ© Ø¥Ù„Ù‰ Ø´ÙØ§ÙÙŠØ© ØªØ¯Ø±ÙŠØ¬ÙŠØ© Ù„ØªÙØ§Ø¯ÙŠ Ø­ÙˆØ§Ù "Ù…ÙƒØ³Ù‘Ø±Ø©"
+    const inner = 18; // Ø¯Ø§Ø®Ù„Ù‡Ø§ ÙŠØ¹ØªØ¨Ø± Ø®Ù„ÙÙŠØ© ØºØ§Ù„Ø¨Ø§Ù‹
+    const outer = 95; // Ø®Ø§Ø±Ø¬Ù‡Ø§ ÙŠØ¹ØªØ¨Ø± Ù…Ù†ØªØ¬ ØºØ§Ù„Ø¨Ø§Ù‹
     const inv = 1 / Math.max(1, outer - inner);
 
     const out = Buffer.from(data); // copy
@@ -157,7 +157,7 @@ async function tryColorKeyBackgroundRemoval(buffer: Buffer): Promise<Buffer | nu
       out[i + 3] = Math.round(a * 255);
     }
 
-    // تنعيم بسيط للألفا لتخفيف الحواف (بدون تخريب المنتج)
+    // ØªÙ†Ø¹ÙŠÙ… Ø¨Ø³ÙŠØ· Ù„Ù„Ø£Ù„ÙØ§ Ù„ØªØ®ÙÙŠÙ Ø§Ù„Ø­ÙˆØ§Ù (Ø¨Ø¯ÙˆÙ† ØªØ®Ø±ÙŠØ¨ Ø§Ù„Ù…Ù†ØªØ¬)
     const softened = await sharp(out, { raw: { width: info.width, height: info.height, channels: ch } })
       .png()
       .toBuffer();
@@ -191,7 +191,7 @@ async function processAndUploadImage(
     mime = options?.mime || "image/jpeg";
   }
 
-  // 1. تصغير ومعالجة الصورة
+  // 1. ØªØµØºÙŠØ± ÙˆÙ…Ø¹Ø§Ù„Ø¬Ø© Ø§Ù„ØµÙˆØ±Ø©
   try {
     const resized = await resizeImageBufferForShop(buf, options?.removeBg ? 'png' : 'jpeg');
     if (resized) buf = resized as Buffer;
@@ -250,7 +250,7 @@ async function processAndUploadImage(
         } catch (e) { console.error("Software eraser failed", e); }
       }
 
-      // إذا الخلفية مو بيضاء بس "لون واحد" (مثل الأسود)، نجرب أداة مجانية ثانية
+      // Ø¥Ø°Ø§ Ø§Ù„Ø®Ù„ÙÙŠØ© Ù…Ùˆ Ø¨ÙŠØ¶Ø§Ø¡ Ø¨Ø³ "Ù„ÙˆÙ† ÙˆØ§Ø­Ø¯" (Ù…Ø«Ù„ Ø§Ù„Ø£Ø³ÙˆØ¯)ØŒ Ù†Ø¬Ø±Ø¨ Ø£Ø¯Ø§Ø© Ù…Ø¬Ø§Ù†ÙŠØ© Ø«Ø§Ù†ÙŠØ©
       if (buf === sourceBeforeRemoval) {
         const keyed = await tryColorKeyBackgroundRemoval(buf);
         if (keyed) {
@@ -263,18 +263,18 @@ async function processAndUploadImage(
     }
   }
 
-  // 2. الرفع إلى Cloudflare R2
+  // 2. Ø§Ù„Ø±ÙØ¹ Ø¥Ù„Ù‰ Cloudflare R2
   const fileName = `${randomUUID()}.${mime.split("/")[1]}`;
   const key = `${folder}/${fileName}`;
 
   const uploadedKey = await uploadToR2(buf, key, mime);
 
   if (uploadedKey) {
-    // إرجاع مسار نسبي لكي تتعامل معه صفحة عرض الصور
+    // Ø¥Ø±Ø¬Ø§Ø¹ Ù…Ø³Ø§Ø± Ù†Ø³Ø¨ÙŠ Ù„ÙƒÙŠ ØªØªØ¹Ø§Ù…Ù„ Ù…Ø¹Ù‡ ØµÙØ­Ø© Ø¹Ø±Ø¶ Ø§Ù„ØµÙˆØ±
     return `/uploads/${uploadedKey}`;
   }
 
-  // Fallback: إذا فشل R2، نعود للـ Base64 لكي لا يتوقف العمل (مؤقتاً)
+  // Fallback: Ø¥Ø°Ø§ ÙØ´Ù„ R2ØŒ Ù†Ø¹ÙˆØ¯ Ù„Ù„Ù€ Base64 Ù„ÙƒÙŠ Ù„Ø§ ÙŠØªÙˆÙ‚Ù Ø§Ù„Ø¹Ù…Ù„ (Ù…Ø¤Ù‚ØªØ§Ù‹)
   return `data:${mime};base64,${buf.toString("base64")}`;
 }
 
@@ -292,3 +292,4 @@ export async function saveCustomerDoorPhotoFromResizedBuffer(buf: Buffer, _mb: n
 export async function saveShopDoorPhotoFromResizedBuffer(buf: Buffer, _mb: number) { return processAndUploadImage(buf, "shops"); }
 export async function saveShopPhotoUploaded(file: File, mb: number) { return saveShopDoorPhotoUploaded(file, mb); }
 export async function saveShopPhotoFromResizedBuffer(buf: Buffer, mb: number) { return saveShopDoorPhotoFromResizedBuffer(buf, mb); }
+

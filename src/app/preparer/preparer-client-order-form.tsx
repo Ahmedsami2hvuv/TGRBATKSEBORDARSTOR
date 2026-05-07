@@ -346,7 +346,7 @@ function ClientOrderFormInner({
           </label>
 
           <label className="mt-4 flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-slate-800">سعر الطلب (بالألف) - اختياري</span>
+            <span className="text-sm font-medium text-slate-800">سعر الطلب  - اختياري</span>
             <input
               ref={orderPriceRef}
               name="orderSubtotal"

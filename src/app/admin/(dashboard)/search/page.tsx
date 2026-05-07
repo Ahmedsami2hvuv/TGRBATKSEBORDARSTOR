@@ -166,7 +166,7 @@ export default async function AdminSearchPage({ searchParams }: Props) {
           </label>
 
           <label className="flex flex-col gap-1 text-sm">
-            <span className={ad.label}>المبلغ من (بالألف)</span>
+            <span className={ad.label}>المبلغ من </span>
             <input
               name="minAmount"
               type="number"
@@ -178,7 +178,7 @@ export default async function AdminSearchPage({ searchParams }: Props) {
           </label>
 
           <label className="flex flex-col gap-1 text-sm">
-            <span className={ad.label}>المبلغ إلى (بالألف)</span>
+            <span className={ad.label}>المبلغ إلى </span>
             <input
               name="maxAmount"
               type="number"

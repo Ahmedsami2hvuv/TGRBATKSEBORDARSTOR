@@ -381,7 +381,7 @@ export function WalletLedgerInteractiveTable({
           انقر على الصف لفتح الطلبية عند توفرها.{" "}
           <span className="text-emerald-800 font-semibold">أخضر</span> ≈ صادر،{" "}
           <span className="text-red-800 font-semibold">أحمر</span> ≈ وارد (بحسب اتجاه
-          المحفظة). المبالغ بالألف.
+          المحفظة). المبالغ .
         </p>
       </div>
     </div>

@@ -107,7 +107,7 @@ function ProductPricingCard({ product, loading, onSave, icons }: {
       <div className="flex-1 min-w-0">
         <h3 className="font-black text-slate-800 truncate">{product.name}</h3>
         <p className="text-[10px] text-slate-400 font-bold italic">
-          بالألف: 2 = 2000 د.ع — ثم حفظ
+          : 2 = 2000 د.ع — ثم حفظ
         </p>
       </div>
 
@@ -122,7 +122,7 @@ function ProductPricingCard({ product, loading, onSave, icons }: {
             className="w-full pl-2 pr-12 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl text-center font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
           />
           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400 leading-tight text-center max-w-[2.25rem]">
-            ألف
+            
             <br />
             د.ع
           </span>

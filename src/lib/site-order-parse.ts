@@ -147,7 +147,7 @@ export function parseSiteOrderMessage(text: string): SiteOrderParsed | null {
   };
 }
 
-/** تحويل رقم صحيح من الرسالة إلى «ألف» كما في حقل رفع الطلب */
+/** تحويل رقم صحيح من الرسالة إلى «» كما في حقل رفع الطلب */
 export function parsedMoneyToAlf(n: number): number {
   if (!Number.isFinite(n) || n <= 0) return 0;
   if (n >= 1000) return n / 1000;

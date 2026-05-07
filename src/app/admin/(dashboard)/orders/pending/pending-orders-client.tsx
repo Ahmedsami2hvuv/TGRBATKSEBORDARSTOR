@@ -162,7 +162,9 @@ export function AdminPricingPanel({
   initialPreparerIds = [],
   shops = [],
   preparers = [],
-  onSuccess
+  rawDeliveryPriceDinar = null,
+  icons = null,
+  onSuccess,
 }: {
   orderId: string;
   initialData: any;
@@ -173,7 +175,7 @@ export function AdminPricingPanel({
   preparers?: { id: string; name: string }[];
   rawDeliveryPriceDinar?: number | null;
   onSuccess?: () => void;
-  icons: GlobalIconsConfig | null;
+  icons?: GlobalIconsConfig | null;
 }) {
   const findPreparerName = (id: string | null | undefined) => {
     return preparers.find((p) => p.id === id)?.name ?? null;
@@ -216,7 +218,7 @@ export function AdminPricingPanel({
   const bound = updateOrderPricingByAdmin.bind(null, orderId);
   const [state, formAction, pending] = useActionState(bound, {} as any);
 
-  // حساب سعر التوصيل بالألف من السعر الخام بالدينار، أو من initialData إذا توفر
+  // حساب سعر التوصيل  من السعر الخام بالدينار، أو من initialData إذا توفر
   const deliveryAlfVal = useMemo(() => {
     if (rawDeliveryPriceDinar != null) return rawDeliveryPriceDinar / 1000;
     return Number(initialData?.deliveryAlf || 0);
@@ -456,9 +458,9 @@ export function AdminPricingPanel({
 
       <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded-xl border border-amber-200 text-center shadow-inner">
         <div className="col-span-3 pb-2"><select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="w-full rounded-lg border border-amber-200 p-2 text-xs font-black outline-none bg-amber-50/50">{[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n} محلات</option>)}</select></div>
-        <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-100"><p className="text-[8px] font-bold text-emerald-600">المنتجات</p><p className="text-xs font-black font-mono">{totals.subtotal} ألف</p></div>
-        <div className="p-2 bg-sky-50 rounded-lg border border-sky-100"><p className="text-[8px] font-bold text-sky-600">توصيل</p><p className="text-xs font-black font-mono">{deliveryAlfVal > 0 ? deliveryAlfVal : "—"} ألف</p></div>
-        <div className="p-2 bg-violet-600 text-white rounded-lg shadow-md border border-violet-700"><p className="text-[8px] font-bold">المجموع</p><p className="text-sm font-black font-mono">{totals.total} ألف</p></div>
+        <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-100"><p className="text-[8px] font-bold text-emerald-600">المنتجات</p><p className="text-xs font-black font-mono">{totals.subtotal} </p></div>
+        <div className="p-2 bg-sky-50 rounded-lg border border-sky-100"><p className="text-[8px] font-bold text-sky-600">توصيل</p><p className="text-xs font-black font-mono">{deliveryAlfVal > 0 ? deliveryAlfVal : "—"} </p></div>
+        <div className="p-2 bg-violet-600 text-white rounded-lg shadow-md border border-violet-700"><p className="text-[8px] font-bold">المجموع</p><p className="text-sm font-black font-mono">{totals.total} </p></div>
       </div>
 
       <form action={formAction} className="space-y-3">

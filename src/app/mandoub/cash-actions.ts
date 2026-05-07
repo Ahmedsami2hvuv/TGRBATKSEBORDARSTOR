@@ -141,7 +141,7 @@ export async function submitMandoubPickupMoney(
 
   const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
   if (!parsed.ok) {
-    return { error: "أدخل المبلغ بالألف بشكل صحيح." };
+    return { error: "أدخل المبلغ  بشكل صحيح." };
   }
   const amountDinar = new Decimal(parsed.value);
   // السماح بإدخال 0 للأرصدة/المواقف الخاصة، لكن نطلب ملاحظة عند إدخال 0.
@@ -301,7 +301,7 @@ export async function submitMandoubDeliveryMoney(
 
   const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
   if (!parsed.ok) {
-    return { error: "أدخل المبلغ بالألف بشكل صحيح." };
+    return { error: "أدخل المبلغ  بشكل صحيح." };
   }
   const amountDinar = new Decimal(parsed.value);
   // السماح بإدخال 0 للأرصدة/المواقف الخاصة، لكن نطلب ملاحظة عند إدخال 0.
@@ -448,7 +448,7 @@ export async function submitMandoubMiscWalletEntry(
   }
   const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
   if (!parsed.ok) {
-    return { error: "أدخل المبلغ بالألف بشكل صحيح." };
+    return { error: "أدخل المبلغ  بشكل صحيح." };
   }
   const amountDinar = new Decimal(parsed.value);
   if (amountDinar.lte(0)) {

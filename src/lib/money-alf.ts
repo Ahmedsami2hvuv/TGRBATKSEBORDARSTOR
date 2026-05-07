@@ -1,4 +1,4 @@
-/** القيم المخزّنة في قاعدة البيانات بالدينار الكامل؛ العرض والإدخال بالألف (10 = 10000 دينار). */
+/** القيم المخزّنة في قاعدة البيانات بالدينار الكامل؛ العرض والإدخال  (10 = 10000 دينار). */
 
 export const ALF_PER_DINAR = 1000;
 
@@ -52,7 +52,7 @@ function trimTrailingZeros(s: string): string {
   return s.replace(/\.?0+$/, "") || "0";
 }
 
-/** عرض مبلغ مخزّن بالدينار كرقم بالألف (بدون كلمة «ألف»). */
+/** عرض مبلغ مخزّن بالدينار كرقم  (بدون كلمة «»). */
 export function formatDinarAsAlf(v: unknown): string {
   const n = toNumber(v);
   if (n == null) return "—";
@@ -63,10 +63,10 @@ export function formatDinarAsAlf(v: unknown): string {
 /** عرض مع ذكر الوحدة */
 export function formatDinarAsAlfWithUnit(v: unknown): string {
   if (toNumber(v) == null) return "—";
-  return `${formatDinarAsAlf(v)} ألف`;
+  return `${formatDinarAsAlf(v)} `;
 }
 
-/** قيمة افتراضية لحقول الإدخال (نص بالألف) من رقم دينار */
+/** قيمة افتراضية لحقول الإدخال (نص ) من رقم دينار */
 export function dinarDecimalToAlfInputString(v: unknown): string {
   const n = toNumber(v);
   if (n == null) return "";
@@ -74,7 +74,7 @@ export function dinarDecimalToAlfInputString(v: unknown): string {
   return trimTrailingZeros(alf.toFixed(2));
 }
 
-/** تحويل ما يكتبه المستخدم (بالألف) إلى دينار (رقم) للتخزين */
+/** تحويل ما يكتبه المستخدم  إلى دينار (رقم) للتخزين */
 export function parseAlfInputToDinarNumber(raw: string): number | null {
   const normalized = normalizeNumerals(raw).replace(/,/g, ".").trim();
   if (!normalized) return null;
@@ -102,12 +102,12 @@ export function parseOptionalAlfInputToDinar(
   return { ok: true, value: n * ALF_PER_DINAR };
 }
 
-/** للحسابات الداخلية: نص ألف → دينار، فارغ = 0 */
+/** للحسابات الداخلية: نص  → دينار، فارغ = 0 */
 export function parseAlfInputToDinarOrZero(raw: string): number {
   return parseAlfInputToDinarNumber(raw) ?? 0;
 }
 
-/** فلاتر البحث: المستخدم يدخل المبلغ بالألف → حدّ دينار في الاستعلام */
+/** فلاتر البحث: المستخدم يدخل المبلغ  → حدّ دينار في الاستعلام */
 export function alfAmountToDinarFilter(n: number): number {
   if (!Number.isFinite(n)) return n;
   return n * ALF_PER_DINAR;

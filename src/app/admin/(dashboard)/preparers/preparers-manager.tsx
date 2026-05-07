@@ -526,7 +526,7 @@ function PreparerCard({
                     <input
                       name="amountAlf"
                       inputMode="decimal"
-                      placeholder="المبلغ (ألف)"
+                      placeholder="المبلغ "
                       className="h-12 w-32 rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 text-center font-black outline-none focus:border-amber-500 focus:bg-white transition"
                     />
                     <button

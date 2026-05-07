@@ -182,19 +182,19 @@ export function UIDesignerClient({ initialTarget, initialSection, initialConfig 
         case "wallet_in_out":
           return (
             <div key={id} className="grid grid-cols-2 gap-2" style={{ gridColumn: 'span 2' }}>
-              <div style={blockStyle} className="p-3 rounded-xl border border-black/5 text-center"><p className="text-[8px] opacity-50">صادر</p><p className="font-black text-xs">120 ألف</p></div>
-              <div style={blockStyle} className="p-3 rounded-xl border border-black/5 text-center"><p className="text-[8px] opacity-50">وارد</p><p className="font-black text-xs text-emerald-600">350 ألف</p></div>
+              <div style={blockStyle} className="p-3 rounded-xl border border-black/5 text-center"><p className="text-[8px] opacity-50">صادر</p><p className="font-black text-xs">120 </p></div>
+              <div style={blockStyle} className="p-3 rounded-xl border border-black/5 text-center"><p className="text-[8px] opacity-50">وارد</p><p className="font-black text-xs text-emerald-600">350 </p></div>
             </div>
           );
         case "cash_in_hand":
           return (
-            <div key={id} style={{ ...blockStyle, backgroundColor: '#10b981', color: 'white' }} className="p-4 rounded-2xl text-center shadow-lg"><p className="text-[9px] font-bold">الكاش الموجود</p><p className="text-xl font-black">230 ألف</p></div>
+            <div key={id} style={{ ...blockStyle, backgroundColor: '#10b981', color: 'white' }} className="p-4 rounded-2xl text-center shadow-lg"><p className="text-[9px] font-bold">الكاش الموجود</p><p className="text-xl font-black">230 </p></div>
           );
         case "site_and_remain":
           return (
             <div key={id} className="grid grid-cols-2 gap-2" style={{ gridColumn: 'span 2' }}>
-              <div style={blockStyle} className="p-2 rounded-xl border border-black/5 text-center"><p className="text-[8px] opacity-50">الموقع</p><p className="font-bold text-[10px]">90 ألف</p></div>
-              <div style={blockStyle} className="p-2 rounded-xl border border-black/5 text-center"><p className="text-[8px] opacity-50">المتبقي</p><p className="font-bold text-[10px]">140 ألف</p></div>
+              <div style={blockStyle} className="p-2 rounded-xl border border-black/5 text-center"><p className="text-[8px] opacity-50">الموقع</p><p className="font-bold text-[10px]">90 </p></div>
+              <div style={blockStyle} className="p-2 rounded-xl border border-black/5 text-center"><p className="text-[8px] opacity-50">المتبقي</p><p className="font-bold text-[10px]">140 </p></div>
             </div>
           );
       }

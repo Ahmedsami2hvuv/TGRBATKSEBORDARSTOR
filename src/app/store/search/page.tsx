@@ -84,7 +84,7 @@ export default async function StoreSearchPage({ searchParams }: { searchParams: 
                         <span className="text-sm md:text-2xl font-black text-violet-600">
                           {(Number(product.salePrice) / 1000).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 3 })}
                         </span>
-                        <span className="text-[8px] md:text-[10px] font-black text-slate-400 mr-1 uppercase">ألف</span>
+                        <span className="text-[8px] md:text-[10px] font-black text-slate-400 mr-1 uppercase"></span>
                       </div>
                       <AddToCartButton product={{
                         id: product.id,

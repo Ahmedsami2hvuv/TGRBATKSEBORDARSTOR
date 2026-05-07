@@ -82,16 +82,16 @@ export function ReportTableClient({ orders }: { orders: any[] }) {
                     </>
                   ) : viewMode === "meat" ? (
                     <>
-                      <td className="px-4 py-4 text-center font-mono font-bold text-red-800">{order.meatBuyAlf} ألف</td>
-                      <td className="px-4 py-4 text-center font-mono font-bold text-emerald-800">{order.meatSellAlf} ألف</td>
+                      <td className="px-4 py-4 text-center font-mono font-bold text-red-800">{order.meatBuyAlf} </td>
+                      <td className="px-4 py-4 text-center font-mono font-bold text-emerald-800">{order.meatSellAlf} </td>
                       <td className="px-4 py-4 text-center font-mono font-black text-red-950 bg-red-100/30">
                         {formatDinarAsAlfWithUnit(order.meatProfitAlf * 1000)}
                       </td>
                     </>
                   ) : (
                     <>
-                      <td className="px-4 py-4 text-center font-mono font-bold text-sky-800">{order.fishBuyAlf} ألف</td>
-                      <td className="px-4 py-4 text-center font-mono font-bold text-emerald-800">{order.fishSellAlf} ألف</td>
+                      <td className="px-4 py-4 text-center font-mono font-bold text-sky-800">{order.fishBuyAlf} </td>
+                      <td className="px-4 py-4 text-center font-mono font-bold text-emerald-800">{order.fishSellAlf} </td>
                       <td className="px-4 py-4 text-center font-mono font-black text-sky-950 bg-sky-100/30">
                         {formatDinarAsAlfWithUnit(order.fishProfitAlf * 1000)}
                       </td>

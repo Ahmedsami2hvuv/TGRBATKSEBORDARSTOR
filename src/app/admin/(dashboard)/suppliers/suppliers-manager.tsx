@@ -69,7 +69,7 @@ function AddSupplierForm({ icons }: { icons: GlobalIconsConfig | null }) {
             <input name="phone" className={ad.input} value={phone} onChange={e => setPhone(e.target.value)} placeholder="07..." />
           </label>
           <label className="flex flex-col gap-1">
-            <span className={ad.label}>هامش الربح (ألف)</span>
+            <span className={ad.label}>هامش الربح </span>
             <input name="profitMargin" type="number" step="0.05" className={ad.input} value={margin} onChange={e => setMargin(e.target.value)} />
           </label>
         </div>
@@ -101,7 +101,7 @@ function SupplierCard({ row, allProducts, icons }: { row: SupplierManagerRow; al
             </div>
             <div>
               <h3 className="text-xl font-black text-slate-900">{row.name}</h3>
-              <p className="text-sm font-bold text-slate-500">الربح: {row.profitMargin} ألف | {row.phone || "بدون هاتف"}</p>
+              <p className="text-sm font-bold text-slate-500">الربح: {row.profitMargin}  | {row.phone || "بدون هاتف"}</p>
             </div>
           </div>
 

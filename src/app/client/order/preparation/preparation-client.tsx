@@ -171,7 +171,7 @@ export function EmployeePreparationClient({
         </div>
         <p className="mt-1 text-xs text-slate-600">
           المحل: <strong>{shopName}</strong> | المنطقة: {shopRegionName} | توصيل المحل:{" "}
-          <strong>{shopDeliveryAlf.toFixed(2)} ألف</strong>
+          <strong>{shopDeliveryAlf.toFixed(2)} </strong>
         </p>
         <textarea
           value={pasteText}
