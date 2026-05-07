@@ -144,13 +144,28 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
   }
 
   const getCustomerDoorUrl = () => {
+    // 1. الأولوية لصورة الباب المسجلة في الطلب نفسه (سواء R2 أو API أو Base64)
+    const fromOrder = order.customerDoorPhotoUrl?.trim();
+    if (fromOrder) {
+      if (fromOrder.startsWith("data:")) return `/api/image/order/${order.id}/customerDoor`;
+      return fromOrder;
+    }
+
+    // 2. إذا لم توجد، نأخذها من ملف الزبون المرتبط
     const fromCustomer = order.customer?.customerDoorPhotoUrl?.trim();
-    if (fromCustomer?.startsWith("data:")) return null;
-    if (fromCustomer) return fromCustomer;
-    if (order.customerDoorPhotoUrl?.trim()?.startsWith("data:")) return `/api/image/order/${order.id}/customerDoor`;
-    if (order.customerDoorPhotoUrl?.trim()) return order.customerDoorPhotoUrl;
-    if (customerPhoneProfile?.photoUrl?.trim()?.startsWith("data:")) return `/api/image/customerPhoneProfile/${customerPhoneProfile.id}/photo`;
-    return customerPhoneProfile?.photoUrl?.trim() || null;
+    if (fromCustomer) {
+      if (fromCustomer.startsWith("data:")) return null; // لا يمكننا جلب Base64 الخاص بالزبون عبر رابط الطلب بسهولة هنا
+      return fromCustomer;
+    }
+
+    // 3. الأولوية الأخيرة لبروفايل رقم الهاتف
+    const fromProfile = customerPhoneProfile?.photoUrl?.trim();
+    if (fromProfile) {
+      if (fromProfile.startsWith("data:")) return `/api/image/customerPhoneProfile/${customerPhoneProfile.id}/photo`;
+      return fromProfile;
+    }
+
+    return null;
   };
   const customerDoorPhotoUrlEffective: string | null = getCustomerDoorUrl();
 

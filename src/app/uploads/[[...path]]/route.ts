@@ -65,10 +65,20 @@ function buildCandidateKeys(originalKey: string): string[] {
   const slash = key.lastIndexOf("/");
   const fileName = slash >= 0 ? key.slice(slash + 1) : key;
   if (fileName) {
-    const folders = ["customers", "profiles", "orders", "shops", "branches"];
+    // قائمة شاملة للمجلدات المحتملة (مفرد وجمع) لضمان الوصول لأي صورة قديمة
+    const folders = [
+      "customers", "customer",
+      "profiles", "profile",
+      "orders", "order",
+      "shops", "shop",
+      "branches", "branch",
+      "attachments", "attachment",
+      "customer-photos", "door-photos"
+    ];
     for (const folder of folders) {
       out.add(`${folder}/${fileName}`);
     }
+    out.add(fileName); // تجربة الملف في الجذر أيضاً
   }
 
   const more = [...out];
@@ -120,14 +130,27 @@ export async function GET(
       return new NextResponse("File Empty", { status: 404 });
     }
 
-    // تحويل البيانات إلى Buffer لضمان التوافق مع المتصفحات
     const byteArray = await response.Body.transformToByteArray();
+
+    // تحديد Content-Type بناءً على الامتداد إذا لم يكن معروفاً من R2
+    let contentType = response.ContentType;
+    if (!contentType || contentType === "application/octet-stream") {
+      const lowerCandidate = candidateKeys[0]?.toLowerCase() || "";
+      if (lowerCandidate.endsWith(".jpg") || lowerCandidate.endsWith(".jpeg")) contentType = "image/jpeg";
+      else if (lowerCandidate.endsWith(".png")) contentType = "image/png";
+      else if (lowerCandidate.endsWith(".webp")) contentType = "image/webp";
+      else if (lowerCandidate.endsWith(".svg")) contentType = "image/svg+xml";
+      else if (lowerCandidate.endsWith(".mp3")) contentType = "audio/mpeg";
+      else if (lowerCandidate.endsWith(".wav")) contentType = "audio/wav";
+      else if (lowerCandidate.endsWith(".m4a")) contentType = "audio/mp4";
+      else contentType = "image/jpeg"; // default fallback
+    }
 
     return new NextResponse(byteArray, {
       headers: {
-        "Content-Type": response.ContentType || "image/jpeg",
+        "Content-Type": contentType,
         "Cache-Control": "public, max-age=31536000, immutable",
-        "Access-Control-Allow-Origin": "*", // للسماح بعرض الصور في أي مكان
+        "Access-Control-Allow-Origin": "*",
       },
     });
   } catch (error) {

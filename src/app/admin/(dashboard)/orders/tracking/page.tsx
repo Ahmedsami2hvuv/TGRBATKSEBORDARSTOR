@@ -274,19 +274,21 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       deliverySumDinar: deliverySum != null ? Number(deliverySum) : null,
       createdAt: o.createdAt,
       // بيانات الوصول السريع
-      audioUrl: resolvePublicAssetSrc(o.voiceNoteUrl) || null,
-      adminAudioUrl: resolvePublicAssetSrc(o.adminVoiceNoteUrl) || null,
+      audioUrl: resolvePublicAssetSrc(o.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/voice` : (o.voiceNoteUrl || null)),
+      adminAudioUrl: resolvePublicAssetSrc(o.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/admin-voice` : (o.adminVoiceNoteUrl || null)),
       shopPhone: o.shop.phone || "",
       shopLocationUrl: o.shop.locationUrl || "",
       customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl,
-      shopDoorPhotoUrl: resolvePublicAssetSrc(o.shopDoorPhotoUrl || o.shop.photoUrl) || null,
+      shopDoorPhotoUrl: resolvePublicAssetSrc(
+        o.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/shopDoor` : (o.shopDoorPhotoUrl || o.shop.photoUrl || null)
+      ),
       customerDoorPhotoUrl: resolvePublicAssetSrc(
-        phoneProfile?.photoUrl ||
-        o.customer?.customerDoorPhotoUrl ||
-        o.customerDoorPhotoUrl,
-      ) || null,
-      secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(o.secondCustomerDoorPhotoUrl) || null,
+        o.customerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/customerDoor` : (o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || phoneProfile?.photoUrl || null)
+      ),
+      secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(
+        o.secondCustomerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/secondCustomerDoor` : (o.secondCustomerDoorPhotoUrl || null)
+      ),
     };
   });
 
