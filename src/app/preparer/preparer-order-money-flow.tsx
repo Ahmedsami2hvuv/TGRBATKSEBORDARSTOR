@@ -173,7 +173,8 @@ export function PreparerOrderMoneyFlow({
   const showPickupFab = hasOrderSubtotal && !pickupComplete;
   const showDeliveryFab = hasTotalAmount && !deliveryComplete;
 
-  const canMarkPickedUp = orderStatus === "assigned" && hasOrderSubtotal;
+  // حسب طلبك: إلغاء زر «استلام الطلب» من واجهة المجهز.
+  const canMarkPickedUp = false;
   const canMarkDelivered = orderStatus === "delivering" && hasTotalAmount;
 
   const pickupPanelOpen = pickupOpen && (showPickupFab || pickupAdvanceToDelivering);
@@ -207,13 +208,6 @@ export function PreparerOrderMoneyFlow({
         showStatusFab={canMarkPickedUp || canMarkDelivered}
         statusFabMode={canMarkPickedUp ? "pickedUp" : "delivered"}
         onStatusFabClick={() => {
-          if (orderStatus === "assigned") {
-            setPickupAdvanceToDelivering(true);
-            setDeliveryAdvanceToDelivered(false);
-            setPickupOpen(true);
-            setDeliveryOpen(false);
-            return;
-          }
           setDeliveryAdvanceToDelivered(true);
           setPickupAdvanceToDelivering(false);
           setDeliverySession((n) => n + 1);
