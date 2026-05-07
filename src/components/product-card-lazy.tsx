@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AddToCartButton } from "@/app/store/add-to-cart-button";
 
 export function ProductCardLazy({
@@ -17,6 +17,25 @@ export function ProductCardLazy({
   const [isFavorite, setIsFavorite] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
+  const hasPushedHistoryRef = useRef(false);
+  const ignoreNextPopRef = useRef(false);
+
+  const openModal = () => {
+    setActivePhotoIndex(0);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+
+    // عند الغلق يدوياً نزيل entry الخاص بنا من history
+    // حتى لا يصبح زر الرجوع "مضلِّل" أو يخرج المستخدم بعد الغلق.
+    if (hasPushedHistoryRef.current) {
+      ignoreNextPopRef.current = true;
+      hasPushedHistoryRef.current = false;
+      window.history.back();
+    }
+  };
 
   useEffect(() => {
     const favorites = JSON.parse(localStorage.getItem("kse_favorites") || "[]");
@@ -26,6 +45,51 @@ export function ProductCardLazy({
       setSelectedVariant(product.variants[0]);
     }
   }, [product.id, product.hasVariants, product.variants]);
+
+  // دعم زر الرجوع من الهاتف:
+  // - إذا كانت النافذة مفتوحة: زر الرجوع يغلقها فقط.
+  // - إذا كانت النافذة غير مفتوحة: زر الرجوع يخرج المستخدم من صفحة الفرع بشكل طبيعي.
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    ignoreNextPopRef.current = false;
+
+    if (!hasPushedHistoryRef.current) {
+      hasPushedHistoryRef.current = true;
+      window.history.pushState(
+        { kse_modal_product: true, productId: product.id },
+        ""
+      );
+    }
+
+    const handlePopState = () => {
+      if (ignoreNextPopRef.current) {
+        ignoreNextPopRef.current = false;
+        return;
+      }
+      hasPushedHistoryRef.current = false;
+      setIsModalOpen(false);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+
+      setIsModalOpen(false);
+      if (hasPushedHistoryRef.current) {
+        ignoreNextPopRef.current = true;
+        hasPushedHistoryRef.current = false;
+        window.history.back();
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isModalOpen, product.id]);
 
   const toggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -63,7 +127,7 @@ export function ProductCardLazy({
   return (
     <>
       <div
-        onClick={() => setIsModalOpen(true)}
+        onClick={openModal}
         className="group bg-white dark:bg-slate-900 rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-lg shadow-slate-200/40 dark:shadow-none overflow-hidden flex flex-col hover:border-violet-400 dark:hover:border-violet-600 hover:-translate-y-4 hover:scale-110 hover:z-30 hover:shadow-[0_20px_50px_rgba(139,92,246,0.3)] transition-all duration-500 relative cursor-pointer"
       >
         <button
@@ -77,7 +141,7 @@ export function ProductCardLazy({
 
         {/* حاوية الصورة - ثابتة الأبعاد لضمان ظهور النصوص فوراً */}
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={openModal}
           className="relative aspect-square overflow-hidden bg-slate-100 dark:bg-slate-800/50 text-right"
         >
           {bgUrl && (
@@ -116,7 +180,7 @@ export function ProductCardLazy({
         <div className="p-3 md:p-6 flex-1 flex flex-col relative z-10 bg-white dark:bg-slate-900 border-t border-slate-50 dark:border-slate-800">
           <div className="flex justify-between items-start mb-1 gap-2">
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={openModal}
               className="text-sm md:text-xl font-black text-slate-900 dark:text-white group-hover:text-violet-600 transition-colors line-clamp-1 flex-1 text-right hover:text-violet-600"
             >
               {product.name}
@@ -137,14 +201,19 @@ export function ProductCardLazy({
       {isModalOpen && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
-          onClick={() => setIsModalOpen(false)}
+          onClick={closeModal}
         >
           <div
             className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => setIsModalOpen(false)}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeModal();
+              }}
               className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg font-bold text-slate-900 dark:text-white hover:bg-white transition-colors"
             >
               ✕
