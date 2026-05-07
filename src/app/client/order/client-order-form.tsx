@@ -97,6 +97,7 @@ function ClientOrderFormInner({
   const [q, setQ] = useState(initialOrder?.customerRegion.name ?? "");
   const [hits, setHits] = useState<RegionHit[]>([]);
   const [selected, setSelected] = useState<RegionHit | null>(initialOrder?.customerRegion ?? null);
+  const latestRegionSearchRequestIdRef = useRef(0);
 
   const [orderPrice, setOrderPrice] = useState(initialOrder?.orderSubtotal ?? "");
   const [orderType, setOrderType] = useState(
@@ -119,7 +120,8 @@ function ClientOrderFormInner({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
-    if (q.trim().length < 2) {
+    const query = q.trim();
+    if (query.length < 2) {
       setHits([]);
       return;
     }
@@ -128,13 +130,18 @@ function ClientOrderFormInner({
       return;
     }
 
+    const requestId = ++latestRegionSearchRequestIdRef.current;
     const t = setTimeout(() => {
       void (async () => {
         try {
-          const r = await fetch(`/api/regions/search?q=${encodeURIComponent(q.trim())}`);
+          const r = await fetch(`/api/regions/search?q=${encodeURIComponent(query)}`);
           const j = (await r.json()) as { regions?: RegionHit[] };
+          // إذا كانت نتيجة قديمة رجعت بعد ما غيّر المستخدم الكتابة/اختيار المنطقة
+          // نمنعها من إعادة فتح القائمة.
+          if (requestId !== latestRegionSearchRequestIdRef.current) return;
           setHits(j.regions ?? []);
         } catch {
+          if (requestId !== latestRegionSearchRequestIdRef.current) return;
           setHits([]);
         }
       })();
@@ -351,7 +358,7 @@ function ClientOrderFormInner({
                 <input ref={regionSearchRef} value={q} onChange={(e) => setQ(e.target.value)} className={`${inputClass} ${isRegionErr ? inputErrorClass : ""}`} placeholder="ابحث عن المنطقة..." required />
               </label>
 
-              {hits.length > 0 && (
+              {hits.length > 0 && !(selected && q === selected.name) && (
                 <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-100">
                   {hits.map((h) => (
                     <button key={h.id} type="button" onClick={() => { setSelected(h); setQ(h.name); setHits([]); }} className="flex w-full flex-col px-4 py-3 text-right transition hover:bg-sky-50 border-b border-slate-50 last:border-0">

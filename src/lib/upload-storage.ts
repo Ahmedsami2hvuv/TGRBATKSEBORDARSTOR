@@ -19,13 +19,29 @@ export async function uploadToR2(buffer: Buffer, key: string, contentType: strin
 
   if (contentType.startsWith("image/") && !contentType.includes("gif")) {
     try {
-      finalBuffer = await sharp(buffer)
-        .resize({ width: 1200, withoutEnlargement: true })
-        .jpeg({ quality: 80 })
-        .toBuffer();
-      finalContentType = "image/jpeg";
-      if (!key.endsWith(".jpg") && !key.endsWith(".jpeg")) {
-        key = key.replace(/\.[^/.]+$/, "") + ".jpg";
+      // IMPORTANT: if we generated a transparent PNG (removeBg),
+      // converting it to JPEG will drop alpha and typically renders
+      // transparent pixels as black. Keep PNG as PNG.
+      const isPng = contentType === "image/png";
+
+      if (isPng) {
+        finalBuffer = await sharp(buffer)
+          .resize({ width: 1200, withoutEnlargement: true })
+          .png({ compressionLevel: 9 })
+          .toBuffer();
+        finalContentType = "image/png";
+        if (!key.endsWith(".png")) {
+          key = key.replace(/\.[^/.]+$/, "") + ".png";
+        }
+      } else {
+        finalBuffer = await sharp(buffer)
+          .resize({ width: 1200, withoutEnlargement: true })
+          .jpeg({ quality: 80 })
+          .toBuffer();
+        finalContentType = "image/jpeg";
+        if (!key.endsWith(".jpg") && !key.endsWith(".jpeg")) {
+          key = key.replace(/\.[^/.]+$/, "") + ".jpg";
+        }
       }
     } catch (e) {
       console.warn("Failed to compress image:", e);
