@@ -523,7 +523,7 @@ export function UnifiedOrderListTable({
                                </div>
                              )}
 
-                             {/* زر البصمات الصوتية الموحد */}
+                             {/* زر الملاحظات الصوتية الموحد */}
                              {((o.audioUrl?.trim() && o.audioUrl.trim().length > 2) ||
                                (o.preparerAudioUrl?.trim() && o.preparerAudioUrl.trim().length > 2) ||
                                (o.adminAudioUrl?.trim() && o.adminAudioUrl.trim().length > 2)) && (
@@ -534,18 +534,18 @@ export function UnifiedOrderListTable({
                                      setActiveAudioId(activeAudioId === o.id ? null : o.id);
                                      setActiveCallId(null); setActiveMsgId(null); setActiveLocId(null); setActiveDoorId(null);
                                    }}
-                                   title="البصمات الصوتية المرفقة"
+                                   title="الملاحظات الصوتية المرفقة"
                                    className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeAudioId === o.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-indigo-500 hover:bg-indigo-500 hover:text-white'}`}
                                  >
                                    <DynamicIcon iconKey="ui_audio" config={icons} fallback="🎤" className="w-3.5 h-3.5" />
                                  </button>
                                  {activeAudioId === o.id && (
-                                   <CenterModal title="تشغيل البصمة الصوتية لـ:" onClose={() => setActiveAudioId(null)}>
+                                   <CenterModal title="تشغيل الملاحظة الصوتية لـ:" onClose={() => setActiveAudioId(null)}>
                                      <div className="flex flex-col gap-1">
                                        {o.audioUrl && o.audioUrl.trim().length > 2 && (
                                          <div className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-slate-100 hover:bg-indigo-50 transition-colors">
                                             <div className="flex items-center gap-3 font-black text-slate-700">
-                                              <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> بصمة المحل
+                                              <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> من المحل
                                             </div>
                                             <MiniAudioPlayer url={o.audioUrl.trim()} />
                                          </div>
@@ -553,7 +553,7 @@ export function UnifiedOrderListTable({
                                        {o.preparerAudioUrl && o.preparerAudioUrl.trim().length > 2 && (
                                          <div className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-slate-100 hover:bg-indigo-50 transition-colors">
                                             <div className="flex items-center gap-3 font-black text-slate-700">
-                                              <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">📦</span> بصمة التجهيز
+                                              <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">📦</span> التجهيز
                                             </div>
                                             <MiniAudioPlayer url={o.preparerAudioUrl.trim()} />
                                          </div>
@@ -561,7 +561,7 @@ export function UnifiedOrderListTable({
                                        {o.adminAudioUrl && o.adminAudioUrl.trim().length > 2 && (
                                          <div className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-slate-100 hover:bg-indigo-50 transition-colors">
                                             <div className="flex items-center gap-3 font-black text-slate-700">
-                                              <span className="size-10 flex items-center justify-center rounded-full bg-rose-100 text-rose-600 text-xl">👑</span> بصمة الإدارة
+                                              <span className="size-10 flex items-center justify-center rounded-full bg-rose-100 text-rose-600 text-xl">👑</span> من الإدارة
                                             </div>
                                             <MiniAudioPlayer url={o.adminAudioUrl.trim()} />
                                          </div>

@@ -15,6 +15,7 @@ import { ImageUploaderCaption } from "@/components/image-uploader-caption";
 import { VoiceNoteAudio } from "@/components/voice-note-audio";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { PreparerOrderMoneyFlow } from "./preparer-order-money-flow";
+import { PreparerDetailPhotoUploadRow } from "./preparer-order-detail-photo-buttons";
 import { NotesCopyButton } from "@/components/notes-copy-button";
 import { OrderTypeDetailBlock } from "@/components/order-type-line";
 import { UISectionConfig } from "@/lib/ui-settings";
@@ -39,6 +40,19 @@ function contactLine(phone: string): string {
   return t || "—";
 }
 
+function formatOrderUploadDateBaghdad(createdAt: Date): string {
+  return createdAt.toLocaleString("ar-IQ-u-nu-latn", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Baghdad",
+  });
+}
+
 const locBtnEmerald =
   "inline-flex min-h-[34px] max-w-full items-center justify-center rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 sm:px-3 sm:text-[13px]";
 const locBtnSecond =
@@ -56,11 +70,12 @@ const squarePhotoContain = "h-full w-full object-contain";
 const PREPARER_ORDER_DETAIL_LAYOUT = [
   "preparer_voice_notes",
   "preparer_shop_block",
+  "preparer_shop_door",
   "preparer_customer_region",
   "preparer_prices",
+  "preparer_order_image",
   "preparer_notes",
   "money_flow",
-  "preparer_order_image",
 ] as const;
 
 function preparerShoppingAudioUrl(order: MandoubOrderDetailPayload): string {
@@ -146,36 +161,33 @@ export function PreparerOrderDetailSection({
           Boolean(order.voiceNoteUrl?.trim()) ||
           Boolean(order.adminVoiceNoteUrl?.trim()) ||
           Boolean(prepAudio);
+        if (!hasAny) return null;
         return (
           <div key="preparer_voice" className="rounded-xl border-2 border-amber-200 bg-amber-50/40 p-4" style={blockStyle}>
             <div className="mb-3 flex items-center gap-2">
               <DynamicIcon iconKey="ui_audio" config={icons} className="h-5 w-5 text-amber-800" fallback={<span>🎤</span>} />
               <h3 className="text-lg font-bold text-amber-950 sm:text-xl">الملاحظات الصوتية</h3>
             </div>
-            {!hasAny ? (
-              <p className="text-sm font-semibold text-amber-900/80">لا توجد بصمات صوتية لهذا الطلب.</p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {order.voiceNoteUrl?.trim() ? (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-bold text-amber-900">بصمة المحل / الزبون</span>
-                    <VoiceNoteAudio src={resolvePublicAssetSrc(order.voiceNoteUrl.trim()) || ""} />
-                  </div>
-                ) : null}
-                {order.adminVoiceNoteUrl?.trim() ? (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-bold text-amber-900">بصمة الإدارة</span>
-                    <VoiceNoteAudio src={resolvePublicAssetSrc(order.adminVoiceNoteUrl.trim()) || ""} />
-                  </div>
-                ) : null}
-                {prepAudio ? (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-bold text-amber-900">بصمة التجهيز</span>
-                    <VoiceNoteAudio src={resolvePublicAssetSrc(prepAudio) || ""} />
-                  </div>
-                ) : null}
-              </div>
-            )}
+            <div className="flex flex-col gap-3">
+              {order.voiceNoteUrl?.trim() ? (
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-bold text-amber-900">من المحل أو الزبون</span>
+                  <VoiceNoteAudio src={resolvePublicAssetSrc(order.voiceNoteUrl.trim()) || ""} />
+                </div>
+              ) : null}
+              {order.adminVoiceNoteUrl?.trim() ? (
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-bold text-amber-900">من الإدارة</span>
+                  <VoiceNoteAudio src={resolvePublicAssetSrc(order.adminVoiceNoteUrl.trim()) || ""} />
+                </div>
+              ) : null}
+              {prepAudio ? (
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-bold text-amber-900">التجهيز</span>
+                  <VoiceNoteAudio src={resolvePublicAssetSrc(prepAudio) || ""} />
+                </div>
+              ) : null}
+            </div>
           </div>
         );
       }
@@ -190,12 +202,49 @@ export function PreparerOrderDetailSection({
               <DynamicIcon iconKey="ui_shops" config={icons} className="h-5 w-5 text-emerald-700" fallback={null} />
               <h3 className="text-lg font-bold text-emerald-900 sm:text-xl">اسم المحل</h3>
             </div>
-            <p className="text-lg font-black leading-snug text-slate-900 sm:text-xl">{order.shop.name}</p>
-            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-base font-semibold text-slate-800">
+            <p className="text-lg font-black leading-snug text-slate-900 dark:text-slate-100 sm:text-xl">{order.shop.name}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-base font-semibold text-slate-800 dark:text-slate-200">
               <DynamicIcon iconKey="ui_user" config={icons} className="h-4 w-4 text-slate-500" fallback={null} />
               <span className="text-slate-600">موظف المحل (اسم العميل): </span>
               <span className="font-bold text-slate-900">{contactName}</span>
             </div>
+          </div>
+        );
+      }
+      case "preparer_shop_door": {
+        const doorRaw = order.shopDoorPhotoUrl?.trim() || "";
+        const doorSrc = doorRaw ? imgSrc(doorRaw) : null;
+        const shopPhotoRaw = order.shop.photoUrl?.trim() || "";
+        const fallbackSrc = !doorSrc && shopPhotoRaw ? imgSrc(shopPhotoRaw) : null;
+        const displaySrc = doorSrc || fallbackSrc;
+        return (
+          <div
+            key="preparer_shop_door"
+            className="mx-auto max-w-md rounded-xl border-2 border-emerald-200 bg-emerald-50/40 p-4 dark:border-emerald-800 dark:bg-emerald-950/25"
+            style={blockStyle}
+          >
+            <div className="mb-2 flex items-center justify-center gap-2">
+              <DynamicIcon iconKey="ui_shops" config={icons} className="h-5 w-5 text-emerald-700 dark:text-emerald-300" fallback={<span>🏪</span>} />
+              <h3 className="text-center text-lg font-bold text-emerald-950 dark:text-emerald-100 sm:text-xl">صورة باب المحل</h3>
+            </div>
+            {displaySrc ? (
+              <div>
+                <div className={`${squarePhotoFrame} dark:border-emerald-800 dark:bg-slate-900`}>
+                  <img src={displaySrc} alt="" className={squarePhotoCover} />
+                </div>
+                {doorSrc && order.shopDoorPhotoUploadedByName?.trim() ? (
+                  <ImageUploaderCaption name={order.shopDoorPhotoUploadedByName} />
+                ) : null}
+                {!doorSrc && fallbackSrc ? (
+                  <p className="mt-2 text-center text-xs font-semibold text-slate-600 dark:text-slate-400">
+                    صورة المحل العامة — لم يُرفع بعد باب خاص بهذا الطلب
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mb-2 text-center text-sm font-semibold text-slate-600 dark:text-slate-400">لا توجد صورة باب محل بعد</p>
+            )}
+            <PreparerDetailPhotoUploadRow auth={auth} orderId={order.id} field="shopDoorPhoto" />
           </div>
         );
       }
@@ -221,12 +270,12 @@ export function PreparerOrderDetailSection({
             <div className="flex flex-wrap items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
               <DynamicIcon iconKey="wallet_cash" config={icons} className="h-5 w-5 text-slate-500" fallback={null} />
               <span className="text-sm font-bold text-slate-700 sm:text-base">سعر الطلب بدون توصيل: </span>
-              <span>{order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)} ألف` : "—"}</span>
+              <span>{order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)}` : "—"}</span>
             </div>
             <div className="flex flex-wrap items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
               <DynamicIcon iconKey="ui_courier" config={icons} className="h-5 w-5 text-slate-500" fallback={null} />
               <span className="text-sm font-bold text-slate-700 sm:text-base">سعر التوصيل: </span>
-              <span>{order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)} ألف` : "—"}</span>
+              <span>{order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)}` : "—"}</span>
             </div>
             <div className="rounded-lg border border-violet-500/55 bg-violet-500/35 px-3 py-3 sm:px-5 sm:py-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)]">
               <div className="flex items-center gap-1.5 text-sm font-bold text-violet-950 sm:text-base">
@@ -242,6 +291,7 @@ export function PreparerOrderDetailSection({
       }
       case "preparer_notes": {
         const text = order.summary?.trim() || "";
+        if (!text) return null;
         return (
           <div key="preparer_notes" className="relative rounded-xl border-2 border-amber-200 bg-amber-50/30 p-4" style={blockStyle}>
             <div className="absolute end-3 top-3">
@@ -252,28 +302,31 @@ export function PreparerOrderDetailSection({
               <h3 className="text-lg font-bold text-amber-950 sm:text-xl">الملاحظات</h3>
             </div>
             <div className="whitespace-pre-wrap text-base font-bold leading-relaxed text-slate-800">
-              {text || "لا توجد ملاحظات"}
+              {text}
             </div>
           </div>
         );
       }
       case "preparer_order_image": {
-        const src = order.imageUrl?.trim() && imgSrc(order.imageUrl.trim());
+        const src = order.imageUrl?.trim() ? imgSrc(order.imageUrl.trim()) : null;
         return (
-          <div key="preparer_order_img" className="mx-auto max-w-md rounded-xl border-2 border-slate-200 bg-white p-4" style={blockStyle}>
-            <p className="mb-2 text-center text-base font-bold text-slate-800 sm:text-lg">صورة الطلبية</p>
+          <div
+            key="preparer_order_img"
+            className="mx-auto max-w-md rounded-xl border-2 border-slate-200 bg-white p-4 dark:border-slate-600 dark:bg-slate-900/80"
+            style={blockStyle}
+          >
+            <p className="mb-2 text-center text-base font-bold text-slate-800 dark:text-slate-100 sm:text-lg">صورة الطلبية</p>
             {src ? (
               <div>
-                <div className={squarePhotoFrame}>
+                <div className={`${squarePhotoFrame} dark:border-slate-600 dark:bg-slate-950`}>
                   <img src={src} alt="" className={squarePhotoContain} />
                 </div>
                 {order.orderImageUploadedByName?.trim() ? <ImageUploaderCaption name={order.orderImageUploadedByName} /> : null}
               </div>
             ) : (
-              <div className="flex aspect-square items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/90 px-2 text-center text-sm font-medium text-slate-500">
-                لا توجد صورة طلبية بعد
-              </div>
+              <p className="mb-2 text-center text-sm font-semibold text-slate-600 dark:text-slate-400">لم تُرفع صورة للطلبية بعد</p>
             )}
+            <PreparerDetailPhotoUploadRow auth={auth} orderId={order.id} field="orderImage" />
           </div>
         );
       }
@@ -561,7 +614,15 @@ export function PreparerOrderDetailSection({
       {reversePickup ? null : null}
       <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto] sm:items-start sm:gap-2">
         <div className="min-w-0">
-          <h2 className="text-xl font-black text-slate-900 sm:text-2xl">رقم الطلب <span className="tabular-nums text-sky-800">#{order.orderNumber}</span></h2>
+          <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 sm:text-2xl">
+            رقم الطلب <span className="tabular-nums text-sky-800 dark:text-sky-200">#{order.orderNumber}</span>
+          </h2>
+          <p className="mt-1 text-sm font-bold text-slate-600 dark:text-slate-300">
+            تاريخ رفع الطلب:{" "}
+            <span className="tabular-nums text-slate-800 dark:text-slate-100">
+              {formatOrderUploadDateBaghdad(order.createdAt)}
+            </span>
+          </p>
           <Link href={preparerPath(`/preparer/order/${order.id}/edit`, auth)} className="mt-2 inline-flex items-center rounded-lg border border-sky-300 bg-sky-50 px-2.5 py-1.5 text-xs font-bold text-sky-900 hover:bg-sky-100">تعديل بيانات الطلب</Link>
         </div>
         <div className="flex flex-shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-self-start">

@@ -29,6 +29,7 @@ const squarePhotoFrame = "aspect-square w-full overflow-hidden rounded-xl border
 const squarePhotoImg = "h-full w-full object-cover";
 const squarePhotoContain = "h-full w-full object-contain";
 const gridInfoPhoto = "grid grid-cols-[minmax(0,1fr)_minmax(0,12rem)] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.32fr)] sm:gap-6";
+const compactPhoneText = "font-mono text-base font-black text-emerald-900 tabular-nums sm:text-lg [direction:ltr] break-all";
 
 const STATUS_AR: Record<string, string> = {
   pending: "قيد الانتظار", assigned: "مسند للمندوب", delivering: "قيد التوصيل",
@@ -194,14 +195,12 @@ export function OrderViewContent({
                 <p className="text-lg font-black text-slate-900">{displayCustomerName || "—"}</p>
                 <p className="text-slate-800 font-bold">{order.customerRegion?.name ?? "—"}</p>
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl font-black text-emerald-950 tabular-nums">{order.customerPhone}</span>
-                    <a href={`tel:${order.customerPhone}`} className="bg-emerald-600 px-3 py-1 text-xs font-bold text-white rounded-full">اتصال 📞</a>
+                  <div className="min-w-0">
+                    <span className={compactPhoneText}>{order.customerPhone}</span>
                   </div>
                   {order.alternatePhone && (
-                    <div className="flex items-center gap-3 mt-2">
-                      <span className="text-xl font-black text-emerald-800 tabular-nums">{order.alternatePhone}</span>
-                      <a href={`tel:${order.alternatePhone}`} className="bg-sky-600 px-3 py-1 text-xs font-bold text-white rounded-full">رقم ثاني 📞</a>
+                    <div className="mt-2 min-w-0 border-t border-emerald-100 pt-2">
+                      <span className={compactPhoneText}>{order.alternatePhone}</span>
                     </div>
                   )}
                 </div>
@@ -265,9 +264,8 @@ export function OrderViewContent({
               <>
                 <p className="text-slate-800 font-bold">{order.secondCustomerRegion?.name ?? "—"}</p>
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl font-black text-emerald-950 tabular-nums">{order.secondCustomerPhone || "—"}</span>
-                    {order.secondCustomerPhone && <a href={`tel:${order.secondCustomerPhone}`} className="bg-emerald-600 px-3 py-1 text-xs font-bold text-white rounded-full">اتصال 📞</a>}
+                  <div className="min-w-0">
+                    <span className={compactPhoneText}>{order.secondCustomerPhone || "—"}</span>
                   </div>
                 </div>
                 <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.secondCustomerLandmark?.trim() || "—"}</p>
@@ -290,22 +288,19 @@ export function OrderViewContent({
                 <p className="text-lg font-black text-slate-900">{displayCustomerName || "—"}</p>
                 <p className="text-slate-800 font-bold">{order.customerRegion?.name ?? "—"}</p>
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl font-black text-emerald-950 tabular-nums">{order.customerPhone}</span>
-                    <a href={`tel:${order.customerPhone}`} className="bg-emerald-600 px-3 py-1 text-xs font-bold text-white rounded-full">اتصال 📞</a>
+                  <div className="min-w-0">
+                    <span className={compactPhoneText}>{order.customerPhone}</span>
                   </div>
                   {(order.alternatePhone || order.secondCustomerPhone) && (
                     <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-emerald-100">
                       {order.alternatePhone && (
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl font-black text-emerald-800 tabular-nums">{order.alternatePhone}</span>
-                          <a href={`tel:${order.alternatePhone}`} className="bg-sky-600 px-3 py-1 text-xs font-bold text-white rounded-full">رقم ثاني 📞</a>
+                        <div className="min-w-0">
+                          <span className={compactPhoneText}>{order.alternatePhone}</span>
                         </div>
                       )}
                       {order.secondCustomerPhone && order.secondCustomerPhone !== order.alternatePhone && (
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl font-black text-emerald-800 tabular-nums">{order.secondCustomerPhone}</span>
-                          <a href={`tel:${order.secondCustomerPhone}`} className="bg-indigo-600 px-3 py-1 text-xs font-bold text-white rounded-full">رقم ثالث 📞</a>
+                        <div className="min-w-0">
+                          <span className={compactPhoneText}>{order.secondCustomerPhone}</span>
                         </div>
                       )}
                     </div>
@@ -376,12 +371,7 @@ export function OrderViewContent({
              <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                    <p className="text-2xl font-black text-slate-900">{order.courier.name}</p>
-                   <p className="text-lg font-bold text-purple-800 tabular-nums">{order.courier.phone}</p>
-                </div>
-                <div className="flex gap-2">
-                   <a href={`tel:${order.courier.phone}`} className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-black text-white shadow-md transition hover:bg-purple-700 active:scale-95">
-                      <span>📞</span> اتصال بالمندوب
-                   </a>
+                   <p className="font-mono text-base font-bold text-purple-800 tabular-nums sm:text-lg [direction:ltr] break-all">{order.courier.phone}</p>
                 </div>
              </div>
           </div>

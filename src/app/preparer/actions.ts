@@ -15,6 +15,7 @@ import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
 import { prisma } from "@/lib/prisma";
 import { transferOrderToCourierInternal } from "@/lib/order-assign-courier";
 import { MAX_ORDER_IMAGE_BYTES, saveOrderImageUploaded, saveShopDoorPhotoUploaded } from "@/lib/order-image";
+import { deleteFromR2 } from "@/lib/upload-storage";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
 import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
@@ -43,6 +44,38 @@ function readPortal(formData: FormData) {
   const exp = String(formData.get("exp") ?? "").trim();
   const s = String(formData.get("s") ?? "").trim();
   return verifyCompanyPreparerPortalQuery(p, exp, s);
+}
+
+function preparerImageSaveErrorMessage(e: unknown): string {
+  const code = e instanceof Error ? e.message : "";
+  if (code === "IMAGE_TOO_LARGE") return "حجم الصورة كبير جداً (الحد ٢٠ ميجابايت).";
+  if (code === "IMAGE_BAD_TYPE") return "استخدم صورة بصيغة JPG أو PNG أو Webp.";
+  if (code === "IMAGE_STORAGE_FAILED") {
+    return "تعذّر حفظ الصورة على الخادم. جرّب صورة أصغر أو أعد المحاولة.";
+  }
+  return "تعذّر حفظ الصورة.";
+}
+
+async function assertPreparerLinkedToOrderShop(
+  preparerId: string,
+  orderId: string,
+): Promise<
+  | { ok: true; order: { id: string; imageUrl: string | null; shopDoorPhotoUrl: string | null } }
+  | { ok: false; error: string }
+> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { id: true, shopId: true, imageUrl: true, shopDoorPhotoUrl: true },
+  });
+  if (!order) return { ok: false, error: "الطلب غير موجود." };
+
+  const link = await prisma.preparerShop.findUnique({
+    where: { preparerId_shopId: { preparerId, shopId: order.shopId } },
+    select: { preparerId: true },
+  });
+  if (!link) return { ok: false, error: "ليس لديك صلاحية على طلبات هذا المحل." };
+
+  return { ok: true, order: { id: order.id, imageUrl: order.imageUrl, shopDoorPhotoUrl: order.shopDoorPhotoUrl } };
 }
 
 async function upsertCustomerByPhone(opts: {
@@ -834,6 +867,103 @@ export async function assignOrderByPreparer(_prev: PreparerActionState, formData
   revalidatePath(`/preparer/order/${orderId}`);
   return { ok: true };
 }
+
+/** رفع أو استبدال صورة الطلبية من صفحة تفاصيل الطلب (المجهز). */
+export async function uploadPreparerPortalOrderImage(
+  _prev: PreparerActionState,
+  formData: FormData,
+): Promise<PreparerActionState> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "جلسة المجهز غير صالحة." };
+
+    const orderId = String(formData.get("orderId") ?? "").trim();
+    const file = formData.get("orderImage");
+    if (!(file instanceof File) || file.size <= 0) return { error: "اختر صورة أو التقطها أولاً." };
+
+    const gate = await assertPreparerLinkedToOrderShop(v.preparerId, orderId);
+    if (!gate.ok) return { error: gate.error };
+
+    let url: string;
+    try {
+      if (gate.order.imageUrl) {
+        try {
+          await deleteFromR2(gate.order.imageUrl);
+        } catch {
+          /* تجاهل فشل حذف النسخة القديمة */
+        }
+      }
+      url = await saveOrderImageUploaded(file, MAX_ORDER_IMAGE_BYTES);
+    } catch (e) {
+      return { error: preparerImageSaveErrorMessage(e) };
+    }
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        imageUrl: url,
+        orderImageUploadedByName: PREPARER_PORTAL_LABEL,
+      },
+    });
+
+    revalidatePath("/preparer");
+    revalidatePath("/preparer/preparation");
+    revalidatePath(`/preparer/order/${orderId}`);
+    return { ok: true };
+  } catch (e) {
+    console.error("uploadPreparerPortalOrderImage", e);
+    return { error: "فشل رفع الصورة." };
+  }
+}
+
+/** رفع أو استبدال صورة باب المحل المرتبطة بالطلب (المجهز). */
+export async function uploadPreparerPortalShopDoorPhoto(
+  _prev: PreparerActionState,
+  formData: FormData,
+): Promise<PreparerActionState> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "جلسة المجهز غير صالحة." };
+
+    const orderId = String(formData.get("orderId") ?? "").trim();
+    const file = formData.get("shopDoorPhoto");
+    if (!(file instanceof File) || file.size <= 0) return { error: "اختر صورة أو التقطها أولاً." };
+
+    const gate = await assertPreparerLinkedToOrderShop(v.preparerId, orderId);
+    if (!gate.ok) return { error: gate.error };
+
+    let url: string;
+    try {
+      if (gate.order.shopDoorPhotoUrl) {
+        try {
+          await deleteFromR2(gate.order.shopDoorPhotoUrl);
+        } catch {
+          /* ignore */
+        }
+      }
+      url = await saveShopDoorPhotoUploaded(file, MAX_ORDER_IMAGE_BYTES);
+    } catch (e) {
+      return { error: preparerImageSaveErrorMessage(e) };
+    }
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        shopDoorPhotoUrl: url,
+        shopDoorPhotoUploadedByName: PREPARER_PORTAL_LABEL,
+      },
+    });
+
+    revalidatePath("/preparer");
+    revalidatePath("/preparer/preparation");
+    revalidatePath(`/preparer/order/${orderId}`);
+    return { ok: true };
+  } catch (e) {
+    console.error("uploadPreparerPortalShopDoorPhoto", e);
+    return { error: "فشل رفع الصورة." };
+  }
+}
+
 export async function updatePreparerOrderFields(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> { return { ok: true }; }
 export async function setPreparerPresenceFromForm(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> { return { ok: true }; }
 export async function bulkAssignOrdersByPreparer(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> {

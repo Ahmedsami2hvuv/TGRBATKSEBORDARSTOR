@@ -170,6 +170,8 @@ export async function loadPreparerPortalOrderTableData(args: {
     return {
       id: o.id,
       shortId: String(o.orderNumber),
+      /** لعمود «تاريخ الرفع» في الجدول الموحّد */
+      createdAt: o.createdAt.toISOString(),
       orderStatus: o.status,
       assignedCourierId: o.assignedCourierId,
       assignedCourierName: o.courier?.name?.trim() || "",

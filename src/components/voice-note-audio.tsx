@@ -80,7 +80,7 @@ function VoiceNotePreviewBlobInner({
 }
 
 /**
- * مشغّل بصمة صوتية: تجنّب استدعاء `load()` بعد كل عرض — ذلك يعيد العنصر لحالة «بدون بيانات» ويُخفي/يومض شريط التحكم في WebKit.
+ * مشغّل تسجيل صوتي: تجنّب استدعاء `load()` بعد كل عرض — ذلك يعيد العنصر لحالة «بدون بيانات» ويُخفي/يومض شريط التحكم في WebKit.
  * إعادة المحاولة عند الخطأ فقط؛ إعادة تهيئة كاملة عبر `key` عند تغيّر المصدر أو `streamKey`.
  */
 export function VoiceNoteAudio({
@@ -189,12 +189,12 @@ export function VoiceNoteAudio({
       />
       {unsupportedType ? (
         <p className="text-xs font-semibold text-amber-900">
-          هذا النوع من البصمة الصوتية غير مدعوم في متصفحك الحالي.
+          هذا النوع من الملف الصوتي غير مدعوم في متصفحك الحالي.
         </p>
       ) : null}
       {loadFailed ? (
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-xs font-semibold text-rose-800">تعذّر تحميل البصمة الصوتية.</p>
+          <p className="text-xs font-semibold text-rose-800">تعذّر تحميل الملف الصوتي.</p>
           <button
             type="button"
             onClick={retryNow}
