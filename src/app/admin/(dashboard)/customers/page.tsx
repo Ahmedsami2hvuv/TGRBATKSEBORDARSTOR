@@ -14,6 +14,28 @@ export const revalidate = 0; // منع الكاش نهائياً
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
 type SourceFilter = "all" | "railway" | "orders" | "reference";
 
+function buildCompactPagination(currentPage: number, totalPages: number): Array<number | "ellipsis"> {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const pages = new Set<number>([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
+  const visible = Array.from(pages)
+    .filter((p) => p >= 1 && p <= totalPages)
+    .sort((a, b) => a - b);
+
+  const compact: Array<number | "ellipsis"> = [];
+  for (let i = 0; i < visible.length; i++) {
+    const page = visible[i]!;
+    if (i > 0) {
+      const prev = visible[i - 1]!;
+      if (page - prev > 1) compact.push("ellipsis");
+    }
+    compact.push(page);
+  }
+  return compact;
+}
+
 export default async function AdminCustomersPage(props: { searchParams: Promise<{ q?: string, page?: string, source?: string }> }) {
   const searchParams = await props.searchParams;
   const q = searchParams.q || "";
@@ -84,6 +106,7 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
   const filteredCount = bySourceFiltered.length;
   const totalPages = Math.max(1, Math.ceil(filteredCount / take));
   const pageSafe = Math.min(Math.max(1, page), totalPages);
+  const paginationItems = buildCompactPagination(pageSafe, totalPages);
   const skip = (pageSafe - 1) * take;
   const profiles = bySourceFiltered.slice(skip, skip + take);
 
@@ -189,23 +212,53 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
         {/* أزرار التنقل بين الصفحات - أعلى النتائج */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 pt-1 pb-3 flex-wrap">
-            {Array.from({ length: totalPages }).map((_, i) => {
-              const p = i + 1;
-              const isActive = pageSafe === p;
+            {pageSafe > 1 ? (
+              <Link
+                href={`/admin/customers?q=${q}&source=${source}&page=${pageSafe - 1}`}
+                className="min-w-[70px] h-10 px-3 flex justify-center items-center rounded-xl font-bold text-sm shadow-sm transition-all border bg-white text-gray-700 hover:bg-gray-50 border-gray-200"
+              >
+                السابق
+              </Link>
+            ) : null}
+
+            {paginationItems.map((item, idx) => {
+              if (item === "ellipsis") {
+                return (
+                  <span
+                    key={`ellipsis-${idx}`}
+                    className="w-10 h-10 flex justify-center items-center text-gray-400 font-black"
+                    aria-hidden="true"
+                  >
+                    ...
+                  </span>
+                );
+              }
+
+              const isActive = pageSafe === item;
               return (
-                <Link 
-                  key={p} 
-                  href={`/admin/customers?q=${q}&source=${source}&page=${p}`} 
+                <Link
+                  key={item}
+                  href={`/admin/customers?q=${q}&source=${source}&page=${item}`}
                   className={`w-10 h-10 flex justify-center items-center rounded-xl font-bold text-sm shadow-sm transition-all border ${
-                    isActive 
-                      ? 'bg-blue-600 text-white border-blue-600' 
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
+                    isActive
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-700 hover:bg-gray-50 border-gray-200"
                   }`}
+                  aria-current={isActive ? "page" : undefined}
                 >
-                  {p}
+                  {item}
                 </Link>
               );
             })}
+
+            {pageSafe < totalPages ? (
+              <Link
+                href={`/admin/customers?q=${q}&source=${source}&page=${pageSafe + 1}`}
+                className="min-w-[70px] h-10 px-3 flex justify-center items-center rounded-xl font-bold text-sm shadow-sm transition-all border bg-white text-gray-700 hover:bg-gray-50 border-gray-200"
+              >
+                التالي
+              </Link>
+            ) : null}
           </div>
         )}
 

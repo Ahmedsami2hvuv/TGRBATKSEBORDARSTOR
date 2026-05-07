@@ -96,24 +96,27 @@ async function detectSolidBackgroundColor(buffer: Buffer): Promise<{ r: number; 
       sample(info.width - 1, Math.floor(info.height / 2)),
     ];
 
-    const avg = pts.reduce(
-      (acc, p) => ({ r: acc.r + p.r, g: acc.g + p.g, b: acc.b + p.b }),
-      { r: 0, g: 0, b: 0 },
-    );
-    const mean = { r: avg.r / pts.length, g: avg.g / pts.length, b: avg.b / pts.length };
+    const median = (arr: number[]) => {
+      const a = [...arr].sort((x, y) => x - y);
+      return a[Math.floor(a.length / 2)] ?? 0;
+    };
+    const med = {
+      r: median(pts.map(p => p.r)),
+      g: median(pts.map(p => p.g)),
+      b: median(pts.map(p => p.b)),
+    };
 
     const dist = (p: { r: number; g: number; b: number }) => {
-      const dr = p.r - mean.r;
-      const dg = p.g - mean.g;
-      const db = p.b - mean.b;
+      const dr = p.r - med.r;
+      const dg = p.g - med.g;
+      const db = p.b - med.b;
       return Math.sqrt(dr * dr + dg * dg + db * db);
     };
 
-    const maxDist = Math.max(...pts.map(dist));
-    // إذا زوايا الصورة متقاربة جداً → خلفية "لون واحد" غالباً.
-    if (maxDist <= 22) {
-      return { r: Math.round(mean.r), g: Math.round(mean.g), b: Math.round(mean.b) };
-    }
+    const inlierThresh = 35;
+    const inliers = pts.filter(p => dist(p) <= inlierThresh).length;
+    // إذا أغلب نقاط الأطراف متقاربة → خلفية "لون واحد" غالباً، حتى لو بيها ضغط JPEG
+    if (inliers >= 6) return { r: med.r, g: med.g, b: med.b };
     return null;
   } catch {
     return null;
@@ -133,9 +136,10 @@ async function tryColorKeyBackgroundRemoval(buffer: Buffer): Promise<Buffer | nu
     const ch = info.channels;
     if (ch < 4) return null;
 
-    // Tolerance: أكبر شوي لأن بعض الخلفيات مو لون واحد 100%
-    const tol = 55;
-    const tol2 = tol * tol;
+    // Soft alpha: نحول القرب من لون الخلفية إلى شفافية تدريجية لتفادي حواف "مكسّرة"
+    const inner = 18; // داخلها يعتبر خلفية غالباً
+    const outer = 95; // خارجها يعتبر منتج غالباً
+    const inv = 1 / Math.max(1, outer - inner);
 
     const out = Buffer.from(data); // copy
     for (let i = 0; i < out.length; i += ch) {
@@ -145,15 +149,21 @@ async function tryColorKeyBackgroundRemoval(buffer: Buffer): Promise<Buffer | nu
       const dr = r - bg.r;
       const dg = g - bg.g;
       const db = b - bg.b;
-      const d2 = dr * dr + dg * dg + db * db;
+      const d = Math.sqrt(dr * dr + dg * dg + db * db);
 
-      // قريب من لون الخلفية → شفافية
-      if (d2 <= tol2) {
-        out[i + 3] = 0;
-      }
+      let a = (d - inner) * inv; // 0..1
+      if (a < 0) a = 0;
+      if (a > 1) a = 1;
+      out[i + 3] = Math.round(a * 255);
     }
 
-    const candidate = await sharp(out, { raw: { width: info.width, height: info.height, channels: ch } })
+    // تنعيم بسيط للألفا لتخفيف الحواف (بدون تخريب المنتج)
+    const softened = await sharp(out, { raw: { width: info.width, height: info.height, channels: ch } })
+      .png()
+      .toBuffer();
+    const candidate = await sharp(softened)
+      .ensureAlpha()
+      .blur(0.15)
       .png()
       .toBuffer();
 

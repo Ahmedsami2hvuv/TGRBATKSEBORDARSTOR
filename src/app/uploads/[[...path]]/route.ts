@@ -13,6 +13,31 @@ const r2Client = process.env.R2_ACCESS_KEY_ID ? new S3Client({
 
 export const runtime = "nodejs";
 
+function buildCandidateKeys(originalKey: string): string[] {
+  const key = (originalKey || "").trim().replace(/^\/+/, "");
+  if (!key) return [];
+
+  const lower = key.toLowerCase();
+  const candidates = [key];
+
+  const extMap: Record<string, string[]> = {
+    ".jpeg": [".jpg", ".png", ".webp"],
+    ".jpg": [".jpeg", ".png", ".webp"],
+    ".png": [".jpg", ".jpeg", ".webp"],
+    ".webp": [".jpg", ".jpeg", ".png"],
+  };
+
+  const matchedExt = Object.keys(extMap).find((ext) => lower.endsWith(ext));
+  if (!matchedExt) return candidates;
+
+  const base = key.slice(0, key.length - matchedExt.length);
+  for (const alt of extMap[matchedExt]) {
+    candidates.push(`${base}${alt}`);
+  }
+
+  return candidates;
+}
+
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ path?: string[] }> },
@@ -25,15 +50,26 @@ export async function GET(
       return new NextResponse("Not found", { status: 404 });
     }
 
-    // تأكد من دمج المسار بشكل صحيح
+    // نجرب المسار الأصلي ثم بدائل الامتداد للروابط القديمة (jpeg/jpg/png/webp)
     const key = segments.join("/");
+    const candidateKeys = buildCandidateKeys(key);
 
-    const response = await r2Client.send(new GetObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
-      Key: key,
-    }));
+    let response: { Body?: { transformToByteArray: () => Promise<Uint8Array> }; ContentType?: string } | null = null;
+    for (const candidate of candidateKeys) {
+      try {
+        response = await r2Client.send(
+          new GetObjectCommand({
+            Bucket: process.env.R2_BUCKET_NAME,
+            Key: candidate,
+          }),
+        );
+        if (response?.Body) break;
+      } catch {
+        response = null;
+      }
+    }
 
-    if (!response.Body) {
+    if (!response?.Body) {
       return new NextResponse("File Empty", { status: 404 });
     }
 

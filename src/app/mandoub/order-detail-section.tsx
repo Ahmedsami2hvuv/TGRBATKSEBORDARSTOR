@@ -132,8 +132,11 @@ export function OrderDetailSection({
       gridColumn: bConf.fullWidth ? "span 2 / span 2" : "auto"
     };
 
+    const isDoubleRoute = order.routeMode === "double";
+
     switch (blockId) {
       case "shop_info":
+        if (isDoubleRoute) return null;
         return (
           <div key="shop" className={gridInfoPhoto} style={blockStyle}>
             <div className="space-y-2">
@@ -162,7 +165,7 @@ export function OrderDetailSection({
               <div className="space-y-2">
                 <h3 className="flex items-center gap-1.5 text-lg font-bold text-emerald-800">
                   <DynamicIcon icon={icons?.ui_user} fallback="👤" width={20} height={20} />
-                  الزبون
+                  {isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون"}
                 </h3>
                 <p className="text-slate-800">{order.customerRegion?.name ?? "—"}</p>
                 <div className="flex flex-wrap items-center gap-2">
@@ -185,7 +188,7 @@ export function OrderDetailSection({
                     الاستدلال الذكي: {smartHintLine?.trim() || "—"}
                   </p>
                 ) : null}
-                <div className="mt-2">{mergedCustomerLocationUrl ? <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن الزبون <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} /></a> : <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} />}</div>
+                <div className="mt-2">{mergedCustomerLocationUrl ? <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>{isDoubleRoute ? "فتح لوكيشن المرسل" : "فتح لوكيشن الزبون"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} /></a> : <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} />}</div>
               </div>
               <div className="max-w-[12rem] self-start">{customerDoorDisplay ? <div className={squarePhotoFrame}><img src={imgSrc(customerDoorDisplay)!} alt="" className={squarePhotoCover} /></div> : <p className="text-xs text-slate-400">لا توجد صورة باب</p>}<div className="mt-2"><MandoubQuickDoorCapture orderId={order.id} nextUrl={nextUrl} auth={auth} /></div></div>
             </div>

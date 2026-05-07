@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { uploadToR2 } from "@/lib/upload-storage";
+import { r2ObjectExistsByUrl } from "@/lib/upload-storage";
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 
@@ -195,5 +196,241 @@ export async function cleanupBase64Images() {
   } catch (error) {
     console.error("Cleanup Error:", error);
     return { success: false, message: "حدث خطأ أثناء التنظيف." };
+  }
+}
+
+function normalizeUploadsUrl(raw: string | null | undefined): string | null {
+  const v = String(raw || "").trim().replace(/^['"]+|['"]+$/g, "");
+  if (!v || v.startsWith("data:")) return null;
+
+  if (v.startsWith("/uploads/")) return v;
+  if (v.startsWith("uploads/")) return `/${v}`;
+
+  const normalized = v.replace(/\\/g, "/");
+  const inPath = normalized.toLowerCase().indexOf("/uploads/");
+  if (inPath >= 0) return normalized.slice(inPath);
+
+  if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+    try {
+      const parsed = new URL(normalized);
+      const p = decodeURIComponent(parsed.pathname || "").replace(/\\/g, "/");
+      if (p.startsWith("/uploads/")) return p;
+      if (p.startsWith("/")) return `/uploads${p}`;
+      return `/uploads/${p}`;
+    } catch {
+      return null;
+    }
+  }
+
+  if (normalized.startsWith("/")) return `/uploads${normalized}`;
+  return `/uploads/${normalized}`;
+}
+
+function extensionVariants(path: string): string[] {
+  const extMap: Record<string, string[]> = {
+    ".jpeg": [".jpg", ".png", ".webp"],
+    ".jpg": [".jpeg", ".png", ".webp"],
+    ".png": [".jpg", ".jpeg", ".webp"],
+    ".webp": [".jpg", ".jpeg", ".png"],
+  };
+  const lower = path.toLowerCase();
+  const ext = Object.keys(extMap).find((e) => lower.endsWith(e));
+  if (!ext) return [path];
+  const base = path.slice(0, path.length - ext.length);
+  return [path, ...extMap[ext].map((e) => `${base}${e}`)];
+}
+
+function folderVariants(path: string, folders: string[]): string[] {
+  const current = path.replace(/^\/+/, "");
+  const firstSlash = current.indexOf("/");
+  if (firstSlash <= 0) return [`/${current}`];
+  const tail = current.slice(firstSlash + 1);
+  const out = new Set<string>([`/${current}`]);
+  for (const f of folders) out.add(`/uploads/${f}/${tail}`);
+  return [...out];
+}
+
+async function resolveExistingUploadsUrl(
+  raw: string | null | undefined,
+  preferredFolders: string[],
+): Promise<string | null> {
+  const normalized = normalizeUploadsUrl(raw);
+  if (!normalized) return null;
+
+  const candidates = new Set<string>();
+  for (const folderCandidate of folderVariants(normalized, preferredFolders)) {
+    for (const extCandidate of extensionVariants(folderCandidate)) {
+      candidates.add(extCandidate);
+    }
+  }
+
+  for (const c of candidates) {
+    if (await r2ObjectExistsByUrl(c)) return c;
+  }
+  return null;
+}
+
+type FixBatchResult = {
+  success: boolean;
+  scanned: number;
+  fixed: number;
+  unresolved: number;
+  message: string;
+};
+
+export async function repairBrokenUploadsUrlsBatch(limit = 700): Promise<FixBatchResult> {
+  const hardLimit = Math.min(Math.max(Number(limit) || 700, 100), 2500);
+  let scanned = 0;
+  let fixed = 0;
+  let unresolved = 0;
+  let budget = hardLimit;
+
+  try {
+    const customers = await prisma.customer.findMany({
+      where: { customerDoorPhotoUrl: { not: null } },
+      select: { id: true, customerDoorPhotoUrl: true },
+      take: budget,
+      orderBy: { id: "desc" },
+    });
+    for (const row of customers) {
+      if (budget <= 0) break;
+      budget--;
+      scanned++;
+      const fixedUrl = await resolveExistingUploadsUrl(row.customerDoorPhotoUrl, ["customers", "profiles"]);
+      if (!fixedUrl) {
+        unresolved++;
+        continue;
+      }
+      if (fixedUrl !== row.customerDoorPhotoUrl) {
+        await prisma.customer.update({ where: { id: row.id }, data: { customerDoorPhotoUrl: fixedUrl } });
+        fixed++;
+      }
+    }
+
+    if (budget > 0) {
+      const profiles = await prisma.customerPhoneProfile.findMany({
+        where: { photoUrl: { not: "" } },
+        select: { id: true, photoUrl: true },
+        take: budget,
+        orderBy: { id: "desc" },
+      });
+      for (const row of profiles) {
+        if (budget <= 0) break;
+        budget--;
+        scanned++;
+        const fixedUrl = await resolveExistingUploadsUrl(row.photoUrl, ["profiles", "customers"]);
+        if (!fixedUrl) {
+          unresolved++;
+          continue;
+        }
+        if (fixedUrl !== row.photoUrl) {
+          await prisma.customerPhoneProfile.update({ where: { id: row.id }, data: { photoUrl: fixedUrl } });
+          fixed++;
+        }
+      }
+    }
+
+    if (budget > 0) {
+      const orders = await prisma.order.findMany({
+        where: {
+          OR: [
+            { imageUrl: { not: null } },
+            { shopDoorPhotoUrl: { not: null } },
+            { customerDoorPhotoUrl: { not: null } },
+            { secondCustomerDoorPhotoUrl: { not: null } },
+          ],
+        },
+        select: {
+          id: true,
+          imageUrl: true,
+          shopDoorPhotoUrl: true,
+          customerDoorPhotoUrl: true,
+          secondCustomerDoorPhotoUrl: true,
+        },
+        take: budget,
+        orderBy: { id: "desc" },
+      });
+
+      for (const row of orders) {
+        if (budget <= 0) break;
+        budget--;
+        scanned++;
+
+        const imageUrl = await resolveExistingUploadsUrl(row.imageUrl, ["orders"]);
+        const shopDoorPhotoUrl = await resolveExistingUploadsUrl(row.shopDoorPhotoUrl, ["shops"]);
+        const customerDoorPhotoUrl = await resolveExistingUploadsUrl(row.customerDoorPhotoUrl, ["customers", "profiles"]);
+        const secondCustomerDoorPhotoUrl = await resolveExistingUploadsUrl(row.secondCustomerDoorPhotoUrl, ["customers", "profiles"]);
+
+        const data: {
+          imageUrl?: string | null;
+          shopDoorPhotoUrl?: string | null;
+          customerDoorPhotoUrl?: string | null;
+          secondCustomerDoorPhotoUrl?: string | null;
+        } = {};
+
+        let rowChanged = false;
+        let rowResolvedAny = false;
+
+        if (imageUrl) {
+          rowResolvedAny = true;
+          if (imageUrl !== row.imageUrl) {
+            data.imageUrl = imageUrl;
+            rowChanged = true;
+          }
+        }
+        if (shopDoorPhotoUrl) {
+          rowResolvedAny = true;
+          if (shopDoorPhotoUrl !== row.shopDoorPhotoUrl) {
+            data.shopDoorPhotoUrl = shopDoorPhotoUrl;
+            rowChanged = true;
+          }
+        }
+        if (customerDoorPhotoUrl) {
+          rowResolvedAny = true;
+          if (customerDoorPhotoUrl !== row.customerDoorPhotoUrl) {
+            data.customerDoorPhotoUrl = customerDoorPhotoUrl;
+            rowChanged = true;
+          }
+        }
+        if (secondCustomerDoorPhotoUrl) {
+          rowResolvedAny = true;
+          if (secondCustomerDoorPhotoUrl !== row.secondCustomerDoorPhotoUrl) {
+            data.secondCustomerDoorPhotoUrl = secondCustomerDoorPhotoUrl;
+            rowChanged = true;
+          }
+        }
+
+        if (!rowResolvedAny) {
+          unresolved++;
+          continue;
+        }
+        if (rowChanged) {
+          await prisma.order.update({ where: { id: row.id }, data });
+          fixed++;
+        }
+      }
+    }
+
+    revalidatePath("/admin/customers");
+    revalidatePath("/admin/customers/profiles");
+    revalidatePath("/admin/orders/pending");
+    revalidatePath("/admin/orders/tracking");
+
+    return {
+      success: true,
+      scanned,
+      fixed,
+      unresolved,
+      message: `تم فحص ${scanned} سجل، إصلاح ${fixed} رابط، وبقي ${unresolved} يحتاج تدخل يدوي.`,
+    };
+  } catch (error) {
+    console.error("repairBrokenUploadsUrlsBatch error:", error);
+    return {
+      success: false,
+      scanned,
+      fixed,
+      unresolved,
+      message: "فشل أثناء إصلاح روابط الصور.",
+    };
   }
 }

@@ -1,11 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { cleanupBase64Images, migrateBase64ImagesToR2 } from "@/lib/cleanup-actions";
+import {
+  cleanupBase64Images,
+  migrateBase64ImagesToR2,
+  repairBrokenUploadsUrlsBatch,
+} from "@/lib/cleanup-actions";
 
 export function CleanupBase64Form() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ success?: boolean; error?: string; message?: string } | null>(null);
+  const [repairResult, setRepairResult] = useState<{
+    success?: boolean;
+    message?: string;
+    scanned?: number;
+    fixed?: number;
+    unresolved?: number;
+  } | null>(null);
 
   async function handleMigrateToR2() {
     if (!confirm("سيتم تحويل صور Base64 القديمة إلى R2 أولاً. تريد المتابعة؟")) {
@@ -53,6 +64,27 @@ export function CleanupBase64Form() {
     }
   }
 
+  async function handleRepairBrokenUrls() {
+    if (!confirm("سيتم فحص دفعة كبيرة من روابط الصور ومحاولة إصلاح المكسور تلقائياً. المتابعة؟")) {
+      return;
+    }
+
+    setLoading(true);
+    setRepairResult(null);
+
+    try {
+      const res = await repairBrokenUploadsUrlsBatch(1200);
+      setRepairResult(res);
+      alert(`${res.message}\nتم الفحص: ${res.scanned}\nتم الإصلاح: ${res.fixed}\nغير المحلول: ${res.unresolved}`);
+    } catch (err) {
+      console.error(err);
+      setRepairResult({ success: false, message: "حدث خطأ أثناء إصلاح الروابط." });
+      alert("فشلت عملية إصلاح الروابط، حاول مرة أخرى.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-4 p-4 bg-rose-50 rounded-2xl border border-rose-100">
       <div>
@@ -72,6 +104,14 @@ export function CleanupBase64Form() {
       </button>
 
       <button
+        onClick={handleRepairBrokenUrls}
+        disabled={loading}
+        className="w-full md:w-auto px-6 py-2.5 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 transition disabled:opacity-50 shadow-sm"
+      >
+        {loading ? "جاري إصلاح الروابط..." : "إصلاح روابط الصور المكسورة (دفعة كبيرة)"}
+      </button>
+
+      <button
         onClick={handleCleanup}
         disabled={loading}
         className="w-full md:w-auto px-6 py-2.5 bg-rose-600 text-white font-black rounded-xl hover:bg-rose-700 transition disabled:opacity-50 shadow-sm"
@@ -81,6 +121,12 @@ export function CleanupBase64Form() {
 
       {result?.success && (
         <p className="text-xs font-bold text-emerald-600">✓ {result.message || "تمت العملية بنجاح!"}</p>
+      )}
+      {repairResult?.message && (
+        <p className={`text-xs font-bold ${repairResult.success ? "text-emerald-600" : "text-rose-600"}`}>
+          {repairResult.success ? "✓ " : "✗ "}
+          {repairResult.message}
+        </p>
       )}
     </div>
   );
