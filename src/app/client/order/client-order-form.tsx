@@ -8,6 +8,7 @@ import { ClientVoiceNoteField } from "./client-voice-note-field";
 import { submitOrder, type ClientOrderState } from "./actions";
 import { clientOrderAccountPath } from "@/lib/client-order-portal-nav";
 import { withoutReversePickupPrefix, isReversePickupOrderType } from "@/lib/order-type-flags";
+import { whatsappMeUrl } from "@/lib/whatsapp";
 
 const inputClass =
   "w-full rounded-xl border border-sky-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200";
@@ -17,6 +18,26 @@ const inputErrorClass = "border-rose-500 ring-2 ring-rose-200 focus:border-rose-
 type RegionHit = { id: string; name: string; deliveryPrice: string };
 
 const initial: ClientOrderState = {};
+const OWNER_WHATSAPP_PHONE = "+9647733921468";
+
+function buildCustomerCheckoutMessage(productsText: string): string {
+  const productLines = productsText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const orderedProducts =
+    productLines.length > 0
+      ? productLines.map((line, index) => `${index + 1}- ${line}`).join("\n")
+      : "1- (لم يتم إدخال تفاصيل المنتجات)";
+  return [
+    "مرحبا لقد طلبت من خصيب ستور",
+    "منتجاتي هي",
+    orderedProducts,
+    "",
+    "ارجو تجهيز الطلب",
+    "شكرا لكم",
+  ].join("\n");
+}
 
 type PropsInner = {
   e: string;
@@ -121,7 +142,19 @@ function ClientOrderFormInner({
     return () => clearTimeout(t);
   }, [q, selected]);
 
-  // غلق الصفحة تلقائياً بعد نجاح الإرسال بـ 3 ثواني
+  // بعد نجاح رفع الطلب الجديد: التحويل التلقائي إلى واتساب مع رسالة جاهزة
+  useEffect(() => {
+    if (state.ok && !initialOrder) {
+      const waMessage = buildCustomerCheckoutMessage(notes);
+      const waUrl = whatsappMeUrl(OWNER_WHATSAPP_PHONE, waMessage);
+      if (waUrl !== "#") {
+        window.location.href = waUrl;
+        return;
+      }
+    }
+  }, [state.ok, initialOrder, notes]);
+
+  // غلق الصفحة تلقائياً بعد نجاح الإرسال بـ 3 ثواني (كتحويل احتياطي)
   useEffect(() => {
     if (state.ok) {
       const t = setTimeout(() => {
@@ -153,23 +186,10 @@ function ClientOrderFormInner({
     }
   }, [state.error]);
 
-  const rawCustDelPrice = selected ? Number(selected.deliveryPrice) : NaN;
-  // إذا كان السعر أقل من 100 (مثلاً 3 أو 5)، نعتبره "ألف" ونستخدمه مباشرة.
-  // إذا كان أكبر (مثلاً 3000)، نقسمه على 1000 لنحصل على قيمة "الألف".
-  const custDelAlf = !Number.isNaN(rawCustDelPrice)
-    ? (rawCustDelPrice < 100 ? rawCustDelPrice : rawCustDelPrice / ALF_PER_DINAR)
-    : NaN;
-
   const normalizedPrice = orderPrice.replace(/,/g, ".").trim();
   const hasOrderPrice = normalizedPrice.length > 0;
   const parsedPrice = hasOrderPrice ? parseFloat(normalizedPrice) : NaN;
-
-  const delivery =
-    selected && !Number.isNaN(custDelAlf) ? Math.max(shopDeliveryAlf, custDelAlf) : null;
-  const total =
-    delivery != null && hasOrderPrice && !Number.isNaN(parsedPrice)
-      ? parsedPrice + delivery
-      : null;
+  const subtotal = hasOrderPrice && !Number.isNaN(parsedPrice) ? parsedPrice : null;
 
   const historyHrefNav = `/client/order/history?${new URLSearchParams({ e, exp, s: sig, phone: customerPhone }).toString()}`;
   const accountHrefNav = clientOrderAccountPath(e, exp, sig);
@@ -190,7 +210,11 @@ function ClientOrderFormInner({
           <h2 className="mt-3 text-xl font-bold text-emerald-800">
             {initialOrder ? "تم تعديل الطلب بنجاح" : "تم رفع الطلب بنجاح"}
           </h2>
-          <p className="mt-2 text-sm text-slate-500 italic">سيتم غلق هذه الصفحة تلقائياً خلال ثوانٍ...</p>
+          <p className="mt-2 text-sm text-slate-500 italic">
+            {initialOrder
+              ? "سيتم غلق هذه الصفحة تلقائياً خلال ثوانٍ..."
+              : "سيتم تحويلك تلقائياً إلى واتساب خلال لحظات..."}
+          </p>
           <div className="mt-5 flex flex-col gap-2">
             <button
               type="button"
@@ -332,7 +356,6 @@ function ClientOrderFormInner({
                   {hits.map((h) => (
                     <button key={h.id} type="button" onClick={() => { setSelected(h); setQ(h.name); setHits([]); }} className="flex w-full flex-col px-4 py-3 text-right transition hover:bg-sky-50 border-b border-slate-50 last:border-0">
                       <span className="text-sm font-black text-slate-900">{h.name}</span>
-                      <span className="text-[10px] font-bold text-slate-400">سعر التوصيل لهذه المنطقة: {formatDinarAsAlfWithUnit(h.deliveryPrice)}</span>
                     </button>
                   ))}
                 </div>
@@ -435,23 +458,17 @@ function ClientOrderFormInner({
           )}
         </section>
 
-        {delivery != null && (
+        {subtotal != null && (
           <section className="kse-glass-dark overflow-hidden rounded-3xl border border-emerald-200 shadow-md">
-            <div className="bg-emerald-600 px-6 py-3 text-center text-xs font-black uppercase tracking-widest text-white">ملخص الحساب التقديري</div>
+            <div className="bg-emerald-600 px-6 py-3 text-center text-xs font-black uppercase tracking-widest text-white">
+              ملخص الطلب
+            </div>
             <div className="p-6 space-y-4">
               <div className="flex items-center justify-between text-sm font-bold text-slate-500">
-                <span>سعر الطلب:</span>
-                <span className="font-mono tabular-nums text-slate-900">{orderPrice ? `${orderPrice} ألف` : "—"}</span>
+                <span>المجموع:</span>
+                <span className="font-mono tabular-nums text-slate-900">{subtotal}</span>
               </div>
-              <div className="flex items-center justify-between text-sm font-bold text-slate-500">
-                <span>أجرة التوصيل:</span>
-                <span className="font-mono tabular-nums text-slate-900">{delivery} ألف</span>
-              </div>
-              <div className="h-px bg-slate-100"></div>
-              <div className="flex items-center justify-between text-lg font-black text-emerald-800">
-                <span>المجموع الكلي:</span>
-                <span className="font-mono tabular-nums">{total ? `${total} ألف` : "—"}</span>
-              </div>
+              <div className="text-[11px] font-bold text-slate-500">بدون التجهيز والتوصيل</div>
             </div>
           </section>
         )}
