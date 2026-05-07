@@ -37,8 +37,14 @@ export function resolvePublicAssetSrc(url: string | null | undefined): string | 
       }
       // دعم روابط قديمة مخزنة بدون /uploads (مثل /customers/... أو /profiles/...)
       // هذه يجب أن تمر من route الصور المحلي: /uploads/[[...path]]
-      if (/^\/(customers|profiles|orders|shops|branches|categories|products|voice-notes)\//i.test(decodedPath)) {
+      const folderPatterns = /^\/(customers|profiles|orders|shops|branches|categories|products|voice-notes|attachments)\//i;
+      if (folderPatterns.test(decodedPath)) {
         return `/uploads${decodedPath}${parsed.search}`;
+      }
+
+      // إذا كان الرابط يشير لملف في الجذر مباشرة (بدون مجلد) ولكنه ينتهي بامتداد صورة
+      if (/\.(jpg|jpeg|png|webp|gif|svg)$/i.test(decodedPath) && decodedPath.split('/').length <= 2) {
+         return `/uploads${decodedPath}${parsed.search}`;
       }
     } catch {
       return null;

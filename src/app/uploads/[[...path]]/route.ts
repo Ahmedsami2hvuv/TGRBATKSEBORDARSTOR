@@ -59,8 +59,8 @@ function buildCandidateKeys(originalKey: string): string[] {
   // fallback قوي: إذا الرابط يشير لمجلد غلط، جرّب نفس اسم الملف داخل مجلدات الصور الأساسية
   const slash = key.lastIndexOf("/");
   const fileName = slash >= 0 ? key.slice(slash + 1) : key;
-  if (fileName) {
-    const folders = ["customers", "profiles", "orders", "shops", "branches"];
+  if (fileName && fileName.includes(".")) {
+    const folders = ["customers", "profiles", "orders", "shops", "branches", "attachments"];
     for (const folder of folders) {
       out.add(`${folder}/${fileName}`);
     }

@@ -276,12 +276,13 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       shopLocationUrl: o.shop.locationUrl,
       customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl,
-      shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
-      customerDoorPhotoUrl:
+      shopDoorPhotoUrl: resolvePublicAssetSrc(o.shopDoorPhotoUrl || o.shop.photoUrl),
+      customerDoorPhotoUrl: resolvePublicAssetSrc(
         phoneProfile?.photoUrl ||
         o.customer?.customerDoorPhotoUrl ||
-        o.customerDoorPhotoUrl,
-      secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
+        o.customerDoorPhotoUrl
+      ),
+      secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(o.secondCustomerDoorPhotoUrl),
     };
   });
 
