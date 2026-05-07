@@ -8,12 +8,7 @@ import {
   submitEmployeeWalletMiscEntryFromCompanyPreparer,
 } from "./actions";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
-import {
-  moneyLedgerAmountClass,
-  moneyMiscSaderAmountInputClass,
-  moneyMiscWardAmountInputClass,
-  moneyTransferAmountInputClass,
-} from "@/lib/money-entry-ui";
+import { moneyLedgerAmountClass } from "@/lib/money-entry-ui";
 
 export type TransferTargetCourier = { id: string; name: string };
 export type TransferTargetEmployee = { id: string; name: string; shopName: string; phone: string };
@@ -154,8 +149,8 @@ export function PreparerWalletTransferSection({
         </div>
       ) : null}
 
-      <div className="rounded-xl border border-slate-200/90 bg-gradient-to-b from-slate-50/90 to-indigo-50/30 px-3 py-3 sm:px-4">
-        <h2 className="text-base font-bold text-slate-900 sm:text-lg">أخذت · تحويل · أعطيت</h2>
+      <div className="rounded-xl border border-slate-200/90 bg-gradient-to-b from-slate-50/90 to-indigo-50/30 px-3 py-3 sm:px-4 dark:border-neutral-950 dark:from-slate-900 dark:to-slate-900 dark:text-slate-100">
+        <h2 className="text-base font-bold text-slate-900 sm:text-lg dark:text-white">أخذت · تحويل · أعطيت</h2>
         {statsInBoxes ? (
           <>
             <div className="mt-3 grid grid-cols-3 gap-2 sm:gap-3">
@@ -274,10 +269,10 @@ export function PreparerWalletTransferSection({
         {miscPanel === "take" || miscPanel === "give" ? (
           <form
             action={miscSubmitAction}
-            className={`mt-4 space-y-3 rounded-xl border-2 p-3 shadow-sm ${
+            className={`isolate mt-4 space-y-3 rounded-xl border-2 border-neutral-950 p-3 text-neutral-950 shadow-sm [color-scheme:light] dark:border-neutral-950 ${
               miscPanel === "take"
-                ? "border-red-500 bg-red-100/90"
-                : "border-emerald-600 bg-lime-100/90"
+                ? "bg-red-100/90"
+                : "bg-lime-100/90"
             }`}
           >
             <input type="hidden" name="p" value={auth.p} />
@@ -285,7 +280,7 @@ export function PreparerWalletTransferSection({
             <input type="hidden" name="s" value={auth.s} />
             <input type="hidden" name="next" value={walletPathWithQuery} />
             <input type="hidden" name="direction" value={miscPanel} />
-            <label className="block text-sm font-bold text-slate-800">
+            <label className="block text-sm font-bold text-neutral-950">
               اسم المعاملة <span className="text-rose-600">*</span>
               <input
                 name="label"
@@ -293,10 +288,10 @@ export function PreparerWalletTransferSection({
                 maxLength={200}
                 autoComplete="off"
                 placeholder="مثال: تحويل من الإدارة، تسديد لزبون…"
-                className="mt-1 w-full rounded-xl border-2 border-slate-200 px-3 py-2 text-base font-medium text-slate-900"
+                className="mt-1 w-full rounded-xl border-2 border-neutral-950 bg-white px-3 py-2 text-base font-medium text-neutral-950 placeholder:text-neutral-500"
               />
             </label>
-            <label className="block text-sm font-bold text-slate-800">
+            <label className="block text-sm font-bold text-neutral-950">
               المبلغ (دينار) <span className="text-rose-600">*</span>
               <input
                 name="amountAlf"
@@ -304,9 +299,7 @@ export function PreparerWalletTransferSection({
                 inputMode="decimal"
                 autoComplete="off"
                 placeholder="0"
-                className={`mt-1 ${
-                  miscPanel === "take" ? moneyMiscWardAmountInputClass : moneyMiscSaderAmountInputClass
-                }`}
+                className="mt-1 w-full rounded-xl border-2 border-neutral-950 bg-white px-3 py-2.5 font-mono text-lg font-black tabular-nums text-neutral-950 shadow-inner placeholder:text-neutral-500"
               />
             </label>
             <button
@@ -325,7 +318,7 @@ export function PreparerWalletTransferSection({
         {transferOpen ? (
           <form
             action={createAction}
-            className="mt-4 space-y-3 rounded-xl border border-violet-200/90 bg-violet-50/95 p-3 shadow-sm"
+            className="isolate mt-4 space-y-3 rounded-xl border-2 border-neutral-950 bg-violet-50/95 p-3 text-neutral-950 shadow-sm [color-scheme:light] dark:border-neutral-950"
           >
             <input type="hidden" name="p" value={auth.p} />
             <input type="hidden" name="exp" value={auth.exp} />
@@ -333,7 +326,7 @@ export function PreparerWalletTransferSection({
             <input type="hidden" name="next" value={walletPathWithQuery} />
 
             <fieldset>
-              <legend className="text-sm font-bold text-slate-800">المستلم</legend>
+              <legend className="text-sm font-bold text-neutral-950">المستلم</legend>
               <div className="mt-2 flex flex-wrap gap-2">
                 {(
                   [
@@ -347,7 +340,7 @@ export function PreparerWalletTransferSection({
                     className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${
                       toKind === value
                         ? "border-violet-600 bg-violet-600 text-white"
-                        : "border-violet-200/90 bg-violet-100/80 text-violet-950"
+                        : "border-neutral-950 bg-violet-100/80 text-violet-950"
                     }`}
                   >
                     <input
@@ -365,12 +358,12 @@ export function PreparerWalletTransferSection({
             </fieldset>
 
             {toKind === "courier" && (
-              <label className="block text-sm font-bold text-slate-800">
+              <label className="block text-sm font-bold text-neutral-950">
                 اختر المندوب <span className="text-rose-600">*</span>
                 <select
                   name="toCourierId"
                   required
-                  className="mt-1 w-full rounded-xl border-2 border-slate-200 px-3 py-2 text-base font-medium text-slate-900"
+                  className="mt-1 w-full rounded-xl border-2 border-neutral-950 bg-white px-3 py-2 text-base font-medium text-neutral-950"
                   defaultValue=""
                 >
                   <option value="" disabled>
@@ -387,12 +380,12 @@ export function PreparerWalletTransferSection({
 
             {toKind === "employee" && (
               <div className="space-y-2">
-                <label className="block text-sm font-bold text-slate-800">
+                <label className="block text-sm font-bold text-neutral-950">
                   اختر المجهز الآخر <span className="text-rose-600">*</span>
                   <select
                     name="toEmployeeId"
                     required
-                    className="mt-1 w-full rounded-xl border-2 border-slate-200 px-3 py-2 text-base font-medium text-slate-900"
+                    className="mt-1 w-full rounded-xl border-2 border-neutral-950 bg-white px-3 py-2 text-base font-medium text-neutral-950"
                     defaultValue=""
                   >
                     <option value="" disabled>
@@ -408,7 +401,7 @@ export function PreparerWalletTransferSection({
               </div>
             )}
 
-            <label className="block text-sm font-bold text-slate-800">
+            <label className="block text-sm font-bold text-neutral-950">
               مكان التسليم <span className="text-rose-600">*</span>
               <input
                 name="handoverLocation"
@@ -416,11 +409,11 @@ export function PreparerWalletTransferSection({
                 maxLength={500}
                 autoComplete="off"
                 placeholder="مثال: أمام المحل، مستودع المنطقة…"
-                className="mt-1 w-full rounded-xl border-2 border-slate-200 px-3 py-2 text-base font-medium text-slate-900"
+                className="mt-1 w-full rounded-xl border-2 border-neutral-950 bg-white px-3 py-2 text-base font-medium text-neutral-950 placeholder:text-neutral-500"
               />
             </label>
 
-            <label className="block text-sm font-bold text-slate-800">
+            <label className="block text-sm font-bold text-neutral-950">
               المبلغ (دينار) <span className="text-rose-600">*</span>
               <input
                 name="amountAlf"
@@ -428,7 +421,7 @@ export function PreparerWalletTransferSection({
                 inputMode="decimal"
                 autoComplete="off"
                 placeholder="0"
-                className={moneyTransferAmountInputClass}
+                className="mt-1 w-full rounded-xl border-2 border-neutral-950 bg-white px-3 py-2.5 font-mono text-lg font-black tabular-nums text-violet-950 shadow-inner placeholder:text-violet-800/50"
               />
             </label>
 

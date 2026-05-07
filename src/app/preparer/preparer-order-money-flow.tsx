@@ -412,6 +412,8 @@ export function PickupMoneyForm(props: {
   couriers?: { id: string; name: string }[];
   currentCourierId?: string | null;
   orderStatus?: string;
+  /** نافذة دفع من قائمة المجهز ليلاً: نص أبيض وحقول واضحة */
+  forDarkModalSurface?: boolean;
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
   const mismatchRef = useRef<HTMLInputElement>(null);
@@ -452,6 +454,10 @@ export function PickupMoneyForm(props: {
     !dinarTotalsMatchClient(nextPickupSum, props.orderSubtotalDinar);
 
   const canAssign = !props.currentCourierId && props.couriers && props.couriers.length > 0;
+  const dark = Boolean(props.forDarkModalSurface);
+  const saderInputClass = dark
+    ? "w-full rounded-xl border-2 border-white/50 bg-neutral-900 px-3 py-2.5 text-lg font-black tabular-nums text-white shadow-inner placeholder:text-white/45"
+    : moneySaderAmountInputClass;
 
   return (
     <form ref={formRef} action={props.formAction} className="space-y-3">
@@ -462,7 +468,13 @@ export function PickupMoneyForm(props: {
       <input type="hidden" name="next" value={props.nextUrl} />
 
       {props.error ? (
-        <div className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-900">
+        <div
+          className={
+            dark
+              ? "rounded-lg border border-rose-400/80 bg-rose-950/50 px-3 py-2 text-sm font-bold text-rose-100"
+              : "rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-900"
+          }
+        >
           {props.error}
         </div>
       ) : null}
@@ -471,17 +483,27 @@ export function PickupMoneyForm(props: {
         <>
           <input type="hidden" name="advanceStatus" value="delivering" />
           <input type="hidden" name="statusAdvanceOnly" value="1" />
-          <p className="text-sm font-bold text-slate-900">تم الاستلام (تحويل حالة فقط)</p>
+          <p className={`text-sm font-bold ${dark ? "text-white" : "text-slate-900"}`}>تم الاستلام (تحويل حالة فقط)</p>
           {showMismatch ? (
-            <div className="space-y-2 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2.5">
-              <p className="text-sm font-black text-amber-950">المبلغ مختلف</p>
-              <label className="block text-sm font-bold text-slate-800">
+            <div
+              className={
+                dark
+                  ? "space-y-2 rounded-xl border border-amber-500/60 bg-amber-950/40 px-3 py-2.5"
+                  : "space-y-2 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2.5"
+              }
+            >
+              <p className={`text-sm font-black ${dark ? "text-amber-100" : "text-amber-950"}`}>المبلغ مختلف</p>
+              <label className={`block text-sm font-bold ${dark ? "text-white" : "text-slate-800"}`}>
                 سبب اختلاف الصادر *
                 <input
                   ref={mismatchRef}
                   name="mismatchNote"
                   required
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className={
+                    dark
+                      ? "mt-1 w-full rounded-xl border border-neutral-500 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-400"
+                      : "mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  }
                   placeholder="اكتب السبب…"
                 />
               </label>
@@ -502,13 +524,25 @@ export function PickupMoneyForm(props: {
 
 
           {/* إسناد المندوب مباشرة */}
-          <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+          <div
+            className={
+              dark
+                ? "space-y-2 rounded-xl border border-neutral-600 bg-neutral-900/60 p-3"
+                : "space-y-2 rounded-xl border border-slate-100 bg-slate-50/50 p-3"
+            }
+          >
             {canAssign && (
               <div className="space-y-1">
-                <span className="text-xs font-bold text-slate-500">اختر المندوب للإسناد المباشر:</span>
+                <span className={`text-xs font-bold ${dark ? "text-white" : "text-slate-500"}`}>
+                  اختر المندوب للإسناد المباشر:
+                </span>
                 <select
                   name="assignToCourierId"
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold"
+                  className={
+                    dark
+                      ? "w-full rounded-lg border border-neutral-500 bg-neutral-900 px-3 py-2 text-sm font-semibold text-white"
+                      : "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900"
+                  }
                 >
                   <option value="">— تخطي الإسناد حالياً —</option>
                   {props.couriers?.map((c) => (
@@ -533,7 +567,7 @@ export function PickupMoneyForm(props: {
                 inputMode="decimal"
                 value={amountAlf}
                 onChange={(e) => setAmountAlf(e.target.value)}
-                className={`mt-1 ${moneySaderAmountInputClass}`}
+                className={`mt-1 ${saderInputClass}`}
                 placeholder="0"
               />
               {props.remainingAlfHint && (
@@ -543,7 +577,11 @@ export function PickupMoneyForm(props: {
                     if (Date.now() - mountTimeRef.current < 300) return;
                     setAmountAlf(props.remainingAlfHint);
                   }}
-                  className="mt-1 flex shrink-0 items-center justify-center rounded-xl border-2 border-emerald-800 bg-emerald-100 px-4 font-black text-emerald-950 shadow-sm"
+                  className={
+                    dark
+                      ? "mt-1 flex shrink-0 items-center justify-center rounded-xl border-2 border-emerald-400 bg-emerald-800/90 px-4 font-black text-white shadow-sm"
+                      : "mt-1 flex shrink-0 items-center justify-center rounded-xl border-2 border-emerald-800 bg-emerald-100 px-4 font-black text-emerald-950 shadow-sm"
+                  }
                   title="تعبئة وحفظ"
                 >
                   {props.remainingAlfHint}
@@ -553,14 +591,24 @@ export function PickupMoneyForm(props: {
           </div>
 
           {showMismatchAfterAmount ? (
-            <div className="space-y-2 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2.5">
-              <p className="text-sm font-black text-amber-950">المبلغ مختلف</p>
-              <label className="block text-sm font-bold text-slate-800">
+            <div
+              className={
+                dark
+                  ? "space-y-2 rounded-xl border border-amber-500/60 bg-amber-950/40 px-3 py-2.5"
+                  : "space-y-2 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2.5"
+              }
+            >
+              <p className={`text-sm font-black ${dark ? "text-amber-100" : "text-amber-950"}`}>المبلغ مختلف</p>
+              <label className={`block text-sm font-bold ${dark ? "text-white" : "text-slate-800"}`}>
                 سبب اختلاف الصادر *
                 <input
                   name="mismatchNote"
                   required
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className={
+                    dark
+                      ? "mt-1 w-full rounded-xl border border-neutral-500 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-400"
+                      : "mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  }
                   placeholder="اكتب السبب…"
                 />
               </label>

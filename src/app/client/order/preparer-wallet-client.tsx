@@ -68,6 +68,33 @@ function matchesWalletQuery(line: MandoubWalletLedgerLine, query: string) {
   return tokens.every((token) => searchable.includes(token));
 }
 
+const EPS = 0.01;
+
+/** علامة تحت زر المسح: مطابق / أقل / أعلى من المطلوب */
+function PaymentAmountMark({ line }: { line: MandoubWalletLedgerLine }) {
+  if (line.source !== "order" || line.expectedDinar == null) return null;
+  const d = line.amountDinar - line.expectedDinar;
+  if (Math.abs(d) < EPS) {
+    return (
+      <span className="text-base leading-none" title="المبلغ مطابق للمطلوب">
+        ✅
+      </span>
+    );
+  }
+  if (d < -EPS) {
+    return (
+      <span className="text-lg font-black leading-none text-sky-800 dark:text-sky-200" title="أقل من المطلوب">
+        {"<"}
+      </span>
+    );
+  }
+  return (
+    <span className="text-lg font-black leading-none text-amber-800 dark:text-amber-200" title="أعلى من المطلوب">
+      {">"}
+    </span>
+  );
+}
+
 export function PreparerWalletClient({
   ledger,
   orderLinkAuth,
@@ -136,9 +163,11 @@ export function PreparerWalletClient({
 
           const dirLabel = ledgerDirLabel(line);
           const dateStr = new Date(line.createdAt).toLocaleString("ar-IQ-u-nu-latn", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
-          const diff = (line.expectedDinar != null) ? line.amountDinar - line.expectedDinar : 0;
-          const hasMismatch = line.expectedDinar != null && Math.abs(diff) > 0.01;
           const orderHref = (orderLinkAuth && line.orderId) ? `/preparer/order/${line.orderId}?${new URLSearchParams({ p: orderLinkAuth.p, exp: orderLinkAuth.exp, s: orderLinkAuth.s }).toString()}` : null;
+          const showDelete =
+            !deleted &&
+            line.source !== "transfer_pending" &&
+            !(line.source === "misc" && line.miscLabel?.startsWith("تحويل من ") && !line.miscLabel?.includes("مجهز") && !line.miscLabel?.includes("الإدارة"));
 
           return (
             <li key={`${line.source}-${line.id}`}>
@@ -148,29 +177,36 @@ export function PreparerWalletClient({
                 isOutPick ? "border-emerald-600 bg-emerald-100/95 dark:bg-emerald-900/40 dark:border-emerald-800" :
                 "border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800"
               }`}>
-                <div className="flex flex-col min-w-0 pl-10 sm:pl-12">
-                  <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
+                <div className={`flex min-w-0 flex-col ${showDelete ? "pl-12 sm:pl-14" : ""}`}>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <p className={`text-base font-black sm:text-lg ${!deleted ? "text-slate-950 dark:text-white" : "text-slate-500"}`}>{dirLabel} · {formatDinarAsAlfWithUnit(line.amountDinar)}</p>
-                    {!deleted && line.source === "order" && line.expectedDinar != null && (
-                      <div className={`inline-flex items-center gap-1 rounded-lg border-2 px-2 py-0.5 text-[11px] font-black whitespace-nowrap ${!hasMismatch ? "border-emerald-600/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : diff > 0 ? "border-amber-600/30 bg-amber-500/10 text-amber-700 dark:text-amber-400" : "border-rose-600/30 bg-rose-500/10 text-rose-700 dark:text-rose-400"}`}>
-                        <span>{!hasMismatch ? "✅ مطابق" : diff > 0 ? "⚠️ زيادة" : "🚨 نقص"}</span>{hasMismatch && <span className="tabular-nums">({formatDinarAsAlfWithUnit(Math.abs(diff))})</span>}
-                      </div>
-                    )}
                     <span className={`text-[10px] font-bold ${!deleted ? "text-slate-600 dark:text-slate-400" : "text-slate-400"}`}>({dateStr})</span>
                   </div>
-                  <p className={`mt-0.5 text-sm font-bold truncate ${!deleted ? "text-slate-800 dark:text-slate-300" : "text-slate-500"}`}>{line.source === "order" ? `طلب ${line.orderNumber} — ${line.shopName}` : (line.miscLabel ?? "—")}</p>
+                  <p className={`mt-0.5 truncate text-sm font-bold ${!deleted ? "text-slate-800 dark:text-slate-300" : "text-slate-500"}`}>{line.source === "order" ? `طلب ${line.orderNumber} — ${line.shopName}` : (line.miscLabel ?? "—")}</p>
                   {line.balanceAfter !== undefined && !deleted && (
                     <div className="mt-1 flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold bg-slate-950/10 dark:bg-white/10 px-1.5 py-0.5 rounded text-slate-800 dark:text-slate-200">المتبقي: {formatDinarAsAlfWithUnit(line.balanceAfter)}</span>
+                      <span className="rounded bg-slate-950/10 px-1.5 py-0.5 text-[10px] font-bold text-slate-800 dark:bg-white/10 dark:text-slate-200">المتبقي: {formatDinarAsAlfWithUnit(line.balanceAfter)}</span>
                     </div>
                   )}
                 </div>
-                {!deleted && line.source !== "transfer_pending" && !(line.source === "misc" && line.miscLabel?.startsWith("تحويل من ") && !line.miscLabel?.includes("مجهز") && !line.miscLabel?.includes("الإدارة")) && (
-                  <form action={line.source === "order" ? deleteAction : deleteMiscAction} className="absolute left-2 top-1/2 -translate-y-1/2 z-10" onClick={(e) => e.stopPropagation()} onSubmit={(e) => { if (!window.confirm(`تأكيد مسح هذه الحركة؟`)) e.preventDefault(); }}>
-                    <input type="hidden" name="p" value={preparerDeleteAuth!.p} /><input type="hidden" name="exp" value={preparerDeleteAuth!.exp} /><input type="hidden" name="s" value={preparerDeleteAuth!.s} /><input type="hidden" name={line.source === "order" ? "eventId" : "miscEntryId"} value={line.id} /><input type="hidden" name="next" value={preparerDeleteNextUrl} />
-                    <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white dark:bg-slate-800 border-2 border-rose-500 text-sm shadow-md hover:scale-105 transition-transform">🗑️</button>
-                  </form>
-                )}
+                {showDelete ? (
+                  <div
+                    className="absolute left-2 top-1/2 z-10 flex -translate-y-1/2 flex-col items-center gap-0.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <form
+                      action={line.source === "order" ? deleteAction : deleteMiscAction}
+                      className="m-0"
+                      onSubmit={(e) => {
+                        if (!window.confirm(`تأكيد مسح هذه الحركة؟`)) e.preventDefault();
+                      }}
+                    >
+                      <input type="hidden" name="p" value={preparerDeleteAuth!.p} /><input type="hidden" name="exp" value={preparerDeleteAuth!.exp} /><input type="hidden" name="s" value={preparerDeleteAuth!.s} /><input type="hidden" name={line.source === "order" ? "eventId" : "miscEntryId"} value={line.id} /><input type="hidden" name="next" value={preparerDeleteNextUrl} />
+                      <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-rose-500 bg-white text-sm shadow-md transition-transform hover:scale-105 dark:bg-slate-800">🗑️</button>
+                    </form>
+                    <PaymentAmountMark line={line} />
+                  </div>
+                ) : null}
                 {orderHref && <Link href={orderHref} className="absolute inset-0 z-0" />}
               </div>
             </li>

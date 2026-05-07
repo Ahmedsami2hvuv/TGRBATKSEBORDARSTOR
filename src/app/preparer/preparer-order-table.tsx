@@ -157,6 +157,7 @@ export function PreparerOrderTable({
       <UnifiedOrderListTable
         rows={rows}
         colCount={showBulkRow ? 9 : 8}
+        hideShopColumnLocationAndDoorPhotoButtons
         showSelectColumn={showQuickSelect}
         isRowSelectable={(r) => isAssignableBeforeCourierReceipt(r.orderStatus)}
         isSelected={(id) => selectedIds.has(id)}
@@ -272,12 +273,13 @@ export function PreparerOrderTable({
       {payOrder &&
         createPortal(
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm overflow-y-auto sm:p-6">
-            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-2xl bg-white p-5 shadow-2xl">
-              <div className="mb-4 flex items-center justify-between border-b pb-3">
-                <h3 className="text-lg font-bold text-slate-900">دفع للعميل - طلب #{payOrder.shortId}</h3>
+            <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-2xl border border-transparent bg-white p-5 text-slate-900 shadow-2xl dark:border-neutral-600 dark:bg-neutral-950 dark:text-white">
+              <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-3 dark:border-neutral-700">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">دفع للعميل - طلب #{payOrder.shortId}</h3>
                 <button
+                  type="button"
                   onClick={() => setPayOrder(null)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
                 >
                   <DynamicIcon iconKey="ui_close" config={icons} className="h-4 w-4" fallback={<span>✕</span>} />
                 </button>
@@ -286,6 +288,7 @@ export function PreparerOrderTable({
                 orderId={payOrder.id}
                 auth={auth}
                 nextUrl={`/preparer?tab=${tab}&q=${qSearch}`}
+                forDarkModalSurface
                 expectedAlfHint={payOrder.orderSubtotalDinar != null ? dinarDecimalToAlfInputString(payOrder.orderSubtotalDinar) : ""}
                 remainingAlfHint={
                   payOrder.orderSubtotalDinar != null

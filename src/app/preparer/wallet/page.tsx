@@ -117,7 +117,15 @@ export default async function PreparerWalletPage({ searchParams }: Props) {
       where: { order: { shopId: { in: shopIds } }, recordedByCompanyPreparerId: preparer.id },
       include: {
         courier: { select: { name: true } },
-        order: { select: { orderNumber: true, shop: { select: { name: true } }, customerRegion: { select: { name: true } } } }
+        order: {
+          select: {
+            orderNumber: true,
+            orderSubtotal: true,
+            totalAmount: true,
+            shop: { select: { name: true } },
+            customerRegion: { select: { name: true } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -157,9 +165,27 @@ export default async function PreparerWalletPage({ searchParams }: Props) {
     phone: p.phone,
   }));
 
-  const orderLines: MandoubWalletLedgerLine[] = orderMoneyEvents.map((e) => ({
-    source: "order", id: e.id, kind: e.kind, amountDinar: Number(e.amountDinar), createdAt: e.createdAt.toISOString(), orderId: e.orderId, orderNumber: e.order.orderNumber, shopName: e.order.shop.name, regionName: e.order.customerRegion?.name, deletedAt: e.deletedAt ? e.deletedAt.toISOString() : null, deletedReason: e.deletedReason, miscLabel: "", deletedByDisplayName: e.deletedByDisplayName ?? null,
-  }));
+  const orderLines: MandoubWalletLedgerLine[] = orderMoneyEvents.map((e) => {
+    const sub = e.order.orderSubtotal != null ? Number(e.order.orderSubtotal) : null;
+    const tot = e.order.totalAmount != null ? Number(e.order.totalAmount) : null;
+    const expectedDinar = e.kind === MONEY_KIND_DELIVERY ? tot : sub;
+    return {
+      source: "order" as const,
+      id: e.id,
+      kind: e.kind,
+      amountDinar: Number(e.amountDinar),
+      createdAt: e.createdAt.toISOString(),
+      orderId: e.orderId,
+      orderNumber: e.order.orderNumber,
+      shopName: e.order.shop.name,
+      regionName: e.order.customerRegion?.name,
+      deletedAt: e.deletedAt ? e.deletedAt.toISOString() : null,
+      deletedReason: e.deletedReason,
+      miscLabel: "",
+      deletedByDisplayName: e.deletedByDisplayName ?? null,
+      ...(expectedDinar != null && !Number.isNaN(expectedDinar) ? { expectedDinar } : {}),
+    };
+  });
 
   const miscLines: MandoubWalletLedgerLine[] = miscRows.map((r) => {
     const trimmedLabel = r.label.trim();

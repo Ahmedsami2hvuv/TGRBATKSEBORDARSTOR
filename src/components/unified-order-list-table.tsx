@@ -128,6 +128,8 @@ type Props = {
   renderInShopNameCol?: (row: MandoubRow) => React.ReactNode;
   hidePhoneData?: boolean;
   hidePhoneColumn?: boolean;
+  /** إخفاء زرّي الموقع وصور الأبواب بجانب اسم المحل (قائمة المجهز وغيرها) */
+  hideShopColumnLocationAndDoorPhotoButtons?: boolean;
 };
 
 export function UnifiedOrderListTable({
@@ -153,6 +155,7 @@ export function UnifiedOrderListTable({
   renderInShopNameCol,
   hidePhoneData = false,
   hidePhoneColumn = false,
+  hideShopColumnLocationAndDoorPhotoButtons = false,
 }: Props) {
   const [modalImg, setModalImg] = useState<{ url: string, title: string } | null>(null);
   const [showNotes, setShowNotes] = useState<string | null>(null);
@@ -412,20 +415,23 @@ export function UnifiedOrderListTable({
                             )}
                           </div>
 
-                        {/* أزرار العميل (المحل) المختصرة (لوكيشن وصور وبصمات) */}
-                        {(( !isDoubleRoute && o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
-                          (o.customerLocationUrl?.trim() && o.customerLocationUrl.trim().length > 2) ||
-                          (o.secondCustomerLocationUrl?.trim() && o.secondCustomerLocationUrl.trim().length > 2) ||
-                          (!isDoubleRoute && o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 2) ||
-                          (o.customerDoorPhotoUrl?.trim() && o.customerDoorPhotoUrl.trim().length > 2) ||
-                          (o.secondCustomerDoorPhotoUrl?.trim() && o.secondCustomerDoorPhotoUrl.trim().length > 2) ||
+                        {/* أزرار العميل (المحل): لوكيشن + صور أبواب يمكن إخفاؤهما عبر hideShopColumnLocationAndDoorPhotoButtons */}
+                        {((!hideShopColumnLocationAndDoorPhotoButtons &&
+                          ((!isDoubleRoute && o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
+                            (o.customerLocationUrl?.trim() && o.customerLocationUrl.trim().length > 2) ||
+                            (o.secondCustomerLocationUrl?.trim() && o.secondCustomerLocationUrl.trim().length > 2))) ||
+                          (!hideShopColumnLocationAndDoorPhotoButtons &&
+                            ((!isDoubleRoute && o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 2) ||
+                              (o.customerDoorPhotoUrl?.trim() && o.customerDoorPhotoUrl.trim().length > 2) ||
+                              (o.secondCustomerDoorPhotoUrl?.trim() && o.secondCustomerDoorPhotoUrl.trim().length > 2))) ||
                           (o.audioUrl?.trim() && o.audioUrl.trim().length > 2) ||
                           (o.preparerAudioUrl?.trim() && o.preparerAudioUrl.trim().length > 2) ||
                           (o.adminAudioUrl?.trim() && o.adminAudioUrl.trim().length > 2) ||
                           (o.smartHintLine?.trim() && !o.smartHintLine.trim().startsWith("—"))) && (
                           <div className="flex items-center gap-1 border-r pr-2 mr-1 border-slate-200" onClick={e => e.stopPropagation()}>
                              {/* زر اللوكيشن الموحد */}
-                             {(( !isDoubleRoute && o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
+                             {!hideShopColumnLocationAndDoorPhotoButtons &&
+                             (( !isDoubleRoute && o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
                               (o.customerLocationUrl?.trim() && o.customerLocationUrl.trim().length > 2) ||
                               (o.secondCustomerLocationUrl?.trim() && o.secondCustomerLocationUrl.trim().length > 2)) && (
                                <div className="relative">
@@ -467,7 +473,8 @@ export function UnifiedOrderListTable({
                                </div>
                              )}
 
-                             {(( !isDoubleRoute && o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 2) ||
+                             {!hideShopColumnLocationAndDoorPhotoButtons &&
+                             (( !isDoubleRoute && o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 2) ||
                                (o.customerDoorPhotoUrl?.trim() && o.customerDoorPhotoUrl.trim().length > 2) ||
                                (o.secondCustomerDoorPhotoUrl?.trim() && o.secondCustomerDoorPhotoUrl.trim().length > 2)) && (
                                <div className="relative">

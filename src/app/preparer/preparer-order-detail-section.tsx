@@ -52,6 +52,22 @@ const squarePhotoFrame =
 const squarePhotoCover = "h-full w-full object-cover";
 const squarePhotoContain = "h-full w-full object-contain";
 
+/** ترتيب ثابت لصفحة طلب المجهز — لا يعتمد على إعدادات لوحة التحكم حتى لا يُستبدل من قاعدة البيانات بالخطأ */
+const PREPARER_ORDER_DETAIL_LAYOUT = [
+  "preparer_voice_notes",
+  "preparer_shop_block",
+  "preparer_customer_region",
+  "preparer_prices",
+  "preparer_notes",
+  "money_flow",
+  "preparer_order_image",
+] as const;
+
+function preparerShoppingAudioUrl(order: MandoubOrderDetailPayload): string {
+  const j = order.preparerShoppingJson as { preparerAudioUrl?: string } | null | undefined;
+  return j?.preparerAudioUrl?.trim() || "";
+}
+
 type PhoneProfileFallback = {
   locationUrl: string;
   landmark: string;
@@ -124,6 +140,143 @@ export function PreparerOrderDetailSection({
     };
 
     switch (blockId) {
+      case "preparer_voice_notes": {
+        const prepAudio = preparerShoppingAudioUrl(order);
+        const hasAny =
+          Boolean(order.voiceNoteUrl?.trim()) ||
+          Boolean(order.adminVoiceNoteUrl?.trim()) ||
+          Boolean(prepAudio);
+        return (
+          <div key="preparer_voice" className="rounded-xl border-2 border-amber-200 bg-amber-50/40 p-4" style={blockStyle}>
+            <div className="mb-3 flex items-center gap-2">
+              <DynamicIcon iconKey="ui_audio" config={icons} className="h-5 w-5 text-amber-800" fallback={<span>🎤</span>} />
+              <h3 className="text-lg font-bold text-amber-950 sm:text-xl">الملاحظات الصوتية</h3>
+            </div>
+            {!hasAny ? (
+              <p className="text-sm font-semibold text-amber-900/80">لا توجد بصمات صوتية لهذا الطلب.</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {order.voiceNoteUrl?.trim() ? (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-bold text-amber-900">بصمة المحل / الزبون</span>
+                    <VoiceNoteAudio src={resolvePublicAssetSrc(order.voiceNoteUrl.trim()) || ""} />
+                  </div>
+                ) : null}
+                {order.adminVoiceNoteUrl?.trim() ? (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-bold text-amber-900">بصمة الإدارة</span>
+                    <VoiceNoteAudio src={resolvePublicAssetSrc(order.adminVoiceNoteUrl.trim()) || ""} />
+                  </div>
+                ) : null}
+                {prepAudio ? (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-bold text-amber-900">بصمة التجهيز</span>
+                    <VoiceNoteAudio src={resolvePublicAssetSrc(prepAudio) || ""} />
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        );
+      }
+      case "preparer_shop_block": {
+        const contactName =
+          order.submittedBy?.name?.trim() ||
+          order.submittedByCompanyPreparer?.name?.trim() ||
+          "—";
+        return (
+          <div key="preparer_shop" className="rounded-xl border-2 border-emerald-200 bg-emerald-50/30 p-4" style={blockStyle}>
+            <div className="mb-2 flex items-center gap-2">
+              <DynamicIcon iconKey="ui_shops" config={icons} className="h-5 w-5 text-emerald-700" fallback={null} />
+              <h3 className="text-lg font-bold text-emerald-900 sm:text-xl">اسم المحل</h3>
+            </div>
+            <p className="text-lg font-black leading-snug text-slate-900 sm:text-xl">{order.shop.name}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-base font-semibold text-slate-800">
+              <DynamicIcon iconKey="ui_user" config={icons} className="h-4 w-4 text-slate-500" fallback={null} />
+              <span className="text-slate-600">موظف المحل (اسم العميل): </span>
+              <span className="font-bold text-slate-900">{contactName}</span>
+            </div>
+          </div>
+        );
+      }
+      case "preparer_customer_region": {
+        const r1 = order.customerRegion?.name?.trim() || "—";
+        const r2 = order.secondCustomerRegion?.name?.trim();
+        const showSecond = routeMode === "double" && r2 && r2 !== r1;
+        return (
+          <div key="preparer_region" className="rounded-xl border-2 border-sky-200 bg-sky-50/40 p-4" style={blockStyle}>
+            <h3 className="mb-2 text-lg font-bold text-sky-950 sm:text-xl">منطقة الزبون</h3>
+            <p className="text-lg font-bold text-slate-900">{r1}</p>
+            {showSecond ? (
+              <p className="mt-2 text-base font-bold text-violet-900">
+                المنطقة الثانية (وجهة 2): <span className="text-slate-900">{r2}</span>
+              </p>
+            ) : null}
+          </div>
+        );
+      }
+      case "preparer_prices": {
+        return (
+          <div key="preparer_prices" className="space-y-4 rounded-xl border-2 border-sky-200 bg-sky-50/50 p-4 sm:p-5" style={blockStyle}>
+            <div className="flex flex-wrap items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
+              <DynamicIcon iconKey="wallet_cash" config={icons} className="h-5 w-5 text-slate-500" fallback={null} />
+              <span className="text-sm font-bold text-slate-700 sm:text-base">سعر الطلب بدون توصيل: </span>
+              <span>{order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)} ألف` : "—"}</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
+              <DynamicIcon iconKey="ui_courier" config={icons} className="h-5 w-5 text-slate-500" fallback={null} />
+              <span className="text-sm font-bold text-slate-700 sm:text-base">سعر التوصيل: </span>
+              <span>{order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)} ألف` : "—"}</span>
+            </div>
+            <div className="rounded-lg border border-violet-500/55 bg-violet-500/35 px-3 py-3 sm:px-5 sm:py-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)]">
+              <div className="flex items-center gap-1.5 text-sm font-bold text-violet-950 sm:text-base">
+                <DynamicIcon iconKey="wallet_remain" config={icons} className="h-4 w-4" fallback={null} />
+                <span>سعر الطلب الكلي</span>
+              </div>
+              <p className="mt-1 font-mono text-2xl font-black tabular-nums text-violet-950 sm:text-3xl">
+                {order.totalAmount != null ? formatDinarAsAlf(order.totalAmount) : "—"}
+              </p>
+            </div>
+          </div>
+        );
+      }
+      case "preparer_notes": {
+        const text = order.summary?.trim() || "";
+        return (
+          <div key="preparer_notes" className="relative rounded-xl border-2 border-amber-200 bg-amber-50/30 p-4" style={blockStyle}>
+            <div className="absolute end-3 top-3">
+              <NotesCopyButton text={text} />
+            </div>
+            <div className="mb-2 flex items-center gap-2 pe-24">
+              <DynamicIcon iconKey="ui_note" config={icons} className="h-5 w-5 text-amber-800" fallback={null} />
+              <h3 className="text-lg font-bold text-amber-950 sm:text-xl">الملاحظات</h3>
+            </div>
+            <div className="whitespace-pre-wrap text-base font-bold leading-relaxed text-slate-800">
+              {text || "لا توجد ملاحظات"}
+            </div>
+          </div>
+        );
+      }
+      case "preparer_order_image": {
+        const src = order.imageUrl?.trim() && imgSrc(order.imageUrl.trim());
+        return (
+          <div key="preparer_order_img" className="mx-auto max-w-md rounded-xl border-2 border-slate-200 bg-white p-4" style={blockStyle}>
+            <p className="mb-2 text-center text-base font-bold text-slate-800 sm:text-lg">صورة الطلبية</p>
+            {src ? (
+              <div>
+                <div className={squarePhotoFrame}>
+                  <img src={src} alt="" className={squarePhotoContain} />
+                </div>
+                {order.orderImageUploadedByName?.trim() ? <ImageUploaderCaption name={order.orderImageUploadedByName} /> : null}
+              </div>
+            ) : (
+              <div className="flex aspect-square items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/90 px-2 text-center text-sm font-medium text-slate-500">
+                لا توجد صورة طلبية بعد
+              </div>
+            )}
+          </div>
+        );
+      }
       case "shop_info":
         return (
           <div key="shop" className={gridInfoPhoto} style={blockStyle}>
@@ -319,7 +472,7 @@ export function PreparerOrderDetailSection({
                       <span>وقت الطلب</span>
                     </div>
                     <p className="mt-1 text-lg font-black text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200 inline-block">
-                      {order.orderNoteNoteTime}
+                      {order.orderNoteTime}
                     </p>
                   </div>
                 )}
@@ -393,9 +546,8 @@ export function PreparerOrderDetailSection({
     }
   };
 
-  const layout = uiSettings?.layoutOrder && uiSettings.layoutOrder.length > 0
-    ? uiSettings.layoutOrder
-    : ["shop_info", "customer_info", "price_details", "notes_summary", "money_flow"];
+  /** دائماً تخطيط المجهز الجديد — لا نقرأ layoutOrder من الإعدادات (قد يُعيد الشكل القديم من لوحة التصميم) */
+  const layout = [...PREPARER_ORDER_DETAIL_LAYOUT];
 
   return (
     <section
