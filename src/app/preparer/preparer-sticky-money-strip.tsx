@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { preparerPath } from "@/lib/preparer-portal-nav";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 
 type Summary = {
   wardStr: string;
@@ -73,7 +73,7 @@ export function PreparerStickyMoneyStrip() {
         </div>
       </div>
       <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2 sm:overflow-visible sm:pb-0">
-        <Link
+        <FullscreenWalletLauncher
           href={walletHref}
           className="flex min-w-[4.75rem] max-w-[33%] flex-1 shrink-0 flex-col rounded-lg border-2 border-red-500 bg-red-50/95 px-1.5 py-1.5 text-center shadow-sm ring-red-300/30 transition hover:ring-2 sm:min-w-0 sm:max-w-none sm:px-2 sm:py-2"
           title="ما استُلم من الزبون (وارد) — حركات الطلبات لمحلاتك"
@@ -90,8 +90,8 @@ export function PreparerStickyMoneyStrip() {
           <span className="mt-0.5 block text-sm font-black tabular-nums leading-none text-red-800 sm:text-base">
             {ward}
           </span>
-        </Link>
-        <Link
+        </FullscreenWalletLauncher>
+        <FullscreenWalletLauncher
           href={walletHref}
           className="flex min-w-[4.75rem] max-w-[33%] flex-1 shrink-0 flex-col rounded-lg border-2 border-emerald-600 bg-emerald-50/95 px-1.5 py-1.5 text-center shadow-sm ring-emerald-300/30 transition hover:ring-2 sm:min-w-0 sm:max-w-none sm:px-2 sm:py-2"
           title="ما دُفع للعميل (صادر) — حركات الطلبات لمحلاتك"
@@ -108,8 +108,8 @@ export function PreparerStickyMoneyStrip() {
           <span className="mt-0.5 block text-sm font-black tabular-nums leading-none text-emerald-800 sm:text-base">
             {sader}
           </span>
-        </Link>
-        <Link
+        </FullscreenWalletLauncher>
+        <FullscreenWalletLauncher
           href={walletHref}
           className="flex min-w-[4.75rem] max-w-[33%] flex-1 shrink-0 flex-col rounded-lg border-2 border-blue-600 bg-blue-50/95 px-1.5 py-1.5 text-center shadow-sm ring-blue-300/30 transition hover:ring-2 sm:min-w-0 sm:max-w-none sm:px-2 sm:py-2"
           title="وارد − صادر — تفاصيل محفظتك في «محفظتي»"
@@ -126,7 +126,7 @@ export function PreparerStickyMoneyStrip() {
           <span className="mt-0.5 block text-sm font-black tabular-nums leading-none text-blue-800 sm:text-base">
             {remain}
           </span>
-        </Link>
+        </FullscreenWalletLauncher>
       </div>
     </div>
   );
