@@ -41,7 +41,32 @@ async function isLikelyWhiteBackground(buffer: Buffer): Promise<boolean> {
       checkPixel(info.width - 1, Math.floor(info.height / 2))
     ];
 
-    return samples.filter(c => c).length >= 5;
+    return samples.filter(c => c).length >= 6;
+  } catch {
+    return false;
+  }
+}
+
+async function hasReasonableCutoutAlpha(buffer: Buffer): Promise<boolean> {
+  try {
+    const { data, info } = await sharp(buffer)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const channels = info.channels;
+    if (channels < 4) return false;
+
+    let nonTransparent = 0;
+    const total = info.width * info.height;
+    for (let i = 0; i < data.length; i += channels) {
+      const alpha = data[i + 3] ?? 255;
+      if (alpha > 16) nonTransparent++;
+    }
+
+    const ratio = nonTransparent / Math.max(1, total);
+    // Too tiny or almost full image means the fallback mask likely failed.
+    return ratio >= 0.08 && ratio <= 0.92;
   } catch {
     return false;
   }
@@ -74,6 +99,7 @@ async function processAndUploadImage(
 
   if (options?.removeBg) {
     let successWithAI = false;
+    const sourceBeforeRemoval = buf;
     try {
       const aiConfigs = await prisma.aIConfig.findMany({
         where: { provider: "removebg", isActive: true },
@@ -105,9 +131,20 @@ async function processAndUploadImage(
     if (!successWithAI) {
       if (await isLikelyWhiteBackground(buf)) {
         try {
-          const mask = await sharp(buf).grayscale().threshold(240).negate().toBuffer();
-          buf = await sharp(buf).ensureAlpha().joinChannel(mask).png().toBuffer();
-          mime = "image/png";
+          const mask = await sharp(buf)
+            .removeAlpha()
+            .grayscale()
+            .blur(0.6)
+            .threshold(245)
+            .negate()
+            .toBuffer();
+          const candidate = await sharp(buf).ensureAlpha().joinChannel(mask).png().toBuffer();
+          if (await hasReasonableCutoutAlpha(candidate)) {
+            buf = candidate;
+            mime = "image/png";
+          } else {
+            buf = sourceBeforeRemoval;
+          }
         } catch (e) { console.error("Software eraser failed", e); }
       }
     } else {

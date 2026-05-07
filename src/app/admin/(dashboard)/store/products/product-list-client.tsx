@@ -34,6 +34,7 @@ export function ProductListClient({
   const [bulkFiles, setBulkFiles] = useState<any[]>([]);
   const [bulkBranchId, setBulkBranchId] = useState("");
   const [importUrl, setImportUrl] = useState("");
+  const [smartRemoveBg, setSmartRemoveBg] = useState(true);
   const [importLoading, setImportLoading] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [totalToImport, setTotalToImport] = useState(0);
@@ -294,7 +295,7 @@ export function ProductListClient({
         const fd = new FormData();
         fd.append("branchId", bulkBranchId);
         fd.append("products", JSON.stringify(productsToUpload));
-        fd.append("removeBg", "true"); // افتراضياً للمنتجات الجديدة من السحب
+        fd.append("removeBg", String(smartRemoveBg));
 
         const res = await fetch('/api/admin/store/bulk-products', {
             method: 'POST',
@@ -362,6 +363,15 @@ export function ProductListClient({
                 value={importUrl}
                 onChange={(e) => setImportUrl(e.target.value)}
              />
+             <label className="mx-2 inline-flex items-center gap-1.5 text-[10px] font-black text-slate-700 whitespace-nowrap">
+               <input
+                 type="checkbox"
+                 checked={smartRemoveBg}
+                 onChange={(e) => setSmartRemoveBg(e.target.checked)}
+                 className="h-3.5 w-3.5 rounded border-slate-300"
+               />
+               قص الخلفية
+             </label>
              <button
                 onClick={handleImportUrl}
                 disabled={importLoading}
