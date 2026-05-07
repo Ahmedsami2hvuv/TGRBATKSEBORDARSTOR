@@ -396,29 +396,52 @@ export async function scrapeCategoryFromUrl(url: string) {
             }
         }
 
-        // 2. استخراج صورة الفرع - البحث الجغرافي حول رابط الفرع
+        const normalizePathname = (value: string) => {
+            try {
+                const parsed = new URL(value, new URL(url).origin);
+                return parsed.pathname.replace(/\/+$/, "");
+            } catch {
+                return String(value || "").split("?")[0].split("#")[0].replace(/\/+$/, "");
+            }
+        };
+
+        // 2. استخراج صورة الفرع - أولاً من نفس بطاقة الفرع المطابق للرابط
         let branchImageUrl = "";
-        const urlMatchForImg = url.match(/\/sub\/(\d+)\/(\d+)/);
-        if (urlMatchForImg) {
-            const subId = urlMatchForImg[2];
-            const linkPattern = new RegExp(`href=["'][^"']*\\/sub\\/\\d+\\/${subId}["']`, 'i');
-            const linkIndex = html.search(linkPattern);
+        const targetPath = normalizePathname(url);
+        const anchorMatches = Array.from(
+            html.matchAll(/<a[^>]*href=["']([^"']+)["'][^>]*>[\s\S]*?<\/a>/gi)
+        );
 
+        for (const anchor of anchorMatches) {
+            const href = anchor[1] || "";
+            if (normalizePathname(href) !== targetPath) continue;
+            const anchorHtml = anchor[0] || "";
+
+            const imgInsideAnchor = anchorHtml.match(
+                /<(?:img|source)[^>]*(?:src|data-src|data-original)=["']([^"']+)["'][^>]*>/i
+            );
+            if (imgInsideAnchor?.[1]) {
+                branchImageUrl = imgInsideAnchor[1];
+                break;
+            }
+
+            // fallback: ابحث ضمن نافذة أكبر حول نفس الرابط
+            const linkIndex = html.indexOf(anchorHtml);
             if (linkIndex !== -1) {
-                // نقتطع جزءاً من الكود حول الرابط (400 حرف قبل وبعد)
-                const start = Math.max(0, linkIndex - 400);
-                const end = Math.min(html.length, linkIndex + 400);
+                const start = Math.max(0, linkIndex - 1200);
+                const end = Math.min(html.length, linkIndex + 1200);
                 const searchWindow = html.substring(start, end);
-
-                // نبحث عن صورة في هذا النطاق الضيق (src أو data-src) تحتوي على category
-                const imgMatch = searchWindow.match(/(?:src|data-src|data-original)=["']([^"']*category[^"']*)["']/i);
-                if (imgMatch) {
-                    branchImageUrl = imgMatch[1];
+                const imgNearAnchor = searchWindow.match(
+                    /<(?:img|source)[^>]*(?:src|data-src|data-original)=["']([^"']+)["'][^>]*>/i
+                );
+                if (imgNearAnchor?.[1]) {
+                    branchImageUrl = imgNearAnchor[1];
+                    break;
                 }
             }
         }
 
-        // إذا لم يجد في النطاق الضيق، يبحث عن أي صورة category في الصفحة (كخيار بديل)
+        // إذا لم يجد من بطاقة الرابط المطابق، يبحث عن أي صورة category (بديل)
         if (!branchImageUrl) {
             const fallbackImg = html.match(/(?:src|data-src|data-original)=["']([^"']*\/category\/[^"']*)["']/i);
             branchImageUrl = fallbackImg ? fallbackImg[1] : "";
