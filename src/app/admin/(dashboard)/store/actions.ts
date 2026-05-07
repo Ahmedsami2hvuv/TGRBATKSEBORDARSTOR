@@ -87,10 +87,20 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
     }
   } else if (remoteImageUrl && remoteImageUrl.startsWith("http") && !photoUrl) {
     try {
-        const response = await fetch(remoteImageUrl);
+        const response = await fetch(remoteImageUrl, {
+          signal: AbortSignal.timeout(20000),
+          headers: {
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+            "Referer": new URL(remoteImageUrl).origin + "/",
+          },
+        });
         if (response.ok) {
           const arrayBuffer = await response.arrayBuffer();
           const contentType = response.headers.get("content-type") || "image/jpeg";
+          if (!contentType.toLowerCase().startsWith("image/")) {
+            throw new Error("REMOTE_BRANCH_IMAGE_NOT_IMAGE");
+          }
           const file = new File([arrayBuffer], "branch-remote.jpg", { type: contentType });
           if (id && photoUrl) {
             await deleteFromR2(photoUrl);
@@ -400,8 +410,8 @@ export async function scrapeCategoryFromUrl(url: string) {
                 const end = Math.min(html.length, linkIndex + 400);
                 const searchWindow = html.substring(start, end);
 
-                // نبحث عن صورة في هذا النطاق الضيق تحتوي على كلمة category
-                const imgMatch = searchWindow.match(/src=["']([^"']*category[^"']*)["']/i);
+                // نبحث عن صورة في هذا النطاق الضيق (src أو data-src) تحتوي على category
+                const imgMatch = searchWindow.match(/(?:src|data-src|data-original)=["']([^"']*category[^"']*)["']/i);
                 if (imgMatch) {
                     branchImageUrl = imgMatch[1];
                 }
@@ -410,7 +420,7 @@ export async function scrapeCategoryFromUrl(url: string) {
 
         // إذا لم يجد في النطاق الضيق، يبحث عن أي صورة category في الصفحة (كخيار بديل)
         if (!branchImageUrl) {
-            const fallbackImg = html.match(/src=["']([^"']*\/category\/[^"']*)["']/i);
+            const fallbackImg = html.match(/(?:src|data-src|data-original)=["']([^"']*\/category\/[^"']*)["']/i);
             branchImageUrl = fallbackImg ? fallbackImg[1] : "";
         }
 
@@ -422,7 +432,7 @@ export async function scrapeCategoryFromUrl(url: string) {
 
         // إذا فشل تماماً، يأخذ أول صورة منتج كحل أخير
         if (!branchImageUrl) {
-            const firstProductImg = html.match(/<img[^>]*class=["'][^"']*img-responsive[^"']*["'][^>]*src=["']([^"']*)["']/i);
+            const firstProductImg = html.match(/<img[^>]*(?:src|data-src|data-original)=["']([^"']*)["'][^>]*>/i);
             branchImageUrl = firstProductImg ? firstProductImg[1] : "";
         }
 
