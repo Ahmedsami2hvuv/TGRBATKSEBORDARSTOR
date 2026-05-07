@@ -175,6 +175,7 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
             phone: true,
             regionId: true,
             locationUrl: true,
+            photoUrl: true,
           },
         })
       : [];
@@ -276,7 +277,10 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl,
       shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
-      customerDoorPhotoUrl: o.customer?.customerDoorPhotoUrl || o.customerDoorPhotoUrl,
+      customerDoorPhotoUrl:
+        phoneProfile?.photoUrl ||
+        o.customer?.customerDoorPhotoUrl ||
+        o.customerDoorPhotoUrl,
       secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
     };
   });
