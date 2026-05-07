@@ -36,6 +36,7 @@ import type { MandoubRow } from "./mandoub-order-table";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { PortalWalletPrefetch } from "@/components/portal-wallet-prefetch";
+import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 
 export const dynamic = "force-dynamic";
 
@@ -467,10 +468,14 @@ export default async function MandoubPage({ searchParams }: Props) {
             </div>
             <ThemeSwitcher />
             <MandoubPresenceToggle auth={baseAuth} availableForAssignment={courier.availableForAssignment} />
-            <Link href={`/mandoub/wallet?${baseQuery.toString()}`} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base">
+            <FullscreenWalletLauncher
+              href={`/mandoub/wallet?${baseQuery.toString()}`}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base"
+              title="محفظة المندوب"
+            >
               <DynamicIcon config={icons.ui_wallet} fallback="" className="w-5 h-5" />
               المحفظة
-            </Link>
+            </FullscreenWalletLauncher>
           </header>
 
           <MandoubWebPushBanner auth={baseAuth} />

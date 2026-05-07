@@ -12,6 +12,7 @@ import { resolvePublicImageSrc } from "@/lib/image-url";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { prisma } from "@/lib/prisma";
 import { EmployeePushBanner } from "../employee-push-banner";
+import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 
 export const dynamic = "force-dynamic";
 
@@ -176,18 +177,20 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
           <p className="text-center text-sm text-slate-500">{employee.shop.region.name}</p>
 
           <nav className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-3">
-            <Link
+            <FullscreenWalletLauncher
               href={formHref}
               className="inline-flex flex-1 items-center justify-center rounded-xl border-2 border-sky-500 bg-sky-600 px-4 py-3 text-center text-sm font-black text-white shadow-sm transition hover:bg-sky-700"
+              title="رفع طلب جديد"
             >
               رفع طلب جديد
-            </Link>
-            <Link
+            </FullscreenWalletLauncher>
+            <FullscreenWalletLauncher
               href={walletHref}
               className="inline-flex flex-1 items-center justify-center rounded-xl border-2 border-teal-600 bg-teal-600 px-4 py-3 text-center text-sm font-black text-white shadow-sm transition hover:bg-teal-700"
+              title="محفظة المجهز"
             >
               المحفظة والتحويلات
-            </Link>
+            </FullscreenWalletLauncher>
             <Link
               href={historyHref}
               className="inline-flex flex-1 items-center justify-center rounded-xl border-2 border-sky-300 bg-white px-4 py-3 text-center text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-50"

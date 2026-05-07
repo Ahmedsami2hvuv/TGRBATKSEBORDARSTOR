@@ -189,10 +189,35 @@ export function MandoubWalletClient({
   const [respondState, respondAction, respondPending] = useActionState(respondWalletPeerTransferByCourier, initialTransfer);
   const [query, setQuery] = useState("");
   const [icons, setIcons] = useStateReact<GlobalIconsConfig | null>(null);
+  const [orderModalHref, setOrderModalHref] = useState<string | null>(null);
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
   }, []);
+
+  useEffect(() => {
+    const onPopState = () => {
+      setOrderModalHref((prev) => (prev ? null : prev));
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const openOrderModal = (href: string) => {
+    if (!orderModalHref) {
+      window.history.pushState({ orderModalOpen: true }, "", window.location.href);
+    }
+    setOrderModalHref(href);
+  };
+
+  const closeOrderModal = () => {
+    if (!orderModalHref) return;
+    if (window.history.state?.orderModalOpen) {
+      window.history.back();
+      return;
+    }
+    setOrderModalHref(null);
+  };
 
   const filteredLedger = useMemo(() => {
     const normalizedQuery = query.trim();
@@ -493,14 +518,43 @@ export function MandoubWalletClient({
           return (
             <li key={`${line.source}-${line.id}`}>
               {orderHref ? (
-                <Link href={orderHref} className="block active:opacity-80 transition-opacity">
+                <button
+                  type="button"
+                  onClick={() => openOrderModal(orderHref)}
+                  className="block w-full text-right active:opacity-80 transition-opacity"
+                >
                   {content}
-                </Link>
+                </button>
               ) : content}
             </li>
           );
         })}
       </ul>
+
+      {orderModalHref ? (
+        <div className="fixed inset-0 z-[120]">
+          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={closeOrderModal} />
+          <div className="relative h-full w-full bg-white dark:bg-slate-950">
+            <div className="flex items-center justify-between border-b bg-slate-50 px-4 py-3 dark:bg-slate-900 dark:border-slate-800">
+              <div className="font-black text-slate-900 dark:text-slate-100">عرض الطلب</div>
+              <button
+                type="button"
+                onClick={closeOrderModal}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                aria-label="إغلاق نافذة الطلب"
+              >
+                ✕
+              </button>
+            </div>
+            <iframe
+              title="تفاصيل الطلب"
+              src={orderModalHref}
+              loading="eager"
+              className="h-[calc(100vh-57px)] w-full border-0 bg-white dark:bg-slate-950"
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

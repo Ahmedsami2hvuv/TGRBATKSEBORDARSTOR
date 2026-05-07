@@ -11,6 +11,7 @@ import { PreparerWalletLink } from "./preparer-wallet-link";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { PortalWalletPrefetch } from "@/components/portal-wallet-prefetch";
+import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 
 export const dynamic = "force-dynamic";
 
@@ -129,7 +130,13 @@ export default async function PreparerHomePage({ searchParams }: Props) {
               {canPriceStore && (
                 <Link href={preparerPath("/preparer/store-pricing", baseAuth)} className="inline-flex items-center justify-center rounded-xl border-2 border-emerald-500 bg-emerald-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-emerald-700 sm:px-4 sm:text-base">تسعير المتجر</Link>
               )}
-              <Link href={preparerPath("/preparer/order/new", baseAuth)} className="inline-flex items-center justify-center rounded-xl border-2 border-sky-500 bg-sky-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-sky-700 sm:px-4 sm:text-base">طلب جديد</Link>
+              <FullscreenWalletLauncher
+                href={preparerPath("/preparer/order/new", baseAuth)}
+                className="inline-flex items-center justify-center rounded-xl border-2 border-sky-500 bg-sky-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-sky-700 sm:px-4 sm:text-base"
+                title="طلب جديد"
+              >
+                طلب جديد
+              </FullscreenWalletLauncher>
             </>
           )}
           <PreparerWalletLink auth={baseAuth} icons={icons} />
