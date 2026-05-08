@@ -1,7 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { addAIConfig, deleteAIConfig, toggleAIConfig, updateAIConfig } from "./actions";
+import {
+  addAIConfig,
+  clearAllAIPortalTrainings,
+  deleteAIConfig,
+  deleteAIPortalTraining,
+  toggleAIConfig,
+  upsertAIPortalTraining,
+  updateAIConfig,
+  type AIPortalKey,
+  type AIPortalTrainingConfig,
+} from "./actions";
 import { useRouter } from "next/navigation";
 
 type AIConfig = {
@@ -13,12 +23,32 @@ type AIConfig = {
   usedToday: number;
 };
 
-export default function AIConfigClient({ initialConfigs }: { initialConfigs: any[] }) {
+export default function AIConfigClient({
+  initialConfigs,
+  initialTrainingConfig,
+}: {
+  initialConfigs: any[];
+  initialTrainingConfig: AIPortalTrainingConfig;
+}) {
   const [configs, setConfigs] = useState<AIConfig[]>(initialConfigs as AIConfig[]);
   const [loading, setLoading] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [trainingConfig, setTrainingConfig] = useState<AIPortalTrainingConfig>(initialTrainingConfig);
+  const [newTrainingByPortal, setNewTrainingByPortal] = useState<Record<AIPortalKey, { title: string; instruction: string }>>({
+    admin: { title: "", instruction: "" },
+    mandoub: { title: "", instruction: "" },
+    preparer: { title: "", instruction: "" },
+    store: { title: "", instruction: "" },
+  });
   const router = useRouter();
+
+  const portalMeta: { key: AIPortalKey; label: string; helper: string }[] = [
+    { key: "mandoub", label: "بوابة المندوب", helper: "أضف أكثر من تدريب حسب حالات المندوب." },
+    { key: "admin", label: "بوابة الإدارة", helper: "تدريبات خاصة بمهام الإدارة وفتح الصفحات." },
+    { key: "preparer", label: "بوابة المجهز", helper: "تدريبات التجهيز واستلام الطلبات والتحديث." },
+    { key: "store", label: "بوابة المتجر", helper: "تدريبات مساعدة العملاء والمنتجات والسلة." },
+  ];
 
   async function handleAdd(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -63,6 +93,82 @@ export default function AIConfigClient({ initialConfigs }: { initialConfigs: any
     const res = await toggleAIConfig(id, currentStatus);
     if (res.ok) {
       router.refresh();
+    }
+    setLoading(null);
+  }
+
+  async function handleAddTraining(portal: AIPortalKey) {
+    const draft = newTrainingByPortal[portal];
+    const instruction = draft.instruction.trim();
+    if (!instruction) return;
+    setLoading(`train:add:${portal}`);
+    const item = {
+      id: `tr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      title: draft.title.trim() || "تدريب جديد",
+      instruction,
+      isActive: true,
+    };
+    const res = await upsertAIPortalTraining(portal, item);
+    if (res.ok) {
+      const next = structuredClone(trainingConfig);
+      next.byPortal[portal].push(item);
+      setTrainingConfig(next);
+      setNewTrainingByPortal((prev) => ({
+        ...prev,
+        [portal]: { title: "", instruction: "" },
+      }));
+      router.refresh();
+    } else {
+      alert(res.error);
+    }
+    setLoading(null);
+  }
+
+  async function handleDeleteTraining(portal: AIPortalKey, id: string) {
+    if (!confirm("هل تريد حذف هذا التدريب؟")) return;
+    setLoading(`train:del:${id}`);
+    const res = await deleteAIPortalTraining(portal, id);
+    if (res.ok) {
+      const next = structuredClone(trainingConfig);
+      next.byPortal[portal] = next.byPortal[portal].filter((it) => it.id !== id);
+      setTrainingConfig(next);
+      router.refresh();
+    } else {
+      alert(res.error);
+    }
+    setLoading(null);
+  }
+
+  async function handleToggleTraining(portal: AIPortalKey, id: string) {
+    const item = trainingConfig.byPortal[portal].find((it) => it.id === id);
+    if (!item) return;
+    setLoading(`train:toggle:${id}`);
+    const res = await upsertAIPortalTraining(portal, { ...item, isActive: !item.isActive });
+    if (res.ok) {
+      const next = structuredClone(trainingConfig);
+      next.byPortal[portal] = next.byPortal[portal].map((it) =>
+        it.id === id ? { ...it, isActive: !it.isActive } : it,
+      );
+      setTrainingConfig(next);
+      router.refresh();
+    } else {
+      alert(res.error);
+    }
+    setLoading(null);
+  }
+
+  async function handleClearAllTrainings() {
+    if (!confirm("راح ينمسح كل تدريب بكل البوابات. متأكد؟")) return;
+    setLoading("train:clear-all");
+    const res = await clearAllAIPortalTrainings();
+    if (res.ok) {
+      setTrainingConfig({
+        version: 1,
+        byPortal: { admin: [], mandoub: [], preparer: [], store: [] },
+      });
+      router.refresh();
+    } else {
+      alert(res.error);
     }
     setLoading(null);
   }
@@ -223,6 +329,83 @@ export default function AIConfigClient({ initialConfigs }: { initialConfigs: any
             <p className="text-slate-400 font-bold">لم تقم بإضافة أي مفاتيح ذكاء صناعي بعد.</p>
           </div>
         )}
+      </div>
+
+      <div className="pt-8 border-t border-slate-200 dark:border-slate-800 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-black text-slate-700 dark:text-slate-300">تدريب الذكاء حسب كل بوابة</h2>
+            <p className="text-xs text-slate-500 font-bold mt-1">كل بوابة لها تدريباتها الخاصة، والذكاء يعرف موقعه تلقائياً.</p>
+          </div>
+          <button
+            onClick={handleClearAllTrainings}
+            disabled={loading === "train:clear-all"}
+            className="bg-rose-600 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-rose-700 disabled:opacity-50"
+          >
+            حذف كل التدريبات
+          </button>
+        </div>
+
+        {portalMeta.map((portal) => (
+          <div key={portal.key} className="bg-white dark:bg-[#131418] p-5 rounded-[2rem] border border-slate-100 dark:border-slate-800 space-y-3">
+            <div>
+              <h3 className="font-black text-sm text-slate-800 dark:text-slate-100">{portal.label}</h3>
+              <p className="text-[11px] text-slate-500 font-bold mt-1">{portal.helper}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <input
+                value={newTrainingByPortal[portal.key].title}
+                onChange={(e) => setNewTrainingByPortal((prev) => ({ ...prev, [portal.key]: { ...prev[portal.key], title: e.target.value } }))}
+                placeholder="عنوان التدريب (اختياري)"
+                className="md:col-span-1 bg-slate-50 dark:bg-slate-900 border-none rounded-xl px-3 py-2 text-xs font-bold"
+              />
+              <input
+                value={newTrainingByPortal[portal.key].instruction}
+                onChange={(e) => setNewTrainingByPortal((prev) => ({ ...prev, [portal.key]: { ...prev[portal.key], instruction: e.target.value } }))}
+                placeholder="نص التدريب/التعليمات لهذه البوابة"
+                className="md:col-span-2 bg-slate-50 dark:bg-slate-900 border-none rounded-xl px-3 py-2 text-xs font-bold"
+              />
+            </div>
+            <button
+              onClick={() => handleAddTraining(portal.key)}
+              disabled={loading === `train:add:${portal.key}` || !newTrainingByPortal[portal.key].instruction.trim()}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-indigo-700 disabled:opacity-50"
+            >
+              إضافة تدريب
+            </button>
+
+            <div className="space-y-2">
+              {(trainingConfig.byPortal[portal.key] || []).length === 0 && (
+                <p className="text-xs text-slate-400 font-bold">لا يوجد تدريبات حالياً.</p>
+              )}
+              {(trainingConfig.byPortal[portal.key] || []).map((item) => (
+                <div key={item.id} className="border border-slate-100 dark:border-slate-800 rounded-xl p-3 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-slate-700 dark:text-slate-200 truncate">{item.title || "بدون عنوان"}</p>
+                    <p className="text-[11px] text-slate-500 font-bold mt-1">{item.instruction}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => handleToggleTraining(portal.key, item.id)}
+                      disabled={loading === `train:toggle:${item.id}`}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black ${item.isActive ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}
+                    >
+                      {item.isActive ? "تعطيل" : "تفعيل"}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTraining(portal.key, item.id)}
+                      disabled={loading === `train:del:${item.id}`}
+                      className="px-3 py-1.5 rounded-lg text-[10px] font-black bg-rose-100 text-rose-700"
+                    >
+                      حذف
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

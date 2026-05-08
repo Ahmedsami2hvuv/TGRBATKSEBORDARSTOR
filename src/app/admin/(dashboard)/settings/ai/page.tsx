@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import AIConfigClient from "./ai-config-client";
-import { syncDatabaseSchema } from "./actions";
+import { getAIPortalTrainingConfig, syncDatabaseSchema } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +10,7 @@ export default async function AISettingsPage() {
     const aiConfigs = await prisma.aIConfig.findMany({
       orderBy: { createdAt: 'desc' }
     });
+    const trainingConfig = await getAIPortalTrainingConfig();
 
     return (
       <div className="p-6 max-w-4xl mx-auto font-cairo">
@@ -20,7 +21,7 @@ export default async function AISettingsPage() {
           </p>
         </div>
 
-        <AIConfigClient initialConfigs={aiConfigs} />
+        <AIConfigClient initialConfigs={aiConfigs} initialTrainingConfig={trainingConfig} />
       </div>
     );
   } catch (error) {
