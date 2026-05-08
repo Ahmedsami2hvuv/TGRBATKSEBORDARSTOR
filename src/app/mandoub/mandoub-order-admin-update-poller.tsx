@@ -94,6 +94,17 @@ export function MandoubOrderAdminUpdatePoller({
             const after = (serverSnapshot[key] ?? "").trim();
             return before !== after;
           });
+          // If only status changed, it is often a courier action (picked up/delivered),
+          // so do not block with "admin updated" modal.
+          if (diffs.length === 1 && diffs[0] === "status") {
+            baselineMs.current = serverMs;
+            baselineSnapshotRef.current = {
+              ...(baselineSnapshotRef.current as Record<string, string>),
+              ...serverSnapshot,
+            } as typeof initialSnapshot;
+            return;
+          }
+
           setChangedFields(diffs.map((key) => FIELD_LABELS[key]));
           setStale(true);
         }
