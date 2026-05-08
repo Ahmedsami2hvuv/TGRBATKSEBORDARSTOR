@@ -49,6 +49,24 @@ async function runAdminCommandRouter(prompt: string): Promise<ChatResponseShape 
     };
   }
 
+  // 1.5) فتح طلب برقمه مباشرة
+  if (text.includes("افتح") && (text.includes("طلب") || text.includes("طلبية"))) {
+    const orderNumber = extractOrderNumber(text);
+    if (orderNumber != null) {
+      const order = await prisma.order.findUnique({
+        where: { orderNumber },
+        select: { id: true, orderNumber: true },
+      });
+      if (!order) {
+        return { text: `ما لقيت طلب برقم ${orderNumber}.` };
+      }
+      return {
+        text: `تمام، افتحلك الطلب رقم ${order.orderNumber}.`,
+        actions: [{ type: "OPEN_ORDER", payload: { orderId: order.id } }],
+      };
+    }
+  }
+
   // 2) إنشاء/تحديث زبون مرجعي
   if (text.includes("زبون مرجعي") || text.includes("ضيف زبون")) {
     const phone = extractPhone(text);
@@ -288,7 +306,13 @@ export async function POST(req: Request) {
       orderBy: { usedToday: 'asc' }
     });
 
-    if (activeConfigs.length === 0) return NextResponse.json({ text: "لا توجد مفاتيح." });
+    if (activeConfigs.length === 0) {
+      return NextResponse.json({
+        text: portal === "admin"
+          ? "ماكو محرك ذكاء مفعّل حالياً. لكن أكدر أنفذ الأوامر الإدارية المباشرة مثل فتح طلب/إسناد/فتح زبون."
+          : "لا توجد مفاتيح ذكاء مفعلة حالياً.",
+      });
+    }
 
     // 1. استخراج الكلمات المفتاحية للبحث عن المنتجات
     const lines = prompt.split("\n");
@@ -412,7 +436,12 @@ ${adminExecutionContext}
         }
       } catch (err) { continue; }
     }
-    return NextResponse.json({ text: "المحرك مشغول حالياً." });
+    return NextResponse.json({
+      text:
+        portal === "admin"
+          ? "ما قدرت أتصل بمحرك الذكاء حالياً. جرب بعد دقيقة، أو اكتب أمر إداري مباشر مثل: افتح طلب رقم 5."
+          : "المحرك مشغول حالياً.",
+    });
   } catch (error) {
     return NextResponse.json({ text: "خطأ فني." }, { status: 500 });
   }
