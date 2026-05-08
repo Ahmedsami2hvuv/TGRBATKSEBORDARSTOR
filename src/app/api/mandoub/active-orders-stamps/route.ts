@@ -4,7 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { mandoubOrdersStampSig } from "@/lib/mandoub-order-stamps";
 
 /**
- * طوابع updatedAt لكل الطلبات النشطة للمندوب — لمقارنة خفيفة وتحديث قائمة الطلبات عند تغيّر أي طلب (مثلاً من الإدارة).
+ * توقيع قائمة الطلبات النشطة للمندوب.
+ * يعتمد على هوية الطلبات (IDs) لتجنب إعادة تحميل كل القائمة عند تعديل
+ * تفاصيل طلب واحد فقط (مثل صورة/لوكيشن/ملاحظة).
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

@@ -522,6 +522,7 @@ export function PickupMoneyForm({
   pending,
   error,
   onClose,
+  noRedirect = false,
 }: {
   orderId: string;
   auth: { c: string; exp: string; s: string };
@@ -536,6 +537,7 @@ export function PickupMoneyForm({
   pending: boolean;
   error?: string;
   onClose: () => void;
+  noRedirect?: boolean;
 }) {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -631,6 +633,7 @@ export function PickupMoneyForm({
         <input type="hidden" name="s" value={auth.s} />
         <input type="hidden" name="orderId" value={orderId} />
         <input type="hidden" name="next" value={nextUrl} />
+        {noRedirect ? <input type="hidden" name="noRedirect" value="1" /> : null}
         <input
           type="hidden"
           name="advanceStatus"
@@ -737,6 +740,7 @@ export function DeliveryMoneyForm({
   error,
   onClose,
   missingCustomerLocation,
+  noRedirect = false,
 }: {
   orderId: string;
   auth: { c: string; exp: string; s: string };
@@ -752,6 +756,7 @@ export function DeliveryMoneyForm({
   error?: string;
   onClose: () => void;
   missingCustomerLocation: boolean;
+  noRedirect?: boolean;
 }) {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -918,6 +923,7 @@ export function DeliveryMoneyForm({
         <input type="hidden" name="s" value={auth.s} />
         <input type="hidden" name="orderId" value={orderId} />
         <input type="hidden" name="next" value={nextUrl} />
+        {noRedirect ? <input type="hidden" name="noRedirect" value="1" /> : null}
         <input
           type="hidden"
           name="advanceStatus"

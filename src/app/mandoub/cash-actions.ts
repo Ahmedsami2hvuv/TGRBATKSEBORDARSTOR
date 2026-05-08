@@ -41,6 +41,10 @@ function revalidateMandoubPaths(nextUrl: string) {
   }
 }
 
+function revalidateAdminTrackingForStatusChange() {
+  revalidatePath("/admin/orders/tracking");
+}
+
 async function courierUploaderLabelForLocation(courierId: string): Promise<string> {
   const row = await prisma.courier.findUnique({
     where: { id: courierId },
@@ -82,6 +86,7 @@ export async function submitMandoubPickupMoney(
   const advanceStatus = String(formData.get("advanceStatus") ?? "").trim();
   const statusAdvanceOnly = formData.get("statusAdvanceOnly") === "1";
   const submitMode = String(formData.get("mandoubMoneySubmitMode") ?? "").trim();
+  const noRedirect = String(formData.get("noRedirect") ?? "").trim() === "1";
 
   const v = verifyDelegatePortalQuery(c, exp, s);
   if (!v.ok) {
@@ -135,7 +140,11 @@ export async function submitMandoubPickupMoney(
         data: { status: "delivering" },
       });
     });
+    revalidateAdminTrackingForStatusChange();
     revalidateMandoubPaths(nextRaw);
+    if (noRedirect) {
+      return { ok: true };
+    }
     redirect(safeMandoubReturn(nextRaw));
   }
 
@@ -179,6 +188,9 @@ export async function submitMandoubPickupMoney(
       });
     }
   });
+  if (advanceStatus === "delivering" && order.status === "assigned") {
+    revalidateAdminTrackingForStatusChange();
+  }
 
   const courierRow = await prisma.courier.findUnique({
     where: { id: v.courierId },
@@ -194,6 +206,9 @@ export async function submitMandoubPickupMoney(
   }).catch(() => {});
 
   revalidateMandoubPaths(nextRaw);
+  if (noRedirect) {
+    return { ok: true };
+  }
   redirect(safeMandoubReturn(nextRaw));
 }
 
@@ -213,6 +228,7 @@ export async function submitMandoubDeliveryMoney(
   const submitMode = String(formData.get("mandoubMoneySubmitMode") ?? "").trim();
   const latRaw = formData.get("lat");
   const lngRaw = formData.get("lng");
+  const noRedirect = String(formData.get("noRedirect") ?? "").trim() === "1";
 
   // تحسين صارم: التحقق من أن القيم نصية وليست فارغة وليست صفراً
   const latStr = typeof latRaw === "string" ? latRaw.trim() : "";
@@ -295,7 +311,11 @@ export async function submitMandoubDeliveryMoney(
         },
       });
     });
+    revalidateAdminTrackingForStatusChange();
     revalidateMandoubPaths(nextRaw);
+    if (noRedirect) {
+      return { ok: true };
+    }
     redirect(safeMandoubReturn(nextRaw));
   }
 
@@ -399,6 +419,9 @@ export async function submitMandoubDeliveryMoney(
       },
     });
   });
+  if (advanceStatus === "delivered" && order.status === "delivering") {
+    revalidateAdminTrackingForStatusChange();
+  }
 
   const courierForNotify = await prisma.courier.findUnique({
     where: { id: v.courierId },
@@ -414,6 +437,9 @@ export async function submitMandoubDeliveryMoney(
   }).catch(() => {});
 
   revalidateMandoubPaths(nextRaw);
+  if (noRedirect) {
+    return { ok: true };
+  }
   redirect(safeMandoubReturn(nextRaw));
 }
 

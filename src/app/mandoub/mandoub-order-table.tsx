@@ -127,6 +127,7 @@ export function MandoubOrderTable({
   );
   const [pickupOrder, setPickupOrder] = useState<MandoubRow | null>(null);
   const [deliveryOrder, setDeliveryOrder] = useState<MandoubRow | null>(null);
+  const [rowStatusOverrides, setRowStatusOverrides] = useState<Record<string, string>>({});
   const [orderDetailHref, setOrderDetailHref] = useState<string | null>(null);
   const [cachedOrderHrefs, setCachedOrderHrefs] = useState<string[]>([]);
   const [loadedOrderHrefs, setLoadedOrderHrefs] = useState<Record<string, boolean>>({});
@@ -146,10 +147,19 @@ export function MandoubOrderTable({
     getGlobalIcons().then(setIcons);
   }, []);
 
-  const rowIds = useMemo(() => rows.map((r) => r.id), [rows]);
+  const displayRows = useMemo(
+    () =>
+      rows.map((r) =>
+        rowStatusOverrides[r.id]
+          ? { ...r, orderStatus: rowStatusOverrides[r.id] }
+          : r,
+      ),
+    [rows, rowStatusOverrides],
+  );
+  const rowIds = useMemo(() => displayRows.map((r) => r.id), [displayRows]);
   const rowDetailHrefs = useMemo(
-    () => rows.map((r) => buildOrderDetailHref(auth, tab, qSearch, r.id)),
-    [rows, auth, tab, qSearch],
+    () => displayRows.map((r) => buildOrderDetailHref(auth, tab, qSearch, r.id)),
+    [displayRows, auth, tab, qSearch],
   );
   const allSelected = rowIds.length > 0 && rowIds.every((id) => selectedIds.has(id));
 
@@ -160,7 +170,19 @@ export function MandoubOrderTable({
     }
   }, [bulkState.ok, router]);
 
-  /** عند تعديل أي طلب من الإدارة يتحدّث updatedAt — نحدّث القائمة دون رفرش يدوي للمتصفح */
+  useEffect(() => {
+    if (!pickupState.ok || !pickupOrder) return;
+    setRowStatusOverrides((prev) => ({ ...prev, [pickupOrder.id]: "delivering" }));
+    setPickupOrder(null);
+  }, [pickupState.ok, pickupOrder]);
+
+  useEffect(() => {
+    if (!deliveryState.ok || !deliveryOrder) return;
+    setRowStatusOverrides((prev) => ({ ...prev, [deliveryOrder.id]: "delivered" }));
+    setDeliveryOrder(null);
+  }, [deliveryState.ok, deliveryOrder]);
+
+  /** نحدّث القائمة فقط عند تغيّر هوية الطلبات (دخول/خروج طلب من القائمة). */
   useEffect(() => {
     if (!listOrdersStampSig) return;
     let cancelled = false;
@@ -289,7 +311,7 @@ export function MandoubOrderTable({
       return;
     }
     setSelectedIds(
-      new Set(rows.filter((r) => r.orderStatus === status).map((r) => r.id)),
+      new Set(displayRows.filter((r) => r.orderStatus === status).map((r) => r.id)),
     );
   }
 
@@ -383,7 +405,7 @@ export function MandoubOrderTable({
       </div>
 
       <UnifiedOrderListTable
-        rows={rows}
+        rows={displayRows}
         colCount={9}
         showSelectColumn={showQuickSelect}
         isRowSelectable={() => true}
@@ -477,6 +499,7 @@ export function MandoubOrderTable({
                 pending={pickupPending}
                 error={pickupState.error}
                 onClose={() => setPickupOrder(null)}
+                noRedirect
               />
             </div>
           </div>,
@@ -517,6 +540,7 @@ export function MandoubOrderTable({
                 error={deliveryState.error}
                 onClose={() => setDeliveryOrder(null)}
                 missingCustomerLocation={!deliveryOrder.hasCustomerLocation}
+                noRedirect
               />
             </div>
           </div>,

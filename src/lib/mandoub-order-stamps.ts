@@ -1,13 +1,13 @@
-/** توقيع ثابت لطوابع الطلبات — يُستخدم في الصفحة وفي API للمقارنة. */
+/**
+ * توقيع هوية قائمة الطلبات للمندوب (وجود الطلبات نفسها فقط).
+ * مهم: لا نعتمد على updatedAt حتى لا تعاد تحميل القائمة كاملة عند
+ * تعديلات المندوب داخل الطلب (صورة/لوكيشن/تحديث بيانات...).
+ */
 export function mandoubOrdersStampSig(
   rows: { id: string; updatedAt: Date }[],
 ): string {
-  const stamps: Record<string, string> = {};
-  for (const r of rows) {
-    stamps[r.id] = r.updatedAt.toISOString();
-  }
-  return Object.keys(stamps)
+  return rows
+    .map((r) => r.id)
     .sort()
-    .map((id) => `${id}:${stamps[id]}`)
     .join("|");
 }

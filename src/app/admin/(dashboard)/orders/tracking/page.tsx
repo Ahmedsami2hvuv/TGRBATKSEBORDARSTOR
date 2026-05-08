@@ -22,7 +22,9 @@ import { OrderTrackingSearch } from "./order-tracking-search";
 import { type TrackingTableRow } from "./order-tracking-table-body";
 import { OrderTrackingBulkTable } from "./order-tracking-bulk-table";
 
-export const dynamic = "force-dynamic";
+// Smart cache window: minor field edits won't thrash tracking.
+// Urgent status transitions are pushed via targeted revalidatePath calls.
+export const revalidate = 60;
 
 export const metadata = {
   title: "تتبع الطلبات — أبو الأكبر للتوصيل",

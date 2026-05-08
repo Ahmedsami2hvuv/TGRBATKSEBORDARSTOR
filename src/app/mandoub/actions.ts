@@ -46,6 +46,10 @@ function revalidateMandoubPaths(nextUrl: string) {
   }
 }
 
+function revalidateAdminTrackingForStatusChange() {
+  revalidatePath("/admin/orders/tracking");
+}
+
 async function updateOrderWithMandoubStatusReconcile(
   orderId: string,
   prevStatus: string,
@@ -58,6 +62,7 @@ async function updateOrderWithMandoubStatusReconcile(
       await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, prevStatus, nextStatus);
       await tx.order.update({ where: { id: orderId }, data });
     });
+    revalidateAdminTrackingForStatusChange();
   } else {
     await prisma.order.update({ where: { id: orderId }, data });
   }
@@ -102,6 +107,7 @@ export async function markOrderDelivered(formData: FormData) {
     data: { status: "delivered" },
   });
 
+  revalidateAdminTrackingForStatusChange();
   revalidateMandoubPaths(nextRaw);
   redirect(safeMandoubReturn(nextRaw));
 }
@@ -134,6 +140,7 @@ export async function markOrderPickedUp(formData: FormData) {
     data: { status: "delivering" },
   });
 
+  revalidateAdminTrackingForStatusChange();
   revalidateMandoubPaths(nextRaw);
   redirect(safeMandoubReturn(nextRaw));
 }
