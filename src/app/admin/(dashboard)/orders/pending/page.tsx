@@ -17,7 +17,8 @@ import {
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { PendingOrdersClient, type PendingOrderRow } from "./pending-orders-client";
 
-export const dynamic = "force-dynamic";
+// Keep data fresh while allowing fast back/forward navigation cache.
+export const revalidate = 15;
 
 export const metadata = {
   title: "إدارة الطلبات والتجهيز — أبو الأكبر للتوصيل",

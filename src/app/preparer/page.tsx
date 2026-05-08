@@ -14,7 +14,8 @@ import { getGlobalIcons } from "@/lib/icon-settings";
 import { PortalWalletPrefetch } from "@/components/portal-wallet-prefetch";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 
-export const dynamic = "force-dynamic";
+// Keep data fresh while allowing fast back/forward navigation cache.
+export const revalidate = 10;
 
 function invalidMsg(reason: string) {
   switch (reason) {

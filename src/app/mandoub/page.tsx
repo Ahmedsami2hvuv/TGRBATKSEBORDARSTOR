@@ -39,7 +39,8 @@ import { PortalWalletPrefetch } from "@/components/portal-wallet-prefetch";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 import { mandoubOrdersStampSig } from "@/lib/mandoub-order-stamps";
 
-export const dynamic = "force-dynamic";
+// Keep data fresh while allowing fast back/forward navigation cache.
+export const revalidate = 10;
 
 export const metadata = {
   title: "لوحة المندوب — أبو الأكبر للتوصيل",
