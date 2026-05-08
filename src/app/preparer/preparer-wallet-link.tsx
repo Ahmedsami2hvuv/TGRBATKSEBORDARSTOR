@@ -5,9 +5,11 @@ import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launche
 export function PreparerWalletLink({
   auth,
   icons: _icons,
+  walletRemainStr,
 }: {
   auth: { p: string; exp: string; s: string };
   icons?: GlobalIconsConfig | null;
+  walletRemainStr?: string;
 }) {
   return (
     <FullscreenWalletLauncher
@@ -15,7 +17,10 @@ export function PreparerWalletLink({
       className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-violet-400 bg-violet-50 px-3 py-2 text-center text-sm font-black text-violet-950 shadow-sm hover:bg-violet-100 sm:w-auto sm:px-4 sm:py-3"
       title="محفظة المجهز"
     >
-      محفظتي
+      <span>محفظتي</span>
+      <span className="rounded-lg bg-violet-100 px-2 py-0.5 text-xs font-black text-violet-900">
+        {walletRemainStr ?? "—"}
+      </span>
     </FullscreenWalletLauncher>
   );
 }

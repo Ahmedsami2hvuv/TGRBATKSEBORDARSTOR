@@ -17,6 +17,7 @@ import {
   fetchOrderOnlyMoneySumsForCourier,
 } from "@/lib/mandoub-courier-event-totals";
 import { computeMandoubTotalsForCourier } from "@/lib/mandoub-courier-totals";
+import { computeMandoubAdminTotalAllTimeDinar } from "@/lib/mandoub-wallet-carry";
 import { mandoubOrderListInclude } from "@/lib/mandoub-order-queries";
 import { extractLatLngFromLocationInput, hasCustomerLocationUrl } from "@/lib/order-location";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
@@ -285,6 +286,9 @@ export default async function MandoubPage({ searchParams }: Props) {
   });
 
   const orderMetrics = computeMandoubTotalsForCourier(activeOrdersNorm, courier.id, totalsBaseline);
+  const handToAdmin = await computeMandoubAdminTotalAllTimeDinar(courier.id);
+  const cashInHand = orderMetrics.sumEarnings.plus(handToAdmin);
+  const cashInHandStr = formatDinarAsAlf(cashInHand);
 
   // هنا نستخدم مبالغ الطلبات فقط في الواجهة الرئيسية
   const { sumDeliveryIn, sumPickupOut, remainingNet } = orderOnlySums;
@@ -481,7 +485,10 @@ export default async function MandoubPage({ searchParams }: Props) {
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base"
               title="محفظة المندوب"
             >
-              المحفظة
+              <span>المحفظة</span>
+              <span className="rounded-lg bg-violet-500 px-2 py-0.5 text-xs font-black text-white">
+                {cashInHandStr}
+              </span>
             </FullscreenWalletLauncher>
           </header>
 

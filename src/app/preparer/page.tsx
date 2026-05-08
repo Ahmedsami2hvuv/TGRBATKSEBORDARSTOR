@@ -14,6 +14,8 @@ import { getGlobalIcons } from "@/lib/icon-settings";
 import { PortalWalletPrefetch } from "@/components/portal-wallet-prefetch";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 import { PreparerNotificationPoller } from "./preparer-notification-poller";
+import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
+import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 
 // Keep data fresh while allowing fast back/forward navigation cache.
 export const revalidate = 10;
@@ -100,22 +102,27 @@ export default async function PreparerHomePage({ searchParams }: Props) {
   const canPriceStore = preparer.authorizedBranches.length > 0;
   const orderListResetAt = preparer.orderListResetAt;
 
-  const { rows: tableRows, searchFields } = await loadPreparerPortalOrderTableData({
-    preparerId: preparer.id,
-    shopIds,
-    orderListResetAt,
-    tab: "all",
-    wardFilter: "lower",
-    saderFilter: "higher",
-    prepFilter: null,
-    onlySubmittedByThisPreparer: false,
-  });
+  const [{ rows: tableRows, searchFields }, couriersForBulkAssign, walletTotals] =
+    await Promise.all([
+      loadPreparerPortalOrderTableData({
+        preparerId: preparer.id,
+        shopIds,
+        orderListResetAt,
+        tab: "all",
+        wardFilter: "lower",
+        saderFilter: "higher",
+        prepFilter: null,
+        onlySubmittedByThisPreparer: false,
+      }),
+      prisma.courier.findMany({
+        where: preparerCourierAssignWhere,
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+      getPreparerMoneyTotals(preparer.id),
+    ]);
 
-  const couriersForBulkAssign = await prisma.courier.findMany({
-    where: preparerCourierAssignWhere,
-    orderBy: { name: "asc" },
-    select: { id: true, name: true },
-  });
+  const walletRemainStr = formatDinarAsAlfWithUnit(walletTotals?.remain ?? 0);
 
   const icons = await getGlobalIcons();
 
@@ -150,7 +157,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
               </FullscreenWalletLauncher>
             </>
           )}
-          <PreparerWalletLink auth={baseAuth} icons={icons} />
+          <PreparerWalletLink auth={baseAuth} icons={icons} walletRemainStr={walletRemainStr} />
         </div>
       </header>
       <PreparerNotificationPoller auth={baseAuth} openUrl={preparationHref} />
