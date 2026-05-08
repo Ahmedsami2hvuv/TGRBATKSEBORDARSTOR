@@ -56,30 +56,44 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       shop = await prisma.shop.findFirst();
     }
 
-    // إنشاء مسودة تجهيز مباشرة لكي تظهر في تبويب "قيد التجهيز" للإدارة
-    const draft = await prisma.companyPreparerShoppingDraft.create({
-      data: {
-        preparerId: null, // سيبقى فارغاً حتى يسحبه مجهز معين أو يوجهه الأدمن
-        customerPhone: phone,
-        customerRegionId: regionId,
-        customerLandmark: landmark,
-        titleLine: "طلب من المتجر الالكتروني",
-        rawListText: summaryParts.join("\n"),
-        status: "draft",
-        data: {
-          version: 1,
-          products: cart.map(i => ({
-            line: i.name,
-            qty: i.quantity || 1,
-            buyAlf: "0",
-            sellAlf: (Number(i.price || 0) / 1000).toString(),
-            isFromStore: true,
-            supplierId: i.supplierId || null, // تمرير معرف المورد إن وجد
-            productId: i.productId || i.id // تمرير معرف المنتج الأصلي
-          })),
-          webStoreCart: cart
-        }
+    const { draft, reservedOrderNumber } = await prisma.$transaction(async (tx) => {
+      const rows = await tx.$queryRaw<Array<{ next_number: bigint | number | string }>>`
+        SELECT nextval(pg_get_serial_sequence('"Order"', 'orderNumber')) AS next_number
+      `;
+      const raw = rows[0]?.next_number;
+      const nextOrderNumber = typeof raw === "bigint" ? Number(raw) : Number(raw ?? 0);
+      if (!Number.isFinite(nextOrderNumber) || nextOrderNumber <= 0) {
+        throw new Error("Failed to reserve next real order number");
       }
+
+      // إنشاء مسودة تجهيز مباشرة لكي تظهر في تبويب "قيد التجهيز" للإدارة
+      const createdDraft = await tx.companyPreparerShoppingDraft.create({
+        data: {
+          preparerId: null, // سيبقى فارغاً حتى يسحبه مجهز معين أو يوجهه الأدمن
+          customerPhone: phone,
+          customerRegionId: regionId,
+          customerLandmark: landmark,
+          titleLine: "طلب من المتجر الالكتروني",
+          rawListText: summaryParts.join("\n"),
+          status: "draft",
+          data: {
+            version: 1,
+            reservedOrderNumber: nextOrderNumber,
+            products: cart.map(i => ({
+              line: i.name,
+              qty: i.quantity || 1,
+              buyAlf: "0",
+              sellAlf: (Number(i.price || 0) / 1000).toString(),
+              isFromStore: true,
+              supplierId: i.supplierId || null, // تمرير معرف المورد إن وجد
+              productId: i.productId || i.id // تمرير معرف المنتج الأصلي
+            })),
+            webStoreCart: cart
+          }
+        }
+      });
+
+      return { draft: createdDraft, reservedOrderNumber: nextOrderNumber };
     });
 
     // Notify via Telegram
@@ -106,7 +120,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       console.error("Telegram notification failed", teleErr);
     }
 
-    const numericOrderNumber = String(draft.draftNumber);
+    const numericOrderNumber = String(reservedOrderNumber);
     const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
     const whatsappMessage = [
       "لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي",

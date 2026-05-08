@@ -312,6 +312,12 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
         finalOrderId = updated.id;
         finalOrderNumber = updated.orderNumber;
       } else {
+        const reservedOrderNumberRaw = Number((draftData?.data as any)?.reservedOrderNumber ?? 0);
+        const reservedOrderNumber =
+          Number.isInteger(reservedOrderNumberRaw) && reservedOrderNumberRaw > 0
+            ? reservedOrderNumberRaw
+            : undefined;
+
         // إنشاء طلب جديد فقط إذا لم يكن هناك طلب مرتبط
         const newOrder = await tx.order.create({
           data: {
@@ -328,6 +334,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
             deliveryPrice: deliveryDinar,
             totalAmount: totalDinar,
             summary: summaryCombined,
+            ...(reservedOrderNumber ? { orderNumber: reservedOrderNumber } : {}),
             preparerShoppingJson: {
               version: 1,
               products: enrichedProducts,
