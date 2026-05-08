@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyDelegatePortalQuery } from "@/lib/delegate-link";
 import { audienceSettings, getOrCreateNotificationSettings } from "@/lib/notification-settings";
 import { prisma } from "@/lib/prisma";
+import { withEphemeralCache } from "@/lib/ephemeral-cache";
 
 export const runtime = "nodejs";
 
@@ -20,20 +21,25 @@ export async function GET(request: Request) {
     status: { in: ["assigned", "delivering"] as string[] },
   };
 
-  const [assignedCount, latest, settingsRow] = await Promise.all([
-    prisma.order.count({
-      where: {
-        assignedCourierId: v.courierId,
-        status: "assigned",
-      },
-    }),
-    prisma.order.findFirst({
-      where: whereActive,
-      orderBy: { orderNumber: "desc" },
-      select: { id: true, orderNumber: true },
-    }),
-    getOrCreateNotificationSettings(),
-  ]);
+  const [assignedCount, latest, settingsRow] = await withEphemeralCache(
+    `notif:mandoub:${v.courierId}:assigned`,
+    4000,
+    () =>
+      Promise.all([
+        prisma.order.count({
+          where: {
+            assignedCourierId: v.courierId,
+            status: "assigned",
+          },
+        }),
+        prisma.order.findFirst({
+          where: whereActive,
+          orderBy: { orderNumber: "desc" },
+          select: { id: true, orderNumber: true },
+        }),
+        getOrCreateNotificationSettings(),
+      ]),
+  );
   const settings = audienceSettings(settingsRow, "mandoub");
 
   return NextResponse.json({

@@ -2,12 +2,13 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Suspense } from "react";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 async function CategoriesGrid() {
   const categories = await prisma.storeCategory.findMany({
     where: { active: true },
     orderBy: { sequence: "desc" },
+    select: { id: true, name: true, photoUrl: true },
   });
 
   return (
@@ -50,7 +51,8 @@ async function CategoriesGrid() {
 
 export default async function StoreHomePage() {
   const storeSettings = await prisma.uISystemSetting.findUnique({
-    where: { target_section: { target: "customer", section: "store_general" } }
+    where: { target_section: { target: "customer", section: "store_general" } },
+    select: { config: true },
   });
 
   const config = (storeSettings?.config as any) || {};

@@ -135,6 +135,7 @@ model CompanyPreparerPrepNotice {
 
 model CompanyPreparerShoppingDraft {
   id               String                      @id @default(cuid())
+  draftNumber      Int                         @unique @default(autoincrement())
   preparerId       String?
   status           PreparerShoppingDraftStatus @default(draft)
   titleLine        String                      @default("")
@@ -403,7 +404,9 @@ model Order {
   @@index([assignedCourierId])
   @@index([submittedByCompanyPreparerId])
   @@index([status])
+  @@index([status, createdAt(sort: Desc)])
   @@index([archivedAt])
+  @@index([archivedAt, createdAt(sort: Desc)])
   @@index([customerRegionId])
   @@index([secondCustomerRegionId])
   @@index([routeMode])
@@ -411,6 +414,9 @@ model Order {
   @@index([customerPhone])
   @@index([submittedByEmployeeId])
   @@index([createdAt])
+  @@index([assignedCourierId, status, createdAt(sort: Desc)])
+  @@index([submittedByCompanyPreparerId, status, createdAt(sort: Desc)])
+  @@index([shopId, status, createdAt(sort: Desc)])
   @@index([courierEarningForCourierId])
 }
 

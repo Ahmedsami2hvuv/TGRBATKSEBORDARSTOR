@@ -181,18 +181,24 @@ export default async function MandoubPage({ searchParams }: Props) {
     );
   }
 
-  const activeOrdersRaw = await prisma.order.findMany({
-    where: {
-      status: { in: ["assigned", "delivering", "delivered"] },
-      OR: [
-        { assignedCourierId: courier.id },
-        { courierEarningForCourierId: courier.id },
-      ],
-    },
-    include: mandoubOrderListInclude,
-    orderBy: { createdAt: "desc" },
-    take: 150,
-  });
+  const totalsBaseline = courier.mandoubTotalsResetAt;
+
+  const [activeOrdersRaw, orderOnlySums, handToAdmin] = await Promise.all([
+    prisma.order.findMany({
+      where: {
+        status: { in: ["assigned", "delivering", "delivered"] },
+        OR: [
+          { assignedCourierId: courier.id },
+          { courierEarningForCourierId: courier.id },
+        ],
+      },
+      include: mandoubOrderListInclude,
+      orderBy: { createdAt: "desc" },
+      take: 150,
+    }),
+    fetchOrderOnlyMoneySumsForCourier(courier.id, totalsBaseline),
+    computeMandoubAdminTotalAllTimeDinar(courier.id),
+  ]);
 
   const regionIds = Array.from(
     new Set(
@@ -265,11 +271,6 @@ export default async function MandoubPage({ searchParams }: Props) {
       return b.orderNumber - a.orderNumber;
     });
 
-  const totalsBaseline = courier.mandoubTotalsResetAt;
-
-  // جلب مبالغ الطلبات فقط لضمان عدم تأثر "المتبقي" الرئيسي بالتحويلات
-  const orderOnlySums = await fetchOrderOnlyMoneySumsForCourier(courier.id, totalsBaseline);
-
   const activeOrdersNorm = activeOrders.map((o) => ({
     ...o,
     moneyEvents: o.moneyEvents.map((e) => ({
@@ -286,7 +287,6 @@ export default async function MandoubPage({ searchParams }: Props) {
   });
 
   const orderMetrics = computeMandoubTotalsForCourier(activeOrdersNorm, courier.id, totalsBaseline);
-  const handToAdmin = await computeMandoubAdminTotalAllTimeDinar(courier.id);
   const cashInHand = orderMetrics.sumEarnings.plus(handToAdmin);
   const cashInHandStr = formatDinarAsAlf(cashInHand);
 

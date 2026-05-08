@@ -88,7 +88,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
       const telegramText = [
         `🛒 <b>طلب تجهيز جديد (المتجر الالكتروني)</b>`,
-        `🔢 <b>رقم المسودة:</b> <code>${draft.id.slice(-6)}</code>`,
+        `🔢 <b>رقم المسودة:</b> <code>${draft.draftNumber}</code>`,
         `📞 <b>الهاتف:</b> <code>${escapeTelegramHtml(phone)}</code>`,
         `📍 <b>المنطقة:</b> ${escapeTelegramHtml(region.name)}`,
         `🏠 <b>نقطة دالة:</b> ${escapeTelegramHtml(landmark)}`,
@@ -106,7 +106,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       console.error("Telegram notification failed", teleErr);
     }
 
-    const numericOrderNumber = String(draft.orderNumber);
+    const numericOrderNumber = String(draft.draftNumber);
     const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
     const whatsappMessage = [
       "لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي",

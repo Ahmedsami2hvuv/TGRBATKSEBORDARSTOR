@@ -47,6 +47,7 @@ type Props = {
 export default async function PreparerHomePage({ searchParams }: Props) {
   const sp = await searchParams;
   const cookieStore = await cookies();
+  const iconsPromise = getGlobalIcons();
 
   // 1. محاولة جلب البيانات من الرابط (الأولوية للرابط)
   let p = sp.p;
@@ -102,7 +103,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
   const canPriceStore = preparer.authorizedBranches.length > 0;
   const orderListResetAt = preparer.orderListResetAt;
 
-  const [{ rows: tableRows, searchFields }, couriersForBulkAssign, walletTotals] =
+  const [{ rows: tableRows, searchFields }, couriersForBulkAssign, walletTotals, icons] =
     await Promise.all([
       loadPreparerPortalOrderTableData({
         preparerId: preparer.id,
@@ -120,11 +121,10 @@ export default async function PreparerHomePage({ searchParams }: Props) {
         select: { id: true, name: true },
       }),
       getPreparerMoneyTotals(preparer.id),
+      iconsPromise,
     ]);
 
   const walletRemainStr = formatDinarAsAlfWithUnit(walletTotals?.remain ?? 0);
-
-  const icons = await getGlobalIcons();
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 text-base leading-relaxed sm:px-4 sm:py-4 sm:text-lg">
