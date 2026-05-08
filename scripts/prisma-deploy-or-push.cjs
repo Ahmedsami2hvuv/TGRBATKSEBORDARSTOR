@@ -14,6 +14,16 @@ function shouldSkipDbDeployStep() {
   return skipFlag;
 }
 
+/**
+ * يضيف معامل statement_timeout للرابط لضمان عدم انقطاع الاتصال في Supabase/Postgres
+ */
+function augmentUrlWithTimeout(url) {
+  if (!url) return url;
+  if (url.includes("statement_timeout=")) return url;
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}statement_timeout=60000`; // 60 seconds
+}
+
 function runCapture(cmd, extraEnv = {}) {
   try {
     execSync(cmd, {
@@ -43,17 +53,22 @@ function runLegacyDomainRewrite(extraEnv = {}) {
   }
 }
 
-function hasPoolerTimeoutIssue(text) {
+function isTimeoutIssue(text) {
   return (
     /unknown config parameter.*transaction_timeout/i.test(text) ||
-    /schema_connector::error.*transaction_timeout/i.test(text)
+    /schema_connector::error.*transaction_timeout/i.test(text) ||
+    /canceling statement due to statement timeout/i.test(text)
   );
 }
 
-function useDirectUrlEnv() {
+function getBestEnv() {
   const direct = process.env.DIRECT_URL;
-  if (!direct) return null;
-  return { DATABASE_URL: direct };
+  const base = process.env.DATABASE_URL;
+  // نفضل الـ Direct URL لعمليات الـ Schema
+  let targetUrl = direct || base;
+  if (!targetUrl) return {};
+
+  return { DATABASE_URL: augmentUrlWithTimeout(targetUrl) };
 }
 
 if (shouldSkipDbDeployStep()) {
@@ -61,43 +76,39 @@ if (shouldSkipDbDeployStep()) {
   process.exit(0);
 }
 
-let migrate = runCapture("npx prisma migrate deploy");
+const bestEnv = getBestEnv();
+
+console.log("[prisma] Attempting migrate deploy...");
+let migrate = runCapture("npx prisma migrate deploy", bestEnv);
+
+// إذا فشل بسبب Timeout، نحاول مرة أخرى مع التأكد من الـ Env
+if (!migrate.ok && isTimeoutIssue(migrate.out)) {
+  console.warn("[prisma] Timeout detected during migrate deploy. Retrying with augmented URL...");
+  migrate = runCapture("npx prisma migrate deploy", bestEnv);
+}
+
 if (migrate.ok) {
-  runLegacyDomainRewrite();
+  runLegacyDomainRewrite(bestEnv);
   process.exit(0);
 }
 
 let combined = migrate.out || "";
-const directEnv = useDirectUrlEnv();
-
-if (hasPoolerTimeoutIssue(combined) && directEnv) {
-  console.warn("[prisma] pooler config issue detected. Retrying migrate deploy via DIRECT_URL…");
-  migrate = runCapture("npx prisma migrate deploy", directEnv);
-  if (migrate.ok) {
-    runLegacyDomainRewrite(directEnv);
-    process.exit(0);
-  }
-  combined = migrate.out || "";
-}
 
 const shouldFallbackToDbPush =
   combined.includes("P3005") ||
-  /baseline an existing production database/i.test(combined);
+  /baseline an existing production database/i.test(combined) ||
+  isTimeoutIssue(combined);
 
 if (shouldFallbackToDbPush) {
   console.warn(
-    "[prisma] migrate deploy failed بسبب baseline. Falling back to db push…",
+    "[prisma] Falling back to db push due to baseline or timeout...",
   );
   try {
-    if (directEnv) {
-      runInherit("npx prisma db push --skip-generate --accept-data-loss", directEnv);
-      runLegacyDomainRewrite(directEnv);
-    } else {
-      runInherit("npx prisma db push --skip-generate --accept-data-loss");
-      runLegacyDomainRewrite();
-    }
+    runInherit("npx prisma db push --skip-generate --accept-data-loss", bestEnv);
+    runLegacyDomainRewrite(bestEnv);
     process.exit(0);
   } catch (e) {
+    console.error("[prisma] db push failed:", e.message);
     process.exit(e.status ?? 1);
   }
 }
