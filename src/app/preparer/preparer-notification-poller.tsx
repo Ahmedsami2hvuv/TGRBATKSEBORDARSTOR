@@ -15,6 +15,7 @@ import {
   type NotificationSettingsPayload,
 } from "@/lib/notification-template";
 import { subscribeDeviceToWebPush } from "@/lib/web-push-client";
+import { preparerPath } from "@/lib/preparer-portal-nav";
 
 type Auth = { p: string; exp?: string; s: string };
 
@@ -30,6 +31,8 @@ export function PreparerNotificationPoller({
   );
   const lastCountRef = useRef<number | null>(null);
   const seenNoticeRef = useRef<string>("");
+  const seenOrderRef = useRef<string>("");
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,10 +51,20 @@ export function PreparerNotificationPoller({
           latestTitle?: string;
           latestBody?: string;
           latestNoticeId?: string;
+          latestShopOrderId?: string;
+          latestShopOrderNumber?: number | null;
+          latestShopOrderCreatedAt?: string | null;
+          latestShopOrderShopName?: string;
+          latestShopOrderRegionName?: string;
           settings?: NotificationSettingsPayload;
         };
         const count = Number(data.noticesCount ?? 0);
         const settings = data.settings ?? DEFAULT_PREPARER_NOTIFICATION_PAYLOAD;
+        if (!initializedRef.current) {
+          seenNoticeRef.current = data.latestNoticeId ?? "";
+          seenOrderRef.current = data.latestShopOrderId ?? "";
+          initializedRef.current = true;
+        }
         const isBump = lastCountRef.current !== null && count > lastCountRef.current;
         const latestNoticeId = data.latestNoticeId ?? "";
         if (settings.enabled && isBump && latestNoticeId && seenNoticeRef.current !== latestNoticeId) {
@@ -73,20 +86,47 @@ export function PreparerNotificationPoller({
             playNotificationSound(settings.soundPreset);
           }
         }
+
+        const latestShopOrderId = String(data.latestShopOrderId ?? "");
+        const latestShopOrderNumber = Number(data.latestShopOrderNumber ?? 0);
+        const latestShopOrderCreatedAt = String(data.latestShopOrderCreatedAt ?? "");
+        if (
+          settings.enabled &&
+          latestShopOrderId &&
+          latestShopOrderCreatedAt &&
+          seenOrderRef.current !== latestShopOrderId
+        ) {
+          seenOrderRef.current = latestShopOrderId;
+          const orderOpenUrl = preparerPath(`/preparer/order/${latestShopOrderId}`, {
+            p: auth.p,
+            exp: auth.exp || "",
+            s: auth.s,
+          });
+          const orderBody = renderNotificationTemplate(settings.templateSingle, {
+            count: 1,
+            orderNumber: Number.isFinite(latestShopOrderNumber) ? latestShopOrderNumber : 0,
+            shopName: data.latestShopOrderShopName ?? "—",
+            regionName: data.latestShopOrderRegionName ?? "—",
+          });
+          if (perm === "granted") {
+            void showTrayNotification({
+              title: "لوحة المجهز — طلب جديد",
+              body: orderBody,
+              tag: `kse-preparer-order-${latestShopOrderId}`,
+              openUrl: orderOpenUrl,
+            });
+          }
+        }
         lastCountRef.current = count;
       } catch {
         // ignore temporary network failures
       }
     };
     void tick();
-    // Bac-kground polling disabled to improve performance
-    // const id = window.setInterval(tick, 10000);
-    // return () => {
-    //   cancelled = true;
-    //   window.clearInterval(id);
-    // };
+    const id = window.setInterval(tick, 10000);
     return () => {
       cancelled = true;
+      window.clearInterval(id);
     };
   }, [auth.p, auth.exp, auth.s, openUrl, perm]);
 

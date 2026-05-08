@@ -3,6 +3,7 @@
  * Optimized for Supabase/Postgres Timeout Issues
  */
 const { execSync } = require("node:child_process");
+const isDevMode = process.argv.includes("--dev");
 
 function shouldSkipDbDeployStep() {
   const skipFlag = process.env.SKIP_DB_DEPLOY === "1";
@@ -62,6 +63,16 @@ if (shouldSkipDbDeployStep()) {
 }
 
 console.log("[prisma] Starting DB update attempt...");
+
+if (isDevMode) {
+  console.log("[prisma] Dev mode: trying migrate dev...");
+  const devResult = runCapture("npx prisma migrate dev --name auto_dev_sync --skip-generate", env);
+  if (devResult.ok) {
+    console.log("[prisma] Dev migration completed.");
+    process.exit(0);
+  }
+  console.warn("[prisma] migrate dev failed in dev mode, trying migrate deploy...");
+}
 
 // محاولة أولى: Migrate Deploy
 let result = runCapture("npx prisma migrate deploy", env);

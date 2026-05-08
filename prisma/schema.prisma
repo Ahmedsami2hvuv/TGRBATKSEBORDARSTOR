@@ -654,3 +654,51 @@ model CourierProfitHistory {
   @@index([courierId])
   @@index([createdAt])
 }
+
+enum PortalChatRole {
+  admin
+  mandoub
+  preparer
+  supplier
+}
+
+model PortalChatThread {
+  id            String                   @id @default(cuid())
+  uniqueKey     String                   @unique
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  lastMessageAt DateTime?
+  participants  PortalChatParticipant[]
+  messages      PortalChatMessage[]
+
+  @@index([lastMessageAt])
+}
+
+model PortalChatParticipant {
+  id         String         @id @default(cuid())
+  threadId   String
+  role       PortalChatRole
+  actorId    String
+  actorName  String
+  lastReadAt DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  thread     PortalChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@unique([threadId, role, actorId])
+  @@index([role, actorId])
+}
+
+model PortalChatMessage {
+  id         String         @id @default(cuid())
+  threadId   String
+  senderRole PortalChatRole
+  senderId   String
+  senderName String
+  body       String
+  createdAt  DateTime       @default(now())
+  thread     PortalChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+  @@index([senderRole, senderId])
+}

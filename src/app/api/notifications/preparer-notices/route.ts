@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const [count, latest, settingsRow] = await withEphemeralCache(
+  const [count, latest, settingsRow, latestShopOrder] = await withEphemeralCache(
     `notif:preparer:${v.preparerId}:notices`,
     4000,
     () =>
@@ -30,6 +30,24 @@ export async function GET(request: Request) {
           select: { id: true, title: true, body: true },
         }),
         getOrCreateNotificationSettings(),
+        prisma.order.findFirst({
+          where: {
+            status: { in: ["pending", "assigned", "delivering"] },
+            shop: {
+              preparerLinks: {
+                some: { preparerId: v.preparerId, canSubmitOrders: true },
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            orderNumber: true,
+            createdAt: true,
+            shop: { select: { name: true } },
+            customerRegion: { select: { name: true } },
+          },
+        }),
       ]),
   );
   const settings = audienceSettings(settingsRow, "preparer");
@@ -39,6 +57,11 @@ export async function GET(request: Request) {
     latestTitle: latest?.title ?? "",
     latestBody: latest?.body ?? "",
     latestNoticeId: latest?.id ?? "",
+    latestShopOrderId: latestShopOrder?.id ?? "",
+    latestShopOrderNumber: latestShopOrder?.orderNumber ?? null,
+    latestShopOrderCreatedAt: latestShopOrder?.createdAt ?? null,
+    latestShopOrderShopName: latestShopOrder?.shop?.name ?? "",
+    latestShopOrderRegionName: latestShopOrder?.customerRegion?.name ?? "",
     settings,
   });
 }

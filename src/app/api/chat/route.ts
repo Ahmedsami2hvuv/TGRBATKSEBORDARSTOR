@@ -9,6 +9,208 @@ type TrainingItem = {
   isActive: boolean;
 };
 
+type ChatResponseShape = {
+  text: string;
+  actions?: any[] | null;
+};
+
+function extractPhone(text: string): string | null {
+  const m = text.match(/(?:\+964|0)?7\d{9}/);
+  return m ? m[0] : null;
+}
+
+function extractOrderNumber(text: string): number | null {
+  const m = text.match(/(?:طلب(?:ية)?\s*رقم|رقم)\s*(\d{1,8})/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) ? n : null;
+}
+
+function cleanLines(text: string): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+async function runAdminCommandRouter(prompt: string): Promise<ChatResponseShape | null> {
+  const text = prompt.trim();
+  const lowered = text.toLowerCase();
+
+  // 1) فتح معلومات زبون
+  if (text.includes("افتح معلومات زبون") || text.includes("معلومات زبون")) {
+    const phone = extractPhone(text);
+    if (!phone) {
+      return { text: "اكتب رقم الزبون حتى أفتح معلوماته." };
+    }
+    return {
+      text: "تمام، افتحلك ملف الزبون هسة.",
+      actions: [{ type: "OPEN_CUSTOMER", payload: { phone } }],
+    };
+  }
+
+  // 2) إنشاء/تحديث زبون مرجعي
+  if (text.includes("زبون مرجعي") || text.includes("ضيف زبون")) {
+    const phone = extractPhone(text);
+    const locMatch = text.match(/https?:\/\/\S+/);
+    const locationUrl = locMatch?.[0] || "";
+    const regionNameMatch = text.match(/(?:منطقة|المنطقة)\s*[:：]?\s*([^\n،,]+)/);
+    const regionName = regionNameMatch?.[1]?.trim() || "";
+    return {
+      text: phone
+        ? "تمام، راح أحفظ الزبون المرجعي."
+        : "أحتاج رقم الزبون حتى أحفظه مرجعي.",
+      actions: phone
+        ? [
+            {
+              type: "CREATE_CUSTOMER_REFERENCE",
+              payload: {
+                phone,
+                regionName,
+                locationUrl,
+                landmark: "",
+                notes: "مضاف من دردشة الإدارة",
+              },
+            },
+          ]
+        : null,
+    };
+  }
+
+  // 3) إسناد طلبية لمندوب
+  if (lowered.includes("اسند") && (lowered.includes("طلب") || lowered.includes("طلبية"))) {
+    const orderNumber = extractOrderNumber(text);
+    if (!orderNumber) return { text: "اكتب رقم الطلبية حتى أسندها." };
+
+    const couriers = await prisma.courier.findMany({
+      where: { blocked: false, availableForAssignment: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+      take: 20,
+    });
+
+    if (couriers.length === 0) {
+      return { text: "ماكو مندوبين متاحين حاليًا." };
+    }
+
+    return {
+      text: "اختار المندوب للإسناد:",
+      actions: [
+        {
+          type: "SHOW_OPTIONS",
+          payload: {
+            items: couriers.map((c) => ({
+              id: c.id,
+              name: c.name,
+              action: {
+                type: "ASSIGN_ORDER_TO_COURIER",
+                payload: { orderNumber, courierId: c.id },
+              },
+            })),
+          },
+        },
+      ],
+    };
+  }
+
+  // 4) نص يشبه طلب تجهيز (اسم/عنوان + هاتف + مواد)
+  const lines = cleanLines(text);
+  const phone = extractPhone(text);
+  if (lines.length >= 3 && phone && (text.includes("ك") || text.includes("طلب تجهيز") || text.includes("بطاطا") || text.includes("خيار"))) {
+    const firstLine = lines[0] || "طلب تجهيز من الشات";
+    const productLines = lines.filter((l) => l !== firstLine && !l.includes(phone));
+    const preparers = await prisma.companyPreparer.findMany({
+      where: { active: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+      take: 20,
+    });
+
+    if (preparers.length === 0) {
+      return { text: "ماكو مجهزين فعالين حالياً حتى أسند الطلب." };
+    }
+
+    return {
+      text: "هذا واضح طلب تجهيز. اختار المجهز حتى أنشئه وأسنده مباشرة.",
+      actions: [
+        {
+          type: "SHOW_OPTIONS",
+          payload: {
+            items: preparers.map((p) => ({
+              id: p.id,
+              name: p.name,
+              action: {
+                type: "CREATE_PREPARATION_DRAFT",
+                payload: {
+                  titleLine: `طلب تجهيز - ${firstLine}`,
+                  customerName: firstLine,
+                  customerPhone: phone,
+                  regionName: firstLine,
+                  customerLandmark: "",
+                  orderTime: "فوري",
+                  products: productLines,
+                  preparerIds: [p.id],
+                },
+              },
+            })),
+          },
+        },
+      ],
+    };
+  }
+
+  return null;
+}
+
+function extractJsonActions(text: string): any[] {
+  const out: any[] = [];
+  let start = -1;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === "\"") {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === "\"") {
+      inString = true;
+      continue;
+    }
+
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+      continue;
+    }
+    if (ch === "}") {
+      if (depth > 0) depth--;
+      if (depth === 0 && start >= 0) {
+        const candidate = text.slice(start, i + 1);
+        try {
+          const parsed = JSON.parse(candidate);
+          if (parsed && typeof parsed === "object" && typeof parsed.type === "string") {
+            out.push(parsed);
+          }
+        } catch {
+          // ignore non-json blocks
+        }
+        start = -1;
+      }
+    }
+  }
+  return out;
+}
+
 function detectPortal(context: any): PortalKey {
   const role = String(context?.role || "").toLowerCase();
   const path = String(context?.path || "").toLowerCase();
@@ -34,7 +236,12 @@ function basePromptByPortal(portal: PortalKey, productsText: string): string {
   if (portal === "admin") {
     return `أنت مساعد خاص ببوابة الإدارة.
 مهمتك مساعدة المدير داخل النظام: ترتيب المهام، توضيح الخطوات، واقتراح التنقل المناسب داخل صفحات الإدارة.
-إذا كان طلب المستخدم يحتاج فتح صفحة معينة، أرجع أمر NAVIGATE فقط مع رابط داخلي آمن يبدأ بـ /admin.
+الأوامر المهمة للإدارة:
+- إسناد طلبية: {"type":"NAVIGATE_ADMIN_PENDING_ASSIGN","payload":{"orderId":"ORDER_ID"}}
+- فتح معلومات زبون: {"type":"OPEN_CUSTOMER","payload":{"phone":"077...","regionId":""}}
+- فتح أي صفحة إدارة: {"type":"NAVIGATE","payload":{"url":"/admin/..."}}
+- قبل الإسناد إذا يحتاج اختيار شخص، ارجع خيارات: {"type":"SHOW_OPTIONS","payload":{"items":[{"id":"...","name":"..."}]}}
+إذا المستخدم كتب نص يشبه طلب تجهيز (اسم + هاتف + مواد)، اعتبره مسودة طلب واطلب منه تأكيد الإسناد.
 تكلم بلهجة عراقية واضحة ومهنية.`;
   }
 
@@ -42,6 +249,7 @@ function basePromptByPortal(portal: PortalKey, productsText: string): string {
     return `أنت مساعد خاص ببوابة المجهز.
 مهمتك مساعدة المجهز في تجهيز الطلبات: فهم الطلب، ترتيب الخطوات، والتنبيه على النقاط المهمة.
 إذا كان مناسب فتح طلب/تجهيز، تقدر تستخدم OPEN_ORDER مع رقم/معرف الطلب.
+إذا المستخدم أعطاك قائمة مواد، لخصها سريعاً واسأل: "أسندها لمن؟" وإذا متوفر خيارات رجّع SHOW_OPTIONS.
 تكلم بلهجة عراقية عملية ومختصرة.`;
   }
 
@@ -49,6 +257,7 @@ function basePromptByPortal(portal: PortalKey, productsText: string): string {
     return `أنت مساعد خاص ببوابة المندوب.
 مهمتك مساعدة المندوب بالتوصيل: ترتيب المشوار، متابعة الحالة، وتذكير بنقاط التسليم والتحصيل.
 إذا كان مناسب فتح طلب، تقدر تستخدم OPEN_ORDER.
+إذا يحتاج اختيار بين عدة خيارات، استخدم SHOW_OPTIONS حتى تظهر كأزرار.
 تكلم بلهجة عراقية ميدانية بسيطة.`;
   }
 
@@ -62,6 +271,7 @@ ${productsText}
 2. المواد الواضحة (مثل موز، خيار): إذا وجدتها مطابقة تماماً لمنتج واحد، أرسل أمر ADD_TO_CART.
 3. المواد المتعددة (مثل لبن، كيك): إذا وجدتها تحتمل أكثر من منتج، اعرض الخيارات للمستخدم واطلب منه الاختيار.
 4. المعلومات الشخصية: احفظ الاسم والرقم في ذاكرتك.
+5. إذا طلب المستخدم منتج بوصف عام مثل "مشروب فراولة"، اعرض المنتجات المطابقة باستخدام SHOW_OPTIONS.
 
 الأوامر التنفيذية (يمكنك إرسال مصفوفة JSON أو كائن واحد):
 - إضافة للسلة: {"type": "ADD_TO_CART", "payload": {"id": "ID", "name": "Name", "price": 0}}
@@ -99,10 +309,57 @@ export async function POST(req: Request) {
     });
 
     const portal = detectPortal(context);
+    if (portal === "admin") {
+      const routed = await runAdminCommandRouter(prompt);
+      if (routed) {
+        return NextResponse.json({
+          text: routed.text,
+          actions: routed.actions ?? null,
+        });
+      }
+    }
+
     const trainingRow = await prisma.uISystemSetting.findUnique({
       where: { target_section: { target: "global", section: "ai_portal_training" } },
     });
     const byPortal = (trainingRow?.config as any)?.byPortal || {};
+    let adminExecutionContext = "";
+    if (portal === "admin") {
+      const [preparers, couriers, recentPendingOrders] = await Promise.all([
+        prisma.companyPreparer.findMany({
+          where: { active: true },
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+          take: 20,
+        }),
+        prisma.courier.findMany({
+          where: { blocked: false, availableForAssignment: true },
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+          take: 20,
+        }),
+        prisma.order.findMany({
+          where: { status: { in: ["pending", "assigned", "delivering"] } },
+          orderBy: { createdAt: "desc" },
+          select: { id: true, orderNumber: true, customerPhone: true, status: true },
+          take: 20,
+        }),
+      ]);
+
+      adminExecutionContext = `
+بيانات تنفيذية للإدارة:
+- المجهزين المتاحين: ${JSON.stringify(preparers)}
+- المندوبين المتاحين: ${JSON.stringify(couriers)}
+- الطلبات القريبة: ${JSON.stringify(recentPendingOrders)}
+
+أوامر تنفيذ فعلية (عند وجود بيانات كافية):
+- إنشاء/تحديث زبون مرجعي: {"type":"CREATE_CUSTOMER_REFERENCE","payload":{"phone":"077...","regionName":"...","landmark":"...","locationUrl":"...","alternatePhone":"","notes":""}}
+- إنشاء طلب تجهيز: {"type":"CREATE_PREPARATION_DRAFT","payload":{"titleLine":"...","customerName":"...","customerPhone":"...","regionName":"...","customerLandmark":"...","orderTime":"فوري","products":["بطاطا 3ك","خيار 2ك"],"preparerIds":["..."]}}
+- إسناد طلبية لمندوب: {"type":"ASSIGN_ORDER_TO_COURIER","payload":{"orderId":"...","orderNumber":"...","courierId":"..."}}
+
+إذا ينقص اختيار الشخص، رجّع SHOW_OPTIONS بخيارات من القوائم أعلاه.`;
+    }
+
     const activePortalTraining = sanitizeTrainingList(byPortal[portal]);
     const portalTrainingPrompt =
       activePortalTraining.length > 0
@@ -117,6 +374,7 @@ export async function POST(req: Request) {
     const basePrompt = basePromptByPortal(portal, productsText);
     const agentSystemPrompt = `${basePrompt}
 ${portalTrainingPrompt}
+${adminExecutionContext}
 تكلم بلهجة عراقية مناسبة للبوابة الحالية وبشكل مختصر وواضح.`;
 
     for (const config of activeConfigs) {
@@ -144,15 +402,11 @@ ${portalTrainingPrompt}
 
         if (fullText) {
           // استخراج كافة الأوامر من النص (قد يرسل الذكاء أكثر من أمر)
-          const actions = [];
-          const matches = fullText.matchAll(/\{"type":.*?\}/g);
-          for (const match of matches) {
-            try { actions.push(JSON.parse(match[0])); } catch(e){}
-          }
+          const actions = extractJsonActions(fullText);
 
           await prisma.aIConfig.update({ where: { id: config.id }, data: { usedToday: { increment: 1 } } });
           return NextResponse.json({
-            text: fullText.replace(/\{"type":.*?\}/g, "").trim(),
+            text: fullText.replace(/\{[\s\S]*?"type"[\s\S]*?\}/g, "").trim(),
             actions: actions.length > 0 ? actions : null
           });
         }

@@ -18,6 +18,9 @@ const PwaRoutePreserver = dynamic(
 const GlobalAIAssistant = dynamic(() => import("@/components/GlobalAIAssistant"), {
   ssr: false,
 });
+const PortalChatWidget = dynamic(() => import("@/components/PortalChatWidget"), {
+  ssr: false,
+});
 
 type ClientRuntimeProps = {
   children: React.ReactNode;
@@ -26,8 +29,10 @@ type ClientRuntimeProps = {
 export function ClientRuntime({ children }: ClientRuntimeProps) {
   return (
     <>
-      {/* Removed background PWA and AI services to stop background activity */}
+      {/* Keep global assistant visible across portals */}
       <EnterSubmitGlobal />
+      <GlobalAIAssistant />
+      <PortalChatWidget />
       {children}
       <Toaster richColors position="top-center" dir="rtl" closeButton />
     </>
