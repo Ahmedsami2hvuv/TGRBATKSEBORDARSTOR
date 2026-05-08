@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { logout } from "./actions";
 import { AdminLiveSearchInput } from "./live-search-input";
@@ -31,6 +31,10 @@ export function AdminShell({
   const [pendingCount, setPendingCount] = useState(pendingInitialCount);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const pathname = usePathname() ?? "";
+  const searchParams = useSearchParams();
+  // عند فتح صفحة كنافذة منبثقة (?view=modal) نُخفي الشريط الجانبي وشريط البحث
+  // لأنّ النافذة الأمّ تعرضهما أصلاً ولا داعي لتكرارهما داخل الـ iframe
+  const isModalView = searchParams?.get("view") === "modal";
 
   const sidebarMinWidth = 240;
   const dragThreshold = 7; // px
@@ -175,6 +179,20 @@ export function AdminShell({
   };
 
   const effectiveNavOpen = navOpen;
+
+  if (isModalView) {
+    return (
+      <div className="kse-app-bg min-h-screen flex text-slate-900 dark:text-slate-100 flex-col">
+        <main className="w-full flex-1 px-2 py-4 sm:p-6 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[1400px]">
+            <div className="relative z-10 w-full h-full">
+              {children}
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div

@@ -895,7 +895,7 @@ export function PendingOrdersClient({
               <button
                 type="button"
                 onClick={() => setPricingOpenId(null)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-sm hover:bg-red-700 transition"
                 aria-label="إغلاق نافذة التسعير"
               >
                 ✕

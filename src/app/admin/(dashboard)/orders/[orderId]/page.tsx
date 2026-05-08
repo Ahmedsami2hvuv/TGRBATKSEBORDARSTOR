@@ -158,10 +158,14 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
 
  return (
  <div className="space-y-4">
- <p className={ad.muted}>
- <Link href="/admin/orders/tracking" className={ad.link}>← تتبع الطلبات</Link>
- </p>
- <h1 className={ad.h1}>عرض الطلب #{order.orderNumber}</h1>
+ {!modalOnly ? (
+   <>
+     <p className={ad.muted}>
+       <Link href="/admin/orders/tracking" className={ad.link}>← تتبع الطلبات</Link>
+     </p>
+     <h1 className={ad.h1}>عرض الطلب #{order.orderNumber}</h1>
+   </>
+ ) : null}
  <OrderViewContent order={safeView} preparers={safePreparers} customWaButtons={safeWaButtons} />
  <AdminOrderMoneyEvents orderNumber={order.orderNumber} nextPath={`/admin/orders/${order.id}`} events={safeMoneyEvents} />
  </div>

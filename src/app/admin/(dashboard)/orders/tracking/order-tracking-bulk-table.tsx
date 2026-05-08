@@ -519,7 +519,7 @@ export function OrderTrackingBulkTable({
                 <button
                   type="button"
                   onClick={closeOrderModal}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-sm hover:bg-red-700"
                   aria-label="إغلاق نافذة الطلب"
                 >
                   ✕

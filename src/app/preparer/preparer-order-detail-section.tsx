@@ -530,29 +530,27 @@ export function PreparerOrderDetailSection({
                   </div>
                 )}
               </div>
-              <div>
-                <div className="flex items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
-                  <DynamicIcon
-                    iconKey="wallet_cash"
-                    config={icons}
-                    className="h-5 w-5 text-slate-400"
-                    fallback={null}
-                  />
-                  {order.orderSubtotal != null ? `سعر${formatDinarAsAlf(order.orderSubtotal)}` : "سعر—"}
-                </div>
+              <div className="flex flex-wrap items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
+                <DynamicIcon
+                  iconKey="wallet_cash"
+                  config={icons}
+                  className="h-5 w-5 text-slate-400"
+                  fallback={null}
+                />
+                <span>السعر:</span>
+                <span>{order.orderSubtotal != null ? formatDinarAsAlf(order.orderSubtotal) : "—"}</span>
               </div>
-              <div>
-                <div className="flex items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
-                  <DynamicIcon
-                    iconKey="ui_courier"
-                    config={icons}
-                    className="h-5 w-5 text-slate-400"
-                    fallback={null}
-                  />
-                  {order.deliveryPrice != null ? `التوصيل${formatDinarAsAlf(order.deliveryPrice)}` : "التوصيل—"}
-                </div>
+              <div className="flex flex-wrap items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
+                <DynamicIcon
+                  iconKey="ui_courier"
+                  config={icons}
+                  className="h-5 w-5 text-slate-400"
+                  fallback={null}
+                />
+                <span>التوصيل:</span>
+                <span>{order.deliveryPrice != null ? formatDinarAsAlf(order.deliveryPrice) : "—"}</span>
               </div>
-              <div className="rounded-lg border border-violet-500/55 bg-violet-500/35 px-3 py-3 sm:px-5 sm:py-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)]">
+              <div className="flex flex-col items-center justify-center rounded-lg border border-violet-500/55 bg-violet-500/35 px-3 py-3 text-center sm:px-5 sm:py-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)]">
                 <div className="flex items-center gap-1.5 text-sm font-bold text-violet-950 sm:text-base">
                   <DynamicIcon
                     iconKey="wallet_remain"

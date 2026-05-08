@@ -16,22 +16,12 @@ export function MandoubOrderDetailActions({ closeHref }: { closeHref: string }) 
     getGlobalIcons().then(setIcons);
   }, []);
 
+  // ملاحظة: تم إزالة زر «إغلاق الطلب» لأن نافذة الطلب لها زر إغلاق علوي بالفعل.
+  void closeHref;
+  void router;
+
   return (
     <div className="flex flex-shrink-0 flex-wrap items-center justify-start gap-2">
-      <button
-        type="button"
-        onClick={() => {
-          if (window.parent && window.parent !== window) {
-            window.parent.postMessage({ type: "WALLET_MODAL_CLOSE" }, window.location.origin);
-            return;
-          }
-          router.push(closeHref);
-        }}
-        className="flex items-center gap-2 rounded-xl border border-sky-300 bg-white px-4 py-2 text-base font-bold text-sky-900 shadow-sm transition hover:bg-sky-50"
-      >
-        <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-4 h-4" />
-        إغلاق الطلب
-      </button>
       <button
         type="button"
         onClick={() => {

@@ -35,7 +35,6 @@ import {
 } from "../mandoub-wallet-client";
 import { getUISettings } from "@/lib/ui-settings";
 import { computeCourierDeliveryEarningDinar } from "@/lib/courier-earnings";
-import { MandoubWalletBackButton } from "./mandoub-wallet-back-button";
 
 export const dynamic = "force-dynamic";
 
@@ -344,21 +343,13 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
   // جلب إعدادات المحفظة
   const uiSettings = await getUISettings("mandoub", "wallet_block");
 
+  // ملاحظة: تم إزالة ترويسة «المحفظة + إجمالي الراتب + زر رجوع» — العنوان وزر الإغلاق متوفّران أصلاً في النافذة المنبثقة العلوية.
+  void monthlySalaryTotal;
+  void hrefMain;
+
   return (
     <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-base leading-relaxed text-slate-800">
       <div className="kse-app-inner mx-auto max-w-3xl px-3 py-4 pb-24 sm:px-4">
-        <header className="kse-glass-dark mb-4 border border-violet-200/90 px-4 py-4 shadow-sm sm:px-5 sm:py-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-black text-slate-900 sm:text-2xl">المحفظة</h1>
-              <div className="flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-xl font-black text-white shadow-sm tabular-nums">
-                {formatDinarAsAlf(monthlySalaryTotal)}
-              </div>
-            </div>
-            <MandoubWalletBackButton hrefMain={hrefMain} />
-          </div>
-        </header>
-
         <MandoubWalletClient
           auth={baseAuth}
           walletPathWithQuery={walletPathWithQuery}

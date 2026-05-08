@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ad } from "@/lib/admin-ui";
 import {
   mandoubOrderMatchesSmartQuery,
@@ -9,7 +9,7 @@ import {
 import type { MandoubRow } from "@/app/mandoub/mandoub-order-table";
 import { PreparerOrderTable } from "./preparer-order-table";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { GlobalIconsConfig } from "@/lib/icon-settings";
 
 export function PreparerOrdersSection({
   allRows,
@@ -31,10 +31,28 @@ export function PreparerOrdersSection({
   icons?: GlobalIconsConfig | null;
 }) {
   const [query, setQuery] = useState(initialQuery);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setQuery(initialQuery);
+    if (initialQuery.trim()) setSearchOpen(true);
   }, [initialQuery]);
+
+  // تركيز الحقل تلقائياً عند فتحه عبر الأيقونة
+  useEffect(() => {
+    if (searchOpen) {
+      const t = window.setTimeout(() => inputRef.current?.focus(), 50);
+      return () => window.clearTimeout(t);
+    }
+  }, [searchOpen]);
+
+  // الاستماع لحدث «طلب فتح البحث» المُرسل من ترويسة الصفحة (الأيقونة بجانب اسم المجهز)
+  useEffect(() => {
+    const handler = () => setSearchOpen(true);
+    window.addEventListener("preparer:open-search", handler);
+    return () => window.removeEventListener("preparer:open-search", handler);
+  }, []);
 
   const filteredRows = useMemo(() => {
     const paired = allRows.map((r, i) => ({ r, f: searchFields[i] }));
@@ -46,34 +64,42 @@ export function PreparerOrdersSection({
 
   return (
     <>
-      <div className="flex flex-col gap-2 border-b border-sky-100 px-2 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3">
-        <h2 className="order-2 shrink-0 text-center text-base font-black text-slate-900 sm:order-1 sm:text-end sm:text-lg">
-          الطلبات
-        </h2>
-        <div
-          className="order-1 relative flex w-full flex-row items-stretch gap-2 sm:order-2 sm:max-w-2xl sm:flex-1"
-          dir="rtl"
-        >
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <DynamicIcon
-              iconKey="ui_search"
-              config={icons}
-              className="h-4 w-4 text-slate-400"
-              fallback={null}
+      {searchOpen ? (
+        <div className="border-b border-sky-100 px-2 py-2.5 sm:px-4 sm:py-3">
+          <div className="relative flex items-stretch gap-2" dir="rtl">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <DynamicIcon
+                iconKey="ui_search"
+                config={icons}
+                className="h-4 w-4 text-slate-400"
+                fallback={null}
+              />
+            </div>
+            <input
+              ref={inputRef}
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="بحث — محل، رقم، هاتف…"
+              className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-sky-200 bg-white pr-9 pl-3 py-2 text-base text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 sm:min-h-[48px] sm:text-lg"
+              dir="rtl"
+              autoComplete="off"
+              enterKeyHint="search"
             />
+            <button
+              type="button"
+              onClick={() => {
+                setSearchOpen(false);
+                setQuery("");
+              }}
+              className="shrink-0 rounded-xl border border-red-500 bg-red-600 px-3 text-sm font-bold text-white shadow-sm hover:bg-red-700"
+              aria-label="إغلاق البحث"
+            >
+              ✕
+            </button>
           </div>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="بحث — محل، رقم، هاتف…"
-            className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-sky-200 bg-white pr-9 pl-3 py-2 text-base text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 sm:min-h-[48px] sm:text-lg"
-            dir="rtl"
-            autoComplete="off"
-            enterKeyHint="search"
-          />
         </div>
-      </div>
+      ) : null}
 
       <PreparerOrderTable
         rows={filteredRows}

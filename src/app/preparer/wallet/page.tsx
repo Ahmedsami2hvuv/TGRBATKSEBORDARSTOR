@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { Decimal } from "@prisma/client/runtime/library";
 import { verifyCompanyPreparerPortalQuery, type CompanyPreparerPortalVerifyReason } from "@/lib/company-preparer-portal-link";
@@ -88,7 +87,6 @@ export default async function PreparerWalletPage({ searchParams }: Props) {
   const employee = preparer.walletEmployee;
   const shopIds = preparer.shopLinks.map((l) => l.shopId);
   const walletPathWithQuery = preparerPath("/preparer/wallet", baseAuth);
-  const back = preparerPath("/preparer", baseAuth);
 
   const [
     miscRows,
@@ -249,10 +247,7 @@ export default async function PreparerWalletPage({ searchParams }: Props) {
     <div className="kse-app-bg min-h-screen px-4 py-8 pb-24 text-slate-800">
       <div className="kse-app-inner mx-auto max-w-lg space-y-5">
         <header className="kse-glass-dark rounded-2xl border border-violet-200/90 p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wide text-violet-800">أبو الأكبر للتوصيل</p>
-          <h1 className="mt-2 text-xl font-black text-slate-900">محفظة المجهز</h1>
-          <p className="mt-1 text-sm font-semibold text-violet-900">{preparer.name}</p>
-          <nav className="mt-4 flex"><Link href={back} className="inline-flex flex-1 items-center justify-center rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50 transition shadow-sm">← الطلبات</Link></nav>
+          <h1 className="text-xl font-black text-slate-900">محفظة {preparer.name}</h1>
         </header>
 
         {/* ملخص المحفظة مرتب ديناميكياً */}

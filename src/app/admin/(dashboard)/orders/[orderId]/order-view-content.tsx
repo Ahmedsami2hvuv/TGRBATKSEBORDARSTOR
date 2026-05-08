@@ -144,7 +144,7 @@ export function OrderViewContent({
           <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border-2 border-amber-400">
             <div className="flex items-center justify-between bg-amber-50 px-6 py-4 border-b border-amber-200">
               <h3 className="text-lg font-black text-amber-900 flex items-center gap-2"><span>💰</span> لوحة تسعير الطلب #{order.orderNumber}</h3>
-              <button onClick={() => setPricingOpen(false)} className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-amber-200 text-amber-900 font-bold hover:bg-amber-100 transition-colors">✕</button>
+              <button onClick={() => setPricingOpen(false)} className="h-10 w-10 flex items-center justify-center rounded-xl bg-red-600 text-white font-bold shadow-sm hover:bg-red-700 transition-colors">✕</button>
             </div>
             <div className="p-6 overflow-y-auto max-h-[80vh]">
               <AdminPricingPanel
@@ -400,34 +400,46 @@ export function OrderViewContent({
         </div>
       </div>
 
-      <div className="mt-6 border-t border-sky-100 pt-5">
-        <p className="text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">قائمة المواد والملاحظات</p>
-
-        {order.submissionSource === "web_store" &&
+      {(() => {
+        const hasNotes = Boolean(order.summary?.trim());
+        const cartItems =
+          order.submissionSource === "web_store" &&
           parsedShoppingJson &&
-          Array.isArray(parsedShoppingJson.webStoreCart) &&
-          (parsedShoppingJson.webStoreCart as unknown[]).length > 0 && (
-          <div className="mb-4 space-y-2">
-            <p className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-100 w-fit">تفاصيل السلة (المتجر)</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {(parsedShoppingJson.webStoreCart as any[]).map((item: any, idx: number) => (
-                <div key={idx} className="flex justify-between items-center p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-black text-slate-900">{item.name}</span>
-                    <span className="text-[10px] font-bold text-slate-500">{item.price?.toLocaleString()} د.ع × {item.quantity}</span>
-                  </div>
-                  <span className="text-sm font-mono font-black text-violet-600">{(item.price * item.quantity).toLocaleString()} د.ع</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+          Array.isArray(parsedShoppingJson.webStoreCart)
+            ? (parsedShoppingJson.webStoreCart as any[])
+            : [];
+        const hasCart = cartItems.length > 0;
+        if (!hasNotes && !hasCart) return null;
+        return (
+          <div className="mt-6 border-t border-sky-100 pt-5">
+            <p className="text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">قائمة المواد والملاحظات</p>
 
-        <div className={`relative rounded-xl border-2 p-4 pe-16 ${order.summary?.trim() ? "border-amber-200 bg-amber-50/30" : "border-transparent bg-slate-50"}`}>
-          <div className="absolute end-3 top-3"><NotesCopyButton text={order.summary ?? ""} /></div>
-          <div className="whitespace-pre-wrap text-sm font-bold text-slate-800 leading-relaxed">{order.summary || "لا توجد ملاحظات"}</div>
-        </div>
-      </div>
+            {hasCart && (
+              <div className="mb-4 space-y-2">
+                <p className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-100 w-fit">تفاصيل السلة (المتجر)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {cartItems.map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between items-center p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-black text-slate-900">{item.name}</span>
+                        <span className="text-[10px] font-bold text-slate-500">{item.price?.toLocaleString()} د.ع × {item.quantity}</span>
+                      </div>
+                      <span className="text-sm font-mono font-black text-violet-600">{(item.price * item.quantity).toLocaleString()} د.ع</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {hasNotes && (
+              <div className="relative rounded-xl border-2 border-amber-200 bg-amber-50/30 p-4 pe-16">
+                <div className="absolute end-3 top-3"><NotesCopyButton text={order.summary ?? ""} /></div>
+                <div className="whitespace-pre-wrap text-sm font-bold text-slate-800 leading-relaxed">{order.summary}</div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <OrderFabDock
         storageKey="adminFab_v1"

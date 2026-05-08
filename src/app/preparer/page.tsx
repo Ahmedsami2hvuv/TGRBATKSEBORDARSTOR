@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { PreparerOrdersSection } from "./preparer-orders-client";
 import { PreparerPresenceToggle } from "./preparer-presence-toggle";
 import { PreparerWalletLink } from "./preparer-wallet-link";
+import { PreparerSearchTrigger } from "./preparer-search-trigger";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { PortalWalletPrefetch } from "@/components/portal-wallet-prefetch";
@@ -120,7 +121,8 @@ export default async function PreparerHomePage({ searchParams }: Props) {
       <header className="kse-glass-dark mb-2 flex flex-wrap items-center gap-2 border border-emerald-200/90 px-3 py-2.5 shadow-sm sm:mb-3 sm:px-4">
         <div className="min-w-0 flex-1 flex items-center gap-3">
           <ThemeSwitcher />
-          <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-slate-100">مرحباً {preparer.name}</p>
+          <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-slate-100">{preparer.name}</p>
+          <PreparerSearchTrigger icons={icons} />
         </div>
         <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
           <PreparerPresenceToggle auth={baseAuth} availableForAssignment={preparer.availableForAssignment} icons={icons} />

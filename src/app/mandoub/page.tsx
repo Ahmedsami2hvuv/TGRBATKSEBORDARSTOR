@@ -462,7 +462,7 @@ export default async function MandoubPage({ searchParams }: Props) {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <DynamicIcon config={icons.ui_user} fallback="" className="w-5 h-5 text-sky-600" />
-                <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-[#00f3ff]">أهلاً {courier.name}</p>
+                <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-[#00f3ff]">{courier.name}</p>
               </div>
               <p className="text-[10px] font-bold text-slate-500 sm:text-xs ms-7">{courier.phone}</p>
             </div>
@@ -473,7 +473,6 @@ export default async function MandoubPage({ searchParams }: Props) {
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base"
               title="محفظة المندوب"
             >
-              <DynamicIcon config={icons.ui_wallet} fallback="" className="w-5 h-5" />
               المحفظة
             </FullscreenWalletLauncher>
           </header>

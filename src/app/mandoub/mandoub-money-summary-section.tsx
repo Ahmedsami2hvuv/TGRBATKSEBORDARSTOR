@@ -1,7 +1,5 @@
 import Link from "next/link";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
-import { DynamicIcon } from "@/components/dynamic-icon";
-import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 export async function MandoubMoneySummarySection({
   totalsBaseline,
@@ -28,8 +26,6 @@ export async function MandoubMoneySummarySection({
   hideResetText?: boolean;
   showAdminBox?: boolean;
 }) {
-  const icons = await getGlobalIcons();
-
   return (
     <section
       aria-label="ملخص الأموال"
@@ -51,29 +47,23 @@ export async function MandoubMoneySummarySection({
       ) : null}
       <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2 sm:overflow-visible sm:pb-0">
         <Link
-          href={hrefWalletLedger("ward")}
-          className="flex min-w-[4.75rem] max-w-[25%] flex-1 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-red-500 bg-red-50 px-1.5 py-1.5 text-center shadow-sm ring-red-300/30 transition hover:ring-2 sm:min-w-0 sm:max-w-none sm:px-2 sm:py-2 dark:bg-[#2d0a0a] dark:border-red-900"
-          title="ما استلمته من الزبون عند تم التسليم — عرض معاملات الوارد"
-        >
-          <div className="flex items-center gap-1">
-            <DynamicIcon iconKey="wallet_in" config={icons} fallback="" className="w-3 h-3 text-red-900 dark:text-red-400" />
-            <span className="text-[9px] font-bold leading-tight text-red-900 sm:text-[10px] dark:text-red-400">الوارد</span>
-          </div>
-          <span className="mt-0.5 block text-sm font-black tabular-nums leading-none text-red-800 sm:text-base dark:text-red-200">
-            {formatDinarAsAlfWithUnit(sumDeliveryInDinar)}
-          </span>
-        </Link>
-        <Link
           href={hrefWalletLedger("sader")}
           className="flex min-w-[4.75rem] max-w-[25%] flex-1 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-emerald-600 bg-emerald-50 px-1.5 py-1.5 text-center shadow-sm ring-emerald-300/30 transition hover:ring-2 sm:min-w-0 sm:max-w-none sm:px-2 sm:py-2 dark:bg-[#062016] dark:border-emerald-900"
           title="ما سلّمته للعميل عند تم الاستلام — عرض معاملات الصادر"
         >
-          <div className="flex items-center gap-1">
-            <DynamicIcon iconKey="wallet_out" config={icons} fallback="" className="w-3 h-3 text-emerald-900 dark:text-emerald-400" />
-            <span className="text-[9px] font-bold leading-tight text-emerald-900 sm:text-[10px] dark:text-emerald-400">الصادر</span>
-          </div>
+          <span className="text-[9px] font-bold leading-tight text-emerald-900 sm:text-[10px] dark:text-emerald-400">الصادر</span>
           <span className="mt-0.5 block text-sm font-black tabular-nums leading-none text-emerald-800 sm:text-base dark:text-emerald-200">
             {formatDinarAsAlfWithUnit(sumPickupOutDinar)}
+          </span>
+        </Link>
+        <Link
+          href={hrefWalletLedger("ward")}
+          className="flex min-w-[4.75rem] max-w-[25%] flex-1 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-red-500 bg-red-50 px-1.5 py-1.5 text-center shadow-sm ring-red-300/30 transition hover:ring-2 sm:min-w-0 sm:max-w-none sm:px-2 sm:py-2 dark:bg-[#2d0a0a] dark:border-red-900"
+          title="ما استلمته من الزبون عند تم التسليم — عرض معاملات الوارد"
+        >
+          <span className="text-[9px] font-bold leading-tight text-red-900 sm:text-[10px] dark:text-red-400">الوارد</span>
+          <span className="mt-0.5 block text-sm font-black tabular-nums leading-none text-red-800 sm:text-base dark:text-red-200">
+            {formatDinarAsAlfWithUnit(sumDeliveryInDinar)}
           </span>
         </Link>
         <Link
@@ -81,10 +71,7 @@ export async function MandoubMoneySummarySection({
           className="flex min-w-[4.75rem] max-w-[25%] flex-1 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-blue-600 bg-blue-50 px-1.5 py-1.5 text-center shadow-sm ring-blue-300/30 transition hover:ring-2 sm:min-w-0 sm:max-w-none sm:px-2 sm:py-2 dark:bg-[#0a192f] dark:border-blue-900"
           title="وارد − صادر — سجل كامل في المحفظة"
         >
-          <div className="flex items-center gap-1">
-            <DynamicIcon iconKey="wallet_remain" config={icons} fallback="" className="w-3 h-3 text-blue-900 dark:text-blue-400" />
-            <span className="text-[9px] font-bold leading-tight text-blue-900 sm:text-[10px] dark:text-blue-400">المتبقي</span>
-          </div>
+          <span className="text-[9px] font-bold leading-tight text-blue-900 sm:text-[10px] dark:text-blue-400">المتبقي</span>
           <span className="mt-0.5 block text-sm font-black tabular-nums leading-none text-blue-800 sm:text-base dark:text-blue-200">
             {formatDinarAsAlfWithUnit(remainingNetDinar)}
           </span>
@@ -97,10 +84,7 @@ export async function MandoubMoneySummarySection({
               : "ثلثي كلفة التوصيل لكل طلب مُسلَّم"
           }
         >
-          <div className="flex items-center gap-1">
-            <DynamicIcon iconKey="wallet_earnings" config={icons} fallback="" className="w-3 h-3 text-amber-950 dark:text-amber-500" />
-            <span className="text-[9px] font-bold leading-tight text-amber-950 sm:text-[10px] dark:text-amber-500">أرباحي</span>
-          </div>
+          <span className="text-[9px] font-bold leading-tight text-amber-950 sm:text-[10px] dark:text-amber-500">أرباحي</span>
           <span className="mt-0.5 block text-sm font-black tabular-nums leading-none text-amber-900 sm:text-base dark:text-amber-400">
             {formatDinarAsAlfWithUnit(sumEarningsDinar)}
           </span>
@@ -110,10 +94,7 @@ export async function MandoubMoneySummarySection({
             className="flex min-w-[4.75rem] max-w-[25%] flex-1 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-violet-400 bg-violet-50 px-1.5 py-1.5 text-center shadow-sm sm:min-w-0 sm:max-w-none sm:px-2 sm:py-2 dark:bg-[#1a0a2f] dark:border-violet-900"
             title="إجمالي مستحقات الإدارة — لا يتأثر بالتصفير"
           >
-            <div className="flex items-center gap-1">
-              <DynamicIcon iconKey="wallet_admin" config={icons} fallback="" className="w-3 h-3 text-violet-900 dark:text-violet-400" />
-              <span className="text-[9px] font-bold leading-tight text-violet-900 sm:text-[10px] dark:text-violet-400">الإدارة</span>
-            </div>
+            <span className="text-[9px] font-bold leading-tight text-violet-900 sm:text-[10px] dark:text-violet-400">الإدارة</span>
             <span className="mt-0.5 block text-sm font-black tabular-nums leading-none text-violet-800 sm:text-base dark:text-violet-300">
               {formatDinarAsAlfWithUnit(adminTotalDinar)}
             </span>

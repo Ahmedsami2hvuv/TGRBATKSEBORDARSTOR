@@ -373,7 +373,7 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
         <button
           type="button"
           onClick={handleClose}
-          className="absolute left-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          className="absolute left-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-500 bg-red-600 text-sm font-bold text-white shadow-sm hover:bg-red-700"
           aria-label="إغلاق"
         >
           ×
@@ -391,7 +391,7 @@ export function ImportLegacyKseBatchClient({ onClose }: ImportLegacyKseBatchClie
               <button
                 type="button"
                 onClick={closeNestedWindow}
-                className="absolute left-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                className="absolute left-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-500 bg-red-600 text-sm font-bold text-white shadow-sm hover:bg-red-700"
                 aria-label="إغلاق نافذة الصفحة"
               >
                 ×

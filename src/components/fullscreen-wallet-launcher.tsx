@@ -92,7 +92,7 @@ export function FullscreenWalletLauncher({
             <button
               type="button"
               onClick={closeModal}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="rounded-lg border border-red-500 bg-red-600 px-3 py-1.5 text-xs font-black text-white shadow-sm transition hover:bg-red-700"
             >
               {closeLabel}
             </button>

@@ -170,16 +170,10 @@ export function OrderDetailSection({
                 <p className="text-slate-800">{order.customerRegion?.name ?? "—"}</p>
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-mono font-bold text-slate-900">{contactLine(order.customerPhone)}</p>
-                  <a href={`tel:${order.customerPhone}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white shadow-sm">
-                    <DynamicIcon icon={icons?.ui_call} fallback="📞" width={14} height={14} />
-                  </a>
                 </div>
                 {mergedAlternate && (
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <p className="font-mono text-sm font-bold text-slate-600">رقم ثانٍ: {mergedAlternate}</p>
-                    <a href={`tel:${mergedAlternate}`} className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-500 text-white shadow-sm">
-                      <DynamicIcon icon={icons?.ui_call} fallback="📞" width={12} height={12} />
-                    </a>
                   </div>
                 )}
                 {mergedLandmark && <p className="mt-1 text-sm font-medium text-slate-800">أقرب نقطة: {mergedLandmark}</p>}
@@ -203,11 +197,6 @@ export function OrderDetailSection({
                   <p className="text-slate-800">{order.secondCustomerRegion?.name ?? "—"}</p>
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-mono font-bold text-slate-900">{contactLine(order.secondCustomerPhone || "")}</p>
-                    {order.secondCustomerPhone && (
-                      <a href={`tel:${order.secondCustomerPhone}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white shadow-sm">
-                        <DynamicIcon icon={icons?.ui_call} fallback="📞" width={14} height={14} />
-                      </a>
-                    )}
                   </div>
                   <div className="mt-2">
                     {order.secondCustomerLocationUrl?.trim() ? (
@@ -231,12 +220,34 @@ export function OrderDetailSection({
         return (
           <div key="pricing" className={`${gridInfoPhoto} mt-8`} style={blockStyle}>
             <div className="space-y-4 rounded-2xl border-2 border-sky-100 bg-sky-50/50 p-4 shadow-inner">
-              <div className="grid grid-cols-2 gap-4">
-                <div><p className="text-xs font-bold text-slate-500 uppercase">نوع الطلب</p><div className="mt-1"><OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-violet-950 bg-violet-100 px-2 py-0.5 rounded text-lg ring-1 ring-violet-300" restClassName="text-lg font-black text-slate-900" /></div></div>
-                {order.orderNoteTime && <div><p className="text-xs font-bold text-slate-500 uppercase">وقت الطلب</p><p className="mt-1 text-sm font-black text-indigo-700">{order.orderNoteTime}</p></div>}
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xs font-bold text-slate-500 uppercase">نوع الطلب</p>
+                  <OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-violet-950 bg-violet-100 px-2 py-0.5 rounded text-lg ring-1 ring-violet-300" restClassName="text-lg font-black text-slate-900" />
+                </div>
+                {order.orderNoteTime && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-bold text-slate-500 uppercase">وقت الطلب</p>
+                    <p className="text-sm font-black text-indigo-700">{order.orderNoteTime}</p>
+                  </div>
+                )}
               </div>
-              {!hideSubtotalInfo && (<div className="space-y-3 pt-2"><div className="flex justify-between items-center"><span className="text-sm font-bold text-slate-600">السعر:</span><span className="font-black text-slate-900 tabular-nums">{order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)} ` : "—"}</span></div><div className="flex justify-between items-center"><span className="text-sm font-bold text-slate-600">توصيل:</span><span className="font-black text-slate-900 tabular-nums">{order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)} ` : "—"}</span></div></div>)}
-              <div className="rounded-xl border-2 border-violet-500/30 bg-violet-50/10 p-4 shadow-sm"><p className="text-xs font-black text-violet-900 uppercase tracking-widest mb-1">الكلي</p><p className="font-mono text-3xl font-black text-violet-950 tabular-nums">{order.totalAmount != null ? formatDinarAsAlfWithUnit(order.totalAmount) : "—"}</p></div>
+              {!hideSubtotalInfo && (
+                <div className="space-y-2 pt-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-bold text-slate-600">السعر:</span>
+                    <span className="font-black text-slate-900 tabular-nums">{order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)}` : "—"}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-bold text-slate-600">توصيل:</span>
+                    <span className="font-black text-slate-900 tabular-nums">{order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)}` : "—"}</span>
+                  </div>
+                </div>
+              )}
+              <div className="flex flex-col items-center justify-center rounded-xl border-2 border-violet-500/30 bg-violet-50/10 p-4 text-center shadow-sm">
+                <p className="text-xs font-black text-violet-900 uppercase tracking-widest mb-1">الكلي</p>
+                <p className="font-mono text-3xl font-black text-violet-950 tabular-nums">{order.totalAmount != null ? formatDinarAsAlfWithUnit(order.totalAmount) : "—"}</p>
+              </div>
             </div>
             <div className="max-w-[12rem] self-start">
               <p className="flex items-center gap-1 mb-2 text-sm font-bold text-slate-700">
@@ -246,16 +257,19 @@ export function OrderDetailSection({
               {order.imageUrl ? <div className={squarePhotoFrame}><img src={imgSrc(order.imageUrl)!} alt="" className={squarePhotoContain} /></div> : <div className="aspect-square flex items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white text-xs font-bold text-slate-400">لا يوجد صورة</div>}<div className="mt-2"><MandoubOrderImageQuick orderId={order.id} nextUrl={nextUrl} auth={auth} /></div></div>
           </div>
         );
-      case "notes_summary":
+      case "notes_summary": {
+        const hasVoiceNote = Boolean(order.voiceNoteUrl?.trim() || order.adminVoiceNoteUrl?.trim());
+        const hasSummary = Boolean(order.summary?.trim());
+        if (!hasVoiceNote && !hasSummary) return null;
         return (
           <div key="notes" className="mt-6 border-t border-sky-100 pt-5" style={blockStyle}>
             <p className="flex items-center gap-1.5 text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">
               <DynamicIcon icon={icons?.ui_note} fallback="📝" width={14} height={14} /> ملاحظات وقائمة المواد
             </p>
             <div className="flex flex-col gap-3">
-              {(order.voiceNoteUrl || order.adminVoiceNoteUrl) && (
+              {hasVoiceNote && (
                 <div className="flex flex-col gap-2 rounded-xl border-2 border-amber-100 bg-amber-50/20 p-3">
-                  {order.voiceNoteUrl && (
+                  {order.voiceNoteUrl?.trim() && (
                     <div className="flex flex-col gap-1">
                       <span className="flex items-center gap-1 text-[10px] font-bold text-amber-700">
                         <DynamicIcon icon={icons?.ui_audio} fallback="🎤" width={10} height={10} /> بصمة الزبون/المحل:
@@ -263,7 +277,7 @@ export function OrderDetailSection({
                       <VoiceNoteAudio src={resolvePublicAssetSrc(order.voiceNoteUrl) || ""} />
                     </div>
                   )}
-                  {order.adminVoiceNoteUrl && (
+                  {order.adminVoiceNoteUrl?.trim() && (
                     <div className="flex flex-col gap-1">
                       <span className="flex items-center gap-1 text-[10px] font-bold text-amber-700">
                         <DynamicIcon icon={icons?.ui_audio} fallback="🎤" width={10} height={10} /> بصمة الإدارة:
@@ -273,10 +287,16 @@ export function OrderDetailSection({
                   )}
                 </div>
               )}
-              <div className="relative rounded-xl border-2 border-amber-200 bg-amber-50/30 p-4"><div className="absolute end-3 top-3"><NotesCopyButton text={order.summary ?? ""} /></div><div className="whitespace-pre-wrap text-sm font-bold text-slate-800 leading-relaxed">{order.summary || "لا توجد ملاحظات"}</div></div>
+              {hasSummary && (
+                <div className="relative rounded-xl border-2 border-amber-200 bg-amber-50/30 p-4">
+                  <div className="absolute end-3 top-3"><NotesCopyButton text={order.summary ?? ""} /></div>
+                  <div className="whitespace-pre-wrap text-sm font-bold text-slate-800 leading-relaxed">{order.summary}</div>
+                </div>
+              )}
             </div>
           </div>
         );
+      }
       case "money_flow":
         return (
           <MandoubOrderMoneyFlow
@@ -350,15 +370,15 @@ export function OrderDetailSection({
           orderId={order.id} shopPhone={shopContactPhone} customerPhone={order.customerPhone} customerAlternatePhone={order.secondCustomerPhone?.trim() || mergedAlternate || ""} preparerPhone={order.submittedByCompanyPreparer?.phone ?? ""} orderStatus={order.status} orderNumber={order.orderNumber} shopName={order.shop.name} city={order.customerRegion?.name ?? ""} totalPrice={order.totalAmount != null ? formatDinarAsAlf(order.totalAmount) : ""} deliveryName={order.courier?.name ?? ""} customerLocationUrl={mergedCustomerLocationUrl} customerLandmark={mergedLandmark} hasCustomerLocation={!missingCustomerLocation} hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
         />
 
-        <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto] sm:items-start">
-          <div>
+        <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-xl font-black text-slate-900 sm:text-2xl">رقم الطلب <span className="tabular-nums text-sky-800">#{order.orderNumber}</span></h2>
-            <div className="flex flex-wrap items-center gap-3 mt-1">
-               <p className="text-[11px] font-black text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">تاريخ الرفع: {formatBaghdadDateTime(order.createdAt)}</p>
-               {order.courier && <p className="text-[11px] font-bold text-slate-500">المندوب: {order.courier.name} ({order.courier.phone})</p>}
-            </div>
+            <p className="text-[11px] font-black text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">تاريخ الرفع: {formatBaghdadDateTime(order.createdAt)}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2"><MandoubOrderDetailActions closeHref={closeHref} /><span className={`rounded-full px-3 py-1.5 text-xs font-bold ${orderStatusBadgeClass(order.status)}`}>{STATUS_AR[order.status] ?? order.status}</span></div>
+          <div className="flex flex-wrap items-center gap-2">
+            <MandoubOrderDetailActions closeHref={closeHref} />
+            <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${orderStatusBadgeClass(order.status)}`}>{STATUS_AR[order.status] ?? order.status}</span>
+          </div>
         </div>
 
         <MandoubCustomerEditForm orderId={order.id} defaultOrderStatus={order.status} defaultCustomerPhone={order.customerPhone} defaultCustomerLocationUrl={mergedCustomerLocationUrl} defaultCustomerLandmark={mergedLandmark} defaultAlternatePhone={mergedAlternate} auth={auth} nextUrl={nextUrl} />
