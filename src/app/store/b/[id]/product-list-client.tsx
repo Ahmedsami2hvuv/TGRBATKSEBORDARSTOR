@@ -4,6 +4,13 @@ import { useState, useEffect } from "react";
 import { ProductCardLazy } from "@/components/product-card-lazy";
 import { ProductCardSkeleton } from "@/components/product-card-skeleton";
 
+const CACHE_TTL_MS = 3 * 60 * 1000;
+
+type BranchProductsCacheShape = {
+  ts: number;
+  products: any[];
+};
+
 export function ProductListClient({
   branchId,
   productBg,
@@ -26,9 +33,18 @@ export function ProductListClient({
 
       if (cached && mounted) {
         try {
-          const parsed = JSON.parse(cached);
-          if (parsed.length > 0) {
-            setProducts(parsed);
+          const parsed = JSON.parse(cached) as BranchProductsCacheShape | any[];
+          const now = Date.now();
+          const parsedProducts = Array.isArray(parsed)
+            ? parsed
+            : Array.isArray(parsed?.products)
+              ? parsed.products
+              : [];
+          const parsedTs = Array.isArray(parsed) ? 0 : Number(parsed?.ts || 0);
+          const isFreshCache = parsedTs > 0 && now - parsedTs <= CACHE_TTL_MS;
+
+          if (isFreshCache && parsedProducts.length > 0) {
+            setProducts(parsedProducts);
             setLoading(false);
           }
         } catch (e) {}
@@ -41,7 +57,11 @@ export function ProductListClient({
 
         if (mounted && Array.isArray(data)) {
           setProducts(data);
-          localStorage.setItem(cacheKey, JSON.stringify(data));
+          const payload: BranchProductsCacheShape = { ts: Date.now(), products: data };
+          localStorage.setItem(
+            cacheKey,
+            JSON.stringify(payload),
+          );
         }
       } catch (error) {
         console.error("Fetch error", error);

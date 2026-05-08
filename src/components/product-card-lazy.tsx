@@ -13,9 +13,11 @@ export function ProductCardLazy({
   bgOpacityPercent?: number,
 }) {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [brokenModalPhotos, setBrokenModalPhotos] = useState<number[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const hasPushedHistoryRef = useRef(false);
   const ignoreNextPopRef = useRef(false);
@@ -38,6 +40,11 @@ export function ProductCardLazy({
   };
 
   useEffect(() => {
+    setImageLoaded(false);
+    setImageFailed(false);
+    setBrokenModalPhotos([]);
+    setActivePhotoIndex(0);
+
     const favorites = JSON.parse(localStorage.getItem("kse_favorites") || "[]");
     setIsFavorite(favorites.includes(product.id));
 
@@ -118,8 +125,13 @@ export function ProductCardLazy({
     price: currentPrice,
   };
 
-  const photo = product.photoUrls?.[0];
-  const photos = product.photoUrls && product.photoUrls.length > 0 ? product.photoUrls : [""];
+  const photo = typeof product.photoUrls?.[0] === "string" ? product.photoUrls[0].trim() : "";
+  const photos = Array.isArray(product.photoUrls)
+    ? product.photoUrls
+        .map((u: any) => (typeof u === "string" ? u.trim() : ""))
+        .filter(Boolean)
+    : [];
+  const currentModalPhoto = photos[activePhotoIndex] || "";
   const normalizedBgOpacity = Number.isFinite(Number(bgOpacityPercent))
     ? Math.min(1, Math.max(0, Number(bgOpacityPercent) / 100))
     : 0.4;
@@ -153,7 +165,7 @@ export function ProductCardLazy({
             />
           )}
 
-          {!imageLoaded && photo && (
+          {!imageLoaded && !imageFailed && photo && (
              <div className="absolute inset-0 flex items-center justify-center z-10">
                 {/* تأثير نبضي خفيف مكان الصورة حتى تحمل */}
                 <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 animate-pulse flex items-center justify-center">
@@ -162,11 +174,15 @@ export function ProductCardLazy({
              </div>
           )}
 
-          {photo ? (
+          {photo && !imageFailed ? (
             <img
               src={photo}
               alt={product.name}
               onLoad={() => setImageLoaded(true)}
+              onError={() => {
+                setImageLoaded(false);
+                setImageFailed(true);
+              }}
               className={`w-full h-full object-contain transition-all duration-1000 relative z-10 p-2 ${imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
               loading="lazy"
               decoding="async"
@@ -229,12 +245,17 @@ export function ProductCardLazy({
                     alt=""
                   />
                 )}
-                {photos[activePhotoIndex] ? (
+                {currentModalPhoto && !brokenModalPhotos.includes(activePhotoIndex) ? (
                   <img
-                    src={photos[activePhotoIndex]}
+                    src={currentModalPhoto}
                     className="w-full h-full object-contain relative z-10 p-4"
                     alt={product.name}
                     decoding="async"
+                    onError={() => {
+                      setBrokenModalPhotos((prev) =>
+                        prev.includes(activePhotoIndex) ? prev : [...prev, activePhotoIndex],
+                      );
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center opacity-20 text-5xl relative z-10">📦</div>
@@ -250,7 +271,14 @@ export function ProductCardLazy({
                           activePhotoIndex === idx ? "border-violet-600 scale-110 shadow-lg" : "border-white/50 opacity-70"
                         }`}
                       >
-                        <img src={url} className="w-full h-full object-cover" alt="" />
+                        <img
+                          src={url}
+                          className="w-full h-full object-cover"
+                          alt=""
+                          onError={() => {
+                            setBrokenModalPhotos((prev) => (prev.includes(idx) ? prev : [...prev, idx]));
+                          }}
+                        />
                       </button>
                     ))}
                   </div>
