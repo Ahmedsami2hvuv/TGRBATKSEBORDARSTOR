@@ -90,10 +90,10 @@ if (shouldFallbackToDbPush) {
   );
   try {
     if (directEnv) {
-      runInherit("npx prisma db push --skip-generate", directEnv);
+      runInherit("npx prisma db push --skip-generate --accept-data-loss", directEnv);
       runLegacyDomainRewrite(directEnv);
     } else {
-      runInherit("npx prisma db push --skip-generate");
+      runInherit("npx prisma db push --skip-generate --accept-data-loss");
       runLegacyDomainRewrite();
     }
     process.exit(0);
