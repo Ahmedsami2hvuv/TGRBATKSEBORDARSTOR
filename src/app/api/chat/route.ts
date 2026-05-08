@@ -50,7 +50,7 @@ async function runAdminCommandRouter(prompt: string): Promise<ChatResponseShape 
   }
 
   // 1.5) فتح طلب برقمه مباشرة
-  if (text.includes("افتح") && (text.includes("طلب") || text.includes("طلبية"))) {
+  if ((text.includes("افتح") || text.includes("عرض")) && (text.includes("طلب") || text.includes("طلبية"))) {
     const orderNumber = extractOrderNumber(text);
     if (orderNumber != null) {
       const order = await prisma.order.findUnique({
@@ -65,6 +65,40 @@ async function runAdminCommandRouter(prompt: string): Promise<ChatResponseShape 
         actions: [{ type: "OPEN_ORDER", payload: { orderId: order.id } }],
       };
     }
+  }
+
+  // 1.6) فتح الإعدادات
+  if (text.includes("افتح") && (text.includes("الاعدادات") || text.includes("الإعدادات"))) {
+      return {
+          text: "جاري فتح صفحة الإعدادات العامة...",
+          actions: [{ type: "NAVIGATE", payload: { url: "/admin/settings" } }]
+      };
+  }
+
+  // 1.7) فتح المنتجات
+  if (text.includes("افتح") && (text.includes("المنتجات") || text.includes("الاصناف"))) {
+      return {
+          text: "جاري فتح قائمة المنتجات...",
+          actions: [{ type: "NAVIGATE", payload: { url: "/admin/store/products" } }]
+      };
+  }
+
+  // 1.8) تحديث حالة الطلبات (للمندوب أو المجهز)
+  if (text.includes("حول") && (text.includes("الطلبات") || text.includes("الطلبيات")) && (text.includes("استلام") || text.includes("واصل"))) {
+      return {
+          text: "تريد أحول كل الطلبات اللي عندك إلى 'تم التسليم'؟ تأكد قبل ما أنفذ.",
+          actions: [
+              {
+                  type: "SHOW_OPTIONS",
+                  payload: {
+                      items: [
+                          { id: "confirm_bulk_delivered", title: "نعم، حولها كلها", action: { type: "BULK_UPDATE_STATUS", payload: { status: "delivered" } } },
+                          { id: "cancel_bulk", title: "لا، إلغاء" }
+                      ]
+                  }
+              }
+          ]
+      };
   }
 
   // 2) إنشاء/تحديث زبون مرجعي
@@ -266,7 +300,9 @@ function basePromptByPortal(portal: PortalKey, productsText: string): string {
   if (portal === "preparer") {
     return `أنت مساعد خاص ببوابة المجهز.
 مهمتك مساعدة المجهز في تجهيز الطلبات: فهم الطلب، ترتيب الخطوات، والتنبيه على النقاط المهمة.
-إذا كان مناسب فتح طلب/تجهيز، تقدر تستخدم OPEN_ORDER مع رقم/معرف الطلب.
+الأوامر المتاحة لك:
+- فتح طلب: {"type":"OPEN_ORDER","payload":{"orderId":"..."}}
+- تحديث حالة الطلبات للكل: {"type":"BULK_UPDATE_STATUS","payload":{"status":"delivered"}}
 إذا المستخدم أعطاك قائمة مواد، لخصها سريعاً واسأل: "أسندها لمن؟" وإذا متوفر خيارات رجّع SHOW_OPTIONS.
 تكلم بلهجة عراقية عملية ومختصرة.`;
   }
@@ -274,6 +310,9 @@ function basePromptByPortal(portal: PortalKey, productsText: string): string {
   if (portal === "mandoub") {
     return `أنت مساعد خاص ببوابة المندوب.
 مهمتك مساعدة المندوب بالتوصيل: ترتيب المشوار، متابعة الحالة، وتذكير بنقاط التسليم والتحصيل.
+الأوامر المتاحة لك:
+- فتح طلب: {"type":"OPEN_ORDER","payload":{"orderId":"..."}}
+- تحديث حالة الطلبات للكل (تم التوصيل): {"type":"BULK_UPDATE_STATUS","payload":{"status":"delivered"}}
 إذا كان مناسب فتح طلب، تقدر تستخدم OPEN_ORDER.
 إذا يحتاج اختيار بين عدة خيارات، استخدم SHOW_OPTIONS حتى تظهر كأزرار.
 تكلم بلهجة عراقية ميدانية بسيطة.`;
@@ -290,10 +329,12 @@ ${productsText}
 3. المواد المتعددة (مثل لبن، كيك): إذا وجدتها تحتمل أكثر من منتج، اعرض الخيارات للمستخدم واطلب منه الاختيار.
 4. المعلومات الشخصية: احفظ الاسم والرقم في ذاكرتك.
 5. إذا طلب المستخدم منتج بوصف عام مثل "مشروب فراولة"، اعرض المنتجات المطابقة باستخدام SHOW_OPTIONS.
+6. إذا طلب فتح صفحة منتج أو فرع، استخدم NAVIGATE مع الرابط المناسب (مثلاً /store/products/ID أو /store/search?q=...).
 
 الأوامر التنفيذية (يمكنك إرسال مصفوفة JSON أو كائن واحد):
-- إضافة للسلة: {"type": "ADD_TO_CART", "payload": {"id": "ID", "name": "Name", "price": 0}}
-- اقتراح خيارات: {"type": "SHOW_OPTIONS", "payload": {"items": [{"id": "", "name": ""}]}}
+- إضافة للسلة: {"type": "ADD_TO_CART", "payload": {"id": "PRODUCT_ID", "name": "Name", "price": 0}}
+- اقتراح خيارات: {"type": "SHOW_OPTIONS", "payload": {"items": [{"id": "", "name": "", "action": {"type":"ADD_TO_CART","payload":{...}}}]}}
+- فتح صفحة: {"type": "NAVIGATE", "payload": {"url": "/store/..."}}
 - اكمال الطلب: {"type": "ASK_ADDRESS", "payload": {}}`;
 }
 

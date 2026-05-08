@@ -188,7 +188,37 @@ export default function GlobalAIAssistant() {
         }
         break;
       case "ADD_TO_CART":
-        window.dispatchEvent(new CustomEvent("add-to-cart", { detail: action.payload }));
+        try {
+          const cart = JSON.parse(localStorage.getItem("kse_cart") || "[]");
+          const product = action.payload;
+          const productId = product.id || product.productId;
+          if (!productId) break;
+
+          const existingIndex = cart.findIndex((item: any) => item.id === productId);
+          if (existingIndex > -1) {
+            cart[existingIndex].quantity += 1;
+          } else {
+            cart.push({
+              id: productId,
+              productId: productId,
+              supplierId: product.supplierId || null,
+              name: product.name || "منتج",
+              price: Number(product.salePrice || product.price || 0),
+              photo: (product.photoUrls?.[0] || product.photo || ""),
+              quantity: 1
+            });
+          }
+          localStorage.setItem("kse_cart", JSON.stringify(cart));
+          window.dispatchEvent(new Event("cart-updated"));
+          window.dispatchEvent(new Event("storage"));
+          // Also dispatch the custom event from store-cart if it exists
+          window.dispatchEvent(new CustomEvent("kse:store-cart-changed"));
+        } catch (err) {
+          console.error("AI Add to cart error:", err);
+        }
+        break;
+      case "BULK_UPDATE_STATUS":
+        void executeChatAction(action);
         break;
       case "CREATE_CUSTOMER_REFERENCE":
       case "CREATE_PREPARATION_DRAFT":
@@ -414,5 +444,6 @@ function actionName(type: string) {
     if (type === "CREATE_PREPARATION_DRAFT") return "إنشاء طلب تجهيز";
     if (type === "PROMPT_ASSIGN_COURIER_FOR_GROUP") return "اختيار إسناد مندوب";
     if (type === "ASSIGN_COURIER_TO_DRAFT_GROUP") return "تعيين مندوب";
+    if (type === "BULK_UPDATE_STATUS") return "تحديث الحالة للكل";
     return type;
 }

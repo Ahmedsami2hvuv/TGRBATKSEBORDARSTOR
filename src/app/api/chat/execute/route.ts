@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { isAdminSession } from "@/lib/admin-session";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { PreparerShoppingDraftStatus } from "@prisma/client";
+import { resolvePortalChatActor } from "@/lib/portal-chat-auth";
 
 type ExecuteAction = {
   type: string;
@@ -343,14 +344,57 @@ async function executeSkipCourierAssign() {
   return { ok: true, text: "تمام، تركنا إسناد المندوب لاحقاً." };
 }
 
-export async function POST(req: Request) {
-  try {
-    if (!(await isAdminSession())) {
-      return NextResponse.json({ ok: false, text: "غير مخوّل." }, { status: 401 });
+async function executeBulkUpdateStatus(payload: any, actor: any) {
+    if (!actor) return { ok: false, text: "غير مخوّل." };
+    const status = payload.status || "delivered";
+
+    if (actor.role === "mandoub") {
+        const result = await prisma.order.updateMany({
+            where: {
+                assignedCourierId: actor.actorId,
+                status: { in: ["assigned", "delivering"] }
+            },
+            data: { status: status === "delivered" ? "delivered" : status }
+        });
+        return { ok: true, text: `تم تحديث ${result.count} طلبات إلى حالة تم الاستلام بنجاح.` };
     }
 
-    const { action } = (await req.json()) as { action?: ExecuteAction };
+    if (actor.role === "preparer") {
+        const result = await prisma.companyPreparerShoppingDraft.updateMany({
+            where: {
+                preparerId: actor.actorId,
+                status: "priced"
+            },
+            data: { status: "sent" }
+        });
+        return { ok: true, text: `تم تحويل ${result.count} قوائم جاهزة إلى 'تم الإرسال'.` };
+    }
+
+    if (actor.role === "admin") {
+        // Admin can update all pending/delivering to delivered if they really want to, but let's keep it safe.
+        return { ok: false, text: "يرجى تحديد الطلبات المراد تحديثها من لوحة التحكم." };
+    }
+
+    return { ok: false, text: "هذا الأمر غير متاح لدورك الحالي." };
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { action, auth } = body as { action?: ExecuteAction, auth?: any };
+
     if (!action?.type) return NextResponse.json({ ok: false, text: "Action مفقود." }, { status: 400 });
+
+    const actor = await resolvePortalChatActor(auth);
+    if (!actor) {
+        return NextResponse.json({ ok: false, text: "غير مخوّل أو انتهت الجلسة." }, { status: 401 });
+    }
+
+    // Admin-only actions
+    const adminOnlyActions = ["CREATE_CUSTOMER_REFERENCE", "CREATE_PREPARATION_DRAFT", "ASSIGN_ORDER_TO_COURIER", "PROMPT_ASSIGN_COURIER_FOR_GROUP", "ASSIGN_COURIER_TO_DRAFT_GROUP"];
+    if (adminOnlyActions.includes(action.type) && actor.role !== "admin") {
+        return NextResponse.json({ ok: false, text: "هذا الأمر متاح للمدير فقط." }, { status: 403 });
+    }
 
     if (action.type === "CREATE_CUSTOMER_REFERENCE") {
       return NextResponse.json(await executeCreateCustomerReference(action.payload));
@@ -370,9 +414,13 @@ export async function POST(req: Request) {
     if (action.type === "SKIP_COURIER_ASSIGN") {
       return NextResponse.json(await executeSkipCourierAssign());
     }
+    if (action.type === "BULK_UPDATE_STATUS") {
+      return NextResponse.json(await executeBulkUpdateStatus(action.payload, actor));
+    }
 
     return NextResponse.json({ ok: false, text: `نوع الأمر غير مدعوم: ${action.type}` }, { status: 400 });
   } catch (error) {
+    console.error("Execute action error:", error);
     return NextResponse.json({ ok: false, text: "فشل تنفيذ العملية." }, { status: 500 });
   }
 }
