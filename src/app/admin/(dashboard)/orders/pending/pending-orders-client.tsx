@@ -883,7 +883,7 @@ export function PendingOrdersClient({
 
       {isDraftMode && pricingModalOrder ? (
         <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm overflow-y-auto"
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm overflow-y-auto"
           onClick={() => setPricingOpenId(null)}
         >
           <div
@@ -895,7 +895,7 @@ export function PendingOrdersClient({
               <button
                 type="button"
                 onClick={() => setPricingOpenId(null)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-sm hover:bg-red-700 transition"
+                className="relative z-[410] flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-sm hover:bg-red-700 transition"
                 aria-label="إغلاق نافذة التسعير"
               >
                 ✕
