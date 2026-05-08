@@ -412,7 +412,14 @@ export function AdminPricingPanel({
                 <label className="flex items-center">
                   <input type="checkbox" checked={isSelected} onChange={() => toggleProductSelection(i)} className="h-4 w-4 rounded border-slate-300" />
                 </label>
-                <div className={`flex-1 flex items-center justify-between p-3 rounded-xl border-2 transition-all ${deleteMode ? "border-rose-300 bg-rose-50" : priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 bg-white hover:border-amber-400 shadow-sm"}`}>
+                <div
+                  className={`flex-1 flex items-center justify-between p-3 rounded-xl border-2 transition-all ${deleteMode ? "border-rose-300 bg-rose-50" : priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 bg-white hover:border-amber-400 shadow-sm"}`}
+                  onClick={() => {
+                    if (!deleteMode) {
+                      setEditingIndex(isEditing ? null : i);
+                    }
+                  }}
+                >
                   <div className="flex-1">
                     <p className="text-xs font-black">{p?.line} {p?.pricedBy && ` (بواسطة: ${p.pricedBy})`}</p>
                     {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName ? (
@@ -427,7 +434,14 @@ export function AdminPricingPanel({
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => deleteMode ? setProducts(products.filter((_, idx) => idx !== i)) : setEditingIndex(isEditing ? null : i)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (deleteMode) {
+                          setProducts(products.filter((_, idx) => idx !== i));
+                        } else {
+                          setEditingIndex(isEditing ? null : i);
+                        }
+                      }}
                       className="min-h-[32px] min-w-[32px] flex items-center justify-center rounded-lg px-2 text-sm transition-all"
                     >
                       {deleteMode ? <DynamicIcon icon={icons?.ui_close} fallback="❌" width={14} height={14} /> : priced ? <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> : <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" width={14} height={14} />}
