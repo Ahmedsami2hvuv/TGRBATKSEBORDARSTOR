@@ -5,6 +5,7 @@ import { useActionState, useEffect, useState, useMemo, useRef } from "react";
 import {
   assignPendingOrderToCourier,
   assignOrderToPreparer,
+  setDraftAutoCourier,
   reassignOrderToPreparer,
   deleteOrderPermanently,
   rejectPendingOrder,
@@ -540,6 +541,7 @@ export function AdminPricingPanel({
       <form action={formAction} className="space-y-3">
         <input type="hidden" name="productsJson" value={JSON.stringify(products)} />
         <input type="hidden" name="placesCount" value={placesCount} />
+        {isDraft && <input type="hidden" name="autoCourierId" value={String(initialData?.autoCourierId ?? "")} />}
         {isDraft && <input type="hidden" name="shopId" value={selectedShopId} />}
         {isDraft && <input type="hidden" name="isDraft" value="true" />}
         <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-amber-200 shadow-sm"><input type="checkbox" id="skip-w" name="skipWallet" className="h-4 w-4 rounded border-emerald-400" /><label htmlFor="skip-w" className="text-[10px] font-black text-emerald-950 cursor-pointer">تجهيز إداري كامل (تخطي حساب المجهز)</label></div>
@@ -730,6 +732,65 @@ export function PendingAssignPanel({
   );
 }
 
+function DraftAutoCourierPanel({
+  draftId,
+  couriers,
+  currentCourierId,
+  currentCourierName,
+  onSuccess,
+}: {
+  draftId: string;
+  couriers: { id: string; name: string }[];
+  currentCourierId?: string | null;
+  currentCourierName?: string | null;
+  onSuccess?: () => void;
+}) {
+  const bound = setDraftAutoCourier.bind(null);
+  const [state, formAction, pending] = useActionState(bound, {} as AssignOrderState);
+  const [selectedCourierId, setSelectedCourierId] = useState(currentCourierId || "");
+
+  useEffect(() => {
+    if (state.ok) onSuccess?.();
+  }, [state.ok, onSuccess]);
+
+  return (
+    <form action={formAction} className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-3 space-y-2" dir="rtl">
+      <input type="hidden" name="draftId" value={draftId} />
+      <input type="hidden" name="courierId" value={selectedCourierId} />
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-black text-indigo-900">اختيار المندوب للتحويل التلقائي عند الإرسال</p>
+        {currentCourierName ? (
+          <span className="rounded-md bg-indigo-100 px-2 py-1 text-[10px] font-black text-indigo-800">
+            الحالي: {currentCourierName}
+          </span>
+        ) : null}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={selectedCourierId}
+          onChange={(e) => setSelectedCourierId(e.target.value)}
+          className="min-w-[220px] rounded-xl border border-indigo-200 bg-white p-2 text-xs font-black outline-none"
+        >
+          <option value="">بدون تحويل تلقائي</option>
+          {couriers.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {pending ? "جارٍ الحفظ..." : "حفظ المندوب"}
+        </button>
+      </div>
+      {state.error ? <p className="text-[11px] font-bold text-rose-600">{state.error}</p> : null}
+    </form>
+  );
+}
+
 function RejectButton({ orderId }: { orderId: string }) {
   const bound = rejectPendingOrder.bind(null);
   const [state, formAction, pending] = useActionState(bound, {} as RejectOrderState);
@@ -760,6 +821,8 @@ export function PendingOrdersClient({
 }) {
   const router = useRouter();
   const [assignOpenId, setAssignOpenId] = useState<string | null>(() => (initialAssignOrderId && orders.some((o) => o.id === initialAssignOrderId)) ? initialAssignOrderId : null);
+  const [draftPreparerOpenId, setDraftPreparerOpenId] = useState<string | null>(null);
+  const [draftCourierOpenId, setDraftCourierOpenId] = useState<string | null>(null);
   const [prepOpenId, setPrepOpenId] = useState<string | null>(null);
   const [pricingOpenId, setPricingOpenId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
@@ -864,61 +927,116 @@ export function PendingOrdersClient({
           const waLink = buildWhatsAppLink(customerPhone);
           const telDigits = customerPhone.replace(/\D/g, "");
           const telLink = telDigits ? `tel:${telDigits}` : null;
+          const draftPreparerOpen = draftPreparerOpenId === o.id;
+          const draftCourierOpen = draftCourierOpenId === o.id;
+          const currentAutoCourierId = String(o.preparerShoppingJson?.autoCourierId ?? "").trim() || null;
+          const currentAutoCourierName = String(o.preparerShoppingJson?.autoCourierName ?? "").trim() || null;
           return (
-            <div
-              key={o.id}
-              className={`kse-glass-dark rounded-2xl border border-slate-200 bg-white p-4 shadow-sm cursor-pointer transition hover:border-violet-300 ${open ? "ring-2 ring-violet-300" : ""}`}
-              onClick={() => setPricingOpenId(o.id)}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="bg-violet-100 text-violet-900 px-2 py-0.5 rounded-md font-black text-xs tabular-nums">
-                      مسودة
-                    </span>
-                    <p className="font-black text-slate-900 leading-snug line-clamp-1">
-                      {o.orderType || o.shopName || "تجهيز"}
+            <div key={o.id} className="space-y-2">
+              <div
+                className={`kse-glass-dark rounded-2xl border border-slate-200 bg-white p-4 shadow-sm cursor-pointer transition hover:border-violet-300 ${open ? "ring-2 ring-violet-300" : ""}`}
+                onClick={() => setPricingOpenId(o.id)}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-violet-100 text-violet-900 px-2 py-0.5 rounded-md font-black text-xs tabular-nums">
+                        مسودة
+                      </span>
+                      <span className="bg-sky-100 text-sky-900 px-2 py-0.5 rounded-md font-black text-xs tabular-nums">
+                        #{o.orderNumber > 0 ? o.orderNumber : "—"}
+                      </span>
+                      <p className="font-black text-slate-900 leading-snug line-clamp-1">
+                        {o.orderType || o.shopName || "تجهيز"}
+                      </p>
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-slate-600">
+                      <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px]">{o.regionName}</span>
+                      <span className="text-emerald-700">{o.shopCustomerLabel || o.shopName || "—"}</span>
+                    </div>
+                    <p className="mt-2 text-[10px] font-black text-slate-500 line-clamp-1">
+                      المجهز: {o.submittedByName || "—"}
                     </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+                      <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-black text-emerald-800 border border-emerald-200">
+                        رقم الزبون: {customerPhone}
+                      </span>
+                      {waLink ? (
+                        <a
+                          href={waLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded-md bg-green-600 px-2.5 py-1 font-black text-white hover:bg-green-700"
+                        >
+                          واتساب
+                        </a>
+                      ) : null}
+                      {telLink ? (
+                        <a
+                          href={telLink}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded-md bg-sky-600 px-2.5 py-1 font-black text-white hover:bg-sky-700"
+                        >
+                          اتصال
+                        </a>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-slate-600">
-                    <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px]">{o.regionName}</span>
-                    <span className="text-emerald-700">{o.shopCustomerLabel || o.shopName || "—"}</span>
-                  </div>
-                  <p className="mt-2 text-[10px] font-black text-slate-500 line-clamp-1">
-                    المجهز: {o.submittedByName || "—"}
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
-                    <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-black text-emerald-800 border border-emerald-200">
-                      رقم الزبون: {customerPhone}
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => setDraftPreparerOpenId(draftPreparerOpen ? null : o.id)}
+                    className="rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-sky-700"
+                  >
+                    تخصيص المجهزين
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDraftCourierOpenId(draftCourierOpen ? null : o.id)}
+                    className="rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-indigo-700"
+                  >
+                    اختيار مندوب التحويل
+                  </button>
+                  {currentAutoCourierName ? (
+                    <span className="rounded-md bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 border border-indigo-200">
+                      التحويل التلقائي: {currentAutoCourierName}
                     </span>
-                    {waLink ? (
-                      <a
-                        href={waLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="rounded-md bg-green-600 px-2.5 py-1 font-black text-white hover:bg-green-700"
-                      >
-                        واتساب
-                      </a>
-                    ) : null}
-                    {telLink ? (
-                      <a
-                        href={telLink}
-                        onClick={(e) => e.stopPropagation()}
-                        className="rounded-md bg-sky-600 px-2.5 py-1 font-black text-white hover:bg-sky-700"
-                      >
-                        اتصال
-                      </a>
-                    ) : null}
-                  </div>
+                  ) : null}
                 </div>
               </div>
 
-              {o.summary?.trim() ? (
-                <p className="mt-3 text-[11px] font-bold text-slate-500 line-clamp-2">
-                  {o.summary}
-                </p>
+              {draftPreparerOpen ? (
+                <div className="px-2" onClick={(e) => e.stopPropagation()}>
+                  <AssignToPreparerPanel
+                    orderId={o.id}
+                    preparers={preparers}
+                    isDraft
+                    initialPreparerIds={o.assignedPreparerIds}
+                    onSuccess={() => {
+                      setDraftPreparerOpenId(null);
+                      router.refresh();
+                    }}
+                    icons={icons || undefined}
+                  />
+                </div>
+              ) : null}
+
+              {draftCourierOpen ? (
+                <div className="px-2" onClick={(e) => e.stopPropagation()}>
+                  <DraftAutoCourierPanel
+                    draftId={o.id}
+                    couriers={couriers}
+                    currentCourierId={currentAutoCourierId}
+                    currentCourierName={currentAutoCourierName}
+                    onSuccess={() => {
+                      setDraftCourierOpenId(null);
+                      router.refresh();
+                    }}
+                  />
+                </div>
               ) : null}
             </div>
           );

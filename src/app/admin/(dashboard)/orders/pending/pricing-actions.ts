@@ -95,6 +95,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
     const isDraft = formData.get("isDraft") === "true";
     const shopId = String(formData.get("shopId") ?? "").trim();
     const submitType = String(formData.get("submitType") ?? "");
+    const autoCourierFromForm = String(formData.get("autoCourierId") ?? "").trim();
 
     let uiProducts: any[] = [];
     try {
@@ -124,6 +125,16 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
     if (!order) return { error: "الطلب غير موجود" };
     originalOrder = order;
     customerRegion = order.customerRegion;
+  }
+
+  let autoCourierId: string | null = null;
+  if (isDraft) {
+    const dataCourierId = String((draftData?.data as any)?.autoCourierId ?? "").trim();
+    const candidate = autoCourierFromForm || dataCourierId;
+    if (candidate) {
+      const courier = await prisma.courier.findUnique({ where: { id: candidate }, select: { id: true } });
+      autoCourierId = courier?.id ?? null;
+    }
   }
 
   // --- 2. معالجة المنتجات ---
@@ -288,6 +299,8 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
             orderSubtotal: subtotalDinar,
             deliveryPrice: deliveryDinar,
             totalAmount: totalDinar,
+            assignedCourierId: autoCourierId,
+            status: autoCourierId ? "assigned" : "pending",
             summary: summaryCombined,
             preparerShoppingJson: {
               version: 1,
@@ -326,10 +339,11 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
             customerRegionId: draftData!.customerRegionId,
             customerLandmark: draftData!.customerLandmark,
             orderNoteTime: draftData!.orderTime,
-            status: "pending",
+            status: autoCourierId ? "assigned" : "pending",
             orderType: "تجهيز تسوق",
             submissionSource: "company_preparer",
             submittedByCompanyPreparerId: null,
+            assignedCourierId: autoCourierId,
             orderSubtotal: subtotalDinar,
             deliveryPrice: deliveryDinar,
             totalAmount: totalDinar,

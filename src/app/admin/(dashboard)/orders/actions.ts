@@ -342,3 +342,67 @@ export async function rejectPendingOrder(
     return { error: "فشل تحديث حالة الطلب" };
   }
 }
+
+export async function setDraftAutoCourier(
+  _prev: AssignOrderState,
+  formData: FormData,
+): Promise<AssignOrderState> {
+  const draftId = String(formData.get("draftId") ?? "").trim();
+  const courierIdRaw = String(formData.get("courierId") ?? "").trim();
+
+  if (!draftId) return { error: "معرف المسودة مفقود" };
+
+  try {
+    const draft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: draftId } });
+    if (!draft) return { error: "المسودة غير موجودة" };
+
+    let autoCourierId: string | null = null;
+    let autoCourierName: string | null = null;
+
+    if (courierIdRaw) {
+      const courier = await prisma.courier.findUnique({
+        where: { id: courierIdRaw },
+        select: { id: true, name: true },
+      });
+      if (!courier) return { error: "المندوب غير موجود" };
+      autoCourierId = courier.id;
+      autoCourierName = courier.name;
+    }
+
+    const currentData = ((draft.data as any) || {}) as Record<string, any>;
+    const groupId = typeof currentData.groupId === "string" ? currentData.groupId.trim() : "";
+
+    const related = groupId
+      ? await prisma.companyPreparerShoppingDraft.findMany({
+          where: { data: { path: ["groupId"], equals: groupId } },
+          select: { id: true, data: true },
+        })
+      : await prisma.companyPreparerShoppingDraft.findMany({
+          where: {
+            customerPhone: draft.customerPhone,
+            titleLine: draft.titleLine,
+            status: { in: ["draft", "priced"] },
+          },
+          select: { id: true, data: true },
+        });
+
+    for (const row of related) {
+      const rowData = ((row.data as any) || {}) as Record<string, any>;
+      await prisma.companyPreparerShoppingDraft.update({
+        where: { id: row.id },
+        data: {
+          data: {
+            ...rowData,
+            autoCourierId,
+            autoCourierName,
+          },
+        },
+      });
+    }
+
+    revalidatePath("/admin/orders/pending");
+    return { ok: true };
+  } catch (e) {
+    return { error: "فشل حفظ مندوب التحويل التلقائي" };
+  }
+}

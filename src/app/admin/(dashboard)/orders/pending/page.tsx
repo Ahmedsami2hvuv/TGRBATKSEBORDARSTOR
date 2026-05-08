@@ -195,7 +195,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
     groupedDraftRows.push({
       id: d.id,
-      orderNumber: 0,
+      orderNumber: Number((draftData as any)?.reservedOrderNumber ?? 0) || 0,
       routeMode: "single",
       shopName: "تجهيز تسوق مشترك",
       regionName: d.customerRegion?.name || "—",
