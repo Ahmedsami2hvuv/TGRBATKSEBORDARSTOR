@@ -748,13 +748,14 @@ function DraftAutoCourierPanel({
   const bound = setDraftAutoCourier.bind(null);
   const [state, formAction, pending] = useActionState(bound, {} as AssignOrderState);
   const [selectedCourierId, setSelectedCourierId] = useState(currentCourierId || "");
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   useEffect(() => {
     if (state.ok) onSuccess?.();
   }, [state.ok, onSuccess]);
 
   return (
-    <form action={formAction} className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-3 space-y-2" dir="rtl">
+    <form ref={formRef} action={formAction} className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-3 space-y-2" dir="rtl">
       <input type="hidden" name="draftId" value={draftId} />
       <input type="hidden" name="courierId" value={selectedCourierId} />
       <div className="flex items-center justify-between gap-2">
@@ -766,25 +767,39 @@ function DraftAutoCourierPanel({
         ) : null}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <select
-          value={selectedCourierId}
-          onChange={(e) => setSelectedCourierId(e.target.value)}
-          className="min-w-[220px] rounded-xl border border-indigo-200 bg-white p-2 text-xs font-black outline-none"
-        >
-          <option value="">بدون تحويل تلقائي</option>
-          {couriers.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
         <button
-          type="submit"
+          type="button"
           disabled={pending}
-          className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50"
+          onClick={() => {
+            setSelectedCourierId("");
+            setTimeout(() => formRef.current?.requestSubmit(), 0);
+          }}
+          className={`rounded-xl px-3 py-2 text-xs font-black border transition ${
+            selectedCourierId === ""
+              ? "bg-indigo-600 text-white border-indigo-700"
+              : "bg-white text-indigo-800 border-indigo-200 hover:bg-indigo-50"
+          } disabled:opacity-50`}
         >
-          {pending ? "جارٍ الحفظ..." : "حفظ المندوب"}
+          بدون تحويل تلقائي
         </button>
+        {couriers.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              setSelectedCourierId(c.id);
+              setTimeout(() => formRef.current?.requestSubmit(), 0);
+            }}
+            className={`rounded-xl px-3 py-2 text-xs font-black border transition ${
+              selectedCourierId === c.id
+                ? "bg-indigo-600 text-white border-indigo-700"
+                : "bg-white text-indigo-800 border-indigo-200 hover:bg-indigo-50"
+            } disabled:opacity-50`}
+          >
+            {c.name}
+          </button>
+        ))}
       </div>
       {state.error ? <p className="text-[11px] font-bold text-rose-600">{state.error}</p> : null}
     </form>
