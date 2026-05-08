@@ -37,6 +37,13 @@ export default async function StoreAdminHub({ searchParams }: { searchParams: Pr
       emoji: "📦",
       color: "bg-violet-500",
     },
+    {
+      title: "سجل الطلبات",
+      desc: "عرض طلبات المتجر الإلكتروني مع البحث والفلترة",
+      href: "/admin/store/orders-history",
+      emoji: "🧾",
+      color: "bg-amber-500",
+    },
   ];
 
   return (

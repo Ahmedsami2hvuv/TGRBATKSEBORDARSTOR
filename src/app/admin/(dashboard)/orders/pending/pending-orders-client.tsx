@@ -214,6 +214,9 @@ export function AdminPricingPanel({
   const [productAssigneeId, setProductAssigneeId] = useState("");
   const [showReassign, setShowReassign] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [productPhotoById, setProductPhotoById] = useState<Record<string, string>>({});
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [previewZoom, setPreviewZoom] = useState(1);
 
   const bound = updateOrderPricingByAdmin.bind(null, orderId);
   const [state, formAction, pending] = useActionState(bound, {} as any);
@@ -235,6 +238,43 @@ export function AdminPricingPanel({
     }, 2000);
     return () => clearTimeout(timer);
   }, [products, placesCount, orderId, isDraft]);
+
+  useEffect(() => {
+    const productIds = Array.from(
+      new Set(
+        products
+          .map((p) => (typeof p?.productId === "string" ? p.productId.trim() : ""))
+          .filter((id) => id.length > 0),
+      ),
+    );
+    if (productIds.length === 0) {
+      setProductPhotoById({});
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/store/products?ids=${encodeURIComponent(productIds.join(","))}`);
+        if (!res.ok) return;
+        const rows = await res.json();
+        if (!Array.isArray(rows) || cancelled) return;
+        const next: Record<string, string> = {};
+        for (const row of rows) {
+          const id = typeof row?.id === "string" ? row.id : "";
+          const firstPhoto = Array.isArray(row?.photoUrls) && row.photoUrls.length > 0 ? String(row.photoUrls[0]) : "";
+          if (id && firstPhoto) next[id] = firstPhoto;
+        }
+        setProductPhotoById(next);
+      } catch {
+        if (!cancelled) setProductPhotoById({});
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [products]);
 
   const toggleProductSelection = (index: number) => {
     setSelectedProductIndexes((prev) => prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]);
@@ -413,15 +453,34 @@ export function AdminPricingPanel({
                   <input type="checkbox" checked={isSelected} onChange={() => toggleProductSelection(i)} className="h-4 w-4 rounded border-slate-300" />
                 </label>
                 <div
-                  className={`flex-1 flex items-center justify-between p-3 rounded-xl border-2 transition-all ${deleteMode ? "border-rose-300 bg-rose-50" : priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 bg-white hover:border-amber-400 shadow-sm"}`}
+                  className={`flex-1 flex items-center justify-between p-3.5 rounded-xl border-2 transition-all ${deleteMode ? "border-rose-300 bg-rose-50" : priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 bg-white hover:border-amber-400 shadow-sm"}`}
                   onClick={() => {
                     if (!deleteMode) {
                       setEditingIndex(isEditing ? null : i);
                     }
                   }}
                 >
-                  <div className="flex-1">
-                    <p className="text-xs font-black">{p?.line} {p?.pricedBy && ` (بواسطة: ${p.pricedBy})`}</p>
+                  <div className="flex flex-1 items-center gap-3">
+                    {p?.productId && productPhotoById[p.productId] ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewImageUrl(productPhotoById[p.productId]);
+                          setPreviewZoom(1);
+                        }}
+                        className="h-14 w-14 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shrink-0"
+                        title="عرض الصورة بحجم أكبر"
+                      >
+                        <img
+                          src={productPhotoById[p.productId]}
+                          alt={p?.line || "صورة المنتج"}
+                          className="h-full w-full object-cover"
+                        />
+                      </button>
+                    ) : null}
+                    <div className="flex-1">
+                      <p className="text-xs font-black">{p?.line} {p?.pricedBy && ` (بواسطة: ${p.pricedBy})`}</p>
                     {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName ? (
                       <p className="text-[10px] text-slate-500">مخصص لـ {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName}</p>
                     ) : p?.supplierId ? (
@@ -430,6 +489,7 @@ export function AdminPricingPanel({
                       <p className="text-[10px] text-slate-400">بدون تخصيص</p>
                     )}
                     {priced && <p className="text-[10px] text-emerald-300 font-mono">شراء: {p?.buyAlf} | بيع: {p?.sellAlf}</p>}
+                    </div>
                   </div>
                   <div className="flex items-center gap-1">
                     <button
@@ -512,6 +572,62 @@ export function AdminPricingPanel({
           </button>
         )}
       </form>
+
+      {previewImageUrl ? (
+        <div
+          className="fixed inset-0 z-[450] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={() => {
+            setPreviewImageUrl(null);
+            setPreviewZoom(1);
+          }}
+        >
+          <div className="relative max-h-[88vh] max-w-[88vw]" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute left-2 top-2 z-10 flex items-center gap-2 rounded-xl bg-black/60 p-1.5">
+              <button
+                type="button"
+                onClick={() => setPreviewZoom((z) => Math.max(0.5, Number((z - 0.25).toFixed(2))))}
+                className="rounded-md bg-white/90 px-2 py-1 text-xs font-black text-slate-900 hover:bg-white"
+                aria-label="تصغير الصورة"
+              >
+                −
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewZoom(1)}
+                className="rounded-md bg-white/90 px-2 py-1 text-xs font-black text-slate-900 hover:bg-white"
+                aria-label="إرجاع الحجم الطبيعي"
+              >
+                100%
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewZoom((z) => Math.min(3, Number((z + 0.25).toFixed(2))))}
+                className="rounded-md bg-white/90 px-2 py-1 text-xs font-black text-slate-900 hover:bg-white"
+                aria-label="تكبير الصورة"
+              >
+                +
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setPreviewImageUrl(null);
+                setPreviewZoom(1);
+              }}
+              className="absolute -right-3 -top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-md hover:bg-red-700"
+              aria-label="إغلاق الصورة"
+            >
+              ✕
+            </button>
+            <img
+              src={previewImageUrl}
+              alt="معاينة صورة المنتج"
+              className="max-h-[88vh] max-w-[88vw] rounded-2xl border-2 border-white object-contain shadow-2xl transition-transform duration-150"
+              style={{ transform: `scale(${previewZoom})` }}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -664,6 +780,14 @@ export function PendingOrdersClient({
   const [targetStatus, setTargetStatus] = useState<string>("pending");
   const [courierId, setCourierId] = useState<string>("");
 
+  const buildWhatsAppLink = (rawPhone: string) => {
+    const digitsOnly = (rawPhone || "").replace(/\D/g, "");
+    if (!digitsOnly) return null;
+    if (digitsOnly.startsWith("964")) return `https://wa.me/${digitsOnly}`;
+    if (digitsOnly.startsWith("0")) return `https://wa.me/964${digitsOnly.slice(1)}`;
+    return `https://wa.me/${digitsOnly}`;
+  };
+
   const toggleOne = (id: string) => setSelected(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const toggleAll = () => setSelected(prev => (selected.size > 0 && orders.every(selected.has.bind(selected))) ? new Set() : new Set(orders.map(o => o.id)));
 
@@ -736,6 +860,10 @@ export function PendingOrdersClient({
         // كارت مرتب + زر كبير يفتح نافذة التسعير (Modal) فقط.
         if (isDraftMode) {
           const open = pricingOpenId === o.id;
+          const customerPhone = o.customerPhone?.trim() || "—";
+          const waLink = buildWhatsAppLink(customerPhone);
+          const telDigits = customerPhone.replace(/\D/g, "");
+          const telLink = telDigits ? `tel:${telDigits}` : null;
           return (
             <div
               key={o.id}
@@ -759,6 +887,31 @@ export function PendingOrdersClient({
                   <p className="mt-2 text-[10px] font-black text-slate-500 line-clamp-1">
                     المجهز: {o.submittedByName || "—"}
                   </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+                    <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-black text-emerald-800 border border-emerald-200">
+                      رقم الزبون: {customerPhone}
+                    </span>
+                    {waLink ? (
+                      <a
+                        href={waLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded-md bg-green-600 px-2.5 py-1 font-black text-white hover:bg-green-700"
+                      >
+                        واتساب
+                      </a>
+                    ) : null}
+                    {telLink ? (
+                      <a
+                        href={telLink}
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded-md bg-sky-600 px-2.5 py-1 font-black text-white hover:bg-sky-700"
+                      >
+                        اتصال
+                      </a>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 

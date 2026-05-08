@@ -25,6 +25,7 @@ export async function POST(req: Request) {
   const product_card_bg_opacity = Number.isFinite(rawOpacity)
     ? Math.min(100, Math.max(0, Math.round(rawOpacity)))
     : 40;
+  const export_store_orders_excel_enabled = formData.get("export_store_orders_excel_enabled") === "on";
 
   // إذا تم رفع ملف جديد، نقوم بمعالجته وحفظه
   if (product_card_bg_file && product_card_bg_file.size > 0) {
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
     how_to_shop_url,
     product_card_bg_url,
     product_card_bg_opacity,
+    export_store_orders_excel_enabled,
   };
 
   await prisma.uISystemSetting.upsert({
@@ -56,5 +58,10 @@ export async function POST(req: Request) {
     create: { target: "customer", section: "store_general", config }
   });
 
-  return NextResponse.json({ ok: true, product_card_bg_url, product_card_bg_opacity });
+  return NextResponse.json({
+    ok: true,
+    product_card_bg_url,
+    product_card_bg_opacity,
+    export_store_orders_excel_enabled,
+  });
 }

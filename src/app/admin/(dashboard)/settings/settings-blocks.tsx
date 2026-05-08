@@ -162,6 +162,7 @@ export function SettingsBlocks({
   const [howToShopUrl, setHowToShopUrl] = useState("");
   const [productCardBgUrl, setProductCardBgUrl] = useState("");
   const [productCardBgOpacity, setProductCardBgOpacity] = useState(40);
+  const [storeOrdersExcelEnabled, setStoreOrdersExcelEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
 
   useMemo(() => {
@@ -171,6 +172,7 @@ export function SettingsBlocks({
         .then((data) => {
           setHowToShopUrl(data.how_to_shop_url || "");
           setProductCardBgUrl(data.product_card_bg_url || "");
+          setStoreOrdersExcelEnabled(data.export_store_orders_excel_enabled !== false);
           setProductCardBgOpacity(
             Number.isFinite(Number(data.product_card_bg_opacity))
               ? Math.min(100, Math.max(0, Math.round(Number(data.product_card_bg_opacity))))
@@ -217,6 +219,7 @@ export function SettingsBlocks({
                 const data = await res.json();
                 if (data.ok) {
                   setProductCardBgUrl(data.product_card_bg_url);
+                  setStoreOrdersExcelEnabled(data.export_store_orders_excel_enabled !== false);
                   setProductCardBgOpacity(
                     Number.isFinite(Number(data.product_card_bg_opacity))
                       ? Math.min(100, Math.max(0, Math.round(Number(data.product_card_bg_opacity))))
@@ -271,6 +274,24 @@ export function SettingsBlocks({
             <p className="text-xs font-bold text-slate-500">
               0% تعني بدون خلفية، و100% تعني الخلفية قوية جدًا.
             </p>
+          </div>
+
+          <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                name="export_store_orders_excel_enabled"
+                checked={storeOrdersExcelEnabled}
+                onChange={(e) => setStoreOrdersExcelEnabled(e.target.checked)}
+                className="mt-1 h-4 w-4 accent-indigo-600"
+              />
+              <span>
+                <span className="block text-sm font-black text-slate-800">تفعيل تصدير طلبات المتجر إلى Excel</span>
+                <span className="mt-1 block text-xs font-bold text-slate-600">
+                  عند الإيقاف، زر التصدير لن يظهر في صفحة سجل طلبات المتجر.
+                </span>
+              </span>
+            </label>
           </div>
 
           {productCardBgUrl && (
