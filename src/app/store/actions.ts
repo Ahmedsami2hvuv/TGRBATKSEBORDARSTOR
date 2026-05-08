@@ -1,9 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
 
-export type OrderFormState = { error?: string; ok?: boolean; orderNumber?: number };
+export type OrderFormState = { error?: string; ok?: boolean; orderNumber?: string };
 
 export async function submitStoreOrder(_prev: any, formData: FormData): Promise<OrderFormState> {
   const phone = formData.get("phone") as string;
@@ -102,7 +101,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       console.error("Telegram notification failed", teleErr);
     }
 
-    return { ok: true, orderNumber: 0 }; // 0 because it's a draft not a final order yet
+    return { ok: true, orderNumber: draft.id.slice(-6) };
   } catch (e) {
     console.error("Order creation failed", e);
     return { error: "فشل في إرسال الطلب، يرجى المحاولة لاحقاً" };

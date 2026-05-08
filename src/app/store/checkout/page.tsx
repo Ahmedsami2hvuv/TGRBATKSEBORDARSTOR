@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFormState } from "react-dom";
 import { submitStoreOrder } from "../actions";
-import Link from "next/link";
 import { normalizeRegionNameForMatch } from "@/lib/region-name-normalize";
 
 type RegionHit = { id: string; name: string };
@@ -18,6 +17,7 @@ export default function CheckoutPage() {
   const [cart, setCart] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
   const [state, action] = useFormState(submitStoreOrder, {});
+  const hasRedirectedToWhatsappRef = useRef(false);
   const regionInputRef = useRef<HTMLInputElement>(null);
 
   const [regionQuery, setRegionQuery] = useState("");
@@ -30,6 +30,18 @@ export default function CheckoutPage() {
     setMounted(true);
     setCart(JSON.parse(localStorage.getItem("kse_cart") || "[]"));
   }, []);
+
+  useEffect(() => {
+    if (!state.ok || hasRedirectedToWhatsappRef.current) return;
+    hasRedirectedToWhatsappRef.current = true;
+
+    const whatsappPhone = "9647733921468";
+    const orderNo = state.orderNumber ? String(state.orderNumber) : "غير متوفر";
+    const whatsappMessage = `لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي\nرقم طلبي هو: ${orderNo}`;
+    const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(whatsappMessage)}`;
+
+    window.location.href = whatsappUrl;
+  }, [state.ok, state.orderNumber]);
 
   useEffect(() => {
     const q = regionQuery.trim();
@@ -78,10 +90,7 @@ export default function CheckoutPage() {
         <div className="text-8xl animate-bounce">🎉</div>
         <h1 className="text-4xl font-black text-slate-900">شكراً لطلبك!</h1>
         <p className="text-xl text-slate-600 font-bold">رقم طلبك هو: <span className="text-violet-600">#{state.orderNumber}</span></p>
-        <p className="text-slate-500 font-bold">سيتم التواصل معك قريباً لتأكيد الطلب والتوصيل.</p>
-        <Link href="/store" className="inline-block px-10 py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-violet-600 transition shadow-xl">
-          العودة للمتجر
-        </Link>
+        <p className="text-slate-500 font-bold">جارٍ تحويلك تلقائياً إلى واتساب...</p>
       </div>
     );
   }

@@ -3,36 +3,24 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CustomProductRequest } from "@/components/custom-product-request";
 import { ProductListClient } from "./product-list-client";
+import { Suspense } from "react";
 
 export const revalidate = 3600; // تحديث الصفحة كل ساعة بدلاً من جلبها في كل ثانية
 
-export default async function BranchPage(props: { params: Promise<{ id: string }> }) {
-  const { id } = await props.params;
-
-  // جلب البيانات بالتوازي (Parallel Data Fetching) لتقليل وقت التحميل للنصف
-  const [branch, storeSettings] = await Promise.all([
-    prisma.storeBranch.findUnique({
-      where: { id },
-      include: {
-        category: { select: { name: true } },
-        parentBranch: { select: { name: true } },
-        _count: { select: { products: true } }
-      }
-    }),
-    prisma.uISystemSetting.findUnique({
-      where: { target_section: { target: "customer", section: "store_general" } },
-      select: { config: true }
-    })
-  ]);
+async function BranchHeader({ branchId }: { branchId: string }) {
+  const branch = await prisma.storeBranch.findUnique({
+    where: { id: branchId },
+    include: {
+      category: { select: { name: true } },
+      parentBranch: { select: { name: true } },
+      _count: { select: { products: true } },
+    },
+  });
 
   if (!branch) return notFound();
 
-  const productBg = (storeSettings?.config as any)?.product_card_bg_url;
-  const productBgOpacity = (storeSettings?.config as any)?.product_card_bg_opacity;
-
   return (
-    <div className="space-y-6 md:space-y-10 pb-10 px-2" dir="rtl">
-      {/* 1. شريط المسار - يظهر فوراً */}
+    <>
       <nav className="flex flex-wrap items-center gap-2 text-xs md:text-sm font-bold text-slate-400 mb-4">
         <Link href="/store" className="hover:text-violet-600 transition">🏠 المتجر</Link>
         <span>/</span>
@@ -47,7 +35,6 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
         <span className="text-slate-900 dark:text-white">{branch.name}</span>
       </nav>
 
-      {/* 2. هيدر الفرع - يظهر فوراً مع النصوص */}
       <section className="relative overflow-hidden p-6 md:p-10 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl">
         <div className="relative z-10 flex flex-col md:flex-row items-center gap-4 md:gap-10">
           <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl overflow-hidden bg-slate-50 dark:bg-slate-800 shrink-0 border-2 border-slate-100 dark:border-slate-700">
@@ -60,27 +47,62 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
           <div className="text-center md:text-right">
             <h1 className="text-2xl md:text-4xl font-black text-slate-900 dark:text-white">{branch.name}</h1>
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mt-2">
-                <span className="text-sm text-slate-500 font-bold">{branch.category.name}</span>
-                <span className="w-1.5 h-1.5 bg-slate-300 rounded-full hidden md:block"></span>
-                <span className="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 text-[10px] md:text-xs font-black px-3 py-1 rounded-full">
-                    {branch._count.products} منتج متوفر
-                </span>
+              <span className="text-sm text-slate-500 font-bold">{branch.category.name}</span>
+              <span className="w-1.5 h-1.5 bg-slate-300 rounded-full hidden md:block"></span>
+              <span className="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 text-[10px] md:text-xs font-black px-3 py-1 rounded-full">
+                {branch._count.products} منتج متوفر
+              </span>
             </div>
           </div>
         </div>
       </section>
+    </>
+  );
+}
+
+async function BranchProducts({ branchId }: { branchId: string }) {
+  const storeSettings = await prisma.uISystemSetting.findUnique({
+    where: { target_section: { target: "customer", section: "store_general" } },
+    select: { config: true },
+  });
+
+  const productBg = (storeSettings?.config as any)?.product_card_bg_url;
+  const productBgOpacity = (storeSettings?.config as any)?.product_card_bg_opacity;
+
+  return <ProductListClient branchId={branchId} productBg={productBg} productBgOpacity={productBgOpacity} />;
+}
+
+export default async function BranchPage(props: { params: Promise<{ id: string }> }) {
+  const { id } = await props.params;
+
+  return (
+    <div className="space-y-6 md:space-y-10 pb-10 px-2" dir="rtl">
+      <Suspense fallback={
+        <div className="space-y-4 animate-pulse">
+          <div className="h-4 w-52 bg-slate-100 dark:bg-slate-800 rounded-full" />
+          <div className="h-48 md:h-64 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800" />
+        </div>
+      }>
+        <BranchHeader branchId={id} />
+      </Suspense>
 
       <CustomProductRequest />
 
-      {/* 3. عنوان المنتجات */}
       <div className="space-y-6">
         <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
           <span className="w-2 h-8 bg-emerald-500 rounded-full"></span>
           المنتجات
         </h2>
 
-        {/* 4. قائمة المنتجات - تحمل في الخلفية وتظهر النصوص فوراً */}
-        <ProductListClient branchId={id} productBg={productBg} productBgOpacity={productBgOpacity} />
+        <Suspense fallback={
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="aspect-[3/5] rounded-[1.5rem] md:rounded-[2.5rem] bg-slate-100 dark:bg-slate-800 animate-pulse" />
+            ))}
+          </div>
+        }>
+          <BranchProducts branchId={id} />
+        </Suspense>
       </div>
     </div>
   );
