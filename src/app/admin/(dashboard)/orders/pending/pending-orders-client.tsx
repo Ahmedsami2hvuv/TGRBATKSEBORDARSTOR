@@ -649,6 +649,11 @@ export function PendingOrdersClient({
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(initialIcons || null);
 
+  const pricingModalOrder = useMemo(() => {
+    if (!pricingOpenId) return null;
+    return orders.find((o) => o.id === pricingOpenId) ?? null;
+  }, [pricingOpenId, orders]);
+
   useEffect(() => {
     if (!initialIcons) {
       getGlobalIcons().then(setIcons);
@@ -727,22 +732,84 @@ export function PendingOrdersClient({
       )}
 
       {orders.map((o) => {
+        // في تبويب "قيد التجهيز" نخلي شكل الإدارة قريب من شكل "تجهيز الطلب" عند المجهز:
+        // كارت مرتب + زر كبير يفتح نافذة التسعير (Modal) فقط.
+        if (isDraftMode) {
+          const open = pricingOpenId === o.id;
+          return (
+            <div key={o.id} className="kse-glass-dark rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-violet-100 text-violet-900 px-2 py-0.5 rounded-md font-black text-xs tabular-nums">
+                      مسودة
+                    </span>
+                    <p className="font-black text-slate-900 leading-snug line-clamp-1">
+                      {o.orderType || o.shopName || "تجهيز"}
+                    </p>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-slate-600">
+                    <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px]">{o.regionName}</span>
+                    <span className="text-emerald-700">{o.shopCustomerLabel || o.shopName || "—"}</span>
+                  </div>
+                  <p className="mt-2 text-[10px] font-black text-slate-500 line-clamp-1">
+                    المجهز: {o.submittedByName || "—"}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setPricingOpenId(open ? null : o.id)}
+                  className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-black text-white shadow-sm hover:bg-violet-700 active:scale-[0.99] transition"
+                  title="فتح / تسعير المسودة"
+                >
+                  {open ? "جارٍ الفتح..." : "فتح / تسعير"}
+                </button>
+              </div>
+
+              {o.summary?.trim() ? (
+                <p className="mt-3 text-[11px] font-bold text-slate-500 line-clamp-2">
+                  {o.summary}
+                </p>
+              ) : null}
+            </div>
+          );
+        }
+
         const pricingOpen = pricingOpenId === o.id;
         const assignOpen = assignOpenId === o.id;
-        const prepOpen = prepOpenId === o.id;
         return (
-          <div key={o.id} className={`overflow-hidden rounded-xl border transition-all duration-200 ${pricingOpen ? "ring-2 ring-amber-400 shadow-lg" : assignOpen ? "border-emerald-400 bg-emerald-50/20 shadow-md" : orderStatusPendingCardBorderBg()}`}>
-            <div className={`flex flex-col sm:flex-row gap-3 p-3 cursor-pointer ${pricingOpen ? "bg-amber-50/20" : ""}`} onClick={() => isDraftMode ? setPricingOpenId(pricingOpen ? null : o.id) : router.push(`/admin/orders/${o.id}`)}>
+          <div
+            key={o.id}
+            className={`overflow-hidden rounded-xl border transition-all duration-200 ${pricingOpen ? "ring-2 ring-amber-400 shadow-lg" : assignOpen ? "border-emerald-400 bg-emerald-50/20 shadow-md" : orderStatusPendingCardBorderBg()}`}
+          >
+            <div
+              className={`flex flex-col sm:flex-row gap-3 p-3 cursor-pointer ${pricingOpen ? "bg-amber-50/20" : ""}`}
+              onClick={() => router.push(`/admin/orders/${o.id}`)}
+            >
               <div className="flex sm:flex-col gap-2 border-sky-100 sm:border-e sm:pe-2" onClick={e => e.stopPropagation()}>
-                {!isDraftMode && <label className="h-10 w-10 flex items-center justify-center rounded-xl border border-sky-200 bg-white/80 cursor-pointer shadow-sm"><input type="checkbox" checked={selected.has(o.id)} onChange={() => toggleOne(o.id)} className="h-5 w-5 rounded border-sky-300" /></label>}
-                <button type="button" onClick={() => { setPricingOpenId(pricingOpen ? null : o.id); setAssignOpenId(null); setPrepOpenId(null); }} className={`h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm transition-all ${pricingOpen ? "bg-amber-600 text-white border-amber-700 ring-2 ring-amber-200" : "bg-white text-amber-600 border-amber-200 hover:bg-amber-50"}`}>
+                <label className="h-10 w-10 flex items-center justify-center rounded-xl border border-sky-200 bg-white/80 cursor-pointer shadow-sm">
+                  <input type="checkbox" checked={selected.has(o.id)} onChange={() => toggleOne(o.id)} className="h-5 w-5 rounded border-sky-300" />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => { setPricingOpenId(pricingOpen ? null : o.id); setAssignOpenId(null); setPrepOpenId(null); }}
+                  className={`h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm transition-all ${pricingOpen ? "bg-amber-600 text-white border-amber-700 ring-2 ring-amber-200" : "bg-white text-amber-600 border-amber-200 hover:bg-amber-50"}`}
+                >
                   <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={18} height={18} />
                 </button>
-                {!isDraftMode && <button type="button" onClick={() => { setAssignOpenId(assignOpen ? null : o.id); setPricingOpenId(null); setPrepOpenId(null); }} className={`h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm transition-all ${assignOpen ? "bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-200" : "bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"}`}><CheckIcon icons={icons} /></button>}
+                <button
+                  type="button"
+                  onClick={() => { setAssignOpenId(assignOpen ? null : o.id); setPricingOpenId(null); setPrepOpenId(null); }}
+                  className={`h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm transition-all ${assignOpen ? "bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-200" : "bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"}`}
+                >
+                  <CheckIcon icons={icons} />
+                </button>
               </div>
+
               <div className="flex-1 text-right space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="bg-sky-100 text-sky-900 px-2 py-0.5 rounded-md font-black text-xs tabular-nums">{isDraftMode ? "مسودة" : `#${o.orderNumber}`}</span>
+                  <span className="bg-sky-100 text-sky-900 px-2 py-0.5 rounded-md font-black text-xs tabular-nums">{`#${o.orderNumber}`}</span>
                   {o.submissionLabel === "طلب متجر" && (
                     <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-black text-[10px] border border-amber-200 shadow-sm animate-pulse flex items-center gap-1">
                       <DynamicIcon icon={icons?.store_cart} fallback="🛒" width={12} height={12} /> طلب متجر
@@ -777,16 +844,87 @@ export function PendingOrdersClient({
                     )}
                   </div>
                 )}
-
-                {isDraftMode && <p className="text-[10px] font-black text-sky-700 bg-sky-50 p-1.5 rounded-lg border border-sky-100 w-fit mt-2 shadow-sm tracking-tight">المجهز: {o.submittedByName || "—"}</p>}
               </div>
-              {!isDraftMode && <div className="hidden sm:flex items-start" onClick={(e) => e.stopPropagation()}><RejectButton orderId={o.id} /></div>}
+
+              <div className="hidden sm:flex items-start" onClick={(e) => e.stopPropagation()}>
+                <RejectButton orderId={o.id} />
+              </div>
             </div>
-            {pricingOpen && <div className="p-4 border-t-2 border-amber-300 bg-amber-50/40" onClick={e => e.stopPropagation()}><AdminPricingPanel orderId={o.id} initialData={o.preparerShoppingJson} isDraft={isDraftMode} initialPreparerIds={o.assignedPreparerIds} orderSummary={o.summary} shops={shops} preparers={preparers} rawDeliveryPriceDinar={o.rawDeliveryPriceDinar} onSuccess={() => { setPricingOpenId(null); isDraftMode && router.refresh(); }} icons={icons} /></div>}
-            {assignOpen && !isDraftMode && <div className="p-4 border-t-2 border-emerald-300 bg-emerald-50/40 shadow-inner" onClick={e => e.stopPropagation()}><PendingAssignPanel orderId={o.id} couriers={couriers} customerPhone={o.customerPhone} customerAlternatePhone={o.customerAlternatePhone} defaultCustomerLocationUrl={o.customerLocationUrl} defaultCustomerLandmark={o.customerLandmark} defaultCustomerDoorPhotoUrl={o.customerDoorPhotoUrl} icons={icons} /></div>}
+
+            {pricingOpen && (
+              <div className="p-4 border-t-2 border-amber-300 bg-amber-50/40" onClick={e => e.stopPropagation()}>
+                <AdminPricingPanel
+                  orderId={o.id}
+                  initialData={o.preparerShoppingJson}
+                  isDraft={isDraftMode}
+                  initialPreparerIds={o.assignedPreparerIds}
+                  orderSummary={o.summary}
+                  shops={shops}
+                  preparers={preparers}
+                  rawDeliveryPriceDinar={o.rawDeliveryPriceDinar}
+                  onSuccess={() => { setPricingOpenId(null); isDraftMode && router.refresh(); }}
+                  icons={icons}
+                />
+              </div>
+            )}
+
+            {assignOpen && (
+              <div className="p-4 border-t-2 border-emerald-300 bg-emerald-50/40 shadow-inner" onClick={e => e.stopPropagation()}>
+                <PendingAssignPanel
+                  orderId={o.id}
+                  couriers={couriers}
+                  customerPhone={o.customerPhone}
+                  customerAlternatePhone={o.customerAlternatePhone}
+                  defaultCustomerLocationUrl={o.customerLocationUrl}
+                  defaultCustomerLandmark={o.customerLandmark}
+                  defaultCustomerDoorPhotoUrl={o.customerDoorPhotoUrl}
+                  icons={icons}
+                />
+              </div>
+            )}
           </div>
         );
       })}
+
+      {isDraftMode && pricingModalOrder ? (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm overflow-y-auto"
+          onClick={() => setPricingOpenId(null)}
+        >
+          <div
+            className="w-full max-w-3xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between rounded-2xl bg-white p-3 shadow-sm border border-slate-200">
+              <h3 className="text-sm font-black text-slate-900">نافذة التسعير — {pricingModalOrder.orderType || "مسودة"}</h3>
+              <button
+                type="button"
+                onClick={() => setPricingOpenId(null)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+                aria-label="إغلاق نافذة التسعير"
+              >
+                ✕
+              </button>
+            </div>
+
+            <AdminPricingPanel
+              orderId={pricingModalOrder.id}
+              initialData={pricingModalOrder.preparerShoppingJson}
+              isDraft={true}
+              initialPreparerIds={pricingModalOrder.assignedPreparerIds}
+              orderSummary={pricingModalOrder.summary}
+              shops={shops}
+              preparers={preparers}
+              rawDeliveryPriceDinar={pricingModalOrder.rawDeliveryPriceDinar}
+              onSuccess={() => {
+                setPricingOpenId(null);
+                router.refresh();
+              }}
+              icons={icons}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
