@@ -26,12 +26,10 @@ type ClientRuntimeProps = {
 export function ClientRuntime({ children }: ClientRuntimeProps) {
   return (
     <>
-      <PwaServiceWorkerRegister />
-      <PwaRoutePreserver />
+      {/* Removed background PWA and AI services to stop background activity */}
       <EnterSubmitGlobal />
       {children}
       <Toaster richColors position="top-center" dir="rtl" closeButton />
-      <GlobalAIAssistant />
     </>
   );
 }

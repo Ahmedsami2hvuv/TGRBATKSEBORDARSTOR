@@ -64,65 +64,11 @@ export function MandoubOrderAdminUpdatePoller({
   }, [initialSnapshot]);
 
   useEffect(() => {
-    if (!orderId || stale) return;
-
-    let cancelled = false;
-    const tick = async () => {
-      const p = new URLSearchParams();
-      p.set("orderId", orderId);
-      if (auth.c) p.set("c", auth.c);
-      if (auth.exp) p.set("exp", auth.exp);
-      if (auth.s) p.set("s", auth.s);
-      try {
-        const res = await fetch(`/api/mandoub/order-updated-at?${p.toString()}`, {
-          cache: "no-store",
-        });
-        if (!res.ok || cancelled) return;
-        const j = (await res.json()) as {
-          updatedAt?: string;
-          snapshot?: Record<string, string>;
-        };
-        const serverIso = j.updatedAt;
-        if (!serverIso) return;
-        const serverMs = Date.parse(serverIso);
-        if (Number.isNaN(serverMs)) return;
-        if (serverMs > baselineMs.current) {
-          const serverSnapshot = j.snapshot ?? {};
-          const baseSnapshot = baselineSnapshotRef.current as Record<string, string>;
-          const diffs = Object.keys(FIELD_LABELS).filter((key) => {
-            const before = (baseSnapshot[key] ?? "").trim();
-            const after = (serverSnapshot[key] ?? "").trim();
-            return before !== after;
-          });
-          // If only status changed, it is often a courier action (picked up/delivered),
-          // so do not block with "admin updated" modal.
-          if (diffs.length === 1 && diffs[0] === "status") {
-            baselineMs.current = serverMs;
-            baselineSnapshotRef.current = {
-              ...(baselineSnapshotRef.current as Record<string, string>),
-              ...serverSnapshot,
-            } as typeof initialSnapshot;
-            return;
-          }
-
-          setChangedFields(diffs.map((key) => FIELD_LABELS[key]));
-          setStale(true);
-        }
-      } catch {
-        /* تجاهل أخطاء الشبكة المؤقتة */
-      }
-    };
-
-    const intervalMs = 12_000;
-    const id = window.setInterval(() => void tick(), intervalMs);
-    void tick();
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
+    // Background polling disabled by user request to stop background loading and request windows
+    return () => {};
   }, [orderId, auth.c, auth.exp, auth.s, stale]);
 
-  if (!stale) return null;
+  if (true) return null; // Always return null to prevent showing the update alert window
 
   return (
     <div
