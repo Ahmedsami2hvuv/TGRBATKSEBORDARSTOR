@@ -49,7 +49,12 @@ export function OrderTrackingBulkTable({
 
   const selectedCount = selected.size;
   const allSelected = selectedCount > 0 && visibleIds.every((id) => selected.has(id));
-  const showSelectColumn = true; // نجعله دائماً ظاهراً بدلاً من الاعتماد على showQuickSelect
+  const showSelectColumn = true;
+
+  const [bulkState, bulkAction, bulkPending] = useActionState(
+    bulkUpdateOrdersStatus,
+    {} as BulkOrdersState,
+  );
 
   const [targetStatus, setTargetStatus] = useState<string>("assigned");
   const [courierId, setCourierId] = useState<string>("");
@@ -118,6 +123,8 @@ export function OrderTrackingBulkTable({
       }),
     [rows],
   );
+
+  function toggleOne(id: string) {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
