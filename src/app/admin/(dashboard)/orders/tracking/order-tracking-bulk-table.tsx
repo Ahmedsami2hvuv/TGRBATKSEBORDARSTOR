@@ -51,18 +51,9 @@ export function OrderTrackingBulkTable({
   const allSelected = selectedCount > 0 && visibleIds.every((id) => selected.has(id));
   const showSelectColumn = true; // نجعله دائماً ظاهراً بدلاً من الاعتماد على showQuickSelect
 
-  const [bulkState, bulkAction, bulkPending] = useActionState(
-    bulkUpdateOrdersStatus,
-    {} as BulkOrdersState,
-  );
-
   const [targetStatus, setTargetStatus] = useState<string>("assigned");
   const [courierId, setCourierId] = useState<string>("");
   const [assignOrder, setAssignOrder] = useState<MandoubRow | null>(null);
-  const [orderDetailHref, setOrderDetailHref] = useState<string | null>(null);
-  const [cachedOrderHrefs, setCachedOrderHrefs] = useState<string[]>([]);
-  const [loadedOrderHrefs, setLoadedOrderHrefs] = useState<Record<string, boolean>>({});
-  const [preloadQueue, setPreloadQueue] = useState<string[]>([]);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
 
   useEffect(() => {
@@ -75,7 +66,7 @@ export function OrderTrackingBulkTable({
     targetStatus === "delivered";
 
   const selectedIdsArr = useMemo(() => Array.from(selected), [selected]);
-  const rowDetailHrefs = useMemo(() => rows.map((r) => `/admin/orders/${r.id}?view=modal`), [rows]);
+
   const unifiedRows: MandoubRow[] = useMemo(
     () =>
       rows.map((r) => {
@@ -127,76 +118,6 @@ export function OrderTrackingBulkTable({
       }),
     [rows],
   );
-
-  useEffect(() => {
-    if (rowDetailHrefs.length === 0) return;
-    setPreloadQueue((prev) => {
-      const seen = new Set(prev);
-      const cached = new Set(cachedOrderHrefs);
-      const next = [...prev];
-      for (const href of rowDetailHrefs) {
-        if (!seen.has(href) && !cached.has(href)) {
-          seen.add(href);
-          next.push(href);
-        }
-      }
-      return next;
-    });
-  }, [rowDetailHrefs, cachedOrderHrefs]);
-
-  useEffect(() => {
-    if (preloadQueue.length === 0) return;
-    if (orderDetailHref && !loadedOrderHrefs[orderDetailHref]) return;
-    const nextHref = preloadQueue.find((href) => !cachedOrderHrefs.includes(href));
-    if (!nextHref) {
-      setPreloadQueue([]);
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      setCachedOrderHrefs((prev) => (prev.includes(nextHref) ? prev : [...prev, nextHref]));
-      setPreloadQueue((prev) => prev.filter((href) => href !== nextHref));
-    }, 500);
-    return () => window.clearTimeout(timer);
-  }, [preloadQueue, cachedOrderHrefs, orderDetailHref, loadedOrderHrefs]);
-
-  const openOrderModal = (href: string) => {
-    if (!orderDetailHref) {
-      window.history.pushState({ orderModalOpen: true }, "", window.location.href);
-    }
-    setOrderDetailHref(href);
-    setCachedOrderHrefs((prev) => (prev.includes(href) ? prev : [...prev, href]));
-    setPreloadQueue((prev) => prev.filter((h) => h !== href));
-  };
-
-  const closeOrderModal = () => {
-    if (!orderDetailHref) return;
-    if (window.history.state?.orderModalOpen) {
-      window.history.back();
-      return;
-    }
-    setOrderDetailHref(null);
-  };
-
-  useEffect(() => {
-    const onPopState = () => {
-      setOrderDetailHref((prev) => (prev ? null : prev));
-    };
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
-
-  useEffect(() => {
-    const onMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type === "ORDER_MODAL_CLOSE") {
-        closeOrderModal();
-      }
-    };
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, [orderDetailHref]);
-
-  function toggleOne(id: string) {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -419,8 +340,7 @@ export function OrderTrackingBulkTable({
         onToggleAll={toggleAll}
         onToggleOne={toggleOne}
         onOpenRow={(id) => {
-          const href = `/admin/orders/${id}?view=modal`;
-          openOrderModal(href);
+          router.push(`/admin/orders/${id}`);
         }}
         selectAllTitle="تحديد الكل"
         selectAllAriaLabel="تحديد كل الطلبات الظاهرة"
@@ -502,50 +422,6 @@ export function OrderTrackingBulkTable({
           </div>
         </div>
       )}
-
-      {cachedOrderHrefs.length > 0 ? (
-        <div className={`fixed inset-0 z-[120] ${orderDetailHref ? "" : "pointer-events-none"}`}>
-          <div
-            className={`absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity ${orderDetailHref ? "opacity-100" : "opacity-0"}`}
-            onClick={closeOrderModal}
-          />
-          <div
-            className={`absolute inset-0 flex items-center justify-center transition-opacity ${orderDetailHref ? "opacity-100" : "opacity-0"}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative h-full w-full overflow-hidden bg-white">
-              <div className="flex items-center justify-between border-b bg-slate-50 px-4 py-3">
-                <div className="font-black text-slate-900">عرض الطلب</div>
-                <button
-                  type="button"
-                  onClick={closeOrderModal}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-sm hover:bg-red-700"
-                  aria-label="إغلاق نافذة الطلب"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="relative h-[calc(100vh-57px)] w-full bg-white">
-                {cachedOrderHrefs.map((href) => (
-                  <iframe
-                    key={href}
-                    title={`صفحة الطلب داخل نافذة ${href}`}
-                    src={href}
-                    loading="eager"
-                    onLoad={() => setLoadedOrderHrefs((prev) => ({ ...prev, [href]: true }))}
-                    className={`absolute inset-0 h-full w-full border-0 bg-white transition-opacity ${orderDetailHref === href ? "opacity-100" : "pointer-events-none opacity-0"}`}
-                  />
-                ))}
-                {orderDetailHref && !loadedOrderHrefs[orderDetailHref] ? (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-sm font-bold text-slate-700">
-                    جارٍ تحميل الطلب...
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
     </div>
   );
