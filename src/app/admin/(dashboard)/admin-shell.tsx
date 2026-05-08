@@ -118,10 +118,14 @@ export function AdminShell({
       } catch {}
     }
     void poll();
-    const id = window.setInterval(() => void poll(), POLL_MS);
+    // Background polling disabled to improve performance
+    // const id = window.setInterval(() => void poll(), POLL_MS);
+    // return () => {
+    //   cancelled = true;
+    //   window.clearInterval(id);
+    // };
     return () => {
       cancelled = true;
-      window.clearInterval(id);
     };
   }, []);
 

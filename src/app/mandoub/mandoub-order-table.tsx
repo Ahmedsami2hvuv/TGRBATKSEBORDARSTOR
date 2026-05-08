@@ -202,6 +202,8 @@ export function MandoubOrderTable({
     if (!listOrdersStampSig) return;
     let cancelled = false;
     const id = window.setInterval(async () => {
+      // Background polling disabled to improve performance
+      /*
       const p = new URLSearchParams();
       if (auth.c) p.set("c", auth.c);
       if (auth.exp) p.set("exp", auth.exp);
@@ -216,8 +218,8 @@ export function MandoubOrderTable({
           router.refresh();
         }
       } catch {
-        /* شبكة مؤقتة */
       }
+      */
     }, 18_000);
     return () => {
       cancelled = true;

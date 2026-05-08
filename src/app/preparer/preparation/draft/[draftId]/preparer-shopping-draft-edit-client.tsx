@@ -350,8 +350,10 @@ export function PreparerShoppingDraftEditClient({
   },[initialDraft.id, auth, selectedPriceIndex, showAddProductsPanel, deleteMode, isAutoSaving, router]);
 
   useEffect(() => {
-    const timer = setInterval(fetchLatestData, 5000);
-    return () => clearInterval(timer);
+    // Background polling disabled to improve performance
+    // const timer = setInterval(fetchLatestData, 5000);
+    // return () => clearInterval(timer);
+    return () => {};
   }, [fetchLatestData]);
 
   const isMounted = useRef(false);

@@ -176,16 +176,17 @@ export function AdminPendingNotifications({
     }
 
     void poll();
-    const id = window.setInterval(() => {
-      void poll();
-    }, POLL_MS);
+    // Background polling disabled to improve performance
+    // const id = window.setInterval(() => {
+    //   void poll();
+    // }, POLL_MS);
     const onVisibility = () => {
       if (document.visibilityState === "visible") void poll();
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       cancelled = true;
-      window.clearInterval(id);
+      // window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [permission]);

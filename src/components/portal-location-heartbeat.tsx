@@ -148,11 +148,15 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
   useEffect(() => {
     if (locked) return;
     trySendOnce();
-    const id = window.setInterval(() => trySendOnce(), SEND_INTERVAL_MS);
-    return () => window.clearInterval(id);
+    // Background location polling disabled to improve performance
+    // const id = window.setInterval(() => trySendOnce(), SEND_INTERVAL_MS);
+    // return () => window.clearInterval(id);
+    return () => {};
   }, [locked, trySendOnce]);
 
   useEffect(() => {
+    // Background staleness check disabled to improve performance
+    /*
     const id = window.setInterval(() => {
       const lastOk = lastSuccessfulPostMsRef.current;
       const sessionStart = sessionStartMsRef.current;
@@ -164,6 +168,7 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
       }
     }, STALENESS_CHECK_MS);
     return () => window.clearInterval(id);
+    */
   }, []);
 
   const onCheckClick = useCallback(() => {

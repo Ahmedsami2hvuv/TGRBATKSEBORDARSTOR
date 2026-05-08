@@ -79,10 +79,14 @@ export function PreparerNotificationPoller({
       }
     };
     void tick();
-    const id = window.setInterval(tick, 10000);
+    // Bac-kground polling disabled to improve performance
+    // const id = window.setInterval(tick, 10000);
+    // return () => {
+    //   cancelled = true;
+    //   window.clearInterval(id);
+    // };
     return () => {
       cancelled = true;
-      window.clearInterval(id);
     };
   }, [auth.p, auth.exp, auth.s, openUrl, perm]);
 
