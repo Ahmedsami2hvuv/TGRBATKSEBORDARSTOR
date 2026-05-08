@@ -40,8 +40,8 @@ import { PortalWalletPrefetch } from "@/components/portal-wallet-prefetch";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 import { mandoubOrdersStampSig } from "@/lib/mandoub-order-stamps";
 
-// Keep data fresh while allowing fast back/forward navigation cache.
-export const revalidate = 10;
+// هذه الصفحة تعتمد على searchParams + cookies، لذلك يجب أن تكون ديناميكية دائماً.
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "لوحة المندوب — أبو الأكبر للتوصيل",
