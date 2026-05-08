@@ -484,11 +484,29 @@ export function UnifiedOrderListTable({
                                      setActiveDoorId(activeDoorId === o.id ? null : o.id);
                                      setActiveCallId(null); setActiveMsgId(null); setActiveLocId(null); setActiveAudioId(null);
                                    }}
-                                   title="صور الأبواب (المحل والزبون)"
-                                   className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeDoorId === o.id ? 'bg-amber-600 text-white' : 'bg-slate-100 text-amber-500 hover:bg-amber-500 hover:text-white'}`}
-                                 >
-                                   <DynamicIcon iconKey="ui_camera" config={icons} fallback="🚪" className="w-3.5 h-3.5" />
-                                 </button>
+                                  title="صور الأبواب (المحل والزبون)"
+                                  className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeDoorId === o.id ? 'bg-amber-600 text-white' : 'bg-slate-100 text-amber-500 hover:bg-amber-500 hover:text-white'}`}
+                                >
+                                  {/*
+                                    أيقونة كاميرا SVG مدمجة بدل DynamicIcon لتفادي وميض
+                                    "باب → كاميرا" عند فتح الصفحة (قبل تحميل إعدادات الأيقونات)،
+                                    ولضمان توسيط مثالي داخل الدائرة بغضّ النظر عن نظام التشغيل.
+                                  */}
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    aria-hidden="true"
+                                    className="h-3.5 w-3.5"
+                                  >
+                                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z" />
+                                    <circle cx="12" cy="13" r="3.5" />
+                                  </svg>
+                                </button>
 
                                  {activeDoorId === o.id && (
                                    <CenterModal title="عرض صورة الباب لـ:" onClose={() => setActiveDoorId(null)}>

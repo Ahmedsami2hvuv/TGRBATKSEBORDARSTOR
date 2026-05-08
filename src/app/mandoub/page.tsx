@@ -446,6 +446,8 @@ export default async function MandoubPage({ searchParams }: Props) {
     preparerShoppingText: o.preparerShoppingJson != null ? JSON.stringify(o.preparerShoppingJson) : "",
     submittedByEmployeeName: o.submittedBy?.name ?? "",
     submittedByPreparerName: o.submittedByCompanyPreparer?.name ?? "",
+    // مهم لدعم البحث بالتاريخ والوقت داخل لوحة المندوب
+    createdAtIso: o.createdAt.toISOString(),
   }));
 
   const tabBtnClass = (active: boolean) =>

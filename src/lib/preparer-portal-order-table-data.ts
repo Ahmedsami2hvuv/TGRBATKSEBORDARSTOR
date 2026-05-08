@@ -248,6 +248,7 @@ export async function loadPreparerPortalOrderTableData(args: {
       o.preparerShoppingJson != null ? JSON.stringify(o.preparerShoppingJson) : "",
     submittedByEmployeeName: o.submittedBy?.name ?? "",
     submittedByPreparerName: o.submittedByCompanyPreparer?.name ?? "",
+    createdAtIso: o.createdAt.toISOString(),
   }));
 
   const ordersForPrimaryShopLabel = activeOrders.map((o) => ({ shop: { name: o.shop.name } }));

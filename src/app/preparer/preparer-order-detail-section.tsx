@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { MandoubOrderDetailPayload } from "@/lib/mandoub-order-queries";
-import { preparerPath } from "@/lib/preparer-portal-nav";
 import { dinarDecimalToAlfInputString, formatDinarAsAlf } from "@/lib/money-alf";
 import { hasCustomerLocationUrl } from "@/lib/order-location";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
@@ -621,7 +620,6 @@ export function PreparerOrderDetailSection({
               {formatOrderUploadDateBaghdad(order.createdAt)}
             </span>
           </p>
-          <Link href={preparerPath(`/preparer/order/${order.id}/edit`, auth)} className="mt-2 inline-flex items-center rounded-lg border border-sky-300 bg-sky-50 px-2.5 py-1.5 text-xs font-bold text-sky-900 hover:bg-sky-100">تعديل بيانات الطلب</Link>
         </div>
         <div className="flex flex-shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-self-start">
           <MandoubOrderDetailActions closeHref={closeHref} />

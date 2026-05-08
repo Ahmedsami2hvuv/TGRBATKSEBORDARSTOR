@@ -14,6 +14,7 @@ import {
 import { hasCustomerLocationUrl } from "@/lib/order-location";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { routeModeOrFromQuery } from "@/lib/admin-super-search";
+import { parseBaghdadDateRange } from "@/lib/order-date-search";
 import { formatDinarAsAlf } from "@/lib/money-alf";
 import { normalizeAdminShopName } from "@/lib/admin-order-from-admin-constants";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
@@ -85,6 +86,7 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
   if (q) {
     const asNum = parseInt(q, 10);
     const numExact = !Number.isNaN(asNum) && String(asNum) === q;
+    const dateRange = parseBaghdadDateRange(q);
     const or: Prisma.OrderWhereInput[] = [
       ...routeModeOrFromQuery(q),
       { customerPhone: { contains: q } },
@@ -94,9 +96,13 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       { customerRegion: { name: { contains: q, mode: "insensitive" } } },
       { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
       { customer: { name: { contains: q, mode: "insensitive" } } },
+      { orderNoteTime: { contains: q, mode: "insensitive" } },
     ];
     if (numExact) {
       or.unshift({ orderNumber: asNum });
+    }
+    if (dateRange) {
+      or.push({ createdAt: { gte: dateRange.gte, lt: dateRange.lt } });
     }
     where.OR = or;
   }
@@ -107,6 +113,7 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
   if (q) {
     const asNum = parseInt(q, 10);
     const numExact = !Number.isNaN(asNum) && String(asNum) === q;
+    const dateRange = parseBaghdadDateRange(q);
     const or: Prisma.OrderWhereInput[] = [
       ...routeModeOrFromQuery(q),
       { customerPhone: { contains: q } },
@@ -116,9 +123,13 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       { customerRegion: { name: { contains: q, mode: "insensitive" } } },
       { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
       { customer: { name: { contains: q, mode: "insensitive" } } },
+      { orderNoteTime: { contains: q, mode: "insensitive" } },
     ];
     if (numExact) {
       or.unshift({ orderNumber: asNum });
+    }
+    if (dateRange) {
+      or.push({ createdAt: { gte: dateRange.gte, lt: dateRange.lt } });
     }
     pendingTabWhere.OR = or;
   }

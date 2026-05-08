@@ -1,5 +1,6 @@
 import { normalizeDigits } from "@/lib/money-alf";
 import { routeModeOrFromQuery } from "@/lib/admin-super-search";
+import { generateDateSearchTokens } from "@/lib/order-date-search";
 
 /** نفس منطق البحث الخارق للطلبات — بدون فلاتر إضافية — للتصفية على جهاز العميل. */
 function parseOrderNumberCandidate(q: string): number | null {
@@ -40,6 +41,8 @@ export type MandoubOrderSearchFields = {
   preparerShoppingText: string;
   submittedByEmployeeName: string;
   submittedByPreparerName: string;
+  /** ISO لتاريخ إنشاء الطلب — مطلوب لدعم البحث بالتاريخ/الوقت. */
+  createdAtIso?: string;
 };
 
 function digitsOnly(s: string): string {
@@ -62,6 +65,7 @@ export function mandoubOrderMatchesSmartQuery(
   }
 
   const t = q.toLowerCase();
+  const dateTokens = generateDateSearchTokens(f.createdAtIso, f.orderNoteTime);
   const hay = [
     f.id,
     String(f.orderNumber),
@@ -89,11 +93,15 @@ export function mandoubOrderMatchesSmartQuery(
     f.regionName,
     f.secondRegionName,
     f.courierName,
+    dateTokens,
   ]
     .join(" ")
     .toLowerCase();
 
   if (hay.includes(t)) return true;
+  // مقارنة الأرقام (بعد توحيد الأرقام العربية إلى لاتينية) لكشف أنماط التاريخ التي يكتبها المستخدم بأرقام عربية
+  const tDigits = normalizeDigits(q).toLowerCase();
+  if (tDigits !== t && hay.includes(tDigits)) return true;
 
   const qDigits = digitsOnly(q);
   if (qDigits.length >= 6) {
