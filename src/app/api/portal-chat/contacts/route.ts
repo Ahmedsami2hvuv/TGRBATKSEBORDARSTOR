@@ -6,10 +6,14 @@ import { resolvePortalChatActor } from "@/lib/portal-chat-auth";
 type Contact = { role: PortalChatRole; actorId: string; actorName: string };
 
 function allowedTargets(role: PortalChatRole): PortalChatRole[] {
-  if (role === "admin") return ["mandoub", "preparer", "supplier", "admin"];
-  if (role === "mandoub") return ["admin", "mandoub", "preparer", "supplier"];
-  if (role === "preparer") return ["admin", "mandoub", "preparer", "supplier"];
-  return ["admin", "mandoub", "preparer", "supplier"];
+  // تحديد العلاقات المطلوبة بدقة:
+  // الإدارة <-> مندوب، الإدارة <-> مجهز
+  // مندوب <-> مجهز، مندوب <-> إدارة
+  // مجهز <-> مندوب، مجهز <-> إدارة
+  if (role === "admin") return ["mandoub", "preparer"];
+  if (role === "mandoub") return ["admin", "preparer"];
+  if (role === "preparer") return ["admin", "mandoub"];
+  return []; // الموردين والآخرين خارج هذه الحلقة حالياً حسب الطلب
 }
 
 function logChatGuard(event: string, meta: Record<string, unknown>) {

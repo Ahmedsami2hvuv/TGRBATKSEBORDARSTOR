@@ -16,10 +16,23 @@ function toUniqueKey(a: { role: PortalChatRole; actorId: string }, b: { role: Po
   return [actorKey(a.role, a.actorId), actorKey(b.role, b.actorId)].sort().join("|");
 }
 
-async function resolveTarget(payload: ThreadCreatePayload | undefined) {
+async function resolveTarget(payload: ThreadCreatePayload | undefined, actorRole: PortalChatRole) {
   const role = payload?.role;
   const actorId = String(payload?.actorId || "").trim();
   if (!role || !actorId) return null;
+
+  // التحقق من صلاحية العلاقة
+  const allowed = {
+    admin: ["mandoub", "preparer"],
+    mandoub: ["admin", "preparer"],
+    preparer: ["admin", "mandoub"],
+    supplier: []
+  };
+
+  if (!allowed[actorRole as keyof typeof allowed]?.includes(role)) {
+    return null;
+  }
+
   if (role === "admin" && actorId === "admin") return { role, actorId, actorName: "الإدارة" };
   if (role === "mandoub") {
     const row = await prisma.courier.findUnique({ where: { id: actorId }, select: { id: true, name: true, blocked: true } });
@@ -28,11 +41,6 @@ async function resolveTarget(payload: ThreadCreatePayload | undefined) {
   }
   if (role === "preparer") {
     const row = await prisma.companyPreparer.findUnique({ where: { id: actorId }, select: { id: true, name: true, active: true } });
-    if (!row || !row.active) return null;
-    return { role, actorId: row.id, actorName: row.name };
-  }
-  if (role === "supplier") {
-    const row = await prisma.storeSupplier.findUnique({ where: { id: actorId }, select: { id: true, name: true, active: true } });
     if (!row || !row.active) return null;
     return { role, actorId: row.id, actorName: row.name };
   }
@@ -52,7 +60,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
     }
 
-    const target = await resolveTarget(body.target);
+    const target = await resolveTarget(body.target, actor.role);
     if (!target) {
       logChatGuard("target_not_found", { actorRole: actor.role, target: body.target ?? null });
       return NextResponse.json({ ok: false, error: "target_not_found" }, { status: 404 });
