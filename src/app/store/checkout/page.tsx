@@ -37,11 +37,12 @@ export default function CheckoutPage() {
 
     const whatsappPhone = "9647733921468";
     const orderNo = state.orderNumber ? String(state.orderNumber) : "غير متوفر";
-    const whatsappMessage = `لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي\nرقم طلبي هو: ${orderNo}`;
+    const fallbackMessage = `لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي\nرقم طلبي هو: ${orderNo}`;
+    const whatsappMessage = state.whatsappMessage || fallbackMessage;
     const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(whatsappMessage)}`;
 
     window.location.href = whatsappUrl;
-  }, [state.ok, state.orderNumber]);
+  }, [state.ok, state.orderNumber, state.whatsappMessage]);
 
   useEffect(() => {
     const q = regionQuery.trim();

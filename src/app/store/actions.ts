@@ -2,7 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 
-export type OrderFormState = { error?: string; ok?: boolean; orderNumber?: string };
+export type OrderFormState = {
+  error?: string;
+  ok?: boolean;
+  orderNumber?: string;
+  whatsappMessage?: string;
+};
 
 export async function submitStoreOrder(_prev: any, formData: FormData): Promise<OrderFormState> {
   const phone = formData.get("phone") as string;
@@ -101,7 +106,20 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       console.error("Telegram notification failed", teleErr);
     }
 
-    return { ok: true, orderNumber: draft.id.slice(-6) };
+    const numericOrderNumber = String(draft.orderNumber);
+    const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
+    const whatsappMessage = [
+      "لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي",
+      `رقم طلبي هو: ${numericOrderNumber}`,
+      "المنتجات:",
+      ...productLines,
+    ].join("\n");
+
+    return {
+      ok: true,
+      orderNumber: numericOrderNumber,
+      whatsappMessage,
+    };
   } catch (e) {
     console.error("Order creation failed", e);
     return { error: "فشل في إرسال الطلب، يرجى المحاولة لاحقاً" };
