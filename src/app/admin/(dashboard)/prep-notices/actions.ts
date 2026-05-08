@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { assertAdminSession } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
+import { pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
 
 export type PrepNoticeAdminState = { error?: string; ok?: boolean };
 
@@ -53,6 +54,10 @@ export async function createAdminPrepNotices(
       }),
     ),
   );
+
+  for (const pid of preparerIds) {
+    void pushNotifyPreparerNewNotice({ preparerId: pid, title, body });
+  }
 
   revalidatePath("/admin/prep-notices");
   revalidatePath("/preparer");

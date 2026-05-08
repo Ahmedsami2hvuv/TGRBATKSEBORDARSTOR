@@ -29,11 +29,13 @@ export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
         const data = (await res.json()) as {
           assignedCount?: number;
           latestActiveOrderNumber?: number;
-          settings?: { sound?: string };
+          latestActiveOrderId?: string;
+          settings?: { soundPreset?: string };
         };
         const count = Number(data.assignedCount ?? 0);
         const latest = Number(data.latestActiveOrderNumber ?? 0);
-        const sound = data.settings?.sound ?? "beep";
+        const latestOrderId = String(data.latestActiveOrderId ?? "");
+        const sound = data.settings?.soundPreset ?? "beep";
 
         if (lastAssignedRef.current !== null && count > lastAssignedRef.current) {
           ensureNotificationAudioContext()?.resume().catch(() => {});
@@ -44,8 +46,15 @@ export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
                 body: `لديك ${count} طلب بانتظار الاستلام. آخر رقم نشط: ${latest || "—"}`,
               });
               n.onclick = () => {
+                const q = new URLSearchParams();
+                q.set("c", auth.c);
+                if (auth.exp) q.set("exp", auth.exp);
+                q.set("s", auth.s);
                 window.focus();
-                window.location.assign("/mandoub");
+                const target = latestOrderId
+                  ? `/mandoub/order/${latestOrderId}?${q.toString()}`
+                  : `/mandoub?${q.toString()}`;
+                window.location.assign(target);
               };
             } catch {
               /* ignore */

@@ -13,7 +13,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
-export type WebPushAudience = "admin" | "mandoub" | "employee" | "customer";
+export type WebPushAudience = "admin" | "mandoub" | "employee" | "customer" | "preparer";
 
 /**
  * يشترك في Web Push ليصل إشعار نظام الهاتف حتى عند إغلاق المتصفح.
@@ -23,6 +23,7 @@ export async function subscribeDeviceToWebPush(options: {
   audience: WebPushAudience;
   mandoub?: { c: string; exp?: string; s: string };
   portal?: { e: string; exp?: string; s: string };
+  preparer?: { p: string; exp?: string; s: string };
   customer?: { customerId: string; sig: string };
 }): Promise<boolean> {
   if (typeof window === "undefined") return false;
@@ -71,6 +72,13 @@ export async function subscribeDeviceToWebPush(options: {
       e: options.portal.e,
       ...(options.portal.exp ? { exp: options.portal.exp } : {}),
       s: options.portal.s,
+    };
+  }
+  if (options.audience === "preparer" && options.preparer) {
+    payload.preparer = {
+      p: options.preparer.p,
+      ...(options.preparer.exp ? { exp: options.preparer.exp } : {}),
+      s: options.preparer.s,
     };
   }
   if (options.audience === "customer" && options.customer) {

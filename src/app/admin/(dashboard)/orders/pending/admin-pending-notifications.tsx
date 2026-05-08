@@ -120,7 +120,12 @@ export function AdminPendingNotifications({
             const diff = next.latestOrderNumber - safeSeen;
             body = renderNotificationTemplate(
               diff === 1 ? next.settings.templateSingle : next.settings.templateMultiple,
-              { count: diff, orderNumber: next.latestOrderNumber },
+              {
+                count: diff,
+                orderNumber: next.latestOrderNumber,
+                shopName: "—",
+                regionName: "—",
+              },
             );
           } else {
             const d = next.pendingCount - (prevCount as number);
@@ -129,6 +134,8 @@ export function AdminPendingNotifications({
               {
                 count: d,
                 orderNumber: next.latestOrderNumber || 0,
+                shopName: "—",
+                regionName: "—",
               },
             );
           }

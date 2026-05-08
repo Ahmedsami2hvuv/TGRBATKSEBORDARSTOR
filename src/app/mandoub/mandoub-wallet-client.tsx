@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useRef, useState } from "react";
 import {
   createWalletPeerTransferFromCourier,
   respondWalletPeerTransferByCourier,
@@ -24,6 +24,7 @@ import {
 } from "@/lib/mandoub-money-events";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { UISectionConfig } from "@/lib/ui-settings";
 import { useEffect, useState as useStateReact } from "react";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
@@ -178,6 +179,7 @@ export function MandoubWalletClient({
   earningsMonthlyStr?: string;
   uiSettings?: UISectionConfig | null;
 }) {
+  const router = useRouter();
   const [miscPanel, setMiscPanel] = useState<null | "take" | "give">(null);
   const [transferOpen, setTransferOpen] = useState(false);
   const [toKind, setToKind] = useState<"" | "courier" | "employee" | "admin">("");
@@ -190,6 +192,11 @@ export function MandoubWalletClient({
   const [query, setQuery] = useState("");
   const [icons, setIcons] = useStateReact<GlobalIconsConfig | null>(null);
   const [orderModalHref, setOrderModalHref] = useState<string | null>(null);
+  const prevCreatePendingRef = useRef(false);
+  const prevRespondPendingRef = useRef(false);
+  const prevMiscSubmitPendingRef = useRef(false);
+  const prevDeletePendingRef = useRef(false);
+  const prevMiscDelPendingRef = useRef(false);
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
@@ -202,6 +209,45 @@ export function MandoubWalletClient({
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
+
+  useEffect(() => {
+    if (prevCreatePendingRef.current && !createPending && !createState.error) {
+      router.refresh();
+    }
+    prevCreatePendingRef.current = createPending;
+  }, [createPending, createState.error, router]);
+
+  useEffect(() => {
+    if (prevRespondPendingRef.current && !respondPending && !respondState.error) {
+      router.refresh();
+    }
+    prevRespondPendingRef.current = respondPending;
+  }, [respondPending, respondState.error, router]);
+
+  useEffect(() => {
+    if (
+      prevMiscSubmitPendingRef.current &&
+      !miscSubmitPending &&
+      !miscSubmitState.error
+    ) {
+      router.refresh();
+    }
+    prevMiscSubmitPendingRef.current = miscSubmitPending;
+  }, [miscSubmitPending, miscSubmitState.error, router]);
+
+  useEffect(() => {
+    if (prevDeletePendingRef.current && !deletePending && !deleteState.error) {
+      router.refresh();
+    }
+    prevDeletePendingRef.current = deletePending;
+  }, [deletePending, deleteState.error, router]);
+
+  useEffect(() => {
+    if (prevMiscDelPendingRef.current && !miscDelPending && !miscDelState.error) {
+      router.refresh();
+    }
+    prevMiscDelPendingRef.current = miscDelPending;
+  }, [miscDelPending, miscDelState.error, router]);
 
   const openOrderModal = (href: string) => {
     if (!orderModalHref) {
@@ -354,11 +400,31 @@ export function MandoubWalletClient({
                 <div className="mt-3 flex gap-2">
                   <form action={respondAction}>
                     <input type="hidden" name="c" value={auth.c} /><input type="hidden" name="exp" value={auth.exp} /><input type="hidden" name="s" value={auth.s} /><input type="hidden" name="next" value={walletPathWithQuery} /><input type="hidden" name="transferId" value={p.id} /><input type="hidden" name="accept" value="1" />
-                    <button type="submit" disabled={respondPending} className="rounded-xl bg-emerald-600 px-6 py-2 text-sm font-black text-white shadow-sm hover:bg-emerald-700">قبول</button>
+                    <button
+                      type="submit"
+                      disabled={respondPending}
+                      className={`rounded-xl px-6 py-2 text-sm font-black text-white shadow-sm transition ${
+                        respondPending
+                          ? "cursor-wait bg-emerald-400"
+                          : "bg-emerald-600 hover:bg-emerald-700"
+                      }`}
+                    >
+                      {respondPending ? "جاري المعالجة..." : "قبول"}
+                    </button>
                   </form>
                   <form action={respondAction}>
                     <input type="hidden" name="c" value={auth.c} /><input type="hidden" name="exp" value={auth.exp} /><input type="hidden" name="s" value={auth.s} /><input type="hidden" name="next" value={walletPathWithQuery} /><input type="hidden" name="transferId" value={p.id} /><input type="hidden" name="accept" value="0" />
-                    <button type="submit" disabled={respondPending} className="rounded-xl border border-rose-500 px-6 py-2 text-sm font-black text-rose-600 dark:bg-slate-800 hover:bg-rose-50">رفض</button>
+                    <button
+                      type="submit"
+                      disabled={respondPending}
+                      className={`rounded-xl border px-6 py-2 text-sm font-black transition ${
+                        respondPending
+                          ? "cursor-wait border-rose-300 bg-rose-100 text-rose-400 dark:border-rose-900 dark:bg-slate-800"
+                          : "border-rose-500 text-rose-600 dark:bg-slate-800 hover:bg-rose-50"
+                      }`}
+                    >
+                      {respondPending ? "جاري المعالجة..." : "رفض"}
+                    </button>
                   </form>
                 </div>
               </li>
@@ -426,7 +492,17 @@ export function MandoubWalletClient({
             )}
             <input name="amountAlf" required inputMode="decimal" placeholder="المبلغ..." className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 p-3 rounded-xl font-black text-xl text-center shadow-inner" />
             <input name={transferOpen ? "handoverLocation" : "label"} required placeholder={transferOpen ? "مكان التسليم..." : "اسم المعاملة..."} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 p-3 rounded-xl font-bold text-sm shadow-inner" />
-            <button type="submit" disabled={createPending || miscSubmitPending} className="w-full rounded-xl bg-indigo-600 py-4 text-base font-black text-white shadow-lg">إتمام العملية</button>
+            <button
+              type="submit"
+              disabled={createPending || miscSubmitPending}
+              className={`w-full rounded-xl py-4 text-base font-black text-white shadow-lg transition ${
+                createPending || miscSubmitPending
+                  ? "cursor-wait bg-indigo-400"
+                  : "bg-indigo-600 hover:bg-indigo-700"
+              }`}
+            >
+              {createPending || miscSubmitPending ? "جاري تنفيذ العملية..." : "إتمام العملية"}
+            </button>
           </form>
         )}
       </div>

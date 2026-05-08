@@ -24,6 +24,11 @@ type NotificationInitial = {
   mandoubTemplateMultiple: string;
   mandoubSoundEnabled: boolean;
   mandoubSoundPreset: NotificationSoundPresetId;
+  preparerEnabled: boolean;
+  preparerTemplateSingle: string;
+  preparerTemplateMultiple: string;
+  preparerSoundEnabled: boolean;
+  preparerSoundPreset: NotificationSoundPresetId;
 };
 
 function ChevronIcon({ open, icons }: { open: boolean, icons: GlobalIconsConfig }) {

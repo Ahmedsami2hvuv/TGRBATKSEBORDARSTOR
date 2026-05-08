@@ -112,10 +112,19 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
   const settingsRow = await getOrCreateNotificationSettings();
   const settings = audienceSettings(settingsRow, "admin");
   if (!settings.enabled) return;
+  const order = await prisma.order.findUnique({
+    where: { orderNumber },
+    select: {
+      shop: { select: { name: true } },
+      customerRegion: { select: { name: true } },
+    },
+  });
 
   const body = renderNotificationTemplate(settings.templateSingle, {
     count: 1,
     orderNumber,
+    shopName: order?.shop?.name ?? "—",
+    regionName: order?.customerRegion?.name ?? "—",
   });
   const subs = await prisma.webPushSubscription.findMany({
     where: { audience: "admin" },
@@ -189,10 +198,21 @@ export async function pushNotifyCourierNewAssignment(
   const settingsRow = await getOrCreateNotificationSettings();
   const settings = audienceSettings(settingsRow, "mandoub");
   if (!settings.enabled) return;
+  const order = orderId
+    ? await prisma.order.findUnique({
+        where: { id: orderId },
+        select: {
+          shop: { select: { name: true } },
+          customerRegion: { select: { name: true } },
+        },
+      })
+    : null;
 
   const body = renderNotificationTemplate(settings.templateSingle, {
     count: 1,
     orderNumber,
+    shopName: order?.shop?.name ?? "—",
+    regionName: order?.customerRegion?.name ?? "—",
   });
   const subs = await prisma.webPushSubscription.findMany({
     where: { audience: "mandoub", courierId },
@@ -205,5 +225,35 @@ export async function pushNotifyCourierNewAssignment(
     body,
     url,
     tag: `kse-push-mandoub-${orderNumber}-${courierId}`,
+  });
+}
+
+/** إشعار للمجهز: طلب تجهيز جديد من الإدارة */
+export async function pushNotifyPreparerNewNotice(input: {
+  preparerId: string;
+  title: string;
+  body?: string;
+}): Promise<void> {
+  if (!isWebPushConfigured()) return;
+  const settingsRow = await getOrCreateNotificationSettings();
+  const settings = audienceSettings(settingsRow, "preparer");
+  if (!settings.enabled) return;
+
+  const body = renderNotificationTemplate(settings.templateSingle, {
+    count: 1,
+    orderNumber: 0,
+    shopName: input.title || "—",
+    regionName: input.body || "—",
+  });
+
+  const subs = await prisma.webPushSubscription.findMany({
+    where: { audience: "preparer", preparerId: input.preparerId },
+    select: { id: true, endpoint: true, p256dh: true, auth: true },
+  });
+  await sendToSubscriptions(subs, {
+    title: "لوحة المجهز — إشعار جديد",
+    body,
+    url: `${getPublicAppUrl()}/preparer/preparation`,
+    tag: `kse-push-preparer-${input.preparerId}-${Date.now()}`,
   });
 }

@@ -1,6 +1,13 @@
 /** قيم نغمة الإشعار — تُخزَّن في DB وتُرسل للعميل عبر API */
 
-export const NOTIFICATION_SOUND_PRESET_IDS = ["beep", "chime", "bell", "soft", "urgent"] as const;
+export const NOTIFICATION_SOUND_PRESET_IDS = [
+  "beep",
+  "chime",
+  "bell",
+  "soft",
+  "phone",
+  "urgent",
+] as const;
 
 export type NotificationSoundPresetId = (typeof NOTIFICATION_SOUND_PRESET_IDS)[number];
 
@@ -15,5 +22,6 @@ export const NOTIFICATION_SOUND_PRESET_LABELS_AR: Record<NotificationSoundPreset
   chime: "نغمة مزدوجة (جرس خفيف)",
   bell: "جرس أطول",
   soft: "نغمة هادئة",
+  phone: "نغمة هاتف",
   urgent: "تنبيه متكرّر (عاجل)",
 };

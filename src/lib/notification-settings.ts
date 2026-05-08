@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import type { NotificationSettingsPayload } from "@/lib/notification-template";
 import { normalizeNotificationSoundPreset } from "@/lib/notification-sound-presets";
 
-export type NotificationAudience = "admin" | "mandoub";
+export type NotificationAudience = "admin" | "mandoub" | "preparer";
 export type { NotificationSettingsPayload };
 
 export const DEFAULT_NOTIFICATION_SETTINGS = {
@@ -16,6 +16,11 @@ export const DEFAULT_NOTIFICATION_SETTINGS = {
   mandoubTemplateMultiple: "تم إسناد {count} طلبات جديدة إليك",
   mandoubSoundEnabled: true,
   mandoubSoundPreset: "beep",
+  preparerEnabled: true,
+  preparerTemplateSingle: "لديك طلب تجهيز جديد من {shopName} إلى {regionName} (#{orderNumber})",
+  preparerTemplateMultiple: "لديك {count} طلبات تجهيز جديدة",
+  preparerSoundEnabled: true,
+  preparerSoundPreset: "phone",
 } as const;
 
 export async function getOrCreateNotificationSettings() {
@@ -40,6 +45,15 @@ export function audienceSettings(
       templateMultiple: settings.adminTemplateMultiple,
       soundEnabled: settings.adminSoundEnabled,
       soundPreset: normalizeNotificationSoundPreset(settings.adminSoundPreset),
+    };
+  }
+  if (audience === "preparer") {
+    return {
+      enabled: settings.preparerEnabled,
+      templateSingle: settings.preparerTemplateSingle,
+      templateMultiple: settings.preparerTemplateMultiple,
+      soundEnabled: settings.preparerSoundEnabled,
+      soundPreset: normalizeNotificationSoundPreset(settings.preparerSoundPreset),
     };
   }
   return {

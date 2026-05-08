@@ -3,6 +3,7 @@ import { isAdminSession } from "@/lib/admin-session";
 import { verifyCustomerPushSignature } from "@/lib/customer-push-token";
 import { verifyDelegatePortalQuery } from "@/lib/delegate-link";
 import { verifyEmployeeOrderPortalQuery } from "@/lib/employee-order-portal-link";
+import { verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-link";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -12,10 +13,11 @@ type Body = {
     endpoint?: string;
     keys?: { p256dh?: string; auth?: string };
   };
-  audience?: "admin" | "mandoub" | "employee" | "customer";
+  audience?: "admin" | "mandoub" | "employee" | "customer" | "preparer";
   mandoub?: { c?: string; exp?: string; s?: string };
   /** رابط موظف المحل (رفع الطلب) — ليس فريق المجهزين */
   portal?: { e?: string; exp?: string; s?: string };
+  preparer?: { p?: string; exp?: string; s?: string };
   customer?: { customerId?: string; sig?: string };
 };
 
@@ -40,7 +42,8 @@ export async function POST(req: Request) {
     audience !== "admin" &&
     audience !== "mandoub" &&
     audience !== "employee" &&
-    audience !== "customer"
+    audience !== "customer" &&
+    audience !== "preparer"
   ) {
     return NextResponse.json({ error: "bad_audience" }, { status: 400 });
   }
@@ -48,6 +51,7 @@ export async function POST(req: Request) {
   let courierId: string | null = null;
   let employeeId: string | null = null;
   let customerId: string | null = null;
+  let preparerId: string | null = null;
 
   if (audience === "admin") {
     if (!(await isAdminSession())) {
@@ -67,6 +71,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
     employeeId = v.employeeId;
+  } else if (audience === "preparer") {
+    const p = body.preparer;
+    const v = verifyCompanyPreparerPortalQuery(p?.p, p?.exp, p?.s);
+    if (!v.ok) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+    preparerId = v.preparerId;
   } else {
     const cid = body.customer?.customerId?.trim();
     const sig = body.customer?.sig?.trim();
@@ -93,6 +104,7 @@ export async function POST(req: Request) {
       courierId: audience === "mandoub" ? courierId : null,
       employeeId: audience === "employee" ? employeeId : null,
       customerId: audience === "customer" ? customerId : null,
+      preparerId: audience === "preparer" ? preparerId : null,
     },
     update: {
       p256dh,
@@ -101,6 +113,7 @@ export async function POST(req: Request) {
       courierId: audience === "mandoub" ? courierId : null,
       employeeId: audience === "employee" ? employeeId : null,
       customerId: audience === "customer" ? customerId : null,
+      preparerId: audience === "preparer" ? preparerId : null,
     },
   });
 

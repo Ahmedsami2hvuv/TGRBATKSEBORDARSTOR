@@ -45,6 +45,13 @@ export default async function SettingsPage() {
           mandoubSoundPreset: normalizeNotificationSoundPreset(
             notificationSettings.mandoubSoundPreset ?? "beep",
           ),
+          preparerEnabled: notificationSettings.preparerEnabled,
+          preparerTemplateSingle: notificationSettings.preparerTemplateSingle,
+          preparerTemplateMultiple: notificationSettings.preparerTemplateMultiple,
+          preparerSoundEnabled: notificationSettings.preparerSoundEnabled,
+          preparerSoundPreset: normalizeNotificationSoundPreset(
+            notificationSettings.preparerSoundPreset ?? "phone",
+          ),
         }}
       />
     </div>

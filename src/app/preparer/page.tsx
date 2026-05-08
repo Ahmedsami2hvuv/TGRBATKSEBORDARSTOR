@@ -13,6 +13,7 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { PortalWalletPrefetch } from "@/components/portal-wallet-prefetch";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
+import { PreparerNotificationPoller } from "./preparer-notification-poller";
 
 // Keep data fresh while allowing fast back/forward navigation cache.
 export const revalidate = 10;
@@ -93,6 +94,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
 
   const baseAuth = { p: p!, exp: exp || "", s: s! };
   const walletHref = preparerPath("/preparer/wallet", baseAuth);
+  const preparationHref = preparerPath("/preparer/preparation", baseAuth);
   const shopIds = preparer.shopLinks.map((l) => l.shopId);
   const canSubmitAny = preparer.shopLinks.some((l) => l.canSubmitOrders);
   const canPriceStore = preparer.authorizedBranches.length > 0;
@@ -151,6 +153,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           <PreparerWalletLink auth={baseAuth} icons={icons} />
         </div>
       </header>
+      <PreparerNotificationPoller auth={baseAuth} openUrl={preparationHref} />
       <PortalWalletPrefetch href={walletHref} />
 
       <section className="kse-glass-dark overflow-hidden border border-sky-200 shadow-sm dark:border-slate-800">

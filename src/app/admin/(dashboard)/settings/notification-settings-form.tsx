@@ -23,8 +23,51 @@ type NotificationSettingsFormProps = {
     mandoubTemplateMultiple: string;
     mandoubSoundEnabled: boolean;
     mandoubSoundPreset: NotificationSoundPresetId;
+    preparerEnabled: boolean;
+    preparerTemplateSingle: string;
+    preparerTemplateMultiple: string;
+    preparerSoundEnabled: boolean;
+    preparerSoundPreset: NotificationSoundPresetId;
   };
 };
+
+type Token = { label: string; token: string };
+
+const TEMPLATE_TOKENS: Token[] = [
+  { label: "رقم الطلب", token: "{رقم الطلب}" },
+  { label: "عدد الطلبات", token: "{عدد الطلبات}" },
+  { label: "اسم المحل", token: "{اسم المحل}" },
+  { label: "اسم المنطقة", token: "{اسم المنطقة}" },
+];
+
+function TokenButtons({ target }: { target: string }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {TEMPLATE_TOKENS.map((item) => (
+        <button
+          key={`${target}-${item.token}`}
+          type="button"
+          className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50"
+          onClick={() => {
+            const input = document.querySelector<HTMLInputElement>(`input[name="${target}"]`);
+            if (!input) return;
+            const start = input.selectionStart ?? input.value.length;
+            const end = input.selectionEnd ?? input.value.length;
+            const next =
+              input.value.slice(0, start) + item.token + input.value.slice(end);
+            input.value = next;
+            const cursor = start + item.token.length;
+            input.setSelectionRange(cursor, cursor);
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.focus();
+          }}
+        >
+          + {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function NotificationSettingsForm({ initial }: NotificationSettingsFormProps) {
   const [state, action, pending] = useActionState(
@@ -66,9 +109,10 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
               ))}
             </select>
           </label>
+          <TokenButtons target="adminTemplateSingle" />
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-slate-600">
-              نص الإشعار عند طلب واحد جديد (يدعم {`{orderNumber}`})
+              نص الإشعار عند طلب واحد جديد
             </span>
             <input
               name="adminTemplateSingle"
@@ -76,9 +120,10 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
               className={inputClass}
             />
           </label>
+          <TokenButtons target="adminTemplateMultiple" />
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-slate-600">
-              نص الإشعار عند عدة طلبات جديدة (يدعم {`{count}`})
+              نص الإشعار عند عدة طلبات جديدة
             </span>
             <input
               name="adminTemplateMultiple"
@@ -92,8 +137,10 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
       <section className="rounded-2xl border border-cyan-200 bg-white/70 p-4">
         <h3 className="text-base font-bold text-slate-900">إشعارات المندوب</h3>
         <div className="mt-3 grid gap-3">
-          {/* تم إخفاء خيار تفعيل/تعطيل إشعارات الإسناد للمندوب */}
-          <input type="hidden" name="mandoubEnabled" value="off" />
+          <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <input type="checkbox" name="mandoubEnabled" defaultChecked={initial.mandoubEnabled} />
+            تفعيل إشعارات إسناد الطلبات للمندوب
+          </label>
           <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
             <input
               type="checkbox"
@@ -116,9 +163,10 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
               ))}
             </select>
           </label>
+          <TokenButtons target="mandoubTemplateSingle" />
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-slate-600">
-              نص الإشعار عند إسناد طلب واحد (يدعم {`{orderNumber}`})
+              نص الإشعار عند إسناد طلب واحد
             </span>
             <input
               name="mandoubTemplateSingle"
@@ -126,13 +174,68 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
               className={inputClass}
             />
           </label>
+          <TokenButtons target="mandoubTemplateMultiple" />
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-slate-600">
-              نص الإشعار عند إسناد عدة طلبات (يدعم {`{count}`})
+              نص الإشعار عند إسناد عدة طلبات
             </span>
             <input
               name="mandoubTemplateMultiple"
               defaultValue={initial.mandoubTemplateMultiple}
+              className={inputClass}
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-violet-200 bg-white/70 p-4">
+        <h3 className="text-base font-bold text-slate-900">إشعارات المجهز</h3>
+        <div className="mt-3 grid gap-3">
+          <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <input type="checkbox" name="preparerEnabled" defaultChecked={initial.preparerEnabled} />
+            تفعيل إشعارات طلبات التجهيز للمجهز
+          </label>
+          <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <input
+              type="checkbox"
+              name="preparerSoundEnabled"
+              defaultChecked={initial.preparerSoundEnabled}
+            />
+            تفعيل الصوت مع إشعار المجهز
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-600">نغمة صوت المجهز</span>
+            <select
+              name="preparerSoundPreset"
+              defaultValue={initial.preparerSoundPreset}
+              className={inputClass}
+            >
+              {NOTIFICATION_SOUND_PRESET_IDS.map((id) => (
+                <option key={id} value={id}>
+                  {NOTIFICATION_SOUND_PRESET_LABELS_AR[id]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <TokenButtons target="preparerTemplateSingle" />
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-600">
+              نص الإشعار عند طلب تجهيز واحد
+            </span>
+            <input
+              name="preparerTemplateSingle"
+              defaultValue={initial.preparerTemplateSingle}
+              className={inputClass}
+            />
+          </label>
+          <TokenButtons target="preparerTemplateMultiple" />
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-600">
+              نص الإشعار عند عدة طلبات تجهيز
+            </span>
+            <input
+              name="preparerTemplateMultiple"
+              defaultValue={initial.preparerTemplateMultiple}
               className={inputClass}
             />
           </label>

@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     prisma.order.findFirst({
       where: whereActive,
       orderBy: { orderNumber: "desc" },
-      select: { orderNumber: true },
+      select: { id: true, orderNumber: true },
     }),
     getOrCreateNotificationSettings(),
   ]);
@@ -39,6 +39,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     assignedCount,
     latestActiveOrderNumber: latest?.orderNumber ?? 0,
+    latestActiveOrderId: latest?.id ?? "",
     settings,
   });
 }

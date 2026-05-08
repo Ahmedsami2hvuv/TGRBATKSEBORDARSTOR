@@ -61,14 +61,20 @@ export async function saveNotificationSettings(
   const adminTemplateMultiple = formString(formData, "adminTemplateMultiple");
   const mandoubTemplateSingle = formString(formData, "mandoubTemplateSingle");
   const mandoubTemplateMultiple = formString(formData, "mandoubTemplateMultiple");
+  const preparerTemplateSingle = formString(formData, "preparerTemplateSingle");
+  const preparerTemplateMultiple = formString(formData, "preparerTemplateMultiple");
   const adminSoundPreset = normalizeNotificationSoundPreset(formString(formData, "adminSoundPreset"));
   const mandoubSoundPreset = normalizeNotificationSoundPreset(formString(formData, "mandoubSoundPreset"));
+  const preparerSoundPreset = normalizeNotificationSoundPreset(formString(formData, "preparerSoundPreset"));
 
   if (!adminTemplateSingle || !adminTemplateMultiple) {
     return { error: "يرجى إدخال نص إشعارات الإدارة (مفرد ومتعدد)." };
   }
   if (!mandoubTemplateSingle || !mandoubTemplateMultiple) {
     return { error: "يرجى إدخال نص إشعارات المندوب (مفرد ومتعدد)." };
+  }
+  if (!preparerTemplateSingle || !preparerTemplateMultiple) {
+    return { error: "يرجى إدخال نص إشعارات المجهز (مفرد ومتعدد)." };
   }
 
   await prisma.appNotificationSettings.upsert({
@@ -86,6 +92,11 @@ export async function saveNotificationSettings(
       mandoubTemplateMultiple,
       mandoubSoundEnabled: formBool(formData, "mandoubSoundEnabled"),
       mandoubSoundPreset,
+      preparerEnabled: formBool(formData, "preparerEnabled"),
+      preparerTemplateSingle,
+      preparerTemplateMultiple,
+      preparerSoundEnabled: formBool(formData, "preparerSoundEnabled"),
+      preparerSoundPreset,
     },
     update: {
       adminEnabled: formBool(formData, "adminEnabled"),
@@ -98,12 +109,18 @@ export async function saveNotificationSettings(
       mandoubTemplateMultiple,
       mandoubSoundEnabled: formBool(formData, "mandoubSoundEnabled"),
       mandoubSoundPreset,
+      preparerEnabled: formBool(formData, "preparerEnabled"),
+      preparerTemplateSingle,
+      preparerTemplateMultiple,
+      preparerSoundEnabled: formBool(formData, "preparerSoundEnabled"),
+      preparerSoundPreset,
     },
   });
 
   revalidatePath("/admin/settings");
   revalidatePath("/admin/orders/pending");
   revalidatePath("/mandoub");
+  revalidatePath("/preparer");
   return { ok: true };
 }
 

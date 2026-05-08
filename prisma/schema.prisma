@@ -118,6 +118,7 @@ model CompanyPreparer {
   recordedOrderMoneyEvents            OrderCourierMoneyEvent[]       @relation("OrderMoneyRecordedByCompanyPreparer")
   shopLinks                           PreparerShop[]
   authorizedBranches                  StoreBranch[]                  @relation("AuthorizedBranches")
+  webPushSubscriptions                WebPushSubscription[]
 }
 
 model CompanyPreparerPrepNotice {
@@ -441,9 +442,11 @@ model WebPushSubscription {
   updatedAt  DateTime  @updatedAt
   employeeId String?
   customerId String?
+  preparerId String?
   courier    Courier?  @relation(fields: [courierId], references: [id], onDelete: Cascade)
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
   employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  preparer   CompanyPreparer? @relation(fields: [preparerId], references: [id], onDelete: Cascade)
 }
 
 model AppNotificationSettings {
@@ -456,10 +459,15 @@ model AppNotificationSettings {
   mandoubTemplateSingle   String   @default("تم إسناد طلب جديد إليك (#{orderNumber})")
   mandoubTemplateMultiple String   @default("تم إسناد {count} طلبات جديدة إليك")
   mandoubSoundEnabled     Boolean  @default(true)
+  preparerEnabled         Boolean  @default(true)
+  preparerTemplateSingle  String   @default("لديك طلب تجهيز جديد من {shopName} إلى {regionName} (#{orderNumber})")
+  preparerTemplateMultiple String  @default("لديك {count} طلبات تجهيز جديدة")
+  preparerSoundEnabled    Boolean  @default(true)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   adminSoundPreset        String   @default("beep")
   mandoubSoundPreset      String   @default("beep")
+  preparerSoundPreset     String   @default("phone")
 }
 
 model TelegramBotSession {

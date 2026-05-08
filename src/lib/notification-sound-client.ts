@@ -69,6 +69,12 @@ export function playNotificationSound(presetRaw: string): void {
         case "soft":
           playTone(ctx, 440, 120, 0.035, 0);
           break;
+        case "phone":
+          playTone(ctx, 1046, 120, 0.08, 0);
+          playTone(ctx, 1318, 120, 0.08, 0.14);
+          playTone(ctx, 1046, 120, 0.08, 0.3);
+          playTone(ctx, 1318, 220, 0.08, 0.44);
+          break;
         case "urgent":
           playTone(ctx, 880, 300, 0.12, 0);
           playTone(ctx, 880, 300, 0.12, 0.35);
