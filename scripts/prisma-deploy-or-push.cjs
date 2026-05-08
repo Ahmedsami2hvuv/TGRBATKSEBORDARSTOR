@@ -82,15 +82,11 @@ if (hasPoolerTimeoutIssue(combined) && directEnv) {
 
 const shouldFallbackToDbPush =
   combined.includes("P3005") ||
-  /baseline an existing production database/i.test(combined) ||
-  /statement timeout/i.test(combined) ||
-  /canceling statement due to statement timeout/i.test(combined) ||
-  hasPoolerTimeoutIssue(combined) ||
-  /Error occurred during query execution/i.test(combined);
+  /baseline an existing production database/i.test(combined);
 
 if (shouldFallbackToDbPush) {
   console.warn(
-    "[prisma] migrate deploy failed (baseline/timeout). Falling back to db push…",
+    "[prisma] migrate deploy failed بسبب baseline. Falling back to db push…",
   );
   try {
     if (directEnv) {
