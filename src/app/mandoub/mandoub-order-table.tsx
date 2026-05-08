@@ -13,6 +13,7 @@ import { dinarDecimalToAlfInputString } from "@/lib/money-alf";
 import { createPortal } from "react-dom";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { useRef } from "react";
 
 export type MandoubRow = {
   id: string;
@@ -132,6 +133,8 @@ export function MandoubOrderTable({
   const [cachedOrderHrefs, setCachedOrderHrefs] = useState<string[]>([]);
   const [loadedOrderHrefs, setLoadedOrderHrefs] = useState<Record<string, boolean>>({});
   const [preloadQueue, setPreloadQueue] = useState<string[]>([]);
+  const pickupSubmitInFlightRef = useRef(false);
+  const deliverySubmitInFlightRef = useRef(false);
 
   const [pickupState, pickupAction, pickupPending] = useActionState(
     submitMandoubPickupMoney,
@@ -171,16 +174,28 @@ export function MandoubOrderTable({
   }, [bulkState.ok, router]);
 
   useEffect(() => {
+    if (pickupPending) {
+      pickupSubmitInFlightRef.current = true;
+      return;
+    }
+    if (!pickupSubmitInFlightRef.current) return;
+    pickupSubmitInFlightRef.current = false;
     if (!pickupState.ok || !pickupOrder) return;
     setRowStatusOverrides((prev) => ({ ...prev, [pickupOrder.id]: "delivering" }));
     setPickupOrder(null);
-  }, [pickupState.ok, pickupOrder]);
+  }, [pickupPending, pickupState.ok, pickupOrder]);
 
   useEffect(() => {
+    if (deliveryPending) {
+      deliverySubmitInFlightRef.current = true;
+      return;
+    }
+    if (!deliverySubmitInFlightRef.current) return;
+    deliverySubmitInFlightRef.current = false;
     if (!deliveryState.ok || !deliveryOrder) return;
     setRowStatusOverrides((prev) => ({ ...prev, [deliveryOrder.id]: "delivered" }));
     setDeliveryOrder(null);
-  }, [deliveryState.ok, deliveryOrder]);
+  }, [deliveryPending, deliveryState.ok, deliveryOrder]);
 
   /** نحدّث القائمة فقط عند تغيّر هوية الطلبات (دخول/خروج طلب من القائمة). */
   useEffect(() => {
