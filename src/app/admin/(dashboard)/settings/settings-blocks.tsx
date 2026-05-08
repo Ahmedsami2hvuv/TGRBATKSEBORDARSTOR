@@ -12,6 +12,8 @@ import { IconSettingsForm } from "./icon-settings-form";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { WhatsappTemplateSettingsForm } from "./whatsapp-template-settings-form";
+import { saveChatSettingsAction } from "./actions";
+import { useRouter } from "next/navigation";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -153,12 +155,17 @@ export function SettingsBlocks({
   notificationInitial,
   globalIcons,
   employeeShareTemplate,
+  chatEnabledInitial,
 }: {
   notificationInitial: NotificationInitial;
   globalIcons: GlobalIconsConfig;
   employeeShareTemplate: string;
+  chatEnabledInitial: boolean;
 }) {
+  const router = useRouter();
   const [openId, setOpenId] = useState<string>("ui-designer");
+  const [chatEnabled, setChatEnabled] = useState(chatEnabledInitial);
+  const [chatSaving, setChatSaving] = useState(false);
   const [howToShopUrl, setHowToShopUrl] = useState("");
   const [productCardBgUrl, setProductCardBgUrl] = useState("");
   const [productCardBgOpacity, setProductCardBgOpacity] = useState(40);
@@ -184,6 +191,46 @@ export function SettingsBlocks({
 
   return (
     <div className="space-y-4">
+      <Block
+        id="chat-settings"
+        title="نظام الدردشة 💬"
+        subtitle="إيقاف أو تشغيل نظام الدردشة بين الإدارة والمندوبين والمجهزين."
+        open={openId === "chat-settings"}
+        onToggle={() => setOpenId((x) => (x === "chat-settings" ? "" : "chat-settings"))}
+        tone="indigo"
+        icons={globalIcons}
+      >
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={chatEnabled}
+                onChange={async (e) => {
+                  const val = e.target.checked;
+                  setChatEnabled(val);
+                  setChatSaving(true);
+                  try {
+                    await saveChatSettingsAction(val);
+                  } finally {
+                    setChatSaving(false);
+                  }
+                }}
+                disabled={chatSaving}
+                className="mt-1 h-5 w-5 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <span>
+                <span className="block text-sm font-black text-slate-800">تفعيل نظام الدردشة</span>
+                <span className="mt-1 block text-xs font-bold text-slate-600">
+                  عند إيقاف هذا الخيار، سيختفي زر الدردشة من جميع الواجهات (المندوب، المجهز، والمورد) ولن يتمكن أحد من إرسال رسائل.
+                </span>
+              </span>
+            </label>
+          </div>
+          {chatSaving && <p className="text-[10px] font-bold text-indigo-600 animate-pulse">جاري الحفظ...</p>}
+        </div>
+      </Block>
+
       <Block
         id="icon-settings"
         title="تغيير الأيقونات والأنيميشن 🎭"

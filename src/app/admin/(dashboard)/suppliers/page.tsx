@@ -37,6 +37,7 @@ export default async function SuppliersPage() {
       phone: s.phone,
       profitMargin: Number(s.profitMargin),
       active: s.active,
+      chatDisabled: s.chatDisabled,
       portalUrl: `${baseUrl}/supplier?p=${s.id}&t=${s.portalToken}`,
       productIds: s.products.map((p: any) => p.id),
     };

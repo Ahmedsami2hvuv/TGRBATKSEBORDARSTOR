@@ -8,11 +8,13 @@ import {
   deleteStoreSupplier,
   renewSupplierPortalToken,
   assignProductsToSupplier,
+  toggleSupplierChat,
   type SupplierFormState,
 } from "./actions";
 import { whatsappMeUrl } from "@/lib/whatsapp";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { SupplierChatToggle } from "./supplier-chat-toggle";
 
 const initial: SupplierFormState = {};
 
@@ -22,6 +24,7 @@ export type SupplierManagerRow = {
   phone: string;
   profitMargin: number;
   active: boolean;
+  chatDisabled: boolean;
   portalUrl: string;
   productIds: string[];
 };
@@ -122,6 +125,9 @@ function SupplierCard({ row, allProducts, icons }: { row: SupplierManagerRow; al
         </div>
 
         <div className="mt-6 pt-6 border-t border-slate-50 flex flex-wrap items-center gap-3">
+           <div>
+             <SupplierChatToggle supplierId={row.id} initialDisabled={row.chatDisabled} icons={icons!} />
+           </div>
            <a href={row.portalUrl} target="_blank" className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2">
              <DynamicIcon iconKey="ui_globe" config={icons} fallback="🌐" className="w-3.5 h-3.5 text-sky-400" /> فتح البوابة
            </a>

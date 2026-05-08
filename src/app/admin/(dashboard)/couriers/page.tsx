@@ -7,6 +7,7 @@ import { buildCourierShareMessage, whatsappAppUrl } from "@/lib/whatsapp";
 import { CourierForm } from "./courier-form";
 import { CourierDeleteForm } from "./courier-delete-form";
 import { CourierResetButton } from "./courier-reset-button";
+import { CourierChatToggle } from "./courier-chat-toggle";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons } from "@/lib/icon-settings";
 
@@ -107,6 +108,7 @@ export default async function AdminCouriersPage() {
                         <DynamicIcon config={icons} iconKey="ui_external_link" fallback="↗" className="w-4 h-4" />
                         معاينة اللوحة
                       </a>
+                      <CourierChatToggle courierId={c.id} initialDisabled={c.chatDisabled} icons={icons} />
                       <CourierResetButton courierId={c.id} />
                     </div>
                   </div>

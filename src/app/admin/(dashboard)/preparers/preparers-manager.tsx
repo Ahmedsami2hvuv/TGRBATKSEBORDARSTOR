@@ -11,11 +11,13 @@ import {
   updateCompanyPreparer,
   renewCompanyPreparerPortalToken,
   deleteCompanyPreparer,
+  togglePreparerChat,
   type PreparerFormState,
 } from "./actions";
 import { whatsappMeUrl } from "@/lib/whatsapp";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import type { GlobalIconsConfig } from "@/lib/icon-settings";
+import { PreparerChatToggle } from "./preparer-chat-toggle";
 
 const initial: PreparerFormState = {};
 
@@ -32,6 +34,7 @@ export type PreparerManagerRow = {
   authorizedCategoryIds: string[];
   linkedShops: { id: string; name: string }[];
   portalUrl: string;
+  chatDisabled: boolean;
   preparerMonthlySalaryResetMode: "calendar_month" | "every_n_days" | "manual";
   preparerMonthlySalaryResetAt: string | null;
   preparerMonthlySalaryResetEveryDays: number | null;
@@ -438,9 +441,15 @@ function PreparerCard({
         {row.notes && <p className="mt-4 text-sm font-bold text-slate-500">{row.notes}</p>}
 
         {/* Portal Links */}
-        <div className="mt-8 border-t border-slate-50 pt-8">
-          <p className="mb-4 text-xs font-black text-slate-400 uppercase tracking-widest">بوابة المجهز والتحكم</p>
-          <PreparerPortalLink id={row.id} url={row.portalUrl} phone={row.phone} preparerName={row.name} icons={icons} />
+        <div className="mt-8 border-t border-slate-50 pt-8 flex flex-col gap-4">
+          <div>
+            <p className="mb-4 text-xs font-black text-slate-400 uppercase tracking-widest">بوابة المجهز والتحكم</p>
+            <PreparerPortalLink id={row.id} url={row.portalUrl} phone={row.phone} preparerName={row.name} icons={icons} />
+          </div>
+          <div>
+            <p className="mb-4 text-xs font-black text-slate-400 uppercase tracking-widest">إعدادات الدردشة</p>
+            <PreparerChatToggle preparerId={row.id} initialDisabled={row.chatDisabled} icons={icons!} />
+          </div>
         </div>
 
         {/* Navigation Tabs */}

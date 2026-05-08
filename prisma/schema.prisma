@@ -98,6 +98,7 @@ model CompanyPreparer {
   phone                               String                         @default("")
   notes                               String                         @default("")
   active                              Boolean                        @default(true)
+  chatDisabled                        Boolean                        @default(false)
   createdAt                           DateTime                       @default(now())
   updatedAt                           DateTime                       @updatedAt
   telegramUserId                      String                         @default("")
@@ -240,6 +241,7 @@ model Courier {
   vehicleType                 CourierVehicleType       @default(car)
   hiddenFromReports           Boolean                  @default(false)
   blocked                     Boolean                  @default(false)
+  chatDisabled                Boolean                  @default(false)
   mandoubTotalsResetAt        DateTime?
   mandoubWalletCarryOverDinar Decimal                  @default(0) @db.Decimal(14, 4)
   telegramUserId              String?                  @unique
@@ -492,6 +494,7 @@ model UISystemSetting {
   target    String
   section   String
   config    Json
+  chatEnabled Boolean @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -578,6 +581,7 @@ model StoreSupplier {
   profitMargin Decimal        @default(0.25) @db.Decimal(10, 2)
   portalToken  String         @default(cuid())
   active       Boolean        @default(true)
+  chatDisabled Boolean        @default(false)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   products     StoreProduct[]

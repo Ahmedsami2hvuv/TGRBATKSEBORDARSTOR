@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolvePortalChatActor } from "@/lib/portal-chat-auth";
 import { runPortalChatRetentionCleanup } from "@/lib/portal-chat-retention";
+import { pushNotifyChatNewMessage } from "@/lib/web-push-server";
+
+import { isChatEnabledGlobally } from "@/lib/portal-chat-settings";
 
 function logChatGuard(event: string, meta: Record<string, unknown>) {
   console.warn("[portal-chat][guard][messages]", event, meta);
@@ -9,6 +12,9 @@ function logChatGuard(event: string, meta: Record<string, unknown>) {
 
 export async function POST(req: Request) {
   try {
+    if (!(await isChatEnabledGlobally())) {
+      return NextResponse.json({ ok: false, error: "chat_disabled" }, { status: 403 });
+    }
     await runPortalChatRetentionCleanup();
     const body = (await req.json()) as { auth?: any; threadId?: string; text?: string };
     const actor = await resolvePortalChatActor(body.auth);
@@ -31,7 +37,7 @@ export async function POST(req: Request) {
     }
 
     const now = new Date();
-    await prisma.$transaction([
+    const [msg] = await prisma.$transaction([
       prisma.portalChatMessage.create({
         data: {
           threadId,
@@ -51,6 +57,22 @@ export async function POST(req: Request) {
       }),
     ]);
 
+    // Send push notification to other participants
+    const others = await prisma.portalChatParticipant.findMany({
+      where: { threadId, NOT: { role: actor.role, actorId: actor.actorId } },
+      select: { role: true, actorId: true },
+    });
+
+    for (const other of others) {
+      await pushNotifyChatNewMessage({
+        targetRole: other.role as any,
+        targetActorId: other.actorId,
+        senderName: actor.actorName,
+        text,
+        threadId,
+      }).catch((e) => console.error("[portal-chat] push notify failed:", e));
+    }
+
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ ok: false, error: "server_error" }, { status: 500 });
@@ -59,6 +81,9 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
+    if (!(await isChatEnabledGlobally())) {
+      return NextResponse.json({ ok: false, error: "chat_disabled", messages: [] });
+    }
     await runPortalChatRetentionCleanup();
     const body = (await req.json()) as { auth?: any; threadId?: string };
     const actor = await resolvePortalChatActor(body.auth);

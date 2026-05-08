@@ -35,9 +35,9 @@ export async function resolvePortalChatActor(auth?: BodyAuth): Promise<PortalCha
     if (v.ok) {
       const courier = await prisma.courier.findUnique({
         where: { id: v.courierId },
-        select: { id: true, name: true, blocked: true },
+        select: { id: true, name: true, blocked: true, chatDisabled: true },
       });
-      if (courier && !courier.blocked) {
+      if (courier && !courier.blocked && !courier.chatDisabled) {
         return { role: "mandoub", actorId: courier.id, actorName: courier.name };
       }
     }
@@ -49,9 +49,9 @@ export async function resolvePortalChatActor(auth?: BodyAuth): Promise<PortalCha
     if (v.ok) {
       const preparer = await prisma.companyPreparer.findUnique({
         where: { id: v.preparerId },
-        select: { id: true, name: true, active: true, portalToken: true },
+        select: { id: true, name: true, active: true, portalToken: true, chatDisabled: true },
       });
-      if (preparer && preparer.active && preparer.portalToken === v.token) {
+      if (preparer && preparer.active && preparer.portalToken === v.token && !preparer.chatDisabled) {
         return { role: "preparer", actorId: preparer.id, actorName: preparer.name };
       }
     }
@@ -61,9 +61,9 @@ export async function resolvePortalChatActor(auth?: BodyAuth): Promise<PortalCha
   if (s?.p && s?.t) {
     const supplier = await prisma.storeSupplier.findFirst({
       where: { id: s.p, portalToken: s.t, active: true },
-      select: { id: true, name: true },
+      select: { id: true, name: true, chatDisabled: true },
     });
-    if (supplier) {
+    if (supplier && !supplier.chatDisabled) {
       return { role: "supplier", actorId: supplier.id, actorName: supplier.name };
     }
   }

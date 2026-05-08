@@ -130,3 +130,16 @@ export async function resetCourierMandoubTotals(id: string) {
     return { error: "فشل تصفير الحساب" };
   }
 }
+
+export async function toggleCourierChat(id: string, disabled: boolean) {
+  try {
+    await prisma.courier.update({
+      where: { id },
+      data: { chatDisabled: disabled }
+    });
+    revalidatePath("/admin/couriers");
+    return { success: true };
+  } catch (e) {
+    return { error: "فشل تعديل حالة الدردشة" };
+  }
+}

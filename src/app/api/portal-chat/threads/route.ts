@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { actorKey, resolvePortalChatActor } from "@/lib/portal-chat-auth";
 import { runPortalChatRetentionCleanup } from "@/lib/portal-chat-retention";
 
+import { isChatEnabledGlobally } from "@/lib/portal-chat-settings";
+
 type ThreadCreatePayload = { role?: PortalChatRole; actorId?: string; actorName?: string };
 
 function logChatGuard(event: string, meta: Record<string, unknown>) {
@@ -39,6 +41,9 @@ async function resolveTarget(payload: ThreadCreatePayload | undefined) {
 
 export async function POST(req: Request) {
   try {
+    if (!(await isChatEnabledGlobally())) {
+      return NextResponse.json({ ok: false, error: "chat_disabled" }, { status: 403 });
+    }
     await runPortalChatRetentionCleanup();
     const body = (await req.json()) as { auth?: any; target?: ThreadCreatePayload };
     const actor = await resolvePortalChatActor(body.auth);
@@ -80,6 +85,9 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
+    if (!(await isChatEnabledGlobally())) {
+      return NextResponse.json({ ok: false, error: "chat_disabled", threads: [] });
+    }
     await runPortalChatRetentionCleanup();
     const body = (await req.json()) as { auth?: any };
     const actor = await resolvePortalChatActor(body.auth);

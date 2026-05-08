@@ -62,6 +62,7 @@ export default async function PreparersPage() {
     linkedShops: p.shopLinks.map((l) => ({ id: l.shop.id, name: l.shop.name })),
     // تحديث بناء الرابط ليكون رمز المجهزportalToken
     portalUrl: buildCompanyPreparerPortalUrl(p.id, p.portalToken, baseUrl),
+    chatDisabled: p.chatDisabled,
     preparerMonthlySalaryResetMode: p.preparerMonthlySalaryResetMode,
     preparerMonthlySalaryResetAt: p.preparerMonthlySalaryResetAt ? p.preparerMonthlySalaryResetAt.toISOString() : null,
     preparerMonthlySalaryResetEveryDays: p.preparerMonthlySalaryResetEveryDays ?? null,

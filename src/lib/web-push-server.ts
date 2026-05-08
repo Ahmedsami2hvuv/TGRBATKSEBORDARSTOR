@@ -257,3 +257,33 @@ export async function pushNotifyPreparerNewNotice(input: {
     tag: `kse-push-preparer-${input.preparerId}-${Date.now()}`,
   });
 }
+
+/** إشعار دردشة */
+export async function pushNotifyChatNewMessage(opts: {
+  targetRole: "admin" | "mandoub" | "preparer" | "supplier";
+  targetActorId: string;
+  senderName: string;
+  text: string;
+  threadId: string;
+}): Promise<void> {
+  if (!isWebPushConfigured()) return;
+
+  const where: any = { audience: opts.targetRole === "admin" ? "admin" : opts.targetRole === "mandoub" ? "mandoub" : opts.targetRole === "preparer" ? "preparer" : "supplier" };
+  if (opts.targetRole === "mandoub") where.courierId = opts.targetActorId;
+  if (opts.targetRole === "preparer") where.preparerId = opts.targetActorId;
+  if (opts.targetRole === "supplier") where.supplierId = opts.targetActorId;
+
+  const subs = await prisma.webPushSubscription.findMany({
+    where,
+    select: { id: true, endpoint: true, p256dh: true, auth: true },
+  });
+
+  if (subs.length === 0) return;
+
+  await sendToSubscriptions(subs, {
+    title: `رسالة من ${opts.senderName}`,
+    body: opts.text.slice(0, 100),
+    url: `${getPublicAppUrl()}/${opts.targetRole === "admin" ? "admin" : opts.targetRole}`,
+    tag: `portal-chat-${opts.threadId}`,
+  });
+}

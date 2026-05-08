@@ -128,3 +128,19 @@ export async function assignProductsToSupplier(_prev: SupplierFormState, formDat
     return { error: "فشل ربط المنتجات" };
   }
 }
+
+export async function toggleSupplierChat(id: string, disabled: boolean) {
+  try {
+    const { isAdminSession } = await import("@/lib/admin-session");
+    if (!(await isAdminSession())) return { success: false, error: "غير مصرح" };
+
+    await prisma.storeSupplier.update({
+      where: { id },
+      data: { chatDisabled: disabled },
+    });
+    revalidatePath("/admin/suppliers");
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: "حدث خطأ أثناء التحديث" };
+  }
+}

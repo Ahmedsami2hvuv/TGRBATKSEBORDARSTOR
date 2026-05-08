@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     }
     if (targets.includes("mandoub")) {
       const rows = await prisma.courier.findMany({
-        where: { blocked: false },
+        where: { blocked: false, chatDisabled: false },
         orderBy: { name: "asc" },
         select: { id: true, name: true },
         take: 50,
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     }
     if (targets.includes("preparer")) {
       const rows = await prisma.companyPreparer.findMany({
-        where: { active: true },
+        where: { active: true, chatDisabled: false },
         orderBy: { name: "asc" },
         select: { id: true, name: true },
         take: 50,
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     }
     if (targets.includes("supplier")) {
       const rows = await prisma.storeSupplier.findMany({
-        where: { active: true },
+        where: { active: true, chatDisabled: false },
         orderBy: { name: "asc" },
         select: { id: true, name: true },
         take: 50,

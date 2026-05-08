@@ -8,10 +8,19 @@ import { normalizeNotificationSoundPreset } from "@/lib/notification-sound-prese
 import { saveEmployeeWhatsappShareTemplate } from "@/lib/whatsapp-template-settings";
 
 import { GlobalIconsConfig, saveGlobalIcons } from "@/lib/icon-settings";
+import { setChatEnabledGlobally } from "@/lib/portal-chat-settings";
 
 export async function saveGlobalIconsAction(config: GlobalIconsConfig) {
   if (!(await isAdminSession())) return { error: "Unauthenticated" };
   await saveGlobalIcons(config);
+  revalidatePath("/admin/settings");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function saveChatSettingsAction(enabled: boolean) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  await setChatEnabledGlobally(enabled);
   revalidatePath("/admin/settings");
   revalidatePath("/", "layout");
   return { ok: true };
