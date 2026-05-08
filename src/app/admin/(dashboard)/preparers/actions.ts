@@ -102,20 +102,6 @@ export async function payDailySalaryForCompanyPreparer(_prev: PreparerFormState,
   return { ok: true };
 }
 
-export async function togglePreparerChat(id: string, disabled: boolean) {
-  if (!(await isAdminSession())) return { success: false, error: "غير مصرح" };
-  try {
-    await prisma.companyPreparer.update({
-      where: { id },
-      data: { chatDisabled: disabled },
-    });
-    revalidatePath("/admin/preparers");
-    return { success: true };
-  } catch (e) {
-    return { success: false, error: "حدث خطأ أثناء التحديث" };
-  }
-}
-
 export async function updateCompanyPreparer(_prev: PreparerFormState, formData: FormData): Promise<PreparerFormState> {
   const denied = await requireAdmin(); if (denied) return denied;
   const id = String(formData.get("id") ?? "").trim();
@@ -138,20 +124,6 @@ export async function updateCompanyPreparer(_prev: PreparerFormState, formData: 
 
   revalidatePath("/admin/preparers");
   return { ok: true };
-}
-
-export async function togglePreparerChat(id: string, disabled: boolean) {
-  if (!(await isAdminSession())) return { success: false, error: "غير مصرح" };
-  try {
-    await prisma.companyPreparer.update({
-      where: { id },
-      data: { chatDisabled: disabled },
-    });
-    revalidatePath("/admin/preparers");
-    return { success: true };
-  } catch (e) {
-    return { success: false, error: "حدث خطأ أثناء التحديث" };
-  }
 }
 
 export async function renewCompanyPreparerPortalToken(formData: FormData) {
@@ -209,20 +181,6 @@ export async function setPreparerBranchDelegations(
   return { ok: true };
 }
 
-export async function togglePreparerChat(id: string, disabled: boolean) {
-  if (!(await isAdminSession())) return { success: false, error: "غير مصرح" };
-  try {
-    await prisma.companyPreparer.update({
-      where: { id },
-      data: { chatDisabled: disabled },
-    });
-    revalidatePath("/admin/preparers");
-    return { success: true };
-  } catch (e) {
-    return { success: false, error: "حدث خطأ أثناء التحديث" };
-  }
-}
-
 export async function setPreparerMonthlySalaryResetConfig(
   _prev: PreparerFormState,
   formData: FormData
@@ -243,18 +201,4 @@ export async function setPreparerMonthlySalaryResetConfig(
   });
   revalidatePath("/admin/preparers");
   return { ok: true };
-}
-
-export async function togglePreparerChat(id: string, disabled: boolean) {
-  if (!(await isAdminSession())) return { success: false, error: "غير مصرح" };
-  try {
-    await prisma.companyPreparer.update({
-      where: { id },
-      data: { chatDisabled: disabled },
-    });
-    revalidatePath("/admin/preparers");
-    return { success: true };
-  } catch (e) {
-    return { success: false, error: "حدث خطأ أثناء التحديث" };
-  }
 }

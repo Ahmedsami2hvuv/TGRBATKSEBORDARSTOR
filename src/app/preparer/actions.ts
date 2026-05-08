@@ -817,11 +817,6 @@ export async function updateStoreProductPrice(
       WHERE "id" = ${productId} AND "branchId" = ${branchId}
     `;
 
-    // إذا كان هناك متغيرات، نقوم بتحديثها أيضاً بنفس هامش الربح
-    // ملاحظة: قد تختلف المتغيرات في أسعارها، لذا سنفترض أن المجهز يعدل المنتج الرئيسي
-    // وإذا أردنا تعديل المتغيرات بشكل منفرد، سنحتاج لواجهة أخرى.
-    // حالياً، سنقوم بتحديث جميع المتغيرات التي لها نفس "اسم" المنتج إذا وجدت أو نتركها للإدارة.
-
     revalidatePath(`/preparer/store-pricing/${branchId}`);
     return { ok: true };
   } catch (e) {
