@@ -737,7 +737,11 @@ export function PendingOrdersClient({
         if (isDraftMode) {
           const open = pricingOpenId === o.id;
           return (
-            <div key={o.id} className="kse-glass-dark rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div
+              key={o.id}
+              className={`kse-glass-dark rounded-2xl border border-slate-200 bg-white p-4 shadow-sm cursor-pointer transition hover:border-violet-300 ${open ? "ring-2 ring-violet-300" : ""}`}
+              onClick={() => setPricingOpenId(o.id)}
+            >
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -756,15 +760,6 @@ export function PendingOrdersClient({
                     المجهز: {o.submittedByName || "—"}
                   </p>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setPricingOpenId(open ? null : o.id)}
-                  className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-black text-white shadow-sm hover:bg-violet-700 active:scale-[0.99] transition"
-                  title="فتح / تسعير المسودة"
-                >
-                  {open ? "جارٍ الفتح..." : "فتح / تسعير"}
-                </button>
               </div>
 
               {o.summary?.trim() ? (
