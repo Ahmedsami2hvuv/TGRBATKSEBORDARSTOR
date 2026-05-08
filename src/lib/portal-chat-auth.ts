@@ -17,6 +17,15 @@ type BodyAuth = {
 };
 
 export async function resolvePortalChatActor(auth?: BodyAuth): Promise<PortalChatActor | null> {
+  const hasExplicitPortalAuth = Boolean(
+    auth?.mandoub?.c ||
+      auth?.mandoub?.s ||
+      auth?.preparer?.p ||
+      auth?.preparer?.s ||
+      auth?.supplier?.p ||
+      auth?.supplier?.t,
+  );
+
   // Important: always prefer explicit portal auth first.
   // Otherwise, if admin cookie exists in same browser, all portal users
   // may be resolved as admin and see wrong chats.
@@ -59,7 +68,13 @@ export async function resolvePortalChatActor(auth?: BodyAuth): Promise<PortalCha
     }
   }
 
-  // Fallback to admin only when no explicit portal auth was provided.
+  // If explicit portal auth was provided but invalid, do NOT fallback to admin.
+  // This prevents cross-portal leakage when admin cookie exists on same browser.
+  if (hasExplicitPortalAuth) {
+    return null;
+  }
+
+  // Fallback to admin only when no portal auth was provided at all.
   if (await isAdminSession()) {
     return { role: "admin", actorId: "admin", actorName: "الإدارة" };
   }

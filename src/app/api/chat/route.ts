@@ -300,9 +300,13 @@ ${productsText}
 export async function POST(req: Request) {
   try {
     const { prompt, history, context } = await req.json();
+    const portal = detectPortal(context);
 
     const activeConfigs = await prisma.aIConfig.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        provider: { not: "removebg" }
+      },
       orderBy: { usedToday: 'asc' }
     });
 
@@ -332,7 +336,6 @@ export async function POST(req: Request) {
       include: { branch: true }
     });
 
-    const portal = detectPortal(context);
     if (portal === "admin") {
       const routed = await runAdminCommandRouter(prompt);
       if (routed) {
@@ -403,17 +406,47 @@ ${adminExecutionContext}
 
     for (const config of activeConfigs) {
       try {
-        const isGemini = config.provider === "gemini";
-        const url = isGemini
-          ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${config.apiKey}`
-          : "https://api.groq.com/openai/v1/chat/completions";
+        const provider = String(config.provider || "").toLowerCase();
+        const isGemini = provider === "gemini";
+        const url =
+          provider === "gemini"
+            ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${config.apiKey}`
+            : provider === "openai"
+              ? "https://api.openai.com/v1/chat/completions"
+              : provider === "deepseek"
+                ? "https://api.deepseek.com/chat/completions"
+                : "https://api.groq.com/openai/v1/chat/completions";
 
-        const body = isGemini ? {
-          contents: [{ parts: [{ text: agentSystemPrompt + "\n\nسياق: " + JSON.stringify(context) + "\nالمستخدم أرسل قائمة:\n" + prompt }] }]
-        } : {
-          model: "llama-3.3-70b-versatile",
-          messages: [{ role: "system", content: agentSystemPrompt }, { role: "user", content: prompt }]
-        };
+        // تجهيز سياق المحادثة (History)
+        const chatHistory = (Array.isArray(history) ? history : [])
+          .filter((h: any) => h.content && typeof h.content === "string")
+          .map((h: any) => ({
+            role: h.role === "assistant" ? (isGemini ? "model" : "assistant") : "user",
+            content: h.content,
+            parts: isGemini ? [{ text: h.content }] : undefined
+          }));
+
+        const body = isGemini
+          ? {
+              system_instruction: { parts: [{ text: agentSystemPrompt + "\n\nسياق البوابة الحالي: " + JSON.stringify(context) }] },
+              contents: [
+                ...chatHistory.map(h => ({ role: h.role, parts: h.parts })),
+                { role: "user", parts: [{ text: prompt }] }
+              ],
+            }
+          : {
+              model:
+                provider === "openai"
+                  ? "gpt-4o-mini"
+                  : provider === "deepseek"
+                    ? "deepseek-chat"
+                    : "llama-3.3-70b-versatile",
+              messages: [
+                { role: "system", content: agentSystemPrompt + "\n\nسياق البوابة الحالي: " + JSON.stringify(context) },
+                ...chatHistory.map(h => ({ role: h.role, content: h.content })),
+                { role: "user", content: prompt },
+              ],
+            };
 
         const response = await fetch(url, {
           method: "POST",

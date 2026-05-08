@@ -12,11 +12,23 @@ function allowedTargets(role: PortalChatRole): PortalChatRole[] {
   return ["admin", "mandoub", "preparer", "supplier"];
 }
 
+function logChatGuard(event: string, meta: Record<string, unknown>) {
+  console.warn("[portal-chat][guard][contacts]", event, meta);
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as { auth?: any };
     const actor = await resolvePortalChatActor(body.auth);
-    if (!actor) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    if (!actor) {
+      logChatGuard("unauthorized_actor", {
+        hasAuth: Boolean(body.auth),
+        hasMandoub: Boolean(body.auth?.mandoub),
+        hasPreparer: Boolean(body.auth?.preparer),
+        hasSupplier: Boolean(body.auth?.supplier),
+      });
+      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    }
 
     const targets = allowedTargets(actor.role);
     const out: Contact[] = [];

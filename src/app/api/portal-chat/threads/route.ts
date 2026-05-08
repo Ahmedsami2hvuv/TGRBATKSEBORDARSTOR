@@ -6,6 +6,10 @@ import { runPortalChatRetentionCleanup } from "@/lib/portal-chat-retention";
 
 type ThreadCreatePayload = { role?: PortalChatRole; actorId?: string; actorName?: string };
 
+function logChatGuard(event: string, meta: Record<string, unknown>) {
+  console.warn("[portal-chat][guard][threads]", event, meta);
+}
+
 function toUniqueKey(a: { role: PortalChatRole; actorId: string }, b: { role: PortalChatRole; actorId: string }): string {
   return [actorKey(a.role, a.actorId), actorKey(b.role, b.actorId)].sort().join("|");
 }
@@ -38,10 +42,16 @@ export async function POST(req: Request) {
     await runPortalChatRetentionCleanup();
     const body = (await req.json()) as { auth?: any; target?: ThreadCreatePayload };
     const actor = await resolvePortalChatActor(body.auth);
-    if (!actor) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    if (!actor) {
+      logChatGuard("unauthorized_actor_post", { hasAuth: Boolean(body.auth), target: body.target ?? null });
+      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    }
 
     const target = await resolveTarget(body.target);
-    if (!target) return NextResponse.json({ ok: false, error: "target_not_found" }, { status: 404 });
+    if (!target) {
+      logChatGuard("target_not_found", { actorRole: actor.role, target: body.target ?? null });
+      return NextResponse.json({ ok: false, error: "target_not_found" }, { status: 404 });
+    }
     if (target.role === actor.role && target.actorId === actor.actorId) {
       return NextResponse.json({ ok: false, error: "self_chat_not_allowed" }, { status: 400 });
     }
@@ -73,7 +83,10 @@ export async function PUT(req: Request) {
     await runPortalChatRetentionCleanup();
     const body = (await req.json()) as { auth?: any };
     const actor = await resolvePortalChatActor(body.auth);
-    if (!actor) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    if (!actor) {
+      logChatGuard("unauthorized_actor_put", { hasAuth: Boolean(body.auth) });
+      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    }
 
     const myParts = await prisma.portalChatParticipant.findMany({
       where: { role: actor.role, actorId: actor.actorId },

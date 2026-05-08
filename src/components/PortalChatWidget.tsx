@@ -64,6 +64,22 @@ export default function PortalChatWidget() {
   }, [pathname, searchParams]);
 
   const unreadTotal = useMemo(() => threads.reduce((sum, t) => sum + t.unreadCount, 0), [threads]);
+  const currentActor = useMemo<{ role: Role; actorId: string } | null>(() => {
+    if (pathname.startsWith("/admin")) return { role: "admin", actorId: "admin" };
+    if (pathname.startsWith("/mandoub")) {
+      const c = searchParams.get("c") || "";
+      return c ? { role: "mandoub", actorId: c } : null;
+    }
+    if (pathname.startsWith("/preparer")) {
+      const p = searchParams.get("p") || "";
+      return p ? { role: "preparer", actorId: p } : null;
+    }
+    if (pathname.startsWith("/supplier")) {
+      const p = searchParams.get("p") || "";
+      return p ? { role: "supplier", actorId: p } : null;
+    }
+    return null;
+  }, [pathname, searchParams]);
 
   async function loadThreads() {
     const res = await fetch("/api/portal-chat/threads", {
@@ -247,7 +263,10 @@ export default function PortalChatWidget() {
               <div className="flex-1 space-y-2 overflow-auto p-2">
                 {isLoadingMessages ? <p className="text-xs text-slate-500">جاري تحميل الرسائل...</p> : null}
                 {messages.map((m) => {
-                  const mine = selectedThreadId && threads.find((t) => t.id === selectedThreadId)?.peer?.actorId !== m.senderId;
+                  const mine =
+                    currentActor != null &&
+                    m.senderRole === currentActor.role &&
+                    m.senderId === currentActor.actorId;
                   return (
                     <div
                       key={m.id}
