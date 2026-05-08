@@ -20,7 +20,9 @@ import { MandoubUploadLocationInline } from "./mandoub-upload-location-inline";
 import { MandoubOrderMoneyFlow } from "./mandoub-order-money-flow";
 import { MandoubOrderImageQuick } from "./mandoub-order-image-quick";
 import { MandoubQuickDoorCapture } from "./mandoub-quick-door";
+import { MandoubQuickDoorSecondCapture } from "./mandoub-quick-door-second";
 import { NotesCopyButton } from "@/components/notes-copy-button";
+import { ImageUploaderCaption } from "@/components/image-uploader-caption";
 import { OrderTypeDetailBlock } from "@/components/order-type-line";
 import { telHref, whatsappMeUrl } from "@/lib/whatsapp";
 import { IconPhone, IconWa } from "@/components/order-fab-dock";
@@ -58,6 +60,13 @@ const squarePhotoFrame =
 const squarePhotoCover = "h-full w-full object-cover";
 const squarePhotoContain = "h-full w-full object-contain";
 
+type PhoneProfileFallback = {
+  locationUrl: string;
+  landmark: string;
+  photoUrl: string;
+  alternatePhone: string | null;
+} | null;
+
 export function OrderDetailSection({
   order,
   closeHref,
@@ -65,6 +74,7 @@ export function OrderDetailSection({
   nextUrl,
   viewerCourierId,
   phoneProfile,
+  secondPhoneProfile,
   smartHintLine,
   uiSettings,
   icons,
@@ -75,6 +85,7 @@ export function OrderDetailSection({
   nextUrl: string;
   viewerCourierId?: string;
   phoneProfile?: any;
+  secondPhoneProfile?: PhoneProfileFallback;
   smartHintLine?: string | null;
   uiSettings?: UISectionConfig | null;
   icons?: GlobalIconsConfig | null;
@@ -104,6 +115,16 @@ export function OrderDetailSection({
     order.customer?.alternatePhone?.trim() ||
     phoneProfile?.alternatePhone?.trim() ||
     "";
+  const secondLocMerged =
+    order.secondCustomerLocationUrl?.trim() || secondPhoneProfile?.locationUrl?.trim() || "";
+  const secondDoorMerged =
+    order.secondCustomerDoorPhotoUrl?.trim() || secondPhoneProfile?.photoUrl?.trim() || "";
+  const secondLandmarkMerged =
+    order.secondCustomerLandmark?.trim() || secondPhoneProfile?.landmark?.trim() || "";
+  const secondDoorCaptionName =
+    secondDoorMerged && order.secondCustomerDoorPhotoUploadedByName?.trim()
+      ? order.secondCustomerDoorPhotoUploadedByName
+      : null;
   const missingCustomerLocation = !hasCustomerLocationUrl(mergedCustomerLocationUrl, undefined);
   const prepJson = order.preparerShoppingJson as any;
   const hideSubtotalInfo = prepJson?.hidePricesFromCourier === true;
@@ -198,9 +219,14 @@ export function OrderDetailSection({
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-mono font-bold text-slate-900">{contactLine(order.secondCustomerPhone || "")}</p>
                   </div>
+                  {secondLandmarkMerged ? (
+                    <p className="mt-1 text-sm font-medium text-slate-800">أقرب نقطة: {secondLandmarkMerged}</p>
+                  ) : null}
                   <div className="mt-2">
-                    {order.secondCustomerLocationUrl?.trim() ? (
-                      <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن المستلم <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} /></a>
+                    {secondLocMerged ? (
+                      <a href={secondLocMerged} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>
+                        فتح لوكيشن المستلم <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                      </a>
                     ) : (
                       <div className="flex flex-col gap-2">
                         <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" />
@@ -209,8 +235,20 @@ export function OrderDetailSection({
                   </div>
                 </div>
                 <div className="max-w-[12rem] self-start">
-                  <p className="text-xs text-slate-400 mb-2 font-bold">باب المستلم</p>
-                  <div className="aspect-square flex items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white text-xs font-bold text-slate-400">قريباً</div>
+                  <p className="text-xs font-bold text-slate-600 mb-2">صورة باب المستلم</p>
+                  {secondDoorMerged && imgSrc(secondDoorMerged) ? (
+                    <div>
+                      <div className={squarePhotoFrame}>
+                        <img src={imgSrc(secondDoorMerged)!} alt="" className={squarePhotoCover} />
+                      </div>
+                      {secondDoorCaptionName ? <ImageUploaderCaption name={secondDoorCaptionName} /> : null}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 mb-2">لا توجد صورة باب للمستلم</p>
+                  )}
+                  <div className="mt-2">
+                    <MandoubQuickDoorSecondCapture orderId={order.id} nextUrl={nextUrl} auth={auth} />
+                  </div>
                 </div>
               </div>
             )}

@@ -109,12 +109,14 @@ export function MandoubOrderTable({
   tab,
   qSearch,
   onSearchChange,
+  listOrdersStampSig,
 }: {
   rows: MandoubRow[];
   auth: { c: string; exp: string; s: string };
   tab: string;
   qSearch: string;
   onSearchChange: (q: string) => void;
+  listOrdersStampSig: string;
 }) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -157,6 +159,34 @@ export function MandoubOrderTable({
       router.refresh();
     }
   }, [bulkState.ok, router]);
+
+  /** عند تعديل أي طلب من الإدارة يتحدّث updatedAt — نحدّث القائمة دون رفرش يدوي للمتصفح */
+  useEffect(() => {
+    if (!listOrdersStampSig) return;
+    let cancelled = false;
+    const id = window.setInterval(async () => {
+      const p = new URLSearchParams();
+      if (auth.c) p.set("c", auth.c);
+      if (auth.exp) p.set("exp", auth.exp);
+      if (auth.s) p.set("s", auth.s);
+      try {
+        const res = await fetch(`/api/mandoub/active-orders-stamps?${p.toString()}`, {
+          cache: "no-store",
+        });
+        if (!res.ok || cancelled) return;
+        const j = (await res.json()) as { stampSig?: string };
+        if (j.stampSig && j.stampSig !== listOrdersStampSig) {
+          router.refresh();
+        }
+      } catch {
+        /* شبكة مؤقتة */
+      }
+    }, 18_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [listOrdersStampSig, auth.c, auth.exp, auth.s, router]);
 
   useEffect(() => {
     setSelectedIds((prev) => {

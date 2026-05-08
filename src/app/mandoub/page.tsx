@@ -37,6 +37,7 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { PortalWalletPrefetch } from "@/components/portal-wallet-prefetch";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
+import { mandoubOrdersStampSig } from "@/lib/mandoub-order-stamps";
 
 export const dynamic = "force-dynamic";
 
@@ -243,6 +244,10 @@ export default async function MandoubPage({ searchParams }: Props) {
     delivering: 2,
     delivered: 3,
   };
+
+  const listOrdersStampSig = mandoubOrdersStampSig(
+    activeOrdersRaw.map((o) => ({ id: o.id, updatedAt: o.updatedAt })),
+  );
 
   const activeOrders = activeOrdersRaw
     .filter((o) => isMandoubActiveListStatus(o.status))
@@ -532,7 +537,13 @@ export default async function MandoubPage({ searchParams }: Props) {
           )}
 
           <section className="kse-glass-dark overflow-hidden border border-sky-200 shadow-sm">
-            <MandoubOrdersSection allRows={tableRows} searchFields={searchFields} auth={baseAuth} tab={tab} />
+            <MandoubOrdersSection
+              allRows={tableRows}
+              searchFields={searchFields}
+              auth={baseAuth}
+              tab={tab}
+              listOrdersStampSig={listOrdersStampSig}
+            />
           </section>
         </div>
       </div>

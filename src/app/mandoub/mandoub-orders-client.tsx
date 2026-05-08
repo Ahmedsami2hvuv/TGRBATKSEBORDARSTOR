@@ -20,11 +20,14 @@ export function MandoubOrdersSection({
   searchFields,
   auth,
   tab,
+  listOrdersStampSig,
 }: {
   allRows: MandoubRow[];
   searchFields: MandoubOrderSearchFields[];
   auth: { c: string; exp: string; s: string };
   tab: string;
+  /** توقيع طوابع الطلبات من الخادم — للكشف عن تعديل الإدارة وتحديث القائمة */
+  listOrdersStampSig: string;
 }) {
   const [query, setQuery] = useState("");
 
@@ -46,6 +49,7 @@ export function MandoubOrdersSection({
         tab={tab}
         qSearch={query}
         onSearchChange={setQuery}
+        listOrdersStampSig={listOrdersStampSig}
       />
 
       <p className={`${ad.orderListCountFooter} px-3 pb-3 sm:px-4`}>

@@ -19,6 +19,7 @@ import { MandoubPresenceToggle } from "../../mandoub-presence-toggle";
 import { getUISettings } from "@/lib/ui-settings";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
+import { MandoubOrderAdminUpdatePoller } from "../../mandoub-order-admin-update-poller";
 
 export const dynamic = "force-dynamic";
 
@@ -134,6 +135,27 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
         })
       : null;
 
+  const secondPhoneNorm = order.secondCustomerPhone
+    ? normalizeIraqMobileLocal11(order.secondCustomerPhone)
+    : null;
+  const secondPhoneProfile =
+    secondPhoneNorm && order.secondCustomerRegionId
+      ? await prisma.customerPhoneProfile.findUnique({
+          where: {
+            phone_regionId: {
+              phone: secondPhoneNorm,
+              regionId: order.secondCustomerRegionId,
+            },
+          },
+          select: {
+            photoUrl: true,
+            locationUrl: true,
+            landmark: true,
+            alternatePhone: true,
+          },
+        })
+      : null;
+
   async function computeSmartHint(
     locationUrl: string,
     regionId: string | null | undefined,
@@ -234,6 +256,11 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
             </>
           ) : null}
 
+          <MandoubOrderAdminUpdatePoller
+            orderId={order.id}
+            initialUpdatedAtIso={order.updatedAt.toISOString()}
+            auth={baseAuth}
+          />
           <OrderDetailSection
             order={order}
             closeHref={`/mandoub?${baseQuery.toString()}`}
@@ -241,6 +268,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
             nextUrl={`/mandoub/order/${orderId}?${baseQuery.toString()}${modalOnly ? "&view=modal" : ""}`}
             viewerCourierId={v.courierId}
             phoneProfile={customerPhoneProfile ?? undefined}
+            secondPhoneProfile={secondPhoneProfile ?? undefined}
             smartHintLine={smartHintLine || "—"}
             uiSettings={uiSettings}
             icons={icons}

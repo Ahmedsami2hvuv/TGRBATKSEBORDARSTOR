@@ -4,6 +4,7 @@ import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 /**
  * ينسخ صورة باب الزبون مباشرة لكل الطلبات المطابقة (نفس الرقم + نفس المنطقة).
  * يُستخدم بعد رفع صورة الباب من المندوب أو الإدارة.
+ * يطابق أرقام الهاتف بعد التطبيع حتى لو تخزين الطلب اختلف قليلاً (07… مقابل 7…).
  */
 export async function syncDoorPhotoToOrdersByPhoneRegion(input: {
   phone: string;
@@ -11,20 +12,60 @@ export async function syncDoorPhotoToOrdersByPhoneRegion(input: {
   doorPhotoUrl: string;
   uploadedByName?: string | null;
 }): Promise<void> {
-  const phone = normalizeIraqMobileLocal11(input.phone.trim()) ?? "";
-  const regionId = input.regionId ?? "";
+  const targetPhone = normalizeIraqMobileLocal11(input.phone.trim()) ?? "";
+  const regionId = input.regionId;
   const door = input.doorPhotoUrl.trim();
-  if (!phone || !regionId || !door) return;
+  if (!targetPhone || !regionId || !door) return;
+
+  const candidates = await prisma.order.findMany({
+    where: { customerRegionId: regionId },
+    select: { id: true, customerPhone: true },
+  });
+  const ids = candidates
+    .filter((row) => normalizeIraqMobileLocal11(row.customerPhone) === targetPhone)
+    .map((row) => row.id);
+  if (ids.length === 0) return;
 
   await prisma.order.updateMany({
-    where: {
-      customerPhone: phone,
-      customerRegionId: regionId,
-    },
+    where: { id: { in: ids } },
     data: {
       customerDoorPhotoUrl: door,
       ...(input.uploadedByName !== undefined
         ? { customerDoorPhotoUploadedByName: input.uploadedByName }
+        : {}),
+    },
+  });
+}
+
+/** نسخ صورة باب المستلم (الوجهة الثانية) لكل الطلبات بنفس الرقم والمنطقة الثانية. */
+export async function syncSecondDoorPhotoToOrdersByPhoneRegion(input: {
+  phone: string;
+  regionId: string | null | undefined;
+  doorPhotoUrl: string;
+  uploadedByName?: string | null;
+}): Promise<void> {
+  const targetPhone = normalizeIraqMobileLocal11(input.phone.trim()) ?? "";
+  const regionId = input.regionId;
+  const door = input.doorPhotoUrl.trim();
+  if (!targetPhone || !regionId || !door) return;
+
+  const candidates = await prisma.order.findMany({
+    where: { secondCustomerRegionId: regionId },
+    select: { id: true, secondCustomerPhone: true },
+  });
+  const ids = candidates
+    .filter(
+      (row) => normalizeIraqMobileLocal11(row.secondCustomerPhone ?? "") === targetPhone,
+    )
+    .map((row) => row.id);
+  if (ids.length === 0) return;
+
+  await prisma.order.updateMany({
+    where: { id: { in: ids } },
+    data: {
+      secondCustomerDoorPhotoUrl: door,
+      ...(input.uploadedByName !== undefined
+        ? { secondCustomerDoorPhotoUploadedByName: input.uploadedByName }
         : {}),
     },
   });
@@ -82,6 +123,16 @@ export async function syncSecondPhoneProfileFromOrder(orderId: string): Promise<
     doorPhotoUrl: o.secondCustomerDoorPhotoUrl?.trim() ?? "",
     alternatePhone: null,
   });
+
+  const door = o.secondCustomerDoorPhotoUrl?.trim() || "";
+  if (door) {
+    await syncSecondDoorPhotoToOrdersByPhoneRegion({
+      phone: o.secondCustomerPhone,
+      regionId: o.secondCustomerRegionId,
+      doorPhotoUrl: door,
+      uploadedByName: o.secondCustomerDoorPhotoUploadedByName ?? null,
+    });
+  }
 }
 
 /**
