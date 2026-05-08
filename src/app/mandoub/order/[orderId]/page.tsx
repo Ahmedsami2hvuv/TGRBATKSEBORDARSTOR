@@ -37,6 +37,10 @@ function invalidLinkMessage(reason: DelegatePortalVerifyReason): string {
   }
 }
 
+function cleanSnapshotString(v: unknown): string {
+  return typeof v === "string" ? v.trim() : "";
+}
+
 type Props = {
   params: Promise<{ orderId: string }>;
   searchParams: Promise<{
@@ -259,6 +263,22 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
           <MandoubOrderAdminUpdatePoller
             orderId={order.id}
             initialUpdatedAtIso={order.updatedAt.toISOString()}
+            initialSnapshot={{
+              status: cleanSnapshotString(order.status),
+              totalAmount: order.totalAmount != null ? String(order.totalAmount) : "",
+              deliveryPrice: order.deliveryPrice != null ? String(order.deliveryPrice) : "",
+              summary: cleanSnapshotString(order.summary),
+              orderType: cleanSnapshotString(order.orderType),
+              customerLocationUrl: cleanSnapshotString(order.customerLocationUrl),
+              customerLandmark: cleanSnapshotString(order.customerLandmark),
+              customerDoorPhotoUrl: cleanSnapshotString(order.customerDoorPhotoUrl),
+              adminVoiceNoteUrl: cleanSnapshotString(order.adminVoiceNoteUrl),
+              shopDoorPhotoUrl: cleanSnapshotString(order.shopDoorPhotoUrl),
+              secondCustomerPhone: cleanSnapshotString(order.secondCustomerPhone),
+              secondCustomerLocationUrl: cleanSnapshotString(order.secondCustomerLocationUrl),
+              secondCustomerLandmark: cleanSnapshotString(order.secondCustomerLandmark),
+              secondCustomerDoorPhotoUrl: cleanSnapshotString(order.secondCustomerDoorPhotoUrl),
+            }}
             auth={baseAuth}
           />
           <OrderDetailSection

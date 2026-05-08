@@ -2,7 +2,62 @@ import { NextResponse } from "next/server";
 import { verifyDelegatePortalQuery } from "@/lib/delegate-link";
 import { prisma } from "@/lib/prisma";
 
-/** للمندوب: طابع تحديث طلب واحد (للمقارنة بدون إعادة تحميل كامل من المتصفح). */
+type OrderSnapshot = {
+  status: string;
+  totalAmount: string;
+  deliveryPrice: string;
+  summary: string;
+  orderType: string;
+  customerLocationUrl: string;
+  customerLandmark: string;
+  customerDoorPhotoUrl: string;
+  adminVoiceNoteUrl: string;
+  shopDoorPhotoUrl: string;
+  secondCustomerPhone: string;
+  secondCustomerLocationUrl: string;
+  secondCustomerLandmark: string;
+  secondCustomerDoorPhotoUrl: string;
+};
+
+function str(v: unknown): string {
+  return typeof v === "string" ? v.trim() : "";
+}
+
+function toSnapshot(order: {
+  status: string;
+  totalAmount: unknown;
+  deliveryPrice: unknown;
+  summary: string | null;
+  orderType: string | null;
+  customerLocationUrl: string | null;
+  customerLandmark: string | null;
+  customerDoorPhotoUrl: string | null;
+  adminVoiceNoteUrl: string | null;
+  shopDoorPhotoUrl: string | null;
+  secondCustomerPhone: string | null;
+  secondCustomerLocationUrl: string | null;
+  secondCustomerLandmark: string | null;
+  secondCustomerDoorPhotoUrl: string | null;
+}): OrderSnapshot {
+  return {
+    status: str(order.status),
+    totalAmount: order.totalAmount != null ? String(order.totalAmount) : "",
+    deliveryPrice: order.deliveryPrice != null ? String(order.deliveryPrice) : "",
+    summary: str(order.summary),
+    orderType: str(order.orderType),
+    customerLocationUrl: str(order.customerLocationUrl),
+    customerLandmark: str(order.customerLandmark),
+    customerDoorPhotoUrl: str(order.customerDoorPhotoUrl),
+    adminVoiceNoteUrl: str(order.adminVoiceNoteUrl),
+    shopDoorPhotoUrl: str(order.shopDoorPhotoUrl),
+    secondCustomerPhone: str(order.secondCustomerPhone),
+    secondCustomerLocationUrl: str(order.secondCustomerLocationUrl),
+    secondCustomerLandmark: str(order.secondCustomerLandmark),
+    secondCustomerDoorPhotoUrl: str(order.secondCustomerDoorPhotoUrl),
+  };
+}
+
+/** للمندوب: فحص تحديثات طلب واحد مع تفاصيل التغيير الأساسية. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const orderId = searchParams.get("orderId")?.trim() ?? "";
@@ -24,7 +79,23 @@ export async function GET(request: Request) {
         { courierEarningForCourierId: v.courierId },
       ],
     },
-    select: { updatedAt: true },
+    select: {
+      updatedAt: true,
+      status: true,
+      totalAmount: true,
+      deliveryPrice: true,
+      summary: true,
+      orderType: true,
+      customerLocationUrl: true,
+      customerLandmark: true,
+      customerDoorPhotoUrl: true,
+      adminVoiceNoteUrl: true,
+      shopDoorPhotoUrl: true,
+      secondCustomerPhone: true,
+      secondCustomerLocationUrl: true,
+      secondCustomerLandmark: true,
+      secondCustomerDoorPhotoUrl: true,
+    },
   });
 
   if (!order) {
@@ -32,7 +103,10 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json(
-    { updatedAt: order.updatedAt.toISOString() },
+    {
+      updatedAt: order.updatedAt.toISOString(),
+      snapshot: toSnapshot(order),
+    },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
