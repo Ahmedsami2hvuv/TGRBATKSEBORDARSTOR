@@ -27,6 +27,9 @@ export default function GlobalAIAssistant() {
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const activePointerIdRef = useRef<number | null>(null);
+  const fabPositionRef = useRef(fabPosition);
   const ignoreNextClickRef = useRef(false);
 
   useEffect(() => {
@@ -56,19 +59,29 @@ export default function GlobalAIAssistant() {
   }, [messages]);
 
   useEffect(() => {
+    fabPositionRef.current = fabPosition;
+  }, [fabPosition]);
+
+  useEffect(() => {
     const onMove = (e: PointerEvent) => {
-      if (!isDraggingFab) return;
+      if (activePointerIdRef.current == null || e.pointerId !== activePointerIdRef.current) return;
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      if (!isDraggingFab && Math.hypot(dx, dy) < 6) return;
+      if (!isDraggingFab) setIsDraggingFab(true);
       const nextX = Math.max(8, Math.min(window.innerWidth - 64 - 8, e.clientX - dragOffsetRef.current.x));
       const nextY = Math.max(8, Math.min(window.innerHeight - 64 - 8, e.clientY - dragOffsetRef.current.y));
       setFabPosition({ x: nextX, y: nextY });
     };
 
-    const onUp = () => {
+    const onUp = (e: PointerEvent) => {
+      if (activePointerIdRef.current == null || e.pointerId !== activePointerIdRef.current) return;
+      activePointerIdRef.current = null;
       if (!isDraggingFab) return;
       setIsDraggingFab(false);
       ignoreNextClickRef.current = true;
       try {
-        sessionStorage.setItem("kse:ai:floating-pos", JSON.stringify(fabPosition));
+        sessionStorage.setItem("kse:ai:floating-pos", JSON.stringify(fabPositionRef.current));
       } catch {
         // ignore storage failure
       }
@@ -85,7 +98,7 @@ export default function GlobalAIAssistant() {
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
     };
-  }, [isDraggingFab, fabPosition]);
+  }, [isDraggingFab]);
 
   function getWelcomeMessage(path: string) {
     if (path.includes("/admin")) return "أهلاً سيادة المدير. كيف يمكنني مساعدتك في إدارة النظام اليوم؟";
@@ -290,7 +303,8 @@ export default function GlobalAIAssistant() {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     };
-    setIsDraggingFab(true);
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    activePointerIdRef.current = e.pointerId;
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
