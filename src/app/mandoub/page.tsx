@@ -36,7 +36,6 @@ import { MandoubWebPushBanner } from "./mandoub-web-push-banner";
 import type { MandoubRow } from "./mandoub-order-table";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons } from "@/lib/icon-settings";
-import { PortalWalletPrefetch } from "@/components/portal-wallet-prefetch";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 import { mandoubOrdersStampSig } from "@/lib/mandoub-order-stamps";
 
@@ -494,8 +493,6 @@ export default async function MandoubPage({ searchParams }: Props) {
 
           <MandoubWebPushBanner auth={baseAuth} />
           <MandoubAssignmentPoller auth={baseAuth} />
-          <PortalWalletPrefetch href={`/mandoub/wallet?${baseQuery.toString()}`} />
-
           <MandoubMoneySummarySection
             totalsBaseline={totalsBaseline}
             sumDeliveryInDinar={Number(sumDeliveryIn)}

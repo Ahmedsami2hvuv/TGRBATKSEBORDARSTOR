@@ -12,7 +12,7 @@ type Props = {
 
 /**
  * زر يفتح صفحة المحفظة داخل نافذة كاملة الشاشة.
- * - يُحمّل المحتوى بالخلفية مسبقاً عبر iframe.
+ * - لا يتم تحميل أي محتوى قبل فتح النافذة فعلياً.
  * - زر الرجوع في الجهاز يغلق النافذة أولاً إن كانت مفتوحة.
  */
 export function FullscreenWalletLauncher({
@@ -97,12 +97,14 @@ export function FullscreenWalletLauncher({
               {closeLabel}
             </button>
           </div>
-          <iframe
-            src={href}
-            title={resolvedTitle}
-            loading="eager"
-            className="h-full w-full border-0"
-          />
+          {open ? (
+            <iframe
+              src={href}
+              title={resolvedTitle}
+              loading="lazy"
+              className="h-full w-full border-0"
+            />
+          ) : null}
         </div>
       </div>
     </>

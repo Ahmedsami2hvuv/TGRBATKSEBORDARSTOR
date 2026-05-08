@@ -11,7 +11,6 @@ import { PreparerWalletLink } from "./preparer-wallet-link";
 import { PreparerSearchTrigger } from "./preparer-search-trigger";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getGlobalIcons } from "@/lib/icon-settings";
-import { PortalWalletPrefetch } from "@/components/portal-wallet-prefetch";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 import { PreparerNotificationPoller } from "./preparer-notification-poller";
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
@@ -161,8 +160,6 @@ export default async function PreparerHomePage({ searchParams }: Props) {
         </div>
       </header>
       <PreparerNotificationPoller auth={baseAuth} openUrl={preparationHref} />
-      <PortalWalletPrefetch href={walletHref} />
-
       <section className="kse-glass-dark overflow-hidden border border-sky-200 shadow-sm dark:border-slate-800">
         <PreparerOrdersSection
           allRows={tableRows}
