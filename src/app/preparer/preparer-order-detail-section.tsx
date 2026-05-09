@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import type { MandoubOrderDetailPayload } from "@/lib/mandoub-order-queries";
 import { dinarDecimalToAlfInputString, formatDinarAsAlf } from "@/lib/money-alf";
