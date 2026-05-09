@@ -27,6 +27,7 @@ type NotificationSettingsFormProps = {
     preparerEnabled: boolean;
     preparerTemplateSingle: string;
     preparerTemplateMultiple: string;
+    preparerTemplateWebsite: string;
     preparerSoundEnabled: boolean;
     preparerSoundPreset: NotificationSoundPresetId;
   };
@@ -220,6 +221,17 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
             <input
               name="preparerTemplateMultiple"
               defaultValue={initial.preparerTemplateMultiple}
+              className={inputClass}
+            />
+          </label>
+          <TokenButtons target="preparerTemplateWebsite" />
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-600">
+              نص إشعار طلبات الموقع (Web) المسندة للمجهز
+            </span>
+            <input
+              name="preparerTemplateWebsite"
+              defaultValue={initial.preparerTemplateWebsite}
               className={inputClass}
             />
           </label>

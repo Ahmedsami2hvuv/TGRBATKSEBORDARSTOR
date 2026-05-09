@@ -27,6 +27,7 @@ export type NotificationSettingsPayload = {
   enabled: boolean;
   templateSingle: string;
   templateMultiple: string;
+  templateWebsite?: string; // قالب خاص لطلبات الموقع المسندة
   soundEnabled: boolean;
   soundPreset: NotificationSoundPresetId;
 };
@@ -51,7 +52,8 @@ export const DEFAULT_MANDOUB_NOTIFICATION_PAYLOAD: NotificationSettingsPayload =
 export const DEFAULT_PREPARER_NOTIFICATION_PAYLOAD: NotificationSettingsPayload = {
   enabled: true,
   templateSingle: "لديك طلب تجهيز جديد من {shopName} إلى {regionName} (#{orderNumber})",
-  templateMultiple: "لديك {count} طلبات تجهيز جديدة",
+  templateMultiple: "لديك طلب محل مسند: {shopName} (#{orderNumber})",
+  templateWebsite: "لديك طلب جديد مسند من الموقع (#{orderNumber})",
   soundEnabled: true,
   soundPreset: "phone",
 };

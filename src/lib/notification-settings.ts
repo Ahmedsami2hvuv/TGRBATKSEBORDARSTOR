@@ -19,6 +19,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = {
   preparerEnabled: true,
   preparerTemplateSingle: "لديك طلب تجهيز جديد من {shopName} إلى {regionName} (#{orderNumber})",
   preparerTemplateMultiple: "تم رفع طلب جديد من محل {shopName} المسند إليك (#{orderNumber})",
+  preparerTemplateWebsite: "لديك طلب جديد مسند من الموقع (#{orderNumber})",
   preparerSoundEnabled: true,
   preparerSoundPreset: "phone",
 } as const;
@@ -52,6 +53,7 @@ export function audienceSettings(
       enabled: settings.preparerEnabled,
       templateSingle: settings.preparerTemplateSingle,
       templateMultiple: settings.preparerTemplateMultiple,
+      templateWebsite: settings.preparerTemplateWebsite,
       soundEnabled: settings.preparerSoundEnabled,
       soundPreset: normalizeNotificationSoundPreset(settings.preparerSoundPreset),
     };

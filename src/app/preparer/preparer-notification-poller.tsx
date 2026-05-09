@@ -70,12 +70,35 @@ export function PreparerNotificationPoller({
         // نعتمد على تغيير الـ ID فقط لضمان وصول كل إشعار جديد
         if (settings.enabled && latestNoticeId && seenNoticeRef.current !== latestNoticeId) {
           seenNoticeRef.current = latestNoticeId;
-          const body = renderNotificationTemplate(settings.templateSingle, {
-            count: 1,
-            orderNumber: 0,
-            shopName: data.latestTitle ?? "—",
-            regionName: data.latestBody ?? "—",
-          });
+
+          const rawTitle = data.latestTitle ?? "";
+          const rawBody = data.latestBody ?? "";
+
+          // هل هذا إشعار إسناد طلب (غالباً من الموقع)؟
+          const isAssignment = rawTitle.includes("إسناد") || rawBody.includes("إسناد") || /\d{8,}/.test(rawTitle) || /\d{8,}/.test(rawBody);
+
+          let body = "";
+          if (isAssignment && settings.templateWebsite) {
+            // استخدام قالب الموقع الجديد
+            // نحاول استخراج رقم الطلب من النص إذا وجد (مثلاً لو كان مكتوب #123)
+            const orderNumMatch = (rawTitle + rawBody).match(/#(\d+)/);
+            const orderNumber = orderNumMatch ? parseInt(orderNumMatch[1]) : 0;
+
+            body = renderNotificationTemplate(settings.templateWebsite, {
+              count: 1,
+              orderNumber: orderNumber,
+              shopName: "الموقع الإلكتروني",
+              regionName: "—",
+            });
+          } else {
+            // القالب العادي
+            body = renderNotificationTemplate(settings.templateSingle, {
+              count: 1,
+              orderNumber: 0,
+              shopName: rawTitle || "—",
+              regionName: rawBody || "—",
+            });
+          }
 
           if (settings.soundEnabled) {
             playNotificationSound(settings.soundPreset);

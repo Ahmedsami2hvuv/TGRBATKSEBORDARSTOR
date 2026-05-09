@@ -228,7 +228,7 @@ export async function pushNotifyCourierNewAssignment(
   });
 }
 
-/** إشعار للمجهز: طلب تجهيز جديد من الإدارة */
+/** إشعار للمجهز: طلب تجهيز جديد أو إسناد من الموقع */
 export async function pushNotifyPreparerNewNotice(input: {
   preparerId: string;
   title: string;
@@ -239,17 +239,37 @@ export async function pushNotifyPreparerNewNotice(input: {
   const settings = audienceSettings(settingsRow, "preparer");
   if (!settings.enabled) return;
 
-  const body = renderNotificationTemplate(settings.templateSingle, {
-    count: 1,
-    orderNumber: 0,
-    shopName: input.title || "—",
-    regionName: input.body || "—",
-  });
+  const rawTitle = input.title || "";
+  const rawBody = input.body || "";
+
+  // فحص ما إذا كان الإشعار يحتوي على رقم هاتف أو كلمة إسناد (طلبات الموقع)
+  const isAssignment = rawTitle.includes("إسناد") || rawBody.includes("إسناد") || /\d{8,}/.test(rawTitle) || /\d{8,}/.test(rawBody);
+
+  let body = "";
+  if (isAssignment && settings.templateWebsite) {
+    const orderNumMatch = (rawTitle + rawBody).match(/#(\d+)/);
+    const orderNumber = orderNumMatch ? parseInt(orderNumMatch[1]) : 0;
+
+    body = renderNotificationTemplate(settings.templateWebsite, {
+      count: 1,
+      orderNumber: orderNumber,
+      shopName: "الموقع الإلكتروني",
+      regionName: "—",
+    });
+  } else {
+    body = renderNotificationTemplate(settings.templateSingle, {
+      count: 1,
+      orderNumber: 0,
+      shopName: rawTitle || "—",
+      regionName: rawBody || "—",
+    });
+  }
 
   const subs = await prisma.webPushSubscription.findMany({
     where: { audience: "preparer", preparerId: input.preparerId },
     select: { id: true, endpoint: true, p256dh: true, auth: true },
   });
+
   await sendToSubscriptions(subs, {
     title: "لوحة المجهز — إشعار جديد",
     body,

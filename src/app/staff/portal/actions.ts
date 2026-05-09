@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { verifyStaffEmployeePortalQuery } from "@/lib/staff-employee-portal-link";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
+import { pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
 
 export type StaffPrepState = { error?: string; ok?: boolean; draftId?: string; preparerName?: string };
 
@@ -110,9 +111,15 @@ export async function submitStaffPreparationDraft(
       data: {
         preparerId: preparer.id,
         title: "طلب تجهيز جديد من موظف الإدارة",
-        body: `تم تحويل طلب تجهيز جديد إلى خانتك من الموظف ${staff.name.trim() || "—"}.`,
+        body: `تم تحويل طلب تجهيز جديد إلى خانتك من الموظف ${staff.name.trim() || "—"}. رقم الزبون: ${phoneLocal}`,
       },
     });
+
+    await pushNotifyPreparerNewNotice({
+      preparerId: preparer.id,
+      title: "إسناد طلب تجهيز جديد",
+      body: `موظف الإدارة (${staff.name}) قام بإسناد طلب جديد لك. رقم الزبون: ${phoneLocal}`,
+    }).catch(e => console.error("Web Push failed for staff portal submission:", e));
   }
 
   if (createdDraftIds.length === 0) {

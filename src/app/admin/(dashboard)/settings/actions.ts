@@ -82,6 +82,7 @@ export async function saveNotificationSettings(
   const mandoubTemplateMultiple = formString(formData, "mandoubTemplateMultiple");
   const preparerTemplateSingle = formString(formData, "preparerTemplateSingle");
   const preparerTemplateMultiple = formString(formData, "preparerTemplateMultiple");
+  const preparerTemplateWebsite = formString(formData, "preparerTemplateWebsite");
   const adminSoundPreset = normalizeNotificationSoundPreset(formString(formData, "adminSoundPreset"));
   const mandoubSoundPreset = normalizeNotificationSoundPreset(formString(formData, "mandoubSoundPreset"));
   const preparerSoundPreset = normalizeNotificationSoundPreset(formString(formData, "preparerSoundPreset"));
@@ -92,8 +93,8 @@ export async function saveNotificationSettings(
   if (!mandoubTemplateSingle || !mandoubTemplateMultiple) {
     return { error: "يرجى إدخال نص إشعارات المندوب (مفرد ومتعدد)." };
   }
-  if (!preparerTemplateSingle || !preparerTemplateMultiple) {
-    return { error: "يرجى إدخال نص إشعارات المجهز (مفرد ومتعدد)." };
+  if (!preparerTemplateSingle || !preparerTemplateMultiple || !preparerTemplateWebsite) {
+    return { error: "يرجى إدخال نص إشعارات المجهز (تجهيز، محلات، موقع)." };
   }
 
   await prisma.appNotificationSettings.upsert({
@@ -114,6 +115,7 @@ export async function saveNotificationSettings(
       preparerEnabled: formBool(formData, "preparerEnabled"),
       preparerTemplateSingle,
       preparerTemplateMultiple,
+      preparerTemplateWebsite,
       preparerSoundEnabled: formBool(formData, "preparerSoundEnabled"),
       preparerSoundPreset,
     },
@@ -131,6 +133,7 @@ export async function saveNotificationSettings(
       preparerEnabled: formBool(formData, "preparerEnabled"),
       preparerTemplateSingle,
       preparerTemplateMultiple,
+      preparerTemplateWebsite,
       preparerSoundEnabled: formBool(formData, "preparerSoundEnabled"),
       preparerSoundPreset,
     },

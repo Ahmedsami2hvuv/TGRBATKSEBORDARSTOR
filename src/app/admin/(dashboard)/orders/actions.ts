@@ -8,7 +8,7 @@ import {
   saveCustomerDoorPhotoUploaded,
 } from "@/lib/order-image";
 import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
-import { pushNotifyCourierNewAssignment } from "@/lib/web-push-server";
+import { pushNotifyCourierNewAssignment, pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
 import { revalidatePath } from "next/cache";
 
 export type AssignOrderState = { error?: string; ok?: boolean };
@@ -174,13 +174,20 @@ export async function assignOrderToPreparer(
         });
     }
 
-    await prisma.companyPreparerPrepNotice.create({
+    const notice = await prisma.companyPreparerPrepNotice.create({
       data: {
         preparerId,
         title: "إسناد طلب تجهيز",
         body: `تم إسناد طلب جديد إليك (${customerPhone}).`,
       },
     });
+
+    // إرسال إشعار دفع (Push) للخلفية
+    void pushNotifyPreparerNewNotice({
+      preparerId,
+      title: notice.title,
+      body: notice.body,
+    }).catch(() => {});
   }
 
   revalidatePath("/admin/orders/pending");

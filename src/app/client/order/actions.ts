@@ -12,7 +12,7 @@ import {
 import { MAX_VOICE_NOTE_BYTES, saveVoiceNoteUploaded } from "@/lib/voice-note";
 import { prisma } from "@/lib/prisma";
 import { upsertCustomerPhoneProfileFromOrderSnapshot } from "@/lib/customer-phone-profile-sync";
-import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
+import { pushNotifyAdminsNewPendingOrder, pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
 import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
 import { withReversePickupPrefix } from "@/lib/order-type-flags";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
@@ -95,13 +95,21 @@ export async function submitEmployeePreparationDraft(
     });
 
     if (shopLink?.preparerId) {
-      await prisma.companyPreparerPrepNotice.create({
+      const notice = await prisma.companyPreparerPrepNotice.create({
         data: {
           preparerId: shopLink.preparerId,
           title: "طلب تجهيز جديد",
           body: `طلب جديد من ${submitter.name} لمحل ${submitter.shopId}`,
         },
       }).catch(() => null);
+
+      if (notice) {
+        void pushNotifyPreparerNewNotice({
+          preparerId: shopLink.preparerId,
+          title: notice.title,
+          body: notice.body,
+        }).catch(() => {});
+      }
     }
 
     revalidatePath("/admin/orders/pending");

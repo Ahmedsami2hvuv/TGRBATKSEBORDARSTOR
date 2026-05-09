@@ -472,6 +472,7 @@ model AppNotificationSettings {
   preparerEnabled         Boolean  @default(true)
   preparerTemplateSingle  String   @default("لديك طلب تجهيز جديد من {shopName} إلى {regionName} (#{orderNumber})")
   preparerTemplateMultiple String  @default("لديك {count} طلبات تجهيز جديدة")
+  preparerTemplateWebsite  String  @default("لديك طلب جديد مسند من الموقع (#{orderNumber})")
   preparerSoundEnabled    Boolean  @default(true)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
