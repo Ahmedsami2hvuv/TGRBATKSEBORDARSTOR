@@ -12,15 +12,16 @@ export function renderNotificationTemplate(
   const shopName = (vars.shopName ?? "—").trim() || "—";
   const regionName = (vars.regionName ?? "—").trim() || "—";
   return template
-    .replaceAll("{count}", String(vars.count))
     .replaceAll("{orderNumber}", String(vars.orderNumber))
     .replaceAll("#{orderNumber}", `#${vars.orderNumber}`)
+    .replaceAll("{count}", String(vars.count))
     .replaceAll("{shopName}", shopName)
     .replaceAll("{regionName}", regionName)
-    .replaceAll("{اسم المحل}", shopName)
-    .replaceAll("{اسم المنطقة}", regionName)
+    // دعم الأسماء العربية كـ Alias للتوافق مع الإعدادات القديمة
     .replaceAll("{رقم الطلب}", String(vars.orderNumber))
-    .replaceAll("{عدد الطلبات}", String(vars.count));
+    .replaceAll("{عدد الطلبات}", String(vars.count))
+    .replaceAll("{اسم المحل}", shopName)
+    .replaceAll("{اسم المنطقة}", regionName);
 }
 
 export type NotificationSettingsPayload = {

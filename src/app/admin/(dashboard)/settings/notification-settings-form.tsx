@@ -36,10 +36,10 @@ type NotificationSettingsFormProps = {
 type Token = { label: string; token: string };
 
 const TEMPLATE_TOKENS: Token[] = [
-  { label: "رقم الطلب", token: "{رقم الطلب}" },
-  { label: "عدد الطلبات", token: "{عدد الطلبات}" },
-  { label: "اسم المحل", token: "{اسم المحل}" },
-  { label: "اسم المنطقة", token: "{اسم المنطقة}" },
+  { label: "رقم الطلب", token: "{orderNumber}" },
+  { label: "عدد الطلبات", token: "{count}" },
+  { label: "اسم المحل", token: "{shopName}" },
+  { label: "اسم المنطقة", token: "{regionName}" },
 ];
 
 function TokenButtons({ target }: { target: string }) {

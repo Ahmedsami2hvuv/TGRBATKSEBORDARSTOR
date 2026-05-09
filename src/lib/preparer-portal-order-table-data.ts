@@ -165,6 +165,7 @@ export async function loadPreparerPortalOrderTableData(args: {
       .filter((e) => e.kind === MONEY_KIND_PICKUP && e.deletedAt == null)
       .reduce((acc, e) => acc + Number(e.amountDinar), 0);
     const orderSubtotalDinar = o.orderSubtotal ? Number(o.orderSubtotal) : null;
+    const totalAmountDinar = o.totalAmount ? Number(o.totalAmount) : null;
     const pickupComplete = orderSubtotalDinar != null && Math.abs(pickupSumDinar - orderSubtotalDinar) < 1e-3;
 
     return {
@@ -202,6 +203,7 @@ export async function loadPreparerPortalOrderTableData(args: {
       ) || false,
       pickupComplete,
       orderSubtotalDinar,
+      totalAmountDinar,
       pickupSumDinar,
 
       // Unified fast-access fields - Safe access
