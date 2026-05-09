@@ -114,7 +114,7 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
           <TokenButtons target="adminTemplateSingle" />
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-slate-600">
-              نص الإشعار عند طلب واحد جديد
+              نص الإشعار عند طلب جديد
             </span>
             <input
               name="adminTemplateSingle"
@@ -122,17 +122,7 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
               className={inputClass}
             />
           </label>
-          <TokenButtons target="adminTemplateMultiple" />
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-slate-600">
-              نص الإشعار عند عدة طلبات جديدة
-            </span>
-            <input
-              name="adminTemplateMultiple"
-              defaultValue={initial.adminTemplateMultiple}
-              className={inputClass}
-            />
-          </label>
+          <input type="hidden" name="adminTemplateMultiple" defaultValue={initial.adminTemplateMultiple} />
         </div>
       </section>
 
@@ -169,7 +159,7 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
           <TokenButtons target="mandoubTemplateSingle" />
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-slate-600">
-              نص الإشعار عند إسناد طلب واحد
+              نص الإشعار عند إسناد طلب جديد
             </span>
             <input
               name="mandoubTemplateSingle"
@@ -177,17 +167,7 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
               className={inputClass}
             />
           </label>
-          <TokenButtons target="mandoubTemplateMultiple" />
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-slate-600">
-              نص الإشعار عند إسناد عدة طلبات
-            </span>
-            <input
-              name="mandoubTemplateMultiple"
-              defaultValue={initial.mandoubTemplateMultiple}
-              className={inputClass}
-            />
-          </label>
+          <input type="hidden" name="mandoubTemplateMultiple" defaultValue={initial.mandoubTemplateMultiple} />
         </div>
       </section>
 
@@ -224,7 +204,7 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
           <TokenButtons target="preparerTemplateSingle" />
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-slate-600">
-              نص الإشعار عند طلب تجهيز واحد
+              نص إشعار طلب التجهيز (من الإدارة)
             </span>
             <input
               name="preparerTemplateSingle"
@@ -235,7 +215,7 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
           <TokenButtons target="preparerTemplateMultiple" />
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-slate-600">
-              نص الإشعار عند عدة طلبات تجهيز
+              نص إشعار طلب جديد من محل مسند للمجهز
             </span>
             <input
               name="preparerTemplateMultiple"

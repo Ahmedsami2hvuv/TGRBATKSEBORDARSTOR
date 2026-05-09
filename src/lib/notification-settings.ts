@@ -18,7 +18,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = {
   mandoubSoundPreset: "beep",
   preparerEnabled: true,
   preparerTemplateSingle: "لديك طلب تجهيز جديد من {shopName} إلى {regionName} (#{orderNumber})",
-  preparerTemplateMultiple: "لديك {count} طلبات تجهيز جديدة",
+  preparerTemplateMultiple: "تم رفع طلب جديد من محل {shopName} المسند إليك (#{orderNumber})",
   preparerSoundEnabled: true,
   preparerSoundPreset: "phone",
 } as const;

@@ -102,7 +102,8 @@ export function PreparerNotificationPoller({
             exp: auth.exp || "",
             s: auth.s,
           });
-          const orderBody = renderNotificationTemplate(settings.templateSingle, {
+          // استخدام القالب الثاني (Multiple سابقاً) لإشعار طلبات المحلات المسندة
+          const orderBody = renderNotificationTemplate(settings.templateMultiple, {
             count: 1,
             orderNumber: Number.isFinite(latestShopOrderNumber) ? latestShopOrderNumber : 0,
             shopName: data.latestShopOrderShopName ?? "—",
@@ -115,6 +116,8 @@ export function PreparerNotificationPoller({
               tag: `kse-preparer-order-${latestShopOrderId}`,
               openUrl: orderOpenUrl,
             });
+          } else if (settings.soundEnabled) {
+            playNotificationSound(settings.soundPreset);
           }
         }
         lastCountRef.current = count;

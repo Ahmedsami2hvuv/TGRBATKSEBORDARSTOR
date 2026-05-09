@@ -115,30 +115,16 @@ export function AdminPendingNotifications({
           Notification.permission === "granted";
 
         if (next.settings.enabled && (orderBump || countBump)) {
-          let body: string;
-          if (orderBump) {
-            const diff = next.latestOrderNumber - safeSeen;
-            body = renderNotificationTemplate(
-              diff === 1 ? next.settings.templateSingle : next.settings.templateMultiple,
-              {
-                count: diff,
-                orderNumber: next.latestOrderNumber,
-                shopName: "—",
-                regionName: "—",
-              },
-            );
-          } else {
-            const d = next.pendingCount - (prevCount as number);
-            body = renderNotificationTemplate(
-              d === 1 ? next.settings.templateSingle : next.settings.templateMultiple,
-              {
-                count: d,
-                orderNumber: next.latestOrderNumber || 0,
-                shopName: "—",
-                regionName: "—",
-              },
-            );
-          }
+          // استخدام القالب الفردي دائماً بناءً على طلب المستخدم (كل طلب إشعار)
+          const body = renderNotificationTemplate(
+            next.settings.templateSingle,
+            {
+              count: 1,
+              orderNumber: next.latestOrderNumber,
+              shopName: "—",
+              regionName: "—",
+            },
+          );
 
           const dedupeKey = `${next.latestOrderNumber}-${next.pendingCount}-${body.slice(0, 40)}`;
           if (bumpHandledRef.current !== dedupeKey) {
