@@ -21,6 +21,7 @@ export default function CheckoutPage() {
   const regionInputRef = useRef<HTMLInputElement>(null);
 
   const [regionQuery, setRegionQuery] = useState("");
+  const [landmark, setLandmark] = useState("");
   const [regionHits, setRegionHits] = useState<RegionHit[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<RegionHit | null>(null);
   const [regionFieldError, setRegionFieldError] = useState<string | null>(null);
@@ -190,10 +191,22 @@ export default function CheckoutPage() {
                             type="button"
                             className="w-full rounded-xl px-3 py-2.5 text-end text-sm font-bold text-slate-800 hover:bg-white border border-transparent hover:border-violet-300 transition"
                             onClick={() => {
+                              const currentInput = regionQuery;
                               setSelectedRegion(h);
                               setRegionQuery(h.name);
                               setRegionHits([]);
                               setRegionFieldError(null);
+
+                              // Extract the remaining text to put it in landmark
+                              const remainder = currentInput.replace(h.name, "").trim();
+                              if (remainder) {
+                                const cleanedRemainder = remainder.replace(/^[،, \-ـ]+/, "");
+                                if (cleanedRemainder) {
+                                  setLandmark((prev) =>
+                                    prev ? `${prev} ${cleanedRemainder}` : cleanedRemainder
+                                  );
+                                }
+                              }
                             }}
                           >
                             {h.name}
@@ -208,6 +221,8 @@ export default function CheckoutPage() {
                 <label className="block text-sm font-black text-slate-700 mb-2">أقرب نقطة دالة</label>
                 <textarea
                   name="landmark"
+                  value={landmark}
+                  onChange={(e) => setLandmark(e.target.value)}
                   className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition"
                   placeholder="مثال: قرب مدرسة ... أو خلف جامع ..."
                   rows={2}
