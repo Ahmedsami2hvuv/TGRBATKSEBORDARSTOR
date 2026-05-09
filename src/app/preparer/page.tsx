@@ -125,6 +125,12 @@ export default async function PreparerHomePage({ searchParams }: Props) {
 
   const walletRemainStr = formatDinarAsAlfWithUnit(walletTotals?.remain ?? 0);
 
+  // تطهير التواريخ لمنع خطأ Serialization (Digest Error) عند تمرير البيانات لمكونات العميل
+  const safeTableRows = tableRows.map((r) => ({
+    ...r,
+    createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
+  }));
+
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 text-base leading-relaxed sm:px-4 sm:py-4 sm:text-lg">
       <header className="kse-glass-dark mb-2 flex flex-wrap items-center gap-2 border border-emerald-200/90 px-3 py-2.5 shadow-sm sm:mb-3 sm:px-4">
@@ -162,7 +168,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
       <PreparerNotificationPoller auth={baseAuth} openUrl={preparationHref} />
       <section className="kse-glass-dark overflow-hidden border border-sky-200 shadow-sm dark:border-slate-800">
         <PreparerOrdersSection
-          allRows={tableRows}
+          allRows={safeTableRows}
           searchFields={searchFields}
           auth={baseAuth}
           tab="all"
