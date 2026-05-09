@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.KSEApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/blue_primary</item>
+        <item name="android:statusBarColor">@color/blue_primary</item>
+    </style>
+</resources>

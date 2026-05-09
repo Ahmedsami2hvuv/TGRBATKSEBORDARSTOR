@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "961910660977",
+    "project_id": "aboakbrapp",
+    "storage_bucket": "aboakbrapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:961910660977:android:2179cb8759454f1b46a0d0",
+        "android_client_info": {
+          "package_name": "com.kse.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBy64FG010l61GW6k2bHOT8s8VhULJerqk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

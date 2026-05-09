@@ -1,0 +1,4 @@
+com.kse.app.test.app-androidTest-0 C:\Users\lenovo\Documents\GitHub\TGRBATKSEBORDARSTOR\android-app\app\build\generated\res\resValues\androidTest\debug
+com.kse.app.test.app-mergeDebugAndroidTestResources-1 C:\Users\lenovo\Documents\GitHub\TGRBATKSEBORDARSTOR\android-app\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
+com.kse.app.test.app-mergeDebugAndroidTestResources-2 C:\Users\lenovo\Documents\GitHub\TGRBATKSEBORDARSTOR\android-app\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
+com.kse.app.test.app-merged_res-3 C:\Users\lenovo\Documents\GitHub\TGRBATKSEBORDARSTOR\android-app\app\build\intermediates\merged_res\debugAndroidTest
