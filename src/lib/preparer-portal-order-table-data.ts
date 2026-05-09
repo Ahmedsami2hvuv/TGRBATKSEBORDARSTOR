@@ -205,9 +205,9 @@ export async function loadPreparerPortalOrderTableData(args: {
       pickupSumDinar,
 
       // Unified fast-access fields
-      audioUrl: o.audioUrl,
-      preparerAudioUrl: o.preparerAudioUrl,
-      adminAudioUrl: o.adminAudioUrl,
+      audioUrl: o.voiceNoteUrl,
+      preparerAudioUrl: (o.preparerShoppingJson as any)?.preparerAudioUrl || null,
+      adminAudioUrl: o.adminVoiceNoteUrl,
       shopLocationUrl: o.shopLocationUrl,
       customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl,
