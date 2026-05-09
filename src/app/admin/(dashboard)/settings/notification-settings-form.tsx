@@ -6,6 +6,7 @@ import {
   NOTIFICATION_SOUND_PRESET_LABELS_AR,
   type NotificationSoundPresetId,
 } from "@/lib/notification-sound-presets";
+import { playNotificationSound } from "@/lib/notification-sound-client";
 import {
   saveNotificationSettings,
   type NotificationSettingsFormState,
@@ -101,6 +102,7 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
               name="adminSoundPreset"
               defaultValue={initial.adminSoundPreset}
               className={inputClass}
+              onChange={(e) => playNotificationSound(e.target.value)}
             >
               {NOTIFICATION_SOUND_PRESET_IDS.map((id) => (
                 <option key={id} value={id}>
@@ -155,6 +157,7 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
               name="mandoubSoundPreset"
               defaultValue={initial.mandoubSoundPreset}
               className={inputClass}
+              onChange={(e) => playNotificationSound(e.target.value)}
             >
               {NOTIFICATION_SOUND_PRESET_IDS.map((id) => (
                 <option key={id} value={id}>
@@ -209,6 +212,7 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
               name="preparerSoundPreset"
               defaultValue={initial.preparerSoundPreset}
               className={inputClass}
+              onChange={(e) => playNotificationSound(e.target.value)}
             >
               {NOTIFICATION_SOUND_PRESET_IDS.map((id) => (
                 <option key={id} value={id}>
