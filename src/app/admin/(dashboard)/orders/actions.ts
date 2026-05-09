@@ -36,14 +36,21 @@ export async function assignOrderToPreparer(
         if (draft) {
           const groupId = (draft.data as any)?.groupId;
           if (groupId) {
+            // بدلاً من الأرشفة، نعيدها كمسودة عامة بدون مجهز لكي لا تختفي
             await prisma.companyPreparerShoppingDraft.updateMany({
               where: { data: { path: ["groupId"], equals: groupId } },
-              data: { status: "archived" }
+              data: {
+                preparerId: null,
+                status: "draft"
+              }
             });
           } else {
             await prisma.companyPreparerShoppingDraft.update({
               where: { id: orderId },
-              data: { status: "archived" }
+              data: {
+                preparerId: null,
+                status: "draft"
+              }
             });
           }
         }
@@ -52,9 +59,13 @@ export async function assignOrderToPreparer(
           where: { id: orderId },
           data: { submittedByCompanyPreparerId: null }
         });
+        // المسودات المرتبطة بطلب حقيقي نعيدها لحالة مسودة بدون مجهز
         await prisma.companyPreparerShoppingDraft.updateMany({
           where: { sentOrderId: orderId },
-          data: { status: "archived" }
+          data: {
+            preparerId: null,
+            status: "draft"
+          }
         });
       }
       revalidatePath("/admin/orders/pending");

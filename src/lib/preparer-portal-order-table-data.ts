@@ -169,13 +169,13 @@ export async function loadPreparerPortalOrderTableData(args: {
 
     return {
       id: o.id,
-      shortId: String(o.orderNumber),
+      shortId: String(o.orderNumber || ""),
       /** لعمود «تاريخ الرفع» في الجدول الموحّد */
-      createdAt: o.createdAt.toISOString(),
-      orderStatus: o.status,
+      createdAt: o.createdAt ? o.createdAt.toISOString() : new Date().toISOString(),
+      orderStatus: o.status || "pending",
       assignedCourierId: o.assignedCourierId,
       assignedCourierName: o.courier?.name?.trim() || "",
-      shopName: o.shop.name,
+      shopName: o.shop?.name || "—",
       shopNameHighlightClass: mandoubShopNameVividClass(o.status, o.prepaidAll),
       regionLine,
       orderType: o.orderType || "—",
@@ -184,10 +184,10 @@ export async function loadPreparerPortalOrderTableData(args: {
       customerPhone: "—",
       timeLine: o.orderNoteTime?.trim()
         ? o.orderNoteTime
-        : o.createdAt.toLocaleString("ar-IQ-u-nu-latn", {
+        : o.createdAt?.toLocaleString("ar-IQ-u-nu-latn", {
             dateStyle: "short",
             timeStyle: "short",
-          }),
+          }) || "—",
       statusAr: STATUS_AR[o.status] ?? o.status,
       statusClass,
       prepaidAll: o.prepaidAll,
@@ -197,24 +197,24 @@ export async function loadPreparerPortalOrderTableData(args: {
         o.customer?.customerLocationUrl,
       ),
       hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
-      hasMoneyDeletedBadge: o.moneyEvents.some(
+      hasMoneyDeletedBadge: o.moneyEvents?.some(
         (e) => e.deletedAt && isManualDeletionReason(e.deletedReason),
-      ),
+      ) || false,
       pickupComplete,
       orderSubtotalDinar,
       pickupSumDinar,
 
-      // Unified fast-access fields
-      audioUrl: o.voiceNoteUrl,
+      // Unified fast-access fields - Safe access
+      audioUrl: (o as any).voiceNoteUrl || null,
       preparerAudioUrl: (o.preparerShoppingJson as any)?.preparerAudioUrl || null,
-      adminAudioUrl: o.adminVoiceNoteUrl,
-      shopLocationUrl: o.shopLocationUrl,
-      customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl,
-      secondCustomerLocationUrl: o.secondCustomerLocationUrl,
-      shopDoorPhotoUrl: o.shopDoorPhotoUrl,
-      customerDoorPhotoUrl: o.customer?.customerDoorPhotoUrl || o.customerDoorPhotoUrl,
-      secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
-      routeMode: o.routeMode as "single" | "double",
+      adminAudioUrl: (o as any).adminVoiceNoteUrl || null,
+      shopLocationUrl: (o as any).shopLocationUrl || null,
+      customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || null,
+      secondCustomerLocationUrl: (o as any).secondCustomerLocationUrl || null,
+      shopDoorPhotoUrl: (o as any).shopDoorPhotoUrl || null,
+      customerDoorPhotoUrl: o.customer?.customerDoorPhotoUrl || (o as any).customerDoorPhotoUrl || null,
+      secondCustomerDoorPhotoUrl: (o as any).secondCustomerDoorPhotoUrl || null,
+      routeMode: (o.routeMode || "single") as "single" | "double",
     };
   });
 
