@@ -93,8 +93,8 @@ export async function saveNotificationSettings(
   if (!mandoubTemplateSingle || !mandoubTemplateMultiple) {
     return { error: "يرجى إدخال نص إشعارات المندوب (مفرد ومتعدد)." };
   }
-  if (!preparerTemplateSingle || !preparerTemplateMultiple || !preparerTemplateWebsite) {
-    return { error: "يرجى إدخال نص إشعارات المجهز (تجهيز، محلات، موقع)." };
+  if (!preparerTemplateSingle || !preparerTemplateMultiple) {
+    return { error: "يرجى إدخال نص إشعارات المجهز (تجهيز، محلات)." };
   }
 
   await prisma.appNotificationSettings.upsert({
@@ -115,7 +115,7 @@ export async function saveNotificationSettings(
       preparerEnabled: formBool(formData, "preparerEnabled"),
       preparerTemplateSingle,
       preparerTemplateMultiple,
-      preparerTemplateWebsite,
+      preparerTemplateWebsite: preparerTemplateWebsite || "لديك طلب جديد مسند من الموقع (#{orderNumber})",
       preparerSoundEnabled: formBool(formData, "preparerSoundEnabled"),
       preparerSoundPreset,
     },
@@ -133,7 +133,7 @@ export async function saveNotificationSettings(
       preparerEnabled: formBool(formData, "preparerEnabled"),
       preparerTemplateSingle,
       preparerTemplateMultiple,
-      preparerTemplateWebsite,
+      preparerTemplateWebsite: preparerTemplateWebsite || "لديك طلب جديد مسند من الموقع (#{orderNumber})",
       preparerSoundEnabled: formBool(formData, "preparerSoundEnabled"),
       preparerSoundPreset,
     },

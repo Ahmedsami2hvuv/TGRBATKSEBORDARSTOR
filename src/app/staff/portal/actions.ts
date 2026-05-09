@@ -119,6 +119,7 @@ export async function submitStaffPreparationDraft(
       preparerId: preparer.id,
       title: "إسناد طلب تجهيز جديد",
       body: `موظف الإدارة (${staff.name}) قام بإسناد طلب جديد لك. رقم الزبون: ${phoneLocal}`,
+      draftId: draft.id,
     }).catch(e => console.error("Web Push failed for staff portal submission:", e));
   }
 

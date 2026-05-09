@@ -234,11 +234,10 @@ export async function pushNotifyPreparerNewNotice(input: {
   title: string;
   body?: string;
   orderId?: string;
+  draftId?: string;
 }): Promise<void> {
-  if (!isWebPushConfigured()) return;
   const settingsRow = await getOrCreateNotificationSettings();
   const settings = audienceSettings(settingsRow, "preparer");
-  if (!settings.enabled) return;
 
   const rawTitle = input.title || "";
   const rawBody = input.body || "";
@@ -251,46 +250,63 @@ export async function pushNotifyPreparerNewNotice(input: {
   const orderNumMatch = (rawTitle + rawBody).match(/#(\d+)/);
   const detectedOrderNumber = orderNumMatch ? parseInt(orderNumMatch[1]) : 0;
 
-  // جلب تفاصيل الطلب الحقيقية لملء القالب
-  const order = await prisma.order.findFirst({
-    where: {
-      OR: [
-        { id: input.orderId || "undefined" },
-        { orderNumber: detectedOrderNumber > 0 ? detectedOrderNumber : -1 }
-      ]
-    },
-    select: {
-      orderNumber: true,
-      shop: { select: { name: true } },
-      customerRegion: { select: { name: true } },
-      submissionSource: true
-    }
-  });
+  // جلب تفاصيل الطلب أو المسودة وملء البيانات
+  const [order, draft, preparer] = await Promise.all([
+    prisma.order.findFirst({
+      where: {
+        OR: [
+          { id: input.orderId || "undefined" },
+          { orderNumber: detectedOrderNumber > 0 ? detectedOrderNumber : -1 }
+        ]
+      },
+      select: {
+        orderNumber: true,
+        shop: { select: { name: true } },
+        customerRegion: { select: { name: true } },
+        submissionSource: true
+      }
+    }),
+    input.draftId
+      ? prisma.companyPreparerShoppingDraft.findUnique({
+          where: { id: input.draftId },
+          select: { customerRegion: { select: { name: true } } }
+        })
+      : null,
+    prisma.companyPreparer.findUnique({
+      where: { id: input.preparerId },
+      select: { telegramUserId: true }
+    })
+  ]);
 
   if (order) {
     orderNumber = order.orderNumber;
     shopName = order.shop?.name || "—";
     regionName = order.customerRegion?.name || "—";
+  } else if (draft) {
+    regionName = draft.customerRegion?.name || "—";
   }
 
   let body = "";
-  // إذا كان الطلب من الموقع أو تم إسناده يدوياً، نستخدم القوالب المخصصة
   if (order?.submissionSource === "web_store" && settings.templateWebsite) {
-    body = renderNotificationTemplate(settings.templateWebsite, {
-      count: 1,
-      orderNumber,
-      shopName,
-      regionName,
-    });
+    body = renderNotificationTemplate(settings.templateWebsite, { count: 1, orderNumber, shopName, regionName });
+  } else if (input.draftId && settings.templateMultiple) {
+    body = renderNotificationTemplate(settings.templateMultiple, { count: 1, orderNumber, shopName, regionName });
   } else {
-    // استخدام قالب "طلب جديد مسند للمجهز" (templateMultiple عادة يستخدم لهذا الغرض في الإعدادات لديك)
-    body = renderNotificationTemplate(settings.templateSingle, {
-      count: 1,
-      orderNumber,
-      shopName,
-      regionName,
-    });
+    body = renderNotificationTemplate(settings.templateSingle, { count: 1, orderNumber, shopName, regionName });
   }
+
+  // 1. إرسال Telegram إذا توفر المعرف
+  if (preparer?.telegramUserId?.trim()) {
+    const chatId = preparer.telegramUserId.trim();
+    const text = `<b>${escapeTelegramHtml(input.title)}</b>\n\n${escapeTelegramHtml(body || rawBody)}`;
+    const kb = {
+      inline_keyboard: [[{ text: "📦 فتح قائمة التجهيز", callback_data: "pr_prep_0" }]],
+    };
+    await sendTelegramMessageWithKeyboardToChat(chatId, text, kb).catch(() => {});
+  }
+
+  // 2. إرسال Web Push إذا كان مفعلاً
+  if (!isWebPushConfigured() || !settings.enabled) return;
 
   const subs = await prisma.webPushSubscription.findMany({
     where: { audience: "preparer", preparerId: input.preparerId },

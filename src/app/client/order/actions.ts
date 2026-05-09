@@ -108,6 +108,7 @@ export async function submitEmployeePreparationDraft(
           preparerId: shopLink.preparerId,
           title: notice.title,
           body: notice.body,
+          draftId: draft.id,
         }).catch(() => {});
       }
     }

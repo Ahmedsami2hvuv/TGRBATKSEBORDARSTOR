@@ -232,7 +232,8 @@ export async function assignOrderToPreparer(
       preparerId,
       title: notice.title,
       body: notice.body,
-      orderId: sentOrderId || undefined
+      orderId: isDraft ? undefined : (sentOrderId || undefined),
+      draftId: isDraft ? (sentOrderId || undefined) : undefined
     }).catch(() => {});
   }
 

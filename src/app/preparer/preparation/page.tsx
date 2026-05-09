@@ -57,7 +57,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
         shopId: { in: shopIds },
         status: "pending",
         submissionSource: "web_store",
-        submittedByCompanyPreparerId: null, // لم يتم إسناده لمجهز بعد
+        submittedByCompanyPreparerId: null,
       },
       select: { id: true, orderNumber: true, summary: true, customerRegion: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
@@ -75,6 +75,23 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
       take: 30,
     }),
   ]);
+
+  // تحويل كافة البيانات إلى نصوص وأرقام بسيطة لمنع خطأ الـ Serialization (digest error)
+  const safeDrafts = drafts.map(d => ({
+    ...d,
+    createdAt: d.createdAt.toISOString(),
+    customerRegion: d.customerRegion ? { name: d.customerRegion.name } : null
+  }));
+
+  const safeWebStorePending = webStorePending.map(o => ({
+    ...o,
+    customerRegion: o.customerRegion ? { name: o.customerRegion.name } : null
+  }));
+
+  const safeOrderTableRows = orderTable.rows.map(r => ({
+    ...r,
+    createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt || "")
+  }));
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-3 py-4 pb-24 sm:px-4">
@@ -94,10 +111,10 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
         <h2 className="text-base font-black text-violet-950 dark:text-violet-400">خانة طلبات التجهيز</h2>
 
         {/* عرض طلبات المتجر أولاً لأنها تتطلب تسعيراً فورياً */}
-        {webStorePending.length > 0 && (
+        {safeWebStorePending.length > 0 && (
           <div className="mb-6 space-y-2">
             <p className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200 w-fit">طلبات بانتظار التسعير (من المتجر) 🛒</p>
-            {webStorePending.map((o) => (
+            {safeWebStorePending.map((o) => (
               <div key={o.id} className="flex gap-2 items-stretch">
                 <FullscreenWalletLauncher
                   href={preparerPath(`/preparer/order/${o.id}`, auth)}
@@ -123,11 +140,11 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
         )}
 
         <p className="text-[10px] font-black text-violet-600 bg-violet-50 px-2 py-1 rounded border border-violet-200 w-fit mb-2">مسودات التجهيز (من الموظفين) 📝</p>
-        {drafts.length === 0 ? (
+        {safeDrafts.length === 0 ? (
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">لا توجد مسودات حالياً.</p>
         ) : (
           <div className="mt-3 space-y-2">
-            {drafts.map((d) => (
+            {safeDrafts.map((d) => (
               <div key={d.id} className="flex gap-2 items-stretch">
                 <FullscreenWalletLauncher
                   href={preparerPath(`/preparer/preparation/draft/${d.id}`, auth)}
@@ -165,7 +182,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
         <div className="p-3 border-b border-sky-100 dark:border-slate-800">
           <h3 className="text-sm font-bold text-sky-900 dark:text-sky-400">الطلبات المرفوعة</h3>
         </div>
-        <PreparerOrdersSection allRows={orderTable.rows} searchFields={orderTable.searchFields} auth={auth} tab="all" initialQuery={sp.q || ""} couriersForBulkAssign={couriers} />
+        <PreparerOrdersSection allRows={safeOrderTableRows} searchFields={orderTable.searchFields} auth={auth} tab="all" initialQuery={sp.q || ""} couriersForBulkAssign={couriers} />
       </section>
     </div>
   );
