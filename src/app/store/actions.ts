@@ -78,66 +78,32 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       });
     }
 
-    const { order, draft } = await prisma.$transaction(async (tx) => {
-      const rows = await tx.$queryRaw<Array<{ next_number: bigint | number | string }>>`
-        SELECT nextval(pg_get_serial_sequence('"Order"', 'orderNumber')) AS next_number
-      `;
-      const raw = rows[0]?.next_number;
-      const nextOrderNumber = typeof raw === "bigint" ? Number(raw) : Number(raw ?? 0);
-      if (!Number.isFinite(nextOrderNumber) || nextOrderNumber <= 0) {
-        throw new Error("Failed to reserve next real order number");
-      }
-
-      const prepJson = {
-        version: 1,
-        reservedOrderNumber: nextOrderNumber,
-        products: cart.map(i => ({
-          line: i.name,
-          qty: i.quantity || 1,
-          buyAlf: "0",
-          sellAlf: (Number(i.price || 0) / 1000).toString(),
-          isFromStore: true,
-          supplierId: i.supplierId || null,
-          productId: i.productId || i.id
-        })),
-        webStoreCart: cart
-      };
-
-      // إنشاء طلب حقيقي بمصدر web_store لكي يظهر في "طلبات المتجر" للمجهز
-      const createdOrder = await tx.order.create({
+    const draft = await prisma.$transaction(async (tx) => {
+      // إنشاء مسودة تجهيز فقط لكي تظهر في تبويب "قيد التجهيز" للإدارة للتسعير والإسناد
+      return tx.companyPreparerShoppingDraft.create({
         data: {
-          shopId: shop!.id,
-          customerId: customer!.id,
-          status: "pending",
-          submissionSource: "web_store",
-          customerPhone: phoneLocal,
-          customerRegionId: regionId,
-          customerLandmark: landmark,
-          orderSubtotal: new Decimal(subtotal),
-          deliveryPrice: region.deliveryPrice,
-          totalAmount: new Decimal(totalAmount),
-          summary: summaryParts.join("\n"),
-          orderNumber: nextOrderNumber,
-          preparerShoppingJson: prepJson
-        }
-      });
-
-      // إنشاء مسودة تجهيز وربطها بالطلب
-      const createdDraft = await tx.companyPreparerShoppingDraft.create({
-        data: {
-          preparerId: null,
+          preparerId: null, // سيبقى فارغاً حتى يسنده الأدمن لمجهز معين
           customerPhone: phoneLocal,
           customerRegionId: regionId,
           customerLandmark: landmark,
           titleLine: "طلب من المتجر الالكتروني",
           rawListText: summaryParts.join("\n"),
           status: "draft",
-          sentOrderId: createdOrder.id,
-          data: prepJson
+          data: {
+            version: 1,
+            products: cart.map(i => ({
+              line: i.name,
+              qty: i.quantity || 1,
+              buyAlf: "", // نتركها فارغة لكي يضطر المجهز لتسعيرها وتجهيزها
+              sellAlf: "", // نتركها فارغة لضمان ظهورها كغير مجهزة
+              isFromStore: true,
+              supplierId: i.supplierId || null,
+              productId: i.productId || i.id
+            })),
+            webStoreCart: cart
+          }
         }
       });
-
-      return { order: createdOrder, draft: createdDraft };
     });
 
     // Notify via Telegram
@@ -146,7 +112,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
       const telegramText = [
         `🛒 <b>طلب تجهيز جديد (المتجر الالكتروني)</b>`,
-        `🔢 <b>رقم الطلب:</b> <code>${order.orderNumber}</code>`,
+        `🔢 <b>رقم المسودة:</b> <code>${draft.draftNumber}</code>`,
         `📞 <b>الهاتف:</b> <code>${escapeTelegramHtml(phoneLocal)}</code>`,
         `📍 <b>المنطقة:</b> ${escapeTelegramHtml(region.name)}`,
         `🏠 <b>نقطة دالة:</b> ${escapeTelegramHtml(landmark)}`,
@@ -164,7 +130,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       console.error("Telegram notification failed", teleErr);
     }
 
-    const numericOrderNumber = String(order.orderNumber);
+    const numericOrderNumber = String(draft.draftNumber);
     const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
     const whatsappMessage = [
       "لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي",

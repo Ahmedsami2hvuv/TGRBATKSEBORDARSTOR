@@ -59,21 +59,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
       preparerId: preparer.id, shopIds, orderListResetAt: preparer.orderListResetAt,
       tab: "all", wardFilter: "lower", saderFilter: "lower", prepFilter: null, onlySubmittedByThisPreparer: true,
     }),
-    prisma.order.findMany({
-      where: {
-        submissionSource: "web_store",
-        status: "pending",
-        submittedByCompanyPreparerId: preparer.id,
-      },
-      select: {
-        id: true,
-        orderNumber: true,
-        summary: true,
-        customerRegion: { select: { name: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    }),
+    Promise.resolve([]),
     prisma.companyPreparerShoppingDraft.findMany({
       where: { preparerId: preparer.id, status: { in: ["draft", "priced"] } },
       select: { id: true, titleLine: true, status: true, createdAt: true },

@@ -22,6 +22,8 @@ type ProductRow = {
   pricedById?: string | null;
   assignedPreparerId?: string | null;
   assignedPreparerName?: string | null;
+  productId?: string | null;
+  isFromStore?: boolean;
 };
 
 type DraftWithRegion = {
@@ -63,6 +65,8 @@ function parseProducts(raw: unknown): ProductRow[] {
       pricedById: typeof r.pricedById === "string" ? r.pricedById : null,
       assignedPreparerId: typeof r.assignedPreparerId === "string" ? r.assignedPreparerId : null,
       assignedPreparerName: typeof r.assignedPreparerName === "string" ? r.assignedPreparerName : null,
+      productId: typeof r.productId === "string" ? r.productId : (typeof r.id === "string" ? r.id : null),
+      isFromStore: !!r.isFromStore,
     });
   }
   return results;

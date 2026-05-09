@@ -84,40 +84,57 @@ export default async function PreparerShoppingDraftPage({ params, searchParams }
     );
   }
 
-  // تحسين الأداء: جلب فقط المنتجات التي تظهر أسماؤها داخل الطلب الحالي بدلاً من جلب كامل المتجر
+  // تحسين الأداء: جلب فقط المنتجات التي تظهر أسماؤها أو معرفاتها داخل الطلب الحالي
   const draftData = draft.data as any;
-  const productLines = (draftData?.products || []).map((p: any) => p.line.trim().toLowerCase());
+  const productsList = (draftData?.products || []) as any[];
+  const productLines = productsList.map((p: any) => p.line.trim().toLowerCase());
+  const productIds = productsList.map((p: any) => p.productId).filter(Boolean);
 
-  const matchingProducts = productLines.length > 0 ? await prisma.storeProduct.findMany({
+  const matchingProducts = await prisma.storeProduct.findMany({
     where: {
-      active: true,
-      OR: productLines.map((line: string) => ({
-        name: { equals: line.split(' ')[0], mode: 'insensitive' } // مطابقة أول كلمة من اسم المنتج كحد أدنى
-      })).slice(0, 50) // حد أقصى للبحث لضمان السرعة
+      OR: [
+        { id: { in: productIds } },
+        { name: { in: productLines } },
+        // Fallback for partial matches if needed
+        ...productLines.map((line: string) => ({
+          name: { equals: line.split(' ')[0], mode: 'insensitive' }
+        })).slice(0, 20)
+      ]
     },
     select: {
+      id: true,
       name: true,
       photoUrls: true,
       branch: { select: { name: true } }
     }
-  }) : [];
+  });
 
   const productImagesMap: Record<string, string> = {};
   const productBranchMap: Record<string, string> = {};
 
-  productLines.forEach((line: string) => {
-    const lineKey = line.trim().toLowerCase();
-    const firstWord = lineKey.split(' ')[0];
-    const match = matchingProducts.find(p => p.name.trim().toLowerCase() === firstWord);
+  productsList.forEach((p: any) => {
+    const lineKey = p.line.trim().toLowerCase();
+
+    // البحث عن المنتج بالمعرف أولاً ثم بالاسم
+    const match = matchingProducts.find(mp => mp.id === p.productId)
+               || matchingProducts.find(mp => mp.name.trim().toLowerCase() === lineKey)
+               || matchingProducts.find(mp => mp.name.trim().toLowerCase() === lineKey.split(' ')[0]);
 
     if (match) {
+      let url = "";
       if (match.photoUrls && Array.isArray(match.photoUrls) && match.photoUrls.length > 0) {
-        productImagesMap[lineKey] = match.photoUrls[0];
+        url = match.photoUrls[0];
       } else if (typeof match.photoUrls === 'string' && match.photoUrls) {
-        productImagesMap[lineKey] = match.photoUrls;
+        url = match.photoUrls;
+      }
+
+      if (url) {
+        productImagesMap[lineKey] = url;
+        if (match.id) productImagesMap[match.id] = url;
       }
       if (match.branch?.name) {
         productBranchMap[lineKey] = match.branch.name;
+        if (match.id) productBranchMap[match.id] = match.branch.name;
       }
     }
   });
