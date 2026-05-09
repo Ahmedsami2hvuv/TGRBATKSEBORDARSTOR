@@ -318,24 +318,23 @@ function basePromptByPortal(portal: PortalKey, productsText: string): string {
 تكلم بلهجة عراقية ميدانية بسيطة.`;
   }
 
-  return `أنت "مساعد مبيعات أبو الأكبر". مهمتك تحويل القائمة المكتوبة إلى سلة تسوق.
+  return `أنت "مساعد مبيعات أبو الأكبر". مهمتك تحويل القائمة المكتوبة إلى سلة تسوق ومساعدة الزبائن في التصفح.
 
 المنتجات المتوفرة حالياً في المتجر والتي تشبه طلب المستخدم:
 ${productsText}
 
-طريقة العمل:
+طريقة العمل (التزم بها بدقة):
 1. حلل القائمة: استخرج الاسم، الرقم، وكل مادة.
-2. المواد الواضحة (مثل موز، خيار): إذا وجدتها مطابقة تماماً لمنتج واحد، أرسل أمر ADD_TO_CART.
-3. المواد المتعددة (مثل لبن، كيك): إذا وجدتها تحتمل أكثر من منتج، اعرض الخيارات للمستخدم واطلب منه الاختيار.
-4. المعلومات الشخصية: احفظ الاسم والرقم في ذاكرتك.
-5. إذا طلب المستخدم منتج بوصف عام مثل "مشروب فراولة"، اعرض المنتجات المطابقة باستخدام SHOW_OPTIONS.
-6. إذا طلب فتح صفحة منتج أو فرع، استخدم NAVIGATE مع الرابط المناسب (مثلاً /store/products/ID أو /store/search?q=...).
+2. المواد الواضحة (مثل موز، خيار): إذا وجدتها مطابقة تماماً لمنتج واحد، أرسل أمر ADD_TO_CART فوراً.
+3. المواد المتعددة أو البحث العام: **يجب دائماً** استخدام SHOW_OPTIONS لعرض المنتجات كأزرار، حتى لو تكرر الطلب. لا تكتفِ بالنص أبداً.
+4. الروابط: إذا طلب المستخدم فتح منتج، استخدم الرابط التالي حصراً: /store/c/PRODUCT_ID (مثلاً: /store/c/123). لا تستخدم /store/products/.
+5. في كل رد يحتوي على منتجات، يجب أن ترفق مصفوفة JSON تحتوي على الأوامر المناسبة.
 
-الأوامر التنفيذية (يمكنك إرسال مصفوفة JSON أو كائن واحد):
+الأوامر التنفيذية (أرسل JSON واضح):
 - إضافة للسلة: {"type": "ADD_TO_CART", "payload": {"id": "PRODUCT_ID", "name": "Name", "price": 0}}
-- اقتراح خيارات: {"type": "SHOW_OPTIONS", "payload": {"items": [{"id": "", "name": "", "action": {"type":"ADD_TO_CART","payload":{...}}}]}}
-- فتح صفحة: {"type": "NAVIGATE", "payload": {"url": "/store/..."}}
-- اكمال الطلب: {"type": "ASK_ADDRESS", "payload": {}}`;
+- اقتراح خيارات (أزرار): {"type": "SHOW_OPTIONS", "payload": {"items": [{"id": "1", "name": "اسم المنتج", "action": {"type":"ADD_TO_CART","payload":{"id":"1","name":"...","price":1000}}}]}}
+- فتح صفحة منتج: {"type": "NAVIGATE", "payload": {"url": "/store/c/PRODUCT_ID"}}
+- بحث عام: {"type": "SEARCH_PRODUCTS", "payload": {"query": "كلمة البحث"}}`;
 }
 
 export async function POST(req: Request) {
@@ -502,9 +501,13 @@ ${adminExecutionContext}
           // استخراج كافة الأوامر من النص (قد يرسل الذكاء أكثر من أمر)
           const actions = extractJsonActions(fullText);
 
+          // تنظيف النص من أكواد الـ JSON ليبقى الرد البشري فقط
+          let cleanedText = fullText.replace(/```json[\s\S]*?```/g, ""); // حذف بلوكات الكود
+          cleanedText = cleanedText.replace(/\{[\s\S]*?"type"[\s\S]*?\}/g, "").trim(); // حذف أي JSON متناثر
+
           await prisma.aIConfig.update({ where: { id: config.id }, data: { usedToday: { increment: 1 } } });
           return NextResponse.json({
-            text: fullText.replace(/\{[\s\S]*?"type"[\s\S]*?\}/g, "").trim(),
+            text: cleanedText,
             actions: actions.length > 0 ? actions : null
           });
         }
