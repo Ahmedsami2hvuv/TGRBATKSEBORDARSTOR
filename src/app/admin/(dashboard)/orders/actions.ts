@@ -101,6 +101,7 @@ export async function assignOrderToPreparer(
   }
 
   const finalGroupId = existingGroupId || `GRP-${Date.now()}`;
+  let unassignedDraftToUse = isDraft && (await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: orderId } }))?.preparerId === null ? orderId : null;
 
   for (const preparerId of preparerIds) {
     const existing = await prisma.companyPreparerShoppingDraft.findFirst({
@@ -113,7 +114,7 @@ export async function assignOrderToPreparer(
     });
 
     if (existing) {
-        // تحديث المسودة الموجودة بالمجموعة الجديدة والمنتجات المدمجة بدلاً من إنشاء واحدة ثانية
+        // تحديث المسودة الموجودة بالمجموعة الجديدة والمنتجات المدمجة
         const existingData = (existing.data as any) || {};
         await prisma.companyPreparerShoppingDraft.update({
             where: { id: existing.id },
@@ -130,28 +131,48 @@ export async function assignOrderToPreparer(
         continue;
     }
 
-    const preparer = await prisma.companyPreparer.findUnique({ where: { id: preparerId } });
-    await prisma.companyPreparerShoppingDraft.create({
-      data: {
-        preparerId,
-        titleLine,
-        rawListText: summary,
-        customerPhone,
-        customerName: customerPhone,
-        customerRegionId,
-        customerLandmark,
-        orderTime: orderNoteTime,
-        sentOrderId,
-        data: {
-           version: 1,
-           groupId: finalGroupId,
-           products: mergedProducts,
-           assignedPreparerId: preparerId,
-           assignedPreparerName: preparer?.name,
-           fromAdminAction: true
-        }
-      }
-    });
+    if (unassignedDraftToUse) {
+        // إذا كان هناك مسودة بدون مجهز (مثل طلب المتجر)، نستخدمها للمجهز الأول بدلاً من إنشاء نسخة جديدة
+        const preparer = await prisma.companyPreparer.findUnique({ where: { id: preparerId } });
+        await prisma.companyPreparerShoppingDraft.update({
+            where: { id: unassignedDraftToUse },
+            data: {
+                preparerId,
+                data: {
+                    ...( (await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: unassignedDraftToUse } }))?.data as any || {} ),
+                    groupId: finalGroupId,
+                    products: mergedProducts,
+                    assignedPreparerId: preparerId,
+                    assignedPreparerName: preparer?.name,
+                }
+            }
+        });
+        unassignedDraftToUse = null; // تم استخدامها
+    } else {
+        // إنشاء مسودة جديدة للمجهز الإضافي
+        const preparer = await prisma.companyPreparer.findUnique({ where: { id: preparerId } });
+        await prisma.companyPreparerShoppingDraft.create({
+          data: {
+            preparerId,
+            titleLine,
+            rawListText: summary,
+            customerPhone,
+            customerName: customerPhone,
+            customerRegionId,
+            customerLandmark,
+            orderTime: orderNoteTime,
+            sentOrderId,
+            data: {
+               version: 1,
+               groupId: finalGroupId,
+               products: mergedProducts,
+               assignedPreparerId: preparerId,
+               assignedPreparerName: preparer?.name,
+               fromAdminAction: true
+            }
+          }
+        });
+    }
 
     await prisma.companyPreparerPrepNotice.create({
       data: {
