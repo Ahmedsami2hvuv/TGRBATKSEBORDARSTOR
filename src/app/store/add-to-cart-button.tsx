@@ -32,9 +32,10 @@ export function AddToCartButton({ product }: { product: any }) {
 
       localStorage.setItem("kse_cart", JSON.stringify(cart));
 
-      // إطلاق الحدث لتحديث العداد في القائمة العلوية
+      // إطلاق كافة الأحداث لضمان المزامنة مع المساعد الذكي وواجهة المتجر
       window.dispatchEvent(new Event("cart-updated"));
-      window.dispatchEvent(new Event("storage")); // لضمان التحديث في كافة التبويبات
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("kse:store-cart-changed", { detail: { cart } }));
 
       setAdded(true);
       setTimeout(() => setAdded(false), 1500);
