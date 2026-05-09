@@ -8,6 +8,7 @@ import { suggestFixedPrices } from "@/lib/fixed-prices";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
 import { calculateAutoSellPrice, isMeatProduct } from "@/lib/auto-pricing";
 import { preparerPath } from "@/lib/preparer-portal-nav";
+import { resolvePublicAssetSrc } from "@/lib/image-url";
 
 const initial: PreparerActionState = {};
 const inputClass =
@@ -592,7 +593,7 @@ export function PreparerShoppingDraftEditClient({
                       className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-slate-100 bg-slate-50 active:scale-95 transition-transform"
                     >
                       <img
-                        src={productImagesMap[p.line.trim().toLowerCase()]}
+                        src={resolvePublicAssetSrc(productImagesMap[p.line.trim().toLowerCase()])!}
                         alt=""
                         className="w-full h-full object-cover"
                       />

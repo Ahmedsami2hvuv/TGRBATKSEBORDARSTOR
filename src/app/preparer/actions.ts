@@ -639,7 +639,10 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
           .filter((id: string) => id !== "")
       : [];
 
-    if (order.submittedByCompanyPreparerId !== v.preparerId && !preparerInvoiceIds.includes(v.preparerId)) {
+    if (
+      order.submittedByCompanyPreparerId !== v.preparerId &&
+      !preparerInvoiceIds.includes(v.preparerId)
+    ) {
       return { error: "ليس لديك صلاحية تعديل هذا الطلب." };
     }
 
@@ -739,39 +742,49 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
     });
     const summary = formatBorderedSummarySection("المنتجات حسب المجهز", summaryParts.join("\n\n═══════════════\n\n"));
 
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        shopId: shop.id,
-        customerPhone,
-        customerRegionId: customerRegion.id,
-        customerLandmark,
-        orderNoteTime: orderTime,
-        orderSubtotal: subtotalDinar,
-        deliveryPrice: deliveryDinar,
-        totalAmount: totalDinar,
-        summary,
-        preparerShoppingJson: {
-          ...(order.preparerShoppingJson as any || {}),
-          version: 1,
-          titleLine,
-          products,
-          placesCount,
-          sumSellAlf,
-          extraAlf,
-          deliveryAlf,
-          preparerInvoices,
-          customerInvoiceText: buildCustomerInvoiceText({
-            brandLabel: "أبو الأكبر للتوصيل",
-            orderNumberLabel: `#${order.orderNumber}`,
-            regionTitle: titleLine,
-            phone: customerPhone || "—",
-            lines: products,
+    await prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          shopId: shop.id,
+          customerPhone,
+          customerRegionId: customerRegion.id,
+          customerLandmark,
+          orderNoteTime: orderTime,
+          orderSubtotal: subtotalDinar,
+          deliveryPrice: deliveryDinar,
+          totalAmount: totalDinar,
+          summary,
+          submittedByCompanyPreparerId: order.submittedByCompanyPreparerId || v.preparerId,
+          submissionSource: isWebStoreOrder ? "company_preparer" : order.submissionSource,
+          preparerShoppingJson: {
+            ...(order.preparerShoppingJson as any || {}),
+            version: 1,
+            titleLine,
+            products,
             placesCount,
+            sumSellAlf,
+            extraAlf,
             deliveryAlf,
-          }),
+            preparerInvoices,
+            customerInvoiceText: buildCustomerInvoiceText({
+              brandLabel: "أبو الأكبر للتوصيل",
+              orderNumberLabel: `#${order.orderNumber}`,
+              regionTitle: titleLine,
+              phone: customerPhone || "—",
+              lines: products,
+              placesCount,
+              deliveryAlf,
+            }),
+          },
         },
-      },
+      });
+
+      // إذا كان هناك مسودة مرتبطة، نقوم بتحديث حالتها
+      await tx.companyPreparerShoppingDraft.updateMany({
+        where: { sentOrderId: orderId, status: { in: ["draft", "priced"] } },
+        data: { status: "sent" },
+      });
     });
 
     revalidatePath("/preparer");

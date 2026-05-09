@@ -63,6 +63,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
       where: {
         submissionSource: "web_store",
         status: "pending",
+        submittedByCompanyPreparerId: preparer.id,
       },
       select: {
         id: true,

@@ -114,12 +114,25 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
 
   // جلب صور المنتجات للطلبات المنظمة مع تحسين الموازنة (Mapping)
   const productLines = (prepJson?.products || []).map((p: any) => p.line.trim());
+
+  // نستخدم استعلاماً أكثر مرونة للبحث عن المنتجات:
+  // 1. الاسم الكامل (Full match)
+  // 2. الكلمة الأولى (Prefix match)
+  // 3. البحث في الكلمات (Keyword match)
+  const productSearchTerms = productLines.flatMap((line: string) => {
+    const parts = line.split(/\s+/).filter((p: string) => p.length > 1);
+    return [line, ...parts];
+  });
+
   const matchingProducts = productLines.length > 0 ? await prisma.storeProduct.findMany({
     where: {
       active: true,
-      OR: productLines.map((line: string) => ({
-        name: { equals: line.split(' ')[0], mode: 'insensitive' }
-      })).slice(0, 50)
+      OR: [
+        { name: { in: productSearchTerms, mode: 'insensitive' } },
+        ...productLines.map((line: string) => ({
+           name: { contains: line.split(' ')[0], mode: 'insensitive' }
+        }))
+      ].slice(0, 100)
     },
     select: {
       name: true,
@@ -133,8 +146,14 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
 
   productLines.forEach(line => {
     const lineKey = line.toLowerCase();
-    const firstWord = lineKey.split(' ')[0];
-    const match = matchingProducts.find(p => p.name.trim().toLowerCase() === firstWord);
+
+    // محاولة المطابقة بالترتيب: الاسم الكامل أولاً، ثم الجزئي
+    let match = matchingProducts.find(p => p.name.trim().toLowerCase() === lineKey);
+
+    if (!match) {
+      const firstWord = lineKey.split(' ')[0];
+      match = matchingProducts.find(p => p.name.trim().toLowerCase().includes(firstWord));
+    }
 
     if (match) {
       if (match.photoUrls && Array.isArray(match.photoUrls) && match.photoUrls.length > 0) {
@@ -175,8 +194,7 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
   // 3. الطلب قادم من المتجر وهو المجهز الحالي الذي يشاهد الطلب (أو سيقوم الإدمن بإسناده له)
   const canEditPricing = hasPreparerShoppingJson && orderRaw.status !== "delivered" && (
     orderRaw.submittedByCompanyPreparerId === preparer.id ||
-    preparerInvoiceIds.includes(preparer.id) ||
-    (orderRaw.submissionSource === "web_store" && orderRaw.status === "pending")
+    preparerInvoiceIds.includes(preparer.id)
   );
   const pricingEditHref = canEditPricing ? preparerPath(`/preparer/preparation/edit/${orderId}`, auth) : undefined;
 

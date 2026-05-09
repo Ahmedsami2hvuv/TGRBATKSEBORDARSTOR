@@ -15,6 +15,7 @@ import { parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import { hasCustomerLocationUrl } from "@/lib/order-location";
 import { computeCourierDeliveryEarningDinar } from "@/lib/courier-earnings";
 import { reconcileMoneyEventsOnOrderStatusChange } from "@/lib/order-money-reconcile";
+import { syncOrderStatusFromActiveMoneyEvents } from "@/lib/mandoub-order-status-from-money";
 import { CourierWalletMiscDirection } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
@@ -592,6 +593,7 @@ export async function softDeleteMandoubMoneyEvent(
         deletedByDisplayName: deletedBy,
       },
     });
+    await syncOrderStatusFromActiveMoneyEvents(tx, ev.orderId);
   });
 
   revalidatePath(`/mandoub/order/${ev.orderId}`);
@@ -630,6 +632,7 @@ export async function softDeleteMandoubMoneyEventAdmin(
         deletedByDisplayName: "لوحة الإدارة",
       },
     });
+    await syncOrderStatusFromActiveMoneyEvents(tx, ev.orderId);
   });
 
   const oid = ev.orderId;
@@ -681,6 +684,7 @@ export async function hardDeleteOrderCourierMoneyEventAdmin(
 
   await prisma.$transaction(async (tx) => {
     await tx.orderCourierMoneyEvent.delete({ where: { id: eventId } });
+    await syncOrderStatusFromActiveMoneyEvents(tx, orderId);
   });
 
   revalidatePath("/admin/orders/tracking");

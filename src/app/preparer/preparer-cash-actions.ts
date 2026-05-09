@@ -12,6 +12,7 @@ import {
 import { parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import { prisma } from "@/lib/prisma";
 import { reconcileMoneyEventsOnOrderStatusChange } from "@/lib/order-money-reconcile";
+import { syncOrderStatusFromActiveMoneyEvents } from "@/lib/mandoub-order-status-from-money";
 import { computeCourierDeliveryEarningDinar } from "@/lib/courier-earnings";
 
 export type PreparerCashState = { error?: string };
@@ -342,6 +343,7 @@ export async function softDeletePreparerMoneyEvent(
         deletedByDisplayName: deletedBy,
       },
     });
+    await syncOrderStatusFromActiveMoneyEvents(tx, ev.order.id);
   });
 
   revalidatePreparerPaths(nextRaw);

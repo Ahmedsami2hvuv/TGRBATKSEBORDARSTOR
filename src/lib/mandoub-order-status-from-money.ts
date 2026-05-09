@@ -75,10 +75,11 @@ export async function syncOrderStatusFromActiveMoneyEvents(
     return;
   }
 
+  const nextStatus = order.assignedCourierId ? "assigned" : "pending";
   await tx.order.update({
     where: { id: orderId },
     data: {
-      status: "assigned",
+      status: nextStatus,
     },
   });
 }

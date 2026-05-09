@@ -1,6 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { Decimal } from "@prisma/client/runtime/library";
+import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
 export type OrderFormState = {
   error?: string;
@@ -18,6 +20,8 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
   if (!phone || !regionId || !cartJson) {
     return { error: "يرجى ملء جميع الحقول المطلوبة" };
   }
+
+  const phoneLocal = normalizeIraqMobileLocal11(phone) || phone;
 
   const cart = JSON.parse(cartJson);
   if (!Array.isArray(cart) || cart.length === 0) {
@@ -45,18 +49,36 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     });
 
     if (!shop) {
-      // إذا لم يوجد، نبحث عن أي محل يحتوي كلمة "متجر"
       shop = await prisma.shop.findFirst({
         where: { name: { contains: "متجر", mode: "insensitive" } }
       });
     }
 
-    // إذا لم يوجد أي محل مناسب، نستخدم أول محل متاح أو ننشئ واحداً افتراضياً
     if (!shop) {
       shop = await prisma.shop.findFirst();
     }
 
-    const { draft, reservedOrderNumber } = await prisma.$transaction(async (tx) => {
+    if (!shop) {
+      return { error: "لا يوجد محل مفعل لاستقبال الطلبات حالياً" };
+    }
+
+    // البحث عن عميل أو إنشاؤه لهذا المحل
+    let customer = await prisma.customer.findFirst({
+      where: { shopId: shop.id, phone: phoneLocal }
+    });
+
+    if (!customer) {
+      customer = await prisma.customer.create({
+        data: {
+          shopId: shop.id,
+          phone: phoneLocal,
+          customerRegionId: regionId,
+          customerLandmark: landmark,
+        }
+      });
+    }
+
+    const { order, draft } = await prisma.$transaction(async (tx) => {
       const rows = await tx.$queryRaw<Array<{ next_number: bigint | number | string }>>`
         SELECT nextval(pg_get_serial_sequence('"Order"', 'orderNumber')) AS next_number
       `;
@@ -66,34 +88,56 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
         throw new Error("Failed to reserve next real order number");
       }
 
-      // إنشاء مسودة تجهيز مباشرة لكي تظهر في تبويب "قيد التجهيز" للإدارة
+      const prepJson = {
+        version: 1,
+        reservedOrderNumber: nextOrderNumber,
+        products: cart.map(i => ({
+          line: i.name,
+          qty: i.quantity || 1,
+          buyAlf: "0",
+          sellAlf: (Number(i.price || 0) / 1000).toString(),
+          isFromStore: true,
+          supplierId: i.supplierId || null,
+          productId: i.productId || i.id
+        })),
+        webStoreCart: cart
+      };
+
+      // إنشاء طلب حقيقي بمصدر web_store لكي يظهر في "طلبات المتجر" للمجهز
+      const createdOrder = await tx.order.create({
+        data: {
+          shopId: shop!.id,
+          customerId: customer!.id,
+          status: "pending",
+          submissionSource: "web_store",
+          customerPhone: phoneLocal,
+          customerRegionId: regionId,
+          customerLandmark: landmark,
+          orderSubtotal: new Decimal(subtotal),
+          deliveryPrice: region.deliveryPrice,
+          totalAmount: new Decimal(totalAmount),
+          summary: summaryParts.join("\n"),
+          orderNumber: nextOrderNumber,
+          preparerShoppingJson: prepJson
+        }
+      });
+
+      // إنشاء مسودة تجهيز وربطها بالطلب
       const createdDraft = await tx.companyPreparerShoppingDraft.create({
         data: {
-          preparerId: null, // سيبقى فارغاً حتى يسحبه مجهز معين أو يوجهه الأدمن
-          customerPhone: phone,
+          preparerId: null,
+          customerPhone: phoneLocal,
           customerRegionId: regionId,
           customerLandmark: landmark,
           titleLine: "طلب من المتجر الالكتروني",
           rawListText: summaryParts.join("\n"),
           status: "draft",
-          data: {
-            version: 1,
-            reservedOrderNumber: nextOrderNumber,
-            products: cart.map(i => ({
-              line: i.name,
-              qty: i.quantity || 1,
-              buyAlf: "0",
-              sellAlf: (Number(i.price || 0) / 1000).toString(),
-              isFromStore: true,
-              supplierId: i.supplierId || null, // تمرير معرف المورد إن وجد
-              productId: i.productId || i.id // تمرير معرف المنتج الأصلي
-            })),
-            webStoreCart: cart
-          }
+          sentOrderId: createdOrder.id,
+          data: prepJson
         }
       });
 
-      return { draft: createdDraft, reservedOrderNumber: nextOrderNumber };
+      return { order: createdOrder, draft: createdDraft };
     });
 
     // Notify via Telegram
@@ -102,8 +146,8 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
       const telegramText = [
         `🛒 <b>طلب تجهيز جديد (المتجر الالكتروني)</b>`,
-        `🔢 <b>رقم المسودة:</b> <code>${draft.draftNumber}</code>`,
-        `📞 <b>الهاتف:</b> <code>${escapeTelegramHtml(phone)}</code>`,
+        `🔢 <b>رقم الطلب:</b> <code>${order.orderNumber}</code>`,
+        `📞 <b>الهاتف:</b> <code>${escapeTelegramHtml(phoneLocal)}</code>`,
         `📍 <b>المنطقة:</b> ${escapeTelegramHtml(region.name)}`,
         `🏠 <b>نقطة دالة:</b> ${escapeTelegramHtml(landmark)}`,
         `-------------------------`,
@@ -120,7 +164,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       console.error("Telegram notification failed", teleErr);
     }
 
-    const numericOrderNumber = String(reservedOrderNumber);
+    const numericOrderNumber = String(order.orderNumber);
     const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
     const whatsappMessage = [
       "لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي",
