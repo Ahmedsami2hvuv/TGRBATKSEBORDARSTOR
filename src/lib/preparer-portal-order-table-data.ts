@@ -220,19 +220,19 @@ export async function loadPreparerPortalOrderTableData(args: {
 
   const searchFields: MandoubOrderSearchFields[] = filteredByPrepf.map((o) => ({
     id: o.id,
-    orderNumber: o.orderNumber,
-    orderType: o.orderType,
+    orderNumber: o.orderNumber || 0,
+    orderType: o.orderType || "",
     customerPhone: "",
     alternatePhone: "",
     secondCustomerPhone: "",
-    summary: o.summary,
-    customerLandmark: o.customerLandmark,
-    secondCustomerLandmark: o.secondCustomerLandmark,
+    summary: o.summary || "",
+    customerLandmark: o.customerLandmark || "",
+    secondCustomerLandmark: o.secondCustomerLandmark || "",
     orderNoteTime: o.orderNoteTime?.trim() ?? "",
-    shopName: o.shop.name,
+    shopName: o.shop?.name || "—",
     regionName: o.customerRegion?.name ?? "",
     secondRegionName: o.secondCustomerRegion?.name ?? "",
-    routeMode: o.routeMode,
+    routeMode: (o.routeMode as any) || "single",
     courierName: o.courier?.name ?? "",
     adminOrderCode: o.adminOrderCode ?? "",
     submissionSource: o.submissionSource ?? "",
@@ -248,10 +248,10 @@ export async function loadPreparerPortalOrderTableData(args: {
       o.preparerShoppingJson != null ? JSON.stringify(o.preparerShoppingJson) : "",
     submittedByEmployeeName: o.submittedBy?.name ?? "",
     submittedByPreparerName: o.submittedByCompanyPreparer?.name ?? "",
-    createdAtIso: o.createdAt.toISOString(),
+    createdAtIso: o.createdAt ? o.createdAt.toISOString() : new Date().toISOString(),
   }));
 
-  const ordersForPrimaryShopLabel = activeOrders.map((o) => ({ shop: { name: o.shop.name } }));
+  const ordersForPrimaryShopLabel = activeOrders.map((o) => ({ shop: { name: o.shop?.name || "—" } }));
 
   return { rows, searchFields, ordersForPrimaryShopLabel };
 }

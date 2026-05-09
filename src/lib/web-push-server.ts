@@ -233,6 +233,7 @@ export async function pushNotifyPreparerNewNotice(input: {
   preparerId: string;
   title: string;
   body?: string;
+  orderId?: string;
 }): Promise<void> {
   if (!isWebPushConfigured()) return;
   const settingsRow = await getOrCreateNotificationSettings();
@@ -242,26 +243,52 @@ export async function pushNotifyPreparerNewNotice(input: {
   const rawTitle = input.title || "";
   const rawBody = input.body || "";
 
-  // فحص ما إذا كان الإشعار يحتوي على رقم هاتف أو كلمة إسناد (طلبات الموقع)
-  const isAssignment = rawTitle.includes("إسناد") || rawBody.includes("إسناد") || /\d{8,}/.test(rawTitle) || /\d{8,}/.test(rawBody);
+  // محاولة استخراج رقم الطلب إذا لم يتوفر معرف صريح
+  let orderNumber = 0;
+  let shopName = "—";
+  let regionName = "—";
+
+  const orderNumMatch = (rawTitle + rawBody).match(/#(\d+)/);
+  const detectedOrderNumber = orderNumMatch ? parseInt(orderNumMatch[1]) : 0;
+
+  // جلب تفاصيل الطلب الحقيقية لملء القالب
+  const order = await prisma.order.findFirst({
+    where: {
+      OR: [
+        { id: input.orderId || "undefined" },
+        { orderNumber: detectedOrderNumber > 0 ? detectedOrderNumber : -1 }
+      ]
+    },
+    select: {
+      orderNumber: true,
+      shop: { select: { name: true } },
+      customerRegion: { select: { name: true } },
+      submissionSource: true
+    }
+  });
+
+  if (order) {
+    orderNumber = order.orderNumber;
+    shopName = order.shop?.name || "—";
+    regionName = order.customerRegion?.name || "—";
+  }
 
   let body = "";
-  if (isAssignment && settings.templateWebsite) {
-    const orderNumMatch = (rawTitle + rawBody).match(/#(\d+)/);
-    const orderNumber = orderNumMatch ? parseInt(orderNumMatch[1]) : 0;
-
+  // إذا كان الطلب من الموقع أو تم إسناده يدوياً، نستخدم القوالب المخصصة
+  if (order?.submissionSource === "web_store" && settings.templateWebsite) {
     body = renderNotificationTemplate(settings.templateWebsite, {
       count: 1,
-      orderNumber: orderNumber,
-      shopName: "الموقع الإلكتروني",
-      regionName: "—",
+      orderNumber,
+      shopName,
+      regionName,
     });
   } else {
+    // استخدام قالب "طلب جديد مسند للمجهز" (templateMultiple عادة يستخدم لهذا الغرض في الإعدادات لديك)
     body = renderNotificationTemplate(settings.templateSingle, {
       count: 1,
-      orderNumber: 0,
-      shopName: rawTitle || "—",
-      regionName: rawBody || "—",
+      orderNumber,
+      shopName,
+      regionName,
     });
   }
 
@@ -274,7 +301,7 @@ export async function pushNotifyPreparerNewNotice(input: {
     title: "لوحة المجهز — إشعار جديد",
     body,
     url: `${getPublicAppUrl()}/preparer/preparation`,
-    tag: `kse-push-preparer-${input.preparerId}-${Date.now()}`,
+    tag: `kse-push-preparer-${input.preparerId}-${orderNumber || Date.now()}`,
   });
 }
 
