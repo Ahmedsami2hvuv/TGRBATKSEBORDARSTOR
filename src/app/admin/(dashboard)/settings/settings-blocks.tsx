@@ -12,8 +12,9 @@ import { IconSettingsForm } from "./icon-settings-form";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { WhatsappTemplateSettingsForm } from "./whatsapp-template-settings-form";
-import { saveChatSettingsAction } from "./actions";
+import { saveChatSettingsAction, saveRoleFeaturesAction } from "./actions";
 import { useRouter } from "next/navigation";
+import { RoleFeaturesConfig } from "@/lib/role-features-settings";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -156,20 +157,30 @@ export function SettingsBlocks({
   globalIcons,
   employeeShareTemplate,
   chatEnabledInitial,
+  mandoubFeaturesInitial,
+  preparerFeaturesInitial,
 }: {
   notificationInitial: NotificationInitial;
   globalIcons: GlobalIconsConfig;
   employeeShareTemplate: string;
   chatEnabledInitial: boolean;
+  mandoubFeaturesInitial: RoleFeaturesConfig;
+  preparerFeaturesInitial: RoleFeaturesConfig;
 }) {
   const router = useRouter();
   const [openId, setOpenId] = useState<string>("ui-designer");
   const [chatEnabled, setChatEnabled] = useState(chatEnabledInitial);
   const [chatSaving, setChatSaving] = useState(false);
+
+  const [mandoubFeatures, setMandoubFeatures] = useState(mandoubFeaturesInitial);
+  const [preparerFeatures, setPreparerFeatures] = useState(preparerFeaturesInitial);
+  const [roleFeaturesSaving, setRoleFeaturesSaving] = useState(false);
+
   const [howToShopUrl, setHowToShopUrl] = useState("");
   const [productCardBgUrl, setProductCardBgUrl] = useState("");
   const [productCardBgOpacity, setProductCardBgOpacity] = useState(40);
   const [storeOrdersExcelEnabled, setStoreOrdersExcelEnabled] = useState(true);
+  const [aiEnabledStore, setAiEnabledStore] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useMemo(() => {
@@ -180,6 +191,7 @@ export function SettingsBlocks({
           setHowToShopUrl(data.how_to_shop_url || "");
           setProductCardBgUrl(data.product_card_bg_url || "");
           setStoreOrdersExcelEnabled(data.export_store_orders_excel_enabled !== false);
+          setAiEnabledStore(data.ai_enabled === true);
           setProductCardBgOpacity(
             Number.isFinite(Number(data.product_card_bg_opacity))
               ? Math.min(100, Math.max(0, Math.round(Number(data.product_card_bg_opacity))))
@@ -191,6 +203,100 @@ export function SettingsBlocks({
 
   return (
     <div className="space-y-4">
+      <Block
+        id="role-features"
+        title="مميزات الأدوار (المندوب والمجهز) 🛠️"
+        subtitle="تحكم في ظهور أزرار الدردشة والذكاء الاصطناعي لكل دور بشكل مستقل."
+        open={openId === "role-features"}
+        onToggle={() => setOpenId((x) => (x === "role-features" ? "" : "role-features"))}
+        tone="indigo"
+        icons={globalIcons}
+      >
+        <div className="space-y-6">
+          {/* المندوب */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-black text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+              إعدادات المندوب
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 hover:bg-slate-50 transition">
+                <input
+                  type="checkbox"
+                  checked={mandoubFeatures.chatEnabled}
+                  onChange={async (e) => {
+                    const newConfig = { ...mandoubFeatures, chatEnabled: e.target.checked };
+                    setMandoubFeatures(newConfig);
+                    setRoleFeaturesSaving(true);
+                    try { await saveRoleFeaturesAction("mandoub", newConfig); } finally { setRoleFeaturesSaving(false); }
+                  }}
+                  disabled={roleFeaturesSaving}
+                  className="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-sm font-bold text-slate-700">تفعيل الدردشة للمندوب</span>
+              </label>
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 hover:bg-slate-50 transition">
+                <input
+                  type="checkbox"
+                  checked={mandoubFeatures.aiEnabled}
+                  onChange={async (e) => {
+                    const newConfig = { ...mandoubFeatures, aiEnabled: e.target.checked };
+                    setMandoubFeatures(newConfig);
+                    setRoleFeaturesSaving(true);
+                    try { await saveRoleFeaturesAction("mandoub", newConfig); } finally { setRoleFeaturesSaving(false); }
+                  }}
+                  disabled={roleFeaturesSaving}
+                  className="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-sm font-bold text-slate-700">تفعيل الذكاء الاصطناعي للمندوب</span>
+              </label>
+            </div>
+          </div>
+
+          {/* المجهز */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-black text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+              إعدادات المجهز
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 hover:bg-slate-50 transition">
+                <input
+                  type="checkbox"
+                  checked={preparerFeatures.chatEnabled}
+                  onChange={async (e) => {
+                    const newConfig = { ...preparerFeatures, chatEnabled: e.target.checked };
+                    setPreparerFeatures(newConfig);
+                    setRoleFeaturesSaving(true);
+                    try { await saveRoleFeaturesAction("preparer", newConfig); } finally { setRoleFeaturesSaving(false); }
+                  }}
+                  disabled={roleFeaturesSaving}
+                  className="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-sm font-bold text-slate-700">تفعيل الدردشة للمجهز</span>
+              </label>
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 hover:bg-slate-50 transition">
+                <input
+                  type="checkbox"
+                  checked={preparerFeatures.aiEnabled}
+                  onChange={async (e) => {
+                    const newConfig = { ...preparerFeatures, aiEnabled: e.target.checked };
+                    setPreparerFeatures(newConfig);
+                    setRoleFeaturesSaving(true);
+                    try { await saveRoleFeaturesAction("preparer", newConfig); } finally { setRoleFeaturesSaving(false); }
+                  }}
+                  disabled={roleFeaturesSaving}
+                  className="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-sm font-bold text-slate-700">تفعيل الذكاء الاصطناعي للمجهز</span>
+              </label>
+            </div>
+          </div>
+
+          {roleFeaturesSaving && <p className="text-[10px] font-bold text-indigo-600 animate-pulse">جاري الحفظ...</p>}
+        </div>
+      </Block>
+
       <Block
         id="chat-settings"
         title="نظام الدردشة 💬"
@@ -323,22 +429,42 @@ export function SettingsBlocks({
             </p>
           </div>
 
-          <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4">
-            <label className="flex cursor-pointer items-start gap-3">
-              <input
-                type="checkbox"
-                name="export_store_orders_excel_enabled"
-                checked={storeOrdersExcelEnabled}
-                onChange={(e) => setStoreOrdersExcelEnabled(e.target.checked)}
-                className="mt-1 h-4 w-4 accent-indigo-600"
-              />
-              <span>
-                <span className="block text-sm font-black text-slate-800">تفعيل تصدير طلبات المتجر إلى Excel</span>
-                <span className="mt-1 block text-xs font-bold text-slate-600">
-                  عند الإيقاف، زر التصدير لن يظهر في صفحة سجل طلبات المتجر.
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  name="export_store_orders_excel_enabled"
+                  checked={storeOrdersExcelEnabled}
+                  onChange={(e) => setStoreOrdersExcelEnabled(e.target.checked)}
+                  className="mt-1 h-4 w-4 accent-indigo-600"
+                />
+                <span>
+                  <span className="block text-sm font-black text-slate-800">تفعيل تصدير طلبات المتجر إلى Excel</span>
+                  <span className="mt-1 block text-xs font-bold text-slate-600">
+                    عند الإيقاف، زر التصدير لن يظهر في صفحة سجل طلبات المتجر.
+                  </span>
                 </span>
-              </span>
-            </label>
+              </label>
+            </div>
+
+            <div className="rounded-2xl border border-violet-100 bg-violet-50/50 p-4">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  name="ai_enabled"
+                  checked={aiEnabledStore}
+                  onChange={(e) => setAiEnabledStore(e.target.checked)}
+                  className="mt-1 h-4 w-4 accent-violet-600"
+                />
+                <span>
+                  <span className="block text-sm font-black text-slate-800">تفعيل الذكاء الاصطناعي في المتجر</span>
+                  <span className="mt-1 block text-xs font-bold text-slate-600">
+                    إظهار مساعد الذكاء الاصطناعي للزبائن في واجهة المتجر.
+                  </span>
+                </span>
+              </label>
+            </div>
           </div>
 
           {productCardBgUrl && (

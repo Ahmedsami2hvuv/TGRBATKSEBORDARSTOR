@@ -9,6 +9,7 @@ import { saveEmployeeWhatsappShareTemplate } from "@/lib/whatsapp-template-setti
 
 import { GlobalIconsConfig, saveGlobalIcons } from "@/lib/icon-settings";
 import { setChatEnabledGlobally } from "@/lib/portal-chat-settings";
+import { RoleFeaturesConfig, saveRoleFeatures } from "@/lib/role-features-settings";
 
 export async function saveGlobalIconsAction(config: GlobalIconsConfig) {
   if (!(await isAdminSession())) return { error: "Unauthenticated" };
@@ -23,6 +24,15 @@ export async function saveChatSettingsAction(enabled: boolean) {
   await setChatEnabledGlobally(enabled);
   revalidatePath("/admin/settings");
   revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function saveRoleFeaturesAction(role: "mandoub" | "preparer", config: RoleFeaturesConfig) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  await saveRoleFeatures(role, config);
+  revalidatePath("/admin/settings");
+  revalidatePath("/mandoub", "layout");
+  revalidatePath("/preparer", "layout");
   return { ok: true };
 }
 

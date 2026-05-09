@@ -33,7 +33,13 @@ function roleLabel(role: Role): string {
   return "مجهز مورد";
 }
 
-export default function PortalChatWidget() {
+export default function PortalChatWidget({
+  mandoubFeatures,
+  preparerFeatures,
+}: {
+  mandoubFeatures?: { chatEnabled: boolean };
+  preparerFeatures?: { chatEnabled: boolean };
+}) {
   const pathname = usePathname() || "";
   const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
@@ -46,10 +52,17 @@ export default function PortalChatWidget() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const prevUnreadRef = useRef(0);
 
-  const isPortalPage = useMemo(
-    () => pathname.startsWith("/admin") || pathname.startsWith("/mandoub") || pathname.startsWith("/preparer") || pathname.startsWith("/supplier"),
-    [pathname],
-  );
+  const isMandoub = pathname.startsWith("/mandoub");
+  const isPreparer = pathname.startsWith("/preparer");
+  const isSupplier = pathname.startsWith("/supplier");
+  const isAdmin = pathname.startsWith("/admin");
+
+  const isPortalPage = useMemo(() => {
+    if (isAdmin) return true;
+    if (isMandoub && mandoubFeatures?.chatEnabled === false) return false;
+    if (isPreparer && preparerFeatures?.chatEnabled === false) return false;
+    return isAdmin || isMandoub || isPreparer || isSupplier;
+  }, [pathname, mandoubFeatures, preparerFeatures]);
 
   const auth = useMemo<AuthPayload>(() => {
     const c = searchParams.get("c") || undefined;

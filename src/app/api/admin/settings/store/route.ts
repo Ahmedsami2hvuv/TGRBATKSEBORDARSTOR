@@ -26,6 +26,7 @@ export async function POST(req: Request) {
     ? Math.min(100, Math.max(0, Math.round(rawOpacity)))
     : 40;
   const export_store_orders_excel_enabled = formData.get("export_store_orders_excel_enabled") === "on";
+  const ai_enabled = formData.get("ai_enabled") === "on";
 
   // إذا تم رفع ملف جديد، نقوم بمعالجته وحفظه
   if (product_card_bg_file && product_card_bg_file.size > 0) {
@@ -48,6 +49,7 @@ export async function POST(req: Request) {
     product_card_bg_url,
     product_card_bg_opacity,
     export_store_orders_excel_enabled,
+    ai_enabled,
   };
 
   await prisma.uISystemSetting.upsert({
@@ -63,5 +65,6 @@ export async function POST(req: Request) {
     product_card_bg_url,
     product_card_bg_opacity,
     export_store_orders_excel_enabled,
+    ai_enabled,
   });
 }

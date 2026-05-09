@@ -10,19 +10,32 @@ type Message = {
   actions?: { type: string; payload: any }[];
 };
 
-export default function GlobalAIAssistant() {
+export default function GlobalAIAssistant({
+  mandoubFeatures,
+  preparerFeatures,
+  storeFeatures,
+}: {
+  mandoubFeatures?: { aiEnabled: boolean };
+  preparerFeatures?: { aiEnabled: boolean };
+  storeFeatures?: { aiEnabled: boolean };
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [fabPosition, setFabPosition] = useState({ x: 24, y: 24 });
   const [isDraggingFab, setIsDraggingFab] = useState(false);
   const pathname = usePathname();
+
+  const isMandoub = pathname.includes("/mandoub");
+  const isPreparer = pathname.includes("/preparer");
+  const isStore = pathname.includes("/store") || pathname === "/";
+  const isAdmin = pathname.includes("/admin");
+
   const isVisiblePortal =
-    pathname.includes("/admin") ||
-    pathname.includes("/preparer") ||
-    pathname.includes("/mandoub") ||
-    pathname.includes("/store") ||
-    pathname === "/";
+    (isAdmin) ||
+    (isPreparer && preparerFeatures?.aiEnabled !== false) ||
+    (isMandoub && mandoubFeatures?.aiEnabled !== false) ||
+    (isStore && storeFeatures?.aiEnabled !== false);
 
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);

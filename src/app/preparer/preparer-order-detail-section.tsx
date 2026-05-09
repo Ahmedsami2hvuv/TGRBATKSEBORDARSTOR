@@ -20,6 +20,7 @@ import { OrderTypeDetailBlock } from "@/components/order-type-line";
 import { UISectionConfig } from "@/lib/ui-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { type GlobalIconsConfig } from "@/lib/icon-settings";
+import { useState } from "react";
 
 const STATUS_AR: Record<string, string> = {
   pending: "جديد",
@@ -68,6 +69,7 @@ const squarePhotoContain = "h-full w-full object-contain";
 /** ترتيب ثابت لصفحة طلب المجهز — لا يعتمد على إعدادات لوحة التحكم حتى لا يُستبدل من قاعدة البيانات بالخطأ */
 const PREPARER_ORDER_DETAIL_LAYOUT = [
   "preparer_voice_notes",
+  "preparer_site_products",
   "preparer_shop_block",
   "preparer_shop_door",
   "preparer_customer_region",
@@ -101,6 +103,8 @@ export function PreparerOrderDetailSection({
   icons,
   canEditPricing,
   pricingEditHref,
+  productImagesMap,
+  productBranchMap,
 }: {
   order: MandoubOrderDetailPayload;
   closeHref: string;
@@ -113,7 +117,11 @@ export function PreparerOrderDetailSection({
   icons?: GlobalIconsConfig | null;
   canEditPricing?: boolean;
   pricingEditHref?: string;
+  productImagesMap?: Record<string, string>;
+  productBranchMap?: Record<string, string>;
 }) {
+  const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
+
   const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
   const shopContactPhone = order.shop.phone?.trim() || order.submittedBy?.phone?.trim() || "";
   const customerDoorDisplay = order.customerDoorPhotoUrl?.trim() || phoneProfile?.photoUrl?.trim() || "";
@@ -186,6 +194,51 @@ export function PreparerOrderDetailSection({
                   <VoiceNoteAudio src={resolvePublicAssetSrc(prepAudio) || ""} />
                 </div>
               ) : null}
+            </div>
+          </div>
+        );
+      }
+      case "preparer_site_products": {
+        const pJson = order.preparerShoppingJson as any;
+        const products = pJson?.products as any[];
+        if (!products || products.length === 0) return null;
+        return (
+          <div key="preparer_site_products" className="rounded-xl border-2 border-indigo-200 bg-indigo-50/30 p-4" style={blockStyle}>
+            <div className="mb-3 flex items-center gap-2">
+              <DynamicIcon iconKey="ui_package" config={icons} className="h-5 w-5 text-indigo-700" fallback={<span>📦</span>} />
+              <h3 className="text-lg font-bold text-indigo-950 sm:text-xl">المواد المطلوبة</h3>
+            </div>
+            <div className="flex flex-col gap-2">
+              {products.map((p, idx) => {
+                const nameKey = p.line.trim().toLowerCase();
+                const img = productImagesMap?.[nameKey];
+                const branch = productBranchMap?.[nameKey];
+                return (
+                  <div key={idx} className="flex items-center gap-3 rounded-lg border border-indigo-100 bg-white p-2 shadow-sm">
+                    {img && (
+                      <button
+                        type="button"
+                        onClick={() => setZoomImage({ url: img, title: p.line })}
+                        className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-slate-100 bg-slate-50 active:scale-95 transition-transform"
+                      >
+                        <img src={resolvePublicAssetSrc(img)!} alt="" className="h-full w-full object-cover" />
+                      </button>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-black text-slate-900">{p.line}</p>
+                      {branch && (
+                        <p className="mt-0.5 inline-block rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600">
+                          📍 {branch}
+                        </p>
+                      )}
+                      <div className="mt-1 flex items-center gap-2">
+                         <span className="text-[10px] font-bold text-slate-500">بواسطة: {p.pricedBy || "—"}</span>
+                         <span className="font-mono text-xs font-black text-emerald-600">{p.buyAlf} (شراء)</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
@@ -643,6 +696,35 @@ export function PreparerOrderDetailSection({
       <div className="mt-5 space-y-6">
         {layout.map(id => renderBlock(id))}
       </div>
+
+      {zoomImage && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-in fade-in duration-300"
+          onClick={() => setZoomImage(null)}
+        >
+          <div
+            className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b bg-slate-50 p-4">
+              <span className="text-base font-bold text-slate-800">{zoomImage.title}</span>
+              <button
+                onClick={() => setZoomImage(null)}
+                className="flex size-10 items-center justify-center rounded-full bg-slate-200 font-bold text-slate-600 transition-all hover:bg-slate-300"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="bg-slate-200 p-1">
+              <img
+                src={resolvePublicAssetSrc(zoomImage.url)!}
+                alt={zoomImage.title}
+                className="h-auto max-h-[75vh] w-full rounded-2xl object-contain shadow-inner"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

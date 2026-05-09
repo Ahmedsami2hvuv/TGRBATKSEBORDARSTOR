@@ -107,6 +107,8 @@ export function PreparerShoppingDraftEditClient({
   const [selectedPriceIndex, setSelectedPriceIndex] = useState<number | null>(null);
   const [tempBasePrice, setTempBasePrice] = useState<number | null>(null);
 
+  const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
+
   // --- Floating Bubble Logic ---
   const [bubblePos, setBubblePos] = useState({ x: 20, y: 150 });
   const [dragging, setDragging] = useState(false);
@@ -578,13 +580,23 @@ export function PreparerShoppingDraftEditClient({
 
                   {/* صورة المنتج */}
                   {productImagesMap[p.line.trim().toLowerCase()] && (
-                    <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-slate-100 bg-slate-50">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setZoomImage({
+                          url: productImagesMap[p.line.trim().toLowerCase()]!,
+                          title: p.line
+                        });
+                      }}
+                      className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-slate-100 bg-slate-50 active:scale-95 transition-transform"
+                    >
                       <img
                         src={productImagesMap[p.line.trim().toLowerCase()]}
                         alt=""
                         className="w-full h-full object-cover"
                       />
-                    </div>
+                    </button>
                   )}
 
                   <div className="min-w-0 flex-1">
@@ -849,6 +861,35 @@ export function PreparerShoppingDraftEditClient({
                   <span className="text-[10px] font-black">تم</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {zoomImage && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-in fade-in duration-300"
+          onClick={() => setZoomImage(null)}
+        >
+          <div
+            className="relative max-w-2xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+              <span className="font-bold text-slate-800 text-base">{zoomImage.title}</span>
+              <button
+                onClick={() => setZoomImage(null)}
+                className="size-10 flex items-center justify-center rounded-full bg-slate-200 text-slate-600 font-bold hover:bg-slate-300 transition-all"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-1 bg-slate-200">
+              <img
+                src={resolvePublicAssetSrc(zoomImage.url)!}
+                alt={zoomImage.title}
+                className="w-full h-auto max-h-[75vh] object-contain rounded-2xl shadow-inner"
+              />
             </div>
           </div>
         </div>

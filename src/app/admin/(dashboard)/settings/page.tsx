@@ -6,17 +6,20 @@ import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getEmployeeWhatsappShareTemplate } from "@/lib/whatsapp-template-settings";
 import { isChatEnabledGlobally } from "@/lib/portal-chat-settings";
+import { getRoleFeatures } from "@/lib/role-features-settings";
 
 export const metadata = {
   title: "الإعدادات — KSEBORDARSTOR",
 };
 
 export default async function SettingsPage() {
-  const [notificationSettings, icons, employeeShareTemplate, chatEnabled] = await Promise.all([
+  const [notificationSettings, icons, employeeShareTemplate, chatEnabled, mandoubFeatures, preparerFeatures] = await Promise.all([
     getOrCreateNotificationSettings(),
     getGlobalIcons(),
     getEmployeeWhatsappShareTemplate(),
     isChatEnabledGlobally(),
+    getRoleFeatures("mandoub"),
+    getRoleFeatures("preparer"),
   ]);
 
   return (
@@ -33,6 +36,8 @@ export default async function SettingsPage() {
         globalIcons={icons}
         employeeShareTemplate={employeeShareTemplate}
         chatEnabledInitial={chatEnabled}
+        mandoubFeaturesInitial={mandoubFeatures}
+        preparerFeaturesInitial={preparerFeatures}
         notificationInitial={{
           adminEnabled: notificationSettings.adminEnabled,
           adminTemplateSingle: notificationSettings.adminTemplateSingle,

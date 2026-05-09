@@ -109,6 +109,45 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
 
   const icons = await getGlobalIcons();
 
+  const prepJson = orderRaw.preparerShoppingJson as any;
+  const hasPreparerShoppingJson = prepJson != null;
+
+  // جلب صور المنتجات للطلبات المنظمة مع تحسين الموازنة (Mapping)
+  const productLines = (prepJson?.products || []).map((p: any) => p.line.trim());
+  const matchingProducts = productLines.length > 0 ? await prisma.storeProduct.findMany({
+    where: {
+      active: true,
+      OR: productLines.map((line: string) => ({
+        name: { equals: line.split(' ')[0], mode: 'insensitive' }
+      })).slice(0, 50)
+    },
+    select: {
+      name: true,
+      photoUrls: true,
+      branch: { select: { name: true } }
+    }
+  }) : [];
+
+  const productImagesMap: Record<string, string> = {};
+  const productBranchMap: Record<string, string> = {};
+
+  productLines.forEach(line => {
+    const lineKey = line.toLowerCase();
+    const firstWord = lineKey.split(' ')[0];
+    const match = matchingProducts.find(p => p.name.trim().toLowerCase() === firstWord);
+
+    if (match) {
+      if (match.photoUrls && Array.isArray(match.photoUrls) && match.photoUrls.length > 0) {
+        productImagesMap[lineKey] = match.photoUrls[0];
+      } else if (typeof match.photoUrls === 'string' && match.photoUrls) {
+        productImagesMap[lineKey] = match.photoUrls;
+      }
+      if (match.branch?.name) {
+        productBranchMap[lineKey] = match.branch.name;
+      }
+    }
+  });
+
   // إخفاء الأرقام الحساسة في Client Component (لن تُستخدم هناك)
   const safeOrder: MandoubOrderDetailPayload = {
     ...order,
@@ -124,8 +163,6 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
   const safePhoneProfile = phoneProfile ? { ...phoneProfile, phone: "", alternatePhone: null } : null;
   const safeSecondPhoneProfile = secondPhoneProfile ? { ...secondPhoneProfile, phone: "", alternatePhone: null } : null;
 
-  const prepJson = orderRaw.preparerShoppingJson as any;
-  const hasPreparerShoppingJson = prepJson != null;
   const preparerInvoiceIds: string[] = Array.isArray(prepJson?.preparerInvoices)
     ? prepJson.preparerInvoices
         .map((inv: any) => String(inv?.preparerId ?? ""))
@@ -164,6 +201,8 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
         canEditPricing={canEditPricing}
         pricingEditHref={pricingEditHref}
         icons={icons}
+        productImagesMap={productImagesMap}
+        productBranchMap={productBranchMap}
       />
 
       {canAssign && (

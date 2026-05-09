@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ClientRuntime } from "@/components/client-runtime";
+import { getRoleFeatures } from "@/lib/role-features-settings";
+import { prisma } from "@/lib/prisma";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,11 +27,23 @@ export const viewport: Viewport = {
   themeColor: "#0ea5e9",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [mandoubFeatures, preparerFeatures, storeSettings] = await Promise.all([
+    getRoleFeatures("mandoub"),
+    getRoleFeatures("preparer"),
+    prisma.uISystemSetting.findUnique({
+      where: { target_section: { target: "customer", section: "store_general" } }
+    })
+  ]);
+
+  const storeFeatures = {
+    aiEnabled: (storeSettings?.config as any)?.ai_enabled !== false
+  };
+
   return (
     <html
       lang="ar"
@@ -39,7 +53,13 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-          <ClientRuntime>{children}</ClientRuntime>
+          <ClientRuntime
+            mandoubFeatures={mandoubFeatures}
+            preparerFeatures={preparerFeatures}
+            storeFeatures={storeFeatures}
+          >
+            {children}
+          </ClientRuntime>
         </ThemeProvider>
       </body>
     </html>

@@ -24,15 +24,30 @@ const PortalChatWidget = dynamic(() => import("@/components/PortalChatWidget"), 
 
 type ClientRuntimeProps = {
   children: React.ReactNode;
+  mandoubFeatures?: { aiEnabled: boolean; chatEnabled: boolean };
+  preparerFeatures?: { aiEnabled: boolean; chatEnabled: boolean };
+  storeFeatures?: { aiEnabled: boolean };
 };
 
-export function ClientRuntime({ children }: ClientRuntimeProps) {
+export function ClientRuntime({
+  children,
+  mandoubFeatures,
+  preparerFeatures,
+  storeFeatures,
+}: ClientRuntimeProps) {
   return (
     <>
       {/* Keep global assistant visible across portals */}
       <EnterSubmitGlobal />
-      <GlobalAIAssistant />
-      <PortalChatWidget />
+      <GlobalAIAssistant
+        mandoubFeatures={mandoubFeatures}
+        preparerFeatures={preparerFeatures}
+        storeFeatures={storeFeatures}
+      />
+      <PortalChatWidget
+        mandoubFeatures={mandoubFeatures}
+        preparerFeatures={preparerFeatures}
+      />
       {children}
       <Toaster richColors position="top-center" dir="rtl" closeButton />
     </>

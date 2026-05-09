@@ -105,18 +105,31 @@ export default async function PreparerShoppingDraftPage({ params, searchParams }
   const productImagesMap: Record<string, string> = {};
   const productBranchMap: Record<string, string> = {};
 
-  matchingProducts.forEach(p => {
-    const nameKey = p.name.trim().toLowerCase();
-    if (p.photoUrls && Array.isArray(p.photoUrls) && p.photoUrls.length > 0) {
-      productImagesMap[nameKey] = p.photoUrls[0];
-    } else if (typeof p.photoUrls === 'string' && p.photoUrls) {
-      productImagesMap[nameKey] = p.photoUrls;
-    }
+  productLines.forEach((line: string) => {
+    const lineKey = line.trim().toLowerCase();
+    const firstWord = lineKey.split(' ')[0];
+    const match = matchingProducts.find(p => p.name.trim().toLowerCase() === firstWord);
 
-    if (p.branch?.name) {
-      productBranchMap[nameKey] = p.branch.name;
+    if (match) {
+      if (match.photoUrls && Array.isArray(match.photoUrls) && match.photoUrls.length > 0) {
+        productImagesMap[lineKey] = match.photoUrls[0];
+      } else if (typeof match.photoUrls === 'string' && match.photoUrls) {
+        productImagesMap[lineKey] = match.photoUrls;
+      }
+      if (match.branch?.name) {
+        productBranchMap[lineKey] = match.branch.name;
+      }
     }
   });
+
+  // إخفاء الأرقام والبيانات الحساسة لضمان الخصوصية عند المجهز
+  const isLikelyPhone = (text: string) => /^[0-9+ \-()]{7,15}$/.test(text.trim());
+  const safeDraft = {
+    ...draft,
+    customerPhone: "",
+    customerName: draft.customerName && isLikelyPhone(draft.customerName) ? "" : draft.customerName,
+    titleLine: draft.titleLine && isLikelyPhone(draft.titleLine) ? "" : draft.titleLine,
+  };
 
   return (
     <div className="kse-app-inner mx-auto max-w-2xl px-4 py-6 pb-24">
@@ -127,7 +140,7 @@ export default async function PreparerShoppingDraftPage({ params, searchParams }
       </div>
       <PreparerShoppingDraftEditClient
         auth={auth}
-        draft={draft}
+        draft={safeDraft}
         draftOwnerId={draft.preparerId}
         preparerId={preparer.id}
         preparerName={preparer.name}

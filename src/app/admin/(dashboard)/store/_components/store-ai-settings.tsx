@@ -9,10 +9,42 @@ export function StoreAiSettings() {
   const [isTesting, setIsTesting] = useState(false);
   const [newKeyInput, setNewKeyInput] = useState("");
   const [isKeysVisible, setIsKeysVisible] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(true);
+  const [isUpdatingAi, setIsUpdatingAi] = useState(false);
 
   useEffect(() => {
     refreshData();
+    fetchAiStatus();
   }, []);
+
+  async function fetchAiStatus() {
+    try {
+      const res = await fetch("/api/admin/settings/store");
+      const data = await res.json();
+      setAiEnabled(data.ai_enabled !== false);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function toggleAi(enabled: boolean) {
+    setIsUpdatingAi(true);
+    try {
+      const formData = new FormData();
+      formData.append("ai_enabled", enabled ? "on" : "off");
+      const res = await fetch("/api/admin/settings/store", {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        setAiEnabled(enabled);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsUpdatingAi(false);
+    }
+  }
 
   async function refreshData() {
     setIsLoadingKeys(true);
@@ -71,6 +103,22 @@ export function StoreAiSettings() {
         </div>
 
         <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 bg-violet-50 dark:bg-violet-900/20 p-4 rounded-[2rem] border border-violet-100 dark:border-violet-800">
+             <div className="flex flex-col">
+                <span className="text-[11px] font-black text-violet-800 dark:text-violet-300">مساعد الذكاء الاصطناعي</span>
+                <span className="text-[9px] font-bold text-violet-600/70">إظهار المساعد للزبائن في المتجر</span>
+             </div>
+             <button
+                onClick={() => toggleAi(!aiEnabled)}
+                disabled={isUpdatingAi}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${aiEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+             >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${aiEnabled ? 'translate-x-6' : 'translate-x-1'}`}
+                />
+             </button>
+          </div>
+
           <div className="flex flex-col gap-3 min-w-[350px] bg-slate-50 dark:bg-slate-800/30 p-4 rounded-[2rem] border border-dashed border-slate-200 dark:border-slate-700">
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between px-1">
