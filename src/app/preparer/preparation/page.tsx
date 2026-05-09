@@ -57,6 +57,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
         shopId: { in: shopIds },
         status: "pending",
         submissionSource: "web_store",
+        submittedByCompanyPreparerId: null, // لم يتم إسناده لمجهز بعد
       },
       select: { id: true, orderNumber: true, summary: true, customerRegion: { select: { name: true } } },
       orderBy: { createdAt: "desc" },

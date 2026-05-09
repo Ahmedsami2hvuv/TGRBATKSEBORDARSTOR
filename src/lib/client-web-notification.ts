@@ -71,10 +71,11 @@ export async function showTrayNotification(options: {
         icon,
         badge: icon,
         data: { url: dataUrl },
-        silent,
+        silent: false, // لضمان الصوت
         vibrate: [500, 110, 500, 110, 450, 110, 200, 110] as number[],
         renotify: true,
-        requireInteraction: true,
+        requireInteraction: true, // يبقى الإشعار ظاهراً حتى يتفاعل معه المستخدم
+        priority: "high", // طلب أولوية عالية (لبعض المتصفحات)
         lang: "ar",
         dir: "rtl" as NotificationDirection,
       };

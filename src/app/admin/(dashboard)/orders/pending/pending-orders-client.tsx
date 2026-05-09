@@ -9,6 +9,7 @@ import {
   reassignOrderToPreparer,
   deleteOrderPermanently,
   rejectPendingOrder,
+  rejectPreparerDraft,
   type AssignOrderState,
   type RejectOrderState,
 } from "../actions";
@@ -810,9 +811,20 @@ function RejectButton({ orderId }: { orderId: string }) {
   const bound = rejectPendingOrder.bind(null);
   const [state, formAction, pending] = useActionState(bound, {} as RejectOrderState);
   return (
-    <form action={formAction}>
+    <form action={formAction} onSubmit={(e) => { if(!confirm("هل أنت متأكد من رفض هذا الطلب؟")) e.preventDefault(); }}>
       <input type="hidden" name="orderId" value={orderId} />
       <button type="submit" disabled={pending} className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-800 hover:bg-rose-600 hover:text-white transition-all disabled:opacity-50">رفض</button>
+    </form>
+  );
+}
+
+function RejectDraftButton({ draftId }: { draftId: string }) {
+  const bound = rejectPreparerDraft.bind(null);
+  const [state, formAction, pending] = useActionState(bound, {} as RejectOrderState);
+  return (
+    <form action={formAction} onSubmit={(e) => { if(!confirm("هل أنت متأكد من رفض هذه المسودة؟")) e.preventDefault(); }}>
+      <input type="hidden" name="draftId" value={draftId} />
+      <button type="submit" disabled={pending} className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-800 hover:bg-rose-600 hover:text-white transition-all disabled:opacity-50">رفض المسودة</button>
     </form>
   );
 }
@@ -996,6 +1008,7 @@ export function PendingOrdersClient({
                           اتصال
                         </a>
                       ) : null}
+                      <RejectDraftButton draftId={o.id} />
                     </div>
                   </div>
                 </div>

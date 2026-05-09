@@ -245,18 +245,21 @@ export function AdminPendingNotifications({
 
       {toast ? (
         <div
-          className="fixed bottom-4 left-4 right-4 z-[300] mx-auto flex max-w-lg items-start gap-3 rounded-2xl border-2 border-emerald-500 bg-emerald-50 px-4 py-3 text-emerald-950 shadow-2xl shadow-emerald-900/20 sm:left-auto sm:right-4 sm:mx-0"
+          className="fixed top-4 left-4 right-4 z-[300] mx-auto flex max-w-lg items-start gap-3 rounded-2xl border-2 border-sky-500 bg-white px-4 py-3 text-slate-900 shadow-2xl shadow-sky-900/30 animate-in slide-in-from-top duration-300 sm:left-auto sm:right-4 sm:mx-0"
           role="alert"
           dir="rtl"
         >
-          <span className="text-2xl" aria-hidden>
+          <span className="text-2xl animate-bounce" aria-hidden>
             🔔
           </span>
-          <p className="min-w-0 flex-1 text-sm font-bold leading-snug">{toast.message}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold text-sky-700 mb-1">إشعار جديد</p>
+            <p className="text-sm font-bold leading-snug">{toast.message}</p>
+          </div>
           <button
             type="button"
             onClick={() => setToast(null)}
-            className="shrink-0 rounded-lg border border-emerald-300 bg-white px-2 py-1 text-xs font-bold text-emerald-900"
+            className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-600"
           >
             إغلاق
           </button>

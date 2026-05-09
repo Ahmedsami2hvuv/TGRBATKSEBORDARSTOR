@@ -190,6 +190,14 @@ export async function assignOrderToPreparer(
     }).catch(() => {});
   }
 
+  // تحديث الطلب الأصلي ليعكس أول مجهز تم إسناده (للعرض في لوحة التحكم)
+  if (!isDraft && sentOrderId && preparerIds.length > 0) {
+    await prisma.order.update({
+      where: { id: sentOrderId },
+      data: { submittedByCompanyPreparerId: preparerIds[0] }
+    });
+  }
+
   revalidatePath("/admin/orders/pending");
   revalidatePath(`/admin/orders/${orderId}`);
   return { ok: true };
@@ -364,10 +372,68 @@ export async function rejectPendingOrder(
       where: { id: orderId },
       data: { status: "cancelled" },
     });
+
+    // أرشفة كافة المسودات المرتبطة بهذا الطلب لضمان المزامنة
+    await prisma.companyPreparerShoppingDraft.updateMany({
+      where: { sentOrderId: orderId },
+      data: { status: "archived" }
+    });
+
     revalidatePath("/admin/orders/pending");
     return { ok: true };
   } catch (e) {
     return { error: "فشل تحديث حالة الطلب" };
+  }
+}
+
+/** رفض مسودة التجهيز (أرشفة) من قبل الأدمن */
+export async function rejectPreparerDraft(
+  _prev: RejectOrderState,
+  formData: FormData,
+): Promise<RejectOrderState> {
+  const draftId = String(formData.get("draftId") ?? "").trim();
+  if (!draftId) return { error: "المعرف مفقود" };
+  try {
+    const draft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: draftId } });
+    if (!draft) return { error: "المسودة غير موجودة" };
+
+    const groupId = (draft.data as any)?.groupId;
+    const sentOrderId = draft.sentOrderId;
+
+    if (groupId) {
+      await prisma.companyPreparerShoppingDraft.updateMany({
+        where: {
+          OR: [
+            { data: { path: ["groupId"], equals: groupId } },
+            { id: draftId }
+          ]
+        },
+        data: { status: "archived" }
+      });
+    } else {
+      await prisma.companyPreparerShoppingDraft.update({
+        where: { id: draftId },
+        data: { status: "archived" }
+      });
+    }
+
+    // إذا كانت المسودة مرتبطة بطلب (مثل طلب المتجر)، نقوم بإلغاء الطلب أيضاً
+    if (sentOrderId) {
+      await prisma.order.update({
+        where: { id: sentOrderId },
+        data: { status: "cancelled" }
+      });
+      // أرشفة بقية المسودات المرتبطة بنفس الطلب
+      await prisma.companyPreparerShoppingDraft.updateMany({
+        where: { sentOrderId, status: { not: "archived" } },
+        data: { status: "archived" }
+      });
+    }
+
+    revalidatePath("/admin/orders/pending");
+    return { ok: true };
+  } catch (e) {
+    return { error: "فشل رفض المسودة" };
   }
 }
 

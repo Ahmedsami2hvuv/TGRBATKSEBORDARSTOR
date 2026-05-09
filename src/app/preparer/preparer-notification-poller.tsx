@@ -34,6 +34,14 @@ export function PreparerNotificationPoller({
   const seenOrderRef = useRef<string>("");
   const initializedRef = useRef(false);
 
+  const [toast, setToast] = useState<{ message: string; url: string } | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const id = window.setTimeout(() => setToast(null), 12000);
+    return () => window.clearTimeout(id);
+  }, [toast]);
+
   useEffect(() => {
     let cancelled = false;
     const tick = async () => {
@@ -80,7 +88,6 @@ export function PreparerNotificationPoller({
           let body = "";
           if (isAssignment && settings.templateWebsite) {
             // استخدام قالب الموقع الجديد
-            // نحاول استخراج رقم الطلب من النص إذا وجد (مثلاً لو كان مكتوب #123)
             const orderNumMatch = (rawTitle + rawBody).match(/#(\d+)/);
             const orderNumber = orderNumMatch ? parseInt(orderNumMatch[1]) : 0;
 
@@ -103,6 +110,8 @@ export function PreparerNotificationPoller({
           if (settings.soundEnabled) {
             playNotificationSound(settings.soundPreset);
           }
+
+          setToast({ message: body, url: openUrl });
 
           if (perm === "granted") {
             void showTrayNotification({
@@ -142,6 +151,8 @@ export function PreparerNotificationPoller({
             regionName: data.latestShopOrderRegionName ?? "—",
           });
 
+          setToast({ message: orderBody, url: orderOpenUrl });
+
           if (perm === "granted") {
             void showTrayNotification({
               title: "لوحة المجهز — طلب جديد",
@@ -177,24 +188,59 @@ export function PreparerNotificationPoller({
   }
 
   return (
-    <div className="mb-2 rounded-xl border border-violet-200 bg-white/80 px-3 py-2">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-bold text-slate-700">
-          إشعارات المجهز:{" "}
-          <span className="text-violet-800">
-            {perm === "granted" ? "مفعلة" : perm === "denied" ? "مرفوضة من المتصفح" : "غير مفعلة"}
+    <>
+      <div className="mb-2 rounded-xl border border-violet-200 bg-white/80 px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-bold text-slate-700">
+            إشعارات المجهز:{" "}
+            <span className="text-violet-800">
+              {perm === "granted" ? "مفعلة" : perm === "denied" ? "مرفوضة من المتصفح" : "غير مفعلة"}
+            </span>
+          </p>
+          {perm !== "granted" ? (
+            <button
+              type="button"
+              onClick={enableNotifications}
+              className="rounded-lg border border-violet-300 bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-900 hover:bg-violet-100"
+            >
+              تفعيل إشعارات المتصفح
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {toast ? (
+        <div
+          className="fixed top-4 left-4 right-4 z-[300] mx-auto flex max-w-lg items-start gap-3 rounded-2xl border-2 border-violet-500 bg-white px-4 py-3 text-slate-900 shadow-2xl shadow-violet-900/30 animate-in slide-in-from-top duration-300 sm:left-auto sm:right-4 sm:mx-0"
+          role="alert"
+          dir="rtl"
+        >
+          <span className="text-2xl animate-bounce" aria-hidden>
+            🔔
           </span>
-        </p>
-        {perm !== "granted" ? (
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold text-violet-700 mb-1">إشعار مجهز جديد</p>
+            <p className="text-sm font-bold leading-snug">{toast.message}</p>
+            <button
+              onClick={() => {
+                window.location.assign(toast.url);
+                setToast(null);
+              }}
+              className="mt-2 text-xs font-bold text-violet-600 underline"
+            >
+              عرض الطلب الآن
+            </button>
+          </div>
           <button
             type="button"
-            onClick={enableNotifications}
-            className="rounded-lg border border-violet-300 bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-900 hover:bg-violet-100"
+            onClick={() => setToast(null)}
+            className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-600"
           >
-            تفعيل إشعارات المتصفح
+            إغلاق
           </button>
-        ) : null}
-      </div>
-    </div>
+        </div>
+      ) : null}
+    </>
   );
+}
 }
