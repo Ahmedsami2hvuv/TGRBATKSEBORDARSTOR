@@ -143,3 +143,16 @@ export async function toggleCourierChat(id: string, disabled: boolean) {
     return { error: "فشل تعديل حالة الدردشة" };
   }
 }
+
+export async function toggleCourierAI(id: string, disabled: boolean) {
+  try {
+    await prisma.courier.update({
+      where: { id },
+      data: { aiDisabled: disabled }
+    });
+    revalidatePath("/admin/couriers");
+    return { success: true };
+  } catch (e) {
+    return { error: "فشل تعديل حالة الذكاء الاصطناعي" };
+  }
+}

@@ -54,6 +54,20 @@ export async function togglePreparerChat(id: string, disabled: boolean) {
   }
 }
 
+export async function togglePreparerAI(id: string, disabled: boolean) {
+  if (!(await isAdminSession())) return { success: false, error: "غير مصرح" };
+  try {
+    await prisma.companyPreparer.update({
+      where: { id },
+      data: { aiDisabled: disabled },
+    });
+    revalidatePath("/admin/preparers");
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: "حدث خطأ أثناء التحديث" };
+  }
+}
+
 export async function deleteCompanyPreparer(_prev: PreparerFormState, formData: FormData): Promise<PreparerFormState> {
   const denied = await requireAdmin(); if (denied) return denied;
   const id = String(formData.get("id") ?? "").trim();

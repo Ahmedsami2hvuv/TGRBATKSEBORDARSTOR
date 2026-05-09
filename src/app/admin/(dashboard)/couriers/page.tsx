@@ -8,6 +8,7 @@ import { CourierForm } from "./courier-form";
 import { CourierDeleteForm } from "./courier-delete-form";
 import { CourierResetButton } from "./courier-reset-button";
 import { CourierChatToggle } from "./courier-chat-toggle";
+import { CourierAIToggle } from "./courier-ai-toggle";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons } from "@/lib/icon-settings";
 
@@ -109,6 +110,7 @@ export default async function AdminCouriersPage() {
                         معاينة اللوحة
                       </a>
                       <CourierChatToggle courierId={c.id} initialDisabled={c.chatDisabled} icons={icons} />
+                      <CourierAIToggle courierId={c.id} initialDisabled={c.aiDisabled} icons={icons} />
                       <CourierResetButton courierId={c.id} />
                     </div>
                   </div>

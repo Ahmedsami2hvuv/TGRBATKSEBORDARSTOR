@@ -63,6 +63,7 @@ export default async function PreparersPage() {
     // تحديث بناء الرابط ليكون رمز المجهزportalToken
     portalUrl: buildCompanyPreparerPortalUrl(p.id, p.portalToken, baseUrl),
     chatDisabled: p.chatDisabled,
+    aiDisabled: p.aiDisabled,
     preparerMonthlySalaryResetMode: p.preparerMonthlySalaryResetMode,
     preparerMonthlySalaryResetAt: p.preparerMonthlySalaryResetAt ? p.preparerMonthlySalaryResetAt.toISOString() : null,
     preparerMonthlySalaryResetEveryDays: p.preparerMonthlySalaryResetEveryDays ?? null,

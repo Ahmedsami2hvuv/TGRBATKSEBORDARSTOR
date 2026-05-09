@@ -969,8 +969,8 @@ export function PendingOrdersClient({
                       <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px]">{o.regionName}</span>
                       <span className="text-emerald-700">{o.shopCustomerLabel || o.shopName || "—"}</span>
                     </div>
-                    <p className="mt-2 text-[10px] font-black text-slate-500 line-clamp-1">
-                      المجهز: {o.submittedByName || "—"}
+                    <p className="mt-2 text-xs font-black text-slate-700 bg-amber-50 inline-block px-2 py-1 rounded-lg border border-amber-200 shadow-sm">
+                      👤 المجهز: <span className="text-amber-900 text-sm">{o.submittedByName || "—"}</span>
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
                       <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-black text-emerald-800 border border-emerald-200">
@@ -1000,27 +1000,33 @@ export function PendingOrdersClient({
                   </div>
                 </div>
 
-                <div className="mt-3 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                <div className="mt-4 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <button
                     type="button"
                     onClick={() => setDraftPreparerOpenId(draftPreparerOpen ? null : o.id)}
-                    className="rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-sky-700"
+                    className="flex-1 rounded-2xl bg-white border-2 border-sky-200 py-3.5 text-xs font-black text-sky-800 shadow-sm hover:bg-sky-50 transition-all flex items-center justify-center gap-2"
                   >
-                    تخصيص المجهزين
+                    <DynamicIcon icon={icons?.ui_shop} fallback="🛒" width={16} height={16} /> تخصيص المجهزين
                   </button>
                   <button
                     type="button"
                     onClick={() => setDraftCourierOpenId(draftCourierOpen ? null : o.id)}
-                    className="rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-indigo-700"
+                    className="flex-1 rounded-2xl bg-white border-2 border-indigo-200 py-3.5 text-xs font-black text-indigo-800 shadow-sm hover:bg-indigo-50 transition-all flex items-center justify-center gap-2"
                   >
-                    اختيار مندوب التحويل
+                    <DynamicIcon icon={icons?.ui_package} fallback="📦" width={16} height={16} /> اختيار مندوب التحويل
                   </button>
-                  {currentAutoCourierName ? (
-                    <span className="rounded-md bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 border border-indigo-200">
-                      التحويل التلقائي: {currentAutoCourierName}
-                    </span>
-                  ) : null}
                 </div>
+
+                {currentAutoCourierName && (
+                  <div className="mt-3 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-900 p-4 shadow-lg border-b-4 border-indigo-950 animate-in fade-in zoom-in duration-300">
+                    <p className="text-[11px] font-black text-indigo-100 flex items-center gap-2 opacity-90">
+                       🔄 التحويل التلقائي مفعل إلى:
+                    </p>
+                    <p className="text-xl font-black text-white mt-1.5 text-center drop-shadow-md">
+                       🚀 {currentAutoCourierName}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {draftPreparerOpen ? (

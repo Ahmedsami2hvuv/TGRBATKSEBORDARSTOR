@@ -99,6 +99,7 @@ model CompanyPreparer {
   notes                               String                         @default("")
   active                              Boolean                        @default(true)
   chatDisabled                        Boolean                        @default(false)
+  aiDisabled                          Boolean                        @default(false)
   createdAt                           DateTime                       @default(now())
   updatedAt                           DateTime                       @updatedAt
   telegramUserId                      String                         @default("")
@@ -242,6 +243,7 @@ model Courier {
   hiddenFromReports           Boolean                  @default(false)
   blocked                     Boolean                  @default(false)
   chatDisabled                Boolean                  @default(false)
+  aiDisabled                  Boolean                  @default(false)
   mandoubTotalsResetAt        DateTime?
   mandoubWalletCarryOverDinar Decimal                  @default(0) @db.Decimal(14, 4)
   telegramUserId              String?                  @unique

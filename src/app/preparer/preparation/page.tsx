@@ -62,7 +62,13 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     Promise.resolve([]),
     prisma.companyPreparerShoppingDraft.findMany({
       where: { preparerId: preparer.id, status: { in: ["draft", "priced"] } },
-      select: { id: true, titleLine: true, status: true, createdAt: true },
+      select: {
+        id: true,
+        titleLine: true,
+        status: true,
+        createdAt: true,
+        customerRegion: { select: { name: true } }
+      },
       orderBy: { createdAt: "desc" },
       take: 30,
     }),
@@ -124,8 +130,8 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-black text-slate-900 dark:text-slate-100">{d.titleLine || "—"}</p>
                     <div className="mt-1 flex items-center gap-2">
-                      <p className="text-xs text-slate-500 font-mono" dir="ltr">
-                        —
+                      <p className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                        {d.customerRegion?.name || "منطقة غير محددة"}
                       </p>
                     </div>
                   </div>

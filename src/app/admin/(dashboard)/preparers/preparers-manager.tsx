@@ -18,6 +18,7 @@ import { whatsappMeUrl } from "@/lib/whatsapp";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import type { GlobalIconsConfig } from "@/lib/icon-settings";
 import { PreparerChatToggle } from "./preparer-chat-toggle";
+import { PreparerAIToggle } from "./preparer-ai-toggle";
 
 const initial: PreparerFormState = {};
 
@@ -35,6 +36,7 @@ export type PreparerManagerRow = {
   linkedShops: { id: string; name: string }[];
   portalUrl: string;
   chatDisabled: boolean;
+  aiDisabled: boolean;
   preparerMonthlySalaryResetMode: "calendar_month" | "every_n_days" | "manual";
   preparerMonthlySalaryResetAt: string | null;
   preparerMonthlySalaryResetEveryDays: number | null;
@@ -447,8 +449,11 @@ function PreparerCard({
             <PreparerPortalLink id={row.id} url={row.portalUrl} phone={row.phone} preparerName={row.name} icons={icons} />
           </div>
           <div>
-            <p className="mb-4 text-xs font-black text-slate-400 uppercase tracking-widest">إعدادات الدردشة</p>
-            <PreparerChatToggle preparerId={row.id} initialDisabled={row.chatDisabled} icons={icons!} />
+            <p className="mb-4 text-xs font-black text-slate-400 uppercase tracking-widest">إعدادات المزايا</p>
+            <div className="flex flex-wrap gap-2">
+              <PreparerChatToggle preparerId={row.id} initialDisabled={row.chatDisabled} icons={icons!} />
+              <PreparerAIToggle preparerId={row.id} initialDisabled={row.aiDisabled} icons={icons!} />
+            </div>
           </div>
         </div>
 
