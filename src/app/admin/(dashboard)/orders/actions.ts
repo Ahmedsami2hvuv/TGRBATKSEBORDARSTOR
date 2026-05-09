@@ -26,8 +26,42 @@ export async function assignOrderToPreparer(
     ? formData.getAll("preparerIds").map(id => String(id).trim())
     : [String(formData.get("preparerId") ?? "").trim()].filter(Boolean);
 
-  if (!orderId || preparerIds.length === 0) {
-    return { error: "يجب اختيار مجهز واحد على الأقل" };
+  if (!orderId) return { error: "المعرف مفقود" };
+
+  // إذا كانت القائمة فارغة، فهذا يعني إلغاء الإسناد
+  if (preparerIds.length === 0) {
+    try {
+      if (isDraft) {
+        const draft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: orderId } });
+        if (draft) {
+          const groupId = (draft.data as any)?.groupId;
+          if (groupId) {
+            await prisma.companyPreparerShoppingDraft.updateMany({
+              where: { data: { path: ["groupId"], equals: groupId } },
+              data: { status: "archived" }
+            });
+          } else {
+            await prisma.companyPreparerShoppingDraft.update({
+              where: { id: orderId },
+              data: { status: "archived" }
+            });
+          }
+        }
+      } else {
+        await prisma.order.update({
+          where: { id: orderId },
+          data: { submittedByCompanyPreparerId: null }
+        });
+        await prisma.companyPreparerShoppingDraft.updateMany({
+          where: { sentOrderId: orderId },
+          data: { status: "archived" }
+        });
+      }
+      revalidatePath("/admin/orders/pending");
+      return { ok: true };
+    } catch (e) {
+      return { error: "فشل إلغاء الإسناد" };
+    }
   }
 
   let customerPhone = "";

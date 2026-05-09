@@ -166,11 +166,11 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
           </div>
           <input name="orderTime" value={orderTime} onChange={e => setOrderTime(e.target.value)} placeholder="وقت الطلب" className={inputClass} required />
 
-          <button type="submit" disabled={pending || !selected || selectedPreparerIds.length === 0} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-sky-600 py-4 text-white font-black shadow-xl disabled:opacity-50 mt-4 flex items-center justify-center gap-2">
+          <button type="submit" disabled={pending || !selected} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-sky-600 py-4 text-white font-black shadow-xl disabled:opacity-50 mt-4 flex items-center justify-center gap-2">
              {pending ? "جاري الإرسال..." : (
                <>
                  <DynamicIcon icon={icons?.ui_success} className="w-5 h-5 brightness-0 invert" fallback={<span>✅</span>} />
-                 تحويل الطلب للمجهز الآن
+                 {selectedPreparerIds.length === 0 ? "إرسال كطلب غير مسند 📝" : "تحويل الطلب للمجهز الآن"}
                </>
              )}
           </button>

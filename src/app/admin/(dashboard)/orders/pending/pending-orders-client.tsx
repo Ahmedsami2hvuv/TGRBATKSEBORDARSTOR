@@ -119,11 +119,11 @@ export function AssignToPreparerPanel({
         ))}
       </div>
       {state.error && <p className="text-xs text-rose-600 font-bold p-2 bg-rose-50 rounded-lg border border-rose-200">{state.error}</p>}
-      <button type="submit" disabled={pending || selectedPreparers.length === 0} className="w-full rounded-xl bg-sky-600 py-3.5 text-sm font-black text-white shadow-lg active:scale-95 disabled:opacity-50 transition-all hover:bg-sky-700 flex items-center justify-center gap-2">
-        {pending ? "جارٍ الإسناد..." : (
+      <button type="submit" disabled={pending} className="w-full rounded-xl bg-sky-600 py-3.5 text-sm font-black text-white shadow-lg active:scale-95 disabled:opacity-50 transition-all hover:bg-sky-700 flex items-center justify-center gap-2">
+        {pending ? "جارٍ الحفظ..." : (
           <>
             <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} />
-            {initialPreparerIds.length > 0 ? "تحديث المجهزين" : `إسناد إلى ${selectedPreparers.length} مجهز`}
+            {selectedPreparers.length === 0 ? "إلغاء الإسناد (حذف من المجهزين)" : (initialPreparerIds.length > 0 ? "تحديث المجهزين" : `إسناد إلى ${selectedPreparers.length} مجهز`)}
           </>
         )}
       </button>
