@@ -837,6 +837,72 @@ export async function updateStoreProductPrice(
     return { error: "فشل تحديث السعر." };
   }
 }
+
+/** أرشفة (رفض) مسودة التجهيز */
+export async function archivePreparerShoppingDraftAction(
+  _prev: any,
+  formData: FormData
+): Promise<PreparerActionState> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "الرابط غير صالح." };
+
+    const draftId = String(formData.get("draftId") ?? "").trim();
+    if (!draftId) return { error: "المعرف ناقص." };
+
+    const draft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: draftId } });
+    if (!draft) return { error: "المسودة غير موجودة." };
+
+    // إذا كانت المسودة جزء من مجموعة، نؤرشف الجميع
+    const groupId = (draft.data as any)?.groupId;
+    if (groupId) {
+      await prisma.companyPreparerShoppingDraft.updateMany({
+        where: { data: { path: ["groupId"], equals: groupId } },
+        data: { status: "archived" }
+      });
+    } else {
+      await prisma.companyPreparerShoppingDraft.update({
+        where: { id: draftId },
+        data: { status: "archived" }
+      });
+    }
+
+    revalidatePath("/preparer/preparation");
+    return { ok: true };
+  } catch (e) {
+    console.error("Archive Draft Error:", e);
+    return { error: "فشل أرشفة المسودة." };
+  }
+}
+
+/** رفض طلب المتجر الإلكتروني من قبل المجهز */
+export async function rejectOrderFromPreparerAction(
+  _prev: any,
+  formData: FormData
+): Promise<PreparerActionState> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "الرابط غير صالح." };
+
+    const orderId = String(formData.get("orderId") ?? "").trim();
+    if (!orderId) return { error: "معرف الطلب ناقص." };
+
+    const gate = await assertPreparerLinkedToOrderShop(v.preparerId, orderId);
+    if (!gate.ok) return { error: gate.error };
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { status: "rejected" }
+    });
+
+    revalidatePath("/preparer/preparation");
+    return { ok: true };
+  } catch (e) {
+    console.error("Reject Order Error:", e);
+    return { error: "فشل رفض الطلب." };
+  }
+}
+
 export async function dismissCompanyPreparerPrepNotice(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> { return { ok: true }; }
 export async function assignOrderByPreparer(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> {
   const v = readPortal(formData);
