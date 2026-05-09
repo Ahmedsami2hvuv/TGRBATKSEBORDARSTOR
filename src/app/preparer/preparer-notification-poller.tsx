@@ -65,9 +65,10 @@ export function PreparerNotificationPoller({
           seenOrderRef.current = data.latestShopOrderId ?? "";
           initializedRef.current = true;
         }
-        const isBump = lastCountRef.current !== null && count > lastCountRef.current;
+
         const latestNoticeId = data.latestNoticeId ?? "";
-        if (settings.enabled && isBump && latestNoticeId && seenNoticeRef.current !== latestNoticeId) {
+        // نعتمد على تغيير الـ ID فقط لضمان وصول كل إشعار جديد
+        if (settings.enabled && latestNoticeId && seenNoticeRef.current !== latestNoticeId) {
           seenNoticeRef.current = latestNoticeId;
           const body = renderNotificationTemplate(settings.templateSingle, {
             count: 1,
@@ -75,21 +76,25 @@ export function PreparerNotificationPoller({
             shopName: data.latestTitle ?? "—",
             regionName: data.latestBody ?? "—",
           });
+
+          if (settings.soundEnabled) {
+            playNotificationSound(settings.soundPreset);
+          }
+
           if (perm === "granted") {
             void showTrayNotification({
               title: "لوحة المجهز — إشعار جديد",
               body,
-              tag: `kse-preparer-${latestNoticeId}`,
+              tag: `kse-prep-notice-${latestNoticeId}`,
               openUrl,
             });
-          } else if (settings.soundEnabled) {
-            playNotificationSound(settings.soundPreset);
           }
         }
 
         const latestShopOrderId = String(data.latestShopOrderId ?? "");
         const latestShopOrderNumber = Number(data.latestShopOrderNumber ?? 0);
         const latestShopOrderCreatedAt = String(data.latestShopOrderCreatedAt ?? "");
+
         if (
           settings.enabled &&
           latestShopOrderId &&
@@ -102,22 +107,25 @@ export function PreparerNotificationPoller({
             exp: auth.exp || "",
             s: auth.s,
           });
-          // استخدام القالب الثاني (Multiple سابقاً) لإشعار طلبات المحلات المسندة
+
+          if (settings.soundEnabled) {
+            playNotificationSound(settings.soundPreset);
+          }
+
           const orderBody = renderNotificationTemplate(settings.templateMultiple, {
             count: 1,
             orderNumber: Number.isFinite(latestShopOrderNumber) ? latestShopOrderNumber : 0,
             shopName: data.latestShopOrderShopName ?? "—",
             regionName: data.latestShopOrderRegionName ?? "—",
           });
+
           if (perm === "granted") {
             void showTrayNotification({
               title: "لوحة المجهز — طلب جديد",
               body: orderBody,
-              tag: `kse-preparer-order-${latestShopOrderId}`,
+              tag: `kse-prep-order-${latestShopOrderId}`,
               openUrl: orderOpenUrl,
             });
-          } else if (settings.soundEnabled) {
-            playNotificationSound(settings.soundPreset);
           }
         }
         lastCountRef.current = count;
@@ -126,7 +134,7 @@ export function PreparerNotificationPoller({
       }
     };
     void tick();
-    const id = window.setInterval(tick, 10000);
+    const id = window.setInterval(tick, 5000); // تقليل الوقت لـ 5 ثوانٍ لسرعة التنبيه
     return () => {
       cancelled = true;
       window.clearInterval(id);

@@ -32,10 +32,9 @@ function toAbsoluteUrl(openUrl: string): string {
 async function readyRegistration(): Promise<ServiceWorkerRegistration | null> {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return null;
   try {
-    const existing = await navigator.serviceWorker.getRegistration();
-    if (existing?.active) return existing;
-    const fresh = await registerNotifyServiceWorker();
-    return fresh?.active ? fresh : null;
+    // ننتظر حتى يصبح الـ Service Worker جاهزاً تماماً
+    const reg = await navigator.serviceWorker.ready;
+    return reg.active ? reg : null;
   } catch {
     return null;
   }
@@ -59,27 +58,30 @@ export async function showTrayNotification(options: {
   if (typeof window === "undefined" || !("Notification" in window)) return;
   if (Notification.permission !== "granted") return;
 
-  const icon = iconUrl ?? getPwaIconUrl();
+  // التأكد من أن الأيقونة برابط مطلق لضمان ظهورها في المتصفح
+  const icon = toAbsoluteUrl("/pwa-icon-192.png");
   const dataUrl = toAbsoluteUrl(openUrl);
 
   const reg = await readyRegistration();
-  if (reg && typeof reg.showNotification === "function") {
+  if (reg && reg.showNotification) {
     try {
       const swNote = {
         body,
-        tag,
+        tag: tag + "-" + Date.now(), // جعل التاج فريداً لضمان عدم الحجب
         icon,
         badge: icon,
         data: { url: dataUrl },
         silent,
-        vibrate: [200, 100, 200] as number[],
+        vibrate: [500, 110, 500, 110, 450, 110, 200, 110] as number[],
+        renotify: true,
+        requireInteraction: true,
         lang: "ar",
         dir: "rtl" as NotificationDirection,
       };
       await reg.showNotification(title, swNote as NotificationOptions);
       return;
-    } catch {
-      /* fallback */
+    } catch (err) {
+      console.error("SW notification failed:", err);
     }
   }
 
@@ -91,6 +93,10 @@ export async function showTrayNotification(options: {
       silent,
       lang: "ar",
       dir: "rtl",
+      // @ts-ignore
+      renotify: true,
+      // @ts-ignore
+      requireInteraction: true,
     });
     n.onclick = () => {
       window.focus();

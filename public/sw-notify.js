@@ -14,8 +14,8 @@ self.addEventListener("push", (event) => {
   const defaults = {
     title: "إشعار جديد — أبو الأكبر",
     body: "لديك تحديث جديد في النظام، اضغط للمتابعة.",
-    url: origin + "/mandoub",
-    tag: "kse-order-alert",
+    url: origin + "/",
+    tag: "kse-general-alert",
   };
 
   event.waitUntil(
@@ -46,7 +46,7 @@ self.addEventListener("push", (event) => {
         lang: 'ar',
         // إضافة أزرار سريعة داخل الإشعار
         actions: [
-          { action: 'open', title: 'فتح الطلب ✅' },
+          { action: 'open', title: 'فتح الآن ✅' },
           { action: 'close', title: 'تجاهل' }
         ]
       };
@@ -64,22 +64,28 @@ self.addEventListener("notificationclick", (event) => {
   const data = event.notification.data || {};
   const rawUrl = data.url || "/";
 
+  // تحويل الرابط النسبي إلى مطلق للتأكد من صحة التوجيه
   let targetUrl;
   try {
-    targetUrl = rawUrl.startsWith("http") ? rawUrl : new URL(rawUrl, self.location.origin).href;
-  } catch {
+    targetUrl = new URL(rawUrl, self.location.origin).href;
+  } catch (err) {
     targetUrl = self.location.origin + "/";
   }
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (windowClients) => {
+      // البحث عن نافذة مفتوحة بالفعل للموقع
       for (const client of windowClients) {
+        // نركز على أي نافذة تابعة للموقع، وسنقوم بتوجيهها للرابط الجديد
         if (client.url.startsWith(self.location.origin)) {
           if ("navigate" in client) {
             try {
-              await client.navigate(targetUrl);
-            } catch {
-              /* ignore navigate failure */
+              // إذا كان العميل موجوداً بالفعل على نفس الرابط، نكتفي بالتركيز عليه
+              if (client.url !== targetUrl) {
+                await client.navigate(targetUrl);
+              }
+            } catch (e) {
+              console.error("Navigation failed:", e);
             }
           }
           if ("focus" in client) {
@@ -89,6 +95,7 @@ self.addEventListener("notificationclick", (event) => {
         }
       }
 
+      // إذا لم تكن هناك نافذة مفتوحة، نفتح واحدة جديدة
       if (self.clients.openWindow) {
         return self.clients.openWindow(targetUrl);
       }
