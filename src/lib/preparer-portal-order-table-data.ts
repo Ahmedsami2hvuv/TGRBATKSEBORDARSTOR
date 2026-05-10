@@ -77,7 +77,7 @@ function jsonToString(value: unknown): string {
 export async function loadPreparerPortalOrderTableData(args: {
   preparerId: string;
   shopIds: string[];
-  orderListResetAt: Date;
+  orderListResetAt: Date | string | null | undefined;
   tab: PreparerPortalTabKey;
   wardFilter: "lower" | "higher";
   saderFilter: "lower" | "higher";
@@ -101,12 +101,21 @@ export async function loadPreparerPortalOrderTableData(args: {
     onlySubmittedByThisPreparer,
   } = args;
 
+  const normalizedOrderListResetAt =
+    orderListResetAt instanceof Date
+      ? orderListResetAt
+      : new Date(String(orderListResetAt ?? ""));
+
+  if (Number.isNaN(normalizedOrderListResetAt.valueOf())) {
+    console.warn("loadPreparerPortalOrderTableData: invalid orderListResetAt", orderListResetAt);
+  }
+
   function passesDailyOrderListReset(o: { createdAt: Date; status: string }): boolean {
     if (tab === "all") return true;
     if (tab === "checkSader" || tab === "checkWard") return true;
     const st = o.status;
     if (st === "assigned" || st === "delivering") return true;
-    return o.createdAt >= orderListResetAt;
+    return o.createdAt >= (Number.isNaN(normalizedOrderListResetAt.valueOf()) ? new Date(0) : normalizedOrderListResetAt);
   }
 
   const activeOrdersRaw =
@@ -120,7 +129,7 @@ export async function loadPreparerPortalOrderTableData(args: {
               ? { submittedByCompanyPreparerId: preparerId }
               : {}),
             // تحسين: جلب الطلبات الحديثة فقط لتقليل الضغط
-            createdAt: { gte: orderListResetAt },
+            createdAt: { gte: Number.isNaN(normalizedOrderListResetAt.valueOf()) ? new Date(0) : normalizedOrderListResetAt },
           },
           include: mandoubOrderListInclude,
           orderBy: { createdAt: "desc" },
@@ -202,10 +211,18 @@ export async function loadPreparerPortalOrderTableData(args: {
     const customerDoorPhotoUrl = safeStringTrim(o.customer?.customerDoorPhotoUrl || (o as any).customerDoorPhotoUrl);
     const secondCustomerDoorPhotoUrl = safeStringTrim((o as any).secondCustomerDoorPhotoUrl);
 
-    const preparerShoppingJson =
-      o.preparerShoppingJson && typeof o.preparerShoppingJson === "object"
-        ? o.preparerShoppingJson
-        : null;
+    let preparerShoppingJson: any = null;
+    if (o.preparerShoppingJson != null) {
+      if (typeof o.preparerShoppingJson === "object") {
+        preparerShoppingJson = o.preparerShoppingJson;
+      } else if (typeof o.preparerShoppingJson === "string") {
+        try {
+          preparerShoppingJson = JSON.parse(o.preparerShoppingJson);
+        } catch {
+          preparerShoppingJson = null;
+        }
+      }
+    }
 
     return {
       id: o.id,

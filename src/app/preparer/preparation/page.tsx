@@ -122,11 +122,20 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     );
   }
 
-  const sanitizedWebStore = deepSanitize(webStorePending);
-  const sanitizedDrafts = deepSanitize(drafts);
-  const safeOrderTableRows = deepSanitize(orderTable.rows);
-  const safeSearchFields = deepSanitize(orderTable.searchFields);
-  const safeCouriers = deepSanitize(couriers);
+  function safeDeepSanitize(obj: any): any {
+    try {
+      return deepSanitize(obj);
+    } catch (error) {
+      console.error("safeDeepSanitize failed:", error);
+      return null;
+    }
+  }
+
+  const sanitizedWebStore = safeDeepSanitize(webStorePending) ?? [];
+  const sanitizedDrafts = safeDeepSanitize(drafts) ?? [];
+  const safeOrderTableRows = safeDeepSanitize(orderTable.rows) ?? [];
+  const safeSearchFields = safeDeepSanitize(orderTable.searchFields) ?? [];
+  const safeCouriers = safeDeepSanitize(couriers) ?? [];
 
 
   return (

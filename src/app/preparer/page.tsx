@@ -102,26 +102,34 @@ export default async function PreparerHomePage({ searchParams }: Props) {
   const canPriceStore = preparer.authorizedBranches.length > 0;
   const orderListResetAt = preparer.orderListResetAt;
 
-  const [{ rows: tableRows, searchFields }, couriersForBulkAssign, walletTotals, icons] =
-    await Promise.all([
-      loadPreparerPortalOrderTableData({
-        preparerId: preparer.id,
-        shopIds,
-        orderListResetAt,
-        tab: "all",
-        wardFilter: "lower",
-        saderFilter: "higher",
-        prepFilter: null,
-        onlySubmittedByThisPreparer: false,
-      }),
-      prisma.courier.findMany({
-        where: preparerCourierAssignWhere,
-        orderBy: { name: "asc" },
-        select: { id: true, name: true },
-      }),
-      getPreparerMoneyTotals(preparer.id),
-      iconsPromise,
-    ]);
+  const [couriersForBulkAssign, walletTotals, icons] = await Promise.all([
+    prisma.courier.findMany({
+      where: preparerCourierAssignWhere,
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    getPreparerMoneyTotals(preparer.id),
+    iconsPromise,
+  ]);
+
+  let tableRows: any[] = [];
+  let searchFields: any[] = [];
+  try {
+    const orderTable = await loadPreparerPortalOrderTableData({
+      preparerId: preparer.id,
+      shopIds,
+      orderListResetAt,
+      tab: "all",
+      wardFilter: "lower",
+      saderFilter: "higher",
+      prepFilter: null,
+      onlySubmittedByThisPreparer: false,
+    });
+    tableRows = orderTable.rows;
+    searchFields = orderTable.searchFields;
+  } catch (error) {
+    console.error("Failed to load preparer portal order table data:", error);
+  }
 
   const walletRemainStr = formatDinarAsAlfWithUnit(walletTotals?.remain ?? 0);
 
@@ -145,11 +153,20 @@ export default async function PreparerHomePage({ searchParams }: Props) {
     return null;
   }
 
-  const safeTableRows = deepSanitize(tableRows);
-  const safeSearchFields = deepSanitize(searchFields);
-  const safeCouriers = deepSanitize(couriersForBulkAssign);
-  const safeIcons = deepSanitize(icons);
-  const safePreparer = deepSanitize(preparer);
+  function safeDeepSanitize(obj: any): any {
+    try {
+      return deepSanitize(obj);
+    } catch (error) {
+      console.error("safeDeepSanitize failed:", error);
+      return null;
+    }
+  }
+
+  const safeTableRows = safeDeepSanitize(tableRows) ?? [];
+  const safeSearchFields = safeDeepSanitize(searchFields) ?? [];
+  const safeCouriers = safeDeepSanitize(couriersForBulkAssign) ?? [];
+  const safeIcons = safeDeepSanitize(icons);
+  const safePreparer = safeDeepSanitize(preparer) ?? { shopLinks: [], authorizedBranches: [], availableForAssignment: false, name: "" };
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 text-base leading-relaxed sm:px-4 sm:py-4 sm:text-lg">
