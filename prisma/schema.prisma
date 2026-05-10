@@ -61,7 +61,9 @@ model CustomerPhoneProfile {
   @@index([regionId])
 }
 
-/** تتبّع استيراد صفحات طلبات الموقع القديم d.ksebstor — لاستئناف السحب بعد تجديد الكوكي وتلخيص الإحصائيات. */
+/**
+ * تتبّع استيراد صفحات طلبات الموقع القديم d.ksebstor — لاستئناف السحب بعد تجديد الكوكي وتلخيص الإحصائيات.
+ */
 model LegacyKseOrderImportLog {
   orderId   Int      @id
   outcome   String   @db.VarChar(32)
@@ -212,20 +214,20 @@ model Employee {
 }
 
 model StaffEmployee {
-  id              String        @id @default(cuid())
-  name            String
-  phone           String        @default("")
-  active          Boolean       @default(true)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  portalToken     String        @default(cuid())
-  canManageStore  Boolean       @default(false)
-  canSubmitOrders Boolean       @default(true)
-  canViewArchived Boolean       @default(false)
-  lastStaffLat    Float?
-  lastStaffLng    Float?
+  id                  String        @id @default(cuid())
+  name                String
+  phone               String        @default("")
+  active              Boolean       @default(true)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  portalToken         String        @default(cuid())
+  canManageStore      Boolean       @default(false)
+  canSubmitOrders     Boolean       @default(true)
+  canViewArchived     Boolean       @default(false)
+  lastStaffLat        Float?
+  lastStaffLng        Float?
   lastStaffLocationAt DateTime?
-  managedBranches StoreBranch[] @relation("StaffManagedBranches")
+  managedBranches     StoreBranch[] @relation("StaffManagedBranches")
 
   @@index([active, createdAt])
 }
@@ -442,43 +444,43 @@ model MandoubWaButtonSetting {
 }
 
 model WebPushSubscription {
-  id         String    @id @default(cuid())
-  endpoint   String    @unique
+  id         String           @id @default(cuid())
+  endpoint   String           @unique
   p256dh     String
   auth       String
   audience   String
   courierId  String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
   employeeId String?
   customerId String?
   preparerId String?
-  courier    Courier?  @relation(fields: [courierId], references: [id], onDelete: Cascade)
-  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  courier    Courier?         @relation(fields: [courierId], references: [id], onDelete: Cascade)
+  customer   Customer?        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  employee   Employee?        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   preparer   CompanyPreparer? @relation(fields: [preparerId], references: [id], onDelete: Cascade)
 }
 
 model AppNotificationSettings {
-  id                      Int      @id
-  adminEnabled            Boolean  @default(true)
-  adminTemplateSingle     String   @default("طلب جديد بانتظار الموافقة (#{orderNumber})")
-  adminTemplateMultiple   String   @default("وصلت {count} طلبات جديدة بانتظار الموافقة")
-  adminSoundEnabled       Boolean  @default(true)
-  mandoubEnabled          Boolean  @default(true)
-  mandoubTemplateSingle   String   @default("تم إسناد طلب جديد إليك (#{orderNumber})")
-  mandoubTemplateMultiple String   @default("تم إسناد {count} طلبات جديدة إليك")
-  mandoubSoundEnabled     Boolean  @default(true)
-  preparerEnabled         Boolean  @default(true)
-  preparerTemplateSingle  String   @default("لديك طلب تجهيز جديد من {shopName} إلى {regionName} (#{orderNumber})")
-  preparerTemplateMultiple String  @default("لديك {count} طلبات تجهيز جديدة")
-  preparerTemplateWebsite  String  @default("لديك طلب جديد مسند من الموقع (#{orderNumber})")
-  preparerSoundEnabled    Boolean  @default(true)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-  adminSoundPreset        String   @default("beep")
-  mandoubSoundPreset      String   @default("beep")
-  preparerSoundPreset     String   @default("phone")
+  id                       Int      @id
+  adminEnabled             Boolean  @default(true)
+  adminTemplateSingle      String   @default("طلب جديد بانتظار الموافقة (#{orderNumber})")
+  adminTemplateMultiple    String   @default("وصلت {count} طلبات جديدة بانتظار الموافقة")
+  adminSoundEnabled        Boolean  @default(true)
+  mandoubEnabled           Boolean  @default(true)
+  mandoubTemplateSingle    String   @default("تم إسناد طلب جديد إليك (#{orderNumber})")
+  mandoubTemplateMultiple  String   @default("تم إسناد {count} طلبات جديدة إليك")
+  mandoubSoundEnabled      Boolean  @default(true)
+  preparerEnabled          Boolean  @default(true)
+  preparerTemplateSingle   String   @default("لديك طلب تجهيز جديد من {shopName} إلى {regionName} (#{orderNumber})")
+  preparerTemplateMultiple String   @default("لديك {count} طلبات تجهيز جديدة")
+  preparerTemplateWebsite  String   @default("لديك طلب جديد مسند من الموقع (#{orderNumber})")
+  preparerSoundEnabled     Boolean  @default(true)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  adminSoundPreset         String   @default("beep")
+  mandoubSoundPreset       String   @default("beep")
+  preparerSoundPreset      String   @default("phone")
 }
 
 model TelegramBotSession {
@@ -493,13 +495,13 @@ model TelegramBotSession {
 }
 
 model UISystemSetting {
-  id        String   @id @default(cuid())
-  target    String
-  section   String
-  config    Json
-  chatEnabled Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  target      String
+  section     String
+  config      Json
+  chatEnabled Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([target, section])
 }
@@ -670,10 +672,10 @@ enum PortalChatRole {
 }
 
 model PortalChatThread {
-  id            String                   @id @default(cuid())
-  uniqueKey     String                   @unique
-  createdAt     DateTime                 @default(now())
-  updatedAt     DateTime                 @updatedAt
+  id            String                  @id @default(cuid())
+  uniqueKey     String                  @unique
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
   lastMessageAt DateTime?
   participants  PortalChatParticipant[]
   messages      PortalChatMessage[]
@@ -682,14 +684,14 @@ model PortalChatThread {
 }
 
 model PortalChatParticipant {
-  id         String         @id @default(cuid())
+  id         String           @id @default(cuid())
   threadId   String
   role       PortalChatRole
   actorId    String
   actorName  String
   lastReadAt DateTime?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
   thread     PortalChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
   @@unique([threadId, role, actorId])
@@ -697,13 +699,13 @@ model PortalChatParticipant {
 }
 
 model PortalChatMessage {
-  id         String         @id @default(cuid())
+  id         String           @id @default(cuid())
   threadId   String
   senderRole PortalChatRole
   senderId   String
   senderName String
   body       String
-  createdAt  DateTime       @default(now())
+  createdAt  DateTime         @default(now())
   thread     PortalChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
   @@index([threadId, createdAt])

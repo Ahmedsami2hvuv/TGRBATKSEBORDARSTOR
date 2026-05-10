@@ -12,6 +12,7 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 import { ModalAwareNavButton } from "@/components/modal-aware-nav-button";
 import { archivePreparerShoppingDraftAction, rejectOrderFromPreparerAction } from "../actions";
+import { ConfirmActionForm } from "./confirm-action-form";
 
 export const dynamic = "force-dynamic";
 
@@ -212,11 +213,11 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
                       تسعير الطلب 💰
                     </div>
                   </FullscreenWalletLauncher>
-                  <form action={rejectOrderFromPreparerAction} onSubmit={(e) => { if(!confirm("هل أنت متأكد من رفض هذا الطلب؟")) e.preventDefault(); }}>
+                  <ConfirmActionForm action={rejectOrderFromPreparerAction} message="هل أنت متأكد من رفض هذا الطلب؟">
                     <input type="hidden" name="p" value={auth.p} /><input type="hidden" name="exp" value={auth.exp} /><input type="hidden" name="s" value={auth.s} />
                     <input type="hidden" name="orderId" value={o.id} />
                     <button type="submit" className="h-full rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-black text-rose-700 hover:bg-rose-100 transition-colors">رفض</button>
-                  </form>
+                  </ConfirmActionForm>
                 </div>
               ))}
             </div>
@@ -246,11 +247,11 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
                       فتح / تسعير
                     </div>
                   </FullscreenWalletLauncher>
-                  <form action={archivePreparerShoppingDraftAction} onSubmit={(e) => { if(!confirm("هل أنت متأكد من رفض هذه المسودة؟")) e.preventDefault(); }}>
+                  <ConfirmActionForm action={archivePreparerShoppingDraftAction} message="هل أنت متأكد من رفض هذه المسودة؟">
                     <input type="hidden" name="p" value={auth.p} /><input type="hidden" name="exp" value={auth.exp} /><input type="hidden" name="s" value={auth.s} />
                     <input type="hidden" name="draftId" value={d.id} />
                     <button type="submit" className="h-full rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-black text-rose-700 hover:bg-rose-100 transition-colors">رفض</button>
-                  </form>
+                  </ConfirmActionForm>
                 </div>
               ))}
             </div>
