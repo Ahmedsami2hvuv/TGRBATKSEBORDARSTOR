@@ -129,7 +129,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     const assignedPreparerIds = Array.from(new Set([
         ...(o.submittedByCompanyPreparerId ? [o.submittedByCompanyPreparerId] : []),
         ...relatedDrafts.map(d => d.preparerId)
-    ]));
+    ].filter(Boolean))) as string[];
 
     return {
       id: o.id,

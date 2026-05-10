@@ -5,14 +5,17 @@ import { MONEY_KIND_DELIVERY, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-even
 export function sumDeliveryInFromOrderMoneyEvents(
   moneyEvents: Array<{
     kind: string;
-    amountDinar: Decimal;
-    deletedAt: Date | null;
+    amountDinar: any;
+    deletedAt: Date | null | string;
   }>,
-): Decimal | null {
-  let sum: Decimal | null = null;
+): number | null {
+  let sum: number | null = null;
   for (const e of moneyEvents) {
     if (e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null) {
-      sum = sum == null ? e.amountDinar : sum.plus(e.amountDinar);
+      const val = typeof e.amountDinar === 'object' && e.amountDinar !== null && 'toNumber' in e.amountDinar ? e.amountDinar.toNumber() : Number(e.amountDinar);
+      if (!Number.isNaN(val)) {
+        sum = sum == null ? val : sum + val;
+      }
     }
   }
   return sum;
@@ -22,14 +25,17 @@ export function sumDeliveryInFromOrderMoneyEvents(
 export function sumPickupOutFromOrderMoneyEvents(
   moneyEvents: Array<{
     kind: string;
-    amountDinar: Decimal;
-    deletedAt: Date | null;
+    amountDinar: any;
+    deletedAt: Date | null | string;
   }>,
-): Decimal | null {
-  let sum: Decimal | null = null;
+): number | null {
+  let sum: number | null = null;
   for (const e of moneyEvents) {
     if (e.kind === MONEY_KIND_PICKUP && e.deletedAt == null) {
-      sum = sum == null ? e.amountDinar : sum.plus(e.amountDinar);
+      const val = typeof e.amountDinar === 'object' && e.amountDinar !== null && 'toNumber' in e.amountDinar ? e.amountDinar.toNumber() : Number(e.amountDinar);
+      if (!Number.isNaN(val)) {
+        sum = sum == null ? val : sum + val;
+      }
     }
   }
   return sum;
@@ -47,8 +53,8 @@ export function orderExpectedTotal(
 /** فحص الوارد: هل هناك اختلاف في ما استلمه المندوب من الزبون؟ */
 export function isWardMismatch(
   status: string,
-  totalAmount: Decimal | null,
-  deliveryEventsSum: Decimal | null | undefined,
+  totalAmount: Decimal | number | string | null,
+  deliveryEventsSum: Decimal | number | string | null | undefined,
 ): { hasMismatch: boolean; type: "excess" | "deficit" | null } {
   // أزلنا قيد الحالة "delivered" لكي يظهر التنبيه بمجرد تسجيل مبلغ مختلف حتى لو لم يكتمل الطلب
   if (status === "pending" || status === "cancelled") return { hasMismatch: false, type: null };
@@ -56,30 +62,40 @@ export function isWardMismatch(
   const actual = deliveryEventsSum;
   if (actual == null || totalAmount == null) return { hasMismatch: false, type: null };
 
-  const diff = actual.minus(totalAmount);
-  if (diff.abs().lessThan(0.01)) return { hasMismatch: false, type: null };
+  const actualNum = typeof actual === 'object' && 'toNumber' in actual ? actual.toNumber() : Number(actual);
+  const totalNum = typeof totalAmount === 'object' && 'toNumber' in totalAmount ? totalAmount.toNumber() : Number(totalAmount);
+  
+  if (Number.isNaN(actualNum) || Number.isNaN(totalNum)) return { hasMismatch: false, type: null };
+
+  const diff = actualNum - totalNum;
+  if (Math.abs(diff) < 0.01) return { hasMismatch: false, type: null };
   return {
     hasMismatch: true,
-    type: diff.greaterThan(0) ? "excess" : "deficit"
+    type: diff > 0 ? "excess" : "deficit"
   };
 }
 
 /** فحص الصادر: هل هناك اختلاف في ما دفعه المندوب للمحل؟ */
 export function isSaderMismatch(
   status: string,
-  orderSubtotal: Decimal | null,
-  pickupEventsSum: Decimal | null | undefined,
+  orderSubtotal: Decimal | number | string | null,
+  pickupEventsSum: Decimal | number | string | null | undefined,
 ): { hasMismatch: boolean; type: "excess" | "deficit" | null } {
   if (status === "pending" || status === "cancelled") return { hasMismatch: false, type: null };
 
   const actual = pickupEventsSum;
   if (actual == null || orderSubtotal == null) return { hasMismatch: false, type: null };
 
-  const diff = actual.minus(orderSubtotal);
-  if (diff.abs().lessThan(0.01)) return { hasMismatch: false, type: null };
+  const actualNum = typeof actual === 'object' && 'toNumber' in actual ? actual.toNumber() : Number(actual);
+  const subtotalNum = typeof orderSubtotal === 'object' && 'toNumber' in orderSubtotal ? orderSubtotal.toNumber() : Number(orderSubtotal);
+
+  if (Number.isNaN(actualNum) || Number.isNaN(subtotalNum)) return { hasMismatch: false, type: null };
+
+  const diff = actualNum - subtotalNum;
+  if (Math.abs(diff) < 0.01) return { hasMismatch: false, type: null };
   return {
     hasMismatch: true,
-    type: diff.greaterThan(0) ? "excess" : "deficit"
+    type: diff > 0 ? "excess" : "deficit"
   };
 }
 
