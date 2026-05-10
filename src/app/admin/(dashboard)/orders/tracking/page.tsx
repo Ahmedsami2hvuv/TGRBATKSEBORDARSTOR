@@ -313,6 +313,10 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
     { key: "delivered", label: "مسلّم" },
   ];
 
+  // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
+  const safeTableRows = JSON.parse(JSON.stringify(tableRows)) as typeof tableRows;
+  const safeCouriers = JSON.parse(JSON.stringify(couriers)) as typeof couriers;
+
   return (
     <div className="space-y-4" dir="rtl">
       <p className={ad.muted}>
@@ -472,10 +476,10 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
           </Suspense>
         </div>
 
-        <OrderTrackingBulkTable rows={tableRows} couriers={couriers} />
+        <OrderTrackingBulkTable rows={safeTableRows} couriers={safeCouriers} />
         <p className={ad.orderListCountFooter}>
           عدد الطلبات في هذه الصفحة:{" "}
-          <span className="font-bold text-sky-900">{tableRows.length}</span>
+          <span className="font-bold text-sky-900">{safeTableRows.length}</span>
         </p>
       </div>
     </div>

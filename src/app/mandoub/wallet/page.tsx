@@ -338,7 +338,13 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
 
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const filteredLedger = filterLedgerByRecentDays(ledger);
+  // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
+  const safeLedger = JSON.parse(JSON.stringify(ledger)) as typeof ledger;
+  const safePendingIncoming = JSON.parse(JSON.stringify(pendingIncomingForUi)) as typeof pendingIncomingForUi;
+  const safeTransferTargetCouriers = JSON.parse(JSON.stringify(transferTargetCouriers)) as typeof transferTargetCouriers;
+  const safeCompanyPreparers = JSON.parse(JSON.stringify(companyPreparers)) as typeof companyPreparers;
+
+  const filteredLedger = filterLedgerByRecentDays(safeLedger);
 
   // جلب إعدادات المحفظة
   const uiSettings = await getUISettings("mandoub", "wallet_block");
@@ -372,12 +378,12 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
           earningsDailyStr={formatDinarAsAlf(tipDailySum)}
           earningsMonthlyStr={formatDinarAsAlf(tipMonthlySum)}
           ledger={filteredLedger}
-          pendingIncoming={pendingIncomingForUi}
-          transferTargetCouriers={transferTargetCouriers.map((c) => ({
+          pendingIncoming={safePendingIncoming}
+          transferTargetCouriers={safeTransferTargetCouriers.map((c) => ({
             id: c.id,
             name: c.name.trim() || "مندوب",
           }))}
-          transferTargetEmployees={companyPreparers.map((prep) => ({
+          transferTargetEmployees={safeCompanyPreparers.map((prep) => ({
             id: prep.walletEmployeeId!,
             name: prep.name.trim() || "مجهز",
             shopName: "",

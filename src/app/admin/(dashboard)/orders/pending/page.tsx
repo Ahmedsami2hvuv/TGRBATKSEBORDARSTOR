@@ -87,11 +87,19 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     getGlobalIcons(),
   ]);
 
-  const draftsBySentOrderId = new Map<string, typeof allActiveDrafts>();
-  const draftsByCustomerPhone = new Map<string, typeof allActiveDrafts>();
-  const draftsGroupedByKey = new Map<string, typeof allActiveDrafts>();
+  // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
+  const safeAllActiveDrafts = JSON.parse(JSON.stringify(allActiveDrafts)) as typeof allActiveDrafts;
+  const safeNewOrders = JSON.parse(JSON.stringify(newOrders)) as typeof newOrders;
+  const safePreparedOrders = JSON.parse(JSON.stringify(preparedOrders)) as typeof preparedOrders;
+  const safeCouriers = JSON.parse(JSON.stringify(couriers)) as typeof couriers;
+  const safeShops = JSON.parse(JSON.stringify(shops)) as typeof shops;
+  const safePreparers = JSON.parse(JSON.stringify(preparers)) as typeof preparers;
 
-  for (const draft of allActiveDrafts) {
+  const draftsBySentOrderId = new Map<string, typeof safeAllActiveDrafts>();
+  const draftsByCustomerPhone = new Map<string, typeof safeAllActiveDrafts>();
+  const draftsGroupedByKey = new Map<string, typeof safeAllActiveDrafts>();
+
+  for (const draft of safeAllActiveDrafts) {
     if (draft.sentOrderId) {
       const list = draftsBySentOrderId.get(draft.sentOrderId) ?? [];
       list.push(draft);
@@ -250,7 +258,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
       {activeTab === "new" && (
         <div className="space-y-4">
-          <PendingOrdersClient orders={newRows} couriers={couriers} shops={shops} preparers={preparers} icons={icons} initialAssignOrderId={activeTab === 'new' ? assignOrder : null} />
+          <PendingOrdersClient orders={newRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={icons} initialAssignOrderId={activeTab === 'new' ? assignOrder : null} />
         </div>
       )}
 
@@ -260,7 +268,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
             <p className="text-center py-12 text-slate-400">لا توجد مسودات قيد التجهيز حالياً.</p>
           ) : (
             <div className="grid gap-3">
-              <PendingOrdersClient orders={groupedDraftRows} couriers={couriers} shops={shops} preparers={preparers} icons={icons} isDraftMode />
+              <PendingOrdersClient orders={groupedDraftRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={icons} isDraftMode />
             </div>
           )}
         </div>
@@ -268,7 +276,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
       {activeTab === "completed" && (
         <div className="space-y-4">
-          <PendingOrdersClient orders={preparedRows} couriers={couriers} shops={shops} preparers={preparers} icons={icons} initialAssignOrderId={activeTab === 'completed' ? assignOrder : null} />
+          <PendingOrdersClient orders={preparedRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={icons} initialAssignOrderId={activeTab === 'completed' ? assignOrder : null} />
         </div>
       )}
     </div>

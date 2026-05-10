@@ -885,7 +885,6 @@ export async function archivePreparerShoppingDraftAction(
 
     revalidatePath("/preparer/preparation");
     return { ok: true };
-    return { ok: true };
   } catch (e) {
     console.error("Archive Draft Error:", e);
     return { error: "فشل أرشفة المسودة." };
@@ -918,22 +917,7 @@ export async function rejectOrderFromPreparerAction(
       data: { status: "archived" }
     });
 
-    // إذا كانت المسودة مرتبطة بطلب (مثل طلب المتجر)، نقوم بإلغاء الطلب أيضاً
-    const sentOrderId = draft.sentOrderId;
-    if (sentOrderId) {
-      await prisma.order.update({
-        where: { id: sentOrderId },
-        data: { status: "cancelled" }
-      });
-      // أرشفة بقية المسودات المرتبطة بنفس الطلب إذا وجدت
-      await prisma.companyPreparerShoppingDraft.updateMany({
-        where: { sentOrderId, status: { not: "archived" } },
-        data: { status: "archived" }
-      });
-    }
-
     revalidatePath("/preparer/preparation");
-    return { ok: true };
     return { ok: true };
   } catch (e) {
     console.error("Reject Order Error:", e);
@@ -1019,22 +1003,6 @@ export async function uploadPreparerPortalOrderImage(
     });
 
     revalidatePath("/preparer");
-    // إذا كانت المسودة مرتبطة بطلب (مثل طلب المتجر)، نقوم بإلغاء الطلب أيضاً
-    const sentOrderId = draft.sentOrderId;
-    if (sentOrderId) {
-      await prisma.order.update({
-        where: { id: sentOrderId },
-        data: { status: "cancelled" }
-      });
-      // أرشفة بقية المسودات المرتبطة بنفس الطلب إذا وجدت
-      await prisma.companyPreparerShoppingDraft.updateMany({
-        where: { sentOrderId, status: { not: "archived" } },
-        data: { status: "archived" }
-      });
-    }
-
-    revalidatePath("/preparer/preparation");
-    return { ok: true };
     revalidatePath(`/preparer/order/${orderId}`);
     return { ok: true };
   } catch (e) {
@@ -1082,22 +1050,6 @@ export async function uploadPreparerPortalShopDoorPhoto(
     });
 
     revalidatePath("/preparer");
-    // إذا كانت المسودة مرتبطة بطلب (مثل طلب المتجر)، نقوم بإلغاء الطلب أيضاً
-    const sentOrderId = draft.sentOrderId;
-    if (sentOrderId) {
-      await prisma.order.update({
-        where: { id: sentOrderId },
-        data: { status: "cancelled" }
-      });
-      // أرشفة بقية المسودات المرتبطة بنفس الطلب إذا وجدت
-      await prisma.companyPreparerShoppingDraft.updateMany({
-        where: { sentOrderId, status: { not: "archived" } },
-        data: { status: "archived" }
-      });
-    }
-
-    revalidatePath("/preparer/preparation");
-    return { ok: true };
     revalidatePath(`/preparer/order/${orderId}`);
     return { ok: true };
   } catch (e) {

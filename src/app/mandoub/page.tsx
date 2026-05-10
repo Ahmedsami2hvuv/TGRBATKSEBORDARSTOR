@@ -459,6 +459,10 @@ export default async function MandoubPage({ searchParams }: Props) {
     createdAtIso: o.createdAt.toISOString(),
   }));
 
+  // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
+  const safeTableRows = JSON.parse(JSON.stringify(tableRows)) as typeof tableRows;
+  const safeSearchFields = JSON.parse(JSON.stringify(searchFields)) as typeof searchFields;
+
   const tabBtnClass = (active: boolean) =>
     `shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
       active ? "bg-sky-600 text-white shadow-md ring-2 ring-sky-300" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
@@ -543,8 +547,8 @@ export default async function MandoubPage({ searchParams }: Props) {
 
           <section className="kse-glass-dark overflow-hidden border border-sky-200 shadow-sm">
             <MandoubOrdersSection
-              allRows={tableRows}
-              searchFields={searchFields}
+              allRows={safeTableRows}
+              searchFields={safeSearchFields}
               auth={baseAuth}
               tab={tab}
               listOrdersStampSig={listOrdersStampSig}

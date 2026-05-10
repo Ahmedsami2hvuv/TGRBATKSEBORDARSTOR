@@ -120,6 +120,9 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
     );
   }
 
+  // تحويل الطلب إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
+  const safeOrder = JSON.parse(JSON.stringify(order)) as typeof order;
+
   const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
   const customerPhoneProfile =
     customerPhoneNorm && order.customerRegionId
@@ -261,28 +264,28 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
           ) : null}
 
           <MandoubOrderAdminUpdatePoller
-            orderId={order.id}
-            initialUpdatedAtIso={order.updatedAt.toISOString()}
+            orderId={safeOrder.id}
+            initialUpdatedAtIso={new Date(safeOrder.updatedAt).toISOString()}
             initialSnapshot={{
-              status: cleanSnapshotString(order.status),
-              totalAmount: order.totalAmount != null ? String(order.totalAmount) : "",
-              deliveryPrice: order.deliveryPrice != null ? String(order.deliveryPrice) : "",
-              summary: cleanSnapshotString(order.summary),
-              orderType: cleanSnapshotString(order.orderType),
-              customerLocationUrl: cleanSnapshotString(order.customerLocationUrl),
-              customerLandmark: cleanSnapshotString(order.customerLandmark),
-              customerDoorPhotoUrl: cleanSnapshotString(order.customerDoorPhotoUrl),
-              adminVoiceNoteUrl: cleanSnapshotString(order.adminVoiceNoteUrl),
-              shopDoorPhotoUrl: cleanSnapshotString(order.shopDoorPhotoUrl),
-              secondCustomerPhone: cleanSnapshotString(order.secondCustomerPhone),
-              secondCustomerLocationUrl: cleanSnapshotString(order.secondCustomerLocationUrl),
-              secondCustomerLandmark: cleanSnapshotString(order.secondCustomerLandmark),
-              secondCustomerDoorPhotoUrl: cleanSnapshotString(order.secondCustomerDoorPhotoUrl),
+              status: cleanSnapshotString(safeOrder.status),
+              totalAmount: safeOrder.totalAmount != null ? String(safeOrder.totalAmount) : "",
+              deliveryPrice: safeOrder.deliveryPrice != null ? String(safeOrder.deliveryPrice) : "",
+              summary: cleanSnapshotString(safeOrder.summary),
+              orderType: cleanSnapshotString(safeOrder.orderType),
+              customerLocationUrl: cleanSnapshotString(safeOrder.customerLocationUrl),
+              customerLandmark: cleanSnapshotString(safeOrder.customerLandmark),
+              customerDoorPhotoUrl: cleanSnapshotString(safeOrder.customerDoorPhotoUrl),
+              adminVoiceNoteUrl: cleanSnapshotString(safeOrder.adminVoiceNoteUrl),
+              shopDoorPhotoUrl: cleanSnapshotString(safeOrder.shopDoorPhotoUrl),
+              secondCustomerPhone: cleanSnapshotString(safeOrder.secondCustomerPhone),
+              secondCustomerLocationUrl: cleanSnapshotString(safeOrder.secondCustomerLocationUrl),
+              secondCustomerLandmark: cleanSnapshotString(safeOrder.secondCustomerLandmark),
+              secondCustomerDoorPhotoUrl: cleanSnapshotString(safeOrder.secondCustomerDoorPhotoUrl),
             }}
             auth={baseAuth}
           />
           <OrderDetailSection
-            order={order}
+            order={safeOrder}
             closeHref={`/mandoub?${baseQuery.toString()}`}
             auth={baseAuth}
             nextUrl={`/mandoub/order/${orderId}?${baseQuery.toString()}${modalOnly ? "&view=modal" : ""}`}
