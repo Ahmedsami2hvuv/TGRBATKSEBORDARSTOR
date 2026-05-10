@@ -62,6 +62,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     return null;
   }
 
+  const orderListResetAt = preparerRaw.orderListResetAt;
   const preparer = deepSanitize(preparerRaw);
   const safeIcons = deepSanitize(icons);
   const auth = { p: p!, exp: exp!, s: s! };
@@ -102,7 +103,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     orderTable = await loadPreparerPortalOrderTableData({
       preparerId: preparer.id,
       shopIds,
-      orderListResetAt: preparer.orderListResetAt,
+      orderListResetAt,
       tab: "all",
       wardFilter: "lower",
       saderFilter: "lower",
