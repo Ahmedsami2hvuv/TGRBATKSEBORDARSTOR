@@ -139,14 +139,33 @@ export default async function PreparerShoppingDraftPage({ params, searchParams }
     }
   });
 
-  // إخفاء الأرقام والبيانات الحساسة لضمان الخصوصية عند المجهز وتطهير التواريخ لمنع خطأ الـ Serialization
+  // دالة التطهير العميقة المطورة: تعالج BigInt و Decimal و Date يدوياً
+  function deepSanitize(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === "bigint") return obj.toString();
+    if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+    if (obj instanceof Date) return obj.toISOString();
+    if (Array.isArray(obj)) return obj.map(deepSanitize);
+    if (typeof obj === "object") {
+      if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) return Number(obj.toString());
+      if (Object.hasOwn(obj, 'd') && Object.hasOwn(obj, 's') && Object.hasOwn(obj, 'e')) return Number(obj.toString());
+      const newObj: any = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
+      }
+      return newObj;
+    }
+    return obj;
+  }
+
+  // إخفاء الأرقام والبيانات الحساسة لضمان الخصوصية عند المجهز وتطهير البيانات لمنع خطأ الـ Serialization
   const isLikelyPhone = (text: string) => /^[0-9+ \-()]{7,15}$/.test(text.trim());
-  const safeDraft = JSON.parse(JSON.stringify({
+  const safeDraft = deepSanitize({
     ...draft,
     customerPhone: "",
     customerName: draft.customerName && isLikelyPhone(draft.customerName) ? "" : draft.customerName,
     titleLine: draft.titleLine && isLikelyPhone(draft.titleLine) ? "" : draft.titleLine,
-  }));
+  });
 
   return (
     <div className="kse-app-inner mx-auto max-w-2xl px-4 py-6 pb-24">

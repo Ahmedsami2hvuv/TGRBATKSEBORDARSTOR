@@ -123,20 +123,28 @@ export default async function PreparerHomePage({ searchParams }: Props) {
       iconsPromise,
     ]);
 
-  const walletRemainStr = formatDinarAsAlfWithUnit(walletTotals?.remain ?? 0);
+  // دالة التطهير العميق للتعامل مع BigInt و Decimal و Date في Next.js 15
+  function deepSanitize(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === "bigint") return obj.toString();
+    if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+    if (obj instanceof Date) return obj.toISOString();
+    if (Array.isArray(obj)) return obj.map(deepSanitize);
+    if (typeof obj === "object") {
+      if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) return Number(obj.toString());
+      if (Object.hasOwn(obj, 'd') && Object.hasOwn(obj, 's') && Object.hasOwn(obj, 'e')) return Number(obj.toString());
+      const newObj: any = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
+      }
+      return newObj;
+    }
+    return obj;
+  }
 
-  // دالة التطهير العميق للتعامل مع BigInt و Decimal و Date
-  const makeSafe = (obj: any) => {
-    if (!obj) return obj;
-    return JSON.parse(JSON.stringify(obj, (key, value) => {
-      if (typeof value === 'bigint') return value.toString();
-      return value;
-    }));
-  };
-
-  const safeTableRows = makeSafe(tableRows);
-  const safeSearchFields = makeSafe(searchFields);
-  const safeCouriers = makeSafe(couriersForBulkAssign);
+  const safeTableRows = deepSanitize(tableRows);
+  const safeSearchFields = deepSanitize(searchFields);
+  const safeCouriers = deepSanitize(couriersForBulkAssign);
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 text-base leading-relaxed sm:px-4 sm:py-4 sm:text-lg">

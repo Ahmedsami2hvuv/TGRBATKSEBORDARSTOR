@@ -110,7 +110,10 @@ export async function loadPreparerPortalOrderTableData(args: {
     const ra = STATUS_SORT_RANK[a.status] ?? 99;
     const rb = STATUS_SORT_RANK[b.status] ?? 99;
     if (ra !== rb) return ra - rb;
-    return b.orderNumber - a.orderNumber;
+    // ترتيب تنازلي لرقم الطلب (الأحدث أولاً) - معالجة آمنة لـ BigInt
+    if (a.orderNumber < b.orderNumber) return 1;
+    if (a.orderNumber > b.orderNumber) return -1;
+    return 0;
   });
 
   const filteredByTab = activeOrders.filter((o) => {
@@ -248,7 +251,12 @@ export async function loadPreparerPortalOrderTableData(args: {
     shopDoorPhotoUploadedByName: o.shopDoorPhotoUploadedByName ?? "",
     preparerShoppingText:
       o.preparerShoppingJson != null
-        ? JSON.stringify(o.preparerShoppingJson, (k, v) => typeof v === 'bigint' ? v.toString() : v)
+        ? JSON.stringify(o.preparerShoppingJson, (k, v) => {
+            if (typeof v === 'bigint') return v.toString();
+            // معالجة Decimal في حال وجوده داخل JSON
+            if (v && typeof v === 'object' && v.d && v.s && v.e) return Number(v.toString());
+            return v;
+          })
         : "",
     submittedByEmployeeName: o.submittedBy?.name ?? "",
     submittedByPreparerName: o.submittedByCompanyPreparer?.name ?? "",
@@ -257,10 +265,35 @@ export async function loadPreparerPortalOrderTableData(args: {
 
   const ordersForPrimaryShopLabel = activeOrders.map((o) => ({ shop: { name: o.shop?.name || "—" } }));
 
-  // تطهير أخير للنتائج لضمان عدم تسرب أي BigInt خفي
-  const safeResults = JSON.parse(JSON.stringify({ rows, searchFields, ordersForPrimaryShopLabel }, (k, v) =>
-    typeof v === 'bigint' ? v.toString() : v
-  ));
+  // دالة تطهير عميقة وقوية جداً لمنع أي تسريب لبيانات غير قابلة للتسلسل
+  function deepSanitize(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === "bigint") return obj.toString();
+    if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+    if (obj instanceof Date) return obj.toISOString();
 
-  return safeResults;
+    if (Array.isArray(obj)) return obj.map(deepSanitize);
+
+    if (typeof obj === "object") {
+      // معالجة Decimal الخاصة بـ Prisma (Decimal.js)
+      if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
+        return Number(obj.toString());
+      }
+      // حماية إضافية للـ Decimal إذا فقد الـ constructor
+      if (Object.hasOwn(obj, 'd') && Object.hasOwn(obj, 's') && Object.hasOwn(obj, 'e')) {
+        return Number(obj.toString());
+      }
+
+      const newObj: any = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          newObj[key] = deepSanitize(obj[key]);
+        }
+      }
+      return newObj;
+    }
+    return obj;
+  }
+
+  return deepSanitize({ rows, searchFields, ordersForPrimaryShopLabel });
 }

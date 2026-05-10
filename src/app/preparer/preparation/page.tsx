@@ -39,6 +39,36 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
 
   if (!preparer) return <div className="p-8 text-center font-bold">الحساب غير متاح.</div>;
 
+  // دالة التطهير العميقة المطورة: تعالج BigInt و Decimal و Date يدوياً
+  function deepSanitize(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === "bigint") return obj.toString();
+    if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+    if (obj instanceof Date) return obj.toISOString();
+
+    if (Array.isArray(obj)) return obj.map(deepSanitize);
+
+    if (typeof obj === "object") {
+      // معالجة Decimal الخاصة بـ Prisma (Decimal.js)
+      if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
+        return Number(obj.toString());
+      }
+      // حماية إضافية للـ Decimal
+      if (Object.hasOwn(obj, 'd') && Object.hasOwn(obj, 's') && Object.hasOwn(obj, 'e')) {
+        return Number(obj.toString());
+      }
+
+      const newObj: any = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          newObj[key] = deepSanitize(obj[key]);
+        }
+      }
+      return newObj;
+    }
+    return obj;
+  }
+
   const auth = { p: p!, exp: exp!, s: s! };
   const homeHref = preparerPath("/preparer", auth);
   const shopIds = preparer.shopLinks.map((l) => l.shopId);
@@ -76,21 +106,16 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     }),
   ]);
 
-  // دالة التطهير العميق للتعامل مع BigInt و Decimal و Date
-  const makeSafe = (obj: any) => {
-    if (!obj) return obj;
-    return JSON.parse(JSON.stringify(obj, (key, value) => {
-      if (typeof value === 'bigint') return value.toString();
-      return value;
-    }));
-  };
+  const safeDrafts = deepSanitize(drafts);
+  const safeWebStorePending = deepSanitize(webStorePending);
+  const safeOrderTableRows = deepSanitize(orderTable.rows);
+  const safeSearchFields = deepSanitize(orderTable.searchFields);
+  const safeCouriers = deepSanitize(couriers);
+  const safePreparerName = String(preparer.name);
 
-  const safeDrafts = makeSafe(drafts);
-  const safeWebStorePending = makeSafe(webStorePending);
-  const safeOrderTableRows = makeSafe(orderTable.rows);
-  const safeSearchFields = makeSafe(orderTable.searchFields);
-  const safeCouriers = makeSafe(couriers);
-  const safePreparer = makeSafe({ name: preparer.name, id: preparer.id });
+  // تحويل إجباري لجميع المعرفات إلى نصوص لضمان عدم حدوث خطأ React Key
+  const sanitizedWebStore = safeWebStorePending.map((o: any) => ({ ...o, id: String(o.id) }));
+  const sanitizedDrafts = safeDrafts.map((d: any) => ({ ...d, id: String(d.id) }));
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-3 py-4 pb-24 sm:px-4">
@@ -110,10 +135,10 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
         <h2 className="text-base font-black text-violet-950 dark:text-violet-400">خانة طلبات التجهيز</h2>
 
         {/* عرض طلبات المتجر أولاً لأنها تتطلب تسعيراً فورياً */}
-        {safeWebStorePending.length > 0 && (
+        {sanitizedWebStore.length > 0 && (
           <div className="mb-6 space-y-2">
             <p className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200 w-fit">طلبات بانتظار التسعير (من المتجر) 🛒</p>
-            {safeWebStorePending.map((o: any) => (
+            {sanitizedWebStore.map((o: any) => (
               <div key={o.id} className="flex gap-2 items-stretch">
                 <FullscreenWalletLauncher
                   href={preparerPath(`/preparer/order/${o.id}`, auth)}
@@ -139,11 +164,11 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
         )}
 
         <p className="text-[10px] font-black text-violet-600 bg-violet-50 px-2 py-1 rounded border border-violet-200 w-fit mb-2">مسودات التجهيز (من الموظفين) 📝</p>
-        {safeDrafts.length === 0 ? (
+        {sanitizedDrafts.length === 0 ? (
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">لا توجد مسودات حالياً.</p>
         ) : (
           <div className="mt-3 space-y-2">
-            {safeDrafts.map((d: any) => (
+            {sanitizedDrafts.map((d: any) => (
               <div key={d.id} className="flex gap-2 items-stretch">
                 <FullscreenWalletLauncher
                   href={preparerPath(`/preparer/preparation/draft/${d.id}`, auth)}

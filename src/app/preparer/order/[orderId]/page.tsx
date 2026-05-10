@@ -167,9 +167,27 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
     }
   });
 
-  // إخفاء الأرقام الحساسة في Client Component (لن تُستخدم هناك)
-  // وتطهير كافة البيانات (Dates, Decimals, BigInts) لتجنب خطأ الـ Serialization في Next.js 15
-  const safeOrder: MandoubOrderDetailPayload = JSON.parse(JSON.stringify({
+  // دالة التطهير العميقة المطورة: تعالج BigInt و Decimal و Date يدوياً
+  function deepSanitize(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === "bigint") return obj.toString();
+    if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+    if (obj instanceof Date) return obj.toISOString();
+    if (Array.isArray(obj)) return obj.map(deepSanitize);
+    if (typeof obj === "object") {
+      if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) return Number(obj.toString());
+      if (Object.hasOwn(obj, 'd') && Object.hasOwn(obj, 's') && Object.hasOwn(obj, 'e')) return Number(obj.toString());
+      const newObj: any = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
+      }
+      return newObj;
+    }
+    return obj;
+  }
+
+  // إخفاء الأرقام الحساسة في Client Component وتطهير كافة البيانات لمنع خطأ الـ Serialization
+  const safeOrder: MandoubOrderDetailPayload = deepSanitize({
     ...order,
     customerPhone: "",
     alternatePhone: "",
@@ -179,9 +197,9 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
     submittedByCompanyPreparer: order.submittedByCompanyPreparer
       ? { ...order.submittedByCompanyPreparer, phone: "" }
       : null,
-  }));
-  const safePhoneProfile = phoneProfile ? JSON.parse(JSON.stringify({ ...phoneProfile, phone: "", alternatePhone: null })) : null;
-  const safeSecondPhoneProfile = secondPhoneProfile ? JSON.parse(JSON.stringify({ ...secondPhoneProfile, phone: "", alternatePhone: null })) : null;
+  });
+  const safePhoneProfile = phoneProfile ? deepSanitize({ ...phoneProfile, phone: "", alternatePhone: null }) : null;
+  const safeSecondPhoneProfile = secondPhoneProfile ? deepSanitize({ ...secondPhoneProfile, phone: "", alternatePhone: null }) : null;
 
   const preparerInvoiceIds: string[] = Array.isArray(prepJson?.preparerInvoices)
     ? prepJson.preparerInvoices

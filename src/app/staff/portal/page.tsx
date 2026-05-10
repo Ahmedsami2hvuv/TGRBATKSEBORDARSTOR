@@ -17,7 +17,23 @@ export default async function StaffPortalPage({ searchParams }: { searchParams: 
   const authQ = new URLSearchParams({ se: sp.se ?? "", exp: sp.exp ?? "", s: sp.s ?? "" }).toString();
 
   // Serialization fix for Next.js 15
-  const sanitizedEmp = JSON.parse(JSON.stringify(emp));
+  function deepSanitize(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === "bigint") return obj.toString();
+    if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+    if (obj instanceof Date) return obj.toISOString();
+    if (Array.isArray(obj)) return obj.map(deepSanitize);
+    if (typeof obj === "object") {
+      const newObj: any = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
+      }
+      return newObj;
+    }
+    return obj;
+  }
+
+  const sanitizedEmp = deepSanitize(emp);
 
   return (
     <div className="kse-app-bg min-h-screen px-4 py-10 text-slate-800" dir="rtl">

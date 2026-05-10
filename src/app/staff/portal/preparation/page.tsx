@@ -55,16 +55,33 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
     getGlobalIcons(),
   ]);
 
+  // دالة التطهير العميقة لضمان توافق Next.js 15
+  function deepSanitize(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === "bigint") return obj.toString();
+    if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+    if (obj instanceof Date) return obj.toISOString();
+    if (Array.isArray(obj)) return obj.map(deepSanitize);
+    if (typeof obj === "object") {
+      const newObj: any = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
+      }
+      return newObj;
+    }
+    return obj;
+  }
+
   const auth = { se: sp.se ?? "", exp: sp.exp ?? "", s: sp.s ?? "" };
   const authQ = new URLSearchParams(auth).toString();
 
   // Serialization fix for Next.js 15
-  const sanitizedStaff = JSON.parse(JSON.stringify(staff));
-  const sanitizedPreparers = JSON.parse(JSON.stringify(preparers.map((p) => ({
+  const sanitizedStaff = deepSanitize(staff);
+  const sanitizedPreparers = deepSanitize(preparers.map((p) => ({
     id: p.id,
     name: p.name,
     available: p.availableForAssignment,
-  }))));
+  })));
 
   return (
     <div className="kse-app-bg min-h-screen px-4 py-8 pb-16 text-slate-800">
