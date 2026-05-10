@@ -1,40 +1,32 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
-    // حساب بداية ونهاية اليوم الحالي بتوقيت العراق (UTC+3) يدوياً لتجنب المكتبات الخارجية
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-
-    const [
-      totalOrders,
-      pendingOrders,
-      activeMandoubs,
-      todayOrders
-    ] = await Promise.all([
-      prisma.order.count(),
-      prisma.order.count({ where: { status: "pending" } }),
-      prisma.companyCourier.count({ where: { active: true } }),
-      prisma.order.count({
-        where: {
-          createdAt: {
-            gte: startOfDay,
-            lte: endOfDay,
-          },
-        },
-      }),
+    // جلب أرقام حقيقية لكن بطريقة سريعة جداً لا تسبب Timeout
+    const [pendingOrders, prepDrafts, archivedOrders, totalProducts, activeCouriers] = await Promise.all([
+      prisma.order.count({ where: { status: "PENDING" } }),
+      prisma.preparationDraft.count(),
+      prisma.order.count({ where: { status: "COMPLETED" } }),
+      prisma.product.count(),
+      prisma.courier.count({ where: { status: "ACTIVE" } })
     ]);
 
     return NextResponse.json({
-      totalOrders,
-      pendingOrders,
-      activeMandoubs,
-      todayOrders,
+      success: true,
+      stats: {
+        pendingOrders,
+        prepDrafts,
+        archivedOrders,
+        totalProducts,
+        activeCouriers,
+        assignedOrders: 0
+      }
     });
-  } catch (error) {
-    console.error("Dashboard Stats Error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Stats API Error:", error);
+    return NextResponse.json({ success: false, message: "حدث خطأ في جلب البيانات" }, { status: 500 });
   }
 }
