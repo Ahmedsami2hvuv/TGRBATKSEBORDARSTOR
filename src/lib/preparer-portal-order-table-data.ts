@@ -247,7 +247,9 @@ export async function loadPreparerPortalOrderTableData(args: {
     orderImageUploadedByName: o.orderImageUploadedByName ?? "",
     shopDoorPhotoUploadedByName: o.shopDoorPhotoUploadedByName ?? "",
     preparerShoppingText:
-      o.preparerShoppingJson != null ? JSON.stringify(o.preparerShoppingJson) : "",
+      o.preparerShoppingJson != null
+        ? JSON.stringify(o.preparerShoppingJson, (k, v) => typeof v === 'bigint' ? v.toString() : v)
+        : "",
     submittedByEmployeeName: o.submittedBy?.name ?? "",
     submittedByPreparerName: o.submittedByCompanyPreparer?.name ?? "",
     createdAtIso: o.createdAt ? o.createdAt.toISOString() : new Date().toISOString(),
@@ -255,5 +257,10 @@ export async function loadPreparerPortalOrderTableData(args: {
 
   const ordersForPrimaryShopLabel = activeOrders.map((o) => ({ shop: { name: o.shop?.name || "—" } }));
 
-  return { rows, searchFields, ordersForPrimaryShopLabel };
+  // تطهير أخير للنتائج لضمان عدم تسرب أي BigInt خفي
+  const safeResults = JSON.parse(JSON.stringify({ rows, searchFields, ordersForPrimaryShopLabel }, (k, v) =>
+    typeof v === 'bigint' ? v.toString() : v
+  ));
+
+  return safeResults;
 }

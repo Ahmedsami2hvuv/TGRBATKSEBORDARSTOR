@@ -125,11 +125,18 @@ export default async function PreparerHomePage({ searchParams }: Props) {
 
   const walletRemainStr = formatDinarAsAlfWithUnit(walletTotals?.remain ?? 0);
 
-  // تطهير شامل لكافة البيانات لمنع خطأ Serialization (Digest Error)
-  // نستخدم JSON.parse(JSON.stringify) لضمان تحويل أي BigInt أو Decimal أو Date إلى تنسيق JSON متوافق
-  const safeTableRows = JSON.parse(JSON.stringify(tableRows));
-  const safeSearchFields = JSON.parse(JSON.stringify(searchFields));
-  const safeCouriers = JSON.parse(JSON.stringify(couriersForBulkAssign));
+  // دالة التطهير العميق للتعامل مع BigInt و Decimal و Date
+  const makeSafe = (obj: any) => {
+    if (!obj) return obj;
+    return JSON.parse(JSON.stringify(obj, (key, value) => {
+      if (typeof value === 'bigint') return value.toString();
+      return value;
+    }));
+  };
+
+  const safeTableRows = makeSafe(tableRows);
+  const safeSearchFields = makeSafe(searchFields);
+  const safeCouriers = makeSafe(couriersForBulkAssign);
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 text-base leading-relaxed sm:px-4 sm:py-4 sm:text-lg">
