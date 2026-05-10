@@ -54,14 +54,18 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
         return Number(obj.toString());
       }
       // حماية إضافية للـ Decimal
-      if (Object.hasOwn(obj, 'd') && Object.hasOwn(obj, 's') && Object.hasOwn(obj, 'e')) {
+      if (obj.d && Array.isArray(obj.d) && typeof obj.s === 'number') {
         return Number(obj.toString());
       }
 
       const newObj: any = {};
       for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
-          newObj[key] = deepSanitize(obj[key]);
+          try {
+            newObj[key] = deepSanitize(obj[key]);
+          } catch (e) {
+            newObj[key] = null;
+          }
         }
       }
       return newObj;

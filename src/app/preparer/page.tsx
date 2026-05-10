@@ -123,6 +123,8 @@ export default async function PreparerHomePage({ searchParams }: Props) {
       iconsPromise,
     ]);
 
+  const walletRemainStr = formatDinarAsAlfWithUnit(walletTotals?.remain ?? 0);
+
   // دالة التطهير العميق للتعامل مع BigInt و Decimal و Date في Next.js 15
   function deepSanitize(obj: any): any {
     if (obj === null || obj === undefined) return obj;

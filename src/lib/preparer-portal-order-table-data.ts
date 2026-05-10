@@ -280,14 +280,18 @@ export async function loadPreparerPortalOrderTableData(args: {
         return Number(obj.toString());
       }
       // حماية إضافية للـ Decimal إذا فقد الـ constructor
-      if (Object.hasOwn(obj, 'd') && Object.hasOwn(obj, 's') && Object.hasOwn(obj, 'e')) {
+      if (obj.d && Array.isArray(obj.d) && typeof obj.s === 'number') {
         return Number(obj.toString());
       }
 
       const newObj: any = {};
       for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
-          newObj[key] = deepSanitize(obj[key]);
+          try {
+            newObj[key] = deepSanitize(obj[key]);
+          } catch (e) {
+            newObj[key] = null; // تجنب الانهيار في حالة الدوران اللانهائي
+          }
         }
       }
       return newObj;
