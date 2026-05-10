@@ -307,21 +307,25 @@ export async function loadPreparerPortalOrderTableData(args: {
   const ordersForPrimaryShopLabel = activeOrders.map((o) => ({ shop: { name: o.shop?.name || "—" } }));
 
   // دالة تطهير عميقة وقوية جداً لمنع أي تسريب لبيانات غير قابلة للتسلسل
-  function deepSanitize(obj: any): any {
+  function deepSanitize(obj: any, visited = new WeakSet()): any {
     if (obj === null || obj === undefined) return obj;
     if (typeof obj === "bigint") return obj.toString();
     if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
     if (obj instanceof Date) return obj.toISOString();
 
-    if (Array.isArray(obj)) return obj.map(deepSanitize);
+    if (Array.isArray(obj)) return obj.map((item) => deepSanitize(item, visited));
 
     if (typeof obj === "object") {
+      if (visited.has(obj)) return "[Circular]";
+      visited.add(obj);
       // معالجة Decimal الخاصة بـ Prisma (Decimal.js)
       if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
+        visited.delete(obj);
         return Number(obj.toString());
       }
       // حماية إضافية للـ Decimal إذا فقد الـ constructor
-      if (obj.d && Array.isArray(obj.d) && typeof obj.s === 'number') {
+      if (obj.d && Array.isArray(obj.d) && typeof obj.s === "number") {
+        visited.delete(obj);
         return Number(obj.toString());
       }
 
@@ -329,12 +333,13 @@ export async function loadPreparerPortalOrderTableData(args: {
       for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
           try {
-            newObj[key] = deepSanitize(obj[key]);
+            newObj[key] = deepSanitize(obj[key], visited);
           } catch (e) {
             newObj[key] = null; // تجنب الانهيار في حالة الدوران اللانهائي
           }
         }
       }
+      visited.delete(obj);
       return newObj;
     }
     return obj;
