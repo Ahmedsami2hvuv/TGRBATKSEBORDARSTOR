@@ -76,7 +76,6 @@ export async function assignOrderToPreparer(
     }
   }
 
-  try {
   let customerPhone = "";
   let titleLine = "";
   let summary = "";

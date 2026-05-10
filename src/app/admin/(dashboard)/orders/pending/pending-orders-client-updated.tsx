@@ -163,8 +163,7 @@ export function AdminPricingPanel({
       : [];
     if (list.length > 0) return list;
     return (orderSummary || "")
-      .split("
-")
+      .split("\n")
       .filter((l) => l.trim().length > 2)
       .map((l) => ({
         line: l.trim(),
@@ -253,8 +252,7 @@ export function AdminPricingPanel({
   };
 
   const handleBulkAdd = (text: string) => {
-    const lines = text.split("
-").map(l => l.trim()).filter(l => l.length > 1);
+    const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 1);
     const newProds = lines.map(line => ({ line, buyAlf: "0", sellAlf: "0", pricedBy: null, assignedPreparerId: null, assignedPreparerName: null }));
     setProducts([...products, ...newProds]);
     setShowBulkAdd(false);
@@ -307,8 +305,7 @@ export function AdminPricingPanel({
         <div className="bg-white p-3 rounded-xl border-2 border-violet-200 animate-in zoom-in-95 shadow-inner">
           <p className="text-[10px] font-bold text-violet-900 mb-2">أدخل المنتجات الجديدة (سطر لكل منتج):</p>
           <textarea className="w-full rounded-lg border border-slate-200 p-2 text-sm min-h-[80px] outline-none focus:ring-2 focus:ring-violet-300 font-bold" placeholder="لحم شرح 1ك&#10;خيار 2 كيلو" onBlur={(e) => {
-              const lines = e.target.value.split("
-").map(l => l.trim()).filter(l => l.length > 1);
+              const lines = e.target.value.split("\n").map(l => l.trim()).filter(l => l.length > 1);
               if (lines.length) { setProducts([...products, ...lines.map(line => ({ line, buyAlf: "0", sellAlf: "0", pricedBy: null, assignedPreparerId: null, assignedPreparerName: null }))]); setShowBulkAdd(false); }
               e.target.value = "";
             }} />
