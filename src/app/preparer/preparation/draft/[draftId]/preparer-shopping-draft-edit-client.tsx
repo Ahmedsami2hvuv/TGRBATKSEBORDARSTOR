@@ -794,6 +794,11 @@ export function PreparerShoppingDraftEditClient({
 
       <div className="fixed bottom-4 inset-x-4 z-50">
           <form action={submitAction}>
+            {submitState.error && (
+              <div className="mb-2 rounded-xl border border-rose-300 bg-rose-50 p-3 text-center text-sm font-black text-rose-700 shadow-sm animate-in fade-in">
+                  {submitState.error}
+              </div>
+            )}
             <input type="hidden" name="p" value={auth.p} />
             <input type="hidden" name="exp" value={auth.exp} />
             <input type="hidden" name="s" value={auth.s} />
