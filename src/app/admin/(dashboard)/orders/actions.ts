@@ -19,6 +19,7 @@ export async function assignOrderToPreparer(
   _prev: AssignOrderState,
   formData: FormData,
 ): Promise<AssignOrderState> {
+  try {
   const orderId = String(formData.get("orderId") ?? "").trim();
   const isDraft = formData.get("isDraft") === "true";
 
@@ -75,6 +76,7 @@ export async function assignOrderToPreparer(
     }
   }
 
+  try {
   let customerPhone = "";
   let titleLine = "";
   let summary = "";
@@ -169,7 +171,7 @@ export async function assignOrderToPreparer(
                     groupId: finalGroupId, 
                     products: mergedProducts,
                     assignedPreparerId: preparerId,
-                    assignedPreparerName: (await prisma.companyPreparer.findUnique({ where: { id: preparerId } }))?.name
+                    assignedPreparerName: (await prisma.companyPreparer.findUnique({ where: { id: preparerId } }))?.name || null
                 } 
             }
         });
@@ -188,7 +190,7 @@ export async function assignOrderToPreparer(
                     groupId: finalGroupId,
                     products: mergedProducts,
                     assignedPreparerId: preparerId,
-                    assignedPreparerName: preparer?.name,
+                    assignedPreparerName: preparer?.name || null,
                 }
             }
         });
@@ -212,7 +214,7 @@ export async function assignOrderToPreparer(
                groupId: finalGroupId,
                products: mergedProducts,
                assignedPreparerId: preparerId,
-               assignedPreparerName: preparer?.name,
+               assignedPreparerName: preparer?.name || null,
                fromAdminAction: true
             }
           }
@@ -248,6 +250,10 @@ export async function assignOrderToPreparer(
   revalidatePath("/admin/orders/pending");
   revalidatePath(`/admin/orders/${orderId}`);
   return { ok: true };
+  } catch (error: any) {
+    console.error("Assign Order Error:", error);
+    return { error: `خطأ الإسناد: ${error.message || "حدث خطأ غير متوقع في الخادم"}` };
+  }
 }
 
 /** إعادة إسناد (تغيير) المجهز */
