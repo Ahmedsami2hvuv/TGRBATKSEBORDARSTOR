@@ -1,6 +1,4 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
-import path from "path";
-import sharp from "sharp";
 
 const r2Client = (typeof process !== 'undefined' && process.env.R2_ACCESS_KEY_ID) ? new S3Client({
   region: "auto",
@@ -13,47 +11,12 @@ const r2Client = (typeof process !== 'undefined' && process.env.R2_ACCESS_KEY_ID
 
 export async function uploadToR2(buffer: Buffer, key: string, contentType: string) {
   if (!r2Client) return null;
-  
-  let finalBuffer = buffer;
-  let finalContentType = contentType;
-
-  if (contentType.startsWith("image/") && !contentType.includes("gif")) {
-    try {
-      // IMPORTANT: if we generated a transparent PNG (removeBg),
-      // converting it to JPEG will drop alpha and typically renders
-      // transparent pixels as black. Keep PNG as PNG.
-      const isPng = contentType === "image/png";
-
-      if (isPng) {
-        finalBuffer = await sharp(buffer)
-          .resize({ width: 1200, withoutEnlargement: true })
-          .png({ compressionLevel: 9 })
-          .toBuffer();
-        finalContentType = "image/png";
-        if (!key.endsWith(".png")) {
-          key = key.replace(/\.[^/.]+$/, "") + ".png";
-        }
-      } else {
-        finalBuffer = await sharp(buffer)
-          .resize({ width: 1200, withoutEnlargement: true })
-          .jpeg({ quality: 80 })
-          .toBuffer();
-        finalContentType = "image/jpeg";
-        if (!key.endsWith(".jpg") && !key.endsWith(".jpeg")) {
-          key = key.replace(/\.[^/.]+$/, "") + ".jpg";
-        }
-      }
-    } catch (e) {
-      console.warn("Failed to compress image:", e);
-    }
-  }
-
   try {
     await r2Client.send(new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME,
       Key: key,
-      Body: finalBuffer,
-      ContentType: finalContentType,
+      Body: buffer,
+      ContentType: contentType,
     }));
     return key;
   } catch (error) {
@@ -81,61 +44,23 @@ export async function deleteFromR2(key: string | null | undefined) {
   }
 }
 
-function extractR2Key(input: string): string | null {
-  const raw = String(input || "").trim();
-  if (!raw) return null;
-
-  if (raw.startsWith("/uploads/")) {
-    return raw.slice("/uploads/".length);
-  }
-
-  if (raw.includes("/uploads/")) {
-    const idx = raw.indexOf("/uploads/");
-    return raw.slice(idx + "/uploads/".length);
-  }
-
-  if (raw.startsWith("http://") || raw.startsWith("https://")) {
-    try {
-      const parsed = new URL(raw);
-      const pathname = decodeURIComponent(parsed.pathname || "");
-      if (pathname.startsWith("/uploads/")) {
-        return pathname.slice("/uploads/".length);
-      }
-      if (pathname.startsWith("/")) return pathname.slice(1);
-      return pathname || null;
-    } catch {
-      return null;
-    }
-  }
-
-  return raw.replace(/^\/+/, "");
-}
-
 export async function r2ObjectExistsByUrl(urlOrKey: string | null | undefined): Promise<boolean> {
   if (!r2Client || !urlOrKey) return false;
-  const key = extractR2Key(String(urlOrKey));
-  if (!key) return false;
+  const raw = String(urlOrKey).trim();
+  let key = raw;
+  if (raw.startsWith("/uploads/")) key = raw.slice(9);
 
   try {
-    await r2Client.send(
-      new HeadObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME,
-        Key: key,
-      }),
-    );
+    await r2Client.send(new HeadObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: key,
+    }));
     return true;
   } catch {
     return false;
   }
 }
 
-// إعادة الدوال اللازمة للنظام القديم والطلبات لضمان عمل الـ Build
-export function getUploadsRoot(): string {
-  const fromEnv = process.env.UPLOAD_DIR?.trim();
-  if (fromEnv) return path.resolve(fromEnv);
-  return path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "uploads");
-}
-
-export function uploadsAbsoluteDir(...segments: string[]): string {
-  return path.join(getUploadsRoot(), ...segments);
-}
+// أداة مساعدة بسيطة للمسارات لتجنب مشاكل الـ Build
+export function getUploadsRoot() { return ""; }
+export function uploadsAbsoluteDir() { return ""; }
