@@ -43,60 +43,90 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
   if (!preparerRaw) return <div className="p-8 text-center font-bold">الحساب غير متاح.</div>;
 
   // Nuclear Sanitization for Next.js 15
-  function deepSanitize(obj: any): any {
+  function deepSanitize(obj: any, visited = new WeakSet()): any {
     if (obj === null || obj === undefined) return obj;
     if (typeof obj === "function") return null;
     if (typeof obj === "bigint") return obj.toString();
     if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
     if (obj instanceof Date) return obj.toISOString();
-    if (Array.isArray(obj)) return obj.map(deepSanitize);
+    if (Array.isArray(obj)) return obj.map(item => deepSanitize(item, visited));
     if (typeof obj === "object") {
+      if (visited.has(obj)) return "[Circular]";
+      visited.add(obj);
       // Prisma Decimal check
       if (obj.d && obj.s && obj.e !== undefined) return Number(obj.toString());
       const newObj: any = {};
       for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          try {
+            newObj[key] = deepSanitize(obj[key], visited);
+          } catch (e) {
+            console.error(`deepSanitize failed on key ${key}:`, e);
+            newObj[key] = null;
+          }
+        }
       }
+      visited.delete(obj);
       return newObj;
     }
     return null;
   }
 
-  const orderListResetAt = preparerRaw.orderListResetAt;
-  const preparer = deepSanitize(preparerRaw);
-  const safeIcons = deepSanitize(icons);
+  let preparer: any = null;
+  let safeIcons: any = null;
+  let orderListResetAt: any = null;
+  try {
+    orderListResetAt = preparerRaw.orderListResetAt;
+    preparer = deepSanitize(preparerRaw);
+    safeIcons = deepSanitize(icons);
+  } catch (e) {
+    console.error("Failed to sanitize initial data:", e);
+    preparer = {};
+    safeIcons = {};
+    orderListResetAt = null;
+  }
   const auth = { p: p!, exp: exp!, s: s! };
   const homeHref = preparerPath("/preparer", auth);
   const shopIds = (preparer.shopLinks || []).map((l: any) => l.shopId);
 
-  const [couriers, webStorePending, drafts] = await Promise.all([
-    prisma.courier.findMany({
-      where: preparerCourierAssignWhere,
-      select: { id: true, name: true }
-    }),
-    prisma.order.findMany({
-      where: {
-        shopId: { in: shopIds },
-        status: "pending",
-        submissionSource: "web_store",
-        submittedByCompanyPreparerId: null,
-      },
-      select: { id: true, orderNumber: true, summary: true, customerRegion: { select: { name: true } } },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.companyPreparerShoppingDraft.findMany({
-      where: { preparerId: preparer.id, status: { in: ["draft", "priced"] } },
-      select: {
-        id: true,
-        titleLine: true,
-        status: true,
-        createdAt: true,
-        customerRegion: { select: { name: true } }
-      },
-      orderBy: { createdAt: "desc" },
-      take: 30,
-    }),
-  ]);
+  let couriers: any[] = [];
+  let webStorePending: any[] = [];
+  let drafts: any[] = [];
+  try {
+    [couriers, webStorePending, drafts] = await Promise.all([
+      prisma.courier.findMany({
+        where: preparerCourierAssignWhere,
+        select: { id: true, name: true }
+      }),
+      prisma.order.findMany({
+        where: {
+          shopId: { in: shopIds },
+          status: "pending",
+          submissionSource: "web_store",
+          submittedByCompanyPreparerId: null,
+        },
+        select: { id: true, orderNumber: true, summary: true, customerRegion: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.companyPreparerShoppingDraft.findMany({
+        where: { preparerId: preparer.id, status: { in: ["draft", "priced"] } },
+        select: {
+          id: true,
+          titleLine: true,
+          status: true,
+          createdAt: true,
+          customerRegion: { select: { name: true } }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+      }),
+    ]);
+  } catch (e) {
+    console.error("Failed to load initial data:", e);
+    couriers = [];
+    webStorePending = [];
+    drafts = [];
+  }
 
   let orderTable;
   try {
