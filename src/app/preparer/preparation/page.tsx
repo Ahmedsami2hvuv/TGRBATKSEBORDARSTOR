@@ -81,7 +81,9 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
       shopDeliveryAlf: Number(l.shop.region.deliveryPrice) / 1000,
     }));
 
-  // جلب الطلبات المسندة لهذا المجهز (من جدول Orders)
+  // --- جلب الطلبات المسندة لهذا المجهز (من جدول Orders) ---
+  // يجب أن نعرض الطلبات التي تم إنشاؤها بواسطة الإدارة وربطها بهذا المجهز.
+  // نفترض أننا سنبحث في جدول Order باستخدام submittedByCompanyPreparerId
   const assignedOrders = await prisma.order.findMany({
     where: {
       submittedByCompanyPreparerId: preparer.id,
@@ -105,7 +107,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     select: { id: true, name: true },
   });
 
-  // تحويل الطلبات إلى نفس تنسيق MandoubRow
+  // تحويل الطلبات إلى نفس تنسيق MandoubRow لتتوافق مع PreparerOrdersSection
   const orderRows: MandoubRow[] = assignedOrders.map((order) => {
     const moneyEvents = order.moneyEvents;
     const deliverySum = sumDeliveryInFromOrderMoneyEvents(moneyEvents);
@@ -115,6 +117,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     const deliveryPriceNumber = order.deliveryPrice ? Number(order.deliveryPrice) : null;
 
     const hasCustomerLocation = hasCustomerLocationUrl(order.customerLocationUrl, order.customer?.customerLocationUrl);
+    // تجاهل hasCourierUploadedLocation لعدم وجوده في نموذج الطلب مباشرة، يمكن تركه false أو حسابه من جدول آخر.
     const hasCourierUploadedLocation = false;
 
     const wardMismatch = isWardMismatch(order.status, totalAmountNumber ? totalAmountNumber : null, deliverySum);
@@ -159,7 +162,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     } as MandoubRow;
   });
 
-  // جلب قيم البحث للمطابقة النصية
+  // جلب قيم البحث لـ PreparerOrdersSection لمطابقة النص
   const searchFields = orderRows.map((row) => ({
     id: row.id,
     orderNumber: row.orderNumber,
@@ -190,6 +193,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     submittedByPreparerName: "",
     createdAtIso: row.lastUpdatedAtIso,
   }));
+
 
   return (
     <div className="kse-app-inner mx-auto max-w-2xl px-4 py-6">
