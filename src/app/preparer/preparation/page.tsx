@@ -1,203 +1,261 @@
 import { cookies } from "next/headers";
-import { verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-link";
-import { preparerCourierAssignWhere } from "@/lib/courier-assignable";
-import { ALF_PER_DINAR } from "@/lib/money-alf";
-import { preparerPath } from "@/lib/preparer-portal-nav";
-import { loadPreparerPortalOrderTableData } from "@/lib/preparer-portal-order-table-data";
-import { prisma } from "@/lib/prisma";
-import { PreparerOrdersSection } from "../preparer-orders-client";
+import { notFound, redirect } from "next/navigation";
 import { PreparerSiteOrderDraftClient } from "./preparer-site-order-draft-client";
-import { whatsappMeUrl } from "@/lib/whatsapp";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
-import { ModalAwareNavButton } from "@/components/modal-aware-nav-button";
-import { archivePreparerShoppingDraftAction, rejectOrderFromPreparerAction } from "../actions";
+import { PreparerSiteOrderPrepClient } from "./preparer-site-order-prep-client";
+import { PreparerOrdersSection } from "../../preparer-orders-client";
+import { PreparerPrepNoticeBanner } from "../../preparer-prep-notice-banner";
+import { verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-link";
+import { prisma } from "@/lib/prisma";
+import { preparerPath } from "@/lib/preparer-portal-nav";
+import { MandoubRow } from "@/app/mandoub/mandoub-order-table";
+import { hasCustomerLocationUrl } from "@/lib/order-location";
+import { sumDeliveryInFromOrderMoneyEvents, sumPickupOutFromOrderMoneyEvents } from "@/lib/mandoub-money";
+import { isWardMismatch, isSaderMismatch } from "@/lib/mandoub-money";
+import { preparerAssignableWhere } from "@/lib/preparer-assignable";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{ p?: string; exp?: string; s?: string; pref?: string; q?: string }>;
+  searchParams: Promise<{ p?: string; exp?: string; s?: string; tab?: string; q?: string }>;
 };
 
 export default async function PreparerPreparationPage({ searchParams }: Props) {
   const sp = await searchParams;
   const cookieStore = await cookies();
 
-  // جلب بيانات التوثيق من الرابط أو الكوكيز
-  const p = sp.p || (await cookieStore).get("preparer_p")?.value;
-  const exp = sp.exp || (await cookieStore).get("preparer_exp")?.value;
-  const s = sp.s || (await cookieStore).get("preparer_s")?.value;
+  let p = sp.p;
+  let s = sp.s;
+  let exp = sp.exp;
+  let tab = sp.tab === "orders" ? "orders" : "draft";
+
+  if (!p || !s || !exp) {
+    p = p || cookieStore.get("preparer_p")?.value;
+    s = s || cookieStore.get("preparer_s")?.value;
+    exp = exp || cookieStore.get("preparer_exp")?.value;
+  }
 
   const v = verifyCompanyPreparerPortalQuery(p, exp, s);
 
-  if (!v.ok) return <div className="p-8 text-center font-bold">الرابط غير صالح.</div>;
-
-  const [preparerRaw, icons] = await Promise.all([
-    prisma.companyPreparer.findFirst({
-      where: { id: v.preparerId, active: true },
-      include: { shopLinks: { where: { canSubmitOrders: true }, include: { shop: { include: { region: true } } } } },
-    }),
-    import("@/lib/icon-settings").then(m => m.getGlobalIcons())
-  ]);
-
-  if (!preparerRaw) return <div className="p-8 text-center font-bold">الحساب غير متاح.</div>;
-
-  // Nuclear Sanitization for Next.js 15
-  function deepSanitize(obj: any): any {
-    if (obj === null || obj === undefined) return obj;
-    if (typeof obj === "bigint") return obj.toString();
-    if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
-    if (obj instanceof Date) return obj.toISOString();
-    if (Array.isArray(obj)) return obj.map(deepSanitize);
-    if (typeof obj === "object") {
-      // Prisma Decimal check
-      if (obj.d && obj.s && obj.e !== undefined) return Number(obj.toString());
-      const newObj: any = {};
-      for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
-      }
-      return newObj;
-    }
-    return obj;
+  if (!v.ok) {
+    return (
+      <div className="kse-app-inner mx-auto max-w-md px-4 py-16">
+        <div className="kse-glass-dark rounded-2xl border border-rose-300 p-8 text-center">
+          <p className="text-lg font-bold text-rose-700">تعذّر فتح الصفحة</p>
+          <p className="mt-2 text-sm text-slate-600">الرابط غير صالح. تأكد من نسخه كاملاً.</p>
+        </div>
+      </div>
+    );
   }
 
-  const preparer = deepSanitize(preparerRaw);
-  const safeIcons = deepSanitize(icons);
+  const preparer = await prisma.companyPreparer.findFirst({
+    where: { id: v.preparerId, active: true },
+    include: {
+      shopLinks: { include: { shop: { select: { id: true, name: true, region: { select: { name: true, deliveryPrice: true } } } } } },
+      prepNotices: { where: { dismissedAt: null }, orderBy: { createdAt: "desc" } },
+    },
+  });
+
+  if (!preparer || preparer.portalToken !== v.token) {
+    return (
+      <div className="kse-app-inner mx-auto max-w-md px-4 py-16">
+        <div className="kse-glass-dark rounded-2xl border border-amber-300 p-8 text-center">
+          <p className="text-lg font-bold text-amber-900">الحساب غير متاح</p>
+          <p className="mt-2 text-sm text-slate-600">حساب المجهز غير مفعّل أو تم تحديث الرابط.</p>
+        </div>
+      </div>
+    );
+  }
+
   const auth = { p: p!, exp: exp!, s: s! };
   const homeHref = preparerPath("/preparer", auth);
-  const shopIds = (preparer.shopLinks || []).map((l: any) => l.shopId);
+  const prepHref = preparerPath("/preparer/preparation", auth);
 
-  const [couriers, orderTable, webStorePending, drafts] = await Promise.all([
-    prisma.courier.findMany({
-      where: preparerCourierAssignWhere,
-      select: { id: true, name: true }
-    }),
-    loadPreparerPortalOrderTableData({
-      preparerId: preparer.id, shopIds, orderListResetAt: preparer.orderListResetAt,
-      tab: "all", wardFilter: "lower", saderFilter: "lower", prepFilter: null, onlySubmittedByThisPreparer: true,
-    }),
-    prisma.order.findMany({
-      where: {
-        shopId: { in: shopIds },
-        status: "pending",
-        submissionSource: "web_store",
-        submittedByCompanyPreparerId: null,
-      },
-      select: { id: true, orderNumber: true, summary: true, customerRegion: { select: { name: true } } },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.companyPreparerShoppingDraft.findMany({
-      where: { preparerId: preparer.id, status: { in: ["draft", "priced"] } },
-      select: {
-        id: true,
-        titleLine: true,
-        status: true,
-        createdAt: true,
-        customerRegion: { select: { name: true } }
-      },
-      orderBy: { createdAt: "desc" },
-      take: 30,
-    }),
-  ]);
+  const notices = preparer.prepNotices.map((n) => ({ id: n.id, title: n.title, body: n.body }));
 
-  const sanitizedWebStore = deepSanitize(webStorePending);
-  const sanitizedDrafts = deepSanitize(drafts);
-  const safeOrderTableRows = deepSanitize(orderTable.rows);
-  const safeSearchFields = deepSanitize(orderTable.searchFields);
-  const safeCouriers = deepSanitize(couriers);
+  const shops = preparer.shopLinks
+    .filter((l) => l.canSubmitOrders)
+    .map((l) => ({
+      id: l.shop.id,
+      name: l.shop.name,
+      shopRegionName: l.shop.region.name,
+      shopDeliveryAlf: Number(l.shop.region.deliveryPrice) / 1000,
+    }));
+
+  // --- جلب الطلبات المسندة لهذا المجهز (من جدول Orders) ---
+  // يجب أن نعرض الطلبات التي تم إنشاؤها بواسطة الإدارة وربطها بهذا المجهز.
+  // نفترض أننا سنبحث في جدول Order باستخدام submittedByCompanyPreparerId
+  const assignedOrders = await prisma.order.findMany({
+    where: {
+      submittedByCompanyPreparerId: preparer.id,
+      status: { not: "archived" },
+    },
+    include: {
+      shop: { select: { id: true, name: true, photoUrl: true, locationUrl: true, phone: true, region: { select: { name: true } } } },
+      customerRegion: { select: { name: true } },
+      customer: { select: { customerDoorPhotoUrl: true, customerLocationUrl: true } },
+      courier: { select: { name: true, phone: true } },
+      submittedByCompanyPreparer: { select: { name: true } },
+      moneyEvents: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+
+  const couriers = await prisma.courier.findMany({
+    where: preparerAssignableWhere,
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
+
+  // تحويل الطلبات إلى نفس تنسيق MandoubRow لتتوافق مع PreparerOrdersSection
+  const orderRows: MandoubRow[] = assignedOrders.map((order) => {
+    const moneyEvents = order.moneyEvents;
+    const deliverySum = sumDeliveryInFromOrderMoneyEvents(moneyEvents);
+    const pickupSum = sumPickupOutFromOrderMoneyEvents(moneyEvents);
+    const totalAmountNumber = order.totalAmount ? Number(order.totalAmount) : null;
+    const orderSubtotalNumber = order.orderSubtotal ? Number(order.orderSubtotal) : null;
+    const deliveryPriceNumber = order.deliveryPrice ? Number(order.deliveryPrice) : null;
+
+    const hasCustomerLocation = hasCustomerLocationUrl(order.customerLocationUrl, order.customer?.customerLocationUrl);
+    // تجاهل hasCourierUploadedLocation لعدم وجوده في نموذج الطلب مباشرة، يمكن تركه false أو حسابه من جدول آخر.
+    const hasCourierUploadedLocation = false;
+
+    const wardMismatch = isWardMismatch(order.status, totalAmountNumber ? totalAmountNumber : null, deliverySum);
+    const saderMismatch = isSaderMismatch(order.status, orderSubtotalNumber ? orderSubtotalNumber : null, pickupSum);
+
+    return {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      orderStatus: order.status,
+      assignedCourierId: order.assignedCourierId,
+      shopName: order.shop.name,
+      shopRegionName: order.shop.region?.name || "",
+      shopPhotoUrl: order.shop.photoUrl,
+      shopLocationUrl: order.shop.locationUrl,
+      shopPhone: order.shop.phone,
+      customerPhone: order.customerPhone,
+      customerAlternatePhone: order.alternatePhone || "",
+      customerName: order.customer?.name || "",
+      customerLandmark: order.customerLandmark,
+      customerLocationUrl: order.customerLocationUrl || order.customer?.customerLocationUrl || "",
+      customerDoorPhotoUrl: order.customer?.customerDoorPhotoUrl || "",
+      hasCustomerLocation,
+      hasCourierUploadedLocation,
+      orderType: order.orderType,
+      orderNoteTime: order.orderNoteTime,
+      summary: order.summary,
+      totalAmount: totalAmountNumber,
+      deliveryPrice: deliveryPriceNumber,
+      orderSubtotal: orderSubtotalNumber,
+      customerRegionName: order.customerRegion?.name || "",
+      courierName: order.courier?.name || "",
+      assignedPreparerIds: [preparer.id],
+      prepNoticeCount: 0,
+      wardMismatchType: wardMismatch.type,
+      saderMismatchType: saderMismatch.type,
+      orderImageUploadedByName: order.orderImageUploadedByName,
+      shopDoorPhotoUploadedByName: order.shopDoorPhotoUploadedByName,
+      customerDoorPhotoUploadedByName: order.customerDoorPhotoUploadedByName,
+      secondCustomerDoorPhotoUploadedByName: order.secondCustomerDoorPhotoUploadedByName,
+      adminVoiceNoteUrl: order.adminVoiceNoteUrl,
+      lastUpdatedAtIso: order.updatedAt.toISOString(),
+    } as MandoubRow;
+  });
+
+  // جلب قيم البحث لـ PreparerOrdersSection لمطابقة النص
+  const searchFields = orderRows.map((row) => ({
+    id: row.id,
+    orderNumber: row.orderNumber,
+    orderType: row.orderType || "",
+    customerPhone: row.customerPhone,
+    alternatePhone: row.customerAlternatePhone,
+    secondCustomerPhone: "",
+    summary: row.summary || "",
+    customerLandmark: row.customerLandmark || "",
+    secondCustomerLandmark: "",
+    orderNoteTime: row.orderNoteTime || "",
+    shopName: row.shopName,
+    regionName: row.customerRegionName,
+    secondRegionName: "",
+    routeMode: "single",
+    courierName: row.courierName,
+    adminOrderCode: "",
+    submissionSource: "",
+    customerLocationUrl: row.customerLocationUrl,
+    customerLocationUploadedByName: "",
+    secondCustomerLocationUrl: "",
+    secondCustomerDoorPhotoUploadedByName: "",
+    customerDoorPhotoUploadedByName: row.customerDoorPhotoUploadedByName || "",
+    orderImageUploadedByName: row.orderImageUploadedByName || "",
+    shopDoorPhotoUploadedByName: row.shopDoorPhotoUploadedByName || "",
+    preparerShoppingText: "",
+    submittedByEmployeeName: "",
+    submittedByPreparerName: "",
+    createdAtIso: row.lastUpdatedAtIso,
+  }));
 
 
   return (
-    <div className="kse-app-inner mx-auto max-w-6xl px-3 py-4 pb-24 sm:px-4">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-2">
-          <ModalAwareNavButton href={homeHref} className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100">
-            ← الطلبات
-          </ModalAwareNavButton>
-          <FullscreenWalletLauncher href={preparerPath("/preparer/order/new", auth)} className="inline-flex items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100" title="طلب يدوي">
-            ➕ طلب يدوي
-          </FullscreenWalletLauncher>
+    <div className="kse-app-inner mx-auto max-w-2xl px-4 py-6">
+      <PreparerPrepNoticeBanner notices={notices} auth={auth} preparationHref={prepHref} />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => redirect(preparerPath("/preparer/preparation?tab=draft", auth))}
+            className={`rounded-xl px-4 py-2 text-xs font-bold transition ${tab === "draft" ? "bg-sky-900 text-white shadow-md" : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}
+          >
+            ➕ طلبات تجهيز جديدة
+          </button>
+          <button
+            onClick={() => redirect(preparerPath("/preparer/preparation?tab=orders", auth))}
+            className={`rounded-xl px-4 py-2 text-xs font-bold transition ${tab === "orders" ? "bg-sky-900 text-white shadow-md" : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}
+          >
+            📦 طلباتي المسندة
+          </button>
         </div>
-        <ThemeSwitcher />
       </div>
 
-      <section className="kse-glass-dark mb-4 rounded-2xl border border-violet-200/80 p-4 shadow-sm">
-        <h2 className="text-base font-black text-violet-950 dark:text-violet-400">خانة طلبات التجهيز</h2>
-
-        {/* عرض طلبات المتجر أولاً لأنها تتطلب تسعيراً فورياً */}
-        {sanitizedWebStore.length > 0 && (
-          <div className="mb-6 space-y-2">
-            <p className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200 w-fit">طلبات بانتظار التسعير (من المتجر) 🛒</p>
-            {sanitizedWebStore.map((o: any) => (
-              <div key={o.id} className="flex gap-2 items-stretch">
-                <FullscreenWalletLauncher
-                  href={preparerPath(`/preparer/order/${o.id}`, auth)}
-                  className="flex-1 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50/30 p-3 hover:border-amber-400 hover:bg-amber-100/50 transition-all shadow-sm active:scale-[0.99] dark:bg-slate-900 dark:border-amber-900/20"
-                  title={`طلب رقم ${o.orderNumber}`}
-                >
-                  <div className="min-w-0 flex-1 text-right">
-                    <p className="text-sm font-black text-slate-900 dark:text-slate-100">طلب رقم #{o.orderNumber} - {o.customerRegion?.name || "منطقة غير محددة"}</p>
-                    <p className="mt-1 text-[11px] font-bold text-slate-500 line-clamp-1">{o.summary}</p>
-                  </div>
-                  <div className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-amber-600">
-                    تسعير الطلب 💰
-                  </div>
-                </FullscreenWalletLauncher>
-                <form action={rejectOrderFromPreparerAction} onSubmit={(e) => { if(!confirm("هل أنت متأكد من رفض هذا الطلب؟")) e.preventDefault(); }}>
-                  <input type="hidden" name="p" value={auth.p} /><input type="hidden" name="exp" value={auth.exp} /><input type="hidden" name="s" value={auth.s} />
-                  <input type="hidden" name="orderId" value={o.id} />
-                  <button type="submit" className="h-full rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-black text-rose-700 hover:bg-rose-100 transition-colors">رفض</button>
-                </form>
-              </div>
-            ))}
+      {tab === "draft" ? (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h1 className="mb-2 text-base font-black text-slate-900">تحويل قائمة واتساب إلى طلب تجهيز</h1>
+            <p className="mb-4 text-xs text-slate-500">
+              الصق رسالة الزبون (واتساب، الموقع)، سيتم تحليلها تلقائياً.
+            </p>
+            {shops.length === 0 ? (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                لا توجد محلات مفعلة لك. اطلب من الإدارة إضافة محلات في قسم المجهزين.
+              </p>
+            ) : (
+              <PreparerSiteOrderPrepClient auth={auth} preparerName={preparer.name} shops={shops} homeHref={homeHref} />
+            )}
           </div>
-        )}
-
-        <p className="text-[10px] font-black text-violet-600 bg-violet-50 px-2 py-1 rounded border border-violet-200 w-fit mb-2">مسودات التجهيز (من الموظفين) 📝</p>
-        {sanitizedDrafts.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">لا توجد مسودات حالياً.</p>
-        ) : (
-          <div className="mt-3 space-y-2">
-            {sanitizedDrafts.map((d: any) => (
-              <div key={d.id} className="flex gap-2 items-stretch">
-                <FullscreenWalletLauncher
-                  href={preparerPath(`/preparer/preparation/draft/${d.id}`, auth)}
-                  className="flex-1 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-3 hover:border-violet-300 hover:bg-violet-50/30 transition-all shadow-sm active:scale-[0.99] dark:bg-slate-900 dark:border-slate-800"
-                  title="فتح / تسعير المسودة"
-                >
-                  <div className="min-w-0 flex-1 text-right">
-                    <p className="text-sm font-black text-slate-900 dark:text-slate-100">{d.titleLine || "—"}</p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <p className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                        {d.customerRegion?.name || "منطقة غير محددة"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-violet-700">
-                    فتح / تسعير
-                  </div>
-                </FullscreenWalletLauncher>
-                <form action={archivePreparerShoppingDraftAction} onSubmit={(e) => { if(!confirm("هل أنت متأكد من رفض هذه المسودة؟")) e.preventDefault(); }}>
-                  <input type="hidden" name="p" value={auth.p} /><input type="hidden" name="exp" value={auth.exp} /><input type="hidden" name="s" value={auth.s} />
-                  <input type="hidden" name="draftId" value={d.id} />
-                  <button type="submit" className="h-full rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-black text-rose-700 hover:bg-rose-100 transition-colors">رفض</button>
-                </form>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <div className="mx-auto max-w-lg">
-        <PreparerSiteOrderDraftClient auth={auth} preparerName={preparer.name} homeHref={homeHref} />
-      </div>
-
-      <section className="kse-glass-dark mt-8 overflow-hidden border border-sky-200 shadow-sm dark:border-slate-800">
-        <div className="p-3 border-b border-sky-100 dark:border-slate-800">
-          <h3 className="text-sm font-bold text-sky-900 dark:text-sky-400">الطلبات المرفوعة</h3>
         </div>
-        <PreparerOrdersSection allRows={safeOrderTableRows} searchFields={safeSearchFields} auth={auth} tab="all" initialQuery={sp.q || ""} couriersForBulkAssign={safeCouriers} />
-      </section>
+      ) : (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h1 className="mb-2 text-base font-black text-slate-900">الطلبات المسندة إليك</h1>
+            <p className="mb-4 text-xs text-slate-500">
+              قائمة الطلبات التي قامت الإدارة بتحويلها إليك للتجهيز.
+            </p>
+            {orderRows.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                <p className="text-slate-500 font-bold">لا توجد طلبات مسندة إليك حالياً.</p>
+                <p className="mt-2 text-xs text-slate-400">سيظهر هنا أي طلب تقوم الإدارة بتحويله لحسابك لتجهيزه.</p>
+              </div>
+            ) : (
+              <PreparerOrdersSection
+                allRows={orderRows}
+                searchFields={searchFields}
+                auth={auth}
+                tab="active"
+                couriersForBulkAssign={couriers}
+                icons={null}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
