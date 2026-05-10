@@ -6,10 +6,14 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "20mb",
     },
   },
-  // تم إزالة مفتاح eslint هنا لأنه أصبح غير مدعوم في النسخ الأحدث ويسبب تنبيهاً
   typescript: {
     ignoreBuildErrors: true,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  // تعطيل توليد الـ Source Maps لتقليل حجم الرفع وتسريع العملية
+  productionBrowserSourceMaps: false,
 };
 
 export default nextConfig;

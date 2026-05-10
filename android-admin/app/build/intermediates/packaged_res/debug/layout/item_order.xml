@@ -4,8 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    app:cardCornerRadius="10dp"
-    app:cardElevation="3dp">
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -18,69 +18,84 @@
             android:layout_height="wrap_content">
 
             <TextView
-                android:id="@+id/tv_order_id"
+                android:id="@+id/tv_customer_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="#1025"
-                android:textColor="#2196F3"
-                android:textStyle="bold"
-                android:textSize="18sp" />
+                android:text="اسم الزبون"
+                android:textColor="#212121"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tv_order_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
-                android:background="#E8F5E9"
+                android:background="#E3F2FD"
                 android:paddingLeft="8dp"
                 android:paddingRight="8dp"
-                android:text="قيد التجهيز"
-                android:textColor="#4CAF50"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:text="حالة الطلب"
+                android:textColor="#1976D2"
                 android:textSize="12sp" />
         </RelativeLayout>
 
         <TextView
-            android:id="@+id/tv_customer_name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="اسم الزبون: أحمد علي"
-            android:textColor="#333333"
-            android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/tv_order_total"
+            android:id="@+id/tv_region_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="المبلغ: 25,000 د.ع"
-            android:textColor="#F44336"
-            android:textStyle="bold" />
+            android:text="المنطقة: بغداد"
+            android:textColor="#757575"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tv_customer_phone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="07XXXXXXXXX"
+            android:textColor="#1976D2"
+            android:textSize="14sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp"
+            android:background="#EEEEEE" />
+
+        <TextView
+            android:id="@+id/tv_order_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="تفاصيل الطلب: منتج 1، منتج 2..."
+            android:textColor="#424242"
+            android:textSize="14sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="8dp"
-            android:gravity="end">
+            android:layout_marginTop="12dp"
+            android:gravity="end"
+            android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/btn_whatsapp"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="واتساب"
-                android:textColor="#4CAF50"
-                app:icon="@android:drawable/stat_notify_chat"
-                app:iconTint="#4CAF50" />
+                android:text="المجموع: "
+                android:textColor="#757575"
+                android:textSize="16sp" />
 
-            <Button
-                android:id="@+id/btn_view_details"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
+            <TextView
+                android:id="@+id/tv_total_amount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="تفاصيل الطلب" />
+                android:text="0 د.ع"
+                android:textColor="#E91E63"
+                android:textSize="18sp"
+                android:textStyle="bold" />
         </LinearLayout>
-
     </LinearLayout>
 </androidx.cardview.widget.CardView>

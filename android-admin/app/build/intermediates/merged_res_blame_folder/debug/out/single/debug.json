@@ -1,5 +1,37 @@
 [
     {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-merged_res-29:\\layout_activity_products.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-main-31:\\layout\\activity_products.xml"
+    },
+    {
+        "merged": "com.kse.admin.app-merged_res-29:/layout_item_mandoub.xml.flat",
+        "source": "com.kse.admin.app-main-31:/layout/item_mandoub.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-merged_res-29:\\layout_item_order.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-main-31:\\layout\\item_order.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-merged_res-29:\\layout_activity_login.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-main-31:\\layout\\activity_login.xml"
+    },
+    {
+        "merged": "com.kse.admin.app-merged_res-29:/layout_activity_mandoubs.xml.flat",
+        "source": "com.kse.admin.app-main-31:/layout/activity_mandoubs.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-merged_res-29:\\layout_item_product.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-main-31:\\layout\\item_product.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-merged_res-29:\\layout_item_mandoub.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-main-31:\\layout\\item_mandoub.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-merged_res-29:\\layout_activity_orders.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-main-31:\\layout\\activity_orders.xml"
+    },
+    {
         "merged": "com.kse.admin.app-merged_res-29:/layout_item_order.xml.flat",
         "source": "com.kse.admin.app-main-31:/layout/item_order.xml"
     },
@@ -12,23 +44,19 @@
         "source": "com.kse.admin.app-main-31:/layout/item_product.xml"
     },
     {
-        "merged": "com.kse.admin.app-merged_res-29:/layout_item_mandoub.xml.flat",
-        "source": "com.kse.admin.app-main-31:/layout/item_mandoub.xml"
-    },
-    {
-        "merged": "com.kse.admin.app-merged_res-29:/layout_activity_login.xml.flat",
-        "source": "com.kse.admin.app-main-31:/layout/activity_login.xml"
-    },
-    {
-        "merged": "com.kse.admin.app-merged_res-29:/layout_activity_mandoubs.xml.flat",
-        "source": "com.kse.admin.app-main-31:/layout/activity_mandoubs.xml"
-    },
-    {
         "merged": "com.kse.admin.app-merged_res-29:/layout_activity_main.xml.flat",
         "source": "com.kse.admin.app-main-31:/layout/activity_main.xml"
     },
     {
         "merged": "com.kse.admin.app-merged_res-29:/layout_activity_orders.xml.flat",
         "source": "com.kse.admin.app-main-31:/layout/activity_orders.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-merged_res-29:\\layout_activity_mandoubs.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-main-31:\\layout\\activity_mandoubs.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-merged_res-29:\\layout_activity_main.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\8.7\\com.kse.admin.app-main-31:\\layout\\activity_main.xml"
     }
 ]

@@ -91,11 +91,11 @@
                 android:columnCount="2"
                 android:alignmentMode="alignMargins">
 
-                <!-- Orders Button -->
+                <!-- Pending Orders (New) -->
                 <androidx.cardview.widget.CardView
-                    android:id="@+id/card_orders"
+                    android:id="@+id/card_pending_orders"
                     android:layout_width="0dp"
-                    android:layout_height="160dp"
+                    android:layout_height="140dp"
                     android:layout_columnWeight="1"
                     android:layout_margin="8dp"
                     android:clickable="true"
@@ -108,24 +108,26 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent">
                         <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:src="@android:drawable/ic_menu_agenda"/>
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@android:drawable/ic_popup_reminder"
+                            app:tint="#FF9800"/>
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="الطلبات"
-                            android:textSize="18sp"
+                            android:text="طلبات بانتظار الموافقة"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                            android:layout_marginTop="8dp"/>
+                            android:layout_marginTop="8dp"
+                            android:gravity="center"/>
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
-                <!-- Products Button -->
+                <!-- Preparation (Drafts) -->
                 <androidx.cardview.widget.CardView
-                    android:id="@+id/card_products"
+                    android:id="@+id/card_preparation"
                     android:layout_width="0dp"
-                    android:layout_height="160dp"
+                    android:layout_height="140dp"
                     android:layout_columnWeight="1"
                     android:layout_margin="8dp"
                     app:cardCornerRadius="12dp"
@@ -136,24 +138,116 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent">
                         <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:src="@android:drawable/ic_menu_gallery"/>
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@android:drawable/ic_menu_edit"
+                            app:tint="#4CAF50"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="قيد التجهيز"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp"
+                            android:gravity="center"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Confirmed Orders -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/card_orders"
+                    android:layout_width="0dp"
+                    android:layout_height="140dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="8dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp">
+                    <LinearLayout
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@android:drawable/ic_menu_agenda"
+                            app:tint="#2196F3"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="الطلبات المسندة"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp"
+                            android:gravity="center"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Archive -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/card_archive"
+                    android:layout_width="0dp"
+                    android:layout_height="140dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="8dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp">
+                    <LinearLayout
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@android:drawable/ic_menu_recent_history"
+                            app:tint="#9E9E9E"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="الأرشيف"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp"
+                            android:gravity="center"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Products -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/card_products"
+                    android:layout_width="0dp"
+                    android:layout_height="140dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="8dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp">
+                    <LinearLayout
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@android:drawable/ic_menu_gallery"
+                            app:tint="#673AB7"/>
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="المنتجات"
-                            android:textSize="18sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                            android:layout_marginTop="8dp"/>
+                            android:layout_marginTop="8dp"
+                            android:gravity="center"/>
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
-                <!-- Mandoubs Button -->
+                <!-- Mandoubs -->
                 <androidx.cardview.widget.CardView
                     android:id="@+id/card_mandoubs"
                     android:layout_width="0dp"
-                    android:layout_height="160dp"
+                    android:layout_height="140dp"
                     android:layout_columnWeight="1"
                     android:layout_margin="8dp"
                     app:cardCornerRadius="12dp"
@@ -164,44 +258,18 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent">
                         <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:src="@android:drawable/ic_menu_directions"/>
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@android:drawable/ic_menu_directions"
+                            app:tint="#E91E63"/>
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="المناديب"
-                            android:textSize="18sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                            android:layout_marginTop="8dp"/>
-                    </LinearLayout>
-                </androidx.cardview.widget.CardView>
-
-                <!-- Settings Button -->
-                <androidx.cardview.widget.CardView
-                    android:id="@+id/card_settings"
-                    android:layout_width="0dp"
-                    android:layout_height="160dp"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="8dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="4dp">
-                    <LinearLayout
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent">
-                        <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:src="@android:drawable/ic_menu_manage"/>
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="الإعدادات"
-                            android:textSize="18sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="8dp"/>
+                            android:layout_marginTop="8dp"
+                            android:gravity="center"/>
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
