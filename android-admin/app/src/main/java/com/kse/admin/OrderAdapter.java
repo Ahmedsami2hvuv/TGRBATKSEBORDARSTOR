@@ -1,85 +1,70 @@
 package com.kse.admin;
 
-import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
 public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHolder> {
 
-    private List<Order> orderList;
-    private Context context;
+    private List<Order> orders;
 
-    public OrderAdapter(List<Order> orderList) {
-        this.orderList = orderList;
+    public OrderAdapter(List<Order> orders) {
+        this.orders = orders;
     }
 
     @NonNull
     @Override
     public OrderViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        context = parent.getContext();
-        View view = LayoutInflater.from(context).inflate(R.layout.item_order, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_order, parent, false);
         return new OrderViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull OrderViewHolder holder, int position) {
-        Order order = orderList.get(position);
-        holder.tvOrderId.setText("طلب #" + order.getId());
-        holder.tvCustomerName.setText("الزبون: " + order.getCustomerName());
-        holder.tvOrderTotal.setText("المبلغ: " + order.getTotalAmount() + " د.ع");
-        holder.tvStatus.setText(order.getStatus());
-
-        // برمجة زر الواتساب
-        holder.btnWhatsapp.setOnClickListener(v -> {
-            String phone = order.getCustomerPhone();
-            if (phone != null && !phone.isEmpty()) {
-                try {
-                    // تحضير رابط واتساب
-                    String url = "https://api.whatsapp.com/send?phone=" + phone + "&text=" + 
-                                 Uri.encode("السلام عليكم، بخصوص طلبك رقم #" + order.getId());
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setData(Uri.parse(url));
-                    context.startActivity(intent);
-                } catch (Exception e) {
-                    Toast.makeText(context, "تطبيق واتساب غير مثبت!", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                Toast.makeText(context, "رقم الهاتف غير متوفر لهذا الزبون", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        // زر تفاصيل الطلب (يمكن برمجته لاحقاً لفتح صفحة كاملة)
-        holder.btnDetails.setOnClickListener(v -> {
-            Toast.makeText(context, "تفاصيل الطلب #" + order.getId(), Toast.LENGTH_SHORT).show();
-        });
+        Order order = orders.get(position);
+        
+        holder.tvCustomerName.setText(order.getCustomerName());
+        holder.tvRegionName.setText("المنطقة: " + order.getRegionName());
+        holder.tvCustomerPhone.setText(order.getCustomerPhone());
+        holder.tvOrderSummary.setText(order.getSummary());
+        holder.tvTotalAmount.setText(String.format("%,.0f د.ع", order.getTotalAmount()));
+        
+        // تحسين عرض الحالة
+        String statusText = order.getStatus();
+        if ("pending".equals(statusText)) {
+            holder.tvStatus.setText("بانتظار الموافقة");
+            holder.tvStatus.setBackgroundResource(android.R.color.holo_orange_light);
+        } else if ("submitted".equals(statusText)) {
+            holder.tvStatus.setText("تم الإرسال");
+            holder.tvStatus.setBackgroundResource(android.R.color.holo_blue_light);
+        } else if ("draft".equals(statusText)) {
+            holder.tvStatus.setText("قيد التجهيز");
+            holder.tvStatus.setBackgroundResource(android.R.color.holo_green_light);
+        } else {
+            holder.tvStatus.setText(statusText);
+        }
     }
 
     @Override
     public int getItemCount() {
-        return orderList.size();
+        return orders.size();
     }
 
-    public static class OrderViewHolder extends RecyclerView.ViewHolder {
-        TextView tvOrderId, tvCustomerName, tvOrderTotal, tvStatus;
-        Button btnWhatsapp, btnDetails;
+    static class OrderViewHolder extends RecyclerView.ViewHolder {
+        TextView tvCustomerName, tvRegionName, tvCustomerPhone, tvOrderSummary, tvTotalAmount, tvStatus;
 
         public OrderViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvOrderId = itemView.findViewById(R.id.tv_order_id);
             tvCustomerName = itemView.findViewById(R.id.tv_customer_name);
-            tvOrderTotal = itemView.findViewById(R.id.tv_order_total);
+            tvRegionName = itemView.findViewById(R.id.tv_region_name);
+            tvCustomerPhone = itemView.findViewById(R.id.tv_customer_phone);
+            tvOrderSummary = itemView.findViewById(R.id.tv_order_summary);
+            tvTotalAmount = itemView.findViewById(R.id.tv_total_amount);
             tvStatus = itemView.findViewById(R.id.tv_order_status);
-            btnWhatsapp = itemView.findViewById(R.id.btn_whatsapp);
-            btnDetails = itemView.findViewById(R.id.btn_view_details);
         }
     }
 }

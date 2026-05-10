@@ -1,9 +1,11 @@
 package com.kse.admin;
 
 import android.os.Bundle;
+import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +20,7 @@ public class ProductsActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private ProductAdapter adapter;
     private List<Product> productList = new ArrayList<>();
+    private ProgressBar progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,9 +28,11 @@ public class ProductsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_products);
 
         recyclerView = findViewById(R.id.recycler_products);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        progressBar = findViewById(R.id.progress_bar_products);
+        
+        // عرض المنتجات بشكل شبكي (2 في كل صف) مثل الموقع
+        recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
 
-        // إعداد الاتصال بالسيرفر
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://kse-app.vercel.app/")
                 .addConverterFactory(GsonConverterFactory.create())
@@ -35,12 +40,15 @@ public class ProductsActivity extends AppCompatActivity {
 
         ApiService apiService = retrofit.create(ApiService.class);
 
-        // جلب البيانات
-        // ملاحظة: هنا نحتاج تمرير branchId إذا كان مطلوباً في الـ API الحقيقي
-        // سنفترض حالياً جلب المنتجات العامة
+        fetchProducts(apiService);
+    }
+
+    private void fetchProducts(ApiService apiService) {
+        progressBar.setVisibility(View.VISIBLE);
         apiService.getProducts().enqueue(new Callback<List<Product>>() {
             @Override
             public void onResponse(Call<List<Product>> call, Response<List<Product>> response) {
+                progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null) {
                     productList.clear();
                     productList.addAll(response.body());
@@ -53,7 +61,8 @@ public class ProductsActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<List<Product>> call, Throwable t) {
-                Toast.makeText(ProductsActivity.this, "خطأ في الاتصال بالسيرفر", Toast.LENGTH_SHORT).show();
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(ProductsActivity.this, "تأكد من الـ Push واتصال الإنترنت", Toast.LENGTH_SHORT).show();
             }
         });
     }

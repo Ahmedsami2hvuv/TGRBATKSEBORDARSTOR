@@ -10,6 +10,10 @@ public interface ApiService {
     @GET("api/admin/store/orders-history/list")
     Call<List<Order>> getOrders(@Query("status") String status, @Query("q") String query);
 
+    // جلب مسودات التجهيز (Drafts)
+    @GET("api/admin/store/preparation/list")
+    Call<List<Order>> getDrafts();
+
     // جلب المنتجات
     @GET("api/store/products?branchId=default")
     Call<List<Product>> getProducts();

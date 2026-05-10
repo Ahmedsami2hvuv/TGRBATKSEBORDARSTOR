@@ -1,6 +1,8 @@
 package com.kse.admin;
 
 import android.os.Bundle;
+import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -18,6 +20,7 @@ public class MandoubsActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private MandoubAdapter adapter;
     private List<Mandoub> mandoubList = new ArrayList<>();
+    private ProgressBar progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,9 +28,9 @@ public class MandoubsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_mandoubs);
 
         recyclerView = findViewById(R.id.recycler_mandoubs);
+        progressBar = findViewById(R.id.progress_bar_mandoub);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // إعداد الاتصال بالسيرفر
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://kse-app.vercel.app/")
                 .addConverterFactory(GsonConverterFactory.create())
@@ -35,10 +38,15 @@ public class MandoubsActivity extends AppCompatActivity {
 
         ApiService apiService = retrofit.create(ApiService.class);
 
-        // جلب بيانات المناديب
+        fetchMandoubs(apiService);
+    }
+
+    private void fetchMandoubs(ApiService apiService) {
+        progressBar.setVisibility(View.VISIBLE);
         apiService.getMandoubs().enqueue(new Callback<List<Mandoub>>() {
             @Override
             public void onResponse(Call<List<Mandoub>> call, Response<List<Mandoub>> response) {
+                progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null) {
                     mandoubList.clear();
                     mandoubList.addAll(response.body());
@@ -51,7 +59,8 @@ public class MandoubsActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<List<Mandoub>> call, Throwable t) {
-                Toast.makeText(MandoubsActivity.this, "خطأ في الاتصال: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(MandoubsActivity.this, "تأكد من الـ Push والاتصال", Toast.LENGTH_SHORT).show();
             }
         });
     }

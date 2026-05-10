@@ -5,12 +5,32 @@
     android:orientation="vertical"
     android:background="#F5F5F5">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar_orders"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="wrap_content"
         android:background="#2196F3"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar" />
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tv_orders_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="الطلبات"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_centerVertical="true" />
+
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            style="?android:attr/progressBarStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:indeterminateTint="#FFFFFF"
+            android:visibility="gone" />
+    </RelativeLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_orders"

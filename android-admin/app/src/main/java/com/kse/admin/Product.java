@@ -1,7 +1,6 @@
 package com.kse.admin;
 
 import com.google.gson.annotations.SerializedName;
-import java.util.List;
 
 public class Product {
     @SerializedName("id")
@@ -10,18 +9,14 @@ public class Product {
     @SerializedName("name")
     private String name;
 
-    @SerializedName("salePrice")
-    private double salePrice;
+    @SerializedName("imageUrl")
+    private String imageUrl;
 
-    @SerializedName("description")
-    private String description;
-
-    @SerializedName("photoUrls")
-    private List<String> photoUrls;
+    @SerializedName("sellPriceAlf")
+    private double sellPriceAlf;
 
     public String getId() { return id; }
     public String getName() { return name; }
-    public double getSalePrice() { return salePrice; }
-    public String getDescription() { return description; }
-    public List<String> getPhotoUrls() { return photoUrls; }
+    public String getImageUrl() { return imageUrl; }
+    public double getSellPriceAlf() { return sellPriceAlf; }
 }

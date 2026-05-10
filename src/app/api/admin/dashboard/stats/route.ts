@@ -1,46 +1,37 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { startOfDay, endOfDay } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
 
 export async function GET() {
   try {
-    const timeZone = "Asia/Baghdad";
-    const now = toZonedTime(new Date(), timeZone);
-    const start = startOfDay(now);
-    const end = endOfDay(now);
+    // حساب بداية ونهاية اليوم الحالي بتوقيت العراق (UTC+3) يدوياً لتجنب المكتبات الخارجية
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
-    // حساب عدد طلبات اليوم
-    const todayOrdersCount = await prisma.order.count({
-      where: {
-        createdAt: {
-          gte: start,
-          lte: end,
+    const [
+      totalOrders,
+      pendingOrders,
+      activeMandoubs,
+      todayOrders
+    ] = await Promise.all([
+      prisma.order.count(),
+      prisma.order.count({ where: { status: "pending" } }),
+      prisma.companyCourier.count({ where: { active: true } }),
+      prisma.order.count({
+        where: {
+          createdAt: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
         },
-      },
-    });
-
-    // حساب إجمالي المبيعات لليوم
-    const salesAggregation = await prisma.order.aggregate({
-      where: {
-        createdAt: {
-          gte: start,
-          lte: end,
-        },
-        status: {
-          not: "cancelled",
-        },
-      },
-      _sum: {
-        totalAmount: true,
-      },
-    });
-
-    const todaySalesTotal = Number(salesAggregation._sum.totalAmount || 0);
+      }),
+    ]);
 
     return NextResponse.json({
-      todayOrdersCount,
-      todaySalesTotal,
+      totalOrders,
+      pendingOrders,
+      activeMandoubs,
+      todayOrders,
     });
   } catch (error) {
     console.error("Dashboard Stats Error:", error);
