@@ -32,50 +32,40 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
 
   if (!v.ok) return <div className="p-8 text-center font-bold">الرابط غير صالح.</div>;
 
-  const preparer = await prisma.companyPreparer.findFirst({
-    where: { id: v.preparerId, active: true },
-    include: { shopLinks: { where: { canSubmitOrders: true }, include: { shop: { include: { region: true } } } } },
-  });
+  const [preparerRaw, icons] = await Promise.all([
+    prisma.companyPreparer.findFirst({
+      where: { id: v.preparerId, active: true },
+      include: { shopLinks: { where: { canSubmitOrders: true }, include: { shop: { include: { region: true } } } } },
+    }),
+    import("@/lib/icon-settings").then(m => m.getGlobalIcons())
+  ]);
 
-  if (!preparer) return <div className="p-8 text-center font-bold">الحساب غير متاح.</div>;
+  if (!preparerRaw) return <div className="p-8 text-center font-bold">الحساب غير متاح.</div>;
 
-  // دالة التطهير العميقة المطورة: تعالج BigInt و Decimal و Date يدوياً
+  // Nuclear Sanitization for Next.js 15
   function deepSanitize(obj: any): any {
     if (obj === null || obj === undefined) return obj;
     if (typeof obj === "bigint") return obj.toString();
     if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
     if (obj instanceof Date) return obj.toISOString();
-
     if (Array.isArray(obj)) return obj.map(deepSanitize);
-
     if (typeof obj === "object") {
-      // معالجة Decimal الخاصة بـ Prisma (Decimal.js)
-      if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
-        return Number(obj.toString());
-      }
-      // حماية إضافية للـ Decimal
-      if (obj.d && Array.isArray(obj.d) && typeof obj.s === 'number') {
-        return Number(obj.toString());
-      }
-
+      // Prisma Decimal check
+      if (obj.d && obj.s && obj.e !== undefined) return Number(obj.toString());
       const newObj: any = {};
       for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-          try {
-            newObj[key] = deepSanitize(obj[key]);
-          } catch (e) {
-            newObj[key] = null;
-          }
-        }
+        if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
       }
       return newObj;
     }
     return obj;
   }
 
+  const preparer = deepSanitize(preparerRaw);
+  const safeIcons = deepSanitize(icons);
   const auth = { p: p!, exp: exp!, s: s! };
   const homeHref = preparerPath("/preparer", auth);
-  const shopIds = preparer.shopLinks.map((l) => l.shopId);
+  const shopIds = (preparer.shopLinks || []).map((l: any) => l.shopId);
 
   const [couriers, orderTable, webStorePending, drafts] = await Promise.all([
     prisma.courier.findMany({
@@ -110,16 +100,12 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     }),
   ]);
 
-  const safeDrafts = deepSanitize(drafts);
-  const safeWebStorePending = deepSanitize(webStorePending);
+  const sanitizedWebStore = deepSanitize(webStorePending);
+  const sanitizedDrafts = deepSanitize(drafts);
   const safeOrderTableRows = deepSanitize(orderTable.rows);
   const safeSearchFields = deepSanitize(orderTable.searchFields);
   const safeCouriers = deepSanitize(couriers);
-  const safePreparerName = String(preparer.name);
 
-  // تحويل إجباري لجميع المعرفات إلى نصوص لضمان عدم حدوث خطأ React Key
-  const sanitizedWebStore = safeWebStorePending.map((o: any) => ({ ...o, id: String(o.id) }));
-  const sanitizedDrafts = safeDrafts.map((d: any) => ({ ...d, id: String(d.id) }));
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-3 py-4 pb-24 sm:px-4">

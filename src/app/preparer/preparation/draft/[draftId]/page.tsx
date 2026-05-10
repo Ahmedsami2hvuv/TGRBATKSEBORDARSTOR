@@ -167,6 +167,9 @@ export default async function PreparerShoppingDraftPage({ params, searchParams }
     titleLine: draft.titleLine && isLikelyPhone(draft.titleLine) ? "" : draft.titleLine,
   });
 
+  const safeProductImagesMap = deepSanitize(productImagesMap);
+  const safeProductBranchMap = deepSanitize(productBranchMap);
+
   return (
     <div className="kse-app-inner mx-auto max-w-2xl px-4 py-6 pb-24">
       <div className="mb-4 text-sm">
@@ -180,8 +183,8 @@ export default async function PreparerShoppingDraftPage({ params, searchParams }
         draftOwnerId={draft.preparerId}
         preparerId={preparer.id}
         preparerName={preparer.name}
-        productImagesMap={productImagesMap}
-        productBranchMap={productBranchMap}
+        productImagesMap={safeProductImagesMap}
+        productBranchMap={safeProductBranchMap}
       />
     </div>
   );

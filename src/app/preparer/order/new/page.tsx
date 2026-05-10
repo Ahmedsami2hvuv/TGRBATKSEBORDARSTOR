@@ -71,13 +71,32 @@ export default async function PreparerOrderNewPage({ searchParams }: Props) {
   const auth = { p: p!, exp: exp!, s: s! };
   const homeHref = preparerPath("/preparer", auth);
 
-  const shops = preparer.shopLinks.map((l) => ({
+  // دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
+  function deepSanitize(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === "bigint") return obj.toString();
+    if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+    if (obj instanceof Date) return obj.toISOString();
+    if (Array.isArray(obj)) return obj.map(deepSanitize);
+    if (typeof obj === "object") {
+      if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) return Number(obj.toString());
+      if (Object.hasOwn(obj, 'd') && Object.hasOwn(obj, 's') && Object.hasOwn(obj, 'e')) return Number(obj.toString());
+      const newObj: any = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
+      }
+      return newObj;
+    }
+    return obj;
+  }
+
+  const shops = deepSanitize(preparer.shopLinks.map((l) => ({
     id: l.shop.id,
     name: l.shop.name,
     photoUrl: l.shop.photoUrl,
     shopRegionName: l.shop.region.name,
     shopDeliveryAlf: Number(l.shop.region.deliveryPrice.toString()) / ALF_PER_DINAR,
-  }));
+  })));
 
   if (shops.length === 0) {
     return (

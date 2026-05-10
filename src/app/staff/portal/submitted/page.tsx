@@ -74,6 +74,25 @@ export default async function StaffSubmittedDraftsPage({ searchParams }: Props) 
 
     const authQ = new URLSearchParams({ se: sp.se ?? "", exp: sp.exp ?? "", s: sp.s ?? "" }).toString();
 
+    // Nuclear Sanitization for Next.js 15 Serialization Safety
+    function deepSanitize(obj: any): any {
+      if (obj === null || obj === undefined) return obj;
+      if (typeof obj === "bigint") return obj.toString();
+      if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+      if (obj instanceof Date) return obj.toISOString();
+      if (Array.isArray(obj)) return obj.map(deepSanitize);
+      if (typeof obj === "object") {
+        // Handle Decimal.js / Prisma Decimal
+        if (obj.d && obj.s && obj.e !== undefined) return Number(obj.toString());
+        const newObj: any = {};
+        for (const key in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
+        }
+        return newObj;
+      }
+      return obj;
+    }
+
     const tableRows: MandoubRow[] = drafts.map((d) => {
       const draftData = (d.data as any) || {};
       return {
@@ -117,6 +136,8 @@ export default async function StaffSubmittedDraftsPage({ searchParams }: Props) 
       };
     });
 
+    const sanitizedRows = deepSanitize(tableRows);
+
     return (
       <div className="kse-app-bg min-h-screen px-2 py-4 pb-16 text-slate-800 sm:px-4 sm:py-8" dir="rtl">
         <div className="kse-app-inner mx-auto max-w-4xl">
@@ -139,12 +160,13 @@ export default async function StaffSubmittedDraftsPage({ searchParams }: Props) 
             </div>
           ) : (
             <section className="kse-glass-dark overflow-hidden border border-slate-200 shadow-sm">
-               <StaffSubmittedClient rows={JSON.parse(JSON.stringify(tableRows))} authQ={authQ} />
+               <StaffSubmittedClient rows={sanitizedRows} authQ={authQ} />
             </section>
           )}
         </div>
       </div>
     );
+
   } catch (error) {
     console.error("staff portal submitted list page failed", error);
     return (

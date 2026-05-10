@@ -82,6 +82,25 @@ export default async function BranchPricingPage({ params, searchParams }: Props)
 
     const baseAuth = { p, exp, s };
 
+    // دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
+    function deepSanitize(obj: any): any {
+      if (obj === null || obj === undefined) return obj;
+      if (typeof obj === "bigint") return obj.toString();
+      if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+      if (obj instanceof Date) return obj.toISOString();
+      if (Array.isArray(obj)) return obj.map(deepSanitize);
+      if (typeof obj === "object") {
+        if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) return Number(obj.toString());
+        if (Object.hasOwn(obj, 'd') && Object.hasOwn(obj, 's') && Object.hasOwn(obj, 'e')) return Number(obj.toString());
+        const newObj: any = {};
+        for (const key in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
+        }
+        return newObj;
+      }
+      return obj;
+    }
+
     return (
       <div className="kse-app-inner mx-auto max-w-4xl px-4 py-6" dir="rtl">
         <header className="mb-6">
@@ -97,8 +116,8 @@ export default async function BranchPricingPage({ params, searchParams }: Props)
         </header>
 
         <PricingListClient
-          branch={branch as any}
-          products={products as any}
+          branch={deepSanitize(branch) as any}
+          products={deepSanitize(products) as any}
           auth={baseAuth}
         />
       </div>

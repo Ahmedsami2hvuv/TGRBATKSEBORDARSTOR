@@ -238,10 +238,45 @@ export default async function PreparerWalletPage({ searchParams }: Props) {
     return item;
   });
 
-  const mergedLedger = filterLedgerByRecentDays(ledgerWithBalance);
+  // دالة تطهير عميقة وقوية جداً لمنع أي تسريب لبيانات غير قابلة للتسلسل (BigInt, Decimal, Date)
+  function deepSanitize(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === "bigint") return obj.toString();
+    if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+    if (obj instanceof Date) return obj.toISOString();
 
-  // ستايل المربعات الحسابية (accounting)
-  const accountingLayout = uiSettings?.layoutOrder || ["summary_grid"];
+    if (Array.isArray(obj)) return obj.map(deepSanitize);
+
+    if (typeof obj === "object") {
+      // معالجة Decimal الخاصة بـ Prisma (Decimal.js)
+      if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
+        return Number(obj.toString());
+      }
+      // حماية إضافية للـ Decimal إذا فقد الـ constructor
+      if (obj.d && Array.isArray(obj.d) && typeof obj.s === 'number') {
+        return Number(obj.toString());
+      }
+
+      const newObj: any = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          try {
+            newObj[key] = deepSanitize(obj[key]);
+          } catch (e) {
+            newObj[key] = null;
+          }
+        }
+      }
+      return newObj;
+    }
+    return obj;
+  }
+
+  const mergedLedger = deepSanitize(filterLedgerByRecentDays(ledgerWithBalance));
+  const safeUISettings = deepSanitize(uiSettings);
+  const safePendingIncoming = deepSanitize(pendingIn);
+  const safeTransferTargetCouriers = deepSanitize(transferTargetCouriers);
+  const safeTransferTargetEmployees = deepSanitize(transferTargetEmployees);
 
   return (
     <div className="kse-app-bg min-h-screen px-4 py-8 pb-24 text-slate-800">
@@ -270,12 +305,12 @@ export default async function PreparerWalletPage({ searchParams }: Props) {
 
         <PreparerWalletTransferSection
           auth={baseAuth} walletPathWithQuery={walletPathWithQuery} selfEmployeeId={employee.id}
-          transferTargetCouriers={transferTargetCouriers} transferTargetEmployees={transferTargetEmployees}
-          pendingIncoming={pendingIn} availableForTransferStr={formatDinarAsAlfWithUnit(availableForTransfer)}
+          transferTargetCouriers={safeTransferTargetCouriers} transferTargetEmployees={safeTransferTargetEmployees}
+          pendingIncoming={safePendingIncoming} availableForTransferStr={formatDinarAsAlfWithUnit(availableForTransfer)}
           pendingOutgoingCount={transferOutLines.length}
         />
 
-        <PreparerWalletClient hideWalletSummary ledger={mergedLedger} orderLinkAuth={baseAuth} preparerDeleteAuth={baseAuth} preparerDeleteNextUrl={walletPathWithQuery} uiSettings={uiSettings} />
+        <PreparerWalletClient hideWalletSummary ledger={mergedLedger} orderLinkAuth={baseAuth} preparerDeleteAuth={baseAuth} preparerDeleteNextUrl={walletPathWithQuery} uiSettings={safeUISettings} />
       </div>
     </div>
   );

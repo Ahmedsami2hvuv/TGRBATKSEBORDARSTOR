@@ -147,17 +147,19 @@ export default async function PreparerHomePage({ searchParams }: Props) {
   const safeTableRows = deepSanitize(tableRows);
   const safeSearchFields = deepSanitize(searchFields);
   const safeCouriers = deepSanitize(couriersForBulkAssign);
+  const safeIcons = deepSanitize(icons);
+  const safePreparer = deepSanitize(preparer);
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 text-base leading-relaxed sm:px-4 sm:py-4 sm:text-lg">
       <header className="kse-glass-dark mb-2 flex flex-wrap items-center gap-2 border border-emerald-200/90 px-3 py-2.5 shadow-sm sm:mb-3 sm:px-4">
         <div className="min-w-0 flex-1 flex items-center gap-3">
           <ThemeSwitcher />
-          <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-slate-100">{preparer.name}</p>
-          <PreparerSearchTrigger icons={icons} />
+          <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-slate-100">{safePreparer.name}</p>
+          <PreparerSearchTrigger icons={safeIcons} />
         </div>
         <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
-          <PreparerPresenceToggle auth={baseAuth} availableForAssignment={preparer.availableForAssignment} icons={icons} />
+          <PreparerPresenceToggle auth={baseAuth} availableForAssignment={safePreparer.availableForAssignment} icons={safeIcons} />
           {canSubmitAny && (
             <>
               <FullscreenWalletLauncher
@@ -179,7 +181,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
               </FullscreenWalletLauncher>
             </>
           )}
-          <PreparerWalletLink auth={baseAuth} icons={icons} walletRemainStr={walletRemainStr} />
+          <PreparerWalletLink auth={baseAuth} icons={safeIcons} walletRemainStr={walletRemainStr} />
         </div>
       </header>
       <PreparerNotificationPoller auth={baseAuth} openUrl={preparationHref} />
@@ -194,7 +196,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           tab="all"
           initialQuery={(sp.q ?? "").trim()}
           couriersForBulkAssign={safeCouriers}
-          icons={icons}
+          icons={safeIcons}
         />
       </section>
     </div>

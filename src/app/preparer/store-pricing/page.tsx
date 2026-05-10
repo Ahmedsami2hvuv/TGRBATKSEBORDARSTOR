@@ -54,6 +54,25 @@ export default async function PreparerStorePricingPage({ searchParams }: Props) 
 
     const baseAuth = { p: String(p ?? ""), exp: String(exp ?? ""), s: String(s ?? "") };
 
+    // دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
+    function deepSanitize(obj: any): any {
+      if (obj === null || obj === undefined) return obj;
+      if (typeof obj === "bigint") return obj.toString();
+      if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+      if (obj instanceof Date) return obj.toISOString();
+      if (Array.isArray(obj)) return obj.map(deepSanitize);
+      if (typeof obj === "object") {
+        if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) return Number(obj.toString());
+        if (Object.hasOwn(obj, 'd') && Object.hasOwn(obj, 's') && Object.hasOwn(obj, 'e')) return Number(obj.toString());
+        const newObj: any = {};
+        for (const key in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
+        }
+        return newObj;
+      }
+      return obj;
+    }
+
     const allowedIds = preparer.authorizedBranches.map((b) => b.id);
     if (allowedIds.length === 0) {
       return (
@@ -83,12 +102,12 @@ export default async function PreparerStorePricingPage({ searchParams }: Props) 
       orderBy: { sequence: "asc" },
     });
 
-    const branches = branchesRaw.map((br) => ({
+    const branches = deepSanitize(branchesRaw.map((br) => ({
       id: String(br.id),
       name: String(br.name),
       photoUrl: br.photoUrl || "",
       categoryName: br.category?.name || "عام"
-    }));
+    })));
 
     return (
       <div className="kse-app-inner mx-auto max-w-4xl px-4 py-6" dir="rtl">

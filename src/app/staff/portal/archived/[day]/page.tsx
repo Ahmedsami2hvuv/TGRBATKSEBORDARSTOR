@@ -27,6 +27,25 @@ export default async function StaffArchivedDayPage({
 
   const authQ = new URLSearchParams({ se: sp.se ?? "", exp: sp.exp ?? "", s: sp.s ?? "" }).toString();
 
+  // Nuclear Sanitization for Next.js 15 Serialization Safety
+  function deepSanitize(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === "bigint") return obj.toString();
+    if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+    if (obj instanceof Date) return obj.toISOString();
+    if (Array.isArray(obj)) return obj.map(deepSanitize);
+    if (typeof obj === "object") {
+      // Handle Decimal.js / Prisma Decimal
+      if (obj.d && obj.s && obj.e !== undefined) return Number(obj.toString());
+      const newObj: any = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
+      }
+      return newObj;
+    }
+    return obj;
+  }
+
   // جلب الأزرار الفعالة من قاعدة البيانات (الأزرار التي صنعتها أنت من الإدارة)
   const waButtons = await prisma.mandoubWaButtonSetting.findMany({
     where: { isActive: true }
@@ -112,8 +131,8 @@ export default async function StaffArchivedDayPage({
 
         {/* تمرير الأزرار الديناميكية للمكون */}
         <StaffArchivedClient
-          rows={JSON.parse(JSON.stringify(rows))}
-          dynamicWaButtons={JSON.parse(JSON.stringify(waButtons))}
+          rows={deepSanitize(rows)}
+          dynamicWaButtons={deepSanitize(waButtons)}
         />
       </div>
     </div>

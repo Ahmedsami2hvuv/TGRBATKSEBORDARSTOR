@@ -52,6 +52,25 @@ export default async function PreparerPreparationEditPage({ params, searchParams
   const home = preparerPath("/preparer", auth);
   const prep = preparerPath("/preparer/preparation", auth);
 
+  // دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
+  function deepSanitize(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === "bigint") return obj.toString();
+    if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+    if (obj instanceof Date) return obj.toISOString();
+    if (Array.isArray(obj)) return obj.map(deepSanitize);
+    if (typeof obj === "object") {
+      if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) return Number(obj.toString());
+      if (Object.hasOwn(obj, 'd') && Object.hasOwn(obj, 's') && Object.hasOwn(obj, 'e')) return Number(obj.toString());
+      const newObj: any = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
+      }
+      return newObj;
+    }
+    return obj;
+  }
+
   const preparer = await prisma.companyPreparer.findFirst({
     where: { id: v.preparerId, active: true },
     include: {
@@ -189,12 +208,12 @@ export default async function PreparerPreparationEditPage({ params, searchParams
     );
   }
 
-  const shops = preparer.shopLinks.map((l) => ({
+  const shops = deepSanitize(preparer.shopLinks.map((l) => ({
     id: l.shop.id,
     name: l.shop.name,
     shopRegionName: l.shop.region.name,
     shopDeliveryAlf: Number(l.shop.region.deliveryPrice.toString()) / ALF_PER_DINAR,
-  }));
+  })));
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-4 py-8 pb-24">
@@ -212,7 +231,7 @@ export default async function PreparerPreparationEditPage({ params, searchParams
           shops={shops}
           homeHref={home}
           prepHref={prep}
-          initialData={JSON.parse(JSON.stringify({
+          initialData={deepSanitize({
             titleLine: String(payload?.titleLine ?? order.customerRegion?.name ?? "").trim(),
             products,
             placesCount: Number.isFinite(placesCountNum) && placesCountNum > 0 ? Math.floor(placesCountNum) : 1,
@@ -225,7 +244,7 @@ export default async function PreparerPreparationEditPage({ params, searchParams
             customerName: order.customer?.name?.trim() || "",
             orderTime: order.orderNoteTime?.trim() || "فوري",
             customerLandmark: order.customerLandmark?.trim() || "",
-          }))}
+          })}
         />
       </div>
     </div>
