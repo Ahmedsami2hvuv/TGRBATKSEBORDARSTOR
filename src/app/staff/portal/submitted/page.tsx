@@ -139,7 +139,7 @@ export default async function StaffSubmittedDraftsPage({ searchParams }: Props) 
             </div>
           ) : (
             <section className="kse-glass-dark overflow-hidden border border-slate-200 shadow-sm">
-               <StaffSubmittedClient rows={tableRows} authQ={authQ} />
+               <StaffSubmittedClient rows={JSON.parse(JSON.stringify(tableRows))} authQ={authQ} />
             </section>
           )}
         </div>

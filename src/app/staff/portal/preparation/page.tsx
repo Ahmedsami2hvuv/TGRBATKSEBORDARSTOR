@@ -58,6 +58,14 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
   const auth = { se: sp.se ?? "", exp: sp.exp ?? "", s: sp.s ?? "" };
   const authQ = new URLSearchParams(auth).toString();
 
+  // Serialization fix for Next.js 15
+  const sanitizedStaff = JSON.parse(JSON.stringify(staff));
+  const sanitizedPreparers = JSON.parse(JSON.stringify(preparers.map((p) => ({
+    id: p.id,
+    name: p.name,
+    available: p.availableForAssignment,
+  }))));
+
   return (
     <div className="kse-app-bg min-h-screen px-4 py-8 pb-16 text-slate-800">
       <div className="kse-app-inner mx-auto max-w-2xl">
@@ -79,13 +87,9 @@ export default async function StaffPreparationPage({ searchParams }: Props) {
         </div>
 
         <StaffPreparationClient
-          staffName={staff.name}
+          staffName={sanitizedStaff.name}
           auth={auth}
-          preparers={preparers.map((p) => ({
-            id: p.id,
-            name: p.name,
-            available: p.availableForAssignment,
-          }))}
+          preparers={sanitizedPreparers}
           icons={icons}
         />
       </div>

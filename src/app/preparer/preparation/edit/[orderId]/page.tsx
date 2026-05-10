@@ -207,12 +207,12 @@ export default async function PreparerPreparationEditPage({ params, searchParams
         <PreparerSiteOrderPrepEditClient
           auth={auth}
           orderId={order.id}
-          orderNumber={order.orderNumber}
+          orderNumber={Number(order.orderNumber)}
           preparerName={preparer.name}
           shops={shops}
           homeHref={home}
           prepHref={prep}
-          initialData={{
+          initialData={JSON.parse(JSON.stringify({
             titleLine: String(payload?.titleLine ?? order.customerRegion?.name ?? "").trim(),
             products,
             placesCount: Number.isFinite(placesCountNum) && placesCountNum > 0 ? Math.floor(placesCountNum) : 1,
@@ -225,7 +225,7 @@ export default async function PreparerPreparationEditPage({ params, searchParams
             customerName: order.customer?.name?.trim() || "",
             orderTime: order.orderNoteTime?.trim() || "فوري",
             customerLandmark: order.customerLandmark?.trim() || "",
-          }}
+          }))}
         />
       </div>
     </div>

@@ -59,9 +59,13 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
         submissionSource: "web_store",
         submittedByCompanyPreparerId: null,
       },
+      // تأمين الحقول المختارة
       select: { id: true, orderNumber: true, summary: true, customerRegion: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
-    }),
+    }).then(orders => orders.map(o => ({
+      ...o,
+      orderNumber: String(o.orderNumber) // تحويل BigInt إلى String فوراً
+    }))),
     prisma.companyPreparerShoppingDraft.findMany({
       where: { preparerId: preparer.id, status: { in: ["draft", "priced"] } },
       select: {
@@ -73,15 +77,18 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
       },
       orderBy: { createdAt: "desc" },
       take: 30,
-    }),
+    }).then(drafts => drafts.map(d => ({
+      ...d,
+      createdAt: d.createdAt.toISOString() // تحويل التاريخ إلى نص
+    }))),
   ]);
 
   // تحويل كافة البيانات إلى نصوص وأرقام بسيطة لمنع خطأ الـ Serialization (digest error)
-  const safeDrafts = JSON.parse(JSON.stringify(drafts)) as typeof drafts;
-  const safeWebStorePending = JSON.parse(JSON.stringify(webStorePending)) as typeof webStorePending;
-  const safeOrderTableRows = JSON.parse(JSON.stringify(orderTable.rows)) as typeof orderTable.rows;
-  const safeSearchFields = JSON.parse(JSON.stringify(orderTable.searchFields)) as typeof orderTable.searchFields;
-  const safeCouriers = JSON.parse(JSON.stringify(couriers)) as typeof couriers;
+  const safeDrafts = JSON.parse(JSON.stringify(drafts));
+  const safeWebStorePending = JSON.parse(JSON.stringify(webStorePending));
+  const safeOrderTableRows = JSON.parse(JSON.stringify(orderTable.rows));
+  const safeSearchFields = JSON.parse(JSON.stringify(orderTable.searchFields));
+  const safeCouriers = JSON.parse(JSON.stringify(couriers));
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-3 py-4 pb-24 sm:px-4">

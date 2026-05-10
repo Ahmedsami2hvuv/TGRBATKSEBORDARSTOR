@@ -125,11 +125,11 @@ export default async function PreparerHomePage({ searchParams }: Props) {
 
   const walletRemainStr = formatDinarAsAlfWithUnit(walletTotals?.remain ?? 0);
 
-  // تطهير التواريخ لمنع خطأ Serialization (Digest Error) عند تمرير البيانات لمكونات العميل
-  const safeTableRows = tableRows.map((r) => ({
-    ...r,
-    createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
-  }));
+  // تطهير شامل لكافة البيانات لمنع خطأ Serialization (Digest Error)
+  // نستخدم JSON.parse(JSON.stringify) لضمان تحويل أي BigInt أو Decimal أو Date إلى تنسيق JSON متوافق
+  const safeTableRows = JSON.parse(JSON.stringify(tableRows));
+  const safeSearchFields = JSON.parse(JSON.stringify(searchFields));
+  const safeCouriers = JSON.parse(JSON.stringify(couriersForBulkAssign));
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 text-base leading-relaxed sm:px-4 sm:py-4 sm:text-lg">
@@ -167,13 +167,16 @@ export default async function PreparerHomePage({ searchParams }: Props) {
       </header>
       <PreparerNotificationPoller auth={baseAuth} openUrl={preparationHref} />
       <section className="kse-glass-dark overflow-hidden border border-sky-200 shadow-sm dark:border-slate-800">
+        <div className="p-3 border-b border-sky-100 dark:border-slate-800">
+          <h3 className="text-sm font-bold text-sky-900 dark:text-sky-400">قائمة الطلبات</h3>
+        </div>
         <PreparerOrdersSection
           allRows={safeTableRows}
-          searchFields={searchFields}
+          searchFields={safeSearchFields}
           auth={baseAuth}
           tab="all"
           initialQuery={(sp.q ?? "").trim()}
-          couriersForBulkAssign={couriersForBulkAssign}
+          couriersForBulkAssign={safeCouriers}
           icons={icons}
         />
       </section>

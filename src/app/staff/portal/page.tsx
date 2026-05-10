@@ -16,6 +16,9 @@ export default async function StaffPortalPage({ searchParams }: { searchParams: 
 
   const authQ = new URLSearchParams({ se: sp.se ?? "", exp: sp.exp ?? "", s: sp.s ?? "" }).toString();
 
+  // Serialization fix for Next.js 15
+  const sanitizedEmp = JSON.parse(JSON.stringify(emp));
+
   return (
     <div className="kse-app-bg min-h-screen px-4 py-10 text-slate-800" dir="rtl">
       <div className="kse-app-inner mx-auto max-w-md">
@@ -24,7 +27,7 @@ export default async function StaffPortalPage({ searchParams }: { searchParams: 
           <h1 className="mt-4 text-2xl font-black text-slate-900">بوابة الموظف</h1>
           <p className="mt-2 text-sm font-bold text-slate-500">أهلاً بك، <span className="text-sky-900">{emp.name}</span></p>
           
-          <StaffPortalMenuClient emp={emp} authQ={authQ} />
+          <StaffPortalMenuClient emp={sanitizedEmp} authQ={authQ} />
         </div>
       </div>
     </div>

@@ -141,13 +141,12 @@ export default async function PreparerShoppingDraftPage({ params, searchParams }
 
   // إخفاء الأرقام والبيانات الحساسة لضمان الخصوصية عند المجهز وتطهير التواريخ لمنع خطأ الـ Serialization
   const isLikelyPhone = (text: string) => /^[0-9+ \-()]{7,15}$/.test(text.trim());
-  const safeDraft = {
+  const safeDraft = JSON.parse(JSON.stringify({
     ...draft,
-    createdAt: draft.createdAt.toISOString(),
     customerPhone: "",
     customerName: draft.customerName && isLikelyPhone(draft.customerName) ? "" : draft.customerName,
     titleLine: draft.titleLine && isLikelyPhone(draft.titleLine) ? "" : draft.titleLine,
-  };
+  }));
 
   return (
     <div className="kse-app-inner mx-auto max-w-2xl px-4 py-6 pb-24">

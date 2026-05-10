@@ -111,7 +111,10 @@ export default async function StaffArchivedDayPage({
         </header>
 
         {/* تمرير الأزرار الديناميكية للمكون */}
-        <StaffArchivedClient rows={rows} dynamicWaButtons={waButtons} />
+        <StaffArchivedClient
+          rows={JSON.parse(JSON.stringify(rows))}
+          dynamicWaButtons={JSON.parse(JSON.stringify(waButtons))}
+        />
       </div>
     </div>
   );

@@ -222,7 +222,7 @@ export async function loadPreparerPortalOrderTableData(args: {
 
   const searchFields: MandoubOrderSearchFields[] = filteredByPrepf.map((o) => ({
     id: o.id,
-    orderNumber: o.orderNumber || 0,
+    orderNumber: Number(o.orderNumber || 0), // تحويل BigInt إلى Number لضمان التوافق مع JSON
     orderType: o.orderType || "",
     customerPhone: "",
     alternatePhone: "",

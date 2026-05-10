@@ -168,7 +168,8 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
   });
 
   // إخفاء الأرقام الحساسة في Client Component (لن تُستخدم هناك)
-  const safeOrder: MandoubOrderDetailPayload = {
+  // وتطهير كافة البيانات (Dates, Decimals, BigInts) لتجنب خطأ الـ Serialization في Next.js 15
+  const safeOrder: MandoubOrderDetailPayload = JSON.parse(JSON.stringify({
     ...order,
     customerPhone: "",
     alternatePhone: "",
@@ -178,9 +179,9 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
     submittedByCompanyPreparer: order.submittedByCompanyPreparer
       ? { ...order.submittedByCompanyPreparer, phone: "" }
       : null,
-  };
-  const safePhoneProfile = phoneProfile ? { ...phoneProfile, phone: "", alternatePhone: null } : null;
-  const safeSecondPhoneProfile = secondPhoneProfile ? { ...secondPhoneProfile, phone: "", alternatePhone: null } : null;
+  }));
+  const safePhoneProfile = phoneProfile ? JSON.parse(JSON.stringify({ ...phoneProfile, phone: "", alternatePhone: null })) : null;
+  const safeSecondPhoneProfile = secondPhoneProfile ? JSON.parse(JSON.stringify({ ...secondPhoneProfile, phone: "", alternatePhone: null })) : null;
 
   const preparerInvoiceIds: string[] = Array.isArray(prepJson?.preparerInvoices)
     ? prepJson.preparerInvoices
