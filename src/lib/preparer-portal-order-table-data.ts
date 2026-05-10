@@ -51,6 +51,29 @@ const STATUS_SORT_RANK: Record<string, number> = {
 
 export type PreparerPrepQuickFilter = "new" | "complete" | "open";
 
+function safeString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function safeStringTrim(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function jsonToString(value: unknown): string {
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value, (_key, v) => {
+      if (typeof v === "bigint") return v.toString();
+      if (v && typeof v === "object" && Object.hasOwn(v, "d") && Object.hasOwn(v, "s") && Object.hasOwn(v, "e")) {
+        return Number((v as any).toString());
+      }
+      return v;
+    });
+  } catch {
+    return "";
+  }
+}
+
 export async function loadPreparerPortalOrderTableData(args: {
   preparerId: string;
   shopIds: string[];
@@ -159,10 +182,11 @@ export async function loadPreparerPortalOrderTableData(args: {
     : filteredByTab;
 
   const rows: MandoubRow[] = filteredByPrepf.map((o) => {
-    const regionLine = o.customerRegion?.name?.trim() || "—";
+    const regionLine = safeStringTrim(o.customerRegion?.name) || "—";
     const price = o.totalAmount;
     const del = o.deliveryPrice;
-    const statusClass = orderStatusBadgeClassPrepaid(o.status, o.prepaidAll);
+    const status = safeString(o.status) || "pending";
+    const statusClass = orderStatusBadgeClassPrepaid(status, Boolean(o.prepaidAll));
 
     const pickupSumDinar = o.moneyEvents
       .filter((e) => e.kind === MONEY_KIND_PICKUP && e.deletedAt == null)
@@ -171,18 +195,30 @@ export async function loadPreparerPortalOrderTableData(args: {
     const totalAmountDinar = o.totalAmount ? Number(o.totalAmount) : null;
     const pickupComplete = orderSubtotalDinar != null && Math.abs(pickupSumDinar - orderSubtotalDinar) < 1e-3;
 
+    const shopLocationUrl = safeStringTrim((o as any).shopLocationUrl);
+    const customerLocationUrl = safeStringTrim(o.customerLocationUrl || o.customer?.customerLocationUrl);
+    const secondCustomerLocationUrl = safeStringTrim((o as any).secondCustomerLocationUrl);
+    const shopDoorPhotoUrl = safeStringTrim((o as any).shopDoorPhotoUrl);
+    const customerDoorPhotoUrl = safeStringTrim(o.customer?.customerDoorPhotoUrl || (o as any).customerDoorPhotoUrl);
+    const secondCustomerDoorPhotoUrl = safeStringTrim((o as any).secondCustomerDoorPhotoUrl);
+
+    const preparerShoppingJson =
+      o.preparerShoppingJson && typeof o.preparerShoppingJson === "object"
+        ? o.preparerShoppingJson
+        : null;
+
     return {
       id: o.id,
-      shortId: String(o.orderNumber || ""),
+      shortId: String(o.orderNumber ?? ""),
       /** لعمود «تاريخ الرفع» في الجدول الموحّد */
       createdAt: o.createdAt ? o.createdAt.toISOString() : new Date().toISOString(),
-      orderStatus: o.status || "pending",
+      orderStatus: status,
       assignedCourierId: o.assignedCourierId,
-      assignedCourierName: o.courier?.name?.trim() || "",
-      shopName: o.shop?.name || "—",
-      shopNameHighlightClass: mandoubShopNameVividClass(o.status, o.prepaidAll),
+      assignedCourierName: safeStringTrim(o.courier?.name),
+      shopName: safeString(o.shop?.name) || "—",
+      shopNameHighlightClass: mandoubShopNameVividClass(status, Boolean(o.prepaidAll)),
       regionLine,
-      orderType: o.orderType || "—",
+      orderType: safeString(o.orderType) || "—",
       priceStr: price != null ? formatDinarAsAlf(price) : "—",
       delStr: del != null ? formatDinarAsAlf(del) : "—",
       customerPhone: "—",
@@ -192,14 +228,11 @@ export async function loadPreparerPortalOrderTableData(args: {
             dateStyle: "short",
             timeStyle: "short",
           }) || "—",
-      statusAr: STATUS_AR[o.status] ?? o.status,
+      statusAr: STATUS_AR[status] ?? status,
       statusClass,
-      prepaidAll: o.prepaidAll,
+      prepaidAll: Boolean(o.prepaidAll),
       reversePickup: isReversePickupOrderType(o.orderType),
-      hasCustomerLocation: hasCustomerLocationUrl(
-        o.customerLocationUrl,
-        o.customer?.customerLocationUrl,
-      ),
+      hasCustomerLocation: hasCustomerLocationUrl(customerLocationUrl),
       hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
       hasMoneyDeletedBadge: o.moneyEvents?.some(
         (e) => e.deletedAt && isManualDeletionReason(e.deletedReason),
@@ -210,56 +243,47 @@ export async function loadPreparerPortalOrderTableData(args: {
       pickupSumDinar,
 
       // Unified fast-access fields - Safe access
-      audioUrl: (o as any).voiceNoteUrl || null,
-      preparerAudioUrl: (o.preparerShoppingJson as any)?.preparerAudioUrl || null,
-      adminAudioUrl: (o as any).adminVoiceNoteUrl || null,
-      shopLocationUrl: (o as any).shopLocationUrl || null,
-      customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || null,
-      secondCustomerLocationUrl: (o as any).secondCustomerLocationUrl || null,
-      shopDoorPhotoUrl: (o as any).shopDoorPhotoUrl || null,
-      customerDoorPhotoUrl: o.customer?.customerDoorPhotoUrl || (o as any).customerDoorPhotoUrl || null,
-      secondCustomerDoorPhotoUrl: (o as any).secondCustomerDoorPhotoUrl || null,
-      routeMode: (o.routeMode || "single") as "single" | "double",
+      audioUrl: safeStringTrim((o as any).voiceNoteUrl) || null,
+      preparerAudioUrl: safeStringTrim(preparerShoppingJson?.preparerAudioUrl) || null,
+      adminAudioUrl: safeStringTrim((o as any).adminVoiceNoteUrl) || null,
+      shopLocationUrl: shopLocationUrl || null,
+      customerLocationUrl: customerLocationUrl || null,
+      secondCustomerLocationUrl: secondCustomerLocationUrl || null,
+      shopDoorPhotoUrl: shopDoorPhotoUrl || null,
+      customerDoorPhotoUrl: customerDoorPhotoUrl || null,
+      secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrl || null,
+      routeMode: (safeString(o.routeMode) || "single") as "single" | "double",
     };
   });
 
   const searchFields: MandoubOrderSearchFields[] = filteredByPrepf.map((o) => ({
     id: o.id,
-    orderNumber: Number(o.orderNumber || 0), // تحويل BigInt إلى Number لضمان التوافق مع JSON
-    orderType: o.orderType || "",
+    orderNumber: Number(o.orderNumber ?? 0), // تحويل BigInt إلى Number لضمان التوافق مع JSON
+    orderType: safeString(o.orderType),
     customerPhone: "",
     alternatePhone: "",
     secondCustomerPhone: "",
-    summary: o.summary || "",
-    customerLandmark: o.customerLandmark || "",
-    secondCustomerLandmark: o.secondCustomerLandmark || "",
-    orderNoteTime: o.orderNoteTime?.trim() ?? "",
-    shopName: o.shop?.name || "—",
-    regionName: o.customerRegion?.name ?? "",
-    secondRegionName: o.secondCustomerRegion?.name ?? "",
-    routeMode: (o.routeMode as any) || "single",
-    courierName: o.courier?.name ?? "",
-    adminOrderCode: o.adminOrderCode ?? "",
-    submissionSource: o.submissionSource ?? "",
-    customerLocationUrl: o.customerLocationUrl ?? "",
-    customerLocationUploadedByName: o.customerLocationUploadedByName ?? "",
-    secondCustomerLocationUrl: o.secondCustomerLocationUrl ?? "",
-    secondCustomerDoorPhotoUploadedByName:
-      o.secondCustomerDoorPhotoUploadedByName ?? "",
-    customerDoorPhotoUploadedByName: o.customerDoorPhotoUploadedByName ?? "",
-    orderImageUploadedByName: o.orderImageUploadedByName ?? "",
-    shopDoorPhotoUploadedByName: o.shopDoorPhotoUploadedByName ?? "",
-    preparerShoppingText:
-      o.preparerShoppingJson != null
-        ? JSON.stringify(o.preparerShoppingJson, (k, v) => {
-            if (typeof v === 'bigint') return v.toString();
-            // معالجة Decimal في حال وجوده داخل JSON
-            if (v && typeof v === 'object' && v.d && v.s && v.e) return Number(v.toString());
-            return v;
-          })
-        : "",
-    submittedByEmployeeName: o.submittedBy?.name ?? "",
-    submittedByPreparerName: o.submittedByCompanyPreparer?.name ?? "",
+    summary: safeString(o.summary),
+    customerLandmark: safeString(o.customerLandmark),
+    secondCustomerLandmark: safeString(o.secondCustomerLandmark),
+    orderNoteTime: safeStringTrim(o.orderNoteTime),
+    shopName: safeString(o.shop?.name) || "—",
+    regionName: safeString(o.customerRegion?.name),
+    secondRegionName: safeString(o.secondCustomerRegion?.name),
+    routeMode: (safeString(o.routeMode) || "single") as any,
+    courierName: safeString(o.courier?.name),
+    adminOrderCode: safeString(o.adminOrderCode),
+    submissionSource: safeString(o.submissionSource),
+    customerLocationUrl: safeString(o.customerLocationUrl),
+    customerLocationUploadedByName: safeString(o.customerLocationUploadedByName),
+    secondCustomerLocationUrl: safeString(o.secondCustomerLocationUrl),
+    secondCustomerDoorPhotoUploadedByName: safeString(o.secondCustomerDoorPhotoUploadedByName),
+    customerDoorPhotoUploadedByName: safeString(o.customerDoorPhotoUploadedByName),
+    orderImageUploadedByName: safeString(o.orderImageUploadedByName),
+    shopDoorPhotoUploadedByName: safeString(o.shopDoorPhotoUploadedByName),
+    preparerShoppingText: o.preparerShoppingJson != null ? jsonToString(o.preparerShoppingJson) : "",
+    submittedByEmployeeName: safeString(o.submittedBy?.name),
+    submittedByPreparerName: safeString(o.submittedByCompanyPreparer?.name),
     createdAtIso: o.createdAt ? o.createdAt.toISOString() : new Date().toISOString(),
   }));
 

@@ -45,6 +45,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
   // Nuclear Sanitization for Next.js 15
   function deepSanitize(obj: any): any {
     if (obj === null || obj === undefined) return obj;
+    if (typeof obj === "function") return null;
     if (typeof obj === "bigint") return obj.toString();
     if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
     if (obj instanceof Date) return obj.toISOString();
@@ -58,7 +59,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
       }
       return newObj;
     }
-    return obj;
+    return null;
   }
 
   const preparer = deepSanitize(preparerRaw);
@@ -67,14 +68,10 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
   const homeHref = preparerPath("/preparer", auth);
   const shopIds = (preparer.shopLinks || []).map((l: any) => l.shopId);
 
-  const [couriers, orderTable, webStorePending, drafts] = await Promise.all([
+  const [couriers, webStorePending, drafts] = await Promise.all([
     prisma.courier.findMany({
       where: preparerCourierAssignWhere,
       select: { id: true, name: true }
-    }),
-    loadPreparerPortalOrderTableData({
-      preparerId: preparer.id, shopIds, orderListResetAt: preparer.orderListResetAt,
-      tab: "all", wardFilter: "lower", saderFilter: "lower", prepFilter: null, onlySubmittedByThisPreparer: true,
     }),
     prisma.order.findMany({
       where: {
@@ -99,6 +96,30 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
       take: 30,
     }),
   ]);
+
+  let orderTable;
+  try {
+    orderTable = await loadPreparerPortalOrderTableData({
+      preparerId: preparer.id,
+      shopIds,
+      orderListResetAt: preparer.orderListResetAt,
+      tab: "all",
+      wardFilter: "lower",
+      saderFilter: "lower",
+      prepFilter: null,
+      onlySubmittedByThisPreparer: true,
+    });
+  } catch (error) {
+    console.error("Failed to load preparer portal order table data:", error);
+    return (
+      <div className="kse-app-inner mx-auto max-w-3xl px-4 py-16">
+        <div className="kse-glass-dark rounded-2xl border border-rose-300 p-8 text-center">
+          <p className="text-lg font-bold text-rose-700">حدث خطأ أثناء تحميل الطلبات</p>
+          <p className="mt-3 text-sm text-slate-600">يرجى إعادة المحاولة، وإذا استمرت المشكلة أرسل لنا بيانات الطلب الذي تم إسناده.</p>
+        </div>
+      </div>
+    );
+  }
 
   const sanitizedWebStore = deepSanitize(webStorePending);
   const sanitizedDrafts = deepSanitize(drafts);

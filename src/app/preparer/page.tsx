@@ -128,6 +128,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
   // دالة التطهير العميق للتعامل مع BigInt و Decimal و Date في Next.js 15
   function deepSanitize(obj: any): any {
     if (obj === null || obj === undefined) return obj;
+    if (typeof obj === "function") return null;
     if (typeof obj === "bigint") return obj.toString();
     if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
     if (obj instanceof Date) return obj.toISOString();
@@ -141,7 +142,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
       }
       return newObj;
     }
-    return obj;
+    return null;
   }
 
   const safeTableRows = deepSanitize(tableRows);
