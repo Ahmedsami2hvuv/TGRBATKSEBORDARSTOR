@@ -1118,7 +1118,11 @@ export function PendingOrdersClient({
                       <DynamicIcon icon={icons?.store_cart} fallback="🛒" width={12} height={12} /> طلب متجر
                     </span>
                   )}
-                  <p className="font-black text-slate-900 leading-snug">{o.shopCustomerLabel || o.shopName?.trim() || "—"}</p>
+                  <p className="font-black text-slate-900 leading-snug">
+                    {o.shopCustomerLabel || o.shopName?.trim() || "—"}
+                    {o.vehiclePreference === "bike" && <span className="mr-2 text-indigo-600" title="طلب دراجة">🏍️</span>}
+                    {o.vehiclePreference === "car" && <span className="mr-2 text-indigo-600" title="طلب سيارة">🚗</span>}
+                  </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-slate-600">
                   <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px]">{o.regionName}</span>
