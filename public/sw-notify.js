@@ -38,13 +38,16 @@ self.addEventListener("push", (event) => {
         tag: payload.tag, // التاج يمنع تكرار الإشعارات المزعجة لنفس الطلب
         icon: icon,
         badge: icon, // الأيقونة الصغيرة في شريط الحالة (أندرويد)
-        vibrate: [500, 110, 500, 110, 450, 110, 200, 110], // نمط اهتزاز تنبيهي قوي
+        // إذا كانت النغمة 'phone' نستخدم اهتزازاً طويلاً جداً يشبه الرنين
+        vibrate: payload.sound === 'phone'
+          ? [1000, 500, 1000, 500, 1000, 500, 1000]
+          : [500, 110, 500, 110, 450, 110, 200, 110],
         renotify: true, // يضمن الاهتزاز حتى لو كان هناك إشعار سابق
         requireInteraction: true, // يبقى الإشعار ظاهراً حتى يتفاعل معه المستخدم
+        silent: false, // التأكد من عدم صمت الإشعار
         data: { url: payload.url },
         dir: 'rtl',
         lang: 'ar',
-        // إضافة أزرار سريعة داخل الإشعار
         actions: [
           { action: 'open', title: 'فتح الآن ✅' },
           { action: 'close', title: 'تجاهل' }

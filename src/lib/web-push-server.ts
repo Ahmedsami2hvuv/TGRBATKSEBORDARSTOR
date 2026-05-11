@@ -24,7 +24,7 @@ export function getVapidPublicKeyForClient(): string | null {
   return process.env.VAPID_PUBLIC_KEY?.trim() || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() || null;
 }
 
-type PushPayload = { title: string; body: string; url: string; tag: string };
+type PushPayload = { title: string; body: string; url: string; tag: string; sound?: string };
 
 export type TestPushAudience = "admin" | "mandoub" | "employee" | "customer";
 
@@ -135,6 +135,7 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
     body,
     url: `${getPublicAppUrl()}/admin/orders/pending`,
     tag: `kse-push-admin-${orderNumber}`,
+    sound: settings.soundPreset,
   });
 }
 
@@ -225,6 +226,7 @@ export async function pushNotifyCourierNewAssignment(
     body,
     url,
     tag: `kse-push-mandoub-${orderNumber}-${courierId}`,
+    sound: settings.soundPreset,
   });
 }
 
@@ -318,6 +320,7 @@ export async function pushNotifyPreparerNewNotice(input: {
     body,
     url: `${getPublicAppUrl()}/preparer/preparation`,
     tag: `kse-push-preparer-${input.preparerId}-${orderNumber || Date.now()}`,
+    sound: settings.soundPreset,
   });
 }
 

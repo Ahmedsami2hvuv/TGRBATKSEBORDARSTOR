@@ -219,8 +219,10 @@ export async function submitOrder(
 
     // الصور والصوت
     let imageUrl: string | null = null;
-    const imageFile = formData.get("orderImage");
-    if (imageFile instanceof File && imageFile.size > 0) {
+    const imageFiles = formData.getAll("orderImage");
+    const imageFile = imageFiles.find((f) => f instanceof File && f.size > 0) as File | undefined;
+
+    if (imageFile) {
       imageUrl = await saveOrderImageUploaded(imageFile, MAX_ORDER_IMAGE_BYTES).catch(() => null);
     }
 
