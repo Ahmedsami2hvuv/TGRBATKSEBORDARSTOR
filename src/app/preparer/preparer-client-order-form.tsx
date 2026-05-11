@@ -62,6 +62,8 @@ function ClientOrderFormInner({
   const [notes, setNotes] = useState("");
   const [customerLocationUrl, setCustomerLocationUrl] = useState("");
   const [customerLandmark, setCustomerLandmark] = useState("");
+  const [vehiclePreference, setVehiclePreference] = useState("");
+  const [deliveryPriceOverride, setDeliveryPriceOverride] = useState<string>("");
 
   const [extraInfoOpen, setExtraInfoOpen] = useState(false);
   const [showNoPriceConfirm, setShowNoPriceConfirm] = useState(false);
@@ -378,6 +380,32 @@ function ClientOrderFormInner({
           </label>
 
           <label className="mt-4 flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-slate-800">هل يحتاج وسيلة نقل محددة؟ (اختياري)</span>
+            <div className="grid grid-cols-3 gap-2 mt-1">
+              {[
+                { id: "", label: "لا يهم", icon: "✨" },
+                { id: "bike", label: "دراجة", icon: "🏍️" },
+                { id: "car", label: "سيارة", icon: "🚗" },
+              ].map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setVehiclePreference(v.id)}
+                  className={`flex flex-col items-center justify-center p-2.5 rounded-xl border-2 transition-all ${
+                    vehiclePreference === v.id
+                      ? "border-sky-600 bg-sky-50 text-sky-700 shadow-sm"
+                      : "border-slate-100 bg-white text-slate-500 hover:border-slate-200"
+                  }`}
+                >
+                  <span className="text-xl mb-0.5">{v.icon}</span>
+                  <span className="text-[10px] font-black">{v.label}</span>
+                </button>
+              ))}
+            </div>
+            <input type="hidden" name="vehiclePreference" value={vehiclePreference} />
+          </label>
+
+          <label className="mt-4 flex flex-col gap-1.5">
             <span className="text-sm font-medium text-slate-800">رقم الزبون *</span>
             <span className="text-xs text-slate-500">أي صيغة: 07… أو +964… أو مع مسافات — يُحوَّل تلقائياً.</span>
             <input
@@ -449,17 +477,42 @@ function ClientOrderFormInner({
             {selected ? <p className="mt-2 text-xs font-medium text-emerald-800">تم الاختيار: {selected.name}</p> : null}
 
             {delivery != null ? (
-              <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-slate-800">
-                <p>
-                  سعر التوصيل (الأعلى بين محلك والزبون):{" "}
+              <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-3 text-sm text-slate-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span>سعر التوصيل الأساسي:</span>
                   <strong className="tabular-nums text-sky-800">{delivery.toFixed(2)}</strong>
-                </p>
-                <p className="mt-1">
-                  المجموع (الطلب + التوصيل):{" "}
-                  <strong className="tabular-nums text-emerald-800">
-                    {total != null && !Number.isNaN(total) ? `${total.toFixed(2)}` : "—"}
+                </div>
+
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-sky-200/50">
+                  <span className="text-xs font-bold text-sky-900">سعر التوصيل الفعلي (يمكنك زيادته):</span>
+                  <div className="relative">
+                    <input
+                      name="deliveryPrice"
+                      type="number"
+                      step="0.01"
+                      value={deliveryPriceOverride || delivery.toFixed(2)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val || parseFloat(val) >= delivery) {
+                          setDeliveryPriceOverride(val);
+                        }
+                      }}
+                      className="w-full rounded-lg border border-sky-300 bg-white px-3 py-2 font-mono font-bold text-sky-800 outline-none focus:ring-2 focus:ring-sky-200"
+                    />
+                  </div>
+                  {deliveryPriceOverride && parseFloat(deliveryPriceOverride) > delivery && (
+                    <p className="text-[10px] font-bold text-emerald-700">تمت زيادة سعر التوصيل للطلب المستعجل.</p>
+                  )}
+                </div>
+
+                <div className="mt-3 pt-2 border-t border-sky-200 flex items-center justify-between">
+                  <span className="font-bold">المجموع الكلي:</span>
+                  <strong className="tabular-nums text-emerald-800 text-lg">
+                    {total != null && !Number.isNaN(total)
+                      ? (parsedPrice + (deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : delivery)).toFixed(2)
+                      : "—"}
                   </strong>
-                </p>
+                </div>
                 {!hasOrderPrice ? (
                   <p className="mt-1 text-xs font-semibold text-amber-800">السعر غير مكتوب حالياً. يمكنك الإرسال بدون سعر بعد التأكيد.</p>
                 ) : null}

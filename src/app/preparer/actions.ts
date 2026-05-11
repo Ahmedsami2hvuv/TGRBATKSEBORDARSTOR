@@ -538,6 +538,8 @@ export async function submitPreparerOrder(
     const customerLocationUrl = String(formData.get("customerLocationUrl") ?? "").trim();
     const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
     const prepaidAll = formData.get("prepaidAll") === "on";
+    const vehiclePreference = formData.get("vehiclePreference") as string || null;
+    const deliveryPriceOverride = formData.get("deliveryPrice") ? Number(formData.get("deliveryPrice")) : null;
 
     const customerPhone = normalizeIraqMobileLocal11(customerPhoneRaw);
     if (!customerPhone) return { error: "رقم هاتف الزبون غير صالح." };
@@ -580,7 +582,11 @@ export async function submitPreparerOrder(
       landmark: customerLandmark,
     });
 
-    const delivery = Decimal.max(shop.region.deliveryPrice, region.deliveryPrice);
+    const defaultDelivery = Decimal.max(shop.region.deliveryPrice, region.deliveryPrice);
+    const delivery = (deliveryPriceOverride !== null && deliveryPriceOverride >= Number(defaultDelivery))
+        ? new Decimal(deliveryPriceOverride)
+        : defaultDelivery;
+
     const total = new Decimal(subtotalParsed.value).plus(delivery);
 
     const order = await prisma.order.create({
@@ -603,6 +609,7 @@ export async function submitPreparerOrder(
         totalAmount: total,
         prepaidAll,
         imageUrl,
+        vehiclePreference,
         orderImageUploadedByName: imageUrl ? PREPARER_PORTAL_LABEL : null,
         shopDoorPhotoUrl,
         shopDoorPhotoUploadedByName: shopDoorPhotoUrl ? PREPARER_PORTAL_LABEL : null,
