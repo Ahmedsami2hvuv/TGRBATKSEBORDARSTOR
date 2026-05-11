@@ -383,7 +383,7 @@ function ClientOrderFormInner({
 
               {selected && (
                 <div className="mt-1 pt-2 border-t border-slate-200/50">
-                  <span className="block mb-3 text-[11px] font-black text-sky-800 bg-sky-50 w-fit px-2 py-0.5 rounded-full shadow-sm">أجرة التوصيل (يمكنك زيادتها للطلب المستعجل):</span>
+                  <span className="block mb-3 text-[11px] font-black text-sky-800 bg-sky-50 w-fit px-2 py-0.5 rounded-full shadow-sm">يمكنك رفع اجرة التوصيل ان اردت):</span>
                   <div className="flex items-center gap-4">
                     <button
                       type="button"

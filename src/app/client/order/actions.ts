@@ -329,26 +329,28 @@ export async function submitOrder(
     void notifyTelegramNewOrder(order.id).catch(() => null);
     void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => null);
 
-    const waTemplate = await getCustomerOrderWhatsappTemplate();
-    const waMessage = renderWhatsappTemplate({
-      template: waTemplate,
-      shopName: submitter.shopId, // Usually we want shop.name, but let's see what's available
-      regionName: custRegion.id, // Usually we want region.name
-      orderItems: notes,
-      orderNumber: order.orderNumber,
+    // جلب أسماء المناطق والمحلات للرسالة
+    const fullShop = await prisma.shop.findUnique({
+      where: { id: submitter.shopId },
+      include: { region: true }
     });
+    const fullRegion = await prisma.region.findUnique({ where: { id: custRegion.id } });
 
-    // Attempt to get names instead of IDs if possible
-    const fullShop = await prisma.shop.findUnique({ where: { id: submitter.shopId }, select: { name: true } });
-    const fullRegion = await prisma.region.findUnique({ where: { id: custRegion.id }, select: { name: true } });
+    // صياغة رسالة العميل (التاجر) الجديدة
+    const clientArea = fullShop?.region?.name || "منطقتكم";
+    const customerArea = fullRegion?.name || "منطقة الزبون";
 
-    const finalWaMessage = renderWhatsappTemplate({
-      template: waTemplate,
-      shopName: fullShop?.name || submitter.shopId,
-      regionName: fullRegion?.name || custRegion.id,
-      orderItems: notes,
-      orderNumber: order.orderNumber,
-    });
+    const finalWaMessage = [
+      "مرحباً، لقد قمت برفع طلب جديد عبر النظام:",
+      `🏢 من محل: ${fullShop?.name || submitter.shopId}`,
+      `📍 من منطقة (العميل): ${clientArea}`,
+      `🎯 إلى منطقة (الزبون): ${customerArea}`,
+      `📞 رقم الزبون: ${phoneLocal}`,
+      `💰 سعر الطلب (بدون توصيل): ${subtotalNum.toLocaleString()}`,
+      `🚚 أجرة التوصيل: ${delivery.toNumber().toLocaleString()}`,
+      `📝 ملاحظات: ${notes || "لا يوجد"}`,
+      `🔢 رقم الطلب: ${order.orderNumber}`,
+    ].join("\n");
 
     const waUrl = whatsappMeUrl(OWNER_WHATSAPP_PHONE, finalWaMessage);
 
