@@ -145,7 +145,7 @@ export async function GET(req: Request) {
         r.regionName,
         r.customerPhone,
         String(r.sectionsCount),
-        String(r.totalAmount / 1000),
+        String(r.totalAmount),
         r.dateLabel,
         String(counts.get(r.customerPhone) ?? 0),
       ]

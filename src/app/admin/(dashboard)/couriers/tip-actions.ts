@@ -24,7 +24,7 @@ export async function payCourierTipAction(formData: FormData) {
     throw new Error("بيانات غير صالحة.");
   }
 
-  const amountDinar = new Decimal(amountAlf * 1000);
+  const amountDinar = new Decimal(amountAlf);
 
   // نستخدم جدول CourierWalletMiscEntry
   // التغيير: direction: "give" لكي يتم خصم المبلغ من متبقي الإدارة (ما بذمة المندوب)

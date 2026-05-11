@@ -55,11 +55,11 @@ export function ProductListClient({
       setVariantType(editing.variantType || "الوزن");
       setVariants(editing.variants?.map((v: any) => ({
         name: v.name,
-        purchasePrice: (v.purchasePrice / 1000).toString(),
-        salePrice: (v.salePrice / 1000).toString()
+        purchasePrice: v.purchasePrice.toString(),
+        salePrice: v.salePrice.toString()
       })) || []);
-      setPurchasePrice(editing.purchasePrice / 1000 || 0);
-      setSalePrice(editing.salePrice / 1000 || 0);
+      setPurchasePrice(editing.purchasePrice || 0);
+      setSalePrice(editing.salePrice || 0);
     } else {
       setHasVariants(false);
       setVariants([]);
@@ -109,29 +109,28 @@ export function ProductListClient({
 
   function calculateAutoSalePrice(purchaseUnit: number): number {
     if (purchaseUnit <= 0) return 0;
-    // تحويل القيمة المدخلة (مثلا 1) إلى قيمتها بالدنانير (1000)
-    const purchase = purchaseUnit * 1000;
+    // السعر المدخل هو السعر المباشر
+    const purchase = purchaseUnit;
 
     let sale = 0;
-    if (purchase < 1000) {
-      sale = purchase + 250;
-    } else if (purchase < 5000) {
+    if (purchase < 1) {
+      sale = purchase + 0.25;
+    } else if (purchase < 5) {
       sale = purchase * 1.25;
-    } else if (purchase < 10000) {
-      sale = purchase + 1000;
+    } else if (purchase < 10) {
+      sale = purchase + 1;
     } else {
       sale = purchase * 1.10;
     }
 
     let roundedSale = 0;
-    if (sale >= 10000) {
-      roundedSale = Math.ceil(sale / 500) * 500;
+    if (sale >= 10) {
+      roundedSale = Math.ceil(sale / 0.5) * 0.5;
     } else {
-      roundedSale = Math.ceil(sale / 250) * 250;
+      roundedSale = Math.ceil(sale / 0.25) * 0.25;
     }
 
-    // إعادة القيمة بصيغة الآلاف (مثلا 1.25) لتناسب الخانة
-    return roundedSale / 1000;
+    return roundedSale;
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {

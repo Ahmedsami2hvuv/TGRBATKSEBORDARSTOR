@@ -161,8 +161,8 @@ export async function upsertProduct(_prev: any, formData: FormData): Promise<For
     const description = formData.get("description") as string || "";
     const branchId = formData.get("branchId") as string;
     const sequence = parseInt(formData.get("sequence") as string || "0");
-    const purchasePrice = parseFloat(formData.get("purchasePrice") as string || "0") * 1000;
-    const salePrice = parseFloat(formData.get("salePrice") as string || "0") * 1000;
+    const purchasePrice = parseFloat(formData.get("purchasePrice") as string || "0");
+    const salePrice = parseFloat(formData.get("salePrice") as string || "0");
     const supplierId = (formData.get("supplierId") as string) || null;
 
     const hasVariants = formData.get("hasVariants") === "true";
@@ -238,8 +238,8 @@ export async function upsertProduct(_prev: any, formData: FormData): Promise<For
             data: variants.map((v: any, idx: number) => ({
               productId: id,
               name: v.name,
-              purchasePrice: parseFloat(v.purchasePrice || 0) * 1000,
-              salePrice: parseFloat(v.salePrice || 0) * 1000,
+              purchasePrice: parseFloat(v.purchasePrice || 0),
+              salePrice: parseFloat(v.salePrice || 0),
               sequence: idx,
             }))
           });
@@ -252,8 +252,8 @@ export async function upsertProduct(_prev: any, formData: FormData): Promise<For
           data: variants.map((v: any, idx: number) => ({
             productId: product.id,
             name: v.name,
-            purchasePrice: parseFloat(v.purchasePrice || 0) * 1000,
-            salePrice: parseFloat(v.salePrice || 0) * 1000,
+            purchasePrice: parseFloat(v.purchasePrice || 0),
+            salePrice: parseFloat(v.salePrice || 0),
             sequence: idx,
           }))
         });
@@ -304,12 +304,12 @@ export async function scrapeProductFromUrl(url: string) {
     let price = 0;
     if (priceMatch) {
         const rawPrice = priceMatch[1].replace(/[^\d]/g, '');
-        price = parseFloat(rawPrice) / 1000;
+        price = parseFloat(rawPrice);
     } else {
         const altPrice = html.match(/(\d{1,3}(?:[.,]\d{3})*)\s*د\.ع/i);
         if (altPrice) {
             const rawPrice = altPrice[1].replace(/[^\d]/g, '');
-            price = parseFloat(rawPrice) / 1000;
+            price = parseFloat(rawPrice);
         }
     }
 
@@ -635,8 +635,8 @@ export async function createProductFromScrapedData(branchId: string, p: any, rem
             data: {
                 name: p.name,
                 description: p.description || "",
-                purchasePrice: Math.round((p.price || 0) * 1000),
-                salePrice: Math.round((p.price || 0) * 1000),
+                purchasePrice: (p.price || 0),
+                salePrice: (p.price || 0),
                 branchId: branchId,
                 photoUrls: [],
                 active: true,
@@ -691,8 +691,8 @@ export async function bulkImportProducts(branchId: string, products: any[]) {
                 data: {
                     name: p.name,
                     description: p.description || "",
-                    purchasePrice: (p.price || 0) * 1000,
-                    salePrice: (p.price || 0) * 1000,
+                    purchasePrice: (p.price || 0),
+                    salePrice: (p.price || 0),
                     branchId: branchId,
                     photoUrls: photoUrls,
                     active: true

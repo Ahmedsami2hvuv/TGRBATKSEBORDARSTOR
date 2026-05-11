@@ -21,8 +21,7 @@ export function RegionsList({ initialRegions, icons }: { initialRegions: any[], 
   const startEdit = (r: any) => {
     setEditingId(r.id);
     setEditName(r.name);
-    let price = Number(r.deliveryPrice);
-    setEditPrice(String(price >= 1000 ? price / 1000 : price));
+    setEditPrice(String(r.deliveryPrice));
   };
 
   const saveEdit = async (id: string) => {
@@ -43,7 +42,7 @@ export function RegionsList({ initialRegions, icons }: { initialRegions: any[], 
   };
 
   const runFix = async () => {
-    if (!confirm("هل تريد حقاً تصحيح كافة الأسعار التالفة في قاعدة البيانات؟ سيتم تحويل القيم مثل 3 أو 0.003 إلى 3000.")) return;
+    if (!confirm("هل تريد حقاً تحويل كافة الأسعار في قاعدة البيانات للنظام الجديد؟ سيتم تحويل القيم مثل 3000 إلى 3 ليصبح النظام بالآلاف مباشرة.")) return;
     setLoading(true);
     try {
       const { fixAllDatabaseDeliveryPrices } = await import("./actions");
@@ -100,7 +99,7 @@ export function RegionsList({ initialRegions, icons }: { initialRegions: any[], 
                 <div>
                   <h3 className="font-bold text-gray-800">{region.name}</h3>
                   <p className="text-sm text-gray-500">
-                    سعر التوصيل: {Number(region.deliveryPrice) >= 1000 ? Number(region.deliveryPrice) / 1000 : region.deliveryPrice} د.ع
+                    سعر التوصيل: {region.deliveryPrice} ألف
                   </p>
                 </div>
                 <button onClick={() => startEdit(region)} className="text-indigo-600 hover:text-indigo-800 text-sm font-bold flex items-center gap-1">

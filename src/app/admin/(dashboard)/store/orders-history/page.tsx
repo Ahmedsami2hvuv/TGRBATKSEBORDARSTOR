@@ -64,7 +64,7 @@ function formatNumber(n: number): string {
 }
 
 function formatMoneyAlfLike(n: number): string {
-  return `${formatNumber(n / 1000)}`;
+  return `${formatNumber(n)}`;
 }
 
 function safeOrderNumber(data: unknown): string {

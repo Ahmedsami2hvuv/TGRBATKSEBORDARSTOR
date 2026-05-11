@@ -56,11 +56,11 @@ export function StaffProductListClient({
       setHasVariants(editing.hasVariants || false);
       setVariants(editing.variants?.map((v: any) => ({
         name: v.name,
-        purchasePrice: (Number(v.purchasePrice) / 1000).toString(),
-        salePrice: (Number(v.salePrice) / 1000).toString()
+        purchasePrice: (Number(v.purchasePrice)).toString(),
+        salePrice: (Number(v.salePrice)).toString()
       })) || []);
-      setPurchasePrice(Number(editing.purchasePrice) / 1000 || 0);
-      setSalePrice(Number(editing.salePrice) / 1000 || 0);
+      setPurchasePrice(Number(editing.purchasePrice) || 0);
+      setSalePrice(Number(editing.salePrice) || 0);
     } else {
       setHasVariants(false);
       setVariants([]);
@@ -175,12 +175,12 @@ export function StaffProductListClient({
 
               {/* 4. الأسعار */}
               <div className="space-y-2">
-                <label className="text-sm font-black text-emerald-600 mr-2">سعر الشراء (بالآلاف)</label>
+                <label className="text-sm font-black text-emerald-600 mr-2">سعر الشراء (د.ع)</label>
                 <input name="purchasePrice" type="number" step="0.001" value={purchasePrice} onChange={(e) => setPurchasePrice(Number(e.target.value))} className="w-full px-5 py-3 rounded-2xl bg-emerald-50 border-none font-black text-emerald-700" />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-violet-600 mr-2">سعر البيع (بالآلاف)</label>
+                <label className="text-sm font-black text-violet-600 mr-2">سعر البيع (د.ع)</label>
                 <input name="salePrice" type="number" step="0.001" value={salePrice} onChange={(e) => setSalePrice(Number(e.target.value))} className="w-full px-5 py-3 rounded-2xl bg-violet-50 border-none font-black text-violet-700" />
               </div>
 

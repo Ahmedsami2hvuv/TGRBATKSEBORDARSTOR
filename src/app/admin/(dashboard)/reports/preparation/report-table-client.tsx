@@ -77,7 +77,7 @@ export function ReportTableClient({ orders }: { orders: any[] }) {
                     <>
                       <td className="px-4 py-4 text-center tabular-nums font-semibold">{order.productCount}</td>
                       <td className="px-4 py-4 text-center font-mono font-black text-emerald-600">
-                        {formatDinarAsAlfWithUnit(order.totalProfitAlf * 1000)}
+                        {formatDinarAsAlfWithUnit(order.totalProfitAlf)}
                       </td>
                     </>
                   ) : viewMode === "meat" ? (
@@ -85,7 +85,7 @@ export function ReportTableClient({ orders }: { orders: any[] }) {
                       <td className="px-4 py-4 text-center font-mono font-bold text-red-800">{order.meatBuyAlf} </td>
                       <td className="px-4 py-4 text-center font-mono font-bold text-emerald-800">{order.meatSellAlf} </td>
                       <td className="px-4 py-4 text-center font-mono font-black text-red-950 bg-red-100/30">
-                        {formatDinarAsAlfWithUnit(order.meatProfitAlf * 1000)}
+                        {formatDinarAsAlfWithUnit(order.meatProfitAlf)}
                       </td>
                     </>
                   ) : (
@@ -93,7 +93,7 @@ export function ReportTableClient({ orders }: { orders: any[] }) {
                       <td className="px-4 py-4 text-center font-mono font-bold text-sky-800">{order.fishBuyAlf} </td>
                       <td className="px-4 py-4 text-center font-mono font-bold text-emerald-800">{order.fishSellAlf} </td>
                       <td className="px-4 py-4 text-center font-mono font-black text-sky-950 bg-sky-100/30">
-                        {formatDinarAsAlfWithUnit(order.fishProfitAlf * 1000)}
+                        {formatDinarAsAlfWithUnit(order.fishProfitAlf)}
                       </td>
                     </>
                   )}
@@ -153,7 +153,7 @@ export function ReportTableClient({ orders }: { orders: any[] }) {
               <div className="flex justify-between items-center w-full mb-2">
                 <span className="text-lg font-bold">صافي الربح المستخلص:</span>
                 <span className="text-3xl font-black tabular-nums">
-                  {formatDinarAsAlfWithUnit((viewMode === "meat" ? selectedOrder.meatProfitAlf : viewMode === "fish" ? selectedOrder.fishProfitAlf : selectedOrder.totalProfitAlf) * 1000)}
+                  {formatDinarAsAlfWithUnit(viewMode === "meat" ? selectedOrder.meatProfitAlf : viewMode === "fish" ? selectedOrder.fishProfitAlf : selectedOrder.totalProfitAlf)}
                 </span>
               </div>
               

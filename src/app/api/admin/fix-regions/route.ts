@@ -17,12 +17,10 @@ export async function GET() {
     let updatedCount = 0;
 
     for (const r of regions) {
-      const p = Number(r.deliveryPrice);
-      // إذا كان السعر أقل من 100، فهذا يعني أنه مكتوب بآلاف الدنانير (مثلاً 3 أو 5)
-      if (p > 0 && p < 100) {
+      if (p >= 1000) {
         await prisma.region.update({
           where: { id: r.id },
-          data: { deliveryPrice: p * 1000 }
+          data: { deliveryPrice: p / 1000 }
         });
         updatedCount++;
       }
@@ -30,17 +28,17 @@ export async function GET() {
 
     const orders = await prisma.order.findMany({
       where: {
-        deliveryPrice: { lt: 100, gt: 0 }
+        deliveryPrice: { gte: 1000 }
       }
     });
     
     let updatedOrdersCount = 0;
     for (const o of orders) {
       const p = Number(o.deliveryPrice);
-      if (p > 0 && p < 100) {
+      if (p >= 1000) {
         await prisma.order.update({
           where: { id: o.id },
-          data: { deliveryPrice: p * 1000 }
+          data: { deliveryPrice: p / 1000 }
         });
         updatedOrdersCount++;
       }
@@ -48,7 +46,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      message: `تم تحديث ${updatedCount} منطقة و ${updatedOrdersCount} طلب لتكون بالدنانير بدلاً من الآلاف.`,
+      message: `تم تحديث ${updatedCount} منطقة و ${updatedOrdersCount} طلب لتكون بالآلاف بدلاً من الدنانير (Direct mode).`,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -7,10 +7,10 @@ import { normalizeRegionNameForMatch } from "@/lib/region-name-normalize";
 
 type RegionHit = { id: string; name: string };
 
-const fmtAlf = (dinarFraction: number) =>
-  (dinarFraction / 1000).toLocaleString(undefined, {
+const fmtAlf = (val: number) =>
+  val.toLocaleString(undefined, {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 3,
+    maximumFractionDigits: 0,
   });
 
 export default function CheckoutPage() {

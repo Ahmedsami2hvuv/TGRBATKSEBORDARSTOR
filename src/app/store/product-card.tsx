@@ -116,7 +116,7 @@ export function ProductCard({
               {product.name}
             </h2>
             <div className="text-xs md:text-lg font-black text-violet-600 dark:text-violet-400 shrink-0">
-              {(currentPrice / 1000).toLocaleString()} 
+              {currentPrice.toLocaleString()}
             </div>
           </div>
 
@@ -197,7 +197,7 @@ export function ProductCard({
                   <div className="text-right flex-1">
                     <h2 className="text-2xl md:text-4xl font-black text-slate-900 dark:text-white">{product.name}</h2>
                     <p className="text-violet-600 dark:text-violet-400 font-black text-xl md:text-2xl mt-2">
-                      {(currentPrice / 1000).toLocaleString()} 
+                      {currentPrice.toLocaleString()}
                     </p>
                   </div>
                   <button
@@ -230,7 +230,7 @@ export function ProductCard({
                           }`}
                         >
                           {v.name}
-                          <span className="block text-[10px] opacity-80">{(Number(v.salePrice) / 1000).toLocaleString()} </span>
+                          <span className="block text-[10px] opacity-80">{Number(v.salePrice).toLocaleString()} </span>
                         </button>
                       ))}
                     </div>

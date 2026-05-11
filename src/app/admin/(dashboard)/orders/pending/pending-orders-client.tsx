@@ -225,7 +225,7 @@ export function AdminPricingPanel({
 
   // حساب سعر التوصيل  من السعر الخام بالدينار، أو من initialData إذا توفر
   const deliveryAlfVal = useMemo(() => {
-    if (rawDeliveryPriceDinar != null) return rawDeliveryPriceDinar / 1000;
+    if (rawDeliveryPriceDinar != null) return rawDeliveryPriceDinar;
     return Number(initialData?.deliveryAlf || 0);
   }, [rawDeliveryPriceDinar, initialData?.deliveryAlf]);
 

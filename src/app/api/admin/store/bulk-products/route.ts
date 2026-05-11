@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
             data: {
                 name: p.name,
                 description: p.description || "",
-                purchasePrice: Math.round((parseFloat(p.purchasePrice) || 0) * 1000),
-                salePrice: Math.round((parseFloat(p.salePrice) || 0) * 1000),
+                purchasePrice: (parseFloat(p.purchasePrice) || 0),
+                salePrice: (parseFloat(p.salePrice) || 0),
                 branchId: branchId,
                 photoUrls: [],
                 active: true,

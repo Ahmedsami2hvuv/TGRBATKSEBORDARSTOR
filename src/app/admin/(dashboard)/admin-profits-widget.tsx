@@ -4,7 +4,7 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { payCourierTipAction } from "./couriers/tip-actions";
 import { AdminProfitsClientContent } from "./admin-profits-client-content";
 
-const ALF_PER_DINAR = 1000;
+const ALF_PER_DINAR = 1;
 
 function numOrZero(v: unknown): number {
   const n = Number(v);

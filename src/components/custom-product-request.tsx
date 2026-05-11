@@ -111,7 +111,7 @@ export function CustomProductRequest() {
                     className="w-full text-right px-4 py-2 hover:bg-violet-50 text-sm font-bold border-t border-slate-50 transition-colors flex justify-between items-center"
                   >
                     <span>{s.name}</span>
-                    <span className="text-[10px] text-violet-600">{(Number(s.salePrice) / 1000).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 3 })} </span>
+                    <span className="text-[10px] text-violet-600">{Number(s.salePrice).toLocaleString()} </span>
                   </button>
                 ))}
               </div>
