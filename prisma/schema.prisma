@@ -145,6 +145,7 @@ model CompanyPreparerShoppingDraft {
   titleLine        String                      @default("")
   rawListText      String                      @default("")
   customerRegionId String?
+  vehiclePreference String?
   customerPhone    String                      @default("")
   customerName     String                      @default("")
   customerLandmark String                      @default("")
@@ -246,6 +247,13 @@ model Courier {
   blocked                     Boolean                  @default(false)
   chatDisabled                Boolean                  @default(false)
   aiDisabled                  Boolean                  @default(false)
+  // إعدادات ظهور الأزرار للمندوب
+  showDoorBtn                 Boolean                  @default(true)
+  showLocationBtn             Boolean                  @default(true)
+  showCallBtn                 Boolean                  @default(true)
+  showWhatsAppBtn             Boolean                  @default(true)
+  showNotesBtn                Boolean                  @default(true)
+  showVoiceNotesBtn           Boolean                  @default(true)
   mandoubTotalsResetAt        DateTime?
   mandoubWalletCarryOverDinar Decimal                  @default(0) @db.Decimal(14, 4)
   telegramUserId              String?                  @unique
@@ -396,6 +404,7 @@ model Order {
   archivedAt                            DateTime?
   submittedByCompanyPreparerId          String?
   preparerShoppingJson                  Json?
+  vehiclePreference                     String?
   courier                               Courier?                 @relation(fields: [assignedCourierId], references: [id])
   courierEarningForCourier              Courier?                 @relation("OrderCourierEarning", fields: [courierEarningForCourierId], references: [id])
   customer                              Customer?                @relation(fields: [customerId], references: [id])

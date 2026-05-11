@@ -247,6 +247,10 @@ export async function updatePreparerShoppingDraft(
 
     const placesRaw = String(formData.get("placesCount") ?? "");
     const placesCount = placesRaw === "" ? (draft.placesCount ?? null) : Number(placesRaw);
+
+    const deliveryPriceRaw = formData.get("deliveryPrice");
+    const customDeliveryAlf = deliveryPriceRaw !== null ? (String(deliveryPriceRaw) === "" ? null : Number(deliveryPriceRaw)) : (dbData.customDeliveryAlf ?? null);
+
     const newStatus = mergedProducts.every((p: any) => p.buyAlf != null && p.buyAlf !== "") ? "priced" : "draft";
 
     const titleLine = String(formData.get("titleLine") ?? draft.titleLine);
@@ -269,6 +273,7 @@ export async function updatePreparerShoppingDraft(
                 data: {
                     ...(rd.data as any),
                     products: mergedProducts,
+                    customDeliveryAlf,
                     lastActivityAt: new Date().toISOString()
                 },
                 status: newStatus as any
@@ -321,7 +326,14 @@ export async function submitPreparerShoppingDraft(
     if (!shop || !custRegion) return { error: "خطأ في بيانات المحل أو المنطقة." };
 
     const placesCount = draft.placesCount || 1;
-    const delivery = Decimal.max(shop.region.deliveryPrice, custRegion.deliveryPrice);
+    const draftData = draft.data as any;
+    const customDeliveryAlf = draftData?.customDeliveryAlf;
+
+    const defaultDelivery = Decimal.max(shop.region.deliveryPrice, custRegion.deliveryPrice);
+    const delivery = (customDeliveryAlf != null && Number.isFinite(Number(customDeliveryAlf)))
+        ? new Decimal(customDeliveryAlf).mul(ALF_PER_DINAR)
+        : defaultDelivery;
+
     const sumSellAlf = products.reduce((acc, p) => acc + Number(p.sellAlf), 0);
     const extraAlf = calculateExtraAlfFromPlacesCount(placesCount);
     const subtotal = new Decimal(sumSellAlf + extraAlf).mul(ALF_PER_DINAR);
@@ -474,6 +486,8 @@ export async function createPreparerShoppingDraftFromAnalysis(
         if (productLines.length === 0) return { error: "لا توجد منتجات." };
 
         const customerRegionId = String(formData.get("customerRegionId") ?? "").trim() || null;
+        const deliveryAlfRaw = formData.get("deliveryPrice");
+        const customDeliveryAlf = deliveryAlfRaw ? Number(deliveryAlfRaw) : null;
 
         const draft = await prisma.companyPreparerShoppingDraft.create({
             data: {
@@ -486,7 +500,8 @@ export async function createPreparerShoppingDraftFromAnalysis(
                 customerRegionId,
                 rawListText: String(formData.get("rawListText") ?? ""),
                 data: {
-                    products: productLines.map(line => ({ line, buyAlf: null, sellAlf: null, pricedBy: null, pricedById: null }))
+                    products: productLines.map(line => ({ line, buyAlf: null, sellAlf: null, pricedBy: null, pricedById: null })),
+                    customDeliveryAlf: (customDeliveryAlf !== null && !isNaN(customDeliveryAlf)) ? customDeliveryAlf : null
                 }
             }
         });

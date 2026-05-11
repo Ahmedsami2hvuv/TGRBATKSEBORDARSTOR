@@ -108,6 +108,10 @@ export function PreparerShoppingDraftEditClient({
   const customerDisplayName = (customerName || "").trim() || initialDraft.customerRegion?.name || (!isLikelyPhoneText(fallbackTitle) ? fallbackTitle : "") || "—";
   const[showCustomerInfo, setShowCustomerInfo] = useState(false);
   const [placesCount, setPlacesCount] = useState<number | "">(initialDraft.placesCount ?? "");
+  const [customDeliveryAlf, setCustomDeliveryAlf] = useState<string>(() => {
+    const d = initialDraft.data as any;
+    return (d && d.customDeliveryAlf != null) ? String(d.customDeliveryAlf) : "";
+  });
   const [products, setProducts] = useState<ProductRow[]>(() => parseProducts(initialDraft.data));
   const [selectedPriceIndex, setSelectedPriceIndex] = useState<number | null>(null);
   const [tempBasePrice, setTempBasePrice] = useState<number | null>(null);
@@ -280,6 +284,7 @@ export function PreparerShoppingDraftEditClient({
         fd.append("customerLandmark", customerLandmark);
         fd.append("orderTime", orderTime);
         fd.append("placesCount", placesCount === "" ? "" : String(placesCount));
+        fd.append("deliveryPrice", customDeliveryAlf);
         fd.append("productsJson", jsonToSave);
 
         updatePreparerShoppingDraft(initial, fd).then(res => {
@@ -348,6 +353,10 @@ export function PreparerShoppingDraftEditClient({
         if (latestJson !== lastSavedJsonRef.current) {
             setProducts(parseProducts(latest.data));
             setPlacesCount(latest.placesCount ?? "");
+            const ld = latest.data as any;
+            if (ld && ld.customDeliveryAlf != null) {
+                setCustomDeliveryAlf(String(ld.customDeliveryAlf));
+            }
             lastSavedJsonRef.current = latestJson;
         }
       }
@@ -375,7 +384,7 @@ export function PreparerShoppingDraftEditClient({
         }
     }, 2000);
     return () => clearTimeout(t);
-  },[titleLine, customerPhone, customerName, customerLandmark, orderTime, placesCount, performSave, productsJson]);
+  },[titleLine, customerPhone, customerName, customerLandmark, orderTime, placesCount, customDeliveryAlf, performSave, productsJson]);
 
   function applyPricingPanel() {
     setPricingErr(null);
@@ -515,8 +524,27 @@ export function PreparerShoppingDraftEditClient({
         </button>
         {showCustomerInfo && (
           <div className="mt-3 space-y-3">
-            <input value={titleLine} onChange={(e) => { setTitleLine(e.target.value); isDirtyRef.current = true; }} className={inputClass} placeholder="العنوان" />
-            <input value={orderTime} onChange={(e) => { setOrderTime(e.target.value); isDirtyRef.current = true; }} className={inputClass} placeholder="الوقت" />
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 mr-2">العنوان والمنطقة</span>
+              <input value={titleLine} onChange={(e) => { setTitleLine(e.target.value); isDirtyRef.current = true; }} className={inputClass} placeholder="العنوان" />
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 mr-2">وقت التجهيز</span>
+              <input value={orderTime} onChange={(e) => { setOrderTime(e.target.value); isDirtyRef.current = true; }} className={inputClass} placeholder="الوقت" />
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 mr-2">سعر التوصيل المخصص (اختياري)</span>
+              <input
+                value={customDeliveryAlf}
+                onChange={(e) => {
+                    setCustomDeliveryAlf(e.target.value);
+                    isDirtyRef.current = true;
+                }}
+                className={`${inputClass} font-mono`}
+                placeholder="اتركه فارغاً لاستخدام سعر المنطقة..."
+                inputMode="decimal"
+              />
+            </div>
           </div>
         )}
 

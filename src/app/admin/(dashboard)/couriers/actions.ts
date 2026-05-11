@@ -17,6 +17,13 @@ export async function createCourier(state: CourierFormState, formData: FormData)
   const vehicleTypeRaw = formData.get("vehicleType") as string;
   const vehicleType = vehicleTypeRaw === "bike" ? "bike" : "car";
 
+  const showDoorBtn = formData.get("showDoorBtn") === "on";
+  const showLocationBtn = formData.get("showLocationBtn") === "on";
+  const showCallBtn = formData.get("showCallBtn") === "on";
+  const showWhatsAppBtn = formData.get("showWhatsAppBtn") === "on";
+  const showNotesBtn = formData.get("showNotesBtn") === "on";
+  const showVoiceNotesBtn = formData.get("showVoiceNotesBtn") === "on";
+
   try {
     // التحقق من وجود رقم الهاتف مسبقاً
     const existingPhone = await prisma.courier.findFirst({ where: { phone } });
@@ -29,7 +36,18 @@ export async function createCourier(state: CourierFormState, formData: FormData)
     }
 
     await prisma.courier.create({
-      data: { name, phone, telegramUserId, vehicleType }
+      data: {
+        name,
+        phone,
+        telegramUserId,
+        vehicleType,
+        showDoorBtn,
+        showLocationBtn,
+        showCallBtn,
+        showWhatsAppBtn,
+        showNotesBtn,
+        showVoiceNotesBtn,
+      },
     });
 
     revalidatePath("/admin/couriers");
@@ -52,10 +70,28 @@ export async function updateCourier(id: string, state: CourierFormState, formDat
   const vehicleTypeRaw = formData.get("vehicleType") as string;
   const vehicleType = vehicleTypeRaw === "bike" ? "bike" : "car";
 
+  const showDoorBtn = formData.get("showDoorBtn") === "on";
+  const showLocationBtn = formData.get("showLocationBtn") === "on";
+  const showCallBtn = formData.get("showCallBtn") === "on";
+  const showWhatsAppBtn = formData.get("showWhatsAppBtn") === "on";
+  const showNotesBtn = formData.get("showNotesBtn") === "on";
+  const showVoiceNotesBtn = formData.get("showVoiceNotesBtn") === "on";
+
   try {
     await prisma.courier.update({
       where: { id },
-      data: { name, phone, telegramUserId, vehicleType }
+      data: {
+        name,
+        phone,
+        telegramUserId,
+        vehicleType,
+        showDoorBtn,
+        showLocationBtn,
+        showCallBtn,
+        showWhatsAppBtn,
+        showNotesBtn,
+        showVoiceNotesBtn,
+      },
     });
     revalidatePath("/admin/couriers");
     return { success: true };

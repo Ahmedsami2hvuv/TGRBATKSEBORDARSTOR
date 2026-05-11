@@ -21,6 +21,12 @@ export function CourierEditForm({
   defaultVehicleType,
   defaultHiddenFromReports,
   defaultBlocked,
+  showDoorBtn,
+  showLocationBtn,
+  showCallBtn,
+  showWhatsAppBtn,
+  showNotesBtn,
+  showVoiceNotesBtn,
   lastMandoubTotalsResetLabel,
   mandoubWalletCarryOverLabel,
 }: {
@@ -31,6 +37,12 @@ export function CourierEditForm({
   defaultVehicleType: "car" | "bike";
   defaultHiddenFromReports: boolean;
   defaultBlocked: boolean;
+  showDoorBtn: boolean;
+  showLocationBtn: boolean;
+  showCallBtn: boolean;
+  showWhatsAppBtn: boolean;
+  showNotesBtn: boolean;
+  showVoiceNotesBtn: boolean;
   lastMandoubTotalsResetLabel: string | null;
   /** متبقي المحفظة المحمول (يُعرض للمندوب بعد التصفير) */
   mandoubWalletCarryOverLabel: string;
@@ -113,6 +125,36 @@ export function CourierEditForm({
           />
           <span className={ad.label}>محظور — لا يظهر في الإسناد والتقرير</span>
         </label>
+
+        <div className="sm:col-span-2 pt-4 border-t border-slate-100">
+          <p className="text-sm font-bold text-slate-800 mb-3">إعدادات أزرار لوحة المندوب (إظهار/إخفاء):</p>
+          <div className="grid grid-cols-2 gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="showDoorBtn" defaultChecked={showDoorBtn} className="h-4 w-4 rounded border-sky-300" />
+              <span className={ad.label}>زر صورة الباب</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="showLocationBtn" defaultChecked={showLocationBtn} className="h-4 w-4 rounded border-sky-300" />
+              <span className={ad.label}>زر اللوكيشن</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="showCallBtn" defaultChecked={showCallBtn} className="h-4 w-4 rounded border-sky-300" />
+              <span className={ad.label}>أزرار الاتصال</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="showWhatsAppBtn" defaultChecked={showWhatsAppBtn} className="h-4 w-4 rounded border-sky-300" />
+              <span className={ad.label}>أزرار الواتساب</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="showNotesBtn" defaultChecked={showNotesBtn} className="h-4 w-4 rounded border-sky-300" />
+              <span className={ad.label}>الملاحظات النصية</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="showVoiceNotesBtn" defaultChecked={showVoiceNotesBtn} className="h-4 w-4 rounded border-sky-300" />
+              <span className={ad.label}>الملاحظات الصوتية</span>
+            </label>
+          </div>
+        </div>
       </div>
       {state.error ? (
         <p className={ad.error} role="alert">

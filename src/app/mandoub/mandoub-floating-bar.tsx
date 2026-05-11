@@ -36,6 +36,8 @@ type Props = {
   hideWhenPreparerEditOpen?: boolean;
   /** واجهة المجهز: إخفاء جميع أزرار الاتصال */
   hideAllButtons?: boolean;
+  showCallBtn?: boolean;
+  showWhatsAppBtn?: boolean;
 };
 
 /** واتساب + اتصال (قائمة عميل/زبون/زبون 2) */
@@ -100,6 +102,8 @@ export async function MandoubFloatingBar(props: Props) {
       customWaButtons={customWaButtons}
       hideWhenPreparerEditOpen={props.hideWhenPreparerEditOpen}
       hideAllButtons={props.hideAllButtons}
+      showCallBtn={props.showCallBtn}
+      showWhatsAppBtn={props.showWhatsAppBtn}
     />
   );
 }

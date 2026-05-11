@@ -83,7 +83,21 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
 
   const courier = await prisma.courier.findUnique({
     where: { id: v.courierId },
-    select: { id: true, name: true, phone: true, blocked: true, mandoubTotalsResetAt: true, vehicleType: true, availableForAssignment: true },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      blocked: true,
+      mandoubTotalsResetAt: true,
+      vehicleType: true,
+      availableForAssignment: true,
+      showDoorBtn: true,
+      showLocationBtn: true,
+      showCallBtn: true,
+      showWhatsAppBtn: true,
+      showNotesBtn: true,
+      showVoiceNotesBtn: true,
+    },
   });
   if (!courier || courier.blocked) {
     return (
@@ -295,6 +309,14 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
             smartHintLine={smartHintLine || "—"}
             uiSettings={uiSettings}
             icons={icons}
+            courierSettings={{
+              showDoorBtn: courier.showDoorBtn,
+              showLocationBtn: courier.showLocationBtn,
+              showCallBtn: courier.showCallBtn,
+              showWhatsAppBtn: courier.showWhatsAppBtn,
+              showNotesBtn: courier.showNotesBtn,
+              showVoiceNotesBtn: courier.showVoiceNotesBtn,
+            }}
           />
         </div>
       </div>

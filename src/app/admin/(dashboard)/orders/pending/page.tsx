@@ -159,25 +159,16 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       wardMismatchType: isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type,
       saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
       preparerShoppingJson: o.preparerShoppingJson,
+      vehiclePreference: o.vehiclePreference,
       assignedPreparerIds,
     };
   };
 
-  const newRows = newOrders.map(mapOrderToRow);
-  const preparedRows = preparedOrders.map(mapOrderToRow);
-
-  const groupedDraftRows: PendingOrderRow[] = [];
-  const processedDraftIds = new Set<string>();
-
-  for (const d of allActiveDrafts) {
-    if (processedDraftIds.has(d.id)) continue;
-
+  const mapDraftToRow = (d: any): PendingOrderRow => {
     const draftData = (d.data as any) || {};
     const groupId = typeof draftData.groupId === "string" ? draftData.groupId.trim() : "";
     const fallbackGroupKey = `${d.customerPhone?.trim() ?? ""}::${d.titleLine?.trim() ?? ""}`;
     const related = draftsGroupedByKey.get(groupId || fallbackGroupKey) ?? [d];
-
-    related.forEach(r => processedDraftIds.add(r.id));
 
     const assignedPreparerIds = Array.from(new Set(related.map(r => r.preparerId).filter(Boolean))) as string[];
     const preparerNames = Array.from(new Set(related.map(r => r.preparer?.name).filter(Boolean))).join(" + ") || "بانتظار مجهز";
@@ -201,7 +192,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         });
     });
 
-    groupedDraftRows.push({
+    return {
       id: d.id,
       orderNumber: Number((draftData as any)?.reservedOrderNumber ?? 0) || 0,
       routeMode: "single",
@@ -230,8 +221,27 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
           relatedIds: related.map(r => r.id),
           groupId: groupId
       },
+      vehiclePreference: d.vehiclePreference,
       assignedPreparerIds,
-    });
+    };
+  };
+
+  const newRows = newOrders.map(mapOrderToRow);
+  const preparedRows = preparedOrders.map(mapOrderToRow);
+
+  const groupedDraftRows: PendingOrderRow[] = [];
+  const processedDraftIds = new Set<string>();
+
+  for (const d of allActiveDrafts) {
+    if (processedDraftIds.has(d.id)) continue;
+
+    const draftData = (d.data as any) || {};
+    const groupId = typeof draftData.groupId === "string" ? draftData.groupId.trim() : "";
+    const fallbackGroupKey = `${d.customerPhone?.trim() ?? ""}::${d.titleLine?.trim() ?? ""}`;
+    const related = draftsGroupedByKey.get(groupId || fallbackGroupKey) ?? [d];
+
+    related.forEach(r => processedDraftIds.add(r.id));
+    groupedDraftRows.push(mapDraftToRow(d));
   }
 
   return (

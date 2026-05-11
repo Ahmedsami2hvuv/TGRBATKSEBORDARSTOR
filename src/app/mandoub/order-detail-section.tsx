@@ -78,6 +78,7 @@ export function OrderDetailSection({
   smartHintLine,
   uiSettings,
   icons,
+  courierSettings,
 }: {
   order: MandoubOrderDetailPayload;
   closeHref: string;
@@ -89,6 +90,14 @@ export function OrderDetailSection({
   smartHintLine?: string | null;
   uiSettings?: UISectionConfig | null;
   icons?: GlobalIconsConfig | null;
+  courierSettings?: {
+    showDoorBtn: boolean;
+    showLocationBtn: boolean;
+    showCallBtn: boolean;
+    showWhatsAppBtn: boolean;
+    showNotesBtn: boolean;
+    showVoiceNotesBtn: boolean;
+  };
 }) {
   const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
   const isAdminPortal = order.submissionSource === "admin_portal";
@@ -175,7 +184,9 @@ export function OrderDetailSection({
             </div>
             <div className="max-w-[12rem] self-start">
               {shopImageUrl ? <div className={squarePhotoFrame}><img src={imgSrc(shopImageUrl)!} alt="" className={squarePhotoCover} /></div> : <p className="text-xs text-slate-400">لا توجد صورة</p>}
-              <div className="mt-2"><MandoubDoorPhotoForm orderId={order.id} nextUrl={nextUrl} {...auth} /></div>
+              {courierSettings?.showDoorBtn !== false && (
+                <div className="mt-2"><MandoubDoorPhotoForm orderId={order.id} nextUrl={nextUrl} {...auth} /></div>
+              )}
             </div>
           </div>
         );
@@ -203,9 +214,16 @@ export function OrderDetailSection({
                     الاستدلال الذكي: {smartHintLine?.trim() || "—"}
                   </p>
                 ) : null}
-                <div className="mt-2">{mergedCustomerLocationUrl ? <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>{isDoubleRoute ? "فتح لوكيشن المرسل" : "فتح لوكيشن الزبون"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} /></a> : <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} />}</div>
+                {courierSettings?.showLocationBtn !== false && (
+                  <div className="mt-2">{mergedCustomerLocationUrl ? <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>{isDoubleRoute ? "فتح لوكيشن المرسل" : "فتح لوكيشن الزبون"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} /></a> : <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} />}</div>
+                )}
               </div>
-              <div className="max-w-[12rem] self-start">{customerDoorDisplay ? <div className={squarePhotoFrame}><img src={imgSrc(customerDoorDisplay)!} alt="" className={squarePhotoCover} /></div> : <p className="text-xs text-slate-400">لا توجد صورة باب</p>}<div className="mt-2"><MandoubQuickDoorCapture orderId={order.id} nextUrl={nextUrl} auth={auth} /></div></div>
+              <div className="max-w-[12rem] self-start">
+                {customerDoorDisplay ? <div className={squarePhotoFrame}><img src={imgSrc(customerDoorDisplay)!} alt="" className={squarePhotoCover} /></div> : <p className="text-xs text-slate-400">لا توجد صورة باب</p>}
+                {courierSettings?.showDoorBtn !== false && (
+                  <div className="mt-2"><MandoubQuickDoorCapture orderId={order.id} nextUrl={nextUrl} auth={auth} /></div>
+                )}
+              </div>
             </div>
 
             {order.routeMode === "double" && (
@@ -222,17 +240,19 @@ export function OrderDetailSection({
                   {secondLandmarkMerged ? (
                     <p className="mt-1 text-sm font-medium text-slate-800">أقرب نقطة: {secondLandmarkMerged}</p>
                   ) : null}
-                  <div className="mt-2">
-                    {secondLocMerged ? (
-                      <a href={secondLocMerged} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>
-                        فتح لوكيشن المستلم <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
-                      </a>
-                    ) : (
-                      <div className="flex flex-col gap-2">
-                        <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" />
-                      </div>
-                    )}
-                  </div>
+                  {courierSettings?.showLocationBtn !== false && (
+                    <div className="mt-2">
+                      {secondLocMerged ? (
+                        <a href={secondLocMerged} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>
+                          فتح لوكيشن المستلم <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                        </a>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="max-w-[12rem] self-start">
                   <p className="text-xs font-bold text-slate-600 mb-2">صورة باب المستلم</p>
@@ -246,9 +266,11 @@ export function OrderDetailSection({
                   ) : (
                     <p className="text-xs text-slate-400 mb-2">لا توجد صورة باب للمستلم</p>
                   )}
-                  <div className="mt-2">
-                    <MandoubQuickDoorSecondCapture orderId={order.id} nextUrl={nextUrl} auth={auth} />
-                  </div>
+                  {courierSettings?.showDoorBtn !== false && (
+                    <div className="mt-2">
+                      <MandoubQuickDoorSecondCapture orderId={order.id} nextUrl={nextUrl} auth={auth} />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -298,14 +320,18 @@ export function OrderDetailSection({
       case "notes_summary": {
         const hasVoiceNote = Boolean(order.voiceNoteUrl?.trim() || order.adminVoiceNoteUrl?.trim());
         const hasSummary = Boolean(order.summary?.trim());
-        if (!hasVoiceNote && !hasSummary) return null;
+        const showNotes = courierSettings?.showNotesBtn !== false;
+        const showVoice = courierSettings?.showVoiceNotesBtn !== false;
+
+        if ((!hasVoiceNote || !showVoice) && (!hasSummary || !showNotes)) return null;
+
         return (
           <div key="notes" className="mt-6 border-t border-sky-100 pt-5" style={blockStyle}>
             <p className="flex items-center gap-1.5 text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">
               <DynamicIcon icon={icons?.ui_note} fallback="📝" width={14} height={14} /> ملاحظات وقائمة المواد
             </p>
             <div className="flex flex-col gap-3">
-              {hasVoiceNote && (
+              {hasVoiceNote && showVoice && (
                 <div className="flex flex-col gap-2 rounded-xl border-2 border-amber-100 bg-amber-50/20 p-3">
                   {order.voiceNoteUrl?.trim() && (
                     <div className="flex flex-col gap-1">
@@ -325,7 +351,7 @@ export function OrderDetailSection({
                   )}
                 </div>
               )}
-              {hasSummary && (
+              {hasSummary && showNotes && (
                 <div className="relative rounded-xl border-2 border-amber-200 bg-amber-50/30 p-4">
                   <div className="absolute end-3 top-3"><NotesCopyButton text={order.summary ?? ""} /></div>
                   <div className="whitespace-pre-wrap text-sm font-bold text-slate-800 leading-relaxed">{order.summary}</div>
@@ -406,6 +432,8 @@ export function OrderDetailSection({
 
         <MandoubFloatingBar
           orderId={order.id} shopPhone={shopContactPhone} customerPhone={order.customerPhone} customerAlternatePhone={order.secondCustomerPhone?.trim() || mergedAlternate || ""} preparerPhone={order.submittedByCompanyPreparer?.phone ?? ""} orderStatus={order.status} orderNumber={order.orderNumber} shopName={order.shop.name} city={order.customerRegion?.name ?? ""} totalPrice={order.totalAmount != null ? formatDinarAsAlf(order.totalAmount) : ""} deliveryName={order.courier?.name ?? ""} customerLocationUrl={mergedCustomerLocationUrl} customerLandmark={mergedLandmark} hasCustomerLocation={!missingCustomerLocation} hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
+          showCallBtn={courierSettings?.showCallBtn}
+          showWhatsAppBtn={courierSettings?.showWhatsAppBtn}
         />
 
         <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto] sm:items-center">

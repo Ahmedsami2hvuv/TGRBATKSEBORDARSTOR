@@ -57,6 +57,7 @@ export type PendingOrderRow = {
   wardMismatchType?: "excess" | "deficit" | null;
   saderMismatchType?: "excess" | "deficit" | null;
   preparerShoppingJson?: any;
+  vehiclePreference?: string | null;
   assignedPreparerIds: string[];
 };
 
@@ -975,6 +976,8 @@ export function PendingOrdersClient({
                       </span>
                       <p className="font-black text-slate-900 leading-snug line-clamp-1">
                         {o.orderType || o.shopName || "تجهيز"}
+                        {o.vehiclePreference === "bike" && <span className="mr-2 text-indigo-600" title="طلب دراجة">🏍️</span>}
+                        {o.vehiclePreference === "car" && <span className="mr-2 text-indigo-600" title="طلب سيارة">🚗</span>}
                       </p>
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-slate-600">

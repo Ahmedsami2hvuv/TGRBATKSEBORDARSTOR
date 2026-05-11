@@ -361,6 +361,8 @@ export type OrderFabDockProps = {
   hideWhenPreparerEditOpen?: boolean;
   /** إخفاء جميع أزرار الاتصال/واتساب تماماً */
   hideAllButtons?: boolean;
+  showCallBtn?: boolean;
+  showWhatsAppBtn?: boolean;
 };
 
 export function OrderFabDock(props: OrderFabDockProps) {
@@ -377,6 +379,8 @@ export function OrderFabDock(props: OrderFabDockProps) {
     customWaButtons,
     hideWhenPreparerEditOpen = false,
     hideAllButtons = false,
+    showCallBtn = true,
+    showWhatsAppBtn = true,
   } = props;
 
   const [preparerEditOpen, setPreparerEditOpen] = useState(false);
@@ -411,8 +415,14 @@ export function OrderFabDock(props: OrderFabDockProps) {
     [customWaButtons],
   );
   const fabIds = useMemo(
-    (): string[] => ["wa", "tel", ...customFabIds],
-    [customFabIds],
+    (): string[] => {
+      const ids: string[] = [];
+      if (showWhatsAppBtn) ids.push("wa");
+      if (showCallBtn) ids.push("tel");
+      ids.push(...customFabIds);
+      return ids;
+    },
+    [customFabIds, showWhatsAppBtn, showCallBtn],
   );
 
   const [contactMenu, setContactMenu] = useState<null | "wa" | "tel">(null);
@@ -969,12 +979,12 @@ export function OrderFabDock(props: OrderFabDockProps) {
         </div>
       ) : null}
 
-      {isExpanded && positions.wa && (
+      {isExpanded && (positions.wa || positions.tel) && (
         <div
           className="pointer-events-auto fixed z-[1000] flex flex-col items-end gap-3 transition-all animate-in slide-in-from-bottom-4 duration-300"
           style={{
-            left: positions.wa.left - 4,
-            bottom: window.innerHeight - positions.wa.top + 12,
+            left: (positions.wa?.left ?? positions.tel?.left ?? 0) - 4,
+            bottom: window.innerHeight - (positions.wa?.top ?? positions.tel?.top ?? 0) + 12,
           }}
         >
           {editUrl && (
@@ -993,37 +1003,41 @@ export function OrderFabDock(props: OrderFabDockProps) {
           )}
 
           <div className="flex flex-col gap-2">
-            <button
-              onClick={() => {
-                setContactMenu("wa");
-                overlayDismissGuardUntilRef.current = Date.now() + 420;
-              }}
-              className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-emerald-600 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
-            >
-              <DynamicIcon
-                iconKey="ui_whatsapp"
-                config={icons}
-                className="h-5 w-5"
-                fallback={<IconWa className="h-5 w-5" />}
-              />
-              <span>مراسلة واتساب</span>
-            </button>
+            {showWhatsAppBtn && (
+              <button
+                onClick={() => {
+                  setContactMenu("wa");
+                  overlayDismissGuardUntilRef.current = Date.now() + 420;
+                }}
+                className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-emerald-600 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
+              >
+                <DynamicIcon
+                  iconKey="ui_whatsapp"
+                  config={icons}
+                  className="h-5 w-5"
+                  fallback={<IconWa className="h-5 w-5" />}
+                />
+                <span>مراسلة واتساب</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => {
-                setContactMenu("tel");
-                overlayDismissGuardUntilRef.current = Date.now() + 420;
-              }}
-              className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-sky-500 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
-            >
-              <DynamicIcon
-                iconKey="ui_call"
-                config={icons}
-                className="h-5 w-5"
-                fallback={<IconPhone className="h-5 w-5" />}
-              />
-              <span>اتصال هاتفي</span>
-            </button>
+            {showCallBtn && (
+              <button
+                onClick={() => {
+                  setContactMenu("tel");
+                  overlayDismissGuardUntilRef.current = Date.now() + 420;
+                }}
+                className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-sky-500 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
+              >
+                <DynamicIcon
+                  iconKey="ui_call"
+                  config={icons}
+                  className="h-5 w-5"
+                  fallback={<IconPhone className="h-5 w-5" />}
+                />
+                <span>اتصال هاتفي</span>
+              </button>
+            )}
 
             {(customWaButtons ?? []).map((btn) => (
               <button
@@ -1047,10 +1061,10 @@ export function OrderFabDock(props: OrderFabDockProps) {
         </div>
       )}
 
-      {positions.wa ? (
+      {positions.wa || positions.tel ? (
         <DraggableFab
-          fabId="wa"
-          position={positions.wa}
+          fabId={showWhatsAppBtn ? "wa" : "tel"}
+          position={positions.wa ?? positions.tel}
           fabSize={fabSize}
           onPositionMove={movePosition}
           onDragEndPersist={persistPosition}

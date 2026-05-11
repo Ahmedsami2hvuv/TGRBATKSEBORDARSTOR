@@ -14,6 +14,8 @@ export type OrderFormState = {
 export async function submitStoreOrder(_prev: any, formData: FormData): Promise<OrderFormState> {
   const phone = formData.get("phone") as string;
   const regionId = formData.get("regionId") as string;
+  const deliveryPriceOverriden = Number(formData.get("deliveryPrice") || 0);
+  const vehiclePreference = formData.get("vehiclePreference") as string || null;
   const landmark = formData.get("landmark") as string || "";
   const cartJson = formData.get("cart") as string;
 
@@ -40,7 +42,10 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
   const region = await prisma.region.findUnique({ where: { id: regionId } });
   if (!region) return { error: "المنطقة غير صالحة" };
 
-  const totalAmount = subtotal + Number(region.deliveryPrice);
+  const basePrice = Number(region.deliveryPrice);
+  const finalDeliveryPrice = deliveryPriceOverriden > basePrice ? deliveryPriceOverriden : basePrice;
+
+  const totalAmount = subtotal + finalDeliveryPrice;
 
   try {
     // الحصول على محل "خصيب ستور" أو إنشاؤه إذا لم يكن موجوداً
@@ -89,6 +94,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
           titleLine: "طلب من المتجر الالكتروني",
           rawListText: summaryParts.join("\n"),
           status: "draft",
+          vehiclePreference: vehiclePreference,
           data: {
             version: 1,
             products: cart.map(i => ({
@@ -113,6 +119,8 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
       const telegramText = [
         `🛒 <b>طلب تجهيز جديد (المتجر الالكتروني)</b>`,
         `🔢 <b>رقم المسودة:</b> <code>${draft.draftNumber}</code>`,
+        `🛵 <b>وسيلة النقل:</b> ${vehiclePreference === 'bike' ? 'دراجة 🏍️' : vehiclePreference === 'car' ? 'سيارة 🚗' : 'غير محدد'}`,
+        `💰 <b>سعر التوصيل:</b> ${finalDeliveryPrice.toLocaleString()} ${finalDeliveryPrice > basePrice ? '🔥 (زيادة من العميل)' : ''}`,
         `📞 <b>الهاتف:</b> <code>${escapeTelegramHtml(phoneLocal)}</code>`,
         `📍 <b>المنطقة:</b> ${escapeTelegramHtml(region.name)}`,
         `🏠 <b>نقطة دالة:</b> ${escapeTelegramHtml(landmark)}`,

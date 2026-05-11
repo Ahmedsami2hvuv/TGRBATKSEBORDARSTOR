@@ -5,7 +5,7 @@ import { useFormState } from "react-dom";
 import { submitStoreOrder } from "../actions";
 import { normalizeRegionNameForMatch } from "@/lib/region-name-normalize";
 
-type RegionHit = { id: string; name: string };
+type RegionHit = { id: string; name: string; deliveryPrice?: string };
 
 const fmtAlf = (val: number) =>
   val.toLocaleString(undefined, {
@@ -24,6 +24,9 @@ export default function CheckoutPage() {
   const [landmark, setLandmark] = useState("");
   const [regionHits, setRegionHits] = useState<RegionHit[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<RegionHit | null>(null);
+  const [deliveryPrice, setDeliveryPrice] = useState<number>(0);
+  const [baseDeliveryPrice, setBaseDeliveryPrice] = useState<number>(0);
+  const [vehiclePreference, setVehiclePreference] = useState("");
   const [regionFieldError, setRegionFieldError] = useState<string | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -116,6 +119,7 @@ export default function CheckoutPage() {
       >
         <input type="hidden" name="cart" value={JSON.stringify(cart)} />
         <input type="hidden" name="regionId" value={selectedRegion?.id ?? ""} />
+        <input type="hidden" name="vehiclePreference" value={vehiclePreference} />
 
         <div className="space-y-8">
           <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/50 space-y-6">
@@ -134,6 +138,31 @@ export default function CheckoutPage() {
                   className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition"
                   placeholder="07XXXXXXXXX"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-black text-slate-700 mb-4">هل تحتاج وسيلة نقل محددة؟ (اختياري)</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { id: "", label: "لا يهم", icon: "any" },
+                    { id: "bike", label: "دراجة", icon: "🏍️" },
+                    { id: "car", label: "سيارة", icon: "🚗" },
+                  ].map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setVehiclePreference(v.id)}
+                      className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${
+                        vehiclePreference === v.id
+                          ? "border-violet-600 bg-violet-50 text-violet-700 shadow-md"
+                          : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
+                      }`}
+                    >
+                      <span className="text-2xl mb-1">{v.icon === "any" ? "✨" : v.icon}</span>
+                      <span className="text-xs font-black">{v.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -163,6 +192,8 @@ export default function CheckoutPage() {
                       normalizeRegionNameForMatch(v) !== normalizeRegionNameForMatch(selectedRegion.name)
                     ) {
                       setSelectedRegion(null);
+                      setDeliveryPrice(0);
+                      setBaseDeliveryPrice(0);
                     }
                   }}
                   autoComplete="off"
@@ -193,6 +224,9 @@ export default function CheckoutPage() {
                             onClick={() => {
                               const currentInput = regionQuery;
                               setSelectedRegion(h);
+                              const price = Number(h.deliveryPrice || 0);
+                              setDeliveryPrice(price);
+                              setBaseDeliveryPrice(price);
                               setRegionQuery(h.name);
                               setRegionHits([]);
                               setRegionFieldError(null);
@@ -228,6 +262,34 @@ export default function CheckoutPage() {
                   rows={2}
                 />
               </div>
+
+              {selectedRegion && (
+                <div className="pt-4 border-t border-slate-100">
+                  <label className="block text-sm font-black text-slate-700 mb-2">سعر التوصيل (يمكنك زيادته لسرعة وصول الطلب)</label>
+                  <div className="relative">
+                    <input
+                      name="deliveryPrice"
+                      type="number"
+                      value={deliveryPrice}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        if (val >= baseDeliveryPrice) {
+                          setDeliveryPrice(val);
+                        }
+                      }}
+                      className="w-full px-6 py-4 rounded-2xl border-2 border-violet-100 bg-violet-50/30 outline-none focus:bg-white focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition font-black text-lg text-violet-700"
+                    />
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                      ألف دينار
+                    </div>
+                  </div>
+                  {deliveryPrice > baseDeliveryPrice && (
+                    <p className="mt-2 text-[10px] font-bold text-emerald-600">
+                      شكراً لك! زيادة سعر التوصيل تساهم في سرعة استجابة المناديب لطلبك.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -250,11 +312,21 @@ export default function CheckoutPage() {
 
             <div className="border-t border-slate-800 pt-6 space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-lg font-black text-violet-400">مجموع الطلب</span>
-                <span className="text-3xl font-black text-white tabular-nums">{fmtAlf(subtotal)}</span>
+                <span className="text-lg font-black text-violet-400">مجموع المنتجات</span>
+                <span className="text-2xl font-black text-white tabular-nums">{fmtAlf(subtotal)}</span>
+              </div>
+              {deliveryPrice > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-black text-violet-400">سعر التوصيل</span>
+                  <span className="text-2xl font-black text-white tabular-nums">{fmtAlf(deliveryPrice)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center border-t border-slate-800 pt-4 mt-2">
+                <span className="text-xl font-black text-white">المجموع الكلي</span>
+                <span className="text-3xl font-black text-violet-400 tabular-nums">{fmtAlf(subtotal + deliveryPrice)}</span>
               </div>
               <p className="text-center text-sm font-bold text-slate-400 leading-relaxed">
-                السعر الكلي بدون التجهيز والتوصيل
+                {deliveryPrice > 0 ? "السعر النهائي شامل التوصيل" : "السعر الكلي بدون التجهيز والتوصيل"}
               </p>
             </div>
 
