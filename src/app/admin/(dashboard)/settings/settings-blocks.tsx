@@ -156,6 +156,8 @@ export function SettingsBlocks({
   notificationInitial,
   globalIcons,
   employeeShareTemplate,
+  customerOrderTemplate,
+  telegramNewOrderTemplate,
   chatEnabledInitial,
   mandoubFeaturesInitial,
   preparerFeaturesInitial,
@@ -163,6 +165,8 @@ export function SettingsBlocks({
   notificationInitial: NotificationInitial;
   globalIcons: GlobalIconsConfig;
   employeeShareTemplate: string;
+  customerOrderTemplate: string;
+  telegramNewOrderTemplate: string;
   chatEnabledInitial: boolean;
   mandoubFeaturesInitial: RoleFeaturesConfig;
   preparerFeaturesInitial: RoleFeaturesConfig;
@@ -563,7 +567,11 @@ export function SettingsBlocks({
         icons={globalIcons}
       >
         <div className="space-y-4">
-          <WhatsappTemplateSettingsForm initialTemplate={employeeShareTemplate} />
+          <WhatsappTemplateSettingsForm
+            initialEmployeeTemplate={employeeShareTemplate}
+            initialCustomerTemplate={customerOrderTemplate}
+            initialTelegramTemplate={telegramNewOrderTemplate}
+          />
           <Link
             href="/admin/wa-buttons"
             className="group relative flex items-start justify-between gap-4 rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm outline-none transition hover:-translate-y-[1px] hover:border-emerald-300 hover:bg-gradient-to-b hover:from-emerald-50/70 hover:to-white hover:shadow-md focus-visible:ring-2 focus-visible:ring-emerald-300/60 sm:p-5"

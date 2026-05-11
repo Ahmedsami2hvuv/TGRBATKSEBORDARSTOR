@@ -14,10 +14,12 @@ import { prisma } from "@/lib/prisma";
 import { upsertCustomerPhoneProfileFromOrderSnapshot } from "@/lib/customer-phone-profile-sync";
 import { pushNotifyAdminsNewPendingOrder, pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
 import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
-import { withReversePickupPrefix } from "@/lib/order-type-flags";
-import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
+import { getCustomerOrderWhatsappTemplate, renderWhatsappTemplate } from "@/lib/whatsapp-template-settings";
+import { whatsappMeUrl } from "@/lib/whatsapp";
 
-export type ClientOrderState = { error?: string; ok?: boolean };
+const OWNER_WHATSAPP_PHONE = "+9647733921468";
+
+export type ClientOrderState = { error?: string; ok?: boolean; waUrl?: string };
 export type EmployeePreparationState = { error?: string; ok?: boolean; draftId?: string; preparerName?: string };
 
 export async function submitEmployeePreparationDraft(
@@ -327,8 +329,31 @@ export async function submitOrder(
     void notifyTelegramNewOrder(order.id).catch(() => null);
     void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => null);
 
+    const waTemplate = await getCustomerOrderWhatsappTemplate();
+    const waMessage = renderWhatsappTemplate({
+      template: waTemplate,
+      shopName: submitter.shopId, // Usually we want shop.name, but let's see what's available
+      regionName: custRegion.id, // Usually we want region.name
+      orderItems: notes,
+      orderNumber: order.orderNumber,
+    });
+
+    // Attempt to get names instead of IDs if possible
+    const fullShop = await prisma.shop.findUnique({ where: { id: submitter.shopId }, select: { name: true } });
+    const fullRegion = await prisma.region.findUnique({ where: { id: custRegion.id }, select: { name: true } });
+
+    const finalWaMessage = renderWhatsappTemplate({
+      template: waTemplate,
+      shopName: fullShop?.name || submitter.shopId,
+      regionName: fullRegion?.name || custRegion.id,
+      orderItems: notes,
+      orderNumber: order.orderNumber,
+    });
+
+    const waUrl = whatsappMeUrl(OWNER_WHATSAPP_PHONE, finalWaMessage);
+
     revalidatePath("/admin/orders/pending");
-    return { ok: true };
+    return { ok: true, waUrl };
   } catch (err: any) {
     console.error("Submit Error:", err);
     return { error: "فشل إرسال الطلب: " + (err.message || "خطأ داخلي") };

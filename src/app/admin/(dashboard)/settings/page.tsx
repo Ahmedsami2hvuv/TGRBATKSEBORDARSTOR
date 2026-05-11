@@ -4,7 +4,8 @@ import { normalizeNotificationSoundPreset } from "@/lib/notification-sound-prese
 import { SettingsBlocks } from "./settings-blocks";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { getEmployeeWhatsappShareTemplate } from "@/lib/whatsapp-template-settings";
+import { getEmployeeWhatsappShareTemplate, getCustomerOrderWhatsappTemplate } from "@/lib/whatsapp-template-settings";
+import { getTelegramNewOrderTemplate } from "@/lib/telegram-notify";
 import { isChatEnabledGlobally } from "@/lib/portal-chat-settings";
 import { getRoleFeatures } from "@/lib/role-features-settings";
 
@@ -13,10 +14,12 @@ export const metadata = {
 };
 
 export default async function SettingsPage() {
-  const [notificationSettings, icons, employeeShareTemplate, chatEnabled, mandoubFeatures, preparerFeatures] = await Promise.all([
+  const [notificationSettings, icons, employeeShareTemplate, customerOrderTemplate, telegramNewOrderTemplate, chatEnabled, mandoubFeatures, preparerFeatures] = await Promise.all([
     getOrCreateNotificationSettings(),
     getGlobalIcons(),
     getEmployeeWhatsappShareTemplate(),
+    getCustomerOrderWhatsappTemplate(),
+    getTelegramNewOrderTemplate(),
     isChatEnabledGlobally(),
     getRoleFeatures("mandoub"),
     getRoleFeatures("preparer"),
@@ -35,6 +38,8 @@ export default async function SettingsPage() {
       <SettingsBlocks
         globalIcons={icons}
         employeeShareTemplate={employeeShareTemplate}
+        customerOrderTemplate={customerOrderTemplate}
+        telegramNewOrderTemplate={telegramNewOrderTemplate}
         chatEnabledInitial={chatEnabled}
         mandoubFeaturesInitial={mandoubFeatures}
         preparerFeaturesInitial={preparerFeatures}

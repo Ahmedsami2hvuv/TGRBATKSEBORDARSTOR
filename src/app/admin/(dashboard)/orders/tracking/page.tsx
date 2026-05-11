@@ -18,6 +18,7 @@ import { parseBaghdadDateRange } from "@/lib/order-date-search";
 import { formatDinarAsAlf } from "@/lib/money-alf";
 import { normalizeAdminShopName } from "@/lib/admin-order-from-admin-constants";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { serializePrisma } from "@/lib/serialize-prisma";
 import { OrderTrackingSearch } from "./order-tracking-search";
 import { type TrackingTableRow } from "./order-tracking-table-body";
 import { OrderTrackingBulkTable } from "./order-tracking-bulk-table";
@@ -314,8 +315,8 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
   ];
 
   // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
-  const safeTableRows = JSON.parse(JSON.stringify(tableRows)) as typeof tableRows;
-  const safeCouriers = JSON.parse(JSON.stringify(couriers)) as typeof couriers;
+  const safeTableRows = serializePrisma(tableRows);
+  const safeCouriers = serializePrisma(couriers);
 
   return (
     <div className="space-y-4" dir="rtl">

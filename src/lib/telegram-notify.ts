@@ -14,34 +14,79 @@ import { getPreparerMoneyTotals } from "./preparer-combined-wallet-totals";
 import { buildCompanyPreparerPortalUrl } from "./company-preparer-portal-link";
 import { buildDelegatePortalUrl } from "./delegate-link";
 
+const TARGET = "admin";
+const SECTION_TELEGRAM_NEW_ORDER = "telegram_new_order_template";
+
+export function getDefaultTelegramNewOrderTemplate(): string {
+  return [
+    "🏪 ({shopName} — {customerName}){vehicleEmoji}",
+    "📍 {regionName}",
+    "📦 {orderType}",
+    "💵 {subtotal}",
+    "🚚 {delivery}",
+    "💰 {total}",
+    "⏰ {noteTime}",
+    "🔢 {orderNumber}",
+    "📞 {customerPhone}",
+  ].join("\n");
+}
+
+export async function getTelegramNewOrderTemplate(): Promise<string> {
+  try {
+    const row = await prisma.uISystemSetting.findUnique({
+      where: { target_section: { target: TARGET, section: SECTION_TELEGRAM_NEW_ORDER } },
+      select: { config: true },
+    });
+    const config = row?.config as { template?: string } | null;
+    return config?.template?.trim() || getDefaultTelegramNewOrderTemplate();
+  } catch {
+    return getDefaultTelegramNewOrderTemplate();
+  }
+}
+
+export async function saveTelegramNewOrderTemplate(template: string): Promise<void> {
+  const normalized = template.trim() || getDefaultTelegramNewOrderTemplate();
+  await prisma.uISystemSetting.upsert({
+    where: { target_section: { target: TARGET, section: SECTION_TELEGRAM_NEW_ORDER } },
+    create: { target: TARGET, section: SECTION_TELEGRAM_NEW_ORDER, config: { template: normalized } },
+    update: { config: { template: normalized } },
+  });
+}
+
 function alfLine(label: string, value: string): string {
   return `${label} ${escapeTelegramHtml(value)} `;
 }
 
-function formatOrderBodyLines(input: {
+async function formatOrderBodyLines(input: {
   shopName: string; customerName: string; regionName: string; orderType: string;
   orderSubtotal: Decimal | null; deliveryPrice: Decimal | null; totalAmount: Decimal | null;
   orderNumber: number; customerPhone: string; orderNoteTime?: string | null;
   vehiclePreference?: string | null;
-}, options?: { omitPhone?: boolean }): string[] {
-  const cust = input.customerName?.trim() || "—";
+}, options?: { omitPhone?: boolean }): Promise<string[]> {
+  const template = await getTelegramNewOrderTemplate();
+
   const vehicleEmoji = input.vehiclePreference === "bike" ? " 🏍️" : (input.vehiclePreference === "car" ? " 🚗" : "");
-  const lines = [
-    `🏪 (${escapeTelegramHtml(input.shopName)} — ${escapeTelegramHtml(cust)})${vehicleEmoji}`,
-    `📍 ${escapeTelegramHtml(input.regionName || "—")}`,
-    `📦 ${escapeTelegramHtml(input.orderType || "—")}`,
-    alfLine("💵", formatDinarAsAlf(input.orderSubtotal)),
-    alfLine("🚚", formatDinarAsAlf(input.deliveryPrice)),
-    alfLine("💰", formatDinarAsAlf(input.totalAmount)),
-  ];
-  if (input.orderNoteTime?.trim()) {
-    lines.push(`⏰ ${escapeTelegramHtml(input.orderNoteTime.trim())}`);
-  }
-  lines.push(`🔢 ${input.orderNumber}`);
-  if (!options?.omitPhone) {
-    lines.push(`📞 ${escapeTelegramHtml(input.customerPhone || "—")}`);
-  }
-  return lines;
+
+  const replacements: Record<string, string> = {
+    "{shopName}": escapeTelegramHtml(input.shopName),
+    "{customerName}": escapeTelegramHtml(input.customerName?.trim() || "—"),
+    "{regionName}": escapeTelegramHtml(input.regionName || "—"),
+    "{orderType}": escapeTelegramHtml(input.orderType || "—"),
+    "{subtotal}": formatDinarAsAlf(input.orderSubtotal),
+    "{delivery}": formatDinarAsAlf(input.deliveryPrice),
+    "{total}": formatDinarAsAlf(input.totalAmount),
+    "{noteTime}": input.orderNoteTime?.trim() ? escapeTelegramHtml(input.orderNoteTime.trim()) : "",
+    "{orderNumber}": String(input.orderNumber),
+    "{customerPhone}": options?.omitPhone ? "" : escapeTelegramHtml(input.customerPhone || "—"),
+    "{vehicleEmoji}": vehicleEmoji,
+  };
+
+  let text = template;
+  Object.entries(replacements).forEach(([key, val]) => {
+    text = text.replaceAll(key, val);
+  });
+
+  return text.split("\n").filter(line => line.trim() !== "");
 }
 
 export async function notifyTelegramPreparerWalletEvent(input: {
@@ -136,7 +181,7 @@ export async function notifyTelegramNewOrder(orderId: string): Promise<void> {
   if (!order) return;
 
   const baseUrl = getPublicAppUrl();
-  const adminText = formatNewOrderTelegramHtml({
+  const adminText = await formatNewOrderTelegramHtml({
     ...order, shopName: order.shop.name, customerName: order.customer?.name ?? "—",
     regionName: order.customerRegion?.name ?? "—", orderId: order.id
   });
@@ -154,17 +199,19 @@ export async function notifyTelegramNewOrder(orderId: string): Promise<void> {
     const prepUrl = buildCompanyPreparerPortalUrl(prep.id, prep.portalToken, baseUrl);
     const prepOrderUrl = `${prepUrl.replace("/preparer", `/preparer/order/${order.id}`)}`;
 
-    const prepText = formatOrderBodyLines({
+    const bodyLines = await formatOrderBodyLines({
       ...order, shopName: order.shop.name, customerName: order.customer?.name ?? "—",
       regionName: order.customerRegion?.name ?? "—"
-    }, { omitPhone: true }).join("\n") + `\n\n🔗 <a href="${prepOrderUrl}">فتح الطلب من حسابك</a>`;
+    }, { omitPhone: true });
+
+    const prepText = bodyLines.join("\n") + `\n\n🔗 <a href="${prepOrderUrl}">فتح الطلب من حسابك</a>`;
 
     await sendTelegramHtmlToChat(prep.telegramUserId, `🔔 <b>طلب جديد لمحل تابع لك:</b>\n\n${prepText}`);
   }
 }
 
-export function formatNewOrderTelegramHtml(input: any, options?: any): string {
-  const lines = formatOrderBodyLines(input);
+export async function formatNewOrderTelegramHtml(input: any, options?: any): Promise<string> {
+  const lines = await formatOrderBodyLines(input, options);
   if (!options?.omitAdminLink) {
     lines.push(`🔗 <a href="${escapeTelegramHtml(getPublicAppUrl() + '/admin/orders/' + input.orderId)}">رابط الإدارة</a>`);
   }
@@ -180,7 +227,7 @@ export async function notifyTelegramMoneyEvent(input: any): Promise<void> {
 
   const baseUrl = getPublicAppUrl();
   const header = input.kind === "pickup_out" ? "💸 للعميل 💸" : "💸 من الزبون 💸";
-  const body = formatOrderBodyLines({ 
+  const body = await formatOrderBodyLines({
     ...order, 
     shopName: order.shop.name, 
     customerName: order.customer?.name ?? "",

@@ -15,6 +15,7 @@ import {
   sumPickupOutFromOrderMoneyEvents,
 } from "@/lib/mandoub-money";
 import { getGlobalIcons } from "@/lib/icon-settings";
+import { serializePrisma } from "@/lib/serialize-prisma";
 import { PendingOrdersClient, type PendingOrderRow } from "./pending-orders-client";
 
 // Keep data fresh while allowing fast back/forward navigation cache.
@@ -88,12 +89,12 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
   ]);
 
   // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
-  const safeAllActiveDrafts = JSON.parse(JSON.stringify(allActiveDrafts)) as typeof allActiveDrafts;
-  const safeNewOrders = JSON.parse(JSON.stringify(newOrders)) as typeof newOrders;
-  const safePreparedOrders = JSON.parse(JSON.stringify(preparedOrders)) as typeof preparedOrders;
-  const safeCouriers = JSON.parse(JSON.stringify(couriers)) as typeof couriers;
-  const safeShops = JSON.parse(JSON.stringify(shops)) as typeof shops;
-  const safePreparers = JSON.parse(JSON.stringify(preparers)) as typeof preparers;
+  const safeAllActiveDrafts = serializePrisma(allActiveDrafts);
+  const safeNewOrders = serializePrisma(newOrders);
+  const safePreparedOrders = serializePrisma(preparedOrders);
+  const safeCouriers = serializePrisma(couriers);
+  const safeShops = serializePrisma(shops);
+  const safePreparers = serializePrisma(preparers);
 
   const draftsBySentOrderId = new Map<string, typeof safeAllActiveDrafts>();
   const draftsByCustomerPhone = new Map<string, typeof safeAllActiveDrafts>();

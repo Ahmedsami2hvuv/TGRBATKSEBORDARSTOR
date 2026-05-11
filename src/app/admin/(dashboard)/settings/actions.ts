@@ -5,7 +5,8 @@ import { isAdminSession } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_NOTIFICATION_SETTINGS } from "@/lib/notification-settings";
 import { normalizeNotificationSoundPreset } from "@/lib/notification-sound-presets";
-import { saveEmployeeWhatsappShareTemplate } from "@/lib/whatsapp-template-settings";
+import { saveEmployeeWhatsappShareTemplate, saveCustomerOrderWhatsappTemplate } from "@/lib/whatsapp-template-settings";
+import { saveTelegramNewOrderTemplate } from "@/lib/telegram-notify";
 
 import { GlobalIconsConfig, saveGlobalIcons } from "@/lib/icon-settings";
 import { setChatEnabledGlobally } from "@/lib/portal-chat-settings";
@@ -63,10 +64,22 @@ export async function saveWhatsappTemplateSettings(
     return { error: "غير مصرّح." };
   }
   const employeeShareTemplate = formString(formData, "employeeShareTemplate");
-  if (!employeeShareTemplate) {
+  const customerOrderTemplate = formString(formData, "customerOrderTemplate");
+  const telegramNewOrderTemplate = formString(formData, "telegramNewOrderTemplate");
+
+  if (!employeeShareTemplate && !customerOrderTemplate && !telegramNewOrderTemplate) {
     return { error: "يرجى كتابة نص الرسالة." };
   }
-  await saveEmployeeWhatsappShareTemplate(employeeShareTemplate);
+
+  if (employeeShareTemplate) {
+    await saveEmployeeWhatsappShareTemplate(employeeShareTemplate);
+  }
+  if (customerOrderTemplate) {
+    await saveCustomerOrderWhatsappTemplate(customerOrderTemplate);
+  }
+  if (telegramNewOrderTemplate) {
+    await saveTelegramNewOrderTemplate(telegramNewOrderTemplate);
+  }
   revalidatePath("/admin/settings");
   revalidatePath("/admin/shops");
   return { ok: true };

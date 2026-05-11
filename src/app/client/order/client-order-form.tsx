@@ -153,15 +153,13 @@ function ClientOrderFormInner({
 
   // بعد نجاح رفع الطلب الجديد: التحويل التلقائي إلى واتساب مع رسالة جاهزة
   useEffect(() => {
-    if (state.ok && !initialOrder) {
-      const waMessage = buildCustomerCheckoutMessage(notes);
-      const waUrl = whatsappMeUrl(OWNER_WHATSAPP_PHONE, waMessage);
-      if (waUrl !== "#") {
-        window.location.href = waUrl;
+    if (state.ok && !initialOrder && state.waUrl) {
+      if (state.waUrl !== "#") {
+        window.location.href = state.waUrl;
         return;
       }
     }
-  }, [state.ok, initialOrder, notes]);
+  }, [state.ok, initialOrder, state.waUrl]);
 
   // غلق الصفحة تلقائياً بعد نجاح الإرسال بـ 3 ثواني (كتحويل احتياطي)
   useEffect(() => {
