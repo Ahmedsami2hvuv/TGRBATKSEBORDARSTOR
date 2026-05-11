@@ -227,8 +227,8 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     };
   };
 
-  const newRows = newOrders.map(mapOrderToRow);
-  const preparedRows = preparedOrders.map(mapOrderToRow);
+  const newRows = serializePrisma(newOrders.map(mapOrderToRow));
+  const preparedRows = serializePrisma(preparedOrders.map(mapOrderToRow));
 
   const groupedDraftRows: PendingOrderRow[] = [];
   const processedDraftIds = new Set<string>();
@@ -245,6 +245,9 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     groupedDraftRows.push(mapDraftToRow(d));
   }
 
+  const safeGroupedDraftRows = serializePrisma(groupedDraftRows);
+  const safeIcons = serializePrisma(icons);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -260,7 +263,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
           الطلبات الجديدة ({newRows.length})
         </Link>
         <Link href="?tab=preparing" className={`px-6 py-3 text-sm font-bold whitespace-nowrap transition-colors border-b-2 ${activeTab === 'preparing' ? 'border-amber-500 text-amber-700 bg-amber-50/50' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-          قيد التجهيز ({groupedDraftRows.length})
+          قيد التجهيز ({safeGroupedDraftRows.length})
         </Link>
         <Link href="?tab=completed" className={`px-6 py-3 text-sm font-bold whitespace-nowrap transition-colors border-b-2 ${activeTab === 'completed' ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
           مكتمل التجهيز ({preparedRows.length})
@@ -269,17 +272,17 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
       {activeTab === "new" && (
         <div className="space-y-4">
-          <PendingOrdersClient orders={newRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={icons} initialAssignOrderId={activeTab === 'new' ? assignOrder : null} />
+          <PendingOrdersClient orders={newRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} initialAssignOrderId={activeTab === 'new' ? assignOrder : null} />
         </div>
       )}
 
       {activeTab === "preparing" && (
         <div className="space-y-4">
-          {groupedDraftRows.length === 0 ? (
+          {safeGroupedDraftRows.length === 0 ? (
             <p className="text-center py-12 text-slate-400">لا توجد مسودات قيد التجهيز حالياً.</p>
           ) : (
             <div className="grid gap-3">
-              <PendingOrdersClient orders={groupedDraftRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={icons} isDraftMode />
+              <PendingOrdersClient orders={safeGroupedDraftRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} isDraftMode />
             </div>
           )}
         </div>
@@ -287,7 +290,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
       {activeTab === "completed" && (
         <div className="space-y-4">
-          <PendingOrdersClient orders={preparedRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={icons} initialAssignOrderId={activeTab === 'completed' ? assignOrder : null} />
+          <PendingOrdersClient orders={preparedRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} initialAssignOrderId={activeTab === 'completed' ? assignOrder : null} />
         </div>
       )}
     </div>

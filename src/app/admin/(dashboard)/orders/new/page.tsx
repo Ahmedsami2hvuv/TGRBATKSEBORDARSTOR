@@ -6,6 +6,7 @@ import { buildEmployeeOrderPortalUrl } from "@/lib/employee-order-portal-link";
 import { headers } from "next/headers";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { courierAssignableWhere } from "@/lib/courier-assignable";
+import { serializePrisma } from "@/lib/serialize-prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function AdminCreateOrderPage() {
   const baseUrl = `${protocol}://${host}`;
 
   // جلب المحلات، المناطق، الزبائن (للملء التلقائي)، والموظفين (كأزرار سريعة)، والمجهزين (لطلبات التجهيز)
-  const [shops, regions, employeesRaw, preparers, couriers, icons] = await Promise.all([
+  const [shopsRaw, regionsRaw, employeesRaw, preparersRaw, couriersRaw, iconsRaw] = await Promise.all([
     prisma.shop.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true, regionId: true, locationUrl: true },
@@ -52,6 +53,13 @@ export default async function AdminCreateOrderPage() {
     getGlobalIcons(),
   ]);
 
+  // تأمين البيانات للنقل إلى Client Components
+  const shops = serializePrisma(shopsRaw);
+  const regions = serializePrisma(regionsRaw);
+  const preparers = serializePrisma(preparersRaw);
+  const couriers = serializePrisma(couriersRaw);
+  const icons = serializePrisma(iconsRaw);
+
   const employees = employeesRaw.map((e) => ({
     id: e.id,
     shopId: e.shopId,
@@ -76,7 +84,7 @@ export default async function AdminCreateOrderPage() {
       <AdminCreateOrderForm
         shops={shops}
         regions={regions}
-        employees={employees}
+        employees={serializePrisma(employees)}
         preparers={preparers}
         couriers={couriers}
         icons={icons}
