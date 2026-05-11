@@ -14,8 +14,9 @@ import { prisma } from "@/lib/prisma";
 import { upsertCustomerPhoneProfileFromOrderSnapshot } from "@/lib/customer-phone-profile-sync";
 import { pushNotifyAdminsNewPendingOrder, pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
 import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
+import { withReversePickupPrefix } from "@/lib/order-type-flags";
 import { getCustomerOrderWhatsappTemplate, renderWhatsappTemplate } from "@/lib/whatsapp-template-settings";
-import { whatsappMeUrl } from "@/lib/whatsapp";
+import { whatsappMeUrl, normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
 const OWNER_WHATSAPP_PHONE = "+9647733921468";
 

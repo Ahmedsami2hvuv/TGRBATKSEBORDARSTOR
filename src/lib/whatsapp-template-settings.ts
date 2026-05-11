@@ -21,11 +21,12 @@ type WhatsappTemplateConfig = {
 
 export function getDefaultEmployeeWhatsappShareTemplate(): string {
   return [
-    "مرحبا بك {customerName}",
+    "مرحباً بك {employee}",
     "من محل {shopName}",
-    "رابط حسابكم بتطبيق الطلب هو:",
+    "رابط حسابكم الخاص لرفع الطلبات عبر النظام هو:",
     "{customerLink}",
     "",
+    "يمكنكم الآن البدء بإرسال الطلبات مباشرة.",
     "نتشرف بخدمتكم دائماً",
   ].join("\n");
 }

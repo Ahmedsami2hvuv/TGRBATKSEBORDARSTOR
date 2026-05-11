@@ -4,13 +4,15 @@
  * or digest errors in Next.js 15 when passed to Client Components.
  */
 export function serializePrisma<T>(data: T): T {
+  if (data === null || data === undefined) return data;
+
   return JSON.parse(
     JSON.stringify(data, (key, value) => {
-      // Handle Prisma Decimal safely without importing it (avoids bundler issues and instanceof throws)
-      if (value && typeof value === 'object' && value.constructor && value.constructor.name === 'Decimal') {
+      // Handle Prisma Decimal safely
+      if (value && typeof value === 'object' && value.constructor && (value.constructor.name === 'Decimal' || value.constructor.name === 'n')) {
         return value.toString();
       }
-      // Handle BigInt if any
+      // Handle BigInt
       if (typeof value === 'bigint') {
         return value.toString();
       }

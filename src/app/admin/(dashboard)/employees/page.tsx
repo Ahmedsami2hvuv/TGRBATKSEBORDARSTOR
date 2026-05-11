@@ -7,6 +7,8 @@ import { buildStaffEmployeePortalUrl } from "@/lib/staff-employee-portal-link";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 
+import { serializePrisma } from "@/lib/serialize-prisma";
+
 export const dynamic = "force-dynamic";
 
 export const metadata = {
@@ -14,7 +16,7 @@ export const metadata = {
 };
 
 export default async function AdminEmployeesHubPage() {
-  const [employees, icons] = await Promise.all([
+  const [employeesRaw, iconsRaw] = await Promise.all([
     prisma.staffEmployee.findMany({
       orderBy: { createdAt: "desc" },
       take: 300,
@@ -22,8 +24,9 @@ export default async function AdminEmployeesHubPage() {
     getGlobalIcons()
   ]);
 
+  const icons = serializePrisma(iconsRaw);
   const baseUrl = getPublicAppUrl();
-  const rows = employees.map((e) => ({
+  const rows = employeesRaw.map((e) => ({
     id: e.id,
     name: e.name,
     phone: e.phone,
@@ -55,7 +58,7 @@ export default async function AdminEmployeesHubPage() {
       </header>
 
       <section className={ad.section}>
-        <StaffEmployeesManager initialEmployees={rows} icons={icons} />
+        <StaffEmployeesManager initialEmployees={serializePrisma(rows)} icons={icons} />
       </section>
     </div>
   );

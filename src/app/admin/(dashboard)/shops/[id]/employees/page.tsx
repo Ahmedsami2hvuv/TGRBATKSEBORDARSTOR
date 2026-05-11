@@ -13,48 +13,10 @@ import {
   getEmployeeWhatsappShareTemplate,
   renderEmployeeWhatsappShareTemplate,
 } from "@/lib/whatsapp-template-settings";
+import { serializePrisma } from "@/lib/serialize-prisma";
 
 export const dynamic = "force-dynamic";
 
-/**
- * دالة تطهير البيانات النووية - محسّنة لـ Next.js 15
- * تمنع تعليق الصفحة بسبب كائنات Decimal أو التداخلات الدائرية
- */
-function deepSanitize(obj: any, visited = new WeakSet()): any {
-  if (obj === null || obj === undefined) return obj;
-  if (typeof obj === "function") return null;
-  if (typeof obj === "bigint") return obj.toString();
-  if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
-  if (obj instanceof Date) return obj.toISOString();
-  if (Array.isArray(obj)) return obj.map((item) => deepSanitize(item, visited));
-
-  if (typeof obj === "object") {
-    if (visited.has(obj)) return "[Circular]";
-    visited.add(obj);
-
-    // دعم Prisma Decimal
-    if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
-      return Number(obj.toString());
-    }
-    if (obj.d && Array.isArray(obj.d) && typeof obj.s === "number") {
-      return Number(obj.toString());
-    }
-
-    const newObj: any = {};
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        try {
-          newObj[key] = deepSanitize(obj[key], visited);
-        } catch (e) {
-          newObj[key] = null;
-        }
-      }
-    }
-    visited.delete(obj);
-    return newObj;
-  }
-  return null;
-}
 
 export default async function ShopEmployeesPage(props: { params: Promise<{ id: string }> }) {
   const { id: shopId } = await props.params;
@@ -93,9 +55,9 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
     notFound();
   }
 
-  // تطهير البيانات قبل أي معالجة أخرى
-  const shop = deepSanitize(shopRaw);
-  const icons = deepSanitize(iconsRaw);
+  // تطهير البيانات قبل أي معالجة أخرى - استخدام الدالة المركزية لضمان التوافق مع Next.js 15
+  const shop = serializePrisma(shopRaw);
+  const icons = serializePrisma(iconsRaw);
 
   const employeesWithLinks: EmployeeRow[] = (shop.employees || []).map((emp: any) => {
     const orderPortalUrl = buildEmployeeOrderPortalUrl(emp.id, emp.orderPortalToken, baseUrl);
@@ -104,7 +66,8 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
     if (emp.phone && emp.phone.length > 5) {
       const message = renderEmployeeWhatsappShareTemplate({
         template: employeeShareTemplate,
-        customerName: emp.name || "",
+        employee: emp.name || "",
+        customerName: emp.name || "", // Fallback for old templates
         shopName: shop.name || "",
         customerLink: orderPortalUrl,
         shopLocation: shop.locationUrl || "",
