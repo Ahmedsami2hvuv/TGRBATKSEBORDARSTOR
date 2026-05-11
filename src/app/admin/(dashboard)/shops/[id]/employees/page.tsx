@@ -16,11 +16,37 @@ import {
 
 export const dynamic = "force-dynamic";
 
+// دالة التطهير النووية (Nuclear Sanitization) لضمان توافق Next.js 15
+function deepSanitize(obj: any, visited = new WeakSet()): any {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === "function") return null;
+  if (typeof obj === "bigint") return obj.toString();
+  if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+  if (obj instanceof Date) return obj.toISOString();
+  if (Array.isArray(obj)) return obj.map((item) => deepSanitize(item, visited));
+  if (typeof obj === "object") {
+    if (visited.has(obj)) return "[Circular]";
+    visited.add(obj);
+    if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
+      return Number(obj.toString());
+    }
+    const newObj: any = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        newObj[key] = deepSanitize(obj[key], visited);
+      }
+    }
+    visited.delete(obj);
+    return newObj;
+  }
+  return null;
+}
+
 export default async function ShopEmployeesPage(props: { params: Promise<{ id: string }> }) {
   const { id: shopId } = await props.params;
   const baseUrl = getPublicAppUrl();
 
-  const [shop, icons, employeeShareTemplate] = await Promise.all([
+  const [shopRaw, iconsRaw, employeeShareTemplate] = await Promise.all([
     prisma.shop.findUnique({
       where: { id: shopId },
       select: {
@@ -42,32 +68,33 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
     getEmployeeWhatsappShareTemplate(),
   ]);
 
-  if (!shop) {
+  if (!shopRaw) {
     notFound();
   }
 
-  // توليد الروابط على السيرفر بفعالية أكبر
-  const employeesWithLinks: EmployeeRow[] = shop.employees.map((emp) => {
-    // بناء الرابط المباشر
+  const shop = deepSanitize(shopRaw);
+  const icons = deepSanitize(iconsRaw);
+
+  // توليد الروابط على السيرفر بفعالية أكبر مع حماية البيانات
+  const employeesWithLinks: EmployeeRow[] = (shop.employees || []).map((emp: any) => {
     const orderPortalUrl = buildEmployeeOrderPortalUrl(emp.id, emp.orderPortalToken, baseUrl);
 
-    // توليد رابط الواتساب فقط إذا كان الرقم صالحاً وبشكل مختصر
     let whatsappLink = "";
     if (emp.phone && emp.phone.length > 5) {
       const message = renderEmployeeWhatsappShareTemplate({
         template: employeeShareTemplate,
-        customerName: emp.name,
-        shopName: shop.name,
+        customerName: emp.name || "",
+        shopName: shop.name || "",
         customerLink: orderPortalUrl,
-        shopLocation: shop.locationUrl,
+        shopLocation: shop.locationUrl || "",
       });
       whatsappLink = whatsappAppUrl(emp.phone, message);
     }
 
     return {
       id: emp.id,
-      name: emp.name,
-      phone: emp.phone,
+      name: emp.name || "",
+      phone: emp.phone || "",
       orderPortalUrl,
       whatsappLink
     };
@@ -93,9 +120,9 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
           <p className={`mt-2 ${ad.lead} max-w-2xl`}>
             هؤلاء هم موظفوك الذين يملكون صلاحية رفع طلبات التوصيل إلى النظام عبر روابط خاصة ومحمية.
           </p>
-          {shop.locationUrl?.trim().length > 5 ? (
+          {(shop.locationUrl?.trim()?.length ?? 0) > 5 ? (
             <a
-              href={shop.locationUrl.trim()}
+              href={shop.locationUrl?.trim() || "#"}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-emerald-700 bg-emerald-50 px-4 py-2 rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100/50"
@@ -143,7 +170,7 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
             <EmployeesList
               shopId={shop.id}
               shopName={shop.name}
-              locationUrl={shop.locationUrl}
+              locationUrl={shop.locationUrl || ""}
               employees={employeesWithLinks}
               icons={icons}
             />

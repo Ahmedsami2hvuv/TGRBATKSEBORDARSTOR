@@ -31,10 +31,10 @@ export function EmployeesList({
   const [query, setQuery] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const filtered = employees.filter(
+  const filtered = (employees || []).filter(
     (e) =>
-      e.name.toLowerCase().includes(query.toLowerCase()) ||
-      e.phone.toLowerCase().includes(query.toLowerCase()),
+      (e.name || "").toLowerCase().includes(query.toLowerCase()) ||
+      (e.phone || "").toLowerCase().includes(query.toLowerCase()),
   );
 
   const copyToClipboard = async (text: string, id: string) => {
