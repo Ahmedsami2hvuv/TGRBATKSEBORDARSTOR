@@ -6,17 +6,25 @@
 export function serializePrisma<T>(data: T): T {
   if (data === null || data === undefined) return data;
 
-  return JSON.parse(
-    JSON.stringify(data, (key, value) => {
-      // Handle Prisma Decimal safely
-      if (value && typeof value === 'object' && value.constructor && (value.constructor.name === 'Decimal' || value.constructor.name === 'n')) {
-        return value.toString();
-      }
-      // Handle BigInt
-      if (typeof value === 'bigint') {
-        return value.toString();
-      }
-      return value;
-    })
-  );
+  try {
+    return JSON.parse(
+      JSON.stringify(data, (key, value) => {
+        // Safe check for Decimal types (including minified names)
+        if (value && typeof value === 'object') {
+          const protoName = value.constructor?.name;
+          if (protoName === 'Decimal' || protoName === 'n' || protoName === 'd') {
+            return value.toString();
+          }
+        }
+        // Handle BigInt
+        if (typeof value === 'bigint') {
+          return value.toString();
+        }
+        return value;
+      })
+    );
+  } catch (error) {
+    console.error("Serialization Error:", error);
+    return data; // Fallback to original data if serialization fails
+  }
 }

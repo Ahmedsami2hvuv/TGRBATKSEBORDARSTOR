@@ -129,22 +129,24 @@ export async function AdminProfitsWidget() {
 
   const couriersList = Object.values(courierStats).sort((a, b) => b.totalProfit.cmp(a.totalProfit));
 
+  const data = {
+    todayNet: todayNet.toNumber(),
+    allTimeNet: allTimeNet.toNumber(),
+    todayPrepProfit: todayPrepProfit.toNumber(),
+    totalPrepProfit: totalPrepProfit.toNumber(),
+    todayDeliveryProfit: todayDeliveryProfit.toNumber(),
+    totalDeliveryProfit: totalDeliveryProfit.toNumber(),
+    todayTipsPaid: todayTipsPaid.toNumber(),
+    totalTipsPaid: totalTipsPaid.toNumber(),
+    couriersList: couriersList.map(c => ({
+      id: c.id,
+      name: c.name,
+      todayProfit: c.todayProfit.toNumber(),
+      todayTips: c.todayTips.toNumber()
+    }))
+  };
+
   return (
-    <AdminProfitsClientContent
-      todayNet={todayNet.toNumber()}
-      allTimeNet={allTimeNet.toNumber()}
-      todayPrepProfit={todayPrepProfit.toNumber()}
-      totalPrepProfit={totalPrepProfit.toNumber()}
-      todayDeliveryProfit={todayDeliveryProfit.toNumber()}
-      totalDeliveryProfit={totalDeliveryProfit.toNumber()}
-      todayTipsPaid={todayTipsPaid.toNumber()}
-      totalTipsPaid={totalTipsPaid.toNumber()}
-      couriersList={couriersList.map(c => ({
-        id: c.id,
-        name: c.name,
-        todayProfit: c.todayProfit.toNumber(),
-        todayTips: c.todayTips.toNumber()
-      }))}
-    />
+    <AdminProfitsClientContent {...data} />
   );
 }

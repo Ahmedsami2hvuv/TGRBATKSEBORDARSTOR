@@ -2,6 +2,8 @@ import { testTelegramAction } from "./actions";
 import { AdminHubDashboard } from "./admin-hub-dashboard";
 import { AdminProfitsWidget } from "./admin-profits-widget";
 
+import { serializePrisma } from "@/lib/serialize-prisma";
+
 export const metadata = {
   title: "لوحة الرئيسية — أبو الأكبر للتوصيل",
 };
@@ -11,7 +13,7 @@ type Props = {
 };
 
 export default async function AdminHomePage({ searchParams }: Props) {
-  const sp = (await searchParams) ?? {};
+  const sp = serializePrisma((await searchParams) ?? {});
   const telegramConfigured =
     Boolean(process.env.TELEGRAM_BOT_TOKEN) &&
     Boolean(process.env.TELEGRAM_GROUP_CHAT_ID);
