@@ -16,7 +16,10 @@ import {
 
 export const dynamic = "force-dynamic";
 
-// دالة التطهير النووية (Nuclear Sanitization) لضمان توافق Next.js 15
+/**
+ * دالة تطهير البيانات النووية - محسّنة لـ Next.js 15
+ * تمنع تعليق الصفحة بسبب كائنات Decimal أو التداخلات الدائرية
+ */
 function deepSanitize(obj: any, visited = new WeakSet()): any {
   if (obj === null || obj === undefined) return obj;
   if (typeof obj === "function") return null;
@@ -24,16 +27,27 @@ function deepSanitize(obj: any, visited = new WeakSet()): any {
   if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
   if (obj instanceof Date) return obj.toISOString();
   if (Array.isArray(obj)) return obj.map((item) => deepSanitize(item, visited));
+
   if (typeof obj === "object") {
     if (visited.has(obj)) return "[Circular]";
     visited.add(obj);
+
+    // دعم Prisma Decimal
     if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
       return Number(obj.toString());
     }
+    if (obj.d && Array.isArray(obj.d) && typeof obj.s === "number") {
+      return Number(obj.toString());
+    }
+
     const newObj: any = {};
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        newObj[key] = deepSanitize(obj[key], visited);
+        try {
+          newObj[key] = deepSanitize(obj[key], visited);
+        } catch (e) {
+          newObj[key] = null;
+        }
       }
     }
     visited.delete(obj);
@@ -46,36 +60,43 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
   const { id: shopId } = await props.params;
   const baseUrl = getPublicAppUrl();
 
-  const [shopRaw, iconsRaw, employeeShareTemplate] = await Promise.all([
-    prisma.shop.findUnique({
-      where: { id: shopId },
-      select: {
-        id: true,
-        name: true,
-        locationUrl: true,
-        employees: {
-          orderBy: { name: "asc" },
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            orderPortalToken: true,
+  let shopRaw, iconsRaw, employeeShareTemplate;
+
+  try {
+    [shopRaw, iconsRaw, employeeShareTemplate] = await Promise.all([
+      prisma.shop.findUnique({
+        where: { id: shopId },
+        select: {
+          id: true,
+          name: true,
+          locationUrl: true,
+          employees: {
+            orderBy: { name: "asc" },
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              orderPortalToken: true,
+            },
           },
         },
-      },
-    }),
-    getGlobalIcons(),
-    getEmployeeWhatsappShareTemplate(),
-  ]);
+      }),
+      getGlobalIcons(),
+      getEmployeeWhatsappShareTemplate(),
+    ]);
+  } catch (error) {
+    console.error("Database fetch error:", error);
+    throw error;
+  }
 
   if (!shopRaw) {
     notFound();
   }
 
+  // تطهير البيانات قبل أي معالجة أخرى
   const shop = deepSanitize(shopRaw);
   const icons = deepSanitize(iconsRaw);
 
-  // توليد الروابط على السيرفر بفعالية أكبر مع حماية البيانات
   const employeesWithLinks: EmployeeRow[] = (shop.employees || []).map((emp: any) => {
     const orderPortalUrl = buildEmployeeOrderPortalUrl(emp.id, emp.orderPortalToken, baseUrl);
 
@@ -122,7 +143,7 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
           </p>
           {(shop.locationUrl?.trim()?.length ?? 0) > 5 ? (
             <a
-              href={shop.locationUrl?.trim() || "#"}
+              href={shop.locationUrl?.trim()}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-emerald-700 bg-emerald-50 px-4 py-2 rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100/50"
@@ -134,7 +155,6 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
           ) : null}
         </div>
 
-        {/* Decorative Background Icon - تظهر كعلامة مائية احترافية في الزاوية */}
         <div className="absolute -left-12 -top-12 opacity-[0.08] pointer-events-none rotate-12 transition-all duration-700">
            <DynamicIcon iconKey="ui_user" config={icons} width={220} height={220} />
         </div>

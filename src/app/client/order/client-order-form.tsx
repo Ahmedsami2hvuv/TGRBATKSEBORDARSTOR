@@ -328,6 +328,23 @@ function ClientOrderFormInner({
               <input ref={orderPriceRef} name="orderSubtotal" inputMode="decimal" value={orderPrice} onChange={(e) => setOrderPrice(e.target.value)} className={`${inputClass} font-mono tabular-nums text-lg font-black animate-placeholder ${isPriceErr ? inputErrorClass : ""}`} placeholder="اكتب السعر هنا" />
             </label>
 
+            <div className="relative">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sm font-bold text-slate-600 px-1">منطقة الزبون *</span>
+                <input ref={regionSearchRef} value={q} onChange={(e) => setQ(e.target.value)} className={`${inputClass} ${isRegionErr ? inputErrorClass : ""}`} placeholder="ابحث عن المنطقة..." required />
+              </label>
+
+              {hits.length > 0 && !(selected && q === selected.name) && (
+                <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-100">
+                  {hits.map((h) => (
+                    <button key={h.id} type="button" onClick={() => { setSelected(h); setQ(h.name); setHits([]); }} className="flex w-full flex-col px-4 py-3 text-right transition hover:bg-sky-50 border-b border-slate-50 last:border-0">
+                      <span className="text-sm font-black text-slate-900">{h.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <label className="flex flex-col gap-1.5">
               <span className="text-sm font-bold text-slate-600 px-1">نوع المركبة (اختياري)</span>
               <div className="grid grid-cols-3 gap-2">
@@ -354,23 +371,6 @@ function ClientOrderFormInner({
               <input type="hidden" name="vehiclePreference" value={vehiclePreference} />
             </label>
 
-            <div className="relative">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-bold text-slate-600 px-1">منطقة الزبون *</span>
-                <input ref={regionSearchRef} value={q} onChange={(e) => setQ(e.target.value)} className={`${inputClass} ${isRegionErr ? inputErrorClass : ""}`} placeholder="ابحث عن المنطقة..." required />
-              </label>
-
-              {hits.length > 0 && !(selected && q === selected.name) && (
-                <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-100">
-                  {hits.map((h) => (
-                    <button key={h.id} type="button" onClick={() => { setSelected(h); setQ(h.name); setHits([]); }} className="flex w-full flex-col px-4 py-3 text-right transition hover:bg-sky-50 border-b border-slate-50 last:border-0">
-                      <span className="text-sm font-black text-slate-900">{h.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
             <div className="flex flex-col gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-3 text-[11px] font-black text-slate-700 shadow-inner">
               <div className="flex items-center justify-between">
                 <div className="flex gap-1">
@@ -385,28 +385,49 @@ function ClientOrderFormInner({
 
               {selected && (
                 <div className="mt-1 pt-2 border-t border-slate-200/50">
-                  <span className="block mb-1 text-[10px] text-sky-700">سعر التوصيل الفعلي (يمكنك زيادته للطلب المستعجل):</span>
-                  <div className="relative">
-                    <input
-                      name="deliveryPrice"
-                      type="number"
-                      step="0.01"
-                      value={deliveryPriceOverride || dPrice.toFixed(2)}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (!val || parseFloat(val) >= dPrice) {
-                          setDeliveryPriceOverride(val);
+                  <span className="block mb-3 text-[11px] font-black text-sky-800 bg-sky-50 w-fit px-2 py-0.5 rounded-full shadow-sm">أجرة التوصيل (يمكنك زيادتها للطلب المستعجل):</span>
+                  <div className="flex items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const current = deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice;
+                        if (current > dPrice) {
+                          setDeliveryPriceOverride((current - 1).toString());
                         }
                       }}
-                      className="w-full rounded-lg border border-sky-200 bg-white px-3 py-1.5 font-mono font-black text-sky-800 outline-none focus:ring-2 focus:ring-sky-100"
-                    />
+                      className="flex h-12 w-14 items-center justify-center rounded-2xl border-2 border-slate-200 bg-white text-2xl font-bold text-slate-400 shadow-sm transition active:scale-95 hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50"
+                    >
+                      −
+                    </button>
+
+                    <div className="flex-1 relative">
+                      <input
+                        name="deliveryPrice"
+                        type="hidden"
+                        value={deliveryPriceOverride || dPrice.toFixed(0)}
+                      />
+                      <div dir="ltr" className="w-full rounded-2xl border-2 border-sky-200 bg-white py-2.5 text-center font-mono text-2xl font-black text-sky-900 shadow-inner ring-4 ring-sky-50/50">
+                        {deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const current = deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice;
+                        setDeliveryPriceOverride((current + 1).toString());
+                      }}
+                      className="flex h-12 w-16 items-center justify-center rounded-2xl bg-emerald-600 text-3xl font-black text-white shadow-[0_4px_0_0_rgba(5,150,105,1)] transition-all active:translate-y-1 active:shadow-none hover:bg-emerald-500"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
               )}
 
               <div className="mt-1 pt-2 border-t border-slate-200 flex items-center justify-between text-emerald-700">
                 <span>السعر الكلي:</span>
-                <span className="text-lg font-black">
+                <span dir="ltr" className="text-xl font-black font-mono">
                   {(subtotal || 0) + (deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice)}
                 </span>
               </div>
