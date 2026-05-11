@@ -120,3 +120,5 @@ export function renderWhatsappTemplate(input: {
 
   return text;
 }
+
+export const renderEmployeeWhatsappShareTemplate = renderWhatsappTemplate;
