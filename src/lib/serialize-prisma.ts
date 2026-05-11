@@ -1,5 +1,3 @@
-import { Decimal } from "@prisma/client/runtime/library";
-
 /**
  * Robustly serializes Prisma objects for Next.js Server Components.
  * Handles Date objects and Prisma Decimal types which cause "Unexpected Error"
@@ -8,8 +6,8 @@ import { Decimal } from "@prisma/client/runtime/library";
 export function serializePrisma<T>(data: T): T {
   return JSON.parse(
     JSON.stringify(data, (key, value) => {
-      // Handle Prisma Decimal
-      if (value instanceof Decimal || (value && typeof value === 'object' && value.constructor?.name === 'Decimal')) {
+      // Handle Prisma Decimal safely without importing it (avoids bundler issues and instanceof throws)
+      if (value && typeof value === 'object' && value.constructor && value.constructor.name === 'Decimal') {
         return value.toString();
       }
       // Handle BigInt if any
