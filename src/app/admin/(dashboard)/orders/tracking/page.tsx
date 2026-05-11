@@ -262,8 +262,8 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       orderNumber: o.orderNumber,
       orderStatus: o.status,
       assignedCourierId: o.assignedCourierId ?? null,
-      shopCustomerLabel: formatShopWithCustomer(o.shop.name, o.customer?.name, o.routeMode),
-      regionName: o.customerRegion?.name ?? o.shop.region.name,
+      shopCustomerLabel: formatShopWithCustomer(o.shop?.name ?? "غير معروف", o.customer?.name, o.routeMode),
+      regionName: o.customerRegion?.name ?? o.shop?.region?.name ?? "—",
       orderType: o.orderType || "—",
       routeModeLabel: o.routeMode === "double" ? "وجهتين" : "",
       totalLabel: o.orderSubtotal != null ? formatDinarAsAlf(o.orderSubtotal) : "—",
@@ -290,12 +290,12 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       // بيانات الوصول السريع
       audioUrl: resolvePublicAssetSrc(o.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/voice` : (o.voiceNoteUrl || null)),
       adminAudioUrl: resolvePublicAssetSrc(o.adminVoiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/admin-voice` : (o.adminVoiceNoteUrl || null)),
-      shopPhone: o.shop.phone || "",
-      shopLocationUrl: o.shop.locationUrl || "",
+      shopPhone: o.shop?.phone || "",
+      shopLocationUrl: o.shop?.locationUrl || "",
       customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl,
       shopDoorPhotoUrl: resolvePublicAssetSrc(
-        o.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/shopDoor` : (o.shopDoorPhotoUrl || o.shop.photoUrl || null)
+        o.shopDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/shopDoor` : (o.shopDoorPhotoUrl || o.shop?.photoUrl || null)
       ),
       customerDoorPhotoUrl: resolvePublicAssetSrc(
         o.customerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/customerDoor` : (o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || phoneProfile?.photoUrl || null)
