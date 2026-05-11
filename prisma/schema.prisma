@@ -212,6 +212,9 @@ model Employee {
   walletTransfersOut       WalletPeerTransfer[]      @relation("WalletTransferFromEmployee")
   walletTransfersIn        WalletPeerTransfer[]      @relation("WalletTransferToEmployee")
   webPushSubscriptions     WebPushSubscription[]
+
+  @@index([shopId])
+  @@index([phone])
 }
 
 model StaffEmployee {

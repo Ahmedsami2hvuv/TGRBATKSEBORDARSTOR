@@ -46,17 +46,23 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
     notFound();
   }
 
-  // توليد الروابط على السيرفر لضمان صحة التوقيع الرقمي
+  // توليد الروابط على السيرفر بفعالية أكبر
   const employeesWithLinks: EmployeeRow[] = shop.employees.map((emp) => {
+    // بناء الرابط المباشر
     const orderPortalUrl = buildEmployeeOrderPortalUrl(emp.id, emp.orderPortalToken, baseUrl);
-    const message = renderEmployeeWhatsappShareTemplate({
-      template: employeeShareTemplate,
-      customerName: emp.name,
-      shopName: shop.name,
-      customerLink: orderPortalUrl,
-      shopLocation: shop.locationUrl,
-    });
-    const whatsappLink = whatsappAppUrl(emp.phone, message);
+
+    // توليد رابط الواتساب فقط إذا كان الرقم صالحاً وبشكل مختصر
+    let whatsappLink = "";
+    if (emp.phone && emp.phone.length > 5) {
+      const message = renderEmployeeWhatsappShareTemplate({
+        template: employeeShareTemplate,
+        customerName: emp.name,
+        shopName: shop.name,
+        customerLink: orderPortalUrl,
+        shopLocation: shop.locationUrl,
+      });
+      whatsappLink = whatsappAppUrl(emp.phone, message);
+    }
 
     return {
       id: emp.id,
