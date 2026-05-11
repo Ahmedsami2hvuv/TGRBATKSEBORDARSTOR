@@ -180,8 +180,7 @@ export async function submitOrder(
     const subtotal = new Decimal(subtotalNum);
 
     // جلب بيانات الموظف والمحل
-    const shopDeliveryPrice = submitter.shop.region.deliveryPrice.toNumber();
-    const shopDel = shopDeliveryPrice < 100 ? shopDeliveryPrice * 1000 : shopDeliveryPrice;
+    const shopDel = submitter.shop.region.deliveryPrice.toNumber();
 
     const custRegion = await prisma.region.findUnique({
       where: { id: customerRegionId },
@@ -189,8 +188,7 @@ export async function submitOrder(
     });
     if (!custRegion) return { error: "المنطقة غير صالحة" };
 
-    const custDeliveryPrice = custRegion.deliveryPrice.toNumber();
-    const custDel = custDeliveryPrice < 100 ? custDeliveryPrice * 1000 : custDeliveryPrice;
+    const custDel = custRegion.deliveryPrice.toNumber();
 
     const delivery = new Decimal(Math.max(shopDel, custDel));
     const total = subtotal.plus(delivery);

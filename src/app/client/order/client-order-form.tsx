@@ -197,7 +197,7 @@ function ClientOrderFormInner({
   const hasOrderPrice = normalizedPrice.length > 0;
   const parsedPrice = hasOrderPrice ? parseFloat(normalizedPrice) : NaN;
   const subtotal = hasOrderPrice && !Number.isNaN(parsedPrice) ? parsedPrice : null;
-  const dPrice = selected ? parseFloat(selected.deliveryPrice) : 0;
+  const dPrice = selected ? (parseFloat(selected.deliveryPrice) / ALF_PER_DINAR) : 0;
   const totalPrice = (subtotal || 0) + dPrice;
 
   const historyHrefNav = `/client/order/history?${new URLSearchParams({ e, exp, s: sig, phone: customerPhone }).toString()}`;

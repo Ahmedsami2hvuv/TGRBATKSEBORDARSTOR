@@ -124,8 +124,8 @@ export async function updateRegion(prevState: any, formData: FormData) {
 // Ø§Ù„Ø¯Ø§Ù„Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…Ø© ÙÙŠ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø³Ø±ÙŠØ¹Ø©
 export async function updateRegionAction(id: string, name: string, price: number) {
   try {
-    // Ù†Ø¹ØªØ¨Ø± Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ù‚Ø§Ø¯Ù… Ù…Ù† Ø§Ù„ÙˆØ§Ø¬Ù‡Ø© Ø¯Ø§Ø¦Ù…Ø§Ù‹ Ø¨Ù€ "Ø§Ù„Ø£Ù„Ù" ÙˆÙ†Ø­ÙˆÙ„Ù‡ Ù„Ù„Ø¯ÙŠÙ†Ø§Ø±
-    const dinarPrice = price * 1000;
+    // السعر القادم من الواجهة هو السعر النهائي (3 تعني 3 آلاف)
+    const dinarPrice = price;
 
     await prisma.region.update({
       where: { id },
@@ -141,16 +141,16 @@ export async function updateRegionAction(id: string, name: string, price: number
   }
 }
 
-// Ø¯Ø§Ù„Ø© Ù„Ø¥ØµÙ„Ø§Ø­ ÙƒØ§ÙØ© Ø§Ù„Ø£Ø³Ø¹Ø§Ø± Ø§Ù„ØªØ§Ù„ÙØ© ÙÙŠ Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª
+// دالة لتحويل كافة الأسعار في قاعدة البيانات من (3000) إلى (3) لتتوافق مع النظام الجديد
 export async function fixAllDatabaseDeliveryPrices() {
   try {
-    // 1. Ø¥ØµÙ„Ø§Ø­ Ø§Ù„Ù…Ù†Ø§Ø·Ù‚
+    // 1. إصلاح المناطق
     const regions = await prisma.region.findMany();
     for (const r of regions) {
       const p = Number(r.deliveryPrice);
-      if (p > 0 && p < 1000) {
-        // Ø¥Ø°Ø§ ÙƒØ§Ù† Ø§Ù„Ø³Ø¹Ø± 3 Ø£Ùˆ 0.003 Ù…Ø«Ù„Ø§Ù‹ØŒ Ù†Ø­ÙˆÙ„Ù‡ Ø¥Ù„Ù‰ 3000
-        const correctedPrice = p < 1 ? p * 1000000 : p * 1000;
+      if (p >= 1000) {
+        // إذا كان السعر 3000 أو أكثر، نقسمه على 1000 ليصبح 3
+        const correctedPrice = p / 1000;
         await prisma.region.update({
           where: { id: r.id },
           data: { deliveryPrice: correctedPrice }
@@ -158,17 +158,17 @@ export async function fixAllDatabaseDeliveryPrices() {
       }
     }
 
-    // 2. Ø¥ØµÙ„Ø§Ø­ Ø§Ù„Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ù…Ø¹Ù„Ù‚Ø© Ø§Ù„ØªÙŠ ØªØ£Ø«Ø±Øª Ø¨Ø§Ù„Ø®Ø·Ø£
+    // 2. إصلاح الطلبات المعلقة
     const orders = await prisma.order.findMany({
       where: {
         status: "pending",
-        deliveryPrice: { lt: 1000, gt: 0 }
+        deliveryPrice: { gte: 1000 }
       }
     });
 
     for (const o of orders) {
       const p = Number(o.deliveryPrice);
-      const correctedPrice = p < 1 ? p * 1000000 : p * 1000;
+      const correctedPrice = p / 1000;
       await prisma.order.update({
         where: { id: o.id },
         data: { deliveryPrice: correctedPrice }
