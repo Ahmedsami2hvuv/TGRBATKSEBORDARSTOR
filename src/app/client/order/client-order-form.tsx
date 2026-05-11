@@ -197,6 +197,8 @@ function ClientOrderFormInner({
   const hasOrderPrice = normalizedPrice.length > 0;
   const parsedPrice = hasOrderPrice ? parseFloat(normalizedPrice) : NaN;
   const subtotal = hasOrderPrice && !Number.isNaN(parsedPrice) ? parsedPrice : null;
+  const dPrice = selected ? parseFloat(selected.deliveryPrice) : 0;
+  const totalPrice = (subtotal || 0) + dPrice;
 
   const historyHrefNav = `/client/order/history?${new URLSearchParams({ e, exp, s: sig, phone: customerPhone }).toString()}`;
   const accountHrefNav = clientOrderAccountPath(e, exp, sig);
@@ -324,6 +326,38 @@ function ClientOrderFormInner({
               <input ref={orderPriceRef} name="orderSubtotal" inputMode="decimal" value={orderPrice} onChange={(e) => setOrderPrice(e.target.value)} className={`${inputClass} font-mono tabular-nums text-lg font-black animate-placeholder ${isPriceErr ? inputErrorClass : ""}`} placeholder="اكتب السعر هنا" />
             </label>
 
+            <div className="relative">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sm font-bold text-slate-600 px-1">منطقة الزبون *</span>
+                <input ref={regionSearchRef} value={q} onChange={(e) => setQ(e.target.value)} className={`${inputClass} ${isRegionErr ? inputErrorClass : ""}`} placeholder="ابحث عن المنطقة..." required />
+              </label>
+
+              {hits.length > 0 && !(selected && q === selected.name) && (
+                <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-100">
+                  {hits.map((h) => (
+                    <button key={h.id} type="button" onClick={() => { setSelected(h); setQ(h.name); setHits([]); }} className="flex w-full flex-col px-4 py-3 text-right transition hover:bg-sky-50 border-b border-slate-50 last:border-0">
+                      <span className="text-sm font-black text-slate-900">{h.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5 text-[11px] font-black text-slate-700 shadow-inner">
+              <div className="flex gap-1">
+                <span>سعر الطلب:</span>
+                <span className="text-slate-900">{subtotal ?? 0}</span>
+              </div>
+              <div className="flex gap-1">
+                <span>التوصيل:</span>
+                <span className="text-slate-900">{dPrice}</span>
+              </div>
+              <div className="flex gap-1 text-emerald-700">
+                <span>السعر الكلي:</span>
+                <span className="font-black">{totalPrice}</span>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label className="group relative flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-rose-50 bg-white p-4 transition-all hover:border-rose-200 hover:bg-rose-50 shadow-sm">
                 <div className="mt-1 relative flex items-center justify-center">
@@ -351,23 +385,6 @@ function ClientOrderFormInner({
               <span className="text-sm font-bold text-slate-600 px-1">وقت التوصيل المفضل *</span>
               <input ref={orderTimeRef} name="orderTime" required value={orderTime} onChange={(e) => setOrderTime(e.target.value)} className={`${inputClass} ${isTimeErr ? inputErrorClass : ""}`} placeholder="مثال: بعد الظهر، الساعة 4، …" />
             </label>
-
-            <div className="relative">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-bold text-slate-600 px-1">منطقة الزبون *</span>
-                <input ref={regionSearchRef} value={q} onChange={(e) => setQ(e.target.value)} className={`${inputClass} ${isRegionErr ? inputErrorClass : ""}`} placeholder="ابحث عن المنطقة..." required />
-              </label>
-
-              {hits.length > 0 && !(selected && q === selected.name) && (
-                <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-100">
-                  {hits.map((h) => (
-                    <button key={h.id} type="button" onClick={() => { setSelected(h); setQ(h.name); setHits([]); }} className="flex w-full flex-col px-4 py-3 text-right transition hover:bg-sky-50 border-b border-slate-50 last:border-0">
-                      <span className="text-sm font-black text-slate-900">{h.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
 
             <label className="flex flex-col gap-1.5">
               <span className="text-sm font-bold text-slate-600 px-1">ملاحظات وقائمة الطلب</span>
@@ -465,20 +482,6 @@ function ClientOrderFormInner({
           )}
         </section>
 
-        {subtotal != null && (
-          <section className="kse-glass-dark overflow-hidden rounded-3xl border border-emerald-200 shadow-md">
-            <div className="bg-emerald-600 px-6 py-3 text-center text-xs font-black uppercase tracking-widest text-white">
-              ملخص الطلب
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between text-sm font-bold text-slate-500">
-                <span>المجموع:</span>
-                <span className="font-mono tabular-nums text-slate-900">{subtotal}</span>
-              </div>
-              <div className="text-[11px] font-bold text-slate-500">بدون التجهيز والتوصيل</div>
-            </div>
-          </section>
-        )}
 
         {state.error ? (
           <div className="rounded-2xl border-2 border-rose-200 bg-rose-50 p-4 text-center text-sm font-black text-rose-800 animate-shake">
@@ -487,7 +490,7 @@ function ClientOrderFormInner({
         ) : null}
 
         <button type="submit" disabled={pending} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-800 py-4 text-lg font-black text-white shadow-xl shadow-emerald-200 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50">
-          {pending ? "جارٍ إرسال الطلب..." : initialOrder ? "تحديث الطلبية الآن" : "إرسال الطلبية للمندوب"}
+          {pending ? "جارٍ إرسال الطلب..." : initialOrder ? "تحديث الطلبية الآن" : "إرسال الطلب للاداره"}
         </button>
       </form>
 
