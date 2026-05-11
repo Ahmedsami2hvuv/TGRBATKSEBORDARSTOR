@@ -251,6 +251,10 @@ export async function updatePreparerShoppingDraft(
     const deliveryPriceRaw = formData.get("deliveryPrice");
     const customDeliveryAlf = deliveryPriceRaw !== null ? (String(deliveryPriceRaw) === "" ? null : Number(deliveryPriceRaw)) : (dbData.customDeliveryAlf ?? null);
 
+    const orderType = String(formData.get("orderType") ?? dbData.orderType ?? "تجهيز تسوق");
+    const orderSubtotalRaw = formData.get("orderSubtotal");
+    const orderSubtotalAlf = orderSubtotalRaw !== null ? (String(orderSubtotalRaw) === "" ? null : Number(orderSubtotalRaw)) : (dbData.orderSubtotalAlf ?? null);
+
     const newStatus = mergedProducts.every((p: any) => p.buyAlf != null && p.buyAlf !== "") ? "priced" : "draft";
 
     const titleLine = String(formData.get("titleLine") ?? draft.titleLine);
@@ -274,6 +278,8 @@ export async function updatePreparerShoppingDraft(
                     ...(rd.data as any),
                     products: mergedProducts,
                     customDeliveryAlf,
+                    orderType,
+                    orderSubtotalAlf,
                     lastActivityAt: new Date().toISOString()
                 },
                 status: newStatus as any
@@ -336,7 +342,14 @@ export async function submitPreparerShoppingDraft(
 
     const sumSellAlf = products.reduce((acc, p) => acc + Number(p.sellAlf), 0);
     const extraAlf = calculateExtraAlfFromPlacesCount(placesCount);
-    const subtotal = new Decimal(sumSellAlf + extraAlf).mul(ALF_PER_DINAR);
+
+    let subtotalValueAlf = sumSellAlf + extraAlf;
+    // إذا كانت هناك قيمة يدوية لسعر الطلب ولا توجد منتجات مسعرة، نستخدم القيمة اليدوية
+    if (products.length === 0 && draftData?.orderSubtotalAlf != null && Number(draftData.orderSubtotalAlf) > 0) {
+        subtotalValueAlf = Number(draftData.orderSubtotalAlf);
+    }
+
+    const subtotal = new Decimal(subtotalValueAlf).mul(ALF_PER_DINAR);
     const total = subtotal.plus(delivery);
 
     // --- توليد فواتير الشراء المنفصلة وتوزيعها ---
@@ -371,7 +384,7 @@ export async function submitPreparerShoppingDraft(
       data: {
         shopId: shop.id,
         status: "pending",
-        orderType: "تجهيز تسوق",
+        orderType: draftData?.orderType || "تجهيز تسوق",
         customerPhone: draft.customerPhone,
         customerRegionId: draft.customerRegionId,
         customerLandmark: draft.customerLandmark,
@@ -487,7 +500,10 @@ export async function createPreparerShoppingDraftFromAnalysis(
 
         const customerRegionId = String(formData.get("customerRegionId") ?? "").trim() || null;
         const deliveryAlfRaw = formData.get("deliveryPrice");
-        const customDeliveryAlf = deliveryAlfRaw ? Number(deliveryAlfRaw) : null;
+        const customDeliveryAlf = (deliveryAlfRaw && String(deliveryAlfRaw).trim() !== "") ? Number(deliveryAlfRaw) : null;
+        const orderType = String(formData.get("orderType") ?? "تجهيز تسوق");
+        const orderSubtotalRaw = formData.get("orderSubtotal");
+        const orderSubtotalAlf = (orderSubtotalRaw && String(orderSubtotalRaw).trim() !== "") ? Number(orderSubtotalRaw) : null;
 
         const draft = await prisma.companyPreparerShoppingDraft.create({
             data: {
@@ -501,7 +517,9 @@ export async function createPreparerShoppingDraftFromAnalysis(
                 rawListText: String(formData.get("rawListText") ?? ""),
                 data: {
                     products: productLines.map(line => ({ line, buyAlf: null, sellAlf: null, pricedBy: null, pricedById: null })),
-                    customDeliveryAlf: (customDeliveryAlf !== null && !isNaN(customDeliveryAlf)) ? customDeliveryAlf : null
+                    customDeliveryAlf: (customDeliveryAlf !== null && !isNaN(customDeliveryAlf)) ? customDeliveryAlf : null,
+                    orderType,
+                    orderSubtotalAlf: (orderSubtotalAlf !== null && !isNaN(orderSubtotalAlf)) ? orderSubtotalAlf : null,
                 }
             }
         });

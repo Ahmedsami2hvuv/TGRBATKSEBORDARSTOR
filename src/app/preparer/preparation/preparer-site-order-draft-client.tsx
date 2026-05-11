@@ -43,6 +43,8 @@ export function PreparerSiteOrderDraftClient({
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [orderTime, setOrderTime] = useState("فوري");
+  const [orderType, setOrderType] = useState("تجهيز تسوق");
+  const [orderSubtotal, setOrderSubtotal] = useState("");
   const [customerLandmark, setCustomerLandmark] = useState("");
   const [deliveryPrice, setDeliveryPrice] = useState("");
   const [q, setQ] = useState("");
@@ -173,6 +175,7 @@ export function PreparerSiteOrderDraftClient({
       setCustomerPhone(phone);
       setCustomerName(site.customerName.trim());
       setCustomerLandmark(site.landmark.trim());
+      setOrderSubtotal(site.totalPrice ? site.totalPrice.toString() : "");
       setRawListText(t);
       setQ(title);
       setSelected(null);
@@ -280,6 +283,10 @@ export function PreparerSiteOrderDraftClient({
             <h2 className="text-sm font-black text-sky-950">2) تأكيد البيانات</h2>
             <label className="mt-3 flex flex-col gap-1"><span className="text-xs font-medium text-slate-800">عنوان المنطقة</span><input value={titleLine} onChange={(ev) => setTitleLine(ev.target.value)} className={inputClass} /></label>
             <label className="mt-3 flex flex-col gap-1"><span className="text-xs font-medium text-slate-800">رقم الزبون *</span><input value={customerPhone} onChange={(ev) => setCustomerPhone(ev.target.value)} className={`${inputClass} font-mono`} /></label>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1"><span className="text-xs font-medium text-slate-800">نوع الطلب</span><input value={orderType} onChange={(ev) => setOrderType(ev.target.value)} className={inputClass} /></label>
+              <label className="flex flex-col gap-1"><span className="text-xs font-medium text-slate-800">سعر الطلب (اختياري)</span><input value={orderSubtotal} onChange={(ev) => setOrderSubtotal(ev.target.value)} className={`${inputClass} font-mono`} placeholder="سعر المواد..." inputMode="decimal" /></label>
+            </div>
             <label className="mt-3 flex flex-col gap-1"><span className="text-xs font-medium text-slate-800">سعر التوصيل (اختياري)</span><input value={deliveryPrice} onChange={(ev) => setDeliveryPrice(ev.target.value)} className={`${inputClass} font-mono`} placeholder="تعديل سعر التوصيل..." inputMode="decimal" /></label>
             <label className="mt-3 flex flex-col gap-1"><span className="text-xs font-medium text-slate-800">وقت الطلب *</span><input value={orderTime} onChange={(ev) => setOrderTime(ev.target.value)} className={inputClass} /></label>
             <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
@@ -301,6 +308,8 @@ export function PreparerSiteOrderDraftClient({
             <input type="hidden" name="customerLandmark" value={customerLandmark} />
             <input type="hidden" name="deliveryPrice" value={deliveryPrice} />
             <input type="hidden" name="orderTime" value={orderTime} />
+            <input type="hidden" name="orderType" value={orderType} />
+            <input type="hidden" name="orderSubtotal" value={orderSubtotal} />
             {state.error ? <div className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{state.error}</div> : null}
             <button type="submit" disabled={pending || !canSubmit} className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-sky-600 px-4 py-3.5 text-sm font-black text-white disabled:opacity-50">{pending ? "جارٍ الحفظ…" : "إضافة إلى خانة التجهيز"}</button>
           </form>
