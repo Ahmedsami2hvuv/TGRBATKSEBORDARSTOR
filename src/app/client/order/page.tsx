@@ -31,24 +31,26 @@ type Props = {
 };
 
 export default async function ClientOrderPage(props: Props) {
-  try {
-    const sp = await props.searchParams;
-    const v = verifyEmployeeOrderPortalQuery(sp.e, sp.exp, sp.s);
+  const sp = await props.searchParams;
 
-    if (!v.ok) {
-      return (
-        <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800">
-          <div className="kse-app-inner mx-auto max-w-md">
-            <div className="kse-glass-dark rounded-2xl border border-rose-300 p-8 text-center">
-              <p className="text-lg font-bold text-rose-700">تعذّر فتح صفحة إدخال الطلب</p>
-              <p className="mt-2 text-sm text-slate-600">{invalidMessage(v.reason)}</p>
-            </div>
+  // التحقق الأولي سريع جداً قبل جلب بيانات قاعدة البيانات
+  const v = verifyEmployeeOrderPortalQuery(sp.e, sp.exp, sp.s);
+
+  if (!v.ok) {
+    return (
+      <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800">
+        <div className="kse-app-inner mx-auto max-w-md">
+          <div className="kse-glass-dark rounded-2xl border border-rose-300 p-8 text-center shadow-sm">
+            <p className="text-lg font-bold text-rose-700">تعذّر فتح صفحة إدخال الطلب</p>
+            <p className="mt-2 text-sm text-slate-600">{invalidMessage(v.reason)}</p>
           </div>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
-    // جلب بيانات الموظف مع المحل والمنطقة بأمان
+  try {
+    // جلب البيانات الأساسية فقط وبسرعة
     const employee = await prisma.employee.findUnique({
       where: { id: v.employeeId },
       select: {
