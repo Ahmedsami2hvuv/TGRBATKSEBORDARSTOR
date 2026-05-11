@@ -109,6 +109,8 @@ export default async function PreparerPreparationEditPage({ params, searchParams
       preparerShoppingJson: true,
       submittedByCompanyPreparerId: true,
       submissionSource: true,
+      deliveryPrice: true,
+      vehiclePreference: true,
     },
   });
 
@@ -244,6 +246,8 @@ export default async function PreparerPreparationEditPage({ params, searchParams
             customerName: order.customer?.name?.trim() || "",
             orderTime: order.orderNoteTime?.trim() || "فوري",
             customerLandmark: order.customerLandmark?.trim() || "",
+            vehiclePreference: (order as any).vehiclePreference || null,
+            deliveryPriceOverride: order.deliveryPrice ? Number(order.deliveryPrice) : null,
           })}
         />
       </div>

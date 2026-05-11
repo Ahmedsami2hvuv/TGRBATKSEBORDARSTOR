@@ -167,6 +167,8 @@ export async function submitOrder(
     const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
     const prepaidAll = formData.get("prepaidAll") === "on";
     const reversePickup = formData.get("reversePickup") === "on";
+    const vehiclePreference = formData.get("vehiclePreference") as string || null;
+    const deliveryPriceOverride = formData.get("deliveryPrice") ? Number(formData.get("deliveryPrice")) : null;
 
     if (!orderType) return { error: "نوع الطلب مطلوب" };
     if (!customerRegionId) return { error: "اختر المنطقة" };
@@ -190,7 +192,11 @@ export async function submitOrder(
 
     const custDel = custRegion.deliveryPrice.toNumber();
 
-    const delivery = new Decimal(Math.max(shopDel, custDel));
+    const defaultDelivery = new Decimal(Math.max(shopDel, custDel));
+    const delivery = (deliveryPriceOverride !== null && deliveryPriceOverride >= Number(defaultDelivery))
+        ? new Decimal(deliveryPriceOverride)
+        : defaultDelivery;
+
     const total = subtotal.plus(delivery);
 
     // الصور والصوت
@@ -257,6 +263,7 @@ export async function submitOrder(
       submissionSource: "customer_via_employee_link",
       submittedByEmployeeId: submitter.id,
       prepaidAll,
+      vehiclePreference,
     };
 
     const order = await prisma.order.create({

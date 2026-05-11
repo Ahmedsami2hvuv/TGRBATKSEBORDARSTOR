@@ -538,8 +538,6 @@ export async function submitPreparerOrder(
     const customerLocationUrl = String(formData.get("customerLocationUrl") ?? "").trim();
     const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
     const prepaidAll = formData.get("prepaidAll") === "on";
-    const vehiclePreference = formData.get("vehiclePreference") as string || null;
-    const deliveryPriceOverride = formData.get("deliveryPrice") ? Number(formData.get("deliveryPrice")) : null;
 
     const customerPhone = normalizeIraqMobileLocal11(customerPhoneRaw);
     if (!customerPhone) return { error: "رقم هاتف الزبون غير صالح." };
@@ -583,9 +581,7 @@ export async function submitPreparerOrder(
     });
 
     const defaultDelivery = Decimal.max(shop.region.deliveryPrice, region.deliveryPrice);
-    const delivery = (deliveryPriceOverride !== null && deliveryPriceOverride >= Number(defaultDelivery))
-        ? new Decimal(deliveryPriceOverride)
-        : defaultDelivery;
+    const delivery = defaultDelivery;
 
     const total = new Decimal(subtotalParsed.value).plus(delivery);
 
@@ -609,7 +605,7 @@ export async function submitPreparerOrder(
         totalAmount: total,
         prepaidAll,
         imageUrl,
-        vehiclePreference,
+        vehiclePreference: String(formData.get("vehiclePreference") ?? "").trim() || null,
         orderImageUploadedByName: imageUrl ? PREPARER_PORTAL_LABEL : null,
         shopDoorPhotoUrl,
         shopDoorPhotoUploadedByName: shopDoorPhotoUrl ? PREPARER_PORTAL_LABEL : null,
@@ -675,6 +671,10 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
     const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
     const titleLine = String(formData.get("titleLine") ?? "").trim() || order.customerRegion?.name || "";
 
+    const vehiclePreference = String(formData.get("vehiclePreference") ?? "").trim() || null;
+    const deliveryPriceOverrideRaw = String(formData.get("deliveryPriceOverride") ?? "").trim();
+    const deliveryPriceOverrideAlf = deliveryPriceOverrideRaw ? parseFloat(deliveryPriceOverrideRaw.replace(/,/g, ".")) : null;
+
     const shoppingPayloadRaw = String(formData.get("shoppingPayload") ?? "");
     let payload: any;
     try {
@@ -728,7 +728,12 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
     const extraAlf = calculateExtraAlfFromPlacesCount(placesCount);
     const sumSellAlf = products.reduce((acc, p) => acc + p.sellAlf, 0);
     const subtotalDinar = new Decimal(sumSellAlf + extraAlf).mul(ALF_PER_DINAR);
-    const deliveryDinar = Decimal.max(shop.region.deliveryPrice, customerRegion.deliveryPrice);
+
+    const baseRegionDeliveryDinar = (deliveryPriceOverrideAlf != null && Number.isFinite(deliveryPriceOverrideAlf))
+      ? new Decimal(deliveryPriceOverrideAlf).mul(ALF_PER_DINAR)
+      : customerRegion.deliveryPrice;
+
+    const deliveryDinar = Decimal.max(shop.region.deliveryPrice, baseRegionDeliveryDinar);
     const totalDinar = subtotalDinar.plus(deliveryDinar);
     const deliveryAlf = Number(deliveryDinar.toString()) / ALF_PER_DINAR;
 
@@ -779,6 +784,7 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
           deliveryPrice: deliveryDinar,
           totalAmount: totalDinar,
           summary,
+          vehiclePreference,
           submittedByCompanyPreparerId: order.submittedByCompanyPreparerId || v.preparerId,
           submissionSource: isWebStoreOrder ? "company_preparer" : order.submissionSource,
           preparerShoppingJson: {
@@ -1080,7 +1086,83 @@ export async function uploadPreparerPortalShopDoorPhoto(
   }
 }
 
-export async function updatePreparerOrderFields(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> { return { ok: true }; }
+export async function updatePreparerOrderFields(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "الرابط غير صالح." };
+
+    const orderId = String(formData.get("orderId") ?? "").trim();
+    if (!orderId) return { error: "معرف الطلب ناقص." };
+
+    const gate = await assertPreparerLinkedToOrderShop(v.preparerId, orderId);
+    if (!gate.ok) return { error: gate.error };
+
+    const orderType = String(formData.get("orderType") ?? "").trim();
+    const customerPhoneRaw = String(formData.get("customerPhone") ?? "").trim();
+    const orderSubtotalRaw = String(formData.get("orderSubtotal") ?? "").trim();
+    const vehiclePreference = String(formData.get("vehiclePreference") ?? "").trim() || null;
+    const deliveryPriceOverrideRaw = String(formData.get("deliveryPriceOverride") ?? "").trim();
+
+    const data: Prisma.OrderUpdateInput = {};
+
+    if (orderType) data.orderType = orderType;
+    if (customerPhoneRaw) {
+      const p = normalizeIraqMobileLocal11(customerPhoneRaw);
+      if (p) data.customerPhone = p;
+    }
+    if (orderSubtotalRaw) {
+      const p = parseAlfInputToDinarDecimalRequired(orderSubtotalRaw);
+      if (p.ok) data.orderSubtotal = p.value;
+    }
+
+    data.vehiclePreference = vehiclePreference;
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { shop: { include: { region: true } }, customerRegion: true },
+    });
+
+    if (order) {
+      const subtotal = data.orderSubtotal ? new Decimal(data.orderSubtotal as any) : order.orderSubtotal;
+
+      let baseRegionDeliveryDinar = order.customerRegion?.deliveryPrice || new Decimal(0);
+      if (deliveryPriceOverrideRaw) {
+        const overrideAlf = parseFloat(deliveryPriceOverrideRaw.replace(/,/g, "."));
+        if (Number.isFinite(overrideAlf)) {
+          baseRegionDeliveryDinar = new Decimal(overrideAlf).mul(ALF_PER_DINAR);
+        }
+      }
+
+      const delivery = Decimal.max(order.shop.region.deliveryPrice, baseRegionDeliveryDinar);
+      data.deliveryPrice = delivery;
+      data.totalAmount = subtotal.plus(delivery);
+    }
+
+    const orderImg = formData.get("orderImage");
+    const shopDoorImg = formData.get("shopDoorPhoto");
+
+    if (orderImg instanceof File && orderImg.size > 0) {
+      data.imageUrl = await saveOrderImageUploaded(orderImg, MAX_ORDER_IMAGE_BYTES);
+      data.orderImageUploadedByName = PREPARER_PORTAL_LABEL;
+    }
+    if (shopDoorImg instanceof File && shopDoorImg.size > 0) {
+      data.shopDoorPhotoUrl = await saveShopDoorPhotoUploaded(shopDoorImg, MAX_ORDER_IMAGE_BYTES);
+      data.shopDoorPhotoUploadedByName = PREPARER_PORTAL_LABEL;
+    }
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data,
+    });
+
+    revalidatePath("/preparer");
+    revalidatePath(`/preparer/order/${orderId}`);
+    return { ok: true };
+  } catch (e) {
+    console.error("updatePreparerOrderFields error:", e);
+    return { error: "فشل تحديث البيانات." };
+  }
+}
 export async function setPreparerPresenceFromForm(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> { return { ok: true }; }
 export async function bulkAssignOrdersByPreparer(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> {
   const v = readPortal(formData);

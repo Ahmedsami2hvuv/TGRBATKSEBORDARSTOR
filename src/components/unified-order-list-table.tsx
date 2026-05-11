@@ -367,6 +367,12 @@ export function UnifiedOrderListTable({
                               <span className="tabular-nums font-bold text-[11px] text-slate-400">#{o.shortId}</span>
                             )}
                           </div>
+                          {o.vehiclePreference === "bike" && (
+                            <span className="text-sm" title="يفضل دراجة">🏍️</span>
+                          )}
+                          {o.vehiclePreference === "car" && (
+                            <span className="text-sm" title="يفضل سيارة">🚗</span>
+                          )}
                         </div>
                         {renderBelowOrderId && (
                           <div className="mt-1">{renderBelowOrderId(o)}</div>

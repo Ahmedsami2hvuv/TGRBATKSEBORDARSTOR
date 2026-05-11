@@ -83,6 +83,8 @@ export type MandoubRow = {
   preparerAudioUrl?: string | null;
   /** تسجيل صوتي من الإدارة */
   adminAudioUrl?: string | null;
+  /** تفضيل نوع المركبة (Bike/Car) */
+  vehiclePreference?: string | null;
 };
 
 function buildOrderDetailHref(

@@ -270,6 +270,7 @@ export async function loadPreparerPortalOrderTableData(args: {
       customerDoorPhotoUrl: customerDoorPhotoUrl || null,
       secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrl || null,
       routeMode: (safeString(o.routeMode) || "single") as "single" | "double",
+      vehiclePreference: o.vehiclePreference || null,
     };
   });
 

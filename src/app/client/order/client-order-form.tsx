@@ -113,6 +113,8 @@ function ClientOrderFormInner({
   const [reversePickup, setReversePickup] = useState(
     initialOrder ? isReversePickupOrderType(initialOrder.orderType) : false
   );
+  const [vehiclePreference, setVehiclePreference] = useState("");
+  const [deliveryPriceOverride, setDeliveryPriceOverride] = useState<string>("");
 
   const [extraInfoOpen, setExtraInfoOpen] = useState(false);
   const [showNoPriceConfirm, setShowNoPriceConfirm] = useState(false);
@@ -326,6 +328,32 @@ function ClientOrderFormInner({
               <input ref={orderPriceRef} name="orderSubtotal" inputMode="decimal" value={orderPrice} onChange={(e) => setOrderPrice(e.target.value)} className={`${inputClass} font-mono tabular-nums text-lg font-black animate-placeholder ${isPriceErr ? inputErrorClass : ""}`} placeholder="اكتب السعر هنا" />
             </label>
 
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-bold text-slate-600 px-1">نوع المركبة (اختياري)</span>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "", label: "تلقائي", icon: "✨" },
+                  { id: "bike", label: "دراجة", icon: "🏍️" },
+                  { id: "car", label: "سيارة", icon: "🚗" },
+                ].map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setVehiclePreference(v.id)}
+                    className={`flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all ${
+                      vehiclePreference === v.id
+                        ? "border-emerald-600 bg-emerald-50 text-emerald-700 shadow-sm"
+                        : "border-slate-100 bg-white text-slate-400 hover:border-slate-200"
+                    }`}
+                  >
+                    <span className="text-xl">{v.icon}</span>
+                    <span className="text-[10px] font-black">{v.label}</span>
+                  </button>
+                ))}
+              </div>
+              <input type="hidden" name="vehiclePreference" value={vehiclePreference} />
+            </label>
+
             <div className="relative">
               <label className="flex flex-col gap-1.5">
                 <span className="text-sm font-bold text-slate-600 px-1">منطقة الزبون *</span>
@@ -343,18 +371,44 @@ function ClientOrderFormInner({
               )}
             </div>
 
-            <div className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5 text-[11px] font-black text-slate-700 shadow-inner">
-              <div className="flex gap-1">
-                <span>سعر الطلب:</span>
-                <span className="text-slate-900">{subtotal ?? 0}</span>
+            <div className="flex flex-col gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-3 text-[11px] font-black text-slate-700 shadow-inner">
+              <div className="flex items-center justify-between">
+                <div className="flex gap-1">
+                  <span>سعر الطلب:</span>
+                  <span className="text-slate-900">{subtotal ?? 0}</span>
+                </div>
+                <div className="flex gap-1">
+                  <span>التوصيل الأساسي:</span>
+                  <span className="text-slate-900">{dPrice}</span>
+                </div>
               </div>
-              <div className="flex gap-1">
-                <span>التوصيل:</span>
-                <span className="text-slate-900">{dPrice}</span>
-              </div>
-              <div className="flex gap-1 text-emerald-700">
+
+              {selected && (
+                <div className="mt-1 pt-2 border-t border-slate-200/50">
+                  <span className="block mb-1 text-[10px] text-sky-700">سعر التوصيل الفعلي (يمكنك زيادته للطلب المستعجل):</span>
+                  <div className="relative">
+                    <input
+                      name="deliveryPrice"
+                      type="number"
+                      step="0.01"
+                      value={deliveryPriceOverride || dPrice.toFixed(2)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val || parseFloat(val) >= dPrice) {
+                          setDeliveryPriceOverride(val);
+                        }
+                      }}
+                      className="w-full rounded-lg border border-sky-200 bg-white px-3 py-1.5 font-mono font-black text-sky-800 outline-none focus:ring-2 focus:ring-sky-100"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-1 pt-2 border-t border-slate-200 flex items-center justify-between text-emerald-700">
                 <span>السعر الكلي:</span>
-                <span className="font-black">{totalPrice}</span>
+                <span className="text-lg font-black">
+                  {(subtotal || 0) + (deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice)}
+                </span>
               </div>
             </div>
 

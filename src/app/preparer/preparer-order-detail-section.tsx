@@ -319,8 +319,19 @@ export function PreparerOrderDetailSection({
         );
       }
       case "preparer_prices": {
+        const bikeIcon = "🏍️";
+        const carIcon = "🚗";
+        const vehicleIcon = order.vehiclePreference === "car" ? carIcon : (order.vehiclePreference === "bike" ? bikeIcon : null);
+        const vehicleLabel = order.vehiclePreference === "car" ? "سيارة" : (order.vehiclePreference === "bike" ? "دراجة" : null);
+
         return (
           <div key="preparer_prices" className="space-y-4 rounded-xl border-2 border-sky-200 bg-sky-50/50 p-4 sm:p-5" style={blockStyle}>
+            {vehicleIcon && (
+              <div className="flex items-center gap-2 rounded-lg bg-white/60 px-3 py-2 border border-sky-100 shadow-sm">
+                <span className="text-xl">{vehicleIcon}</span>
+                <span className="text-sm font-bold text-sky-900">نوع المركبة المفضل: {vehicleLabel}</span>
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
               <DynamicIcon iconKey="wallet_cash" config={icons} className="h-5 w-5 text-slate-500" fallback={null} />
               <span className="text-sm font-bold text-slate-700 sm:text-base">سعر الطلب بدون توصيل: </span>
@@ -545,9 +556,20 @@ export function PreparerOrderDetailSection({
           </div>
         );
       case "price_details":
+        const bikeIcon = "🏍️";
+        const carIcon = "🚗";
+        const vehicleIcon = order.vehiclePreference === "car" ? carIcon : (order.vehiclePreference === "bike" ? bikeIcon : null);
+        const vehicleLabel = order.vehiclePreference === "car" ? "سيارة" : (order.vehiclePreference === "bike" ? "دراجة" : null);
+
         return (
           <div key="pricing" className={`${gridInfoPhoto} mt-6`} style={blockStyle}>
             <div className="min-w-0 space-y-4 rounded-xl border border-sky-100 bg-sky-50/50 p-4 sm:space-y-5 sm:p-5">
+              {vehicleIcon && (
+                <div className="flex items-center gap-2 rounded-lg bg-white/60 px-3 py-2 border border-sky-100 shadow-sm mb-2">
+                  <span className="text-xl">{vehicleIcon}</span>
+                  <span className="text-sm font-bold text-sky-900">المركبة: {vehicleLabel}</span>
+                </div>
+              )}
               <div className="grid grid-cols-1 gap-4 xs:grid-cols-2">
                 <div>
                   <div className="flex items-center gap-1.5 text-sm font-bold text-slate-700 sm:text-base">

@@ -22,10 +22,12 @@ function formatOrderBodyLines(input: {
   shopName: string; customerName: string; regionName: string; orderType: string;
   orderSubtotal: Decimal | null; deliveryPrice: Decimal | null; totalAmount: Decimal | null;
   orderNumber: number; customerPhone: string; orderNoteTime?: string | null;
+  vehiclePreference?: string | null;
 }, options?: { omitPhone?: boolean }): string[] {
   const cust = input.customerName?.trim() || "—";
+  const vehicleEmoji = input.vehiclePreference === "bike" ? " 🏍️" : (input.vehiclePreference === "car" ? " 🚗" : "");
   const lines = [
-    `🏪 (${escapeTelegramHtml(input.shopName)} — ${escapeTelegramHtml(cust)})`,
+    `🏪 (${escapeTelegramHtml(input.shopName)} — ${escapeTelegramHtml(cust)})${vehicleEmoji}`,
     `📍 ${escapeTelegramHtml(input.regionName || "—")}`,
     `📦 ${escapeTelegramHtml(input.orderType || "—")}`,
     alfLine("💵", formatDinarAsAlf(input.orderSubtotal)),

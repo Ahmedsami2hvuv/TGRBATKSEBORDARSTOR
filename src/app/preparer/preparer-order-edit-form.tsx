@@ -113,6 +113,42 @@ export function PreparerOrderEditForm({
         />
       </label>
 
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-bold text-slate-800">تفضيل المركبة</span>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { id: "none", label: "تلقائي", icon: "⚙️" },
+            { id: "bike", label: "دراجة", icon: "🏍️" },
+            { id: "car", label: "سيارة", icon: "🚗" },
+          ].map((v) => (
+            <label
+              key={v.id}
+              className="flex cursor-pointer flex-col items-center gap-1 rounded-xl border-2 border-slate-200 bg-white p-2 transition hover:border-sky-300"
+            >
+              <input
+                type="radio"
+                name="vehiclePreference"
+                value={v.id === "none" ? "" : v.id}
+                className="hidden"
+                defaultChecked={v.id === "none"}
+              />
+              <span className="text-xl">{v.icon}</span>
+              <span className="text-[10px] font-bold">{v.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <label className="flex flex-col gap-1">
+        <span className="text-sm font-bold text-slate-800">تعديل سعر التوصيل الأساسي (اختياري)</span>
+        <input
+          name="deliveryPriceOverride"
+          className="rounded-xl border border-sky-200 px-3 py-2.5 text-sm font-mono"
+          placeholder="مثلاً: 3"
+        />
+        <p className="text-[10px] text-slate-500">* بالألف. سيتم مقارنته بسعر المحل واعتماد الأكبر.</p>
+      </label>
+
       <label className="flex flex-col gap-1">
         <span className="text-sm font-bold text-slate-800">صورة الطلبية (استبدال)</span>
         <input

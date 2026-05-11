@@ -44,6 +44,8 @@ type Props = {
     customerName: string;
     orderTime: string;
     customerLandmark: string;
+    vehiclePreference?: string | null;
+    deliveryPriceOverride?: number | null;
   };
 };
 
@@ -70,6 +72,8 @@ export function PreparerSiteOrderPrepEditClient({
   const [orderTime, setOrderTime] = useState(initialData.orderTime);
   const [customerLandmark, setCustomerLandmark] = useState(initialData.customerLandmark);
   const [shopId, setShopId] = useState(initialData.shopId);
+  const [vehiclePreference, setVehiclePreference] = useState<string | null>(initialData.vehiclePreference || null);
+  const [deliveryPriceOverride, setDeliveryPriceOverride] = useState<string>(initialData.deliveryPriceOverride ? String(initialData.deliveryPriceOverride) : "");
 
   const [selectedPriceIndex, setSelectedPriceIndex] = useState<number | null>(null);
   const [pricingLinesText, setPricingLinesText] = useState("");
@@ -82,7 +86,13 @@ export function PreparerSiteOrderPrepEditClient({
 
   const shop = shops.find((s) => s.id === shopId) ?? shops[0];
   const regionDeliveryAlf = initialData.customerRegionDeliveryDinar / ALF_PER_DINAR;
-  const deliveryAlf = shop ? Math.max(shop.shopDeliveryAlf, regionDeliveryAlf) : regionDeliveryAlf;
+
+  const overrideNum = parseFloat(deliveryPriceOverride.replace(/,/g, ".").trim());
+  const effectiveBaseDeliveryAlf = (Number.isFinite(overrideNum) && overrideNum > 0)
+    ? overrideNum
+    : regionDeliveryAlf;
+
+  const deliveryAlf = shop ? Math.max(shop.shopDeliveryAlf, effectiveBaseDeliveryAlf) : effectiveBaseDeliveryAlf;
 
   const allPriced = useMemo(() => {
     if (products.length === 0) return false;
@@ -301,6 +311,51 @@ export function PreparerSiteOrderPrepEditClient({
         </label>
       </section>
 
+      <section className="kse-glass-dark rounded-2xl border border-violet-200 p-4 shadow-sm">
+        <h2 className="text-sm font-black text-violet-950">تعديل التوصيل والمركبة</h2>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setVehiclePreference("bike")}
+            className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 py-3 transition ${
+              vehiclePreference === "bike" ? "border-sky-600 bg-sky-50 text-sky-900" : "border-slate-200 bg-white text-slate-500"
+            }`}
+          >
+            <span className="text-2xl">🏍️</span>
+            <span className="text-xs font-bold">دراجة</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setVehiclePreference("car")}
+            className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 py-3 transition ${
+              vehiclePreference === "car" ? "border-sky-600 bg-sky-50 text-sky-900" : "border-slate-200 bg-white text-slate-500"
+            }`}
+          >
+            <span className="text-2xl">🚗</span>
+            <span className="text-xs font-bold">سيارة</span>
+          </button>
+        </div>
+
+        <label className="mt-4 flex flex-col gap-1">
+          <span className="text-xs font-bold text-slate-800">تعديل سعر التوصيل الأساسي (اختياري)</span>
+          <div className="relative">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={deliveryPriceOverride}
+              onChange={(e) => setDeliveryPriceOverride(e.target.value)}
+              placeholder={`السعر الأساسي الحالي: ${regionDeliveryAlf}`}
+              className={`${inputClass} font-mono`}
+            />
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+              <span className="text-xs font-bold text-slate-400">ألف</span>
+            </div>
+          </div>
+          <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
+            * سيتم اعتماد السعر الأكبر بين (المحل) و (المنطقة أو هذا التعديل).
+          </p>
+        </label>
+      </section>
 
       <form action={formAction} className="space-y-3">
         <input type="hidden" name="p" value={auth.p} />
@@ -315,6 +370,8 @@ export function PreparerSiteOrderPrepEditClient({
         <input type="hidden" name="customerName" value={customerName} />
         <input type="hidden" name="orderTime" value={orderTime} />
         <input type="hidden" name="customerLandmark" value={customerLandmark} />
+        <input type="hidden" name="vehiclePreference" value={vehiclePreference || ""} />
+        <input type="hidden" name="deliveryPriceOverride" value={deliveryPriceOverride} />
 
         {state.error ? (
           <div className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{state.error}</div>
