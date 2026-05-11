@@ -4,7 +4,7 @@ import { preparerCourierAssignWhere } from "@/lib/courier-assignable";
 import { ALF_PER_DINAR } from "@/lib/money-alf";
 import { preparerPath } from "@/lib/preparer-portal-nav";
 import { loadPreparerPortalOrderTableData } from "@/lib/preparer-portal-order-table-data";
-import { prisma } from "@/lib/prisma";
+import { serializePrisma } from "@/lib/serialize-prisma";
 import { PreparerOrdersSection } from "../preparer-orders-client";
 import { PreparerSiteOrderDraftClient } from "./preparer-site-order-draft-client";
 import { whatsappMeUrl } from "@/lib/whatsapp";
@@ -43,58 +43,11 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
 
   if (!preparerRaw) return <div className="p-8 text-center font-bold">الحساب غير متاح.</div>;
 
-  // Nuclear Sanitization for Next.js 15
-  function deepSanitize(obj: any, visited = new WeakSet()): any {
-    if (obj === null || obj === undefined) return obj;
-    if (typeof obj === "function") return null;
-    if (typeof obj === "bigint") return obj.toString();
-    if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
-    if (obj instanceof Date) return obj.toISOString();
-    if (Array.isArray(obj)) return obj.map((item) => deepSanitize(item, visited));
-    if (typeof obj === "object") {
-      if (visited.has(obj)) return "[Circular]";
-      visited.add(obj);
-      // Prisma Decimal / Decimal.js compatibility
-      if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
-        return Number(obj.toString());
-      }
-      if (obj.d && Array.isArray(obj.d) && typeof obj.s === "number") {
-        return Number(obj.toString());
-      }
-      const newObj: any = {};
-      for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-          try {
-            newObj[key] = deepSanitize(obj[key], visited);
-          } catch (error) {
-            console.error(`deepSanitize failed on key ${key}:`, error);
-            newObj[key] = null;
-          }
-        }
-      }
-      visited.delete(obj);
-      return newObj;
-    }
-    return null;
-  }
-
   const preparerId = preparerRaw.id;
-  let preparer: any = null;
-  let safeIcons: any = null;
-  let orderListResetAt: any = null;
-  try {
-    orderListResetAt = preparerRaw.orderListResetAt;
-    preparer = deepSanitize(preparerRaw);
-    safeIcons = deepSanitize(icons);
-  } catch (e) {
-    console.error("Failed to sanitize initial data:", e);
-    preparer = { shopLinks: [] };
-    safeIcons = {};
-    orderListResetAt = null;
-  }
   const auth = { p: p!, exp: exp!, s: s! };
   const homeHref = preparerPath("/preparer", auth);
   const shopIds = (preparerRaw.shopLinks || []).map((l: any) => l.shopId);
+  const orderListResetAt = preparerRaw.orderListResetAt;
 
   let couriers: any[] = [];
   let webStorePending: any[] = [];
@@ -130,9 +83,6 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     ]);
   } catch (e) {
     console.error("Failed to load initial data:", e);
-    couriers = [];
-    webStorePending = [];
-    drafts = [];
   }
 
   let orderTable;
@@ -159,20 +109,14 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     );
   }
 
-  function safeDeepSanitize(obj: any): any {
-    try {
-      return deepSanitize(obj);
-    } catch (error) {
-      console.error("safeDeepSanitize failed:", error);
-      return null;
-    }
-  }
-
-  const sanitizedWebStore = safeDeepSanitize(webStorePending) ?? [];
-  const sanitizedDrafts = safeDeepSanitize(drafts) ?? [];
-  const safeOrderTableRows = safeDeepSanitize(orderTable?.rows) ?? [];
-  const safeSearchFields = safeDeepSanitize(orderTable?.searchFields) ?? [];
-  const safeCouriers = safeDeepSanitize(couriers) ?? [];
+  // Serialization for Next.js 15
+  const safePreparer = serializePrisma(preparerRaw);
+  const safeIcons = serializePrisma(icons);
+  const safeWebStore = serializePrisma(webStorePending);
+  const safeDrafts = serializePrisma(drafts);
+  const safeOrderTableRows = serializePrisma(orderTable?.rows || []);
+  const safeSearchFields = serializePrisma(orderTable?.searchFields || []);
+  const safeCouriers = serializePrisma(couriers);
 
   try {
     return (
@@ -193,10 +137,10 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
           <h2 className="text-base font-black text-violet-950 dark:text-violet-400">خانة طلبات التجهيز</h2>
 
           {/* عرض طلبات المتجر أولاً لأنها تتطلب تسعيراً فورياً */}
-          {sanitizedWebStore.length > 0 && (
+          {safeWebStore.length > 0 && (
             <div className="mb-6 space-y-2">
               <p className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200 w-fit">طلبات بانتظار التسعير (من المتجر) 🛒</p>
-              {sanitizedWebStore.map((o: any) => (
+              {safeWebStore.map((o: any) => (
                 <div key={o.id} className="flex gap-2 items-stretch">
                   <FullscreenWalletLauncher
                     href={preparerPath(`/preparer/order/${o.id}`, auth)}
@@ -217,11 +161,11 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
           )}
 
           <p className="text-[10px] font-black text-violet-600 bg-violet-50 px-2 py-1 rounded border border-violet-200 w-fit mb-2">مسودات التجهيز (من الموظفين) 📝</p>
-          {sanitizedDrafts.length === 0 ? (
+          {safeDrafts.length === 0 ? (
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">لا توجد مسودات حالياً.</p>
           ) : (
             <div className="mt-3 space-y-2">
-              {sanitizedDrafts.map((d: any) => (
+              {safeDrafts.map((d: any) => (
                 <div key={d.id} className="flex gap-2 items-stretch">
                   <FullscreenWalletLauncher
                     href={preparerPath(`/preparer/preparation/draft/${d.id}`, auth)}
@@ -247,7 +191,7 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
         </section>
 
         <div className="mx-auto max-w-lg">
-          <PreparerSiteOrderDraftClient auth={auth} preparerName={preparer.name} homeHref={homeHref} />
+          <PreparerSiteOrderDraftClient auth={auth} preparerName={safePreparer.name} homeHref={homeHref} />
         </div>
 
         <section className="kse-glass-dark mt-8 overflow-hidden border border-sky-200 shadow-sm dark:border-slate-800">
