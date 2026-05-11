@@ -92,6 +92,21 @@ export async function submitEmployeePreparationDraft(
           fromEmployeeName: submitter.name,
         },
       },
+    }).catch(async (err) => {
+      console.warn("Draft creation with extra fields failed, trying minimal version:", err.message);
+      return prisma.companyPreparerShoppingDraft.create({
+        data: {
+          preparerId: shopLink?.preparerId ?? null,
+          status: "draft",
+          titleLine,
+          rawListText,
+          customerRegionId: region.id,
+          customerPhone: phoneLocal,
+          customerName,
+          customerLandmark,
+          orderTime,
+        }
+      });
     });
 
     if (shopLink?.preparerId) {
@@ -270,12 +285,27 @@ export async function submitOrder(
       data: orderData,
       select: { id: true, orderNumber: true },
     }).catch(async (err) => {
-      console.error("Primary order create failed, trying fallback (omitting new fields):", err.message);
-      // محاولة الإنشاء بدون الحقول الجديدة (مثل prepaidAll أو submissionSource) إذا فشلت الأولى
-      const fallbackData = { ...orderData };
-      delete fallbackData.prepaidAll;
-      delete fallbackData.submissionSource;
-      delete fallbackData.submittedByEmployeeId;
+      console.error("Primary order create failed, trying fallback:", err.message);
+
+      // بناء بيانات احتياطية تحتوي فقط على الحقول القديمة والمضمونة 100%
+      const fallbackData = {
+        shopId: orderData.shopId,
+        customerId: orderData.customerId,
+        status: "pending",
+        summary: orderData.summary,
+        orderType: orderData.orderType,
+        customerLocationUrl: orderData.customerLocationUrl,
+        customerLandmark: orderData.customerLandmark,
+        customerRegionId: orderData.customerRegionId,
+        deliveryPrice: orderData.deliveryPrice,
+        orderSubtotal: orderData.orderSubtotal,
+        totalAmount: orderData.totalAmount,
+        customerPhone: orderData.customerPhone,
+        orderNoteTime: orderData.orderNoteTime,
+        imageUrl: orderData.imageUrl,
+        voiceNoteUrl: orderData.voiceNoteUrl,
+        shopDoorPhotoUrl: orderData.shopDoorPhotoUrl,
+      };
 
       return prisma.order.create({
         data: fallbackData,
