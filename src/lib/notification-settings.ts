@@ -28,7 +28,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = {
 } as const;
 
 export async function getOrCreateNotificationSettings() {
-  return prisma.appNotificationSettings.upsert({
+  const row = await prisma.appNotificationSettings.upsert({
     where: { id: 1 },
     update: {},
     create: {
@@ -36,6 +36,12 @@ export async function getOrCreateNotificationSettings() {
       ...DEFAULT_NOTIFICATION_SETTINGS,
     },
   });
+
+  // ضمان ملء القيم المفقودة إذا كان السجل موجوداً مسبقاً بدون الحقول الجديدة
+  return {
+    ...DEFAULT_NOTIFICATION_SETTINGS,
+    ...row,
+  };
 }
 
 export function audienceSettings(

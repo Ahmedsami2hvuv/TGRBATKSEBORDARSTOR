@@ -89,35 +89,27 @@ export async function saveNotificationSettings(
   _prev: NotificationSettingsFormState,
   formData: FormData,
 ): Promise<NotificationSettingsFormState> {
-  const adminTitleSingle = formString(formData, "adminTitleSingle");
-  const adminTemplateSingle = formString(formData, "adminTemplateSingle");
-  const adminTemplateMultiple = formString(formData, "adminTemplateMultiple");
-  const mandoubTitleSingle = formString(formData, "mandoubTitleSingle");
-  const mandoubTemplateSingle = formString(formData, "mandoubTemplateSingle");
-  const mandoubTemplateMultiple = formString(formData, "mandoubTemplateMultiple");
-  const preparerTitleSingle = formString(formData, "preparerTitleSingle");
-  const preparerTemplateSingle = formString(formData, "preparerTemplateSingle");
-  const preparerTemplateMultiple = formString(formData, "preparerTemplateMultiple");
-  const preparerTemplateWebsite = formString(formData, "preparerTemplateWebsite");
+  const adminTitleSingle = formString(formData, "adminTitleSingle") || DEFAULT_NOTIFICATION_SETTINGS.adminTitleSingle;
+  const adminTemplateSingle = formString(formData, "adminTemplateSingle") || DEFAULT_NOTIFICATION_SETTINGS.adminTemplateSingle;
+  const adminTemplateMultiple = formString(formData, "adminTemplateMultiple") || DEFAULT_NOTIFICATION_SETTINGS.adminTemplateMultiple;
+
+  const mandoubTitleSingle = formString(formData, "mandoubTitleSingle") || DEFAULT_NOTIFICATION_SETTINGS.mandoubTitleSingle;
+  const mandoubTemplateSingle = formString(formData, "mandoubTemplateSingle") || DEFAULT_NOTIFICATION_SETTINGS.mandoubTemplateSingle;
+  const mandoubTemplateMultiple = formString(formData, "mandoubTemplateMultiple") || DEFAULT_NOTIFICATION_SETTINGS.mandoubTemplateMultiple;
+
+  const preparerTitleSingle = formString(formData, "preparerTitleSingle") || DEFAULT_NOTIFICATION_SETTINGS.preparerTitleSingle;
+  const preparerTemplateSingle = formString(formData, "preparerTemplateSingle") || DEFAULT_NOTIFICATION_SETTINGS.preparerTemplateSingle;
+  const preparerTemplateMultiple = formString(formData, "preparerTemplateMultiple") || DEFAULT_NOTIFICATION_SETTINGS.preparerTemplateMultiple;
+  const preparerTemplateWebsite = formString(formData, "preparerTemplateWebsite") || DEFAULT_NOTIFICATION_SETTINGS.preparerTemplateWebsite;
+
   const adminSoundPreset = normalizeNotificationSoundPreset(formString(formData, "adminSoundPreset"));
   const mandoubSoundPreset = normalizeNotificationSoundPreset(formString(formData, "mandoubSoundPreset"));
   const preparerSoundPreset = normalizeNotificationSoundPreset(formString(formData, "preparerSoundPreset"));
-
-  if (!adminTitleSingle || !adminTemplateSingle || !adminTemplateMultiple) {
-    return { error: "يرجى إدخال عنوان ونص إشعارات الإدارة." };
-  }
-  if (!mandoubTitleSingle || !mandoubTemplateSingle || !mandoubTemplateMultiple) {
-    return { error: "يرجى إدخال عنوان ونص إشعارات المندوب." };
-  }
-  if (!preparerTitleSingle || !preparerTemplateSingle || !preparerTemplateMultiple) {
-    return { error: "يرجى إدخال عنوان ونص إشعارات المجهز." };
-  }
 
   await prisma.appNotificationSettings.upsert({
     where: { id: 1 },
     create: {
       id: 1,
-      ...DEFAULT_NOTIFICATION_SETTINGS,
       adminEnabled: formBool(formData, "adminEnabled"),
       adminTitleSingle,
       adminTemplateSingle,
@@ -134,7 +126,7 @@ export async function saveNotificationSettings(
       preparerTitleSingle,
       preparerTemplateSingle,
       preparerTemplateMultiple,
-      preparerTemplateWebsite: preparerTemplateWebsite || "لديك طلب جديد مسند من الموقع (#{orderNumber})",
+      preparerTemplateWebsite,
       preparerSoundEnabled: formBool(formData, "preparerSoundEnabled"),
       preparerSoundPreset,
     },
@@ -155,7 +147,7 @@ export async function saveNotificationSettings(
       preparerTitleSingle,
       preparerTemplateSingle,
       preparerTemplateMultiple,
-      preparerTemplateWebsite: preparerTemplateWebsite || "لديك طلب جديد مسند من الموقع (#{orderNumber})",
+      preparerTemplateWebsite,
       preparerSoundEnabled: formBool(formData, "preparerSoundEnabled"),
       preparerSoundPreset,
     },

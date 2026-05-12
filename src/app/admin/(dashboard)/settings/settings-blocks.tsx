@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { NotificationSoundPresetId } from "@/lib/notification-sound-presets";
 import { NotificationSettingsForm } from "./notification-settings-form";
 import { PurgeDemoDataForm } from "./purge-demo-data-form";
@@ -18,18 +18,22 @@ import { RoleFeaturesConfig } from "@/lib/role-features-settings";
 
 type NotificationInitial = {
   adminEnabled: boolean;
+  adminTitleSingle: string;
   adminTemplateSingle: string;
   adminTemplateMultiple: string;
   adminSoundEnabled: boolean;
   adminSoundPreset: NotificationSoundPresetId;
   mandoubEnabled: boolean;
+  mandoubTitleSingle: string;
   mandoubTemplateSingle: string;
   mandoubTemplateMultiple: string;
   mandoubSoundEnabled: boolean;
   mandoubSoundPreset: NotificationSoundPresetId;
   preparerEnabled: boolean;
+  preparerTitleSingle: string;
   preparerTemplateSingle: string;
   preparerTemplateMultiple: string;
+  preparerTemplateWebsite: string;
   preparerSoundEnabled: boolean;
   preparerSoundPreset: NotificationSoundPresetId;
 };
@@ -187,7 +191,7 @@ export function SettingsBlocks({
   const [aiEnabledStore, setAiEnabledStore] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useMemo(() => {
+  useEffect(() => {
     if (openId === "store-settings") {
       fetch("/api/admin/settings/store")
         .then((res) => res.json())
@@ -201,7 +205,8 @@ export function SettingsBlocks({
               ? Math.min(100, Math.max(0, Math.round(Number(data.product_card_bg_opacity))))
               : 40
           );
-        });
+        })
+        .catch(err => console.error("Failed to load store settings:", err));
     }
   }, [openId]);
 
