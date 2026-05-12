@@ -35,22 +35,11 @@ export default async function RootLayout({
 }>) {
   // جلب الكوكيز للتعرف على المندوب أو المستخدم لربطه بـ OneSignal
   const cookieStore = await cookies();
-  const mandoubCode = cookieStore.get("mandoub_c")?.value;
-  const preparerCode = cookieStore.get("preparer_p")?.value;
+  const mandoubId = cookieStore.get("mandoub_c")?.value;
+  const preparerId = cookieStore.get("preparer_p")?.value;
   const employeeId = cookieStore.get("employee_e")?.value;
 
-  // جلب المعرف الحقيقي من قاعدة البيانات لضمان التطابق مع السيرفر
-  let externalId: string | undefined = undefined;
-
-  if (mandoubCode) {
-    const courier = await prisma.courier.findFirst({ where: { id: mandoubCode }, select: { id: true } });
-    if (courier) externalId = courier.id;
-  } else if (preparerCode) {
-    const preparer = await prisma.companyPreparer.findFirst({ where: { id: preparerCode }, select: { id: true } });
-    if (preparer) externalId = preparer.id;
-  } else if (employeeId) {
-    externalId = employeeId;
-  }
+  const externalId = mandoubId || preparerId || employeeId;
 
   const [mandoubFeatures, preparerFeatures, storeSettings] = await Promise.all([
     getRoleFeatures("mandoub"),
