@@ -259,26 +259,32 @@ export async function pushNotifyCourierNewAssignment(
   const settings = audienceSettings(settingsRow, "mandoub");
   if (!settings.enabled) return;
 
-  const order = orderId
-    ? await prisma.order.findUnique({
-        where: { id: orderId },
-        select: {
-          shop: { select: { name: true } },
-          customerRegion: { select: { name: true } },
-        },
-      })
-    : null;
+  const order = await prisma.order.findFirst({
+    where: {
+      OR: [
+        { id: orderId || "undefined" },
+        { orderNumber: orderNumber }
+      ]
+    },
+    select: {
+      orderNumber: true,
+      shop: { select: { name: true } },
+      customerRegion: { select: { name: true } },
+    },
+  });
+
+  const finalOrderNumber = order?.orderNumber || orderNumber;
 
   const title = renderNotificationTemplate(settings.titleSingle, {
     count: 1,
-    orderNumber,
+    orderNumber: finalOrderNumber,
     shopName: order?.shop?.name ?? "—",
     regionName: order?.customerRegion?.name ?? "—",
   });
 
   const body = renderNotificationTemplate(settings.templateSingle, {
     count: 1,
-    orderNumber,
+    orderNumber: finalOrderNumber,
     shopName: order?.shop?.name ?? "—",
     regionName: order?.customerRegion?.name ?? "—",
   });
