@@ -11,40 +11,51 @@ interface Slide {
 
 export function StoreSlider({ slides }: { slides: Slide[] }) {
   const [current, setCurrent] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
-    if (slides.length <= 1) return;
+    if (slides.length <= 1 || isPaused) return;
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % slides.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [slides.length, isPaused]);
 
   if (slides.length === 0) return null;
 
   return (
-    <div className="relative w-full aspect-[21/9] md:aspect-[25/9] overflow-hidden rounded-[2rem] md:rounded-[3rem] shadow-2xl shadow-slate-200/50 dark:shadow-none group">
+    <div
+      className="relative w-full aspect-[21/9] md:aspect-[25/9] overflow-hidden rounded-[2rem] md:rounded-[3rem] shadow-2xl shadow-slate-200/50 dark:shadow-none group"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       {slides.map((slide, index) => (
         <div
           key={slide.id}
           className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
-            index === current ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
+            index === current ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-110 -rotate-1 pointer-events-none"
           }`}
         >
           {slide.linkUrl ? (
-            <Link href={slide.linkUrl} className="block w-full h-full">
+            <Link href={slide.linkUrl} className="block w-full h-full relative">
               <img
                 src={slide.imageUrl}
                 alt=""
                 className="w-full h-full object-cover"
+                loading={index === 0 ? "eager" : "lazy"}
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
             </Link>
           ) : (
-            <img
-              src={slide.imageUrl}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+            <div className="w-full h-full relative">
+              <img
+                src={slide.imageUrl}
+                alt=""
+                className="w-full h-full object-cover"
+                loading={index === 0 ? "eager" : "lazy"}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+            </div>
           )}
         </div>
       ))}

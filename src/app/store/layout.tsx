@@ -1,8 +1,10 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { DraggableBackButton } from "@/components/draggable-back-button";
 import { StoreSidePanels } from "@/components/store-side-panels";
 import { StoreHeaderActions } from "./store-header-actions";
+import { StoreSearchBar } from "./_components/store-search-bar";
 
 export const metadata: Metadata = {
   title: "خصيب ستور(ابو الاكبر للتوصيل)",
@@ -27,16 +29,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             </span>
           </Link>
 
-          <div className="flex-1 max-w-md mx-4">
-            <form action="/store/search" className="relative">
-              <input
-                name="q"
-                placeholder="ابحث عن منتجات، أقسام، أو أفرع..."
-                className="w-full pl-10 pr-4 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 border-none focus:ring-2 focus:ring-violet-500 transition-all font-bold text-sm dark:text-white"
-              />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
-            </form>
-          </div>
+          <Suspense fallback={<div className="flex-1 max-w-md mx-4 h-10 bg-slate-100/50 dark:bg-slate-800/50 animate-pulse rounded-2xl" />}>
+            <StoreSearchBar />
+          </Suspense>
 
           <StoreHeaderActions />
         </div>

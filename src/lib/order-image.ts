@@ -7,10 +7,11 @@ import { randomUUID } from "crypto";
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 export const MAX_ORDER_IMAGE_BYTES = 20 * 1024 * 1024;
 
-export function inferImageMime(file: File): string | null {
+export function inferImageMime(file: any): string | null {
+  if (!file) return null;
   const t = file.type?.trim().toLowerCase();
   if (t && IMAGE_TYPES.has(t)) return t;
-  const n = file.name.toLowerCase();
+  const n = (file.name || "").toLowerCase();
   if (n.endsWith(".png")) return "image/png";
   if (n.endsWith(".webp")) return "image/webp";
   if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
@@ -65,7 +66,6 @@ async function hasReasonableCutoutAlpha(buffer: Buffer): Promise<boolean> {
     }
 
     const ratio = nonTransparent / Math.max(1, total);
-    // Too tiny or almost full image means the fallback mask likely failed.
     return ratio >= 0.08 && ratio <= 0.92;
   } catch {
     return false;
@@ -115,7 +115,7 @@ async function detectSolidBackgroundColor(buffer: Buffer): Promise<{ r: number; 
 
     const inlierThresh = 35;
     const inliers = pts.filter(p => dist(p) <= inlierThresh).length;
-    // Ø¥Ø°Ø§ Ø£ØºÙ„Ø¨ Ù†Ù‚Ø§Ø· Ø§Ù„Ø£Ø·Ø±Ø§Ù Ù…ØªÙ‚Ø§Ø±Ø¨Ø© â†’ Ø®Ù„ÙÙŠØ© "Ù„ÙˆÙ† ÙˆØ§Ø­Ø¯" ØºØ§Ù„Ø¨Ø§Ù‹ØŒ Ø­ØªÙ‰ Ù„Ùˆ Ø¨ÙŠÙ‡Ø§ Ø¶ØºØ· JPEG
+    // إذا أغلب نقاط الأطراف متقاربة -> خلفية "لون واحد" غالباً
     if (inliers >= 6) return { r: med.r, g: med.g, b: med.b };
     return null;
   } catch {
@@ -136,12 +136,11 @@ async function tryColorKeyBackgroundRemoval(buffer: Buffer): Promise<Buffer | nu
     const ch = info.channels;
     if (ch < 4) return null;
 
-    // Soft alpha: Ù†Ø­ÙˆÙ„ Ø§Ù„Ù‚Ø±Ø¨ Ù…Ù† Ù„ÙˆÙ† Ø§Ù„Ø®Ù„ÙÙŠØ© Ø¥Ù„Ù‰ Ø´ÙØ§ÙÙŠØ© ØªØ¯Ø±ÙŠØ¬ÙŠØ© Ù„ØªÙØ§Ø¯ÙŠ Ø­ÙˆØ§Ù "Ù…ÙƒØ³Ù‘Ø±Ø©"
-    const inner = 18; // Ø¯Ø§Ø®Ù„Ù‡Ø§ ÙŠØ¹ØªØ¨Ø± Ø®Ù„ÙÙŠØ© ØºØ§Ù„Ø¨Ø§Ù‹
-    const outer = 95; // Ø®Ø§Ø±Ø¬Ù‡Ø§ ÙŠØ¹ØªØ¨Ø± Ù…Ù†ØªØ¬ ØºØ§Ù„Ø¨Ø§Ù‹
+    const inner = 18;
+    const outer = 95;
     const inv = 1 / Math.max(1, outer - inner);
 
-    const out = Buffer.from(data); // copy
+    const out = Buffer.from(data);
     for (let i = 0; i < out.length; i += ch) {
       const r = out[i] ?? 0;
       const g = out[i + 1] ?? 0;
@@ -151,13 +150,12 @@ async function tryColorKeyBackgroundRemoval(buffer: Buffer): Promise<Buffer | nu
       const db = b - bg.b;
       const d = Math.sqrt(dr * dr + dg * dg + db * db);
 
-      let a = (d - inner) * inv; // 0..1
+      let a = (d - inner) * inv;
       if (a < 0) a = 0;
       if (a > 1) a = 1;
       out[i + 3] = Math.round(a * 255);
     }
 
-    // ØªÙ†Ø¹ÙŠÙ… Ø¨Ø³ÙŠØ· Ù„Ù„Ø£Ù„ÙØ§ Ù„ØªØ®ÙÙŠÙ Ø§Ù„Ø­ÙˆØ§Ù (Ø¨Ø¯ÙˆÙ† ØªØ®Ø±ÙŠØ¨ Ø§Ù„Ù…Ù†ØªØ¬)
     const softened = await sharp(out, { raw: { width: info.width, height: info.height, channels: ch } })
       .png()
       .toBuffer();
@@ -175,26 +173,28 @@ async function tryColorKeyBackgroundRemoval(buffer: Buffer): Promise<Buffer | nu
 }
 
 async function processAndUploadImage(
-  file: File | Buffer,
+  file: File | Buffer | Blob,
   folder: string,
   options?: { removeBg?: boolean, mime?: string }
 ): Promise<string> {
   let buf: Buffer;
   let mime: string;
 
-  if (file instanceof File) {
-    if (file.size > MAX_ORDER_IMAGE_BYTES) throw new Error("IMAGE_TOO_LARGE");
-    mime = inferImageMime(file) || "image/jpeg";
-    buf = Buffer.from(await file.arrayBuffer());
-  } else {
+  if (Buffer.isBuffer(file)) {
     buf = file;
     mime = options?.mime || "image/jpeg";
+  } else {
+    // File or Blob
+    const anyFile = file as any;
+    if (anyFile.size > MAX_ORDER_IMAGE_BYTES) throw new Error("IMAGE_TOO_LARGE");
+    mime = options?.mime || inferImageMime(anyFile) || "image/jpeg";
+    buf = Buffer.from(await anyFile.arrayBuffer());
   }
 
-  // 1. ØªØµØºÙŠØ± ÙˆÙ…Ø¹Ø§Ù„Ø¬Ø© Ø§Ù„ØµÙˆØ±Ø©
+  // 1. تصغير ومعالجة الصورة
   try {
-    const resized = await resizeImageBufferForShop(buf, options?.removeBg ? 'png' : 'jpeg');
-    if (resized) buf = resized as Buffer;
+    const resized = await resizeImageBufferForShop(buf, (options?.removeBg || mime === "image/png") ? 'png' : 'jpeg');
+    if (resized) buf = resized;
   } catch (e) {
     console.error("Image resize failed", e);
   }
@@ -250,7 +250,6 @@ async function processAndUploadImage(
         } catch (e) { console.error("Software eraser failed", e); }
       }
 
-      // Ø¥Ø°Ø§ Ø§Ù„Ø®Ù„ÙÙŠØ© Ù…Ùˆ Ø¨ÙŠØ¶Ø§Ø¡ Ø¨Ø³ "Ù„ÙˆÙ† ÙˆØ§Ø­Ø¯" (Ù…Ø«Ù„ Ø§Ù„Ø£Ø³ÙˆØ¯)ØŒ Ù†Ø¬Ø±Ø¨ Ø£Ø¯Ø§Ø© Ù…Ø¬Ø§Ù†ÙŠØ© Ø«Ø§Ù†ÙŠØ©
       if (buf === sourceBeforeRemoval) {
         const keyed = await tryColorKeyBackgroundRemoval(buf);
         if (keyed) {
@@ -263,18 +262,19 @@ async function processAndUploadImage(
     }
   }
 
-  // 2. Ø§Ù„Ø±ÙØ¹ Ø¥Ù„Ù‰ Cloudflare R2
-  const fileName = `${randomUUID()}.${mime.split("/")[1]}`;
+  // 2. الرفع إلى Cloudflare R2
+  const fileName = `${randomUUID()}.${mime.split("/")[1] || 'jpg'}`;
   const key = `${folder}/${fileName}`;
 
   const uploadedKey = await uploadToR2(buf, key, mime);
 
   if (uploadedKey) {
-    // Ø¥Ø±Ø¬Ø§Ø¹ Ù…Ø³Ø§Ø± Ù†Ø³Ø¨ÙŠ Ù„ÙƒÙŠ ØªØªØ¹Ø§Ù…Ù„ Ù…Ø¹Ù‡ ØµÙØ­Ø© Ø¹Ø±Ø¶ Ø§Ù„ØµÙˆØ±
     return `/uploads/${uploadedKey}`;
   }
 
-  // Fallback: Ø¥Ø°Ø§ ÙØ´Ù„ R2ØŒ Ù†Ø¹ÙˆØ¯ Ù„Ù„Ù€ Base64 Ù„ÙƒÙŠ Ù„Ø§ ÙŠØªÙˆÙ‚Ù Ø§Ù„Ø¹Ù…Ù„ (Ù…Ø¤Ù‚ØªØ§Ù‹)
+  // Fallback: إذا فشل R2، نعود للـ Base64 لكي لا يتوقف العمل (مؤقتاً)
+  // تحذير: هذا قد يسبب مشاكل في حجم استجابة Server Action
+  console.warn(`R2 upload failed for ${key}, falling back to base64`);
   return `data:${mime};base64,${buf.toString("base64")}`;
 }
 
@@ -293,4 +293,3 @@ export async function saveCustomerDoorPhotoFromResizedBuffer(buf: Buffer, _mb: n
 export async function saveShopDoorPhotoFromResizedBuffer(buf: Buffer, _mb: number) { return processAndUploadImage(buf, "shops"); }
 export async function saveShopPhotoUploaded(file: File, mb: number) { return saveShopDoorPhotoUploaded(file, mb); }
 export async function saveShopPhotoFromResizedBuffer(buf: Buffer, mb: number) { return saveShopDoorPhotoFromResizedBuffer(buf, mb); }
-
