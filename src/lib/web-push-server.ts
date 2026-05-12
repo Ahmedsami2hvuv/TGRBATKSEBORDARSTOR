@@ -57,8 +57,25 @@ export async function sendTestPushBroadcast(opts: {
 
     const subs = await prisma.webPushSubscription.findMany({
       where,
-      select: { id: true, endpoint: true, p256dh: true, auth: true },
+      select: { id: true, endpoint: true, p256dh: true, auth: true, courierId: true, preparerId: true },
     });
+
+    const externalIds: string[] = subs
+      .map(s => s.courierId || s.preparerId)
+      .filter((id): id is string => !!id);
+
+    // إذا كان الجمهور هو المناديب، نجلب كل المعرفات لضمان وصول وان سيجنال للجميع
+    if (aud === "mandoub") {
+      const allCouriers = await prisma.courier.findMany({ select: { id: true } });
+      allCouriers.forEach(c => {
+        if (!externalIds.includes(c.id)) externalIds.push(c.id);
+      });
+    }
+
+    // إذا كان الجمهور "أدمن"، نضيف المعرف العام
+    if (aud === "admin") {
+      externalIds.push("admin_global");
+    }
 
     const url =
       aud === "admin"
@@ -70,11 +87,11 @@ export async function sendTestPushBroadcast(opts: {
             : `${base}/`;
 
     await sendToSubscriptions(subs, {
-      title: opts.title,
+      title: `🔔 [تجربة وان سيجنال] ${opts.title}`,
       body: opts.body,
       url,
       tag: `${tagBase}-${aud}`,
-    });
+    }, externalIds);
     empty[aud] = subs.length;
   }
 
