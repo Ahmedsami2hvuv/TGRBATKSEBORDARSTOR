@@ -89,11 +89,12 @@ import { sendOneSignalNotification } from "@/lib/onesignal-server";
 async function sendToSubscriptions(
   subs: { id: string; endpoint: string; p256dh: string; auth: string }[],
   payload: PushPayload,
-  externalIds?: string[], // إضافة خيار لإرسال عبر وان سيجنال أيضاً
+  externalIds?: string[],
 ): Promise<void> {
-  // 1. محاولة الإرسال عبر وان سيجنال إذا توفرت المعرفات
+  // 1. الإرسال عبر وان سيجنال (النظام الجديد)
   if (externalIds && externalIds.length > 0) {
-    void sendOneSignalNotification({
+    console.log("OneSignal: Sending to", externalIds);
+    await sendOneSignalNotification({
       title: payload.title,
       body: payload.body,
       url: payload.url,
@@ -101,7 +102,7 @@ async function sendToSubscriptions(
     });
   }
 
-  // 2. الطريقة القديمة (Web Push)
+  // 2. الطريقة القديمة (Web Push) - سنبقيها فقط كاحتياط للأدمن حالياً
   if (!configureVapid()) return;
   const json = JSON.stringify(payload);
   for (const s of subs) {
@@ -112,6 +113,7 @@ async function sendToSubscriptions(
         WEB_PUSH_HTTP_OPTIONS,
       );
     } catch (e: unknown) {
+      // حذف الاشتراكات القديمة المعطلة
       const status = (e as { statusCode?: number }).statusCode;
       if (status === 410 || status === 404) {
         await prisma.webPushSubscription.delete({ where: { id: s.id } }).catch(() => {});
