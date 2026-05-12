@@ -39,11 +39,10 @@ export async function sendTestPushBroadcast(opts: {
     employee: 0,
     customer: 0,
   };
-  if (!isWebPushConfigured()) {
-    return { counts: empty, vapidConfigured: false };
-  }
+
   const base = getPublicAppUrl();
   const tagBase = `kse-test-${Date.now()}`;
+  const hasVapid = isWebPushConfigured();
 
   for (const aud of opts.audiences) {
     const where =
@@ -64,7 +63,6 @@ export async function sendTestPushBroadcast(opts: {
       .map(s => s.courierId || s.preparerId)
       .filter((id): id is string => !!id);
 
-    // إذا كان الجمهور هو المناديب، نجلب كل المعرفات لضمان وصول وان سيجنال للجميع
     if (aud === "mandoub") {
       const allCouriers = await prisma.courier.findMany({ select: { id: true } });
       allCouriers.forEach(c => {
@@ -72,7 +70,6 @@ export async function sendTestPushBroadcast(opts: {
       });
     }
 
-    // إذا كان الجمهور "أدمن"، نضيف المعرف العام
     if (aud === "admin") {
       externalIds.push("admin_global");
     }
@@ -92,10 +89,10 @@ export async function sendTestPushBroadcast(opts: {
       url,
       tag: `${tagBase}-${aud}`,
     }, externalIds);
-    empty[aud] = subs.length;
+    empty[aud] = subs.length || externalIds.length;
   }
 
-  return { counts: empty, vapidConfigured: true };
+  return { counts: empty, vapidConfigured: hasVapid };
 }
 
 /** أولوية عالية + TTL طويل: يقلّل تأخير التسليم عند إغلاق التطبيق أو وضع الطاقة على الجوال */

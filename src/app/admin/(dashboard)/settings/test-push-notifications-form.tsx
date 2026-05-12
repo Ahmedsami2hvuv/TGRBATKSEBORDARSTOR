@@ -57,17 +57,16 @@ export function TestPushNotificationsForm() {
         setResult(data.error === "no_audiences" ? "لم تُختر جهة." : "تعذّر الإرسال.");
         return;
       }
-      if (!data.vapidConfigured) {
-        setResult("مفاتيح VAPID غير مضبوطة على الخادم.");
-        return;
-      }
+
       const c = data.counts;
       if (c) {
-        setResult(
-          `تم الطلب. أجهزة مستهدفة تقريبياً: إدارة ${c.admin}، مندوب ${c.mandoub}، موظف محل (Web Push) ${c.employee}، عميل ${c.customer}. (صفر يعني لا يوجد اشتراك مسجّل لتلك الجهة.)`,
-        );
+        let msg = `تم الطلب بنجاح. الأجهزة المستهدفة: إدارة (${c.admin})، مندوب (${c.mandoub})، موظف (${c.employee})، عميل (${c.customer}).`;
+        if (!data.vapidConfigured) {
+          msg += " (تنبيه: تم الإرسال عبر OneSignal فقط لأن VAPID غير مضبوط)";
+        }
+        setResult(msg);
       } else {
-        setResult("تم الإرسال.");
+        setResult("تم الإرسال بنجاح عبر OneSignal.");
       }
     } catch {
       setResult("خطأ شبكة.");
