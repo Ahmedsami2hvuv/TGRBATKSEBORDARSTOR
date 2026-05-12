@@ -83,9 +83,19 @@ export async function sendTestPushBroadcast(opts: {
             ? `${base}/client/order`
             : `${base}/`;
 
+    const dummyVars = {
+      count: 5,
+      orderNumber: 1234,
+      shopName: "محل تجريبي",
+      regionName: "المنصورة",
+    };
+
+    const renderedTitle = renderNotificationTemplate(opts.title, dummyVars);
+    const renderedBody = renderNotificationTemplate(opts.body, dummyVars);
+
     await sendToSubscriptions(subs, {
-      title: `🔔 [تجربة وان سيجنال] ${opts.title}`,
-      body: opts.body,
+      title: `🔔 [تجربة] ${renderedTitle}`,
+      body: renderedBody,
       url,
       tag: `${tagBase}-${aud}`,
     }, externalIds);

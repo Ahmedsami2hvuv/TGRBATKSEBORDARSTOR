@@ -89,6 +89,10 @@ export async function saveNotificationSettings(
   _prev: NotificationSettingsFormState,
   formData: FormData,
 ): Promise<NotificationSettingsFormState> {
+  if (!(await isAdminSession())) {
+    return { error: "غير مصرّح." };
+  }
+
   const adminTitleSingle = formString(formData, "adminTitleSingle") || DEFAULT_NOTIFICATION_SETTINGS.adminTitleSingle;
   const adminTemplateSingle = formString(formData, "adminTemplateSingle") || DEFAULT_NOTIFICATION_SETTINGS.adminTemplateSingle;
   const adminTemplateMultiple = formString(formData, "adminTemplateMultiple") || DEFAULT_NOTIFICATION_SETTINGS.adminTemplateMultiple;

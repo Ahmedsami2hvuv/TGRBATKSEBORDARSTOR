@@ -1,7 +1,7 @@
 import type { NotificationSoundPresetId } from "@/lib/notification-sound-presets";
 
 export function renderNotificationTemplate(
-  template: string,
+  template: string | null | undefined,
   vars: {
     count: number;
     orderNumber: number;
@@ -9,6 +9,7 @@ export function renderNotificationTemplate(
     regionName?: string;
   },
 ): string {
+  if (!template) return "";
   const shopName = (vars.shopName ?? "—").trim() || "—";
   const regionName = (vars.regionName ?? "—").trim() || "—";
   return template

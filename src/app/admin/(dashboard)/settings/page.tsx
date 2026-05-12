@@ -14,16 +14,37 @@ export const metadata = {
 };
 
 export default async function SettingsPage() {
-  const [notificationSettings, icons, employeeShareTemplate, customerOrderTemplate, telegramNewOrderTemplate, chatEnabled, mandoubFeatures, preparerFeatures] = await Promise.all([
-    getOrCreateNotificationSettings(),
-    getGlobalIcons(),
-    getEmployeeWhatsappShareTemplate(),
-    getCustomerOrderWhatsappTemplate(),
-    getTelegramNewOrderTemplate(),
-    isChatEnabledGlobally(),
-    getRoleFeatures("mandoub"),
-    getRoleFeatures("preparer"),
-  ]);
+  // استخدام try-catch لمنع انهيار الصفحة بالكامل في حال وجود خطأ في أحد الوعود
+  let data;
+  try {
+    data = await Promise.all([
+      getOrCreateNotificationSettings().catch(e => { console.error("Settings Error:", e); return null; }),
+      getGlobalIcons().catch(e => { console.error("Icons Error:", e); return {}; }),
+      getEmployeeWhatsappShareTemplate().catch(() => ""),
+      getCustomerOrderWhatsappTemplate().catch(() => ""),
+      getTelegramNewOrderTemplate().catch(() => ""),
+      isChatEnabledGlobally().catch(() => true),
+      getRoleFeatures("mandoub").catch(() => ({ chatEnabled: true, aiEnabled: false })),
+      getRoleFeatures("preparer").catch(() => ({ chatEnabled: true, aiEnabled: false })),
+    ]);
+  } catch (e) {
+    console.error("Critical Settings Page Error:", e);
+    return <div className="p-8 text-red-600 font-bold">حدث خطأ أثناء تحميل الإعدادات. يرجى التأكد من اتصال قاعدة البيانات.</div>;
+  }
+
+  const [
+    notificationSettings,
+    icons,
+    employeeShareTemplate,
+    customerOrderTemplate,
+    telegramNewOrderTemplate,
+    chatEnabled,
+    mandoubFeatures,
+    preparerFeatures
+  ] = data;
+
+  // تأمين كائن الإشعارات في حال كان null
+  const ns = notificationSettings || {};
 
   return (
     <div className="space-y-8">
@@ -36,38 +57,38 @@ export default async function SettingsPage() {
       </div>
 
       <SettingsBlocks
-        globalIcons={icons}
-        employeeShareTemplate={employeeShareTemplate}
-        customerOrderTemplate={customerOrderTemplate}
-        telegramNewOrderTemplate={telegramNewOrderTemplate}
-        chatEnabledInitial={chatEnabled}
-        mandoubFeaturesInitial={mandoubFeatures}
-        preparerFeaturesInitial={preparerFeatures}
+        globalIcons={icons as any}
+        employeeShareTemplate={employeeShareTemplate as string}
+        customerOrderTemplate={customerOrderTemplate as string}
+        telegramNewOrderTemplate={telegramNewOrderTemplate as string}
+        chatEnabledInitial={!!chatEnabled}
+        mandoubFeaturesInitial={mandoubFeatures as any}
+        preparerFeaturesInitial={preparerFeatures as any}
         notificationInitial={{
-          adminEnabled: notificationSettings.adminEnabled ?? true,
-          adminTitleSingle: notificationSettings.adminTitleSingle ?? "طلب جديد #{orderNumber}",
-          adminTemplateSingle: notificationSettings.adminTemplateSingle ?? "طلب جديد بانتظار الموافقة (#{orderNumber})",
-          adminTemplateMultiple: notificationSettings.adminTemplateMultiple ?? "وصلت {count} طلبات جديدة بانتظار الموافقة",
-          adminSoundEnabled: notificationSettings.adminSoundEnabled ?? true,
+          adminEnabled: ns.adminEnabled ?? true,
+          adminTitleSingle: ns.adminTitleSingle ?? "طلب جديد #{orderNumber}",
+          adminTemplateSingle: ns.adminTemplateSingle ?? "طلب جديد بانتظار الموافقة (#{orderNumber})",
+          adminTemplateMultiple: ns.adminTemplateMultiple ?? "وصلت {count} طلبات جديدة بانتظار الموافقة",
+          adminSoundEnabled: ns.adminSoundEnabled ?? true,
           adminSoundPreset: normalizeNotificationSoundPreset(
-            notificationSettings.adminSoundPreset ?? "beep",
+            ns.adminSoundPreset ?? "beep",
           ),
-          mandoubEnabled: notificationSettings.mandoubEnabled ?? true,
-          mandoubTitleSingle: notificationSettings.mandoubTitleSingle ?? "طلب جديد #{orderNumber}",
-          mandoubTemplateSingle: notificationSettings.mandoubTemplateSingle ?? "تم إسناد طلب جديد إليك (#{orderNumber})",
-          mandoubTemplateMultiple: notificationSettings.mandoubTemplateMultiple ?? "تم إسناد {count} طلبات جديدة إليك",
-          mandoubSoundEnabled: notificationSettings.mandoubSoundEnabled ?? true,
+          mandoubEnabled: ns.mandoubEnabled ?? true,
+          mandoubTitleSingle: ns.mandoubTitleSingle ?? "طلب جديد #{orderNumber}",
+          mandoubTemplateSingle: ns.mandoubTemplateSingle ?? "تم إسناد طلب جديد إليك (#{orderNumber})",
+          mandoubTemplateMultiple: ns.mandoubTemplateMultiple ?? "تم إسناد {count} طلبات جديدة إليك",
+          mandoubSoundEnabled: ns.mandoubSoundEnabled ?? true,
           mandoubSoundPreset: normalizeNotificationSoundPreset(
-            notificationSettings.mandoubSoundPreset ?? "beep",
+            ns.mandoubSoundPreset ?? "beep",
           ),
-          preparerEnabled: notificationSettings.preparerEnabled ?? true,
-          preparerTitleSingle: notificationSettings.preparerTitleSingle ?? "تجهيز طلب #{orderNumber}",
-          preparerTemplateSingle: notificationSettings.preparerTemplateSingle ?? "لديك طلب تجهيز جديد (#{orderNumber})",
-          preparerTemplateMultiple: notificationSettings.preparerTemplateMultiple ?? "لديك {count} طلبات تجهيز جديدة",
-          preparerTemplateWebsite: notificationSettings.preparerTemplateWebsite ?? "لديك طلب جديد مسند من الموقع (#{orderNumber})",
-          preparerSoundEnabled: notificationSettings.preparerSoundEnabled ?? true,
+          preparerEnabled: ns.preparerEnabled ?? true,
+          preparerTitleSingle: ns.preparerTitleSingle ?? "تجهيز طلب #{orderNumber}",
+          preparerTemplateSingle: ns.preparerTemplateSingle ?? "لديك طلب تجهيز جديد (#{orderNumber})",
+          preparerTemplateMultiple: ns.preparerTemplateMultiple ?? "لديك {count} طلبات تجهيز جديدة",
+          preparerTemplateWebsite: ns.preparerTemplateWebsite ?? "لديك طلب جديد مسند من الموقع (#{orderNumber})",
+          preparerSoundEnabled: ns.preparerSoundEnabled ?? true,
           preparerSoundPreset: normalizeNotificationSoundPreset(
-            notificationSettings.preparerSoundPreset ?? "phone",
+            ns.preparerSoundPreset ?? "phone",
           ),
         }}
       />

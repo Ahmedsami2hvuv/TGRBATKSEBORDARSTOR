@@ -137,7 +137,18 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
               className={inputClass}
             />
           </label>
-          <input type="hidden" name="adminTemplateMultiple" defaultValue={initial.adminTemplateMultiple} />
+
+          <TokenButtons target="adminTemplateMultiple" />
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-600">
+              نص الإشعار عند وجود عدة طلبات
+            </span>
+            <input
+              name="adminTemplateMultiple"
+              defaultValue={initial.adminTemplateMultiple}
+              className={inputClass}
+            />
+          </label>
         </div>
       </section>
 
@@ -193,7 +204,18 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
               className={inputClass}
             />
           </label>
-          <input type="hidden" name="mandoubTemplateMultiple" defaultValue={initial.mandoubTemplateMultiple} />
+
+          <TokenButtons target="mandoubTemplateMultiple" />
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-600">
+              نص الإشعار عند إسناد عدة طلبات
+            </span>
+            <input
+              name="mandoubTemplateMultiple"
+              defaultValue={initial.mandoubTemplateMultiple}
+              className={inputClass}
+            />
+          </label>
         </div>
       </section>
 
