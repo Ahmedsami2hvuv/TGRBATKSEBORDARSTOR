@@ -24,6 +24,7 @@ export async function sendOneSignalNotification(options: {
   body: string;
   url: string;
   externalIds: string[];
+  sound?: string;
   data?: any;
 }) {
   const osClient = getClient();
@@ -35,21 +36,22 @@ export async function sendOneSignalNotification(options: {
       en: options.body,
     },
     headings: {
-      ar: `🔔 ${options.title}`,
-      en: `🔔 ${options.title}`,
+      ar: options.title,
+      en: options.title,
     },
     include_aliases: {
       external_id: options.externalIds,
     },
-    // إضافة لضمان التوافق مع النسخ الأقدم من المتصفحات
     include_external_user_ids: options.externalIds,
     target_channel: "push",
     url: options.url,
     data: options.data,
-    // تحسينات لضمان الظهور والتنبيه
+    // إرسال اسم النغمة المختارة
+    android_sound: options.sound,
+    ios_sound: options.sound ? `${options.sound}.wav` : undefined,
     android_visibility: 1,
     priority: 10,
-    android_accent_color: "FF0000", // لون التنبيه
+    android_accent_color: "FF0000",
     small_icon: "ic_stat_onesignal_default",
   };
 

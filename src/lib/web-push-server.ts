@@ -123,6 +123,7 @@ async function sendToSubscriptions(
       body: payload.body,
       url: payload.url,
       externalIds: externalIds,
+      sound: payload.sound,
     });
   }
 
