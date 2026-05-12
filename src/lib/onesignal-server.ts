@@ -35,8 +35,8 @@ export async function sendOneSignalNotification(options: {
       en: options.body,
     },
     headings: {
-      ar: options.title,
-      en: options.title,
+      ar: `🔔 ${options.title}`,
+      en: `🔔 ${options.title}`,
     },
     include_aliases: {
       external_id: options.externalIds,

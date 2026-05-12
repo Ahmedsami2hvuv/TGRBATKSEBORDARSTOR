@@ -140,6 +140,14 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
     shopName: order?.shop?.name ?? "—",
     regionName: order?.customerRegion?.name ?? "—",
   });
+
+  // جلب معرفات الموظفين (الأدمن) لإرسالها عبر وان سيجنال
+  const adminEmployees = await prisma.employee.findMany({
+    where: { role: "admin" },
+    select: { id: true }
+  });
+  const adminExternalIds = adminEmployees.map(e => e.id);
+
   const subs = await prisma.webPushSubscription.findMany({
     where: { audience: "admin" },
     select: { id: true, endpoint: true, p256dh: true, auth: true },
@@ -150,7 +158,7 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
     url: `${getPublicAppUrl()}/admin/orders/pending`,
     tag: `kse-push-admin-${orderNumber}`,
     sound: settings.soundPreset,
-  });
+  }, adminExternalIds);
 }
 
 /** إشعار للإدارة: تغيّر توفر مندوب/مجهز */
@@ -167,6 +175,14 @@ export async function pushNotifyAdminsPresenceChange(input: {
   const title =
     input.kind === "courier" ? "مندوب — التوفر" : "مجهز — التوفر";
   const body = `${input.name.trim() || "—"} — ${input.available ? "متاح للإسناد" : "غير متاح"}`;
+
+  // جلب معرفات الأدمن
+  const adminEmployees = await prisma.employee.findMany({
+    where: { role: "admin" },
+    select: { id: true }
+  });
+  const adminExternalIds = adminEmployees.map(e => e.id);
+
   const subs = await prisma.webPushSubscription.findMany({
     where: { audience: "admin" },
     select: { id: true, endpoint: true, p256dh: true, auth: true },
@@ -176,7 +192,7 @@ export async function pushNotifyAdminsPresenceChange(input: {
     body,
     url: `${getPublicAppUrl()}/admin`,
     tag: `kse-presence-${input.kind}-${Date.now()}`,
-  });
+  }, adminExternalIds);
 }
 
 /** إشعار للمندوب: إسناد طلب */
@@ -236,7 +252,7 @@ export async function pushNotifyCourierNewAssignment(
   const path = orderId ? `/mandoub/order/${orderId}` : "/mandoub";
   const url = buildDelegatePortalUrl(courierId, getPublicAppUrl(), path);
   await sendToSubscriptions(subs, {
-    title: "لوحة المندوب — طلب جديد",
+    title: "🔔 [جديد] لوحة المندوب — طلب جديد",
     body,
     url,
     tag: `kse-push-mandoub-${orderNumber}-${courierId}`,
@@ -330,7 +346,7 @@ export async function pushNotifyPreparerNewNotice(input: {
   });
 
   await sendToSubscriptions(subs, {
-    title: "لوحة المجهز — إشعار جديد",
+    title: "🔔 [جديد] لوحة المجهز — إشعار جديد",
     body,
     url: `${getPublicAppUrl()}/preparer/preparation`,
     tag: `kse-push-preparer-${input.preparerId}-${orderNumber || Date.now()}`,
@@ -361,7 +377,7 @@ export async function pushNotifyChatNewMessage(opts: {
   if (subs.length === 0) return;
 
   await sendToSubscriptions(subs, {
-    title: `رسالة من ${opts.senderName}`,
+    title: `💬 [جديد] رسالة من ${opts.senderName}`,
     body: opts.text.slice(0, 100),
     url: `${getPublicAppUrl()}/${opts.targetRole === "admin" ? "admin" : opts.targetRole}`,
     tag: `portal-chat-${opts.threadId}`,
