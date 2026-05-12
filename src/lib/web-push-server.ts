@@ -138,7 +138,6 @@ async function sendToSubscriptions(
 
 /** إشعار للإدارة: طلب جديد قيد الانتظار */
 export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Promise<void> {
-  if (!isWebPushConfigured()) return;
   const settingsRow = await getOrCreateNotificationSettings();
   const settings = audienceSettings(settingsRow, "admin");
   if (!settings.enabled) return;
@@ -240,7 +239,6 @@ export async function pushNotifyCourierNewAssignment(
     await sendTelegramMessageWithKeyboardToChat(chatId, text, kb).catch(() => {});
   }
 
-  if (!isWebPushConfigured()) return;
   const settingsRow = await getOrCreateNotificationSettings();
   const settings = audienceSettings(settingsRow, "mandoub");
   if (!settings.enabled) return;
