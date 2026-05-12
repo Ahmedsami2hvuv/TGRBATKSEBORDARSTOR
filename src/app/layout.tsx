@@ -4,6 +4,7 @@ import { ClientRuntime } from "@/components/client-runtime";
 import { getRoleFeatures } from "@/lib/role-features-settings";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -33,7 +34,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // جلب الكوكيز للتعرف على المندوب أو المستخدم لربطه بـ OneSignal
+  // جلب الكوكيز للتعرف على المستخدم
   const cookieStore = await cookies();
   const mandoubId = cookieStore.get("mandoub_c")?.value;
   const preparerId = cookieStore.get("preparer_p")?.value;
@@ -46,7 +47,7 @@ export default async function RootLayout({
     getRoleFeatures("preparer"),
     prisma.uISystemSetting.findUnique({
       where: { target_section: { target: "customer", section: "store_general" } }
-    })
+    }).catch(() => null)
   ]);
 
   const storeFeatures = {
@@ -60,13 +61,11 @@ export default async function RootLayout({
       className="h-full antialiased"
       suppressHydrationWarning
     >
-      <head>
-        <script
-          src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js"
-          defer
-        ></script>
-      </head>
       <body className="min-h-full flex flex-col">
+        <Script
+          src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+          strategy="afterInteractive"
+        />
         <ThemeProvider>
           <ClientRuntime
             mandoubFeatures={mandoubFeatures}
