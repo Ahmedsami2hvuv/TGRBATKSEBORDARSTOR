@@ -4,73 +4,39 @@ import { ClientRuntime } from "@/components/client-runtime";
 import { getRoleFeatures } from "@/lib/role-features-settings";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
-import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "أبو الأكبر للتوصيل",
   description: "إدارة التوصيل والطلبات — لوحة الإدارة",
   manifest: "/site.webmanifest",
-  icons: {
-    icon: "/icon.png",
-    apple: "/apple-icon.png",
-  },
-  appleWebApp: {
-    capable: true,
-    title: "أبو الأكبر للتوصيل",
-    statusBarStyle: "default",
-  },
-  formatDetection: {
-    telephone: false,
-  },
+  icons: { icon: "/icon.png", apple: "/apple-icon.png" },
+  appleWebApp: { capable: true, title: "أبو الأكبر للتوصيل", statusBarStyle: "default" },
 };
 
-export const viewport: Viewport = {
-  themeColor: "#0ea5e9",
-};
+export const viewport: Viewport = { themeColor: "#0ea5e9" };
 
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  // جلب الكوكيز للتعرف على المستخدم
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const mandoubId = cookieStore.get("mandoub_c")?.value;
   const preparerId = cookieStore.get("preparer_p")?.value;
   const employeeId = cookieStore.get("employee_e")?.value;
-
   const externalId = mandoubId || preparerId || employeeId;
 
-  const [mandoubFeatures, preparerFeatures, storeSettings] = await Promise.all([
-    getRoleFeatures("mandoub"),
-    getRoleFeatures("preparer"),
-    prisma.uISystemSetting.findUnique({
-      where: { target_section: { target: "customer", section: "store_general" } }
-    }).catch(() => null)
+  // استرجاع الميزات بشكل آمن جداً
+  const [mandoubFeatures, preparerFeatures] = await Promise.all([
+    getRoleFeatures("mandoub").catch(() => ({})),
+    getRoleFeatures("preparer").catch(() => ({})),
   ]);
 
-  const storeFeatures = {
-    aiEnabled: (storeSettings?.config as any)?.ai_enabled !== false
-  };
-
   return (
-    <html
-      lang="ar"
-      dir="rtl"
-      className="h-full antialiased"
-      suppressHydrationWarning
-    >
+    <html lang="ar" dir="rtl" className="h-full antialiased" suppressHydrationWarning>
       <body className="min-h-full flex flex-col">
-        <Script
-          src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
-          strategy="afterInteractive"
-        />
         <ThemeProvider>
           <ClientRuntime
             mandoubFeatures={mandoubFeatures}
             preparerFeatures={preparerFeatures}
-            storeFeatures={storeFeatures}
+            storeFeatures={{ aiEnabled: true }}
             externalId={externalId}
           >
             {children}
