@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect } from "react";
-import OneSignal from "react-onesignal";
 import { usePathname } from "next/navigation";
 
 interface OneSignalInitializerProps {
   externalId?: string;
+}
+
+declare global {
+  interface Window {
+    OneSignal: any;
+  }
 }
 
 export default function OneSignalInitializer({ externalId }: OneSignalInitializerProps) {
@@ -15,11 +20,12 @@ export default function OneSignalInitializer({ externalId }: OneSignalInitialize
     const initOneSignal = async () => {
       try {
         if (typeof window !== "undefined") {
-          await OneSignal.init({
+          window.OneSignal = window.OneSignal || [];
+
+          await window.OneSignal.init({
             appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
             allowLocalhostAsSecureOrigin: true,
-            serviceWorkerPath: "OneSignalSDKWorker.js",
-            serviceWorkerParam: { scope: "/" },
+            serviceWorkerPath: "/OneSignalSDKWorker.js",
             notificationDisplayPredicate: () => {
               // إجبار ظهور الإشعار دائماً حتى لو كان الموقع مفتوحاً
               return true;
@@ -42,14 +48,14 @@ export default function OneSignalInitializer({ externalId }: OneSignalInitialize
           }
 
           if (finalId) {
-            await OneSignal.login(finalId);
+            await window.OneSignal.login(finalId);
             console.log("✅ [OneSignal] Linked Device to ID:", finalId);
           }
 
           // طلب الإذن إذا لم يكن ممنوحاً
-          if (OneSignal.Notifications.permission !== "granted") {
+          if (window.OneSignal.Notifications.permission !== "granted") {
             console.log("🔔 [OneSignal] Requesting permission...");
-            await OneSignal.Notifications.requestPermission();
+            await window.OneSignal.Notifications.requestPermission();
           }
         }
       } catch (error) {
@@ -57,7 +63,19 @@ export default function OneSignalInitializer({ externalId }: OneSignalInitialize
       }
     };
 
-    initOneSignal();
+    // التأكد من تحميل السكربت قبل البدء
+    if (window.OneSignal) {
+        initOneSignal();
+    } else {
+        // إذا لم يكن محمل بعد، ننتظر قليلاً أو نعتمد على السكربت في layout
+        const checkInterval = setInterval(() => {
+            if (window.OneSignal) {
+                initOneSignal();
+                clearInterval(checkInterval);
+            }
+        }, 1000);
+        return () => clearInterval(checkInterval);
+    }
   }, [externalId, pathname]);
 
   return null;

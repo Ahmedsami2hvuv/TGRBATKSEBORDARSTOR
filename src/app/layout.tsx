@@ -60,6 +60,12 @@ export default async function RootLayout({
       className="h-full antialiased"
       suppressHydrationWarning
     >
+      <head>
+        <script
+          src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js"
+          defer
+        ></script>
+      </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <ClientRuntime
