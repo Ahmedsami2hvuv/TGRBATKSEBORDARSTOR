@@ -60,108 +60,118 @@ export async function saveWhatsappTemplateSettings(
   _prev: WhatsappTemplateSettingsState,
   formData: FormData,
 ): Promise<WhatsappTemplateSettingsState> {
-  if (!(await isAdminSession())) {
-    return { error: "غير مصرّح." };
-  }
-  const employeeShareTemplate = formString(formData, "employeeShareTemplate");
-  const customerOrderTemplate = formString(formData, "customerOrderTemplate");
-  const telegramNewOrderTemplate = formString(formData, "telegramNewOrderTemplate");
+  try {
+    if (!(await isAdminSession())) {
+      return { error: "غير مصرّح." };
+    }
+    const employeeShareTemplate = formString(formData, "employeeShareTemplate");
+    const customerOrderTemplate = formString(formData, "customerOrderTemplate");
+    const telegramNewOrderTemplate = formString(formData, "telegramNewOrderTemplate");
 
-  if (!employeeShareTemplate && !customerOrderTemplate && !telegramNewOrderTemplate) {
-    return { error: "يرجى كتابة نص الرسالة." };
-  }
+    if (!employeeShareTemplate && !customerOrderTemplate && !telegramNewOrderTemplate) {
+      return { error: "يرجى كتابة نص الرسالة." };
+    }
 
-  if (employeeShareTemplate) {
-    await saveEmployeeWhatsappShareTemplate(employeeShareTemplate);
+    if (employeeShareTemplate) {
+      await saveEmployeeWhatsappShareTemplate(employeeShareTemplate);
+    }
+    if (customerOrderTemplate) {
+      await saveCustomerOrderWhatsappTemplate(customerOrderTemplate);
+    }
+    if (telegramNewOrderTemplate) {
+      await saveTelegramNewOrderTemplate(telegramNewOrderTemplate);
+    }
+    revalidatePath("/admin/settings");
+    revalidatePath("/admin/shops");
+    return { ok: true };
+  } catch (error: any) {
+    console.error("Error saving WhatsApp templates:", error);
+    return { error: "حدث خطأ: " + (error.message || "خطأ غير معروف") };
   }
-  if (customerOrderTemplate) {
-    await saveCustomerOrderWhatsappTemplate(customerOrderTemplate);
-  }
-  if (telegramNewOrderTemplate) {
-    await saveTelegramNewOrderTemplate(telegramNewOrderTemplate);
-  }
-  revalidatePath("/admin/settings");
-  revalidatePath("/admin/shops");
-  return { ok: true };
 }
 
 export async function saveNotificationSettings(
   _prev: NotificationSettingsFormState,
   formData: FormData,
 ): Promise<NotificationSettingsFormState> {
-  if (!(await isAdminSession())) {
-    return { error: "غير مصرّح." };
+  try {
+    if (!(await isAdminSession())) {
+      return { error: "غير مصرّح." };
+    }
+
+    const adminTitleSingle = formString(formData, "adminTitleSingle") || DEFAULT_NOTIFICATION_SETTINGS.adminTitleSingle;
+    const adminTemplateSingle = formString(formData, "adminTemplateSingle") || DEFAULT_NOTIFICATION_SETTINGS.adminTemplateSingle;
+    const adminTemplateMultiple = formString(formData, "adminTemplateMultiple") || DEFAULT_NOTIFICATION_SETTINGS.adminTemplateMultiple;
+
+    const mandoubTitleSingle = formString(formData, "mandoubTitleSingle") || DEFAULT_NOTIFICATION_SETTINGS.mandoubTitleSingle;
+    const mandoubTemplateSingle = formString(formData, "mandoubTemplateSingle") || DEFAULT_NOTIFICATION_SETTINGS.mandoubTemplateSingle;
+    const mandoubTemplateMultiple = formString(formData, "mandoubTemplateMultiple") || DEFAULT_NOTIFICATION_SETTINGS.mandoubTemplateMultiple;
+
+    const preparerTitleSingle = formString(formData, "preparerTitleSingle") || DEFAULT_NOTIFICATION_SETTINGS.preparerTitleSingle;
+    const preparerTemplateSingle = formString(formData, "preparerTemplateSingle") || DEFAULT_NOTIFICATION_SETTINGS.preparerTemplateSingle;
+    const preparerTemplateMultiple = formString(formData, "preparerTemplateMultiple") || DEFAULT_NOTIFICATION_SETTINGS.preparerTemplateMultiple;
+    const preparerTemplateWebsite = formString(formData, "preparerTemplateWebsite") || DEFAULT_NOTIFICATION_SETTINGS.preparerTemplateWebsite;
+
+    const adminSoundPreset = normalizeNotificationSoundPreset(formString(formData, "adminSoundPreset"));
+    const mandoubSoundPreset = normalizeNotificationSoundPreset(formString(formData, "mandoubSoundPreset"));
+    const preparerSoundPreset = normalizeNotificationSoundPreset(formString(formData, "preparerSoundPreset"));
+
+    await prisma.appNotificationSettings.upsert({
+      where: { id: 1 },
+      create: {
+        id: 1,
+        adminEnabled: formBool(formData, "adminEnabled"),
+        adminTitleSingle,
+        adminTemplateSingle,
+        adminTemplateMultiple,
+        adminSoundEnabled: formBool(formData, "adminSoundEnabled"),
+        adminSoundPreset,
+        mandoubEnabled: formBool(formData, "mandoubEnabled"),
+        mandoubTitleSingle,
+        mandoubTemplateSingle,
+        mandoubTemplateMultiple,
+        mandoubSoundEnabled: formBool(formData, "mandoubSoundEnabled"),
+        mandoubSoundPreset,
+        preparerEnabled: formBool(formData, "preparerEnabled"),
+        preparerTitleSingle,
+        preparerTemplateSingle,
+        preparerTemplateMultiple,
+        preparerTemplateWebsite,
+        preparerSoundEnabled: formBool(formData, "preparerSoundEnabled"),
+        preparerSoundPreset,
+      },
+      update: {
+        adminEnabled: formBool(formData, "adminEnabled"),
+        adminTitleSingle,
+        adminTemplateSingle,
+        adminTemplateMultiple,
+        adminSoundEnabled: formBool(formData, "adminSoundEnabled"),
+        adminSoundPreset,
+        mandoubEnabled: formBool(formData, "mandoubEnabled"),
+        mandoubTitleSingle,
+        mandoubTemplateSingle,
+        mandoubTemplateMultiple,
+        mandoubSoundEnabled: formBool(formData, "mandoubSoundEnabled"),
+        mandoubSoundPreset,
+        preparerEnabled: formBool(formData, "preparerEnabled"),
+        preparerTitleSingle,
+        preparerTemplateSingle,
+        preparerTemplateMultiple,
+        preparerTemplateWebsite,
+        preparerSoundEnabled: formBool(formData, "preparerSoundEnabled"),
+        preparerSoundPreset,
+      },
+    });
+
+    revalidatePath("/admin/settings");
+    revalidatePath("/admin/orders/pending");
+    revalidatePath("/mandoub");
+    revalidatePath("/preparer");
+    return { ok: true };
+  } catch (error: any) {
+    console.error("Error saving notification settings:", error);
+    return { error: "حدث خطأ غير متوقع: " + (error.message || "خطأ غير معروف") };
   }
-
-  const adminTitleSingle = formString(formData, "adminTitleSingle") || DEFAULT_NOTIFICATION_SETTINGS.adminTitleSingle;
-  const adminTemplateSingle = formString(formData, "adminTemplateSingle") || DEFAULT_NOTIFICATION_SETTINGS.adminTemplateSingle;
-  const adminTemplateMultiple = formString(formData, "adminTemplateMultiple") || DEFAULT_NOTIFICATION_SETTINGS.adminTemplateMultiple;
-
-  const mandoubTitleSingle = formString(formData, "mandoubTitleSingle") || DEFAULT_NOTIFICATION_SETTINGS.mandoubTitleSingle;
-  const mandoubTemplateSingle = formString(formData, "mandoubTemplateSingle") || DEFAULT_NOTIFICATION_SETTINGS.mandoubTemplateSingle;
-  const mandoubTemplateMultiple = formString(formData, "mandoubTemplateMultiple") || DEFAULT_NOTIFICATION_SETTINGS.mandoubTemplateMultiple;
-
-  const preparerTitleSingle = formString(formData, "preparerTitleSingle") || DEFAULT_NOTIFICATION_SETTINGS.preparerTitleSingle;
-  const preparerTemplateSingle = formString(formData, "preparerTemplateSingle") || DEFAULT_NOTIFICATION_SETTINGS.preparerTemplateSingle;
-  const preparerTemplateMultiple = formString(formData, "preparerTemplateMultiple") || DEFAULT_NOTIFICATION_SETTINGS.preparerTemplateMultiple;
-  const preparerTemplateWebsite = formString(formData, "preparerTemplateWebsite") || DEFAULT_NOTIFICATION_SETTINGS.preparerTemplateWebsite;
-
-  const adminSoundPreset = normalizeNotificationSoundPreset(formString(formData, "adminSoundPreset"));
-  const mandoubSoundPreset = normalizeNotificationSoundPreset(formString(formData, "mandoubSoundPreset"));
-  const preparerSoundPreset = normalizeNotificationSoundPreset(formString(formData, "preparerSoundPreset"));
-
-  await prisma.appNotificationSettings.upsert({
-    where: { id: 1 },
-    create: {
-      id: 1,
-      adminEnabled: formBool(formData, "adminEnabled"),
-      adminTitleSingle,
-      adminTemplateSingle,
-      adminTemplateMultiple,
-      adminSoundEnabled: formBool(formData, "adminSoundEnabled"),
-      adminSoundPreset,
-      mandoubEnabled: formBool(formData, "mandoubEnabled"),
-      mandoubTitleSingle,
-      mandoubTemplateSingle,
-      mandoubTemplateMultiple,
-      mandoubSoundEnabled: formBool(formData, "mandoubSoundEnabled"),
-      mandoubSoundPreset,
-      preparerEnabled: formBool(formData, "preparerEnabled"),
-      preparerTitleSingle,
-      preparerTemplateSingle,
-      preparerTemplateMultiple,
-      preparerTemplateWebsite,
-      preparerSoundEnabled: formBool(formData, "preparerSoundEnabled"),
-      preparerSoundPreset,
-    },
-    update: {
-      adminEnabled: formBool(formData, "adminEnabled"),
-      adminTitleSingle,
-      adminTemplateSingle,
-      adminTemplateMultiple,
-      adminSoundEnabled: formBool(formData, "adminSoundEnabled"),
-      adminSoundPreset,
-      mandoubEnabled: formBool(formData, "mandoubEnabled"),
-      mandoubTitleSingle,
-      mandoubTemplateSingle,
-      mandoubTemplateMultiple,
-      mandoubSoundEnabled: formBool(formData, "mandoubSoundEnabled"),
-      mandoubSoundPreset,
-      preparerEnabled: formBool(formData, "preparerEnabled"),
-      preparerTitleSingle,
-      preparerTemplateSingle,
-      preparerTemplateMultiple,
-      preparerTemplateWebsite,
-      preparerSoundEnabled: formBool(formData, "preparerSoundEnabled"),
-      preparerSoundPreset,
-    },
-  });
-
-  revalidatePath("/admin/settings");
-  revalidatePath("/admin/orders/pending");
-  revalidatePath("/mandoub");
-  revalidatePath("/preparer");
-  return { ok: true };
 }
 
 export type PurgeDemoCoreDataState = {
