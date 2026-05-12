@@ -41,6 +41,8 @@ export async function sendOneSignalNotification(options: {
     include_aliases: {
       external_id: options.externalIds,
     },
+    // إضافة لضمان التوافق مع النسخ الأقدم من المتصفحات
+    include_external_user_ids: options.externalIds,
     target_channel: "push",
     url: options.url,
     data: options.data,

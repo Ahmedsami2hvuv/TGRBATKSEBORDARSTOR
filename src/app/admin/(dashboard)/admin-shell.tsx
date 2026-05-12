@@ -9,6 +9,7 @@ import { adminSidebarTiles, tileHref } from "@/lib/admin-nav";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig, getGlobalIcons } from "@/lib/icon-settings";
+import { OneSignalInitializer } from "@/components/OneSignalInitializer";
 
 function navItemActive(pathname: string, href: string): boolean {
   const base = href.split("#")[0] ?? href;
@@ -204,6 +205,7 @@ export function AdminShell({
         !isLg && navOpen ? "overflow-hidden" : ""
       } lg:overflow-visible`}
     >
+      <OneSignalInitializer externalId="admin_global" />
       <button
         type="button"
         onClick={() => setNavOpen((o) => !o)}

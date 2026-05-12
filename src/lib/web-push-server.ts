@@ -182,7 +182,6 @@ export async function pushNotifyAdminsPresenceChange(input: {
   name: string;
   available: boolean;
 }): Promise<void> {
-  if (!isWebPushConfigured()) return;
   const settingsRow = await getOrCreateNotificationSettings();
   const settings = audienceSettings(settingsRow, "admin");
   if (!settings.enabled) return;
@@ -196,7 +195,7 @@ export async function pushNotifyAdminsPresenceChange(input: {
     where: { role: "admin" },
     select: { id: true }
   });
-  const adminExternalIds = adminEmployees.map(e => e.id);
+  const adminExternalIds = [...adminEmployees.map(e => e.id), "admin_global"];
 
   const subs = await prisma.webPushSubscription.findMany({
     where: { audience: "admin" },
@@ -356,7 +355,7 @@ export async function pushNotifyPreparerNewNotice(input: {
   }
 
   // 2. إرسال Web Push إذا كان مفعلاً
-  if (!isWebPushConfigured() || !settings.enabled) return;
+  if (!settings.enabled) return;
 
   const subs = await prisma.webPushSubscription.findMany({
     where: { audience: "preparer", preparerId: input.preparerId },
@@ -380,8 +379,6 @@ export async function pushNotifyChatNewMessage(opts: {
   text: string;
   threadId: string;
 }): Promise<void> {
-  if (!isWebPushConfigured()) return;
-
   const where: any = { audience: opts.targetRole === "admin" ? "admin" : opts.targetRole === "mandoub" ? "mandoub" : opts.targetRole === "preparer" ? "preparer" : "supplier" };
   if (opts.targetRole === "mandoub") where.courierId = opts.targetActorId;
   if (opts.targetRole === "preparer") where.preparerId = opts.targetActorId;
@@ -392,12 +389,17 @@ export async function pushNotifyChatNewMessage(opts: {
     select: { id: true, endpoint: true, p256dh: true, auth: true },
   });
 
-  if (subs.length === 0) return;
+  const externalIds: string[] = [];
+  if (opts.targetActorId) {
+    externalIds.push(opts.targetActorId);
+  } else if (opts.targetRole === "admin") {
+    externalIds.push("admin_global");
+  }
 
   await sendToSubscriptions(subs, {
     title: `💬 [جديد] رسالة من ${opts.senderName}`,
     body: opts.text.slice(0, 100),
     url: `${getPublicAppUrl()}/${opts.targetRole === "admin" ? "admin" : opts.targetRole}`,
     tag: `portal-chat-${opts.threadId}`,
-  }, opts.targetActorId ? [opts.targetActorId] : undefined);
+  }, externalIds.length > 0 ? externalIds : undefined);
 }

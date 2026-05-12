@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { SupplierPricingClient } from "./supplier-pricing-client";
+import { OneSignalInitializer } from "@/components/OneSignalInitializer";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +76,7 @@ export default async function SupplierPortalPage({ searchParams }: Props) {
 
     return (
       <div className="min-h-screen bg-slate-50 pb-20" dir="rtl">
+        <OneSignalInitializer externalId={supplier.id} />
         <header className="bg-white border-b border-slate-100 px-6 py-8 sticky top-0 z-10 shadow-sm">
           <div className="max-w-4xl mx-auto">
              <div className="flex items-center gap-4">

@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 
 import { serializePrisma } from "@/lib/serialize-prisma";
 import { StaffPortalMenuClient } from "./staff-portal-menu-client";
+import { OneSignalInitializer } from "@/components/OneSignalInitializer";
 
 export default async function StaffPortalPage({ searchParams }: { searchParams: Promise<any> }) {
   try {
@@ -23,6 +24,7 @@ export default async function StaffPortalPage({ searchParams }: { searchParams: 
 
     return (
       <div className="kse-app-bg min-h-screen px-4 py-10 text-slate-800" dir="rtl">
+        <OneSignalInitializer externalId={v.staffEmployeeId} />
         <div className="kse-app-inner mx-auto max-w-md">
           <div className="kse-glass-dark rounded-3xl border border-sky-200 p-8 text-center shadow-xl">
             <p className="text-xs font-black uppercase tracking-widest text-sky-800/60">أبو الأكبر للتوصيل</p>
