@@ -223,18 +223,18 @@ export async function assignOrderToPreparer(
     const notice = await prisma.companyPreparerPrepNotice.create({
       data: {
         preparerId,
-        title: "إسناد طلب تجهيز",
-        body: `تم إسناد طلب جديد إليك (${customerPhone}).`,
+        title: titleLine,
+        body: summary || titleLine,
       },
     });
 
-    // إرسال إشعار دفع (Push) للخلفية
+    // إرسال إشعار دفع (Push)
     void pushNotifyPreparerNewNotice({
       preparerId,
-      title: notice.title,
-      body: notice.body,
+      title: titleLine,
+      body: summary,
       orderId: isDraft ? undefined : (sentOrderId || undefined),
-      draftId: isDraft ? (sentOrderId || undefined) : undefined
+      draftId: isDraft ? (orderId || undefined) : undefined
     }).catch(() => {});
   }
 

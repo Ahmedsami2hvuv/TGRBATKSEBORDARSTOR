@@ -174,8 +174,8 @@ export async function createAdminOrder(
       await prisma.companyPreparerPrepNotice.create({
         data: {
           preparerId,
-          title: "طلب تجهيز جديد",
-          body: `تم تحويل طلب تجهيز من الإدارة (${titleLine}).`,
+          title: titleLine,
+          body: titleLine,
         },
       });
     }

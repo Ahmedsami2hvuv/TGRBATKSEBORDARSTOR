@@ -92,8 +92,8 @@ export async function submitAdminPreparationDraft(
     await prisma.companyPreparerPrepNotice.create({
       data: {
         preparerId: preparer.id,
-        title: "طلب تجهيز من المتجر/الإدارة",
-        body: `تم تحويل طلب تجهيز جديد إلى خانتك من الإدارة.`,
+        title: titleLine,
+        body: titleLine,
       },
     });
   }
