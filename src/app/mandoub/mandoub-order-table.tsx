@@ -85,6 +85,13 @@ export type MandoubRow = {
   adminAudioUrl?: string | null;
   /** تفضيل نوع المركبة (Bike/Car) */
   vehiclePreference?: string | null;
+  /** إعدادات ظهور الأزرار للمندوب */
+  showDoorBtn?: boolean;
+  showLocationBtn?: boolean;
+  showCallBtn?: boolean;
+  showWhatsAppBtn?: boolean;
+  showNotesBtn?: boolean;
+  showVoiceNotesBtn?: boolean;
 };
 
 function buildOrderDetailHref(

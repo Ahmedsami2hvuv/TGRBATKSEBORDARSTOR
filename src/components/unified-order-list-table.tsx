@@ -401,7 +401,7 @@ export function UnifiedOrderListTable({
 
                             {/* ملاحظات الطلب */}
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                              {o.summary && (
+                              {o.summary && o.showNotesBtn !== false && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setShowNotes(showNotes === o.id ? null : o.id); }}
                                   className="flex size-7 items-center justify-center rounded-full bg-sky-100 text-sky-600 hover:bg-sky-200 transition-colors border-2 border-white shadow-sm"
@@ -436,7 +436,7 @@ export function UnifiedOrderListTable({
                           (o.smartHintLine?.trim() && !o.smartHintLine.trim().startsWith("—"))) && (
                           <div className="flex items-center gap-1 border-r pr-2 mr-1 border-slate-200" onClick={e => e.stopPropagation()}>
                              {/* زر اللوكيشن الموحد */}
-                             {!hideShopColumnLocationAndDoorPhotoButtons &&
+                             {!hideShopColumnLocationAndDoorPhotoButtons && o.showLocationBtn !== false &&
                              (( !isDoubleRoute && o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
                               (o.customerLocationUrl?.trim() && o.customerLocationUrl.trim().length > 2) ||
                               (o.secondCustomerLocationUrl?.trim() && o.secondCustomerLocationUrl.trim().length > 2)) && (
@@ -479,7 +479,7 @@ export function UnifiedOrderListTable({
                                </div>
                              )}
 
-                             {!hideShopColumnLocationAndDoorPhotoButtons &&
+                             {!hideShopColumnLocationAndDoorPhotoButtons && o.showDoorBtn !== false &&
                              (( !isDoubleRoute && o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 2) ||
                                (o.customerDoorPhotoUrl?.trim() && o.customerDoorPhotoUrl.trim().length > 2) ||
                                (o.secondCustomerDoorPhotoUrl?.trim() && o.secondCustomerDoorPhotoUrl.trim().length > 2)) && (
@@ -548,7 +548,7 @@ export function UnifiedOrderListTable({
                              )}
 
                              {/* زر الملاحظات الصوتية الموحد */}
-                             {((o.audioUrl?.trim() && o.audioUrl.trim().length > 2) ||
+                             {o.showVoiceNotesBtn !== false && ((o.audioUrl?.trim() && o.audioUrl.trim().length > 2) ||
                                (o.preparerAudioUrl?.trim() && o.preparerAudioUrl.trim().length > 2) ||
                                (o.adminAudioUrl?.trim() && o.adminAudioUrl.trim().length > 2)) && (
                                <div className="relative">
@@ -690,6 +690,7 @@ export function UnifiedOrderListTable({
                           {!hidePhoneData && (
                           <div className="flex flex-wrap items-center gap-2">
                             {/* زر الاتصال */}
+                            {o.showCallBtn !== false && (
                             <div className="relative">
                               <button
                                 onClick={(e) => {
@@ -726,8 +727,10 @@ export function UnifiedOrderListTable({
                                 </CenterModal>
                               )}
                             </div>
+                            )}
 
                             {/* زر المراسلة */}
+                            {o.showWhatsAppBtn !== false && (
                             <div className="relative">
                               <button
                                 onClick={(e) => {
@@ -764,6 +767,7 @@ export function UnifiedOrderListTable({
                                 </CenterModal>
                               )}
                             </div>
+                            )}
                           </div>
                           )}
                         </div>

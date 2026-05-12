@@ -37,6 +37,28 @@ export async function saveRoleFeaturesAction(role: "mandoub" | "preparer", confi
   return { ok: true };
 }
 
+export async function updateCourierButtonsAction(courierId: string, data: {
+  showDoorBtn?: boolean;
+  showLocationBtn?: boolean;
+  showCallBtn?: boolean;
+  showWhatsAppBtn?: boolean;
+  showNotesBtn?: boolean;
+  showVoiceNotesBtn?: boolean;
+}) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  try {
+    await prisma.courier.update({
+      where: { id: courierId },
+      data,
+    });
+    revalidatePath("/admin/settings");
+    revalidatePath("/mandoub");
+    return { ok: true };
+  } catch (error: any) {
+    return { error: error.message || "Failed to update courier buttons" };
+  }
+}
+
 export type NotificationSettingsFormState = {
   ok?: boolean;
   error?: string;

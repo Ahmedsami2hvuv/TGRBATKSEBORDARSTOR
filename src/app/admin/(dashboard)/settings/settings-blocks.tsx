@@ -12,9 +12,10 @@ import { IconSettingsForm } from "./icon-settings-form";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { WhatsappTemplateSettingsForm } from "./whatsapp-template-settings-form";
-import { saveChatSettingsAction, saveRoleFeaturesAction } from "./actions";
+import { saveChatSettingsAction, saveRoleFeaturesAction, updateCourierButtonsAction } from "./actions";
 import { useRouter } from "next/navigation";
 import { RoleFeaturesConfig } from "@/lib/role-features-settings";
+import { CourierButtonsSettings } from "./courier-buttons-settings";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -212,6 +213,18 @@ export function SettingsBlocks({
 
   return (
     <div className="space-y-4">
+      <Block
+        id="courier-buttons"
+        title="أزرار الوصول السريع للمندوب ⚡"
+        subtitle="تحكم في الأزرار التي تظهر للمندوب (لوكيشن، اتصال، واتساب...) لكل مندوب بشكل مستقل."
+        open={openId === "courier-buttons"}
+        onToggle={() => setOpenId((x) => (x === "courier-buttons" ? "" : "courier-buttons"))}
+        tone="indigo"
+        icons={globalIcons}
+      >
+        <CourierButtonsSettings />
+      </Block>
+
       <Block
         id="role-features"
         title="مميزات الأدوار (المندوب والمجهز) 🛠️"

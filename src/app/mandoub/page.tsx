@@ -424,6 +424,12 @@ export default async function MandoubPage({ searchParams }: Props) {
       routeMode: o.routeMode as any,
       preparerAudioUrl: (o.preparerShoppingJson as any)?.preparerAudioUrl || null,
       adminAudioUrl: o.adminVoiceNoteUrl,
+      showDoorBtn: courier.showDoorBtn,
+      showLocationBtn: courier.showLocationBtn,
+      showCallBtn: courier.showCallBtn,
+      showWhatsAppBtn: courier.showWhatsAppBtn,
+      showNotesBtn: courier.showNotesBtn,
+      showVoiceNotesBtn: courier.showVoiceNotesBtn,
     };
   });
 
