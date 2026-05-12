@@ -36,7 +36,7 @@ export type NotificationSettingsPayload = {
 /** قيم افتراضية للعرض قبل أول استجابة من الـ API (وتتوافق مع المخطط الافتراضي في قاعدة البيانات) */
 export const DEFAULT_ADMIN_NOTIFICATION_PAYLOAD: NotificationSettingsPayload = {
   enabled: true,
-  templateSingle: "طلب جديد بانتظار الموافقة (#{orderNumber})",
+  templateSingle: "طلب جديد: {shopName} ← {regionName} (#{orderNumber})",
   templateMultiple: "وصلت {count} طلبات جديدة بانتظار الموافقة",
   soundEnabled: true,
   soundPreset: "beep",
@@ -44,7 +44,7 @@ export const DEFAULT_ADMIN_NOTIFICATION_PAYLOAD: NotificationSettingsPayload = {
 
 export const DEFAULT_MANDOUB_NOTIFICATION_PAYLOAD: NotificationSettingsPayload = {
   enabled: true,
-  templateSingle: "تم إسناد طلب جديد إليك (#{orderNumber})",
+  templateSingle: "طلب من {shopName} إلى {regionName} (#{orderNumber})",
   templateMultiple: "تم إسناد {count} طلبات جديدة إليك",
   soundEnabled: true,
   soundPreset: "beep",
@@ -52,9 +52,9 @@ export const DEFAULT_MANDOUB_NOTIFICATION_PAYLOAD: NotificationSettingsPayload =
 
 export const DEFAULT_PREPARER_NOTIFICATION_PAYLOAD: NotificationSettingsPayload = {
   enabled: true,
-  templateSingle: "لديك طلب تجهيز جديد من {shopName} إلى {regionName} (#{orderNumber})",
-  templateMultiple: "لديك طلب محل مسند: {shopName} (#{orderNumber})",
-  templateWebsite: "لديك طلب جديد مسند من الموقع (#{orderNumber})",
+  templateSingle: "تجهيز: {shopName} ← {regionName} (#{orderNumber})",
+  templateMultiple: "طلب من محل {shopName} المسند إليك (#{orderNumber})",
+  templateWebsite: "طلب من الموقع إلى {regionName} (#{orderNumber})",
   soundEnabled: true,
   soundPreset: "phone",
 };

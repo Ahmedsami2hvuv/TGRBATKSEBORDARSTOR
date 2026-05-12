@@ -269,7 +269,7 @@ export async function pushNotifyCourierNewAssignment(
 
   // 2. إرسال OneSignal (باستخدام معرف المندوب)
   await sendToSubscriptions(subs, {
-    title: "🔔 [جديد] لوحة المندوب — طلب جديد",
+    title: `طلب جديد #${orderNumber}`,
     body,
     url,
     tag: `kse-push-mandoub-${orderNumber}-${courierId}`,
@@ -363,7 +363,7 @@ export async function pushNotifyPreparerNewNotice(input: {
   });
 
   await sendToSubscriptions(subs, {
-    title: "🔔 [جديد] لوحة المجهز — إشعار جديد",
+    title: input.title || `تنبيه من لوحة المجهز`,
     body,
     url: `${getPublicAppUrl()}/preparer/preparation`,
     tag: `kse-push-preparer-${input.preparerId}-${orderNumber || Date.now()}`,
