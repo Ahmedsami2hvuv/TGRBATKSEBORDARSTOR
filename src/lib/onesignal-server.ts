@@ -44,9 +44,11 @@ export async function sendOneSignalNotification(options: {
     target_channel: "push",
     url: options.url,
     data: options.data,
-    // لجعل الإشعار يبقى على الشاشة في الأندرويد حتى يتم التفاعل معه
+    // تحسينات لضمان الظهور والتنبيه
     android_visibility: 1,
     priority: 10,
+    android_accent_color: "FF0000", // لون التنبيه
+    small_icon: "ic_stat_onesignal_default",
   };
 
   try {
