@@ -1,13 +1,22 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 export function StoreSearchBar() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const isFirstRender = useRef(true);
+
+  // مزامنة حقل البحث مع الرابط عند التغيير (مثلاً عند الضغط على زر الرجوع)
+  useEffect(() => {
+    const q = searchParams.get("q") || "";
+    if (q !== query) {
+      setQuery(q);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -15,16 +24,30 @@ export function StoreSearchBar() {
       return;
     }
 
+    // منع الانتقال التلقائي للبحث إذا كان الحقل فارغاً والمستخدم يتصفح الأقسام
+    if (!query && !searchParams.get("q") && pathname !== "/store/search") {
+      return;
+    }
+
+    // إذا لم يتغير البحث عن الموجود في الرابط فعلياً، لا تفعل شيئاً
+    if (query === (searchParams.get("q") || "")) {
+      return;
+    }
+
     const timeoutId = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
-      if (query) params.set("q", query);
-      else params.delete("q");
-
-      router.replace(`/store/search?${params.toString()}`, { scroll: false });
+      if (query) {
+        params.set("q", query);
+        router.replace(`/store/search?${params.toString()}`, { scroll: false });
+      } else if (pathname === "/store/search") {
+        // إذا كان المستخدم في صفحة البحث ومسح النص، نقوم بتحديث النتائج لتصبح فارغة
+        params.delete("q");
+        router.replace(`/store/search?${params.toString()}`, { scroll: false });
+      }
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [query, router, searchParams]);
+  }, [query, router, searchParams, pathname]);
 
   return (
     <div className="flex-1 max-w-md mx-4">
