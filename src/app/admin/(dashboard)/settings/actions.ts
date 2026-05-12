@@ -89,10 +89,13 @@ export async function saveNotificationSettings(
   _prev: NotificationSettingsFormState,
   formData: FormData,
 ): Promise<NotificationSettingsFormState> {
+  const adminTitleSingle = formString(formData, "adminTitleSingle");
   const adminTemplateSingle = formString(formData, "adminTemplateSingle");
   const adminTemplateMultiple = formString(formData, "adminTemplateMultiple");
+  const mandoubTitleSingle = formString(formData, "mandoubTitleSingle");
   const mandoubTemplateSingle = formString(formData, "mandoubTemplateSingle");
   const mandoubTemplateMultiple = formString(formData, "mandoubTemplateMultiple");
+  const preparerTitleSingle = formString(formData, "preparerTitleSingle");
   const preparerTemplateSingle = formString(formData, "preparerTemplateSingle");
   const preparerTemplateMultiple = formString(formData, "preparerTemplateMultiple");
   const preparerTemplateWebsite = formString(formData, "preparerTemplateWebsite");
@@ -100,14 +103,14 @@ export async function saveNotificationSettings(
   const mandoubSoundPreset = normalizeNotificationSoundPreset(formString(formData, "mandoubSoundPreset"));
   const preparerSoundPreset = normalizeNotificationSoundPreset(formString(formData, "preparerSoundPreset"));
 
-  if (!adminTemplateSingle || !adminTemplateMultiple) {
-    return { error: "يرجى إدخال نص إشعارات الإدارة (مفرد ومتعدد)." };
+  if (!adminTitleSingle || !adminTemplateSingle || !adminTemplateMultiple) {
+    return { error: "يرجى إدخال عنوان ونص إشعارات الإدارة." };
   }
-  if (!mandoubTemplateSingle || !mandoubTemplateMultiple) {
-    return { error: "يرجى إدخال نص إشعارات المندوب (مفرد ومتعدد)." };
+  if (!mandoubTitleSingle || !mandoubTemplateSingle || !mandoubTemplateMultiple) {
+    return { error: "يرجى إدخال عنوان ونص إشعارات المندوب." };
   }
-  if (!preparerTemplateSingle || !preparerTemplateMultiple) {
-    return { error: "يرجى إدخال نص إشعارات المجهز (تجهيز، محلات)." };
+  if (!preparerTitleSingle || !preparerTemplateSingle || !preparerTemplateMultiple) {
+    return { error: "يرجى إدخال عنوان ونص إشعارات المجهز." };
   }
 
   await prisma.appNotificationSettings.upsert({
@@ -116,16 +119,19 @@ export async function saveNotificationSettings(
       id: 1,
       ...DEFAULT_NOTIFICATION_SETTINGS,
       adminEnabled: formBool(formData, "adminEnabled"),
+      adminTitleSingle,
       adminTemplateSingle,
       adminTemplateMultiple,
       adminSoundEnabled: formBool(formData, "adminSoundEnabled"),
       adminSoundPreset,
       mandoubEnabled: formBool(formData, "mandoubEnabled"),
+      mandoubTitleSingle,
       mandoubTemplateSingle,
       mandoubTemplateMultiple,
       mandoubSoundEnabled: formBool(formData, "mandoubSoundEnabled"),
       mandoubSoundPreset,
       preparerEnabled: formBool(formData, "preparerEnabled"),
+      preparerTitleSingle,
       preparerTemplateSingle,
       preparerTemplateMultiple,
       preparerTemplateWebsite: preparerTemplateWebsite || "لديك طلب جديد مسند من الموقع (#{orderNumber})",
@@ -134,16 +140,19 @@ export async function saveNotificationSettings(
     },
     update: {
       adminEnabled: formBool(formData, "adminEnabled"),
+      adminTitleSingle,
       adminTemplateSingle,
       adminTemplateMultiple,
       adminSoundEnabled: formBool(formData, "adminSoundEnabled"),
       adminSoundPreset,
       mandoubEnabled: formBool(formData, "mandoubEnabled"),
+      mandoubTitleSingle,
       mandoubTemplateSingle,
       mandoubTemplateMultiple,
       mandoubSoundEnabled: formBool(formData, "mandoubSoundEnabled"),
       mandoubSoundPreset,
       preparerEnabled: formBool(formData, "preparerEnabled"),
+      preparerTitleSingle,
       preparerTemplateSingle,
       preparerTemplateMultiple,
       preparerTemplateWebsite: preparerTemplateWebsite || "لديك طلب جديد مسند من الموقع (#{orderNumber})",

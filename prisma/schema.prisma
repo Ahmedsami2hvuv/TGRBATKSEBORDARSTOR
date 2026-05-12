@@ -476,14 +476,17 @@ model WebPushSubscription {
 model AppNotificationSettings {
   id                       Int      @id
   adminEnabled             Boolean  @default(true)
+  adminTitleSingle         String   @default("طلب جديد #{orderNumber}")
   adminTemplateSingle      String   @default("طلب جديد بانتظار الموافقة (#{orderNumber})")
   adminTemplateMultiple    String   @default("وصلت {count} طلبات جديدة بانتظار الموافقة")
   adminSoundEnabled        Boolean  @default(true)
   mandoubEnabled           Boolean  @default(true)
+  mandoubTitleSingle       String   @default("طلب جديد #{orderNumber}")
   mandoubTemplateSingle    String   @default("تم إسناد طلب جديد إليك (#{orderNumber})")
   mandoubTemplateMultiple  String   @default("تم إسناد {count} طلبات جديدة إليك")
   mandoubSoundEnabled      Boolean  @default(true)
   preparerEnabled          Boolean  @default(true)
+  preparerTitleSingle      String   @default("تجهيز طلب #{orderNumber}")
   preparerTemplateSingle   String   @default("لديك طلب تجهيز جديد من {shopName} إلى {regionName} (#{orderNumber})")
   preparerTemplateMultiple String   @default("لديك {count} طلبات تجهيز جديدة")
   preparerTemplateWebsite  String   @default("لديك طلب جديد مسند من الموقع (#{orderNumber})")

@@ -7,16 +7,19 @@ export type { NotificationSettingsPayload };
 
 export const DEFAULT_NOTIFICATION_SETTINGS = {
   adminEnabled: true,
+  adminTitleSingle: "طلب جديد #{orderNumber}",
   adminTemplateSingle: "طلب جديد: {shopName} ← {regionName} (#{orderNumber})",
   adminTemplateMultiple: "وصلت {count} طلبات جديدة بانتظار الموافقة",
   adminSoundEnabled: true,
   adminSoundPreset: "beep",
   mandoubEnabled: true,
+  mandoubTitleSingle: "طلب جديد #{orderNumber}",
   mandoubTemplateSingle: "طلب من {shopName} إلى {regionName} (#{orderNumber})",
   mandoubTemplateMultiple: "تم إسناد {count} طلبات جديدة إليك",
   mandoubSoundEnabled: true,
   mandoubSoundPreset: "beep",
   preparerEnabled: true,
+  preparerTitleSingle: "تجهيز طلب #{orderNumber}",
   preparerTemplateSingle: "تجهيز: {shopName} ← {regionName} (#{orderNumber})",
   preparerTemplateMultiple: "طلب من محل {shopName} المسند إليك (#{orderNumber})",
   preparerTemplateWebsite: "طلب من الموقع إلى {regionName} (#{orderNumber})",
@@ -42,6 +45,7 @@ export function audienceSettings(
   if (audience === "admin") {
     return {
       enabled: settings.adminEnabled,
+      titleSingle: settings.adminTitleSingle,
       templateSingle: settings.adminTemplateSingle,
       templateMultiple: settings.adminTemplateMultiple,
       soundEnabled: settings.adminSoundEnabled,
@@ -51,6 +55,7 @@ export function audienceSettings(
   if (audience === "preparer") {
     return {
       enabled: settings.preparerEnabled,
+      titleSingle: settings.preparerTitleSingle,
       templateSingle: settings.preparerTemplateSingle,
       templateMultiple: settings.preparerTemplateMultiple,
       templateWebsite: settings.preparerTemplateWebsite,
@@ -60,6 +65,7 @@ export function audienceSettings(
   }
   return {
     enabled: settings.mandoubEnabled,
+    titleSingle: settings.mandoubTitleSingle,
     templateSingle: settings.mandoubTemplateSingle,
     templateMultiple: settings.mandoubTemplateMultiple,
     soundEnabled: settings.mandoubSoundEnabled,

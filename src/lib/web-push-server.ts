@@ -149,6 +149,13 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
     },
   });
 
+  const title = renderNotificationTemplate(settings.titleSingle, {
+    count: 1,
+    orderNumber,
+    shopName: order?.shop?.name ?? "—",
+    regionName: order?.customerRegion?.name ?? "—",
+  });
+
   const body = renderNotificationTemplate(settings.templateSingle, {
     count: 1,
     orderNumber,
@@ -168,7 +175,7 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
     select: { id: true, endpoint: true, p256dh: true, auth: true },
   });
   await sendToSubscriptions(subs, {
-    title: "لوحة الإدارة — طلب جديد",
+    title,
     body,
     url: `${getPublicAppUrl()}/admin/orders/pending`,
     tag: `kse-push-admin-${orderNumber}`,
@@ -252,6 +259,13 @@ export async function pushNotifyCourierNewAssignment(
       })
     : null;
 
+  const title = renderNotificationTemplate(settings.titleSingle, {
+    count: 1,
+    orderNumber,
+    shopName: order?.shop?.name ?? "—",
+    regionName: order?.customerRegion?.name ?? "—",
+  });
+
   const body = renderNotificationTemplate(settings.templateSingle, {
     count: 1,
     orderNumber,
@@ -269,7 +283,7 @@ export async function pushNotifyCourierNewAssignment(
 
   // 2. إرسال OneSignal (باستخدام معرف المندوب)
   await sendToSubscriptions(subs, {
-    title: `طلب جديد #${orderNumber}`,
+    title,
     body,
     url,
     tag: `kse-push-mandoub-${orderNumber}-${courierId}`,
@@ -336,18 +350,23 @@ export async function pushNotifyPreparerNewNotice(input: {
   }
 
   let body = "";
+  let title = "";
+
   if (order?.submissionSource === "web_store" && settings.templateWebsite) {
+    title = renderNotificationTemplate(settings.titleSingle, { count: 1, orderNumber, shopName, regionName });
     body = renderNotificationTemplate(settings.templateWebsite, { count: 1, orderNumber, shopName, regionName });
   } else if (input.draftId && settings.templateMultiple) {
+    title = renderNotificationTemplate(settings.titleSingle, { count: 1, orderNumber, shopName, regionName });
     body = renderNotificationTemplate(settings.templateMultiple, { count: 1, orderNumber, shopName, regionName });
   } else {
+    title = renderNotificationTemplate(settings.titleSingle, { count: 1, orderNumber, shopName, regionName });
     body = renderNotificationTemplate(settings.templateSingle, { count: 1, orderNumber, shopName, regionName });
   }
 
   // 1. إرسال Telegram إذا توفر المعرف
   if (preparer?.telegramUserId?.trim()) {
     const chatId = preparer.telegramUserId.trim();
-    const text = `<b>${escapeTelegramHtml(input.title)}</b>\n\n${escapeTelegramHtml(body || rawBody)}`;
+    const text = `<b>${escapeTelegramHtml(title || input.title)}</b>\n\n${escapeTelegramHtml(body || rawBody)}`;
     const kb = {
       inline_keyboard: [[{ text: "📦 فتح قائمة التجهيز", callback_data: "pr_prep_0" }]],
     };
@@ -363,7 +382,7 @@ export async function pushNotifyPreparerNewNotice(input: {
   });
 
   await sendToSubscriptions(subs, {
-    title: input.title || `تنبيه من لوحة المجهز`,
+    title: title || input.title || `تنبيه من لوحة المجهز`,
     body,
     url: `${getPublicAppUrl()}/preparer/preparation`,
     tag: `kse-push-preparer-${input.preparerId}-${orderNumber || Date.now()}`,

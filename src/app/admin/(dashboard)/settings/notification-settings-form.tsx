@@ -15,16 +15,19 @@ import {
 type NotificationSettingsFormProps = {
   initial: {
     adminEnabled: boolean;
+    adminTitleSingle: string;
     adminTemplateSingle: string;
     adminTemplateMultiple: string;
     adminSoundEnabled: boolean;
     adminSoundPreset: NotificationSoundPresetId;
     mandoubEnabled: boolean;
+    mandoubTitleSingle: string;
     mandoubTemplateSingle: string;
     mandoubTemplateMultiple: string;
     mandoubSoundEnabled: boolean;
     mandoubSoundPreset: NotificationSoundPresetId;
     preparerEnabled: boolean;
+    preparerTitleSingle: string;
     preparerTemplateSingle: string;
     preparerTemplateMultiple: string;
     preparerTemplateWebsite: string;
@@ -112,6 +115,17 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
               ))}
             </select>
           </label>
+          <TokenButtons target="adminTitleSingle" />
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-600">
+              عنوان الإشعار (إدارة)
+            </span>
+            <input
+              name="adminTitleSingle"
+              defaultValue={initial.adminTitleSingle}
+              className={inputClass}
+            />
+          </label>
           <TokenButtons target="adminTemplateSingle" />
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-slate-600">
@@ -157,6 +171,17 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
               ))}
             </select>
           </label>
+          <TokenButtons target="mandoubTitleSingle" />
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-600">
+              عنوان الإشعار (مندوب)
+            </span>
+            <input
+              name="mandoubTitleSingle"
+              defaultValue={initial.mandoubTitleSingle}
+              className={inputClass}
+            />
+          </label>
           <TokenButtons target="mandoubTemplateSingle" />
           <label className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-slate-600">
@@ -201,6 +226,17 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
                 </option>
               ))}
             </select>
+          </label>
+          <TokenButtons target="preparerTitleSingle" />
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-600">
+              عنوان الإشعار (مجهز)
+            </span>
+            <input
+              name="preparerTitleSingle"
+              defaultValue={initial.preparerTitleSingle}
+              className={inputClass}
+            />
           </label>
           <TokenButtons target="preparerTemplateSingle" />
           <label className="flex flex-col gap-1">

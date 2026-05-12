@@ -26,6 +26,7 @@ export function renderNotificationTemplate(
 
 export type NotificationSettingsPayload = {
   enabled: boolean;
+  titleSingle: string;
   templateSingle: string;
   templateMultiple: string;
   templateWebsite?: string; // قالب خاص لطلبات الموقع المسندة
@@ -36,6 +37,7 @@ export type NotificationSettingsPayload = {
 /** قيم افتراضية للعرض قبل أول استجابة من الـ API (وتتوافق مع المخطط الافتراضي في قاعدة البيانات) */
 export const DEFAULT_ADMIN_NOTIFICATION_PAYLOAD: NotificationSettingsPayload = {
   enabled: true,
+  titleSingle: "طلب جديد #{orderNumber}",
   templateSingle: "طلب جديد: {shopName} ← {regionName} (#{orderNumber})",
   templateMultiple: "وصلت {count} طلبات جديدة بانتظار الموافقة",
   soundEnabled: true,
@@ -44,6 +46,7 @@ export const DEFAULT_ADMIN_NOTIFICATION_PAYLOAD: NotificationSettingsPayload = {
 
 export const DEFAULT_MANDOUB_NOTIFICATION_PAYLOAD: NotificationSettingsPayload = {
   enabled: true,
+  titleSingle: "طلب جديد #{orderNumber}",
   templateSingle: "طلب من {shopName} إلى {regionName} (#{orderNumber})",
   templateMultiple: "تم إسناد {count} طلبات جديدة إليك",
   soundEnabled: true,
@@ -52,6 +55,7 @@ export const DEFAULT_MANDOUB_NOTIFICATION_PAYLOAD: NotificationSettingsPayload =
 
 export const DEFAULT_PREPARER_NOTIFICATION_PAYLOAD: NotificationSettingsPayload = {
   enabled: true,
+  titleSingle: "تجهيز طلب #{orderNumber}",
   templateSingle: "تجهيز: {shopName} ← {regionName} (#{orderNumber})",
   templateMultiple: "طلب من محل {shopName} المسند إليك (#{orderNumber})",
   templateWebsite: "طلب من الموقع إلى {regionName} (#{orderNumber})",

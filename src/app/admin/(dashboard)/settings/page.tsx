@@ -45,6 +45,7 @@ export default async function SettingsPage() {
         preparerFeaturesInitial={preparerFeatures}
         notificationInitial={{
           adminEnabled: notificationSettings.adminEnabled,
+          adminTitleSingle: notificationSettings.adminTitleSingle,
           adminTemplateSingle: notificationSettings.adminTemplateSingle,
           adminTemplateMultiple: notificationSettings.adminTemplateMultiple,
           adminSoundEnabled: notificationSettings.adminSoundEnabled,
@@ -52,6 +53,7 @@ export default async function SettingsPage() {
             notificationSettings.adminSoundPreset ?? "beep",
           ),
           mandoubEnabled: notificationSettings.mandoubEnabled,
+          mandoubTitleSingle: notificationSettings.mandoubTitleSingle,
           mandoubTemplateSingle: notificationSettings.mandoubTemplateSingle,
           mandoubTemplateMultiple: notificationSettings.mandoubTemplateMultiple,
           mandoubSoundEnabled: notificationSettings.mandoubSoundEnabled,
@@ -59,8 +61,10 @@ export default async function SettingsPage() {
             notificationSettings.mandoubSoundPreset ?? "beep",
           ),
           preparerEnabled: notificationSettings.preparerEnabled,
+          preparerTitleSingle: notificationSettings.preparerTitleSingle,
           preparerTemplateSingle: notificationSettings.preparerTemplateSingle,
           preparerTemplateMultiple: notificationSettings.preparerTemplateMultiple,
+          preparerTemplateWebsite: notificationSettings.preparerTemplateWebsite,
           preparerSoundEnabled: notificationSettings.preparerSoundEnabled,
           preparerSoundPreset: normalizeNotificationSoundPreset(
             notificationSettings.preparerSoundPreset ?? "phone",
