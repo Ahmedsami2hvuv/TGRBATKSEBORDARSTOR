@@ -21,12 +21,17 @@ const GlobalAIAssistant = dynamic(() => import("@/components/GlobalAIAssistant")
 const PortalChatWidget = dynamic(() => import("@/components/PortalChatWidget"), {
   ssr: false,
 });
+const OneSignalInitializer = dynamic(
+  () => import("@/components/OneSignalInitializer").then((m) => m.OneSignalInitializer),
+  { ssr: false },
+);
 
 type ClientRuntimeProps = {
   children: React.ReactNode;
   mandoubFeatures?: { aiEnabled: boolean; chatEnabled: boolean };
   preparerFeatures?: { aiEnabled: boolean; chatEnabled: boolean };
   storeFeatures?: { aiEnabled: boolean };
+  externalId?: string; // إضافة هذا الحقل
 };
 
 export function ClientRuntime({
@@ -34,9 +39,11 @@ export function ClientRuntime({
   mandoubFeatures,
   preparerFeatures,
   storeFeatures,
+  externalId,
 }: ClientRuntimeProps) {
   return (
     <>
+      <OneSignalInitializer externalId={externalId} />
       {/* Keep global assistant visible across portals */}
       <EnterSubmitGlobal />
       <GlobalAIAssistant

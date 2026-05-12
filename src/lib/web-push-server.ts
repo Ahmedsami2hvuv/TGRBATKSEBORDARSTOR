@@ -84,10 +84,24 @@ export async function sendTestPushBroadcast(opts: {
 /** أولوية عالية + TTL طويل: يقلّل تأخير التسليم عند إغلاق التطبيق أو وضع الطاقة على الجوال */
 const WEB_PUSH_HTTP_OPTIONS = { TTL: 86400, urgency: "high" as const };
 
+import { sendOneSignalNotification } from "@/lib/onesignal-server";
+
 async function sendToSubscriptions(
   subs: { id: string; endpoint: string; p256dh: string; auth: string }[],
   payload: PushPayload,
+  externalIds?: string[], // إضافة خيار لإرسال عبر وان سيجنال أيضاً
 ): Promise<void> {
+  // 1. محاولة الإرسال عبر وان سيجنال إذا توفرت المعرفات
+  if (externalIds && externalIds.length > 0) {
+    void sendOneSignalNotification({
+      title: payload.title,
+      body: payload.body,
+      url: payload.url,
+      externalIds: externalIds,
+    });
+  }
+
+  // 2. الطريقة القديمة (Web Push)
   if (!configureVapid()) return;
   const json = JSON.stringify(payload);
   for (const s of subs) {
@@ -227,7 +241,7 @@ export async function pushNotifyCourierNewAssignment(
     url,
     tag: `kse-push-mandoub-${orderNumber}-${courierId}`,
     sound: settings.soundPreset,
-  });
+  }, [courierId]); // تمرير معرف المندوب لوان سيجنال
 }
 
 /** إشعار للمجهز: طلب تجهيز جديد أو إسناد من الموقع */
@@ -321,7 +335,7 @@ export async function pushNotifyPreparerNewNotice(input: {
     url: `${getPublicAppUrl()}/preparer/preparation`,
     tag: `kse-push-preparer-${input.preparerId}-${orderNumber || Date.now()}`,
     sound: settings.soundPreset,
-  });
+  }, [input.preparerId]); // تمرير معرف المجهز لوان سيجنال
 }
 
 /** إشعار دردشة */
@@ -351,5 +365,5 @@ export async function pushNotifyChatNewMessage(opts: {
     body: opts.text.slice(0, 100),
     url: `${getPublicAppUrl()}/${opts.targetRole === "admin" ? "admin" : opts.targetRole}`,
     tag: `portal-chat-${opts.threadId}`,
-  });
+  }, opts.targetActorId ? [opts.targetActorId] : undefined);
 }

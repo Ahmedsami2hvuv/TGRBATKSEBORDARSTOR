@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ClientRuntime } from "@/components/client-runtime";
 import { getRoleFeatures } from "@/lib/role-features-settings";
 import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -32,6 +33,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // جلب الكوكيز للتعرف على المندوب أو المستخدم لربطه بـ OneSignal
+  const cookieStore = await cookies();
+  const mandoubId = cookieStore.get("mandoub_c")?.value;
+  const preparerId = cookieStore.get("preparer_p")?.value;
+  const employeeId = cookieStore.get("employee_e")?.value;
+
+  const externalId = mandoubId || preparerId || employeeId;
+
   const [mandoubFeatures, preparerFeatures, storeSettings] = await Promise.all([
     getRoleFeatures("mandoub"),
     getRoleFeatures("preparer"),
@@ -57,6 +66,7 @@ export default async function RootLayout({
             mandoubFeatures={mandoubFeatures}
             preparerFeatures={preparerFeatures}
             storeFeatures={storeFeatures}
+            externalId={externalId}
           >
             {children}
           </ClientRuntime>
