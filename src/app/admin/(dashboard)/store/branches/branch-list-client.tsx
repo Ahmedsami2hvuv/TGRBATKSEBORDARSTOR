@@ -3,7 +3,7 @@
 import { useState, use, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { upsertBranch, deleteBranch, scrapeCategoryFromUrl, scrapeProductFromUrl, createProductFromScrapedData } from "../actions";
+import { upsertBranch, deleteBranch, scrapeCategoryFromUrl, scrapeProductFromUrl, createProductFromScrapedData, clearBranchProducts } from "../actions";
 import { compressImageFileForUpload } from "@/lib/client-image-compress";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
@@ -134,6 +134,7 @@ export function BranchListClient({
     branchData: null,
     branchId: null,
     error: null,
+    skipIfNameExists: false,
   });
 
   async function handleBulkImageUpload(files: FileList) {
@@ -176,66 +177,67 @@ export function BranchListClient({
 
     // بدء الفحص التلقائي إذا كان الرابط يبدو صالحاً
     if (url.includes("/shop/sub/") || url.includes("/item/")) {
-        autoProcessSession(id, url);
+        const session = importSessions.find(s => s.id === id);
+        autoProcessSession(id, url, { manualImage: session?.manualImage });
     }
   }
 
-  async function autoProcessSession(id: string, url: string) {
-    const session = importSessions.find(s => s.id === id);
-    if (!session || session.status !== 'idle') return;
-
-    updateSession(id, { status: 'scraping', error: null });
+  async function autoProcessSession(id: string, url: string, options?: { skipIfNameExists?: boolean, branchId?: string, manualImage?: File | null }) {
+    updateSession(id, { status: 'scraping', error: null, ...options });
 
     try {
         const res = await scrapeCategoryFromUrl(url);
         if (res.ok && res.branchData) {
             updateSession(id, { branchData: res.branchData, total: res.productUrls.length });
 
-            // البدء بالإنشاء الفوري للفرع (الفكرة الأقوى)
-            const catId = (document.getElementById('bulkCategoryGlobal') as HTMLSelectElement)?.value || defaultCategoryId || categories[0]?.id;
+            let branchId = options?.branchId;
+            if (!branchId) {
+                const catId = (document.getElementById('bulkCategoryGlobal') as HTMLSelectElement)?.value || defaultCategoryId || categories[0]?.id;
 
-            const fd = new FormData();
-            fd.append("name", res.branchData.name);
-            fd.append("categoryId", catId);
+                const fd = new FormData();
+                fd.append("name", res.branchData.name);
+                fd.append("categoryId", catId);
 
-            // إذا كانت هناك صورة يدوية مرفوعة، نستخدمها، وإلا نستخدم رابط الصورة المسحوب
-            if (session.manualImage) {
-                fd.append("photo", session.manualImage);
-            } else {
-                fd.append("remoteImageUrl", res.branchData.imageUrl);
-            }
-            fd.append("skipRevalidate", "true");
-
-            const bRes = await upsertBranch(null, fd);
-            if (bRes.ok && bRes.id) {
-                const branchId = bRes.id;
-                updateSession(id, { status: 'importing', branchId: branchId });
-
-                // سحب المنتجات
-                const urlsToScrape = res.productUrls; // إزالة قيد الـ 50 منتج للسماح بسحب كافة المنتجات
-                let currentProgress = 0;
-                let successCount = 0;
-
-                for (const pUrl of urlsToScrape) {
-                    const pRes = await scrapeProductFromUrl(pUrl);
-                    if (pRes.ok) {
-                        // استخدام الأكشن الجديد لإنشاء المنتج وربطه بالفرع فوراً
-                        const pImport = await createProductFromScrapedData(branchId, pRes.data, shouldRemoveBg);
-                        if (pImport.ok) successCount++;
-                    }
-                    currentProgress++;
-                    updateSession(id, { progress: currentProgress });
-                }
-
-                if (successCount > 0) {
-                    updateSession(id, { status: 'completed' });
-                } else if (urlsToScrape.length === 0) {
-                    updateSession(id, { status: 'completed', error: "تم إنشاء الفرع (الفرع فارغ من المنتجات)" });
+                // إذا كانت هناك صورة يدوية مرفوعة، نستخدمها، وإلا نستخدم رابط الصورة المسحوب
+                if (options?.manualImage) {
+                    fd.append("photo", options.manualImage);
                 } else {
-                    updateSession(id, { status: 'error', error: "فشل سحب المنتجات لهذا الفرع" });
+                    fd.append("remoteImageUrl", res.branchData.imageUrl);
                 }
+                fd.append("skipRevalidate", "true");
+
+                const bRes = await upsertBranch(null, fd);
+                if (bRes.ok && bRes.id) {
+                    branchId = bRes.id;
+                    updateSession(id, { branchId: branchId });
+                } else {
+                    updateSession(id, { status: 'error', error: bRes.error || "فشل إنشاء الفرع" });
+                    return;
+                }
+            }
+
+            updateSession(id, { status: 'importing' });
+
+            // سحب المنتجات
+            const urlsToScrape = res.productUrls;
+            let currentProgress = 0;
+            let successCount = 0;
+
+            for (const pUrl of urlsToScrape) {
+                const pRes = await scrapeProductFromUrl(pUrl);
+                if (pRes.ok) {
+                    // استخدام الأكشن الجديد لإنشاء المنتج وربطه بالفرع فوراً مع خيار تخطي الموجود
+                    const pImport = await createProductFromScrapedData(branchId!, pRes.data, shouldRemoveBg, options?.skipIfNameExists);
+                    if (pImport.ok) successCount++;
+                }
+                currentProgress++;
+                updateSession(id, { progress: currentProgress });
+            }
+
+            if (successCount > 0 || urlsToScrape.length === 0) {
+                updateSession(id, { status: 'completed', error: urlsToScrape.length === 0 ? "تم إنشاء الفرع (الفرع فارغ من المنتجات)" : null });
             } else {
-                updateSession(id, { status: 'error', error: bRes.error || "فشل إنشاء الفرع" });
+                updateSession(id, { status: 'error', error: "فشل سحب المنتجات لهذا الفرع" });
             }
         } else {
             updateSession(id, { status: 'error', error: res.error || "تعذر تحليل الرابط" });
@@ -243,6 +245,69 @@ export function BranchListClient({
     } catch (e: any) {
         updateSession(id, { status: 'error', error: e.message });
     }
+  }
+
+  async function handleResetSession(id: string) {
+    const session = importSessions.find(s => s.id === id);
+    if (!session || !session.branchId) return;
+
+    if (!confirm(`هل أنت متأكد من مسح كافة منتجات فرع "${session.branchData?.name || ''}" والبدء بسحب جديد؟`)) return;
+
+    updateSession(id, { status: 'idle', progress: 0, total: 0, error: "جاري مسح المنتجات..." });
+    const res = await clearBranchProducts(session.branchId);
+    if (!res.ok) {
+        updateSession(id, { status: 'error', error: "فشل مسح المنتجات" });
+        return;
+    }
+
+    const newUrl = prompt("أدخل رابط المنتجات الجديد (أو اتركه فارغاً لاستخدام الرابط الحالي):", session.url);
+    if (newUrl !== null) {
+        const urlToUse = newUrl || session.url;
+        autoProcessSession(id, urlToUse, { skipIfNameExists: false, branchId: session.branchId });
+    } else {
+        updateSession(id, { status: 'idle', error: null });
+    }
+  }
+
+  async function handleContinueSession(id: string) {
+    const session = importSessions.find(s => s.id === id);
+    if (!session || !session.branchId) return;
+
+    const newUrl = prompt("أدخل الرابط لفحص وسحب الجديد فقط (أو اتركه فارغاً لاستخدام الرابط الحالي):", session.url);
+    if (newUrl !== null) {
+        const urlToUse = newUrl || session.url;
+        autoProcessSession(id, urlToUse, { skipIfNameExists: true, branchId: session.branchId });
+    }
+  }
+
+  async function startSyncForBranch(br: any, mode: 'reset' | 'continue') {
+    const url = prompt(`أدخل رابط السحب لفرع "${br.name}":`);
+    if (!url) return;
+
+    setShowScraper(true);
+    const sessionId = (Date.now() + Math.random()).toString();
+    const newSession = {
+        ...createEmptySession(),
+        id: sessionId,
+        url: url,
+        branchId: br.id,
+        branchData: { name: br.name, imageUrl: br.photoUrl },
+        skipIfNameExists: mode === 'continue',
+        status: 'idle'
+    };
+
+    setImportSessions(prev => [newSession, ...prev]);
+
+    if (mode === 'reset') {
+        setLoading(true);
+        await clearBranchProducts(br.id);
+        setLoading(false);
+    }
+
+    autoProcessSession(sessionId, url, {
+        skipIfNameExists: mode === 'continue',
+        branchId: br.id
+    });
   }
 
   async function handleManualImageUpload(id: string, file: File) {
@@ -532,12 +597,30 @@ export function BranchListClient({
                                     ) : (
                                         <div />
                                     )}
-                                    <button
-                                        onClick={() => handleCancelSession(session.id)}
-                                        className="text-[10px] font-bold text-rose-500 hover:text-rose-700 flex items-center gap-1"
-                                    >
-                                        🗑️ إلغاء ومسح
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                        {session.branchId && (
+                                            <>
+                                                <button
+                                                    onClick={() => handleResetSession(session.id)}
+                                                    className="text-[10px] font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"
+                                                >
+                                                    🔄 إعادة
+                                                </button>
+                                                <button
+                                                    onClick={() => handleContinueSession(session.id)}
+                                                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                                                >
+                                                    ✨ تكملة
+                                                </button>
+                                            </>
+                                        )}
+                                        <button
+                                            onClick={() => handleCancelSession(session.id)}
+                                            className="text-[10px] font-bold text-rose-500 hover:text-rose-700 flex items-center gap-1"
+                                        >
+                                            🗑️ إلغاء ومسح
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -742,7 +825,14 @@ export function BranchListClient({
             </Link>
 
             {/* Actions Bar */}
-            <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="mt-4 grid grid-cols-4 gap-2">
+              <button
+                onClick={() => startSyncForBranch(br, 'continue')}
+                className="p-2 bg-indigo-50 text-indigo-700 rounded-xl text-[10px] font-black hover:bg-indigo-100 transition-colors flex items-center justify-center"
+                title="تكملة سحب المنتجات"
+              >
+                <DynamicIcon icon={icons?.ui_flash} fallback="✨" className="w-3.5 h-3.5" />
+              </button>
               <button
                 onClick={() => {
                   setEditing(br);

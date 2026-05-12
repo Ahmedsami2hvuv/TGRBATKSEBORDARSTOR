@@ -153,6 +153,29 @@ export async function deleteBranch(id: string) {
   revalidatePath("/admin/store/branches");
 }
 
+export async function clearBranchProducts(branchId: string) {
+    try {
+        const products = await prisma.storeProduct.findMany({
+            where: { branchId },
+            select: { photoUrls: true }
+        });
+
+        for (const p of products) {
+            if (p.photoUrls) {
+                for (const url of p.photoUrls) {
+                    await deleteFromR2(url);
+                }
+            }
+        }
+
+        await prisma.storeProduct.deleteMany({ where: { branchId } });
+        revalidatePath("/admin/store/products");
+        return { ok: true };
+    } catch (e: any) {
+        return { error: e.message };
+    }
+}
+
 // --- Products ---
 export async function upsertProduct(_prev: any, formData: FormData): Promise<FormState> {
   try {
@@ -626,8 +649,15 @@ export async function createCategorySimple(name: string) {
     }
 }
 
-export async function createProductFromScrapedData(branchId: string, p: any, removeBg: boolean = true) {
+export async function createProductFromScrapedData(branchId: string, p: any, removeBg: boolean = true, skipIfNameExists: boolean = false) {
     try {
+        if (skipIfNameExists) {
+            const existing = await prisma.storeProduct.findFirst({
+                where: { branchId, name: p.name }
+            });
+            if (existing) return { ok: true, skipped: true };
+        }
+
         let photoUrls: string[] = [];
 
         // إنشاء المنتج فوراً مع رابط الصورة الخارجي كبداية (اختياري) أو مصفوفة فارغة
