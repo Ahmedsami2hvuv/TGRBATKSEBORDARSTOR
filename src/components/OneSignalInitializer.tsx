@@ -2,29 +2,44 @@
 
 import { useEffect } from "react";
 import Script from "next/script";
+import { usePathname } from "next/navigation";
 
 export function OneSignalInitializer({ externalId }: { externalId?: string }) {
+  const pathname = usePathname();
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       window.OneSignalDeferred.push(async function (OneSignal: any) {
-        await OneSignal.init({
-          appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
-          safari_web_id: "web.onesignal.auto.064c4897-400a-426c-829d-648c08974567", // سيتم تحديثه إذا لزم الأمر
-          notifyButton: {
-            enable: false, // سنستخدم الزر الخاص بنا
-          },
-          allowLocalhostAsSecureOrigin: true,
-        });
+        try {
+          await OneSignal.init({
+            appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
+            safari_web_id: "web.onesignal.auto.064c4897-400a-426c-829d-648c08974567",
+            notifyButton: {
+              enable: false,
+            },
+            allowLocalhostAsSecureOrigin: true,
+            serviceWorkerParam: { scope: "/" },
+            serviceWorkerPath: "OneSignalSDKWorker.js",
+          });
 
-        if (externalId) {
-          // ربط الجهاز بـ ID المندوب أو المستخدم في نظامنا
-          await OneSignal.login(externalId);
-          console.log("OneSignal: Logged in with External ID:", externalId);
+          let finalId = externalId;
+
+          // إذا كان المستخدم في لوحة الإدارة ولم يتم تحديد ID له، نربطه بـ admin_global
+          if (!finalId && pathname?.startsWith("/admin")) {
+            finalId = "admin_global";
+          }
+
+          if (finalId) {
+            await OneSignal.login(finalId);
+            console.log("OneSignal: Device linked to ID:", finalId);
+          }
+        } catch (error) {
+          console.error("OneSignal Init Error:", error);
         }
       });
     }
-  }, [externalId]);
+  }, [externalId, pathname]);
 
   return (
     <Script
@@ -34,7 +49,6 @@ export function OneSignalInitializer({ externalId }: { externalId?: string }) {
   );
 }
 
-// تعريف النوع للمتصفح
 declare global {
   interface Window {
     OneSignalDeferred: any[];

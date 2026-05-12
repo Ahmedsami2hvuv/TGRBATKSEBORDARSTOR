@@ -141,12 +141,12 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
     regionName: order?.customerRegion?.name ?? "—",
   });
 
-  // جلب معرفات الموظفين (الأدمن) لإرسالها عبر وان سيجنال
+  // جلب معرفات الموظفين (الأدمن) + المعرف العام للأدمن
   const adminEmployees = await prisma.employee.findMany({
     where: { role: "admin" },
     select: { id: true }
   });
-  const adminExternalIds = adminEmployees.map(e => e.id);
+  const adminExternalIds = [...adminEmployees.map(e => e.id), "admin_global"];
 
   const subs = await prisma.webPushSubscription.findMany({
     where: { audience: "admin" },
@@ -205,6 +205,8 @@ export async function pushNotifyCourierNewAssignment(
     where: { id: courierId },
     select: { telegramUserId: true },
   });
+
+  // 1. إرسال Telegram (تم استعادته)
   if (courier?.telegramUserId?.trim()) {
     const chatId = courier.telegramUserId.trim();
     const text = `<b>تم إسناد طلب جديد لك</b>\n\n🔢 رقم الطلب: <b>#${escapeTelegramHtml(String(
@@ -219,16 +221,14 @@ export async function pushNotifyCourierNewAssignment(
         [{ text: "💼 محفظتي", callback_data: "co_wallet_0" }],
       ],
     };
-    try {
-      await sendTelegramMessageWithKeyboardToChat(chatId, text, kb);
-    } catch (e) {
-      console.error("[pushNotifyCourierNewAssignment] telegram send failed:", e);
-    }
+    await sendTelegramMessageWithKeyboardToChat(chatId, text, kb).catch(() => {});
   }
+
   if (!isWebPushConfigured()) return;
   const settingsRow = await getOrCreateNotificationSettings();
   const settings = audienceSettings(settingsRow, "mandoub");
   if (!settings.enabled) return;
+
   const order = orderId
     ? await prisma.order.findUnique({
         where: { id: orderId },
@@ -245,19 +245,23 @@ export async function pushNotifyCourierNewAssignment(
     shopName: order?.shop?.name ?? "—",
     regionName: order?.customerRegion?.name ?? "—",
   });
+
   const subs = await prisma.webPushSubscription.findMany({
     where: { audience: "mandoub", courierId },
     select: { id: true, endpoint: true, p256dh: true, auth: true },
   });
+
   const path = orderId ? `/mandoub/order/${orderId}` : "/mandoub";
   const url = buildDelegatePortalUrl(courierId, getPublicAppUrl(), path);
+
+  // 2. إرسال OneSignal (باستخدام معرف المندوب)
   await sendToSubscriptions(subs, {
     title: "🔔 [جديد] لوحة المندوب — طلب جديد",
     body,
     url,
     tag: `kse-push-mandoub-${orderNumber}-${courierId}`,
     sound: settings.soundPreset,
-  }, [courierId]); // تمرير معرف المندوب لوان سيجنال
+  }, [courierId]);
 }
 
 /** إشعار للمجهز: طلب تجهيز جديد أو إسناد من الموقع */
