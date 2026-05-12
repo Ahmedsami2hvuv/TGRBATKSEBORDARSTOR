@@ -23,26 +23,43 @@ export default async function AdminSlidesPage() {
         <h2 className="text-xl font-black mb-6 flex items-center gap-2">
           <span>➕</span> إضافة سلايد جديد
         </h2>
-        <form action={createSlide} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <input
-            name="imageUrl"
-            required
-            placeholder="رابط الصورة (URL)"
-            className="p-3 rounded-xl bg-slate-50 border-none font-bold text-sm"
-          />
-          <input
-            name="linkUrl"
-            placeholder="رابط التوجيه (اختياري)"
-            className="p-3 rounded-xl bg-slate-50 border-none font-bold text-sm"
-          />
-          <div className="flex gap-2">
+        <form action={createSlide} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-bold text-slate-400 mr-2">تحميل صورة</label>
             <input
-              name="sequence"
-              type="number"
-              placeholder="الترتيب"
-              className="w-24 p-3 rounded-xl bg-slate-50 border-none font-bold text-sm"
+              name="imageFile"
+              type="file"
+              accept="image/*"
+              className="p-2 rounded-xl bg-slate-50 border-none font-bold text-xs"
             />
-            <button className="flex-1 bg-violet-600 text-white rounded-xl font-black hover:bg-violet-700 transition">
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-bold text-slate-400 mr-2">أو رابط URL</label>
+            <input
+              name="imageUrl"
+              placeholder="رابط الصورة"
+              className="p-3 rounded-xl bg-slate-50 border-none font-bold text-sm"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-bold text-slate-400 mr-2">رابط التوجيه (اختياري)</label>
+            <input
+              name="linkUrl"
+              placeholder="https://..."
+              className="p-3 rounded-xl bg-slate-50 border-none font-bold text-sm"
+            />
+          </div>
+          <div className="flex items-end gap-2">
+            <div className="flex flex-col gap-1 w-20">
+              <label className="text-[10px] font-bold text-slate-400 mr-2">الترتيب</label>
+              <input
+                name="sequence"
+                type="number"
+                placeholder="0"
+                className="p-3 rounded-xl bg-slate-50 border-none font-bold text-sm"
+              />
+            </div>
+            <button className="flex-1 h-[46px] bg-violet-600 text-white rounded-xl font-black hover:bg-violet-700 transition">
               حفظ السلايد
             </button>
           </div>

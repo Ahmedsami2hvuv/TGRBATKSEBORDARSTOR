@@ -287,6 +287,7 @@ export async function saveStoreProductImageUploaded(file: File, _mb: number, opt
   return processAndUploadImage(file, "products", { removeBg: options?.removeBg ?? true });
 }
 export async function saveStoreBranchImageUploaded(file: File, _mb: number) { return processAndUploadImage(file, "branches", { removeBg: false }); }
+export async function saveStoreSlideImageUploaded(file: File, _mb: number) { return processAndUploadImage(file, "slides", { removeBg: false }); }
 export async function saveOrderImageFromResizedBuffer(buf: Buffer, _mb: number) { return processAndUploadImage(buf, "orders"); }
 export async function saveCustomerDoorPhotoFromResizedBuffer(buf: Buffer, _mb: number) { return processAndUploadImage(buf, "customers"); }
 export async function saveShopDoorPhotoFromResizedBuffer(buf: Buffer, _mb: number) { return processAndUploadImage(buf, "shops"); }
