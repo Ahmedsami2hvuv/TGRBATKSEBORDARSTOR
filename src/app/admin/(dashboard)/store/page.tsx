@@ -31,6 +31,13 @@ export default async function StoreAdminHub({ searchParams }: { searchParams: Pr
       color: "bg-emerald-500",
     },
     {
+      title: "سلايدات الواجهة",
+      desc: "إدارة الصور الإعلانية في الصفحة الرئيسية",
+      href: "/admin/store/slides",
+      emoji: "🖼️",
+      color: "bg-pink-500",
+    },
+    {
       title: "المنتجات",
       desc: "إدارة قائمة المنتجات والأسعار والصور",
       href: "/admin/store/products",

@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Suspense } from "react";
+import { StoreSlider } from "./_components/store-slider";
 
-export const revalidate = 120;
+export const revalidate = 60; // Refresh every minute
 
 async function CategoriesGrid() {
   const categories = await prisma.storeCategory.findMany({
@@ -50,53 +51,41 @@ async function CategoriesGrid() {
 }
 
 export default async function StoreHomePage() {
-  const storeSettings = await prisma.uISystemSetting.findUnique({
-    where: { target_section: { target: "customer", section: "store_general" } },
-    select: { config: true },
-  });
+  const [slides, storeSettings] = await Promise.all([
+    prisma.storeSlide.findMany({
+      where: { active: true },
+      orderBy: { sequence: "asc" }
+    }),
+    prisma.uISystemSetting.findUnique({
+      where: { target_section: { target: "customer", section: "store_general" } },
+      select: { config: true },
+    })
+  ]);
 
   const config = (storeSettings?.config as any) || {};
 
   return (
     <div className="space-y-12">
-      {/* Hero Section */}
-      <section className="relative py-16 md:py-24 text-center overflow-hidden rounded-[3rem] bg-slate-50 dark:bg-slate-900 transition-colors">
-        <div className="relative z-10 px-4">
-          <span className="inline-block px-4 py-1.5 mb-6 text-xs font-black tracking-widest text-violet-600 bg-violet-100 dark:bg-violet-900/30 dark:text-violet-400 rounded-full uppercase">
-            مرحباً بك في عالمنا
-          </span>
-          <h1 className="text-4xl md:text-7xl font-black text-slate-900 dark:text-white mb-6 leading-tight">
-            خصيب ستور <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-indigo-600">
-              تسوق بذكاء وأمان
-            </span>
-          </h1>
-          <p className="text-base md:text-xl text-slate-600 dark:text-slate-400 font-bold max-w-2xl mx-auto mb-10 leading-relaxed">
-            نقدم لك تجربة تسوق فريدة مع أسرع خدمة توصيل في المنطقة.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-4">
-            {config.how_to_shop_url && (
-              <Link
-                href={config.how_to_shop_url}
-                target="_blank"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-black rounded-2xl hover:border-violet-500 transition-all shadow-sm active:scale-95"
-              >
-                <span>📺</span>
-                طريقة التسوق
-              </Link>
-            )}
-            <Link
-               href="#categories"
-               className="inline-flex items-center gap-2 px-8 py-4 bg-violet-600 text-white font-black rounded-2xl hover:bg-violet-700 transition-all shadow-xl shadow-violet-200 dark:shadow-none active:scale-95"
-            >
-              ابدأ التسوق الآن
-            </Link>
+      {/* Dynamic Slider Section */}
+      <section>
+        {slides.length > 0 ? (
+          <StoreSlider slides={slides.map(s => ({ id: s.id, imageUrl: s.imageUrl, linkUrl: s.linkUrl }))} />
+        ) : (
+          /* Fallback if no slides are added yet */
+          <div className="relative py-16 md:py-24 text-center overflow-hidden rounded-[3rem] bg-slate-50 dark:bg-slate-900 transition-colors">
+            <div className="relative z-10 px-4">
+              <h1 className="text-4xl md:text-7xl font-black text-slate-900 dark:text-white mb-6 leading-tight">
+                خصيب ستور <br className="hidden md:block" />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-indigo-600">
+                  تسوق بذكاء وأمان
+                </span>
+              </h1>
+              <p className="text-base md:text-xl text-slate-600 dark:text-slate-400 font-bold max-w-2xl mx-auto mb-10 leading-relaxed">
+                نقدم لك تجربة تسوق فريدة مع أسرع خدمة توصيل في المنطقة.
+              </p>
+            </div>
           </div>
-        </div>
-
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-96 h-96 bg-violet-500/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-500/5 blur-[120px] rounded-full" />
+        )}
       </section>
 
       {/* Categories Grid */}

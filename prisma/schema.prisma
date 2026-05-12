@@ -622,6 +622,18 @@ model StoreProductVariant {
   @@index([productId])
 }
 
+model StoreSlide {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  linkUrl   String   @default("")
+  active    Boolean  @default(true)
+  sequence  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active, sequence])
+}
+
 enum CourierVehicleType {
   car
   bike
