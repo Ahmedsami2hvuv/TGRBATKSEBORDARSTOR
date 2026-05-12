@@ -278,6 +278,8 @@ export default async function PreparerWalletPage({ searchParams }: Props) {
   const safeTransferTargetCouriers = deepSanitize(transferTargetCouriers);
   const safeTransferTargetEmployees = deepSanitize(transferTargetEmployees);
 
+  const accountingLayout = uiSettings?.layoutOrder || ["summary_grid", "transfer_section", "ledger"];
+
   return (
     <div className="kse-app-bg min-h-screen px-4 py-8 pb-24 text-slate-800">
       <div className="kse-app-inner mx-auto max-w-lg space-y-5">
