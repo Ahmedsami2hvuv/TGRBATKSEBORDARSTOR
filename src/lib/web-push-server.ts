@@ -319,19 +319,27 @@ export async function pushNotifyPreparerNewNotice(input: {
   const settingsRow = await getOrCreateNotificationSettings();
   const settings = audienceSettings(settingsRow, "preparer");
 
-  const rawTitle = input.title || "";
-  const rawBody = input.body || "";
+  // إذا لم يكن هناك طلب أو مسودة، فهو إشعار يدوي (Manual Notice) من الإدارة
+  if (!input.orderId && !input.draftId) {
+    const subs = await prisma.webPushSubscription.findMany({
+      where: { audience: "preparer", preparerId: input.preparerId },
+      select: { id: true, endpoint: true, p256dh: true, auth: true },
+    });
+    await sendToSubscriptions(subs, {
+      title: input.title,
+      body: input.body || "",
+      url: `${getPublicAppUrl()}/preparer/preparation`,
+      tag: `preparer-manual-${Date.now()}`,
+      sound: settings.soundPreset,
+    }, [input.preparerId]);
+    return;
+  }
 
-  // محاولة استخراج رقم الطلب إذا لم يتوفر معرف صريح
-  let orderNumber = 0;
-  let shopName = "—";
-  let regionName = "—";
-
-  const orderNumMatch = (rawTitle + rawBody).match(/#(\d+)/);
+  // محاولة جلب بيانات الطلب أو المسودة لتعبئة القالب
+  const orderNumMatch = (input.title + (input.body || "")).match(/#(\d+)/);
   const detectedOrderNumber = orderNumMatch ? parseInt(orderNumMatch[1]) : 0;
 
-  // جلب تفاصيل الطلب أو المسودة وملء البيانات
-  const [order, draft, preparer] = await Promise.all([
+  const [order, draft] = await Promise.all([
     prisma.order.findFirst({
       where: {
         OR: [
@@ -346,52 +354,34 @@ export async function pushNotifyPreparerNewNotice(input: {
         submissionSource: true
       }
     }),
-    input.draftId
-      ? prisma.companyPreparerShoppingDraft.findUnique({
-          where: { id: input.draftId },
-          select: { customerRegion: { select: { name: true } } }
-        })
-      : null,
-    prisma.companyPreparer.findUnique({
-      where: { id: input.preparerId },
-      select: { telegramUserId: true }
-    })
+    input.draftId ? prisma.companyPreparerShoppingDraft.findUnique({
+      where: { id: input.draftId },
+      select: { customerRegion: { select: { name: true } } }
+    }) : null
   ]);
 
-  if (order) {
-    orderNumber = order.orderNumber;
-    shopName = order.shop?.name || "—";
-    regionName = order.customerRegion?.name || "—";
-  } else if (draft) {
-    regionName = draft.customerRegion?.name || "—";
-  }
+  const vars = {
+    count: 1,
+    orderNumber: order?.orderNumber || detectedOrderNumber || 0,
+    shopName: order?.shop?.name || "—",
+    regionName: order?.customerRegion?.name || draft?.customerRegion?.name || "—",
+  };
 
-  let body = "";
-  let title = "";
+  let finalTitle = renderNotificationTemplate(settings.titleSingle, vars);
+  let finalBody = "";
 
   if (order?.submissionSource === "web_store" && settings.templateWebsite) {
-    title = renderNotificationTemplate(settings.titleSingle, { count: 1, orderNumber, shopName, regionName });
-    body = renderNotificationTemplate(settings.templateWebsite, { count: 1, orderNumber, shopName, regionName });
+    finalBody = renderNotificationTemplate(settings.templateWebsite, vars);
   } else if (input.draftId && settings.templateMultiple) {
-    title = renderNotificationTemplate(settings.titleSingle, { count: 1, orderNumber, shopName, regionName });
-    body = renderNotificationTemplate(settings.templateMultiple, { count: 1, orderNumber, shopName, regionName });
+    // تم استخدام templateMultiple هنا بناءً على تصميم واجهة الإعدادات للمجهز
+    finalBody = renderNotificationTemplate(settings.templateMultiple, vars);
   } else {
-    title = renderNotificationTemplate(settings.titleSingle, { count: 1, orderNumber, shopName, regionName });
-    body = renderNotificationTemplate(settings.templateSingle, { count: 1, orderNumber, shopName, regionName });
+    finalBody = renderNotificationTemplate(settings.templateSingle, vars);
   }
 
-  // 1. إرسال Telegram إذا توفر المعرف
-  if (preparer?.telegramUserId?.trim()) {
-    const chatId = preparer.telegramUserId.trim();
-    const text = `<b>${escapeTelegramHtml(title || input.title)}</b>\n\n${escapeTelegramHtml(body || rawBody)}`;
-    const kb = {
-      inline_keyboard: [[{ text: "📦 فتح قائمة التجهيز", callback_data: "pr_prep_0" }]],
-    };
-    await sendTelegramMessageWithKeyboardToChat(chatId, text, kb).catch(() => {});
-  }
-
-  // 2. إرسال Web Push إذا كان مفعلاً
-  if (!settings.enabled) return;
+  // إذا فشل القالب في إنتاج نص (غير محتمل)، نستخدم النص القادم من الإدارة كاحتياط
+  const displayTitle = finalTitle || input.title;
+  const displayBody = finalBody || input.body || "";
 
   const subs = await prisma.webPushSubscription.findMany({
     where: { audience: "preparer", preparerId: input.preparerId },
@@ -399,12 +389,12 @@ export async function pushNotifyPreparerNewNotice(input: {
   });
 
   await sendToSubscriptions(subs, {
-    title: title || input.title || `تنبيه من لوحة المجهز`,
-    body,
+    title: displayTitle,
+    body: displayBody,
     url: `${getPublicAppUrl()}/preparer/preparation`,
-    tag: `kse-push-preparer-${input.preparerId}-${orderNumber || Date.now()}`,
+    tag: `kse-push-preparer-${input.preparerId}-${vars.orderNumber || Date.now()}`,
     sound: settings.soundPreset,
-  }, [input.preparerId]); // تمرير معرف المجهز لوان سيجنال
+  }, [input.preparerId]);
 }
 
 /** إشعار دردشة */

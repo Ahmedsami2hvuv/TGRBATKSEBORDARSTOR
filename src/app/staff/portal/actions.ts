@@ -110,15 +110,15 @@ export async function submitStaffPreparationDraft(
     await prisma.companyPreparerPrepNotice.create({
       data: {
         preparerId: preparer.id,
-        title: "طلب تجهيز جديد من موظف الإدارة",
-        body: `تم تحويل طلب تجهيز جديد إلى خانتك من الموظف ${staff.name.trim() || "—"}. رقم الزبون: ${phoneLocal}`,
+        title: titleLine,
+        body: `طلب تجهيز جديد: ${customerRegionId} - ${phoneLocal}`,
       },
     });
 
     await pushNotifyPreparerNewNotice({
       preparerId: preparer.id,
-      title: "إسناد طلب تجهيز جديد",
-      body: `موظف الإدارة (${staff.name}) قام بإسناد طلب جديد لك. رقم الزبون: ${phoneLocal}`,
+      title: titleLine,
+      body: rawListText,
       draftId: draft.id,
     }).catch(e => console.error("Web Push failed for staff portal submission:", e));
   }
