@@ -224,12 +224,7 @@ export function ProductCardLazy({
             <div className="overflow-y-auto flex-1 pb-10">
               <div className="relative bg-white dark:bg-slate-900 overflow-hidden flex flex-col items-center pt-12">
                 {currentModalPhoto && !brokenModalPhotos.includes(activePhotoIndex) ? (
-                  <div className="relative w-full flex flex-col items-center">
-                    {/* التوقيع - وضعته في الأعلى ليكون أول شيء يظهر في السكرين شوت */}
-                    <div className="mb-6 bg-slate-900 text-white px-8 py-3 rounded-full text-xs font-black shadow-2xl border-2 border-white/20 animate-bounce">
-                       خصيب ستور-أبو ألاكبر للتوصيل-07733921468
-                    </div>
-
+                  <div className="relative w-full flex flex-col items-center group/img">
                     <img
                       src={currentModalPhoto}
                       className="w-full h-auto object-contain relative z-10 p-4"
@@ -237,6 +232,16 @@ export function ProductCardLazy({
                       alt={product.name}
                       decoding="async"
                     />
+
+                    {/* التوقيع - تصميم احترافي أسفل الصورة مباشرة */}
+                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 w-[90%] md:w-auto">
+                      <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/40 dark:border-slate-700/40 px-6 py-2 rounded-2xl shadow-2xl flex items-center gap-3 whitespace-nowrap overflow-hidden">
+                        <div className="w-2 h-2 rounded-full bg-violet-600 animate-pulse shrink-0"></div>
+                        <span className="text-[10px] md:text-sm font-black bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+                          خصيب ستور - أبو ألاكبر للتوصيل - 07733921468
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="w-full h-64 flex items-center justify-center opacity-20 text-5xl relative z-10">📦</div>
