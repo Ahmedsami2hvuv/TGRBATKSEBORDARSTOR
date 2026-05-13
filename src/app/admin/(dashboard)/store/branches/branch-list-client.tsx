@@ -258,6 +258,11 @@ export function BranchListClient({
 
             if (successCount > 0 || urlsToScrape.length === 0) {
                 updateSession(id, { status: 'completed', error: urlsToScrape.length === 0 ? "تم إنشاء الفرع (الفرع فارغ من المنتجات)" : null });
+
+                // إخفاء المهمة المكتملة تلقائياً بعد 3 ثوانٍ للسماح للمستخدم بالتركيز على المهام المتبقية
+                setTimeout(() => {
+                    setImportSessions(prev => prev.filter(s => s.id !== id));
+                }, 3000);
             } else {
                 updateSession(id, { status: 'error', error: "فشل سحب المنتجات لهذا الفرع" });
             }
