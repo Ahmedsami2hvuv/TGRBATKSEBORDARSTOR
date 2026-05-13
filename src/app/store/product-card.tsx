@@ -137,17 +137,12 @@ export function ProductCard({
           >
             <button
               type="button"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsModalOpen(false);
-              }}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 setIsModalOpen(false);
               }}
-              className="absolute top-4 right-4 z-[110] w-12 h-12 bg-slate-900/40 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl text-white hover:bg-slate-900/60 transition-all active:scale-90"
+              className="absolute top-4 left-4 z-[110] w-12 h-12 bg-slate-900/40 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl text-white hover:bg-slate-900/60 transition-all active:scale-90"
             >
               <span className="text-2xl font-bold">✕</span>
             </button>

@@ -25,14 +25,8 @@ export function ProductCardLazy({
 
   const closeModal = () => {
     setIsModalOpen(false);
-
-    // عند الغلق يدوياً نزيل entry الخاص بنا من history
-    // حتى لا يصبح زر الرجوع "مضلِّل" أو يخرج المستخدم بعد الغلق.
-    if (hasPushedHistoryRef.current) {
-      ignoreNextPopRef.current = true;
-      hasPushedHistoryRef.current = false;
-      window.history.back();
-    }
+    // تم إلغاء history.back من هنا لمنع العودة لصفحة البداية بالخطأ
+    hasPushedHistoryRef.current = false;
   };
 
   useEffect(() => {
@@ -213,17 +207,12 @@ export function ProductCardLazy({
           >
             <button
               type="button"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                closeModal();
-              }}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 closeModal();
               }}
-              className="absolute top-4 right-4 z-[110] w-12 h-12 bg-slate-900/40 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl text-white hover:bg-slate-900/60 transition-all active:scale-90"
+              className="absolute top-4 left-4 z-[110] w-12 h-12 bg-slate-900/40 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl text-white hover:bg-slate-900/60 transition-all active:scale-90"
             >
               <span className="text-2xl font-bold">✕</span>
             </button>
