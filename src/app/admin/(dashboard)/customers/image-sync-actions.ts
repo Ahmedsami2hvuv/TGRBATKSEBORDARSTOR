@@ -1,66 +1,89 @@
-"use server";
-
 import { prisma } from "@/lib/prisma";
-import { uploadToR2 } from "@/lib/upload-storage";
-import { nanoid } from "nanoid";
+import { uploadRemoteImageToR2 } from "@/lib/order-image";
 import { revalidatePath } from "next/cache";
+import { Client } from "pg";
+import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
-const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "";
+const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
+const OLD_BASE_URL = "https://tgrbatks-production.up.railway.app";
 
 export async function syncCustomerImages() {
+  const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 15000 });
   try {
-    // جلب الزبائن الذين لديهم صور قديمة (تبدأ بـ http ولا تنتمي لـ R2)
-    const customersWithOldImages = await prisma.customer.findMany({
-      where: {
-        customerDoorPhotoUrl: {
-          contains: "http",
-          not: { contains: "r2.dev" }
-        }
-      },
-      take: 50 // معالجة 50 صورة في كل دفعة
+    await client.connect();
+
+    // 1. جلب كل من لديهم صور في القاعدة القديمة
+    const oldRes = await client.query(`
+      SELECT phone, "regionId", "photoUrl"
+      FROM "CustomerPhoneProfile"
+      WHERE "photoUrl" IS NOT NULL AND "photoUrl" != '' AND "photoUrl" != 'not_found'
+    `);
+
+    if (oldRes.rows.length === 0) {
+      return { success: true, count: 0, message: "لا توجد صور في القاعدة القديمة لسحبها." };
+    }
+
+    // 2. جلب الزبائن الحاليين للمطابقة
+    const localProfiles = await prisma.customerPhoneProfile.findMany({
+      select: { id: true, phone: true, regionId: true, photoUrl: true }
     });
 
-    if (customersWithOldImages.length === 0) {
-      return { success: true, count: 0, message: "تم تأمين جميع الصور بنجاح!" };
+    const localMap = new Map<string, any>();
+    for (const p of localProfiles) {
+      const phone = normalizeIraqMobileLocal11(p.phone) || p.phone;
+      localMap.set(`${phone}|${p.regionId}`, p);
     }
 
     let syncedCount = 0;
+    let failedCount = 0;
 
-    for (const customer of customersWithOldImages) {
-      const oldUrl = customer.customerDoorPhotoUrl;
-      if (!oldUrl) continue;
+    // 3. البدء في سحب الصور الناقصة فقط
+    for (const row of oldRes.rows) {
+      const phone = normalizeIraqMobileLocal11(row.phone) || row.phone;
+      const key = `${phone}|${row.regionId}`;
+      const local = localMap.get(key);
 
-      try {
-        const response = await fetch(oldUrl);
-        if (!response.ok) continue;
+      // إذا كان الزبون موجوداً محلياً وصورته فارغة أو ليست على R2
+      if (local && (!local.photoUrl || !local.photoUrl.includes("/uploads/"))) {
+        let remoteUrl = row.photoUrl;
 
-        const buffer = Buffer.from(await response.arrayBuffer());
-        const contentType = response.headers.get("content-type") || "image/jpeg";
-        const extension = contentType.split("/")[1] || "jpg";
-        const key = `customers/door_${customer.id}_${nanoid(5)}.${extension}`;
-
-        const uploadedKey = await uploadToR2(buffer, key, contentType);
-        if (uploadedKey) {
-          const newUrl = `${R2_PUBLIC_URL}/${uploadedKey}`;
-          await prisma.customer.update({
-            where: { id: customer.id },
-            data: { customerDoorPhotoUrl: newUrl }
-          });
-          syncedCount++;
+        // إصلاح الرابط إذا كان نسبياً
+        if (remoteUrl && !remoteUrl.startsWith("http") && !remoteUrl.startsWith("data:")) {
+          remoteUrl = `${OLD_BASE_URL}${remoteUrl.startsWith('/') ? '' : '/'}${remoteUrl}`;
         }
-      } catch (err) {
-        console.error(`Failed to sync image for customer ${customer.id}:`, err);
+
+        try {
+          const newR2Url = await uploadRemoteImageToR2(remoteUrl, "customers");
+          if (newR2Url) {
+            await prisma.customerPhoneProfile.update({
+              where: { id: local.id },
+              data: { photoUrl: newR2Url }
+            });
+            syncedCount++;
+          } else {
+            failedCount++;
+          }
+        } catch (err) {
+          console.error(`Error syncing image for ${phone}:`, err);
+          failedCount++;
+        }
       }
+
+      // نتوقف عند 50 صورة في كل مرة لتجنب الـ Timeout في فيرسل
+      if (syncedCount >= 50) break;
     }
 
     revalidatePath("/admin/customers");
     return {
       success: true,
       count: syncedCount,
-      remaining: customersWithOldImages.length - syncedCount,
-      message: `تم تأمين ${syncedCount} صورة بنجاح.`
+      failed: failedCount,
+      message: `تم سحب ${syncedCount} صورة بنجاح ورفعها لـ R2.`
     };
   } catch (error: any) {
+    console.error("SYNC ERROR:", error);
     return { success: false, message: error.message };
+  } finally {
+    await client.end();
   }
 }
