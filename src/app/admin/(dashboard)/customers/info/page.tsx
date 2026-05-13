@@ -423,11 +423,6 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
                           src={doorPhotoSrc}
                           alt=""
                           className="max-h-64 max-w-xs rounded-xl border-2 border-sky-400 shadow-md object-contain bg-white"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).style.display = 'none';
-                            const p = (e.currentTarget as HTMLImageElement).parentElement?.nextElementSibling;
-                            if (p) p.classList.remove('hidden');
-                          }}
                         />
                       </a>
                     ) : (
@@ -435,9 +430,6 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
                         لا توجد صورة متوفرة حالياً.
                       </p>
                     )}
-                    <p className="hidden text-xs font-bold text-amber-600 mt-2">
-                      ⚠️ حدث خطأ في تحميل الصورة من المصدر.
-                    </p>
                   </div>
               <p className="text-sm">
                 <Link
