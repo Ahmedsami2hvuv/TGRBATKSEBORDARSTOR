@@ -200,65 +200,73 @@ async function processAndUploadImage(
   }
 
   if (options?.removeBg) {
-    let successWithAI = false;
-    const sourceBeforeRemoval = buf;
-    try {
-      const aiConfigs = await prisma.aIConfig.findMany({
-        where: { provider: "removebg", isActive: true },
-        orderBy: { createdAt: "asc" }
-      });
+    // التحقق من الإعداد العام قبل البدء بعملية القص
+    const generalSettings = await prisma.uISystemSetting.findUnique({
+      where: { target_section: { target: "customer", section: "store_general" } }
+    });
+    const isAiGlobalEnabled = (generalSettings?.config as any)?.ai_enabled !== false;
 
-      for (const config of aiConfigs) {
-        if (successWithAI) break;
-        if (config.usedToday >= 50) continue;
+    if (isAiGlobalEnabled) {
+      let successWithAI = false;
+      const sourceBeforeRemoval = buf;
+      try {
+        const aiConfigs = await prisma.aIConfig.findMany({
+          where: { provider: "removebg", isActive: true },
+          orderBy: { createdAt: "asc" }
+        });
 
-        try {
-          const formData = new FormData();
-          formData.append("image_file", new Blob([buf], { type: "image/png" }), "image.png");
-          const response = await fetch("https://api.remove.bg/v1.0/removebg", {
-            method: "POST",
-            headers: { "X-Api-Key": config.apiKey },
-            body: formData
-          });
+        for (const config of aiConfigs) {
+          if (successWithAI) break;
+          if (config.usedToday >= 50) continue;
 
-          if (response.ok) {
-            buf = Buffer.from(await response.arrayBuffer());
-            successWithAI = true;
-            await prisma.aIConfig.update({ where: { id: config.id }, data: { usedToday: { increment: 1 } } });
-          }
-        } catch (err) { console.error("AI removal failed", err); }
-      }
-    } catch (err) { console.error("AI step failed", err); }
+          try {
+            const formData = new FormData();
+            formData.append("image_file", new Blob([buf], { type: "image/png" }), "image.png");
+            const response = await fetch("https://api.remove.bg/v1.0/removebg", {
+              method: "POST",
+              headers: { "X-Api-Key": config.apiKey },
+              body: formData
+            });
 
-    if (!successWithAI) {
-      if (await isLikelyWhiteBackground(buf)) {
-        try {
-          const mask = await sharp(buf)
-            .removeAlpha()
-            .grayscale()
-            .blur(0.6)
-            .threshold(245)
-            .negate()
-            .toBuffer();
-          const candidate = await sharp(buf).ensureAlpha().joinChannel(mask).png().toBuffer();
-          if (await hasReasonableCutoutAlpha(candidate)) {
-            buf = candidate;
-            mime = "image/png";
-          } else {
-            buf = sourceBeforeRemoval;
-          }
-        } catch (e) { console.error("Software eraser failed", e); }
-      }
-
-      if (buf === sourceBeforeRemoval) {
-        const keyed = await tryColorKeyBackgroundRemoval(buf);
-        if (keyed) {
-          buf = keyed;
-          mime = "image/png";
+            if (response.ok) {
+              buf = Buffer.from(await response.arrayBuffer());
+              successWithAI = true;
+              await prisma.aIConfig.update({ where: { id: config.id }, data: { usedToday: { increment: 1 } } });
+            }
+          } catch (err) { console.error("AI removal failed", err); }
         }
+      } catch (err) { console.error("AI step failed", err); }
+
+      if (!successWithAI) {
+        if (await isLikelyWhiteBackground(buf)) {
+          try {
+            const mask = await sharp(buf)
+              .removeAlpha()
+              .grayscale()
+              .blur(0.6)
+              .threshold(245)
+              .negate()
+              .toBuffer();
+            const candidate = await sharp(buf).ensureAlpha().joinChannel(mask).png().toBuffer();
+            if (await hasReasonableCutoutAlpha(candidate)) {
+              buf = candidate;
+              mime = "image/png";
+            } else {
+              buf = sourceBeforeRemoval;
+            }
+          } catch (e) { console.error("Software eraser failed", e); }
+        }
+
+        if (buf === sourceBeforeRemoval) {
+          const keyed = await tryColorKeyBackgroundRemoval(buf);
+          if (keyed) {
+            buf = keyed;
+            mime = "image/png";
+          }
+        }
+      } else {
+        mime = "image/png";
       }
-    } else {
-      mime = "image/png";
     }
   }
 
