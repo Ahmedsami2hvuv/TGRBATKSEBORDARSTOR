@@ -165,24 +165,21 @@ export function BranchListClient({
     setImportSessions(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
   }
 
-  // إضافة سطر جديد تلقائياً إذا امتلأ الأخير
+  // تحديث الرابط وبدء السحب
   function handleSessionChange(id: string, url: string) {
     updateSession(id, { url });
 
-    // إذا كان هذا هو السطر الأخير وتم إدخال رابط، افتح سطراً جديداً
-    const sessionIndex = importSessions.findIndex(s => s.id === id);
-    if (sessionIndex === importSessions.length - 1 && url.trim() !== "") {
-        setImportSessions(prev => [...prev, createEmptySession()]);
-    }
-
-    // بدء الفحص التلقائي إذا كان الرابط يبدو صالحاً
+    // ابدأ السحب إذا كان الرابط صالحاً
     if (url.includes("/shop/sub/") || url.includes("/item/")) {
-        const session = importSessions.find(s => s.id === id);
-        autoProcessSession(id, url, { manualImage: session?.manualImage });
+        autoProcessSession(id, url);
     }
   }
 
   async function autoProcessSession(id: string, url: string, options?: { skipIfNameExists?: boolean, branchId?: string, manualImage?: File | null }) {
+    // فحص حالة الجلسة قبل البدء لمنع التكرار
+    const currentSession = importSessions.find(s => s.id === id);
+    if (currentSession && (currentSession.status === 'scraping' || currentSession.status === 'importing' || currentSession.status === 'completed')) return;
+
     updateSession(id, { status: 'scraping', error: null, ...options });
 
     try {
@@ -250,7 +247,9 @@ export function BranchListClient({
                         } catch (err) {
                             console.error("Failed to scrape product:", pUrl, err);
                         } finally {
-                            updateSession(id, { progress: (prev: number) => (prev || 0) + 1 });
+                            setImportSessions(prev => prev.map(s =>
+                                s.id === id ? { ...s, progress: (s.progress || 0) + 1 } : s
+                            ));
                         }
                     }));
                 }
@@ -259,10 +258,10 @@ export function BranchListClient({
             if (successCount > 0 || urlsToScrape.length === 0) {
                 updateSession(id, { status: 'completed', error: urlsToScrape.length === 0 ? "تم إنشاء الفرع (الفرع فارغ من المنتجات)" : null });
 
-                // إخفاء المهمة المكتملة تلقائياً بعد 3 ثوانٍ للسماح للمستخدم بالتركيز على المهام المتبقية
+                // إخفاء المهمة المكتملة يقيناً بعد 800 ملي ثانية لضمان التركيز
                 setTimeout(() => {
                     setImportSessions(prev => prev.filter(s => s.id !== id));
-                }, 3000);
+                }, 800);
             } else {
                 updateSession(id, { status: 'error', error: "فشل سحب المنتجات لهذا الفرع" });
             }
