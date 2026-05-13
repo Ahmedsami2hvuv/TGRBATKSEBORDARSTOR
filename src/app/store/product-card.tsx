@@ -77,7 +77,7 @@ export function ProductCard({
         {/* حاوية الصورة - تم إلغاء المربع الإجباري لظهور الصورة بحجمها الكامل */}
         <div className="relative overflow-hidden bg-white dark:bg-slate-900 flex flex-col items-center justify-center border-b border-slate-50">
           {photos[0] ? (
-            <>
+            <div className="relative w-full flex flex-col items-center pt-2 pb-1">
               <img
                 src={photos[0]}
                 alt={product.name}
@@ -85,11 +85,13 @@ export function ProductCard({
                 decoding="async"
                 className="w-full h-auto max-h-[250px] object-contain transition-transform duration-700 group-hover:scale-105 relative z-10 p-2"
               />
-              {/* التوقيع أسفل الصورة في الكارت */}
-              <div className="mt-2 mb-1 px-4 py-1 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm z-20">
-                <span className="text-[9px] font-black bg-gradient-to-r from-slate-600 to-slate-400 dark:from-slate-300 dark:to-slate-500 bg-clip-text text-transparent">خصيب ستور - أبو ألاكبر</span>
+              {/* التوقيع أسفل الصورة في الكارت - ملاصق تماماً وتصميم أنيق */}
+              <div className="mt-[-20px] mb-0 px-3 py-0.5 bg-violet-600 rounded-full shadow-lg shadow-violet-200 dark:shadow-none z-20 border border-white dark:border-slate-900">
+                <span className="text-[8px] md:text-[10px] font-black text-white whitespace-nowrap">
+                  خصيب ستور - أبو ألاكبر
+                </span>
               </div>
-            </>
+            </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center relative z-10 opacity-20 text-3xl md:text-5xl">
               <DynamicIcon icon={icons?.ui_package} fallback="📦" />
@@ -156,12 +158,11 @@ export function ProductCard({
                     alt={product.name}
                     decoding="async"
                   />
-                  {/* التوقيع - تصميم احترافي تحت الصورة مباشرة */}
-                  <div className="mt-4 mb-4 w-full flex justify-center px-4">
-                    <div className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 px-8 py-3 rounded-3xl shadow-xl flex items-center gap-3 relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-violet-600/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-violet-600 animate-pulse shrink-0 shadow-[0_0_10px_rgba(139,92,246,0.5)]"></div>
-                      <span className="text-xs md:text-base font-black bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-wide">
+                  {/* التوقيع - ملاصق تماماً للصورة ومنكمش في سطر واحد */}
+                  <div className="mt-[-28px] mb-[-10px] w-full flex justify-center px-4 z-20 scale-90 md:scale-100">
+                    <div className="bg-violet-600 px-4 py-1.5 rounded-full shadow-2xl flex items-center gap-2 shrink-0 border-2 border-white dark:border-slate-900">
+                      <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse shrink-0"></div>
+                      <span className="text-[8px] sm:text-xs font-black text-white whitespace-nowrap overflow-hidden text-ellipsis">
                         خصيب ستور - أبو ألاكبر للتوصيل - 07733921468
                       </span>
                     </div>
