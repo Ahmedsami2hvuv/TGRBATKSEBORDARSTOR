@@ -149,17 +149,17 @@ export function ProductCard({
 
             <div className="overflow-y-auto flex-1 pb-10">
               <div className="relative bg-white dark:bg-slate-900 overflow-hidden flex flex-col items-center">
-                <div className="relative w-full">
+                <div className="relative w-full flex flex-col items-center">
+                  <div className="mb-6 bg-slate-900 text-white px-8 py-3 rounded-full text-xs font-black shadow-2xl border-2 border-white/20 animate-bounce">
+                     خصيب ستور-أبو ألاكبر للتوصيل-07733921468
+                  </div>
                   <img
                     src={photos[activePhotoIndex]}
-                    className="w-full h-auto max-h-[500px] object-contain relative z-10 p-4"
+                    className="w-full h-auto object-contain relative z-10 p-4"
+                    style={{ maxHeight: 'none' }}
                     alt={product.name}
                     decoding="async"
                   />
-                </div>
-
-                <div className="bg-slate-100 text-slate-500 px-4 py-1.5 rounded-full text-[9px] font-black mb-4 relative z-20 border border-slate-200">
-                   خصيب ستور-أبو ألاكبر للتوصيل-07733921468
                 </div>
 
                 {photos.length > 1 && (

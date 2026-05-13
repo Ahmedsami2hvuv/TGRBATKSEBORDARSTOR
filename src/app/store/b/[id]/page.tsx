@@ -75,7 +75,7 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
           <span className="w-2 h-8 bg-emerald-500 rounded-full"></span>
           المنتجات
         </h2>
-        <ProductListClient branchId={id} productBg={productBg} productBgOpacity={productBgOpacity} />
+        <ProductListClient branchId={id} />
       </div>
     </div>
   );

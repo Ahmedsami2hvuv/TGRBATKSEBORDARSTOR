@@ -5,12 +5,8 @@ import { AddToCartButton } from "@/app/store/add-to-cart-button";
 
 export function ProductCardLazy({
   product,
-  bgUrl,
-  bgOpacityPercent,
 }: {
   product: any,
-  bgUrl?: string,
-  bgOpacityPercent?: number,
 }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
@@ -132,9 +128,6 @@ export function ProductCardLazy({
         .filter(Boolean)
     : [];
   const currentModalPhoto = photos[activePhotoIndex] || "";
-  const normalizedBgOpacity = Number.isFinite(Number(bgOpacityPercent))
-    ? Math.min(1, Math.max(0, Number(bgOpacityPercent) / 100))
-    : 0.4;
 
   return (
     <>
@@ -151,46 +144,39 @@ export function ProductCardLazy({
           </span>
         </button>
 
-        {/* حاوية الصورة - ثابتة الأبعاد لضمان ظهور النصوص فوراً */}
-        <button
-          onClick={openModal}
-          className="relative aspect-square overflow-hidden bg-slate-100 dark:bg-slate-800/50 text-right"
-        >
-          {bgUrl && (
-            <img
-              src={bgUrl}
-              className="absolute inset-0 w-full h-full object-cover z-0"
-              style={{ opacity: normalizedBgOpacity }}
-              alt=""
-            />
-          )}
-
+        {/* حاوية الصورة - تم إلغاء نظام الخلفية والمربع الإجباري لظهور الصورة كاملة */}
+        <div className="relative overflow-hidden bg-white dark:bg-slate-900 flex flex-col items-center justify-center border-b border-slate-50 dark:border-slate-800">
           {!imageLoaded && !imageFailed && photo && (
              <div className="absolute inset-0 flex items-center justify-center z-10">
-                {/* تأثير نبضي خفيف مكان الصورة حتى تحمل */}
-                <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 animate-pulse flex items-center justify-center">
+                <div className="w-full h-full bg-slate-50 dark:bg-slate-800 animate-pulse flex items-center justify-center">
                     <span className="text-4xl opacity-10">🖼️</span>
                 </div>
              </div>
           )}
 
           {photo && !imageFailed ? (
-            <img
-              src={photo}
-              alt={product.name}
-              onLoad={() => setImageLoaded(true)}
-              onError={() => {
-                setImageLoaded(false);
-                setImageFailed(true);
-              }}
-              className={`w-full h-full object-contain transition-all duration-1000 relative z-10 p-2 ${imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
-              loading="lazy"
-              decoding="async"
-            />
+            <div className="relative w-full flex flex-col items-center py-4">
+              <img
+                src={photo}
+                alt={product.name}
+                onLoad={() => setImageLoaded(true)}
+                onError={() => {
+                  setImageLoaded(false);
+                  setImageFailed(true);
+                }}
+                className={`w-full h-auto max-h-[280px] object-contain transition-all duration-700 relative z-10 p-2 ${imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
+                loading="lazy"
+                decoding="async"
+              />
+              {/* التوقيع أسفل الصورة في الكارت */}
+              <div className="mt-2 mb-1 px-3 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700">
+                <span className="text-[8px] font-black text-slate-400">خصيب ستور-أبو ألاكبر</span>
+              </div>
+            </div>
           ) : (
-            <div className="w-full h-full flex items-center justify-center opacity-20 text-4xl">📦</div>
+            <div className="w-full h-48 flex items-center justify-center opacity-20 text-4xl">📦</div>
           )}
-        </button>
+        </div>
 
         {/* معلومات المنتج - تظهر فوراً وتكون قابلة للتفاعل حتى قبل تحميل الصور */}
         <div className="p-3 md:p-6 flex-1 flex flex-col relative z-10 bg-white dark:bg-slate-900 border-t border-slate-50 dark:border-slate-800">
@@ -236,29 +222,24 @@ export function ProductCardLazy({
             </button>
 
             <div className="overflow-y-auto flex-1 pb-10">
-              <div className="relative aspect-square md:aspect-video bg-slate-100 dark:bg-slate-800/50 overflow-hidden">
-                {bgUrl && (
-                  <img
-                    src={bgUrl}
-                    className="absolute inset-0 w-full h-full object-cover z-0"
-                    style={{ opacity: normalizedBgOpacity }}
-                    alt=""
-                  />
-                )}
+              <div className="relative bg-white dark:bg-slate-900 overflow-hidden flex flex-col items-center pt-12">
                 {currentModalPhoto && !brokenModalPhotos.includes(activePhotoIndex) ? (
-                  <img
-                    src={currentModalPhoto}
-                    className="w-full h-full object-contain relative z-10 p-4"
-                    alt={product.name}
-                    decoding="async"
-                    onError={() => {
-                      setBrokenModalPhotos((prev) =>
-                        prev.includes(activePhotoIndex) ? prev : [...prev, activePhotoIndex],
-                      );
-                    }}
-                  />
+                  <div className="relative w-full flex flex-col items-center">
+                    {/* التوقيع - وضعته في الأعلى ليكون أول شيء يظهر في السكرين شوت */}
+                    <div className="mb-6 bg-slate-900 text-white px-8 py-3 rounded-full text-xs font-black shadow-2xl border-2 border-white/20 animate-bounce">
+                       خصيب ستور-أبو ألاكبر للتوصيل-07733921468
+                    </div>
+
+                    <img
+                      src={currentModalPhoto}
+                      className="w-full h-auto object-contain relative z-10 p-4"
+                      style={{ maxHeight: 'none' }}
+                      alt={product.name}
+                      decoding="async"
+                    />
+                  </div>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center opacity-20 text-5xl relative z-10">📦</div>
+                  <div className="w-full h-64 flex items-center justify-center opacity-20 text-5xl relative z-10">📦</div>
                 )}
 
                 {photos.length > 1 && (
