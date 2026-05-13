@@ -688,7 +688,7 @@ export async function createProductFromScrapedData(branchId: string, p: any, rem
 
         let photoUrls: string[] = [];
 
-        // إنشاء المنتج فوراً مع رابط الصورة الخارجي كبداية (اختياري) أو مصفوفة فارغة
+        // إنشاء المنتج فوراً لضمان السرعة، وسنترك معالجة الصورة كعملية منفصلة
         const product = await prisma.storeProduct.create({
             data: {
                 name: p.name,
@@ -696,19 +696,27 @@ export async function createProductFromScrapedData(branchId: string, p: any, rem
                 purchasePrice: (p.price || 0),
                 salePrice: (p.price || 0),
                 branchId: branchId,
-                photoUrls: [],
+                photoUrls: [], // مصفوفة فارغة مؤقتاً
                 active: true,
                 sequence: 0,
             }
         });
 
-        // ثم محاولة جلب الصورة وحفظها محلياً في الخلفية (أو هنا وننتظرها)
+        // محاولة جلب الصورة وحفظها (بدون تعطيل الاستجابة إذا أردنا سرعة قصوى)
+        // ملاحظة: الـ await هنا ضروري لضمان حفظ الصورة قبل انتهاء الأكشن في بعض البيئات
+        // لكننا جعلنا استدعاء الأكشن نفسه متوازياً في العميل
         if (p.imageUrl) {
             try {
-                const imgRes = await fetch(p.imageUrl, { signal: AbortSignal.timeout(15000) });
+                const imgRes = await fetch(p.imageUrl, {
+                    signal: AbortSignal.timeout(10000), // تقليل المهلة لـ 10 ثواني
+                    headers: { 'User-Agent': 'Mozilla/5.0' }
+                });
+
                 if (imgRes.ok) {
                     const buffer = await imgRes.arrayBuffer();
                     const file = new File([buffer], "product.jpg", { type: imgRes.headers.get("content-type") || "image/jpeg" });
+
+                    // استخدام معالجة الصور المحسنة (مع تعطيل القص إذا كان مغلقاً)
                     const savedUrl = await saveStoreProductImageUploaded(file, MAX_ORDER_IMAGE_BYTES, { removeBg });
 
                     await prisma.storeProduct.update({
@@ -717,7 +725,7 @@ export async function createProductFromScrapedData(branchId: string, p: any, rem
                     });
                 }
             } catch (e) {
-                console.error("Product Image Import Failed", e);
+                console.error(`Image fail for ${p.name}:`, e);
             }
         }
 

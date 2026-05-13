@@ -218,20 +218,32 @@ export function BranchListClient({
 
             updateSession(id, { status: 'importing' });
 
-            // سحب المنتجات
+            // سحب المنتجات بشكل متوازٍ (Parallel) لتسريع العملية
             const urlsToScrape = res.productUrls;
             let currentProgress = 0;
             let successCount = 0;
 
-            for (const pUrl of urlsToScrape) {
-                const pRes = await scrapeProductFromUrl(pUrl);
-                if (pRes.ok) {
-                    // استخدام الأكشن الجديد لإنشاء المنتج وربطه بالفرع فوراً مع خيار تخطي الموجود
-                    const pImport = await createProductFromScrapedData(branchId!, pRes.data, shouldRemoveBg, options?.skipIfNameExists);
-                    if (pImport.ok) successCount++;
-                }
-                currentProgress++;
-                updateSession(id, { progress: currentProgress });
+            // تقسيم الروابط إلى مجموعات (دفعات من 5 منتجات)
+            const chunks = [];
+            for (let i = 0; i < urlsToScrape.length; i += 5) {
+                chunks.push(urlsToScrape.slice(i, i + 5));
+            }
+
+            for (const chunk of chunks) {
+                await Promise.all(chunk.map(async (pUrl) => {
+                    try {
+                        const pRes = await scrapeProductFromUrl(pUrl);
+                        if (pRes.ok) {
+                            const pImport = await createProductFromScrapedData(branchId!, pRes.data, shouldRemoveBg, options?.skipIfNameExists);
+                            if (pImport.ok) successCount++;
+                        }
+                    } catch (err) {
+                        console.error("Failed to scrape product:", pUrl, err);
+                    } finally {
+                        currentProgress++;
+                        updateSession(id, { progress: currentProgress });
+                    }
+                }));
             }
 
             if (successCount > 0 || urlsToScrape.length === 0) {
