@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Client } from "pg";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
-const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
+const OLD_DB_URL = process.env.OLD_DB_URL || "";
 const OLD_BASE_URL = "https://tgrbatks-production.up.railway.app";
 
 export async function syncCustomerImages() {

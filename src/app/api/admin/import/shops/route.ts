@@ -3,7 +3,7 @@ import { Client } from "pg";
 import { prisma } from "@/lib/prisma";
 import { uploadRemoteImageToR2 } from "@/lib/order-image";
 
-const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
+const OLD_DB_URL = process.env.OLD_DB_URL || "";
 const OLD_BASE_URL = "https://tgrbatks-production.up.railway.app";
 
 function fixPhotoUrl(url: string | null): string {

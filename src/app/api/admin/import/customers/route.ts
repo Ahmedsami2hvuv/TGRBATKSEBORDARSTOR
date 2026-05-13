@@ -3,7 +3,7 @@ import { Client } from "pg";
 import { prisma } from "@/lib/prisma";
 import { uploadRemoteImageToR2 } from "@/lib/order-image";
 
-const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
+const OLD_DB_URL = process.env.OLD_DB_URL || "";
 
 export async function POST(req: Request) {
   const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 30000 });

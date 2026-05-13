@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { r2ObjectExistsByUrl } from "@/lib/upload-storage";
 
-const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
+const OLD_DB_URL = process.env.OLD_DB_URL || "";
 
 function isAlreadyOnR2OrUploads(url: string | null | undefined): boolean {
   const value = (url || "").trim().toLowerCase();
