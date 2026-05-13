@@ -204,11 +204,11 @@ export function ProductCardLazy({
 
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
           onClick={closeModal}
         >
           <div
-            className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]"
+            className="bg-white dark:bg-slate-900 w-full md:max-w-3xl md:rounded-[3rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300 flex flex-col h-full md:h-auto md:max-h-[95vh]"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -223,20 +223,20 @@ export function ProductCardLazy({
               ✕
             </button>
 
-            <div className="overflow-y-auto flex-1 pb-10">
-              <div className="relative bg-white dark:bg-slate-900 overflow-hidden flex flex-col items-center pt-12">
+            <div className="overflow-y-auto flex-1 pb-6">
+              <div className="relative bg-white dark:bg-slate-900 overflow-hidden flex flex-col items-center pt-0">
                 {currentModalPhoto && !brokenModalPhotos.includes(activePhotoIndex) ? (
                   <div className="relative w-full flex flex-col items-center group/img">
                     <img
                       src={currentModalPhoto}
-                      className="w-full h-auto object-contain relative z-10 p-4"
+                      className="w-full h-auto object-contain relative z-10"
                       style={{ maxHeight: 'none' }}
                       alt={product.name}
                       decoding="async"
                     />
 
                     {/* التوقيع - ملاصق تماماً للصورة ومنكمش في سطر واحد */}
-                    <div className="mt-[-28px] mb-[-10px] w-full flex justify-center px-4 z-20 scale-90 md:scale-100">
+                    <div className="mt-[-20px] mb-2 w-full flex justify-center px-4 z-20 scale-90 md:scale-100">
                       <div className="bg-violet-600 px-4 py-1.5 rounded-full shadow-2xl flex items-center gap-2 shrink-0 border-2 border-white dark:border-slate-900">
                         <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse shrink-0"></div>
                         <span className="text-[8px] sm:text-xs font-black text-white whitespace-nowrap">
