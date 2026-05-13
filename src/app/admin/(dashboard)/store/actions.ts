@@ -382,39 +382,56 @@ export async function scrapeProductFromUrl(url: string) {
 
 export async function scrapeCategoryFromUrl(url: string) {
     try {
-        const response = await fetch(url, {
+        let targetUrl = url.trim();
+
+        // تحويل روابط المنتجات الفردية إلى روابط أفرع تلقائياً إذا تم إدخالها في مستورد الأفرع
+        const itemToSubMatch = targetUrl.match(/\/shop\/item\/(\d+)\/(\d+)/);
+        if (itemToSubMatch) {
+            const domain = new URL(targetUrl).origin;
+            targetUrl = `${domain}/shop/sub/${itemToSubMatch[1]}/${itemToSubMatch[2]}`;
+            console.log("Converted item URL to branch URL:", targetUrl);
+        }
+
+        const response = await fetch(targetUrl, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
         });
         const html = await response.text();
 
-        // 1. استخراج اسم الفرع - البحث عن الرابط النشط المطابق لعنوان URL الحالي
+        // 1. استخراج اسم الفرع
         let branchName = "";
 
-        // محاولة استخراج المعرفات من الرابط (مثلاً 3/6)
-        const urlMatch = url.match(/\/sub\/(\d+)\/(\d+)/);
-        if (urlMatch) {
-            const subId = urlMatch[2];
-            // البحث عن الرابط الذي يحتوي على هذا المعرف ويجلب النص الخاص به
-            const activeLinkRegex = new RegExp(`href=["'][^"']*\\/sub\\/\\d+\\/${subId}["'][^>]*>([\\s\\S]*?)<`, 'i');
-            const activeMatch = html.match(activeLinkRegex);
-            if (activeMatch) {
-                branchName = activeMatch[1].replace(/<[^>]*>?/gm, '').trim();
+        // محاولة جلب الاسم من h1 أو h2 أو الوسوم المشهورة في الموقع
+        const headerMatch = html.match(/<h1[^>]*class=["'][^"']*(?:title|name|header|page-title)[^"']*["'][^>]*>([\s\S]*?)<\/h1>/i) ||
+                          html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) ||
+                          html.match(/<h2[^>]*class=["'][^"']*(?:title|section-title)[^"']*["'][^>]*>([\s\S]*?)<\/h2>/i) ||
+                          html.match(/<title>([\s\S]*?)<\/title>/i);
+
+        if (headerMatch) {
+            branchName = headerMatch[1].replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').split('|')[0].split('-')[0].trim();
+        }
+
+        // محاولة استخراج المعرفات من الرابط (مثلاً 3/6) كخيار بديل
+        if (!branchName || branchName.length < 2 || ["المتجر", "الرئيسية", "Home"].includes(branchName)) {
+            const urlMatch = targetUrl.match(/\/sub\/(\d+)\/(\d+)/);
+            if (urlMatch) {
+                const subId = urlMatch[2];
+                const activeLinkRegex = new RegExp(`href=["'][^"']*\\/sub\\/\\d+\\/${subId}["'][^>]*>([\\s\\S]*?)<`, 'i');
+                const activeMatch = html.match(activeLinkRegex);
+                if (activeMatch) {
+                    branchName = activeMatch[1].replace(/<[^>]*>?/gm, '').trim();
+                }
             }
         }
 
-        // إذا فشل، نعود لطريقة شريط المسار ولكن بفلترة أقوى
-        if (!branchName) {
+        // إذا لا يزال مجهولاً، نستخدم شريط المسار
+        if (!branchName || ["المتجر", "الرئيسية", "Home"].includes(branchName)) {
             const breadcrumbMatch = html.match(/<ul[^>]*class=["'][^"']*breadcrumb[^"']*["'][^>]*>([\s\S]*?)<\/ul>/i);
             if (breadcrumbMatch) {
                 const crumbs = Array.from(breadcrumbMatch[1].matchAll(/<li[^>]*>(?:<a[^>]*>)?([\s\S]*?)(?:<\/a>)?<\/li>/gi));
-                for (let i = crumbs.length - 1; i >= 0; i--) {
-                    const text = crumbs[i][1].replace(/<[^>]*>?/gm, '').trim();
-                    if (text && !["المتجر", "الرئيسية", "الرئيسي"].some(w => text.includes(w)) && text.length < 30) {
-                        branchName = text;
-                        break;
-                    }
+                if (crumbs.length > 0) {
+                    branchName = crumbs[crumbs.length - 1][1].replace(/<[^>]*>?/gm, '').trim();
                 }
             }
         }
@@ -531,14 +548,25 @@ export async function scrapeCategoryFromUrl(url: string) {
         }
 
         // استخراج روابط المنتجات
-        const productUrlMatches = Array.from(html.matchAll(/href=["']([^"']*\/item\/[^"']*)["']/gi));
-        const productUrls = Array.from(new Set(productUrlMatches.map(m => m[1])));
-        const domain = new URL(url).origin;
-        const fullUrls = productUrls.map(u => u.startsWith('http') ? u : domain + u);
+        // البحث عن أي رابط يحتوي على /item/ متبوعاً بأرقام لضمان جلب المنتجات فقط
+        const productUrlMatches = Array.from(html.matchAll(/href=["']([^"']*\/item\/\d+\/\d+\/\d+[^"']*)["']/gi));
+        let productUrls = Array.from(new Set(productUrlMatches.map(m => m[1])));
+
+        const domain = new URL(targetUrl).origin;
+        let fullUrls = productUrls.map(u => u.startsWith('http') ? u : domain + (u.startsWith('/') ? '' : '/') + u);
+
+        // تنظيف الروابط واستبعاد رابط الفرع نفسه لو ظهر بالخطأ
+        const currentPath = new URL(targetUrl).pathname;
+        fullUrls = fullUrls.filter(u => {
+            try {
+                const upath = new URL(u).pathname;
+                return upath !== currentPath && upath.includes('/item/');
+            } catch { return true; }
+        });
 
         return {
             ok: true,
-            branchData: { name: branchName, imageUrl: branchImageUrl },
+            branchData: { name: branchName || "فرع مستورد", imageUrl: branchImageUrl },
             productUrls: fullUrls
         };
     } catch (error: any) {
