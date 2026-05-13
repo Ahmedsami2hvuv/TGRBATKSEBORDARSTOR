@@ -26,7 +26,6 @@ export default function CheckoutPage() {
   const [selectedRegion, setSelectedRegion] = useState<RegionHit | null>(null);
   const [deliveryPrice, setDeliveryPrice] = useState<number>(0);
   const [baseDeliveryPrice, setBaseDeliveryPrice] = useState<number>(0);
-  const [vehiclePreference, setVehiclePreference] = useState("");
   const [regionFieldError, setRegionFieldError] = useState<string | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -119,7 +118,6 @@ export default function CheckoutPage() {
       >
         <input type="hidden" name="cart" value={JSON.stringify(cart)} />
         <input type="hidden" name="regionId" value={selectedRegion?.id ?? ""} />
-        <input type="hidden" name="vehiclePreference" value={vehiclePreference} />
 
         <div className="space-y-8">
           <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/50 space-y-6">
@@ -138,31 +136,6 @@ export default function CheckoutPage() {
                   className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition"
                   placeholder="07XXXXXXXXX"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-black text-slate-700 mb-4">هل تحتاج وسيلة نقل محددة؟ (اختياري)</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { id: "", label: "لا يهم", icon: "any" },
-                    { id: "bike", label: "دراجة", icon: "🏍️" },
-                    { id: "car", label: "سيارة", icon: "🚗" },
-                  ].map((v) => (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onClick={() => setVehiclePreference(v.id)}
-                      className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${
-                        vehiclePreference === v.id
-                          ? "border-violet-600 bg-violet-50 text-violet-700 shadow-md"
-                          : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
-                      }`}
-                    >
-                      <span className="text-2xl mb-1">{v.icon === "any" ? "✨" : v.icon}</span>
-                      <span className="text-xs font-black">{v.label}</span>
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
           </div>

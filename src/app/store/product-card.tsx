@@ -7,12 +7,8 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 
 export function ProductCard({
   product,
-  bgUrl: initialBgUrl,
-  bgOpacityPercent,
 }: {
   product: any,
-  bgUrl?: string,
-  bgOpacityPercent?: number,
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -48,9 +44,6 @@ export function ProductCard({
   const photos = product.photoUrls && product.photoUrls.length > 0 ? product.photoUrls : [""];
   const currentPrice = selectedVariant ? Number(selectedVariant.salePrice) : Number(product.salePrice);
   const currentName = selectedVariant ? `${product.name} (${selectedVariant.name})` : product.name;
-  const normalizedBgOpacity = Number.isFinite(Number(bgOpacityPercent))
-    ? Math.min(1, Math.max(0, Number(bgOpacityPercent) / 100))
-    : 0.4;
 
   const productForCart = {
     ...product,
@@ -82,18 +75,7 @@ export function ProductCard({
         </button>
 
         {/* حاوية الصورة - ثابتة الأبعاد لضمان ظهور النصوص فوراً */}
-        <div className="relative aspect-square overflow-hidden bg-slate-50 dark:bg-slate-800/50">
-          {initialBgUrl && (
-            <img
-              src={initialBgUrl}
-              className="absolute inset-0 w-full h-full object-cover z-0"
-              style={{ opacity: normalizedBgOpacity }}
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
-          )}
-
+        <div className="relative aspect-square overflow-hidden bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center">
           {photos[0] ? (
             <img
               src={photos[0]}
@@ -159,24 +141,22 @@ export function ProductCard({
             </button>
 
             <div className="overflow-y-auto flex-1 pb-10">
-              <div className="relative aspect-square md:aspect-video bg-slate-50 dark:bg-slate-800/50 overflow-hidden">
-                {initialBgUrl && (
+              <div className="relative bg-slate-50 dark:bg-slate-800/50 overflow-hidden flex flex-col items-center">
+                <div className="relative aspect-square w-full">
                   <img
-                    src={initialBgUrl}
-                    className="absolute inset-0 w-full h-full object-cover z-0"
-                    style={{ opacity: normalizedBgOpacity }}
-                    alt=""
+                    src={photos[activePhotoIndex]}
+                    className="w-full h-full object-contain relative z-10 p-4"
+                    alt={product.name}
+                    decoding="async"
                   />
-                )}
-                <img
-                  src={photos[activePhotoIndex]}
-                  className="w-full h-full object-contain relative z-10 p-4"
-                  alt={product.name}
-                  decoding="async"
-                />
+                </div>
+
+                <div className="bg-violet-600 text-white px-6 py-2 rounded-full text-[10px] md:text-xs font-black shadow-lg mb-4 relative z-20">
+                   خصيب ستور-أبو ألاكبر للتوصيل-07733921468
+                </div>
 
                 {photos.length > 1 && (
-                  <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 px-4 overflow-x-auto py-2 z-20">
+                  <div className="w-full flex justify-center gap-2 px-4 overflow-x-auto py-2 z-20">
                     {photos.map((url: string, idx: number) => (
                       <button
                         key={idx}

@@ -34,7 +34,8 @@ export function ProductListClient({
   const [bulkFiles, setBulkFiles] = useState<any[]>([]);
   const [bulkBranchId, setBulkBranchId] = useState("");
   const [importUrl, setImportUrl] = useState("");
-  const [smartRemoveBg, setSmartRemoveBg] = useState(true);
+  const [smartRemoveBg, setSmartRemoveBg] = useState(false);
+  const [manualRemoveBg, setManualRemoveBg] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [totalToImport, setTotalToImport] = useState(0);
@@ -141,6 +142,7 @@ export function ProductListClient({
 
     formData.append("hasVariants", hasVariants.toString());
     formData.append("variants", JSON.stringify(variants));
+    formData.append("removeBg", String(manualRemoveBg));
 
     const photoFiles = formData.getAll("photos") as File[];
     const validPhotos: File[] = [];
@@ -597,7 +599,18 @@ export function ProductListClient({
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">صور المنتج</label>
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2 flex items-center gap-2">
+                      صور المنتج
+                      <label className="inline-flex items-center gap-1.5 text-[10px] font-black text-violet-600 bg-violet-50 px-2 py-1 rounded-md cursor-pointer border border-violet-100">
+                         <input
+                           type="checkbox"
+                           checked={manualRemoveBg}
+                           onChange={(e) => setManualRemoveBg(e.target.checked)}
+                           className="h-3 w-3 rounded"
+                         />
+                         تفعيل القص الذكي
+                      </label>
+                    </label>
                     <input
                         name="photos"
                         type="file"
@@ -781,13 +794,7 @@ export function ProductListClient({
             {/* Status Badge */}
             <div className={`absolute top-4 left-4 z-10 w-3 h-3 rounded-full border-2 border-white shadow-sm ${p.active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
 
-            <div className="relative aspect-square bg-slate-50 overflow-hidden shadow-inner">
-              {productCardBgUrl && (
-                <div
-                  className="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                  style={{ backgroundImage: `url(${productCardBgUrl})` }}
-                />
-              )}
+            <div className="relative aspect-square bg-slate-50 overflow-hidden shadow-inner flex flex-col items-center justify-center">
               {p.photoUrls?.[0] ? (
                 <img
                   src={p.photoUrls[0]}
