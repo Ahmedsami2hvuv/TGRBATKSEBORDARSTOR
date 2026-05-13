@@ -169,18 +169,25 @@ export function BranchListClient({
   function handleSessionChange(id: string, url: string) {
     updateSession(id, { url });
 
-    // ابدأ السحب إذا كان الرابط صالحاً
+    // ابدأ السحب إذا كان الرابط صالحاً (فحص أولي)
     if (url.includes("/shop/sub/") || url.includes("/item/")) {
         autoProcessSession(id, url);
     }
   }
 
   async function autoProcessSession(id: string, url: string, options?: { skipIfNameExists?: boolean, branchId?: string, manualImage?: File | null }) {
-    // فحص حالة الجلسة قبل البدء لمنع التكرار
-    const currentSession = importSessions.find(s => s.id === id);
-    if (currentSession && (currentSession.status === 'scraping' || currentSession.status === 'importing' || currentSession.status === 'completed')) return;
+    // الانتقال لحالة الفحص بشكل آمن لمنع التكرار
+    let alreadyStarted = false;
+    setImportSessions(prev => {
+        const s = prev.find(x => x.id === id);
+        if (!s || (s.status !== 'idle' && s.status !== 'error')) {
+            alreadyStarted = true;
+            return prev;
+        }
+        return prev.map(x => x.id === id ? { ...x, status: 'scraping', error: null, url, ...options } : x);
+    });
 
-    updateSession(id, { status: 'scraping', error: null, ...options });
+    if (alreadyStarted) return;
 
     try {
         const res = await scrapeCategoryFromUrl(url);
@@ -195,9 +202,12 @@ export function BranchListClient({
                 fd.append("name", res.branchData.name);
                 fd.append("categoryId", catId);
 
-                // إذا كانت هناك صورة يدوية مرفوعة، نستخدمها، وإلا نستخدم رابط الصورة المسحوب
-                if (options?.manualImage) {
-                    fd.append("photo", options.manualImage);
+                // جلب الصورة اليدوية من حالة الجلسة إذا كانت موجودة (لضمان عمل الصور المرفوعة مسبقاً)
+                const currentSession = importSessions.find(s => s.id === id);
+                const manualImageToUse = options?.manualImage || currentSession?.manualImage;
+
+                if (manualImageToUse) {
+                    fd.append("photo", manualImageToUse);
                 } else {
                     fd.append("remoteImageUrl", res.branchData.imageUrl);
                 }
@@ -258,10 +268,10 @@ export function BranchListClient({
             if (successCount > 0 || urlsToScrape.length === 0) {
                 updateSession(id, { status: 'completed', error: urlsToScrape.length === 0 ? "تم إنشاء الفرع (الفرع فارغ من المنتجات)" : null });
 
-                // إخفاء المهمة المكتملة يقيناً بعد 800 ملي ثانية لضمان التركيز
+                // إخفاء السطر المكتمل نهائياً بعد ثانية واحدة للسماح برؤية علامة الصح ثم الحذف
                 setTimeout(() => {
                     setImportSessions(prev => prev.filter(s => s.id !== id));
-                }, 800);
+                }, 1000);
             } else {
                 updateSession(id, { status: 'error', error: "فشل سحب المنتجات لهذا الفرع" });
             }
@@ -579,7 +589,15 @@ export function BranchListClient({
                 )}
 
                 {importSessions.map((session, index) => (
-                    <div key={session.id} className={`p-5 rounded-[2rem] border-2 transition-all duration-300 ${session.status === 'completed' ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-indigo-50 shadow-sm'}`}>
+                    <div
+                        key={session.id}
+                        className={`p-5 rounded-[2rem] border-2 transition-all duration-1000 ease-in-out ${
+                            session.status === 'completed'
+                                ? 'bg-emerald-50 border-emerald-200 scale-90 opacity-0 -translate-x-full max-h-0 py-0 mb-0 mt-0 border-0 overflow-hidden pointer-events-none'
+                                : 'bg-white border-indigo-50 shadow-sm max-h-[400px] mb-4'
+                        }`}
+                        style={{ transitionProperty: 'all' }}
+                    >
                         <div className="flex flex-col md:flex-row gap-4 items-center">
                             <div className="w-full md:w-16 h-16 shrink-0 relative group">
                                 <div
@@ -667,7 +685,7 @@ export function BranchListClient({
                     </div>
                 ))}
 
-                {importSessions.length > 0 && (
+                {importSessions.length > 0 && !importSessions.some(s => s.status === 'idle' && !s.url && !s.manualImage) && (
                   <div className="flex justify-center pt-2">
                     <button
                       onClick={() => setImportSessions(prev => [...prev, createEmptySession()])}
@@ -679,7 +697,13 @@ export function BranchListClient({
                 )}
             </div>
 
-            <div className="p-8 border-t flex justify-center bg-slate-50 shrink-0">
+            <div className="p-8 border-t flex flex-col items-center gap-4 bg-slate-50 shrink-0">
+                {importSessions.some(s => s.status === 'scraping' || s.status === 'importing') && (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-full border border-amber-100">
+                        <span className="w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
+                        <span className="text-[10px] font-black text-amber-700">جاري معالجة بعض الأفرع... يفضل الانتظار حتى الانتهاء</span>
+                    </div>
+                )}
                 <button
                     onClick={() => window.location.reload()}
                     className="w-full md:w-auto px-12 py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 shadow-xl shadow-emerald-100 transition-all active:scale-95 flex items-center justify-center gap-3"
