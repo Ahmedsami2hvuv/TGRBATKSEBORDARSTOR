@@ -5,8 +5,8 @@ import { getGlobalIcons } from "@/lib/icon-settings";
 export const dynamic = "force-dynamic";
 
 export default async function CategoriesPage() {
-  // جلب الوعد (Promise) الخاص بالأقسام
-  const categoriesPromise = prisma.storeCategory.findMany({
+  // جلب البيانات مباشرة في السيرفر لضمان الاستقرار في الإنتاج
+  const categories = await prisma.storeCategory.findMany({
     select: {
       id: true,
       name: true,
@@ -24,7 +24,7 @@ export default async function CategoriesPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-black text-slate-900">أقسام المتجر</h1>
       </div>
-      <CategoryListClient categoriesPromise={categoriesPromise} icons={icons} />
+      <CategoryListClient initialCategories={categories} icons={icons} />
     </div>
   );
 }

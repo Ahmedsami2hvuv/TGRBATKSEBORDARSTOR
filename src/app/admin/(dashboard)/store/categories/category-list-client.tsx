@@ -8,8 +8,7 @@ import { compressImageFileForUpload } from "@/lib/client-image-compress";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 
-export function CategoryListClient({ categoriesPromise, icons }: { categoriesPromise: Promise<any[]>; icons: GlobalIconsConfig | null }) {
-  const initialCategories = use(categoriesPromise);
+export function CategoryListClient({ initialCategories, icons }: { initialCategories: any[]; icons: GlobalIconsConfig | null }) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
