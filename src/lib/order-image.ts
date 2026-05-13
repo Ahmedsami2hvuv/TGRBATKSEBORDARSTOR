@@ -175,7 +175,13 @@ async function tryColorKeyBackgroundRemoval(buffer: Buffer): Promise<Buffer | nu
 async function processAndUploadImage(
   file: File | Buffer | Blob,
   folder: string,
-  options?: { removeBg?: boolean, mime?: string }
+  options?: {
+    removeBg?: boolean,
+    mime?: string,
+    skipAiCheck?: boolean,
+    isAiGlobalEnabled?: boolean,
+    prefetchedAiConfigs?: any[]
+  }
 ): Promise<string> {
   let buf: Buffer;
   let mime: string;
@@ -200,17 +206,20 @@ async function processAndUploadImage(
   }
 
   if (options?.removeBg) {
-    // التحقق من الإعداد العام قبل البدء بعملية القص
-    const generalSettings = await prisma.uISystemSetting.findUnique({
-      where: { target_section: { target: "customer", section: "store_general" } }
-    });
-    const isAiGlobalEnabled = (generalSettings?.config as any)?.ai_enabled !== false;
+    // التحقق من الإعداد العام
+    let isAiGlobalEnabled = options?.isAiGlobalEnabled;
+    if (isAiGlobalEnabled === undefined && !options?.skipAiCheck) {
+        const generalSettings = await prisma.uISystemSetting.findUnique({
+            where: { target_section: { target: "customer", section: "store_general" } }
+        });
+        isAiGlobalEnabled = (generalSettings?.config as any)?.ai_enabled !== false;
+    }
 
     if (isAiGlobalEnabled) {
       let successWithAI = false;
       const sourceBeforeRemoval = buf;
       try {
-        const aiConfigs = await prisma.aIConfig.findMany({
+        const aiConfigs = options?.prefetchedAiConfigs || await prisma.aIConfig.findMany({
           where: { provider: "removebg", isActive: true },
           orderBy: { createdAt: "asc" }
         });
@@ -231,7 +240,9 @@ async function processAndUploadImage(
             if (response.ok) {
               buf = Buffer.from(await response.arrayBuffer());
               successWithAI = true;
-              await prisma.aIConfig.update({ where: { id: config.id }, data: { usedToday: { increment: 1 } } });
+              if (!options?.prefetchedAiConfigs) {
+                await prisma.aIConfig.update({ where: { id: config.id }, data: { usedToday: { increment: 1 } } });
+              }
             }
           } catch (err) { console.error("AI removal failed", err); }
         }
@@ -291,8 +302,12 @@ export async function saveCustomerDoorPhotoUploaded(file: File, _mb: number) { r
 export async function saveShopDoorPhotoUploaded(file: File, _mb: number) { return processAndUploadImage(file, "shops"); }
 export async function saveCustomerProfilePhotoUploaded(file: File, _mb: number) { return processAndUploadImage(file, "profiles"); }
 export async function saveStoreCategoryImageUploaded(file: File, _mb: number) { return processAndUploadImage(file, "categories", { removeBg: false }); }
-export async function saveStoreProductImageUploaded(file: File, _mb: number, options?: { removeBg?: boolean }) {
-  return processAndUploadImage(file, "products", { removeBg: options?.removeBg ?? false });
+export async function saveStoreProductImageUploaded(file: File, _mb: number, options?: { removeBg?: boolean, isAiGlobalEnabled?: boolean, prefetchedAiConfigs?: any[] }) {
+  return processAndUploadImage(file, "products", {
+    removeBg: options?.removeBg ?? false,
+    isAiGlobalEnabled: options?.isAiGlobalEnabled,
+    prefetchedAiConfigs: options?.prefetchedAiConfigs
+  });
 }
 export async function saveStoreBranchImageUploaded(file: File, _mb: number) { return processAndUploadImage(file, "branches", { removeBg: false }); }
 export async function saveStoreSlideImageUploaded(file: File, _mb: number) { return processAndUploadImage(file, "slides", { removeBg: false }); }

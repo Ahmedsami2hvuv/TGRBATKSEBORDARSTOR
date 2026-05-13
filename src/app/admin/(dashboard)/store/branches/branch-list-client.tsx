@@ -3,7 +3,7 @@
 import { useState, use, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { upsertBranch, deleteBranch, scrapeCategoryFromUrl, scrapeProductFromUrl, createProductFromScrapedData, clearBranchProducts } from "../actions";
+import { upsertBranch, deleteBranch, scrapeCategoryFromUrl, scrapeProductFromUrl, createProductFromScrapedData, bulkCreateProductsFromScrapedData, clearBranchProducts } from "../actions";
 import { compressImageFileForUpload } from "@/lib/client-image-compress";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
@@ -218,32 +218,42 @@ export function BranchListClient({
 
             updateSession(id, { status: 'importing' });
 
-            // سحب المنتجات بشكل متوازٍ (Parallel) لتسريع العملية
+            const productsToImport = (res as any).products || [];
             const urlsToScrape = res.productUrls;
-            let currentProgress = 0;
             let successCount = 0;
 
-            // تقسيم الروابط إلى مجموعات (دفعات من 5 منتجات)
-            const chunks = [];
-            for (let i = 0; i < urlsToScrape.length; i += 5) {
-                chunks.push(urlsToScrape.slice(i, i + 5));
-            }
+            if (productsToImport.length > 0) {
+                // السرعة القصوى: إرسال كافة المنتجات في طلب واحد للسيرفر (Bulk Action)
+                const bRes = await bulkCreateProductsFromScrapedData(branchId!, productsToImport, shouldRemoveBg, options?.skipIfNameExists);
+                if (bRes.ok) {
+                    successCount = bRes.count || 0;
+                    updateSession(id, { progress: productsToImport.length });
+                } else {
+                    updateSession(id, { status: 'error', error: bRes.error || "فشل السحب الجماعي" });
+                    return;
+                }
+            } else {
+                // الطريقة التقليدية (فقط إذا كان الموقع لا يدعم السحب الجماعي)
+                const chunks = [];
+                for (let i = 0; i < urlsToScrape.length; i += 5) {
+                    chunks.push(urlsToScrape.slice(i, i + 5));
+                }
 
-            for (const chunk of chunks) {
-                await Promise.all(chunk.map(async (pUrl) => {
-                    try {
-                        const pRes = await scrapeProductFromUrl(pUrl);
-                        if (pRes.ok) {
-                            const pImport = await createProductFromScrapedData(branchId!, pRes.data, shouldRemoveBg, options?.skipIfNameExists);
-                            if (pImport.ok) successCount++;
+                for (const chunk of chunks) {
+                    await Promise.all(chunk.map(async (pUrl) => {
+                        try {
+                            const pRes = await scrapeProductFromUrl(pUrl);
+                            if (pRes.ok) {
+                                const pImport = await createProductFromScrapedData(branchId!, pRes.data, shouldRemoveBg, options?.skipIfNameExists);
+                                if (pImport.ok) successCount++;
+                            }
+                        } catch (err) {
+                            console.error("Failed to scrape product:", pUrl, err);
+                        } finally {
+                            updateSession(id, { progress: (prev: number) => (prev || 0) + 1 });
                         }
-                    } catch (err) {
-                        console.error("Failed to scrape product:", pUrl, err);
-                    } finally {
-                        currentProgress++;
-                        updateSession(id, { progress: currentProgress });
-                    }
-                }));
+                    }));
+                }
             }
 
             if (successCount > 0 || urlsToScrape.length === 0) {

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { deleteFromR2 } from "@/lib/upload-storage";
 import {
   saveStoreCategoryImageUploaded,
@@ -547,27 +548,51 @@ export async function scrapeCategoryFromUrl(url: string) {
             branchImageUrl = domain + (branchImageUrl.startsWith('/') ? '' : '/') + branchImageUrl;
         }
 
-        // استخراج روابط المنتجات
-        // البحث عن أي رابط يحتوي على /item/ متبوعاً بأرقام لضمان جلب المنتجات فقط
-        const productUrlMatches = Array.from(html.matchAll(/href=["']([^"']*\/item\/\d+\/\d+\/\d+[^"']*)["']/gi));
-        let productUrls = Array.from(new Set(productUrlMatches.map(m => m[1])));
+        // استخراج روابط المنتجات وبياناتها مباشرة من صفحة الفرع لتسريع العملية
+        const products: any[] = [];
+        const productCardRegex = /class=["'][^"']*product-card[^"']*["']>([\s\S]*?)<\/div>\s*<\/div>/gi;
+        const cardMatches = Array.from(html.matchAll(productCardRegex));
 
-        const domain = new URL(targetUrl).origin;
-        let fullUrls = productUrls.map(u => u.startsWith('http') ? u : domain + (u.startsWith('/') ? '' : '/') + u);
+        for (const match of cardMatches) {
+            const content = match[1];
 
-        // تنظيف الروابط واستبعاد رابط الفرع نفسه لو ظهر بالخطأ
-        const currentPath = new URL(targetUrl).pathname;
-        fullUrls = fullUrls.filter(u => {
-            try {
-                const upath = new URL(u).pathname;
-                return upath !== currentPath && upath.includes('/item/');
-            } catch { return true; }
-        });
+            // استخراج الرابط
+            const urlMatch = content.match(/href=["']([^"']*\/item\/[^"']*)["']/i);
+            if (!urlMatch) continue;
+
+            const rawPUrl = urlMatch[1];
+            const pUrl = rawPUrl.startsWith('http') ? rawPUrl : new URL(targetUrl).origin + (rawPUrl.startsWith('/') ? '' : '/') + rawPUrl;
+
+            // استخراج الاسم
+            const nameMatch = content.match(/<h[2-6][^>]*>([\s\S]*?)<\/h/i) || content.match(/class=["'][^"']*(?:name|title)[^"']*["']>([\s\S]*?)<\//i);
+            const pName = nameMatch ? nameMatch[1].replace(/<[^>]*>?/gm, '').trim() : "";
+
+            // استخراج السعر
+            const priceMatch = content.match(/(\d+(?:[.,]\d+)?)\s*(?:د\.ع|IQD)/i);
+            const pPrice = priceMatch ? parseFloat(priceMatch[1].replace(/,/g, '')) : 0;
+
+            // استخراج الصورة
+            const imgMatch = content.match(/(?:src|data-src|data-original)=["']([^"']*(?:\.jpg|\.png|\.webp|\.jpeg)[^"']*)["']/i);
+            let pImg = imgMatch ? imgMatch[1] : "";
+            if (pImg && !pImg.startsWith('http')) pImg = new URL(targetUrl).origin + (pImg.startsWith('/') ? '' : '/') + pImg;
+
+            if (pName && !products.some(p => p.url === pUrl)) {
+                products.push({ name: pName, price: pPrice, imageUrl: pImg, url: pUrl });
+            }
+        }
+
+        // إذا لم نجد منتجات بنظام الـ card، نأخذ الروابط فقط كخيار بديل (fallback)
+        const productUrls = products.length > 0 ? products.map(p => p.url) :
+            Array.from(new Set(Array.from(html.matchAll(/href=["']([^"']*\/item\/\d+\/\d+\/\d+[^"']*)["']/gi)).map(m => {
+                const u = m[1];
+                return u.startsWith('http') ? u : new URL(targetUrl).origin + (u.startsWith('/') ? '' : '/') + u;
+            })));
 
         return {
             ok: true,
             branchData: { name: branchName || "فرع مستورد", imageUrl: branchImageUrl },
-            productUrls: fullUrls
+            productUrls: productUrls,
+            products: products // البيانات الجاهزة
         };
     } catch (error: any) {
         return { error: "فشل في تحليل الرابط: " + error.message };
@@ -686,9 +711,7 @@ export async function createProductFromScrapedData(branchId: string, p: any, rem
             if (existing) return { ok: true, skipped: true };
         }
 
-        let photoUrls: string[] = [];
-
-        // إنشاء المنتج فوراً لضمان السرعة، وسنترك معالجة الصورة كعملية منفصلة
+        // إنشاء المنتج فوراً لضمان السرعة
         const product = await prisma.storeProduct.create({
             data: {
                 name: p.name,
@@ -702,72 +725,136 @@ export async function createProductFromScrapedData(branchId: string, p: any, rem
             }
         });
 
-        // محاولة جلب الصورة وحفظها (بدون تعطيل الاستجابة إذا أردنا سرعة قصوى)
-        // ملاحظة: الـ await هنا ضروري لضمان حفظ الصورة قبل انتهاء الأكشن في بعض البيئات
-        // لكننا جعلنا استدعاء الأكشن نفسه متوازياً في العميل
+        // معالجة الصورة في الخلفية
         if (p.imageUrl) {
-            try {
-                const imgRes = await fetch(p.imageUrl, {
-                    signal: AbortSignal.timeout(10000), // تقليل المهلة لـ 10 ثواني
-                    headers: { 'User-Agent': 'Mozilla/5.0' }
-                });
-
-                if (imgRes.ok) {
-                    const buffer = await imgRes.arrayBuffer();
-                    const file = new File([buffer], "product.jpg", { type: imgRes.headers.get("content-type") || "image/jpeg" });
-
-                    // استخدام معالجة الصور المحسنة (مع تعطيل القص إذا كان مغلقاً)
-                    const savedUrl = await saveStoreProductImageUploaded(file, MAX_ORDER_IMAGE_BYTES, { removeBg });
-
-                    await prisma.storeProduct.update({
-                        where: { id: product.id },
-                        data: { photoUrls: [savedUrl] }
+            const processSingleImage = async () => {
+                try {
+                    const imgRes = await fetch(p.imageUrl, {
+                        signal: AbortSignal.timeout(10000),
+                        headers: { 'User-Agent': 'Mozilla/5.0' }
                     });
+
+                    if (imgRes.ok) {
+                        const buffer = await imgRes.arrayBuffer();
+                        const file = new File([buffer], "product.jpg", { type: imgRes.headers.get("content-type") || "image/jpeg" });
+
+                        const savedUrl = await saveStoreProductImageUploaded(file, MAX_ORDER_IMAGE_BYTES, { removeBg });
+
+                        await prisma.storeProduct.update({
+                            where: { id: product.id },
+                            data: { photoUrls: [savedUrl] }
+                        });
+                        revalidatePath("/admin/store/products");
+                    }
+                } catch (e) {
+                    console.error(`Image fail for ${p.name}:`, e);
                 }
+            };
+
+            try {
+                after(processSingleImage);
             } catch (e) {
-                console.error(`Image fail for ${p.name}:`, e);
+                processSingleImage(); // Fallback
             }
         }
 
+        revalidatePath("/admin/store/products");
         return { ok: true, id: product.id };
     } catch (e: any) {
         return { error: e.message };
     }
 }
 
-export async function bulkImportProducts(branchId: string, products: any[]) {
+export async function bulkCreateProductsFromScrapedData(branchId: string, products: any[], removeBg: boolean = true, skipIfNameExists: boolean = false) {
     try {
-        for (const p of products) {
-            let photoUrls: string[] = [];
+        const generalSettings = await prisma.uISystemSetting.findUnique({
+            where: { target_section: { target: "customer", section: "store_general" } }
+        });
+        const isAiGlobalEnabled = (generalSettings?.config as any)?.ai_enabled !== false;
 
-            // تحميل صورة المنتج وتحويلها لـ Base64 داخلياً لضمان الاستقرار
-            if (p.imageUrl) {
-                try {
-                    const imgRes = await fetch(p.imageUrl);
-                    if (imgRes.ok) {
-                        const buffer = await imgRes.arrayBuffer();
-                        const file = new File([buffer], "product.jpg", { type: imgRes.headers.get("content-type") || "image/jpeg" });
-                        const b64 = await saveStoreProductImageUploaded(file, MAX_ORDER_IMAGE_BYTES);
-                        photoUrls.push(b64);
-                    }
-                } catch (e) { console.error("Img Import Failed", e); }
-            }
-
-            await prisma.storeProduct.create({
-                data: {
-                    name: p.name,
-                    description: p.description || "",
-                    purchasePrice: (p.price || 0),
-                    salePrice: (p.price || 0),
-                    branchId: branchId,
-                    photoUrls: photoUrls,
-                    active: true
-                }
+        let aiConfigs: any[] = [];
+        if (removeBg && isAiGlobalEnabled) {
+            aiConfigs = await prisma.aIConfig.findMany({
+                where: { provider: "removebg", isActive: true },
+                orderBy: { createdAt: "asc" }
             });
         }
+
+        // تحسين: فحص وجود المنتجات بطلب واحد بدلاً من تكرار الاستعلام
+        const names = products.map(p => p.name);
+        const existingNames = skipIfNameExists ? (await prisma.storeProduct.findMany({
+            where: { branchId, name: { in: names } },
+            select: { name: true }
+        })).map(p => p.name) : [];
+
+        const toCreateData = products
+            .filter(p => !existingNames.includes(p.name))
+            .map(p => ({
+                name: p.name,
+                description: p.description || "",
+                purchasePrice: (p.price || 0),
+                salePrice: (p.price || 0),
+                branchId: branchId,
+                photoUrls: [], // فارغ حالياً ليتم السحب في الخلفية
+                active: true,
+                sequence: 0
+            }));
+
+        if (toCreateData.length === 0) return { ok: true, count: 0 };
+
+        // إدخال جماعي فوري
+        const createdProducts = await (prisma.storeProduct as any).createManyAndReturn({
+            data: toCreateData
+        });
+
+        // معالجة الصور في الخلفية لضمان "استجابة تقارب الصفر"
+        const processBulkImages = async () => {
+            const filteredProductsToProcess = products.filter(p => !existingNames.includes(p.name));
+
+            await Promise.all(createdProducts.map(async (product: any, idx: number) => {
+                const pData = filteredProductsToProcess[idx];
+                if (!pData || !pData.imageUrl) return;
+
+                try {
+                    const imgRes = await fetch(pData.imageUrl, {
+                        signal: AbortSignal.timeout(10000),
+                        headers: { 'User-Agent': 'Mozilla/5.0' }
+                    });
+                    if (imgRes.ok) {
+                        const buffer = await imgRes.arrayBuffer();
+                        const file = new File([buffer], "p.jpg", { type: imgRes.headers.get("content-type") || "image/jpeg" });
+                        const finalPhotoUrl = await saveStoreProductImageUploaded(file, MAX_ORDER_IMAGE_BYTES, {
+                            removeBg,
+                            isAiGlobalEnabled,
+                            prefetchedAiConfigs: aiConfigs
+                        });
+
+                        if (finalPhotoUrl) {
+                            await prisma.storeProduct.update({
+                                where: { id: product.id },
+                                data: { photoUrls: [finalPhotoUrl] }
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error("Img bg fail", pData.name, e);
+                }
+            }));
+            revalidatePath("/admin/store/products");
+            revalidatePath("/staff/portal/store/products");
+        };
+
+        try {
+            after(processBulkImages);
+        } catch (e) {
+            processBulkImages();
+        }
+
         revalidatePath("/admin/store/products");
-        return { ok: true };
+        revalidatePath("/staff/portal/store/products");
+        return { ok: true, count: createdProducts.length };
     } catch (e: any) {
+        console.error("BULK ERR:", e);
         return { error: e.message };
     }
 }
