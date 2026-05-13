@@ -49,6 +49,19 @@ export default async function BranchesPage(props: {
     take: 500
   });
 
+  const [categories, preparers, rawBranches] = await Promise.all([
+    categoriesPromise,
+    preparersPromise,
+    branchesPromise
+  ]);
+
+  // تحويل البيانات لتكون قابلة للنقل للمتصفح (Serialization)
+  const branches = rawBranches.map(b => ({
+    ...b,
+    profitMargin: b.profitMargin ? Number(b.profitMargin) : 0,
+    _count: b._count
+  }));
+
   const icons = await getGlobalIcons();
 
   return (
@@ -74,9 +87,9 @@ export default async function BranchesPage(props: {
       </div>
 
       <BranchListClient
-        branchesPromise={branchesPromise}
-        categoriesPromise={categoriesPromise}
-        preparersPromise={preparersPromise}
+        initialBranches={branches}
+        categories={categories}
+        preparers={preparers}
         defaultCategoryId={categoryId}
         icons={icons}
       />

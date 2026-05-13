@@ -100,7 +100,12 @@ export default async function ProductsPage(props: { searchParams: Promise<{ bran
         purchasePrice: purchasePriceNum,
         salePrice: salePriceNum,
         image: imageUrl,
-        photoUrls: Array.isArray(p.photoUrls) ? p.photoUrls : []
+        photoUrls: Array.isArray(p.photoUrls) ? p.photoUrls : [],
+        variants: p.variants.map(v => ({
+          ...v,
+          purchasePrice: v.purchasePrice ? Number(v.purchasePrice) : 0,
+          salePrice: v.salePrice ? Number(v.salePrice) : 0,
+        }))
       };
     });
 

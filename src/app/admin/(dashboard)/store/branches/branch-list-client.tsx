@@ -9,21 +9,18 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
 export function BranchListClient({
-  branchesPromise,
-  categoriesPromise,
-  preparersPromise,
+  initialBranches,
+  categories,
+  preparers,
   defaultCategoryId,
   icons
 }: {
-  branchesPromise: Promise<any[]>,
-  categoriesPromise: Promise<any[]>,
-  preparersPromise: Promise<any[]>,
+  initialBranches: any[],
+  categories: any[],
+  preparers: any[],
   defaultCategoryId?: string,
   icons: GlobalIconsConfig | null
 }) {
-  const initialBranches = use(branchesPromise);
-  const categories = use(categoriesPromise);
-  const preparers = use(preparersPromise);
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
