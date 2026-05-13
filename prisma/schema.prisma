@@ -541,6 +541,7 @@ model StoreCategory {
   updatedAt DateTime      @updatedAt
   active    Boolean       @default(true)
   photoUrl  String        @default("")
+  notes     String        @default("")
   branches  StoreBranch[]
 
   @@index([active, sequence])
@@ -558,6 +559,7 @@ model StoreBranch {
   parentBranchId       String?
   authorizedPreparerId String?
   profitMargin         Decimal          @default(0.25) @db.Decimal(10, 2)
+  notes                String           @default("")
   authorizedPreparer   CompanyPreparer? @relation("AuthorizedBranches", fields: [authorizedPreparerId], references: [id])
   category             StoreCategory    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   parentBranch         StoreBranch?     @relation("SubBranches", fields: [parentBranchId], references: [id], onDelete: Cascade)

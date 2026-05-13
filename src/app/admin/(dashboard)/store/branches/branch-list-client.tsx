@@ -807,6 +807,17 @@ export function BranchListClient({
                         className="w-full px-4 py-2 text-xs font-bold text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer"
                     />
                 </div>
+
+                <div className="space-y-2 lg:col-span-4">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">ملاحظة تظهر للزبون عند فتح هذا الفرع</label>
+                    <textarea
+                        name="notes"
+                        defaultValue={editing?.notes || ""}
+                        rows={2}
+                        className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-violet-500 focus:bg-white outline-none font-bold transition-all resize-none text-sm"
+                        placeholder="مثلاً: جميع هذه المنتجات طازجة وتصلنا يومياً..."
+                    />
+                </div>
             </div>
 
             <div className="flex gap-3 pt-6 border-t border-slate-50">

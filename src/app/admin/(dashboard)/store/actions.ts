@@ -18,6 +18,7 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
   const id = formData.get("id") as string;
   const name = formData.get("name") as string;
   const sequence = parseInt(formData.get("sequence") as string || "0");
+  const notes = formData.get("notes") as string || "";
   const photoFile = formData.get("photo") as File;
   let photoUrl = formData.get("currentPhotoUrl") as string || "";
 
@@ -38,11 +39,11 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
   if (id) {
     await prisma.storeCategory.update({
       where: { id },
-      data: { name, sequence, photoUrl }
+      data: { name, sequence, photoUrl, notes }
     });
   } else {
     await prisma.storeCategory.create({
-      data: { name, sequence, photoUrl }
+      data: { name, sequence, photoUrl, notes }
     });
   }
 
@@ -69,6 +70,7 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
   const sequence = parseInt(formData.get("sequence") as string || "0");
   const authorizedPreparerId = (formData.get("authorizedPreparerId") as string) || null;
   const profitMargin = parseFloat(formData.get("profitMargin") as string || "0.25");
+  const notes = formData.get("notes") as string || "";
   const photoFile = formData.get("photo") as File;
   const remoteImageUrl = formData.get("remoteImageUrl") as string;
   const removeBg = formData.get("removeBg") === "true";
@@ -120,7 +122,8 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
     authorizedPreparerId: authorizedPreparerId === "" ? null : authorizedPreparerId,
     profitMargin,
     sequence,
-    photoUrl
+    photoUrl,
+    notes
   };
 
   if (id) {
