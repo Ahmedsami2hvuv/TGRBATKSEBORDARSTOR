@@ -62,7 +62,7 @@ const getCachedCategory = unstable_cache(
     async (id: string) => {
         return prisma.storeCategory.findUnique({
             where: { id },
-            select: { id: true, name: true, photoUrl: true, notes: true }
+            select: { id: true, name: true, photoUrl: true }
         });
     },
     ["store-category-header"],
@@ -96,22 +96,6 @@ async function CategoryHeader({ id }: { id: string }) {
         </div>
       </section>
 
-      {category.notes && (
-        <div className="relative overflow-hidden p-6 rounded-[2rem] bg-violet-600 shadow-xl shadow-violet-200 dark:shadow-none animate-in slide-in-from-top duration-700">
-          <div className="relative z-10 flex items-start gap-4 text-white">
-            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shrink-0">
-              💡
-            </div>
-            <div className="space-y-1">
-              <h4 className="text-sm font-black opacity-80 uppercase tracking-widest">ملاحظة القسم</h4>
-              <p className="text-sm md:text-base font-bold leading-relaxed whitespace-pre-wrap">{category.notes}</p>
-            </div>
-          </div>
-          {/* Decorative shapes */}
-          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
-          <div className="absolute -left-4 -top-4 w-24 h-24 bg-violet-400/20 rounded-full blur-2xl" />
-        </div>
-      )}
     </>
   );
 }

@@ -12,11 +12,15 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
   const [branch, storeSettings] = await Promise.all([
     prisma.storeBranch.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        photoUrl: true,
+        categoryId: true,
+        parentBranchId: true,
         category: { select: { name: true } },
         parentBranch: { select: { name: true } },
         _count: { select: { products: true } },
-        notes: true
       }
     }),
     prisma.uISystemSetting.findUnique({
@@ -69,20 +73,6 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
         </div>
       </section>
 
-      {branch.notes && (
-        <div className="relative overflow-hidden p-6 rounded-[2rem] bg-emerald-600 shadow-xl shadow-emerald-200 dark:shadow-none animate-in slide-in-from-top duration-700">
-          <div className="relative z-10 flex items-start gap-4 text-white">
-            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shrink-0">
-              📌
-            </div>
-            <div className="space-y-1">
-              <h4 className="text-sm font-black opacity-80 uppercase tracking-widest">تنبيه / ملاحظة</h4>
-              <p className="text-sm md:text-base font-bold leading-relaxed whitespace-pre-wrap">{branch.notes}</p>
-            </div>
-          </div>
-          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
-        </div>
-      )}
 
       <CustomProductRequest />
 
