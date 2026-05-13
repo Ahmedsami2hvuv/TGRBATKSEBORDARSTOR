@@ -422,14 +422,22 @@ export default async function CustomerInfoPage({ searchParams }: Props) {
                         <img
                           src={doorPhotoSrc}
                           alt=""
-                          className="max-h-48 max-w-xs rounded-xl border border-sky-200 object-contain"
+                          className="max-h-64 max-w-xs rounded-xl border-2 border-sky-400 shadow-md object-contain bg-white"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.display = 'none';
+                            const p = (e.currentTarget as HTMLImageElement).parentElement?.nextElementSibling;
+                            if (p) p.classList.remove('hidden');
+                          }}
                         />
                       </a>
                     ) : (
-                      <p className="text-xs font-bold text-amber-700">
-                        لا توجد صورة فعلية لهذا المرجع حالياً. شغّل "سحب الصور" ثم "تنظيف الروابط".
+                      <p className="text-xs font-bold text-slate-400 italic">
+                        لا توجد صورة متوفرة حالياً.
                       </p>
                     )}
+                    <p className="hidden text-xs font-bold text-amber-600 mt-2">
+                      ⚠️ حدث خطأ في تحميل الصورة من المصدر.
+                    </p>
                   </div>
               <p className="text-sm">
                 <Link

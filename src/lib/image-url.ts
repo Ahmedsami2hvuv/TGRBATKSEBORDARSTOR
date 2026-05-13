@@ -18,6 +18,9 @@ export function resolvePublicAssetSrc(url: string | null | undefined): string | 
 
  // معالجة الروابط المطلقة (R2 أو غيرها) لتمر عبر البروكسي
  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+  // إذا كان الرابط أصلاً من Cloudflare R2، نرجعه كما هو
+  if (raw.includes("r2.dev") || raw.includes("cloudflare")) return raw;
+
  try {
  const urlObj = new URL(raw);
  const path = decodeURIComponent(urlObj.pathname);
