@@ -64,9 +64,9 @@ export function ProductCard({
         {/* زر المفضلة - يظهر فوراً */}
         <button
           onClick={toggleFavorite}
-          className="absolute top-3 left-3 z-20 w-8 h-8 md:w-10 md:h-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-md transition-transform hover:scale-110 active:scale-95"
+          className="absolute top-1 left-1 z-20 w-6 h-6 md:w-8 md:h-8 bg-white/5 dark:bg-slate-800/5 backdrop-blur-[1px] rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95"
         >
-          <span className={`text-lg md:text-xl ${isFavorite ? "text-rose-500" : "text-slate-300"}`}>
+          <span className={`text-[10px] md:text-base ${isFavorite ? "text-rose-500" : "text-slate-400/20"}`}>
             <DynamicIcon
               icon={isFavorite ? icons?.store_favorites : icons?.store_favorites_empty}
               fallback={isFavorite ? "❤️" : "🤍"}
@@ -137,14 +137,19 @@ export function ProductCard({
           >
             <button
               type="button"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsModalOpen(false);
+              }}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 setIsModalOpen(false);
               }}
-              className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg font-bold text-slate-900 dark:text-white hover:bg-white transition-colors"
+              className="absolute top-4 right-4 z-[110] w-12 h-12 bg-slate-900/40 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl text-white hover:bg-slate-900/60 transition-all active:scale-90"
             >
-              ✕
+              <span className="text-2xl font-bold">✕</span>
             </button>
 
             <div className="overflow-y-auto flex-1 pb-0">

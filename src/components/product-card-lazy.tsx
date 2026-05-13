@@ -137,9 +137,9 @@ export function ProductCardLazy({
       >
         <button
           onClick={toggleFavorite}
-          className="absolute top-3 left-3 z-20 w-8 h-8 md:w-10 md:h-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-md transition-transform hover:scale-110 active:scale-95"
+          className="absolute top-1 left-1 z-20 w-6 h-6 md:w-8 md:h-8 bg-white/5 dark:bg-slate-800/5 backdrop-blur-[1px] rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95"
         >
-          <span className={`text-lg md:text-xl ${isFavorite ? "text-rose-500" : "text-slate-300"}`}>
+          <span className={`text-[10px] md:text-base ${isFavorite ? "text-rose-500" : "text-slate-400/20"}`}>
             {isFavorite ? "❤️" : "🤍"}
           </span>
         </button>
@@ -169,8 +169,8 @@ export function ProductCardLazy({
                 decoding="async"
               />
               {/* التوقيع أسفل الصورة في الكارت - ملاصق تماماً وتصميم أنيق */}
-              <div className="mt-[-20px] mb-0 px-3 py-0.5 bg-violet-600 rounded-full shadow-lg shadow-violet-200 dark:shadow-none z-20 border border-white dark:border-slate-900">
-                <span className="text-[8px] md:text-[10px] font-black text-white whitespace-nowrap">
+              <div className="mt-[-20px] mb-0 px-2.5 py-0.5 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-full shadow-md z-20 border border-white/20">
+                <span className="text-[8px] md:text-[9px] font-black text-white whitespace-nowrap">
                   خصيب ستور - أبو ألاكبر
                 </span>
               </div>
@@ -213,14 +213,19 @@ export function ProductCardLazy({
           >
             <button
               type="button"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeModal();
+              }}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 closeModal();
               }}
-              className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg font-bold text-slate-900 dark:text-white hover:bg-white transition-colors"
+              className="absolute top-4 right-4 z-[110] w-12 h-12 bg-slate-900/40 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl text-white hover:bg-slate-900/60 transition-all active:scale-90"
             >
-              ✕
+              <span className="text-2xl font-bold">✕</span>
             </button>
 
             <div className="overflow-y-auto flex-1 pb-6">
