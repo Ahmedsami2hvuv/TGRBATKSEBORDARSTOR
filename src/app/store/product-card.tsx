@@ -74,16 +74,23 @@ export function ProductCard({
           </span>
         </button>
 
-        {/* حاوية الصورة - ثابتة الأبعاد لضمان ظهور النصوص فوراً */}
-        <div className="relative aspect-square overflow-hidden bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center">
+        {/* حاوية الصورة - تم إلغاء المربع الإجباري لظهور الصورة بحجمها الكامل */}
+        <div className="relative overflow-hidden bg-white dark:bg-slate-900 flex flex-col items-center justify-center border-b border-slate-50">
           {photos[0] ? (
-            <img
-              src={photos[0]}
-              alt={product.name}
-              loading="lazy"
-              decoding="async"
-              className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-110 relative z-10 p-2"
-            />
+            <>
+              <img
+                src={photos[0]}
+                alt={product.name}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-auto max-h-[250px] object-contain transition-transform duration-700 group-hover:scale-105 relative z-10 p-2"
+              />
+              <div className="absolute bottom-1 left-0 right-0 text-center z-20">
+                <span className="bg-white/80 backdrop-blur-sm text-[8px] font-bold text-slate-400 px-2 py-0.5 rounded-full">
+                  خصيب ستور-أبو ألاكبر
+                </span>
+              </div>
+            </>
           ) : (
             <div className="w-full h-full flex items-center justify-center relative z-10 opacity-20 text-3xl md:text-5xl">
               <DynamicIcon icon={icons?.ui_package} fallback="📦" />
@@ -141,17 +148,17 @@ export function ProductCard({
             </button>
 
             <div className="overflow-y-auto flex-1 pb-10">
-              <div className="relative bg-slate-50 dark:bg-slate-800/50 overflow-hidden flex flex-col items-center">
-                <div className="relative aspect-square w-full">
+              <div className="relative bg-white dark:bg-slate-900 overflow-hidden flex flex-col items-center">
+                <div className="relative w-full">
                   <img
                     src={photos[activePhotoIndex]}
-                    className="w-full h-full object-contain relative z-10 p-4"
+                    className="w-full h-auto max-h-[500px] object-contain relative z-10 p-4"
                     alt={product.name}
                     decoding="async"
                   />
                 </div>
 
-                <div className="bg-violet-600 text-white px-6 py-2 rounded-full text-[10px] md:text-xs font-black shadow-lg mb-4 relative z-20">
+                <div className="bg-slate-100 text-slate-500 px-4 py-1.5 rounded-full text-[9px] font-black mb-4 relative z-20 border border-slate-200">
                    خصيب ستور-أبو ألاكبر للتوصيل-07733921468
                 </div>
 

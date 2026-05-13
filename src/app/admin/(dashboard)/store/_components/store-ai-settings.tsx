@@ -103,15 +103,15 @@ export function StoreAiSettings() {
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3 bg-violet-50 dark:bg-violet-900/20 p-4 rounded-[2rem] border border-violet-100 dark:border-violet-800">
+          <div className="flex items-center gap-3 bg-rose-50 dark:bg-rose-900/20 p-4 rounded-[2rem] border border-rose-100 dark:border-rose-800">
              <div className="flex flex-col">
-                <span className="text-[11px] font-black text-violet-800 dark:text-violet-300">مساعد الذكاء الاصطناعي</span>
-                <span className="text-[9px] font-bold text-violet-600/70">إظهار المساعد للزبائن في المتجر</span>
+                <span className="text-[11px] font-black text-rose-800 dark:text-rose-300">نظام قص الخلفية</span>
+                <span className="text-[9px] font-bold text-rose-600/70">تعطيل/تفعيل إزالة الخلفية عند الرفع</span>
              </div>
              <button
                 onClick={() => toggleAi(!aiEnabled)}
                 disabled={isUpdatingAi}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${aiEnabled ? 'bg-violet-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${aiEnabled ? 'bg-rose-600' : 'bg-slate-300 dark:bg-slate-700'}`}
              >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${aiEnabled ? 'translate-x-6' : 'translate-x-1'}`}
