@@ -291,10 +291,7 @@ async function processAndUploadImage(
     return `/uploads/${uploadedKey}`;
   }
 
-  // Fallback: إذا فشل R2، نعود للـ Base64 لكي لا يتوقف العمل (مؤقتاً)
-  // تحذير: هذا قد يسبب مشاكل في حجم استجابة Server Action
-  console.warn(`R2 upload failed for ${key}, falling back to base64`);
-  return `data:${mime};base64,${buf.toString("base64")}`;
+  throw new Error("IMAGE_STORAGE_FAILED");
 }
 
 export async function saveOrderImageUploaded(file: File, _mb: number) { return processAndUploadImage(file, "orders"); }
