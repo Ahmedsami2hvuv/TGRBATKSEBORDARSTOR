@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Client } from "pg";
 import { prisma } from "@/lib/prisma";
+import { uploadRemoteImageToR2 } from "@/lib/order-image";
 
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
 
@@ -83,12 +84,13 @@ export async function POST(req: Request) {
 
       if (importMissingOnly) {
         try {
+          const finalPhotoUrl = await uploadRemoteImageToR2(row.photoUrl, "customers");
           await prisma.customerPhoneProfile.create({
             data: {
               phone,
               regionId: targetRegionId,
               locationUrl: row.locationUrl || "",
-              photoUrl: row.photoUrl || "",
+              photoUrl: finalPhotoUrl,
               notes: row.notes || "",
               landmark: row.landmark || "",
               alternatePhone: row.alternatePhone,
@@ -100,6 +102,7 @@ export async function POST(req: Request) {
           skippedExisting++;
         }
       } else {
+        const finalPhotoUrl = await uploadRemoteImageToR2(row.photoUrl, "customers");
         await prisma.customerPhoneProfile.upsert({
           where: {
             phone_regionId: {
@@ -109,7 +112,7 @@ export async function POST(req: Request) {
           },
           update: {
             locationUrl: row.locationUrl || "",
-            photoUrl: row.photoUrl || "",
+            photoUrl: finalPhotoUrl,
             notes: row.notes || "",
             landmark: row.landmark || "",
             alternatePhone: row.alternatePhone,
@@ -118,7 +121,7 @@ export async function POST(req: Request) {
             phone,
             regionId: targetRegionId,
             locationUrl: row.locationUrl || "",
-            photoUrl: row.photoUrl || "",
+            photoUrl: finalPhotoUrl,
             notes: row.notes || "",
             landmark: row.landmark || "",
             alternatePhone: row.alternatePhone,

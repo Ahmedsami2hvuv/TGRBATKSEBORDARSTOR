@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Client } from "pg";
 import { prisma } from "@/lib/prisma";
+import { uploadRemoteImageToR2 } from "@/lib/order-image";
 
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
 const OLD_BASE_URL = "https://tgrbatks-production.up.railway.app";
@@ -49,6 +50,7 @@ export async function POST(req: Request) {
         targetRegionId = regionNameMap.get(oldShop.regionName.trim())!;
       }
 
+      const finalShopPhotoUrl = await uploadRemoteImageToR2(fixPhotoUrl(oldShop.photoUrl), "shops");
       const newShop = await prisma.shop.upsert({
         where: { id: oldShop.oldId },
         update: {
@@ -56,7 +58,7 @@ export async function POST(req: Request) {
           locationUrl: oldShop.locationUrl || "",
           ownerName: oldShop.ownerName || "",
           phone: oldShop.phone || "",
-          photoUrl: fixPhotoUrl(oldShop.photoUrl),
+          photoUrl: finalShopPhotoUrl,
           regionId: targetRegionId
         },
         create: {
@@ -65,7 +67,7 @@ export async function POST(req: Request) {
           locationUrl: oldShop.locationUrl || "",
           ownerName: oldShop.ownerName || "",
           phone: oldShop.phone || "",
-          photoUrl: fixPhotoUrl(oldShop.photoUrl),
+          photoUrl: finalShopPhotoUrl,
           regionId: targetRegionId
         }
       });
@@ -106,6 +108,7 @@ export async function POST(req: Request) {
       `, [oldShop.oldId]);
 
       for (const oldCust of resCust.rows) {
+        const finalCustomerPhotoUrl = await uploadRemoteImageToR2(fixPhotoUrl(oldCust.customerDoorPhotoUrl), "customers");
         await prisma.customer.upsert({
           where: { id: oldCust.id },
           update: {
@@ -115,7 +118,7 @@ export async function POST(req: Request) {
             customerLocationUrl: oldCust.customerLocationUrl || "",
             customerLandmark: oldCust.customerLandmark || "",
             alternatePhone: oldCust.alternatePhone,
-            customerDoorPhotoUrl: fixPhotoUrl(oldCust.customerDoorPhotoUrl)
+            customerDoorPhotoUrl: finalCustomerPhotoUrl
           },
           create: {
             id: oldCust.id,
@@ -125,7 +128,7 @@ export async function POST(req: Request) {
             customerLocationUrl: oldCust.customerLocationUrl || "",
             customerLandmark: oldCust.customerLandmark || "",
             alternatePhone: oldCust.alternatePhone,
-            customerDoorPhotoUrl: fixPhotoUrl(oldCust.customerDoorPhotoUrl)
+            customerDoorPhotoUrl: finalCustomerPhotoUrl
           }
         });
         customersImported++;

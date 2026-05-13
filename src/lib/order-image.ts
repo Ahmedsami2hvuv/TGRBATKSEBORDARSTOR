@@ -313,3 +313,34 @@ export async function saveCustomerDoorPhotoFromResizedBuffer(buf: Buffer, _mb: n
 export async function saveShopDoorPhotoFromResizedBuffer(buf: Buffer, _mb: number) { return processAndUploadImage(buf, "shops"); }
 export async function saveShopPhotoUploaded(file: File, mb: number) { return saveShopDoorPhotoUploaded(file, mb); }
 export async function saveShopPhotoFromResizedBuffer(buf: Buffer, mb: number) { return saveShopDoorPhotoFromResizedBuffer(buf, mb); }
+
+export async function uploadRemoteImageToR2(urlOrBase64: string, folder: string): Promise<string> {
+  if (!urlOrBase64 || urlOrBase64.length < 10) return "";
+
+  if (urlOrBase64.includes("r2.dev") || urlOrBase64.includes("cloudflarestorage.com") || urlOrBase64.startsWith("/uploads/")) {
+    return urlOrBase64;
+  }
+
+  try {
+    let buffer: Buffer;
+    let contentType: string;
+
+    if (urlOrBase64.startsWith("data:image")) {
+      const matches = urlOrBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      if (!matches || matches.length !== 3) return "";
+      contentType = matches[1];
+      buffer = Buffer.from(matches[2], 'base64');
+    } else {
+      const response = await fetch(urlOrBase64, { signal: AbortSignal.timeout(20000) });
+      if (!response.ok) return "";
+      buffer = Buffer.from(await response.arrayBuffer());
+      contentType = response.headers.get("content-type") || "image/jpeg";
+    }
+
+    // استخدام الدالة العامة للرفع
+    return await processAndUploadImage(buffer, folder, { mime: contentType });
+  } catch (error) {
+    console.error(`Failed to upload remote image to R2 (${folder}):`, error);
+    return "";
+  }
+}
