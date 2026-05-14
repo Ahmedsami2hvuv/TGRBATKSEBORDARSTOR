@@ -118,8 +118,15 @@ export function BranchListClient({
 
   // --- Smart Scraper State (Advanced Bulk) ---
   const [showScraper, setShowScraper] = useState(false);
-  const [showActiveList, setShowActiveList] = useState(false); // تبديل بين قائمة الإدخال وقائمة المعالجة
+  const [showActiveList, setShowActiveList] = useState(false);
   const [importSessions, setImportSessions] = useState<any[]>([]);
+
+  // التأكد من وجود حقل إدخال واحد على الأقل دائماً عند فتح النافذة
+  useEffect(() => {
+    if (showScraper && importSessions.length === 0) {
+      setImportSessions([createEmptySession()]);
+    }
+  }, [showScraper]);
   const [shouldRemoveBg, setShouldRemoveBg] = useState(true);
   const createEmptySession = () => ({
     id: (Date.now() + Math.random()).toString(),
@@ -173,9 +180,18 @@ export function BranchListClient({
 
         const updatedTarget = { ...target, url };
 
-        // نحدث الرابط في مكانه بدون تغيير ترتيب المصفوفة
-        // هذا يمنع اهتزاز واجهة المستخدم وانتقال التركيز (Focus) لمكان آخر
-        return prev.map(s => s.id === id ? updatedTarget : s);
+        // تحديث المصفوفة الحالية
+        let newSessions = prev.map(s => s.id === id ? updatedTarget : s);
+
+        // إذا تم إدخال رابط في الحقل الحالي، تأكد من وجود حقل فارغ جديد دائماً
+        if (isReady) {
+            const hasEmptyField = newSessions.some(s => !s.url && s.status === 'idle');
+            if (!hasEmptyField) {
+                newSessions.push(createEmptySession());
+            }
+        }
+
+        return newSessions;
     });
 
     // ابدأ السحب إذا كان الرابط صالحاً (فحص أولي)
@@ -556,34 +572,17 @@ export function BranchListClient({
                 <div className="flex gap-2 mb-6 sticky top-0 bg-white/80 backdrop-blur-md z-30 py-2 border-b border-indigo-50">
                     <button
                         onClick={() => setShowActiveList(false)}
-                        className={`flex-1 py-3 rounded-2xl font-black text-xs transition-all ${!showActiveList ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                        className={`flex-1 py-3 rounded-2xl font-black text-[11px] transition-all ${!showActiveList ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
                     >
-                        📝 إضافة روابط جديدة ({importSessions.filter(s => !s.url && s.status === 'idle').length})
+                        📝 إضافة روابط ({importSessions.filter(s => !s.url && s.status === 'idle').length})
                     </button>
                     <button
                         onClick={() => setShowActiveList(true)}
-                        className={`flex-1 py-3 rounded-2xl font-black text-xs transition-all ${showActiveList ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                        className={`flex-1 py-3 rounded-2xl font-black text-[11px] transition-all ${showActiveList ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
                     >
-                        ⏳ الأفرع الجاري سحبها ({importSessions.filter(s => s.url || s.status !== 'idle').length})
+                        ⏳ المعالجة ({importSessions.filter(s => s.url || s.status !== 'idle').length})
                     </button>
                 </div>
-
-                {/* Empty state: start with URL first, image is optional */}
-                {!showActiveList && importSessions.filter(s => !s.url && s.status === 'idle').length === 0 && (
-                    <div className="mb-6 p-8 border-2 border-dashed border-indigo-200 rounded-[2rem] bg-indigo-50/50 flex flex-col items-center justify-center gap-4">
-                        <div className="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center text-3xl">🔗</div>
-                        <div className="text-center">
-                            <h3 className="text-xl font-black text-indigo-900">أضف فرعاً جديداً</h3>
-                            <p className="text-sm text-indigo-500 font-bold mt-1">بمجرد وضع الرابط، سينتقل الفرع لقائمة المعالجة تلقائياً.</p>
-                        </div>
-                        <button
-                          onClick={() => setImportSessions(prev => [...prev, createEmptySession()])}
-                          className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black hover:bg-indigo-700 transition-colors"
-                        >
-                          ➕ إضافة حقل جديد
-                        </button>
-                    </div>
-                )}
 
                 {/* Quick Add More Button (Only in Input tab) */}
                 {!showActiveList && importSessions.length > 0 && (
