@@ -91,7 +91,6 @@ export async function POST(req: Request) {
     for (const o of ordersWithLongUrls) {
       if (!o.customerPhone || !o.customerRegionId) continue;
       
-      // جلب الرابط النظيف من الملف المرجعي
       const profile = await prisma.customerPhoneProfile.findUnique({
         where: { phone_regionId: { phone: o.customerPhone, regionId: o.customerRegionId } }
       });
@@ -105,12 +104,52 @@ export async function POST(req: Request) {
       }
     }
 
+    // 3. تنظيف جدول المنتجات (Product)
+    const productsWithBase64 = await prisma.product.findMany({
+      where: { image: { startsWith: "data:image" } }
+    });
+    let productUpdates = 0;
+    for (const p of productsWithBase64) {
+      try {
+        const buffer = Buffer.from(p.image!.split(",")[1], 'base64');
+        const uploadedKey = await uploadToR2(buffer, `products/${p.id}.jpg`, "image/jpeg");
+        if (uploadedKey) {
+          await prisma.product.update({
+            where: { id: p.id },
+            data: { image: `https://${R2_DOMAIN}/${uploadedKey}` }
+          });
+          productUpdates++;
+        }
+      } catch (err) {}
+    }
+
+    // 4. تنظيف جدول المحلات (Shop)
+    const shopsWithBase64 = await prisma.shop.findMany({
+      where: { logoUrl: { startsWith: "data:image" } }
+    });
+    let shopUpdates = 0;
+    for (const s of shopsWithBase64) {
+      try {
+        const buffer = Buffer.from(s.logoUrl!.split(",")[1], 'base64');
+        const uploadedKey = await uploadToR2(buffer, `shops/${s.id}.jpg`, "image/jpeg");
+        if (uploadedKey) {
+          await prisma.shop.update({
+            where: { id: s.id },
+            data: { logoUrl: `https://${R2_DOMAIN}/${uploadedKey}` }
+          });
+          shopUpdates++;
+        }
+      } catch (err) {}
+    }
+
     return NextResponse.json({
       success: true,
-      message: `تم رفع ${profileUpdates} صور أساسية، وتنظيف ${customerUpdates} زبون محل، و ${orderUpdates} طلبية.`,
+      message: `تم التنظيف: ${profileUpdates} بروفايلات، ${orderUpdates} طلبيات، ${productUpdates} منتجات، ${shopUpdates} محلات.`,
       profileUpdates,
       customerUpdates,
-      orderUpdates
+      orderUpdates,
+      productUpdates,
+      shopUpdates
     });
 
   } catch (error: any) {
