@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { GlobalIconsConfig, IconConfig } from "@/lib/icon-settings";
+import { GlobalIconsConfig, IconConfig, DEFAULT_ICONS } from "@/lib/icon-settings";
 import { saveGlobalIconsAction } from "./actions";
 
 const ICON_KEYS = [
@@ -295,6 +295,23 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
                     <span>{uploadingKey === item.id ? "جاري الرفع إلى R2..." : "📤 رفع ملف جديد إلى R2"}</span>
                     <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(item.id, e)} />
                   </label>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const defaultVal = DEFAULT_ICONS[item.id];
+                      if (defaultVal) {
+                        setIcons((prev) => ({
+                          ...prev,
+                          [item.id]: { ...defaultVal },
+                        }));
+                      }
+                    }}
+                    className="p-2 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-100 transition-all"
+                    title="استعادة الافتراضي"
+                  >
+                    🔄
+                  </button>
 
                   {config.url && (
                     <button

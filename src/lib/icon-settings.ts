@@ -16,7 +16,7 @@ const CLIENT_ICONS_CACHE_KEY = "kse:global-icons-cache:v1";
 const CLIENT_ICONS_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 const SERVER_ICONS_CACHE_MAX_AGE_MS = 60 * 1000;
 
-const DEFAULT_ICONS: GlobalIconsConfig = {
+export const DEFAULT_ICONS: GlobalIconsConfig = {
   "loading_main": {
     url: "https://lottie.host/54e33590-d50d-495c-9c99-4a0050868a2d/7vGv1DkXy9.json",
     type: "lottie"
