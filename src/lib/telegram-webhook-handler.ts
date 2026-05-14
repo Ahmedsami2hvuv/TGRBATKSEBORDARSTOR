@@ -12,7 +12,14 @@ import {
 import { formatDinarAsAlf, parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { syncOrderCourierMoneyExpectations } from "@/lib/order-courier-money-sync";
-import { getPublicAppUrl } from "./app-url";
+import {
+  handleTelegramAdminCallback,
+  handleTelegramAdminPrivateMessage,
+} from "./telegram-admin-panel";
+import {
+  handleShopTelegramCallback,
+  handleShopTelegramMessage,
+} from "./telegram-shop";
 
 type WebhookContext = {
   chatId: string;
@@ -51,10 +58,23 @@ export async function handleTelegramWebhook(body: any): Promise<void> {
     };
 
     // أوامر البداية
-    if (msg.text.startsWith("/start")) {
-      await sendTelegramHtmlToChat(ctx.chatId, "أهلاً بك في نظام <b>أبو الأكبر للتوصيل</b>. استخدم الأزرار المرفقة مع إشعارات الطلبات للتحكم.");
-      return;
+    if (msg.text.startsWith("/")) {
+      const handled = await handleTelegramAdminPrivateMessage(msg);
+      if (handled) return;
+
+      if (msg.text.startsWith("/start")) {
+        await sendTelegramHtmlToChat(ctx.chatId, "أهلاً بك في نظام <b>أبو الأكبر للتوصيل</b>. استخدم الأزرار المرفقة مع إشعارات الطلبات للتحكم.");
+        return;
+      }
     }
+
+    // للمدراء: محاولة معالجة الرسائل العادية كطلبات سريعة
+    const isMaybeAdmin = await handleTelegramAdminPrivateMessage(msg);
+    if (isMaybeAdmin) return;
+
+    // معالجة رسائل المحلات
+    const isShopMsg = await handleShopTelegramMessage(msg);
+    if (isShopMsg) return;
 
     // التحقق من وجود جلسة تعديل نصية نشطة
     const session = await prisma.telegramBotSession.findUnique({
@@ -70,6 +90,14 @@ export async function handleTelegramWebhook(body: any): Promise<void> {
 
 async function handleCallbackQuery(cb: TelegramCallbackQuery, ctx: WebhookContext): Promise<void> {
   const data = cb.data || "";
+
+  // لوحة الإدارة (تلقرام)
+  const adminHandled = await handleTelegramAdminCallback(cb);
+  if (adminHandled) return;
+
+  // المحلات
+  const shopHandled = await handleShopTelegramCallback(cb as any);
+  if (shopHandled) return;
 
   // l[orderNumber]: قائمة المناديب للإسناد
   if (data.startsWith("l")) {

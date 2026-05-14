@@ -272,6 +272,11 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
   // 💰 متبقي: ناتجة من (وارد - صادر) للحركات اليدوية والتحويلات
   const walletRemain = walletInOutDisplay.walletIn.minus(walletInOutDisplay.walletOut);
 
+  // متاح للتحويل = عندي كاش + متبقي المحفظة - صادر معلق
+  // ملاحظة: cashInHand (أرباح + إدارة) هو الكاش الفعلي من الطلبات.
+  // walletRemain هو صافي الحركات اليدوية والتحويلات المقبولة.
+  const availableForTransfer = cashInHand.plus(walletRemain).minus(walletInOutDisplay.pendingOutgoing);
+
   const pendingIncomingForUi = await Promise.all(
     pendingIncomingTransfers.map(async (p) => ({
       id: p.id,
@@ -391,7 +396,7 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
             shopName: "",
             phone: prep.phone.trim() || "",
           }))}
-          availableForTransferStr={formatDinarAsAlf(cashInHand)}
+          availableForTransferStr={formatDinarAsAlf(availableForTransfer)}
           pendingOutgoingCount={pendingOutgoingCount}
           uiSettings={uiSettings}
         />

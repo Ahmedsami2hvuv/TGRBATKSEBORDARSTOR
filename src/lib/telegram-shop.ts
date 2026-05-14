@@ -2,6 +2,7 @@
  * بوت المحلات (خاص المدير): شاشة المحل تعرض العملاء (يرفعون الطلب) فقط؛ زبائن التوصيل من الإدارة / البحث الخارق.
  */
 import { revalidatePath } from "next/cache";
+import { Decimal } from "@prisma/client/runtime/library";
 import { rankRegionsByQuery } from "@/lib/arabic-region-search";
 import { resizeImageBufferForShop } from "@/lib/image-resize";
 import { MAX_ORDER_IMAGE_BYTES, saveShopPhotoFromResizedBuffer } from "@/lib/order-image";
@@ -17,6 +18,9 @@ import {
   type TelegramInlineKeyboard,
 } from "@/lib/telegram";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
+import { formatDinarAsAlf, parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
+import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
+import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 
 export const SHOP_LIST_PAGE_SIZE = 10;
 
@@ -45,7 +49,11 @@ export type ShopTelegramCallback =
   | { kind: "customer_edit_name"; customerId: string }
   | { kind: "customer_edit_phone"; customerId: string }
   | { kind: "customer_del_confirm"; customerId: string }
-  | { kind: "customer_del_yes"; customerId: string };
+  | { kind: "customer_del_yes"; customerId: string }
+  | { kind: "employee_order_start"; employeeId: string }
+  | { kind: "employee_order_region_pick"; regionId: string }
+  | { kind: "e_qadd" }
+  | { kind: "e_qadj"; field: "price" | "del"; amount: number };
 
 export function parseShopTelegramCallback(raw: string): ShopTelegramCallback | null {
   const t = raw.trim();
@@ -54,7 +62,14 @@ export function parseShopTelegramCallback(raw: string): ShopTelegramCallback | n
   if (t === "shfind") return { kind: "find_start" };
   if (t === "shskp") return { kind: "skip_photo" };
   if (t === "shcancel") return { kind: "cancel_flow" };
-  let m = /^shub(\d+)$/.exec(t);
+  if (t === "e_qadd") return { kind: "e_qadd" };
+  let m = /^e_qadj:(p|d):(-?\d+)$/.exec(t);
+  if (m) {
+    const field = m[1] === "p" ? "price" : "del";
+    const amount = Number(m[2]);
+    return { kind: "e_qadj", field, amount };
+  }
+  m = /^shub(\d+)$/.exec(t);
   if (m) {
     const page = Number(m[1]);
     if (Number.isFinite(page) && page >= 0) return { kind: "hub", page };
@@ -101,6 +116,10 @@ export function parseShopTelegramCallback(raw: string): ShopTelegramCallback | n
   if (m?.[1]) return { kind: "customer_del_confirm", customerId: m[1] };
   m = /^scy:([a-z0-9]+)$/.exec(t);
   if (m?.[1]) return { kind: "customer_del_yes", customerId: m[1] };
+  m = /^eor:([a-z0-9]+)$/.exec(t);
+  if (m?.[1]) return { kind: "employee_order_start", employeeId: m[1] };
+  m = /^eop:([a-z0-9]+)$/.exec(t);
+  if (m?.[1]) return { kind: "employee_order_region_pick", regionId: m[1] };
   return null;
 }
 
@@ -281,6 +300,9 @@ async function formatEmployeeMenu(employeeId: string): Promise<{
     [
       { text: "✏️ الاسم", callback_data: `enm:${emp.id}` },
       { text: "✏️ الهاتف", callback_data: `enp:${emp.id}` },
+    ],
+    [
+      { text: "➕ رفع طلب باسمه", callback_data: `eor:${emp.id}` },
     ],
     [
       {
@@ -765,6 +787,127 @@ export async function handleShopTelegramCallback(cq: {
         if (d) await editTelegramMessage(chatId, messageId, `✅ تم حذف زبون التوصيل.\n\n${d.text}`, d.keyboard);
         return true;
       }
+      case "employee_order_start": {
+        await upsertShopSession(
+          telegramUserId,
+          chatId,
+          "shop_emp_order_any",
+          JSON.stringify({ employeeId: parsed.employeeId, draft: {} }),
+        );
+        await editTelegramMessage(
+          chatId,
+          messageId,
+          `<b>رفع طلب سريع</b>\n\nأرسل تفاصيل الطلب في رسالة واحدة (أو عدة أسطر).\n` +
+            `مثال:\n` +
+            `جيكور شارع سيد حامد\n` +
+            `07701234567\n` +
+            `25\n\n` +
+            `سيتعرف البوت على المنطقة والسعر والهاتف تلقائياً.`,
+          { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: `sem:${parsed.employeeId}` }]] },
+        );
+        return true;
+      }
+      case "employee_order_region_pick": {
+        const session = await prisma.telegramBotSession.findUnique({ where: { telegramUserId } });
+        if (!session || !["shop_emp_order_region_query", "shop_emp_order_any"].includes(session.step)) return true;
+        const payload = JSON.parse(session.payload || "{}") as { employeeId: string; draft: any };
+        const region = await prisma.region.findUnique({ where: { id: parsed.regionId } });
+        if (!region) return true;
+        payload.draft.regionId = region.id;
+        payload.draft.regionName = region.name;
+        payload.draft.deliveryPrice = region.deliveryPrice;
+
+        if (payload.draft.customerPhone && payload.draft.orderSubtotal) {
+          // لدينا كل شيء، ننتقل للتأكيد
+          await upsertShopSession(telegramUserId, chatId, "shop_emp_order_confirm", JSON.stringify(payload));
+          const { text, keyboard } = formatEmployeeOrderConfirm(payload);
+          await editTelegramMessage(chatId, messageId, text, keyboard);
+          return true;
+        }
+
+        if (!payload.draft.customerPhone) {
+          await upsertShopSession(telegramUserId, chatId, "shop_emp_order_cust_phone", JSON.stringify(payload));
+          await editTelegramMessage(
+            chatId,
+            messageId,
+            `المنطقة المختارة: <b>${region.name}</b>\n\nأرسل الآن <b>رقم هاتف الزبون</b> (وجهة التوصيل).`,
+            { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]] },
+          );
+        } else {
+          await upsertShopSession(telegramUserId, chatId, "shop_emp_order_price", JSON.stringify(payload));
+          await editTelegramMessage(
+            chatId,
+            messageId,
+            `المنطقة المختارة: <b>${region.name}</b>\n\nأرسل الآن <b>سعر الطلب</b> (بالآلاف).`,
+            { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]] },
+          );
+        }
+        return true;
+      }
+      case "e_qadd": {
+        const session = await prisma.telegramBotSession.findUnique({ where: { telegramUserId } });
+        if (!session || session.step !== "shop_emp_order_confirm") return true;
+        const p = JSON.parse(session.payload || "{}") as { employeeId: string; draft: any };
+        const { employeeId, draft } = p;
+
+        const emp = await prisma.employee.findUnique({
+          where: { id: employeeId },
+          include: { shop: { include: { region: true } } },
+        });
+        if (!emp) return true;
+
+        const price = new Decimal(draft.orderSubtotal);
+        const finalDel = new Decimal(draft.deliveryPrice);
+        const total = price.add(finalDel);
+
+        const order = await prisma.order.create({
+          data: {
+            shopId: emp.shopId,
+            status: "pending",
+            orderType: draft.orderType || "غير محدد",
+            customerRegionId: draft.regionId,
+            customerPhone: draft.customerPhone,
+            orderSubtotal: price,
+            deliveryPrice: finalDel,
+            totalAmount: total,
+            submissionSource: "admin_on_behalf_of_employee",
+            submittedByEmployeeId: employeeId,
+            orderNoteTime: "فوري",
+          },
+        });
+
+        await clearShopSession(telegramUserId);
+        await notifyTelegramNewOrder(order.id).catch(() => {});
+        void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+
+        await editTelegramMessage(
+          chatId,
+          messageId,
+          `✅ تم رفع الطلب بنجاح باسم <b>${emp.name}</b> (${emp.shop.name})\n\n` +
+            `رقم الطلب: <b>#${order.orderNumber}</b>\n` +
+            `المستلم: <code>${draft.customerPhone}</code>\n` +
+            `المنطقة: ${draft.regionName}\n` +
+            `السعر: ${formatDinarAsAlf(price)}`,
+          { inline_keyboard: [[{ text: "⬅️ قائمة المحلات", callback_data: "shub0" }]] },
+        );
+        return true;
+      }
+      case "e_qadj": {
+        const session = await prisma.telegramBotSession.findUnique({ where: { telegramUserId } });
+        if (!session || session.step !== "shop_emp_order_confirm") return true;
+        const p = JSON.parse(session.payload || "{}") as { employeeId: string; draft: any };
+
+        if (parsed.field === "price") {
+          p.draft.orderSubtotal = Math.max(0, (p.draft.orderSubtotal || 0) + parsed.amount);
+        } else {
+          p.draft.deliveryPrice = Math.max(0, (p.draft.deliveryPrice || 0) + parsed.amount);
+        }
+
+        await upsertShopSession(telegramUserId, chatId, "shop_emp_order_confirm", JSON.stringify(p));
+        const { text, keyboard } = formatEmployeeOrderConfirm(p);
+        await editTelegramMessage(chatId, messageId, text, keyboard);
+        return true;
+      }
       default:
         return true;
     }
@@ -1181,7 +1324,217 @@ export async function handleShopTelegramMessage(message: {
     return true;
   }
 
+  // --- رفع طلب من الإدارة باسم العميل (مطوّر) ---
+  if (step === "shop_emp_order_any") {
+    const txt = message.text?.trim() ?? "";
+    if (!txt) return true;
+
+    const lines = txt
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const payload = JSON.parse(session.payload || "{}") as { employeeId: string; draft: any };
+
+    let phone = "";
+    let priceStr = "";
+    let potentialRegion = "";
+    const otherLines: string[] = [];
+
+    for (const line of lines) {
+      const p = normalizeIraqMobileLocal11(line);
+      if (p && !phone) {
+        phone = p;
+        continue;
+      }
+      const pr = parseAlfInputToDinarDecimalRequired(line);
+      if (pr.ok && !priceStr && /^\d+(\.\d+)?$/.test(line)) {
+        priceStr = line;
+        continue;
+      }
+      otherLines.push(line);
+    }
+
+    if (otherLines.length > 0) {
+      potentialRegion = otherLines[0]!;
+      payload.draft.orderType = otherLines.slice(1).join(" ") || otherLines[0];
+    }
+
+    payload.draft.customerPhone = phone;
+    if (priceStr) {
+      const pr = parseAlfInputToDinarDecimalRequired(priceStr);
+      payload.draft.orderSubtotal = pr.value;
+    }
+
+    if (potentialRegion) {
+      const all = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+      const ranked = rankRegionsByQuery(potentialRegion, all, 8);
+
+      if (ranked.length > 0) {
+        // إذا وجدنا تطابقاً قوياً جداً، ننتقل للهاتف أو السعر
+        // لكن المستخدم طلب عرض أزرار للمناطق المقاربة
+        const rows = ranked.map((r) => [{ text: r.name, callback_data: `eop:${r.id}` }]);
+        await upsertShopSession(telegramUserId, chatId, "shop_emp_order_region_query", JSON.stringify(payload));
+        await sendTelegramMessageWithKeyboardToChat(chatId, `بالنسبة للمنطقة، هل تقصد:`, {
+          inline_keyboard: rows,
+        });
+        return true;
+      }
+    }
+
+    // إذا لم نجد منطقة أو لم تكن هناك خطوط كافية
+    await upsertShopSession(telegramUserId, chatId, "shop_emp_order_region_query", JSON.stringify(payload));
+    await sendTelegramMessageWithKeyboardToChat(chatId, "اكتب اسم <b>منطقة الزبون</b> للبحث.", {
+      inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]],
+    });
+    return true;
+  }
+
+  if (step === "shop_emp_order_type") {
+    const type = message.text?.trim() ?? "";
+    if (!type) return true;
+    const payload = JSON.parse(session.payload || "{}");
+    payload.draft.orderType = type;
+    await upsertShopSession(telegramUserId, chatId, "shop_emp_order_region_query", JSON.stringify(payload));
+    await sendTelegramMessageWithKeyboardToChat(chatId, "اكتب اسم <b>منطقة الزبون</b> للبحث.", {
+      inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]],
+    });
+    return true;
+  }
+
+  if (step === "shop_emp_order_region_query") {
+    const q = message.text?.trim() ?? "";
+    if (!q) return true;
+    const all = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+    const ranked = rankRegionsByQuery(q, all, 8);
+    if (ranked.length === 0) {
+      await sendTelegramMessageWithKeyboardToChat(chatId, "لم يتم العثور على منطقة بهذا الاسم. حاول مرة أخرى.", {
+        inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]],
+      });
+      return true;
+    }
+    const rows = ranked.map((r) => [{ text: r.name, callback_data: `eop:${r.id}` }]);
+    await sendTelegramMessageWithKeyboardToChat(chatId, "اختر المنطقة من القائمة:", { inline_keyboard: rows });
+    return true;
+  }
+
+  if (step === "shop_emp_order_cust_phone") {
+    const phone = normalizeIraqMobileLocal11(message.text?.trim() ?? "");
+    if (!phone) {
+      await sendTelegramMessageWithKeyboardToChat(chatId, "رقم غير صالح. جرّب 07…", {
+        inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]],
+      });
+      return true;
+    }
+    const payload = JSON.parse(session.payload || "{}");
+    payload.draft.customerPhone = phone;
+    await upsertShopSession(telegramUserId, chatId, "shop_emp_order_price", JSON.stringify(payload));
+    await sendTelegramMessageWithKeyboardToChat(chatId, "أرسل <b>سعر الطلب</b> (بالآلاف).", {
+      inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]],
+    });
+    return true;
+  }
+
+  if (step === "shop_emp_order_price") {
+    const priceRes = parseAlfInputToDinarDecimalRequired(message.text?.trim() ?? "");
+    if (!priceRes.ok) {
+      await sendTelegramMessageWithKeyboardToChat(chatId, "سعر غير صالح. أرسل رقماً.", {
+        inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]],
+      });
+      return true;
+    }
+    const payload = JSON.parse(session.payload || "{}");
+    const { employeeId, draft } = payload;
+    const price = new Decimal(priceRes.value);
+
+    try {
+      const emp = await prisma.employee.findUnique({
+        where: { id: employeeId },
+        include: { shop: { include: { region: true } } },
+      });
+      if (!emp) throw new Error("Employee not found");
+
+      const shopDel = emp.shop.region.deliveryPrice;
+      const custDel = new Decimal(draft.deliveryPrice);
+      const finalDel = Decimal.max(shopDel, custDel);
+      const total = price.add(finalDel);
+
+      const order = await prisma.order.create({
+        data: {
+          shopId: emp.shopId,
+          status: "pending",
+          orderType: draft.orderType,
+          customerRegionId: draft.regionId,
+          customerPhone: draft.customerPhone,
+          orderSubtotal: price,
+          deliveryPrice: finalDel,
+          totalAmount: total,
+          submissionSource: "admin_on_behalf_of_employee",
+          submittedByEmployeeId: employeeId,
+          orderNoteTime: "فوري",
+        },
+      });
+
+      await clearShopSession(telegramUserId);
+      await notifyTelegramNewOrder(order.id).catch(() => {});
+      void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+
+      await sendTelegramMessageWithKeyboardToChat(
+        chatId,
+        `✅ تم رفع الطلب بنجاح باسم <b>${emp.name}</b> (${emp.shop.name})\n\n` +
+          `رقم الطلب: <b>#${order.orderNumber}</b>\n` +
+          `المستلم: <code>${draft.customerPhone}</code>\n` +
+          `المنطقة: ${draft.regionName}\n` +
+          `السعر: ${formatDinarAsAlf(price)}`,
+        { inline_keyboard: [[{ text: "⬅️ قائمة المحلات", callback_data: "shub0" }]] },
+      );
+    } catch (err) {
+      console.error("[employee order creation]", err);
+      await sendTelegramMessageWithKeyboardToChat(chatId, "فشل إنشاء الطلب. حاول لاحقاً.");
+    }
+    return true;
+  }
+
   return false;
+}
+
+function formatEmployeeOrderConfirm(p: any) {
+  const draft = p.draft;
+  const price = draft.orderSubtotal || 0;
+  const del = draft.deliveryPrice || 0;
+  const total = price + del;
+  const text =
+    `<b>تأكيد الطلب</b>\n\n` +
+    `نوع الطلب: ${escapeTelegramHtml(draft.orderType || "غير محدد")}\n` +
+    `المنطقة: ${escapeTelegramHtml(draft.regionName)}\n` +
+    `الهاتف: <code>${draft.customerPhone}</code>\n\n` +
+    `💰 السعر: <b>${formatDinarAsAlf(price)}</b>\n` +
+    `🚚 التوصيل: <b>${formatDinarAsAlf(del)}</b>\n` +
+    `💵 الإجمالي: <b>${formatDinarAsAlf(total)}</b>\n\n` +
+    `هل تريد إضافة هذا الطلب للنظام؟`;
+
+  const kb: TelegramInlineKeyboard = {
+    inline_keyboard: [
+      [
+        { text: "➖ 1", callback_data: "e_qadj:p:-1" },
+        { text: "سعر الطلب", callback_data: "none" },
+        { text: "➕ 1", callback_data: "e_qadj:p:1" },
+      ],
+      [
+        { text: "➖ 5", callback_data: "e_qadj:p:-5" },
+        { text: "➕ 5", callback_data: "e_qadj:p:5" },
+      ],
+      [
+        { text: "➖ 1", callback_data: "e_qadj:d:-1" },
+        { text: "أجرة التوصيل", callback_data: "none" },
+        { text: "➕ 1", callback_data: "e_qadj:d:1" },
+      ],
+      [
+        { text: "✅ إضافة مباشر", callback_data: "e_qadd" },
+        { text: "❌ تجاهل", callback_data: "shcancel" },
+      ],
+    ],
+  };
+  return { text, keyboard: kb };
 }
 
 function pickTelegramImageFileId(message: {

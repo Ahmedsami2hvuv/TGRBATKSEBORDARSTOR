@@ -90,6 +90,7 @@ export default async function SettingsPage() {
           preparerSoundPreset: normalizeNotificationSoundPreset(
             ns.preparerSoundPreset ?? "phone",
           ),
+          telegramAdminIds: ns.telegramAdminIds ?? "",
         }}
       />
     </div>

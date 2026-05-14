@@ -101,11 +101,12 @@ export async function computeMandoubWalletRemainAllTimeDinar(courierId: string):
 export function mandoubWalletRemainDinar(
   carryOverDinar: Decimal | null | undefined,
   remainingNetMerged: Decimal,
-  pendingIncomingSum: Decimal,
+  _pendingIncomingSum: Decimal, // تم إهمالها بناءً على طلب المستخدم: لا يضاف التحويل إلا بعد القبول
   pendingOutgoingSum: Decimal,
 ): Decimal {
   const c = carryOverDinar ?? new Decimal(0);
-  return c.plus(remainingNetMerged).plus(pendingIncomingSum).minus(pendingOutgoingSum);
+  // الرصيد الفعلي هو الرصيد الصافي المدمج + المبلغ المدور - الحوالات التي أرسلها المندوب ولم تقبل بعد (لأنها خرجت من يده)
+  return c.plus(remainingNetMerged).minus(pendingOutgoingSum);
 }
 
 export function mandoubHandToAdminDinar(walletRemain: Decimal, sumEarnings: Decimal): Decimal {

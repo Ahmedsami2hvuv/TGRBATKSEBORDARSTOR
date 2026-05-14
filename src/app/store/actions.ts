@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
+import { notifyTelegramStoreOrder } from "@/lib/telegram-notify";
 
 export type OrderFormState = {
   error?: string;
@@ -113,30 +114,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     });
 
     // Notify via Telegram
-    try {
-      const { sendTelegramMessage, escapeTelegramHtml } = await import("@/lib/telegram");
-
-      const telegramText = [
-        `🛒 <b>طلب تجهيز جديد (المتجر الالكتروني)</b>`,
-        `🔢 <b>رقم المسودة:</b> <code>${draft.draftNumber}</code>`,
-        `🛵 <b>وسيلة النقل:</b> ${vehiclePreference === 'bike' ? 'دراجة 🏍️' : vehiclePreference === 'car' ? 'سيارة 🚗' : 'غير محدد'}`,
-        `💰 <b>سعر التوصيل:</b> ${finalDeliveryPrice.toLocaleString()} ${finalDeliveryPrice > basePrice ? '🔥 (زيادة من العميل)' : ''}`,
-        `📞 <b>الهاتف:</b> <code>${escapeTelegramHtml(phoneLocal)}</code>`,
-        `📍 <b>المنطقة:</b> ${escapeTelegramHtml(region.name)}`,
-        `🏠 <b>نقطة دالة:</b> ${escapeTelegramHtml(landmark)}`,
-        `-------------------------`,
-        `📦 <b>المحتويات:</b>`,
-        ...cart.map((i: any) => {
-          return `• ${escapeTelegramHtml(i.name)} (${i.quantity || 1})`;
-        }),
-        `-------------------------`,
-        `🔗 <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/admin/orders/pending?tab=preparing">فتح لوحة التجهيز</a>`
-      ].join("\n");
-
-      await sendTelegramMessage(telegramText);
-    } catch (teleErr) {
-      console.error("Telegram notification failed", teleErr);
-    }
+    void notifyTelegramStoreOrder(draft.id);
 
     const numericOrderNumber = String(draft.draftNumber);
     const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);

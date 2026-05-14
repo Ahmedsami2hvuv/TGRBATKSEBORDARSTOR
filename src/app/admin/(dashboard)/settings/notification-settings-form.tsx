@@ -33,6 +33,7 @@ type NotificationSettingsFormProps = {
     preparerTemplateWebsite: string;
     preparerSoundEnabled: boolean;
     preparerSoundPreset: NotificationSoundPresetId;
+    telegramAdminIds: string;
   };
 };
 
@@ -292,6 +293,24 @@ export function NotificationSettingsForm({ initial }: NotificationSettingsFormPr
               defaultValue={initial.preparerTemplateWebsite}
               className={inputClass}
             />
+          </label>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-blue-200 bg-white/70 p-4">
+        <h3 className="text-base font-bold text-slate-900">إعدادات مدراء التليجرام</h3>
+        <div className="mt-3 grid gap-3">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-600">IDs مدراء التليجرام (مفصولة بفاصلة أو مسافة)</span>
+            <input
+              name="telegramAdminIds"
+              defaultValue={initial.telegramAdminIds}
+              className={inputClass}
+              placeholder="مثال: 12345678, 87654321"
+            />
+            <span className="text-[10px] text-slate-500 font-bold">
+              يتم استخدام هذه الـ IDs للسماح للمدراء بالوصول إلى لوحة الإدارة عبر البوت.
+            </span>
           </label>
         </div>
       </section>

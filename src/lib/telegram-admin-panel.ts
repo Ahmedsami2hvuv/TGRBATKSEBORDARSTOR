@@ -4,8 +4,11 @@
  */
 import { ADMIN_TILES, isTileEnabled } from "@/lib/admin-nav";
 import { getPublicAppUrl } from "@/lib/app-url";
-import { formatDinarAsAlf } from "@/lib/money-alf";
+import { formatDinarAsAlf, parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import { prisma } from "@/lib/prisma";
+import { rankRegionsByQuery } from "@/lib/arabic-region-search";
+import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
+import { Decimal } from "@prisma/client/runtime/library";
 import {
   answerCallbackQuery,
   editTelegramMessage,
@@ -28,8 +31,22 @@ import { buildTelegramOrderKeyboard, formatNewOrderTelegramHtml } from "@/lib/te
 
 export const TELEGRAM_ADMIN_ORDERS_PAGE_SIZE = 8;
 
-export function getTelegramAdminUserIdSet(): Set<string> {
+export async function getTelegramAdminUserIdSet(): Promise<Set<string>> {
   const ids = new Set<string>();
+
+  // من قاعدة البيانات
+  try {
+    const settings = await prisma.appNotificationSettings.findUnique({ where: { id: 1 } });
+    if (settings?.telegramAdminIds) {
+      for (const s of settings.telegramAdminIds.split(/[\s,]+/).map((x) => x.trim()).filter(Boolean)) {
+        ids.add(s);
+      }
+    }
+  } catch (e) {
+    console.error("Error fetching telegramAdminIds from DB:", e);
+  }
+
+  // من البيئة (Env Vars)
   const plural = process.env.TELEGRAM_ADMIN_USER_IDS?.trim();
   if (plural) {
     for (const s of plural.split(/[\s,]+/).map((x) => x.trim()).filter(Boolean)) {
@@ -43,9 +60,9 @@ export function getTelegramAdminUserIdSet(): Set<string> {
   return ids;
 }
 
-export function isTelegramAdminUser(telegramUserId: number | undefined): boolean {
+export async function isTelegramAdminUser(telegramUserId: number | undefined): Promise<boolean> {
   if (telegramUserId == null) return false;
-  const set = getTelegramAdminUserIdSet();
+  const set = await getTelegramAdminUserIdSet();
   if (set.size === 0) return false;
   return set.has(String(telegramUserId));
 }
@@ -67,13 +84,22 @@ export type ParsedTelegramAdminCallback =
   | { kind: "cust_field_loc"; customerId: string }
   | { kind: "cust_field_alt"; customerId: string }
   | { kind: "cust_field_lmk"; customerId: string }
-  | { kind: "cust_field_door"; customerId: string };
+  | { kind: "cust_field_door"; customerId: string }
+  | { kind: "qadd" }
+  | { kind: "qadj"; field: "price" | "del"; amount: number };
 
 export function parseTelegramAdminCallback(raw: string): ParsedTelegramAdminCallback | null {
   const t = raw.trim();
   if (t === "main") return { kind: "main" };
   if (t === "superq") return { kind: "super_search_start" };
   if (t === "superx") return { kind: "super_search_cancel" };
+  if (t === "qadd") return { kind: "qadd" };
+  let m = /^qadj:(p|d):(-?\d+)$/.exec(t);
+  if (m) {
+    const field = m[1] === "p" ? "price" : "del";
+    const amount = Number(m[2]);
+    return { kind: "qadj", field, amount };
+  }
   const sec = /^s:(.+)$/.exec(t);
   if (sec?.[1]) {
     const slug = sec[1].trim();
@@ -509,15 +535,146 @@ export async function handleTelegramAdminPrivateMessage(message: {
   from?: { id: number };
   chat: { id: number };
   text?: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const fromId = message.from?.id;
-  if (fromId == null || !isTelegramAdminUser(fromId)) return;
-  if (!isTelegramPrivateChat(message.chat, fromId)) return;
+  if (fromId == null || !(await isTelegramAdminUser(fromId))) return false;
+  if (!isTelegramPrivateChat(message.chat, fromId)) return false;
   const txt = message.text?.trim() ?? "";
-  if (!txt.startsWith("/")) return;
-  const cmd = txt.split(/\s+/)[0]?.toLowerCase() ?? "";
-  if (cmd !== "/start" && cmd !== "/admin") return;
-  await sendTelegramAdminMainMenu(String(message.chat.id));
+
+  if (txt.startsWith("/")) {
+    const cmd = txt.split(/\s+/)[0]?.toLowerCase() ?? "";
+    if (cmd === "/start" || cmd === "/admin") {
+      await sendTelegramAdminMainMenu(String(message.chat.id));
+      return true;
+    }
+    return false;
+  }
+
+  // إذا لم يكن أمراً، قد يكون نص لإنشاء طلب
+  return await handleAdminQuickOrderMessage(message);
+}
+
+async function handleAdminQuickOrderMessage(message: {
+  chat: { id: number };
+  text?: string;
+  from?: { id: number };
+}): Promise<boolean> {
+  const txt = message.text?.trim();
+  if (!txt) return false;
+
+  // محاولة استخراج رقم هاتف وسعر
+  const lines = txt.split("\n").map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return false;
+
+  // خوارزمية بسيطة جداً للتعرف على الحقول
+  let phone = "";
+  let priceStr = "";
+  let regionSearch = "";
+  let type = "";
+
+  for (const line of lines) {
+    const p = normalizeIraqMobileLocal11(line);
+    if (p && !phone) {
+      phone = p;
+      continue;
+    }
+    if (/^\d+(\.\d+)?$/.test(line) && !priceStr) {
+      priceStr = line;
+      continue;
+    }
+    if (!type) {
+      type = line;
+      continue;
+    }
+    if (!regionSearch) {
+      regionSearch = line;
+    }
+  }
+
+  if (!phone || !priceStr) return false;
+
+  const price = parseAlfInputToDinarDecimalRequired(priceStr);
+  if (!price.ok) return false;
+
+  // البحث عن المنطقة
+  let region = await prisma.region.findFirst({
+    where: { name: { contains: regionSearch, mode: 'insensitive' } }
+  });
+
+  // إذا لم نجد المنطقة، نحاول البحث في المناطق المعروفة
+  if (!region && regionSearch) {
+    const all = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+    const ranked = rankRegionsByQuery(regionSearch, all, 1);
+    if (ranked.length > 0) {
+      region = await prisma.region.findUnique({ where: { id: ranked[0].id } });
+    }
+  }
+
+  const deliveryPrice = region?.deliveryPrice.toNumber() || 0;
+
+  const payload = {
+    phone,
+    price: price.value,
+    type: type || "غير محدد",
+    regionId: region?.id,
+    regionName: region?.name || regionSearch || "غير محدد",
+    deliveryPrice
+  };
+
+  await prisma.telegramBotSession.upsert({
+    where: { telegramUserId: String(message.from?.id) },
+    create: {
+      telegramUserId: String(message.from?.id),
+      chatId: String(message.chat.id),
+      step: "admin_quick_order_confirm",
+      payload: JSON.stringify(payload),
+    },
+    update: {
+      step: "admin_quick_order_confirm",
+      payload: JSON.stringify(payload),
+    }
+  });
+
+  const { text, keyboard } = formatQuickOrderConfirm(payload);
+  await sendTelegramMessageWithKeyboardToChat(String(message.chat.id), text, keyboard);
+  return true;
+}
+
+function formatQuickOrderConfirm(p: any) {
+  const total = p.price + p.deliveryPrice;
+  const text =
+    `<b>تأكيد الطلب السريع</b>\n\n` +
+    `نوع الطلب: ${escapeTelegramHtml(p.type)}\n` +
+    `المنطقة: ${escapeTelegramHtml(p.regionName)}\n` +
+    `الهاتف: <code>${p.phone}</code>\n\n` +
+    `💰 السعر: <b>${formatDinarAsAlf(p.price)}</b>\n` +
+    `🚚 التوصيل: <b>${formatDinarAsAlf(p.deliveryPrice)}</b>\n` +
+    `💵 الإجمالي: <b>${formatDinarAsAlf(total)}</b>\n\n` +
+    `هل تريد إضافة هذا الطلب للنظام؟`;
+
+  const kb: TelegramInlineKeyboard = {
+    inline_keyboard: [
+      [
+        { text: "➖ 1", callback_data: "qadj:p:-1" },
+        { text: "سعر الطلب", callback_data: "none" },
+        { text: "➕ 1", callback_data: "qadj:p:1" },
+      ],
+      [
+        { text: "➖ 5", callback_data: "qadj:p:-5" },
+        { text: "➕ 5", callback_data: "qadj:p:5" },
+      ],
+      [
+        { text: "➖ 1", callback_data: "qadj:d:-1" },
+        { text: "أجرة التوصيل", callback_data: "none" },
+        { text: "➕ 1", callback_data: "qadj:d:1" },
+      ],
+      [
+        { text: "✅ إضافة مباشر", callback_data: "qadd" },
+        { text: "❌ تجاهل", callback_data: "main" }
+      ]
+    ]
+  };
+  return { text, keyboard: kb };
 }
 
 export async function handleTelegramAdminCallback(cq: {
@@ -527,7 +684,7 @@ export async function handleTelegramAdminCallback(cq: {
   data?: string;
 }): Promise<boolean> {
   const fromId = cq.from?.id;
-  if (fromId == null || !isTelegramAdminUser(fromId)) return false;
+  if (fromId == null || !(await isTelegramAdminUser(fromId))) return false;
   const msg = cq.message;
   if (!msg) return false;
   if (!isTelegramPrivateChat(msg.chat, fromId)) return false;
@@ -651,6 +808,14 @@ export async function handleTelegramAdminCallback(cq: {
         return true;
       }
       case "section": {
+        if (parsed.slug === "shops") {
+          // إذا دخل قسم المحلات، نفعّل وضع البحث التلقائي
+          await prisma.telegramBotSession.upsert({
+            where: { telegramUserId },
+            create: { telegramUserId, chatId, step: "shop_search_name", payload: "" },
+            update: { step: "shop_search_name", payload: "" },
+          });
+        }
         const { text, keyboard } = await renderAdminSection(parsed.slug);
         const edited = await editTelegramMessage(chatId, messageId, text, keyboard);
         if (!edited.ok) {
@@ -747,6 +912,66 @@ export async function handleTelegramAdminCallback(cq: {
         if (!edited.ok) {
           await sendTelegramMessageWithKeyboardToChat(chatId, text, kb);
         }
+        return true;
+      }
+      case "qadd": {
+        const session = await prisma.telegramBotSession.findUnique({ where: { telegramUserId } });
+        if (!session || session.step !== "admin_quick_order_confirm") return true;
+        const p = JSON.parse(session.payload || "{}");
+
+        // المحل الافتراضي للإدارة (أو أول محل في النظام)
+        const defaultShop = await prisma.shop.findFirst({ orderBy: { createdAt: 'asc' } });
+        if (!defaultShop) {
+          await answerCallbackQuery(cq.id, "لا يوجد محل في النظام لرفع الطلب باسمه", true);
+          return true;
+        }
+
+        const order = await prisma.order.create({
+          data: {
+            shopId: defaultShop.id,
+            status: "pending",
+            orderType: p.type,
+            customerRegionId: p.regionId,
+            customerPhone: p.phone,
+            orderSubtotal: new Decimal(p.price),
+            deliveryPrice: new Decimal(p.deliveryPrice),
+            totalAmount: new Decimal(p.price + p.deliveryPrice),
+            submissionSource: "admin_quick_order",
+            orderNoteTime: "فوري",
+          },
+        });
+
+        await prisma.telegramBotSession.update({
+          where: { telegramUserId },
+          data: { step: "idle", payload: "" }
+        });
+
+        await notifyTelegramNewOrder(order.id).catch(() => {});
+        void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+
+        await editTelegramMessage(chatId, messageId, `✅ تم إنشاء الطلب السريع بنجاح!\n\nرقم الطلب: <b>#${order.orderNumber}</b>`, {
+          inline_keyboard: [[{ text: "📦 تفاصيل الطلب", callback_data: `det${order.orderNumber}` }], [{ text: "🏠 الرئيسية", callback_data: "main" }]]
+        });
+        return true;
+      }
+      case "qadj": {
+        const session = await prisma.telegramBotSession.findUnique({ where: { telegramUserId } });
+        if (!session || session.step !== "admin_quick_order_confirm") return true;
+        const p = JSON.parse(session.payload || "{}");
+
+        if (parsed.field === "price") {
+          p.price = Math.max(0, p.price + parsed.amount);
+        } else {
+          p.deliveryPrice = Math.max(0, p.deliveryPrice + parsed.amount);
+        }
+
+        await prisma.telegramBotSession.update({
+          where: { telegramUserId },
+          data: { payload: JSON.stringify(p) }
+        });
+
+        const { text, keyboard } = formatQuickOrderConfirm(p);
+        await editTelegramMessage(chatId, messageId, text, keyboard);
         return true;
       }
     }

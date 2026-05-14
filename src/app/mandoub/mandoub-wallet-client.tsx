@@ -323,6 +323,15 @@ export function MandoubWalletClient({
             <p className="text-3xl font-black tabular-nums text-emerald-950 sm:text-4xl dark:text-emerald-100">{cashInHandStr}</p>
           </div>
         );
+      case "available_for_transfer":
+        return (
+          <div key="available_for_transfer" className="kse-glass-dark flex items-center justify-between rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 shadow-sm dark:bg-violet-900/20 dark:border-violet-800">
+            <p className="flex items-center gap-1 text-xs font-bold text-violet-900 dark:text-violet-400 sm:text-sm">
+              <DynamicIcon icon={icons?.wallet_transfer} fallback="💸" width={16} height={16} /> متاح للتحويل
+            </p>
+            <p className="text-lg font-black tabular-nums text-violet-950 sm:text-2xl dark:text-violet-100">{availableForTransferStr}</p>
+          </div>
+        );
       case "earnings_and_admin":
         return (
           <div key="earnings" className="grid grid-cols-2 gap-2 sm:gap-3">
@@ -363,7 +372,7 @@ export function MandoubWalletClient({
 
   const layout = uiSettings?.layoutOrder && uiSettings.layoutOrder.length > 0
     ? uiSettings.layoutOrder
-    : ["wallet_in_out", "site_and_remain", "cash_in_hand", "earnings_and_admin", "tips_blocks"];
+    : ["wallet_in_out", "site_and_remain", "cash_in_hand", "available_for_transfer", "earnings_and_admin", "tips_blocks"];
 
   return (
     <div className="space-y-5" dir="rtl">

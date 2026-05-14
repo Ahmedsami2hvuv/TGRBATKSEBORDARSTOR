@@ -18,7 +18,7 @@ import { MAX_ORDER_IMAGE_BYTES, saveOrderImageUploaded, saveShopDoorPhotoUploade
 import { deleteFromR2 } from "@/lib/upload-storage";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
-import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
+import { notifyTelegramNewOrder, notifyTelegramOrderPrepared } from "@/lib/telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 import { ADMIN_OFFICE_LABEL, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
 
@@ -1005,6 +1005,8 @@ export async function assignOrderByPreparer(_prev: PreparerActionState, formData
     },
   });
 
+  void notifyTelegramOrderPrepared(orderId);
+
   revalidatePath("/preparer");
   revalidatePath(`/preparer/order/${orderId}`);
   return { ok: true };
@@ -1212,6 +1214,8 @@ export async function bulkAssignOrdersByPreparer(_prev: PreparerActionState, for
           customerPaymentReceivedAt: new Date(), // بما أن المجهز استلمها ودافع حسابها
         },
       });
+
+      void notifyTelegramOrderPrepared(orderId);
     }
 
     revalidatePath("/preparer");

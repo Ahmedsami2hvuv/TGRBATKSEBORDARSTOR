@@ -125,6 +125,8 @@ export async function saveNotificationSettings(
     const adminTemplateSingle = formString(formData, "adminTemplateSingle") || DEFAULT_NOTIFICATION_SETTINGS.adminTemplateSingle;
     const adminTemplateMultiple = formString(formData, "adminTemplateMultiple") || DEFAULT_NOTIFICATION_SETTINGS.adminTemplateMultiple;
 
+    const telegramAdminIds = formString(formData, "telegramAdminIds");
+
     const mandoubTitleSingle = formString(formData, "mandoubTitleSingle") || DEFAULT_NOTIFICATION_SETTINGS.mandoubTitleSingle;
     const mandoubTemplateSingle = formString(formData, "mandoubTemplateSingle") || DEFAULT_NOTIFICATION_SETTINGS.mandoubTemplateSingle;
     const mandoubTemplateMultiple = formString(formData, "mandoubTemplateMultiple") || DEFAULT_NOTIFICATION_SETTINGS.mandoubTemplateMultiple;
@@ -148,6 +150,7 @@ export async function saveNotificationSettings(
         adminTemplateMultiple,
         adminSoundEnabled: formBool(formData, "adminSoundEnabled"),
         adminSoundPreset,
+        telegramAdminIds,
         mandoubEnabled: formBool(formData, "mandoubEnabled"),
         mandoubTitleSingle,
         mandoubTemplateSingle,
@@ -169,6 +172,7 @@ export async function saveNotificationSettings(
         adminTemplateMultiple,
         adminSoundEnabled: formBool(formData, "adminSoundEnabled"),
         adminSoundPreset,
+        telegramAdminIds,
         mandoubEnabled: formBool(formData, "mandoubEnabled"),
         mandoubTitleSingle,
         mandoubTemplateSingle,

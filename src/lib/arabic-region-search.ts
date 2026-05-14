@@ -69,6 +69,12 @@ export function rankRegionsByQuery(
 
   return scored
     .filter((x) => x.score >= 0)
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => {
+      if (Math.abs(b.score - a.score) < 5) {
+        // إذا كانت السكورات متقاربة، نفضل الاسم الأقصر
+        return a.name.length - b.name.length;
+      }
+      return b.score - a.score;
+    })
     .slice(0, limit);
 }

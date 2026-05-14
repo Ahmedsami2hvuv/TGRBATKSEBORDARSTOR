@@ -25,6 +25,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = {
   preparerTemplateWebsite: "طلب من الموقع إلى {regionName} (#{orderNumber})",
   preparerSoundEnabled: true,
   preparerSoundPreset: "phone",
+  telegramAdminIds: "",
 } as const;
 
 export async function getOrCreateNotificationSettings() {

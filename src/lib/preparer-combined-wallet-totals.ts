@@ -30,22 +30,23 @@ export async function getPreparerMoneyTotals(preparerId: string): Promise<{
 
   let ward = orderSums.sumDeliveryIn;
   let sader = orderSums.sumPickupOut;
+  let pendingOutgoing = new Decimal(0);
 
   const wid = preparer.walletEmployeeId;
   if (wid) {
-    const [miscTake, miscGive, pOut, pIn] = await Promise.all([
+    const [miscTake, miscGive, pOut] = await Promise.all([
       sumMiscTakeForEmployee(wid),
       sumMiscGiveForEmployee(wid),
       sumPendingOutgoingForEmployee(wid),
-      sumPendingIncomingForEmployee(wid),
     ]);
-    ward = ward.plus(miscTake).plus(pIn);
-    sader = sader.plus(miscGive).plus(pOut);
+    ward = ward.plus(miscTake);
+    sader = sader.plus(miscGive);
+    pendingOutgoing = pOut;
   }
 
   return {
     ward,
     sader,
-    remain: ward.minus(sader),
+    remain: ward.minus(sader).minus(pendingOutgoing),
   };
 }

@@ -13,6 +13,7 @@ import {
 import { getPreparerMoneyTotals } from "./preparer-combined-wallet-totals";
 import { buildCompanyPreparerPortalUrl } from "./company-preparer-portal-link";
 import { buildDelegatePortalUrl } from "./delegate-link";
+import { computeMandoubWalletRemainAllTimeDinar } from "./mandoub-wallet-carry";
 
 const TARGET = "admin";
 const SECTION_TELEGRAM_NEW_ORDER = "telegram_new_order_template";
@@ -139,13 +140,16 @@ export async function notifyTelegramCourierTransferEvent(input: {
   let kb: TelegramInlineKeyboard | undefined = undefined;
 
   const amountStr = `\u200E${formatDinarAsAlf(input.amountDinar)}\u200E`;
+  const walletTotal = await computeMandoubWalletRemainAllTimeDinar(input.courierId);
+  const walletTotalStr = `\u200E${formatDinarAsAlf(walletTotal)}\u200E`;
+  const walletLine = `\n\n\u200F<b>💵 عندي:</b> ${walletTotalStr}`;
 
   if (input.kind === "incoming") {
     text = `\u200F💰 <b>تحويل مالي واصل إليك</b>\n\n` +
            `\u200F<b>المرسل:</b> ${escapeTelegramHtml(input.partyName)}\n` +
            `\u200F<b>المبلغ:</b> ${amountStr}\n` +
            `\u200F<b>المكان:</b> ${escapeTelegramHtml(input.location)}\n\n` +
-           `\u200Fهل تقبل استلام المبلغ؟`;
+           `\u200Fهل تقبل استلام المبلغ؟` + walletLine;
     kb = {
       inline_keyboard: [
         [
@@ -158,12 +162,12 @@ export async function notifyTelegramCourierTransferEvent(input: {
     text = `\u200F✅ <b>تم قبول تحويلك</b>\n\n` +
            `\u200F<b>المستلم:</b> ${escapeTelegramHtml(input.partyName)}\n` +
            `\u200F<b>المبلغ:</b> ${amountStr}\n` +
-           `\u200Fلقد تم خصم المبلغ من ذمتك للإدارة بنجاح.`;
+           `\u200Fلقد تم خصم المبلغ من ذمتك للإدارة بنجاح.` + walletLine;
   } else if (input.kind === "rejected") {
     text = `\u200F❌ <b>تم رفض تحويلك</b>\n\n` +
            `\u200F<b>الطرف الآخر:</b> ${escapeTelegramHtml(input.partyName)}\n` +
            `\u200F<b>المبلغ:</b> ${amountStr}\n` +
-           `\u200Fالمبلغ لا يزال في ذمتك، تواصل معه للتأكد.`;
+           `\u200Fالمبلغ لا يزال في ذمتك، تواصل معه للتأكد.` + walletLine;
   }
 
   if (kb) {
@@ -204,9 +208,14 @@ export async function notifyTelegramNewOrder(orderId: string): Promise<void> {
       regionName: order.customerRegion?.name ?? "—"
     }, { omitPhone: true });
 
-    const prepText = bodyLines.join("\n") + `\n\n🔗 <a href="${prepOrderUrl}">فتح الطلب من حسابك</a>`;
+    const prepText = `🔔 <b>طلب جديد لمحل تابع لك:</b>\n\n` + bodyLines.join("\n") + `\n\n🔗 <a href="${prepOrderUrl}">فتح الطلب من حسابك</a>`;
+    const prepKb: TelegramInlineKeyboard = {
+      inline_keyboard: [
+        [{ text: "👤 إسناد لمندوب", callback_data: `l${order.orderNumber}` }]
+      ]
+    };
 
-    await sendTelegramHtmlToChat(prep.telegramUserId, `🔔 <b>طلب جديد لمحل تابع لك:</b>\n\n${prepText}`);
+    await sendTelegramMessageWithKeyboardToChat(prep.telegramUserId, prepText, prepKb);
   }
 }
 
@@ -248,11 +257,79 @@ export async function notifyTelegramMoneyEvent(input: any): Promise<void> {
   if (order.courier?.telegramUserId) {
     const courierUrl = buildDelegatePortalUrl(order.courier.id, baseUrl);
     const courierOrderUrl = `${courierUrl.replace("/mandoub", `/mandoub/order/${order.id}`)}`;
-    const courierText = textBase + `\n\n🔗 <a href="${courierOrderUrl}">فتح الطلب من حسابك</a>`;
+
+    // إضافة المبلغ الكلي للمندوب "💵 عندي"
+    const walletTotal = await computeMandoubWalletRemainAllTimeDinar(order.courier.id);
+    const walletTotalStr = `\u200E${formatDinarAsAlf(walletTotal)}\u200E`;
+
+    const courierText = textBase +
+      `\n\n🔗 <a href="${courierOrderUrl}">فتح الطلب من حسابك</a>` +
+      `\n\n\u200F<b>💵 عندي:</b> ${walletTotalStr}`;
+
     await sendTelegramHtmlToChat(order.courier.telegramUserId, courierText);
   }
+}
 
-  // تم إلغاء إرسال إشعارات التحديثات المالية للطلبات إلى المجهزين بناءً على طلب المستخدم
+export async function notifyTelegramOrderPrepared(orderId: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { shop: true, customer: true, customerRegion: true, courier: true }
+  });
+  if (!order || !order.courier?.telegramUserId) return;
+
+  const body = await formatOrderBodyLines({
+    ...order,
+    shopName: order.shop.name,
+    customerName: order.customer?.name ?? "",
+    regionName: order.customerRegion?.name ?? ""
+  });
+
+  const walletTotal = await computeMandoubWalletRemainAllTimeDinar(order.courier.id);
+  const walletTotalStr = `\u200E${formatDinarAsAlf(walletTotal)}\u200E`;
+
+  const baseUrl = getPublicAppUrl();
+  const courierUrl = buildDelegatePortalUrl(order.courier.id, baseUrl);
+  const courierOrderUrl = `${courierUrl.replace("/mandoub", `/mandoub/order/${order.id}`)}`;
+
+  const text = [
+    `\u200F✅ <b>اكتمل تجهيز الطلب</b>`,
+    ...body,
+    `\n🔗 <a href="${courierOrderUrl}">فتح الطلب من حسابك</a>`,
+    `\n\u200F<b>💵 عندي:</b> ${walletTotalStr}`
+  ].join("\n");
+
+  await sendTelegramHtmlToChat(order.courier.telegramUserId, text);
+  await sendTelegramMessage(`\u200F✅ <b>تم تجهيز طلب #${order.orderNumber} وإسناده للمندوب ${escapeTelegramHtml(order.courier.name)}</b>`);
+}
+
+/** إشعار عند وصول طلب جديد من المتجر الإلكتروني */
+export async function notifyTelegramStoreOrder(draftId: string): Promise<void> {
+  const draft = await prisma.companyPreparerShoppingDraft.findUnique({
+    where: { id: draftId },
+    include: { customerRegion: true }
+  });
+  if (!draft) return;
+
+  const data = draft.data as any;
+  const cart = (data?.webStoreCart as any[]) || [];
+  const vehicleEmoji = draft.vehiclePreference === "bike" ? " 🏍️" : (draft.vehiclePreference === "car" ? " 🚗" : "");
+
+  const text = [
+    `\u200F🛒 <b>طلب جديد من المتجر</b>`,
+    `\u200F🔢 <b>رقم المسودة:</b> \u200E${draft.draftNumber}\u200E`,
+    `\u200F👤 <b>الزبون:</b> ${escapeTelegramHtml(draft.customerName || "—")}`,
+    `\u200F📍 <b>المنطقة:</b> ${escapeTelegramHtml(draft.customerRegion?.name || "—")}`,
+    `\u200F🏠 <b>العنوان:</b> ${escapeTelegramHtml(draft.customerLandmark || "—")}`,
+    `\u200F📞 <b>الهاتف:</b> \u200E${escapeTelegramHtml(draft.customerPhone)}\u200E`,
+    `\u200F📦 <b>النوع:</b> ${escapeTelegramHtml(data?.orderType || "تجهيز تسوق")}${vehicleEmoji}`,
+    `\u200F-------------------------`,
+    `\u200F<b>المحتويات:</b>`,
+    ...cart.map(i => `\u200F• ${escapeTelegramHtml(i.name)} (${i.quantity || 1})`),
+    `\u200F-------------------------`,
+    `\u200F🔗 <a href="${getPublicAppUrl()}/admin/orders/pending?tab=preparing">فتح لوحة التجهيز</a>`
+  ].join("\n");
+
+  await sendTelegramMessage(text);
 }
 
 export async function notifyTelegramPresenceChange(input: any): Promise<void> {

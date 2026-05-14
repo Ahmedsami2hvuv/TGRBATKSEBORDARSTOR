@@ -37,6 +37,7 @@ type NotificationInitial = {
   preparerTemplateWebsite: string;
   preparerSoundEnabled: boolean;
   preparerSoundPreset: NotificationSoundPresetId;
+  telegramAdminIds: string;
 };
 
 function ChevronIcon({ open, icons }: { open: boolean, icons: GlobalIconsConfig }) {

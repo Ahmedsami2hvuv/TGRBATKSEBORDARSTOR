@@ -496,6 +496,7 @@ model AppNotificationSettings {
   adminSoundPreset         String   @default("beep")
   mandoubSoundPreset       String   @default("beep")
   preparerSoundPreset      String   @default("phone")
+  telegramAdminIds         String   @default("")
 }
 
 model TelegramBotSession {
