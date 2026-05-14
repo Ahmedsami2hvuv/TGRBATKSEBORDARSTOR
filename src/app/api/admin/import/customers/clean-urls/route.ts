@@ -8,7 +8,7 @@ const R2_DOMAIN = process.env.R2_BUCKET_DOMAIN || "pub-2f347893a77443198f121df01
 
 export async function POST(req: Request) {
   try {
-    // 1. تنظيف بروفايلات الزبائن (CustomerPhoneProfile)
+    // 1. تنظيف بروفايلات الزبائن الأساسية (CustomerPhoneProfile)
     const profilesWithBase64 = await prisma.customerPhoneProfile.findMany({
       where: { photoUrl: { startsWith: "data:image" } }
     });
@@ -27,16 +27,48 @@ export async function POST(req: Request) {
         const uploadedKey = await uploadToR2(buffer, key, contentType);
 
         if (uploadedKey) {
+          const publicUrl = `https://${R2_DOMAIN}/${uploadedKey}`;
           await prisma.customerPhoneProfile.update({
             where: { id: p.id },
-            data: { photoUrl: `https://${R2_DOMAIN}/${uploadedKey}` }
+            data: { photoUrl: publicUrl }
           });
           profileUpdates++;
         }
       } catch (err) {}
     }
 
-    // 2. تنظيف المحلات (Shop)
+    // 2. مزامنة جداول الزبائن والطلبيات مع الروابط النظيفة
+    const customersToSync = await prisma.customer.findMany({
+      where: { customerDoorPhotoUrl: { startsWith: "data:image" } }
+    });
+    let customerUpdates = 0;
+    for (const c of customersToSync) {
+      if (!c.customerRegionId) continue;
+      const profile = await prisma.customerPhoneProfile.findUnique({
+        where: { phone_regionId: { phone: c.phone, regionId: c.customerRegionId } }
+      });
+      if (profile?.photoUrl?.includes("r2.dev")) {
+        await prisma.customer.update({ where: { id: c.id }, data: { customerDoorPhotoUrl: profile.photoUrl } });
+        customerUpdates++;
+      }
+    }
+
+    const ordersToSync = await prisma.order.findMany({
+      where: { customerDoorPhotoUrl: { startsWith: "data:image" } }
+    });
+    let orderUpdates = 0;
+    for (const o of ordersToSync) {
+      if (!o.customerPhone || !o.customerRegionId) continue;
+      const profile = await prisma.customerPhoneProfile.findUnique({
+        where: { phone_regionId: { phone: o.customerPhone, regionId: o.customerRegionId } }
+      });
+      if (profile?.photoUrl?.includes("r2.dev")) {
+        await prisma.order.update({ where: { id: o.id }, data: { customerDoorPhotoUrl: profile.photoUrl } });
+        orderUpdates++;
+      }
+    }
+
+    // 3. تنظيف المحلات (Shop)
     const shopsWithBase64 = await prisma.shop.findMany({
       where: { photoUrl: { startsWith: "data:image" } }
     });
@@ -46,16 +78,13 @@ export async function POST(req: Request) {
         const buffer = Buffer.from(s.photoUrl.split(",")[1], 'base64');
         const uploadedKey = await uploadToR2(buffer, `shops/${s.id}.jpg`, "image/jpeg");
         if (uploadedKey) {
-          await prisma.shop.update({
-            where: { id: s.id },
-            data: { photoUrl: `https://${R2_DOMAIN}/${uploadedKey}` }
-          });
+          await prisma.shop.update({ where: { id: s.id }, data: { photoUrl: `https://${R2_DOMAIN}/${uploadedKey}` } });
           shopUpdates++;
         }
       } catch (err) {}
     }
 
-    // 3. تنظيف الأفرع (StoreBranch)
+    // 4. تنظيف الأفرع (StoreBranch)
     const branchesWithBase64 = await prisma.storeBranch.findMany({
       where: { photoUrl: { startsWith: "data:image" } }
     });
@@ -65,28 +94,24 @@ export async function POST(req: Request) {
         const buffer = Buffer.from(b.photoUrl.split(",")[1], 'base64');
         const uploadedKey = await uploadToR2(buffer, `branches/${b.id}.jpg`, "image/jpeg");
         if (uploadedKey) {
-          await prisma.storeBranch.update({
-            where: { id: b.id },
-            data: { photoUrl: `https://${R2_DOMAIN}/${uploadedKey}` }
-          });
+          await prisma.storeBranch.update({ where: { id: b.id }, data: { photoUrl: `https://${R2_DOMAIN}/${uploadedKey}` } });
           branchUpdates++;
         }
       } catch (err) {}
     }
 
-    // 4. تنظيف المنتجات (StoreProduct) - ملاحظة: الصور هنا مخزنة كـ Array
-    const products = await prisma.storeProduct.findMany({
+    // 5. تنظيف المنتجات (StoreProduct)
+    const productsWithBase64 = await prisma.storeProduct.findMany({
       where: { photoUrls: { hasSome: ["data:image/jpeg", "data:image/png", "data:image/webp"] } }
-    });
-    // ملاحظة: فلتر hasSome مع startsWith صعب في Prisma، سنقوم بفلترة يدوية بسيطة
-    const productsWithBase64 = await prisma.storeProduct.findMany();
-    let productUpdates = 0;
-    for (const p of productsWithBase64) {
-      if (!p.photoUrls || p.photoUrls.length === 0) continue;
+    }).catch(() => []); // تجنب الخطأ إذا كان الفلتر غير مدعوم
 
+    // فلترة يدوية أدق للمنتجات
+    const allProducts = await prisma.storeProduct.findMany();
+    let productUpdates = 0;
+    for (const p of allProducts) {
+      if (!p.photoUrls || p.photoUrls.length === 0) continue;
       let changed = false;
       const newUrls = [...p.photoUrls];
-
       for (let i = 0; i < newUrls.length; i++) {
         if (newUrls[i].startsWith("data:image")) {
           try {
@@ -99,25 +124,22 @@ export async function POST(req: Request) {
           } catch (err) {}
         }
       }
-
       if (changed) {
-        await prisma.storeProduct.update({
-          where: { id: p.id },
-          data: { photoUrls: newUrls }
-        });
+        await prisma.storeProduct.update({ where: { id: p.id }, data: { photoUrls: newUrls } });
         productUpdates++;
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: `اكتمل التنظيف: ${profileUpdates} زبون، ${shopUpdates} محلات، ${branchUpdates} أفرع، ${productUpdates} منتجات.`,
+      message: "اكتمل التنظيف الشامل",
       profileUpdates,
+      customerUpdates,
+      orderUpdates,
       shopUpdates,
       branchUpdates,
       productUpdates
     });
-
   } catch (error: any) {
     console.error("Clean error:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
