@@ -100,7 +100,13 @@ export default async function PreparerWalletPage({ searchParams }: Props) {
   ] = await Promise.all([
     prisma.employeeWalletMiscEntry.findMany({ where: { employeeId: employee.id }, orderBy: { createdAt: "desc" } }),
     prisma.walletPeerTransfer.findMany({
-      where: { status: "pending", OR: [{ fromEmployeeId: employee.id }, { toEmployeeId: employee.id }] },
+      where: {
+        status: { in: ["pending", "rejected"] },
+        OR: [
+          { fromEmployeeId: employee.id },
+          { toEmployeeId: employee.id }
+        ]
+      },
       orderBy: { createdAt: "desc" },
     }),
     prisma.courier.findMany({ where: { blocked: false }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
@@ -211,13 +217,43 @@ export default async function PreparerWalletPage({ searchParams }: Props) {
     };
   });
 
-  const pendingIn = await Promise.all(pendingTransferRows.filter(t => t.toEmployeeId === employee.id).map(async t => ({
+  const pendingIn = await Promise.all(pendingTransferRows.filter(t => t.toEmployeeId === employee.id && t.status === "pending").map(async t => ({
     id: t.id, amountDinar: Number(t.amountDinar), fromLabel: await resolvePartyDisplayName(t.fromKind, t.fromCourierId, t.fromEmployeeId), handoverLocation: t.handoverLocation, createdAt: t.createdAt.toISOString()
   })));
 
-  const transferOutLines: MandoubWalletLedgerLine[] = await Promise.all(pendingTransferRows.filter(t => t.fromEmployeeId === employee.id).map(async t => ({
-    source: "transfer_pending", id: t.id, kind: LEDGER_KIND_TRANSFER_PENDING_OUT, amountDinar: Number(t.amountDinar), createdAt: t.createdAt.toISOString(), orderId: "", orderNumber: 0, shopName: "", miscLabel: `تحويل بانتظار الموافقة — ${t.handoverLocation}`, deletedAt: null, deletedReason: null, deletedByDisplayName: null,
-  })));
+  const transferOutLines: MandoubWalletLedgerLine[] = await Promise.all(pendingTransferRows.filter(t => t.fromEmployeeId === employee.id || t.toEmployeeId === employee.id).filter(t => t.status === "pending" || t.status === "rejected").map(async t => {
+    const isFromMe = t.fromEmployeeId === employee.id;
+    const isRejected = t.status === "rejected";
+
+    let kind = "";
+    if (isRejected) {
+      kind = isFromMe ? "transfer_rejected_out" : "transfer_rejected_in";
+    } else {
+      kind = isFromMe ? LEDGER_KIND_TRANSFER_PENDING_OUT : LEDGER_KIND_TRANSFER_PENDING_IN;
+    }
+
+    let label = "";
+    if (isRejected) {
+      label = isFromMe ? `تحويل مرفوض من الطرف الآخر — ${t.handoverLocation}` : `تحويل قمت برفضه — ${t.handoverLocation}`;
+    } else {
+      label = isFromMe ? `تحويل بانتظار الموافقة — ${t.handoverLocation}` : `تحويل واصل بانتظار موافقتك — ${t.handoverLocation}`;
+    }
+
+    return {
+      source: isRejected ? "transfer_rejected" as const : "transfer_pending" as const,
+      id: t.id,
+      kind,
+      amountDinar: Number(t.amountDinar),
+      createdAt: t.createdAt.toISOString(),
+      orderId: "",
+      orderNumber: 0,
+      shopName: "",
+      miscLabel: label,
+      deletedAt: null,
+      deletedReason: null,
+      deletedByDisplayName: null,
+    };
+  }));
 
   // دمج السجل وحساب الرصيد التنازلي
   const sortedFullLedger = [...orderLines, ...miscLines, ...transferOutLines].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

@@ -38,7 +38,7 @@ export type MandoubWalletDeletionReason =
   | null;
 
 export type MandoubWalletLedgerLine = {
-  source: "order" | "misc" | "transfer_pending";
+  source: "order" | "misc" | "transfer_pending" | "transfer_rejected";
   id: string;
   kind: string;
   amountDinar: number;
@@ -87,6 +87,8 @@ function buildOrderHref(auth: { c: string; exp: string; s: string }, orderId: st
 function ledgerDirLabel(line: MandoubWalletLedgerLine): string {
   if (line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT) return "صادر معلّق";
   if (line.kind === LEDGER_KIND_TRANSFER_PENDING_IN) return "وارد معلّق";
+  if (line.kind === "transfer_rejected_out") return "صادر مرفوض";
+  if (line.kind === "transfer_rejected_in") return "وارد مرفوض";
   if (line.kind === MONEY_KIND_PICKUP) return "صادر";
   if (line.kind === MONEY_KIND_DELIVERY) return "وارد";
   if (line.kind === MISC_LEDGER_KIND_TAKE) return "أخذت";
@@ -486,8 +488,9 @@ export function MandoubWalletClient({
       <ul className="space-y-3 pb-8">
         {filteredLedger.map((line) => {
           const deleted = line.deletedAt != null;
-          const isOutPick = line.kind === MONEY_KIND_PICKUP || line.kind === MISC_LEDGER_KIND_GIVE || line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT;
-          const isInPick = line.kind === MONEY_KIND_DELIVERY || line.kind === MISC_LEDGER_KIND_TAKE || line.kind === LEDGER_KIND_TRANSFER_PENDING_IN;
+          const isRejected = line.source === "transfer_rejected";
+          const isOutPick = line.kind === MONEY_KIND_PICKUP || line.kind === MISC_LEDGER_KIND_GIVE || line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT || line.kind === "transfer_rejected_out";
+          const isInPick = line.kind === MONEY_KIND_DELIVERY || line.kind === MISC_LEDGER_KIND_TAKE || line.kind === LEDGER_KIND_TRANSFER_PENDING_IN || line.kind === "transfer_rejected_in";
           const dirLabel = ledgerDirLabel(line);
           const dateStr = new Date(line.createdAt).toLocaleString("ar-IQ-u-nu-latn", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
           const diff = (line.expectedDinar != null) ? line.amountDinar - line.expectedDinar : 0;
@@ -503,7 +506,7 @@ export function MandoubWalletClient({
 
           const content = (
             <div className={`relative flex flex-col gap-1 rounded-2xl border-2 px-4 py-3 transition-all shadow-sm backdrop-blur-[2px] ${
-              deleted ? "border-slate-300 bg-slate-100/90 text-slate-600 dark:bg-slate-800" :
+              deleted || isRejected ? "border-slate-300 bg-slate-100/90 text-slate-600 dark:bg-slate-800" :
               isInPick ? "border-rose-500/60 bg-rose-500/20 dark:bg-rose-500/25 dark:border-rose-500/50" :
               isOutPick ? "border-emerald-500/60 bg-emerald-500/20 dark:bg-emerald-500/25 dark:border-emerald-500/50" :
               "border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800"
@@ -554,7 +557,7 @@ export function MandoubWalletClient({
                 )}
               </div>
 
-              {!deleted && line.source !== "transfer_pending" && (
+              {!deleted && !isRejected && line.source !== "transfer_pending" && (
                 <form action={line.source === "order" ? deleteAction : miscDelAction} className="absolute left-2 top-1/2 -translate-y-1/2 z-10" onClick={(e) => e.stopPropagation()}>
                   <input type="hidden" name="c" value={auth.c} /><input type="hidden" name="exp" value={auth.exp} /><input type="hidden" name="s" value={auth.s} />
                   <input type="hidden" name={line.source === "order" ? "eventId" : "miscEntryId"} value={line.id} />

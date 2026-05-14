@@ -14,6 +14,11 @@ export const LEDGER_KIND_TRANSFER_PENDING_OUT = "transfer_pending_out";
 /** تحويل أموال معلّق — وارد (يظهر في الأعلى مع أزرار الموافقة) */
 export const LEDGER_KIND_TRANSFER_PENDING_IN = "transfer_pending_in";
 
+/** تحويل أموال مرفوض — صادر */
+export const LEDGER_KIND_TRANSFER_REJECTED_OUT = "transfer_rejected_out";
+/** تحويل أموال مرفوض — وارد */
+export const LEDGER_KIND_TRANSFER_REJECTED_IN = "transfer_rejected_in";
+
 export function dinarAmountsMatchExpected(amount: Decimal, expected: Decimal | null): boolean {
   if (expected == null) return false;
   return amount.toDecimalPlaces(2).equals(expected.toDecimalPlaces(2));

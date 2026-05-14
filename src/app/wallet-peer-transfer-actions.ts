@@ -261,7 +261,7 @@ export async function respondWalletPeerTransferGeneral(
       const fromPrep = await prisma.companyPreparer.findFirst({ where: { walletEmployeeId: row.fromEmployeeId } });
       if (fromPrep) {
         await notifyTelegramPreparerWalletEvent({
-          preparerId: fromPrep.id, kind: "transfer_out_rejected", amountDinar: row.amountDinar,
+          preparerId: fromPrep.id, kind: "transfer_rejected", amountDinar: row.amountDinar,
           label: `تم رفض تحويلك من قبل ${myName}`
         });
       }

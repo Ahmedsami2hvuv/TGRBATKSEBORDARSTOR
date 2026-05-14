@@ -320,11 +320,13 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
       deletedByDisplayName: null,
     })),
     ...recentTransfers
-      .filter(t => t.status === "pending")
+      .filter(t => t.status === "pending" || t.status === "rejected")
       .map(t => ({
-        source: "transfer_pending" as const,
+        source: t.status === "rejected" ? "transfer_rejected" as const : "transfer_pending" as const,
         id: t.id,
-        kind: t.fromCourierId === courier.id ? LEDGER_KIND_TRANSFER_PENDING_OUT : LEDGER_KIND_TRANSFER_PENDING_IN,
+        kind: t.fromCourierId === courier.id
+          ? (t.status === "rejected" ? "transfer_rejected_out" : LEDGER_KIND_TRANSFER_PENDING_OUT)
+          : (t.status === "rejected" ? "transfer_rejected_in" : LEDGER_KIND_TRANSFER_PENDING_IN),
         amountDinar: (t.amountDinar as any).toNumber ? (t.amountDinar as any).toNumber() : Number(t.amountDinar),
         createdAt: t.createdAt.toISOString(),
         orderId: "",

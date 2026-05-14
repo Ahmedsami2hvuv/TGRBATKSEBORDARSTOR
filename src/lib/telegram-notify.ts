@@ -54,7 +54,7 @@ export async function saveTelegramNewOrderTemplate(template: string): Promise<vo
 }
 
 function alfLine(label: string, value: string): string {
-  return `${label} ${escapeTelegramHtml(value)} `;
+  return `\u200F${label} \u200E${escapeTelegramHtml(value)}\u200E `;
 }
 
 async function formatOrderBodyLines(input: {
@@ -72,12 +72,12 @@ async function formatOrderBodyLines(input: {
     "{customerName}": escapeTelegramHtml(input.customerName?.trim() || "—"),
     "{regionName}": escapeTelegramHtml(input.regionName || "—"),
     "{orderType}": escapeTelegramHtml(input.orderType || "—"),
-    "{subtotal}": formatDinarAsAlf(input.orderSubtotal),
-    "{delivery}": formatDinarAsAlf(input.deliveryPrice),
-    "{total}": formatDinarAsAlf(input.totalAmount),
+    "{subtotal}": `\u200E${formatDinarAsAlf(input.orderSubtotal)}\u200E`,
+    "{delivery}": `\u200E${formatDinarAsAlf(input.deliveryPrice)}\u200E`,
+    "{total}": `\u200E${formatDinarAsAlf(input.totalAmount)}\u200E`,
     "{noteTime}": input.orderNoteTime?.trim() ? escapeTelegramHtml(input.orderNoteTime.trim()) : "",
-    "{orderNumber}": String(input.orderNumber),
-    "{customerPhone}": options?.omitPhone ? "" : escapeTelegramHtml(input.customerPhone || "—"),
+    "{orderNumber}": `\u200E${input.orderNumber}\u200E`,
+    "{customerPhone}": options?.omitPhone ? "" : `\u200E${escapeTelegramHtml(input.customerPhone || "—")}\u200E`,
     "{vehicleEmoji}": vehicleEmoji,
   };
 
@@ -86,7 +86,7 @@ async function formatOrderBodyLines(input: {
     text = text.replaceAll(key, val);
   });
 
-  return text.split("\n").filter(line => line.trim() !== "");
+  return text.split("\n").filter(line => line.trim() !== "").map(line => `\u200F${line}`);
 }
 
 export async function notifyTelegramPreparerWalletEvent(input: {
@@ -102,19 +102,19 @@ export async function notifyTelegramPreparerWalletEvent(input: {
   const isRejected = input.kind === "transfer_rejected";
 
   const emoji = isRejected ? "❌ تحويل مرفوض" : isIn ? "🔴 وارد للمحفظة" : "🟢 صادر من المحفظة";
-  const amount = formatDinarAsAlfWithUnit(input.amountDinar);
-  const remain = totals ? formatDinarAsAlfWithUnit(totals.remain) : "—";
-  const dateStr = new Date().toLocaleDateString("ar-IQ-u-nu-latn", { dateStyle: "short" });
+  const amount = `\u200E${formatDinarAsAlf(input.amountDinar)}\u200E`;
+  const remain = totals ? `\u200E${formatDinarAsAlf(totals.remain)}\u200E` : "—";
+  const dateStr = `\u200E${new Date().toLocaleDateString("ar-IQ-u-nu-latn", { dateStyle: "short" })}\u200E`;
 
   const text = [
-    `<b>💰 حركة محفظة مجهز</b>`,
-    `<b>المجهز:</b> ${escapeTelegramHtml(preparer?.name || "—")}`,
-    `<b>التاريخ:</b> ${dateStr}`,
-    `<b>النوع:</b> ${emoji}`,
-    `<b>المبلغ:</b> ${amount}`,
-    `<b>التفاصيل:</b> ${escapeTelegramHtml(input.label)}`,
-    `-------------------------`,
-    `<b>💰 المتبقي بذمة المجهز:</b> ${remain}`
+    `\u200F<b>💰 حركة محفظة مجهز</b>`,
+    `\u200F<b>المجهز:</b> ${escapeTelegramHtml(preparer?.name || "—")}`,
+    `\u200F<b>التاريخ:</b> ${dateStr}`,
+    `\u200F<b>النوع:</b> ${emoji}`,
+    `\u200F<b>المبلغ:</b> ${amount}`,
+    `\u200F<b>التفاصيل:</b> ${escapeTelegramHtml(input.label)}`,
+    `\u200F-------------------------`,
+    `\u200F<b>💰 المتبقي بذمة المجهز:</b> ${remain}`
   ].join("\n");
 
   await sendTelegramMessage(text);
@@ -138,14 +138,14 @@ export async function notifyTelegramCourierTransferEvent(input: {
   let text = "";
   let kb: TelegramInlineKeyboard | undefined = undefined;
 
-  const amountStr = formatDinarAsAlfWithUnit(input.amountDinar);
+  const amountStr = `\u200E${formatDinarAsAlf(input.amountDinar)}\u200E`;
 
   if (input.kind === "incoming") {
-    text = `💰 <b>تحويل مالي واصل إليك</b>\n\n` +
-           `<b>المرسل:</b> ${escapeTelegramHtml(input.partyName)}\n` +
-           `<b>المبلغ:</b> ${amountStr}\n` +
-           `<b>المكان:</b> ${escapeTelegramHtml(input.location)}\n\n` +
-           `هل تقبل استلام المبلغ؟`;
+    text = `\u200F💰 <b>تحويل مالي واصل إليك</b>\n\n` +
+           `\u200F<b>المرسل:</b> ${escapeTelegramHtml(input.partyName)}\n` +
+           `\u200F<b>المبلغ:</b> ${amountStr}\n` +
+           `\u200F<b>المكان:</b> ${escapeTelegramHtml(input.location)}\n\n` +
+           `\u200Fهل تقبل استلام المبلغ؟`;
     kb = {
       inline_keyboard: [
         [
@@ -155,15 +155,15 @@ export async function notifyTelegramCourierTransferEvent(input: {
       ]
     };
   } else if (input.kind === "accepted") {
-    text = `✅ <b>تم قبول تحويلك</b>\n\n` +
-           `<b>المستلم:</b> ${escapeTelegramHtml(input.partyName)}\n` +
-           `<b>المبلغ:</b> ${amountStr}\n` +
-           `لقد تم خصم المبلغ من ذمتك للإدارة بنجاح.`;
+    text = `\u200F✅ <b>تم قبول تحويلك</b>\n\n` +
+           `\u200F<b>المستلم:</b> ${escapeTelegramHtml(input.partyName)}\n` +
+           `\u200F<b>المبلغ:</b> ${amountStr}\n` +
+           `\u200Fلقد تم خصم المبلغ من ذمتك للإدارة بنجاح.`;
   } else if (input.kind === "rejected") {
-    text = `❌ <b>تم رفض تحويلك</b>\n\n` +
-           `<b>الطرف الآخر:</b> ${escapeTelegramHtml(input.partyName)}\n` +
-           `<b>المبلغ:</b> ${amountStr}\n` +
-           `المبلغ لا يزال في ذمتك، تواصل معه للتأكد.`;
+    text = `\u200F❌ <b>تم رفض تحويلك</b>\n\n` +
+           `\u200F<b>الطرف الآخر:</b> ${escapeTelegramHtml(input.partyName)}\n` +
+           `\u200F<b>المبلغ:</b> ${amountStr}\n` +
+           `\u200Fالمبلغ لا يزال في ذمتك، تواصل معه للتأكد.`;
   }
 
   if (kb) {
@@ -235,8 +235,8 @@ export async function notifyTelegramMoneyEvent(input: any): Promise<void> {
   });
 
   const textBase = [
-    escapeTelegramHtml(header),
-    `👤 ${escapeTelegramHtml(input.courierName)}`,
+    `\u200F${escapeTelegramHtml(header)}`,
+    `\u200F👤 ${escapeTelegramHtml(input.courierName)}`,
     alfLine("💰", formatDinarAsAlf(input.amountDinar)),
     ...body
   ].join("\n");

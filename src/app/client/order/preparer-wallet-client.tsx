@@ -23,6 +23,8 @@ const initialMiscDelete: PreparerWalletActions.EmployeeWalletMiscState = {};
 function ledgerDirLabel(line: MandoubWalletLedgerLine): string {
   if (line.kind === LEDGER_KIND_TRANSFER_PENDING_IN) return "وارد معلّق";
   if (line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT) return "صادر معلّق";
+  if (line.kind === "transfer_rejected_in") return "وارد مرفوض";
+  if (line.kind === "transfer_rejected_out") return "صادر مرفوض";
   if (line.kind === MONEY_KIND_PICKUP) return "صادر";
   if (line.kind === MONEY_KIND_DELIVERY) return "وارد";
   if (line.kind === MISC_LEDGER_KIND_TAKE) return "أخذت";
@@ -101,12 +103,14 @@ export function PreparerWalletClient({
   preparerDeleteAuth,
   preparerDeleteNextUrl,
   uiSettings,
+  hideWalletSummary = false,
 }: {
   ledger: MandoubWalletLedgerLine[];
   orderLinkAuth?: { p: string; exp: string; s: string };
   preparerDeleteAuth?: { p: string; exp: string; s: string };
   preparerDeleteNextUrl?: string;
   uiSettings?: UISectionConfig | null;
+  hideWalletSummary?: boolean;
 }) {
   const [deleteState, deleteAction, deletePending] = useActionState(softDeletePreparerMoneyEvent, initialDelete);
   const [deleteMiscState, deleteMiscAction, deleteMiscPending] = useActionState(PreparerWalletActions.softDeleteEmployeeWalletMiscEntryFromCompanyPreparer, initialMiscDelete);
@@ -158,21 +162,23 @@ export function PreparerWalletClient({
       <ul className="space-y-3 pb-8" style={containerStyle}>
         {filteredLedger.map((line) => {
           const deleted = line.deletedAt != null;
-          const isInPick = line.kind === MONEY_KIND_DELIVERY || line.kind === MISC_LEDGER_KIND_TAKE || line.kind === LEDGER_KIND_TRANSFER_PENDING_IN;
-          const isOutPick = line.kind === MONEY_KIND_PICKUP || line.kind === MISC_LEDGER_KIND_GIVE || line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT;
+          const isRejected = line.source === "transfer_rejected";
+          const isInPick = line.kind === MONEY_KIND_DELIVERY || line.kind === MISC_LEDGER_KIND_TAKE || line.kind === LEDGER_KIND_TRANSFER_PENDING_IN || line.kind === "transfer_rejected_in";
+          const isOutPick = line.kind === MONEY_KIND_PICKUP || line.kind === MISC_LEDGER_KIND_GIVE || line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT || line.kind === "transfer_rejected_out";
 
           const dirLabel = ledgerDirLabel(line);
           const dateStr = new Date(line.createdAt).toLocaleString("ar-IQ-u-nu-latn", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
           const orderHref = (orderLinkAuth && line.orderId) ? `/preparer/order/${line.orderId}?${new URLSearchParams({ p: orderLinkAuth.p, exp: orderLinkAuth.exp, s: orderLinkAuth.s }).toString()}` : null;
           const showDelete =
             !deleted &&
+            !isRejected &&
             line.source !== "transfer_pending" &&
             !(line.source === "misc" && line.miscLabel?.startsWith("تحويل من ") && !line.miscLabel?.includes("مجهز") && !line.miscLabel?.includes("الإدارة"));
 
           return (
             <li key={`${line.source}-${line.id}`}>
               <div className={`relative flex flex-col gap-1.5 rounded-2xl border-2 px-4 py-3 transition-all shadow-sm ${
-                deleted ? "border-slate-300 bg-slate-100/90 text-slate-600 dark:bg-slate-800" :
+                deleted || isRejected ? "border-slate-300 bg-slate-100/90 text-slate-600 dark:bg-slate-800" :
                 isInPick ? "border-red-600 bg-red-100/95 dark:bg-red-900/40 dark:border-red-800" :
                 isOutPick ? "border-emerald-600 bg-emerald-100/95 dark:bg-emerald-900/40 dark:border-emerald-800" :
                 "border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800"
