@@ -1,4 +1,5 @@
 import { ad } from "@/lib/admin-ui";
+import { prisma } from "@/lib/prisma";
 import { getOrCreateNotificationSettings } from "@/lib/notification-settings";
 import { normalizeNotificationSoundPreset } from "@/lib/notification-sound-presets";
 import { SettingsBlocks } from "./settings-blocks";
@@ -26,6 +27,7 @@ export default async function SettingsPage() {
       isChatEnabledGlobally().catch(() => true),
       getRoleFeatures("mandoub").catch(() => ({ chatEnabled: true, aiEnabled: false })),
       getRoleFeatures("preparer").catch(() => ({ chatEnabled: true, aiEnabled: false })),
+      prisma.telegramAdmin.findMany({ orderBy: { createdAt: "desc" } }).catch(() => []),
     ]);
   } catch (e) {
     console.error("Critical Settings Page Error:", e);
@@ -40,7 +42,8 @@ export default async function SettingsPage() {
     telegramNewOrderTemplate,
     chatEnabled,
     mandoubFeatures,
-    preparerFeatures
+    preparerFeatures,
+    telegramAdmins
   ] = data;
 
   // تأمين كائن الإشعارات في حال كان null
@@ -64,6 +67,7 @@ export default async function SettingsPage() {
         chatEnabledInitial={!!chatEnabled}
         mandoubFeaturesInitial={mandoubFeatures as any}
         preparerFeaturesInitial={preparerFeatures as any}
+        telegramAdminsInitial={telegramAdmins as any}
         notificationInitial={{
           adminEnabled: ns.adminEnabled ?? true,
           adminTitleSingle: ns.adminTitleSingle ?? "طلب جديد #{orderNumber}",

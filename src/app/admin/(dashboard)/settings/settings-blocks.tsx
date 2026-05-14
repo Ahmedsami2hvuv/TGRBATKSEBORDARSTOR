@@ -167,6 +167,7 @@ export function SettingsBlocks({
   chatEnabledInitial,
   mandoubFeaturesInitial,
   preparerFeaturesInitial,
+  telegramAdminsInitial,
 }: {
   notificationInitial: NotificationInitial;
   globalIcons: GlobalIconsConfig;
@@ -176,6 +177,7 @@ export function SettingsBlocks({
   chatEnabledInitial: boolean;
   mandoubFeaturesInitial: RoleFeaturesConfig;
   preparerFeaturesInitial: RoleFeaturesConfig;
+  telegramAdminsInitial: Array<{ id: string; telegramUserId: string; name: string; active: boolean }>;
 }) {
   const router = useRouter();
   const [openId, setOpenId] = useState<string>("ui-designer");
@@ -215,6 +217,9 @@ export function SettingsBlocks({
   const [telegramAdminIds, setTelegramAdminIds] = useState(notificationInitial.telegramAdminIds);
   const [telegramSaving, setTelegramSaving] = useState(false);
 
+  const [newAdminId, setNewAdminId] = useState("");
+  const [newAdminName, setNewAdminName] = useState("");
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <Block
@@ -226,32 +231,109 @@ export function SettingsBlocks({
         tone="indigo"
         icons={globalIcons}
       >
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-black text-slate-700">IDs مدراء التليجرام</label>
-            <input
-              value={telegramAdminIds}
-              onChange={(e) => setTelegramAdminIds(e.target.value)}
-              placeholder="1234567, 8901234"
-              className="w-full px-4 py-2 rounded-xl border border-slate-300 outline-none focus:border-indigo-500 font-bold"
-            />
-            <p className="text-[10px] font-bold text-slate-500">افصل بين الأرقام بفاصلة أو مسافة.</p>
+        <div className="space-y-6">
+          <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <h3 className="text-xs font-black text-slate-800">إضافة مدير جديد</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <input
+                value={newAdminId}
+                onChange={(e) => setNewAdminId(e.target.value)}
+                placeholder="Telegram ID"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold"
+              />
+              <input
+                value={newAdminName}
+                onChange={(e) => setNewAdminName(e.target.value)}
+                placeholder="الاسم المستعار"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold"
+              />
+            </div>
+            <button
+              disabled={telegramSaving || !newAdminId || !newAdminName}
+              onClick={async () => {
+                setTelegramSaving(true);
+                try {
+                  const actions = await import("./actions");
+                  await actions.addTelegramAdminAction(newAdminId, newAdminName);
+                  setNewAdminId("");
+                  setNewAdminName("");
+                  router.refresh();
+                } finally {
+                  setTelegramSaving(false);
+                }
+              }}
+              className="w-full py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all text-sm"
+            >
+              {telegramSaving ? "جاري الإضافة..." : "إضافة للمدراء"}
+            </button>
           </div>
-          <button
-            disabled={telegramSaving}
-            onClick={async () => {
-              setTelegramSaving(true);
-              try {
-                await (await import("./actions")).saveTelegramAdminIdsAction(telegramAdminIds);
-                alert("تم الحفظ بنجاح");
-              } finally {
-                setTelegramSaving(false);
-              }
-            }}
-            className="w-full py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all text-sm"
-          >
-            {telegramSaving ? "جاري الحفظ..." : "حفظ المعرفات"}
-          </button>
+
+          <div className="space-y-2">
+            <h3 className="text-xs font-black text-slate-500 px-1">قائمة المدراء</h3>
+            <div className="space-y-2">
+              {telegramAdminsInitial.length === 0 && (
+                <p className="text-[10px] text-center text-slate-400 py-2">لا يوجد مدراء معرفين حالياً.</p>
+              )}
+              {telegramAdminsInitial.map((adm) => (
+                <div key={adm.id} className={`flex items-center justify-between gap-3 p-3 rounded-2xl border ${adm.active ? 'bg-white border-slate-200' : 'bg-slate-50 border-slate-100 opacity-60'}`}>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-slate-800 truncate">{adm.name}</p>
+                    <p className="text-[10px] font-bold text-slate-500">{adm.telegramUserId}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={async () => {
+                        const actions = await import("./actions");
+                        await actions.toggleTelegramAdminActiveAction(adm.id, !adm.active);
+                        router.refresh();
+                      }}
+                      className={`p-2 rounded-lg border transition ${adm.active ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-emerald-50 border-emerald-200 text-emerald-600'}`}
+                    >
+                      <DynamicIcon iconKey={adm.active ? "ui_eye_off" : "ui_eye"} config={globalIcons} className="w-4 h-4" fallback={<span>{adm.active ? "🚫" : "✅"}</span>} />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm("هل أنت متأكد من حذف هذا المدير؟")) return;
+                        const actions = await import("./actions");
+                        await actions.deleteTelegramAdminAction(adm.id);
+                        router.refresh();
+                      }}
+                      className="p-2 rounded-lg border bg-rose-50 border-rose-200 text-rose-600 transition"
+                    >
+                      <DynamicIcon iconKey="ui_trash" config={globalIcons} className="w-4 h-4" fallback={<span>🗑️</span>} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100 pt-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-400">نظام الـ IDs القديم (للتوافق)</label>
+              <input
+                value={telegramAdminIds}
+                onChange={(e) => setTelegramAdminIds(e.target.value)}
+                placeholder="1234567, 8901234"
+                className="w-full px-3 py-1.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-400 text-xs font-bold bg-slate-50/50"
+              />
+            </div>
+            <button
+              disabled={telegramSaving}
+              onClick={async () => {
+                setTelegramSaving(true);
+                try {
+                  await (await import("./actions")).saveTelegramAdminIdsAction(telegramAdminIds);
+                  alert("تم الحفظ بنجاح");
+                } finally {
+                  setTelegramSaving(false);
+                }
+              }}
+              className="mt-2 text-[10px] font-bold text-indigo-600 hover:underline"
+            >
+              {telegramSaving ? "جاري الحفظ..." : "تحديث القائمة القديمة"}
+            </button>
+          </div>
         </div>
       </Block>
 

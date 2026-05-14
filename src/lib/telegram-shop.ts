@@ -53,7 +53,8 @@ export type ShopTelegramCallback =
   | { kind: "employee_order_start"; employeeId: string }
   | { kind: "employee_order_region_pick"; regionId: string }
   | { kind: "e_qadd" }
-  | { kind: "e_qadj"; field: "price" | "del"; amount: number };
+  | { kind: "e_qadj"; field: "price" | "del"; amount: number }
+  | { kind: "employee_hub" };
 
 export function parseShopTelegramCallback(raw: string): ShopTelegramCallback | null {
   const t = raw.trim();
@@ -63,6 +64,7 @@ export function parseShopTelegramCallback(raw: string): ShopTelegramCallback | n
   if (t === "shskp") return { kind: "skip_photo" };
   if (t === "shcancel") return { kind: "cancel_flow" };
   if (t === "e_qadd") return { kind: "e_qadd" };
+  if (t === "sot_emp") return { kind: "employee_hub" };
   let m = /^e_qadj:(p|d):(-?\d+)$/.exec(t);
   if (m) {
     const field = m[1] === "p" ? "price" : "del";
@@ -906,6 +908,25 @@ export async function handleShopTelegramCallback(cq: {
         await upsertShopSession(telegramUserId, chatId, "shop_emp_order_confirm", JSON.stringify(p));
         const { text, keyboard } = formatEmployeeOrderConfirm(p);
         await editTelegramMessage(chatId, messageId, text, keyboard);
+        return true;
+      }
+      case "employee_hub": {
+        const emp = await prisma.employee.findUnique({
+          where: { telegramUserId },
+          include: { shop: true }
+        });
+        if (!emp) {
+          await editTelegramMessage(chatId, messageId, "لم يتم العثور على حساب موظف مرتبط بهذا التليجرام. يرجى إرسال رابط البوابة الخاص بك للتفعيل.");
+          return true;
+        }
+        const text = `أهلاً بك <b>${emp.name}</b> (${emp.shop.name})\n\nيمكنك الآن إضافة طلبات سريعة بمجرد كتابة التفاصيل (اسم المنطقة، رقم الهاتف، السعر) في رسالة واحدة.`;
+        const kb: TelegramInlineKeyboard = {
+          inline_keyboard: [
+            [{ text: "➕ إضافة طلب جديد", callback_data: `eor:${emp.id}` }],
+            [{ text: "📦 طلباتي الأخيرة", callback_data: `emp_orders_list` }]
+          ]
+        };
+        await editTelegramMessage(chatId, messageId, text, kb);
         return true;
       }
       default:

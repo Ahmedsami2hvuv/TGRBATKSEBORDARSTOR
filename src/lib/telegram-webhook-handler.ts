@@ -57,6 +57,48 @@ export async function handleTelegramWebhook(body: any): Promise<void> {
       fromName: msg.from?.first_name || "",
     };
 
+    // التحقق مما إذا كانت الرسالة عبارة عن رابط بوابة الموظف
+    if (msg.text.includes("/client/order?")) {
+      const url = msg.text.trim();
+      try {
+        const urlObj = new URL(url);
+        const e = urlObj.searchParams.get("e");
+        const exp = urlObj.searchParams.get("exp");
+        const s = urlObj.searchParams.get("s");
+
+        if (e && exp && s) {
+          // جلب الموظف للتحقق
+          const employee = await prisma.employee.findUnique({
+            where: { id: e },
+            include: { shop: true }
+          });
+
+          if (employee && employee.orderPortalToken === exp) {
+            // ربط حساب التليجرام بالموظف
+            await prisma.employee.update({
+              where: { id: employee.id },
+              data: { telegramUserId: ctx.fromId }
+            });
+
+            await sendTelegramMessageWithKeyboardToChat(
+              ctx.chatId,
+              `مرحباً بك <b>${employee.name}</b> من <b>${employee.shop.name}</b>.\n\nتم ربط حسابك بنجاح. يمكنك الآن استخدام الأزرار أدناه لإدارة طلبياتك.`,
+              {
+                inline_keyboard: [
+                  [{ text: "📋 طلبياتي", callback_data: `sot_emp` }],
+                  [{ text: "➕ إضافة طلب جديد", callback_data: `eor:${employee.id}` }],
+                  [{ text: "📊 المحفظة", callback_data: `emp_wallet` }]
+                ]
+              }
+            );
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing employee portal link from telegram:", e);
+      }
+    }
+
     // أوامر البداية
     if (msg.text.startsWith("/")) {
       const handled = await handleTelegramAdminPrivateMessage(msg);
@@ -75,6 +117,31 @@ export async function handleTelegramWebhook(body: any): Promise<void> {
     // معالجة رسائل المحلات
     const isShopMsg = await handleShopTelegramMessage(msg);
     if (isShopMsg) return;
+
+    // محاولة معالجة الرسالة كطلب سريع لموظف محل
+    const emp = await prisma.employee.findUnique({
+      where: { telegramUserId: ctx.fromId },
+    });
+    if (emp) {
+      // إذا كان المستخدم موظف محل، نحاول معالجة رسالته كطلب سريع
+      // سنقوم بمحاكاة الضغط على زر "إضافة طلب باسمه" ثم تمرير النص
+      const payload = { employeeId: emp.id, draft: {} };
+      await prisma.telegramBotSession.upsert({
+        where: { telegramUserId: ctx.fromId },
+        create: {
+          telegramUserId: ctx.fromId,
+          chatId: ctx.chatId,
+          step: "shop_emp_order_any",
+          payload: JSON.stringify(payload),
+        },
+        update: {
+          step: "shop_emp_order_any",
+          payload: JSON.stringify(payload),
+        },
+      });
+      const handled = await handleShopTelegramMessage(msg);
+      if (handled) return;
+    }
 
     // التحقق من وجود جلسة تعديل نصية نشطة
     const session = await prisma.telegramBotSession.findUnique({

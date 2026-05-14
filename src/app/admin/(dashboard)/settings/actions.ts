@@ -60,22 +60,57 @@ export async function updateCourierButtonsAction(courierId: string, data: {
 }
 
 export async function saveTelegramAdminIdsAction(telegramAdminIds: string) {
+  // This function is kept for backward compatibility if needed, but we'll use the new one below
   if (!(await isAdminSession())) return { error: "Unauthenticated" };
   try {
-    await prisma.appNotificationSettings.upsert({
+    await prisma.appNotificationSettings.update({
       where: { id: 1 },
-      create: {
-        id: 1,
-        telegramAdminIds,
-      },
-      update: {
-        telegramAdminIds,
-      },
+      data: { telegramAdminIds },
     });
     revalidatePath("/admin/settings");
     return { ok: true };
   } catch (error: any) {
     return { error: error.message || "Failed to save Telegram Admin IDs" };
+  }
+}
+
+export async function addTelegramAdminAction(telegramUserId: string, name: string) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  try {
+    await prisma.telegramAdmin.upsert({
+      where: { telegramUserId },
+      create: { telegramUserId, name },
+      update: { name },
+    });
+    revalidatePath("/admin/settings");
+    return { ok: true };
+  } catch (error: any) {
+    return { error: error.message || "Failed to add Telegram Admin" };
+  }
+}
+
+export async function deleteTelegramAdminAction(id: string) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  try {
+    await prisma.telegramAdmin.delete({ where: { id } });
+    revalidatePath("/admin/settings");
+    return { ok: true };
+  } catch (error: any) {
+    return { error: error.message || "Failed to delete Telegram Admin" };
+  }
+}
+
+export async function toggleTelegramAdminActiveAction(id: string, active: boolean) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  try {
+    await prisma.telegramAdmin.update({
+      where: { id },
+      data: { active },
+    });
+    revalidatePath("/admin/settings");
+    return { ok: true };
+  } catch (error: any) {
+    return { error: error.message || "Failed to toggle Telegram Admin status" };
   }
 }
 

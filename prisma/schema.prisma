@@ -202,6 +202,7 @@ model Employee {
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
   orderPortalToken         String                    @default(cuid())
+  telegramUserId           String?                   @unique
   lastEmployeeLat          Float?
   lastEmployeeLng          Float?
   lastEmployeeLocationAt   DateTime?
@@ -508,6 +509,15 @@ model TelegramBotSession {
   payload        String   @default("")
   updatedAt      DateTime @updatedAt
   createdAt      DateTime @default(now())
+}
+
+model TelegramAdmin {
+  id             String   @id @default(cuid())
+  telegramUserId String   @unique
+  name           String
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model UISystemSetting {

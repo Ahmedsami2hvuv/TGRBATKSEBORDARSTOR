@@ -27,14 +27,28 @@ import {
   formatSuperSearchPromptHtml,
   upsertSuperSearchSession,
 } from "@/lib/telegram-super-search-bot";
-import { buildTelegramOrderKeyboard, formatNewOrderTelegramHtml } from "@/lib/telegram-notify";
+import { buildTelegramOrderKeyboard, formatNewOrderTelegramHtml, notifyTelegramNewOrder } from "@/lib/telegram-notify";
+import { pushNotifyAdminsNewPendingOrder } from "@/lib/admin-push-notify";
 
 export const TELEGRAM_ADMIN_ORDERS_PAGE_SIZE = 8;
 
 export async function getTelegramAdminUserIdSet(): Promise<Set<string>> {
   const ids = new Set<string>();
 
-  // من قاعدة البيانات
+  // من قاعدة البيانات - الجدول الجديد
+  try {
+    const admins = await prisma.telegramAdmin.findMany({
+      where: { active: true },
+      select: { telegramUserId: true }
+    });
+    for (const a of admins) {
+      if (a.telegramUserId) ids.add(a.telegramUserId);
+    }
+  } catch (e) {
+    console.error("Error fetching telegramAdmins from DB:", e);
+  }
+
+  // من قاعدة البيانات - الحقل القديم (للتوافق)
   try {
     const settings = await prisma.appNotificationSettings.findUnique({ where: { id: 1 } });
     if (settings?.telegramAdminIds) {
@@ -86,7 +100,17 @@ export type ParsedTelegramAdminCallback =
   | { kind: "cust_field_lmk"; customerId: string }
   | { kind: "cust_field_door"; customerId: string }
   | { kind: "qadd" }
-  | { kind: "qadj"; field: "price" | "del"; amount: number };
+  | { kind: "qadj"; field: "price" | "del"; amount: number }
+  | { kind: "cr_detail"; id: string }
+  | { kind: "cr_edit"; id: string }
+  | { kind: "cr_toggle_block"; id: string }
+  | { kind: "cr_delete"; id: string }
+  | { kind: "cr_add" }
+  | { kind: "pr_detail"; id: string }
+  | { kind: "pr_edit"; id: string }
+  | { kind: "pr_toggle_active"; id: string }
+  | { kind: "pr_delete"; id: string }
+  | { kind: "pr_add" };
 
 export function parseTelegramAdminCallback(raw: string): ParsedTelegramAdminCallback | null {
   const t = raw.trim();
@@ -94,12 +118,35 @@ export function parseTelegramAdminCallback(raw: string): ParsedTelegramAdminCall
   if (t === "superq") return { kind: "super_search_start" };
   if (t === "superx") return { kind: "super_search_cancel" };
   if (t === "qadd") return { kind: "qadd" };
+  if (t === "cr_add") return { kind: "cr_add" };
+  if (t === "pr_add") return { kind: "pr_add" };
+
   let m = /^qadj:(p|d):(-?\d+)$/.exec(t);
   if (m) {
     const field = m[1] === "p" ? "price" : "del";
     const amount = Number(m[2]);
     return { kind: "qadj", field, amount };
   }
+
+  // Couriers
+  m = /^crd:(.+)$/.exec(t);
+  if (m) return { kind: "cr_detail", id: m[1] };
+  m = /^cre:(.+)$/.exec(t);
+  if (m) return { kind: "cr_edit", id: m[1] };
+  m = /^crb:(.+)$/.exec(t);
+  if (m) return { kind: "cr_toggle_block", id: m[1] };
+  m = /^crx:(.+)$/.exec(t);
+  if (m) return { kind: "cr_delete", id: m[1] };
+
+  // Preparers
+  m = /^prd:(.+)$/.exec(t);
+  if (m) return { kind: "pr_detail", id: m[1] };
+  m = /^pre:(.+)$/.exec(t);
+  if (m) return { kind: "pr_edit", id: m[1] };
+  m = /^pra:(.+)$/.exec(t);
+  if (m) return { kind: "pr_toggle_active", id: m[1] };
+  m = /^prx:(.+)$/.exec(t);
+  if (m) return { kind: "pr_delete", id: m[1] };
   const sec = /^s:(.+)$/.exec(t);
   if (sec?.[1]) {
     const slug = sec[1].trim();
@@ -146,19 +193,50 @@ function adminBaseUrl(): string {
   return getPublicAppUrl().replace(/\/+$/, "");
 }
 
+function getTileEmoji(slug: string): string {
+  const emojis: Record<string, string> = {
+    "new-orders": "📥",
+    "order-tracking": "🚚",
+    "admin-create-order": "➕",
+    "archived-orders": "📦",
+    "rejected-orders": "❌",
+    "reports": "📊",
+    "prep-notices": "🔔",
+    "new-customer-profile": "👤",
+    "customers": "👥",
+    "couriers": "🛵",
+    "courier-map": "🗺️",
+    "preparers": "👨‍🍳",
+    "suppliers": "🏢",
+    "employees": "👷",
+    "shops": "🏪",
+    "regions": "📍",
+    "wa-buttons": "📲",
+    "super-search": "🔍",
+    "store": "🛒",
+    "settings": "⚙️",
+    "notification-settings": "🔔",
+  };
+  return emojis[slug] || "🔹";
+}
+
 function adminMainKeyboard(): TelegramInlineKeyboard {
   const rows: TelegramInlineKeyboard["inline_keyboard"] = [];
-  rows.push([{ text: "🔍 بحث خارق (كل شيء)", callback_data: "superq" }]);
+  rows.push([{ text: "🔍 البحث الخارق (كل شيء)", callback_data: "superq" }]);
   rows.push([{ text: "📥 الطلبات المعلّقة", callback_data: "pend0" }]);
   const tiles = ADMIN_TILES.filter((t) => isTileEnabled(t.slug));
   for (let i = 0; i < tiles.length; i += 2) {
     const a = tiles[i];
     const b = tiles[i + 1];
+
+    // Skip tiles that might have English names or are redundant in this context
+    if (a.slug === "ai-settings" || a.slug === "legacy-kse-profiles-batch") continue;
+
     const row: Array<{ text: string; callback_data: string }> = [
-      { text: `${a.emoji} ${a.label}`.slice(0, 64), callback_data: `s:${a.slug}` },
+      { text: `${getTileEmoji(a.slug)} ${a.label}`.slice(0, 64), callback_data: `s:${a.slug}` },
     ];
-    if (b) {
-      row.push({ text: `${b.emoji} ${b.label}`.slice(0, 64), callback_data: `s:${b.slug}` });
+    if (b && b.slug !== "ai-settings" && b.slug !== "legacy-kse-profiles-batch") {
+      row.push({ text: `${getTileEmoji(b.slug)} ${b.label}`.slice(0, 64), callback_data: `s:${b.slug}` });
     }
     rows.push(row);
   }
@@ -297,11 +375,15 @@ function ordersListKeyboard(
   if (page > 0) {
     nav.push({ text: "⬅️ السابق", callback_data: `${navPrefix}${page - 1}` });
   }
-  nav.push({ text: "🏠 لوحة الإدارة", callback_data: "main" });
   if (page < totalPages - 1) {
     nav.push({ text: "التالي ➡️", callback_data: `${navPrefix}${page + 1}` });
   }
-  const rows: TelegramInlineKeyboard["inline_keyboard"] = [nav];
+
+  const rows: TelegramInlineKeyboard["inline_keyboard"] = [];
+  if (nav.length > 0) rows.push(nav);
+
+  rows.push([{ text: "🔙 رجوع", callback_data: "main" }, { text: "🏠 الرئيسية", callback_data: "main" }]);
+
   for (const o of orders) {
     rows.push([
       {
@@ -336,7 +418,7 @@ function orderDetailKeyboard(orderNumber: number, orderId: string): TelegramInli
       ],
       ...main.inline_keyboard,
       [
-        { text: "⬅️ أحدث الطلبات", callback_data: "ord0" },
+        { text: "🔙 رجوع للقائمة", callback_data: "ord0" },
         { text: "🏠 الرئيسية", callback_data: "main" },
       ],
     ],
@@ -344,7 +426,9 @@ function orderDetailKeyboard(orderNumber: number, orderId: string): TelegramInli
 }
 
 function backOnlyKeyboard(): TelegramInlineKeyboard {
-  return { inline_keyboard: [[{ text: "🏠 لوحة الإدارة", callback_data: "main" }]] };
+  return {
+    inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "main" }, { text: "🏠 الرئيسية", callback_data: "main" }]]
+  };
 }
 
 async function renderAdminSection(slug: string): Promise<{ text: string; keyboard: TelegramInlineKeyboard }> {
@@ -389,14 +473,44 @@ async function renderAdminSection(slug: string): Promise<{ text: string; keyboar
       };
     }
     case "preparers": {
-      return {
-        text:
-          `<b>المجهزين (فريق الإدارة)</b>\n\n` +
-          `قسم التقييم في الواجهة: «المجهزين» — ليسوا موظفي المحل.\n` +
-          `موظفو المحل يُضافون من «المحلات».\n` +
-          `تقرير الطلبات المرفوعة من الروابط: «التقارير → طلبات موظفي المحل».`,
-        keyboard: backOnlyKeyboard(),
+      const rows = await prisma.preparer.findMany({
+        orderBy: { name: "asc" },
+        take: 30,
+        select: { id: true, name: true, active: true },
+      });
+
+      if (rows.length === 0) {
+        return {
+          text: "<b>المجهزين</b>\n\nلا يوجد مجهزون مسجلون حالياً.",
+          keyboard: {
+            inline_keyboard: [
+              [{ text: "➕ إضافة مجهز جديد", callback_data: "pr_add" }],
+              [{ text: "🔙 رجوع", callback_data: "main" }]
+            ]
+          }
+        };
+      }
+
+      const text = `<b>قائمة المجهزين (${rows.length})</b>\n\nاختر مجهزاً للإدارة:`;
+      const kb: TelegramInlineKeyboard = {
+        inline_keyboard: []
       };
+
+      for (let i = 0; i < rows.length; i += 2) {
+        const row: any[] = [];
+        const p1 = rows[i];
+        row.push({ text: `${p1.active ? '✅ ' : '❌ '}${p1.name}`, callback_data: `prd:${p1.id}` });
+        if (i + 1 < rows.length) {
+          const p2 = rows[i + 1];
+          row.push({ text: `${p2.active ? '✅ ' : '❌ '}${p2.name}`, callback_data: `prd:${p2.id}` });
+        }
+        kb.inline_keyboard.push(row);
+      }
+
+      kb.inline_keyboard.push([{ text: "➕ إضافة مجهز جديد", callback_data: "pr_add" }]);
+      kb.inline_keyboard.push([{ text: "🏠 الرئيسية", callback_data: "main" }]);
+
+      return { text, keyboard: kb };
     }
     case "reports": {
       const [pending, assigned, delivering, delivered, cancelled, allCount] = await Promise.all([
@@ -438,33 +552,48 @@ async function renderAdminSection(slug: string): Promise<{ text: string; keyboar
     case "couriers": {
       const rows = await prisma.courier.findMany({
         orderBy: { name: "asc" },
-        take: 25,
+        take: 30,
         select: {
+          id: true,
           name: true,
           phone: true,
           blocked: true,
-          hiddenFromReports: true,
-          availableForAssignment: true,
           vehicleType: true,
         },
       });
+
       if (rows.length === 0) {
-        return { text: "<b>المندوبين</b>\n\nلا يوجد مندوبون.", keyboard: backOnlyKeyboard() };
+        return {
+          text: "<b>المندوبين</b>\n\nلا يوجد مندوبون مسجلون حالياً.",
+          keyboard: {
+            inline_keyboard: [
+              [{ text: "➕ إضافة مندوب جديد", callback_data: "cr_add" }],
+              [{ text: "🔙 رجوع", callback_data: "main" }]
+            ]
+          }
+        };
       }
-      const lines = rows.map((r) => {
-        const flags = [
-          r.blocked ? "محظور" : null,
-          r.hiddenFromReports ? "مخفي" : null,
-          r.availableForAssignment === false ? "غير متاح للإسناد" : null,
-        ]
-          .filter(Boolean)
-          .join("، ");
-        return `• ${escapeTelegramHtml(r.name)} — ${escapeTelegramHtml(r.phone)} — ${r.vehicleType}${flags ? ` (${flags})` : ""}`;
-      });
-      return {
-        text: `<b>المندوبين</b>\n\n${lines.join("\n")}`,
-        keyboard: backOnlyKeyboard(),
+
+      const text = `<b>قائمة المناديب (${rows.length})</b>\n\nاختر مندوباً لعرض التفاصيل أو التعديل:`;
+      const kb: TelegramInlineKeyboard = {
+        inline_keyboard: []
       };
+
+      for (let i = 0; i < rows.length; i += 2) {
+        const row: any[] = [];
+        const c1 = rows[i];
+        row.push({ text: `${c1.blocked ? '🚫 ' : ''}${c1.name}`, callback_data: `crd:${c1.id}` });
+        if (i + 1 < rows.length) {
+          const c2 = rows[i + 1];
+          row.push({ text: `${c2.blocked ? '🚫 ' : ''}${c2.name}`, callback_data: `crd:${c2.id}` });
+        }
+        kb.inline_keyboard.push(row);
+      }
+
+      kb.inline_keyboard.push([{ text: "➕ إضافة مندوب جديد", callback_data: "cr_add" }]);
+      kb.inline_keyboard.push([{ text: "🏠 الرئيسية", callback_data: "main" }]);
+
+      return { text, keyboard: kb };
     }
     case "shops": {
       return renderShopsTelegramHub(0);
@@ -489,17 +618,31 @@ async function renderAdminSection(slug: string): Promise<{ text: string; keyboar
     case "employees": {
       const rows = await prisma.employee.findMany({
         orderBy: { name: "asc" },
-        take: 25,
-        select: { name: true, phone: true, shop: { select: { name: true } } },
+        take: 30,
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          telegramUserId: true,
+          shop: { select: { name: true } },
+        },
       });
+
       if (rows.length === 0) {
-        return { text: "<b>الموظفين</b>\n\nلا يوجد موظفون.", keyboard: backOnlyKeyboard() };
+        return {
+          text: "<b>الموظفين</b>\n\nلا يوجد موظفون مسجلون. تتم إضافة الموظفين عادةً من خلال لوحة تحكم المحلات.",
+          keyboard: backOnlyKeyboard()
+        };
       }
-      const lines = rows.map(
-        (r) => `• ${escapeTelegramHtml(r.name)} — ${escapeTelegramHtml(r.phone)} — ${escapeTelegramHtml(r.shop.name)}`,
-      );
+
+      const text = `<b>موظفو المحلات (${rows.length})</b>\n\nقائمة الموظفين وربط الحسابات:`;
+      const lines = rows.map(r => {
+        const linkStatus = r.telegramUserId ? "🔗 مربوط" : "❌ غير مربوط";
+        return `• ${escapeTelegramHtml(r.name)} (${escapeTelegramHtml(r.shop.name)})\n  📱 ${escapeTelegramHtml(r.phone)} — ${linkStatus}`;
+      });
+
       return {
-        text: `<b>موظفو المحلات</b>\n\n${lines.join("\n")}`,
+        text: `${text}\n\n${lines.join("\n\n")}`,
         keyboard: backOnlyKeyboard(),
       };
     }
@@ -540,17 +683,76 @@ export async function handleTelegramAdminPrivateMessage(message: {
   if (fromId == null || !(await isTelegramAdminUser(fromId))) return false;
   if (!isTelegramPrivateChat(message.chat, fromId)) return false;
   const txt = message.text?.trim() ?? "";
+  const telegramUserId = String(fromId);
+  const chatId = String(message.chat.id);
 
   if (txt.startsWith("/")) {
     const cmd = txt.split(/\s+/)[0]?.toLowerCase() ?? "";
     if (cmd === "/start" || cmd === "/admin") {
-      await sendTelegramAdminMainMenu(String(message.chat.id));
+      await sendTelegramAdminMainMenu(chatId);
       return true;
     }
     return false;
   }
 
-  // إذا لم يكن أمراً، قد يكون نص لإنشاء طلب
+  // التحقق من الجلسات النشطة (إضافة/تعديل)
+  const session = await prisma.telegramBotSession.findUnique({ where: { telegramUserId } });
+  if (session && session.step !== "idle") {
+    if (txt === "تجاهل" || txt === "الغاء" || txt === "إلغاء") {
+      await prisma.telegramBotSession.update({ where: { telegramUserId }, data: { step: "idle", payload: "" } });
+      await sendTelegramMessageWithKeyboardToChat(chatId, "❌ تم إلغاء العملية.", adminMainKeyboard());
+      return true;
+    }
+
+    if (session.step === "add_courier_name") {
+      await prisma.telegramBotSession.update({
+        where: { telegramUserId },
+        data: { step: "add_courier_phone", payload: JSON.stringify({ name: txt }) }
+      });
+      await sendTelegramMessageWithKeyboardToChat(chatId, `✅ الاسم: ${txt}\n\nيرجى إرسال رقم هاتف المندوب:`, {
+        inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "s:couriers" }]]
+      });
+      return true;
+    }
+
+    if (session.step === "add_courier_phone") {
+      const p = JSON.parse(session.payload || "{}");
+      const phone = normalizeIraqMobileLocal11(txt);
+      if (!phone) {
+        await sendTelegramMessageWithKeyboardToChat(chatId, "❌ رقم الهاتف غير صحيح. يرجى إرسال رقم هاتف عراقي صالح:");
+        return true;
+      }
+      const courier = await prisma.courier.create({
+        data: { name: p.name, phone, vehicleType: "دراجة" }
+      });
+      await prisma.telegramBotSession.update({ where: { telegramUserId }, data: { step: "idle", payload: "" } });
+      await sendTelegramMessageWithKeyboardToChat(chatId, `✅ تم إضافة المندوب <b>${courier.name}</b> بنجاح!`, {
+        inline_keyboard: [[{ text: "📦 عرض المندوب", callback_data: `crd:${courier.id}` }], [{ text: "🏠 الرئيسية", callback_data: "main" }]]
+      });
+      return true;
+    }
+
+    if (session.step === "add_preparer_name") {
+      const prep = await prisma.preparer.create({ data: { name: txt, active: true } });
+      await prisma.telegramBotSession.update({ where: { telegramUserId }, data: { step: "idle", payload: "" } });
+      await sendTelegramMessageWithKeyboardToChat(chatId, `✅ تم إضافة المجهز <b>${prep.name}</b> بنجاح!`, {
+        inline_keyboard: [[{ text: "👤 عرض المجهز", callback_data: `prd:${prep.id}` }], [{ text: "🏠 الرئيسية", callback_data: "main" }]]
+      });
+      return true;
+    }
+
+    if (session.step === "await_courier_name") {
+      const p = JSON.parse(session.payload || "{}");
+      await prisma.courier.update({ where: { id: p.id }, data: { name: txt } });
+      await prisma.telegramBotSession.update({ where: { telegramUserId }, data: { step: "idle", payload: "" } });
+      await sendTelegramMessageWithKeyboardToChat(chatId, "✅ تم تحديث اسم المندوب بنجاح.", {
+        inline_keyboard: [[{ text: "🔙 رجوع للمندوب", callback_data: `crd:${p.id}` }]]
+      });
+      return true;
+    }
+  }
+
+  // إذا لم يكن هناك جلسة، قد يكون نص لإنشاء طلب سريع
   return await handleAdminQuickOrderMessage(message);
 }
 
@@ -655,13 +857,13 @@ function formatQuickOrderConfirm(p: any) {
   const kb: TelegramInlineKeyboard = {
     inline_keyboard: [
       [
-        { text: "➖ 1", callback_data: "qadj:p:-1" },
+        { text: "➖ 5", callback_data: "qadj:p:-5" },
         { text: "سعر الطلب", callback_data: "none" },
-        { text: "➕ 1", callback_data: "qadj:p:1" },
+        { text: "➕ 5", callback_data: "qadj:p:5" },
       ],
       [
-        { text: "➖ 5", callback_data: "qadj:p:-5" },
-        { text: "➕ 5", callback_data: "qadj:p:5" },
+        { text: "➖ 1", callback_data: "qadj:p:-1" },
+        { text: "➕ 1", callback_data: "qadj:p:1" },
       ],
       [
         { text: "➖ 1", callback_data: "qadj:d:-1" },
@@ -883,14 +1085,14 @@ export async function handleTelegramAdminCallback(cq: {
         const order = await loadOrderForAdminDetail(parsed.orderNumber);
         if (!order) {
           const errKb: TelegramInlineKeyboard = {
-            inline_keyboard: [[{ text: "⬅️ أحدث الطلبات", callback_data: "ord0" }]],
+            inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "ord0" }, { text: "🏠 الرئيسية", callback_data: "main" }]],
           };
           await editTelegramMessage(chatId, messageId, "❌ الطلب غير موجود.", errKb).catch(() => {});
           return true;
         }
         const customerName = order.customer?.name?.trim() || "—";
         const regionName = order.customerRegion?.name ?? "—";
-        const body = formatNewOrderTelegramHtml(
+        const body = await formatNewOrderTelegramHtml(
           {
             shopName: order.shop.name,
             customerName,
@@ -903,10 +1105,12 @@ export async function handleTelegramAdminCallback(cq: {
             customerPhone: order.customerPhone,
             orderNoteTime: order.orderNoteTime,
             orderId: order.id,
+            customerLocationUrl: order.customerLocationUrl,
+            customerLandmark: order.customerLandmark,
           },
           { omitAdminLink: true },
         );
-        const text = `<b>تفاصيل الطلب</b>\n\n${body}`;
+        const text = `<b>📦 تفاصيل الطلب #${order.orderNumber}</b>\n\n${body}`;
         const kb = orderDetailKeyboard(order.orderNumber, order.id);
         const edited = await editTelegramMessage(chatId, messageId, text, kb);
         if (!edited.ok) {
@@ -972,6 +1176,122 @@ export async function handleTelegramAdminCallback(cq: {
 
         const { text, keyboard } = formatQuickOrderConfirm(p);
         await editTelegramMessage(chatId, messageId, text, keyboard);
+        return true;
+      }
+
+      case "cr_detail": {
+        const courier = await prisma.courier.findUnique({ where: { id: parsed.id } });
+        if (!courier) {
+          await answerCallbackQuery(cq.id, "المندوب غير موجود", true);
+          return true;
+        }
+        const text =
+          `<b>بيانات المندوب: ${escapeTelegramHtml(courier.name)}</b>\n\n` +
+          `📞 الهاتف: <code>${courier.phone}</code>\n` +
+          `🚗 المركبة: ${courier.vehicleType || "غير محدد"}\n` +
+          `🛡️ الحالة: ${courier.blocked ? "🚫 محظور" : "✅ نشط"}\n` +
+          `📍 متاح للإسناد: ${courier.availableForAssignment ? "نعم" : "لا"}\n\n` +
+          `اختر إجراءً:`;
+
+        const kb: TelegramInlineKeyboard = {
+          inline_keyboard: [
+            [
+              { text: courier.blocked ? "🔓 إلغاء الحظر" : "🚫 حظر المندوب", callback_data: `crb:${courier.id}` },
+              { text: "✏️ تعديل البيانات", callback_data: `cre:${courier.id}` },
+            ],
+            [{ text: "🗑️ حذف المندوب نهائياً", callback_data: `crx:${courier.id}` }],
+            [{ text: "🔙 رجوع للقائمة", callback_data: "s:couriers" }],
+          ],
+        };
+        await editTelegramMessage(chatId, messageId, text, kb);
+        return true;
+      }
+      case "cr_toggle_block": {
+        const courier = await prisma.courier.findUnique({ where: { id: parsed.id } });
+        if (!courier) return true;
+        await prisma.courier.update({
+          where: { id: parsed.id },
+          data: { blocked: !courier.blocked },
+        });
+        await handleTelegramAdminCallback({ ...cq, data: `crd:${parsed.id}` });
+        return true;
+      }
+      case "cr_delete": {
+        // تأكيد الحذف
+        const kb: TelegramInlineKeyboard = {
+          inline_keyboard: [
+            [
+              { text: "✅ نعم، احذف", callback_data: `crx_confirm:${parsed.id}` },
+              { text: "❌ تراجع", callback_data: `crd:${parsed.id}` },
+            ],
+          ],
+        };
+        await editTelegramMessage(chatId, messageId, "<b>⚠️ تنبيه تأكيد الحذف</b>\n\nهل أنت متأكد من حذف هذا المندوب نهائياً من النظام؟ لا يمكن التراجع عن هذا الإجراء.", kb);
+        return true;
+      }
+      case "cr_edit": {
+        await prisma.telegramBotSession.upsert({
+          where: { telegramUserId },
+          create: { telegramUserId, chatId, step: "await_courier_name", payload: JSON.stringify({ id: parsed.id }) },
+          update: { step: "await_courier_name", payload: JSON.stringify({ id: parsed.id }) },
+        });
+        await editTelegramMessage(chatId, messageId, "<b>تعديل المندوب</b>\n\nأرسل الاسم الجديد للمندوب الآن (أو أرسل 'تجاهل' للإبقاء على الحالي):", {
+          inline_keyboard: [[{ text: "❌ إلغاء", callback_data: `crd:${parsed.id}` }]],
+        });
+        return true;
+      }
+      case "cr_add": {
+        await prisma.telegramBotSession.upsert({
+          where: { telegramUserId },
+          create: { telegramUserId, chatId, step: "add_courier_name", payload: "{}" },
+          update: { step: "add_courier_name", payload: "{}" },
+        });
+        await editTelegramMessage(chatId, messageId, "<b>إضافة مندوب جديد</b>\n\nيرجى إرسال اسم المندوب الرباعي:", {
+          inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "s:couriers" }]],
+        });
+        return true;
+      }
+
+      // Preparers
+      case "pr_detail": {
+        const prep = await prisma.preparer.findUnique({ where: { id: parsed.id } });
+        if (!prep) return true;
+        const text =
+          `<b>بيانات المجهز: ${escapeTelegramHtml(prep.name)}</b>\n\n` +
+          `🛡️ الحالة: ${prep.active ? "✅ نشط" : "❌ معطل"}\n\n` +
+          `اختر إجراءً:`;
+        const kb: TelegramInlineKeyboard = {
+          inline_keyboard: [
+            [
+              { text: prep.active ? "❌ تعطيل" : "✅ تفعيل", callback_data: `pra:${prep.id}` },
+              { text: "✏️ تعديل الاسم", callback_data: `pre:${prep.id}` },
+            ],
+            [{ text: "🗑️ حذف المجهز", callback_data: `prx:${prep.id}` }],
+            [{ text: "🔙 رجوع للقائمة", callback_data: "s:preparers" }],
+          ],
+        };
+        await editTelegramMessage(chatId, messageId, text, kb);
+        return true;
+      }
+      case "pr_toggle_active": {
+        const prep = await prisma.preparer.findUnique({ where: { id: parsed.id } });
+        if (!prep) return true;
+        await prisma.preparer.update({
+          where: { id: parsed.id },
+          data: { active: !prep.active },
+        });
+        await handleTelegramAdminCallback({ ...cq, data: `prd:${parsed.id}` });
+        return true;
+      }
+      case "pr_add": {
+        await prisma.telegramBotSession.upsert({
+          where: { telegramUserId },
+          create: { telegramUserId, chatId, step: "add_preparer_name", payload: "{}" },
+          update: { step: "add_preparer_name", payload: "{}" },
+        });
+        await editTelegramMessage(chatId, messageId, "<b>إضافة مجهز جديد</b>\n\nيرجى إرسال اسم المجهز:", {
+          inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "s:preparers" }]],
+        });
         return true;
       }
     }
