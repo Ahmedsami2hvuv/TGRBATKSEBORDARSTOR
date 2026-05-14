@@ -118,6 +118,7 @@ export function BranchListClient({
 
   // --- Smart Scraper State (Advanced Bulk) ---
   const [showScraper, setShowScraper] = useState(false);
+  const [showActiveList, setShowActiveList] = useState(false); // تبديل بين قائمة الإدخال وقائمة المعالجة
   const [importSessions, setImportSessions] = useState<any[]>([]);
   const [shouldRemoveBg, setShouldRemoveBg] = useState(true);
   const createEmptySession = () => ({
@@ -551,31 +552,47 @@ export function BranchListClient({
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 pt-0 space-y-4 custom-scrollbar">
+                {/* Tabs to switch between Input and Processing */}
+                <div className="flex gap-2 mb-6 sticky top-0 bg-white/80 backdrop-blur-md z-30 py-2 border-b border-indigo-50">
+                    <button
+                        onClick={() => setShowActiveList(false)}
+                        className={`flex-1 py-3 rounded-2xl font-black text-xs transition-all ${!showActiveList ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                    >
+                        📝 إضافة روابط جديدة ({importSessions.filter(s => !s.url && s.status === 'idle').length})
+                    </button>
+                    <button
+                        onClick={() => setShowActiveList(true)}
+                        className={`flex-1 py-3 rounded-2xl font-black text-xs transition-all ${showActiveList ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                    >
+                        ⏳ الأفرع الجاري سحبها ({importSessions.filter(s => s.url || s.status !== 'idle').length})
+                    </button>
+                </div>
+
                 {/* Empty state: start with URL first, image is optional */}
-                {importSessions.length === 0 && (
+                {!showActiveList && importSessions.filter(s => !s.url && s.status === 'idle').length === 0 && (
                     <div className="mb-6 p-8 border-2 border-dashed border-indigo-200 rounded-[2rem] bg-indigo-50/50 flex flex-col items-center justify-center gap-4">
                         <div className="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center text-3xl">🔗</div>
                         <div className="text-center">
-                            <h3 className="text-xl font-black text-indigo-900">ابدأ بوضع رابط الفرع</h3>
-                            <p className="text-sm text-indigo-500 font-bold mt-1">الصورة اختيارية، النظام يسحب صورة الفرع تلقائياً من الموقع.</p>
+                            <h3 className="text-xl font-black text-indigo-900">أضف فرعاً جديداً</h3>
+                            <p className="text-sm text-indigo-500 font-bold mt-1">بمجرد وضع الرابط، سينتقل الفرع لقائمة المعالجة تلقائياً.</p>
                         </div>
                         <button
-                          onClick={() => setImportSessions([createEmptySession()])}
+                          onClick={() => setImportSessions(prev => [...prev, createEmptySession()])}
                           className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black hover:bg-indigo-700 transition-colors"
                         >
-                          ➕ إضافة أول فرع
+                          ➕ إضافة حقل جديد
                         </button>
                     </div>
                 )}
 
-                {/* Quick Add More Button */}
-                {importSessions.length > 0 && (
+                {/* Quick Add More Button (Only in Input tab) */}
+                {!showActiveList && importSessions.length > 0 && (
                     <div className="flex justify-between items-center mb-4 px-4">
                         <button
                             onClick={() => document.getElementById('bulk-image-input-more')?.click()}
                             className="px-6 py-2 bg-indigo-100 text-indigo-700 rounded-xl text-xs font-black hover:bg-indigo-200 transition-colors flex items-center gap-2"
                         >
-                            <span>➕ إضافة صور أخرى</span>
+                            <span>📷 إضافة من الصور</span>
                         </button>
                         <input
                             id="bulk-image-input-more"
@@ -592,10 +609,12 @@ export function BranchListClient({
                     </div>
                 )}
 
-                {importSessions.map((session, index) => (
+                {importSessions
+                    .filter(s => showActiveList ? (s.url || s.status !== 'idle') : (!s.url && s.status === 'idle'))
+                    .map((session, index) => (
                     <div
                         key={session.id}
-                        className="p-5 rounded-[2rem] border-2 mb-4 bg-white border-indigo-50 shadow-sm"
+                        className="p-5 rounded-[2rem] border-2 mb-4 bg-white border-indigo-50 shadow-sm animate-in fade-in slide-in-from-bottom-2"
                     >
                         <div className="flex flex-col md:flex-row gap-4 items-center">
                             <div className="w-full md:w-16 h-16 shrink-0 relative group">
