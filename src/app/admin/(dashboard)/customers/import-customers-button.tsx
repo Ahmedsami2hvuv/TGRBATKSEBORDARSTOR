@@ -217,6 +217,7 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
         alert(
           `تم التنظيف بنجاح!\n` +
           `زبائن تم تنظيفهم: ${data.profileUpdates || 0}\n` +
+          `طلبيات تم تنظيفها: ${data.orderUpdates || 0}\n` +
           `محلات تم تنظيفها: ${data.shopUpdates || 0}\n` +
           `أفرع تم تنظيفها: ${data.branchUpdates || 0}\n` +
           `منتجات تم تنظيفها: ${data.productUpdates || 0}`
