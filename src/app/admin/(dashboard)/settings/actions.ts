@@ -59,6 +59,26 @@ export async function updateCourierButtonsAction(courierId: string, data: {
   }
 }
 
+export async function saveTelegramAdminIdsAction(telegramAdminIds: string) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  try {
+    await prisma.appNotificationSettings.upsert({
+      where: { id: 1 },
+      create: {
+        id: 1,
+        telegramAdminIds,
+      },
+      update: {
+        telegramAdminIds,
+      },
+    });
+    revalidatePath("/admin/settings");
+    return { ok: true };
+  } catch (error: any) {
+    return { error: error.message || "Failed to save Telegram Admin IDs" };
+  }
+}
+
 export type NotificationSettingsFormState = {
   ok?: boolean;
   error?: string;
