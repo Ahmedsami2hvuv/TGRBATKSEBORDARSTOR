@@ -28,7 +28,7 @@ import {
   upsertSuperSearchSession,
 } from "@/lib/telegram-super-search-bot";
 import { buildTelegramOrderKeyboard, formatNewOrderTelegramHtml, notifyTelegramNewOrder } from "@/lib/telegram-notify";
-import { pushNotifyAdminsNewPendingOrder } from "@/lib/admin-push-notify";
+import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 
 export const TELEGRAM_ADMIN_ORDERS_PAGE_SIZE = 8;
 
