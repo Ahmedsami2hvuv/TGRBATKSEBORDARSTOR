@@ -16,29 +16,28 @@ async function processAnyImage(url: string | null, folder: string): Promise<{new
   if (!isRailway && !isBase64) return { newUrl: null, forceClear: false };
 
   try {
-    // 1. معالجة الـ Base64 (بما في ذلك الروابط الهجينة)
+    // 1. معالجة الـ Base64 (الصور الثقيلة جداً)
     const b64Match = url.match(/data:image\/[^;]+;base64,([^\s"']+)/);
     if (b64Match) {
       const buffer = Buffer.from(b64Match[1], 'base64');
       const key = `${folder}/${crypto.randomUUID()}.jpg`;
       const uploadedKey = await uploadToR2(buffer, key, "image/jpeg");
-      return { newUrl: uploadedKey ? `https://${R2_DOMAIN}/${uploadedKey}` : "", forceClear: !uploadedKey };
+      return { newUrl: uploadedKey ? `https://${R2_DOMAIN}/${uploadedKey}` : null, forceClear: !uploadedKey };
     }
 
-    // 2. معالجة روابط ريلوي (محاولة سحبها)
+    // 2. معالجة روابط ريلوي (سحب ورفع)
     if (isRailway) {
       try {
-        const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
         if (response.ok) {
           const buffer = Buffer.from(await response.arrayBuffer());
           const contentType = response.headers.get("content-type") || "image/jpeg";
           const fileName = url.split("/").pop()?.split("?")[0] || `${crypto.randomUUID()}.jpg`;
           const key = `${folder}/${fileName}`;
           const uploadedKey = await uploadToR2(buffer, key, contentType);
-          return { newUrl: uploadedKey ? `https://${R2_DOMAIN}/${uploadedKey}` : "", forceClear: true };
+          return { newUrl: uploadedKey ? `https://${R2_DOMAIN}/${uploadedKey}` : null, forceClear: true };
         }
       } catch (e) {}
-      // إذا فشل السحب من ريلوي، نمسحه فوراً لكي لا يثقل القاعدة
       return { newUrl: "", forceClear: true };
     }
   } catch (e) {
@@ -52,8 +51,29 @@ export async function POST(req: Request) {
     let orderUpdates = 0;
     let shopUpdates = 0;
     let productUpdates = 0;
+    let profileUpdates = 0;
 
-    // 1. تنظيف المحلات (Shop) - مسح روابط ريلوي الميتة
+    // 1. تنظيف بروفايلات الزبائن (إضافة البحث عن base64 هنا)
+    const profiles = await prisma.customerPhoneProfile.findMany({
+      where: {
+        OR: [
+          { photoUrl: { contains: "base64", mode: "insensitive" } },
+          { photoUrl: { contains: "railway", mode: "insensitive" } }
+        ]
+      }
+    });
+    for (const p of profiles) {
+      const res = await processAnyImage(p.photoUrl, "customers");
+      if (res.newUrl !== null || res.forceClear) {
+        await prisma.customerPhoneProfile.update({
+          where: { id: p.id },
+          data: { photoUrl: res.newUrl || "" }
+        });
+        profileUpdates++;
+      }
+    }
+
+    // 2. تنظيف المحلات
     const shops = await prisma.shop.findMany({
       where: { OR: [{ photoUrl: { contains: "railway", mode: "insensitive" } }, { photoUrl: { contains: "base64", mode: "insensitive" } }] }
     });
@@ -65,12 +85,13 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2. تنظيف الطلبيات (Order) - تركيز على shopDoorPhotoUrl
+    // 3. تنظيف الطلبيات
     const orders = await prisma.order.findMany({
       where: {
         OR: [
           { shopDoorPhotoUrl: { contains: "railway", mode: "insensitive" } },
           { shopDoorPhotoUrl: { contains: "base64", mode: "insensitive" } },
+          { customerDoorPhotoUrl: { contains: "base64", mode: "insensitive" } },
           { customerDoorPhotoUrl: { contains: "railway", mode: "insensitive" } },
           { imageUrl: { contains: "railway", mode: "insensitive" } }
         ]
@@ -90,7 +111,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 3. تنظيف المنتجات
+    // 4. تنظيف المنتجات
     const products = await prisma.storeProduct.findMany();
     for (const p of products) {
       if (!p.photoUrls || p.photoUrls.length === 0) continue;
@@ -112,7 +133,7 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ success: true, orderUpdates, shopUpdates, productUpdates, profileUpdates: 0, branchUpdates: 0 });
+    return NextResponse.json({ success: true, orderUpdates, shopUpdates, productUpdates, profileUpdates, branchUpdates: 0 });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
