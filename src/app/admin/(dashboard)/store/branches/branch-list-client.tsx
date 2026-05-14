@@ -164,16 +164,25 @@ export function BranchListClient({
 
   // تحديث الرابط وبدء السحب
   function handleSessionChange(id: string, url: string) {
-    // صعود الفرع للأعلى فور وضع الرابط
+    const isReady = url.includes("/shop/sub/") || url.includes("/item/");
+
     setImportSessions(prev => {
         const target = prev.find(s => s.id === id);
         if (!target) return prev;
-        const rest = prev.filter(s => s.id !== id);
-        return [{ ...target, url }, ...rest];
+
+        const updatedTarget = { ...target, url };
+
+        if (isReady && prev[0].id !== id) {
+            // صعود للأعلى عند اكتمال الرابط فقط (يمنع اهتزاز المشهد أثناء الكتابة)
+            return [updatedTarget, ...prev.filter(x => x.id !== id)];
+        } else {
+            // تحديث في مكانه أثناء الكتابة
+            return prev.map(s => s.id === id ? updatedTarget : s);
+        }
     });
 
     // ابدأ السحب إذا كان الرابط صالحاً (فحص أولي)
-    if (url.includes("/shop/sub/") || url.includes("/item/")) {
+    if (isReady) {
         autoProcessSession(id, url);
     }
   }
@@ -269,12 +278,8 @@ export function BranchListClient({
             }
 
             if (successCount > 0 || urlsToScrape.length === 0) {
-                updateSession(id, { status: 'completed', error: urlsToScrape.length === 0 ? "تم إنشاء الفرع (الفرع فارغ من المنتجات)" : null });
-
-                // إخفاء السطر المكتمل نهائياً بسرعة وبدون حركة انتقالية
-                setTimeout(() => {
-                    setImportSessions(prev => prev.filter(s => s.id !== id));
-                }, 400);
+                // إخفاء وحذف فوري بدون أي حركة "تزحلق" أو "سحب"
+                setImportSessions(prev => prev.filter(s => s.id !== id));
             } else {
                 updateSession(id, { status: 'error', error: "فشل سحب المنتجات لهذا الفرع" });
             }
@@ -594,11 +599,7 @@ export function BranchListClient({
                 {importSessions.map((session, index) => (
                     <div
                         key={session.id}
-                        className={`p-5 rounded-[2rem] border-2 mb-4 transition-all duration-500 ${
-                            session.status === 'completed'
-                                ? 'opacity-0'
-                                : 'bg-white border-indigo-50 shadow-sm'
-                        }`}
+                        className="p-5 rounded-[2rem] border-2 mb-4 bg-white border-indigo-50 shadow-sm"
                     >
                         <div className="flex flex-col md:flex-row gap-4 items-center">
                             <div className="w-full md:w-16 h-16 shrink-0 relative group">
