@@ -105,7 +105,7 @@ export function parseTelegramAdminCallback(raw: string): ParsedTelegramAdminCall
     const slug = sec[1].trim();
     if (slug.length > 0 && slug.length <= 48) return { kind: "section", slug };
   }
-  let m = /^ord(\d+)$/.exec(t);
+  m = /^ord(\d+)$/.exec(t);
   if (m) {
     const page = Number(m[1]);
     if (!Number.isFinite(page) || page < 0) return null;
