@@ -98,6 +98,9 @@ export default async function ClientOrderPage(props: Props) {
       ? Number(shop.region.deliveryPrice.toString()) / ALF_PER_DINAR
       : 0;
 
+    const botUsername = process.env.TELEGRAM_BOT_USERNAME || "";
+    const portalUrl = `${getPublicAppUrl().replace(/\/+$/, "")}/client/order?e=${sp.e}&exp=${sp.exp}&s=${sp.s}`;
+
     return (
       <div className="kse-app-bg relative min-h-screen px-4 py-8 pb-16 text-slate-800">
         <div className="absolute top-4 left-4 z-50">
@@ -115,6 +118,8 @@ export default async function ClientOrderPage(props: Props) {
             sig={sp.s!}
             viewerName=""
             initialOrder={null}
+            botUsername={botUsername}
+            portalUrl={portalUrl}
           />
         </div>
       </div>

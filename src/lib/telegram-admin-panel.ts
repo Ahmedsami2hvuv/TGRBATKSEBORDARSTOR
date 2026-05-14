@@ -110,7 +110,11 @@ export type ParsedTelegramAdminCallback =
   | { kind: "pr_edit"; id: string }
   | { kind: "pr_toggle_active"; id: string }
   | { kind: "pr_delete"; id: string }
-  | { kind: "pr_add" };
+  | { kind: "pr_add" }
+  | { kind: "rg_detail"; id: string }
+  | { kind: "rg_edit_name"; id: string }
+  | { kind: "rg_edit_price"; id: string }
+  | { kind: "rg_adj_price"; id: string; amount: number };
 
 export function parseTelegramAdminCallback(raw: string): ParsedTelegramAdminCallback | null {
   const t = raw.trim();
@@ -147,6 +151,17 @@ export function parseTelegramAdminCallback(raw: string): ParsedTelegramAdminCall
   if (m) return { kind: "pr_toggle_active", id: m[1] };
   m = /^prx:(.+)$/.exec(t);
   if (m) return { kind: "pr_delete", id: m[1] };
+
+  // Regions
+  m = /^rgd:(.+)$/.exec(t);
+  if (m) return { kind: "rg_detail", id: m[1] };
+  m = /^rgen:(.+)$/.exec(t);
+  if (m) return { kind: "rg_edit_name", id: m[1] };
+  m = /^rgep:(.+)$/.exec(t);
+  if (m) return { kind: "rg_edit_price", id: m[1] };
+  m = /^rga:(.+):(-?\d+)$/.exec(t);
+  if (m) return { kind: "rg_adj_price", id: m[1], amount: Number(m[2]) };
+
   const sec = /^s:(.+)$/.exec(t);
   if (sec?.[1]) {
     const slug = sec[1].trim();
@@ -602,18 +617,30 @@ async function renderAdminSection(slug: string): Promise<{ text: string; keyboar
       const rows = await prisma.region.findMany({
         orderBy: { name: "asc" },
         take: 35,
-        select: { name: true, deliveryPrice: true },
+        select: { id: true, name: true, deliveryPrice: true },
       });
       if (rows.length === 0) {
         return { text: "<b>المناطق</b>\n\nلا يوجد مناطق.", keyboard: backOnlyKeyboard() };
       }
-      const lines = rows.map(
-        (r) => `• ${escapeTelegramHtml(r.name)} — توصيل ${escapeTelegramHtml(formatDinarAsAlf(r.deliveryPrice))} `,
-      );
-      return {
-        text: `<b>المناطق</b>\n\n${lines.join("\n")}`,
-        keyboard: backOnlyKeyboard(),
+
+      const text = `<b>إدارة المناطق (${rows.length})</b>\n\nاختر منطقة لتعديل سعر التوصيل:`;
+      const kb: TelegramInlineKeyboard = {
+        inline_keyboard: []
       };
+
+      for (let i = 0; i < rows.length; i += 2) {
+        const row: any[] = [];
+        const r1 = rows[i];
+        row.push({ text: `${r1.name} (${formatDinarAsAlf(r1.deliveryPrice)})`, callback_data: `rgd:${r1.id}` });
+        if (i + 1 < rows.length) {
+          const r2 = rows[i + 1];
+          row.push({ text: `${r2.name} (${formatDinarAsAlf(r2.deliveryPrice)})`, callback_data: `rgd:${r2.id}` });
+        }
+        kb.inline_keyboard.push(row);
+      }
+
+      kb.inline_keyboard.push([{ text: "🔙 رجوع", callback_data: "main" }]);
+      return { text, keyboard: kb };
     }
     case "employees": {
       const rows = await prisma.employee.findMany({
@@ -741,6 +768,46 @@ export async function handleTelegramAdminPrivateMessage(message: {
       return true;
     }
 
+      return true;
+    }
+
+    if (session.step === "edit_region_name") {
+      const p = JSON.parse(session.payload || "{}");
+      await prisma.region.update({ where: { id: p.id }, data: { name: txt } });
+      await prisma.telegramBotSession.update({ where: { telegramUserId }, data: { step: "idle", payload: "" } });
+      await sendTelegramMessageWithKeyboardToChat(chatId, "✅ تم تحديث اسم المنطقة بنجاح.", {
+        inline_keyboard: [[{ text: "🔙 رجوع للمنطقة", callback_data: `rgd:${p.id}` }]]
+      });
+      return true;
+    }
+
+    if (session.step === "edit_region_price") {
+      const p = JSON.parse(session.payload || "{}");
+      const price = parseAlfInputToDinarDecimalRequired(txt);
+      if (!price.ok) {
+        await sendTelegramMessageWithKeyboardToChat(chatId, "❌ السعر غير صالح. يرجى إرسال رقم (مثلاً 3.5):");
+        return true;
+      }
+      await prisma.region.update({ where: { id: p.id }, data: { deliveryPrice: new Decimal(price.value) } });
+      await prisma.telegramBotSession.update({ where: { telegramUserId }, data: { step: "idle", payload: "" } });
+      await sendTelegramMessageWithKeyboardToChat(chatId, "✅ تم تحديث سعر التوصيل بنجاح.", {
+        inline_keyboard: [[{ text: "🔙 رجوع للمنطقة", callback_data: `rgd:${p.id}` }]]
+      });
+      return true;
+    }
+
+    if (session.step === "admin_quick_order_time") {
+      const p = JSON.parse(session.payload || "{}");
+      p.orderNoteTime = txt;
+      await prisma.telegramBotSession.update({
+        where: { telegramUserId },
+        data: { step: "admin_quick_order_confirm", payload: JSON.stringify(p) }
+      });
+      const { text, keyboard } = formatQuickOrderConfirm(p);
+      await sendTelegramMessageWithKeyboardToChat(chatId, text, keyboard);
+      return true;
+    }
+
     if (session.step === "await_courier_name") {
       const p = JSON.parse(session.payload || "{}");
       await prisma.courier.update({ where: { id: p.id }, data: { name: txt } });
@@ -798,6 +865,17 @@ async function handleAdminQuickOrderMessage(message: {
   const price = parseAlfInputToDinarDecimalRequired(priceStr);
   if (!price.ok) return false;
 
+  // محاولة استخراج الوقت (عادة يكون في آخر الرسالة أو يحتوي على كلمات دالة)
+  let orderTime = "";
+  const timeKeywords = ["العصر", "الصبح", "ظهر", "ليل", "بـ", "ساعة", "اليوم", "باجر"];
+  for (const line of lines) {
+    if (timeKeywords.some(kw => line.includes(kw)) || /\d+/.test(line)) {
+      if (line !== phone && line !== priceStr && line !== regionSearch) {
+        orderTime = line;
+      }
+    }
+  }
+
   // البحث عن المنطقة
   let region = await prisma.region.findFirst({
     where: { name: { contains: regionSearch, mode: 'insensitive' } }
@@ -816,12 +894,33 @@ async function handleAdminQuickOrderMessage(message: {
 
   const payload = {
     phone,
-    price: price.value,
+    price: Number(price.value),
     type: type || "غير محدد",
     regionId: region?.id,
     regionName: region?.name || regionSearch || "غير محدد",
-    deliveryPrice
+    deliveryPrice: Number(deliveryPrice),
+    orderNoteTime: orderTime || ""
   };
+
+  if (!orderTime) {
+    await prisma.telegramBotSession.upsert({
+      where: { telegramUserId: String(message.from?.id) },
+      create: {
+        telegramUserId: String(message.from?.id),
+        chatId: String(message.chat.id),
+        step: "admin_quick_order_time",
+        payload: JSON.stringify(payload),
+      },
+      update: {
+        step: "admin_quick_order_time",
+        payload: JSON.stringify(payload),
+      }
+    });
+    await sendTelegramMessageWithKeyboardToChat(String(message.chat.id), "❓ <b>شوكت تحب يجيلك المندوب؟</b>\n(أرسل الوقت، مثلاً: العصر، أو بـ 4)", {
+      inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "main" }]]
+    });
+    return true;
+  }
 
   await prisma.telegramBotSession.upsert({
     where: { telegramUserId: String(message.from?.id) },
@@ -843,12 +942,13 @@ async function handleAdminQuickOrderMessage(message: {
 }
 
 function formatQuickOrderConfirm(p: any) {
-  const total = p.price + p.deliveryPrice;
+  const total = Number(p.price) + Number(p.deliveryPrice);
   const text =
     `<b>تأكيد الطلب السريع</b>\n\n` +
     `نوع الطلب: ${escapeTelegramHtml(p.type)}\n` +
     `المنطقة: ${escapeTelegramHtml(p.regionName)}\n` +
-    `الهاتف: <code>${p.phone}</code>\n\n` +
+    `الهاتف: <code>${p.phone}</code>\n` +
+    `الوقت: <b>${escapeTelegramHtml(p.orderNoteTime || "فوري")}</b>\n\n` +
     `💰 السعر: <b>${formatDinarAsAlf(p.price)}</b>\n` +
     `🚚 التوصيل: <b>${formatDinarAsAlf(p.deliveryPrice)}</b>\n` +
     `💵 الإجمالي: <b>${formatDinarAsAlf(total)}</b>\n\n` +
@@ -857,12 +957,8 @@ function formatQuickOrderConfirm(p: any) {
   const kb: TelegramInlineKeyboard = {
     inline_keyboard: [
       [
-        { text: "➖ 5", callback_data: "qadj:p:-5" },
-        { text: "سعر الطلب", callback_data: "none" },
-        { text: "➕ 5", callback_data: "qadj:p:5" },
-      ],
-      [
         { text: "➖ 1", callback_data: "qadj:p:-1" },
+        { text: "سعر الطلب", callback_data: "none" },
         { text: "➕ 1", callback_data: "qadj:p:1" },
       ],
       [
@@ -1139,9 +1235,9 @@ export async function handleTelegramAdminCallback(cq: {
             customerPhone: p.phone,
             orderSubtotal: new Decimal(p.price),
             deliveryPrice: new Decimal(p.deliveryPrice),
-            totalAmount: new Decimal(p.price + p.deliveryPrice),
+            totalAmount: new Decimal(Number(p.price) + Number(p.deliveryPrice)),
             submissionSource: "admin_quick_order",
-            orderNoteTime: "فوري",
+            orderNoteTime: p.orderNoteTime || "فوري",
           },
         });
 
@@ -1158,15 +1254,80 @@ export async function handleTelegramAdminCallback(cq: {
         });
         return true;
       }
+      case "rg_detail": {
+        const region = await prisma.region.findUnique({ where: { id: parsed.id } });
+        if (!region) {
+          await answerCallbackQuery(cq.id, "المنطقة غير موجودة", true);
+          return true;
+        }
+        const text =
+          `<b>📍 إدارة منطقة: ${escapeTelegramHtml(region.name)}</b>\n\n` +
+          `💰 سعر التوصيل الحالي: <b>${formatDinarAsAlf(region.deliveryPrice)}</b>\n\n` +
+          `يمكنك تعديل السعر باستخدام الأزرار أدناه أو إرسال سعر جديد كرسالة.`;
+
+        const kb: TelegramInlineKeyboard = {
+          inline_keyboard: [
+            [
+              { text: "➖ 1.0", callback_data: `rga:${region.id}:-1000` },
+              { text: "تعديل السعر", callback_data: "none" },
+              { text: "➕ 1.0", callback_data: `rga:${region.id}:1000` },
+            ],
+            [
+              { text: "➖ 0.5", callback_data: `rga:${region.id}:-500` },
+              { text: "➕ 0.5", callback_data: `rga:${region.id}:500` },
+            ],
+            [
+              { text: "📝 إدخال سعر يدوي", callback_data: `rgep:${region.id}` },
+              { text: "🏷️ تعديل الاسم", callback_data: `rgen:${region.id}` },
+            ],
+            [{ text: "🔙 رجوع للمناطق", callback_data: "s:regions" }]
+          ]
+        };
+        await editTelegramMessage(chatId, messageId, text, kb);
+        return true;
+      }
+      case "rg_adj_price": {
+        const region = await prisma.region.findUnique({ where: { id: parsed.id } });
+        if (!region) return true;
+        const newPrice = Math.max(0, region.deliveryPrice.toNumber() + parsed.amount / 1000);
+        await prisma.region.update({
+          where: { id: region.id },
+          data: { deliveryPrice: new Decimal(newPrice) }
+        });
+        // إعادة عرض التفاصيل
+        return await handleTelegramAdminCallback({ ...cq, data: `rgd:${region.id}` });
+      }
+      case "rg_edit_name": {
+        await prisma.telegramBotSession.upsert({
+          where: { telegramUserId },
+          create: { telegramUserId, chatId, step: "edit_region_name", payload: JSON.stringify({ id: parsed.id }) },
+          update: { step: "edit_region_name", payload: JSON.stringify({ id: parsed.id }) },
+        });
+        await sendTelegramMessageWithKeyboardToChat(chatId, "⌨️ أرسل الاسم الجديد للمنطقة:", {
+          inline_keyboard: [[{ text: "❌ إلغاء", callback_data: `rgd:${parsed.id}` }]]
+        });
+        return true;
+      }
+      case "rg_edit_price": {
+        await prisma.telegramBotSession.upsert({
+          where: { telegramUserId },
+          create: { telegramUserId, chatId, step: "edit_region_price", payload: JSON.stringify({ id: parsed.id }) },
+          update: { step: "edit_region_price", payload: JSON.stringify({ id: parsed.id }) },
+        });
+        await sendTelegramMessageWithKeyboardToChat(chatId, "⌨️ أرسل سعر التوصيل الجديد (مثلاً 3.5 أو 5):", {
+          inline_keyboard: [[{ text: "❌ إلغاء", callback_data: `rgd:${parsed.id}` }]]
+        });
+        return true;
+      }
       case "qadj": {
         const session = await prisma.telegramBotSession.findUnique({ where: { telegramUserId } });
         if (!session || session.step !== "admin_quick_order_confirm") return true;
         const p = JSON.parse(session.payload || "{}");
 
         if (parsed.field === "price") {
-          p.price = Math.max(0, p.price + parsed.amount);
+          p.price = Math.max(0, Number(p.price) + Number(parsed.amount));
         } else {
-          p.deliveryPrice = Math.max(0, p.deliveryPrice + parsed.amount);
+          p.deliveryPrice = Math.max(0, Number(p.deliveryPrice) + Number(parsed.amount));
         }
 
         await prisma.telegramBotSession.update({
