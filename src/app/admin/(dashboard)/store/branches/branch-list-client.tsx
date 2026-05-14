@@ -172,13 +172,9 @@ export function BranchListClient({
 
         const updatedTarget = { ...target, url };
 
-        if (isReady && prev[0].id !== id) {
-            // صعود للأعلى عند اكتمال الرابط فقط (يمنع اهتزاز المشهد أثناء الكتابة)
-            return [updatedTarget, ...prev.filter(x => x.id !== id)];
-        } else {
-            // تحديث في مكانه أثناء الكتابة
-            return prev.map(s => s.id === id ? updatedTarget : s);
-        }
+        // نحدث الرابط في مكانه بدون تغيير ترتيب المصفوفة
+        // هذا يمنع اهتزاز واجهة المستخدم وانتقال التركيز (Focus) لمكان آخر
+        return prev.map(s => s.id === id ? updatedTarget : s);
     });
 
     // ابدأ السحب إذا كان الرابط صالحاً (فحص أولي)
