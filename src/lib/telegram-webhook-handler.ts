@@ -17,9 +17,10 @@ import {
   handleTelegramAdminPrivateMessage,
 } from "./telegram-admin-panel";
 import {
-  handleShopTelegramCallback,
-  handleShopTelegramMessage,
-} from "./telegram-shop";
+  handleCourierCallback,
+  handleCourierPrivateTextMessage,
+  getCourierByTelegramUserId,
+} from "./telegram-courier-panel";
 
 type WebhookContext = {
   chatId: string;
@@ -57,8 +58,8 @@ export async function handleTelegramWebhook(body: any): Promise<void> {
       fromName: msg.from?.first_name || "",
     };
 
-    // التحقق مما إذا كانت الرسالة عبارة عن رابط بوابة الموظف
-    if (msg.text.includes("/client/order?")) {
+    // التحقق مما إذا كانت الرسالة عبارة عن رابط بوابة الموظف أو المندوب
+    if (msg.text.includes("/client/order?") || msg.text.includes("/mandoub/order?")) {
       const url = msg.text.trim();
       try {
         const urlObj = new URL(url);
@@ -66,36 +67,64 @@ export async function handleTelegramWebhook(body: any): Promise<void> {
         const exp = urlObj.searchParams.get("exp");
         const s = urlObj.searchParams.get("s");
 
-        if (e && exp && s) {
-          // جلب الموظف للتحقق
-          const employee = await prisma.employee.findUnique({
-            where: { id: e },
-            include: { shop: true }
-          });
+        const isCourierLink = url.includes("/mandoub/");
 
-          if (employee && employee.orderPortalToken === exp) {
-            // ربط حساب التليجرام بالموظف
-            await prisma.employee.update({
-              where: { id: employee.id },
-              data: { telegramUserId: ctx.fromId }
+        if (e && exp && s) {
+          if (isCourierLink) {
+            // ربط حساب المندوب
+            const courier = await prisma.courier.findUnique({
+              where: { id: e },
             });
 
-            await sendTelegramMessageWithKeyboardToChat(
-              ctx.chatId,
-              `مرحباً بك <b>${employee.name}</b> من <b>${employee.shop.name}</b>.\n\nتم ربط حسابك بنجاح. يمكنك الآن استخدام الأزرار أدناه لإدارة طلبياتك.`,
-              {
-                inline_keyboard: [
-                  [{ text: "📋 طلبياتي", callback_data: `sot_emp` }],
-                  [{ text: "➕ إضافة طلب جديد", callback_data: `eor:${employee.id}` }],
-                  [{ text: "📊 المحفظة", callback_data: `emp_wallet` }]
-                ]
-              }
-            );
-            return;
+            if (courier && courier.orderPortalToken === exp) {
+              await prisma.courier.update({
+                where: { id: courier.id },
+                data: { telegramUserId: ctx.fromId }
+              });
+
+              await sendTelegramMessageWithKeyboardToChat(
+                ctx.chatId,
+                `مرحباً بك المندوب <b>${courier.name}</b>.\n\nتم ربط حسابك بنجاح. يمكنك الآن إدارة طلبياتك ومحفظتك مباشرة من هنا.`,
+                {
+                  inline_keyboard: [
+                    [{ text: "📦 طلبياتي", callback_data: "co_orders_0" }],
+                    [{ text: "💼 محفظتي", callback_data: "co_wallet_0" }]
+                  ]
+                }
+              );
+              return;
+            }
+          } else {
+            // جلب الموظف للتحقق
+            const employee = await prisma.employee.findUnique({
+              where: { id: e },
+              include: { shop: true }
+            });
+
+            if (employee && employee.orderPortalToken === exp) {
+              // ربط حساب التليجرام بالموظف
+              await prisma.employee.update({
+                where: { id: employee.id },
+                data: { telegramUserId: ctx.fromId }
+              });
+
+              await sendTelegramMessageWithKeyboardToChat(
+                ctx.chatId,
+                `مرحباً بك <b>${employee.name}</b> من <b>${employee.shop.name}</b>.\n\nتم ربط حسابك بنجاح. يمكنك الآن استخدام الأزرار أدناه لإدارة طلبياتك.`,
+                {
+                  inline_keyboard: [
+                    [{ text: "📋 طلبياتي", callback_data: `sot_emp` }],
+                    [{ text: "➕ إضافة طلب جديد", callback_data: `eor:${employee.id}` }],
+                    [{ text: "📊 المحفظة", callback_data: `emp_wallet` }]
+                  ]
+                }
+              );
+              return;
+            }
           }
         }
       } catch (e) {
-        console.error("Error parsing employee portal link from telegram:", e);
+        console.error("Error parsing portal link from telegram:", e);
       }
     }
 
@@ -113,6 +142,17 @@ export async function handleTelegramWebhook(body: any): Promise<void> {
     // للمدراء: محاولة معالجة الرسائل العادية كطلبات سريعة
     const isMaybeAdmin = await handleTelegramAdminPrivateMessage(msg);
     if (isMaybeAdmin) return;
+
+    // معالجة رسائل المناديب
+    const courier = await getCourierByTelegramUserId(ctx.fromId);
+    if (courier) {
+      await handleCourierPrivateTextMessage({
+        message: msg as any,
+        courier: courier as any,
+        telegramUserId: ctx.fromId,
+      });
+      return;
+    }
 
     // معالجة رسائل المحلات
     const isShopMsg = await handleShopTelegramMessage(msg);
@@ -165,6 +205,18 @@ async function handleCallbackQuery(cb: TelegramCallbackQuery, ctx: WebhookContex
   // المحلات
   const shopHandled = await handleShopTelegramCallback(cb as any);
   if (shopHandled) return;
+
+  // المناديب
+  const courier = await getCourierByTelegramUserId(ctx.fromId);
+  if (courier) {
+    await handleCourierCallback({
+      cq: cb as any,
+      courier: courier as any,
+    });
+    // ملاحظة: لا نضع return هنا لأن بعض الـ callbacks قد تكون مشتركة أو تحتاج معالجة إضافية،
+    // ولكن في تصميمنا الحالي handleCourierCallback كافية.
+    return;
+  }
 
   // l[orderNumber]: قائمة المناديب للإسناد
   if (data.startsWith("l")) {
