@@ -97,7 +97,7 @@ export async function handlePreparerTelegramCallback(
       case "main": {
         await clearPreparerSession(telegramUserId);
         const { text, keyboard } = await renderPreparerHub(preparer);
-        await editTelegramMessage(chatId, messageId, text, keyboard);
+        await editTelegramMessage(chatId, messageId, text, keyboard, botToken);
         return true;
       }
       case "wallet": {
@@ -120,7 +120,7 @@ export async function handlePreparerTelegramCallback(
             [{ text: "🏠 الرئيسية", callback_data: "p_main" }]
           ]
         };
-        await editTelegramMessage(chatId, messageId, text, kb);
+        await editTelegramMessage(chatId, messageId, text, kb, botToken);
         return true;
       }
       case "orders": {
@@ -151,7 +151,7 @@ export async function handlePreparerTelegramCallback(
             [{ text: "🏠 الرئيسية", callback_data: "p_main" }]
           ]
         };
-        await editTelegramMessage(chatId, messageId, text, kb);
+        await editTelegramMessage(chatId, messageId, text, kb, botToken);
         return true;
       }
       case "detail": {
@@ -181,13 +181,13 @@ export async function handlePreparerTelegramCallback(
             [{ text: "⬅️ قائمة الطلبات", callback_data: "p_orders_0" }]
           ]
         };
-        await editTelegramMessage(chatId, messageId, text, kb);
+        await editTelegramMessage(chatId, messageId, text, kb, botToken);
         return true;
       }
       case "cancel_flow": {
         await clearPreparerSession(telegramUserId);
         const { text, keyboard } = await renderPreparerHub(preparer);
-        await editTelegramMessage(chatId, messageId, text, keyboard);
+        await editTelegramMessage(chatId, messageId, text, keyboard, botToken);
         return true;
       }
     }
@@ -225,12 +225,15 @@ export async function renderPreparerHub(preparer: any) {
   return { text, keyboard: kb };
 }
 
-export async function handlePreparerTelegramMessage(message: {
-  message_id: number;
-  from?: { id: number };
-  chat: { id: number };
-  text?: string;
-}): Promise<boolean> {
+export async function handlePreparerTelegramMessage(
+  message: {
+    message_id: number;
+    from?: { id: number };
+    chat: { id: number };
+    text?: string;
+  },
+  botToken?: string,
+): Promise<boolean> {
   const fromId = message.from?.id;
   if (fromId == null) return false;
   const telegramUserId = String(fromId);
@@ -242,7 +245,7 @@ export async function handlePreparerTelegramMessage(message: {
   const txt = message.text?.trim() ?? "";
   if (txt === "/start") {
     const { text, keyboard } = await renderPreparerHub(preparer);
-    await sendTelegramMessageWithKeyboardToChat(chatId, text, keyboard);
+    await sendTelegramMessageWithKeyboardToChat(chatId, text, keyboard, botToken);
     return true;
   }
 

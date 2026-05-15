@@ -10,7 +10,10 @@ export async function POST(
   request: Request,
   { params }: { params: { botId: string } }
 ) {
+  console.log(`[webhook] Received request for botId: ${params.botId}`);
+
   if (!verifyTelegramWebhookSecret(request.headers)) {
+    console.error(`[webhook] Secret verification failed for botId: ${params.botId}`);
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
@@ -20,13 +23,16 @@ export async function POST(
   });
 
   if (!bot || !bot.active) {
+    console.error(`[webhook] Bot not found or inactive: ${botId}`);
     return NextResponse.json({ ok: false, error: "Bot not found or inactive" }, { status: 404 });
   }
 
   let body: any;
   try {
     body = await request.json();
-  } catch {
+    console.log(`[webhook] Update received:`, JSON.stringify(body));
+  } catch (err) {
+    console.error(`[webhook] Error parsing JSON:`, err);
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 

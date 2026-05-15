@@ -25,14 +25,14 @@ export async function getActiveBotByPurpose(purpose: string) {
  * التأكد من ضبط الـ Webhook لجميع البوتات النشطة في قاعدة البيانات.
  * مفيد للاستدعاء عند بدء التطبيق أو عند إضافة بوت جديد.
  */
-export async function ensureAllBotsWebhooksConfigured() {
+export async function ensureAllBotsWebhooksConfigured(force: boolean = false, baseUrl?: string) {
   const { ensureTelegramWebhookConfigured } = await import("./telegram");
   const bots = await prisma.telegramBot.findMany({
     where: { active: true }
   });
 
   for (const bot of bots) {
-    await ensureTelegramWebhookConfigured(bot.token, bot.id).catch(err => {
+    await ensureTelegramWebhookConfigured(bot.token, bot.id, force, baseUrl).catch(err => {
       console.error(`Failed to ensure webhook for bot ${bot.name}:`, err);
     });
   }

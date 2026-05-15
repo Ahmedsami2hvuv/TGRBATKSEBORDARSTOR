@@ -82,10 +82,13 @@ export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promis
       await handleShopTelegramMessage(msg, botToken);
     }
     else if (botPurpose === "preparer") {
-      await handlePreparerTelegramMessage(msg);
+      await handlePreparerTelegramMessage(msg, botToken);
     }
     else if (botPurpose === "supplier") {
-      await handleSupplierTelegramMessage(msg);
+      await handleSupplierTelegramMessage(msg, botToken);
+    }
+    else {
+      console.warn(`[telegram-webhook] Unhandled purpose "${botPurpose}" for message from ${msg.from?.id}`);
     }
   }
 }

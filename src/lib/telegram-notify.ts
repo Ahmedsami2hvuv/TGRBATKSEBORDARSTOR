@@ -136,6 +136,7 @@ export async function notifyTelegramCourierTransferEvent(input: {
   partyName: string;
   location: string;
   transferId?: string;
+  botToken?: string;
 }) {
   const courier = await prisma.courier.findUnique({ where: { id: input.courierId } });
   if (!courier?.telegramUserId) return;
@@ -174,11 +175,10 @@ export async function notifyTelegramCourierTransferEvent(input: {
            `\u200Fالمبلغ لا يزال في ذمتك، تواصل معه للتأكد.` + walletLine;
   }
 
+  const courierBotToken = input.botToken || await getBotTokenByPurpose("courier");
   if (kb) {
-    const courierBotToken = await getBotTokenByPurpose("courier");
     await sendTelegramMessageWithKeyboardToChat(courier.telegramUserId, text, kb, courierBotToken);
   } else {
-    const courierBotToken = await getBotTokenByPurpose("courier");
     await sendTelegramHtmlToChat(courier.telegramUserId, text, courierBotToken);
   }
 }
@@ -275,14 +275,14 @@ export async function notifyTelegramMoneyEvent(input: any): Promise<void> {
       `\n\n🔗 <a href="${courierOrderUrl}">فتح الطلب من حسابك</a>` +
       `\n\n\u200F<b>💵 عندي:</b> ${walletTotalStr}`;
 
-    const courierBotToken = await getBotTokenByPurpose("courier");
+    const courierBotToken = input.botToken || await getBotTokenByPurpose("courier");
     await sendTelegramHtmlToChat(order.courier.telegramUserId, courierText, courierBotToken);
   }
 }
 
-export async function notifyTelegramOrderPrepared(orderId: string): Promise<void> {
+export async function notifyTelegramOrderPrepared(input: { orderId: string; botToken?: string }): Promise<void> {
   const order = await prisma.order.findUnique({
-    where: { id: orderId },
+    where: { id: input.orderId },
     include: { shop: true, customer: true, customerRegion: true, courier: true }
   });
   if (!order || !order.courier?.telegramUserId) return;
@@ -308,7 +308,7 @@ export async function notifyTelegramOrderPrepared(orderId: string): Promise<void
     `\n\u200F<b>💵 عندي:</b> ${walletTotalStr}`
   ].join("\n");
 
-  const courierBotToken = await getBotTokenByPurpose("courier");
+  const courierBotToken = input.botToken || await getBotTokenByPurpose("courier");
   await sendTelegramHtmlToChat(order.courier.telegramUserId, text, courierBotToken);
 
   const adminBotToken = await getBotTokenByPurpose("admin");

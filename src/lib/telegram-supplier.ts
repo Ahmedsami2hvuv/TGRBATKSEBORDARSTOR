@@ -56,7 +56,7 @@ export async function handleSupplierTelegramCallback(
   switch (parsed.kind) {
     case "main": {
       const { text, keyboard } = await renderSupplierHub(supplier);
-      await editTelegramMessage(chatId, messageId, text, keyboard);
+      await editTelegramMessage(chatId, messageId, text, keyboard, botToken);
       return true;
     }
     case "products": {
@@ -76,7 +76,7 @@ export async function handleSupplierTelegramCallback(
       const kb: TelegramInlineKeyboard = {
         inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "sup_main" }]]
       };
-      await editTelegramMessage(chatId, messageId, text, kb);
+      await editTelegramMessage(chatId, messageId, text, kb, botToken);
       return true;
     }
     case "wallet": {
@@ -84,7 +84,7 @@ export async function handleSupplierTelegramCallback(
       const kb: TelegramInlineKeyboard = {
         inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "sup_main" }]]
       };
-      await editTelegramMessage(chatId, messageId, text, kb);
+      await editTelegramMessage(chatId, messageId, text, kb, botToken);
       return true;
     }
   }
@@ -114,12 +114,15 @@ export async function renderSupplierHub(supplier: any) {
   return { text, keyboard: kb };
 }
 
-export async function handleSupplierTelegramMessage(message: {
-  message_id: number;
-  from?: { id: number };
-  chat: { id: number };
-  text?: string;
-}): Promise<boolean> {
+export async function handleSupplierTelegramMessage(
+  message: {
+    message_id: number;
+    from?: { id: number };
+    chat: { id: number };
+    text?: string;
+  },
+  botToken?: string,
+): Promise<boolean> {
   const fromId = message.from?.id;
   if (fromId == null) return false;
   const telegramUserId = String(fromId);
@@ -131,7 +134,7 @@ export async function handleSupplierTelegramMessage(message: {
   const txt = message.text?.trim() ?? "";
   if (txt === "/start") {
     const { text, keyboard } = await renderSupplierHub(supplier);
-    await sendTelegramMessageWithKeyboardToChat(chatId, text, keyboard);
+    await sendTelegramMessageWithKeyboardToChat(chatId, text, keyboard, botToken);
     return true;
   }
 

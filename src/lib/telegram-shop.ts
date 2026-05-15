@@ -471,7 +471,7 @@ export async function handleShopTelegramCallback(
       const isEnvAdmin = envIds.includes(telegramUserId) || process.env.TELEGRAM_ADMIN_USER_ID === telegramUserId;
       if (!isEnvAdmin) {
         const emp = await prisma.employee.findUnique({ where: { telegramUserId }, select: { id: true } });
-        if (emp) return await handleShopTelegramCallback({ ...cq, data: "sot_emp" });
+        if (emp) return await handleShopTelegramCallback({ ...cq, data: "sot_emp" }, botToken);
         return true;
       }
     }
@@ -483,15 +483,15 @@ export async function handleShopTelegramCallback(
         await clearShopSession(telegramUserId);
         const emp = await prisma.employee.findUnique({ where: { telegramUserId }, include: { shop: true } });
         if (emp) {
-          return await handleShopTelegramCallback({ ...cq, data: "sot_emp" });
+          return await handleShopTelegramCallback({ ...cq, data: "sot_emp" }, botToken);
         }
         const hub = await renderShopsTelegramHub(0);
-        await editTelegramMessage(chatId, messageId, hub.text, hub.keyboard).catch(() => {});
+        await editTelegramMessage(chatId, messageId, hub.text, hub.keyboard, botToken).catch(() => {});
         return true;
       }
       case "hub": {
         const hub = await renderShopsTelegramHub(parsed.page);
-        await editTelegramMessage(chatId, messageId, hub.text, hub.keyboard);
+        await editTelegramMessage(chatId, messageId, hub.text, hub.keyboard, botToken);
         return true;
       }
       case "add_start": {
@@ -503,6 +503,7 @@ export async function handleShopTelegramCallback(
           {
             inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]],
           },
+          botToken,
         );
         return true;
       }
@@ -515,6 +516,7 @@ export async function handleShopTelegramCallback(
           {
             inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]],
           },
+          botToken,
         );
         return true;
       }
@@ -523,16 +525,16 @@ export async function handleShopTelegramCallback(
         if (!d) {
           await editTelegramMessage(chatId, messageId, "المحل غير موجود.", {
             inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shcancel" }]],
-          });
+          }, botToken);
           return true;
         }
-        await editTelegramMessage(chatId, messageId, d.text, d.keyboard);
+        await editTelegramMessage(chatId, messageId, d.text, d.keyboard, botToken);
         return true;
       }
       case "edit_menu": {
         const d = await formatShopDetail(parsed.shopId);
         if (!d) return true;
-        await editTelegramMessage(chatId, messageId, d.text, d.keyboard);
+        await editTelegramMessage(chatId, messageId, d.text, d.keyboard, botToken);
         return true;
       }
       case "edit_name": {
@@ -542,6 +544,7 @@ export async function handleShopTelegramCallback(
           messageId,
           `اكتب <b>الاسم الجديد</b> للمحل.\n\nللإلغاء: /cancel_shop`,
           { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]] },
+          botToken,
         );
         return true;
       }
@@ -552,6 +555,7 @@ export async function handleShopTelegramCallback(
           messageId,
           `أرسل <b>رابط خرائط Google</b> أو نصاً يبدأ بـ http(s) للوكيشن.\n\nللإلغاء: /cancel_shop`,
           { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]] },
+          botToken,
         );
         return true;
       }
@@ -567,6 +571,7 @@ export async function handleShopTelegramCallback(
           messageId,
           `اكتب اسم <b>المنطقة</b> للبحث ثم اختر من القائمة.\n\nللإلغاء: /cancel_shop`,
           { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]] },
+          botToken,
         );
         return true;
       }
@@ -577,6 +582,7 @@ export async function handleShopTelegramCallback(
           messageId,
           `أرسل <b>صورة المحل</b> كصورة (وليس ملفاً).\n\nللإلغاء: /cancel_shop`,
           { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]] },
+          botToken,
         );
         return true;
       }
@@ -594,7 +600,7 @@ export async function handleShopTelegramCallback(
         revalidatePath("/admin/shops");
         await clearShopSession(telegramUserId);
         const d = await formatShopDetail(p.shopId);
-        if (d) await editTelegramMessage(chatId, messageId, `✅ تم تحديث المنطقة.\n\n${d.text}`, d.keyboard);
+        if (d) await editTelegramMessage(chatId, messageId, `✅ تم تحديث المنطقة.\n\n${d.text}`, d.keyboard, botToken);
         return true;
       }
       case "create_region_pick": {
@@ -615,6 +621,7 @@ export async function handleShopTelegramCallback(
           messageId,
           `<b>اللوكيشن</b>\n\nأرسل رابط خرائط Google أو رابطاً يبدأ بـ https لموقع المحل.\n\nللإلغاء: /cancel_shop`,
           { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]] },
+          botToken,
         );
         return true;
       }
@@ -636,7 +643,7 @@ export async function handleShopTelegramCallback(
         revalidatePath("/admin/shops");
         await clearShopSession(telegramUserId);
         const hub = await renderShopsTelegramHub(0);
-        await editTelegramMessage(chatId, messageId, `✅ تم إنشاء المحل.\n\n${hub.text}`, hub.keyboard);
+        await editTelegramMessage(chatId, messageId, `✅ تم إنشاء المحل.\n\n${hub.text}`, hub.keyboard, botToken);
         return true;
       }
       case "delete_confirm": {
@@ -652,6 +659,7 @@ export async function handleShopTelegramCallback(
               ],
             ],
           },
+          botToken,
         );
         return true;
       }
@@ -659,7 +667,7 @@ export async function handleShopTelegramCallback(
         await prisma.shop.delete({ where: { id: parsed.shopId } });
         revalidatePath("/admin/shops");
         const hub = await renderShopsTelegramHub(0);
-        await editTelegramMessage(chatId, messageId, `✅ تم حذف المحل.\n\n${hub.text}`, hub.keyboard);
+        await editTelegramMessage(chatId, messageId, `✅ تم حذف المحل.\n\n${hub.text}`, hub.keyboard, botToken);
         return true;
       }
       case "employee_menu": {
@@ -668,10 +676,10 @@ export async function handleShopTelegramCallback(
         if (!d) {
           await editTelegramMessage(chatId, messageId, "العميل غير موجود.", {
             inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shcancel" }]],
-          });
+          }, botToken);
           return true;
         }
-        await editTelegramMessage(chatId, messageId, d.text, d.keyboard);
+        await editTelegramMessage(chatId, messageId, d.text, d.keyboard, botToken);
         return true;
       }
       case "employee_add": {
@@ -679,7 +687,7 @@ export async function handleShopTelegramCallback(
         if (!shopRow) {
           await editTelegramMessage(chatId, messageId, "المحل غير موجود.", {
             inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shcancel" }]],
-          });
+          }, botToken);
           return true;
         }
         await upsertShopSession(
@@ -694,6 +702,7 @@ export async function handleShopTelegramCallback(
           `<b>إضافة عميل</b> <i>(يرفع الطلب من رابط المحل)</i>\n\n` +
             `أرسل <b>رقم هاتفه</b> العراقي (07…).\n\nللإلغاء: /cancel_shop`,
           { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: `sh:${parsed.shopId}` }]] },
+          botToken,
         );
         return true;
       }
@@ -702,7 +711,7 @@ export async function handleShopTelegramCallback(
         if (!emp) {
           await editTelegramMessage(chatId, messageId, "العميل غير موجود.", {
             inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shcancel" }]],
-          });
+          }, botToken);
           return true;
         }
         await upsertShopSession(
@@ -716,6 +725,7 @@ export async function handleShopTelegramCallback(
           messageId,
           `اكتب <b>الاسم الجديد</b> للعميل.\n\nللإلغاء: /cancel_shop`,
           { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: `sem:${parsed.employeeId}` }]] },
+          botToken,
         );
         return true;
       }
@@ -724,7 +734,7 @@ export async function handleShopTelegramCallback(
         if (!emp) {
           await editTelegramMessage(chatId, messageId, "العميل غير موجود.", {
             inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shcancel" }]],
-          });
+          }, botToken);
           return true;
         }
         await upsertShopSession(
@@ -738,6 +748,7 @@ export async function handleShopTelegramCallback(
           messageId,
           `أرسل <b>رقم الهاتف الجديد</b> العراقي (07…).\n\nللإلغاء: /cancel_shop`,
           { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: `sem:${parsed.employeeId}` }]] },
+          botToken,
         );
         return true;
       }
@@ -747,10 +758,10 @@ export async function handleShopTelegramCallback(
         if (!d) {
           await editTelegramMessage(chatId, messageId, "زبون التوصيل غير موجود.", {
             inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shcancel" }]],
-          });
+          }, botToken);
           return true;
         }
-        await editTelegramMessage(chatId, messageId, d.text, d.keyboard);
+        await editTelegramMessage(chatId, messageId, d.text, d.keyboard, botToken);
         return true;
       }
       case "customer_orders": {
@@ -758,10 +769,10 @@ export async function handleShopTelegramCallback(
         if (!d) {
           await editTelegramMessage(chatId, messageId, "زبون التوصيل غير موجود.", {
             inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shcancel" }]],
-          });
+          }, botToken);
           return true;
         }
-        await editTelegramMessage(chatId, messageId, d.text, d.keyboard);
+        await editTelegramMessage(chatId, messageId, d.text, d.keyboard, botToken);
         return true;
       }
       case "customer_edit_name": {
@@ -776,6 +787,7 @@ export async function handleShopTelegramCallback(
           messageId,
           `اكتب <b>الاسم الجديد</b> للزبون.\n\nللإلغاء: /cancel_shop`,
           { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: `scm:${parsed.customerId}` }]] },
+          botToken,
         );
         return true;
       }
@@ -791,6 +803,7 @@ export async function handleShopTelegramCallback(
           messageId,
           `أرسل <b>رقم هاتف زبون التوصيل</b> العراقي (مثال 07xxxxxxxx).\n\nللإلغاء: /cancel_shop`,
           { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: `scm:${parsed.customerId}` }]] },
+          botToken,
         );
         return true;
       }
@@ -812,6 +825,7 @@ export async function handleShopTelegramCallback(
               ],
             ],
           },
+          botToken,
         );
         return true;
       }
@@ -823,7 +837,7 @@ export async function handleShopTelegramCallback(
         revalidatePath("/admin/shops");
         revalidatePath("/admin/customers");
         const d = await formatShopDetail(shopId);
-        if (d) await editTelegramMessage(chatId, messageId, `✅ تم حذف زبون التوصيل.\n\n${d.text}`, d.keyboard);
+        if (d) await editTelegramMessage(chatId, messageId, `✅ تم حذف زبون التوصيل.\n\n${d.text}`, d.keyboard, botToken);
         return true;
       }
       case "employee_order_start": {
@@ -846,6 +860,7 @@ export async function handleShopTelegramCallback(
             `25\n\n` +
             `سيتعرف البوت على المنطقة والسعر والهاتف تلقائياً.`,
           { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: cancelTarget }]] },
+          botToken,
         );
         return true;
       }
@@ -867,6 +882,7 @@ export async function handleShopTelegramCallback(
             messageId,
             `المنطقة المختارة: <b>${region.name}</b>\n\n❓ <b>شوكت تحب يجيلك المندوب؟</b>\n(أرسل الوقت، مثلاً: هسه، باجر، بـ 4 العصر...)`,
             { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]] },
+            botToken,
           );
           return true;
         }
@@ -878,6 +894,7 @@ export async function handleShopTelegramCallback(
             messageId,
             `المنطقة المختارة: <b>${region.name}</b>\n\nأرسل الآن <b>رقم هاتف الزبون</b> (وجهة التوصيل).`,
             { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]] },
+            botToken,
           );
         } else {
           await upsertShopSession(telegramUserId, chatId, "shop_emp_order_price", JSON.stringify(payload));
@@ -886,6 +903,7 @@ export async function handleShopTelegramCallback(
             messageId,
             `المنطقة المختارة: <b>${region.name}</b>\n\nأرسل الآن <b>سعر الطلب</b> (بالآلاف).`,
             { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]] },
+            botToken,
           );
         }
         return true;
@@ -957,6 +975,7 @@ export async function handleShopTelegramCallback(
               ]
             ]
           },
+          botToken,
         );
         return true;
       }
@@ -973,7 +992,7 @@ export async function handleShopTelegramCallback(
 
         await upsertShopSession(telegramUserId, chatId, "shop_emp_order_confirm", JSON.stringify(p));
         const { text, keyboard } = formatEmployeeOrderConfirm(p, telegramUserId);
-        await editTelegramMessage(chatId, messageId, text, keyboard);
+        await editTelegramMessage(chatId, messageId, text, keyboard, botToken);
         return true;
       }
       case "employee_hub": {
@@ -982,7 +1001,7 @@ export async function handleShopTelegramCallback(
           include: { shop: true }
         });
         if (!emp) {
-          await editTelegramMessage(chatId, messageId, "لم يتم العثور على حساب موظف مرتبط بهذا التليجرام. يرجى إرسال رابط البوابة الخاص بك للتفعيل.");
+          await editTelegramMessage(chatId, messageId, "لم يتم العثور على حساب موظف مرتبط بهذا التليجرام. يرجى إرسال رابط البوابة الخاص بك للتفعيل.", undefined, botToken);
           return true;
         }
         const text = `أهلاً بك <b>${emp.name}</b> (${emp.shop.name})\n\nيمكنك الآن إضافة طلبات سريعة بمجرد كتابة التفاصيل (اسم المنطقة، رقم الهاتف، السعر) في رسالة واحدة.`;
@@ -992,7 +1011,7 @@ export async function handleShopTelegramCallback(
             [{ text: "📦 طلباتي الأخيرة", callback_data: `emp_orders_list` }]
           ]
         };
-        await editTelegramMessage(chatId, messageId, text, kb);
+        await editTelegramMessage(chatId, messageId, text, kb, botToken);
         return true;
       }
       case "employee_orders_list": {
@@ -1022,7 +1041,7 @@ export async function handleShopTelegramCallback(
         const kb: TelegramInlineKeyboard = {
           inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "sot_emp" }]]
         };
-        await editTelegramMessage(chatId, messageId, text, kb);
+        await editTelegramMessage(chatId, messageId, text, kb, botToken);
         return true;
       }
       default:

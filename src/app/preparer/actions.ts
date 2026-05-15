@@ -1005,7 +1005,7 @@ export async function assignOrderByPreparer(_prev: PreparerActionState, formData
     },
   });
 
-  void notifyTelegramOrderPrepared(orderId);
+  void notifyTelegramOrderPrepared({ orderId });
 
   revalidatePath("/preparer");
   revalidatePath(`/preparer/order/${orderId}`);
@@ -1215,7 +1215,7 @@ export async function bulkAssignOrdersByPreparer(_prev: PreparerActionState, for
         },
       });
 
-      void notifyTelegramOrderPrepared(orderId);
+      void notifyTelegramOrderPrepared({ orderId });
     }
 
     revalidatePath("/preparer");

@@ -68,8 +68,13 @@ export async function getTelegramAdminUserIdSet(): Promise<Set<string>> {
 export async function isTelegramAdminUser(telegramUserId: number | undefined): Promise<boolean> {
   if (telegramUserId == null) return false;
   const set = await getTelegramAdminUserIdSet();
-  if (set.size === 0) return false;
-  return set.has(String(telegramUserId));
+  const isAllowed = set.has(String(telegramUserId));
+
+  if (!isAllowed) {
+    console.warn(`[telegram-admin] Unauthorized access attempt by user ID: ${telegramUserId}. Allowed IDs: ${Array.from(set).join(', ')}`);
+  }
+
+  return isAllowed;
 }
 
 export function isTelegramPrivateChat(chat: { id: number }, fromUserId: number): boolean {
@@ -687,8 +692,8 @@ async function renderAdminSection(slug: string): Promise<{ text: string; keyboar
   }
 }
 
-export async function sendTelegramAdminMainMenu(chatId: string): Promise<void> {
-  await sendTelegramMessageWithKeyboardToChat(chatId, formatAdminPanelWelcomeHtml(), adminMainKeyboard());
+export async function sendTelegramAdminMainMenu(chatId: string, botToken?: string): Promise<void> {
+  await sendTelegramMessageWithKeyboardToChat(chatId, formatAdminPanelWelcomeHtml(), adminMainKeyboard(), botToken);
 }
 
 export async function handleTelegramAdminPrivateMessage(message: {
@@ -696,7 +701,7 @@ export async function handleTelegramAdminPrivateMessage(message: {
   from?: { id: number };
   chat: { id: number };
   text?: string;
-}): Promise<boolean> {
+}, botToken?: string): Promise<boolean> {
   const fromId = message.from?.id;
   if (fromId == null || !(await isTelegramAdminUser(fromId))) return false;
   if (!isTelegramPrivateChat(message.chat, fromId)) return false;
@@ -707,7 +712,7 @@ export async function handleTelegramAdminPrivateMessage(message: {
   if (txt.startsWith("/")) {
     const cmd = txt.split(/\s+/)[0]?.toLowerCase() ?? "";
     if (cmd === "/start" || cmd === "/admin") {
-      await sendTelegramAdminMainMenu(chatId);
+      await sendTelegramAdminMainMenu(chatId, botToken);
       return true;
     }
     return false;
@@ -718,7 +723,7 @@ export async function handleTelegramAdminPrivateMessage(message: {
   if (session && session.step !== "idle") {
     if (txt === "تجاهل" || txt === "الغاء" || txt === "إلغاء") {
       await prisma.telegramBotSession.update({ where: { telegramUserId }, data: { step: "idle", payload: "" } });
-      await sendTelegramMessageWithKeyboardToChat(chatId, "❌ تم إلغاء العملية.", adminMainKeyboard());
+      await sendTelegramMessageWithKeyboardToChat(chatId, "❌ تم إلغاء العملية.", adminMainKeyboard(), botToken);
       return true;
     }
 
@@ -945,9 +950,10 @@ export async function handleTelegramAdminCallback(
           messageId,
           formatAdminPanelWelcomeHtml(),
           adminMainKeyboard(),
+          botToken,
         );
         if (!edited.ok) {
-          await sendTelegramAdminMainMenu(chatId);
+          await sendTelegramAdminMainMenu(chatId, botToken);
         }
         return true;
       }
@@ -974,9 +980,10 @@ export async function handleTelegramAdminCallback(
           messageId,
           formatAdminPanelWelcomeHtml(),
           adminMainKeyboard(),
+          botToken,
         );
         if (!edited.ok) {
-          await sendTelegramAdminMainMenu(chatId);
+          await sendTelegramAdminMainMenu(chatId, botToken);
         }
         return true;
       }
