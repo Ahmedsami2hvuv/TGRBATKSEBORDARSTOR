@@ -768,9 +768,6 @@ export async function handleTelegramAdminPrivateMessage(message: {
       return true;
     }
 
-      return true;
-    }
-
     if (session.step === "edit_region_name") {
       const p = JSON.parse(session.payload || "{}");
       await prisma.region.update({ where: { id: p.id }, data: { name: txt } });
