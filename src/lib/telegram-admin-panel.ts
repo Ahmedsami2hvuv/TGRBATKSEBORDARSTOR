@@ -487,7 +487,7 @@ async function renderAdminSection(slug: string): Promise<{ text: string; keyboar
       };
     }
     case "preparers": {
-      const rows = await prisma.preparer.findMany({
+      const rows = await prisma.companyPreparer.findMany({
         orderBy: { name: "asc" },
         take: 30,
         select: { id: true, name: true, active: true },
@@ -778,7 +778,7 @@ export async function handleTelegramAdminPrivateMessage(message: {
     }
 
     if (session.step === "add_preparer_name") {
-      const prep = await prisma.preparer.create({ data: { name: txt, active: true } });
+      const prep = await prisma.companyPreparer.create({ data: { name: txt, active: true } });
       await prisma.telegramBotSession.update({ where: { telegramUserId }, data: { step: "idle", payload: "" } });
       await sendTelegramMessageWithKeyboardToChat(chatId, `✅ تم إضافة المجهز <b>${prep.name}</b> بنجاح!`, {
         inline_keyboard: [[{ text: "👤 عرض المجهز", callback_data: `prd:${prep.id}` }], [{ text: "🏠 الرئيسية", callback_data: "main" }]]
@@ -1374,7 +1374,7 @@ export async function handleTelegramAdminCallback(
 
       // Preparers
       case "pr_detail": {
-        const prep = await prisma.preparer.findUnique({ where: { id: parsed.id } });
+        const prep = await prisma.companyPreparer.findUnique({ where: { id: parsed.id } });
         if (!prep) return true;
         const text =
           `<b>بيانات المجهز: ${escapeTelegramHtml(prep.name)}</b>\n\n` +
@@ -1394,9 +1394,9 @@ export async function handleTelegramAdminCallback(
         return true;
       }
       case "pr_toggle_active": {
-        const prep = await prisma.preparer.findUnique({ where: { id: parsed.id } });
+        const prep = await prisma.companyPreparer.findUnique({ where: { id: parsed.id } });
         if (!prep) return true;
-        await prisma.preparer.update({
+        await prisma.companyPreparer.update({
           where: { id: parsed.id },
           data: { active: !prep.active },
         });
