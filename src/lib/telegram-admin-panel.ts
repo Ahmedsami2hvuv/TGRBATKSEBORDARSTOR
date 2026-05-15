@@ -1464,6 +1464,7 @@ export async function handleTelegramAdminCallback(
       }
 
       case "assign_start":
+      case "assign_start":
       case "assign_list": {
         const order = await prisma.order.findFirst({ where: { orderNumber: parsed.orderNumber } });
         if (!order) {
@@ -1555,12 +1556,17 @@ export async function handleTelegramAdminCallback(
           return true;
         }
 
-        const successMsg = `✅ تم إسناد الطلب <b>#${order.orderNumber}</b> للمندوب <b>${courier.name}</b> بنجاح.`;
+        const successMsg = `✅ تم إسناد الطلب <b>#${order.orderNumber}</b> للمندوب <b>${courier.name}</b> بنجاح.\n\nهل تريد تغيير المندوب؟`;
 
-        // إذا كان بوت إشعارات، لا نريد زر "تفاصيل الطلب" الذي يفتح لوحة الإدارة
-        const kb = {
-          inline_keyboard: isNotificationBot ? [] : [[{ text: "🏠 الرئيسية", callback_data: "main" }]]
+        const kb: TelegramInlineKeyboard = {
+          inline_keyboard: [
+            [{ text: "🔄 تغيير المندوب", callback_data: `l${order.orderNumber}` }]
+          ]
         };
+
+        if (!isNotificationBot) {
+          kb.inline_keyboard.push([{ text: "🏠 الرئيسية", callback_data: "main" }]);
+        }
 
         await editTelegramMessage(chatId, messageId, successMsg, kb, botToken);
 
