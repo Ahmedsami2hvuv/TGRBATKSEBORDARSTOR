@@ -37,7 +37,8 @@ export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promis
 
     // توجيه بناءً على نوع البوت
     if (botPurpose === "admin" || botPurpose === "notification") {
-      const handled = await handleTelegramAdminCallback(cb, botToken);
+      const isNotificationBot = botPurpose === "notification";
+      const handled = await handleTelegramAdminCallback(cb, botToken, { isNotificationBot });
       if (!handled) {
         const { answerCallbackQuery } = await import("./telegram");
         await answerCallbackQuery(cb.id, "ليس لديك صلاحية أو الأمر غير معروف.", true, botToken).catch(() => {});

@@ -963,9 +963,11 @@ export async function handleTelegramAdminCallback(
     data?: string;
   },
   botToken?: string,
+  options?: { isNotificationBot?: boolean }
 ): Promise<boolean> {
   const fromId = cq.from?.id;
-  console.log(`[admin-callback] Received from: ${fromId}, data: ${cq.data}`);
+  const isNotificationBot = !!options?.isNotificationBot;
+  console.log(`[admin-callback] Received from: ${fromId}, data: ${cq.data}, isNotificationBot: ${isNotificationBot}`);
 
   if (fromId == null || !(await isTelegramAdminUser(fromId))) {
     console.warn(`[admin-callback] Permission denied for user: ${fromId}`);
@@ -996,6 +998,10 @@ export async function handleTelegramAdminCallback(
   try {
     switch (parsed.kind) {
       case "main": {
+        if (isNotificationBot) {
+          await answerCallbackQuery(cq.id, "هذه القائمة مخصصة لبوت الإدارة الرئيسي فقط.", true, botToken);
+          return true;
+        }
         await clearSuperSearchSession(telegramUserId).catch(() => {});
         await prisma.telegramBotSession.updateMany({
           where: {
@@ -1505,16 +1511,20 @@ export async function handleTelegramAdminCallback(
         await prisma.order.update({
           where: { id: order.id },
           data: {
-            courierId: courier.id,
+            assignedCourierId: courier.id,
             status: "assigned",
             assignedAt: new Date()
           }
         });
 
         const successMsg = `✅ تم إسناد الطلب <b>#${order.orderNumber}</b> للمندوب <b>${courier.name}</b> بنجاح.`;
-        await editTelegramMessage(chatId, messageId, successMsg, {
-          inline_keyboard: [[{ text: "📦 تفاصيل الطلب", callback_data: `det${order.orderNumber}` }]]
-        }, botToken);
+
+        // إذا كان بوت إشعارات، لا نريد زر "تفاصيل الطلب" الذي يفتح لوحة الإدارة
+        const kb = {
+          inline_keyboard: isNotificationBot ? [] : [[{ text: "🏠 الرئيسية", callback_data: "main" }]]
+        };
+
+        await editTelegramMessage(chatId, messageId, successMsg, kb, botToken);
 
         // إشعار المندوب (إذا كان مربوطاً)
         if (courier.telegramUserId) {
