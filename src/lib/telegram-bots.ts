@@ -7,7 +7,7 @@ import { prisma } from "./prisma";
 export async function getBotTokenByPurpose(purpose: string): Promise<string | undefined> {
   const normalizedPurpose = purpose.trim().toLowerCase();
   const bot = await prisma.telegramBot.findFirst({
-    where: { purpose: normalizedPurpose, active: true },
+    where: { purpose: { equals: normalizedPurpose, mode: "insensitive" }, active: true },
     select: { token: true }
   });
   if (bot?.token?.trim()) {
@@ -36,7 +36,7 @@ export async function getBotTokenByPurpose(purpose: string): Promise<string | un
  */
 export async function getActiveBotByPurpose(purpose: string) {
   return await prisma.telegramBot.findFirst({
-    where: { purpose, active: true }
+    where: { purpose: { equals: purpose.trim().toLowerCase(), mode: "insensitive" }, active: true }
   });
 }
 

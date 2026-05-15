@@ -29,7 +29,7 @@ import {
   upsertSuperSearchSession,
 } from "@/lib/telegram-super-search-bot";
 import { buildTelegramOrderKeyboard, formatNewOrderTelegramHtml, notifyTelegramNewOrder } from "@/lib/telegram-notify";
-import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
+import { pushNotifyAdminsNewPendingOrder, pushNotifyCourierNewAssignment } from "@/lib/web-push-server";
 
 export const TELEGRAM_ADMIN_ORDERS_PAGE_SIZE = 8;
 
@@ -1585,8 +1585,9 @@ export async function handleTelegramAdminCallback(
 
         // إشعار المندوب (إذا كان مربوطاً)
         if (courier.telegramUserId) {
-           const { notifyCourierNewAssignment } = await import("./telegram-courier-panel");
-           await notifyCourierNewAssignment(courier.id, order.id).catch(console.error);
+          await pushNotifyCourierNewAssignment(courier.id, order.orderNumber, order.id).catch((err) => {
+            console.error("[assign_exec] pushNotifyCourierNewAssignment failed:", err);
+          });
         }
 
         await answerCallbackQuery(cq.id, "تم الإسناد بنجاح", false, botToken);
