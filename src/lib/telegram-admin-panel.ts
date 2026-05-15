@@ -1503,7 +1503,12 @@ export async function handleTelegramAdminCallback(
         const listEditResult = await editTelegramMessage(chatId, messageId, text, kb, botToken);
         if (!listEditResult.ok) {
           console.warn(`[assign_list] editTelegramMessage failed: ${listEditResult.error}`);
-          await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, botToken);
+          const sendResult = await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, botToken);
+          if (!sendResult.ok) {
+            console.error(`[assign_list] Fallback sendTelegramMessageWithKeyboardToChat failed: ${sendResult.error}`);
+            await answerCallbackQuery(cq.id, "خطأ في عرض قائمة المندوبين. حاول مرة أخرى.", true, botToken).catch(() => {});
+            return true;
+          }
         }
         return true;
       }
@@ -1571,7 +1576,12 @@ export async function handleTelegramAdminCallback(
         const execEditResult = await editTelegramMessage(chatId, messageId, successMsg, kb, botToken);
         if (!execEditResult.ok) {
           console.warn(`[assign_exec] editTelegramMessage failed: ${execEditResult.error}`);
-          await sendTelegramMessageWithKeyboardToChat(chatId, successMsg, kb, botToken);
+          const sendResult = await sendTelegramMessageWithKeyboardToChat(chatId, successMsg, kb, botToken);
+          if (!sendResult.ok) {
+            console.error(`[assign_exec] Fallback sendTelegramMessageWithKeyboardToChat failed: ${sendResult.error}`);
+            await answerCallbackQuery(cq.id, "خطأ في تحديث حالة الطلب. حاول مرة أخرى.", true, botToken).catch(() => {});
+            return true;
+          }
         }
 
         // إشعار المندوب (إذا كان مربوطاً)
