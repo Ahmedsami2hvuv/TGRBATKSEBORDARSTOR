@@ -999,9 +999,9 @@ export async function handleTelegramAdminCallback(
         const kb: TelegramInlineKeyboard = {
           inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "superx" }]],
         };
-        const edited = await editTelegramMessage(chatId, messageId, formatSuperSearchPromptHtml(), kb);
+        const edited = await editTelegramMessage(chatId, messageId, formatSuperSearchPromptHtml(), kb, botToken);
         if (!edited.ok) {
-          await sendTelegramMessageWithKeyboardToChat(chatId, formatSuperSearchPromptHtml(), kb);
+          await sendTelegramMessageWithKeyboardToChat(chatId, formatSuperSearchPromptHtml(), kb, botToken);
         }
         return true;
       }
@@ -1030,12 +1030,12 @@ export async function handleTelegramAdminCallback(
         if (!d) {
           await editTelegramMessage(chatId, messageId, "الزبون غير موجود.", {
             inline_keyboard: [[{ text: "🔍 بحث جديد", callback_data: "superq" }]],
-          }).catch(() => {});
+          }, botToken).catch(() => {});
           return true;
         }
-        const edited = await editTelegramMessage(chatId, messageId, d.text, d.keyboard);
+        const edited = await editTelegramMessage(chatId, messageId, d.text, d.keyboard, botToken);
         if (!edited.ok) {
-          await sendTelegramMessageWithKeyboardToChat(chatId, d.text, d.keyboard);
+          await sendTelegramMessageWithKeyboardToChat(chatId, d.text, d.keyboard, botToken);
         }
         return true;
       }
@@ -1089,9 +1089,9 @@ export async function handleTelegramAdminCallback(
           });
         }
         const { text, keyboard } = await renderAdminSection(parsed.slug);
-        const edited = await editTelegramMessage(chatId, messageId, text, keyboard);
+        const edited = await editTelegramMessage(chatId, messageId, text, keyboard, botToken);
         if (!edited.ok) {
-          await sendTelegramMessageWithKeyboardToChat(chatId, text, keyboard);
+          await sendTelegramMessageWithKeyboardToChat(chatId, text, keyboard, botToken);
         }
         return true;
       }
@@ -1109,9 +1109,9 @@ export async function handleTelegramAdminCallback(
           total,
         );
         const kb = ordersListKeyboard(parsed.page, pageSize, total, orders, "ord");
-        const edited = await editTelegramMessage(chatId, messageId, text, kb);
+        const edited = await editTelegramMessage(chatId, messageId, text, kb, botToken);
         if (!edited.ok) {
-          await sendTelegramMessageWithKeyboardToChat(chatId, text, kb);
+          await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, botToken);
         }
         return true;
       }
@@ -1127,9 +1127,9 @@ export async function handleTelegramAdminCallback(
           total,
         );
         const kb = ordersListKeyboard(parsed.page, pageSize, total, orders, "pend");
-        const edited = await editTelegramMessage(chatId, messageId, text, kb);
+        const edited = await editTelegramMessage(chatId, messageId, text, kb, botToken);
         if (!edited.ok) {
-          await sendTelegramMessageWithKeyboardToChat(chatId, text, kb);
+          await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, botToken);
         }
         return true;
       }
@@ -1145,9 +1145,9 @@ export async function handleTelegramAdminCallback(
           total,
         );
         const kb = ordersListKeyboard(parsed.page, pageSize, total, orders, "canc");
-        const edited = await editTelegramMessage(chatId, messageId, text, kb);
+        const edited = await editTelegramMessage(chatId, messageId, text, kb, botToken);
         if (!edited.ok) {
-          await sendTelegramMessageWithKeyboardToChat(chatId, text, kb);
+          await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, botToken);
         }
         return true;
       }
@@ -1157,7 +1157,7 @@ export async function handleTelegramAdminCallback(
           const errKb: TelegramInlineKeyboard = {
             inline_keyboard: [[{ text: "🔙 رجوع", callback_data: "ord0" }, { text: "🏠 الرئيسية", callback_data: "main" }]],
           };
-          await editTelegramMessage(chatId, messageId, "❌ الطلب غير موجود.", errKb).catch(() => {});
+          await editTelegramMessage(chatId, messageId, "❌ الطلب غير موجود.", errKb, botToken).catch(() => {});
           return true;
         }
         const customerName = order.customer?.name?.trim() || "—";
@@ -1182,9 +1182,9 @@ export async function handleTelegramAdminCallback(
         );
         const text = `<b>📦 تفاصيل الطلب #${order.orderNumber}</b>\n\n${body}`;
         const kb = orderDetailKeyboard(order.orderNumber, order.id);
-        const edited = await editTelegramMessage(chatId, messageId, text, kb);
+        const edited = await editTelegramMessage(chatId, messageId, text, kb, botToken);
         if (!edited.ok) {
-          await sendTelegramMessageWithKeyboardToChat(chatId, text, kb);
+          await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, botToken);
         }
         return true;
       }
@@ -1196,7 +1196,7 @@ export async function handleTelegramAdminCallback(
         // المحل الافتراضي للإدارة (أو أول محل في النظام)
         const defaultShop = await prisma.shop.findFirst({ orderBy: { createdAt: 'asc' } });
         if (!defaultShop) {
-          await answerCallbackQuery(cq.id, "لا يوجد محل في النظام لرفع الطلب باسمه", true);
+          await answerCallbackQuery(cq.id, "لا يوجد محل في النظام لرفع الطلب باسمه", true, botToken);
           return true;
         }
 
@@ -1220,18 +1220,18 @@ export async function handleTelegramAdminCallback(
           data: { step: "idle", payload: "" }
         });
 
-        await notifyTelegramNewOrder(order.id).catch(() => {});
+        await notifyTelegramNewOrder(order.id, botToken).catch(() => {});
         void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
         await editTelegramMessage(chatId, messageId, `✅ تم إنشاء الطلب السريع بنجاح!\n\nرقم الطلب: <b>#${order.orderNumber}</b>`, {
           inline_keyboard: [[{ text: "📦 تفاصيل الطلب", callback_data: `det${order.orderNumber}` }], [{ text: "🏠 الرئيسية", callback_data: "main" }]]
-        });
+        }, botToken);
         return true;
       }
       case "rg_detail": {
         const region = await prisma.region.findUnique({ where: { id: parsed.id } });
         if (!region) {
-          await answerCallbackQuery(cq.id, "المنطقة غير موجودة", true);
+          await answerCallbackQuery(cq.id, "المنطقة غير موجودة", true, botToken);
           return true;
         }
         const text =
@@ -1257,7 +1257,7 @@ export async function handleTelegramAdminCallback(
             [{ text: "🔙 رجوع للمناطق", callback_data: "s:regions" }]
           ]
         };
-        await editTelegramMessage(chatId, messageId, text, kb);
+        await editTelegramMessage(chatId, messageId, text, kb, botToken);
         return true;
       }
       case "rg_adj_price": {
@@ -1310,14 +1310,14 @@ export async function handleTelegramAdminCallback(
         });
 
         const { text, keyboard } = formatQuickOrderConfirm(p);
-        await editTelegramMessage(chatId, messageId, text, keyboard);
+        await editTelegramMessage(chatId, messageId, text, keyboard, botToken);
         return true;
       }
 
       case "cr_detail": {
         const courier = await prisma.courier.findUnique({ where: { id: parsed.id } });
         if (!courier) {
-          await answerCallbackQuery(cq.id, "المندوب غير موجود", true);
+          await answerCallbackQuery(cq.id, "المندوب غير موجود", true, botToken);
           return true;
         }
         const text =
@@ -1338,7 +1338,7 @@ export async function handleTelegramAdminCallback(
             [{ text: "🔙 رجوع للقائمة", callback_data: "s:couriers" }],
           ],
         };
-        await editTelegramMessage(chatId, messageId, text, kb);
+        await editTelegramMessage(chatId, messageId, text, kb, botToken);
         return true;
       }
       case "cr_toggle_block": {
@@ -1361,7 +1361,7 @@ export async function handleTelegramAdminCallback(
             ],
           ],
         };
-        await editTelegramMessage(chatId, messageId, "<b>⚠️ تنبيه تأكيد الحذف</b>\n\nهل أنت متأكد من حذف هذا المندوب نهائياً من النظام؟ لا يمكن التراجع عن هذا الإجراء.", kb);
+        await editTelegramMessage(chatId, messageId, "<b>⚠️ تنبيه تأكيد الحذف</b>\n\nهل أنت متأكد من حذف هذا المندوب نهائياً من النظام؟ لا يمكن التراجع عن هذا الإجراء.", kb, botToken);
         return true;
       }
       case "cr_edit": {
@@ -1372,7 +1372,7 @@ export async function handleTelegramAdminCallback(
         });
         await editTelegramMessage(chatId, messageId, "<b>تعديل المندوب</b>\n\nأرسل الاسم الجديد للمندوب الآن (أو أرسل 'تجاهل' للإبقاء على الحالي):", {
           inline_keyboard: [[{ text: "❌ إلغاء", callback_data: `crd:${parsed.id}` }]],
-        });
+        }, botToken);
         return true;
       }
       case "cr_add": {
@@ -1383,7 +1383,7 @@ export async function handleTelegramAdminCallback(
         });
         await editTelegramMessage(chatId, messageId, "<b>إضافة مندوب جديد</b>\n\nيرجى إرسال اسم المندوب الرباعي:", {
           inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "s:couriers" }]],
-        });
+        }, botToken);
         return true;
       }
 
@@ -1405,7 +1405,7 @@ export async function handleTelegramAdminCallback(
             [{ text: "🔙 رجوع للقائمة", callback_data: "s:preparers" }],
           ],
         };
-        await editTelegramMessage(chatId, messageId, text, kb);
+        await editTelegramMessage(chatId, messageId, text, kb, botToken);
         return true;
       }
       case "pr_toggle_active": {
@@ -1426,7 +1426,7 @@ export async function handleTelegramAdminCallback(
         });
         await editTelegramMessage(chatId, messageId, "<b>إضافة مجهز جديد</b>\n\nيرجى إرسال اسم المجهز:", {
           inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "s:preparers" }]],
-        });
+        }, botToken);
         return true;
       }
     }
