@@ -5,11 +5,30 @@ import { prisma } from "./prisma";
  * إذا لم يوجد بوت مخصص في قاعدة البيانات، يمكن العودة للتوكن الافتراضي من .env
  */
 export async function getBotTokenByPurpose(purpose: string): Promise<string | undefined> {
+  const normalizedPurpose = purpose.trim().toLowerCase();
   const bot = await prisma.telegramBot.findFirst({
-    where: { purpose, active: true },
+    where: { purpose: normalizedPurpose, active: true },
     select: { token: true }
   });
-  return bot?.token;
+  if (bot?.token?.trim()) {
+    console.log(`[telegram-bots] Using DB token for bot purpose=${normalizedPurpose}`);
+    return bot.token.trim();
+  }
+
+  const envKey = `TELEGRAM_${normalizedPurpose.toUpperCase()}_BOT_TOKEN`;
+  const envToken = process.env[envKey]?.trim();
+  if (envToken) {
+    console.log(`[telegram-bots] Using ENV token ${envKey} for bot purpose=${normalizedPurpose}`);
+    return envToken;
+  }
+
+  const baseToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  if (baseToken) {
+    console.log(`[telegram-bots] Using fallback TELEGRAM_BOT_TOKEN for bot purpose=${normalizedPurpose}`);
+  } else {
+    console.warn(`[telegram-bots] No bot token found for purpose=${normalizedPurpose}`);
+  }
+  return baseToken || undefined;
 }
 
 /**
