@@ -62,6 +62,11 @@ export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promis
     if (botPurpose === "admin") {
       await handleTelegramAdminPrivateMessage(msg, botToken);
     }
+    else if (botPurpose === "notification") {
+      // رد بسيط لبوت الإشعارات للتأكد من عمله
+      const { sendTelegramHtmlToChat } = await import("./telegram");
+      await sendTelegramHtmlToChat(String(msg.from.id), "🔔 هذا هو بوت الإشعارات، وظيفته إرسال التنبيهات فقط.", botToken);
+    }
     else if (botPurpose === "courier") {
       const courier = await getCourierByTelegramUserId(String(msg.from?.id || ""));
       if (courier) {

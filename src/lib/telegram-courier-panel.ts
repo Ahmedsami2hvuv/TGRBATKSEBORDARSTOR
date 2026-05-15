@@ -862,22 +862,14 @@ async function completeCourierPickupTx(
         mismatchNote,
       },
     });
-    if (order.status === "assigned" || order.status === "pending") {
-      await tx.order.update({
-        where: { id: order.id },
-        data: {
-          status: "delivering",
-          shopCostPaidAt: new Date(),
-        },
-      });
-    } else {
-      await tx.order.update({
-        where: { id: order.id },
-        data: {
-          shopCostPaidAt: new Date(),
-        },
-      });
-    }
+    const shouldUpdateStatus = order.status === "assigned" || order.status === "pending";
+    await tx.order.update({
+      where: { id: order.id },
+      data: {
+        shopCostPaidAt: new Date(),
+        ...(shouldUpdateStatus ? { status: "delivering" } : {}),
+      },
+    });
   });
   revalidateCourierOrder(order.id);
   void notifyTelegramMoneyEvent({

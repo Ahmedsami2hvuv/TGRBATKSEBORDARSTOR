@@ -3,6 +3,7 @@ import type { EmployeeOrderPortalVerifyReason } from "@/lib/employee-order-porta
 import { verifyEmployeeOrderPortalQuery } from "@/lib/employee-order-portal-link";
 import { prisma } from "@/lib/prisma";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
+import { getPublicAppUrl } from "@/lib/app-url";
 import { ClientOrderForm } from "./client-order-form";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 
