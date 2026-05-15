@@ -43,6 +43,7 @@ import {
   mandoubHandToAdminDinar,
   computeMandoubWalletRemainAllTimeDinar,
 } from "@/lib/mandoub-wallet-carry";
+import { buildDelegatePortalUrl } from "@/lib/delegate-link";
 import { normalizeIraqMobileLocal11, telHref, whatsappMeUrl } from "@/lib/whatsapp";
 
 type CourierMainKeyboardKind = "main" | "orders" | "wallet";
@@ -83,11 +84,22 @@ export async function getCourierByTelegramUserId(
   return c;
 }
 
-function buildCourierKeyboard(kind: CourierMainKeyboardKind): TelegramInlineKeyboard {
+function buildCourierKeyboard(kind: CourierMainKeyboardKind, courierId?: string): TelegramInlineKeyboard {
+  const baseUrl = getPublicAppUrl();
+  const portalUrl = courierId ? buildDelegatePortalUrl(courierId, baseUrl) : null;
+
+  const mainRow = [
+    { text: "📦 طلبياتي", callback_data: "co_orders_0" },
+    { text: "💼 محفظتي", callback_data: "co_wallet_0" },
+  ];
+
+  const portalRow = portalUrl ? [[{ text: "🔗 فتح بوابة المندوب", url: portalUrl }]] : [];
+
   if (kind === "orders") {
     return {
       inline_keyboard: [
-        [{ text: "📦 طلبياتي", callback_data: "co_orders_0" }, { text: "💼 محفظتي", callback_data: "co_wallet_0" }],
+        ...portalRow,
+        mainRow,
         [{ text: "🏠 الرئيسية", callback_data: "co_main" }],
       ],
     };
@@ -95,17 +107,16 @@ function buildCourierKeyboard(kind: CourierMainKeyboardKind): TelegramInlineKeyb
   if (kind === "wallet") {
     return {
       inline_keyboard: [
-        [{ text: "💼 محفظتي", callback_data: "co_wallet_0" }, { text: "📦 طلبياتي", callback_data: "co_orders_0" }],
+        ...portalRow,
+        mainRow,
         [{ text: "🏠 الرئيسية", callback_data: "co_main" }],
       ],
     };
   }
   return {
     inline_keyboard: [
-      [
-        { text: "📦 طلبياتي", callback_data: "co_orders_0" },
-        { text: "💼 محفظتي", callback_data: "co_wallet_0" },
-      ],
+      ...portalRow,
+      mainRow,
     ],
   };
 }
@@ -271,7 +282,7 @@ export async function handleCourierStart({
     `📦 طلبياتي — تفاصيل الطلبات والمسار\n` +
     `💼 محفظتي — أرقام ووارد/صادر وسجل العمليات`;
 
-  await sendTelegramMessageWithKeyboardToChat(chatId, text, buildCourierKeyboard("main"), botToken);
+  await sendTelegramMessageWithKeyboardToChat(chatId, text, buildCourierKeyboard("main", courier.id), botToken);
 }
 
 async function loadCourierOrdersForTelegram(courierId: string, page: number) {
@@ -974,7 +985,7 @@ export async function handleCourierCallback({
         chatId,
         messageId: cq.message.message_id,
         text: "أمر غير صالح",
-        keyboard: buildCourierKeyboard("main"),
+        keyboard: buildCourierKeyboard("main", courier.id),
         botToken,
       });
     }
@@ -991,7 +1002,7 @@ export async function handleCourierCallback({
       chatId,
       messageId: cq.message.message_id,
       text,
-      keyboard: buildCourierKeyboard("main"),
+      keyboard: buildCourierKeyboard("main", courier.id),
       botToken,
     });
     return;
@@ -1016,7 +1027,7 @@ export async function handleCourierCallback({
       await sendTelegramMessageWithKeyboardToChat(
         chatId,
         text,
-        buildCourierKeyboard("main"),
+        buildCourierKeyboard("main", courier.id),
         botToken,
       ).catch(() => {});
       return;
@@ -1859,6 +1870,6 @@ export async function handleCourierPrivateTextMessage({
     const mainText =
       `<b>أهلاً ${escapeTelegramHtml(courier.name)}</b>\n` +
       `تم استلام رسالتك. اختر من الأزرار أدناه للتحكم بطلبياتك:`;
-    await sendTelegramMessageWithKeyboardToChat(chatId, mainText, buildCourierKeyboard("main"), botToken).catch(() => {});
+    await sendTelegramMessageWithKeyboardToChat(chatId, mainText, buildCourierKeyboard("main", courier.id), botToken).catch(() => {});
   }
 }
