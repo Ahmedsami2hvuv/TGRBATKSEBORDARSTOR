@@ -1551,7 +1551,6 @@ export async function handleTelegramAdminCallback(
             data: {
               assignedCourierId: courier.id,
               status: "assigned",
-              assignedAt: new Date()
             }
           });
           console.log(`[assign_exec] DB Update SUCCESS for Order #${updatedOrder.orderNumber}`);
