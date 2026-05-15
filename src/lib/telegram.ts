@@ -86,13 +86,12 @@ async function telegramRaw(method: string, body: Record<string, unknown>, custom
   }
 }
 
-export async function ensureTelegramWebhookConfigured(customToken: string, customBotId: string, force: boolean = false, overrideBaseUrl?: string): Promise<void> {
+export async function ensureTelegramWebhookConfigured(customToken: string, customBotId: string, force: boolean = false, overrideBaseUrl?: string): Promise<{ ok: boolean; url: string; description?: string }> {
   const token = customToken?.trim();
-  if (!token || !customBotId) return;
+  if (!token || !customBotId) return { ok: false, url: "", description: "Missing token or botId" };
 
-  // استخدام الرابط الممرر أو جلب الافتراضي
   let base = (overrideBaseUrl || getPublicAppUrl()).trim();
-  if (!base || base.startsWith("http://localhost")) return;
+  if (!base || base.startsWith("http://localhost")) return { ok: false, url: "", description: "Invalid Base URL" };
 
   const path = `/api/telegram/webhook/${customBotId}`;
   const desiredUrl = `${base.replace(/\/+$/, "")}${path}`;
@@ -101,18 +100,19 @@ export async function ensureTelegramWebhookConfigured(customToken: string, custo
   if (!force) {
     const info = await telegramRaw("getWebhookInfo", {}, token);
     const current = (info.result ?? {}) as { url?: string };
-    if ((current.url ?? "").trim() === desiredUrl) return;
+    if ((current.url ?? "").trim() === desiredUrl) return { ok: true, url: desiredUrl, description: "Already configured" };
   }
 
   const body: Record<string, unknown> = {
     url: desiredUrl,
     allowed_updates: ["message", "callback_query"],
-    drop_pending_updates: true, // تنظيف الرسائل القديمة العالقة
+    drop_pending_updates: true,
   };
   if (desiredSecret) body.secret_token = desiredSecret;
 
   console.log(`[telegram] Setting webhook for bot ${customBotId} to ${desiredUrl}`);
-  await telegramRaw("setWebhook", body, token);
+  const res = await telegramRaw("setWebhook", body, token);
+  return { ok: res.ok, url: desiredUrl, description: res.description };
 }
 
 export async function sendTelegramMessage(text: string, options: { botToken: string, chatId?: string }): Promise<{
@@ -142,7 +142,11 @@ export async function sendTelegramMessageWithKeyboardToChat(
   replyMarkup: TelegramInlineKeyboard,
   botToken?: string,
 ): Promise<{ ok: boolean; error?: string; messageId?: number }> {
-  if (!botToken) await ensureTelegramWebhookConfigured().catch(() => {});
+  if (!botToken) {
+    // لا يمكن تهيئة ويب هوك بدون توكن، نتجاوز هذه الخطوة ونعتمد على المزامنة اليدوية
+    console.warn("[telegram] sendTelegramMessageWithKeyboardToChat called without botToken and no auto-config possible.");
+  }
+
   const data = await telegramRaw("sendMessage", {
     chat_id: chatId,
     text,
@@ -164,7 +168,11 @@ export async function sendTelegramPhotoToChat(
   replyMarkup?: TelegramInlineKeyboard,
   botToken?: string,
 ): Promise<{ ok: boolean; error?: string; messageId?: number }> {
-  if (!botToken) await ensureTelegramWebhookConfigured().catch(() => {});
+  if (!botToken) {
+    // لا يمكن تهيئة ويب هوك بدون توكن، نتجاوز هذه الخطوة ونعتمد على المزامنة اليدوية
+    console.warn("[telegram] sendTelegramMessageWithKeyboardToChat called without botToken and no auto-config possible.");
+  }
+
   const body: Record<string, unknown> = {
     chat_id: chatId,
     photo: photoUrl,
@@ -258,7 +266,11 @@ export async function sendTelegramHtmlToChat(
   text: string,
   botToken?: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  if (!botToken) await ensureTelegramWebhookConfigured().catch(() => {});
+  if (!botToken) {
+    // لا يمكن تهيئة ويب هوك بدون توكن، نتجاوز هذه الخطوة ونعتمد على المزامنة اليدوية
+    console.warn("[telegram] sendTelegramMessageWithKeyboardToChat called without botToken and no auto-config possible.");
+  }
+
   const data = await telegramRaw("sendMessage", {
     chat_id: chatId,
     text,

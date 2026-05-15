@@ -32,8 +32,15 @@ export async function ensureAllBotsWebhooksConfigured(force: boolean = false, ba
   });
 
   for (const bot of bots) {
-    await ensureTelegramWebhookConfigured(bot.token, bot.id, force, baseUrl).catch(err => {
+    const result = await ensureTelegramWebhookConfigured(bot.token, bot.id, force, baseUrl).catch(err => {
       console.error(`Failed to ensure webhook for bot ${bot.name}:`, err);
+      return { ok: false, url: "", description: err.message };
     });
+
+    if (result.ok) {
+      console.log(`Successfully configured webhook for ${bot.name}: ${result.url} (${result.description || "OK"})`);
+    } else {
+      console.error(`Failed to configure webhook for ${bot.name}: ${result.description}`);
+    }
   }
 }
