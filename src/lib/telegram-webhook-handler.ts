@@ -25,6 +25,9 @@ import {
   handleShopTelegramCallback,
   handleShopTelegramMessage,
 } from "./telegram-shop";
+import { verifyCompanyPreparerPortalQuery } from "./company-preparer-portal-link";
+import { verifyEmployeeOrderPortalQuery } from "./employee-order-portal-link";
+import { verifyDelegatePortalQuery } from "./delegate-link";
 
 type WebhookContext = {
   chatId: string;
@@ -62,25 +65,55 @@ export async function handleTelegramWebhook(body: any): Promise<void> {
       fromName: msg.from?.first_name || "",
     };
 
-    // التحقق مما إذا كانت الرسالة عبارة عن رابط بوابة الموظف أو المندوب
-    if (msg.text.includes("/client/order?") || msg.text.includes("/mandoub/order?")) {
+    // التحقق مما إذا كانت الرسالة عبارة عن رابط بوابة (موظف، مندوب، مجهز)
+    if (msg.text.includes("/client/order?") || msg.text.includes("/mandoub") || msg.text.includes("/preparer")) {
       const url = msg.text.trim();
       try {
         const urlObj = new URL(url);
+        const p = urlObj.searchParams.get("p");
         const e = urlObj.searchParams.get("e");
+        const c = urlObj.searchParams.get("c");
         const exp = urlObj.searchParams.get("exp");
         const s = urlObj.searchParams.get("s");
 
-        const isCourierLink = url.includes("/mandoub/");
-
-        if (e && exp && s) {
-          if (isCourierLink) {
-            // ربط حساب المندوب
-            const courier = await prisma.courier.findUnique({
-              where: { id: e },
+        // 1. رابط المجهز (Preparer)
+        if (url.includes("/preparer") && p && exp) {
+          const v = verifyCompanyPreparerPortalQuery(p, exp, s || undefined);
+          if (v.ok) {
+            const preparer = await prisma.companyPreparer.findUnique({
+              where: { id: v.preparerId },
             });
 
-            if (courier && courier.orderPortalToken === exp) {
+            if (preparer && preparer.portalToken === v.token) {
+              await prisma.companyPreparer.update({
+                where: { id: preparer.id },
+                data: { telegramUserId: ctx.fromId }
+              });
+
+              await sendTelegramMessageWithKeyboardToChat(
+                ctx.chatId,
+                `مرحباً بك المجهز <b>${preparer.name}</b>.\n\nتم ربط حسابك بنجاح. يمكنك الآن استلام إشعارات التجهيز وإدارة مهامك من هنا.`,
+                {
+                  inline_keyboard: [
+                    [{ text: "📝 قائمة التجهيز", callback_data: "prep_list" }],
+                    [{ text: "💰 المحفظة", callback_data: "prep_wallet" }]
+                  ]
+                }
+              );
+              return;
+            }
+          }
+        }
+
+        // 2. رابط المندوب (Courier/Mandoub)
+        if (url.includes("/mandoub") && c) {
+          const v = verifyDelegatePortalQuery(c, exp || undefined, s || undefined);
+          if (v.ok) {
+            const courier = await prisma.courier.findUnique({
+              where: { id: v.courierId },
+            });
+
+            if (courier) {
               await prisma.courier.update({
                 where: { id: courier.id },
                 data: { telegramUserId: ctx.fromId }
@@ -98,15 +131,19 @@ export async function handleTelegramWebhook(body: any): Promise<void> {
               );
               return;
             }
-          } else {
-            // جلب الموظف للتحقق
+          }
+        }
+
+        // 3. رابط الموظف (Employee/Client)
+        if (url.includes("/client/order") && e && exp && s) {
+          const v = verifyEmployeeOrderPortalQuery(e, exp, s);
+          if (v.ok) {
             const employee = await prisma.employee.findUnique({
-              where: { id: e },
+              where: { id: v.employeeId },
               include: { shop: true }
             });
 
-            if (employee && employee.orderPortalToken === exp) {
-              // ربط حساب التليجرام بالموظف
+            if (employee && employee.orderPortalToken === v.token) {
               await prisma.employee.update({
                 where: { id: employee.id },
                 data: { telegramUserId: ctx.fromId }
@@ -138,7 +175,7 @@ export async function handleTelegramWebhook(body: any): Promise<void> {
       if (handled) return;
 
       if (msg.text.startsWith("/start")) {
-        await sendTelegramHtmlToChat(ctx.chatId, "أهلاً بك في نظام <b>أبو الأكبر للتوصيل</b>. استخدم الأزرار المرفقة مع إشعارات الطلبات للتحكم.");
+        await sendTelegramHtmlToChat(ctx.chatId, "أهلاً بك في خدمة <b>أبو الأكبر للتوصيل</b>.\n\nأرسل لي رابط حسابك حتى أتعرف عليك وأعطيك كل صلاحياتك.");
         return;
       }
     }

@@ -968,7 +968,7 @@ export async function handleShopTelegramCallback(cq: {
         }
 
         await upsertShopSession(telegramUserId, chatId, "shop_emp_order_confirm", JSON.stringify(p));
-        const { text, keyboard } = formatEmployeeOrderConfirm(p);
+        const { text, keyboard } = formatEmployeeOrderConfirm(p, telegramUserId);
         await editTelegramMessage(chatId, messageId, text, keyboard);
         return true;
       }
@@ -1585,7 +1585,7 @@ export async function handleShopTelegramMessage(message: {
     payload.draft.orderNoteTime = time;
 
     await upsertShopSession(telegramUserId, chatId, "shop_emp_order_confirm", JSON.stringify(payload));
-    const { text, keyboard } = formatEmployeeOrderConfirm(payload);
+    const { text, keyboard } = formatEmployeeOrderConfirm(payload, telegramUserId);
     await sendTelegramMessageWithKeyboardToChat(chatId, text, keyboard);
     return true;
   }
@@ -1593,7 +1593,7 @@ export async function handleShopTelegramMessage(message: {
   return false;
 }
 
-function formatEmployeeOrderConfirm(p: any) {
+function formatEmployeeOrderConfirm(p: any, telegramUserId: string) {
   const draft = p.draft;
   const price = Number(draft.orderSubtotal || 0);
   const del = Number(draft.deliveryPrice || 0);
@@ -1607,7 +1607,9 @@ function formatEmployeeOrderConfirm(p: any) {
     `💰 السعر: <b>${formatDinarAsAlf(price)}</b>\n` +
     `🚚 التوصيل: <b>${formatDinarAsAlf(del)}</b>\n` +
     `💵 الإجمالي: <b>${formatDinarAsAlf(total)}</b>\n\n` +
-    `هل تريد إضافة هذا الطلب للنظام؟`;
+    `عند الضغط على تأكيد، سيتم حفظ الطلب وفتح الواتساب تلقائياً.`;
+
+  const confirmUrl = `${getPublicAppUrl()}/api/telegram/confirm-order?uid=${telegramUserId}`;
 
   const kb: TelegramInlineKeyboard = {
     inline_keyboard: [
@@ -1622,7 +1624,7 @@ function formatEmployeeOrderConfirm(p: any) {
         { text: "➕ 1", callback_data: "e_qadj:d:1" },
       ],
       [
-        { text: "✅ إضافة مباشر", callback_data: "e_qadd" },
+        { text: "✅ تأكيد وإرسال واتساب", url: confirmUrl },
         { text: "❌ تجاهل", callback_data: "shcancel" },
       ],
     ],
