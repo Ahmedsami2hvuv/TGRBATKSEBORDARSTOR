@@ -123,6 +123,7 @@ export type ParsedTelegramAdminCallback =
 
 export function parseTelegramAdminCallback(raw: string): ParsedTelegramAdminCallback | null {
   const t = raw.trim();
+  console.log(`[parseTelegramAdminCallback] parsing: "${t}"`);
   if (t === "main") return { kind: "main" };
   if (t === "superq") return { kind: "super_search_start" };
   if (t === "superx") return { kind: "super_search_cancel" };
@@ -965,12 +966,16 @@ export async function handleTelegramAdminCallback(
   botToken?: string,
   options?: { isNotificationBot?: boolean }
 ): Promise<boolean> {
-  const fromId = cq.from?.id;
-  const isNotificationBot = !!options?.isNotificationBot;
-  console.log(`[admin-callback] Received from: ${fromId}, data: ${cq.data}, isNotificationBot: ${isNotificationBot}`);
+  try {
+    const fromId = cq.from?.id;
+    const isNotificationBot = !!options?.isNotificationBot;
+    console.log(`[admin-callback] Received from: ${fromId}, data: ${cq.data}, isNotificationBot: ${isNotificationBot}`);
 
   if (fromId == null || !(await isTelegramAdminUser(fromId))) {
-    console.warn(`[admin-callback] Permission denied for user: ${fromId}`);
+    console.warn(`[admin-callback] Permission denied for user: ${fromId}. Please add this ID to TelegramAdmin table.`);
+    // إرسال تنبيه للمستخدم ليشاهد الـ ID الخاص به
+    const { answerCallbackQuery } = await import("./telegram");
+    await answerCallbackQuery(cq.id, `ليس لديك صلاحية. معرفك: ${fromId}`, true, botToken).catch(() => {});
     return false;
   }
   const msg = cq.message;
@@ -1500,22 +1505,54 @@ export async function handleTelegramAdminCallback(
         return true;
       }
       case "assign_exec": {
-        const order = await prisma.order.findFirst({ where: { orderNumber: parsed.orderNumber } });
-        const courier = await prisma.courier.findUnique({ where: { id: parsed.courierId } });
+        const rawData = cq.data ?? "";
+        console.log(`[assign_exec] START - RawData: "${rawData}"`);
+        console.log(`[assign_exec] Parsed: OrderNum=${parsed.orderNumber}, CourierId="${parsed.courierId}"`);
 
-        if (!order || !courier) {
-          await answerCallbackQuery(cq.id, "خطأ: الطلب أو المندوب غير موجود", true, botToken);
+        const orderNum = Number(parsed.orderNumber);
+        const courierId = String(parsed.courierId || "").trim();
+
+        if (!orderNum || !courierId) {
+          console.error(`[assign_exec] Invalid input: orderNum=${orderNum}, courierId="${courierId}"`);
+          await answerCallbackQuery(cq.id, "خطأ في بيانات الإسناد", true, botToken);
           return true;
         }
 
-        await prisma.order.update({
-          where: { id: order.id },
-          data: {
-            assignedCourierId: courier.id,
-            status: "assigned",
-            assignedAt: new Date()
-          }
+        const order = await prisma.order.findFirst({
+          where: { orderNumber: orderNum },
+          orderBy: { createdAt: 'desc' }
         });
+
+        const courier = await prisma.courier.findUnique({ where: { id: courierId } });
+
+        if (!order) {
+          console.error(`[assign_exec] Order NOT FOUND: ${orderNum}`);
+          await answerCallbackQuery(cq.id, `خطأ: الطلب #${orderNum} غير موجود`, true, botToken);
+          return true;
+        }
+        if (!courier) {
+          console.error(`[assign_exec] Courier NOT FOUND: "${courierId}"`);
+          await answerCallbackQuery(cq.id, "خطأ: المندوب المختار غير موجود أو تم حذفه", true, botToken);
+          return true;
+        }
+
+        console.log(`[assign_exec] SUCCESS Match - Updating order ${order.id} (#${order.orderNumber}) to Courier: ${courier.name} (${courier.id})`);
+
+        try {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              assignedCourierId: courier.id,
+              status: "assigned",
+              assignedAt: new Date()
+            }
+          });
+          console.log(`[assign_exec] DB Update SUCCESS`);
+        } catch (err) {
+          console.error(`[assign_exec] DB Update FAILED:`, err);
+          await answerCallbackQuery(cq.id, "حدث خطأ أثناء تحديث قاعدة البيانات", true, botToken);
+          return true;
+        }
 
         const successMsg = `✅ تم إسناد الطلب <b>#${order.orderNumber}</b> للمندوب <b>${courier.name}</b> بنجاح.`;
 
