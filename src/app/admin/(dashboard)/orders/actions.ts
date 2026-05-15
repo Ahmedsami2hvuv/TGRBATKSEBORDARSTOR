@@ -399,6 +399,7 @@ export async function assignPendingOrderToCourier(
 
     // إرسال إشعار للمندوب
     try {
+        console.log(`[assignPendingOrderToCourier] notify courierId=${courierId} orderNumber=${updatedOrder.orderNumber}`);
         await pushNotifyCourierNewAssignment(courierId, updatedOrder.orderNumber);
     } catch (e) {
         console.error("Failed to push notify courier:", e);

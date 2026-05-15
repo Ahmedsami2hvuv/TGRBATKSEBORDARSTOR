@@ -240,6 +240,7 @@ export async function pushNotifyCourierNewAssignment(
   });
 
   const courierBotToken = await getBotTokenByPurpose("courier");
+  console.log(`[pushNotifyCourierNewAssignment] courierId=${courierId} telegramUserId=${courier?.telegramUserId ?? "missing"} botToken=${courierBotToken ? "found" : "missing"}`);
 
   // 1. إرسال Telegram (تم استعادته)
   if (courier?.telegramUserId?.trim() && courierBotToken) {
@@ -256,16 +257,26 @@ export async function pushNotifyCourierNewAssignment(
         [{ text: "💼 محفظتي", callback_data: "co_wallet_0" }],
       ],
     };
-    const sent = await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, courierBotToken).catch(() => ({ ok: false, error: "send failed" }));
+    const sent = await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, courierBotToken).catch((err) => {
+      console.error(`[pushNotifyCourierNewAssignment] sendTelegramMessageWithKeyboardToChat failed:`, err);
+      return { ok: false, error: err?.message ?? "send failed" };
+    });
+    console.log(`[pushNotifyCourierNewAssignment] first message sent: ${sent.ok}`);
     if (sent.ok) {
       const followUpText = `<b>تم ربط طلب #${escapeTelegramHtml(String(orderNumber))} بحسابك الآن.</b>\n\nيمكنك فتح الطلب من زر "📦 فتح الطلب" أو العودة إلى "📦 طلبياتي".`;
       const followUpKb = {
         inline_keyboard: [[{ text: "📦 طلبياتي", callback_data: "co_orders_0" }]],
       };
-      await sendTelegramMessageWithKeyboardToChat(chatId, followUpText, followUpKb, courierBotToken).catch(() => {});
+      const followUpSent = await sendTelegramMessageWithKeyboardToChat(chatId, followUpText, followUpKb, courierBotToken).catch((err) => {
+        console.error(`[pushNotifyCourierNewAssignment] follow-up sendTelegramMessageWithKeyboardToChat failed:`, err);
+        return { ok: false, error: err?.message ?? "send failed" };
+      });
+      console.log(`[pushNotifyCourierNewAssignment] follow-up message sent: ${followUpSent.ok}`);
     }
   } else if (courier?.telegramUserId?.trim()) {
     console.warn(`[pushNotifyCourierNewAssignment] courier bot token missing; cannot send Telegram notify to ${courier.telegramUserId}`);
+  } else {
+    console.warn(`[pushNotifyCourierNewAssignment] courier record missing telegramUserId for courierId=${courierId}`);
   }
 
   const settingsRow = await getOrCreateNotificationSettings();
@@ -330,6 +341,7 @@ export async function pushNotifyCourierAssignmentRemoved(
     select: { telegramUserId: true },
   });
   const courierBotToken = await getBotTokenByPurpose("courier");
+  console.log(`[pushNotifyCourierAssignmentRemoved] courierId=${courierId} telegramUserId=${courier?.telegramUserId ?? "missing"} botToken=${courierBotToken ? "found" : "missing"}`);
   if (!courier?.telegramUserId?.trim() || !courierBotToken) return;
 
   const chatId = courier.telegramUserId.trim();
