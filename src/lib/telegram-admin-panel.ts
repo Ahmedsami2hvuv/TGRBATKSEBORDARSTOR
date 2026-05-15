@@ -113,7 +113,11 @@ export type ParsedTelegramAdminCallback =
   | { kind: "rg_detail"; id: string }
   | { kind: "rg_edit_name"; id: string }
   | { kind: "rg_edit_price"; id: string }
-  | { kind: "rg_adj_price"; id: string; amount: number };
+  | { kind: "rg_adj_price"; id: string; amount: number }
+  | { kind: "assign_start"; orderNumber: number }
+  | { kind: "edit_start"; orderNumber: number }
+  | { kind: "edit_cust_start"; orderNumber: number }
+  | { kind: "edit_full_start"; orderNumber: number };
 
 export function parseTelegramAdminCallback(raw: string): ParsedTelegramAdminCallback | null {
   const t = raw.trim();
@@ -124,7 +128,17 @@ export function parseTelegramAdminCallback(raw: string): ParsedTelegramAdminCall
   if (t === "cr_add") return { kind: "cr_add" };
   if (t === "pr_add") return { kind: "pr_add" };
 
-  let m = /^qadj:(p|d):(-?\d+)$/.exec(t);
+  // أوامر مختصرة من الإشعارات
+  let m = /^l(\d+)$/.exec(t);
+  if (m) return { kind: "assign_start", orderNumber: Number(m[1]) };
+  m = /^e(\d+)$/.exec(t);
+  if (m) return { kind: "edit_start", orderNumber: Number(m[1]) };
+  m = /^oc(\d+)$/.exec(t);
+  if (m) return { kind: "edit_cust_start", orderNumber: Number(m[1]) };
+  m = /^em(\d+)$/.exec(t);
+  if (m) return { kind: "edit_full_start", orderNumber: Number(m[1]) };
+
+  m = /^qadj:(p|d):(-?\d+)$/.exec(t);
   if (m) {
     const field = m[1] === "p" ? "price" : "del";
     const amount = Number(m[2]);
@@ -1428,6 +1442,49 @@ export async function handleTelegramAdminCallback(
           inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "s:preparers" }]],
         }, botToken);
         return true;
+      }
+
+      case "assign_start": {
+        // توجيه لعملية الإسناد
+        const order = await prisma.order.findFirst({ where: { orderNumber: parsed.orderNumber } });
+        if (!order) {
+           await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken);
+           return true;
+        }
+        // هنا نقوم بعرض قائمة المناديب المتاحين أو توجيه المستخدم
+        const { text, keyboard } = await renderAdminSection("couriers");
+        await editTelegramMessage(chatId, messageId, `<b>إسناد الطلب #${order.orderNumber}</b>\n\n` + text, keyboard, botToken);
+        return true;
+      }
+      case "edit_start":
+      case "edit_full_start": {
+        const order = await prisma.order.findFirst({ where: { orderNumber: parsed.orderNumber } });
+        if (!order) {
+           await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken);
+           return true;
+        }
+        const { startPrivateOrderEdit } = await import("./telegram-private-order-edit");
+        await startPrivateOrderEdit({
+          telegramUserId,
+          chatId,
+          orderId: order.id,
+          messageId,
+          botToken
+        });
+        return true;
+      }
+      case "edit_cust_start": {
+         const order = await prisma.order.findFirst({ where: { orderNumber: parsed.orderNumber } });
+         if (!order) return true;
+         const { startPrivateCustomerEditForOrder } = await import("./telegram-private-customer-edit");
+         await startPrivateCustomerEditForOrder({
+           telegramUserId,
+           chatId,
+           orderId: order.id,
+           messageId,
+           botToken
+         });
+         return true;
       }
     }
   } catch (e) {
