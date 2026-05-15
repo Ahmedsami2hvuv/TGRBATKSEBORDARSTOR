@@ -645,7 +645,8 @@ export function PendingAssignPanel({
   defaultCustomerLocationUrl,
   defaultCustomerLandmark,
   defaultCustomerDoorPhotoUrl,
-  icons
+  icons,
+  onSuccess,
 }: {
   orderId: string;
   couriers: { id: string; name: string }[];
@@ -655,9 +656,17 @@ export function PendingAssignPanel({
   defaultCustomerLandmark: string;
   defaultCustomerDoorPhotoUrl: string;
   icons: GlobalIconsConfig | null;
+  onSuccess?: () => void;
 }) {
   const bound = assignPendingOrderToCourier.bind(null);
   const [state, formAction, pending] = useActionState(bound, {} as AssignOrderState);
+
+  useEffect(() => {
+    if (state.ok && onSuccess) {
+      onSuccess();
+    }
+  }, [state.ok, onSuccess]);
+
   if (couriers.length === 0) return <p className="p-3 bg-amber-50 text-amber-900 rounded-lg text-sm font-bold border border-amber-200 text-center flex items-center justify-center gap-2"><DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={16} height={16} /> لا يوجد مندوبون مسجلون.</p>;
   const inputClass = "w-full rounded-xl border border-slate-200 p-2.5 text-xs font-mono outline-none text-left bg-white focus:ring-2 focus:ring-emerald-300";
   const labelClass = "text-[11px] font-bold text-slate-500 mb-1 block pr-1";
@@ -724,6 +733,7 @@ export function PendingAssignPanel({
       </div>
 
       {state.error && <p className="text-xs text-rose-600 font-bold p-2 bg-rose-50 rounded-lg border border-rose-200">⚠️ {state.error}</p>}
+      {state.ok && <p className="text-xs text-emerald-700 font-bold p-2 bg-emerald-50 rounded-lg border border-emerald-200">✅ تم إسناد الطلب للمندوب بنجاح.</p>}
 
       <div className="pt-2">
         <button type="submit" disabled={pending} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-800 py-4 text-sm font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-emerald-950">
@@ -880,7 +890,7 @@ export function PendingOrdersClient({
   };
 
   const toggleOne = (id: string) => setSelected(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const toggleAll = () => setSelected(prev => (selected.size > 0 && orders.every(selected.has.bind(selected))) ? new Set() : new Set(orders.map(o => o.id)));
+  const toggleAll = () => setSelected(prev => (prev.size > 0 && orders.every((o) => prev.has(o.id))) ? new Set() : new Set(orders.map((o) => o.id)));
 
   useEffect(() => { if (bulkState.ok) setSelected(new Set()); }, [bulkState.ok]);
   useEffect(() => {
@@ -1186,6 +1196,7 @@ export function PendingOrdersClient({
                   defaultCustomerLandmark={o.customerLandmark}
                   defaultCustomerDoorPhotoUrl={o.customerDoorPhotoUrl}
                   icons={icons}
+                  onSuccess={() => { setAssignOpenId(null); router.refresh(); }}
                 />
               </div>
             )}
