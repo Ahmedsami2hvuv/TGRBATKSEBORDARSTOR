@@ -8,16 +8,16 @@ export const dynamic = "force-dynamic";
 
 export async function POST(
   request: Request,
-  { params }: { params: { botId: string } }
+  { params }: { params: Promise<{ botId: string }> }
 ) {
-  console.log(`[webhook] Received request for botId: ${params.botId}`);
+  const { botId } = await params;
+  console.log(`[webhook] Received request for botId: ${botId}`);
 
   if (!verifyTelegramWebhookSecret(request.headers)) {
-    console.error(`[webhook] Secret verification failed for botId: ${params.botId}`);
+    console.error(`[webhook] Secret verification failed for botId: ${botId}`);
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
-  const botId = params.botId;
   const bot = await prisma.telegramBot.findUnique({
     where: { id: botId },
   });
