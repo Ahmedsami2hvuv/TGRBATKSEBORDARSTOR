@@ -75,8 +75,14 @@ export async function handlePreparerTelegramCallback(
   },
   botToken?: string,
 ): Promise<boolean> {
-  const parsed = parsePreparerTelegramCallback(cq.data?.trim() ?? "");
-  if (!parsed) return false;
+  const data = cq.data?.trim() ?? "";
+  console.log(`[preparer-callback] Received from: ${cq.from.id}, data: ${data}`);
+
+  const parsed = parsePreparerTelegramCallback(data);
+  if (!parsed) {
+    console.warn(`[preparer-callback] Failed to parse data: ${data}`);
+    return false;
+  }
   const msg = cq.message;
   if (!msg) return false;
 
@@ -86,10 +92,12 @@ export async function handlePreparerTelegramCallback(
 
   const preparer = await getPreparerByTelegramUserId(telegramUserId);
   if (!preparer) {
+    console.warn(`[preparer-callback] Preparer not found for user: ${telegramUserId}`);
     await answerCallbackQuery(cq.id, "لم يتم العثور على حساب مجهز نشط مرتبط بهذا التليجرام.", true, botToken);
     return true;
   }
 
+  console.log(`[preparer-callback] Found preparer: ${preparer.name}, Kind: ${parsed.kind}`);
   await answerCallbackQuery(cq.id, undefined, false, botToken).catch(() => {});
 
   try {

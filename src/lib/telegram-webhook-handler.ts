@@ -27,19 +27,29 @@ import {
  */
 export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promise<void> {
   const botToken = bot.token;
-  const botPurpose = bot.purpose; // 'admin' | 'courier' | 'shop' | etc.
+  const botPurpose = bot.purpose?.trim().toLowerCase(); // Normalize purpose
+
+  console.log(`[handleTelegramWebhook] Bot: ${bot.name} (${botPurpose}), Update Type: ${body.callback_query ? 'callback_query' : body.message ? 'message' : 'unknown'}`);
 
   if (body.callback_query) {
     const cb = body.callback_query;
+    console.log(`[handleTelegramWebhook] Callback Data: ${cb.data}, From: ${cb.from.id}`);
 
     // توجيه بناءً على نوع البوت
     if (botPurpose === "admin") {
-      await handleTelegramAdminCallback(cb, botToken);
+      const handled = await handleTelegramAdminCallback(cb, botToken);
+      if (!handled) {
+        const { answerCallbackQuery } = await import("./telegram");
+        await answerCallbackQuery(cb.id, "ليس لديك صلاحية أو الأمر غير معروف.", true, botToken).catch(() => {});
+      }
     }
     else if (botPurpose === "courier") {
       const courier = await getCourierByTelegramUserId(String(cb.from.id));
       if (courier) {
         await handleCourierCallback({ cq: cb, courier: courier as any, botToken });
+      } else {
+        const { answerCallbackQuery } = await import("./telegram");
+        await answerCallbackQuery(cb.id, "حساب المندوب غير مفعّل أو غير موجود.", true, botToken).catch(() => {});
       }
     }
     else if (botPurpose === "shop") {
@@ -50,6 +60,10 @@ export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promis
     }
     else if (botPurpose === "supplier") {
       await handleSupplierTelegramCallback(cb, botToken);
+    } else {
+      console.warn(`[handleTelegramWebhook] No handler for bot purpose: ${botPurpose}`);
+      const { answerCallbackQuery } = await import("./telegram");
+      await answerCallbackQuery(cb.id, `نظام ${botPurpose} غير مبرمج للاستجابة للأزرار بعد.`, false, botToken).catch(() => {});
     }
     return;
   }

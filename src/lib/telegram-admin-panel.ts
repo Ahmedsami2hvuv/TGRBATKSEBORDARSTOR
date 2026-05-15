@@ -942,14 +942,29 @@ export async function handleTelegramAdminCallback(
   botToken?: string,
 ): Promise<boolean> {
   const fromId = cq.from?.id;
-  if (fromId == null || !(await isTelegramAdminUser(fromId))) return false;
+  console.log(`[admin-callback] Received from: ${fromId}, data: ${cq.data}`);
+
+  if (fromId == null || !(await isTelegramAdminUser(fromId))) {
+    console.warn(`[admin-callback] Permission denied for user: ${fromId}`);
+    return false;
+  }
   const msg = cq.message;
-  if (!msg) return false;
-  if (!isTelegramPrivateChat(msg.chat, fromId)) return false;
+  if (!msg) {
+    console.warn(`[admin-callback] No message object in callback`);
+    return false;
+  }
+  if (!isTelegramPrivateChat(msg.chat, fromId)) {
+    console.warn(`[admin-callback] Not a private chat: ${msg.chat.id}`);
+    return false;
+  }
 
   const parsed = parseTelegramAdminCallback(cq.data?.trim() ?? "");
-  if (!parsed) return false;
+  if (!parsed) {
+    console.warn(`[admin-callback] Failed to parse data: ${cq.data}`);
+    return false;
+  }
 
+  console.log(`[admin-callback] Parsed Kind: ${parsed.kind}`);
   await answerCallbackQuery(cq.id, undefined, false, botToken).catch(() => {});
 
   const chatId = String(msg.chat.id);

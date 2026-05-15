@@ -951,12 +951,15 @@ export async function handleCourierCallback({
 }): Promise<void> {
   const chatId = String(cq.message?.chat.id);
   const telegramUserId = String(cq.from.id);
+  const data = cq.data?.trim() ?? "";
+
+  console.log(`[courier-callback] Received from: ${telegramUserId} (${courier.name}), data: ${data}`);
 
   await answerCallbackQuery(cq.id, undefined, false, botToken).catch(() => {});
 
-  const data = cq.data?.trim() ?? "";
   const parsed = parseCourierCallbackData(data);
   if (!parsed) {
+    console.warn(`[courier-callback] Failed to parse data: ${data}`);
     if (cq.message) {
       await deleteThenSendCourierMessage({
         chatId,
@@ -1824,6 +1827,8 @@ export async function handleCourierPrivateTextMessage({
 }): Promise<void> {
   const chatId = String(message.chat.id);
   const txt = message.text?.trim() ?? "";
+
+  console.log(`[courier-message] From: ${telegramUserId} (${courier.name}), Text: ${txt}`);
 
   // Rescue Message: لضمان أن المستخدم يرى استجابة فورية
   if (txt === "/start" || txt === "start") {
