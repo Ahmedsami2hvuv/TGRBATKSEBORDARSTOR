@@ -56,9 +56,11 @@ async function telegramRaw(method: string, body: Record<string, unknown>, custom
   description?: string;
   result?: unknown;
 }> {
-  const token = customToken || process.env.TELEGRAM_BOT_TOKEN;
+  // التوكن يجب أن يمرر دائماً الآن، لا نعتمد على متغير البيئة كخيار أول
+  const token = customToken?.trim();
   if (!token) {
-    return { ok: false, description: "TELEGRAM_BOT_TOKEN غير مضبوط" };
+    console.error(`[telegram] Attempted to call ${method} without a token.`);
+    return { ok: false, description: "Token missing" };
   }
   const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
     method: "POST",
@@ -73,28 +75,21 @@ async function telegramRaw(method: string, body: Record<string, unknown>, custom
   };
 }
 
-let lastWebhookEnsureAt = 0;
-const WEBHOOK_ENSURE_EVERY_MS = 5 * 60 * 1000;
-
-export async function ensureTelegramWebhookConfigured(customToken?: string, customBotId?: string): Promise<void> {
-  const token = (customToken || process.env.TELEGRAM_BOT_TOKEN)?.trim();
-  if (!token) return;
+export async function ensureTelegramWebhookConfigured(customToken: string, customBotId: string): Promise<void> {
+  const token = customToken?.trim();
+  if (!token || !customBotId) return;
   const base = getPublicAppUrl().trim();
   if (!base || base.startsWith("http://localhost")) return;
 
-  // إذا كان بوت مخصص، نستخدم مسار ديناميكي
-  const path = customBotId ? `/api/telegram/webhook/${customBotId}` : `/api/telegram/webhook`;
+  const path = `/api/telegram/webhook/${customBotId}`;
   const desiredUrl = `${base.replace(/\/+$/, "")}${path}`;
   const desiredSecret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || "";
 
   const info = await telegramRaw("getWebhookInfo", {}, token);
   const current = (info.result ?? {}) as {
     url?: string;
-    has_custom_certificate?: boolean;
-    pending_update_count?: number;
   };
-  const sameUrl = (current.url ?? "").trim() === desiredUrl;
-  if (sameUrl) return;
+  if ((current.url ?? "").trim() === desiredUrl) return;
 
   const body: Record<string, unknown> = {
     url: desiredUrl,
@@ -105,14 +100,13 @@ export async function ensureTelegramWebhookConfigured(customToken?: string, cust
   await telegramRaw("setWebhook", body, token);
 }
 
-export async function sendTelegramMessage(text: string, options?: { botToken?: string, chatId?: string }): Promise<{
+export async function sendTelegramMessage(text: string, options: { botToken: string, chatId?: string }): Promise<{
   ok: boolean;
   error?: string;
 }> {
-  if (!options?.botToken) await ensureTelegramWebhookConfigured().catch(() => {});
-  const chatIdRaw = options?.chatId || process.env.TELEGRAM_GROUP_CHAT_ID;
+  const chatIdRaw = options.chatId || process.env.TELEGRAM_GROUP_CHAT_ID;
   if (!chatIdRaw) {
-    return { ok: false, error: "TELEGRAM_GROUP_CHAT_ID غير مضبوط" };
+    return { ok: false, error: "TELEGRAM_GROUP_CHAT_ID غير مضبوط في فيرسل" };
   }
   const chatId = normalizeTelegramGroupChatId(chatIdRaw);
   const data = await telegramRaw("sendMessage", {
@@ -120,7 +114,7 @@ export async function sendTelegramMessage(text: string, options?: { botToken?: s
     text,
     parse_mode: "HTML",
     disable_web_page_preview: true,
-  }, options?.botToken);
+  }, options.botToken);
   if (!data.ok) {
     return { ok: false, error: data.description ?? "sendMessage failed" };
   }

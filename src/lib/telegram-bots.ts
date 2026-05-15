@@ -9,7 +9,7 @@ export async function getBotTokenByPurpose(purpose: string): Promise<string | un
     where: { purpose, active: true },
     select: { token: true }
   });
-  return bot?.token || process.env.TELEGRAM_BOT_TOKEN;
+  return bot?.token;
 }
 
 /**
