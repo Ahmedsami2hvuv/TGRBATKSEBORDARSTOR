@@ -115,6 +115,8 @@ export type ParsedTelegramAdminCallback =
   | { kind: "rg_edit_price"; id: string }
   | { kind: "rg_adj_price"; id: string; amount: number }
   | { kind: "assign_start"; orderNumber: number }
+  | { kind: "assign_list"; orderNumber: number; page: number }
+  | { kind: "assign_exec"; orderNumber: number; courierId: string }
   | { kind: "edit_start"; orderNumber: number }
   | { kind: "edit_cust_start"; orderNumber: number }
   | { kind: "edit_full_start"; orderNumber: number };
@@ -131,6 +133,13 @@ export function parseTelegramAdminCallback(raw: string): ParsedTelegramAdminCall
   // أوامر مختصرة من الإشعارات
   let m = /^l(\d+)$/.exec(t);
   if (m) return { kind: "assign_start", orderNumber: Number(m[1]) };
+
+  m = /^al(\d+)_p(\d+)$/.exec(t);
+  if (m) return { kind: "assign_list", orderNumber: Number(m[1]), page: Number(m[2]) };
+
+  m = /^ax(\d+):(.+)$/.exec(t);
+  if (m) return { kind: "assign_exec", orderNumber: Number(m[1]), courierId: m[2] };
+
   m = /^e(\d+)$/.exec(t);
   if (m) return { kind: "edit_start", orderNumber: Number(m[1]) };
   m = /^oc(\d+)$/.exec(t);
@@ -967,10 +976,9 @@ export async function handleTelegramAdminCallback(
     console.warn(`[admin-callback] No message object in callback`);
     return false;
   }
-  if (!isTelegramPrivateChat(msg.chat, fromId)) {
-    console.warn(`[admin-callback] Not a private chat: ${msg.chat.id}`);
-    return false;
-  }
+
+  // الغاء شرط المحادثة الخاصة للمدراء للسماح بالتحكم من المجموعات
+  // if (!isTelegramPrivateChat(msg.chat, fromId)) { ... }
 
   const parsed = parseTelegramAdminCallback(cq.data?.trim() ?? "");
   if (!parsed) {
@@ -1444,16 +1452,77 @@ export async function handleTelegramAdminCallback(
         return true;
       }
 
-      case "assign_start": {
-        // توجيه لعملية الإسناد
+      case "assign_start":
+      case "assign_list": {
         const order = await prisma.order.findFirst({ where: { orderNumber: parsed.orderNumber } });
         if (!order) {
            await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken);
            return true;
         }
-        // هنا نقوم بعرض قائمة المناديب المتاحين أو توجيه المستخدم
-        const { text, keyboard } = await renderAdminSection("couriers");
-        await editTelegramMessage(chatId, messageId, `<b>إسناد الطلب #${order.orderNumber}</b>\n\n` + text, keyboard, botToken);
+
+        const couriers = await prisma.courier.findMany({
+          where: { blocked: false },
+          orderBy: { name: "asc" },
+          take: 20,
+        });
+
+        if (couriers.length === 0) {
+          await answerCallbackQuery(cq.id, "لا يوجد مناديب نشطين في النظام", true, botToken);
+          return true;
+        }
+
+        const text = `<b>إسناد الطلب #${order.orderNumber}</b>\nاختر المندوب من القائمة أدناه:`;
+        const kb: TelegramInlineKeyboard = { inline_keyboard: [] };
+
+        for (let i = 0; i < couriers.length; i += 2) {
+          const row = [];
+          const c1 = couriers[i];
+          row.push({ text: c1.name, callback_data: `ax${order.orderNumber}:${c1.id}` });
+          if (i + 1 < couriers.length) {
+            const c2 = couriers[i + 1];
+            row.push({ text: c2.name, callback_data: `ax${order.orderNumber}:${c2.id}` });
+          }
+          kb.inline_keyboard.push(row);
+        }
+
+        kb.inline_keyboard.push([{ text: "❌ إلغاء", callback_data: `det${order.orderNumber}` }]);
+
+        // إذا كان الطلب من مجموعة، يفضل إرسال رسالة جديدة أو تعديل الحالية إذا أمكن
+        await editTelegramMessage(chatId, messageId, text, kb, botToken).catch(async () => {
+           await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, botToken);
+        });
+        return true;
+      }
+      case "assign_exec": {
+        const order = await prisma.order.findFirst({ where: { orderNumber: parsed.orderNumber } });
+        const courier = await prisma.courier.findUnique({ where: { id: parsed.courierId } });
+
+        if (!order || !courier) {
+          await answerCallbackQuery(cq.id, "خطأ: الطلب أو المندوب غير موجود", true, botToken);
+          return true;
+        }
+
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            courierId: courier.id,
+            status: "assigned",
+            assignedAt: new Date()
+          }
+        });
+
+        const successMsg = `✅ تم إسناد الطلب <b>#${order.orderNumber}</b> للمندوب <b>${courier.name}</b> بنجاح.`;
+        await editTelegramMessage(chatId, messageId, successMsg, {
+          inline_keyboard: [[{ text: "📦 تفاصيل الطلب", callback_data: `det${order.orderNumber}` }]]
+        }, botToken);
+
+        // إشعار المندوب (إذا كان مربوطاً)
+        if (courier.telegramUserId) {
+           const { notifyCourierNewAssignment } = await import("./telegram-courier-panel");
+           await notifyCourierNewAssignment(courier.id, order.id).catch(console.error);
+        }
+
+        await answerCallbackQuery(cq.id, "تم الإسناد بنجاح", false, botToken);
         return true;
       }
       case "edit_start":
