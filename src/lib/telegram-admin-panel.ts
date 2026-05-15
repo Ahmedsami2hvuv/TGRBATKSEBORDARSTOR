@@ -48,17 +48,7 @@ export async function getTelegramAdminUserIdSet(): Promise<Set<string>> {
     console.error("Error fetching telegramAdmins from DB:", e);
   }
 
-  // من قاعدة البيانات - الحقل القديم (للتوافق)
-  try {
-    const settings = await prisma.appNotificationSettings.findUnique({ where: { id: 1 } });
-    if (settings?.telegramAdminIds) {
-      for (const s of settings.telegramAdminIds.split(/[\s,]+/).map((x) => x.trim()).filter(Boolean)) {
-        ids.add(s);
-      }
-    }
-  } catch (e) {
-    console.error("Error fetching telegramAdminIds from DB:", e);
-  }
+  // ملاحظة: تم إلغاء نظام الـ IDs القديم (appNotificationSettings) بناءً على الطلب
 
   // من البيئة (Env Vars)
   const plural = process.env.TELEGRAM_ADMIN_USER_IDS?.trim();
