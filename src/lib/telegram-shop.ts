@@ -820,10 +820,14 @@ export async function handleShopTelegramCallback(cq: {
         payload.draft.deliveryPrice = region.deliveryPrice;
 
         if (payload.draft.customerPhone && payload.draft.orderSubtotal) {
-          // لدينا كل شيء، ننتقل للتأكيد
-          await upsertShopSession(telegramUserId, chatId, "shop_emp_order_confirm", JSON.stringify(payload));
-          const { text, keyboard } = formatEmployeeOrderConfirm(payload);
-          await editTelegramMessage(chatId, messageId, text, keyboard);
+          // لدينا كل شيء، ننتقل لسؤال الوقت
+          await upsertShopSession(telegramUserId, chatId, "shop_emp_order_time", JSON.stringify(payload));
+          await editTelegramMessage(
+            chatId,
+            messageId,
+            `المنطقة المختارة: <b>${region.name}</b>\n\n❓ <b>شوكت تحب يجيلك المندوب؟</b>\n(أرسل الوقت، مثلاً: هسه، باجر، بـ 4 العصر...)`,
+            { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]] },
+          );
           return true;
         }
 
@@ -874,7 +878,7 @@ export async function handleShopTelegramCallback(cq: {
             totalAmount: total,
             submissionSource: "admin_on_behalf_of_employee",
             submittedByEmployeeId: employeeId,
-            orderNoteTime: "فوري",
+            orderNoteTime: draft.orderNoteTime || "فوري",
           },
         });
 
@@ -900,9 +904,9 @@ export async function handleShopTelegramCallback(cq: {
         const p = JSON.parse(session.payload || "{}") as { employeeId: string; draft: any };
 
         if (parsed.field === "price") {
-          p.draft.orderSubtotal = Math.max(0, (p.draft.orderSubtotal || 0) + parsed.amount);
+          p.draft.orderSubtotal = Math.max(0, Number(p.draft.orderSubtotal || 0) + parsed.amount);
         } else {
-          p.draft.deliveryPrice = Math.max(0, (p.draft.deliveryPrice || 0) + parsed.amount);
+          p.draft.deliveryPrice = Math.max(0, Number(p.draft.deliveryPrice || 0) + parsed.amount);
         }
 
         await upsertShopSession(telegramUserId, chatId, "shop_emp_order_confirm", JSON.stringify(p));
@@ -1464,54 +1468,24 @@ export async function handleShopTelegramMessage(message: {
       return true;
     }
     const payload = JSON.parse(session.payload || "{}");
-    const { employeeId, draft } = payload;
-    const price = new Decimal(priceRes.value);
+    payload.draft.orderSubtotal = priceRes.value;
 
-    try {
-      const emp = await prisma.employee.findUnique({
-        where: { id: employeeId },
-        include: { shop: { include: { region: true } } },
-      });
-      if (!emp) throw new Error("Employee not found");
+    await upsertShopSession(telegramUserId, chatId, "shop_emp_order_time", JSON.stringify(payload));
+    await sendTelegramMessageWithKeyboardToChat(chatId, "❓ <b>شوكت تحب يجيلك المندوب؟</b>\n(مثلاً: هسه، باجر، بـ 4 العصر...)", {
+      inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]]
+    });
+    return true;
+  }
 
-      const shopDel = emp.shop.region.deliveryPrice;
-      const custDel = new Decimal(draft.deliveryPrice);
-      const finalDel = Decimal.max(shopDel, custDel);
-      const total = price.add(finalDel);
+  if (step === "shop_emp_order_time") {
+    const time = message.text?.trim() ?? "";
+    if (!time) return true;
+    const payload = JSON.parse(session.payload || "{}");
+    payload.draft.orderNoteTime = time;
 
-      const order = await prisma.order.create({
-        data: {
-          shopId: emp.shopId,
-          status: "pending",
-          orderType: draft.orderType,
-          customerRegionId: draft.regionId,
-          customerPhone: draft.customerPhone,
-          orderSubtotal: price,
-          deliveryPrice: finalDel,
-          totalAmount: total,
-          submissionSource: "admin_on_behalf_of_employee",
-          submittedByEmployeeId: employeeId,
-          orderNoteTime: "فوري",
-        },
-      });
-
-      await clearShopSession(telegramUserId);
-      await notifyTelegramNewOrder(order.id).catch(() => {});
-      void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
-
-      await sendTelegramMessageWithKeyboardToChat(
-        chatId,
-        `✅ تم رفع الطلب بنجاح باسم <b>${emp.name}</b> (${emp.shop.name})\n\n` +
-          `رقم الطلب: <b>#${order.orderNumber}</b>\n` +
-          `المستلم: <code>${draft.customerPhone}</code>\n` +
-          `المنطقة: ${draft.regionName}\n` +
-          `السعر: ${formatDinarAsAlf(price)}`,
-        { inline_keyboard: [[{ text: "⬅️ قائمة المحلات", callback_data: "shub0" }]] },
-      );
-    } catch (err) {
-      console.error("[employee order creation]", err);
-      await sendTelegramMessageWithKeyboardToChat(chatId, "فشل إنشاء الطلب. حاول لاحقاً.");
-    }
+    await upsertShopSession(telegramUserId, chatId, "shop_emp_order_confirm", JSON.stringify(payload));
+    const { text, keyboard } = formatEmployeeOrderConfirm(payload);
+    await sendTelegramMessageWithKeyboardToChat(chatId, text, keyboard);
     return true;
   }
 
@@ -1520,14 +1494,15 @@ export async function handleShopTelegramMessage(message: {
 
 function formatEmployeeOrderConfirm(p: any) {
   const draft = p.draft;
-  const price = draft.orderSubtotal || 0;
-  const del = draft.deliveryPrice || 0;
+  const price = Number(draft.orderSubtotal || 0);
+  const del = Number(draft.deliveryPrice || 0);
   const total = price + del;
   const text =
     `<b>تأكيد الطلب</b>\n\n` +
     `نوع الطلب: ${escapeTelegramHtml(draft.orderType || "غير محدد")}\n` +
     `المنطقة: ${escapeTelegramHtml(draft.regionName)}\n` +
-    `الهاتف: <code>${draft.customerPhone}</code>\n\n` +
+    `الهاتف: <code>${draft.customerPhone}</code>\n` +
+    `الوقت: <b>${escapeTelegramHtml(draft.orderNoteTime || "فوري")}</b>\n\n` +
     `💰 السعر: <b>${formatDinarAsAlf(price)}</b>\n` +
     `🚚 التوصيل: <b>${formatDinarAsAlf(del)}</b>\n` +
     `💵 الإجمالي: <b>${formatDinarAsAlf(total)}</b>\n\n` +
@@ -1539,10 +1514,6 @@ function formatEmployeeOrderConfirm(p: any) {
         { text: "➖ 1", callback_data: "e_qadj:p:-1" },
         { text: "سعر الطلب", callback_data: "none" },
         { text: "➕ 1", callback_data: "e_qadj:p:1" },
-      ],
-      [
-        { text: "➖ 5", callback_data: "e_qadj:p:-5" },
-        { text: "➕ 5", callback_data: "e_qadj:p:5" },
       ],
       [
         { text: "➖ 1", callback_data: "e_qadj:d:-1" },
