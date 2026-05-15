@@ -1500,9 +1500,11 @@ export async function handleTelegramAdminCallback(
         kb.inline_keyboard.push([{ text: "❌ إلغاء", callback_data: `det${order.orderNumber}` }]);
 
         // إذا كان الطلب من مجموعة، يفضل إرسال رسالة جديدة أو تعديل الحالية إذا أمكن
-        await editTelegramMessage(chatId, messageId, text, kb, botToken).catch(async () => {
-           await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, botToken);
-        });
+        const listEditResult = await editTelegramMessage(chatId, messageId, text, kb, botToken);
+        if (!listEditResult.ok) {
+          console.warn(`[assign_list] editTelegramMessage failed: ${listEditResult.error}`);
+          await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, botToken);
+        }
         return true;
       }
       case "assign_exec": {
@@ -1566,7 +1568,11 @@ export async function handleTelegramAdminCallback(
           kb.inline_keyboard.push([{ text: "🏠 الرئيسية", callback_data: "main" }]);
         }
 
-        await editTelegramMessage(chatId, messageId, successMsg, kb, botToken);
+        const execEditResult = await editTelegramMessage(chatId, messageId, successMsg, kb, botToken);
+        if (!execEditResult.ok) {
+          console.warn(`[assign_exec] editTelegramMessage failed: ${execEditResult.error}`);
+          await sendTelegramMessageWithKeyboardToChat(chatId, successMsg, kb, botToken);
+        }
 
         // إشعار المندوب (إذا كان مربوطاً)
         if (courier.telegramUserId) {
