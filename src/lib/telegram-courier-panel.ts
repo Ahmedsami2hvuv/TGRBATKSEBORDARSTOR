@@ -255,7 +255,16 @@ export async function handleCourierStart({
   botToken?: string;
 }): Promise<void> {
   const courier = await getCourierByTelegramUserId(telegramUserId);
-  if (!courier) return;
+  if (!courier) {
+    await sendTelegramHtmlToChat(
+      chatId,
+      `<b>🚗 بوت المناديب</b>\n\n` +
+      `أهلاً بك. حسابك (ID: <code>${telegramUserId}</code>) غير مسجل كمندوب حالياً.\n\n` +
+      `يرجى تزويد الإدارة بهذا المعرف ليتم إضافتك وتفعيل لوحة التحكم الخاصة بك.`,
+      botToken
+    );
+    return;
+  }
   const text =
     `<b>أهلاً ${escapeTelegramHtml(courier.name)}</b>\n` +
     `اختر من الأزرار:\n` +

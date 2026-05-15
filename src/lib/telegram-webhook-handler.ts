@@ -90,16 +90,49 @@ export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promis
           telegramUserId: String(msg.from.id),
           botToken
         });
+      } else {
+        const { sendTelegramHtmlToChat } = await import("./telegram");
+        await sendTelegramHtmlToChat(
+          String(msg.from.id),
+          `<b>🚫 حساب المندوب غير مسجل</b>\n\n` +
+          `أهلاً بك في نظام التوصيل. حسابك الحالي (ID: <code>${msg.from.id}</code>) غير مرتبط بأي مندوب نشط.\n\n` +
+          `يرجى تزويد الإدارة بالمعرف أعلاه لإضافتك للنظام.`,
+          botToken
+        );
       }
     }
     else if (botPurpose === "shop") {
-      await handleShopTelegramMessage(msg, botToken);
+      const handled = await handleShopTelegramMessage(msg, botToken);
+      if (!handled) {
+        const { sendTelegramHtmlToChat } = await import("./telegram");
+        await sendTelegramHtmlToChat(
+          String(msg.from.id),
+          `<b>🏪 بوت المحلات</b>\n\nحسابك غير مسجل كصاحب محل أو موظف.\nالمعرف الخاص بك (ID): <code>${msg.from.id}</code>\n\nيرجى تزويد الإدارة بالمعرف أعلاه لتفعيل حسابك.`,
+          botToken
+        );
+      }
     }
     else if (botPurpose === "preparer") {
-      await handlePreparerTelegramMessage(msg, botToken);
+      const handled = await handlePreparerTelegramMessage(msg, botToken);
+      if (!handled) {
+        const { sendTelegramHtmlToChat } = await import("./telegram");
+        await sendTelegramHtmlToChat(
+          String(msg.from.id),
+          `<b>👨‍🍳 بوت المجهزين</b>\n\nحسابك غير مسجل كمجهز في النظام.\nالمعرف الخاص بك (ID): <code>${msg.from.id}</code>`,
+          botToken
+        );
+      }
     }
     else if (botPurpose === "supplier") {
-      await handleSupplierTelegramMessage(msg, botToken);
+      const handled = await handleSupplierTelegramMessage(msg, botToken);
+      if (!handled) {
+        const { sendTelegramHtmlToChat } = await import("./telegram");
+        await sendTelegramHtmlToChat(
+          String(msg.from.id),
+          `<b>🚛 بوت الموردين</b>\n\nحسابك غير مسجل كمورد.\nالمعرف الخاص بك (ID): <code>${msg.from.id}</code>`,
+          botToken
+        );
+      }
     }
     else {
       // رد الطوارئ: إذا وصل البوت إلى هنا ولم يرد، نرسل رسالة ترحيبية بسيطة للتأكد من الاتصال

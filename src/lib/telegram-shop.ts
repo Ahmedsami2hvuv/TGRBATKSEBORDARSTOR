@@ -1087,7 +1087,26 @@ export async function handleShopTelegramMessage(message: {
 
   // Rescue & Debug
   if (txt === "/start" || txt === "start") {
-    console.log(`[shop-bot] Received /start from ${telegramUserId}`);
+    const admin = await prisma.telegramAdmin.findFirst({ where: { telegramUserId, active: true } });
+    const emp = await prisma.employee.findUnique({ where: { telegramUserId }, include: { shop: true } });
+
+    if (admin) {
+      const hub = await renderShopsTelegramHub(0);
+      await sendTelegramMessageWithKeyboardToChat(chatId, `<b>مرحباً بك (مدير)</b>\n\n${hub.text}`, hub.keyboard, botToken);
+      return true;
+    }
+
+    if (emp) {
+      const text = `<b>أهلاً بك يا ${escapeTelegramHtml(emp.name)}</b>\nفي لوحة تحكم موظفي: <b>${escapeTelegramHtml(emp.shop.name)}</b>\n\nيمكنك إرسال تفاصيل الطلب مباشرة هنا (مثلاً: رقم الهاتف + السعر) أو استخدام القائمة أدناه.`;
+      const kb: TelegramInlineKeyboard = {
+        inline_keyboard: [[{ text: "🏠 لوحة التحكم", callback_data: "sot_emp" }]]
+      };
+      await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, botToken);
+      return true;
+    }
+
+    await sendTelegramHtmlToChat(chatId, `<b>🏪 بوت المحلات</b>\n\nحسابك (ID: <code>${telegramUserId}</code>) غير مرتب بـ موظف أو مدير.\n\nيرجى التواصل مع الإدارة لتفعيل حسابك.`, botToken);
+    return true;
   }
 
   const session = await prisma.telegramBotSession.findUnique({
