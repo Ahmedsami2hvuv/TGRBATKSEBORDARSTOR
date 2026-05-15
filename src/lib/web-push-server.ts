@@ -4,7 +4,8 @@ import { buildDelegatePortalUrl } from "@/lib/delegate-link";
 import { audienceSettings, getOrCreateNotificationSettings } from "@/lib/notification-settings";
 import { renderNotificationTemplate } from "@/lib/notification-template";
 import { prisma } from "@/lib/prisma";
-import { escapeTelegramHtml, sendTelegramMessageWithKeyboardToChat } from "@/lib/telegram";
+import { getBotTokenByPurpose } from "@/lib/telegram-bots";
+import { escapeTelegramHtml, sendTelegramHtmlToChat, sendTelegramMessageWithKeyboardToChat } from "@/lib/telegram";
 
 function configureVapid(): boolean {
   const pub = process.env.VAPID_PUBLIC_KEY?.trim();
@@ -238,12 +239,14 @@ export async function pushNotifyCourierNewAssignment(
     select: { telegramUserId: true },
   });
 
+  const courierBotToken = await getBotTokenByPurpose("courier");
+
   // 1. إرسال Telegram (تم استعادته)
-  if (courier?.telegramUserId?.trim()) {
+  if (courier?.telegramUserId?.trim() && courierBotToken) {
     const chatId = courier.telegramUserId.trim();
     const text = `<b>تم إسناد طلب جديد لك</b>\n\n🔢 رقم الطلب: <b>#${escapeTelegramHtml(String(
       orderNumber,
-    ))}</b>\n\nاختر:`;
+    ))}</b>\n\nالطلب مرتبط الآن بحسابك. اختر من الأزرار:`;
     const kb = {
       inline_keyboard: [
         [
@@ -253,7 +256,16 @@ export async function pushNotifyCourierNewAssignment(
         [{ text: "💼 محفظتي", callback_data: "co_wallet_0" }],
       ],
     };
-    await sendTelegramMessageWithKeyboardToChat(chatId, text, kb).catch(() => {});
+    const sent = await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, courierBotToken).catch(() => ({ ok: false, error: "send failed" }));
+    if (sent.ok) {
+      const followUpText = `<b>تم ربط طلب #${escapeTelegramHtml(String(orderNumber))} بحسابك الآن.</b>\n\nيمكنك فتح الطلب من زر "📦 فتح الطلب" أو العودة إلى "📦 طلبياتي".`;
+      const followUpKb = {
+        inline_keyboard: [[{ text: "📦 طلبياتي", callback_data: "co_orders_0" }]],
+      };
+      await sendTelegramMessageWithKeyboardToChat(chatId, followUpText, followUpKb, courierBotToken).catch(() => {});
+    }
+  } else if (courier?.telegramUserId?.trim()) {
+    console.warn(`[pushNotifyCourierNewAssignment] courier bot token missing; cannot send Telegram notify to ${courier.telegramUserId}`);
   }
 
   const settingsRow = await getOrCreateNotificationSettings();
@@ -306,6 +318,26 @@ export async function pushNotifyCourierNewAssignment(
     tag: `kse-push-mandoub-${orderNumber}-${courierId}`,
     sound: settings.soundPreset,
   }, [courierId]);
+}
+
+export async function pushNotifyCourierAssignmentRemoved(
+  courierId: string,
+  orderNumber: number,
+  orderId?: string,
+): Promise<void> {
+  const courier = await prisma.courier.findUnique({
+    where: { id: courierId },
+    select: { telegramUserId: true },
+  });
+  const courierBotToken = await getBotTokenByPurpose("courier");
+  if (!courier?.telegramUserId?.trim() || !courierBotToken) return;
+
+  const chatId = courier.telegramUserId.trim();
+  const text = `<b>عذراً، الطلب #${escapeTelegramHtml(String(orderNumber))} ليس لك وتم تغيير المندوب.</b>`;
+  const kb = {
+    inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "co_main" }]],
+  };
+  await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, courierBotToken).catch(() => {});
 }
 
 /** إشعار للمجهز: طلب تجهيز جديد أو إسناد من الموقع */

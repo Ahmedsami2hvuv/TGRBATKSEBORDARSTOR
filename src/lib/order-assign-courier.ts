@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { pushNotifyCourierNewAssignment } from "@/lib/web-push-server";
+import { pushNotifyCourierAssignmentRemoved, pushNotifyCourierNewAssignment } from "@/lib/web-push-server";
 
 export type AssignCourierInternalOpts = {
   /** إسناد من المجهز: السماح حتى لو المندوب أوقف «متاح للإسناد» */
@@ -88,6 +88,8 @@ export async function transferOrderToCourierInternal(
     return { error: "المندوب غير متاح للإسناد حالياً (وضع «غير موجود»)" };
   }
 
+  const oldCourierId = order.assignedCourierId;
+
   await prisma.order.update({
     where: { id: orderId },
     data: {
@@ -99,11 +101,17 @@ export async function transferOrderToCourierInternal(
   const shouldNotifyMandoub =
     // نُخطر عند:
     // - الطلب كان pending (أول إسناد)
-    // - أو المندوب الحالي (المخزن سابقاً) يختلف، حتى لو كان null (حالة غير متوقعة ولكن قد تحصل)
-    order.status === "pending" || order.assignedCourierId !== courierId;
+    // - أو المندوب الحالي (المخزن سابقاً) يختلف
+    order.status === "pending" || (oldCourierId && oldCourierId !== courierId);
   if (shouldNotifyMandoub) {
     void pushNotifyCourierNewAssignment(courierId, order.orderNumber, orderId).catch((e) => {
       console.error("[pushNotifyCourierNewAssignment] failed:", e);
+    });
+  }
+
+  if (oldCourierId && oldCourierId !== courierId) {
+    void pushNotifyCourierAssignmentRemoved(oldCourierId, order.orderNumber, orderId).catch((e) => {
+      console.error("[pushNotifyCourierAssignmentRemoved] failed:", e);
     });
   }
 
