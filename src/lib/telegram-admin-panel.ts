@@ -1488,6 +1488,7 @@ export async function handleTelegramAdminCallback(
         for (let i = 0; i < couriers.length; i += 2) {
           const row = [];
           const c1 = couriers[i];
+          // التأكد من أن الـ ID نصي وسليم
           row.push({ text: c1.name, callback_data: `ax${order.orderNumber}:${c1.id}` });
           if (i + 1 < couriers.length) {
             const c2 = couriers[i + 1];
@@ -1603,8 +1604,9 @@ export async function handleTelegramAdminCallback(
          return true;
       }
     }
+    return false;
   } catch (e) {
-    console.error("[telegram admin panel]", e);
+    console.error("[telegram admin panel - Outer Catch]", e);
     return true;
   }
 }
