@@ -1464,11 +1464,10 @@ export async function handleTelegramAdminCallback(
       }
 
       case "assign_start":
-      case "assign_start":
       case "assign_list": {
-        const order = await prisma.order.findFirst({ where: { orderNumber: parsed.orderNumber } });
+        const order = await prisma.order.findUnique({ where: { orderNumber: parsed.orderNumber } });
         if (!order) {
-           await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken);
+           await answerCallbackQuery(cq.id, `❌ الطلب #${parsed.orderNumber} غير موجود`, true, botToken);
            return true;
         }
 
@@ -1520,28 +1519,27 @@ export async function handleTelegramAdminCallback(
           return true;
         }
 
-        const order = await prisma.order.findFirst({
-          where: { orderNumber: orderNum },
-          orderBy: { createdAt: 'desc' }
+        const order = await prisma.order.findUnique({
+          where: { orderNumber: orderNum }
         });
 
         const courier = await prisma.courier.findUnique({ where: { id: courierId } });
 
         if (!order) {
           console.error(`[assign_exec] Order NOT FOUND: ${orderNum}`);
-          await answerCallbackQuery(cq.id, `خطأ: الطلب #${orderNum} غير موجود`, true, botToken);
+          await answerCallbackQuery(cq.id, `❌ فشل: الطلب #${orderNum} غير موجود حالياً`, true, botToken);
           return true;
         }
         if (!courier) {
           console.error(`[assign_exec] Courier NOT FOUND: "${courierId}"`);
-          await answerCallbackQuery(cq.id, "خطأ: المندوب المختار غير موجود أو تم حذفه", true, botToken);
+          await answerCallbackQuery(cq.id, "❌ فشل: المندوب غير موجود في القائمة", true, botToken);
           return true;
         }
 
         console.log(`[assign_exec] SUCCESS Match - Updating order ${order.id} (#${order.orderNumber}) to Courier: ${courier.name} (${courier.id})`);
 
         try {
-          await prisma.order.update({
+          const updatedOrder = await prisma.order.update({
             where: { id: order.id },
             data: {
               assignedCourierId: courier.id,
@@ -1549,10 +1547,10 @@ export async function handleTelegramAdminCallback(
               assignedAt: new Date()
             }
           });
-          console.log(`[assign_exec] DB Update SUCCESS`);
+          console.log(`[assign_exec] DB Update SUCCESS for Order #${updatedOrder.orderNumber}`);
         } catch (err) {
           console.error(`[assign_exec] DB Update FAILED:`, err);
-          await answerCallbackQuery(cq.id, "حدث خطأ أثناء تحديث قاعدة البيانات", true, botToken);
+          await answerCallbackQuery(cq.id, "❌ فشل تحديث قاعدة البيانات", true, botToken);
           return true;
         }
 
