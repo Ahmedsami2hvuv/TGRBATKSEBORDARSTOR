@@ -865,17 +865,6 @@ async function handleAdminQuickOrderMessage(message: {
   const price = parseAlfInputToDinarDecimalRequired(priceStr);
   if (!price.ok) return false;
 
-  // محاولة استخراج الوقت (عادة يكون في آخر الرسالة أو يحتوي على كلمات دالة)
-  let orderTime = "";
-  const timeKeywords = ["العصر", "الصبح", "ظهر", "ليل", "بـ", "ساعة", "اليوم", "باجر"];
-  for (const line of lines) {
-    if (timeKeywords.some(kw => line.includes(kw)) || /\d+/.test(line)) {
-      if (line !== phone && line !== priceStr && line !== regionSearch) {
-        orderTime = line;
-      }
-    }
-  }
-
   // البحث عن المنطقة
   let region = await prisma.region.findFirst({
     where: { name: { contains: regionSearch, mode: 'insensitive' } }
@@ -899,45 +888,27 @@ async function handleAdminQuickOrderMessage(message: {
     regionId: region?.id,
     regionName: region?.name || regionSearch || "غير محدد",
     deliveryPrice: Number(deliveryPrice),
-    orderNoteTime: orderTime || ""
+    orderNoteTime: ""
   };
-
-  if (!orderTime) {
-    await prisma.telegramBotSession.upsert({
-      where: { telegramUserId: String(message.from?.id) },
-      create: {
-        telegramUserId: String(message.from?.id),
-        chatId: String(message.chat.id),
-        step: "admin_quick_order_time",
-        payload: JSON.stringify(payload),
-      },
-      update: {
-        step: "admin_quick_order_time",
-        payload: JSON.stringify(payload),
-      }
-    });
-    await sendTelegramMessageWithKeyboardToChat(String(message.chat.id), "❓ <b>شوكت تحب يجيلك المندوب؟</b>\n(أرسل الوقت، مثلاً: العصر، أو بـ 4)", {
-      inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "main" }]]
-    });
-    return true;
-  }
 
   await prisma.telegramBotSession.upsert({
     where: { telegramUserId: String(message.from?.id) },
     create: {
       telegramUserId: String(message.from?.id),
       chatId: String(message.chat.id),
-      step: "admin_quick_order_confirm",
+      step: "admin_quick_order_time",
       payload: JSON.stringify(payload),
     },
     update: {
-      step: "admin_quick_order_confirm",
+      step: "admin_quick_order_time",
       payload: JSON.stringify(payload),
     }
   });
 
-  const { text, keyboard } = formatQuickOrderConfirm(payload);
-  await sendTelegramMessageWithKeyboardToChat(String(message.chat.id), text, keyboard);
+  await sendTelegramMessageWithKeyboardToChat(String(message.chat.id), "❓ <b>شوكت تحب يجيلك المندوب؟</b>\n(أرسل الوقت، مثلاً: هسه، باجر، بـ 4 العصر...)", {
+    inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "main" }]]
+  });
+
   return true;
 }
 
