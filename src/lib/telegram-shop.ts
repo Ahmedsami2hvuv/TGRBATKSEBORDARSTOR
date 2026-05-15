@@ -17,7 +17,7 @@ import {
   telegramDownloadFileById,
   type TelegramInlineKeyboard,
 } from "@/lib/telegram";
-import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
+import { normalizeIraqMobileLocal11, whatsappMeUrl } from "@/lib/whatsapp";
 import { formatDinarAsAlf, parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
@@ -52,6 +52,7 @@ export type ShopTelegramCallback =
   | { kind: "customer_del_yes"; customerId: string }
   | { kind: "employee_order_start"; employeeId: string }
   | { kind: "employee_order_region_pick"; regionId: string }
+  | { kind: "employee_orders_list"; employeeId: string }
   | { kind: "e_qadd" }
   | { kind: "e_qadj"; field: "price" | "del"; amount: number }
   | { kind: "employee_hub" };
@@ -65,6 +66,11 @@ export function parseShopTelegramCallback(raw: string): ShopTelegramCallback | n
   if (t === "shcancel") return { kind: "cancel_flow" };
   if (t === "e_qadd") return { kind: "e_qadd" };
   if (t === "sot_emp") return { kind: "employee_hub" };
+  if (t === "emp_orders_list") {
+    // سنقوم بجلب الـ ID لاحقاً من قاعدة البيانات باستخدام telegramUserId في المعالج
+    // لكن للتبسيط في الـ parser نمررها كـ empty string مؤقتاً أو نعتمد على telegramUserId
+    return { kind: "employee_orders_list", employeeId: "" };
+  }
   let m = /^e_qadj:(p|d):(-?\d+)$/.exec(t);
   if (m) {
     const field = m[1] === "p" ? "price" : "del";
@@ -444,10 +450,37 @@ export async function handleShopTelegramCallback(cq: {
 
   await answerCallbackQuery(cq.id).catch(() => {});
 
+  // منع الموظفين من الوصول لواجهات الإدارة (المحلات، العملاء، الزبائن)
+  const adminKinds: Array<ShopTelegramCallback["kind"]> = [
+    "hub", "add_start", "find_start", "detail", "edit_menu", "edit_name",
+    "edit_location", "edit_region_search", "edit_photo", "edit_region_pick",
+    "create_region_pick", "delete_confirm", "delete_yes", "employee_menu",
+    "employee_add", "employee_edit_name", "employee_edit_phone",
+    "customer_menu", "customer_orders", "customer_edit_name",
+    "customer_edit_phone", "customer_del_confirm", "customer_del_yes"
+  ];
+
+  if (adminKinds.includes(parsed.kind)) {
+    const admin = await prisma.telegramAdmin.findFirst({ where: { telegramUserId, active: true } });
+    if (!admin) {
+      const envIds = (process.env.TELEGRAM_ADMIN_USER_IDS || "").split(/[\s,]+/).filter(Boolean);
+      const isEnvAdmin = envIds.includes(telegramUserId) || process.env.TELEGRAM_ADMIN_USER_ID === telegramUserId;
+      if (!isEnvAdmin) {
+        const emp = await prisma.employee.findUnique({ where: { telegramUserId }, select: { id: true } });
+        if (emp) return await handleShopTelegramCallback({ ...cq, data: "sot_emp" });
+        return true;
+      }
+    }
+  }
+
   try {
     switch (parsed.kind) {
       case "cancel_flow": {
         await clearShopSession(telegramUserId);
+        const emp = await prisma.employee.findUnique({ where: { telegramUserId }, include: { shop: true } });
+        if (emp) {
+          return await handleShopTelegramCallback({ ...cq, data: "sot_emp" });
+        }
         const hub = await renderShopsTelegramHub(0);
         await editTelegramMessage(chatId, messageId, hub.text, hub.keyboard).catch(() => {});
         return true;
@@ -485,7 +518,7 @@ export async function handleShopTelegramCallback(cq: {
         const d = await formatShopDetail(parsed.shopId);
         if (!d) {
           await editTelegramMessage(chatId, messageId, "المحل غير موجود.", {
-            inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shub0" }]],
+            inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shcancel" }]],
           });
           return true;
         }
@@ -630,7 +663,7 @@ export async function handleShopTelegramCallback(cq: {
         const d = await formatEmployeeMenu(parsed.employeeId);
         if (!d) {
           await editTelegramMessage(chatId, messageId, "العميل غير موجود.", {
-            inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shub0" }]],
+            inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shcancel" }]],
           });
           return true;
         }
@@ -641,7 +674,7 @@ export async function handleShopTelegramCallback(cq: {
         const shopRow = await prisma.shop.findUnique({ where: { id: parsed.shopId }, select: { id: true } });
         if (!shopRow) {
           await editTelegramMessage(chatId, messageId, "المحل غير موجود.", {
-            inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shub0" }]],
+            inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shcancel" }]],
           });
           return true;
         }
@@ -664,7 +697,7 @@ export async function handleShopTelegramCallback(cq: {
         const emp = await prisma.employee.findUnique({ where: { id: parsed.employeeId }, select: { id: true } });
         if (!emp) {
           await editTelegramMessage(chatId, messageId, "العميل غير موجود.", {
-            inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shub0" }]],
+            inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shcancel" }]],
           });
           return true;
         }
@@ -686,7 +719,7 @@ export async function handleShopTelegramCallback(cq: {
         const emp = await prisma.employee.findUnique({ where: { id: parsed.employeeId }, select: { id: true } });
         if (!emp) {
           await editTelegramMessage(chatId, messageId, "العميل غير موجود.", {
-            inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shub0" }]],
+            inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shcancel" }]],
           });
           return true;
         }
@@ -709,7 +742,7 @@ export async function handleShopTelegramCallback(cq: {
         const d = await formatCustomerMenu(parsed.customerId);
         if (!d) {
           await editTelegramMessage(chatId, messageId, "زبون التوصيل غير موجود.", {
-            inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shub0" }]],
+            inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shcancel" }]],
           });
           return true;
         }
@@ -720,7 +753,7 @@ export async function handleShopTelegramCallback(cq: {
         const d = await formatCustomerOrders(parsed.customerId);
         if (!d) {
           await editTelegramMessage(chatId, messageId, "زبون التوصيل غير موجود.", {
-            inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shub0" }]],
+            inline_keyboard: [[{ text: "⬅️ المحلات", callback_data: "shcancel" }]],
           });
           return true;
         }
@@ -790,6 +823,9 @@ export async function handleShopTelegramCallback(cq: {
         return true;
       }
       case "employee_order_start": {
+        const emp = await prisma.employee.findUnique({ where: { id: parsed.employeeId }, select: { telegramUserId: true } });
+        const cancelTarget = (emp && emp.telegramUserId === telegramUserId) ? "sot_emp" : `sem:${parsed.employeeId}`;
+
         await upsertShopSession(
           telegramUserId,
           chatId,
@@ -805,7 +841,7 @@ export async function handleShopTelegramCallback(cq: {
             `07701234567\n` +
             `25\n\n` +
             `سيتعرف البوت على المنطقة والسعر والهاتف تلقائياً.`,
-          { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: `sem:${parsed.employeeId}` }]] },
+          { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: cancelTarget }]] },
         );
         return true;
       }
@@ -883,8 +919,21 @@ export async function handleShopTelegramCallback(cq: {
         });
 
         await clearShopSession(telegramUserId);
+        revalidatePath("/admin/orders/pending");
         await notifyTelegramNewOrder(order.id).catch(() => {});
         void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+
+        const waMsg = [
+          "مرحباً، لقد قمت برفع طلب جديد عبر التليجرام:",
+          `🏢 من محل: ${emp.shop.name}`,
+          `📍 من منطقة: ${emp.shop.region.name}`,
+          `🎯 إلى منطقة: ${draft.regionName}`,
+          `📞 رقم الزبون: ${draft.customerPhone}`,
+          `💰 سعر الطلب: ${formatDinarAsAlf(price)}`,
+          `🚚 التوصيل: ${formatDinarAsAlf(finalDel)}`,
+          `🔢 رقم الطلب: ${order.orderNumber}`,
+        ].join("\n");
+        const waUrl = whatsappMeUrl("+9647733921468", waMsg);
 
         await editTelegramMessage(
           chatId,
@@ -894,7 +943,16 @@ export async function handleShopTelegramCallback(cq: {
             `المستلم: <code>${draft.customerPhone}</code>\n` +
             `المنطقة: ${draft.regionName}\n` +
             `السعر: ${formatDinarAsAlf(price)}`,
-          { inline_keyboard: [[{ text: "⬅️ قائمة المحلات", callback_data: "shub0" }]] },
+          {
+            inline_keyboard: [
+              [{ text: "🟢 ارسال التفاصيل للواتساب", url: waUrl }],
+              [
+                { text: "🏠 الرئيسية", callback_data: "sot_emp" },
+                { text: "➕ طلب جديد", callback_data: `eor:${emp.id}` },
+                { text: "📦 طلباتي", callback_data: "emp_orders_list" }
+              ]
+            ]
+          },
         );
         return true;
       }
@@ -929,6 +987,36 @@ export async function handleShopTelegramCallback(cq: {
             [{ text: "➕ إضافة طلب جديد", callback_data: `eor:${emp.id}` }],
             [{ text: "📦 طلباتي الأخيرة", callback_data: `emp_orders_list` }]
           ]
+        };
+        await editTelegramMessage(chatId, messageId, text, kb);
+        return true;
+      }
+      case "employee_orders_list": {
+        const emp = await prisma.employee.findUnique({
+          where: { telegramUserId },
+          include: { shop: true }
+        });
+        if (!emp) return true;
+
+        const orders = await prisma.order.findMany({
+          where: { submittedByEmployeeId: emp.id },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          select: { orderNumber: true, status: true, totalAmount: true, customerPhone: true }
+        });
+
+        let text = `<b>📦 طلباتك الأخيرة (${emp.shop.name})</b>\n\n`;
+        if (orders.length === 0) {
+          text += "لا توجد طلبات سابقة مرفوعة باسمك.";
+        } else {
+          text += orders.map(o => (
+            `#${o.orderNumber} — ${o.status}\n` +
+            `📱 ${o.customerPhone} · 💰 ${formatDinarAsAlf(o.totalAmount)}`
+          )).join("\n\n");
+        }
+
+        const kb: TelegramInlineKeyboard = {
+          inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "sot_emp" }]]
         };
         await editTelegramMessage(chatId, messageId, text, kb);
         return true;
@@ -980,13 +1068,26 @@ export async function handleShopTelegramMessage(message: {
     const txt = message.text?.trim() ?? "";
     if (txt === "/cancel_shop") {
       await clearShopSession(telegramUserId);
-      await sendTelegramMessageWithKeyboardToChat(
-        chatId,
-        "تم الإلغاء.",
-        { inline_keyboard: [[{ text: "📋 المحلات", callback_data: "shub0" }]] },
-      );
+      const emp = await prisma.employee.findUnique({ where: { telegramUserId } });
+      const kb: TelegramInlineKeyboard = {
+        inline_keyboard: [[{
+          text: emp ? "🏠 الرئيسية" : "📋 المحلات",
+          callback_data: emp ? "sot_emp" : "shub0"
+        }]]
+      };
+      await sendTelegramMessageWithKeyboardToChat(chatId, "تم الإلغاء.", kb);
       return true;
     }
+
+    // تفعيل البداية التلقائية للطلب السريع للموظفين
+    const emp = await prisma.employee.findUnique({ where: { telegramUserId }, select: { id: true } });
+    if (emp && txt && !txt.startsWith("/")) {
+      // محاكاة الضغط على "إضافة طلب جديد" ثم تمرير النص
+      await upsertShopSession(telegramUserId, chatId, "shop_emp_order_any", JSON.stringify({ employeeId: emp.id, draft: {} }));
+      // استدعاء معالج الرسائل مرة أخرى بالخطوة الجديدة
+      return await handleShopTelegramMessage(message);
+    }
+
     return false;
   }
 
@@ -1006,7 +1107,7 @@ export async function handleShopTelegramMessage(message: {
     for (const s of shops) {
       rows.push([{ text: `${s.name} (${s.region.name})`.slice(0, 64), callback_data: `sh:${s.id}` }]);
     }
-    rows.push([{ text: "⬅️ كل المحلات", callback_data: "shub0" }]);
+    rows.push([{ text: "⬅️ كل المحلات", callback_data: "shcancel" }]);
     await sendTelegramMessageWithKeyboardToChat(
       chatId,
       shops.length === 0

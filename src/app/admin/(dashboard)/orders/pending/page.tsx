@@ -57,6 +57,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         include: {
           shop: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
           submittedBy: { select: { id: true, name: true } },
+          submittedByEmployee: { select: { id: true, name: true } },
           customerRegion: { select: { id: true, name: true } },
           customer: { select: { id: true, customerLocationUrl: true, customerLandmark: true, customerDoorPhotoUrl: true, alternatePhone: true } },
           moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true } },
@@ -149,8 +150,8 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         totalAmount: o.totalAmount != null ? formatDinarAsAlfWithUnit(o.totalAmount) : null,
         deliveryPrice: o.deliveryPrice != null ? formatDinarAsAlfWithUnit(o.deliveryPrice) : null,
         rawDeliveryPriceDinar: o.deliveryPrice != null ? Number(o.deliveryPrice) : null,
-        submittedByName: o.submittedByCompanyPreparer?.name || o.submittedBy?.name || null,
-        submissionLabel: o.submissionSource === "company_preparer" ? "مكتمل التجهيز" : o.submissionSource === "web_store" ? "طلب متجر" : "طلب جديد",
+        submittedByName: o.submittedByCompanyPreparer?.name || o.submittedByEmployee?.name || o.submittedBy?.name || null,
+        submissionLabel: o.submissionSource === "company_preparer" ? "مكتمل التجهيز" : o.submissionSource === "web_store" ? "طلب متجر" : o.submissionSource === "admin_on_behalf_of_employee" ? "طلب موظف (بوت)" : "طلب جديد",
         customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || "",
         customerLandmark: o.customerLandmark || o.customer?.customerLandmark || "",
         voiceNoteUrl: o.voiceNoteUrl || null,
