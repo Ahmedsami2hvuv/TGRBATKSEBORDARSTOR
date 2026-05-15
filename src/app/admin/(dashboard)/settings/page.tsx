@@ -28,6 +28,7 @@ export default async function SettingsPage() {
       getRoleFeatures("mandoub").catch(() => ({ chatEnabled: true, aiEnabled: false })),
       getRoleFeatures("preparer").catch(() => ({ chatEnabled: true, aiEnabled: false })),
       prisma.telegramAdmin.findMany({ orderBy: { createdAt: "desc" } }).catch(() => []),
+      prisma.telegramBot.findMany({ orderBy: { createdAt: "desc" } }).catch(() => []),
     ]);
   } catch (e) {
     console.error("Critical Settings Page Error:", e);
@@ -43,7 +44,8 @@ export default async function SettingsPage() {
     chatEnabled,
     mandoubFeatures,
     preparerFeatures,
-    telegramAdmins
+    telegramAdmins,
+    telegramBots
   ] = data;
 
   // تأمين كائن الإشعارات في حال كان null
@@ -68,6 +70,7 @@ export default async function SettingsPage() {
         mandoubFeaturesInitial={mandoubFeatures as any}
         preparerFeaturesInitial={preparerFeatures as any}
         telegramAdminsInitial={telegramAdmins as any}
+        telegramBotsInitial={telegramBots as any}
         notificationInitial={{
           adminEnabled: ns.adminEnabled ?? true,
           adminTitleSingle: ns.adminTitleSingle ?? "طلب جديد #{orderNumber}",

@@ -11,6 +11,7 @@ import { saveTelegramNewOrderTemplate } from "@/lib/telegram-notify";
 import { GlobalIconsConfig, saveGlobalIcons } from "@/lib/icon-settings";
 import { setChatEnabledGlobally } from "@/lib/portal-chat-settings";
 import { RoleFeaturesConfig, saveRoleFeatures } from "@/lib/role-features-settings";
+import { ensureTelegramWebhookConfigured } from "@/lib/telegram";
 
 export async function saveGlobalIconsAction(config: GlobalIconsConfig) {
   if (!(await isAdminSession())) return { error: "Unauthenticated" };
@@ -111,6 +112,64 @@ export async function toggleTelegramAdminActiveAction(id: string, active: boolea
     return { ok: true };
   } catch (error: any) {
     return { error: error.message || "Failed to toggle Telegram Admin status" };
+  }
+}
+
+export async function addTelegramBotAction(data: { name: string; username: string; token: string; purpose: string }) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  try {
+    const bot = await prisma.telegramBot.create({
+      data: {
+        name: data.name,
+        username: data.username,
+        token: data.token,
+        purpose: data.purpose,
+      },
+    });
+    // تهيئة الـ Webhook فور الإضافة
+    await ensureTelegramWebhookConfigured(bot.token, bot.id).catch(console.error);
+    revalidatePath("/admin/settings");
+    return { ok: true };
+  } catch (error: any) {
+    console.error("Error adding telegram bot:", error);
+    throw error;
+  }
+}
+
+export async function deleteTelegramBotAction(id: string) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  try {
+    await prisma.telegramBot.delete({ where: { id } });
+    revalidatePath("/admin/settings");
+    return { ok: true };
+  } catch (error: any) {
+    throw error;
+  }
+}
+
+export async function toggleTelegramBotActiveAction(id: string, active: boolean) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  try {
+    await prisma.telegramBot.update({
+      where: { id },
+      data: { active },
+    });
+    revalidatePath("/admin/settings");
+    return { ok: true };
+  } catch (error: any) {
+    throw error;
+  }
+}
+
+export async function syncTelegramWebhooksAction() {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  try {
+    const { ensureAllBotsWebhooksConfigured } = await import("@/lib/telegram-bots");
+    await ensureAllBotsWebhooksConfigured();
+    return { ok: true };
+  } catch (error: any) {
+    console.error("Error syncing telegram webhooks:", error);
+    return { error: error.message || "Failed to sync webhooks" };
   }
 }
 

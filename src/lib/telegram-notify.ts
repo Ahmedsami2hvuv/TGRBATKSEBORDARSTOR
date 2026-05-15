@@ -10,6 +10,7 @@ import {
   sendTelegramMessageWithKeyboardToChat,
   type TelegramInlineKeyboard,
 } from "@/lib/telegram";
+import { getBotTokenByPurpose } from "./telegram-bots";
 import { getPreparerMoneyTotals } from "./preparer-combined-wallet-totals";
 import { buildCompanyPreparerPortalUrl } from "./company-preparer-portal-link";
 import { buildDelegatePortalUrl } from "./delegate-link";
@@ -118,9 +119,12 @@ export async function notifyTelegramPreparerWalletEvent(input: {
     `\u200F<b>💰 المتبقي بذمة المجهز:</b> ${remain}`
   ].join("\n");
 
-  await sendTelegramMessage(text);
+  const notificationBotToken = await getBotTokenByPurpose("notification");
+  await sendTelegramMessage(text, { botToken: notificationBotToken });
+
   if (preparer?.telegramUserId) {
-    await sendTelegramHtmlToChat(preparer.telegramUserId, text);
+    const preparerBotToken = await getBotTokenByPurpose("preparer");
+    await sendTelegramHtmlToChat(preparer.telegramUserId, text, preparerBotToken);
   }
 }
 
@@ -171,9 +175,11 @@ export async function notifyTelegramCourierTransferEvent(input: {
   }
 
   if (kb) {
-    await sendTelegramMessageWithKeyboardToChat(courier.telegramUserId, text, kb);
+    const courierBotToken = await getBotTokenByPurpose("courier");
+    await sendTelegramMessageWithKeyboardToChat(courier.telegramUserId, text, kb, courierBotToken);
   } else {
-    await sendTelegramHtmlToChat(courier.telegramUserId, text);
+    const courierBotToken = await getBotTokenByPurpose("courier");
+    await sendTelegramHtmlToChat(courier.telegramUserId, text, courierBotToken);
   }
 }
 
@@ -191,8 +197,9 @@ export async function notifyTelegramNewOrder(orderId: string): Promise<void> {
   });
 
   // إرسال للإدارة (رابط الإدارة)
+  const adminBotToken = await getBotTokenByPurpose("admin");
   const adminKb = buildTelegramOrderKeyboard(order.orderNumber, order.id);
-  await sendTelegramMessageWithKeyboard(adminText, adminKb);
+  await sendTelegramMessageWithKeyboard(adminText, adminKb, adminBotToken);
 
   // إرسال للمجهزين المرتبطين بالمحل
   const preparers = await prisma.companyPreparer.findMany({
@@ -215,7 +222,8 @@ export async function notifyTelegramNewOrder(orderId: string): Promise<void> {
       ]
     };
 
-    await sendTelegramMessageWithKeyboardToChat(prep.telegramUserId, prepText, prepKb);
+    const preparerBotToken = await getBotTokenByPurpose("preparer");
+    await sendTelegramMessageWithKeyboardToChat(prep.telegramUserId, prepText, prepKb, preparerBotToken);
   }
 }
 
@@ -251,7 +259,8 @@ export async function notifyTelegramMoneyEvent(input: any): Promise<void> {
   ].join("\n");
 
   // إرسال للإدارة
-  await sendTelegramMessage(textBase);
+  const adminBotToken = await getBotTokenByPurpose("admin");
+  await sendTelegramMessage(textBase, { botToken: adminBotToken });
 
   // إرسال للمندوب (رابط حسابه)
   if (order.courier?.telegramUserId) {
@@ -266,7 +275,8 @@ export async function notifyTelegramMoneyEvent(input: any): Promise<void> {
       `\n\n🔗 <a href="${courierOrderUrl}">فتح الطلب من حسابك</a>` +
       `\n\n\u200F<b>💵 عندي:</b> ${walletTotalStr}`;
 
-    await sendTelegramHtmlToChat(order.courier.telegramUserId, courierText);
+    const courierBotToken = await getBotTokenByPurpose("courier");
+    await sendTelegramHtmlToChat(order.courier.telegramUserId, courierText, courierBotToken);
   }
 }
 
@@ -298,8 +308,11 @@ export async function notifyTelegramOrderPrepared(orderId: string): Promise<void
     `\n\u200F<b>💵 عندي:</b> ${walletTotalStr}`
   ].join("\n");
 
-  await sendTelegramHtmlToChat(order.courier.telegramUserId, text);
-  await sendTelegramMessage(`\u200F✅ <b>تم تجهيز طلب #${order.orderNumber} وإسناده للمندوب ${escapeTelegramHtml(order.courier.name)}</b>`);
+  const courierBotToken = await getBotTokenByPurpose("courier");
+  await sendTelegramHtmlToChat(order.courier.telegramUserId, text, courierBotToken);
+
+  const adminBotToken = await getBotTokenByPurpose("admin");
+  await sendTelegramMessage(`\u200F✅ <b>تم تجهيز طلب #${order.orderNumber} وإسناده للمندوب ${escapeTelegramHtml(order.courier.name)}</b>`, { botToken: adminBotToken });
 }
 
 /** إشعار عند وصول طلب جديد من المتجر الإلكتروني */
@@ -329,13 +342,15 @@ export async function notifyTelegramStoreOrder(draftId: string): Promise<void> {
     `\u200F🔗 <a href="${getPublicAppUrl()}/admin/orders/pending?tab=preparing">فتح لوحة التجهيز</a>`
   ].join("\n");
 
-  await sendTelegramMessage(text);
+  const notificationBotToken = await getBotTokenByPurpose("notification");
+  await sendTelegramMessage(text, { botToken: notificationBotToken });
 }
 
 export async function notifyTelegramPresenceChange(input: any): Promise<void> {
   const label = input.kind === "courier" ? "مندوب" : "مجهز";
   const text = `<b>${label}:</b> ${escapeTelegramHtml(input.name)} \n${input.available ? "✅ متاح" : "⏸ غير متاح"}`;
-  await sendTelegramMessage(text);
+  const adminBotToken = await getBotTokenByPurpose("admin");
+  await sendTelegramMessage(text, { botToken: adminBotToken });
 }
 
 export async function notifyTelegramSupplierPriceUpdate(input: {
@@ -359,7 +374,8 @@ export async function notifyTelegramSupplierPriceUpdate(input: {
     `<b>سعر البيع الحالي:</b> ${saleStr}`,
   ].join("\n");
 
-  await sendTelegramMessage(text);
+  const adminBotToken = await getBotTokenByPurpose("admin");
+  await sendTelegramMessage(text, { botToken: adminBotToken });
 }
 
 export function buildTelegramOrderKeyboard(

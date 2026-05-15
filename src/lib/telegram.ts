@@ -51,12 +51,12 @@ export type TelegramInlineKeyboard = {
   inline_keyboard: Array<Array<{ text: string; callback_data?: string; url?: string }>>;
 };
 
-async function telegramRaw(method: string, body: Record<string, unknown>): Promise<{
+async function telegramRaw(method: string, body: Record<string, unknown>, customToken?: string): Promise<{
   ok: boolean;
   description?: string;
   result?: unknown;
 }> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const token = customToken || process.env.TELEGRAM_BOT_TOKEN;
   if (!token) {
     return { ok: false, description: "TELEGRAM_BOT_TOKEN غير مضبوط" };
   }
@@ -76,19 +76,18 @@ async function telegramRaw(method: string, body: Record<string, unknown>): Promi
 let lastWebhookEnsureAt = 0;
 const WEBHOOK_ENSURE_EVERY_MS = 5 * 60 * 1000;
 
-async function ensureTelegramWebhookConfigured(): Promise<void> {
-  const now = Date.now();
-  if (now - lastWebhookEnsureAt < WEBHOOK_ENSURE_EVERY_MS) return;
-  lastWebhookEnsureAt = now;
-
-  const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+export async function ensureTelegramWebhookConfigured(customToken?: string, customBotId?: string): Promise<void> {
+  const token = (customToken || process.env.TELEGRAM_BOT_TOKEN)?.trim();
   if (!token) return;
   const base = getPublicAppUrl().trim();
   if (!base || base.startsWith("http://localhost")) return;
-  const desiredUrl = `${base.replace(/\/+$/, "")}/api/telegram/webhook`;
+
+  // إذا كان بوت مخصص، نستخدم مسار ديناميكي
+  const path = customBotId ? `/api/telegram/webhook/${customBotId}` : `/api/telegram/webhook`;
+  const desiredUrl = `${base.replace(/\/+$/, "")}${path}`;
   const desiredSecret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || "";
 
-  const info = await telegramRaw("getWebhookInfo", {});
+  const info = await telegramRaw("getWebhookInfo", {}, token);
   const current = (info.result ?? {}) as {
     url?: string;
     has_custom_certificate?: boolean;
@@ -103,15 +102,15 @@ async function ensureTelegramWebhookConfigured(): Promise<void> {
     drop_pending_updates: false,
   };
   if (desiredSecret) body.secret_token = desiredSecret;
-  await telegramRaw("setWebhook", body);
+  await telegramRaw("setWebhook", body, token);
 }
 
-export async function sendTelegramMessage(text: string): Promise<{
+export async function sendTelegramMessage(text: string, options?: { botToken?: string, chatId?: string }): Promise<{
   ok: boolean;
   error?: string;
 }> {
-  await ensureTelegramWebhookConfigured().catch(() => {});
-  const chatIdRaw = process.env.TELEGRAM_GROUP_CHAT_ID;
+  if (!options?.botToken) await ensureTelegramWebhookConfigured().catch(() => {});
+  const chatIdRaw = options?.chatId || process.env.TELEGRAM_GROUP_CHAT_ID;
   if (!chatIdRaw) {
     return { ok: false, error: "TELEGRAM_GROUP_CHAT_ID غير مضبوط" };
   }
@@ -121,7 +120,7 @@ export async function sendTelegramMessage(text: string): Promise<{
     text,
     parse_mode: "HTML",
     disable_web_page_preview: true,
-  });
+  }, options?.botToken);
   if (!data.ok) {
     return { ok: false, error: data.description ?? "sendMessage failed" };
   }
@@ -132,15 +131,16 @@ export async function sendTelegramMessageWithKeyboardToChat(
   chatId: string,
   text: string,
   replyMarkup: TelegramInlineKeyboard,
+  botToken?: string,
 ): Promise<{ ok: boolean; error?: string; messageId?: number }> {
-  await ensureTelegramWebhookConfigured().catch(() => {});
+  if (!botToken) await ensureTelegramWebhookConfigured().catch(() => {});
   const data = await telegramRaw("sendMessage", {
     chat_id: chatId,
     text,
     parse_mode: "HTML",
     disable_web_page_preview: true,
     reply_markup: replyMarkup,
-  });
+  }, botToken);
   if (!data.ok) {
     return { ok: false, error: (data as { description?: string }).description };
   }
@@ -153,8 +153,9 @@ export async function sendTelegramPhotoToChat(
   photoUrl: string,
   caption?: string,
   replyMarkup?: TelegramInlineKeyboard,
+  botToken?: string,
 ): Promise<{ ok: boolean; error?: string; messageId?: number }> {
-  await ensureTelegramWebhookConfigured().catch(() => {});
+  if (!botToken) await ensureTelegramWebhookConfigured().catch(() => {});
   const body: Record<string, unknown> = {
     chat_id: chatId,
     photo: photoUrl,
@@ -163,7 +164,7 @@ export async function sendTelegramPhotoToChat(
   };
   if (replyMarkup) body.reply_markup = replyMarkup;
 
-  const data = await telegramRaw("sendPhoto", body);
+  const data = await telegramRaw("sendPhoto", body, botToken);
   if (!data.ok) {
     return { ok: false, error: (data as { description?: string }).description };
   }
@@ -174,13 +175,14 @@ export async function sendTelegramPhotoToChat(
 export async function sendTelegramMessageWithKeyboard(
   text: string,
   replyMarkup: TelegramInlineKeyboard,
+  botToken?: string,
 ): Promise<{ ok: boolean; error?: string; messageId?: number }> {
   const chatIdRaw = process.env.TELEGRAM_GROUP_CHAT_ID;
   if (!chatIdRaw) {
     return { ok: false, error: "TELEGRAM_GROUP_CHAT_ID غير مضبوط" };
   }
   const chatId = normalizeTelegramGroupChatId(chatIdRaw);
-  return sendTelegramMessageWithKeyboardToChat(chatId, text, replyMarkup);
+  return sendTelegramMessageWithKeyboardToChat(chatId, text, replyMarkup, botToken);
 }
 
 export async function editTelegramMessage(
@@ -188,6 +190,7 @@ export async function editTelegramMessage(
   messageId: number,
   text: string,
   replyMarkup?: TelegramInlineKeyboard,
+  botToken?: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const body: Record<string, unknown> = {
     chat_id: chatId,
@@ -199,7 +202,7 @@ export async function editTelegramMessage(
   if (replyMarkup) {
     body.reply_markup = replyMarkup;
   }
-  const data = await telegramRaw("editMessageText", body);
+  const data = await telegramRaw("editMessageText", body, botToken);
   if (!data.ok) {
     return { ok: false, error: (data as { description?: string }).description };
   }
@@ -211,12 +214,13 @@ export async function editTelegramMessageReplyMarkup(
   chatId: string,
   messageId: number,
   replyMarkup: TelegramInlineKeyboard,
+  botToken?: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const data = await telegramRaw("editMessageReplyMarkup", {
     chat_id: chatId,
     message_id: messageId,
     reply_markup: replyMarkup,
-  });
+  }, botToken);
   if (!data.ok) {
     return { ok: false, error: (data as { description?: string }).description };
   }
@@ -227,11 +231,12 @@ export async function editTelegramMessageReplyMarkup(
 export async function deleteTelegramMessage(
   chatId: string,
   messageId: number,
+  botToken?: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const data = await telegramRaw("deleteMessage", {
     chat_id: chatId,
     message_id: messageId,
-  });
+  }, botToken);
   if (!data.ok) {
     return { ok: false, error: (data as { description?: string }).description };
   }
@@ -242,14 +247,15 @@ export async function deleteTelegramMessage(
 export async function sendTelegramHtmlToChat(
   chatId: string,
   text: string,
+  botToken?: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  await ensureTelegramWebhookConfigured().catch(() => {});
+  if (!botToken) await ensureTelegramWebhookConfigured().catch(() => {});
   const data = await telegramRaw("sendMessage", {
     chat_id: chatId,
     text,
     parse_mode: "HTML",
     disable_web_page_preview: true,
-  });
+  }, botToken);
   if (!data.ok) {
     return { ok: false, error: (data as { description?: string }).description };
   }
@@ -260,19 +266,20 @@ export async function answerCallbackQuery(
   callbackQueryId: string,
   text?: string,
   showAlert?: boolean,
+  botToken?: string,
 ): Promise<void> {
   await telegramRaw("answerCallbackQuery", {
     callback_query_id: callbackQueryId,
     text: text?.slice(0, 200),
     show_alert: showAlert ?? false,
-  });
+  }, botToken);
 }
 
 /** رسالة في محادثة معيّنة مع طلب رد (للبحث عن المنطقة وغيره من المجموعة). */
 export async function sendTelegramMessageWithForceReply(
   chatId: string,
   text: string,
-  options?: { placeholder?: string },
+  options?: { placeholder?: string, botToken?: string },
 ): Promise<{ ok: boolean; messageId?: number; error?: string }> {
   const data = await telegramRaw("sendMessage", {
     chat_id: chatId,
@@ -283,7 +290,7 @@ export async function sendTelegramMessageWithForceReply(
       force_reply: true,
       input_field_placeholder: options?.placeholder?.slice(0, 64),
     },
-  });
+  }, options?.botToken);
   if (!data.ok) {
     return { ok: false, error: (data as { description?: string }).description };
   }
@@ -295,6 +302,7 @@ export async function sendTelegramMessageWithForceReply(
 export async function sendTelegramMessageRemoveKeyboard(
   chatId: string,
   text: string,
+  botToken?: string,
 ): Promise<{ ok: boolean; messageId?: number; error?: string }> {
   const data = await telegramRaw("sendMessage", {
     chat_id: chatId,
@@ -302,7 +310,7 @@ export async function sendTelegramMessageRemoveKeyboard(
     parse_mode: "HTML",
     disable_web_page_preview: true,
     reply_markup: { remove_keyboard: true },
-  });
+  }, botToken);
   if (!data.ok) {
     return { ok: false, error: (data as { description?: string }).description };
   }
@@ -314,6 +322,7 @@ export async function sendTelegramMessageRemoveKeyboard(
 export async function sendTelegramLocationRequestKeyboard(
   chatId: string,
   text: string,
+  botToken?: string,
 ): Promise<{ ok: boolean; messageId?: number; error?: string }> {
   const data = await telegramRaw("sendMessage", {
     chat_id: chatId,
@@ -325,7 +334,7 @@ export async function sendTelegramLocationRequestKeyboard(
       resize_keyboard: true,
       one_time_keyboard: true,
     },
-  });
+  }, botToken);
   if (!data.ok) {
     return { ok: false, error: (data as { description?: string }).description };
   }
@@ -334,12 +343,12 @@ export async function sendTelegramLocationRequestKeyboard(
 }
 
 /** تنزيل ملف من خوادم تيليجرام (صورة مستلمة من المستخدم). */
-export async function telegramDownloadFileById(fileId: string): Promise<Buffer> {
-  const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+export async function telegramDownloadFileById(fileId: string, botToken?: string): Promise<Buffer> {
+  const token = (botToken || process.env.TELEGRAM_BOT_TOKEN)?.trim();
   if (!token) {
     throw new Error("TELEGRAM_BOT_TOKEN غير مضبوط");
   }
-  const data = await telegramRaw("getFile", { file_id: fileId });
+  const data = await telegramRaw("getFile", { file_id: fileId }, token);
   if (!data.ok) {
     throw new Error(data.description ?? "getFile failed");
   }

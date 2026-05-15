@@ -3,7 +3,7 @@
  * قائمة واتساب: عنوان، رقم، منتجات — بأي ترتيب للأسطر.
  */
 
-import { normalizeDigits } from "@/lib/money-alf";
+import { normalizeDigits, parseAlfInputToDinarNumber } from "@/lib/money-alf";
 
 export type FlexibleOrderParsed = {
   title: string;
@@ -11,7 +11,15 @@ export type FlexibleOrderParsed = {
   products: string[];
 };
 
-function extractPhoneFromText(line: string): string | null {
+export type QuickOrderParsed = {
+  phone: string | null;
+  price: number | null;
+  regionQuery: string | null;
+  orderType: string | null;
+  remainingLines: string[];
+};
+
+export function extractPhoneFromText(line: string): string | null {
   if (!line?.trim()) return null;
   const digits = normalizeDigits(line);
   if (!digits) return null;
@@ -25,6 +33,52 @@ function extractPhoneFromText(line: string): string | null {
     return `0${digits}`;
   }
   return null;
+}
+
+export function parseQuickOrder(text: string): QuickOrderParsed {
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  let phone: string | null = null;
+  let price: number | null = null;
+  const otherLines: string[] = [];
+
+  for (const line of lines) {
+    const p = extractPhoneFromText(line);
+    if (p && !phone) {
+      phone = p;
+      continue;
+    }
+
+    // Heuristic: if it looks like a pure price (e.g. "25" or "12.5")
+    if (/^\d+(\.\d+)?$/.test(line) && price === null) {
+      const pr = parseAlfInputToDinarNumber(line);
+      if (pr !== null) {
+        price = pr;
+        continue;
+      }
+    }
+
+    otherLines.push(line);
+  }
+
+  let regionQuery: string | null = null;
+  let orderType: string | null = null;
+
+  if (otherLines.length > 0) {
+    regionQuery = otherLines[0]!;
+    orderType = otherLines.slice(1).join(" ") || otherLines[0] || null;
+  }
+
+  return {
+    phone,
+    price,
+    regionQuery,
+    orderType,
+    remainingLines: otherLines,
+  };
 }
 
 export function parseFlexibleOrderLines(text: string): FlexibleOrderParsed | null {

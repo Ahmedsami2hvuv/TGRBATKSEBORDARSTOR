@@ -16,6 +16,7 @@ import { saveChatSettingsAction, saveRoleFeaturesAction, updateCourierButtonsAct
 import { useRouter } from "next/navigation";
 import { RoleFeaturesConfig } from "@/lib/role-features-settings";
 import { CourierButtonsSettings } from "./courier-buttons-settings";
+import { TelegramBotsForm } from "./telegram-bots-form";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -168,6 +169,7 @@ export function SettingsBlocks({
   mandoubFeaturesInitial,
   preparerFeaturesInitial,
   telegramAdminsInitial,
+  telegramBotsInitial,
 }: {
   notificationInitial: NotificationInitial;
   globalIcons: GlobalIconsConfig;
@@ -178,6 +180,7 @@ export function SettingsBlocks({
   mandoubFeaturesInitial: RoleFeaturesConfig;
   preparerFeaturesInitial: RoleFeaturesConfig;
   telegramAdminsInitial: Array<{ id: string; telegramUserId: string; name: string; active: boolean }>;
+  telegramBotsInitial: any[];
 }) {
   const router = useRouter();
   const [openId, setOpenId] = useState<string>("ui-designer");
@@ -215,6 +218,7 @@ export function SettingsBlocks({
   }, [openId]);
 
   const [telegramAdminIds, setTelegramAdminIds] = useState(notificationInitial.telegramAdminIds);
+  const [telegramBots, setTelegramBots] = useState(telegramBotsInitial);
   const [telegramSaving, setTelegramSaving] = useState(false);
 
   const [newAdminId, setNewAdminId] = useState("");
@@ -222,6 +226,18 @@ export function SettingsBlocks({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Block
+        id="telegram-bots"
+        title="بوتات تليجرام 🤖"
+        subtitle="إضافة وإدارة بوتات النظام المتعددة."
+        open={openId === "telegram-bots"}
+        onToggle={() => setOpenId((x) => (x === "telegram-bots" ? "" : "telegram-bots"))}
+        tone="indigo"
+        icons={globalIcons}
+      >
+        <TelegramBotsForm initialBots={telegramBots} icons={globalIcons} />
+      </Block>
+
       <Block
         id="telegram-admins"
         title="مدراء البوت 🤖"

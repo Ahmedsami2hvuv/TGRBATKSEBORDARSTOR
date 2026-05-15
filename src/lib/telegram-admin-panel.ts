@@ -5,6 +5,7 @@
 import { ADMIN_TILES, isTileEnabled } from "@/lib/admin-nav";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { formatDinarAsAlf, parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
+import { parseQuickOrder } from "@/lib/flexible-order-parse";
 import { prisma } from "@/lib/prisma";
 import { rankRegionsByQuery } from "@/lib/arabic-region-search";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
@@ -818,62 +819,33 @@ async function handleAdminQuickOrderMessage(message: {
   const txt = message.text?.trim();
   if (!txt) return false;
 
-  // محاولة استخراج رقم هاتف وسعر
-  const lines = txt.split("\n").map(l => l.trim()).filter(Boolean);
-  if (lines.length < 2) return false;
-
-  // خوارزمية بسيطة جداً للتعرف على الحقول
-  let phone = "";
-  let priceStr = "";
-  let regionSearch = "";
-  let type = "";
-
-  for (const line of lines) {
-    const p = normalizeIraqMobileLocal11(line);
-    if (p && !phone) {
-      phone = p;
-      continue;
-    }
-    if (/^\d+(\.\d+)?$/.test(line) && !priceStr) {
-      priceStr = line;
-      continue;
-    }
-    if (!type) {
-      type = line;
-      continue;
-    }
-    if (!regionSearch) {
-      regionSearch = line;
-    }
-  }
-
-  if (!phone || !priceStr) return false;
-
-  const price = parseAlfInputToDinarDecimalRequired(priceStr);
-  if (!price.ok) return false;
+  const parsed = parseQuickOrder(txt);
+  if (!parsed.phone || parsed.price === null) return false;
 
   // البحث عن المنطقة
-  let region = await prisma.region.findFirst({
-    where: { name: { contains: regionSearch, mode: 'insensitive' } }
-  });
+  let region = null;
+  if (parsed.regionQuery) {
+    region = await prisma.region.findFirst({
+      where: { name: { contains: parsed.regionQuery, mode: 'insensitive' } }
+    });
 
-  // إذا لم نجد المنطقة، نحاول البحث في المناطق المعروفة
-  if (!region && regionSearch) {
-    const all = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-    const ranked = rankRegionsByQuery(regionSearch, all, 1);
-    if (ranked.length > 0) {
-      region = await prisma.region.findUnique({ where: { id: ranked[0].id } });
+    if (!region) {
+      const all = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
+      const ranked = rankRegionsByQuery(parsed.regionQuery, all, 1);
+      if (ranked.length > 0) {
+        region = await prisma.region.findUnique({ where: { id: ranked[0].id } });
+      }
     }
   }
 
   const deliveryPrice = region?.deliveryPrice.toNumber() || 0;
 
   const payload = {
-    phone,
-    price: Number(price.value),
-    type: type || "غير محدد",
+    phone: parsed.phone,
+    price: parsed.price,
+    type: parsed.orderType || "غير محدد",
     regionId: region?.id,
-    regionName: region?.name || regionSearch || "غير محدد",
+    regionName: region?.name || parsed.regionQuery || "غير محدد",
     deliveryPrice: Number(deliveryPrice),
     orderNoteTime: ""
   };
@@ -933,12 +905,15 @@ function formatQuickOrderConfirm(p: any) {
   return { text, keyboard: kb };
 }
 
-export async function handleTelegramAdminCallback(cq: {
-  id: string;
-  from: { id: number };
-  message?: { chat: { id: number }; message_id: number; text?: string };
-  data?: string;
-}): Promise<boolean> {
+export async function handleTelegramAdminCallback(
+  cq: {
+    id: string;
+    from: { id: number };
+    message?: { chat: { id: number }; message_id: number; text?: string };
+    data?: string;
+  },
+  botToken?: string,
+): Promise<boolean> {
   const fromId = cq.from?.id;
   if (fromId == null || !(await isTelegramAdminUser(fromId))) return false;
   const msg = cq.message;
@@ -948,7 +923,7 @@ export async function handleTelegramAdminCallback(cq: {
   const parsed = parseTelegramAdminCallback(cq.data?.trim() ?? "");
   if (!parsed) return false;
 
-  await answerCallbackQuery(cq.id).catch(() => {});
+  await answerCallbackQuery(cq.id, undefined, false, botToken).catch(() => {});
 
   const chatId = String(msg.chat.id);
   const messageId = msg.message_id;

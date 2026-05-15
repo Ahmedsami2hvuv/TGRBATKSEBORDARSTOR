@@ -500,6 +500,17 @@ model AppNotificationSettings {
   telegramAdminIds         String   @default("")
 }
 
+model TelegramBot {
+  id        String   @id @default(cuid())
+  name      String
+  username  String   @default("")
+  token     String   @unique
+  purpose   String   // 'admin', 'notification', 'courier', 'preparer', 'customer', 'employee', 'supplier'
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model TelegramBotSession {
   id             String   @id @default(cuid())
   telegramUserId String   @unique
@@ -611,6 +622,7 @@ model StoreSupplier {
   id           String         @id @default(cuid())
   name         String
   phone        String         @default("")
+  telegramUserId String       @default("")
   profitMargin Decimal        @default(0.25) @db.Decimal(10, 2)
   portalToken  String         @default(cuid())
   active       Boolean        @default(true)

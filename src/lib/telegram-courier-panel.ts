@@ -248,9 +248,11 @@ function statusAr(status: string): string {
 export async function handleCourierStart({
   chatId,
   telegramUserId,
+  botToken,
 }: {
   chatId: string;
   telegramUserId: string;
+  botToken?: string;
 }): Promise<void> {
   const courier = await getCourierByTelegramUserId(telegramUserId);
   if (!courier) return;
@@ -260,7 +262,7 @@ export async function handleCourierStart({
     `📦 طلبياتي — تفاصيل الطلبات والمسار\n` +
     `💼 محفظتي — أرقام ووارد/صادر وسجل العمليات`;
 
-  await sendTelegramMessageWithKeyboardToChat(chatId, text, buildCourierKeyboard("main"));
+  await sendTelegramMessageWithKeyboardToChat(chatId, text, buildCourierKeyboard("main"), botToken);
 }
 
 async function loadCourierOrdersForTelegram(courierId: string, page: number) {
@@ -490,9 +492,10 @@ async function deleteThenSendCourierMessage(opts: {
   messageId: number;
   text: string;
   keyboard: TelegramInlineKeyboard;
+  botToken?: string;
 }): Promise<void> {
-  await deleteTelegramMessage(opts.chatId, opts.messageId).catch(() => {});
-  const sent = await sendTelegramMessageWithKeyboardToChat(opts.chatId, opts.text, opts.keyboard);
+  await deleteTelegramMessage(opts.chatId, opts.messageId, opts.botToken).catch(() => {});
+  const sent = await sendTelegramMessageWithKeyboardToChat(opts.chatId, opts.text, opts.keyboard, opts.botToken);
   if (!sent.ok) {
     console.error("[telegram-courier-panel] deleteThenSend failed:", sent.error);
   }
@@ -793,13 +796,14 @@ async function beginCourierPickupAmountStep(
   telegramUserId: string,
   orderNumber: number,
   expectedAlf: string,
+  botToken?: string,
 ): Promise<void> {
   const res = await sendTelegramMessageWithForceReply(
     chatId,
     `<b>💳 استلام الطلب — طلب #${orderNumber}</b>\n` +
       `المتوقع تقريباً: <b>${escapeTelegramHtml(expectedAlf)}</b> \n\n` +
       `أرسل المبلغ الذي دفعته للعميل <b></b> (ردّ على هذه الرسالة):`,
-    { placeholder: "" },
+    { placeholder: "", botToken },
   );
   if (!res.ok || res.messageId == null) return;
   await upsertCourierSession(
@@ -816,13 +820,14 @@ async function beginCourierDeliveryAmountStep(
   telegramUserId: string,
   orderNumber: number,
   expectedAlf: string,
+  botToken?: string,
 ): Promise<void> {
   const res = await sendTelegramMessageWithForceReply(
     chatId,
     `<b>💸 استلام من الزبون — طلب #${orderNumber}</b>\n` +
       `المتوقع تقريباً: <b>${escapeTelegramHtml(expectedAlf)}</b> \n\n` +
       `أرسل المبلغ الذي استلمته من الزبون <b></b> (ردّ على هذه الرسالة):`,
-    { placeholder: "" },
+    { placeholder: "", botToken },
   );
   if (!res.ok || res.messageId == null) return;
   await upsertCourierSession(
@@ -840,6 +845,7 @@ async function completeCourierPickupTx(
   amountDinar: Decimal,
   matches: boolean,
   mismatchNote: string,
+  botToken?: string,
 ): Promise<void> {
   const expected = order.orderSubtotal;
   if (expected == null) return;
@@ -856,10 +862,20 @@ async function completeCourierPickupTx(
         mismatchNote,
       },
     });
-    if (order.status === "assigned") {
+    if (order.status === "assigned" || order.status === "pending") {
       await tx.order.update({
         where: { id: order.id },
-        data: { status: "delivering" },
+        data: {
+          status: "delivering",
+          shopCostPaidAt: new Date(),
+        },
+      });
+    } else {
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          shopCostPaidAt: new Date(),
+        },
       });
     }
   });
@@ -871,6 +887,7 @@ async function completeCourierPickupTx(
     expectedDinar: expected,
     matchesExpected: matches,
     courierName: courier.name,
+    botToken,
   }).catch(() => {});
 }
 
@@ -880,6 +897,7 @@ async function completeCourierDeliveryTx(
   amountDinar: Decimal,
   matches: boolean,
   mismatchNote: string,
+  botToken?: string,
 ): Promise<void> {
   const expected = order.totalAmount;
   if (expected == null) return;
@@ -908,6 +926,7 @@ async function completeCourierDeliveryTx(
         status: "delivered",
         courierEarningDinar: earning,
         courierEarningForCourierId: earningFor,
+        customerPaymentReceivedAt: new Date(),
       },
     });
   });
@@ -919,12 +938,14 @@ async function completeCourierDeliveryTx(
     expectedDinar: expected,
     matchesExpected: matches,
     courierName: courier.name,
+    botToken,
   }).catch(() => {});
 }
 
 export async function handleCourierCallback({
   cq,
   courier,
+  botToken,
 }: {
   cq: NonNullable<TgUpdate["callback_query"]>;
   courier: {
@@ -934,11 +955,12 @@ export async function handleCourierCallback({
     mandoubWalletCarryOverDinar: Decimal;
     vehicleType: "car" | "bike";
   };
+  botToken?: string;
 }): Promise<void> {
   const chatId = String(cq.message?.chat.id);
   const telegramUserId = String(cq.from.id);
 
-  await answerCallbackQuery(cq.id).catch(() => {});
+  await answerCallbackQuery(cq.id, undefined, false, botToken).catch(() => {});
 
   const data = cq.data?.trim() ?? "";
   const parsed = parseCourierCallbackData(data);
@@ -949,6 +971,7 @@ export async function handleCourierCallback({
         messageId: cq.message.message_id,
         text: "أمر غير صالح",
         keyboard: buildCourierKeyboard("main"),
+        botToken,
       });
     }
     return;
@@ -965,6 +988,7 @@ export async function handleCourierCallback({
       messageId: cq.message.message_id,
       text,
       keyboard: buildCourierKeyboard("main"),
+      botToken,
     });
     return;
   }
@@ -976,6 +1000,7 @@ export async function handleCourierCallback({
       messageId: cq.message.message_id,
       text,
       keyboard,
+      botToken,
     });
     return;
   }
@@ -988,6 +1013,7 @@ export async function handleCourierCallback({
         chatId,
         text,
         buildCourierKeyboard("main"),
+        botToken,
       ).catch(() => {});
       return;
     }
@@ -1005,6 +1031,7 @@ export async function handleCourierCallback({
       messageId: cq.message.message_id,
       text,
       keyboard,
+      botToken,
     });
     return;
   }
@@ -1012,7 +1039,7 @@ export async function handleCourierCallback({
   if (parsed.kind === "order_wa_menu") {
     const order = await loadCourierOrderDetailForTelegram(courier.id, parsed.orderNumber);
     if (!order) {
-      await sendTelegramHtmlToChat(chatId, "⚠️ الطلب غير موجود أو غير مسند لك.").catch(() => {});
+      await sendTelegramHtmlToChat(chatId, "⚠️ الطلب غير موجود أو غير مسند لك.", botToken).catch(() => {});
       return;
     }
     const on = String(order.orderNumber);
@@ -1047,6 +1074,7 @@ export async function handleCourierCallback({
       messageId: cq.message.message_id,
       text,
       keyboard,
+      botToken,
     });
     return;
   }
@@ -1054,7 +1082,7 @@ export async function handleCourierCallback({
   if (parsed.kind === "order_call_menu") {
     const order = await loadCourierOrderDetailForTelegram(courier.id, parsed.orderNumber);
     if (!order) {
-      await sendTelegramHtmlToChat(chatId, "⚠️ الطلب غير موجود أو غير مسند لك.").catch(() => {});
+      await sendTelegramHtmlToChat(chatId, "⚠️ الطلب غير موجود أو غير مسند لك.", botToken).catch(() => {});
       return;
     }
     const on = String(order.orderNumber);
@@ -1074,6 +1102,7 @@ export async function handleCourierCallback({
         messageId: cq.message.message_id,
         text: `<b>📞 اتصال</b>\nلا توجد أرقام مسجّلة لهذا الطلب.`,
         keyboard: { inline_keyboard: [[{ text: "⬅️ رجوع", callback_data: `co_order_${on}` }]] },
+        botToken,
       });
       return;
     }
@@ -1089,6 +1118,7 @@ export async function handleCourierCallback({
       messageId: cq.message.message_id,
       text,
       keyboard,
+      botToken,
     });
     return;
   }
@@ -1096,7 +1126,7 @@ export async function handleCourierCallback({
   if (parsed.kind === "order_call_dial") {
     const order = await loadCourierOrderDetailForTelegram(courier.id, parsed.orderNumber);
     if (!order) {
-      await answerCallbackQuery(cq.id, "الطلب غير موجود", true).catch(() => {});
+      await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken).catch(() => {});
       return;
     }
     const shopPhone = order.shop?.phone?.trim() || "";
@@ -1106,7 +1136,7 @@ export async function handleCourierCallback({
       parsed.who === "s" ? shopPhone : parsed.who === "c" ? customerPhone : customer2Phone;
     const href = telHref(phone);
     if (href === "#") {
-      await answerCallbackQuery(cq.id, "لا يوجد رقم", true).catch(() => {});
+      await answerCallbackQuery(cq.id, "لا يوجد رقم", true, botToken).catch(() => {});
       return;
     }
     const on = String(order.orderNumber);
@@ -1116,14 +1146,14 @@ export async function handleCourierCallback({
       `<a href="${escapeTelegramHtml(href)}">اضغط للاتصال من الجهاز</a>`;
     await sendTelegramMessageWithKeyboardToChat(chatId, body, {
       inline_keyboard: [[{ text: "⬅️ رجوع للطلب", callback_data: `co_order_${on}` }]],
-    }).catch(() => {});
+    }, botToken).catch(() => {});
     return;
   }
 
   if (parsed.kind === "order_loc_menu") {
     const order = await loadCourierOrderDetailForTelegram(courier.id, parsed.orderNumber);
     if (!order) {
-      await answerCallbackQuery(cq.id, "الطلب غير موجود", true).catch(() => {});
+      await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken).catch(() => {});
       return;
     }
 
@@ -1154,6 +1184,7 @@ export async function handleCourierCallback({
       messageId: cq.message.message_id,
       text,
       keyboard,
+      botToken,
     });
     return;
   }
@@ -1161,7 +1192,7 @@ export async function handleCourierCallback({
   if (parsed.kind === "order_photo_one") {
     const order = await loadCourierOrderDetailForTelegram(courier.id, parsed.orderNumber);
     if (!order) {
-      await answerCallbackQuery(cq.id, "الطلب غير موجود", true).catch(() => {});
+      await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken).catch(() => {});
       return;
     }
     const shopDoor = (order.shopDoorPhotoUrl ?? "").trim();
@@ -1177,14 +1208,14 @@ export async function handleCourierCallback({
           : parsed.slot === "order"
             ? `📦 صورة الطلب — طلب #${order.orderNumber}`
             : `👤 صورة الزبون — طلب #${order.orderNumber}`;
-      await sendTelegramPhotoToChat(chatId, abs, escapeTelegramHtml(cap)).catch(() => {});
+      await sendTelegramPhotoToChat(chatId, abs, escapeTelegramHtml(cap), botToken).catch(() => {});
       return;
     }
     const slotKey = parsed.slot === "shop" ? "sh" : parsed.slot === "order" ? "or" : "cu";
     const res = await sendTelegramMessageWithForceReply(
       chatId,
       `<b>لا توجد صورة بعد</b>\nأرسل الصورة هنا (ردّ على هذه الرسالة):`,
-      { placeholder: "صورة" },
+      { placeholder: "صورة", botToken },
     );
     if (!res.ok || res.messageId == null) return;
     await upsertCourierSession(
@@ -1200,7 +1231,7 @@ export async function handleCourierCallback({
   if (parsed.kind === "order_edit_menu") {
     const order = await loadCourierOrderDetailForTelegram(courier.id, parsed.orderNumber);
     if (!order) {
-      await answerCallbackQuery(cq.id, "الطلب غير موجود", true).catch(() => {});
+      await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken).catch(() => {});
       return;
     }
     const on = String(order.orderNumber);
@@ -1222,6 +1253,7 @@ export async function handleCourierCallback({
       messageId: cq.message.message_id,
       text: `<b>✏️ تعديل الطلب #${order.orderNumber}</b>\nاختر الحقل:`,
       keyboard: kb,
+      botToken,
     });
     return;
   }
@@ -1229,7 +1261,7 @@ export async function handleCourierCallback({
   if (parsed.kind === "order_edit_field") {
     const order = await loadCourierOrderDetailForTelegram(courier.id, parsed.orderNumber);
     if (!order) {
-      await answerCallbackQuery(cq.id, "الطلب غير موجود", true).catch(() => {});
+      await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken).catch(() => {});
       return;
     }
     const on = String(order.orderNumber);
@@ -1242,6 +1274,7 @@ export async function handleCourierCallback({
     const step = `courier_edit_${parsed.field}`;
     const res = await sendTelegramMessageWithForceReply(chatId, prompts[parsed.field], {
       placeholder: "…",
+      botToken,
     });
     if (!res.ok || res.messageId == null) return;
     await upsertCourierSession(
@@ -1257,7 +1290,7 @@ export async function handleCourierCallback({
   if (parsed.kind === "order_loc_gps") {
     const order = await loadCourierOrderDetailForTelegram(courier.id, parsed.orderNumber);
     if (!order) {
-      await answerCallbackQuery(cq.id, "الطلب غير موجود", true).catch(() => {});
+      await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken).catch(() => {});
       return;
     }
     await upsertCourierSession(telegramUserId, chatId, "courier_await_gps", order.orderNumber, "{}");
@@ -1265,6 +1298,7 @@ export async function handleCourierCallback({
       chatId,
       `<b>📍 موقع الزبون — طلب #${order.orderNumber}</b>\n` +
         `اضغط الزر لإرسال موقعك (GPS). سيُحفظ كموقع الزبون.`,
+      botToken,
     ).catch(() => {});
     return;
   }
@@ -1272,45 +1306,45 @@ export async function handleCourierCallback({
   if (parsed.kind === "order_pickup") {
     const order = await loadCourierOrderDetailForTelegram(courier.id, parsed.orderNumber);
     if (!order) {
-      await answerCallbackQuery(cq.id, "الطلب غير موجود", true).catch(() => {});
+      await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken).catch(() => {});
       return;
     }
     if (order.status !== "assigned") {
-      await answerCallbackQuery(cq.id, "لا يمكن تنفيذ الدفع بهذا الوقت.", true).catch(() => {});
+      await answerCallbackQuery(cq.id, "لا يمكن تنفيذ الدفع بهذا الوقت.", true, botToken).catch(() => {});
       return;
     }
     if (order.orderSubtotal == null) {
-      await answerCallbackQuery(cq.id, "سعر الطلب غير محدد.", true).catch(() => {});
+      await answerCallbackQuery(cq.id, "سعر الطلب غير محدد.", true, botToken).catch(() => {});
       return;
     }
     const expectedAlf = formatDinarAsAlf(order.orderSubtotal);
-    await beginCourierPickupAmountStep(chatId, telegramUserId, order.orderNumber, expectedAlf);
+    await beginCourierPickupAmountStep(chatId, telegramUserId, order.orderNumber, expectedAlf, botToken);
     return;
   }
 
   if (parsed.kind === "order_delivery") {
     const order = await loadCourierOrderDetailForTelegram(courier.id, parsed.orderNumber);
     if (!order) {
-      await answerCallbackQuery(cq.id, "الطلب غير موجود", true).catch(() => {});
+      await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken).catch(() => {});
       return;
     }
     if (order.status !== "delivering") {
-      await answerCallbackQuery(cq.id, "لا يمكن تنفيذ الاستلام بهذا الوقت.", true).catch(() => {});
+      await answerCallbackQuery(cq.id, "لا يمكن تنفيذ الاستلام بهذا الوقت.", true, botToken).catch(() => {});
       return;
     }
     if (order.totalAmount == null) {
-      await answerCallbackQuery(cq.id, "المبلغ الكلي غير محدد.", true).catch(() => {});
+      await answerCallbackQuery(cq.id, "المبلغ الكلي غير محدد.", true, botToken).catch(() => {});
       return;
     }
     const expectedAlf = formatDinarAsAlf(order.totalAmount);
-    await beginCourierDeliveryAmountStep(chatId, telegramUserId, order.orderNumber, expectedAlf);
+    await beginCourierDeliveryAmountStep(chatId, telegramUserId, order.orderNumber, expectedAlf, botToken);
     return;
   }
 
   if (parsed.kind === "wallet") {
     const { text, keyboard } = await buildCourierWalletTelegramText(courier, parsed.tab, parsed.page);
-    await editTelegramMessage(chatId, cq.message.message_id, text, keyboard).catch(async () => {
-      await sendTelegramMessageWithKeyboardToChat(chatId, text, keyboard);
+    await editTelegramMessage(chatId, cq.message.message_id, text, keyboard, botToken).catch(async () => {
+      await sendTelegramMessageWithKeyboardToChat(chatId, text, keyboard, botToken);
     });
     return;
   }
@@ -1319,6 +1353,7 @@ export async function handleCourierCallback({
 export async function processCourierTelegramSessionMessage(
   message: NonNullable<TgUpdate["message"]>,
   courier: { id: string; name: string; vehicleType: "car" | "bike" },
+  botToken?: string,
 ): Promise<boolean> {
   const telegramUserId = String(message.from?.id ?? "");
   const chatId = String(message.chat.id);
@@ -1362,6 +1397,7 @@ export async function processCourierTelegramSessionMessage(
     await sendTelegramMessageRemoveKeyboard(
       chatId,
       `تم حفظ موقع الزبون لطلب <b>#${order.orderNumber}</b>.`,
+      botToken,
     ).catch(() => {});
     return true;
   }
@@ -1381,6 +1417,7 @@ export async function processCourierTelegramSessionMessage(
         chatId,
         "أرسل صورة صالحة (ملف صورة).",
         { inline_keyboard: [] },
+        botToken,
       ).catch(() => {});
       return true;
     }
@@ -1392,7 +1429,7 @@ export async function processCourierTelegramSessionMessage(
       return true;
     }
     try {
-      const buf = await telegramDownloadFileById(fileId);
+      const buf = await telegramDownloadFileById(fileId, botToken);
       const jpeg = await resizeImageBufferForShop(buf);
       const url = await saveOrderImageFromResizedBuffer(jpeg, MAX_ORDER_IMAGE_BYTES);
       const uploader = courier.name.trim() || "مندوب";
@@ -1428,13 +1465,14 @@ export async function processCourierTelegramSessionMessage(
       console.error("[courier telegram photo]", e);
       await sendTelegramMessageWithKeyboardToChat(chatId, "تعذّر حفظ الصورة.", {
         inline_keyboard: [],
-      }).catch(() => {});
+      }, botToken).catch(() => {});
     }
     await clearCourierSession(telegramUserId);
     await sendTelegramMessageWithKeyboardToChat(
       chatId,
       "تم حفظ الصورة.",
       { inline_keyboard: [[{ text: "⬅️ فتح الطلب", callback_data: `co_order_${order.orderNumber}` }]] },
+      botToken,
     ).catch(() => {});
     return true;
   }
@@ -1464,7 +1502,7 @@ export async function processCourierTelegramSessionMessage(
       await sendTelegramMessageWithForceReply(
         chatId,
         "❌ المبلغ غير صالح. أدخل رقماً  (ردّ على هذه الرسالة):",
-        { placeholder: "" },
+        { placeholder: "", botToken },
       );
       return true;
     }
@@ -1472,6 +1510,7 @@ export async function processCourierTelegramSessionMessage(
     if (amountDinar.lt(0)) {
       await sendTelegramMessageWithForceReply(chatId, "❌ المبلغ لا يمكن أن يكون سالباً.", {
         placeholder: "",
+        botToken,
       });
       return true;
     }
@@ -1498,7 +1537,7 @@ export async function processCourierTelegramSessionMessage(
       const res = await sendTelegramMessageWithForceReply(
         chatId,
         "❗ المبلغ مختلف عن المتوقع أو صفر. اكتب ملاحظة (سبب الفرق) — ردّ على هذه الرسالة:",
-        { placeholder: "ملاحظة" },
+        { placeholder: "ملاحظة", botToken },
       );
       if (!res.ok || res.messageId == null) return true;
       await upsertCourierSession(
@@ -1514,12 +1553,13 @@ export async function processCourierTelegramSessionMessage(
       return true;
     }
 
-    await completeCourierPickupTx(courier, order, amountDinar, matches, "");
+    await completeCourierPickupTx(courier, order, amountDinar, matches, "", botToken);
     await clearCourierSession(telegramUserId);
     await sendTelegramMessageWithKeyboardToChat(
       chatId,
       "تم تسجيل دفع العميل.",
       { inline_keyboard: [[{ text: "⬅️ فتح الطلب", callback_data: `co_order_${order.orderNumber}` }]] },
+      botToken,
     ).catch(() => {});
     return true;
   }
@@ -1529,7 +1569,7 @@ export async function processCourierTelegramSessionMessage(
     const amountDinar = new Decimal(payload.amountDinar ?? "0");
     const mismatchNote = textIn.trim();
     if (!mismatchNote) {
-      await sendTelegramMessageWithForceReply(chatId, "❌ الملاحظة مطلوبة.", { placeholder: "ملاحظة" });
+      await sendTelegramMessageWithForceReply(chatId, "❌ الملاحظة مطلوبة.", { placeholder: "ملاحظة", botToken });
       return true;
     }
     const expected = order.orderSubtotal;
@@ -1547,12 +1587,13 @@ export async function processCourierTelegramSessionMessage(
     const nextPaid = paidSoFar.plus(amountDinar);
     const matches = dinarAmountsMatchExpected(nextPaid, expected);
 
-    await completeCourierPickupTx(courier, order, amountDinar, matches, mismatchNote);
+    await completeCourierPickupTx(courier, order, amountDinar, matches, mismatchNote, botToken);
     await clearCourierSession(telegramUserId);
     await sendTelegramMessageWithKeyboardToChat(
       chatId,
       "تم تسجيل دفع العميل.",
       { inline_keyboard: [[{ text: "⬅️ فتح الطلب", callback_data: `co_order_${order.orderNumber}` }]] },
+      botToken,
     ).catch(() => {});
     return true;
   }
@@ -1563,7 +1604,7 @@ export async function processCourierTelegramSessionMessage(
       await sendTelegramMessageWithForceReply(
         chatId,
         "❌ المبلغ غير صالح. أدخل رقماً  (ردّ على هذه الرسالة):",
-        { placeholder: "" },
+        { placeholder: "", botToken },
       );
       return true;
     }
@@ -1571,6 +1612,7 @@ export async function processCourierTelegramSessionMessage(
     if (amountDinar.lt(0)) {
       await sendTelegramMessageWithForceReply(chatId, "❌ المبلغ لا يمكن أن يكون سالباً.", {
         placeholder: "",
+        botToken,
       });
       return true;
     }
@@ -1597,7 +1639,7 @@ export async function processCourierTelegramSessionMessage(
       const res = await sendTelegramMessageWithForceReply(
         chatId,
         "❗ المبلغ مختلف عن المتوقع أو صفر. اكتب ملاحظة — ردّ على هذه الرسالة:",
-        { placeholder: "ملاحظة" },
+        { placeholder: "ملاحظة", botToken },
       );
       if (!res.ok || res.messageId == null) return true;
       await upsertCourierSession(
@@ -1613,12 +1655,13 @@ export async function processCourierTelegramSessionMessage(
       return true;
     }
 
-    await completeCourierDeliveryTx(courier, order, amountDinar, matches, "");
+    await completeCourierDeliveryTx(courier, order, amountDinar, matches, "", botToken);
     await clearCourierSession(telegramUserId);
     await sendTelegramMessageWithKeyboardToChat(
       chatId,
       "تم تسجيل استلام من الزبون وإتمام التسليم.",
       { inline_keyboard: [[{ text: "⬅️ فتح الطلب", callback_data: `co_order_${order.orderNumber}` }]] },
+      botToken,
     ).catch(() => {});
     return true;
   }
@@ -1628,7 +1671,7 @@ export async function processCourierTelegramSessionMessage(
     const amountDinar = new Decimal(payload.amountDinar ?? "0");
     const mismatchNote = textIn.trim();
     if (!mismatchNote) {
-      await sendTelegramMessageWithForceReply(chatId, "❌ الملاحظة مطلوبة.", { placeholder: "ملاحظة" });
+      await sendTelegramMessageWithForceReply(chatId, "❌ الملاحظة مطلوبة.", { placeholder: "ملاحظة", botToken });
       return true;
     }
     const expected = order.totalAmount;
@@ -1646,12 +1689,13 @@ export async function processCourierTelegramSessionMessage(
     const nextReceived = receivedSoFar.plus(amountDinar);
     const matches = dinarAmountsMatchExpected(nextReceived, expected);
 
-    await completeCourierDeliveryTx(courier, order, amountDinar, matches, mismatchNote);
+    await completeCourierDeliveryTx(courier, order, amountDinar, matches, mismatchNote, botToken);
     await clearCourierSession(telegramUserId);
     await sendTelegramMessageWithKeyboardToChat(
       chatId,
       "تم تسجيل استلام من الزبون.",
       { inline_keyboard: [[{ text: "⬅️ فتح الطلب", callback_data: `co_order_${order.orderNumber}` }]] },
+      botToken,
     ).catch(() => {});
     return true;
   }
@@ -1659,7 +1703,7 @@ export async function processCourierTelegramSessionMessage(
   if (session.step === "courier_edit_phone") {
     const phone = normalizeIraqMobileLocal11(textIn);
     if (!phone) {
-      await sendTelegramMessageWithForceReply(chatId, "❌ رقم غير صالح (07…).", { placeholder: "07" });
+      await sendTelegramMessageWithForceReply(chatId, "❌ رقم غير صالح (07…).", { placeholder: "07", botToken });
       return true;
     }
     await prisma.$transaction(async (tx) => {
@@ -1674,6 +1718,7 @@ export async function processCourierTelegramSessionMessage(
       chatId,
       "تم تحديث رقم الزبون.",
       { inline_keyboard: [[{ text: "⬅️ فتح الطلب", callback_data: `co_order_${order.orderNumber}` }]] },
+      botToken,
     ).catch(() => {});
     return true;
   }
@@ -1685,7 +1730,7 @@ export async function processCourierTelegramSessionMessage(
       await sendTelegramMessageWithForceReply(
         chatId,
         "❌ رقم غير صالح أو اكتب — للمسح.",
-        { placeholder: "07" },
+        { placeholder: "07", botToken },
       );
       return true;
     }
@@ -1701,6 +1746,7 @@ export async function processCourierTelegramSessionMessage(
       chatId,
       "تم تحديث الرقم الثانٍ.",
       { inline_keyboard: [[{ text: "⬅️ فتح الطلب", callback_data: `co_order_${order.orderNumber}` }]] },
+      botToken,
     ).catch(() => {});
     return true;
   }
@@ -1724,6 +1770,7 @@ export async function processCourierTelegramSessionMessage(
       chatId,
       "تم تحديث أقرب نقطة دالة.",
       { inline_keyboard: [[{ text: "⬅️ فتح الطلب", callback_data: `co_order_${order.orderNumber}` }]] },
+      botToken,
     ).catch(() => {});
     return true;
   }
@@ -1733,7 +1780,7 @@ export async function processCourierTelegramSessionMessage(
     try {
       new URL(url);
     } catch {
-      await sendTelegramMessageWithForceReply(chatId, "❌ رابط غير صالح.", { placeholder: "http" });
+      await sendTelegramMessageWithForceReply(chatId, "❌ رابط غير صالح.", { placeholder: "http", botToken });
       return true;
     }
     await prisma.$transaction(async (tx) => {
@@ -1758,6 +1805,7 @@ export async function processCourierTelegramSessionMessage(
       chatId,
       "تم تحديث رابط الخرائط.",
       { inline_keyboard: [[{ text: "⬅️ فتح الطلب", callback_data: `co_order_${order.orderNumber}` }]] },
+      botToken,
     ).catch(() => {});
     return true;
   }
@@ -1769,6 +1817,7 @@ export async function handleCourierPrivateTextMessage({
   message,
   courier,
   telegramUserId,
+  botToken,
 }: {
   message: NonNullable<TgUpdate["message"]>;
   courier: {
@@ -1779,11 +1828,12 @@ export async function handleCourierPrivateTextMessage({
     vehicleType: "car" | "bike";
   };
   telegramUserId: string;
+  botToken?: string;
 }): Promise<void> {
   const chatId = String(message.chat.id);
   const txt = message.text?.trim() ?? "";
   if (txt === "/start" || txt === "start") {
-    await handleCourierStart({ chatId, telegramUserId });
+    await handleCourierStart({ chatId, telegramUserId, botToken });
     return;
   }
 
@@ -1792,7 +1842,7 @@ export async function handleCourierPrivateTextMessage({
       id: courier.id,
       name: courier.name,
       vehicleType: courier.vehicleType,
-    })
+    }, botToken)
   ) {
     return;
   }
@@ -1809,5 +1859,5 @@ export async function handleCourierPrivateTextMessage({
   const mainText =
     `<b>أهلاً ${escapeTelegramHtml(courier.name)}</b>\n` +
     `اختر من الأزرار:`;
-  await sendTelegramMessageWithKeyboardToChat(chatId, mainText, buildCourierKeyboard("main")).catch(() => {});
+  await sendTelegramMessageWithKeyboardToChat(chatId, mainText, buildCourierKeyboard("main"), botToken).catch(() => {});
 }

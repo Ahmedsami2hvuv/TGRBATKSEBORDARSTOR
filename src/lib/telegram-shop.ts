@@ -18,7 +18,8 @@ import {
   type TelegramInlineKeyboard,
 } from "@/lib/telegram";
 import { normalizeIraqMobileLocal11, whatsappMeUrl } from "@/lib/whatsapp";
-import { formatDinarAsAlf, parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
+import { formatDinarAsAlf, parseAlfInputToDinarDecimalRequired, parseAlfInputToDinarNumber } from "@/lib/money-alf";
+import { parseQuickOrder } from "@/lib/flexible-order-parse";
 import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 
@@ -431,24 +432,27 @@ async function formatCustomerOrders(customerId: string): Promise<{
   return { text: lines.join("\n"), keyboard: { inline_keyboard: kb } };
 }
 
-export async function handleShopTelegramCallback(cq: {
-  id: string;
-  from: { id: number };
-  message?: { chat: { id: number }; message_id: number; text?: string };
-  data?: string;
-}): Promise<boolean> {
+export async function handleShopTelegramCallback(
+  cq: {
+    id: string;
+    from: { id: number };
+    message?: { chat: { id: number }; message_id: number; text?: string };
+    data?: string;
+  },
+  botToken?: string,
+): Promise<boolean> {
   const parsed = parseShopTelegramCallback(cq.data?.trim() ?? "");
   if (!parsed) return false;
   const msg = cq.message;
   if (!msg) {
-    await answerCallbackQuery(cq.id);
+    await answerCallbackQuery(cq.id, undefined, false, botToken);
     return true;
   }
   const chatId = String(msg.chat.id);
   const messageId = msg.message_id;
   const telegramUserId = String(cq.from.id);
 
-  await answerCallbackQuery(cq.id).catch(() => {});
+  await answerCallbackQuery(cq.id, undefined, false, botToken).catch(() => {});
 
   // منع الموظفين من الوصول لواجهات الإدارة (المحلات، العملاء، الزبائن)
   const adminKinds: Array<ShopTelegramCallback["kind"]> = [
@@ -1455,45 +1459,16 @@ export async function handleShopTelegramMessage(message: {
     const txt = message.text?.trim() ?? "";
     if (!txt) return true;
 
-    const lines = txt
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
     const payload = JSON.parse(session.payload || "{}") as { employeeId: string; draft: any };
+    const parsed = parseQuickOrder(txt);
 
-    let phone = "";
-    let priceStr = "";
-    let potentialRegion = "";
-    const otherLines: string[] = [];
+    if (parsed.phone) payload.draft.customerPhone = parsed.phone;
+    if (parsed.price !== null) payload.draft.orderSubtotal = parsed.price;
+    if (parsed.orderType) payload.draft.orderType = parsed.orderType;
 
-    for (const line of lines) {
-      const p = normalizeIraqMobileLocal11(line);
-      if (p && !phone) {
-        phone = p;
-        continue;
-      }
-      const pr = parseAlfInputToDinarDecimalRequired(line);
-      if (pr.ok && !priceStr && /^\d+(\.\d+)?$/.test(line)) {
-        priceStr = line;
-        continue;
-      }
-      otherLines.push(line);
-    }
-
-    if (otherLines.length > 0) {
-      potentialRegion = otherLines[0]!;
-      payload.draft.orderType = otherLines.slice(1).join(" ") || otherLines[0];
-    }
-
-    payload.draft.customerPhone = phone;
-    if (priceStr) {
-      const pr = parseAlfInputToDinarDecimalRequired(priceStr);
-      payload.draft.orderSubtotal = pr.value;
-    }
-
-    if (potentialRegion) {
+    if (parsed.regionQuery) {
       const all = await prisma.region.findMany({ select: { id: true, name: true, deliveryPrice: true } });
-      const ranked = rankRegionsByQuery(potentialRegion, all, 8);
+      const ranked = rankRegionsByQuery(parsed.regionQuery, all, 8);
 
       if (ranked.length > 0) {
         // إذا وجدنا تطابقاً قوياً جداً، ننتقل للهاتف أو السعر
