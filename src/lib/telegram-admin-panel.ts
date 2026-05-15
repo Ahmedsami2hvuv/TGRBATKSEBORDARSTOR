@@ -1606,7 +1606,11 @@ export async function handleTelegramAdminCallback(
     }
     return false;
   } catch (e) {
-    console.error("[telegram admin panel - Outer Catch]", e);
+    console.error("[telegram admin panel - Inner Catch]", e);
     return true;
   }
+} catch (e) {
+  console.error("[telegram admin panel - Outer Catch]", e);
+  return false;
+}
 }
