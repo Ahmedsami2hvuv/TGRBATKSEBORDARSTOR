@@ -21,6 +21,10 @@ import {
   handleCourierPrivateTextMessage,
   getCourierByTelegramUserId,
 } from "./telegram-courier-panel";
+import {
+  handleShopTelegramCallback,
+  handleShopTelegramMessage,
+} from "./telegram-shop";
 
 type WebhookContext = {
   chatId: string;
@@ -202,21 +206,22 @@ async function handleCallbackQuery(cb: TelegramCallbackQuery, ctx: WebhookContex
   const adminHandled = await handleTelegramAdminCallback(cb);
   if (adminHandled) return;
 
-  // المحلات
-  const shopHandled = await handleShopTelegramCallback(cb as any);
-  if (shopHandled) return;
-
   // المناديب
   const courier = await getCourierByTelegramUserId(ctx.fromId);
   if (courier) {
-    await handleCourierCallback({
-      cq: cb as any,
-      courier: courier as any,
-    });
-    // ملاحظة: لا نضع return هنا لأن بعض الـ callbacks قد تكون مشتركة أو تحتاج معالجة إضافية،
-    // ولكن في تصميمنا الحالي handleCourierCallback كافية.
-    return;
+    // التحقق مما إذا كان الـ callback خاص بالمندوب (يبدأ بـ co_)
+    if (data.startsWith("co_") || data.startsWith("c_") || data.includes("_co_")) {
+      await handleCourierCallback({
+        cq: cb as any,
+        courier: courier as any,
+      });
+      return;
+    }
   }
+
+  // المحلات
+  const shopHandled = await handleShopTelegramCallback(cb as any);
+  if (shopHandled) return;
 
   // l[orderNumber]: قائمة المناديب للإسناد
   if (data.startsWith("l")) {

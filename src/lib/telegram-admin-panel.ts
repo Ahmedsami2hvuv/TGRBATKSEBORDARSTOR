@@ -946,10 +946,7 @@ export async function handleTelegramAdminCallback(cq: {
   if (!isTelegramPrivateChat(msg.chat, fromId)) return false;
 
   const parsed = parseTelegramAdminCallback(cq.data?.trim() ?? "");
-  if (!parsed) {
-    await answerCallbackQuery(cq.id, "أمر غير مدعوم", true).catch(() => {});
-    return true;
-  }
+  if (!parsed) return false;
 
   await answerCallbackQuery(cq.id).catch(() => {});
 
