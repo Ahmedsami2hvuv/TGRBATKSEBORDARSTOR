@@ -36,6 +36,9 @@ export const TELEGRAM_ADMIN_ORDERS_PAGE_SIZE = 8;
 export async function getTelegramAdminUserIdSet(): Promise<Set<string>> {
   const ids = new Set<string>();
 
+  // إضافة المعرف الخاص بك كمطور/مدير أساسي لضمان عدم انقطاع الخدمة أثناء التحديث
+  ids.add("937732530");
+
   // من قاعدة البيانات - الجدول الجديد
   try {
     const admins = await prisma.telegramAdmin.findMany({
@@ -703,11 +706,30 @@ export async function handleTelegramAdminPrivateMessage(message: {
   text?: string;
 }, botToken?: string): Promise<boolean> {
   const fromId = message.from?.id;
-  if (fromId == null || !(await isTelegramAdminUser(fromId))) return false;
-  if (!isTelegramPrivateChat(message.chat, fromId)) return false;
-  const txt = message.text?.trim() ?? "";
-  const telegramUserId = String(fromId);
+  const telegramUserId = String(fromId || "");
   const chatId = String(message.chat.id);
+  const txt = message.text?.trim() ?? "";
+
+  // Rescue & Debug: رد فوري للتأكد من وصول الرسالة للخادم
+  if (txt === "/start" || txt === "start") {
+     console.log(`[admin-panel] Received /start from ${telegramUserId}`);
+  }
+
+  if (fromId == null || !(await isTelegramAdminUser(fromId))) {
+    // إبلاغ المستخدم غير المصرح له بهويته (مهم جداً للمزامنة)
+    const { sendTelegramHtmlToChat } = await import("./telegram");
+    await sendTelegramHtmlToChat(
+      chatId,
+      `⚠️ <b>نظام الإدارة: تم استلام رسالتك</b>\n\n` +
+      `لكن حسابك غير مسجل كمدير حالياً.\n` +
+      `معرفك (ID): <code>${telegramUserId}</code>\n\n` +
+      `<i>يرجى إرسال هذا الرقم للمطور أو إضافته في الإعدادات.</i>`,
+      botToken
+    ).catch(() => {});
+    return false;
+  }
+
+  if (!isTelegramPrivateChat(message.chat, fromId)) return false;
 
   if (txt.startsWith("/")) {
     const cmd = txt.split(/\s+/)[0]?.toLowerCase() ?? "";

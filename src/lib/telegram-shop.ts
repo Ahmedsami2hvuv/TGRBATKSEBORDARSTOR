@@ -1078,17 +1078,22 @@ export async function handleShopTelegramMessage(message: {
   text?: string;
   photo?: Array<{ file_id: string; file_size?: number; width?: number; height?: number }>;
   document?: { file_id: string; mime_type?: string; file_name?: string };
-}): Promise<boolean> {
+}, botToken?: string): Promise<boolean> {
   const fromId = message.from?.id;
   if (fromId == null) return false;
   const telegramUserId = String(fromId);
   const chatId = String(message.chat.id);
+  const txt = message.text?.trim() ?? "";
+
+  // Rescue & Debug
+  if (txt === "/start" || txt === "start") {
+    console.log(`[shop-bot] Received /start from ${telegramUserId}`);
+  }
 
   const session = await prisma.telegramBotSession.findUnique({
     where: { telegramUserId },
   });
   if (!session || session.step === "idle" || !session.step.startsWith("shop_")) {
-    const txt = message.text?.trim() ?? "";
     if (txt === "/cancel_shop") {
       await clearShopSession(telegramUserId);
       const emp = await prisma.employee.findUnique({ where: { telegramUserId } });
@@ -1098,17 +1103,28 @@ export async function handleShopTelegramMessage(message: {
           callback_data: emp ? "sot_emp" : "shub0"
         }]]
       };
-      await sendTelegramMessageWithKeyboardToChat(chatId, "تم الإلغاء.", kb);
+      await sendTelegramMessageWithKeyboardToChat(chatId, "تم الإلغاء.", kb, botToken);
       return true;
     }
 
     // تفعيل البداية التلقائية للطلب السريع للموظفين
-    const emp = await prisma.employee.findUnique({ where: { telegramUserId }, select: { id: true } });
+    const emp = await prisma.employee.findUnique({ where: { telegramUserId }, select: { id: true, name: true } });
     if (emp && txt && !txt.startsWith("/")) {
       // محاكاة الضغط على "إضافة طلب جديد" ثم تمرير النص
       await upsertShopSession(telegramUserId, chatId, "shop_emp_order_any", JSON.stringify({ employeeId: emp.id, draft: {} }));
       // استدعاء معالج الرسائل مرة أخرى بالخطوة الجديدة
-      return await handleShopTelegramMessage(message);
+      return await handleShopTelegramMessage(message, botToken);
+    }
+
+    // Rescue for unknown shop bot messages
+    if (txt && !txt.startsWith("/")) {
+       const empCheck = await prisma.employee.findUnique({ where: { telegramUserId } });
+       if (empCheck) {
+          await sendTelegramMessageWithKeyboardToChat(chatId, `أهلاً ${escapeTelegramHtml(empCheck.name)}، يمكنك البدء بكتابة تفاصيل الطلب مباشرة هنا.`, {
+            inline_keyboard: [[{ text: "🏠 لوحة التحكم", callback_data: "sot_emp" }]]
+          }, botToken);
+          return true;
+       }
     }
 
     return false;

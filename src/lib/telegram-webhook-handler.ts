@@ -88,7 +88,15 @@ export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promis
       await handleSupplierTelegramMessage(msg, botToken);
     }
     else {
-      console.warn(`[telegram-webhook] Unhandled purpose "${botPurpose}" for message from ${msg.from?.id}`);
+      // رد الطوارئ: إذا وصل البوت إلى هنا ولم يرد، نرسل رسالة ترحيبية بسيطة للتأكد من الاتصال
+      const { sendTelegramHtmlToChat } = await import("./telegram");
+      await sendTelegramHtmlToChat(
+        String(msg.from.id),
+        `✅ تم استلام رسالتك بنجاح في نظام **${botPurpose}**.\n\n` +
+        `معرفك (ID): <code>${msg.from.id}</code>\n` +
+        `هذا الرد يظهر لأن النظام قيد التشغيل والـ Webhook يعمل بشكل صحيح.`,
+        botToken
+      );
     }
   }
 }

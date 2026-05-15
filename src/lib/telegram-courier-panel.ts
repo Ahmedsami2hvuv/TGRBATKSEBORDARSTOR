@@ -1824,32 +1824,27 @@ export async function handleCourierPrivateTextMessage({
 }): Promise<void> {
   const chatId = String(message.chat.id);
   const txt = message.text?.trim() ?? "";
+
+  // Rescue Message: لضمان أن المستخدم يرى استجابة فورية
   if (txt === "/start" || txt === "start") {
     await handleCourierStart({ chatId, telegramUserId, botToken });
     return;
   }
 
-  if (
-    await processCourierTelegramSessionMessage(message, {
-      id: courier.id,
-      name: courier.name,
-      vehicleType: courier.vehicleType,
-    }, botToken)
-  ) {
-    return;
-  }
+  // محاولة معالجة الجلسة (إدخال مبالغ، صور، إلخ)
+  const sessionHandled = await processCourierTelegramSessionMessage(message, {
+    id: courier.id,
+    name: courier.name,
+    vehicleType: courier.vehicleType,
+  }, botToken);
 
-  const msgLoc = (message as { location?: unknown }).location;
-  if (message.photo?.length || msgLoc || message.document) {
-    return;
-  }
+  if (sessionHandled) return;
 
-  if (!txt) {
-    return;
+  // إذا وصلت رسالة نصية غير معروفة، نرد بالقائمة الرئيسية
+  if (txt && !message.photo && !message.location) {
+    const mainText =
+      `<b>أهلاً ${escapeTelegramHtml(courier.name)}</b>\n` +
+      `تم استلام رسالتك. اختر من الأزرار أدناه للتحكم بطلبياتك:`;
+    await sendTelegramMessageWithKeyboardToChat(chatId, mainText, buildCourierKeyboard("main"), botToken).catch(() => {});
   }
-
-  const mainText =
-    `<b>أهلاً ${escapeTelegramHtml(courier.name)}</b>\n` +
-    `اختر من الأزرار:`;
-  await sendTelegramMessageWithKeyboardToChat(chatId, mainText, buildCourierKeyboard("main"), botToken).catch(() => {});
 }
