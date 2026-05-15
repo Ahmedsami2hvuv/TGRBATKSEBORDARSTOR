@@ -43,7 +43,7 @@ import {
   mandoubHandToAdminDinar,
   computeMandoubWalletRemainAllTimeDinar,
 } from "@/lib/mandoub-wallet-carry";
-import { buildDelegatePortalUrl } from "@/lib/delegate-link";
+import { verifyDelegatePortalQuery } from "./delegate-link";
 import { normalizeIraqMobileLocal11, telHref, whatsappMeUrl } from "@/lib/whatsapp";
 
 type CourierMainKeyboardKind = "main" | "orders" | "wallet";
@@ -1830,12 +1830,12 @@ export async function processCourierTelegramSessionMessage(
 
 export async function handleCourierPrivateTextMessage({
   message,
-  courier,
+  courier: initialCourier,
   telegramUserId,
   botToken,
 }: {
   message: NonNullable<TgUpdate["message"]>;
-  courier: {
+  courier?: {
     id: string;
     name: string;
     mandoubTotalsResetAt: Date | null;
@@ -1846,11 +1846,64 @@ export async function handleCourierPrivateTextMessage({
   botToken?: string;
 }): Promise<void> {
   const chatId = String(message.chat.id);
-  const txt = message.text?.trim() ?? "";
+  const txt = (message.text?.trim() ?? "").toLowerCase();
 
-  console.log(`[courier-message] From: ${telegramUserId} (${courier.name}), Text: ${txt}`);
+  console.log(`[courier-message] From: ${telegramUserId}, Text: ${txt}`);
 
-  // Rescue Message: لضمان أن المستخدم يرى استجابة فورية
+  // 1. محاولة التعرف على المندوب من الرابط إذا لم يكن مسجلاً أو أرسل رابطاً جديداً
+  if (txt.includes("/mandoub?")) {
+    try {
+      const urlObj = new URL(txt.startsWith("http") ? txt : `https://${txt}`);
+      const c = urlObj.searchParams.get("c") || "";
+      const s = urlObj.searchParams.get("s") || "";
+      const exp = urlObj.searchParams.get("exp") || "";
+
+      const verify = verifyDelegatePortalQuery(c, exp, s);
+      if (verify.ok) {
+        const targetCourierId = verify.courierId;
+        // تحديث قاعدة البيانات لربط هذا الـ Telegram ID بالمندوب
+        await prisma.courier.update({
+          where: { id: targetCourierId },
+          data: { telegramUserId: telegramUserId }
+        });
+
+        const updatedCourier = await getCourierByTelegramUserId(telegramUserId);
+        if (updatedCourier) {
+          await sendTelegramHtmlToChat(
+            chatId,
+            `<b>✅ تم تفعيل حسابك بنجاح!</b>\n\n` +
+            `أهلاً بك يا ${escapeTelegramHtml(updatedCourier.name)}، تم ربط حساب تليجرام بلوحة المندوب الخاصة بك.`,
+            botToken
+          );
+          await handleCourierStart({ chatId, telegramUserId, botToken });
+          return;
+        }
+      }
+    } catch (e) {
+      console.error("[courier-link-detection] Error parsing link:", e);
+    }
+  }
+
+  // التحقق من وجود المندوب (إما الممرر أو البحث عنه بالـ ID)
+  const courier = initialCourier || await getCourierByTelegramUserId(telegramUserId);
+
+  if (!courier) {
+    // إذا لم يكن مسجلاً ولم يرسل رابطاً صالحاً، نطلب منه الرابط أو المعرف
+    if (txt === "/start" || txt === "start") {
+      await handleCourierStart({ chatId, telegramUserId, botToken });
+    } else {
+      await sendTelegramHtmlToChat(
+        chatId,
+        `<b>🚫 حساب المندوب غير مسجل</b>\n\n` +
+        `يرجى إرسال <b>رابط لوحة المندوب</b> الخاصة بك هنا ليتم تفعيل حسابك تلقائياً.\n\n` +
+        `أو زود الإدارة بهذا المعرف: <code>${telegramUserId}</code>`,
+        botToken
+      );
+    }
+    return;
+  }
+
+  // Rescue Message
   if (txt === "/start" || txt === "start") {
     await handleCourierStart({ chatId, telegramUserId, botToken });
     return;

@@ -197,9 +197,9 @@ export async function notifyTelegramNewOrder(orderId: string): Promise<void> {
   });
 
   // إرسال للإدارة (رابط الإدارة)
-  const adminBotToken = await getBotTokenByPurpose("admin");
+  const notificationBotToken = await getBotTokenByPurpose("notification");
   const adminKb = buildTelegramOrderKeyboard(order.orderNumber, order.id);
-  await sendTelegramMessageWithKeyboard(adminText, adminKb, adminBotToken);
+  await sendTelegramMessageWithKeyboard(adminText, adminKb, notificationBotToken);
 
   // إرسال للمجهزين المرتبطين بالمحل
   const preparers = await prisma.companyPreparer.findMany({
@@ -259,8 +259,8 @@ export async function notifyTelegramMoneyEvent(input: any): Promise<void> {
   ].join("\n");
 
   // إرسال للإدارة
-  const adminBotToken = await getBotTokenByPurpose("admin");
-  await sendTelegramMessage(textBase, { botToken: adminBotToken });
+  const notificationBotToken = await getBotTokenByPurpose("notification");
+  await sendTelegramMessage(textBase, { botToken: notificationBotToken });
 
   // إرسال للمندوب (رابط حسابه)
   if (order.courier?.telegramUserId) {
@@ -308,11 +308,10 @@ export async function notifyTelegramOrderPrepared(input: { orderId: string; botT
     `\n\u200F<b>💵 عندي:</b> ${walletTotalStr}`
   ].join("\n");
 
-  const courierBotToken = input.botToken || await getBotTokenByPurpose("courier");
+  const notificationBotToken = await getBotTokenByPurpose("notification");
   await sendTelegramHtmlToChat(order.courier.telegramUserId, text, courierBotToken);
 
-  const adminBotToken = await getBotTokenByPurpose("admin");
-  await sendTelegramMessage(`\u200F✅ <b>تم تجهيز طلب #${order.orderNumber} وإسناده للمندوب ${escapeTelegramHtml(order.courier.name)}</b>`, { botToken: adminBotToken });
+  await sendTelegramMessage(`\u200F✅ <b>تم تجهيز طلب #${order.orderNumber} وإسناده للمندوب ${escapeTelegramHtml(order.courier.name)}</b>`, { botToken: notificationBotToken });
 }
 
 /** إشعار عند وصول طلب جديد من المتجر الإلكتروني */
@@ -349,8 +348,8 @@ export async function notifyTelegramStoreOrder(draftId: string): Promise<void> {
 export async function notifyTelegramPresenceChange(input: any): Promise<void> {
   const label = input.kind === "courier" ? "مندوب" : "مجهز";
   const text = `<b>${label}:</b> ${escapeTelegramHtml(input.name)} \n${input.available ? "✅ متاح" : "⏸ غير متاح"}`;
-  const adminBotToken = await getBotTokenByPurpose("admin");
-  await sendTelegramMessage(text, { botToken: adminBotToken });
+  const notificationBotToken = await getBotTokenByPurpose("notification");
+  await sendTelegramMessage(text, { botToken: notificationBotToken });
 }
 
 export async function notifyTelegramSupplierPriceUpdate(input: {
@@ -374,8 +373,8 @@ export async function notifyTelegramSupplierPriceUpdate(input: {
     `<b>سعر البيع الحالي:</b> ${saleStr}`,
   ].join("\n");
 
-  const adminBotToken = await getBotTokenByPurpose("admin");
-  await sendTelegramMessage(text, { botToken: adminBotToken });
+  const notificationBotToken = await getBotTokenByPurpose("notification");
+  await sendTelegramMessage(text, { botToken: notificationBotToken });
 }
 
 export function buildTelegramOrderKeyboard(

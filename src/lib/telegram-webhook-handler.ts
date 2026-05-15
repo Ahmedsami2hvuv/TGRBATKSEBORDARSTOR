@@ -36,7 +36,7 @@ export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promis
     console.log(`[handleTelegramWebhook] Callback Data: ${cb.data}, From: ${cb.from.id}`);
 
     // توجيه بناءً على نوع البوت
-    if (botPurpose === "admin") {
+    if (botPurpose === "admin" || botPurpose === "notification") {
       const handled = await handleTelegramAdminCallback(cb, botToken);
       if (!handled) {
         const { answerCallbackQuery } = await import("./telegram");
@@ -82,24 +82,11 @@ export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promis
       await sendTelegramHtmlToChat(String(msg.from.id), "🔔 هذا هو بوت الإشعارات، وظيفته إرسال التنبيهات فقط.", botToken);
     }
     else if (botPurpose === "courier") {
-      const courier = await getCourierByTelegramUserId(String(msg.from?.id || ""));
-      if (courier) {
-        await handleCourierPrivateTextMessage({
-          message: msg,
-          courier: courier as any,
-          telegramUserId: String(msg.from.id),
-          botToken
-        });
-      } else {
-        const { sendTelegramHtmlToChat } = await import("./telegram");
-        await sendTelegramHtmlToChat(
-          String(msg.from.id),
-          `<b>🚫 حساب المندوب غير مسجل</b>\n\n` +
-          `أهلاً بك في نظام التوصيل. حسابك الحالي (ID: <code>${msg.from.id}</code>) غير مرتبط بأي مندوب نشط.\n\n` +
-          `يرجى تزويد الإدارة بالمعرف أعلاه لإضافتك للنظام.`,
-          botToken
-        );
-      }
+      await handleCourierPrivateTextMessage({
+        message: msg,
+        telegramUserId: String(msg.from.id),
+        botToken
+      });
     }
     else if (botPurpose === "shop") {
       const handled = await handleShopTelegramMessage(msg, botToken);
