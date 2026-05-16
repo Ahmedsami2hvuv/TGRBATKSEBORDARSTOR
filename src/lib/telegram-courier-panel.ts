@@ -2183,13 +2183,22 @@ async function processCourierWalletSessionMessage(
          });
       } else if (toEmployeeId) {
         const prep = await prisma.companyPreparer.findFirst({ where: { walletEmployeeId: toEmployeeId } });
-        if (prep) {
-          await notifyTelegramPreparerWalletEvent({
-            preparerId: prep.id,
-            kind: "transfer_in",
-            amountDinar: amount,
-            label: `تحويل واصل من ${fromLabel} — مكان التسليم: ${loc}`
-          });
+        if (prep && prep.telegramUserId) {
+          const text = `💰 <b>تحويل مالي واصل إليك</b>\n\n` +
+            `من: <b>${fromLabel} (مندوب)</b>\n` +
+            `المبلغ: <b>${formatDinarAsAlf(amount)}</b>\n` +
+            `المكان: <b>${loc}</b>\n\n` +
+            `هل ترغب في قبول المبلغ؟`;
+          const kb: TelegramInlineKeyboard = {
+            inline_keyboard: [
+              [
+                { text: "✅ قبول", callback_data: `p_w_tacc:${t.id}` },
+                { text: "❌ رفض", callback_data: `p_w_trej:${t.id}` }
+              ]
+            ]
+          };
+          const preparerBotToken = await getBotTokenByPurpose("preparer");
+          await sendTelegramMessageWithKeyboardToChat(prep.telegramUserId, text, kb, preparerBotToken).catch(console.error);
         }
       }
     } catch (e) {

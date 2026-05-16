@@ -42,6 +42,15 @@ export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promis
       if (handled) return;
     }
 
+    // السماح بمعالجة أزرار المناديب (قبول/رفض التحويلات) عالمياً
+    if (data.startsWith("acc_t_") || data.startsWith("rej_t_")) {
+      const courier = await getCourierByTelegramUserId(String(cb.from.id));
+      if (courier) {
+        await handleCourierCallback({ cq: cb, courier: courier as any, botToken });
+        return;
+      }
+    }
+
     // توجيه بناءً على نوع البوت
     if (botPurpose === "admin" || botPurpose === "notification") {
       const isNotificationBot = botPurpose === "notification";
