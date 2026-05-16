@@ -16,7 +16,7 @@ import {
   type TelegramInlineKeyboard,
   type TgUpdate, // تم التصحيح هنا
 } from "@/lib/telegram";
-import { formatDinarAsAlf, parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
+import { formatDinarAsAlf, formatDinarAsAlfWithUnit, parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import { resizeImageBufferForShop } from "@/lib/image-resize";
 import { MAX_ORDER_IMAGE_BYTES, saveOrderImageFromResizedBuffer } from "@/lib/order-image";
 import { notifyTelegramMoneyEvent } from "@/lib/telegram-notify";
@@ -1022,15 +1022,23 @@ export async function handleCourierCallback({
   if (!cq.message) return;
 
   if (parsed.kind === "main") {
+    // تنظيف أي جلسة نشطة عند العودة للرئيسية لضمان عدم تداخل الخطوات
+    await clearCourierSession(telegramUserId).catch(() => {});
+
     const text =
       `<b>أهلاً ${escapeTelegramHtml(courier.name)}</b>\n` +
-      `اختر من الأزرار:`;
+      `رصيدك المتبقي: <b>${formatDinarAsAlfWithUnit(courier.mandoubWalletCarryOverDinar)}</b>\n\n` +
+      `اختر من الأزرار أدناه للتنقل:`;
+
     await deleteThenSendCourierMessage({
       chatId,
       messageId: cq.message.message_id,
       text,
       keyboard: buildCourierKeyboard("main", courier.id),
       botToken,
+    }).catch(async () => {
+      // fallback في حال فشل الحذف
+      await sendTelegramMessageWithKeyboardToChat(chatId, text, buildCourierKeyboard("main", courier.id), botToken);
     });
     return;
   }
