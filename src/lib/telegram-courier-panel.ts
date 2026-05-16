@@ -1504,6 +1504,8 @@ export async function handleCourierCallback({
     }
     return;
   }
+
+  if (parsed.kind === "transfer_accept" || parsed.kind === "transfer_reject") {
     const isAccept = parsed.kind === "transfer_accept";
     const tid = parsed.transferId;
 
