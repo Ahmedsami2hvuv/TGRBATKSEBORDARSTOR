@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { pushNotifyCourierAssignmentRemoved, pushNotifyCourierNewAssignment } from "@/lib/web-push-server";
+import { notifyTelegramCourierNewAssignment } from "./telegram-notify";
 
 export type AssignCourierInternalOpts = {
   /** إسناد من المجهز: السماح حتى لو المندوب أوقف «متاح للإسناد» */
@@ -45,6 +46,7 @@ export async function assignPendingOrderToCourierInternal(
   });
 
   void pushNotifyCourierNewAssignment(courierId, order.orderNumber, orderId);
+  void notifyTelegramCourierNewAssignment(orderId).catch(e => console.error("[notifyTelegramCourierNewAssignment] failed:", e));
 
   revalidatePath("/admin/orders/pending");
   revalidatePath("/admin/couriers");
@@ -107,6 +109,7 @@ export async function transferOrderToCourierInternal(
     void pushNotifyCourierNewAssignment(courierId, order.orderNumber, orderId).catch((e) => {
       console.error("[pushNotifyCourierNewAssignment] failed:", e);
     });
+    void notifyTelegramCourierNewAssignment(orderId).catch(e => console.error("[notifyTelegramCourierNewAssignment] failed:", e));
   }
 
   if (oldCourierId && oldCourierId !== courierId) {

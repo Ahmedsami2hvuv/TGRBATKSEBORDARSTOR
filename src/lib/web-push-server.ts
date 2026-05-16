@@ -262,17 +262,6 @@ export async function pushNotifyCourierNewAssignment(
       return { ok: false, error: err?.message ?? "send failed" };
     });
     console.log(`[pushNotifyCourierNewAssignment] first message sent: ${sent.ok}`);
-    if (sent.ok) {
-      const followUpText = `<b>تم ربط طلب #${escapeTelegramHtml(String(orderNumber))} بحسابك الآن.</b>\n\nيمكنك فتح الطلب من زر "📦 فتح الطلب" أو العودة إلى "📦 طلبياتي".`;
-      const followUpKb = {
-        inline_keyboard: [[{ text: "📦 طلبياتي", callback_data: "co_orders_0" }]],
-      };
-      const followUpSent = await sendTelegramMessageWithKeyboardToChat(chatId, followUpText, followUpKb, courierBotToken).catch((err) => {
-        console.error(`[pushNotifyCourierNewAssignment] follow-up sendTelegramMessageWithKeyboardToChat failed:`, err);
-        return { ok: false, error: err?.message ?? "send failed" };
-      });
-      console.log(`[pushNotifyCourierNewAssignment] follow-up message sent: ${followUpSent.ok}`);
-    }
   } else if (courier?.telegramUserId?.trim()) {
     console.warn(`[pushNotifyCourierNewAssignment] courier bot token missing; cannot send Telegram notify to ${courier.telegramUserId}`);
   } else {

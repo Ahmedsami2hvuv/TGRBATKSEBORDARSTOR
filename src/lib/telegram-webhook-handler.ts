@@ -33,7 +33,14 @@ export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promis
 
   if (body.callback_query) {
     const cb = body.callback_query;
-    console.log(`[handleTelegramWebhook] Callback Data: ${cb.data}, From: ${cb.from.id}`);
+    const data = cb.data ?? "";
+    console.log(`[handleTelegramWebhook] Callback Data: ${data}, From: ${cb.from.id}`);
+
+    // السماح بمعالجة أزرار المجهزين (مثل قبول/رفض التحويلات) في كافة البوتات
+    if (data.startsWith("p_")) {
+      const handled = await handlePreparerTelegramCallback(cb, botToken);
+      if (handled) return;
+    }
 
     // توجيه بناءً على نوع البوت
     if (botPurpose === "admin" || botPurpose === "notification") {

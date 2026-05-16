@@ -115,7 +115,12 @@ export async function ensureTelegramWebhookConfigured(customToken: string, custo
   return { ok: res.ok, url: desiredUrl, description: res.description };
 }
 
-export async function sendTelegramMessage(text: string, options: { botToken: string, chatId?: string }): Promise<{
+export type TelegramSendOptions = {
+  disable_notification?: boolean;
+  protect_content?: boolean;
+};
+
+export async function sendTelegramMessage(text: string, options: { botToken: string, chatId?: string } & TelegramSendOptions): Promise<{
   ok: boolean;
   error?: string;
 }> {
@@ -129,6 +134,8 @@ export async function sendTelegramMessage(text: string, options: { botToken: str
     text,
     parse_mode: "HTML",
     disable_web_page_preview: true,
+    disable_notification: options.disable_notification,
+    protect_content: options.protect_content,
   }, options.botToken);
   if (!data.ok) {
     return { ok: false, error: data.description ?? "sendMessage failed" };
@@ -141,6 +148,7 @@ export async function sendTelegramMessageWithKeyboardToChat(
   text: string,
   replyMarkup: TelegramInlineKeyboard,
   botToken?: string,
+  options?: TelegramSendOptions,
 ): Promise<{ ok: boolean; error?: string; messageId?: number }> {
   if (!botToken) {
     // لا يمكن تهيئة ويب هوك بدون توكن، نتجاوز هذه الخطوة ونعتمد على المزامنة اليدوية
@@ -153,6 +161,8 @@ export async function sendTelegramMessageWithKeyboardToChat(
     parse_mode: "HTML",
     disable_web_page_preview: true,
     reply_markup: replyMarkup,
+    disable_notification: options?.disable_notification,
+    protect_content: options?.protect_content,
   }, botToken);
   if (!data.ok) {
     return { ok: false, error: (data as { description?: string }).description };
@@ -167,6 +177,7 @@ export async function sendTelegramPhotoToChat(
   caption?: string,
   replyMarkup?: TelegramInlineKeyboard,
   botToken?: string,
+  options?: TelegramSendOptions,
 ): Promise<{ ok: boolean; error?: string; messageId?: number }> {
   if (!botToken) {
     // لا يمكن تهيئة ويب هوك بدون توكن، نتجاوز هذه الخطوة ونعتمد على المزامنة اليدوية
@@ -178,6 +189,8 @@ export async function sendTelegramPhotoToChat(
     photo: photoUrl,
     parse_mode: "HTML",
     caption: caption ?? "",
+    disable_notification: options?.disable_notification,
+    protect_content: options?.protect_content,
   };
   if (replyMarkup) body.reply_markup = replyMarkup;
 
@@ -265,6 +278,7 @@ export async function sendTelegramHtmlToChat(
   chatId: string,
   text: string,
   botToken?: string,
+  options?: TelegramSendOptions,
 ): Promise<{ ok: boolean; error?: string }> {
   if (!botToken) {
     // لا يمكن تهيئة ويب هوك بدون توكن، نتجاوز هذه الخطوة ونعتمد على المزامنة اليدوية
@@ -276,6 +290,8 @@ export async function sendTelegramHtmlToChat(
     text,
     parse_mode: "HTML",
     disable_web_page_preview: true,
+    disable_notification: options?.disable_notification,
+    protect_content: options?.protect_content,
   }, botToken);
   if (!data.ok) {
     return { ok: false, error: (data as { description?: string }).description };

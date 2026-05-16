@@ -107,18 +107,35 @@ export async function sumPendingIncomingForEmployee(employeeId: string): Promise
 }
 
 export async function employeeWalletRemainFromMisc(employeeId: string): Promise<Decimal> {
-  const rows = await prisma.employeeWalletMiscEntry.findMany({
-    where: { employeeId, deletedAt: null },
-    select: { direction: true, amountDinar: true },
-  });
+  const [miscRows, acceptedToAdminTransfers] = await Promise.all([
+    prisma.employeeWalletMiscEntry.findMany({
+      where: { employeeId, deletedAt: null },
+      select: { direction: true, amountDinar: true },
+    }),
+    prisma.walletPeerTransfer.findMany({
+      where: {
+        fromEmployeeId: employeeId,
+        toKind: WalletPeerPartyKind.admin,
+        status: "accepted",
+      },
+      select: { amountDinar: true },
+    }),
+  ]);
+
   let balance = new Decimal(0);
-  for (const r of rows) {
+  for (const r of miscRows) {
     if (r.direction === CourierWalletMiscDirection.take) {
       balance = balance.plus(r.amountDinar);
     } else {
       balance = balance.minus(r.amountDinar);
     }
   }
+
+  // خصم التحويلات المقبولة الموجهة للإدارة لأنها لا تُسجل كقيود misc
+  for (const t of acceptedToAdminTransfers) {
+    balance = balance.minus(t.amountDinar);
+  }
+
   return balance;
 }
 

@@ -177,9 +177,9 @@ export async function notifyTelegramCourierTransferEvent(input: {
 
   const courierBotToken = input.botToken || await getBotTokenByPurpose("courier");
   if (kb) {
-    await sendTelegramMessageWithKeyboardToChat(courier.telegramUserId, text, kb, courierBotToken);
+    await sendTelegramMessageWithKeyboardToChat(courier.telegramUserId, text, kb, courierBotToken, { disable_notification: false });
   } else {
-    await sendTelegramHtmlToChat(courier.telegramUserId, text, courierBotToken);
+    await sendTelegramHtmlToChat(courier.telegramUserId, text, courierBotToken, { disable_notification: false });
   }
 }
 
@@ -223,7 +223,7 @@ export async function notifyTelegramNewOrder(orderId: string): Promise<void> {
     };
 
     const preparerBotToken = await getBotTokenByPurpose("preparer");
-    await sendTelegramMessageWithKeyboardToChat(prep.telegramUserId, prepText, prepKb, preparerBotToken);
+    await sendTelegramMessageWithKeyboardToChat(prep.telegramUserId, prepText, prepKb, preparerBotToken, { disable_notification: false });
   }
 }
 
@@ -276,7 +276,7 @@ export async function notifyTelegramMoneyEvent(input: any): Promise<void> {
       `\n\n\u200F<b>💵 عندي:</b> ${walletTotalStr}`;
 
     const courierBotToken = input.botToken || await getBotTokenByPurpose("courier");
-    await sendTelegramHtmlToChat(order.courier.telegramUserId, courierText, courierBotToken);
+    await sendTelegramHtmlToChat(order.courier.telegramUserId, courierText, courierBotToken, { disable_notification: false });
   }
 }
 
@@ -309,9 +309,52 @@ export async function notifyTelegramOrderPrepared(input: { orderId: string; botT
   ].join("\n");
 
   const notificationBotToken = await getBotTokenByPurpose("notification");
-  await sendTelegramHtmlToChat(order.courier.telegramUserId, text, courierBotToken);
+  const courierBotToken = input.botToken || await getBotTokenByPurpose("courier");
+  await sendTelegramHtmlToChat(order.courier.telegramUserId, text, courierBotToken, { disable_notification: false });
 
   await sendTelegramMessage(`\u200F✅ <b>تم تجهيز طلب #${order.orderNumber} وإسناده للمندوب ${escapeTelegramHtml(order.courier.name)}</b>`, { botToken: notificationBotToken });
+}
+
+/** إشعار للمندوب عند إسناد طلب جديد له */
+export async function notifyTelegramCourierNewAssignment(orderId: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      shop: { include: { region: true } },
+      customer: true,
+      customerRegion: true,
+      courier: true
+    }
+  });
+  if (!order || !order.courier?.telegramUserId) return;
+
+  const bodyLines = await formatOrderBodyLines({
+    ...order,
+    shopName: order.shop.name,
+    customerName: order.customer?.name ?? "—",
+    regionName: order.customerRegion?.name ?? order.shop.region?.name ?? "—",
+  });
+
+  const baseUrl = getPublicAppUrl();
+  const courierUrl = buildDelegatePortalUrl(order.courier.id, baseUrl);
+  const courierOrderUrl = `${courierUrl.replace("/mandoub", `/mandoub/order/${order.id}`)}`;
+
+  const text = [
+    `\u200F🔔 <b>تم إسناد طلب جديد إليك</b>`,
+    ...bodyLines,
+    `\n\u200Fيمكنك الضغط على الأزرار أدناه للتحكم بالطلب.`,
+  ].join("\n");
+
+  const kb: TelegramInlineKeyboard = {
+    inline_keyboard: [
+      [{ text: `📦 فتح الطلب #${order.orderNumber}`, callback_data: `co_order_${order.orderNumber}` }],
+      [{ text: "🔗 فتح في المتصفح", url: courierOrderUrl }]
+    ]
+  };
+
+  const courierBotToken = await getBotTokenByPurpose("courier");
+  // إرسال كرسالة جديدة لضمان ظهور إشعار (Popup) للمندوب حتى لو كان داخل قوائم أخرى
+  await sendTelegramMessageWithKeyboardToChat(order.courier.telegramUserId, text, kb, courierBotToken, { disable_notification: false });
 }
 
 /** إشعار عند وصول طلب جديد من المتجر الإلكتروني */
