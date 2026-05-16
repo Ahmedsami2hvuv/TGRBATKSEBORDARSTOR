@@ -2145,7 +2145,7 @@ async function processCourierWalletSessionMessage(
       toCourierId = targetC.id;
     }
 
-    await prisma.walletPeerTransfer.create({
+    const t = await prisma.walletPeerTransfer.create({
       data: {
         amountDinar: amount,
         handoverLocation: loc,
@@ -2196,14 +2196,8 @@ async function processCourierWalletSessionMessage(
       console.error("Failed to send transfer notification", e);
     }
 
-      }
-    } catch(e) {}
-
     return true;
   }
-
-  return false;
-}
 
   return false;
 }
