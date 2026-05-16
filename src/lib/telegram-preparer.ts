@@ -5,6 +5,7 @@ import {
   editTelegramMessage,
   escapeTelegramHtml,
   sendTelegramMessageWithKeyboardToChat,
+  sendTelegramMessageWithKeyboard,
   type TelegramInlineKeyboard,
 } from "@/lib/telegram";
 import {
@@ -19,7 +20,7 @@ import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
 import { rankRegionsByQuery, normalizeArabicSearch } from "@/lib/arabic-region-search";
 import { extractPhoneFromText, parseQuickOrder } from "@/lib/flexible-order-parse";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
-import { notifyTelegramNewOrder, sendTelegramMessageWithKeyboard } from "@/lib/telegram-notify";
+import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 import { transferOrderToCourierInternal } from "@/lib/order-assign-courier";
 import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
@@ -454,7 +455,7 @@ export async function handlePreparerTelegramCallback(
         if (transfer.fromEmployeeId) {
           const sender = await prisma.companyPreparer.findFirst({ where: { walletEmployeeId: transfer.fromEmployeeId } });
           if (sender?.telegramUserId) {
-             await sendTelegramMessageWithKeyboard(sender.telegramUserId, `✅ المجهز <b>${preparer.name}</b> قبل تحويلك بقيمة <b>${formatDinarAsAlf(transfer.amountDinar)}</b>.`, undefined, botToken);
+             await sendTelegramMessageWithKeyboardToChat(sender.telegramUserId, `✅ المجهز <b>${preparer.name}</b> قبل تحويلك بقيمة <b>${formatDinarAsAlf(transfer.amountDinar)}</b>.`, { inline_keyboard: [] }, botToken);
           }
         }
         return true;
@@ -474,7 +475,7 @@ export async function handlePreparerTelegramCallback(
         if (transfer.fromEmployeeId) {
           const sender = await prisma.companyPreparer.findFirst({ where: { walletEmployeeId: transfer.fromEmployeeId } });
           if (sender?.telegramUserId) {
-             await sendTelegramMessageWithKeyboard(sender.telegramUserId, `❌ المجهز <b>${preparer.name}</b> رفض تحويلك بقيمة <b>${formatDinarAsAlf(transfer.amountDinar)}</b>.`, undefined, botToken);
+             await sendTelegramMessageWithKeyboardToChat(sender.telegramUserId, `❌ المجهز <b>${preparer.name}</b> رفض تحويلك بقيمة <b>${formatDinarAsAlf(transfer.amountDinar)}</b>.`, { inline_keyboard: [] }, botToken);
           }
         }
         return true;
@@ -838,7 +839,7 @@ export async function handlePreparerTelegramMessage(
           ]
         ]
       };
-      await sendTelegramMessageWithKeyboard(recipientTgId, text, kb, botToken).catch(console.error);
+      await sendTelegramMessageWithKeyboardToChat(recipientTgId, text, kb, botToken).catch(console.error);
     }
     return true;
   }
