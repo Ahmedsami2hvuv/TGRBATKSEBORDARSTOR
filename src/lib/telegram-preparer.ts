@@ -9,20 +9,23 @@ import {
 } from "@/lib/telegram";
 import {
   formatDinarAsAlf,
+  normalizeDigits,
   parseAlfInputToDinarDecimalRequired,
   parseAlfInputToDinarNumber,
 } from "@/lib/money-alf";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { buildCompanyPreparerPortalUrl, verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-link";
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
-import { normalizeArabicSearch, rankRegionsByQuery } from "@/lib/arabic-region-search";
+import { rankRegionsByQuery, normalizeArabicSearch } from "@/lib/arabic-region-search";
 import { extractPhoneFromText, parseQuickOrder } from "@/lib/flexible-order-parse";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
-import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
+import { notifyTelegramNewOrder, sendTelegramMessageWithKeyboard } from "@/lib/telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 import { transferOrderToCourierInternal } from "@/lib/order-assign-courier";
 import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
 import { revalidatePath } from "next/cache";
+import { CourierWalletMiscDirection, WalletPeerPartyKind } from "@prisma/client";
+import { writeLedgerEntriesForAcceptedTransfer } from "@/lib/wallet-peer-transfer";
 
 export type PreparerTelegramCallback =
   | { kind: "main" }
@@ -35,7 +38,14 @@ export type PreparerTelegramCallback =
   | { kind: "assign_courier"; orderId: string }
   | { kind: "assign_courier_exec"; orderId: string; courierId: string }
   | { kind: "cancel_flow" }
-  | { kind: "assign_start_by_num"; orderNumber: number };
+  | { kind: "assign_start_by_num"; orderNumber: number }
+  | { kind: "wallet_take" }
+  | { kind: "wallet_give" }
+  | { kind: "wallet_transfer_start" }
+  | { kind: "wallet_transfer_type"; target: "courier" | "preparer" }
+  | { kind: "wallet_transfer_pick"; type: "courier" | "preparer"; id: string }
+  | { kind: "wallet_transfer_accept"; transferId: string }
+  | { kind: "wallet_transfer_reject"; transferId: string };
 
 export function parsePreparerTelegramCallback(raw: string): PreparerTelegramCallback | null {
   const t = raw.trim();
@@ -43,6 +53,11 @@ export function parsePreparerTelegramCallback(raw: string): PreparerTelegramCall
   if (t === "p_wallet") return { kind: "wallet" };
   if (t === "p_new") return { kind: "new_order" };
   if (t === "p_cancel") return { kind: "cancel_flow" };
+  if (t === "p_w_take") return { kind: "wallet_take" };
+  if (t === "p_w_give") return { kind: "wallet_give" };
+  if (t === "p_w_trans") return { kind: "wallet_transfer_start" };
+  if (t === "p_w_tt:c") return { kind: "wallet_transfer_type", target: "courier" };
+  if (t === "p_w_tt:p") return { kind: "wallet_transfer_type", target: "preparer" };
 
   let m = /^p_orders_(\d+)$/.exec(t);
   if (m) return { kind: "orders", page: Number(m[1]) };
@@ -61,6 +76,15 @@ export function parsePreparerTelegramCallback(raw: string): PreparerTelegramCall
 
   m = /^p_ace:([a-zA-Z0-9_-]+):([a-zA-Z0-9_-]+)$/.exec(t);
   if (m) return { kind: "assign_courier_exec", orderId: m[1], courierId: m[2] };
+
+  m = /^p_w_tp:(c|p):([a-zA-Z0-9_-]+)$/.exec(t);
+  if (m) return { kind: "wallet_transfer_pick", type: m[1] === "c" ? "courier" : "preparer", id: m[2] };
+
+  m = /^p_w_tacc:(.+)$/.exec(t);
+  if (m) return { kind: "wallet_transfer_accept", transferId: m[1] };
+
+  m = /^p_w_trej:(.+)$/.exec(t);
+  if (m) return { kind: "wallet_transfer_reject", transferId: m[1] };
 
   // دعم الاختصارات من الإشعارات
   m = /^l(\d+)$/.exec(t);
@@ -299,25 +323,160 @@ export async function handlePreparerTelegramCallback(
       }
       case "wallet": {
         const totals = await getPreparerMoneyTotals(preparer.id);
-        const baseUrl = getPublicAppUrl();
-        const portalUrl = buildCompanyPreparerPortalUrl(preparer.id, preparer.portalToken, baseUrl);
+        const wid = preparer.walletEmployeeId;
+
+        let txLines = "";
+        if (wid) {
+          const recent = await prisma.employeeWalletMiscEntry.findMany({
+            where: { employeeId: wid, deletedAt: null },
+            orderBy: { createdAt: "desc" },
+            take: 15
+          });
+          if (recent.length > 0) {
+            txLines = "\n<b>آخر 15 حركة:</b>\n" + recent.map(r =>
+              `${r.direction === "take" ? "➕" : "➖"} ${formatDinarAsAlf(r.amountDinar)} : ${escapeTelegramHtml(r.label || "—")}`
+            ).join("\n");
+          }
+        }
 
         const text = [
           `<b>💰 محفظة المجهز: ${escapeTelegramHtml(preparer.name)}</b>`,
           `-------------------------`,
-          `💵 المتبقي بذمتك للإدارة:`,
-          `<b>${formatDinarAsAlf(totals.remain)}</b>`,
+          `📥 الوارد (أخذت): <b>${formatDinarAsAlf(totals?.ward || 0)}</b>`,
+          `📤 الصادر (أعطيت): <b>${formatDinarAsAlf(totals?.sader || 0)}</b>`,
+          `💵 المتبقي بذمتك للإدارة: <b>${formatDinarAsAlf(totals?.remain || 0)}</b>`,
           `-------------------------`,
-          `يمكنك عرض كشف الحساب المفصل من خلال الرابط أدناه.`
+          txLines,
+          `-------------------------`,
+          `يمكنك استخدام الأزرار أدناه لتسجيل الحركات المالية أو التحويل.`
         ].join("\n");
 
         const kb: TelegramInlineKeyboard = {
           inline_keyboard: [
-            [{ text: "🔗 فتح سجل المحفظة", url: portalUrl + "?tab=wallet" }],
+            [
+              { text: "➕ أخذت", callback_data: "p_w_take" },
+              { text: "➖ أعطيت", callback_data: "p_w_give" }
+            ],
+            [{ text: "💸 تحويل مبلغ", callback_data: "p_w_trans" }],
             [{ text: "🏠 الرئيسية", callback_data: "p_main" }]
           ]
         };
         await editTelegramMessage(chatId, messageId, text, kb, botToken);
+        return true;
+      }
+      case "wallet_take":
+      case "wallet_give": {
+        const step = parsed.kind === "wallet_take" ? "preparer_wallet_take" : "preparer_wallet_give";
+        await upsertPreparerSession(telegramUserId, chatId, step, "");
+        const actionText = parsed.kind === "wallet_take" ? "أخذت (وارد)" : "أعطيت (صادر)";
+        await sendTelegramMessageWithKeyboardToChat(chatId,
+          `<b>تسجيل حركة: ${actionText}</b>\n\nأرسل رسالة من سطرين:\nالسطر الأول: المبلغ\nالسطر الثاني: اسم المعاملة أو الملاحظة`,
+          { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "p_wallet" }]] },
+          botToken
+        );
+        return true;
+      }
+      case "wallet_transfer_start": {
+        const kb: TelegramInlineKeyboard = {
+          inline_keyboard: [
+            [{ text: "🧑‍✈️ إلى مندوب", callback_data: "p_w_tt:c" }],
+            [{ text: "👨‍🍳 إلى مجهز آخر", callback_data: "p_w_tt:p" }],
+            [{ text: "❌ إلغاء", callback_data: "p_wallet" }]
+          ]
+        };
+        await editTelegramMessage(chatId, messageId, "اختر نوع الطرف الذي ترغب بالتحويل إليه:", kb, botToken);
+        return true;
+      }
+      case "wallet_transfer_type": {
+        if (parsed.target === "courier") {
+          const couriers = await prisma.courier.findMany({
+            where: { blocked: false, hiddenFromReports: false },
+            orderBy: { name: "asc" },
+            take: 20
+          });
+          const rows = couriers.map(c => ([{ text: c.name, callback_data: `p_w_tp:c:${c.id}` }]));
+          rows.push([{ text: "⬅️ رجوع", callback_data: "p_w_trans" }]);
+          await editTelegramMessage(chatId, messageId, "اختر المندوب المستلم:", { inline_keyboard: rows }, botToken);
+        } else {
+          const preparers = await prisma.companyPreparer.findMany({
+            where: { active: true, id: { not: preparer.id } },
+            orderBy: { name: "asc" },
+            take: 20
+          });
+          const rows = preparers.map(p => ([{ text: p.name, callback_data: `p_w_tp:p:${p.id}` }]));
+          rows.push([{ text: "⬅️ رجوع", callback_data: "p_w_trans" }]);
+          await editTelegramMessage(chatId, messageId, "اختر المجهز المستلم:", { inline_keyboard: rows }, botToken);
+        }
+        return true;
+      }
+      case "wallet_transfer_pick": {
+        const payload = JSON.stringify({ targetType: parsed.type, targetId: parsed.id });
+        await upsertPreparerSession(telegramUserId, chatId, "preparer_wallet_transfer_note", payload);
+
+        let targetName = "الطرف المختار";
+        if (parsed.type === "courier") {
+          const c = await prisma.courier.findUnique({ where: { id: parsed.id } });
+          if (c) targetName = c.name;
+        } else {
+          const p = await prisma.companyPreparer.findUnique({ where: { id: parsed.id } });
+          if (p) targetName = p.name;
+        }
+
+        await sendTelegramMessageWithKeyboardToChat(chatId,
+          `<b>تحويل مبلغ إلى: ${escapeTelegramHtml(targetName)}</b>\n\nأرسل رسالة من سطرين:\nالسطر الأول: المبلغ\nالسطر الثاني: مكان التحويل أو ملاحظة`,
+          { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "p_wallet" }]] },
+          botToken
+        );
+        return true;
+      }
+      case "wallet_transfer_accept": {
+        const transfer = await prisma.walletPeerTransfer.findUnique({ where: { id: parsed.transferId } });
+        if (!transfer || transfer.status !== "pending") {
+          await answerCallbackQuery(cq.id, "هذا التحويل لم يعد متاحاً.", true, botToken);
+          return true;
+        }
+        if (transfer.toEmployeeId !== preparer.walletEmployeeId) {
+          await answerCallbackQuery(cq.id, "عذراً، هذا التحويل ليس موجهاً إليك.", true, botToken);
+          return true;
+        }
+
+        await prisma.$transaction(async (tx) => {
+          const updated = await tx.walletPeerTransfer.update({
+            where: { id: transfer.id },
+            data: { status: "accepted", respondedAt: new Date() }
+          });
+          await writeLedgerEntriesForAcceptedTransfer(tx, updated);
+        });
+
+        await editTelegramMessage(chatId, messageId, `✅ تم قبول التحويل بقيمة ${formatDinarAsAlf(transfer.amountDinar)} بنجاح.`, { inline_keyboard: [[{ text: "💰 المحفظة", callback_data: "p_wallet" }]] }, botToken);
+
+        // إشعار للمرسل
+        if (transfer.fromEmployeeId) {
+          const sender = await prisma.companyPreparer.findFirst({ where: { walletEmployeeId: transfer.fromEmployeeId } });
+          if (sender?.telegramUserId) {
+             await sendTelegramMessageWithKeyboard(sender.telegramUserId, `✅ المجهز <b>${preparer.name}</b> قبل تحويلك بقيمة <b>${formatDinarAsAlf(transfer.amountDinar)}</b>.`, undefined, botToken);
+          }
+        }
+        return true;
+      }
+      case "wallet_transfer_reject": {
+        const transfer = await prisma.walletPeerTransfer.findUnique({ where: { id: parsed.transferId } });
+        if (!transfer || transfer.status !== "pending") return true;
+
+        await prisma.walletPeerTransfer.update({
+          where: { id: transfer.id },
+          data: { status: "rejected", respondedAt: new Date() }
+        });
+
+        await editTelegramMessage(chatId, messageId, "❌ تم رفض التحويل.", { inline_keyboard: [[{ text: "💰 المحفظة", callback_data: "p_wallet" }]] }, botToken);
+
+        // إشعار للمرسل
+        if (transfer.fromEmployeeId) {
+          const sender = await prisma.companyPreparer.findFirst({ where: { walletEmployeeId: transfer.fromEmployeeId } });
+          if (sender?.telegramUserId) {
+             await sendTelegramMessageWithKeyboard(sender.telegramUserId, `❌ المجهز <b>${preparer.name}</b> رفض تحويلك بقيمة <b>${formatDinarAsAlf(transfer.amountDinar)}</b>.`, undefined, botToken);
+          }
+        }
         return true;
       }
       case "new_order": {
@@ -595,6 +754,95 @@ export async function handlePreparerTelegramMessage(
   }
 
   const session = await getPreparerSession(telegramUserId);
+
+  // معالجة جلسات المحفظة (أخذت / أعطيت)
+  if (session?.step === "preparer_wallet_take" || session?.step === "preparer_wallet_give") {
+    const lines = txt.split("\n").map(l => l.trim()).filter(Boolean);
+    if (lines.length < 2) {
+      await sendTelegramMessageWithKeyboardToChat(chatId, "الرجاء إرسال سطرين:\n1. المبلغ\n2. اسم المعاملة", { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "p_wallet" }]] }, botToken);
+      return true;
+    }
+    const amount = parseAlfInputToDinarNumber(lines[0]!);
+    if (amount == null) {
+      await sendTelegramMessageWithKeyboardToChat(chatId, "المبلغ غير صحيح. الرجاء إدخال رقم صحيح في السطر الأول.", { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "p_wallet" }]] }, botToken);
+      return true;
+    }
+    const label = lines.slice(1).join(" ");
+    const direction = session.step === "preparer_wallet_take" ? CourierWalletMiscDirection.take : CourierWalletMiscDirection.give;
+
+    if (preparer.walletEmployeeId) {
+      await prisma.employeeWalletMiscEntry.create({
+        data: {
+          employeeId: preparer.walletEmployeeId,
+          direction,
+          amountDinar: amount,
+          label,
+        }
+      });
+      await clearPreparerSession(telegramUserId);
+      await sendTelegramMessageWithKeyboardToChat(chatId, `✅ تم تسجيل الحركة بنجاح: ${label} بقيمة ${formatDinarAsAlf(amount)}`, { inline_keyboard: [[{ text: "💰 المحفظة", callback_data: "p_wallet" }]] }, botToken);
+    } else {
+      await sendTelegramMessageWithKeyboardToChat(chatId, "لا يوجد حساب مالي مرتبط بك. يرجى مراجعة الإدارة.", { inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "p_main" }]] }, botToken);
+    }
+    return true;
+  }
+
+  // معالجة جلسة التحويل
+  if (session?.step === "preparer_wallet_transfer_note") {
+    const payload = JSON.parse(session.payload || "{}");
+    const lines = txt.split("\n").map(l => l.trim()).filter(Boolean);
+    if (lines.length < 2) {
+      await sendTelegramMessageWithKeyboardToChat(chatId, "الرجاء إرسال سطرين:\n1. المبلغ\n2. مكان التحويل", { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "p_wallet" }]] }, botToken);
+      return true;
+    }
+    const amount = parseAlfInputToDinarNumber(lines[0]!);
+    if (amount == null) {
+      await sendTelegramMessageWithKeyboardToChat(chatId, "المبلغ غير صحيح.", { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "p_wallet" }]] }, botToken);
+      return true;
+    }
+    const location = lines.slice(1).join(" ");
+
+    const transfer = await prisma.walletPeerTransfer.create({
+      data: {
+        amountDinar: amount,
+        handoverLocation: location,
+        status: "pending",
+        fromKind: WalletPeerPartyKind.employee,
+        fromEmployeeId: preparer.walletEmployeeId,
+        toKind: payload.targetType === "courier" ? WalletPeerPartyKind.courier : WalletPeerPartyKind.employee,
+        toCourierId: payload.targetType === "courier" ? payload.targetId : null,
+        toEmployeeId: payload.targetType === "preparer" ? (await prisma.companyPreparer.findUnique({ where: { id: payload.targetId } }))?.walletEmployeeId : null,
+      }
+    });
+
+    await clearPreparerSession(telegramUserId);
+    await sendTelegramMessageWithKeyboardToChat(chatId, `⏳ تم إرسال طلب التحويل بقيمة ${formatDinarAsAlf(amount)} بانتظار الموافقة.`, { inline_keyboard: [[{ text: "💰 المحفظة", callback_data: "p_wallet" }]] }, botToken);
+
+    // إرسال إشعار للمستلم
+    let recipientTgId: string | null = null;
+    if (payload.targetType === "courier") {
+      const c = await prisma.courier.findUnique({ where: { id: payload.targetId } });
+      recipientTgId = c?.telegramUserId || null;
+    } else {
+      const p = await prisma.companyPreparer.findUnique({ where: { id: payload.targetId } });
+      recipientTgId = p?.telegramUserId || null;
+    }
+
+    if (recipientTgId) {
+      const text = `💰 <b>طلب تحويل جديد</b>\n\nمن المجهز: <b>${preparer.name}</b>\nالمبلغ: <b>${formatDinarAsAlf(amount)}</b>\nالمكان: <b>${location}</b>`;
+      const kb: TelegramInlineKeyboard = {
+        inline_keyboard: [
+          [
+            { text: "✅ قبول", callback_data: `p_w_tacc:${transfer.id}` },
+            { text: "❌ رفض", callback_data: `p_w_trej:${transfer.id}` }
+          ]
+        ]
+      };
+      await sendTelegramMessageWithKeyboard(recipientTgId, text, kb, botToken).catch(console.error);
+    }
+    return true;
+  }
+
   if (session?.step === "preparer_new_order_region") {
     await sendTelegramMessageWithKeyboardToChat(chatId,
       "الرجاء اختيار المنطقة من القائمة أو أعد إرسال طلبك مع اسم المنطقة بشكل أوضح.",
