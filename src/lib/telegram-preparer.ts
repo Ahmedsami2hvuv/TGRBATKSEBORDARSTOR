@@ -15,7 +15,7 @@ import {
 import { getPublicAppUrl } from "@/lib/app-url";
 import { buildCompanyPreparerPortalUrl, verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-link";
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
-import { rankRegionsByQuery } from "@/lib/arabic-region-search";
+import { normalizeArabicSearch, rankRegionsByQuery } from "@/lib/arabic-region-search";
 import { extractPhoneFromText, parseQuickOrder } from "@/lib/flexible-order-parse";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
@@ -34,7 +34,8 @@ export type PreparerTelegramCallback =
   | { kind: "region_pick"; regionId: string }
   | { kind: "assign_courier"; orderId: string }
   | { kind: "assign_courier_exec"; orderId: string; courierId: string }
-  | { kind: "cancel_flow" };
+  | { kind: "cancel_flow" }
+  | { kind: "assign_start_by_num"; orderNumber: number };
 
 export function parsePreparerTelegramCallback(raw: string): PreparerTelegramCallback | null {
   const t = raw.trim();
@@ -60,6 +61,10 @@ export function parsePreparerTelegramCallback(raw: string): PreparerTelegramCall
 
   m = /^p_ace:([a-zA-Z0-9_-]+):([a-zA-Z0-9_-]+)$/.exec(t);
   if (m) return { kind: "assign_courier_exec", orderId: m[1], courierId: m[2] };
+
+  // دعم الاختصارات من الإشعارات
+  m = /^l(\d+)$/.exec(t);
+  if (m) return { kind: "assign_start_by_num", orderNumber: Number(m[1]) };
 
   return null;
 }
@@ -117,17 +122,19 @@ type PreparerNewOrderPayload = {
 };
 
 function findShopIdFromText(text: string, shopLinks: Array<{ shop: { id: string; name: string } }>): string | null {
-  const normalized = text.toLowerCase();
-  const exactMatches = shopLinks.filter((link) => link.shop.name.toLowerCase() === normalized);
+  const normalized = normalizeArabicSearch(text);
+  const exactMatches = shopLinks.filter((link) => normalizeArabicSearch(link.shop.name) === normalized);
   if (exactMatches.length === 1) return exactMatches[0].shop.id;
 
-  const substringMatches = shopLinks.filter((link) =>
-    normalized.includes(link.shop.name.toLowerCase()) || link.shop.name.toLowerCase().includes(normalized)
-  );
+  const substringMatches = shopLinks.filter((link) => {
+    const shopName = normalizeArabicSearch(link.shop.name);
+    return normalized.includes(shopName) || shopName.includes(normalized);
+  });
   if (substringMatches.length === 1) return substringMatches[0].shop.id;
 
   const firstLine = text.split("\n").map((line) => line.trim()).find(Boolean) ?? "";
-  const firstLineMatches = shopLinks.filter((link) => link.shop.name.toLowerCase().includes(firstLine.toLowerCase()));
+  const normalizedFirstLine = normalizeArabicSearch(firstLine);
+  const firstLineMatches = shopLinks.filter((link) => normalizeArabicSearch(link.shop.name).includes(normalizedFirstLine));
   if (firstLineMatches.length === 1) return firstLineMatches[0].shop.id;
 
   return null;
@@ -387,11 +394,44 @@ export async function handlePreparerTelegramCallback(
         return true;
       }
       case "assign_courier_exec": {
+        const order = await prisma.order.findUnique({ where: { id: parsed.orderId } });
         const result = await transferOrderToCourierInternal(parsed.orderId, parsed.courierId, { bypassCourierAvailability: true });
         const text = result.ok
-          ? `✅ تم إسناد الطلب بنجاح.`
+          ? `✅ تم إسناد الطلب #${order?.orderNumber} بنجاح.`
           : `⚠️ ${escapeTelegramHtml(result.error)}`;
-        await sendTelegramMessageWithKeyboardToChat(chatId, text, { inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "p_main" }]] }, botToken);
+
+        const kb: TelegramInlineKeyboard = {
+          inline_keyboard: [
+            [{ text: "🔄 تغيير المندوب", callback_data: `p_ac:${parsed.orderId}` }],
+            [{ text: "🏠 الرئيسية", callback_data: "p_main" }]
+          ]
+        };
+        await editTelegramMessage(chatId, messageId, text, kb, botToken);
+        return true;
+      }
+      case "assign_start_by_num": {
+        const order = await prisma.order.findUnique({ where: { orderNumber: parsed.orderNumber } });
+        if (!order) {
+          await answerCallbackQuery(cq.id, `الطلب #${parsed.orderNumber} غير موجود.`, true, botToken);
+          return true;
+        }
+        // تحويل الطلب إلى معالجة assign_courier الاعتيادية
+        const couriers = await prisma.courier.findMany({
+          where: { blocked: false, hiddenFromReports: false },
+          orderBy: { name: "asc" },
+          take: 20,
+        });
+        if (couriers.length === 0) {
+          await answerCallbackQuery(cq.id, "لا توجد أسماء مندوبين متاحة حالياً.", true, botToken);
+          return true;
+        }
+        const rows = couriers.map((courier) => ([{
+          text: courier.name || "مندوب",
+          callback_data: `p_ace:${order.id}:${courier.id}`,
+        }]));
+        rows.push([{ text: "🏠 الرئيسية", callback_data: "p_main" }]);
+        const text = `اختر مندوباً لإسناد الطلب #${order.orderNumber}:`;
+        await editTelegramMessage(chatId, messageId, text, { inline_keyboard: rows }, botToken);
         return true;
       }
       case "orders": {
@@ -513,11 +553,41 @@ export async function handlePreparerTelegramMessage(
   if (fromId == null) return false;
   const telegramUserId = String(fromId);
   const chatId = String(message.chat.id);
+  const txt = message.text?.trim() ?? "";
+
+  // 1. رابط التفعيل (Registration via Link)
+  if (txt.includes("/preparer") && (txt.includes("exp=") || txt.includes("token="))) {
+    try {
+      const p = txt.match(/[?&]p=([^&]+)/)?.[1];
+      const exp = (txt.match(/[?&]exp=([^&]+)/)?.[1]) || (txt.match(/[?&]token=([^&]+)/)?.[1]);
+      const s = txt.match(/[?&]s=([^&]+)/)?.[1];
+
+      if (p && exp) {
+        console.log(`[preparer-reg] Attempting link registration: p=${p}, exp=${exp.substring(0, 10)}...`);
+        const v = verifyCompanyPreparerPortalQuery(p, exp, s);
+        if (v.ok) {
+          const updated = await prisma.companyPreparer.update({
+            where: { id: v.preparerId },
+            data: { telegramUserId, portalToken: v.token, active: true }
+          });
+          console.log(`[preparer-reg] Success: Preparer ${updated.name} (ID: ${updated.id}) linked to TG:${telegramUserId}`);
+          const { text, keyboard } = await renderPreparerHub(updated);
+          await sendTelegramMessageWithKeyboardToChat(chatId,
+            `✅ تم ربط حسابك بنجاح مجهزنا <b>${escapeTelegramHtml(updated.name)}</b>!\n\nيمكنك الآن استلام الإشعارات وإدارة الطلبات.`,
+            keyboard, botToken
+          );
+          return true;
+        } else {
+          console.warn(`[preparer-reg] Verification failed: ${v.reason}`);
+        }
+      }
+    } catch (e) {
+      console.error("[preparer-reg] Error:", e);
+    }
+  }
 
   const preparer = await getPreparerByTelegramUserId(telegramUserId);
   if (!preparer) return false;
-
-  const txt = message.text?.trim() ?? "";
   if (txt === "/start") {
     const { text, keyboard } = await renderPreparerHub(preparer);
     await sendTelegramMessageWithKeyboardToChat(chatId, text, keyboard, botToken);
@@ -536,6 +606,25 @@ export async function handlePreparerTelegramMessage(
 
   const parsed = parseQuickOrder(txt);
   if (!parsed.phone || parsed.price == null) {
+    // محاولة البحث عن المحلات باستخدام البحث المطور
+    const normalizedTxt = normalizeArabicSearch(txt);
+    const searchMatches = preparer.shopLinks.filter(link => {
+      const shopName = normalizeArabicSearch(link.shop.name);
+      return shopName.includes(normalizedTxt) || normalizedTxt.includes(shopName);
+    });
+
+    if (searchMatches.length > 0 && txt.length >= 2) {
+      const text = `🔍 <b>نتائج البحث عن المحلات: "${escapeTelegramHtml(txt)}"</b>\n\nاختر المحل لبدء إنشاء طلب سريع له:`;
+      const kb: TelegramInlineKeyboard = {
+        inline_keyboard: [
+          ...searchMatches.map(m => [{ text: m.shop.name, callback_data: `p_shop:${m.shop.id}` }]),
+          [{ text: "🏠 الرئيسية", callback_data: "p_main" }]
+        ]
+      };
+      await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, botToken);
+      return true;
+    }
+
     await sendTelegramMessageWithKeyboardToChat(chatId,
       `لم يتم التعرف على رقم الهاتف أو السعر في نص الطلب.
 
@@ -569,14 +658,25 @@ export async function handlePreparerTelegramMessage(
     }
   }
 
+  // تحسين استخراج المنطقة: إذا كان السطر الأول هو اسم المحل، ننتقل للسطر التالي
+  if (payload.shopName && parsed.remainingLines.length > 1) {
+    const firstLineNormalized = normalizeArabicSearch(parsed.remainingLines[0] || "");
+    const shopNameNormalized = normalizeArabicSearch(payload.shopName);
+    if (firstLineNormalized.includes(shopNameNormalized) || shopNameNormalized.includes(firstLineNormalized)) {
+      payload.customerRegionName = parsed.remainingLines[1] || "";
+      payload.orderNoteTime = parsed.remainingLines.slice(2).join(" ") || parsed.orderType || "فوري";
+    }
+  }
+
   if (!payload.shopId) {
     await askPreparerToPickShop(chatId, botToken, telegramUserId, payload, preparer.shopLinks);
     return true;
   }
 
   const allRegions = await prisma.region.findMany({ select: { id: true, name: true } });
-  if (parsed.regionQuery) {
-    const ranked = rankRegionsByQuery(parsed.regionQuery, allRegions, 10);
+  const regionQuery = payload.customerRegionName || parsed.regionQuery;
+  if (regionQuery) {
+    const ranked = rankRegionsByQuery(regionQuery, allRegions, 10);
     if (ranked.length === 1) {
       payload.customerRegionId = ranked[0].id;
       payload.customerRegionName = ranked[0].name;
