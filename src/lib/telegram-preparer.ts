@@ -323,46 +323,8 @@ export async function handlePreparerTelegramCallback(
         return true;
       }
       case "wallet": {
-        const totals = await getPreparerMoneyTotals(preparer.id);
-        const wid = preparer.walletEmployeeId;
-
-        let txLines = "";
-        if (wid) {
-          const recent = await prisma.employeeWalletMiscEntry.findMany({
-            where: { employeeId: wid, deletedAt: null },
-            orderBy: { createdAt: "desc" },
-            take: 15
-          });
-          if (recent.length > 0) {
-            txLines = "\n<b>آخر 15 حركة:</b>\n" + recent.map(r =>
-              `${r.direction === "take" ? "➕" : "➖"} ${formatDinarAsAlf(r.amountDinar)} : ${escapeTelegramHtml(r.label || "—")}`
-            ).join("\n");
-          }
-        }
-
-        const text = [
-          `<b>💰 محفظة المجهز: ${escapeTelegramHtml(preparer.name)}</b>`,
-          `-------------------------`,
-          `📥 الوارد (أخذت): <b>${formatDinarAsAlf(totals?.ward || 0)}</b>`,
-          `📤 الصادر (أعطيت): <b>${formatDinarAsAlf(totals?.sader || 0)}</b>`,
-          `💵 المتبقي بذمتك للإدارة: <b>${formatDinarAsAlf(totals?.remain || 0)}</b>`,
-          `-------------------------`,
-          txLines,
-          `-------------------------`,
-          `يمكنك استخدام الأزرار أدناه لتسجيل الحركات المالية أو التحويل.`
-        ].join("\n");
-
-        const kb: TelegramInlineKeyboard = {
-          inline_keyboard: [
-            [
-              { text: "➕ أخذت", callback_data: "p_w_take" },
-              { text: "➖ أعطيت", callback_data: "p_w_give" }
-            ],
-            [{ text: "💸 تحويل مبلغ", callback_data: "p_w_trans" }],
-            [{ text: "🏠 الرئيسية", callback_data: "p_main" }]
-          ]
-        };
-        await editTelegramMessage(chatId, messageId, text, kb, botToken);
+        const { text, keyboard } = await renderPreparerWallet(preparer);
+        await editTelegramMessage(chatId, messageId, text, keyboard, botToken);
         return true;
       }
       case "wallet_take":
@@ -449,7 +411,9 @@ export async function handlePreparerTelegramCallback(
           await writeLedgerEntriesForAcceptedTransfer(tx, updated);
         });
 
-        await editTelegramMessage(chatId, messageId, `✅ تم قبول التحويل بقيمة ${formatDinarAsAlf(transfer.amountDinar)} بنجاح.`, { inline_keyboard: [[{ text: "💰 المحفظة", callback_data: "p_wallet" }]] }, botToken);
+        const prefix = `✅ <b>تم قبول التحويل بقيمة ${formatDinarAsAlf(transfer.amountDinar)} بنجاح.</b>`;
+        const { text, keyboard } = await renderPreparerWallet(preparer, prefix);
+        await editTelegramMessage(chatId, messageId, text, keyboard, botToken);
 
         // إشعار للمرسل
         if (transfer.fromEmployeeId) {
@@ -469,7 +433,9 @@ export async function handlePreparerTelegramCallback(
           data: { status: "rejected", respondedAt: new Date() }
         });
 
-        await editTelegramMessage(chatId, messageId, "❌ تم رفض التحويل.", { inline_keyboard: [[{ text: "💰 المحفظة", callback_data: "p_wallet" }]] }, botToken);
+        const prefix = `❌ <b>تم رفض التحويل.</b>`;
+        const { text, keyboard } = await renderPreparerWallet(preparer, prefix);
+        await editTelegramMessage(chatId, messageId, text, keyboard, botToken);
 
         // إشعار للمرسل
         if (transfer.fromEmployeeId) {
@@ -672,6 +638,53 @@ export async function handlePreparerTelegramCallback(
   return false;
 }
 
+export async function renderPreparerWallet(preparer: any, prefix?: string) {
+  const totals = await getPreparerMoneyTotals(preparer.id);
+  const wid = preparer.walletEmployeeId;
+
+  let txLines = "";
+  if (wid) {
+    const recent = await prisma.employeeWalletMiscEntry.findMany({
+      where: { employeeId: wid, deletedAt: null },
+      orderBy: { createdAt: "desc" },
+      take: 15
+    });
+    if (recent.length > 0) {
+      txLines = "\n<b>آخر 15 حركة:</b>\n" + recent.map(r =>
+        `${r.direction === "take" ? "➕" : "➖"} ${formatDinarAsAlf(r.amountDinar)} : ${escapeTelegramHtml(r.label || "—")}`
+      ).join("\n");
+    }
+  }
+
+  const textLines = [];
+  if (prefix) {
+    textLines.push(prefix);
+    textLines.push(`-------------------------`);
+  }
+  textLines.push(`<b>💰 محفظة المجهز: ${escapeTelegramHtml(preparer.name)}</b>`);
+  textLines.push(`-------------------------`);
+  textLines.push(`📥 الوارد (أخذت): <b>${formatDinarAsAlf(totals?.ward || 0)}</b>`);
+  textLines.push(`📤 الصادر (أعطيت): <b>${formatDinarAsAlf(totals?.sader || 0)}</b>`);
+  textLines.push(`💵 المتبقي بذمتك للإدارة: <b>${formatDinarAsAlf(totals?.remain || 0)}</b>`);
+  textLines.push(`-------------------------`);
+  if (txLines) textLines.push(txLines);
+  textLines.push(`-------------------------`);
+  textLines.push(`يمكنك استخدام الأزرار أدناه لتسجيل الحركات المالية أو التحويل.`);
+
+  const kb: TelegramInlineKeyboard = {
+    inline_keyboard: [
+      [
+        { text: "➕ أخذت", callback_data: "p_w_take" },
+        { text: "➖ أعطيت", callback_data: "p_w_give" }
+      ],
+      [{ text: "💸 تحويل مبلغ", callback_data: "p_w_trans" }],
+      [{ text: "🏠 الرئيسية", callback_data: "p_main" }]
+    ]
+  };
+
+  return { text: textLines.join("\n"), keyboard: kb };
+}
+
 export async function renderPreparerHub(preparer: any) {
   const pendingCount = await prisma.order.count({
     where: {
@@ -781,7 +794,10 @@ export async function handlePreparerTelegramMessage(
         }
       });
       await clearPreparerSession(telegramUserId);
-      await sendTelegramMessageWithKeyboardToChat(chatId, `✅ تم تسجيل الحركة بنجاح: ${label} بقيمة ${formatDinarAsAlf(amount)}`, { inline_keyboard: [[{ text: "💰 المحفظة", callback_data: "p_wallet" }]] }, botToken);
+      const actionLabel = direction === "take" ? "أخذت" : "أعطيت";
+      const prefix = `✅ <b>تم تسجيل المعاملة</b>\n${actionLabel} ${formatDinarAsAlf(amount)} ${escapeTelegramHtml(label)}`;
+      const { text, keyboard } = await renderPreparerWallet(preparer, prefix);
+      await sendTelegramMessageWithKeyboardToChat(chatId, text, keyboard, botToken);
     } else {
       await sendTelegramMessageWithKeyboardToChat(chatId, "لا يوجد حساب مالي مرتبط بك. يرجى مراجعة الإدارة.", { inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "p_main" }]] }, botToken);
     }
@@ -817,7 +833,9 @@ export async function handlePreparerTelegramMessage(
     });
 
     await clearPreparerSession(telegramUserId);
-    await sendTelegramMessageWithKeyboardToChat(chatId, `⏳ تم إرسال طلب التحويل بقيمة ${formatDinarAsAlf(amount)} بانتظار الموافقة.`, { inline_keyboard: [[{ text: "💰 المحفظة", callback_data: "p_wallet" }]] }, botToken);
+    const prefix = `⏳ <b>تم إرسال طلب التحويل بقيمة ${formatDinarAsAlf(amount)} بانتظار الموافقة.</b>`;
+    const { text: walletText, keyboard: walletKb } = await renderPreparerWallet(preparer, prefix);
+    await sendTelegramMessageWithKeyboardToChat(chatId, walletText, walletKb, botToken);
 
     // إرسال إشعار للمستلم
     let recipientTgId: string | null = null;
