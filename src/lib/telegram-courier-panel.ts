@@ -19,7 +19,7 @@ import {
 import { formatDinarAsAlf, formatDinarAsAlfWithUnit, parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import { resizeImageBufferForShop } from "@/lib/image-resize";
 import { MAX_ORDER_IMAGE_BYTES, saveOrderImageFromResizedBuffer } from "@/lib/order-image";
-import { notifyTelegramMoneyEvent } from "@/lib/telegram-notify";
+import { notifyTelegramMoneyEvent, notifyTelegramCourierTransferEvent } from "@/lib/telegram-notify";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { mandoubOrderDetailInclude } from "@/lib/mandoub-order-queries";
@@ -43,7 +43,8 @@ import {
   mandoubHandToAdminDinar,
   computeMandoubWalletRemainAllTimeDinar,
 } from "@/lib/mandoub-wallet-carry";
-import { verifyDelegatePortalQuery } from "./delegate-link";
+import { buildDelegatePortalUrl, verifyDelegatePortalQuery } from "./delegate-link";
+import { getBotTokenByPurpose } from "./telegram-bots";
 import { normalizeIraqMobileLocal11, telHref, whatsappMeUrl } from "@/lib/whatsapp";
 
 type CourierMainKeyboardKind = "main" | "orders" | "wallet";
@@ -1521,7 +1522,6 @@ export async function handleCourierCallback({
       await editTelegramMessage(chatId, cq.message.message_id, cq.message.text + "\n\n✅ <b>تم القبول</b>", { inline_keyboard: [] }, botToken).catch(() => {});
 
       // إشعار المرسل
-      const { notifyTelegramCourierTransferEvent } = await import("./telegram-notify");
       const fromName = await resolvePartyDisplayName(transfer.toKind, transfer.toCourierId, transfer.toEmployeeId);
       if (transfer.fromCourierId) {
         await notifyTelegramCourierTransferEvent({
@@ -1542,7 +1542,6 @@ export async function handleCourierCallback({
       await editTelegramMessage(chatId, cq.message.message_id, cq.message.text + "\n\n❌ <b>تم الرفض</b>", { inline_keyboard: [] }, botToken).catch(() => {});
 
       // إشعار المرسل
-      const { notifyTelegramCourierTransferEvent } = await import("./telegram-notify");
       const fromName = await resolvePartyDisplayName(transfer.toKind, transfer.toCourierId, transfer.toEmployeeId);
       if (transfer.fromCourierId) {
         await notifyTelegramCourierTransferEvent({
