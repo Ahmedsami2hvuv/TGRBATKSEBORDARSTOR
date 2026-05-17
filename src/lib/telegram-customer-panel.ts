@@ -205,7 +205,7 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
 
     await answerCallbackQuery(cb.id, "جاري البدء...", false, botToken).catch(() => {});
     const text = `<b>📦 رفع طلب جديد</b>\n\n` +
-      `يرجى إرسال تفاصيل الطلب في رسالة واحدة كل سطر يحتوي على معلومة كالتالي:\n\n` +
+      `دزلي تفاصيل الطلب كل تفصيلة بسطر كالتالي:\n\n` +
       `نوع الطلب\n` +
       `السعر\n` +
       `المنطقة\n` +
