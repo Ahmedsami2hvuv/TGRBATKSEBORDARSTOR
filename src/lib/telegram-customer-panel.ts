@@ -8,6 +8,7 @@ import { buildEmployeeOrderPortalUrl, verifyEmployeeOrderPortalQuery } from "./e
 import { getPublicAppUrl } from "./app-url";
 import { Decimal } from "@prisma/client/runtime/library";
 import { formatDinarAsAlf, normalizeNumerals } from "./money-alf";
+import { notifyTelegramNewOrder } from "./telegram-notify";
 
 /**
  * مساعد لترجمة حالة الطلب بالألوان والرموز الموحدة (Harmonized with Courier Bot)
@@ -195,9 +196,7 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
     });
 
     await answerCallbackQuery(cb.id, "جاري البدء...", false, botToken).catch(() => {});
-    await sendTelegramHtmlToChat(
-      chatId,
-      `<b>📦 رفع طلب جديد</b>\n\n` +
+    const text = `<b>📦 رفع طلب جديد</b>\n\n` +
       `يرجى إرسال تفاصيل الطلب في رسالة واحدة كل سطر يحتوي على معلومة كالتالي:\n\n` +
       `نوع الطلب\n` +
       `السعر\n` +
@@ -207,9 +206,22 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
       `<code>بوكيه ورد\n` +
       `15\n` +
       `جيكور\n` +
-      `077333921468</code>`,
+      `077333921468</code>`;
+
+    await editTelegramMessage(
+      chatId,
+      cb.message.message_id,
+      text,
+      { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "customer_main" }]] },
       botToken
-    );
+    ).catch(async () => {
+      await sendTelegramMessageWithKeyboardToChat(
+        chatId,
+        text,
+        { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "customer_main" }]] },
+        botToken
+      );
+    });
     return;
   }
 
@@ -257,6 +269,9 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
           }
         });
 
+        // إرسال إشعار للإدارة والمجهزين
+        void notifyTelegramNewOrder(order.id).catch(console.error);
+
         await prisma.telegramBotSession.update({
           where: { telegramUserId },
           data: { step: "idle", payload: "" }
@@ -270,7 +285,7 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
             [{ text: "💬 إرسال للواتساب", url: waUrl }],
             [
               { text: "📦 طلب جديد", callback_data: "new_order" },
-              { text: "🏠 الرئيسية", callback_data: "co_main" }
+              { text: "🏠 الرئيسية", callback_data: "customer_main" }
             ]
           ]
         };
@@ -288,13 +303,43 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
     }
   }
 
+  if (cb.data === "customer_main") {
+    await answerCallbackQuery(cb.id, undefined, false, botToken).catch(() => {});
+    await prisma.telegramBotSession.update({
+      where: { telegramUserId },
+      data: { step: "idle", payload: "" }
+    }).catch(() => {});
+
+    const employee = await prisma.employee.findUnique({
+      where: { telegramUserId },
+      include: { shop: true }
+    });
+
+    if (employee) {
+      const portalUrl = buildEmployeeOrderPortalUrl(employee.id, employee.orderPortalToken, getPublicAppUrl());
+      const welcomeMsg = `<b>أهلاً ${employee.name}</b>\nمحل: <b>${employee.shop.name}</b>\n\nاختر من الأزرار أدناه للتنقل:`;
+      await editTelegramMessage(chatId, cb.message.message_id, welcomeMsg, buildCustomerKeyboard(portalUrl), botToken)
+        .catch(async () => {
+          await sendTelegramMessageWithKeyboardToChat(chatId, welcomeMsg, buildCustomerKeyboard(portalUrl), botToken);
+        });
+    }
+    return;
+  }
+
   if (cb.data === "cancel_order") {
     await prisma.telegramBotSession.update({
       where: { telegramUserId },
       data: { step: "idle", payload: "" }
     });
     await answerCallbackQuery(cb.id, "تم الإلغاء", false, botToken);
-    await editTelegramMessage(chatId, cb.message.message_id, "❌ تم إلغاء رفع الطلب.", { inline_keyboard: [] }, botToken);
+    const employee = await prisma.employee.findUnique({
+      where: { telegramUserId },
+      include: { shop: true }
+    });
+    if (employee) {
+      const portalUrl = buildEmployeeOrderPortalUrl(employee.id, employee.orderPortalToken, getPublicAppUrl());
+      await editTelegramMessage(chatId, cb.message.message_id, "❌ تم إلغاء رفع الطلب.", buildCustomerKeyboard(portalUrl), botToken);
+    }
     return;
   }
 
