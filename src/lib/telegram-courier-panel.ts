@@ -362,11 +362,10 @@ function buildOrdersKeyboard(
 ): TelegramInlineKeyboard {
   const rows: Array<Array<{ text: string; callback_data: string }>> = [];
 
-  // ترتيب الطلبات يدوياً لضمان الأحمر فوق ثم البرتقالي ثم الأخضر
   const statusPriority: Record<string, number> = {
-    assigned: 1,   // الأحمر
-    delivering: 2, // البرتقالي
-    delivered: 3,  // الأخضر
+    assigned: 1,
+    delivering: 2,
+    delivered: 3,
     archived: 4
   };
 
@@ -374,7 +373,7 @@ function buildOrdersKeyboard(
     const pA = statusPriority[a.status] ?? 99;
     const pB = statusPriority[b.status] ?? 99;
     if (pA !== pB) return pA - pB;
-    return b.orderNumber - a.orderNumber; // ترتيب تنازلي لرقم الطلب داخل نفس الحالة
+    return b.orderNumber - a.orderNumber;
   });
 
   sortedOrders.forEach((o) => {
@@ -387,11 +386,24 @@ function buildOrdersKeyboard(
     if (o.status === "delivering") prefix = "🟠 ";
     if (o.status === "delivered") prefix = "🟢 ";
 
-    // دفع كل زر في سطر منفصل (واحد تحت الآخر) كما طلبت
+    // الزر الأساسي للطلبية
     rows.push([{
       text: (prefix + (label || `#${o.orderNumber}`)).slice(0, 64),
       callback_data: `co_order_${o.orderNumber}`,
     }]);
+
+    // إضافة زر الحالة المباشر تحت الطلبية (طلبك: "وتحت كل زر مال طلبية خلي زر...")
+    if (o.status === "assigned") {
+      rows.push([{
+        text: "🟠 تم الاستلام",
+        callback_data: `co_pick_${o.orderNumber}`,
+      }]);
+    } else if (o.status === "delivering") {
+      rows.push([{
+        text: "🟢 تم التسليم",
+        callback_data: `co_deliv_${o.orderNumber}`,
+      }]);
+    }
   });
 
   rows.push([{ text: "🏠 الرئيسية", callback_data: "co_main" }]);
@@ -752,8 +764,6 @@ export async function buildCourierWalletTelegramText(
   const walletRemain = await computeMandoubWalletRemainAllTimeDinar(courier.id);
   const handToAdmin = mandoubHandToAdminDinar(walletRemain, orderMetrics.sumEarnings);
 
-  const ledgerLines = await loadCourierWalletTelegramLedgerLines(courier.id, page, tab);
-
   const remainSiteValue = formatDinarAsAlf(orderOnlySums.remainingNet);
   const walletInValue = formatDinarAsAlf(walletInOutDisplay.walletIn);
   const walletOutValue = formatDinarAsAlf(walletInOutDisplay.walletOut);
@@ -761,55 +771,25 @@ export async function buildCourierWalletTelegramText(
   const walletRemainValue = formatDinarAsAlf(walletRemain);
   const handToAdminValue = formatDinarAsAlf(handToAdmin);
 
-  const header = `<b>💼 محفظتي</b>\n<i>العرض: ${WALLET_TAB_LABELS[tab]}</i>\n\n`;
+  // تصميم الرسالة الجديد حسب طلبك
+  const text = `<b>💼 محفظتي</b>\n\n` +
+    `صادر: <b>${walletOutValue}</b> | وارد: <b>${walletInValue}</b> | متبقي: <b>${walletRemainValue}</b>\n\n` +
+    `مجموع الصادر: <b>${formatDinarAsAlf(orderOnlySums.sumOut)}</b> | مجموع الوارد: <b>${formatDinarAsAlf(orderOnlySums.sumIn)}</b>\n\n` +
+    `يسلم للإدارة: <b>${handToAdminValue}</b>`;
 
-  const bodyLines = ledgerLines
-    .map((l) => {
-      const dir = courierDirLabel(l.kind);
-      const amt = formatDinarAsAlf(new Decimal(l.amountDinar));
-      const dt = new Date(l.createdAt).toLocaleString("ar-IQ-u-nu-latn", { dateStyle: "medium", timeStyle: "short" });
-      if (l.source === "order") {
-        return `• ${dir}: ${amt} \n  طلب #${l.orderNumber} — ${escapeTelegramHtml(l.shopName)}\n  ${dt}`;
-      }
-      return `• ${dir}: ${amt} \n  ${escapeTelegramHtml(l.miscLabel ?? "—")}\n  ${dt}`;
-    })
-    .join("\n");
-
-  const text = header + (bodyLines.length ? bodyLines : "لا توجد بيانات حالياً لهذا العرض.");
-
-  const tabBtn = (code: WalletTab, label: string): { text: string; callback_data: string } => {
-    const prefix = tab === code ? "✅ " : "";
-    return {
-      text: `${prefix}${label}`.slice(0, 64),
-      callback_data: `co_wallet_${code}_0`,
-    };
-  };
+  const baseUrl = getPublicAppUrl();
+  const portalUrl = buildDelegatePortalUrl(courier.id, baseUrl);
 
   const keyboard: TelegramInlineKeyboard = {
     inline_keyboard: [
       [
-        tabBtn("remain_site", `متبقي من الموقع: ${remainSiteValue} `),
-        tabBtn("wallet_in", `وارد: ${walletInValue} `),
-        tabBtn("wallet_out", `صادر: ${walletOutValue} `),
+        { text: "🔴 أخذت", callback_data: "co_w_take" },
+        { text: "🟣 تحويل", callback_data: "co_w_xfer" },
+        { text: "🔴 أعطيت", callback_data: "co_w_give" },
       ],
       [
-        tabBtn("earnings", `أرباحي: ${earningsValue} `),
-        tabBtn("transfers", "تحويلات معلّقة"),
-        tabBtn("handover_admin", `يسلم للإدارة: ${handToAdminValue} `),
-      ],
-      [
-        tabBtn("remain_wallet", `متبقي المحفظة: ${walletRemainValue} `),
-        tabBtn("all", "الكل"),
-      ],
-      [
-        { text: "📥 أخذت مبلغا", callback_data: "co_w_take" },
-        { text: "📤 أعطيت مبلغا", callback_data: "co_w_give" },
-      ],
-      [{ text: "💸 تحويل مالي", callback_data: "co_w_xfer" }],
-      [{ text: "🏠 الرئيسية", callback_data: "co_main" }],
-      [
-        { text: "◀️ السابق", callback_data: `co_wallet_${tab}_${Math.max(0, page - 1)}` },
-        { text: "التالي ▶️", callback_data: `co_wallet_${tab}_${page + 1}` },
+        { text: "⬅️ رجوع", callback_data: "co_main" },
+        { text: "🌐 فتح الموقع", url: portalUrl },
       ],
     ],
   };
@@ -819,33 +799,7 @@ export async function buildCourierWalletTelegramText(
 
 async function buildCourierOrdersTextAndKeyboard(courier: { id: string; name: string }, page: number): Promise<{ text: string; keyboard: TelegramInlineKeyboard }> {
   const orders = await loadCourierOrdersForTelegram(courier.id, page);
-
-  // ترتيب القائمة النصية أيضاً لتطابق ترتيب الأزرار
-  const statusPriority: Record<string, number> = {
-    assigned: 1,
-    delivering: 2,
-    delivered: 3,
-    archived: 4
-  };
-  const sortedForText = [...orders].sort((a, b) => {
-    const pA = statusPriority[a.status] ?? 99;
-    const pB = statusPriority[b.status] ?? 99;
-    if (pA !== pB) return pA - pB;
-    return b.orderNumber - a.orderNumber;
-  });
-
-  const lines: string[] = [];
-  if (sortedForText.length === 0) {
-    lines.push("لا توجد طلبات حالياً.");
-  } else {
-    for (const o of sortedForText) {
-      const shopName = o.shop?.name?.trim() || "—";
-      lines.push(
-        `• <b>#${o.orderNumber}</b> — ${escapeTelegramHtml(shopName)} — ${escapeTelegramHtml(statusAr(o.status))}`,
-      );
-    }
-  }
-  const text = `<b>📦 طلبياتي</b>\n${lines.join("\n")}`;
+  const text = `<b>طلباتك هيو</b>`;
   const keyboard = buildOrdersKeyboard(
     orders.map((o) => ({
       orderNumber: o.orderNumber,
@@ -1198,28 +1152,18 @@ export async function handleCourierCallback({
     const customerPhone = order.customerPhone?.trim() || order.customer?.phone?.trim() || "";
     const customer2Phone = order.secondCustomerPhone?.trim() || "";
 
-    const waText = `طلبية #${on} — ${order.shop?.name?.trim() || ""}`;
+    const waText = `طلبية #${on}`;
 
     const waRows: Array<Array<{ text: string; url: string }>> = [];
-    const pushIfValid = (btn: { text: string; url: string }) => {
-      if (btn.url && btn.url !== "#") waRows.push([btn]);
-    };
-
-    // استخدام wa.me بدلاً من whatsapp:// لأن بعض عملاء تيليجرام لا يسمحون بفتح الـ deep link.
-    pushIfValid({ text: "🏪 واتساب عميل", url: whatsappMeUrl(shopPhone, waText) });
-    pushIfValid({ text: "👤 واتساب زبون", url: whatsappMeUrl(customerPhone, waText) });
-    if (customer2Phone)
-      pushIfValid({ text: "👤 واتساب زبون 2", url: whatsappMeUrl(customer2Phone, waText) });
-
-    const back: Array<Array<{ text: string; callback_data: string }>> = [
-      [{ text: "⬅️ رجوع", callback_data: `co_order_${on}` }],
-    ];
+    if (shopPhone) waRows.push([{ text: "🟢 واتس اب عميل", url: whatsappMeUrl(shopPhone, waText) }]);
+    if (customerPhone) waRows.push([{ text: "🟢 واتس اب زبون", url: whatsappMeUrl(customerPhone, waText) }]);
+    if (customer2Phone) waRows.push([{ text: "🟢 واتس اب زبون 2", url: whatsappMeUrl(customer2Phone, waText) }]);
 
     const keyboard: TelegramInlineKeyboard = {
-      inline_keyboard: [...waRows, ...back],
+      inline_keyboard: [...waRows, [{ text: "⬅️ رجوع", callback_data: `co_order_${on}` }]],
     };
 
-    const text = `<b>واتس اب</b>\nاختر الشخص للاتصال:`;
+    const text = `<b>واتس اب</b>\nاختر الشخص لمراسلته:`;
     await deleteThenSendCourierMessage({
       chatId,
       messageId: cq.message.message_id,
@@ -1243,27 +1187,15 @@ export async function handleCourierCallback({
     const customer2Phone = order.secondCustomerPhone?.trim() || "";
 
     const rows: Array<Array<{ text: string; callback_data: string }>> = [];
-    if (shopPhone) rows.push([{ text: "🏪 اتصال عميل", callback_data: `co_callgo_${on}_s` }]);
-    if (customerPhone) rows.push([{ text: "👤 اتصال زبون", callback_data: `co_callgo_${on}_c` }]);
-    if (customer2Phone.trim()) rows.push([{ text: "👤 اتصال زبون 2", callback_data: `co_callgo_${on}_2` }]);
-
-    if (rows.length === 0) {
-      await deleteThenSendCourierMessage({
-        chatId,
-        messageId: cq.message.message_id,
-        text: `<b>📞 اتصال</b>\nلا توجد أرقام مسجّلة لهذا الطلب.`,
-        keyboard: { inline_keyboard: [[{ text: "⬅️ رجوع", callback_data: `co_order_${on}` }]] },
-        botToken,
-      });
-      return;
-    }
+    if (shopPhone) rows.push([{ text: "📞 اتصال بالعميل", callback_data: `co_callgo_${on}_s` }]);
+    if (customerPhone) rows.push([{ text: "📞 اتصال بالزبون", callback_data: `co_callgo_${on}_c` }]);
+    if (customer2Phone.trim()) rows.push([{ text: "📞 اتصال بالزبون 2", callback_data: `co_callgo_${on}_2` }]);
 
     const keyboard: TelegramInlineKeyboard = {
       inline_keyboard: [...rows, [{ text: "⬅️ رجوع", callback_data: `co_order_${on}` }]],
     };
 
-    const text =
-      `<b>📞 اتصال</b>\nاختر الشخص — ستصلك رسالة فيها رابط اتصال يعمل على الهاتف:`;
+    const text = `<b>📞 اتصال</b>\nاختر الشخص للاتصال به:`;
     await deleteThenSendCourierMessage({
       chatId,
       messageId: cq.message.message_id,
@@ -2273,14 +2205,43 @@ async function processCourierWalletSessionMessage(
   // 3. معالجة تحويل (مبلغ ومكان بسطرين) - النظام الجديد
   if (session.step === "courier_xfer_input") {
     const lines = textIn.split("\n").map(l => l.trim()).filter(Boolean);
-    if (lines.length < 1) return true;
 
-    const amountStr = lines[0];
-    const loc = lines.slice(1).join(" ") || "بدون مكان";
+    // إذا أرسل المندوب سطر واحد فقط (المبلغ)
+    if (lines.length === 1) {
+      const parsed = parseAlfInputToDinarDecimalRequired(lines[0]);
+      if (parsed.ok) {
+        // نحدث الجلسة لتخزين المبلغ ونطلب المكان
+        cachedPayload.amount = parsed.value;
+        await upsertCourierSession(
+          telegramUserId,
+          chatId,
+          "courier_xfer_input",
+          null,
+          JSON.stringify(cachedPayload)
+        );
+        await sendTelegramHtmlToChat(chatId, "⚠️ يرجى إرسال <b>المكان</b> الآن في رسالة جديدة:", botToken);
+        return true;
+      }
+    }
+
+    // إذا كان لدينا المبلغ مسبقاً في الجلسة، فهذه الرسالة هي "المكان"
+    let amountStr = "";
+    let loc = "";
+
+    if (cachedPayload.amount && lines.length === 1) {
+      amountStr = cachedPayload.amount;
+      loc = lines[0];
+    } else if (lines.length >= 2) {
+      amountStr = lines[0];
+      loc = lines.slice(1).join(" ");
+    } else {
+      await sendTelegramHtmlToChat(chatId, "❌ يرجى إرسال المبلغ والمكان بشكل صحيح.", botToken);
+      return true;
+    }
 
     const parsed = parseAlfInputToDinarDecimalRequired(amountStr);
     if (!parsed.ok) {
-      await sendTelegramHtmlToChat(chatId, "❌ المبلغ غير صحيح في السطر الأول. حاول مرة أخرى.", botToken);
+      await sendTelegramHtmlToChat(chatId, "❌ المبلغ غير صحيح. حاول مرة أخرى.", botToken);
       return true;
     }
 

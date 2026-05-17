@@ -7,6 +7,29 @@ import {
 import { buildEmployeeOrderPortalUrl, verifyEmployeeOrderPortalQuery } from "./employee-order-portal-link";
 import { getPublicAppUrl } from "./app-url";
 import { Decimal } from "@prisma/client/runtime/library";
+import { formatDinarAsAlf, normalizeNumerals } from "./money-alf";
+
+/**
+ * مساعد لترجمة حالة الطلب بالألوان والرموز الموحدة (Harmonized with Courier Bot)
+ */
+function statusAr(status: string): string {
+  switch (status) {
+    case "pending":
+      return "🔴 قيد المراجعة";
+    case "assigned":
+      return "🔴 بانتظار المندوب";
+    case "delivering":
+      return "🟠 عند المندوب";
+    case "delivered":
+      return "🟢 تم التسليم";
+    case "canceled":
+      return "❌ ملغي";
+    case "archived":
+      return "مؤرشف";
+    default:
+      return status;
+  }
+}
 
 /**
  * بناء لوحة تحكم العميل (الموظف)
@@ -178,7 +201,8 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
       `نوع الطلب: وجبة دجاج\n` +
       `السعر: 15\n` +
       `المنطقة: المنصور\n` +
-      `رقم الزبون: 07701234567`,
+      `رقم الزبون: 07701234567\n\n` +
+      `أو يمكنك كتابة المعلومات بشكل مباشر وسأحاول فهمها.`,
       botToken
     );
     return;
@@ -234,7 +258,7 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
         });
 
         await answerCallbackQuery(cb.id, "تم حفظ الطلب بنجاح", true, botToken);
-        await editTelegramMessage(chatId, cb.message.message_id, "✅ <b>تم حفظ الطلب بنجاح!</b>\nسيتم مراجعته من قبل الإدارة.", { inline_keyboard: [] }, botToken);
+        await editTelegramMessage(chatId, cb.message.message_id, `✅ <b>تم حفظ الطلب بنجاح!</b>\n\nالآن: ${statusAr("pending")}`, { inline_keyboard: [] }, botToken);
         return;
       }
     }
@@ -284,36 +308,58 @@ async function processCustomerSession(msg: any, employee: any, botToken: string)
 }
 
 function parseOrderText(text: string) {
-  const lines = text.split("\n");
+  const normalized = normalizeNumerals(text);
+  const lines = normalized.split("\n");
   const result: any = {};
 
   for (const line of lines) {
-    const [key, ...valParts] = line.split(":");
-    if (!valParts.length) continue;
-    const value = valParts.join(":").trim();
-    const k = key.trim();
+    const parts = line.split(/[:=]/); // support : or =
+    if (parts.length > 1) {
+      const key = parts[0].trim();
+      const value = parts.slice(1).join(":").trim();
 
-    if (k.includes("نوع") || k.includes("طلب")) result.type = value;
-    if (k.includes("سعر") || k.includes("مبلغ")) {
-       const priceMatch = value.match(/\d+(\.\d+)?/);
-       if (priceMatch) result.price = priceMatch[0];
-    }
-    if (k.includes("منطقة") || k.includes("عنوان")) result.regionName = value;
-    if (k.includes("رقم") || k.includes("هاتف")) {
-       const phoneMatch = value.match(/07[789]\d{8}/);
-       if (phoneMatch) result.phone = phoneMatch[0];
+      if (key.includes("نوع") || key.includes("طلب")) result.type = value;
+      if (key.includes("سعر") || key.includes("مبلغ")) {
+        const priceMatch = value.match(/\d+(\.\d+)?/);
+        if (priceMatch) result.price = priceMatch[0];
+      }
+      if (key.includes("منطقة") || key.includes("عنوان") || key.includes("مكان")) result.regionName = value;
+      if (key.includes("رقم") || key.includes("هاتف") || key.includes("موبايل")) {
+        const phoneMatch = value.match(/07[789]\d{8}/);
+        if (phoneMatch) result.phone = phoneMatch[0];
+      }
     }
   }
 
-  // دعم الإدخال العشوائي إذا لم تكن هناك علامات (:)
-  if (Object.keys(result).length === 0) {
-    // محاولة استخراج الرقم
-    const phoneMatch = text.match(/07[789]\d{8}/);
+  // Fallback: search anywhere if fields are still missing
+  if (!result.phone) {
+    const phoneMatch = normalized.match(/07[789]\d{8}/);
     if (phoneMatch) result.phone = phoneMatch[0];
+  }
+  if (!result.price) {
+    const prices = normalized.match(/\b\d+(\.\d+)?\b/g);
+    if (prices) {
+      for (const p of prices) {
+        // Price is usually shorter than a phone number
+        if (p !== result.phone && p.length < 7) {
+          result.price = p;
+          break;
+        }
+      }
+    }
+  }
+  if (!result.regionName || !result.type) {
+    for (const line of lines) {
+      const t = line.trim();
+      if (!t || t.includes(":") || t.includes("=")) continue;
+      if (t === result.phone || t === result.price) continue;
 
-    // محاولة استخراج السعر
-    const priceMatch = text.match(/\b\d+(\.\d+)?\b/);
-    if (priceMatch) result.price = priceMatch[0];
+      if (!result.type) {
+        result.type = t;
+      } else if (!result.regionName) {
+        result.regionName = t;
+      }
+    }
   }
 
   return result;
@@ -379,17 +425,17 @@ async function processParsedOrder(chatId: string, telegramUserId: string, payloa
   // إذا اكتملت البيانات، نعرض التأكيد
   if (payload.type && payload.price && payload.regionId && payload.phone) {
     const region = await prisma.region.findUnique({ where: { id: payload.regionId } });
-    const subtotal = payload.price;
-    const delivery = region?.deliveryPrice || 0;
-    const total = Number(subtotal) + Number(delivery);
+    const subtotal = new Decimal(payload.price);
+    const delivery = region?.deliveryPrice || new Decimal(0);
+    const total = subtotal.plus(delivery);
 
     const confirmText = `<b>تأكيد الطلب:</b>\n\n` +
       `📦 النوع: ${payload.type}\n` +
-      `💵 السعر: ${subtotal} ألف\n` +
+      `💵 السعر: ${formatDinarAsAlf(subtotal)} الف\n` +
       `📍 المنطقة: ${region?.name}\n` +
       `📞 الزبون: ${payload.phone}\n` +
-      `🚚 التوصيل: ${delivery} ألف\n` +
-      `💰 الإجمالي: ${total} ألف\n\n` +
+      `🚚 التوصيل: ${formatDinarAsAlf(delivery)} الف\n` +
+      `💰 الإجمالي: ${formatDinarAsAlf(total)} الف\n\n` +
       `هل البيانات صحيحة؟`;
 
     const kb = {
