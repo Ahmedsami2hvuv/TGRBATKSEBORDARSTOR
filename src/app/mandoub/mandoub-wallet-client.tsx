@@ -154,6 +154,8 @@ export function MandoubWalletClient({
   pendingIncoming,
   transferTargetCouriers,
   transferTargetEmployees,
+  availableForTransferStr,
+  pendingOutgoingCount,
   earningsDailyStr,
   earningsMonthlyStr,
   uiSettings,
