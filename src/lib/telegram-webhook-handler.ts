@@ -20,6 +20,10 @@ import {
   handleSupplierTelegramCallback,
   handleSupplierTelegramMessage,
 } from "./telegram-supplier";
+import {
+  handleCustomerCallback,
+  handleCustomerPrivateMessage,
+} from "./telegram-customer-panel";
 
 /**
  * معالج الـ Webhook الرئيسي.
@@ -77,6 +81,9 @@ export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promis
     }
     else if (botPurpose === "supplier") {
       await handleSupplierTelegramCallback(cb, botToken);
+    }
+    else if (botPurpose === "customer") {
+      await handleCustomerCallback(cb, botToken);
     } else {
       console.warn(`[handleTelegramWebhook] No handler for bot purpose: ${botPurpose}`);
       const { answerCallbackQuery } = await import("./telegram");
@@ -137,6 +144,9 @@ export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promis
           botToken
         );
       }
+    }
+    else if (botPurpose === "customer") {
+      await handleCustomerPrivateMessage(msg, botToken);
     }
     else {
       // رد الطوارئ: إذا وصل البوت إلى هنا ولم يرد، نرسل رسالة ترحيبية بسيطة للتأكد من الاتصال

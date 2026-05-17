@@ -313,7 +313,7 @@ function ClientOrderFormInner({
           </div>
 
           {botUsername && portalUrl && (
-            <div className="mt-4 space-y-3">
+            <div className="mt-4">
               <a
                 href={`https://t.me/${botUsername}?start=${Buffer.from(portalUrl).toString("base64")}`}
                 target="_blank"
@@ -325,21 +325,8 @@ function ClientOrderFormInner({
                 </svg>
                 استخدم البوت (ربط الحساب)
               </a>
-
-              <a
-                href={`https://t.me/${botUsername}?text=${encodeURIComponent(portalUrl)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-indigo-600 py-4 text-sm font-black text-white shadow-lg shadow-indigo-200 transition-all hover:bg-indigo-700 active:scale-95"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                تواصل مع الدعم عبر التليكرام
-              </a>
-
               <p className="mt-2 text-[10px] font-bold text-slate-400">
-                سيقوم البوت بالتعرف عليك فوراً أو يمكنك إرسال الرابط مباشرة.
+                سيقوم البوت بالتعرف عليك فوراً وعرض خياراتك.
               </p>
             </div>
           )}
