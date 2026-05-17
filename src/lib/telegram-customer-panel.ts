@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import {
+  deleteTelegramMessage,
   sendTelegramHtmlToChat,
   sendTelegramMessageWithKeyboardToChat,
   type TelegramInlineKeyboard,
@@ -180,12 +181,19 @@ export async function handleCustomerPrivateMessage(msg: any, botToken: string): 
  * معالجة الـ Callbacks لبوت العملاء
  */
 export async function handleCustomerCallback(cb: any, botToken: string): Promise<void> {
-  const { answerCallbackQuery, editTelegramMessage, sendTelegramHtmlToChat, sendTelegramMessageWithForceReply } = await import("./telegram");
+  const { answerCallbackQuery, deleteTelegramMessage, sendTelegramHtmlToChat } = await import("./telegram");
   const telegramUserId = String(cb.from.id);
   const chatId = String(cb.message.chat.id);
 
   if (cb.data === "logout") {
-    // ... logic ...
+    await prisma.employee.updateMany({
+      where: { telegramUserId },
+      data: { telegramUserId: null }
+    });
+    await answerCallbackQuery(cb.id, "تم تسجيل الخروج", true, botToken);
+    await deleteTelegramMessage(chatId, cb.message.message_id, botToken).catch(() => {});
+    await sendTelegramHtmlToChat(chatId, "👋 تم تسجيل الخروج بنجاح. يمكنك العودة في أي وقت باستخدام الرابط من المتصفح.", botToken);
+    return;
   }
 
   if (cb.data === "new_order") {
@@ -201,27 +209,22 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
       `نوع الطلب\n` +
       `السعر\n` +
       `المنطقة\n` +
-      `رقم الزبون\n\n` +
+      `رقم الزبون\n` +
+      `شوكت تحب يجيك المندوب\n\n` +
       `<b>مثال:</b>\n` +
       `<code>بوكيه ورد\n` +
       `15\n` +
       `جيكور\n` +
-      `077333921468</code>`;
+      `077333921468\n` +
+      `ب4 العصر</code>`;
 
-    await editTelegramMessage(
+    await deleteTelegramMessage(chatId, cb.message.message_id, botToken).catch(() => {});
+    await sendTelegramMessageWithKeyboardToChat(
       chatId,
-      cb.message.message_id,
       text,
       { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "customer_main" }]] },
       botToken
-    ).catch(async () => {
-      await sendTelegramMessageWithKeyboardToChat(
-        chatId,
-        text,
-        { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "customer_main" }]] },
-        botToken
-      );
-    });
+    );
     return;
   }
 
@@ -265,7 +268,8 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
             deliveryPrice: deliveryPrice,
             totalAmount: subtotal.plus(deliveryPrice),
             status: "pending",
-            submissionSource: "telegram_customer"
+            submissionSource: "telegram_customer",
+            orderNoteTime: payload.noteTime
           }
         });
 
@@ -291,9 +295,9 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
         };
 
         await answerCallbackQuery(cb.id, "تم حفظ الطلب بنجاح", true, botToken);
-        await editTelegramMessage(
+        await deleteTelegramMessage(chatId, cb.message.message_id, botToken).catch(() => {});
+        await sendTelegramMessageWithKeyboardToChat(
           chatId,
-          cb.message.message_id,
           `✅ <b>تم حفظ الطلب بنجاح!</b>\n\nالآن: ${statusAr("pending")}`,
           successKb,
           botToken
@@ -318,10 +322,8 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
     if (employee) {
       const portalUrl = buildEmployeeOrderPortalUrl(employee.id, employee.orderPortalToken, getPublicAppUrl());
       const welcomeMsg = `<b>أهلاً ${employee.name}</b>\nمحل: <b>${employee.shop.name}</b>\n\nاختر من الأزرار أدناه للتنقل:`;
-      await editTelegramMessage(chatId, cb.message.message_id, welcomeMsg, buildCustomerKeyboard(portalUrl), botToken)
-        .catch(async () => {
-          await sendTelegramMessageWithKeyboardToChat(chatId, welcomeMsg, buildCustomerKeyboard(portalUrl), botToken);
-        });
+      await deleteTelegramMessage(chatId, cb.message.message_id, botToken).catch(() => {});
+      await sendTelegramMessageWithKeyboardToChat(chatId, welcomeMsg, buildCustomerKeyboard(portalUrl), botToken);
     }
     return;
   }
@@ -338,7 +340,8 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
     });
     if (employee) {
       const portalUrl = buildEmployeeOrderPortalUrl(employee.id, employee.orderPortalToken, getPublicAppUrl());
-      await editTelegramMessage(chatId, cb.message.message_id, "❌ تم إلغاء رفع الطلب.", buildCustomerKeyboard(portalUrl), botToken);
+      await deleteTelegramMessage(chatId, cb.message.message_id, botToken).catch(() => {});
+      await sendTelegramMessageWithKeyboardToChat(chatId, "❌ تم إلغاء رفع الطلب.", buildCustomerKeyboard(portalUrl), botToken);
     }
     return;
   }
@@ -378,7 +381,7 @@ async function processCustomerSession(msg: any, employee: any, botToken: string)
 
 function parseOrderText(text: string) {
   const normalized = normalizeNumerals(text);
-  const lines = normalized.split("\n");
+  const lines = normalized.split("\n").map(l => l.trim()).filter(l => l !== "");
   const result: any = {};
 
   for (const line of lines) {
@@ -396,6 +399,9 @@ function parseOrderText(text: string) {
       if (key.includes("رقم") || key.includes("هاتف") || key.includes("موبايل")) {
         const phoneMatch = value.match(/07[789]\d{8}/);
         if (phoneMatch) result.phone = phoneMatch[0];
+      }
+      if (key.includes("وقت") || key.includes("ساعة") || key.includes("متى") || key.includes("شوكت")) {
+        result.noteTime = value;
       }
     }
   }
@@ -417,11 +423,20 @@ function parseOrderText(text: string) {
       }
     }
   }
+
+  // إذا كان هناك 5 أسطر على الأقل، نعتبر الأخير هو الوقت إذا لم يتم تحديده مسبقاً
+  if (lines.length >= 5 && !result.noteTime) {
+    const last = lines[lines.length - 1];
+    if (last !== result.phone && last !== result.price && last !== result.regionName && last !== result.type) {
+      result.noteTime = last;
+    }
+  }
+
   if (!result.regionName || !result.type) {
     for (const line of lines) {
       const t = line.trim();
       if (!t || t.includes(":") || t.includes("=")) continue;
-      if (t === result.phone || t === result.price) continue;
+      if (t === result.phone || t === result.price || t === result.noteTime) continue;
 
       if (!result.type) {
         result.type = t;
@@ -455,7 +470,13 @@ async function processParsedOrder(chatId: string, telegramUserId: string, payloa
     return;
   }
 
-  // 4. التحقق من المنطقة
+  // 4. التحقق من الوقت (جديد)
+  if (!payload.noteTime) {
+    await sendTelegramHtmlToChat(chatId, "⚠️ <b>شوكت تحب يجيك المندوب؟</b>\n(مثلاً: هسة، العصر، بـ 6 مساءً):", botToken);
+    return;
+  }
+
+  // 5. التحقق من المنطقة
   if (!payload.regionId) {
     if (!payload.regionName) {
       await sendTelegramHtmlToChat(chatId, "⚠️ يرجى تزويدنا <b>بمنطقة الزبون</b>:", botToken);
@@ -508,7 +529,7 @@ async function processParsedOrder(chatId: string, telegramUserId: string, payloa
   }
 
   // إذا اكتملت البيانات، نعرض التأكيد
-  if (payload.type && payload.price && payload.regionId && payload.phone) {
+  if (payload.type && payload.price && payload.regionId && payload.phone && payload.noteTime) {
     const region = await prisma.region.findUnique({ where: { id: payload.regionId } });
     const subtotal = new Decimal(payload.price);
     const delivery = region?.deliveryPrice || new Decimal(0);
@@ -519,6 +540,7 @@ async function processParsedOrder(chatId: string, telegramUserId: string, payloa
       `💵 السعر: ${formatDinarAsAlf(subtotal)} الف\n` +
       `📍 المنطقة: ${region?.name}\n` +
       `📞 الزبون: ${payload.phone}\n` +
+      `⏰ الوقت: ${payload.noteTime}\n` +
       `🚚 التوصيل: ${formatDinarAsAlf(delivery)} الف\n` +
       `💰 الإجمالي: ${formatDinarAsAlf(total)} الف\n\n` +
       `هل البيانات صحيحة؟`;
