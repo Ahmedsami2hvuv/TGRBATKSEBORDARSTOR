@@ -1,6 +1,8 @@
 import { Decimal } from "@prisma/client/runtime/library";
+import { WalletPeerPartyKind } from "@prisma/client";
 import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { prisma } from "@/lib/prisma";
+import { resolvePartyDisplayName } from "./wallet-peer-transfer";
 import { getPublicAppUrl } from "@/lib/app-url";
 import {
   escapeTelegramHtml,
@@ -188,16 +190,70 @@ export async function notifyTelegramPreparerTransferEvent(input: {
 
   // إرسال نسخة للإدارة في حال القبول/الرفض النهائي للشفافية
   if (input.kind !== "incoming") {
-    const adminBotToken = await getBotTokenByPurpose("notification");
-    const adminText = `<b>🔄 تحديث تحويل مجهز</b>\n` +
-                      `<b>المجهز:</b> ${escapeTelegramHtml(preparer.name)}\n` +
-                      `<b>الحالة:</b> ${input.kind === "accepted" ? "✅ مقبول" : "❌ مرفوض"}\n` +
-                      `<b>المبلغ:</b> ${amountStr}\n` +
-                      `<b>الطرف الآخر:</b> ${escapeTelegramHtml(input.partyName)}\n` +
-                      `-------------------------\n` +
-                      `<b>💰 المتبقي بذمته:</b> ${remainStr}`;
-    await sendTelegramMessage(adminText, { botToken: adminBotToken });
+    await notifyTelegramAdminTransferUpdate(input.transferId || "", input.kind);
   }
+}
+
+/** إشعار موحد للإدارة حول حالة التحويل (معلق/مقبول/مرفوض) */
+export async function notifyTelegramAdminTransferUpdate(transferId: string, status: "pending" | "accepted" | "rejected") {
+  const transfer = await prisma.walletPeerTransfer.findUnique({
+    where: { id: transferId },
+  });
+  if (!transfer) return;
+
+  const fromName = await resolvePartyDisplayName(transfer.fromKind, transfer.fromCourierId, transfer.fromEmployeeId);
+  const toName = await resolvePartyDisplayName(transfer.toKind, transfer.toCourierId, transfer.toEmployeeId);
+  const amountStr = formatDinarAsAlfWithUnit(transfer.amountDinar);
+  const dateStr = `\u200E${new Date().toLocaleDateString("ar-IQ-u-nu-latn", { dateStyle: "short" })}\u200E`;
+  const timeStr = `\u200E${new Date().toLocaleTimeString("ar-IQ-u-nu-latn", { hour: "2-digit", minute: "2-digit" })}\u200E`;
+
+  let text = "";
+  if (status === "pending") {
+    text = `⏳ <b>تحويل مالي صادر معلق</b>\n\n` +
+           `<b>من:</b> ${escapeTelegramHtml(fromName)}\n` +
+           `<b>إلى:</b> ${escapeTelegramHtml(toName)}\n` +
+           `<b>المبلغ:</b> ${amountStr}\n` +
+           `<b>المكان:</b> ${escapeTelegramHtml(transfer.handoverLocation || "—")}\n` +
+           `<b>التاريخ:</b> ${dateStr}\n` +
+           `<b>الوقت:</b> ${timeStr}`;
+  } else {
+    // جلب الأرصدة الحالية للطرفين
+    let fromBalanceStr = "—";
+    let toBalanceStr = "—";
+
+    if (transfer.fromKind === WalletPeerPartyKind.courier && transfer.fromCourierId) {
+      const b = await computeMandoubWalletRemainAllTimeDinar(transfer.fromCourierId);
+      fromBalanceStr = formatDinarAsAlfWithUnit(b);
+    } else if (transfer.fromKind === WalletPeerPartyKind.employee && transfer.fromEmployeeId) {
+      const prep = await prisma.companyPreparer.findFirst({ where: { walletEmployeeId: transfer.fromEmployeeId } });
+      if (prep) {
+        const totals = await getPreparerMoneyTotals(prep.id);
+        fromBalanceStr = formatDinarAsAlfWithUnit(totals?.remain || 0);
+      }
+    }
+
+    if (transfer.toKind === WalletPeerPartyKind.courier && transfer.toCourierId) {
+      const b = await computeMandoubWalletRemainAllTimeDinar(transfer.toCourierId);
+      toBalanceStr = formatDinarAsAlfWithUnit(b);
+    } else if (transfer.toKind === WalletPeerPartyKind.employee && transfer.toEmployeeId) {
+      const prep = await prisma.companyPreparer.findFirst({ where: { walletEmployeeId: transfer.toEmployeeId } });
+      if (prep) {
+        const totals = await getPreparerMoneyTotals(prep.id);
+        toBalanceStr = formatDinarAsAlfWithUnit(totals?.remain || 0);
+      }
+    }
+
+    const statusTitle = status === "accepted" ? "✅ <b>تم قبول التحويل</b>" : "❌ <b>تم رفض التحويل</b>";
+    text = `${statusTitle}\n\n` +
+           `<b>المبلغ:</b> ${amountStr}\n` +
+           `<b>المبلغ الحالي عند ${escapeTelegramHtml(fromName)} هو ${fromBalanceStr}</b>\n` +
+           `<b>المبلغ الحالي عند ${escapeTelegramHtml(toName)} هو ${toBalanceStr}</b>\n\n` +
+           `<b>التاريخ:</b> ${dateStr}\n` +
+           `<b>الوقت:</b> ${timeStr}`;
+  }
+
+  const notificationBotToken = await getBotTokenByPurpose("notification");
+  await sendTelegramMessage(text, { botToken: notificationBotToken });
 }
 
 /** إشعار للمندوب عند استلام أو قبول/رفض تحويله */
@@ -252,6 +308,11 @@ export async function notifyTelegramCourierTransferEvent(input: {
     await sendTelegramMessageWithKeyboardToChat(courier.telegramUserId, text, kb, courierBotToken, { disable_notification: false });
   } else {
     await sendTelegramHtmlToChat(courier.telegramUserId, text, courierBotToken, { disable_notification: false });
+  }
+
+  // إرسال نسخة للإدارة في حال القبول/الرفض النهائي للشفافية
+  if (input.kind !== "incoming" && input.transferId) {
+    await notifyTelegramAdminTransferUpdate(input.transferId, input.kind);
   }
 }
 

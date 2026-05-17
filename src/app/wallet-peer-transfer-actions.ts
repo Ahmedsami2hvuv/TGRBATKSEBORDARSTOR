@@ -14,6 +14,7 @@ import {
   notifyTelegramCourierTransferEvent,
   notifyTelegramPreparerWalletEvent,
   notifyTelegramPreparerTransferEvent,
+  notifyTelegramAdminTransferUpdate,
 } from "@/lib/telegram-notify";
 
 export type WalletPeerTransferState = { error?: string };
@@ -69,6 +70,9 @@ export async function createWalletPeerTransferFromCourier(
         toKind, toCourierId, toEmployeeId,
       },
     });
+
+    // إشعار للإدارة بالتحويل المعلق
+    await notifyTelegramAdminTransferUpdate(t.id, "pending");
 
     // إشعار للمستلم (إذا كان مندوباً)
     if (toKind === WalletPeerPartyKind.courier && toCourierId) {
@@ -147,6 +151,9 @@ export async function createWalletPeerTransferFromEmployee(
         toKind, toCourierId, toEmployeeId,
       },
     });
+
+    // إشعار للإدارة بالتحويل المعلق
+    await notifyTelegramAdminTransferUpdate(t.id, "pending");
 
     const fromName = await resolvePartyDisplayName(WalletPeerPartyKind.employee, null, selfEmployeeId);
 
@@ -240,14 +247,14 @@ export async function respondWalletPeerTransferGeneral(
     if (row.fromKind === WalletPeerPartyKind.courier && row.fromCourierId) {
       await notifyTelegramCourierTransferEvent({
         courierId: row.fromCourierId, kind: "accepted", amountDinar: row.amountDinar,
-        partyName: myName, location: row.handoverLocation
+        partyName: myName, location: row.handoverLocation, transferId: row.id
       });
     } else if (row.fromKind === WalletPeerPartyKind.employee && row.fromEmployeeId) {
       const fromPrep = await prisma.companyPreparer.findFirst({ where: { walletEmployeeId: row.fromEmployeeId } });
       if (fromPrep) {
         await notifyTelegramPreparerTransferEvent({
           preparerId: fromPrep.id, kind: "accepted", amountDinar: row.amountDinar,
-          partyName: myName, location: row.handoverLocation
+          partyName: myName, location: row.handoverLocation, transferId: row.id
         });
       }
     }
@@ -261,14 +268,14 @@ export async function respondWalletPeerTransferGeneral(
     if (row.fromKind === WalletPeerPartyKind.courier && row.fromCourierId) {
       await notifyTelegramCourierTransferEvent({
         courierId: row.fromCourierId, kind: "rejected", amountDinar: row.amountDinar,
-        partyName: myName, location: row.handoverLocation
+        partyName: myName, location: row.handoverLocation, transferId: row.id
       });
     } else if (row.fromKind === WalletPeerPartyKind.employee && row.fromEmployeeId) {
       const fromPrep = await prisma.companyPreparer.findFirst({ where: { walletEmployeeId: row.fromEmployeeId } });
       if (fromPrep) {
         await notifyTelegramPreparerTransferEvent({
           preparerId: fromPrep.id, kind: "rejected", amountDinar: row.amountDinar,
-          partyName: myName, location: row.handoverLocation
+          partyName: myName, location: row.handoverLocation, transferId: row.id
         });
       }
     }

@@ -439,6 +439,7 @@ export async function handlePreparerTelegramCallback(
             amountDinar: transfer.amountDinar,
             partyName: fromLabel,
             location: transfer.handoverLocation,
+            transferId: transfer.id,
             botToken
           });
 
@@ -503,11 +504,19 @@ export async function handlePreparerTelegramCallback(
             amountDinar: transfer.amountDinar,
             partyName: fromLabel,
             location: transfer.handoverLocation,
+            transferId: transfer.id,
             botToken
           });
           const { text, keyboard } = await renderPreparerWallet(preparer);
           await editTelegramMessage(chatId, messageId, text, keyboard, botToken);
         } else {
+          await prisma.walletPeerTransfer.update({
+            where: { id: transfer.id },
+            data: { status: "rejected", respondedAt: new Date() }
+          });
+          await notifyTelegramAdminTransferUpdate(transfer.id, "rejected");
+          await editTelegramMessage(chatId, messageId, "❌ تم رفض التحويل.", { inline_keyboard: [] }, botToken);
+        }
           await editTelegramMessage(chatId, messageId, "❌ تم رفض التحويل.", { inline_keyboard: [] }, botToken);
         }
 
@@ -919,6 +928,11 @@ export async function handlePreparerTelegramMessage(
     });
 
     await clearPreparerSession(telegramUserId);
+
+    // إشعار للإدارة بالتحويل المعلق
+    const { notifyTelegramAdminTransferUpdate } = await import("./telegram-notify");
+    await notifyTelegramAdminTransferUpdate(transfer.id, "pending");
+
     const prefix = `⏳ <b>تم إرسال طلب التحويل بقيمة ${formatDinarAsAlf(amount)} بانتظار الموافقة.</b>`;
     const { text: walletText, keyboard: walletKb } = await renderPreparerWallet(preparer, prefix);
     await sendTelegramMessageWithKeyboardToChat(chatId, walletText, walletKb, botToken);
