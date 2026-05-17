@@ -14,58 +14,74 @@ export async function handleCustomerPrivateMessage(msg: any, botToken: string): 
   const chatId = String(msg.chat.id);
   const text = msg.text?.trim() || "";
 
-  // التعامل مع أمر البداية /start
-  if (text.startsWith("/start")) {
-    const parts = text.split(" ");
-    if (parts.length > 1) {
-      const payloadBase64 = parts[1];
-      try {
-        const decodedUrl = Buffer.from(payloadBase64, "base64").toString("utf-8");
-        // استخراج الباراميترات من الرابط
-        const urlObj = new URL(decodedUrl);
-        const e = urlObj.searchParams.get("e");
-        const exp = urlObj.searchParams.get("exp");
-        const s = urlObj.searchParams.get("s");
-
-        const v = verifyEmployeeOrderPortalQuery(e, exp, s);
-        if (v.ok) {
-          const employee = await prisma.employee.findUnique({
-            where: { id: v.employeeId },
-            include: { shop: true }
-          });
-
-          if (employee) {
-            // ربط اليوزر تليجرام بالموظف/المحل إذا لم يكن مرتبطاً (اختياري حسب منطقك)
-            // هنا سنكتفي بالترحيب وعرض الخيارات
-
-            const welcomeMsg = `<b>أهلاً بك يا ${employee.name}</b>\nمن محل <b>${employee.shop.name}</b>\n\nيمكنك الآن إدارة طلباتك من هنا.`;
-
-            const keyboard: TelegramInlineKeyboard = {
-              inline_keyboard: [
-                [
-                  { text: "📦 رفع طلب جديد", url: decodedUrl },
-                ],
-                [
-                  { text: "📜 سجل الطلبات", url: `${urlObj.origin}/client/order/history?e=${e}&exp=${exp}&s=${s}` },
-                  { text: "📊 إحصائياتي", url: `${urlObj.origin}/client/order/account?e=${e}&exp=${exp}&s=${s}` }
-                ]
-              ]
-            };
-
-            await sendTelegramMessageWithKeyboardToChat(chatId, welcomeMsg, keyboard, botToken);
-            return;
-          }
-        }
-      } catch (err) {
-        console.error("[customer bot] payload error:", err);
+  // دالة لمحاولة استخراج البيانات من الرابط (سواء كان في الـ start أو كرسالة عادية)
+  const tryParsePortalUrl = async (input: string) => {
+    try {
+      let urlStr = input;
+      // إذا كان النص قادماً من /start payload
+      if (input.startsWith("/start ")) {
+        const payload = input.split(" ")[1];
+        urlStr = Buffer.from(payload, "base64").toString("utf-8");
       }
+
+      const urlObj = new URL(urlStr);
+      const e = urlObj.searchParams.get("e");
+      const exp = urlObj.searchParams.get("exp");
+      const s = urlObj.searchParams.get("s");
+
+      if (e && exp && s) {
+        const v = verifyEmployeeOrderPortalQuery(e, exp, s);
+        return { ok: v.ok, employeeId: v.employeeId, url: urlStr };
+      }
+    } catch (err) {
+      return null;
+    }
+    return null;
+  };
+
+  const v = await tryParsePortalUrl(text);
+
+  if (v && v.ok) {
+    const employee = await prisma.employee.findUnique({
+      where: { id: v.employeeId },
+      include: { shop: true }
+    });
+
+    if (employee) {
+      const welcomeMsg = `<b>أهلاً بك يا ${employee.name}</b>\nمن محل <b>${employee.shop.name}</b>\n\nلقد تم التعرف على حسابك بنجاح. يمكنك استخدام الأزرار أدناه:`;
+
+      const portalUrl = v.url;
+
+      const keyboard: TelegramInlineKeyboard = {
+        inline_keyboard: [
+          [
+            { text: "📦 رفع طلب جديد", url: portalUrl },
+          ],
+          [
+            { text: "📜 سجل الطلبات", url: portalUrl.replace("/order", "/order/history") },
+            { text: "📊 إحصائياتي", url: portalUrl.replace("/order", "/order/account") }
+          ]
+        ]
+      };
+
+      await sendTelegramMessageWithKeyboardToChat(chatId, welcomeMsg, keyboard, botToken);
+      return;
     }
   }
 
   // الرد الافتراضي
+  if (text.startsWith("/start")) {
+    await sendTelegramHtmlToChat(
+      chatId,
+      "مرحباً بك في بوت العملاء.\n\nيرجى العودة لصفحة المتصفح والضغط على زر <b>(إرسال الرابط للبوت)</b> ليتم تفعيل خياراتك هنا.",
+      botToken
+    );
+    return;
+  }
+
   await sendTelegramHtmlToChat(
     chatId,
-    "مرحباً بك في بوت العملاء.\n\nيرجى فتح رابط بوابة العميل المرسل إليك من قبل المكتب للوصول إلى خياراتك.",
+    "عذراً، لم أتعرف على هذا الرابط. يرجى إرسال رابط بوابة العميل الصحيح من المتصفح.",
     botToken
   );
 }
@@ -74,7 +90,6 @@ export async function handleCustomerPrivateMessage(msg: any, botToken: string): 
  * معالجة الـ Callbacks لبوت العملاء
  */
 export async function handleCustomerCallback(cb: any, botToken: string): Promise<void> {
-  // حالياً لا توجد أزرار انلاين تحتاج معالجة خلفية، لكن يمكن إضافة المنطق هنا مستقبلاً
   const { answerCallbackQuery } = await import("./telegram");
   await answerCallbackQuery(cb.id, "جاري المعالجة...", false, botToken).catch(() => {});
 }
