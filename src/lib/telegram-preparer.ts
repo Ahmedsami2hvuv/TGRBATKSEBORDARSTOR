@@ -21,7 +21,11 @@ import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
 import { rankRegionsByQuery, normalizeArabicSearch } from "@/lib/arabic-region-search";
 import { extractPhoneFromText, parseQuickOrder } from "@/lib/flexible-order-parse";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
-import { notifyTelegramNewOrder, notifyTelegramCourierTransferEvent } from "@/lib/telegram-notify";
+import {
+  notifyTelegramNewOrder,
+  notifyTelegramCourierTransferEvent,
+  notifyTelegramPreparerTransferEvent,
+} from "@/lib/telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 import { transferOrderToCourierInternal } from "@/lib/order-assign-courier";
 import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
@@ -425,12 +429,20 @@ export async function handlePreparerTelegramCallback(
           await writeLedgerEntriesForAcceptedTransfer(tx, updated);
         });
 
-        const fromLabel = await resolvePartyDisplayName(transfer.fromKind, transfer.fromCourierId, transfer.fromEmployeeId);
-        const toLabel = await resolvePartyDisplayName(transfer.toKind, transfer.toCourierId, transfer.toEmployeeId);
-
         if (preparer) {
-          const prefix = `✅ <b>تم قبول التحويل من ${fromLabel} بقيمة ${formatDinarAsAlf(transfer.amountDinar)} بنجاح.</b>`;
-          const { text, keyboard } = await renderPreparerWallet(preparer, prefix);
+          const fromLabel = await resolvePartyDisplayName(transfer.fromKind, transfer.fromCourierId, transfer.fromEmployeeId);
+          const toLabel = await resolvePartyDisplayName(transfer.toKind, transfer.toCourierId, transfer.toEmployeeId);
+
+          await notifyTelegramPreparerTransferEvent({
+            preparerId: preparer.id,
+            kind: "accepted",
+            amountDinar: transfer.amountDinar,
+            partyName: fromLabel,
+            location: transfer.handoverLocation,
+            botToken
+          });
+
+          const { text, keyboard } = await renderPreparerWallet(preparer);
           await editTelegramMessage(chatId, messageId, text, keyboard, botToken);
         } else if (courier) {
           // إذا كان المستلم مندوباً، نحدث رسالة القبول في بوت المندوب
@@ -484,8 +496,16 @@ export async function handlePreparerTelegramCallback(
         const toLabel = await resolvePartyDisplayName(transfer.toKind, transfer.toCourierId, transfer.toEmployeeId);
 
         if (preparer) {
-          const prefix = `❌ <b>تم رفض التحويل.</b>`;
-          const { text, keyboard } = await renderPreparerWallet(preparer, prefix);
+          const fromLabel = await resolvePartyDisplayName(transfer.fromKind, transfer.fromCourierId, transfer.fromEmployeeId);
+          await notifyTelegramPreparerTransferEvent({
+            preparerId: preparer.id,
+            kind: "rejected",
+            amountDinar: transfer.amountDinar,
+            partyName: fromLabel,
+            location: transfer.handoverLocation,
+            botToken
+          });
+          const { text, keyboard } = await renderPreparerWallet(preparer);
           await editTelegramMessage(chatId, messageId, text, keyboard, botToken);
         } else {
           await editTelegramMessage(chatId, messageId, "❌ تم رفض التحويل.", { inline_keyboard: [] }, botToken);
@@ -903,34 +923,30 @@ export async function handlePreparerTelegramMessage(
     const { text: walletText, keyboard: walletKb } = await renderPreparerWallet(preparer, prefix);
     await sendTelegramMessageWithKeyboardToChat(chatId, walletText, walletKb, botToken);
 
-    // إرسال إشعار للمستلم
-    let recipientTgId: string | null = null;
+    const fromLabel = await resolvePartyDisplayName(WalletPeerPartyKind.employee, null, preparer.walletEmployeeId);
+
+    // إرسال إشعار للمستلم باستخدام الدوال الجاهزة لتوحيد التنسيق
     if (payload.targetType === "courier") {
-      const c = await prisma.courier.findUnique({ where: { id: payload.targetId } });
-      recipientTgId = c?.telegramUserId || null;
+      await notifyTelegramCourierTransferEvent({
+        courierId: payload.targetId,
+        kind: "incoming",
+        amountDinar: new Decimal(amount),
+        partyName: fromLabel,
+        location,
+        transferId: transfer.id
+      });
     } else {
-      const p = await prisma.companyPreparer.findUnique({ where: { id: payload.targetId } });
-      recipientTgId = p?.telegramUserId || null;
-    }
-
-    if (recipientTgId) {
-      const fromLabel = await resolvePartyDisplayName(WalletPeerPartyKind.employee, null, preparer.walletEmployeeId);
-      const text = `💰 <b>طلب تحويل جديد</b>\n\nمن: <b>${fromLabel}</b>\nالمبلغ: <b>${formatDinarAsAlf(amount)}</b>\nالمكان: <b>${location}</b>\n\nهل ترغب في قبول المبلغ؟`;
-      const kb: TelegramInlineKeyboard = {
-        inline_keyboard: [
-          [
-            { text: "✅ قبول", callback_data: `p_w_tacc:${transfer.id}` },
-            { text: "❌ رفض", callback_data: `p_w_trej:${transfer.id}` }
-          ]
-        ]
-      };
-
-      let targetBotToken = botToken;
-      if (payload.targetType === "courier") {
-        targetBotToken = await getBotTokenByPurpose("courier") || botToken;
+      const targetPrep = await prisma.companyPreparer.findUnique({ where: { id: payload.targetId } });
+      if (targetPrep) {
+        await notifyTelegramPreparerTransferEvent({
+          preparerId: targetPrep.id,
+          kind: "incoming",
+          amountDinar: new Decimal(amount),
+          partyName: fromLabel,
+          location,
+          transferId: transfer.id
+        });
       }
-
-      await sendTelegramMessageWithKeyboardToChat(recipientTgId, text, kb, targetBotToken).catch(console.error);
     }
     return true;
   }

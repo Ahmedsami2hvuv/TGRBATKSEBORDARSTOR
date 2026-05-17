@@ -128,6 +128,78 @@ export async function notifyTelegramPreparerWalletEvent(input: {
   }
 }
 
+/** إشعار للمجهز عند استلام أو قبول/رفض تحويله */
+export async function notifyTelegramPreparerTransferEvent(input: {
+  preparerId: string;
+  kind: "incoming" | "accepted" | "rejected";
+  amountDinar: Decimal;
+  partyName: string;
+  location: string;
+  transferId?: string;
+  botToken?: string;
+}) {
+  const preparer = await prisma.companyPreparer.findUnique({ where: { id: input.preparerId } });
+  if (!preparer?.telegramUserId) return;
+
+  let text = "";
+  let kb: TelegramInlineKeyboard | undefined = undefined;
+
+  const amountStr = `\u200E${formatDinarAsAlf(input.amountDinar)}\u200E`;
+  const totals = await getPreparerMoneyTotals(input.preparerId);
+  const remainStr = totals ? `\u200E${formatDinarAsAlf(totals.remain)}\u200E` : "—";
+  const dateStr = `\u200E${new Date().toLocaleDateString("ar-IQ-u-nu-latn", { dateStyle: "short" })}\u200E`;
+  const walletLine = `\n\n\u200F<b>💰 المتبقي بذمة المجهز:</b> ${remainStr}`;
+
+  if (input.kind === "incoming") {
+    text = `\u200F💰 <b>تحويل مالي واصل إليك (مجهز)</b>\n\n` +
+           `\u200F<b>المرسل:</b> ${escapeTelegramHtml(input.partyName)}\n` +
+           `\u200F<b>المبلغ:</b> ${amountStr}\n` +
+           `\u200F<b>المكان:</b> ${escapeTelegramHtml(input.location)}\n` +
+           `\u200F<b>التاريخ:</b> ${dateStr}\n\n` +
+           `\u200Fهل تقبل استلام المبلغ؟` + walletLine;
+    kb = {
+      inline_keyboard: [
+        [
+          { text: "✅ قبول", callback_data: `p_w_tacc:${input.transferId}` },
+          { text: "❌ رفض", callback_data: `p_w_trej:${input.transferId}` }
+        ]
+      ]
+    };
+  } else if (input.kind === "accepted") {
+    text = `\u200F✅ <b>تم قبول تحويلك</b>\n\n` +
+           `\u200F<b>المستلم:</b> ${escapeTelegramHtml(input.partyName)}\n` +
+           `\u200F<b>المبلغ:</b> ${amountStr}\n` +
+           `\u200F<b>التاريخ:</b> ${dateStr}\n\n` +
+           `\u200Fتم خصم المبلغ من ذمتك بنجاح.` + walletLine;
+  } else if (input.kind === "rejected") {
+    text = `\u200F❌ <b>تم رفض تحويلك</b>\n\n` +
+           `\u200F<b>الطرف الآخر:</b> ${escapeTelegramHtml(input.partyName)}\n` +
+           `\u200F<b>المبلغ:</b> ${amountStr}\n` +
+           `\u200F<b>التاريخ:</b> ${dateStr}\n\n` +
+           `\u200Fالمبلغ لا يزال في ذمتك.` + walletLine;
+  }
+
+  const preparerBotToken = input.botToken || await getBotTokenByPurpose("preparer");
+  if (kb) {
+    await sendTelegramMessageWithKeyboardToChat(preparer.telegramUserId, text, kb, preparerBotToken, { disable_notification: false });
+  } else {
+    await sendTelegramHtmlToChat(preparer.telegramUserId, text, preparerBotToken, { disable_notification: false });
+  }
+
+  // إرسال نسخة للإدارة في حال القبول/الرفض النهائي للشفافية
+  if (input.kind !== "incoming") {
+    const adminBotToken = await getBotTokenByPurpose("notification");
+    const adminText = `<b>🔄 تحديث تحويل مجهز</b>\n` +
+                      `<b>المجهز:</b> ${escapeTelegramHtml(preparer.name)}\n` +
+                      `<b>الحالة:</b> ${input.kind === "accepted" ? "✅ مقبول" : "❌ مرفوض"}\n` +
+                      `<b>المبلغ:</b> ${amountStr}\n` +
+                      `<b>الطرف الآخر:</b> ${escapeTelegramHtml(input.partyName)}\n` +
+                      `-------------------------\n` +
+                      `<b>💰 المتبقي بذمته:</b> ${remainStr}`;
+    await sendTelegramMessage(adminText, { botToken: adminBotToken });
+  }
+}
+
 /** إشعار للمندوب عند استلام أو قبول/رفض تحويله */
 export async function notifyTelegramCourierTransferEvent(input: {
   courierId: string;

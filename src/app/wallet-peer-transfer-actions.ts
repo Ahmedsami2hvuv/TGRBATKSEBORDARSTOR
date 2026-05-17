@@ -10,7 +10,11 @@ import { verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-
 import { parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import { prisma } from "@/lib/prisma";
 import { resolvePartyDisplayName, writeLedgerEntriesForAcceptedTransfer } from "@/lib/wallet-peer-transfer";
-import { notifyTelegramCourierTransferEvent, notifyTelegramPreparerWalletEvent } from "@/lib/telegram-notify";
+import {
+  notifyTelegramCourierTransferEvent,
+  notifyTelegramPreparerWalletEvent,
+  notifyTelegramPreparerTransferEvent,
+} from "@/lib/telegram-notify";
 
 export type WalletPeerTransferState = { error?: string };
 
@@ -79,8 +83,9 @@ export async function createWalletPeerTransferFromCourier(
       const prep = await prisma.companyPreparer.findFirst({ where: { walletEmployeeId: toEmployeeId } });
       if (prep) {
         const fromName = await resolvePartyDisplayName(WalletPeerPartyKind.courier, v.courierId, null);
-        await notifyTelegramPreparerWalletEvent({
-          preparerId: prep.id, kind: "transfer_in", amountDinar, label: `تحويل واصل من ${fromName} — مكان التسليم: ${handoverLocation}`
+        await notifyTelegramPreparerTransferEvent({
+          preparerId: prep.id, kind: "incoming", amountDinar, partyName: fromName,
+          location: handoverLocation, transferId: t.id
         });
       }
     }
@@ -156,8 +161,9 @@ export async function createWalletPeerTransferFromEmployee(
     else if (toKind === WalletPeerPartyKind.employee && toEmployeeId) {
       const targetPrep = await prisma.companyPreparer.findFirst({ where: { walletEmployeeId: toEmployeeId } });
       if (targetPrep) {
-        await notifyTelegramPreparerWalletEvent({
-          preparerId: targetPrep.id, kind: "transfer_in", amountDinar, label: `تحويل واصل من ${fromName} — مكان التسليم: ${handoverLocation}`
+        await notifyTelegramPreparerTransferEvent({
+          preparerId: targetPrep.id, kind: "incoming", amountDinar, partyName: fromName,
+          location: handoverLocation, transferId: t.id
         });
       }
     }
@@ -239,9 +245,9 @@ export async function respondWalletPeerTransferGeneral(
     } else if (row.fromKind === WalletPeerPartyKind.employee && row.fromEmployeeId) {
       const fromPrep = await prisma.companyPreparer.findFirst({ where: { walletEmployeeId: row.fromEmployeeId } });
       if (fromPrep) {
-        await notifyTelegramPreparerWalletEvent({
-          preparerId: fromPrep.id, kind: "transfer_out_accepted", amountDinar: row.amountDinar,
-          label: `تم قبول تحويلك من قبل ${myName}`
+        await notifyTelegramPreparerTransferEvent({
+          preparerId: fromPrep.id, kind: "accepted", amountDinar: row.amountDinar,
+          partyName: myName, location: row.handoverLocation
         });
       }
     }
@@ -260,9 +266,9 @@ export async function respondWalletPeerTransferGeneral(
     } else if (row.fromKind === WalletPeerPartyKind.employee && row.fromEmployeeId) {
       const fromPrep = await prisma.companyPreparer.findFirst({ where: { walletEmployeeId: row.fromEmployeeId } });
       if (fromPrep) {
-        await notifyTelegramPreparerWalletEvent({
-          preparerId: fromPrep.id, kind: "transfer_rejected", amountDinar: row.amountDinar,
-          label: `تم رفض تحويلك من قبل ${myName}`
+        await notifyTelegramPreparerTransferEvent({
+          preparerId: fromPrep.id, kind: "rejected", amountDinar: row.amountDinar,
+          partyName: myName, location: row.handoverLocation
         });
       }
     }
