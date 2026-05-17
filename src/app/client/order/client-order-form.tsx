@@ -315,9 +315,7 @@ function ClientOrderFormInner({
           {botUsername && portalUrl && (
             <div className="mt-4">
               <a
-                href={`https://t.me/${botUsername}?text=${encodeURIComponent(portalUrl)}`}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={`tg://msg?text=${encodeURIComponent(portalUrl)}&to=@${botUsername.replace("@", "")}`}
                 className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#0088cc] py-4 text-sm font-black text-white shadow-lg shadow-sky-200 transition-all hover:bg-[#0077b5] active:scale-95 animate-pulse"
               >
                 <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
@@ -326,7 +324,7 @@ function ClientOrderFormInner({
                 إرسال الرابط للبوت (تفعيل الحساب)
               </a>
               <p className="mt-2 text-[10px] font-bold text-slate-400">
-                سيقوم الزر بكتابة الرابط تلقائياً، فقط اضغط "إرسال" داخل التليجرام.
+                سيقوم الزر بفتح البوت وكتابة الرابط تلقائياً، فقط اضغط "إرسال".
               </p>
             </div>
           )}
