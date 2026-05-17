@@ -17,7 +17,7 @@ import { notifyTelegramNewOrder } from "./telegram-notify";
 function statusAr(status: string): string {
   switch (status) {
     case "pending":
-      return "🔴 قيد المراجعة";
+      return "🔴وصل للادارة ";
     case "assigned":
       return "🔴 بانتظار المندوب";
     case "delivering":
@@ -294,11 +294,11 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
           ]
         };
 
-        await answerCallbackQuery(cb.id, "تم حفظ الطلب بنجاح", true, botToken);
+        await answerCallbackQuery(cb.id, "تم  رفع الطلب بنجاح", true, botToken);
         await deleteTelegramMessage(chatId, cb.message.message_id, botToken).catch(() => {});
         await sendTelegramMessageWithKeyboardToChat(
           chatId,
-          `✅ <b>تم حفظ الطلب بنجاح!</b>\n\nالآن: ${statusAr("pending")}`,
+          `✅ <b>تم ترفع الطلب بنجاح!</b>\n\nالآن: ${statusAr("pending")}`,
           successKb,
           botToken
         );
