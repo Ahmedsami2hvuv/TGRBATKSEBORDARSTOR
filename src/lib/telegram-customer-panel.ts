@@ -17,7 +17,7 @@ import { notifyTelegramNewOrder } from "./telegram-notify";
 function statusAr(status: string): string {
   switch (status) {
     case "pending":
-      return "🔴وصل للادارة ";
+      return "🔴وصل للادارة";
     case "assigned":
       return "🔴 بانتظار المندوب";
     case "delivering":
@@ -527,7 +527,7 @@ async function processParsedOrder(chatId: string, telegramUserId: string, payloa
       where: { telegramUserId },
       data: { payload: JSON.stringify(payload) }
     });
-    await sendTelegramHtmlToChat(chatId, "⚠️ <b>شوكت تحب يجيك المندوب؟</b>\n(مثلاً: هسة، العصر، بـ 6 مساءً):", botToken);
+    await sendTelegramHtmlToChat(chatId, "⚠️ <b>شوكت تحب يجيك المندوب؟</b>\n(مثلاً: هسة، او باجر الصبح او باجر العصر او اليوم ب4 العصر بكيفك اي شي تكتبه ):", botToken);
     return;
   }
 
