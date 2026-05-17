@@ -197,12 +197,17 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
     await answerCallbackQuery(cb.id, "جاري البدء...", false, botToken).catch(() => {});
     await sendTelegramHtmlToChat(
       chatId,
-      `<b>📦 رفع طلب جديد</b>\n\nيرجى إرسال تفاصيل الطلب في رسالة واحدة كالتالي:\n\n` +
-      `نوع الطلب: وجبة دجاج\n` +
-      `السعر: 15\n` +
-      `المنطقة: المنصور\n` +
-      `رقم الزبون: 07701234567\n\n` +
-      `أو يمكنك كتابة المعلومات بشكل مباشر وسأحاول فهمها.`,
+      `<b>📦 رفع طلب جديد</b>\n\n` +
+      `يرجى إرسال تفاصيل الطلب في رسالة واحدة كل سطر يحتوي على معلومة كالتالي:\n\n` +
+      `نوع الطلب\n` +
+      `السعر\n` +
+      `المنطقة\n` +
+      `رقم الزبون\n\n` +
+      `<b>مثال:</b>\n` +
+      `<code>بوكيه ورد\n` +
+      `15\n` +
+      `جيكور\n` +
+      `077333921468</code>`,
       botToken
     );
     return;
@@ -237,7 +242,7 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
         const subtotal = new Decimal(payload.price);
         const deliveryPrice = region?.deliveryPrice || new Decimal(0);
 
-        await prisma.order.create({
+        const order = await prisma.order.create({
           data: {
             shopId: employee.shopId,
             submittedByEmployeeId: employee.id,
@@ -257,8 +262,27 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
           data: { step: "idle", payload: "" }
         });
 
+        const waText = `طلب جديد: ${payload.type}\nالسعر: ${formatDinarAsAlf(subtotal)}\nالعنوان: ${region?.name}`;
+        const waUrl = `https://wa.me/${payload.phone.replace(/^0/, '964')}?text=${encodeURIComponent(waText)}`;
+
+        const successKb = {
+          inline_keyboard: [
+            [{ text: "💬 إرسال للواتساب", url: waUrl }],
+            [
+              { text: "📦 طلب جديد", callback_data: "new_order" },
+              { text: "🏠 الرئيسية", callback_data: "co_main" }
+            ]
+          ]
+        };
+
         await answerCallbackQuery(cb.id, "تم حفظ الطلب بنجاح", true, botToken);
-        await editTelegramMessage(chatId, cb.message.message_id, `✅ <b>تم حفظ الطلب بنجاح!</b>\n\nالآن: ${statusAr("pending")}`, { inline_keyboard: [] }, botToken);
+        await editTelegramMessage(
+          chatId,
+          cb.message.message_id,
+          `✅ <b>تم حفظ الطلب بنجاح!</b>\n\nالآن: ${statusAr("pending")}`,
+          successKb,
+          botToken
+        );
         return;
       }
     }
@@ -393,30 +417,46 @@ async function processParsedOrder(chatId: string, telegramUserId: string, payloa
       return;
     }
 
-    // البحث عن المنطقة
+    // البحث عن المناطق التي تطابق الاسم
     const regions = await prisma.region.findMany();
-    const match = regions.find(r => r.name.includes(payload.regionName) || payload.regionName.includes(r.name));
+    const searchName = payload.regionName.trim();
 
-    if (match) {
-      payload.regionId = match.id;
+    // البحث عن تطابق تام أولاً
+    const exactMatch = regions.find(r => r.name === searchName);
+
+    // البحث عن تطابقات جزئية (إذا كتب "جيكور" يجد كل الجيكورات)
+    const allMatches = regions.filter(r =>
+      r.name === searchName ||
+      r.name.includes(searchName) ||
+      searchName.includes(r.name)
+    );
+
+    if (exactMatch && allMatches.length === 1) {
+      payload.regionId = exactMatch.id;
       await prisma.telegramBotSession.update({
         where: { telegramUserId },
         data: { payload: JSON.stringify(payload) }
       });
-      // استمرار المعالجة بعد الربط
+    } else if (allMatches.length > 0) {
+      // إذا وجد أكثر من منطقة (مثل جيكور حزبة 1 و 2) نعرض خيارات
+      const kb = {
+        inline_keyboard: allMatches.slice(0, 8).map(r => [{ text: r.name, callback_data: `reg_sel:${r.id}` }])
+      };
+      await sendTelegramMessageWithKeyboardToChat(chatId, `وجدت عدة مناطق باسم "${searchName}". يرجى اختيار المنطقة الصحيحة:`, kb, botToken);
+      return;
     } else {
-      // اقتراحات المناطق
+      // البحث عن كلمات مشابهة
       const suggestions = regions.filter(r =>
-        r.name.split(" ").some(word => payload.regionName.includes(word))
+        r.name.split(" ").some(word => word.length > 2 && searchName.includes(word))
       ).slice(0, 5);
 
       if (suggestions.length > 0) {
         const kb = {
           inline_keyboard: suggestions.map(r => [{ text: r.name, callback_data: `reg_sel:${r.id}` }])
         };
-        await sendTelegramMessageWithKeyboardToChat(chatId, `لم أتعرف بدقة على المنطقة "${payload.regionName}". هل تقصد إحدى هذه؟`, kb, botToken);
+        await sendTelegramMessageWithKeyboardToChat(chatId, `لم أتعرف بدقة على المنطقة "${searchName}". هل تقصد إحدى هذه؟`, kb, botToken);
       } else {
-        await sendTelegramHtmlToChat(chatId, `عذراً، لم أجد منطقة باسم "${payload.regionName}". يرجى كتابة اسم المنطقة بشكل أوضح أو منطقة قريبة منها:`, botToken);
+        await sendTelegramHtmlToChat(chatId, `عذراً، لم أجد منطقة باسم "${searchName}". يرجى كتابة اسم المنطقة بشكل أوضح أو منطقة قريبة منها:`, botToken);
       }
       return;
     }
