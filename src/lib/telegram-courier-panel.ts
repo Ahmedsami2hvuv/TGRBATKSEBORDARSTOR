@@ -361,7 +361,23 @@ function buildOrdersKeyboard(
   }>,
 ): TelegramInlineKeyboard {
   const rows: Array<Array<{ text: string; callback_data: string }>> = [];
-  const orderBtns = orders.map((o) => {
+
+  // ترتيب الطلبات يدوياً لضمان الأحمر فوق ثم البرتقالي ثم الأخضر
+  const statusPriority: Record<string, number> = {
+    assigned: 1,   // الأحمر
+    delivering: 2, // البرتقالي
+    delivered: 3,  // الأخضر
+    archived: 4
+  };
+
+  const sortedOrders = [...orders].sort((a, b) => {
+    const pA = statusPriority[a.status] ?? 99;
+    const pB = statusPriority[b.status] ?? 99;
+    if (pA !== pB) return pA - pB;
+    return b.orderNumber - a.orderNumber; // ترتيب تنازلي لرقم الطلب داخل نفس الحالة
+  });
+
+  sortedOrders.forEach((o) => {
     const shop = (o.shopName ?? "").trim();
     const region = (o.customerRegionName ?? "").trim();
     const parts = [`#${o.orderNumber}`, shop, region].filter(Boolean);
@@ -371,14 +387,13 @@ function buildOrdersKeyboard(
     if (o.status === "delivering") prefix = "🟠 ";
     if (o.status === "delivered") prefix = "🟢 ";
 
-    return {
+    // دفع كل زر في سطر منفصل (واحد تحت الآخر) كما طلبت
+    rows.push([{
       text: (prefix + (label || `#${o.orderNumber}`)).slice(0, 64),
       callback_data: `co_order_${o.orderNumber}`,
-    };
+    }]);
   });
-  for (let i = 0; i < orderBtns.length; i += 2) {
-    rows.push(orderBtns.slice(i, i + 2));
-  }
+
   rows.push([{ text: "🏠 الرئيسية", callback_data: "co_main" }]);
   return { inline_keyboard: rows };
 }
@@ -804,11 +819,26 @@ export async function buildCourierWalletTelegramText(
 
 async function buildCourierOrdersTextAndKeyboard(courier: { id: string; name: string }, page: number): Promise<{ text: string; keyboard: TelegramInlineKeyboard }> {
   const orders = await loadCourierOrdersForTelegram(courier.id, page);
+
+  // ترتيب القائمة النصية أيضاً لتطابق ترتيب الأزرار
+  const statusPriority: Record<string, number> = {
+    assigned: 1,
+    delivering: 2,
+    delivered: 3,
+    archived: 4
+  };
+  const sortedForText = [...orders].sort((a, b) => {
+    const pA = statusPriority[a.status] ?? 99;
+    const pB = statusPriority[b.status] ?? 99;
+    if (pA !== pB) return pA - pB;
+    return b.orderNumber - a.orderNumber;
+  });
+
   const lines: string[] = [];
-  if (orders.length === 0) {
+  if (sortedForText.length === 0) {
     lines.push("لا توجد طلبات حالياً.");
   } else {
-    for (const o of orders) {
+    for (const o of sortedForText) {
       const shopName = o.shop?.name?.trim() || "—";
       lines.push(
         `• <b>#${o.orderNumber}</b> — ${escapeTelegramHtml(shopName)} — ${escapeTelegramHtml(statusAr(o.status))}`,
