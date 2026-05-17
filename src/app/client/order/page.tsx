@@ -7,6 +7,7 @@ import { getPublicAppUrl } from "@/lib/app-url";
 import { ClientOrderForm } from "./client-order-form";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getActiveBotByPurpose } from "@/lib/telegram-bots";
+import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -100,11 +101,34 @@ export default async function ClientOrderPage(props: Props) {
       ? Number(shop.region.deliveryPrice.toString()) / ALF_PER_DINAR
       : 0;
 
-    // جلب يوزر بوت العملاء من الإعدادات
+    // جلب يوزر بوت العملاء من الإعدادات وتنظيفه تماماً
     const customerBot = await getActiveBotByPurpose("customer");
-    const botUsername = customerBot?.username?.replace("@", "") || process.env.TELEGRAM_BOT_USERNAME || "";
+    const rawBotUsername = customerBot?.username || process.env.TELEGRAM_BOT_USERNAME || "";
+    const botUsername = rawBotUsername
+      .replace(/^https?:\/\/t\.me\//, "")
+      .replace(/^@/, "")
+      .trim();
 
     const portalUrl = `${getPublicAppUrl().replace(/\/+$/, "")}/client/order?e=${sp.e}&exp=${sp.exp}&s=${sp.s}`;
+
+    // توليد رمز مختصر لتجاوز حد الـ 64 حرف في تليجرام
+    // نستخدم upsert أو نتأكد من عدم وجود تكرار (رغم أن الـ hex8 احتمال تكراره ضئيل جداً)
+    const botStartParam = `pl_${randomBytes(8).toString("hex")}`;
+    await prisma.schemaPlaceholder.create({
+      data: {
+        id: botStartParam,
+        note: portalUrl,
+      },
+    });
+
+    // تنظيف بسيط "على الماشي" (اختياري) لمنع تراكم البيانات إذا لم يتم إعداد Cron
+    // سنقوم بحذف الروابط التي مضى عليها أكثر من 48 ساعة بشكل عشوائي (1 من كل 20 طلب)
+    if (Math.random() < 0.05) {
+      const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+      prisma.schemaPlaceholder.deleteMany({
+        where: { id: { startsWith: "pl_" }, createdAt: { lt: twoDaysAgo } }
+      }).catch(() => {}); // لا نريد تعطيل الطلب الحالي إذا فشل المسح
+    }
 
     return (
       <div className="kse-app-bg relative min-h-screen px-4 py-8 pb-16 text-slate-800">
@@ -125,6 +149,7 @@ export default async function ClientOrderPage(props: Props) {
             initialOrder={null}
             botUsername={botUsername}
             portalUrl={portalUrl}
+            botStartParam={botStartParam}
           />
         </div>
       </div>

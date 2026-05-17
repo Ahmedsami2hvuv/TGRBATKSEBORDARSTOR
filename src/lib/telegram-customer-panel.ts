@@ -21,7 +21,25 @@ export async function handleCustomerPrivateMessage(msg: any, botToken: string): 
       // إذا كان النص قادماً من /start payload
       if (input.startsWith("/start ")) {
         const payload = input.split(" ")[1];
-        urlStr = Buffer.from(payload, "base64").toString("utf-8");
+
+        // التعامل مع الروابط المختصرة المخزنة في SchemaPlaceholder
+        if (payload.startsWith("pl_")) {
+          const stored = await prisma.schemaPlaceholder.findUnique({
+            where: { id: payload }
+          });
+          if (stored && stored.note.startsWith("http")) {
+            urlStr = stored.note;
+          } else {
+            return null;
+          }
+        } else {
+          // المحاولة القديمة: Base64
+          try {
+            urlStr = Buffer.from(payload, "base64").toString("utf-8");
+          } catch {
+            return null;
+          }
+        }
       }
 
       const urlObj = new URL(urlStr);
