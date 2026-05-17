@@ -6,6 +6,7 @@ import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { ClientOrderForm } from "./client-order-form";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { getActiveBotByPurpose } from "@/lib/telegram-bots";
 
 export const dynamic = "force-dynamic";
 
@@ -99,7 +100,10 @@ export default async function ClientOrderPage(props: Props) {
       ? Number(shop.region.deliveryPrice.toString()) / ALF_PER_DINAR
       : 0;
 
-    const botUsername = process.env.TELEGRAM_BOT_USERNAME || "";
+    // جلب يوزر بوت العملاء من الإعدادات
+    const customerBot = await getActiveBotByPurpose("customer");
+    const botUsername = customerBot?.username?.replace("@", "") || process.env.TELEGRAM_BOT_USERNAME || "";
+
     const portalUrl = `${getPublicAppUrl().replace(/\/+$/, "")}/client/order?e=${sp.e}&exp=${sp.exp}&s=${sp.s}`;
 
     return (
