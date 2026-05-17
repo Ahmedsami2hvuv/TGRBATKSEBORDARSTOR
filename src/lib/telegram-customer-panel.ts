@@ -281,7 +281,7 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
           data: { step: "idle", payload: "" }
         });
 
-        const waText = `طلب جديد: ${payload.type}\nالسعر: ${formatDinarAsAlf(subtotal)}\nالعنوان: ${region?.name}`;
+    const waText = `طلب جديد: ${payload.type}\nالسعر: ${formatDinarAsAlf(subtotal)}\nالعنوان: ${region?.name}\nالوقت: ${payload.noteTime || 'فوري'}`;
         const waUrl = `https://wa.me/${payload.phone.replace(/^0/, '964')}?text=${encodeURIComponent(waText)}`;
 
         const successKb = {
@@ -362,17 +362,66 @@ async function processCustomerSession(msg: any, employee: any, botToken: string)
 
   if (session.step === "customer_new_order_input") {
     const payload = JSON.parse(session.payload || "{}");
+    const lines = text.split("\n").map(l => l.trim()).filter(l => l !== "");
 
-    // محاولة استخراج الحقول من النص
-    const newFields = parseOrderText(text);
-    const mergedPayload = { ...payload, ...newFields };
+    // Store the current user input for reference
+    const currentUserInput = text;
+
+    if (lines.length === 1 && !text.includes(":") && !text.includes("=")) {
+      // رد على سؤال محدد - نملأ أول حقل ناقص بالترتيب المنطقي للعملية
+      if (!payload.price) {
+        const priceMatch = text.match(/\d+(\.\d+)?/);
+        payload.price = priceMatch ? priceMatch[0] : text;
+      } else if (!payload.type) {
+        payload.type = text;
+      } else if (!payload.phone) {
+        const phoneMatch = text.match(/(?:964|0)?7[789]\d{8,11}/);
+        payload.phone = phoneMatch ? phoneMatch[0] : text;
+      } else if (!payload.noteTime) {
+        // إذا كنا ننتظر الوقت، أي مدخل من المستخدم هو الوقت
+        payload.noteTime = text;
+        // إزالة العلامات المساعدة
+        delete payload._askingForTime;
+        delete payload._lastUserInput;
+      } else if (!payload.regionId && !payload.regionName) {
+        payload.regionName = text;
+      }
+    } else {
+      // إدخال متعدد الأسطر أو معنّون
+      const newFields = parseOrderText(text);
+      // دمج الحقول الجديدة مع الحفاظ على القديمة (إلا إذا كان الإدخال صريحاً بالعناوين)
+      const hasLabels = text.includes(":") || text.includes("=");
+
+      if (newFields.type && (hasLabels || !payload.type)) payload.type = newFields.type;
+      if (newFields.price && (hasLabels || !payload.price)) payload.price = newFields.price;
+      if (newFields.regionName && (hasLabels || !payload.regionName)) payload.regionName = newFields.regionName;
+      if (newFields.phone && (hasLabels || !payload.phone)) payload.phone = newFields.phone;
+      if (newFields.noteTime && (hasLabels || !payload.noteTime)) {
+        payload.noteTime = newFields.noteTime;
+        // إزالة العلامات المساعدة
+        delete payload._askingForTime;
+        delete payload._lastUserInput;
+      }
+      
+      // إذا لم يتم العثور على حقول محددة لكن النص قد يكون وقتاً أو منطقة، نحاول ملأ الحقول الناقصة
+      if (!hasLabels && !payload.noteTime && payload.price && payload.type && payload.phone) {
+        // قد يكون هذا وقتاً - خاصة إذا كنا ننتظر الوقت
+        if (payload._askingForTime) {
+          payload.noteTime = text;
+          delete payload._askingForTime;
+          delete payload._lastUserInput;
+        } else {
+          payload.noteTime = text;
+        }
+      }
+    }
 
     await prisma.telegramBotSession.update({
       where: { telegramUserId },
-      data: { payload: JSON.stringify(mergedPayload) }
+      data: { payload: JSON.stringify(payload) }
     });
 
-    await processParsedOrder(chatId, telegramUserId, mergedPayload, botToken);
+    await processParsedOrder(chatId, telegramUserId, payload, botToken);
     return true;
   }
 
@@ -400,7 +449,7 @@ function parseOrderText(text: string) {
         const phoneMatch = value.match(/07[789]\d{8}/);
         if (phoneMatch) result.phone = phoneMatch[0];
       }
-      if (key.includes("وقت") || key.includes("ساعة") || key.includes("متى") || key.includes("شوكت")) {
+      if (key.includes("وقت") || key.includes("ساعة") || key.includes("متى") || key.includes("شوكت") || key.includes("ايمتى")) {
         result.noteTime = value;
       }
     }
@@ -408,7 +457,7 @@ function parseOrderText(text: string) {
 
   // Fallback: search anywhere if fields are still missing
   if (!result.phone) {
-    const phoneMatch = normalized.match(/07[789]\d{8}/);
+    const phoneMatch = normalized.match(/(?:964|0)?7[789]\d{8,11}/);
     if (phoneMatch) result.phone = phoneMatch[0];
   }
   if (!result.price) {
@@ -472,6 +521,12 @@ async function processParsedOrder(chatId: string, telegramUserId: string, payloa
 
   // 4. التحقق من الوقت (جديد)
   if (!payload.noteTime) {
+    // ضع علامة بأننا طلبنا الوقت
+    payload._askingForTime = true;
+    await prisma.telegramBotSession.update({
+      where: { telegramUserId },
+      data: { payload: JSON.stringify(payload) }
+    });
     await sendTelegramHtmlToChat(chatId, "⚠️ <b>شوكت تحب يجيك المندوب؟</b>\n(مثلاً: هسة، العصر، بـ 6 مساءً):", botToken);
     return;
   }
@@ -503,6 +558,7 @@ async function processParsedOrder(chatId: string, telegramUserId: string, payloa
         where: { telegramUserId },
         data: { payload: JSON.stringify(payload) }
       });
+      // استمرار المعالجة لعرض رسالة التأكيد مباشرة
     } else if (allMatches.length > 0) {
       // إذا وجد أكثر من منطقة (مثل جيكور حزبة 1 و 2) نعرض خيارات
       const kb = {
