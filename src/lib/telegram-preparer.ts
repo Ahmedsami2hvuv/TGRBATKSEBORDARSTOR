@@ -25,6 +25,7 @@ import {
   notifyTelegramNewOrder,
   notifyTelegramCourierTransferEvent,
   notifyTelegramPreparerTransferEvent,
+  notifyTelegramAdminTransferUpdate,
 } from "@/lib/telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 import { transferOrderToCourierInternal } from "@/lib/order-assign-courier";
@@ -429,10 +430,10 @@ export async function handlePreparerTelegramCallback(
           await writeLedgerEntriesForAcceptedTransfer(tx, updated);
         });
 
-        if (preparer) {
-          const fromLabel = await resolvePartyDisplayName(transfer.fromKind, transfer.fromCourierId, transfer.fromEmployeeId);
-          const toLabel = await resolvePartyDisplayName(transfer.toKind, transfer.toCourierId, transfer.toEmployeeId);
+        const fromLabel = await resolvePartyDisplayName(transfer.fromKind, transfer.fromCourierId, transfer.fromEmployeeId);
+        const toLabel = await resolvePartyDisplayName(transfer.toKind, transfer.toCourierId, transfer.toEmployeeId);
 
+        if (preparer) {
           await notifyTelegramPreparerTransferEvent({
             preparerId: preparer.id,
             kind: "accepted",
@@ -517,8 +518,6 @@ export async function handlePreparerTelegramCallback(
           await notifyTelegramAdminTransferUpdate(transfer.id, "rejected");
           await editTelegramMessage(chatId, messageId, "❌ تم رفض التحويل.", { inline_keyboard: [] }, botToken);
         }
-          await editTelegramMessage(chatId, messageId, "❌ تم رفض التحويل.", { inline_keyboard: [] }, botToken);
-        }
 
         // إشعار للمرسل
         let senderTgId: string | null = null;
@@ -533,11 +532,16 @@ export async function handlePreparerTelegramCallback(
         }
 
         if (senderTgId) {
-           let senderBotToken = botToken;
-           if (isSenderCourier) {
-             senderBotToken = await getBotTokenByPurpose("courier") || botToken;
-           }
-           await sendTelegramMessageWithKeyboardToChat(senderTgId, `❌ <b>${toLabel}</b> رفض تحويلك بقيمة <b>${formatDinarAsAlf(transfer.amountDinar)}</b>.`, { inline_keyboard: [] }, senderBotToken).catch(() => {});
+          let senderBotToken = botToken;
+          if (isSenderCourier) {
+            senderBotToken = (await getBotTokenByPurpose("courier")) || botToken;
+          }
+          await sendTelegramMessageWithKeyboardToChat(
+            senderTgId,
+            `❌ <b>${toLabel}</b> رفض تحويلك بقيمة <b>${formatDinarAsAlf(transfer.amountDinar)}</b>.`,
+            { inline_keyboard: [] },
+            senderBotToken
+          ).catch(() => {});
         }
         return true;
       }
