@@ -142,6 +142,9 @@ type CourierCallback =
   | { kind: "order_edit_field"; orderNumber: number; field: "phone" | "alt" | "lmk" | "loc" }
   | { kind: "order_pickup"; orderNumber: number }
   | { kind: "order_delivery"; orderNumber: number }
+  | { kind: "pay_exp"; orderNumber: number; type: "pickup" | "delivery" }
+  | { kind: "pay_zero"; orderNumber: number }
+  | { kind: "pay_cancel"; orderNumber: number }
   | { kind: "wallet"; tab: WalletTab; page: number }
   | { kind: "wallet_take" }
   | { kind: "wallet_give" }
@@ -239,6 +242,15 @@ function parseCourierCallbackData(raw: string): CourierCallback | null {
   const delivery = /^co_deliv_(\d+)$/.exec(t);
   if (delivery) return { kind: "order_delivery", orderNumber: Number(delivery[1]) };
 
+  const payExp = /^co_pay_exp_(\d+)_(pickup|delivery)$/.exec(t);
+  if (payExp) return { kind: "pay_exp", orderNumber: Number(payExp[1]), type: payExp[2] as any };
+
+  const payZero = /^co_pay_zero_(\d+)$/.exec(t);
+  if (payZero) return { kind: "pay_zero", orderNumber: Number(payZero[1]) };
+
+  const payCancel = /^co_pay_cancel_(\d+)$/.exec(t);
+  if (payCancel) return { kind: "pay_cancel", orderNumber: Number(payCancel[1]) };
+
   // Backward compatibility: old callbacks were `co_wallet_<page>` (tab=all).
   const mwOld = /^co_wallet_(\d+)$/.exec(t);
   if (mwOld) return { kind: "wallet", tab: "all", page: Number(mwOld[1]) };
@@ -280,11 +292,11 @@ function parseCourierCallbackData(raw: string): CourierCallback | null {
 function statusAr(status: string): string {
   switch (status) {
     case "assigned":
-      return "بانتظار المندوب";
+      return "🔴 بانتظار المندوب";
     case "delivering":
-      return "عند المندوب (تم الاستلام)";
+      return "🟠 عند المندوب (تم الاستلام)";
     case "delivered":
-      return "تم التسليم";
+      return "🟢 تم التسليم";
     case "archived":
       return "مؤرشف";
     default:
@@ -328,7 +340,7 @@ async function loadCourierOrdersForTelegram(courierId: string, page: number) {
       assignedCourierId: courierId,
       status: { in: ["assigned", "delivering", "delivered", "archived"] },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { orderNumber: "desc" },
     skip: page * pageSize,
     take: pageSize,
     include: {
@@ -345,6 +357,7 @@ function buildOrdersKeyboard(
     orderNumber: number;
     shopName?: string | null;
     customerRegionName?: string | null;
+    status: string;
   }>,
 ): TelegramInlineKeyboard {
   const rows: Array<Array<{ text: string; callback_data: string }>> = [];
@@ -353,8 +366,13 @@ function buildOrdersKeyboard(
     const region = (o.customerRegionName ?? "").trim();
     const parts = [`#${o.orderNumber}`, shop, region].filter(Boolean);
     const label = parts.join(" ").replace(/\s+/g, " ").trim();
+
+    let prefix = "🔴 ";
+    if (o.status === "delivering") prefix = "🟠 ";
+    if (o.status === "delivered") prefix = "🟢 ";
+
     return {
-      text: (label || `#${o.orderNumber}`).slice(0, 64),
+      text: (prefix + (label || `#${o.orderNumber}`)).slice(0, 64),
       callback_data: `co_order_${o.orderNumber}`,
     };
   });
@@ -503,11 +521,10 @@ function buildCourierOrderDetailKeyboard(opts: {
     { text: "📞 اتصال", callback_data: `co_call_${on}` },
   ]);
 
-  if (order.status === "assigned" || order.status === "delivering") {
-    inline.push([
-      { text: "✅ تم استلام الطلب", callback_data: `co_pick_${on}` },
-      { text: "✅ تم تسليم الطلب", callback_data: `co_deliv_${on}` },
-    ]);
+  if (order.status === "assigned") {
+    inline.push([{ text: "🟠 تم استلام الطلب", callback_data: `co_pick_${on}` }]);
+  } else if (order.status === "delivering") {
+    inline.push([{ text: "🟢 تم تسليم الطلب", callback_data: `co_deliv_${on}` }]);
   }
 
   inline.push([
@@ -804,6 +821,7 @@ async function buildCourierOrdersTextAndKeyboard(courier: { id: string; name: st
       orderNumber: o.orderNumber,
       shopName: o.shop?.name ?? "",
       customerRegionName: o.customerRegion?.name ?? o.shop?.region?.name ?? "",
+      status: o.status,
     })),
   );
   return { text, keyboard };
@@ -862,14 +880,25 @@ async function beginCourierPickupAmountStep(
   expectedAlf: string,
   botToken?: string,
 ): Promise<void> {
-  const res = await sendTelegramMessageWithForceReply(
+  const kb: TelegramInlineKeyboard = {
+    inline_keyboard: [
+      [{ text: `✅ دفع المتوقع (${expectedAlf})`, callback_data: `co_pay_exp_${orderNumber}_pickup` }],
+      [{ text: "❌ إلغاء", callback_data: `co_pay_cancel_${orderNumber}` }],
+    ]
+  };
+  const res = await sendTelegramMessageWithKeyboardToChat(
     chatId,
     `<b>💳 استلام الطلب — طلب #${orderNumber}</b>\n` +
       `المتوقع تقريباً: <b>${escapeTelegramHtml(expectedAlf)}</b> \n\n` +
-      `أرسل المبلغ الذي دفعته للعميل <b></b> (ردّ على هذه الرسالة):`,
-    { placeholder: "", botToken },
+      `أرسل المبلغ الذي دفعته للعميل <b></b> (ردّ على هذه الرسالة) أو استخدم الأزرار:`,
+    kb,
+    botToken,
   );
   if (!res.ok || res.messageId == null) return;
+  // Note: we still need force_reply if we want to catch the typed message reliably,
+  // but standard message sending with keyboard is easier to manage with quick buttons.
+  // Actually, the current system uses reply_to_message check.
+  // Let's send a separate force reply message if they want to type, OR just handle it via session.
   await upsertCourierSession(
     telegramUserId,
     chatId,
@@ -886,12 +915,20 @@ async function beginCourierDeliveryAmountStep(
   expectedAlf: string,
   botToken?: string,
 ): Promise<void> {
-  const res = await sendTelegramMessageWithForceReply(
+  const kb: TelegramInlineKeyboard = {
+    inline_keyboard: [
+      [{ text: `✅ استلام المتوقع (${expectedAlf})`, callback_data: `co_pay_exp_${orderNumber}_delivery` }],
+      [{ text: "🟡 تم التسليم بدون استلام (0)", callback_data: `co_pay_zero_${orderNumber}` }],
+      [{ text: "❌ إلغاء", callback_data: `co_pay_cancel_${orderNumber}` }],
+    ]
+  };
+  const res = await sendTelegramMessageWithKeyboardToChat(
     chatId,
     `<b>💸 استلام من الزبون — طلب #${orderNumber}</b>\n` +
       `المتوقع تقريباً: <b>${escapeTelegramHtml(expectedAlf)}</b> \n\n` +
-      `أرسل المبلغ الذي استلمته من الزبون <b></b> (ردّ على هذه الرسالة):`,
-    { placeholder: "", botToken },
+      `أرسل المبلغ الذي استلمته من الزبون <b></b> (ردّ على هذه الرسالة) أو استخدم الأزرار:`,
+    kb,
+    botToken,
   );
   if (!res.ok || res.messageId == null) return;
   await upsertCourierSession(
@@ -1422,6 +1459,82 @@ export async function handleCourierCallback({
     }
     const expectedAlf = formatDinarAsAlf(order.totalAmount);
     await beginCourierDeliveryAmountStep(chatId, telegramUserId, order.orderNumber, expectedAlf, botToken);
+    return;
+  }
+
+  if (parsed.kind === "pay_exp") {
+    const order = await loadCourierOrderDetailForTelegram(courier.id, parsed.orderNumber);
+    if (!order) {
+      await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken).catch(() => {});
+      return;
+    }
+    const expected = parsed.type === "pickup" ? order.orderSubtotal : order.totalAmount;
+    if (expected == null) {
+      await answerCallbackQuery(cq.id, "المبلغ المتوقع غير محدد.", true, botToken).catch(() => {});
+      return;
+    }
+    if (parsed.type === "pickup") {
+      await completeCourierPickupTx(courier, order, expected, true, "", botToken);
+    } else {
+      await completeCourierDeliveryTx(courier, order, expected, true, "", botToken);
+    }
+    await clearCourierSession(telegramUserId);
+    await deleteThenSendCourierMessage({
+      chatId,
+      messageId: cq.message.message_id,
+      text: `✅ تم تسجيل ${parsed.type === "pickup" ? "الدفع للعميل" : "الاستلام من الزبون"} بالمبلغ المتوقع.`,
+      keyboard: { inline_keyboard: [[{ text: "⬅️ فتح الطلب", callback_data: `co_order_${order.orderNumber}` }]] },
+      botToken,
+    });
+    return;
+  }
+
+  if (parsed.kind === "pay_zero") {
+    const order = await loadCourierOrderDetailForTelegram(courier.id, parsed.orderNumber);
+    if (!order) {
+      await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken).catch(() => {});
+      return;
+    }
+    const res = await sendTelegramMessageWithForceReply(
+      chatId,
+      "❗ إتمام بدون استلام مبلغا. اكتب ملاحظة (سبب عدم استلام مبلغ) — ردّ على هذه الرسالة:",
+      { placeholder: "ملاحظة", botToken },
+    );
+    if (!res.ok || res.messageId == null) return;
+    await upsertCourierSession(
+      telegramUserId,
+      chatId,
+      "courier_delivery_note",
+      order.orderNumber,
+      JSON.stringify({
+        promptMessageId: res.messageId,
+        amountDinar: "0",
+      }),
+    );
+    return;
+  }
+
+  if (parsed.kind === "pay_cancel") {
+    await clearCourierSession(telegramUserId);
+    const order = await loadCourierOrderDetailForTelegram(courier.id, parsed.orderNumber);
+    if (order) {
+      const hasCustomerLocation = Boolean(mergedOrderCustomerLoc(order));
+      const text = formatOrderDetailHtml(order);
+      const keyboard = buildCourierOrderDetailKeyboard({
+        order,
+        courier: { id: courier.id },
+        hasCustomerLocation,
+      });
+      await deleteThenSendCourierMessage({
+        chatId,
+        messageId: cq.message.message_id,
+        text,
+        keyboard,
+        botToken,
+      });
+    } else {
+      await editTelegramMessage(chatId, cq.message.message_id, "تم الإلغاء.", { inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "co_main" }]] }, botToken).catch(() => {});
+    }
     return;
   }
 
