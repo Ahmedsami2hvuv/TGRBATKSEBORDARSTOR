@@ -6,6 +6,7 @@ import {
 } from "./telegram";
 import { buildEmployeeOrderPortalUrl, verifyEmployeeOrderPortalQuery } from "./employee-order-portal-link";
 import { getPublicAppUrl } from "./app-url";
+import { Decimal } from "@prisma/client/runtime/library";
 
 /**
  * بناء لوحة تحكم العميل (الموظف)
@@ -14,7 +15,7 @@ function buildCustomerKeyboard(portalUrl: string): TelegramInlineKeyboard {
   return {
     inline_keyboard: [
       [
-        { text: "📦 رفع طلب جديد", url: portalUrl },
+        { text: "📦 رفع طلب جديد", callback_data: "new_order" },
       ],
       [
         { text: "📜 سجل الطلبات", url: portalUrl.replace("/order", "/order/history") },
@@ -80,60 +81,62 @@ export async function handleCustomerPrivateMessage(msg: any, botToken: string): 
 
   const v = await tryParsePortalUrl(text);
 
+  // البحث عن الموظف أولاً لاستخدامه في حالة عدم وجود رابط
+  const employee = await prisma.employee.findUnique({
+    where: { telegramUserId },
+    include: { shop: true }
+  });
+
   if (v && v.ok) {
-    const employee = await prisma.employee.findUnique({
+    const targetEmployee = await prisma.employee.findUnique({
       where: { id: v.employeeId },
       include: { shop: true }
     });
 
-    if (employee) {
-      // إلغاء أي ربط سابق لهذا المستخدم لضمان عدم حدوث خطأ Unique constraint
-      await prisma.employee.updateMany({
-        where: { telegramUserId },
-        data: { telegramUserId: null }
-      });
+    if (targetEmployee) {
+      // استخدام Transaction لضمان الذرية ومنع Race Conditions
+      await prisma.$transaction([
+        // 1. إلغاء أي ربط سابق لهذا المستخدم لضمان عدم حدوث خطأ Unique constraint
+        prisma.employee.updateMany({
+          where: { telegramUserId },
+          data: { telegramUserId: null }
+        }),
+        // 2. ربط الحساب بالتيليجرام
+        prisma.employee.update({
+          where: { id: targetEmployee.id },
+          data: { telegramUserId }
+        })
+      ]);
 
-      // ربط الحساب بالتيليجرام
-      await prisma.employee.update({
-        where: { id: employee.id },
-        data: { telegramUserId }
-      });
-
-      const welcomeMsg = `<b>أهلاً بك يا ${employee.name}</b>\nمن محل <b>${employee.shop.name}</b>\n\nلقد تم تفعيل حسابك بنجاح. يمكنك استخدام الأزرار أدناه:`;
+      const welcomeMsg = `<b>أهلاً بك يا ${targetEmployee.name}</b>\nمن محل <b>${targetEmployee.shop.name}</b>\n\nلقد تم تفعيل حسابك بنجاح. يمكنك استخدام الأزرار أدناه:`;
 
       await sendTelegramMessageWithKeyboardToChat(chatId, welcomeMsg, buildCustomerKeyboard(v.url), botToken);
       return;
     }
   }
 
-  // إذا لم يكن رابطاً، نتحقق إذا كان المستخدم مسجلاً مسبقاً
-  const existingEmployee = await prisma.employee.findUnique({
-    where: { telegramUserId },
-    include: { shop: true }
-  });
+  // إذا كان المستخدم مسجلاً، نتحقق من وجود جلسة نشطة لرفع طلب
+  if (employee) {
+    const sessionHandled = await processCustomerSession(msg, employee, botToken);
+    if (sessionHandled) return;
+  }
 
-  if (existingEmployee) {
-    const portalUrl = buildEmployeeOrderPortalUrl(existingEmployee.id, existingEmployee.orderPortalToken, getPublicAppUrl());
-    const msgText = `<b>لوحة تحكم ${existingEmployee.name}</b>\nمحل: <b>${existingEmployee.shop.name}</b>`;
-    await sendTelegramMessageWithKeyboardToChat(chatId, msgText, buildCustomerKeyboard(portalUrl), botToken);
+  // إذا لم يكن رابطاً، نتحقق إذا كان المستخدم مسجلاً مسبقاً
+  if (employee) {
+    const portalUrl = buildEmployeeOrderPortalUrl(employee.id, employee.orderPortalToken, getPublicAppUrl());
+    if (text.startsWith("/start")) {
+      const msgText = `<b>أهلاً ${employee.name}</b>\nمحل: <b>${employee.shop.name}</b>\n\nاختر من الأزرار أدناه للتنقل:`;
+      await sendTelegramMessageWithKeyboardToChat(chatId, msgText, buildCustomerKeyboard(portalUrl), botToken);
+    } else {
+      // إذا أرسل رسالة عادية وهو مسجل، نذكره بالخيارات
+      const msgText = `أهلاً بك. لرفع طلب جديد اضغط على الزر أدناه:`;
+      await sendTelegramMessageWithKeyboardToChat(chatId, msgText, buildCustomerKeyboard(portalUrl), botToken);
+    }
     return;
   }
 
-  // الرد الافتراضي
+  // الرد الافتراضي لغير المسجلين
   if (text.startsWith("/start")) {
-    // في حال كان المستخدم مسجلاً وطلب /start، نعرض له اللوحة مباشرة
-    const employee = await prisma.employee.findUnique({
-      where: { telegramUserId },
-      include: { shop: true }
-    });
-
-    if (employee) {
-      const portalUrl = buildEmployeeOrderPortalUrl(employee.id, employee.orderPortalToken, getPublicAppUrl());
-      const msgText = `<b>لوحة تحكم ${employee.name}</b>\nمحل: <b>${employee.shop.name}</b>`;
-      await sendTelegramMessageWithKeyboardToChat(chatId, msgText, buildCustomerKeyboard(portalUrl), botToken);
-      return;
-    }
-
     await sendTelegramHtmlToChat(
       chatId,
       "مرحباً بك في بوت العملاء.\n\nيرجى العودة لصفحة المتصفح والضغط على زر <b>(إرسال الرابط للبوت)</b> ليتم تفعيل خياراتك هنا.",
@@ -153,31 +156,249 @@ export async function handleCustomerPrivateMessage(msg: any, botToken: string): 
  * معالجة الـ Callbacks لبوت العملاء
  */
 export async function handleCustomerCallback(cb: any, botToken: string): Promise<void> {
-  const { answerCallbackQuery, editTelegramMessage } = await import("./telegram");
+  const { answerCallbackQuery, editTelegramMessage, sendTelegramHtmlToChat, sendTelegramMessageWithForceReply } = await import("./telegram");
   const telegramUserId = String(cb.from.id);
   const chatId = String(cb.message.chat.id);
 
   if (cb.data === "logout") {
-    await prisma.employee.updateMany({
+    // ... logic ...
+  }
+
+  if (cb.data === "new_order") {
+    await prisma.telegramBotSession.upsert({
       where: { telegramUserId },
-      data: { telegramUserId: null }
+      create: { telegramUserId, chatId, step: "customer_new_order_input" },
+      update: { step: "customer_new_order_input", payload: "{}" }
     });
 
-    await prisma.telegramBotSession.updateMany({
+    await answerCallbackQuery(cb.id, "جاري البدء...", false, botToken).catch(() => {});
+    await sendTelegramHtmlToChat(
+      chatId,
+      `<b>📦 رفع طلب جديد</b>\n\nيرجى إرسال تفاصيل الطلب في رسالة واحدة كالتالي:\n\n` +
+      `نوع الطلب: وجبة دجاج\n` +
+      `السعر: 15\n` +
+      `المنطقة: المنصور\n` +
+      `رقم الزبون: 07701234567`,
+      botToken
+    );
+    return;
+  }
+
+  if (cb.data.startsWith("reg_sel:")) {
+    const regionId = cb.data.split(":")[1];
+    const session = await prisma.telegramBotSession.findUnique({ where: { telegramUserId } });
+    if (session && session.step === "customer_new_order_input") {
+      const payload = JSON.parse(session.payload || "{}");
+      payload.regionId = regionId;
+      await prisma.telegramBotSession.update({
+        where: { telegramUserId },
+        data: { payload: JSON.stringify(payload) }
+      });
+      await answerCallbackQuery(cb.id, "تم اختيار المنطقة", false, botToken);
+
+      // نتحقق من الحقول الناقصة مرة أخرى
+      await processParsedOrder(chatId, telegramUserId, payload, botToken);
+      return;
+    }
+  }
+
+  if (cb.data === "confirm_order") {
+    const session = await prisma.telegramBotSession.findUnique({ where: { telegramUserId } });
+    if (session && session.step === "customer_new_order_input") {
+      const payload = JSON.parse(session.payload || "{}");
+      const employee = await prisma.employee.findUnique({ where: { telegramUserId }, include: { shop: true } });
+
+      if (employee && payload.type && payload.price && payload.regionId && payload.phone) {
+        const region = await prisma.region.findUnique({ where: { id: payload.regionId } });
+        const subtotal = new Decimal(payload.price);
+        const deliveryPrice = region?.deliveryPrice || new Decimal(0);
+
+        await prisma.order.create({
+          data: {
+            shopId: employee.shopId,
+            submittedByEmployeeId: employee.id,
+            orderType: payload.type,
+            customerPhone: payload.phone,
+            customerRegionId: payload.regionId,
+            orderSubtotal: subtotal,
+            deliveryPrice: deliveryPrice,
+            totalAmount: subtotal.plus(deliveryPrice),
+            status: "pending",
+            submissionSource: "telegram_customer"
+          }
+        });
+
+        await prisma.telegramBotSession.update({
+          where: { telegramUserId },
+          data: { step: "idle", payload: "" }
+        });
+
+        await answerCallbackQuery(cb.id, "تم حفظ الطلب بنجاح", true, botToken);
+        await editTelegramMessage(chatId, cb.message.message_id, "✅ <b>تم حفظ الطلب بنجاح!</b>\nسيتم مراجعته من قبل الإدارة.", { inline_keyboard: [] }, botToken);
+        return;
+      }
+    }
+  }
+
+  if (cb.data === "cancel_order") {
+    await prisma.telegramBotSession.update({
       where: { telegramUserId },
       data: { step: "idle", payload: "" }
     });
-
-    await answerCallbackQuery(cb.id, "تم تسجيل الخروج بنجاح", false, botToken).catch(() => {});
-    await editTelegramMessage(
-      chatId,
-      cb.message.message_id,
-      "<b>تم تسجيل الخروج</b>\n\nتم إلغاء ربط حسابك بهذا البوت. يمكنك إعادة الربط في أي وقت من خلال البوابة.",
-      { inline_keyboard: [] },
-      botToken
-    ).catch(() => {});
+    await answerCallbackQuery(cb.id, "تم الإلغاء", false, botToken);
+    await editTelegramMessage(chatId, cb.message.message_id, "❌ تم إلغاء رفع الطلب.", { inline_keyboard: [] }, botToken);
     return;
   }
 
   await answerCallbackQuery(cb.id, "جاري المعالجة...", false, botToken).catch(() => {});
+}
+
+/**
+ * معالجة مدخلات الجلسة للعميل
+ */
+async function processCustomerSession(msg: any, employee: any, botToken: string): Promise<boolean> {
+  const telegramUserId = String(msg.from.id);
+  const chatId = String(msg.chat.id);
+  const text = msg.text?.trim() || "";
+
+  const session = await prisma.telegramBotSession.findUnique({ where: { telegramUserId } });
+  if (!session || !session.step.startsWith("customer_")) return false;
+
+  if (session.step === "customer_new_order_input") {
+    const payload = JSON.parse(session.payload || "{}");
+
+    // محاولة استخراج الحقول من النص
+    const newFields = parseOrderText(text);
+    const mergedPayload = { ...payload, ...newFields };
+
+    await prisma.telegramBotSession.update({
+      where: { telegramUserId },
+      data: { payload: JSON.stringify(mergedPayload) }
+    });
+
+    await processParsedOrder(chatId, telegramUserId, mergedPayload, botToken);
+    return true;
+  }
+
+  return false;
+}
+
+function parseOrderText(text: string) {
+  const lines = text.split("\n");
+  const result: any = {};
+
+  for (const line of lines) {
+    const [key, ...valParts] = line.split(":");
+    if (!valParts.length) continue;
+    const value = valParts.join(":").trim();
+    const k = key.trim();
+
+    if (k.includes("نوع") || k.includes("طلب")) result.type = value;
+    if (k.includes("سعر") || k.includes("مبلغ")) {
+       const priceMatch = value.match(/\d+(\.\d+)?/);
+       if (priceMatch) result.price = priceMatch[0];
+    }
+    if (k.includes("منطقة") || k.includes("عنوان")) result.regionName = value;
+    if (k.includes("رقم") || k.includes("هاتف")) {
+       const phoneMatch = value.match(/07[789]\d{8}/);
+       if (phoneMatch) result.phone = phoneMatch[0];
+    }
+  }
+
+  // دعم الإدخال العشوائي إذا لم تكن هناك علامات (:)
+  if (Object.keys(result).length === 0) {
+    // محاولة استخراج الرقم
+    const phoneMatch = text.match(/07[789]\d{8}/);
+    if (phoneMatch) result.phone = phoneMatch[0];
+
+    // محاولة استخراج السعر
+    const priceMatch = text.match(/\b\d+(\.\d+)?\b/);
+    if (priceMatch) result.price = priceMatch[0];
+  }
+
+  return result;
+}
+
+async function processParsedOrder(chatId: string, telegramUserId: string, payload: any, botToken: string) {
+  const { sendTelegramHtmlToChat, sendTelegramMessageWithKeyboardToChat } = await import("./telegram");
+
+  // 1. التحقق من السعر
+  if (!payload.price) {
+    await sendTelegramHtmlToChat(chatId, "⚠️ يرجى تزويدنا <b>بسعر الطلب</b> (بالآلاف، مثلاً 15 أو 22.5):", botToken);
+    return;
+  }
+
+  // 2. التحقق من النوع
+  if (!payload.type) {
+    await sendTelegramHtmlToChat(chatId, "⚠️ يرجى تزويدنا <b>بنوع الطلب</b> (مثلاً: وجبة، غسالة، إلخ):", botToken);
+    return;
+  }
+
+  // 3. التحقق من الرقم
+  if (!payload.phone) {
+    await sendTelegramHtmlToChat(chatId, "⚠️ يرجى تزويدنا <b>برقم هاتف الزبون</b> (07...):", botToken);
+    return;
+  }
+
+  // 4. التحقق من المنطقة
+  if (!payload.regionId) {
+    if (!payload.regionName) {
+      await sendTelegramHtmlToChat(chatId, "⚠️ يرجى تزويدنا <b>بمنطقة الزبون</b>:", botToken);
+      return;
+    }
+
+    // البحث عن المنطقة
+    const regions = await prisma.region.findMany();
+    const match = regions.find(r => r.name.includes(payload.regionName) || payload.regionName.includes(r.name));
+
+    if (match) {
+      payload.regionId = match.id;
+      await prisma.telegramBotSession.update({
+        where: { telegramUserId },
+        data: { payload: JSON.stringify(payload) }
+      });
+      // استمرار المعالجة بعد الربط
+    } else {
+      // اقتراحات المناطق
+      const suggestions = regions.filter(r =>
+        r.name.split(" ").some(word => payload.regionName.includes(word))
+      ).slice(0, 5);
+
+      if (suggestions.length > 0) {
+        const kb = {
+          inline_keyboard: suggestions.map(r => [{ text: r.name, callback_data: `reg_sel:${r.id}` }])
+        };
+        await sendTelegramMessageWithKeyboardToChat(chatId, `لم أتعرف بدقة على المنطقة "${payload.regionName}". هل تقصد إحدى هذه؟`, kb, botToken);
+      } else {
+        await sendTelegramHtmlToChat(chatId, `عذراً، لم أجد منطقة باسم "${payload.regionName}". يرجى كتابة اسم المنطقة بشكل أوضح أو منطقة قريبة منها:`, botToken);
+      }
+      return;
+    }
+  }
+
+  // إذا اكتملت البيانات، نعرض التأكيد
+  if (payload.type && payload.price && payload.regionId && payload.phone) {
+    const region = await prisma.region.findUnique({ where: { id: payload.regionId } });
+    const subtotal = payload.price;
+    const delivery = region?.deliveryPrice || 0;
+    const total = Number(subtotal) + Number(delivery);
+
+    const confirmText = `<b>تأكيد الطلب:</b>\n\n` +
+      `📦 النوع: ${payload.type}\n` +
+      `💵 السعر: ${subtotal} ألف\n` +
+      `📍 المنطقة: ${region?.name}\n` +
+      `📞 الزبون: ${payload.phone}\n` +
+      `🚚 التوصيل: ${delivery} ألف\n` +
+      `💰 الإجمالي: ${total} ألف\n\n` +
+      `هل البيانات صحيحة؟`;
+
+    const kb = {
+      inline_keyboard: [
+        [{ text: "✅ نعم، حفظ الطلب", callback_data: "confirm_order" }],
+        [{ text: "❌ إلغاء", callback_data: "cancel_order" }]
+      ]
+    };
+
+    await sendTelegramMessageWithKeyboardToChat(chatId, confirmText, kb, botToken);
+  }
 }

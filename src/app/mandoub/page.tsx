@@ -40,6 +40,7 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 import { mandoubOrdersStampSig } from "@/lib/mandoub-order-stamps";
+import { randomBytes } from "crypto";
 
 // هذه الصفحة تعتمد على searchParams + cookies، لذلك يجب أن تكون ديناميكية دائماً.
 export const dynamic = "force-dynamic";
@@ -186,7 +187,26 @@ export default async function MandoubPage({ searchParams }: Props) {
   const botInfo = botToken ? await fetch(`https://api.telegram.org/bot${botToken}/getMe`).then(r => r.json()).catch(() => null) : null;
   const botUsername = botInfo?.result?.username;
   const portalUrl = buildDelegatePortalUrl(courier.id, getPublicAppUrl());
-  const telegramLink = botUsername ? `https://t.me/${botUsername}?start=${Buffer.from(portalUrl).toString("base64")}` : null;
+
+  let telegramLink = null;
+  if (botUsername) {
+    const botStartParam = `pl_${randomBytes(8).toString("hex")}`;
+    await prisma.schemaPlaceholder.create({
+      data: {
+        id: botStartParam,
+        note: portalUrl,
+      },
+    });
+    telegramLink = `https://t.me/${botUsername}?start=${botStartParam}`;
+  }
+
+  // تنظيف دوري للروابط القديمة (5% من الطلبات)
+  if (Math.random() < 0.05) {
+    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    prisma.schemaPlaceholder.deleteMany({
+      where: { id: { startsWith: "pl_" }, createdAt: { lt: twoDaysAgo } }
+    }).catch(() => {});
+  }
 
   const totalsBaseline = courier.mandoubTotalsResetAt;
 

@@ -2298,16 +2298,19 @@ export async function handleCourierPrivateTextMessage({
 
   const linkMatch = await tryParseCourierLink(message.text || "");
   if (linkMatch && linkMatch.ok) {
-    // إلغاء أي ربط سابق لهذا المستخدم
-    await prisma.courier.updateMany({
-      where: { telegramUserId },
-      data: { telegramUserId: null }
-    });
-
-    await prisma.courier.update({
-      where: { id: linkMatch.courierId },
-      data: { telegramUserId }
-    });
+    // استخدام Transaction لضمان الذرية ومنع Race Conditions
+    await prisma.$transaction([
+      // 1. إلغاء أي ربط سابق لهذا المستخدم
+      prisma.courier.updateMany({
+        where: { telegramUserId },
+        data: { telegramUserId: null }
+      }),
+      // 2. ربط الحساب الجديد
+      prisma.courier.update({
+        where: { id: linkMatch.courierId },
+        data: { telegramUserId }
+      })
+    ]);
 
     const updatedCourier = await getCourierByTelegramUserId(telegramUserId);
     if (updatedCourier) {
