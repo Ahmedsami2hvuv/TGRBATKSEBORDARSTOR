@@ -2210,7 +2210,12 @@ async function processCourierWalletSessionMessage(
       chatId,
       `✅ تم تسجيل العملية بنجاح.\n\n` +
       `💵 <b>المتبقي بذمتك حالياً:</b> ${formatDinarAsAlf(walletTotal)}`,
-      { inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "co_main" }]] },
+      {
+        inline_keyboard: [
+          [{ text: "💼 محفظتي", callback_data: "co_wallet_all_0" }],
+          [{ text: "🏠 الرئيسية", callback_data: "co_main" }]
+        ]
+      },
       botToken
     );
     return true;
@@ -2304,7 +2309,12 @@ async function processCourierWalletSessionMessage(
     await sendTelegramMessageWithKeyboardToChat(
       chatId,
       `✅ تم إرسال طلب التحويل بنجاح.\nالمبلغ: ${formatDinarAsAlf(amount)}\nالمكان: ${loc}\n\nبانتظار قبول الطرف الآخر.`,
-      { inline_keyboard: [[{ text: "🏠 الرئيسية", callback_data: "co_main" }]] },
+      {
+        inline_keyboard: [
+          [{ text: "💼 محفظتي", callback_data: "co_wallet_all_0" }],
+          [{ text: "🏠 الرئيسية", callback_data: "co_main" }]
+        ]
+      },
       botToken
     );
 
