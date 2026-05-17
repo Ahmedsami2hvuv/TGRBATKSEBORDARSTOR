@@ -764,18 +764,23 @@ export async function buildCourierWalletTelegramText(
   const walletRemain = await computeMandoubWalletRemainAllTimeDinar(courier.id);
   const handToAdmin = mandoubHandToAdminDinar(walletRemain, orderMetrics.sumEarnings);
 
-  const remainSiteValue = formatDinarAsAlf(orderOnlySums.remainingNet);
   const walletInValue = formatDinarAsAlf(walletInOutDisplay.walletIn);
   const walletOutValue = formatDinarAsAlf(walletInOutDisplay.walletOut);
+  const walletNetValue = formatDinarAsAlf(walletInOutDisplay.walletIn.minus(walletInOutDisplay.walletOut));
+
+  const orderSumOutValue = formatDinarAsAlf(orderOnlySums.sumOut);
+  const orderSumInValue = formatDinarAsAlf(orderOnlySums.sumIn);
+
   const earningsValue = formatDinarAsAlf(orderMetrics.sumEarnings);
   const walletRemainValue = formatDinarAsAlf(walletRemain);
   const handToAdminValue = formatDinarAsAlf(handToAdmin);
 
-  // تصميم الرسالة الجديد حسب طلبك
+  // تصميم الرسالة الجديد حسب طلبك (محاذاة مع الموقع)
   const text = `<b>💼 محفظتي</b>\n\n` +
-    `صادر: <b>${walletOutValue}</b> | وارد: <b>${walletInValue}</b> | متبقي: <b>${walletRemainValue}</b>\n\n` +
-    `مجموع الصادر: <b>${formatDinarAsAlf(orderOnlySums.sumOut)}</b> | مجموع الوارد: <b>${formatDinarAsAlf(orderOnlySums.sumIn)}</b>\n\n` +
-    `يسلم للإدارة: <b>${handToAdminValue}</b>`;
+    `صادر المحفظة: <b>${walletOutValue}</b> | وارد المحفظة: <b>${walletInValue}</b> | متبقي المحفظة: <b>${walletNetValue}</b>\n` +
+    `مجموع الصادر: <b>${orderSumOutValue}</b> | مجموع الوارد: <b>${orderSumInValue}</b> | عندي: <b>${walletRemainValue}</b>\n\n` +
+    `💰 <b>أرباحي: ${earningsValue}</b>\n` +
+    `🏛️ <b>يسلم للإدارة: ${handToAdminValue}</b>`;
 
   const baseUrl = getPublicAppUrl();
   const portalUrl = buildDelegatePortalUrl(courier.id, baseUrl);
@@ -1511,21 +1516,28 @@ export async function handleCourierCallback({
   if (parsed.kind === "wallet_take" || parsed.kind === "wallet_give") {
     const isTake = parsed.kind === "wallet_take";
     const label = isTake ? "أخذت" : "أعطيت";
-    const res = await sendTelegramMessageWithForceReply(
+    const example = isTake ? "10\nأخذت من فلان شخص" : "10\nسلمت لفلان شخص";
+
+    const text = `<b>💰 تسجيل عملية (${label})</b>\n\n` +
+      `اكتب المبلغ وتحته اسم المعاملة\n` +
+      `مثال:\n` +
+      `<code>${example}</code>`;
+
+    await deleteThenSendCourierMessage({
       chatId,
-      `<b>💰 تسجيل عملية (${label})</b>\n\n` +
-      `أرسل المبلغ بالآلاف (مثلاً 5 أو 10.5) - ردّ على هذه الرسالة:`,
-      { botToken }
+      messageId: cq.message.message_id,
+      text,
+      keyboard: { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "co_wallet_all_0" }]] },
+      botToken
+    });
+
+    await upsertCourierSession(
+      telegramUserId,
+      chatId,
+      isTake ? "courier_w_take_input" : "courier_w_give_input",
+      null,
+      "{}"
     );
-    if (res.ok && res.messageId) {
-      await upsertCourierSession(
-        telegramUserId,
-        chatId,
-        isTake ? "courier_w_take_amt" : "courier_w_give_amt",
-        null,
-        JSON.stringify({ promptMessageId: res.messageId })
-      );
-    }
     return;
   }
 
@@ -2146,41 +2158,43 @@ async function processCourierWalletSessionMessage(
     cachedPayload = {};
   }
 
-  // 1. معالجة مبلغ (أخذت/أعطيت) - تم تعديلها لتسمح بالكتابة المباشرة إذا كانت الخطوة مناسبة
-  if (session.step === "courier_w_take_amt" || session.step === "courier_w_give_amt") {
-    // نتحقق من الرد فقط إذا كان الـ promptMessageId موجوداً، وإلا نعتمد على الحالة
-    if (cachedPayload.promptMessageId && message.reply_to_message?.message_id !== cachedPayload.promptMessageId) {
-       // إذا كان هناك طلب رد ولم يقم بالرد، نتركه ربما يكتب شيئاً آخر، أو نعالجها كحالة عادية
+  // 1. معالجة مبلغ وملاحظة (أخذت/أعطيت) - النظام الجديد سطرين
+  if (session.step === "courier_w_take_input" || session.step === "courier_w_give_input") {
+    const lines = textIn.split("\n").map(l => l.trim()).filter(Boolean);
+    const isTake = session.step === "courier_w_take_input";
+
+    let amountStr = "";
+    let note = "";
+
+    // السماح بالكتابة المباشرة بدون رد على الرسالة
+    if (cachedPayload.amount && lines.length === 1) {
+      amountStr = cachedPayload.amount;
+      note = lines[0];
+    } else if (lines.length === 1) {
+      const parsed = parseAlfInputToDinarDecimalRequired(lines[0]);
+      if (parsed.ok) {
+        cachedPayload.amount = parsed.value;
+        await upsertCourierSession(telegramUserId, chatId, session.step, null, JSON.stringify(cachedPayload));
+        await sendTelegramHtmlToChat(chatId, `✅ المبلغ: <b>${formatDinarAsAlf(new Decimal(parsed.value))}</b>\nأرسل الآن <b>اسم المعاملة</b> (بيان):`, botToken);
+        return true;
+      } else {
+        await sendTelegramHtmlToChat(chatId, "❌ المبلغ غير صحيح. أرسل الرقم بالآلاف (مثلاً 10):", botToken);
+        return true;
+      }
+    } else if (lines.length >= 2) {
+      amountStr = lines[0];
+      note = lines.slice(1).join(" ");
+    } else {
+      return false;
     }
 
-    const isTake = session.step === "courier_w_take_amt";
-    const parsed = parseAlfInputToDinarDecimalRequired(textIn);
+    const parsed = parseAlfInputToDinarDecimalRequired(amountStr);
     if (!parsed.ok) {
-      await sendTelegramMessageWithForceReply(chatId, "❌ مبلغ غير صالح. أرسل الرقم بالآلاف:", { botToken });
+      await sendTelegramHtmlToChat(chatId, "❌ المبلغ غير صحيح في السطر الأول.", botToken);
       return true;
     }
-    const res = await sendTelegramMessageWithForceReply(
-      chatId,
-      `✅ المبلغ: ${formatDinarAsAlf(new Decimal(parsed.value))}\n\n` +
-      `أرسل <b>ملاحظة أو بيان</b> للعملية (مثلاً: سلفة، فطور):`,
-      { botToken }
-    );
-    await upsertCourierSession(
-      telegramUserId,
-      chatId,
-      isTake ? "courier_w_take_note" : "courier_w_give_note",
-      null,
-      JSON.stringify({ promptMessageId: res.ok ? res.messageId : undefined, amount: parsed.value })
-    );
-    return true;
-  }
 
-  // 2. معالجة ملاحظة (أخذت/أعطيت)
-  if (session.step === "courier_w_take_note" || session.step === "courier_w_give_note") {
-    const isTake = session.step === "courier_w_take_note";
-    const amount = new Decimal(cachedPayload.amount || 0);
-    const note = textIn || (isTake ? "أخذ مبلغا" : "إعطاء مبلغا");
-
+    const amount = new Decimal(parsed.value);
     await prisma.courierWalletMiscEntry.create({
       data: {
         courierId: courier.id,
