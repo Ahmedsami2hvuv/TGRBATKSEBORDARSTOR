@@ -96,12 +96,15 @@ function buildCourierKeyboard(kind: CourierMainKeyboardKind, courierId?: string)
 
   const portalRow = portalUrl ? [[{ text: "🔗 فتح بوابة المندوب", url: portalUrl }]] : [];
 
+  const logoutRow = [[{ text: "🚪 تسجيل الخروج", callback_data: "co_logout" }]];
+
   if (kind === "orders") {
     return {
       inline_keyboard: [
         ...portalRow,
         mainRow,
         [{ text: "🏠 الرئيسية", callback_data: "co_main" }],
+        ...logoutRow,
       ],
     };
   }
@@ -111,6 +114,7 @@ function buildCourierKeyboard(kind: CourierMainKeyboardKind, courierId?: string)
         ...portalRow,
         mainRow,
         [{ text: "🏠 الرئيسية", callback_data: "co_main" }],
+        ...logoutRow,
       ],
     };
   }
@@ -118,6 +122,7 @@ function buildCourierKeyboard(kind: CourierMainKeyboardKind, courierId?: string)
     inline_keyboard: [
       ...portalRow,
       mainRow,
+      ...logoutRow,
     ],
   };
 }
@@ -145,7 +150,8 @@ type CourierCallback =
   | { kind: "wallet_transfer_select"; targetKind: "prep" | "courier"; targetId: string }
   | { kind: "wallet_transfer_do"; targetKind: "admin" | "prep" | "courier"; targetId?: string }
   | { kind: "transfer_accept"; transferId: string }
-  | { kind: "transfer_reject"; transferId: string };
+  | { kind: "transfer_reject"; transferId: string }
+  | { kind: "logout" };
 
 type WalletTab =
   | "all"
@@ -265,6 +271,8 @@ function parseCourierCallbackData(raw: string): CourierCallback | null {
   if (accT) return { kind: "transfer_accept", transferId: accT[1] };
   const rejT = /^rej_t_(.+)$/.exec(t);
   if (rejT) return { kind: "transfer_reject", transferId: rejT[1] };
+
+  if (t === "co_logout") return { kind: "logout" };
 
   return null;
 }
@@ -1049,6 +1057,23 @@ export async function handleCourierCallback({
           botToken,
         });
       });
+    return;
+  }
+
+  if (parsed.kind === "logout") {
+    await prisma.courier.updateMany({
+      where: { telegramUserId },
+      data: { telegramUserId: null }
+    });
+    await clearCourierSession(telegramUserId);
+    await answerCallbackQuery(cq.id, "تم تسجيل الخروج بنجاح", false, botToken).catch(() => {});
+    await editTelegramMessage(
+      chatId,
+      cq.message.message_id,
+      "<b>تم تسجيل الخروج</b>\n\nتم إلغاء ربط حساب المندوب بهذا البوت. يمكنك إعادة الربط من خلال لوحة المندوب في أي وقت.",
+      { inline_keyboard: [] },
+      botToken
+    ).catch(() => {});
     return;
   }
 
@@ -2233,40 +2258,71 @@ export async function handleCourierPrivateTextMessage({
   console.log(`[courier-message] From: ${telegramUserId}, Text: ${txt}`);
 
   // 1. محاولة التعرف على المندوب من الرابط إذا لم يكن مسجلاً أو أرسل رابطاً جديداً
-  if (txt.includes("/mandoub?")) {
+  const tryParseCourierLink = async (input: string) => {
     try {
-      const urlObj = new URL(txt.startsWith("http") ? txt : `https://${txt}`);
+      let urlStr = input;
+      if (input.startsWith("/start ")) {
+        const payload = input.split(" ")[1];
+        if (payload.startsWith("pl_")) {
+          const stored = await prisma.schemaPlaceholder.findUnique({
+            where: { id: payload }
+          });
+          if (stored && stored.note.startsWith("http")) {
+            urlStr = stored.note;
+          } else {
+            return null;
+          }
+        } else {
+          try {
+            urlStr = Buffer.from(payload, "base64").toString("utf-8");
+          } catch {
+            return null;
+          }
+        }
+      }
+
+      const urlObj = new URL(urlStr);
       const c = urlObj.searchParams.get("c") || "";
       const s = urlObj.searchParams.get("s") || "";
       const exp = urlObj.searchParams.get("exp") || "";
 
       const verify = verifyDelegatePortalQuery(c, exp, s);
       if (verify.ok) {
-        const targetCourierId = verify.courierId;
-        // تحديث قاعدة البيانات لربط هذا الـ Telegram ID بالمندوب
-        await prisma.courier.update({
-          where: { id: targetCourierId },
-          data: { telegramUserId: telegramUserId }
-        });
-
-        const updatedCourier = await getCourierByTelegramUserId(telegramUserId);
-        if (updatedCourier) {
-          const text = `<b>✅ تم تفعيل حسابك بنجاح!</b>\n\n` +
-            `أهلاً بك يا ${escapeTelegramHtml(updatedCourier.name)}، تم ربط حساب تليجرام بلوحة المندوب الخاصة بك.\n\n` +
-            `📦 طلبياتي — تفاصيل الطلبات والمسار\n` +
-            `💼 محفظتي — أرقام ووارد/صادر وسجل العمليات`;
-
-          await sendTelegramMessageWithKeyboardToChat(
-            chatId,
-            text,
-            buildCourierKeyboard("main", updatedCourier.id),
-            botToken
-          );
-          return;
-        }
+        return { ok: true, courierId: verify.courierId, url: urlStr };
       }
-    } catch (e) {
-      console.error("[courier-link-detection] Error parsing link:", e);
+    } catch (err) {
+      return null;
+    }
+    return null;
+  };
+
+  const linkMatch = await tryParseCourierLink(message.text || "");
+  if (linkMatch && linkMatch.ok) {
+    // إلغاء أي ربط سابق لهذا المستخدم
+    await prisma.courier.updateMany({
+      where: { telegramUserId },
+      data: { telegramUserId: null }
+    });
+
+    await prisma.courier.update({
+      where: { id: linkMatch.courierId },
+      data: { telegramUserId }
+    });
+
+    const updatedCourier = await getCourierByTelegramUserId(telegramUserId);
+    if (updatedCourier) {
+      const text = `<b>✅ تم تفعيل حسابك بنجاح!</b>\n\n` +
+        `أهلاً بك يا ${escapeTelegramHtml(updatedCourier.name)}، تم ربط حساب تليجرام بلوحة المندوب الخاصة بك.\n\n` +
+        `📦 طلبياتي — تفاصيل الطلبات والمسار\n` +
+        `💼 محفظتي — أرقام ووارد/صادر وسجل العمليات`;
+
+      await sendTelegramMessageWithKeyboardToChat(
+        chatId,
+        text,
+        buildCourierKeyboard("main", updatedCourier.id),
+        botToken
+      );
+      return;
     }
   }
 

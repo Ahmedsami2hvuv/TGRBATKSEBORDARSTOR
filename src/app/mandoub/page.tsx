@@ -4,7 +4,9 @@ import { formatDinarAsAlf } from "@/lib/money-alf";
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
 import type { DelegatePortalVerifyReason } from "@/lib/delegate-link";
-import { verifyDelegatePortalQuery } from "@/lib/delegate-link";
+import { getPublicAppUrl } from "@/lib/app-url";
+import { buildDelegatePortalUrl, verifyDelegatePortalQuery } from "@/lib/delegate-link";
+import { getBotTokenByPurpose } from "@/lib/telegram-bots";
 import {
   isSaderMismatch,
   isWardMismatch,
@@ -179,6 +181,12 @@ export default async function MandoubPage({ searchParams }: Props) {
       </div>
     );
   }
+
+  const botToken = await getBotTokenByPurpose("courier");
+  const botInfo = botToken ? await fetch(`https://api.telegram.org/bot${botToken}/getMe`).then(r => r.json()).catch(() => null) : null;
+  const botUsername = botInfo?.result?.username;
+  const portalUrl = buildDelegatePortalUrl(courier.id, getPublicAppUrl());
+  const telegramLink = botUsername ? `https://t.me/${botUsername}?start=${Buffer.from(portalUrl).toString("base64")}` : null;
 
   const totalsBaseline = courier.mandoubTotalsResetAt;
 
@@ -488,6 +496,19 @@ export default async function MandoubPage({ searchParams }: Props) {
               <p className="text-[10px] font-bold text-slate-500 sm:text-xs ms-7">{courier.phone}</p>
             </div>
             <ThemeSwitcher />
+            {telegramLink && (
+              <a
+                href={telegramLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#229ED9] text-white shadow-sm ring-1 ring-[#1b8bc2] transition hover:bg-[#1b8bc2] sm:h-9 sm:w-9"
+                title="فتح بوت التليجرام"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.11.02-1.93 1.23-5.46 3.62-.51.35-.98.52-1.4.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.45-.42-1.39-.88.03-.24.36-.48.99-.73 3.88-1.69 6.47-2.8 7.77-3.33 3.7-1.51 4.47-1.77 4.97-1.78.11 0 .36.03.52.16.14.12.18.28.19.45.01.06.01.12 0 .19z" />
+                </svg>
+              </a>
+            )}
             <MandoubPresenceToggle auth={baseAuth} availableForAssignment={courier.availableForAssignment} />
             <FullscreenWalletLauncher
               href={`/mandoub/wallet?${baseQuery.toString()}`}
