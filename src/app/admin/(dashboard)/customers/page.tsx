@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0; // منع الكاش نهائياً
 
 const OLD_DB_URL = "postgresql://postgres:jkDcspXZlicvzQvaffZAxBgischujWrX@caboose.proxy.rlwy.net:46307/railway";
-type SourceFilter = "all" | "railway" | "orders" | "reference";
+type SourceFilter = "all" | "railway" | "orders" | "reference" | "blocked";
 
 function buildCompactPagination(currentPage: number, totalPages: number): Array<number | "ellipsis"> {
   if (totalPages <= 7) {
@@ -51,6 +51,8 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
     getGlobalIcons(),
     prisma.customerPhoneProfile.count(),
   ]);
+
+  const blockedCount = allProfiles.filter(p => p.isBlocked).length;
 
   // مفاتيح (phone|region) + phones القادمة من ريلوي
   const railwayKeys = new Set<string>();
@@ -101,7 +103,9 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
     : classifiedProfiles;
 
   const bySourceFiltered =
-    source === "all" ? searchFiltered : searchFiltered.filter((p) => p.sourceKind === source);
+    source === "all" ? searchFiltered :
+    source === "blocked" ? searchFiltered.filter((p) => p.isBlocked) :
+    searchFiltered.filter((p) => p.sourceKind === source);
 
   const filteredCount = bySourceFiltered.length;
   const totalPages = Math.max(1, Math.ceil(filteredCount / take));
@@ -148,7 +152,8 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
       notes: p.notes,
       landmark: p.landmark,
       photoUrl: p.photoUrl,
-      locationUrl: p.locationUrl
+      locationUrl: p.locationUrl,
+      isBlocked: p.isBlocked
     });
   }
 
@@ -188,6 +193,7 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
               className="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-xl text-sm font-bold"
             >
               <option value="all">كل المصادر</option>
+              <option value="blocked">🔴 المحظورين ({blockedCount})</option>
               <option value="railway">قادمين من ريلوي</option>
               <option value="orders">قادمين من طلبات الموقع</option>
               <option value="reference">مضافين مرجعياً</option>
@@ -301,6 +307,7 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
                       <span className="text-[10px] font-bold text-slate-500 mt-1">
                         {r.sourceKind === "railway" ? "ريلوي" : r.sourceKind === "orders" ? "طلبات الموقع" : "مرجعي"}
                       </span>
+                      {r.isBlocked && <span className="text-[10px] font-black text-red-600">🔴 محظور</span>}
                       <div className="flex gap-2 text-xs mt-1">
                          {resolvePublicAssetSrc(r.photoUrl) && <span title="توجد صورة باب قابلة للعرض"><DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="w-3.5 h-3.5" /></span>}
                          {r.locationUrl && <span title="موقع GPS"><DynamicIcon iconKey="ui_location" config={icons} fallback="📍" className="w-3.5 h-3.5" /></span>}

@@ -46,19 +46,33 @@ export async function GET(request: Request) {
       landmark: true,
       alternatePhone: true,
       photoUrl: true,
+      isBlocked: true,
     },
   });
 
-  if (!profile) {
+  const globalBlock = await prisma.globalBlockedPhone.findUnique({
+    where: { phone },
+  });
+
+  if (!profile && !globalBlock) {
     return NextResponse.json({ profile: null });
+  }
+
+  const BLOCKED_PREFIX = "🔴 الزبون ممنوع من التوصيل";
+  let landmark = profile?.landmark?.trim() ?? "";
+  const isBlocked = !!profile?.isBlocked || !!globalBlock;
+
+  if (isBlocked && !landmark.includes(BLOCKED_PREFIX)) {
+    landmark = `${BLOCKED_PREFIX} ${landmark}`.trim();
   }
 
   return NextResponse.json({
     profile: {
-      locationUrl: profile.locationUrl?.trim() ?? "",
-      landmark: profile.landmark?.trim() ?? "",
-      alternatePhone: profile.alternatePhone?.trim() ?? null,
-      photoUrl: profile.photoUrl?.trim() ?? "",
+      locationUrl: profile?.locationUrl?.trim() ?? "",
+      landmark: landmark,
+      alternatePhone: profile?.alternatePhone?.trim() ?? null,
+      photoUrl: profile?.photoUrl?.trim() ?? "",
+      isBlocked: isBlocked,
     },
   });
 }

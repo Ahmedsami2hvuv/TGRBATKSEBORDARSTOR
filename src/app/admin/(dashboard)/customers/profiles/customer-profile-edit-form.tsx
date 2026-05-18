@@ -20,6 +20,7 @@ export function CustomerProfileEditForm({
   defaultAlternatePhone,
   defaultNotes,
   defaultPhotoUrl,
+  defaultIsBlocked,
   regions,
 }: {
   profileId: string;
@@ -30,6 +31,7 @@ export function CustomerProfileEditForm({
   defaultAlternatePhone: string;
   defaultNotes: string;
   defaultPhotoUrl: string;
+  defaultIsBlocked: boolean;
   regions: AdminRegionOption[];
 }) {
   const [state, formAction, pending] = useActionState(
@@ -92,6 +94,18 @@ export function CustomerProfileEditForm({
             defaultValue={defaultLandmark}
             className={ad.input}
           />
+        </label>
+        <label className="flex items-center gap-2 text-sm sm:col-span-2 bg-red-50 p-3 rounded-xl border border-red-100">
+          <input
+            type="checkbox"
+            name="isBlocked"
+            defaultChecked={defaultIsBlocked}
+            className="w-5 h-5 text-red-600 border-red-300 rounded focus:ring-red-500"
+          />
+          <div className="flex flex-col">
+            <span className="font-bold text-red-700">حظر الزبون في هذه المنطقة</span>
+            <span className="text-xs text-red-600">سيتم إضافة علامة تحذير للمناديب ومنع الطلبات الجديدة لهذا الرقم في هذه المنطقة.</span>
+          </div>
         </label>
         <label className="flex flex-col gap-1 text-sm sm:col-span-2">
           <span className={ad.label}>رقم هاتف ثانٍ (اختياري)</span>

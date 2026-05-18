@@ -28,6 +28,9 @@ export type CustomerProfileFormHint = {
   regionNotFound?: string;
   currentRegionName: string | null;
   inCurrentRegion: boolean;
+  /** هل الرقم محظور عالمياً */
+  isGloballyBlocked: boolean;
+  currentRegionIsBlocked: boolean;
   currentRegionMissingPhoto: boolean;
   /** أسماء مناطق أخرى يظهر فيها الرقم حالياً */
   otherRegionNames: string[];
@@ -274,6 +277,7 @@ const emptyHint: CustomerProfileFormHint = {
   regionResolved: false,
   currentRegionName: null,
   inCurrentRegion: false,
+  currentRegionIsBlocked: false,
   currentRegionMissingPhoto: false,
   otherRegionNames: [],
 };
@@ -323,11 +327,17 @@ export async function getCustomerProfileFormHint(
     ),
   ];
 
+  const isGloballyBlocked = await prisma.globalBlockedPhone.findUnique({
+    where: { phone: n },
+  });
+
   return {
     canCheck: true,
     regionResolved: true,
     currentRegionName: region.name,
+    isGloballyBlocked: !!isGloballyBlocked,
     inCurrentRegion: !!inCurrent,
+    currentRegionIsBlocked: !!inCurrent?.isBlocked || !!isGloballyBlocked,
     currentRegionMissingPhoto: !!(inCurrent && !inCurrent.photoUrl?.trim()),
     otherRegionNames: otherNames,
   };
@@ -561,24 +571,43 @@ async function performUpsertCustomerPhoneProfile(input: {
     photoUrl = remote.photoUrl;
   }
 
+  const BLOCKED_PREFIX = "🔴 الزبون ممنوع من التوصيل";
+  let landmark = parsed.landmark.trim();
+
+  // If already blocked, ensure landmark has the prefix even if missing in pasted text.
+  // If not blocked but text has prefix, we might want to automatically block?
+  // For safety in Upsert (bulk/quick), we prioritize the existing block status.
+  if (existingInRegion?.isBlocked && !landmark.includes(BLOCKED_PREFIX)) {
+    landmark = `${BLOCKED_PREFIX} ${landmark}`.trim();
+  } else if (!existingInRegion?.isBlocked && landmark.includes(BLOCKED_PREFIX)) {
+    // If text has prefix but not blocked in DB, maybe it was a mistake or they should be blocked.
+    // However, to keep it simple, we don't automatically toggle isBlocked: true from text here
+    // unless we want that feature. Usually admin should toggle it explicitly.
+    // But if we are importing from a source that has it, maybe we SHOULD block?
+    // Let's at least keep the landmark as is if it has the prefix.
+  }
+
   if (existingInRegion) {
     await prisma.customerPhoneProfile.update({
       where: { id: existingInRegion.id },
       data: {
         locationUrl: locParsed.url,
-        landmark: parsed.landmark.trim(),
+        landmark,
         notes: parsed.notes.trim(),
         alternatePhone,
         photoUrl,
       },
     });
   } else {
+    // New profile: if landmark has prefix, set isBlocked true
+    const shouldBeBlocked = landmark.includes(BLOCKED_PREFIX);
     await prisma.customerPhoneProfile.create({
       data: {
         phone: n,
         regionId: region.id,
+        isBlocked: shouldBeBlocked,
         locationUrl: locParsed.url,
-        landmark: parsed.landmark.trim(),
+        landmark,
         photoUrl,
         alternatePhone,
         notes: parsed.notes.trim(),
@@ -1216,6 +1245,7 @@ export async function updateCustomerPhoneProfile(
     return { error: "السجل غير موجود" };
   }
 
+  const isBlocked = formData.get("isBlocked") === "on";
   const regionId = String(formData.get("regionId") ?? "").trim();
   if (!regionId) {
     return { error: "اختر المنطقة" };
@@ -1224,11 +1254,21 @@ export async function updateCustomerPhoneProfile(
   if (!region) {
     return { error: "المنطقة غير موجودة" };
   }
+
+  const BLOCKED_PREFIX = "🔴 الزبون ممنوع من التوصيل";
+  let landmark = String(formData.get("landmark") ?? "").trim();
+
+  // Handle landmark sync with blocked status
+  if (isBlocked && !landmark.includes(BLOCKED_PREFIX)) {
+    landmark = `${BLOCKED_PREFIX} ${landmark}`.trim();
+  } else if (!isBlocked && landmark.includes(BLOCKED_PREFIX)) {
+    landmark = landmark.replace(BLOCKED_PREFIX, "").trim();
+  }
+
   const locParsed = parseLocationUrl(String(formData.get("locationUrl") ?? ""));
   if (!locParsed.ok) {
     return { error: locParsed.error };
   }
-  const landmark = String(formData.get("landmark") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
   const altRaw = String(formData.get("alternatePhone") ?? "").trim();
   let alternatePhone: string | null = null;
@@ -1263,10 +1303,30 @@ export async function updateCustomerPhoneProfile(
     photoUrl = uploaded.photoUrl;
   }
 
-  await prisma.customerPhoneProfile.update({
+  const isGloballyBlocked = await tx.globalBlockedPhone.findUnique({
+    where: { phone: existing.phone },
+  });
+
+  if (isBlocked) {
+    // Add to global block if checking it
+    await tx.globalBlockedPhone.upsert({
+      where: { phone: existing.phone },
+      create: { phone: existing.phone },
+      update: {},
+    });
+  } else if (!isBlocked && isGloballyBlocked) {
+    // If we are unblocking this specific profile, should we remove it from global?
+    // Let's assume yes, if they uncheck it here, they want to allow it.
+    await tx.globalBlockedPhone.deleteMany({
+      where: { phone: existing.phone },
+    });
+  }
+
+  await tx.customerPhoneProfile.update({
     where: { id },
     data: {
       regionId,
+      isBlocked,
       locationUrl: locParsed.url,
       landmark,
       notes,
@@ -1274,6 +1334,32 @@ export async function updateCustomerPhoneProfile(
       photoUrl,
     },
   });
+
+  // Sync active orders and potentially other profiles if global status changed
+  if (isBlocked !== existing.isBlocked || landmark !== existing.landmark) {
+    // Update active orders for this phone across ALL regions if it's a block
+    await tx.order.updateMany({
+      where: {
+        customerPhone: existing.phone,
+        // If it's a global block now, update everything.
+        // If it's just a landmark change in this region, update this region.
+        ...(isBlocked ? {} : { customerRegionId: existing.regionId }),
+        status: { in: ["pending", "assigned", "delivering"] },
+      },
+      data: {
+        customerLandmark: landmark,
+      },
+    });
+
+    if (isBlocked) {
+      // Also update all other profiles for this phone to be blocked
+      await tx.customerPhoneProfile.updateMany({
+        where: { phone: existing.phone },
+        data: { isBlocked: true },
+      });
+    }
+  }
+});
 
   revalidatePath("/admin/customers");
   revalidatePath("/admin/customers/profiles");

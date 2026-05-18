@@ -55,10 +55,18 @@ model CustomerPhoneProfile {
   updatedAt      DateTime @updatedAt
   landmark       String   @default("")
   alternatePhone String?
+  isBlocked      Boolean  @default(false)
   region         Region   @relation(fields: [regionId], references: [id])
 
   @@unique([phone, regionId])
   @@index([regionId])
+}
+
+model GlobalBlockedPhone {
+  phone     String   @id
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 /**

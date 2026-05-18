@@ -78,6 +78,7 @@ type OrderViewModel = {
   customerLocationUploadedByName: string | null; customerRegion: { name: string } | null;
   customerRegionId: string | null;
   customerProfileId: string | null;
+  isBlocked: boolean;
   courier: { name: string; phone: string } | null; customer: { name: string } | null;
   submittedBy: { name: string; phone: string } | null;
   submittedByCompanyPreparer: { name: string; phone: string } | null;
@@ -123,6 +124,15 @@ export function OrderViewContent({
 
   return (
     <div className={`kse-glass-dark relative mt-4 border p-4 pb-24 text-base leading-relaxed sm:p-5 sm:pb-32 ${orderStatusStartStripeClass(order.status)} ${order.prepaidAll ? "border-emerald-300 bg-gradient-to-b from-emerald-50 to-teal-50" : isReversePickup ? "border-violet-400 bg-violet-100" : isDoubleRoute ? "border-fuchsia-300 bg-gradient-to-b from-fuchsia-50 to-violet-50" : `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}`}`} dir="rtl">
+
+      {order.isBlocked && (
+        <div
+          className="mb-4 animate-pulse rounded-2xl border-4 border-red-600 bg-red-100 p-4 text-center text-xl font-black text-red-900 shadow-xl"
+          role="alert"
+        >
+          🛑 تنبيه: هذا الزبون محظور من التوصيل (Blocklist)
+        </div>
+      )}
 
       {/* بصمات الصوت في بداية الصفحة بتنسيق مرتب */}
       {(voiceSrc || adminVoiceSrc) && (

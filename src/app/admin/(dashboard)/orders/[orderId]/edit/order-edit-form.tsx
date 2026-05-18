@@ -81,6 +81,7 @@ export function OrderEditForm({
   defaultOrderNoteTime,
   defaultAssignedCourierId,
   defaultPrepaidAll,
+  defaultIsBlocked,
   shops,
   regions,
   couriers,
@@ -113,6 +114,7 @@ export function OrderEditForm({
   defaultOrderNoteTime: string;
   defaultAssignedCourierId: string;
   defaultPrepaidAll: boolean;
+  defaultIsBlocked?: boolean;
   shops: ShopOpt[];
   regions: RegionOpt[];
   couriers: CourierOpt[];
@@ -130,6 +132,7 @@ export function OrderEditForm({
   const [customerRegionId, setCustomerRegionId] = useState(defaultCustomerRegionId);
   const [custLocationUrl, setCustLocationUrl] = useState(defaultCustomerLocationUrl);
   const [custLandmark, setCustLandmark] = useState(defaultCustomerLandmark);
+  const [isBlocked, setIsBlocked] = useState(!!defaultIsBlocked);
   const [locBusy, setLocBusy] = useState(false);
   const [confirmClearLoc, setConfirmClearLoc] = useState(false);
   const [confirmReplaceLoc, setConfirmReplaceLoc] = useState(false);
@@ -375,6 +378,15 @@ export function OrderEditForm({
         </div>
       ) : null}
 
+      {isBlocked && (
+        <div
+          className="animate-pulse rounded-xl border-4 border-red-600 bg-red-100 px-4 py-3 text-center text-lg font-black text-red-900 shadow-lg"
+          role="alert"
+        >
+          🛑 تنبيه: هذا الزبون محظور من التوصيل (Blocklist)
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
         <Link
           href={`/admin/shops/${shopId}/edit`}
@@ -573,6 +585,22 @@ export function OrderEditForm({
               استلام من الزبون وتسليم للعميل.
             </span>
           </span>
+        </label>
+      </div>
+
+      <div className="rounded-xl border-2 border-red-200 bg-red-50/30 p-4">
+        <label className="flex cursor-pointer items-center gap-3">
+          <input
+            type="checkbox"
+            name="isBlocked"
+            checked={isBlocked}
+            onChange={(e) => setIsBlocked(e.target.checked)}
+            className="h-6 w-6 rounded border-red-400 text-red-600 focus:ring-red-500"
+          />
+          <div className="flex flex-col">
+            <span className="text-sm font-bold text-red-900">حظر هذا الزبون (Block Customer)</span>
+            <span className="text-xs text-red-700">عند التفعيل، سيتم وضع علامة حظر على هذا الرقم في هذه المنطقة.</span>
+          </div>
         </label>
       </div>
 

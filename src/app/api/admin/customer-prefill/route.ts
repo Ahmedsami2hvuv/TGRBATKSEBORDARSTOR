@@ -47,6 +47,7 @@ export async function GET(request: Request) {
         landmark: true,
         photoUrl: true,
         alternatePhone: true,
+        isBlocked: true,
       },
     });
 
@@ -62,6 +63,7 @@ export async function GET(request: Request) {
         customerLandmark: phoneProfile.landmark ?? "",
         customerDoorPhotoUrl: phoneProfile.photoUrl?.trim() ? phoneProfile.photoUrl : null,
         alternatePhone: phoneProfile.alternatePhone,
+        isBlocked: phoneProfile.isBlocked,
       };
     }
   }

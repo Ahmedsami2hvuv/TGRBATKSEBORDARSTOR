@@ -56,6 +56,7 @@ export default async function EditCustomerProfilePage({
           defaultAlternatePhone={profile.alternatePhone ?? ""}
           defaultNotes={profile.notes}
           defaultPhotoUrl={profile.photoUrl}
+          defaultIsBlocked={profile.isBlocked}
           regions={regionOptions}
         />
         <CustomerProfileDeleteForm id={profile.id} />

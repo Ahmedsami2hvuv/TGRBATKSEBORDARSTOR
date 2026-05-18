@@ -155,6 +155,7 @@ export async function updateOrderAdmin(
 ): Promise<OrderEditState> {
   if (!(await assertAdmin())) return { error: "غير مصرّح" };
 
+  const isBlocked = formData.get("isBlocked") === "on";
   const shopId = String(formData.get("shopId") ?? "").trim();
   const status = String(formData.get("status") ?? "").trim();
   const orderTypeRaw = String(formData.get("orderType") ?? "").trim();
@@ -288,7 +289,103 @@ export async function updateOrderAdmin(
   });
 
   await syncPhoneProfileFromOrder(orderId);
+
+  if (isBlocked) {
+    await blockCustomerAction(phoneLocal);
+  } else {
+    // We don't automatically unblock globally when one order is edited,
+    // but we can unblock for this region if needed.
+    // For now, let's keep it consistent.
+  }
+
   revalidateAdminOrderPaths(orderId);
   if (status === "archived") redirect("/admin/orders/archived");
   redirect("/admin/orders/tracking");
+}
+
+export async function blockCustomerAction(phone: string) {
+  if (!(await assertAdmin())) return { error: "غير مصرّح" };
+  const phoneLocal = normalizeIraqMobileLocal11(phone);
+  if (!phoneLocal) return { error: "بيانات غير صالحة" };
+
+  const BLOCKED_PREFIX = "🔴 الزبون ممنوع من التوصيل";
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Add to Global Block List
+    await tx.globalBlockedPhone.upsert({
+      where: { phone: phoneLocal },
+      create: { phone: phoneLocal },
+      update: {},
+    });
+
+    // 2. Update all existing profiles for this phone to be isBlocked = true
+    const profiles = await tx.customerPhoneProfile.findMany({
+      where: { phone: phoneLocal },
+    });
+
+    for (const profile of profiles) {
+      const nextLandmark = profile.landmark.includes(BLOCKED_PREFIX)
+        ? profile.landmark
+        : `${BLOCKED_PREFIX} ${profile.landmark}`.trim();
+
+      await tx.customerPhoneProfile.update({
+        where: { id: profile.id },
+        data: {
+          isBlocked: true,
+          landmark: nextLandmark,
+        },
+      });
+    }
+
+    // 3. Update all active orders for this phone in ANY region
+    await tx.order.updateMany({
+      where: {
+        customerPhone: phoneLocal,
+        status: { in: ["pending", "assigned", "delivering"] },
+      },
+      data: {
+        customerLandmark: {
+          set: BLOCKED_PREFIX, // Note: We might want to prepend if we had the original landmark, but order might have its own.
+        },
+      },
+    });
+  });
+
+  return { ok: true };
+}
+
+export async function unblockCustomerAction(phone: string) {
+  if (!(await assertAdmin())) return { error: "غير مصرّح" };
+  const phoneLocal = normalizeIraqMobileLocal11(phone);
+  if (!phoneLocal) return { error: "بيانات غير صالحة" };
+
+  const BLOCKED_PREFIX = "🔴 الزبون ممنوع من التوصيل";
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Remove from Global Block List
+    await tx.globalBlockedPhone.deleteMany({
+      where: { phone: phoneLocal },
+    });
+
+    // 2. Update all profiles
+    const profiles = await tx.customerPhoneProfile.findMany({
+      where: { phone: phoneLocal },
+    });
+
+    for (const profile of profiles) {
+      const nextLandmark = profile.landmark.replace(BLOCKED_PREFIX, "").trim();
+      await tx.customerPhoneProfile.update({
+        where: { id: profile.id },
+        data: {
+          isBlocked: false,
+          landmark: nextLandmark,
+        },
+      });
+    }
+
+    // Note: We don't easily know the original landmark for orders to restore it,
+    // but usually unblocking is followed by manual correction or next order prefill.
+  });
+
+  return { ok: true };
 }
