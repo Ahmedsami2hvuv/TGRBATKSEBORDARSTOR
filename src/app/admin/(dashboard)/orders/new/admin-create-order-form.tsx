@@ -458,6 +458,7 @@ export function AdminCreateOrderForm({
  }
 
  return (
+ <>
  <form action={formAction} className="space-y-4" encType="multipart/form-data">
  <input type="hidden" name="adminSubmissionMode" value={submissionMode} />
  <input type="hidden" name="routeMode" value={routeMode} />
@@ -1087,5 +1088,6 @@ export function AdminCreateOrderForm({
  </div>
  </div>
  )}
+ </>
  );
 }
