@@ -26,6 +26,14 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
   const phoneLocal = normalizeIraqMobileLocal11(phone) || phone;
 
+  // Global block check
+  const isGlobalBlocked = await prisma.globalBlockedPhone.findUnique({
+    where: { phone: phoneLocal },
+  });
+  if (isGlobalBlocked) {
+    return { error: "عذراً، هذا الرقم محظور من الطلب حالياً." };
+  }
+
   const cart = JSON.parse(cartJson);
   if (!Array.isArray(cart) || cart.length === 0) {
     return { error: "السلة فارغة" };

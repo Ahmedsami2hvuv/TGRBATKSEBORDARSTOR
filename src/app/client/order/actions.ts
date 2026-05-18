@@ -62,6 +62,14 @@ export async function submitEmployeePreparationDraft(
     const phoneLocal = normalizeIraqMobileLocal11(customerPhone);
     if (!phoneLocal) return { error: "رقم الهاتف غير صحيح." };
 
+    // Global block check
+    const isGlobalBlocked = await prisma.globalBlockedPhone.findUnique({
+      where: { phone: phoneLocal },
+    });
+    if (isGlobalBlocked) {
+      return { error: "عذراً، هذا الرقم محظور عالمياً ولا يمكن إنشاء طلب تجهيز له." };
+    }
+
     const region = await prisma.region.findUnique({
       where: { id: customerRegionId },
       select: { id: true },
@@ -194,6 +202,14 @@ export async function submitOrder(
 
     const phoneLocal = normalizeIraqMobileLocal11(customerPhone);
     if (!phoneLocal) return { error: "رقم الهاتف غير صحيح" };
+
+    // Global block check
+    const isGlobalBlocked = await prisma.globalBlockedPhone.findUnique({
+      where: { phone: phoneLocal },
+    });
+    if (isGlobalBlocked) {
+      return { error: "عذراً، هذا الرقم محظور عالمياً من التوصيل حالياً." };
+    }
 
     // معالجة السعر
     const subtotalNum = parseAlfInputToDinarNumber(orderSubtotalRaw.replace(/,/g, ".").trim()) || 0;

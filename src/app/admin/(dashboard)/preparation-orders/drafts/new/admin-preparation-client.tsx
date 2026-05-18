@@ -119,17 +119,42 @@ export function AdminPreparationClient({
     }
   }
 
-  function runParse() {
+  async function runParse() {
     setParseError(null);
     const t = pasteText.trim();
     if (!t) {
       setParseError("الصق نص الطلب أولاً.");
       return;
     }
-    const site = parseSiteOrderMessage(t);
+
+    let phone = "";
+    let site = parseSiteOrderMessage(t);
+    let flex = null;
+
+    if (site && site.items.length > 0) {
+      phone = extractPhoneNumberFromText(t) ?? "";
+    } else {
+      flex = parseFlexibleOrderLines(t);
+      if (flex) {
+        phone = flex.phone;
+      }
+    }
+
+    if (phone) {
+      try {
+        const check = await fetch(`/api/check-block?phone=${encodeURIComponent(phone)}`);
+        const blockRes = await check.json();
+        if (blockRes.blocked) {
+          setParseError(`🔴 الزبون ممنوع من التوصيل (الرقم ${blockRes.phone} محظور عالمياً)`);
+          return;
+        }
+      } catch (e) {
+        console.error("Block check failed", e);
+      }
+    }
+
     if (site && site.items.length > 0) {
       const title = (site.address || site.landmark || "طلب موقع").trim();
-      const phone = extractPhoneNumberFromText(t) ?? "";
       setTitleLine(title);
       setProducts(site.items.map((it) => `${it.name.trim()} ${it.qty}`.trim()));
       setCustomerPhone(phone);
@@ -139,7 +164,7 @@ export function AdminPreparationClient({
       void resolveRegionAfterParse(t, title, site.items.map((it) => `${it.name.trim()} ${it.qty}`.trim()));
       return;
     }
-    const flex = parseFlexibleOrderLines(t);
+
     if (flex) {
       setTitleLine(flex.title);
       setProducts([...flex.products]);

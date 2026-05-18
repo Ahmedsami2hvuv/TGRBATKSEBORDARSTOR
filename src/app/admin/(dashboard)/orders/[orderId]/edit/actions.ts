@@ -338,17 +338,24 @@ export async function blockCustomerAction(phone: string) {
     }
 
     // 3. Update all active orders for this phone in ANY region
-    await tx.order.updateMany({
+    const activeOrders = await tx.order.findMany({
       where: {
         customerPhone: phoneLocal,
         status: { in: ["pending", "assigned", "delivering"] },
       },
-      data: {
-        customerLandmark: {
-          set: BLOCKED_PREFIX, // Note: We might want to prepend if we had the original landmark, but order might have its own.
-        },
-      },
+      select: { id: true, customerLandmark: true },
     });
+
+    for (const order of activeOrders) {
+      const nextLandmark = order.customerLandmark.includes(BLOCKED_PREFIX)
+        ? order.customerLandmark
+        : `${BLOCKED_PREFIX} ${order.customerLandmark}`.trim();
+
+      await tx.order.update({
+        where: { id: order.id },
+        data: { customerLandmark: nextLandmark },
+      });
+    }
   });
 
   return { ok: true };

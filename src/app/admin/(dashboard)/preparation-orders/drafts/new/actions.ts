@@ -37,6 +37,14 @@ export async function submitAdminPreparationDraft(
   }
   const finalPhone = phoneLocal || customerPhone;
 
+  // Global block check
+  const isGlobalBlocked = await prisma.globalBlockedPhone.findUnique({
+    where: { phone: finalPhone },
+  });
+  if (isGlobalBlocked) {
+    return { error: `عذراً، الرقم (${finalPhone}) محظور عالمياً ولا يمكن إنشاء طلب تجهيز له.` };
+  }
+
   const region = await prisma.region.findUnique({
     where: { id: customerRegionId },
     select: { id: true },

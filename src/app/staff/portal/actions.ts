@@ -52,6 +52,16 @@ export async function submitStaffPreparationDraft(
     };
   }
 
+  // منع الإرسال إذا كان الرقم محظوراً عالمياً
+  const isBlocked = await prisma.globalBlockedPhone.findUnique({
+    where: { phone: phoneLocal },
+  });
+  if (isBlocked) {
+    return {
+      error: "عذراً، هذا الرقم محظور عالمياً من التوصيل ولا يمكن رفع طلب له.",
+    };
+  }
+
   const region = await prisma.region.findUnique({
     where: { id: customerRegionId },
     select: { id: true },
@@ -185,6 +195,15 @@ export async function updateStaffPreparationDraft(
   }
   const phoneLocal = normalizeIraqMobileLocal11(customerPhone);
   if (!phoneLocal) return { error: "رقم الزبون غير صالح." };
+
+  // Global block check
+  const isBlocked = await prisma.globalBlockedPhone.findUnique({
+    where: { phone: phoneLocal },
+  });
+  if (isBlocked) {
+    return { error: "عذراً، هذا الرقم محظور عالمياً ولا يمكن تعديل الطلب إليه." };
+  }
+
   const region = await prisma.region.findUnique({ where: { id: customerRegionId }, select: { id: true } });
   if (!region) return { error: "منطقة الزبون غير صالحة." };
 

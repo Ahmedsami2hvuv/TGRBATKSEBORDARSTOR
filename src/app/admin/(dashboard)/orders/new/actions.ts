@@ -141,6 +141,15 @@ export async function createAdminOrder(
     }
 
     const phoneLocal = normalizeIraqMobileLocal11(customerPhone) || customerPhone;
+
+    // فحص الحظر العالمي قبل إنشاء مسودة التجهيز من الأدمن
+    const isGlobalBlocked = await prisma.globalBlockedPhone.findUnique({
+      where: { phone: phoneLocal },
+    });
+    if (isGlobalBlocked) {
+      return { error: `عذراً، الرقم ${phoneLocal} محظور عالمياً ولا يمكن إنشاء طلب له.` };
+    }
+
     const lines = productsCsv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
     const products = lines.map((line) => ({ line, buyAlf: null, sellAlf: null, pricedBy: null }));
 
@@ -221,6 +230,15 @@ export async function createAdminOrder(
 
   const firstPhone = normalizeIraqMobileLocal11(firstPhoneRaw);
   if (!firstPhone) return { error: "رقم الزبون غير صالح." };
+
+  // فحص الحظر العالمي للرقم الأول
+  const isFirstBlocked = await prisma.globalBlockedPhone.findUnique({
+    where: { phone: firstPhone },
+  });
+  if (isFirstBlocked) {
+    return { error: `عذراً، رقم الزبون (${firstPhone}) محظور عالمياً.` };
+  }
+
   if (!firstRegionIdRaw) return { error: "منطقة الزبون مطلوبة." };
 
   let secondPhone: string | null = null;
@@ -228,6 +246,15 @@ export async function createAdminOrder(
   if (routeMode === "double") {
     secondPhone = normalizeIraqMobileLocal11(secondPhoneRaw);
     if (!secondPhone) return { error: "رقم المستلم غير صالح." };
+
+    // فحص الحظر العالمي للرقم الثاني (المستلم) في حال الطلب بوجهين
+    const isSecondBlocked = await prisma.globalBlockedPhone.findUnique({
+      where: { phone: secondPhone },
+    });
+    if (isSecondBlocked) {
+      return { error: `عذراً، رقم المستلم (${secondPhone}) محظور عالمياً.` };
+    }
+
     if (!secondRegionIdRaw) return { error: "منطقة المستلم مطلوبة." };
     secondRegionId = secondRegionIdRaw;
   }

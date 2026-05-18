@@ -30,16 +30,39 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
     setSelectedPreparerIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  function runSmartParse() {
+  async function runSmartParse() {
     setParseError(null);
     const t = pasteText.trim();
     if (!t) { setParseError("يرجى لصق النص أولاً."); return; }
 
+    let phone = "";
     const site = parseSiteOrderMessage(t);
+    if (site && site.items.length > 0) {
+      phone = extractPhoneNumberFromText(t) ?? "";
+    } else {
+      const flex = parseFlexibleOrderLines(t);
+      if (flex) {
+        phone = flex.phone;
+      }
+    }
+
+    if (phone) {
+      try {
+        const check = await fetch(`/api/check-block?phone=${encodeURIComponent(phone)}`);
+        const blockRes = await check.json();
+        if (blockRes.blocked) {
+          setParseError(`🔴 الزبون ممنوع من التوصيل (الرقم ${blockRes.phone} محظور عالمياً)`);
+          return;
+        }
+      } catch (e) {
+        console.error("Block check failed", e);
+      }
+    }
+
     if (site && site.items.length > 0) {
       setTitleLine((site.address || site.landmark || "طلب موقع").trim());
       setProducts(site.items.map((it) => `${it.name.trim()} ${it.qty}`.trim()));
-      setCustomerPhone(extractPhoneNumberFromText(t) ?? "");
+      setCustomerPhone(phone);
       setQ(site.address || "");
       return;
     }

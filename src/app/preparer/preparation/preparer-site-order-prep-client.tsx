@@ -187,7 +187,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
     }
   }
 
-  function runParse() {
+  async function runParse() {
     setParseError(null);
     setRegionGate("idle");
     const t = pasteText.trim();
@@ -195,7 +195,33 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
       setParseError("الصق نص القائمة أولاً.");
       return;
     }
-    const flex = parseFlexibleOrderLines(t);
+
+    let phone = "";
+    let flex = parseFlexibleOrderLines(t);
+    let site = null;
+
+    if (flex) {
+      phone = flex.phone;
+    } else {
+      site = parseSiteOrderMessage(t);
+      if (site && site.items.length > 0) {
+        phone = extractPhoneNumberFromText(t) ?? "";
+      }
+    }
+
+    if (phone) {
+      try {
+        const check = await fetch(`/api/check-block?phone=${encodeURIComponent(phone)}`);
+        const blockRes = await check.json();
+        if (blockRes.blocked) {
+          setParseError(`🔴 الزبون ممنوع من التوصيل (الرقم ${blockRes.phone} محظور عالمياً)`);
+          return;
+        }
+      } catch (e) {
+        console.error("Block check failed", e);
+      }
+    }
+
     if (flex) {
       setTitleLine(flex.title);
       setProducts([...flex.products]);
@@ -206,10 +232,9 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
       void resolveRegionAfterParse(flex.title);
       return;
     }
-    const site = parseSiteOrderMessage(t);
+
     if (site && site.items.length > 0) {
       const title = (site.address || site.landmark || "طلب موقع").trim();
-      const phone = extractPhoneNumberFromText(t) ?? "";
       const prods = site.items.map((it) => `${it.name.trim()} ${it.qty}`.trim());
       setTitleLine(title);
       setProducts(prods);

@@ -505,11 +505,22 @@ export async function createPreparerShoppingDraftFromAnalysis(
         const orderSubtotalRaw = formData.get("orderSubtotal");
         const orderSubtotalAlf = (orderSubtotalRaw && String(orderSubtotalRaw).trim() !== "") ? Number(orderSubtotalRaw) : null;
 
+        const customerPhoneRaw = String(formData.get("customerPhone") ?? "").trim();
+        const phoneLocal = normalizeIraqMobileLocal11(customerPhoneRaw) || customerPhoneRaw;
+
+        // Global block check
+        const isGlobalBlocked = await prisma.globalBlockedPhone.findUnique({
+          where: { phone: phoneLocal },
+        });
+        if (isGlobalBlocked) {
+          return { error: `عذراً، الرقم (${phoneLocal}) محظور عالمياً ولا يمكن إنشاء طلب تجهيز له.` };
+        }
+
         const draft = await prisma.companyPreparerShoppingDraft.create({
             data: {
                 preparerId: v.preparerId,
                 titleLine: String(formData.get("titleLine") ?? ""),
-                customerPhone: String(formData.get("customerPhone") ?? ""),
+                customerPhone: phoneLocal,
                 customerName: String(formData.get("customerName") ?? ""),
                 customerLandmark: String(formData.get("customerLandmark") ?? ""),
                 orderTime: String(formData.get("orderTime") ?? "فوري"),
@@ -559,6 +570,15 @@ export async function submitPreparerOrder(
 
     const customerPhone = normalizeIraqMobileLocal11(customerPhoneRaw);
     if (!customerPhone) return { error: "رقم هاتف الزبون غير صالح." };
+
+    // Global block check
+    const isGlobalBlocked = await prisma.globalBlockedPhone.findUnique({
+      where: { phone: customerPhone },
+    });
+    if (isGlobalBlocked) {
+      return { error: `عذراً، الرقم (${customerPhone}) محظور عالمياً من الطلب.` };
+    }
+
     if (!customerRegionId) return { error: "منطقة الزبون مطلوبة." };
 
     const subtotalParsed = parseAlfInputToDinarDecimalRequired(
@@ -1128,7 +1148,16 @@ export async function updatePreparerOrderFields(_prev: PreparerActionState, form
     if (orderType) data.orderType = orderType;
     if (customerPhoneRaw) {
       const p = normalizeIraqMobileLocal11(customerPhoneRaw);
-      if (p) data.customerPhone = p;
+      if (p) {
+        // Global block check
+        const isGlobalBlocked = await prisma.globalBlockedPhone.findUnique({
+          where: { phone: p },
+        });
+        if (isGlobalBlocked) {
+          return { error: `عذراً، الرقم (${p}) محظور عالمياً من الطلب.` };
+        }
+        data.customerPhone = p;
+      }
     }
     if (orderSubtotalRaw) {
       const p = parseAlfInputToDinarDecimalRequired(orderSubtotalRaw);
