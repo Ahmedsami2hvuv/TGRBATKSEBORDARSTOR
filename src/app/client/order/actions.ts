@@ -208,7 +208,7 @@ export async function submitOrder(
       where: { phone: phoneLocal },
     });
     if (isGlobalBlocked) {
-      return { error: "عذراً، هذا الرقم محظور عالمياً من التوصيل حالياً." };
+      return { error: "عذراً، هذا الرقم محظور من التوصيل حالياً." };
     }
 
     // معالجة السعر

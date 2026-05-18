@@ -465,6 +465,12 @@ function mergedOrderCustomerLoc(order: CourierOrderDetailForTelegram): string {
 function formatOrderDetailHtml(order: CourierOrderDetailForTelegram): string {
   const shopName = order.shop?.name?.trim() || "—";
   const shopRegionName = order.shop?.region?.name?.trim() || "—";
+  const shopPhone = (
+    order.shop?.phone?.trim() ||
+    order.submittedBy?.phone?.trim() ||
+    order.submittedByCompanyPreparer?.phone?.trim() ||
+    ""
+  );
 
   const customerName = order.customer?.name?.trim() || "—";
   const customerPhone = order.customer?.phone?.trim() || order.customerPhone || "—";
@@ -488,7 +494,7 @@ function formatOrderDetailHtml(order: CourierOrderDetailForTelegram): string {
 
   const lines: string[] = [
     `<b>📦 طلب #${order.orderNumber}</b>`,
-    `🏪 المحل: ${escapeTelegramHtml(shopName)}`,
+    `🏪 المحل: ${escapeTelegramHtml(shopName)}${shopPhone ? ` · 📞 ${escapeTelegramHtml(shopPhone)}` : ""}`,
     `🗺️ عنوان المحل: ${escapeTelegramHtml(shopRegionName)}`,
     isDouble
       ? `👤 المرسل: ${escapeTelegramHtml(customerName)} · 📞 ${escapeTelegramHtml(customerPhone)}`
@@ -546,6 +552,7 @@ function buildCourierOrderDetailKeyboard(opts: {
 }): TelegramInlineKeyboard {
   const { order, hasCustomerLocation } = opts;
   const on = String(order.orderNumber);
+  const isDouble = order.routeMode === "double";
 
   const inline: TelegramInlineKeyboard["inline_keyboard"] = [];
 
@@ -561,16 +568,16 @@ function buildCourierOrderDetailKeyboard(opts: {
   }
 
   inline.push([
-    { text: "📷 باب العميل", callback_data: `co_psh_${on}` },
+    { text: "📷 باب المحل", callback_data: `co_psh_${on}` },
     { text: "📷 الطلب", callback_data: `co_por_${on}` },
-    { text: "📷 باب الزبون", callback_data: `co_pcu_${on}` },
+    { text: isDouble ? "📷 باب المرسل" : "📷 باب الزبون", callback_data: `co_pcu_${on}` },
   ]);
 
-  inline.push([{ text: "📍 لكيشن", callback_data: `co_loc_${on}` }]);
-
+  const locRow = [{ text: "📍 لكيشن", callback_data: `co_loc_${on}` }];
   if (!hasCustomerLocation) {
-    inline.push([{ text: "📍 إضافة لكيشن (GPS)", callback_data: `co_lg_${on}` }]);
+    locRow.push({ text: "📍 إضافة GPS", callback_data: `co_lg_${on}` });
   }
+  inline.push(locRow);
 
   inline.push([{ text: "✏️ تعديل الطلب", callback_data: `co_edit_${on}` }]);
 
@@ -588,6 +595,8 @@ async function loadCourierOrderDetailForTelegram(courierId: string, orderNumber:
       customer: true,
       customerRegion: true,
       secondCustomerRegion: true,
+      submittedBy: true,
+      submittedByCompanyPreparer: true,
     },
   });
 }
@@ -1159,7 +1168,15 @@ export async function handleCourierCallback({
       return;
     }
     const on = String(order.orderNumber);
-    const shopPhone = order.shop?.phone?.trim() || "";
+
+    // تحسين جلب رقم المحل من عدة مصادر (المحل نفسه، أو الموظف/المجهز الذي أدخل الطلب)
+    const shopPhone = (
+      order.shop?.phone?.trim() ||
+      order.submittedBy?.phone?.trim() ||
+      order.submittedByCompanyPreparer?.phone?.trim() ||
+      ""
+    );
+
     const customerPhone = order.customerPhone?.trim() || order.customer?.phone?.trim() || "";
     const customer2Phone = order.secondCustomerPhone?.trim() || "";
     const altPhone = order.alternatePhone?.trim() || order.customer?.alternatePhone?.trim() || "";
@@ -1169,6 +1186,7 @@ export async function handleCourierCallback({
     const waRows: Array<Array<{ text: string; url: string }>> = [];
     const isDouble = order.routeMode === "double";
 
+    // سطر أول: المحل والرقم الثاني
     const shopBtn = shopPhone ? { text: "🟢 واتس اب المحل", url: whatsappMeUrl(shopPhone, waText) } : null;
     const altBtn = altPhone ? { text: "🟢 رقم ثانٍ", url: whatsappMeUrl(altPhone, waText) } : null;
 
@@ -1180,11 +1198,13 @@ export async function handleCourierCallback({
     }
 
     if (isDouble) {
+      // في وضع الوجهتين: المرسل والمستلم
       const row = [];
       if (customerPhone) row.push({ text: "🟢 واتس اب المرسل", url: whatsappMeUrl(customerPhone, waText) });
       if (customer2Phone) row.push({ text: "🟢 واتس اب المستلم", url: whatsappMeUrl(customer2Phone, waText) });
       if (row.length > 0) waRows.push(row);
     } else {
+      // في الوضع الطبيعي: الزبون
       if (customerPhone) waRows.push([{ text: "🟢 واتس اب الزبون", url: whatsappMeUrl(customerPhone, waText) }]);
     }
 
@@ -1211,7 +1231,13 @@ export async function handleCourierCallback({
     }
     const on = String(order.orderNumber);
 
-    const shopPhone = order.shop?.phone?.trim() || "";
+    const shopPhone = (
+      order.shop?.phone?.trim() ||
+      order.submittedBy?.phone?.trim() ||
+      order.submittedByCompanyPreparer?.phone?.trim() ||
+      ""
+    );
+
     const customerPhone = order.customerPhone?.trim() || order.customer?.phone?.trim() || "";
     const customer2Phone = order.secondCustomerPhone?.trim() || "";
     const altPhone = order.alternatePhone?.trim() || order.customer?.alternatePhone?.trim() || "";
@@ -1259,7 +1285,12 @@ export async function handleCourierCallback({
       await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken).catch(() => {});
       return;
     }
-    const shopPhone = order.shop?.phone?.trim() || "";
+    const shopPhone = (
+      order.shop?.phone?.trim() ||
+      order.submittedBy?.phone?.trim() ||
+      order.submittedByCompanyPreparer?.phone?.trim() ||
+      ""
+    );
     const customerPhone = order.customerPhone?.trim() || order.customer?.phone?.trim() || "";
     const customer2Phone = order.secondCustomerPhone?.trim() || "";
     const altPhone = order.alternatePhone?.trim() || order.customer?.alternatePhone?.trim() || "";
@@ -1292,27 +1323,38 @@ export async function handleCourierCallback({
     }
 
     const on = String(order.orderNumber);
+    const isDouble = order.routeMode === "double";
 
     const customerLoc =
       order.customerLocationUrl?.trim() || order.customer?.customerLocationUrl?.trim() || "";
+    const secondLoc = order.secondCustomerLocationUrl?.trim() || "";
     const shopLoc = order.shop?.locationUrl?.trim() || "";
 
-    const customerBtn: { text: string; url?: string; callback_data?: string } = customerLoc
-      ? { text: "📍 لكيشن الزبون", url: customerLoc }
-      : { text: "📍 إضافة لكيشن الزبون (GPS)", callback_data: `co_lg_${on}` };
-
     const rows: Array<Array<{ text: string; url?: string; callback_data?: string }>> = [];
-    rows.push([customerBtn]);
 
+    // سطر المحل
     if (shopLoc) {
-      rows.push([{ text: "🏬 لكيشن عميل", url: shopLoc }]);
+      rows.push([{ text: "🏬 لكيشن المحل", url: shopLoc }]);
+    }
+
+    // سطر الزبون / المرسل
+    const label1 = isDouble ? "📍 لكيشن المرسل" : "📍 لكيشن الزبون";
+    if (customerLoc) {
+      rows.push([{ text: label1, url: customerLoc }]);
+    } else {
+      rows.push([{ text: `➕ إضافة ${label1} (GPS)`, callback_data: `co_lg_${on}` }]);
+    }
+
+    // سطر المستلم (في حالة الوجهتين)
+    if (isDouble && secondLoc) {
+      rows.push([{ text: "📍 لكيشن المستلم", url: secondLoc }]);
     }
 
     const keyboard: TelegramInlineKeyboard = {
       inline_keyboard: [...rows, [{ text: "⬅️ رجوع", callback_data: `co_order_${on}` }]],
     };
 
-    const text = `<b>لكيشن</b>\nاختر الخيار:`;
+    const text = `<b>📍 روابط المواقع</b>\nاختر الموقع لفتحه في الخرائط:`;
     await deleteThenSendCourierMessage({
       chatId,
       messageId: cq.message.message_id,
@@ -1329,6 +1371,7 @@ export async function handleCourierCallback({
       await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken).catch(() => {});
       return;
     }
+    const isDouble = order.routeMode === "double";
     const shopDoor = (order.shopDoorPhotoUrl ?? "").trim();
     const customerDoor = (order.customerDoorPhotoUrl ?? order.customer?.customerDoorPhotoUrl ?? "").trim();
     const orderImg = (order.imageUrl ?? "").trim();
@@ -1338,10 +1381,10 @@ export async function handleCourierCallback({
     if (abs) {
       const cap =
         parsed.slot === "shop"
-          ? `🏪 صورة العميل — طلب #${order.orderNumber}`
+          ? `🏪 صورة المحل — طلب #${order.orderNumber}`
           : parsed.slot === "order"
             ? `📦 صورة الطلب — طلب #${order.orderNumber}`
-            : `👤 صورة الزبون — طلب #${order.orderNumber}`;
+            : isDouble ? `👤 صورة المرسل — طلب #${order.orderNumber}` : `👤 صورة الزبون — طلب #${order.orderNumber}`;
       await sendTelegramPhotoToChat(chatId, abs, escapeTelegramHtml(cap), botToken).catch(() => {});
       return;
     }
