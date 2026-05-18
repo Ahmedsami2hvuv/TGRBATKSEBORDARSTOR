@@ -234,6 +234,34 @@ export async function pushNotifyCourierNewAssignment(
   orderNumber: number,
   orderId?: string
 ): Promise<void> {
+  // جلب بيانات الطلب أولاً لاستخدامها في الإشعار
+  const order = await prisma.order.findFirst({
+    where: {
+      OR: [
+        { id: orderId || "undefined" },
+        { orderNumber: orderNumber }
+      ]
+    },
+    select: {
+      orderNumber: true,
+      orderType: true,
+      orderSubtotal: true,
+      deliveryPrice: true,
+      totalAmount: true,
+      customerPhone: true,
+      alternatePhone: true,
+      secondCustomerPhone: true,
+      customerLocationUrl: true,
+      secondCustomerLocationUrl: true,
+      customerDoorPhotoUrl: true,
+      secondCustomerDoorPhotoUrl: true,
+      shop: { select: { name: true } },
+      customerRegion: { select: { name: true } },
+    },
+  });
+
+  const finalOrderNumber = order?.orderNumber || orderNumber;
+
   const courier = await prisma.courier.findUnique({
     where: { id: courierId },
     select: { telegramUserId: true },
@@ -245,18 +273,58 @@ export async function pushNotifyCourierNewAssignment(
   // 1. إرسال Telegram (تم استعادته)
   if (courier?.telegramUserId?.trim() && courierBotToken) {
     const chatId = courier.telegramUserId.trim();
-    const text = `<b>تم إسناد طلب جديد لك</b>\n\n🔢 رقم الطلب: <b>#${escapeTelegramHtml(String(
-      orderNumber,
-    ))}</b>\n\nالطلب مرتبط الآن بحسابك. اختر من الأزرار:`;
-    const kb = {
-      inline_keyboard: [
-        [
-          { text: "📦 فتح الطلب", callback_data: `co_order_${orderNumber}` },
-          { text: "📦 طلبياتي", callback_data: "co_orders_0" },
-        ],
-        [{ text: "💼 محفظتي", callback_data: "co_wallet_0" }],
-      ],
-    };
+
+    const shopName = order?.shop?.name || "—";
+    const regionName = order?.customerRegion?.name || "—";
+    const orderType = order?.orderType || "—";
+    const subtotal = order?.orderSubtotal ? String(order.orderSubtotal) : "—";
+    const delivery = order?.deliveryPrice ? String(order.deliveryPrice) : "—";
+    const total = order?.totalAmount ? String(order.totalAmount) : "—";
+    const phone = order?.customerPhone || "—";
+    const altPhone = order?.secondCustomerPhone || order?.alternatePhone || "—";
+
+    const text = `<b>${escapeTelegramHtml(shopName)} ⬅️ ${escapeTelegramHtml(regionName)}</b>
+نوع الطلب: ${escapeTelegramHtml(orderType)}
+سعر الطلب بدون توصيل: ${escapeTelegramHtml(subtotal)}
+سعر التوصيل: ${escapeTelegramHtml(delivery)}
+السعر الكلي: <b>${escapeTelegramHtml(total)}</b>
+رقم العميل: ${escapeTelegramHtml(phone)}
+رقم الزبون: ${escapeTelegramHtml(altPhone)}
+🔢 رقم الطلب: <b>#${escapeTelegramHtml(String(finalOrderNumber))}</b>
+
+اختر من الأزرار التالية:`;
+
+    const buttons = [];
+
+    // صف اللوكيشنات
+    const locButtons = [];
+    if (order?.customerLocationUrl) {
+      locButtons.push({ text: "📍 لوكيشن العميل", url: order.customerLocationUrl });
+    }
+    if (order?.secondCustomerLocationUrl) {
+      locButtons.push({ text: "📍 لوكيشن الزبون", url: order.secondCustomerLocationUrl });
+    }
+    if (locButtons.length > 0) buttons.push(locButtons);
+
+    // صف صور الأبواب
+    const photoButtons = [];
+    if (order?.customerDoorPhotoUrl) {
+      photoButtons.push({ text: "🖼️ باب العميل", url: order.customerDoorPhotoUrl });
+    }
+    if (order?.secondCustomerDoorPhotoUrl) {
+      photoButtons.push({ text: "🖼️ باب الزبون", url: order.secondCustomerDoorPhotoUrl });
+    }
+    if (photoButtons.length > 0) buttons.push(photoButtons);
+
+    // الأزرار الأساسية
+    buttons.push([
+      { text: "📦 فتح الطلب", callback_data: `co_order_${finalOrderNumber}` },
+      { text: "📦 طلبياتي", callback_data: "co_orders_0" },
+    ]);
+    buttons.push([{ text: "💼 محفظتي", callback_data: "co_wallet_0" }]);
+
+    const kb = { inline_keyboard: buttons };
+
     const sent = await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, courierBotToken).catch((err) => {
       console.error(`[pushNotifyCourierNewAssignment] sendTelegramMessageWithKeyboardToChat failed:`, err);
       return { ok: false, error: err?.message ?? "send failed" };
@@ -271,22 +339,6 @@ export async function pushNotifyCourierNewAssignment(
   const settingsRow = await getOrCreateNotificationSettings();
   const settings = audienceSettings(settingsRow, "mandoub");
   if (!settings.enabled) return;
-
-  const order = await prisma.order.findFirst({
-    where: {
-      OR: [
-        { id: orderId || "undefined" },
-        { orderNumber: orderNumber }
-      ]
-    },
-    select: {
-      orderNumber: true,
-      shop: { select: { name: true } },
-      customerRegion: { select: { name: true } },
-    },
-  });
-
-  const finalOrderNumber = order?.orderNumber || orderNumber;
 
   const title = renderNotificationTemplate(settings.titleSingle, {
     count: 1,
