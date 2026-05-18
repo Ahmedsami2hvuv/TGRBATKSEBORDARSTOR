@@ -1303,63 +1303,64 @@ export async function updateCustomerPhoneProfile(
     photoUrl = uploaded.photoUrl;
   }
 
-  const isGloballyBlocked = await tx.globalBlockedPhone.findUnique({
-    where: { phone: existing.phone },
-  });
-
-  if (isBlocked) {
-    // Add to global block if checking it
-    await tx.globalBlockedPhone.upsert({
+  await prisma.$transaction(async (tx) => {
+    const isGloballyBlocked = await tx.globalBlockedPhone.findUnique({
       where: { phone: existing.phone },
-      create: { phone: existing.phone },
-      update: {},
-    });
-  } else if (!isBlocked && isGloballyBlocked) {
-    // If we are unblocking this specific profile, should we remove it from global?
-    // Let's assume yes, if they uncheck it here, they want to allow it.
-    await tx.globalBlockedPhone.deleteMany({
-      where: { phone: existing.phone },
-    });
-  }
-
-  await tx.customerPhoneProfile.update({
-    where: { id },
-    data: {
-      regionId,
-      isBlocked,
-      locationUrl: locParsed.url,
-      landmark,
-      notes,
-      alternatePhone,
-      photoUrl,
-    },
-  });
-
-  // Sync active orders and potentially other profiles if global status changed
-  if (isBlocked !== existing.isBlocked || landmark !== existing.landmark) {
-    // Update active orders for this phone across ALL regions if it's a block
-    await tx.order.updateMany({
-      where: {
-        customerPhone: existing.phone,
-        // If it's a global block now, update everything.
-        // If it's just a landmark change in this region, update this region.
-        ...(isBlocked ? {} : { customerRegionId: existing.regionId }),
-        status: { in: ["pending", "assigned", "delivering"] },
-      },
-      data: {
-        customerLandmark: landmark,
-      },
     });
 
     if (isBlocked) {
-      // Also update all other profiles for this phone to be blocked
-      await tx.customerPhoneProfile.updateMany({
+      // Add to global block if checking it
+      await tx.globalBlockedPhone.upsert({
         where: { phone: existing.phone },
-        data: { isBlocked: true },
+        create: { phone: existing.phone },
+        update: {},
+      });
+    } else if (!isBlocked && isGloballyBlocked) {
+      // If we are unblocking this specific profile, should we remove it from global?
+      // Let's assume yes, if they uncheck it here, they want to allow it.
+      await tx.globalBlockedPhone.deleteMany({
+        where: { phone: existing.phone },
       });
     }
-  }
-});
+
+    await tx.customerPhoneProfile.update({
+      where: { id },
+      data: {
+        regionId,
+        isBlocked,
+        locationUrl: locParsed.url,
+        landmark,
+        notes,
+        alternatePhone,
+        photoUrl,
+      },
+    });
+
+    // Sync active orders and potentially other profiles if global status changed
+    if (isBlocked !== existing.isBlocked || landmark !== existing.landmark) {
+      // Update active orders for this phone across ALL regions if it's a block
+      await tx.order.updateMany({
+        where: {
+          customerPhone: existing.phone,
+          // If it's a global block now, update everything.
+          // If it's just a landmark change in this region, update this region.
+          ...(isBlocked ? {} : { customerRegionId: existing.regionId }),
+          status: { in: ["pending", "assigned", "delivering"] },
+        },
+        data: {
+          customerLandmark: landmark,
+        },
+      });
+
+      if (isBlocked) {
+        // Also update all other profiles for this phone to be blocked
+        await tx.customerPhoneProfile.updateMany({
+          where: { phone: existing.phone },
+          data: { isBlocked: true },
+        });
+      }
+    }
+  });
 
   revalidatePath("/admin/customers");
   revalidatePath("/admin/customers/profiles");
