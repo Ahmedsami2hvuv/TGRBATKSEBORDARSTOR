@@ -225,7 +225,7 @@ export function OrderViewContent({
                   <>
                     <p className="font-bold text-slate-900">{order.shop.name}</p>
                     <p className="text-sm font-medium"><span className="text-slate-500">المسؤول: </span><span className="font-bold text-sky-900">{order.submittedByCompanyPreparer?.name || order.submittedBy?.name || "—"}</span></p>
-                    <div className="mt-2">{order.shopLocationUrl?.trim() ? <a href={order.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">فتح اللوكيشن ↗</a> : <p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن</p>}</div>
+                    <div className="mt-2">{order.shopLocationUrl?.trim() ? <a href={order.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">فتح لوكيشن المحل ↗</a> : <p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن</p>}</div>
                   </>
                 }
               </>

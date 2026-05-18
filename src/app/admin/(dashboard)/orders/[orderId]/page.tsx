@@ -125,6 +125,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
  customerLandmark: order.customerLandmark || customerProfile?.landmark || "",
  alternatePhone: order.alternatePhone || customerProfile?.alternatePhone || null,
  customerLocationUrl: customerLocationUrlEffective,
+ shopLocationUrl: order.shop?.locationUrl || "",
  customerProfileId: customerProfile?.id || null,
  preparerShoppingJson: order.preparerShoppingJson ? JSON.stringify(order.preparerShoppingJson) : null,
  };

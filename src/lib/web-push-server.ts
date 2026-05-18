@@ -6,6 +6,8 @@ import { renderNotificationTemplate } from "@/lib/notification-template";
 import { prisma } from "@/lib/prisma";
 import { getBotTokenByPurpose } from "@/lib/telegram-bots";
 import { escapeTelegramHtml, sendTelegramHtmlToChat, sendTelegramMessageWithKeyboardToChat } from "@/lib/telegram";
+import { resolvePublicAssetSrc } from "@/lib/image-url";
+import { formatDinarAsAlf } from "@/lib/money-alf";
 
 function configureVapid(): boolean {
   const pub = process.env.VAPID_PUBLIC_KEY?.trim();
@@ -255,8 +257,13 @@ export async function pushNotifyCourierNewAssignment(
       secondCustomerLocationUrl: true,
       customerDoorPhotoUrl: true,
       secondCustomerDoorPhotoUrl: true,
-      shop: { select: { name: true } },
+      customerLandmark: true,
+      secondCustomerLandmark: true,
+      summary: true,
+      orderNoteTime: true,
+      shop: { select: { name: true, locationUrl: true } },
       customerRegion: { select: { name: true } },
+      secondCustomerRegion: { select: { name: true } },
     },
   });
 
@@ -275,11 +282,18 @@ export async function pushNotifyCourierNewAssignment(
     const chatId = courier.telegramUserId.trim();
 
     const shopName = order?.shop?.name || "—";
+    const shopLoc = order?.shop?.locationUrl || "";
     const regionName = order?.customerRegion?.name || "—";
+    const secondRegionName = order?.secondCustomerRegion?.name || "";
+    const landmark = order?.customerLandmark || "";
+    const secondLandmark = order?.secondCustomerLandmark || "";
+    const summary = order?.summary || "";
+    const noteTime = order?.orderNoteTime || "الان";
+
     const orderType = order?.orderType || "—";
-    const subtotal = order?.orderSubtotal ? String(order.orderSubtotal) : "—";
-    const delivery = order?.deliveryPrice ? String(order.deliveryPrice) : "—";
-    const total = order?.totalAmount ? String(order.totalAmount) : "—";
+    const subtotal = order?.orderSubtotal ? formatDinarAsAlf(order.orderSubtotal) : "—";
+    const delivery = order?.deliveryPrice ? formatDinarAsAlf(order.deliveryPrice) : "—";
+    const total = order?.totalAmount ? formatDinarAsAlf(order.totalAmount) : "—";
     const phone = order?.customerPhone || "—";
     const altPhone = order?.secondCustomerPhone || order?.alternatePhone || "—";
     const loc1 = order?.customerLocationUrl || "";
@@ -287,12 +301,17 @@ export async function pushNotifyCourierNewAssignment(
 
     let text = `🏪 <b>(${escapeTelegramHtml(shopName)} — ${escapeTelegramHtml(regionName)})</b>
 🔔 تم إسناد طلب جديد إليك
-📍 ${escapeTelegramHtml(regionName)}
-📦 ${escapeTelegramHtml(orderType)}
+📍 ${escapeTelegramHtml(regionName)}${landmark ? ` (${escapeTelegramHtml(landmark)})` : ""}`;
+
+    if (secondRegionName) {
+      text += `\n📍 ${escapeTelegramHtml(secondRegionName)}${secondLandmark ? ` (${escapeTelegramHtml(secondLandmark)})` : ""}`;
+    }
+
+    text += `\n📦 ${escapeTelegramHtml(orderType)}
 💵 ${escapeTelegramHtml(subtotal)}
 🚚 ${escapeTelegramHtml(delivery)}
 💰 <b>${escapeTelegramHtml(total)}</b>
-⏰ الان
+⏰ ${escapeTelegramHtml(noteTime)}
 🔢 #${escapeTelegramHtml(String(finalOrderNumber))}
 📞 ${escapeTelegramHtml(phone)}`;
 
@@ -300,8 +319,14 @@ export async function pushNotifyCourierNewAssignment(
       text += `\n📞 ${escapeTelegramHtml(altPhone)}`;
     }
 
-    if (loc1 || loc2) {
+    if (summary) {
+      text += `\n\n📝 <b>الملاحظات:</b>\n${escapeTelegramHtml(summary)}`;
+    }
+
+    // إضافة اللوكيشنات
+    if (shopLoc || loc1 || loc2) {
       text += `\n`;
+      if (shopLoc) text += `\n📍 <a href="${escapeTelegramHtml(shopLoc)}">لوكيشن المحل</a>`;
       if (loc1) text += `\n📍 <a href="${escapeTelegramHtml(loc1)}">لوكيشن العميل</a>`;
       if (loc2) text += `\n📍 <a href="${escapeTelegramHtml(loc2)}">لوكيشن الزبون</a>`;
     }
@@ -310,13 +335,24 @@ export async function pushNotifyCourierNewAssignment(
 
     const buttons = [];
 
+    const baseUrl = getPublicAppUrl();
+    const getFullUrl = (src: string | null | undefined) => {
+      if (!src) return undefined;
+      const resolved = resolvePublicAssetSrc(src);
+      if (!resolved) return undefined;
+      if (resolved.startsWith("http")) return resolved;
+      return `${baseUrl}${resolved.startsWith("/") ? "" : "/"}${resolved}`;
+    };
+
     // صف أزرار صور الأبواب
     const photoButtons = [];
-    if (order?.customerDoorPhotoUrl) {
-      photoButtons.push({ text: "🖼️ باب العميل", url: order.customerDoorPhotoUrl });
+    const door1 = getFullUrl(order?.customerDoorPhotoUrl);
+    if (door1) {
+      photoButtons.push({ text: "🖼️ باب العميل", url: door1 });
     }
-    if (order?.secondCustomerDoorPhotoUrl) {
-      photoButtons.push({ text: "🖼️ باب الزبون", url: order.secondCustomerDoorPhotoUrl });
+    const door2 = getFullUrl(order?.secondCustomerDoorPhotoUrl);
+    if (door2) {
+      photoButtons.push({ text: "🖼️ باب الزبون", url: door2 });
     }
     if (photoButtons.length > 0) {
       buttons.push(photoButtons);
