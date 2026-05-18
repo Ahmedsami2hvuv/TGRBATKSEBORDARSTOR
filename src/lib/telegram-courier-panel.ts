@@ -133,7 +133,7 @@ type CourierCallback =
   | { kind: "order_detail"; orderNumber: number }
   | { kind: "order_wa_menu"; orderNumber: number }
   | { kind: "order_call_menu"; orderNumber: number }
-  | { kind: "order_call_dial"; orderNumber: number; who: "s" | "c" | "2" }
+  | { kind: "order_call_dial"; orderNumber: number; who: "s" | "c" | "2" | "a" }
   | { kind: "order_loc_menu"; orderNumber: number }
   | { kind: "order_loc_gps"; orderNumber: number }
   | { kind: "order_photo_one"; orderNumber: number; slot: "shop" | "order" | "cust" }
@@ -212,8 +212,8 @@ function parseCourierCallbackData(raw: string): CourierCallback | null {
   const locGps = /^co_lg_(\d+)$/.exec(t);
   if (locGps) return { kind: "order_loc_gps", orderNumber: Number(locGps[1]) };
 
-  const callgo = /^co_callgo_(\d+)_(s|c|2)$/.exec(t);
-  if (callgo) return { kind: "order_call_dial", orderNumber: Number(callgo[1]), who: callgo[2] as "s" | "c" | "2" };
+  const callgo = /^co_callgo_(\d+)_(s|c|2|a)$/.exec(t);
+  if (callgo) return { kind: "order_call_dial", orderNumber: Number(callgo[1]), who: callgo[2] as "s" | "c" | "2" | "a" };
 
   const psh = /^co_psh_(\d+)$/.exec(t);
   if (psh) return { kind: "order_photo_one", orderNumber: Number(psh[1]), slot: "shop" };
@@ -484,41 +484,47 @@ function formatOrderDetailHtml(order: CourierOrderDetailForTelegram): string {
   const altPhone =
     order.alternatePhone?.trim() || order.customer?.alternatePhone?.trim() || "";
 
+  const isDouble = order.routeMode === "double";
+
   const lines: string[] = [
     `<b>📦 طلب #${order.orderNumber}</b>`,
-    `🏪 ${escapeTelegramHtml(shopName)}`,
+    `🏪 المحل: ${escapeTelegramHtml(shopName)}`,
     `🗺️ عنوان المحل: ${escapeTelegramHtml(shopRegionName)}`,
-    `👤 ${escapeTelegramHtml(customerName)} · 📞 ${escapeTelegramHtml(customerPhone)}`,
+    isDouble
+      ? `👤 المرسل: ${escapeTelegramHtml(customerName)} · 📞 ${escapeTelegramHtml(customerPhone)}`
+      : `👤 الزبون: ${escapeTelegramHtml(customerName)} · 📞 ${escapeTelegramHtml(customerPhone)}`,
   ];
   if (altPhone) {
-    lines.push(`📞 ثانٍ: ${escapeTelegramHtml(altPhone)}`);
+    lines.push(`📞 رقم ثانٍ: ${escapeTelegramHtml(altPhone)}`);
   }
   lines.push(
-    `🗺️ عنوان الزبون: ${escapeTelegramHtml(customerRegionName)}`,
+    isDouble ? `🗺️ عنوان المرسل: ${escapeTelegramHtml(customerRegionName)}` : `🗺️ عنوان الزبون: ${escapeTelegramHtml(customerRegionName)}`,
     `📌 الحالة: ${escapeTelegramHtml(statusAr(order.status))}`,
     `📦 نوع الطلب: ${escapeTelegramHtml(orderType)}`,
     alfLine("💵", order.orderSubtotal != null ? formatDinarAsAlf(order.orderSubtotal) : "—"),
     alfLine("🚚", order.deliveryPrice != null ? formatDinarAsAlf(order.deliveryPrice) : "—"),
     alfLine("💰", order.totalAmount != null ? formatDinarAsAlf(order.totalAmount) : "—"),
-    mainLocLine,
+    isDouble ? `📍 موقع المرسل: ${mergedCustomerLocUrl ? `<a href="${escapeTelegramHtml(mergedCustomerLocUrl)}">فتح الموقع</a>` : "—"}` : mainLocLine,
   );
 
-  if (landmarkLine) lines.push(landmarkLine);
+  if (landmarkLine) lines.push(isDouble ? `📌 نقطة دالة (المرسل): ${escapeTelegramHtml(mergedLandmark)}` : landmarkLine);
 
   if (order.orderNoteTime) {
     lines.push(`⏱️ وقت ملاحظة الطلب: ${escapeTelegramHtml(order.orderNoteTime)}`);
   }
 
-  // Double destination: only show extra landmark/region if present
-  if (order.routeMode === "double") {
+  // Double destination
+  if (isDouble) {
     const loc2 = order.secondCustomerLocationUrl?.trim();
     const region2 = order.secondCustomerRegion?.name?.trim() || "—";
+    const phone2 = order.secondCustomerPhone?.trim() || "—";
     lines.push(``);
-    lines.push(`<b>الوجهة الثانية</b>`);
-    lines.push(`🗺️ ${escapeTelegramHtml(region2)}`);
-    lines.push(loc2 ? `📍 الموقع 2: <a href="${escapeTelegramHtml(loc2)}">فتح الموقع</a>` : `📍 الموقع 2: —`);
+    lines.push(`<b>👤 المستلم (الوجهة الثانية)</b>`);
+    lines.push(`📞 هاتف المستلم: ${escapeTelegramHtml(phone2)}`);
+    lines.push(`🗺️ عنوان المستلم: ${escapeTelegramHtml(region2)}`);
+    lines.push(loc2 ? `📍 موقع المستلم: <a href="${escapeTelegramHtml(loc2)}">فتح الموقع</a>` : `📍 موقع المستلم: —`);
     const lmk2 = order.secondCustomerLandmark?.trim() || "";
-    if (lmk2) lines.push(`📌 أقرب نقطة دالة 2: ${escapeTelegramHtml(lmk2)}`);
+    if (lmk2) lines.push(`📌 نقطة دالة (المستلم): ${escapeTelegramHtml(lmk2)}`);
   }
 
   return lines.join("\n");
@@ -1156,13 +1162,31 @@ export async function handleCourierCallback({
     const shopPhone = order.shop?.phone?.trim() || "";
     const customerPhone = order.customerPhone?.trim() || order.customer?.phone?.trim() || "";
     const customer2Phone = order.secondCustomerPhone?.trim() || "";
+    const altPhone = order.alternatePhone?.trim() || order.customer?.alternatePhone?.trim() || "";
 
     const waText = `طلبية #${on}`;
 
     const waRows: Array<Array<{ text: string; url: string }>> = [];
-    if (shopPhone) waRows.push([{ text: "🟢 واتس اب عميل", url: whatsappMeUrl(shopPhone, waText) }]);
-    if (customerPhone) waRows.push([{ text: "🟢 واتس اب زبون", url: whatsappMeUrl(customerPhone, waText) }]);
-    if (customer2Phone) waRows.push([{ text: "🟢 واتس اب زبون 2", url: whatsappMeUrl(customer2Phone, waText) }]);
+    const isDouble = order.routeMode === "double";
+
+    const shopBtn = shopPhone ? { text: "🟢 واتس اب المحل", url: whatsappMeUrl(shopPhone, waText) } : null;
+    const altBtn = altPhone ? { text: "🟢 رقم ثانٍ", url: whatsappMeUrl(altPhone, waText) } : null;
+
+    if (shopBtn || altBtn) {
+      const row = [];
+      if (shopBtn) row.push(shopBtn);
+      if (altBtn) row.push(altBtn);
+      waRows.push(row);
+    }
+
+    if (isDouble) {
+      const row = [];
+      if (customerPhone) row.push({ text: "🟢 واتس اب المرسل", url: whatsappMeUrl(customerPhone, waText) });
+      if (customer2Phone) row.push({ text: "🟢 واتس اب المستلم", url: whatsappMeUrl(customer2Phone, waText) });
+      if (row.length > 0) waRows.push(row);
+    } else {
+      if (customerPhone) waRows.push([{ text: "🟢 واتس اب الزبون", url: whatsappMeUrl(customerPhone, waText) }]);
+    }
 
     const keyboard: TelegramInlineKeyboard = {
       inline_keyboard: [...waRows, [{ text: "⬅️ رجوع", callback_data: `co_order_${on}` }]],
@@ -1190,11 +1214,29 @@ export async function handleCourierCallback({
     const shopPhone = order.shop?.phone?.trim() || "";
     const customerPhone = order.customerPhone?.trim() || order.customer?.phone?.trim() || "";
     const customer2Phone = order.secondCustomerPhone?.trim() || "";
+    const altPhone = order.alternatePhone?.trim() || order.customer?.alternatePhone?.trim() || "";
 
     const rows: Array<Array<{ text: string; callback_data: string }>> = [];
-    if (shopPhone) rows.push([{ text: "📞 اتصال بالعميل", callback_data: `co_callgo_${on}_s` }]);
-    if (customerPhone) rows.push([{ text: "📞 اتصال بالزبون", callback_data: `co_callgo_${on}_c` }]);
-    if (customer2Phone.trim()) rows.push([{ text: "📞 اتصال بالزبون 2", callback_data: `co_callgo_${on}_2` }]);
+    const isDouble = order.routeMode === "double";
+
+    const shopBtn = shopPhone ? { text: "📞 اتصال بالمحل", callback_data: `co_callgo_${on}_s` } : null;
+    const altBtn = altPhone ? { text: "📞 رقم ثانٍ", callback_data: `co_callgo_${on}_a` } : null;
+
+    if (shopBtn || altBtn) {
+      const row = [];
+      if (shopBtn) row.push(shopBtn);
+      if (altBtn) row.push(altBtn);
+      rows.push(row);
+    }
+
+    if (isDouble) {
+      const row = [];
+      if (customerPhone) row.push({ text: "📞 اتصال بالمرسل", callback_data: `co_callgo_${on}_c` });
+      if (customer2Phone.trim()) row.push({ text: "📞 اتصال بالمستلم", callback_data: `co_callgo_${on}_2` });
+      if (row.length > 0) rows.push(row);
+    } else {
+      if (customerPhone) rows.push([{ text: "📞 اتصال بالزبون", callback_data: `co_callgo_${on}_c` }]);
+    }
 
     const keyboard: TelegramInlineKeyboard = {
       inline_keyboard: [...rows, [{ text: "⬅️ رجوع", callback_data: `co_order_${on}` }]],
@@ -1220,8 +1262,12 @@ export async function handleCourierCallback({
     const shopPhone = order.shop?.phone?.trim() || "";
     const customerPhone = order.customerPhone?.trim() || order.customer?.phone?.trim() || "";
     const customer2Phone = order.secondCustomerPhone?.trim() || "";
+    const altPhone = order.alternatePhone?.trim() || order.customer?.alternatePhone?.trim() || "";
     const phone =
-      parsed.who === "s" ? shopPhone : parsed.who === "c" ? customerPhone : customer2Phone;
+      parsed.who === "s" ? shopPhone :
+      parsed.who === "c" ? customerPhone :
+      parsed.who === "2" ? customer2Phone :
+      parsed.who === "a" ? altPhone : "";
     const href = telHref(phone);
     if (href === "#") {
       await answerCallbackQuery(cq.id, "لا يوجد رقم", true, botToken).catch(() => {});
