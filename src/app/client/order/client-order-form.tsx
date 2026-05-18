@@ -126,6 +126,13 @@ function ClientOrderFormInner({
   const [showNoPriceConfirm, setShowNoPriceConfirm] = useState(false);
   const [allowNoPriceSubmit, setAllowNoPriceSubmit] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [blockedPhone, setBlockedPhone] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (state.error && state.error.includes("محظور")) {
+      setBlockedPhone(customerPhone);
+    }
+  }, [state.error, customerPhone]);
 
   useEffect(() => {
     const query = q.trim();
@@ -579,7 +586,7 @@ function ClientOrderFormInner({
         </section>
 
 
-        {state.error ? (
+        {state.error && !state.error.includes("محظور") ? (
           <div className="rounded-2xl border-2 border-rose-200 bg-rose-50 p-4 text-center text-sm font-black text-rose-800 animate-shake">
             ⚠️ {state.error}
           </div>
@@ -589,6 +596,29 @@ function ClientOrderFormInner({
           {pending ? "جارٍ إرسال الطلب..." : initialOrder ? "تحديث الطلبية الآن" : "إرسال الطلب للاداره"}
         </button>
       </form>
+
+      {blockedPhone && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-sm rounded-3xl border-2 border-rose-100 bg-white p-6 shadow-2xl text-center animate-in zoom-in duration-300">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+              <span className="text-3xl">🚫</span>
+            </div>
+            <h3 className="text-xl font-black text-slate-900">زبون محظور!</h3>
+            <p className="mt-3 text-sm font-bold leading-relaxed text-slate-600">
+              عذراً، هذا الرقم محظور من التوصيل حالياً.
+              <br/>
+              <span className="font-mono text-rose-600 mt-1 block" dir="ltr">{blockedPhone}</span>
+            </p>
+            <button
+              type="button"
+              onClick={() => setBlockedPhone(null)}
+              className="mt-6 w-full rounded-2xl bg-slate-900 py-3 text-sm font-black text-white shadow-lg active:scale-95 transition"
+            >
+              فهمت ذلك
+            </button>
+          </div>
+        </div>
+      )}
 
       {showNoPriceConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
