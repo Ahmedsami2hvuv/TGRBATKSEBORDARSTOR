@@ -45,11 +45,11 @@ export function StaffSubmittedClient({
         selectedTitle=""
         selectedAriaPrefix=""
         showStatusDotInSelectCol={true}
-        renderSelectActions={(row) => {
+        renderBelowOrderId={(row) => {
           if (row.orderStatus === "sent" || row.orderStatus === "archived") return null;
           return (
             <div className="flex flex-col gap-1 mt-1">
-               <button
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   if (!confirm("هل أنت متأكد من إلغاء هذا الطلب؟")) return;
@@ -62,10 +62,17 @@ export function StaffSubmittedClient({
                   formAction(fd);
                 }}
                 disabled={cancellingId === row.id}
-                className="rounded bg-rose-50 px-1 py-0.5 text-[10px] font-bold text-rose-600 border border-rose-200 hover:bg-rose-100 disabled:opacity-50"
+                className="rounded-full bg-rose-600 px-2 py-1 text-[10px] font-bold text-white shadow-sm hover:bg-rose-700 disabled:opacity-50"
               >
-                {cancellingId === row.id ? "جاري..." : "إلغاء"}
+                {cancellingId === row.id ? "..." : "إلغاء"}
               </button>
+            </div>
+          );
+        }}
+        renderSelectActions={(row) => {
+          if (row.orderStatus === "sent" || row.orderStatus === "archived") return null;
+          return (
+            <div className="flex flex-col gap-1 mt-1">
               <Link
                 href={`/staff/portal/submitted/${row.id}?${authQ}`}
                 onClick={(e) => e.stopPropagation()}
