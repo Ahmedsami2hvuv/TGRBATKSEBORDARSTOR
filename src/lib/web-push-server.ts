@@ -282,31 +282,35 @@ export async function pushNotifyCourierNewAssignment(
     const total = order?.totalAmount ? String(order.totalAmount) : "—";
     const phone = order?.customerPhone || "—";
     const altPhone = order?.secondCustomerPhone || order?.alternatePhone || "—";
+    const loc1 = order?.customerLocationUrl || "";
+    const loc2 = order?.secondCustomerLocationUrl || "";
 
-    const text = `<b>${escapeTelegramHtml(shopName)} ⬅️ ${escapeTelegramHtml(regionName)}</b>
-نوع الطلب: ${escapeTelegramHtml(orderType)}
-سعر الطلب بدون توصيل: ${escapeTelegramHtml(subtotal)}
-سعر التوصيل: ${escapeTelegramHtml(delivery)}
-السعر الكلي: <b>${escapeTelegramHtml(total)}</b>
-رقم العميل: ${escapeTelegramHtml(phone)}
-رقم الزبون: ${escapeTelegramHtml(altPhone)}
-🔢 رقم الطلب: <b>#${escapeTelegramHtml(String(finalOrderNumber))}</b>
+    let text = `🏪 <b>(${escapeTelegramHtml(shopName)} — ${escapeTelegramHtml(regionName)})</b>
+🔔 تم إسناد طلب جديد إليك
+📍 ${escapeTelegramHtml(regionName)}
+📦 ${escapeTelegramHtml(orderType)}
+💵 ${escapeTelegramHtml(subtotal)}
+🚚 ${escapeTelegramHtml(delivery)}
+💰 <b>${escapeTelegramHtml(total)}</b>
+⏰ الان
+🔢 #${escapeTelegramHtml(String(finalOrderNumber))}
+📞 ${escapeTelegramHtml(phone)}`;
 
-اختر من الأزرار التالية:`;
+    if (altPhone && altPhone !== "—") {
+      text += `\n📞 ${escapeTelegramHtml(altPhone)}`;
+    }
+
+    if (loc1 || loc2) {
+      text += `\n`;
+      if (loc1) text += `\n📍 <a href="${escapeTelegramHtml(loc1)}">لوكيشن العميل</a>`;
+      if (loc2) text += `\n📍 <a href="${escapeTelegramHtml(loc2)}">لوكيشن الزبون</a>`;
+    }
+
+    text += `\n\nيمكنك الضغط على الأزرار أدناه للتحكم بالطلب.`;
 
     const buttons = [];
 
-    // صف اللوكيشنات
-    const locButtons = [];
-    if (order?.customerLocationUrl) {
-      locButtons.push({ text: "📍 لوكيشن العميل", url: order.customerLocationUrl });
-    }
-    if (order?.secondCustomerLocationUrl) {
-      locButtons.push({ text: "📍 لوكيشن الزبون", url: order.secondCustomerLocationUrl });
-    }
-    if (locButtons.length > 0) buttons.push(locButtons);
-
-    // صف صور الأبواب
+    // صف أزرار صور الأبواب
     const photoButtons = [];
     if (order?.customerDoorPhotoUrl) {
       photoButtons.push({ text: "🖼️ باب العميل", url: order.customerDoorPhotoUrl });
@@ -314,7 +318,9 @@ export async function pushNotifyCourierNewAssignment(
     if (order?.secondCustomerDoorPhotoUrl) {
       photoButtons.push({ text: "🖼️ باب الزبون", url: order.secondCustomerDoorPhotoUrl });
     }
-    if (photoButtons.length > 0) buttons.push(photoButtons);
+    if (photoButtons.length > 0) {
+      buttons.push(photoButtons);
+    }
 
     // الأزرار الأساسية
     buttons.push([
