@@ -355,6 +355,9 @@ export async function createAdminOrder(
   await syncPhoneProfileFromOrder(order.id);
   if (routeMode === "double") await syncSecondPhoneProfileFromOrder(order.id);
 
+  if (assignedCourierId) {
+    void pushNotifyCourierNewAssignment(assignedCourierId, order.orderNumber, order.id);
+  }
   void notifyTelegramNewOrder(order.id);
   void pushNotifyAdminsNewPendingOrder(order.orderNumber);
 

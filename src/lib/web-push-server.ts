@@ -8,6 +8,7 @@ import { getBotTokenByPurpose } from "@/lib/telegram-bots";
 import { escapeTelegramHtml, sendTelegramHtmlToChat, sendTelegramMessageWithKeyboardToChat } from "@/lib/telegram";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { formatDinarAsAlf } from "@/lib/money-alf";
+import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
 function configureVapid(): boolean {
   const pub = process.env.VAPID_PUBLIC_KEY?.trim();
@@ -262,6 +263,9 @@ export async function pushNotifyCourierNewAssignment(
       summary: true,
       orderNoteTime: true,
       routeMode: true,
+      customerRegionId: true,
+      secondCustomerRegionId: true,
+      customer: { select: { customerLocationUrl: true } },
       shop: { select: { name: true, locationUrl: true } },
       customerRegion: { select: { name: true } },
       secondCustomerRegion: { select: { name: true } },
@@ -297,8 +301,50 @@ export async function pushNotifyCourierNewAssignment(
     const total = order?.totalAmount ? formatDinarAsAlf(order.totalAmount) : "—";
     const phone = order?.customerPhone || "—";
     const altPhone = order?.secondCustomerPhone || order?.alternatePhone || "—";
-    const loc1 = order?.customerLocationUrl || "";
-    const loc2 = order?.secondCustomerLocationUrl || "";
+
+    const isValidUrl = (u: string | null | undefined) => {
+      const trimmed = (u || "").trim();
+      if (!trimmed) return false;
+      return trimmed.startsWith("http") || trimmed.includes("maps.") || trimmed.includes("goo.gl") || /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(trimmed);
+    };
+
+    const formatAsUrl = (u: string | null | undefined) => {
+      let trimmed = (u || "").trim();
+      if (!trimmed) return "";
+      if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+      if (trimmed.includes("maps.") || trimmed.includes("goo.gl") || trimmed.includes("google.com")) return "https://" + trimmed;
+      // معالجة الإحداثيات الخام مثل 33.123,44.123
+      if (/^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(trimmed) || /^-?\d+\.\d+,-?\d+\.\d+$/.test(trimmed)) {
+        return `https://www.google.com/maps/search/?api=1&query=${trimmed.replace(/\s/g, "")}`;
+      }
+      return "https://" + trimmed;
+    };
+
+    let loc1Raw = order?.customerLocationUrl || order?.customer?.customerLocationUrl || "";
+    if (!isValidUrl(loc1Raw) && order?.customerPhone && order?.customerRegionId) {
+      const norm = normalizeIraqMobileLocal11(order.customerPhone);
+      if (norm) {
+        const profile = await prisma.customerPhoneProfile.findUnique({
+          where: { phone_regionId: { phone: norm, regionId: order.customerRegionId } }
+        });
+        if (isValidUrl(profile?.locationUrl)) loc1Raw = profile.locationUrl || "";
+      }
+    }
+
+    let loc2Raw = order?.secondCustomerLocationUrl || "";
+    if (!isValidUrl(loc2Raw) && order?.secondCustomerPhone && order?.secondCustomerRegionId) {
+      const norm = normalizeIraqMobileLocal11(order.secondCustomerPhone);
+      if (norm) {
+        const profile = await prisma.customerPhoneProfile.findUnique({
+          where: { phone_regionId: { phone: norm, regionId: order.secondCustomerRegionId } }
+        });
+        if (isValidUrl(profile?.locationUrl)) loc2Raw = profile.locationUrl || "";
+      }
+    }
+
+    const shopLoc = isValidUrl(order?.shop?.locationUrl) ? formatAsUrl(order!.shop!.locationUrl) : "";
+    const loc1 = isValidUrl(loc1Raw) ? formatAsUrl(loc1Raw) : "";
+    const loc2 = isValidUrl(loc2Raw) ? formatAsUrl(loc2Raw) : "";
 
     // ذكاء اصطناعي للعنوان إذا لم يوجد لاندمارك
     const smartHint1 = !landmark.trim() && order?.customerRegion?.name ? `${order.customerRegion.name}` : "";
@@ -324,11 +370,7 @@ export async function pushNotifyCourierNewAssignment(
       text += `\n📞 ${escapeTelegramHtml(altPhone)}`;
     }
 
-    if (summary) {
-      text += `\n\n📝 <b>الملاحظات:</b>\n${escapeTelegramHtml(summary)}`;
-    }
-
-    // إضافة اللوكيشنات
+    // إضافة اللوكيشنات قبل الملاحظات
     if (shopLoc || loc1 || loc2) {
       text += `\n`;
       if (shopLoc) text += `\n📍 <a href="${escapeTelegramHtml(shopLoc)}">لوكيشن المحل</a>`;
@@ -339,6 +381,10 @@ export async function pushNotifyCourierNewAssignment(
       } else {
         if (loc1) text += `\n📍 <a href="${escapeTelegramHtml(loc1)}">لوكيشن الزبون</a>`;
       }
+    }
+
+    if (summary) {
+      text += `\n\n📝 <b>الملاحظات:</b>\n${escapeTelegramHtml(summary)}`;
     }
 
     text += `\n\nيمكنك الضغط على الأزرار أدناه للتحكم بالطلب.`;

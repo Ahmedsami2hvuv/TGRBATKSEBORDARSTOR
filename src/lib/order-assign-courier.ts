@@ -46,7 +46,7 @@ export async function assignPendingOrderToCourierInternal(
   });
 
   void pushNotifyCourierNewAssignment(courierId, order.orderNumber, orderId);
-  void notifyTelegramCourierNewAssignment(orderId).catch(e => console.error("[notifyTelegramCourierNewAssignment] failed:", e));
+  // void notifyTelegramCourierNewAssignment(orderId).catch(e => console.error("[notifyTelegramCourierNewAssignment] failed:", e));
 
   revalidatePath("/admin/orders/pending");
   revalidatePath("/admin/couriers");
@@ -109,7 +109,7 @@ export async function transferOrderToCourierInternal(
     void pushNotifyCourierNewAssignment(courierId, order.orderNumber, orderId).catch((e) => {
       console.error("[pushNotifyCourierNewAssignment] failed:", e);
     });
-    void notifyTelegramCourierNewAssignment(orderId).catch(e => console.error("[notifyTelegramCourierNewAssignment] failed:", e));
+    // void notifyTelegramCourierNewAssignment(orderId).catch(e => console.error("[notifyTelegramCourierNewAssignment] failed:", e));
   }
 
   if (oldCourierId && oldCourierId !== courierId) {
