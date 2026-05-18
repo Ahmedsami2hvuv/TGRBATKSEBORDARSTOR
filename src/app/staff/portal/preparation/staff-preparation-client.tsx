@@ -19,6 +19,7 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
   const [products, setProducts] = useState<string[]>([]);
   const [customerPhone, setCustomerPhone] = useState("");
   const [orderTime, setOrderTime] = useState("فوري");
+  const [blockedPhone, setBlockedPhone] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<any[]>([]);
   const [selected, setSelected] = useState<any | null>(null);
@@ -51,7 +52,7 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
         const check = await fetch(`/api/check-block?phone=${encodeURIComponent(phone)}`);
         const blockRes = await check.json();
         if (blockRes.blocked) {
-          setParseError(`🔴 الزبون ممنوع من التوصيل (الرقم ${blockRes.phone} محظور عالمياً)`);
+          setBlockedPhone(blockRes.phone);
           return;
         }
       } catch (e) {
@@ -198,6 +199,29 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
              )}
           </button>
         </form>
+      )}
+
+      {blockedPhone && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-sm rounded-3xl border-2 border-rose-100 bg-white p-6 shadow-2xl text-center animate-in zoom-in duration-300">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+              <span className="text-3xl">🚫</span>
+            </div>
+            <h3 className="text-xl font-black text-slate-900">زبون محظور!</h3>
+            <p className="mt-3 text-sm font-bold leading-relaxed text-slate-600">
+              عذراً، هذا الرقم محظور من التوصيل حالياً.
+              <br/>
+              <span className="font-mono text-rose-600 mt-1 block" dir="ltr">{blockedPhone}</span>
+            </p>
+            <button
+              type="button"
+              onClick={() => setBlockedPhone(null)}
+              className="mt-6 w-full rounded-2xl bg-slate-900 py-3 text-sm font-black text-white shadow-lg active:scale-95 transition"
+            >
+              فهمت ذلك
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
