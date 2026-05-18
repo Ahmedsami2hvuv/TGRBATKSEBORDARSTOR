@@ -287,7 +287,6 @@ export async function pushNotifyCourierNewAssignment(
     const chatId = courier.telegramUserId.trim();
 
     const shopName = order?.shop?.name || "—";
-    const shopLoc = order?.shop?.locationUrl || "";
     const regionName = order?.customerRegion?.name || "—";
     const secondRegionName = order?.secondCustomerRegion?.name || "";
     const landmark = order?.customerLandmark || "";
