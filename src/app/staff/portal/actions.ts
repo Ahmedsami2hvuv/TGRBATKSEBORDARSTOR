@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyStaffEmployeePortalQuery } from "@/lib/staff-employee-portal-link";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
+import { notifyTelegramDraftCanceled } from "@/lib/telegram-notify";
 
 export type StaffPrepState = { error?: string; ok?: boolean; draftId?: string; preparerName?: string };
 
@@ -273,5 +274,58 @@ export async function updateStaffPreparationDraft(
   revalidatePath("/staff/portal/submitted");
   revalidatePath(`/staff/portal/submitted/${draft.id}`);
   revalidatePath("/preparer/preparation");
+  return { ok: true };
+}
+
+export async function cancelStaffPreparationDraft(
+  _prev: StaffDraftEditState,
+  formData: FormData,
+): Promise<StaffDraftEditState> {
+  const se = String(formData.get("se") ?? "").trim();
+  const exp = String(formData.get("exp") ?? "").trim();
+  const sig = String(formData.get("s") ?? "").trim();
+  const v = verifyStaffEmployeePortalQuery(se, exp, sig);
+  if (!v.ok) return { error: "الرابط غير صالح أو غير مكتمل." };
+
+  const staff = await prisma.staffEmployee.findUnique({
+    where: { id: v.staffEmployeeId },
+    select: { id: true, active: true, portalToken: true },
+  });
+  if (!staff || !staff.active || staff.portalToken !== v.token) {
+    return { error: "الحساب غير مفعّل أو الرابط غير صالح." };
+  }
+
+  const draftId = String(formData.get("draftId") ?? "").trim();
+  if (!draftId) return { error: "معرّف المسودة مفقود." };
+
+  const draft = await prisma.companyPreparerShoppingDraft.findUnique({
+    where: { id: draftId },
+    select: { id: true, status: true, data: true, titleLine: true, customerPhone: true },
+  });
+  if (!draft) return { error: "المسودة غير موجودة." };
+
+  // التحقق من الصلاحية
+  const meta = draft.data && typeof draft.data === "object" ? (draft.data as Record<string, unknown>) : {};
+  const owner = String(meta.fromStaffEmployeeId ?? "").trim();
+  if (owner !== staff.id) {
+    return { error: "لا صلاحية لإلغاء هذه المسودة." };
+  }
+
+  if (draft.status === PreparerShoppingDraftStatus.sent || draft.status === PreparerShoppingDraftStatus.archived) {
+    return { error: "لا يمكن إلغاء طلب تم إرساله أو أرشفته بالفعل." };
+  }
+
+  await prisma.companyPreparerShoppingDraft.update({
+    where: { id: draftId },
+    data: { status: PreparerShoppingDraftStatus.archived },
+  });
+
+  // إرسال إشعار للإدارة
+  void notifyTelegramDraftCanceled(draftId).catch(console.error);
+
+  // إرسال إشعار للمجموعات (اختياري حسب الحاجة، هنا سنقوم بتحديث المسارات)
+  revalidatePath("/staff/portal/submitted");
+  revalidatePath("/preparer/preparation");
+
   return { ok: true };
 }

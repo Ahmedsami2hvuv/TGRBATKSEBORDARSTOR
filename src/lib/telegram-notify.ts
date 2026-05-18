@@ -553,6 +553,36 @@ export async function notifyTelegramSupplierPriceUpdate(input: {
   await sendTelegramMessage(text, { botToken: notificationBotToken });
 }
 
+export async function notifyTelegramOrderCanceled(orderId: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { shop: true }
+  });
+  if (!order) return;
+
+  const msg = `❌ <b>تم إلغاء الطلب #${order.orderNumber}</b>\nمن قبل المحل: <b>${escapeTelegramHtml(order.shop.name)}</b>\nرقم الزبون: <code>${order.customerPhone}</code>`;
+  const notificationBotToken = await getBotTokenByPurpose("notification");
+  if (notificationBotToken) {
+    await sendTelegramMessage(msg, { botToken: notificationBotToken });
+  }
+}
+
+export async function notifyTelegramDraftCanceled(draftId: string): Promise<void> {
+  const draft = await prisma.companyPreparerShoppingDraft.findUnique({
+    where: { id: draftId },
+  });
+  if (!draft) return;
+
+  const meta = draft.data && typeof draft.data === "object" ? (draft.data as Record<string, unknown>) : {};
+  const staffName = String(meta.fromStaffEmployeeName ?? "موظف");
+
+  const msg = `❌ <b>تم إلغاء مسودة التجهيز #${draft.draftNumber}</b>\nمن قبل الموظف: <b>${escapeTelegramHtml(staffName)}</b>\nالزبون: <code>${draft.customerPhone}</code>\nالعنوان: ${escapeTelegramHtml(draft.titleLine)}`;
+  const notificationBotToken = await getBotTokenByPurpose("notification");
+  if (notificationBotToken) {
+    await sendTelegramMessage(msg, { botToken: notificationBotToken });
+  }
+}
+
 export function buildTelegramOrderKeyboard(
   orderNumber: number,
   orderId?: string,

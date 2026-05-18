@@ -2,6 +2,7 @@ import { prisma } from "./prisma";
 import {
   deleteTelegramMessage,
   sendTelegramHtmlToChat,
+  sendTelegramMessage,
   sendTelegramMessageWithKeyboardToChat,
   type TelegramInlineKeyboard,
 } from "./telegram";
@@ -9,7 +10,9 @@ import { buildEmployeeOrderPortalUrl, verifyEmployeeOrderPortalQuery } from "./e
 import { getPublicAppUrl } from "./app-url";
 import { Decimal } from "@prisma/client/runtime/library";
 import { formatDinarAsAlf, normalizeNumerals } from "./money-alf";
-import { notifyTelegramNewOrder } from "./telegram-notify";
+import { notifyTelegramNewOrder, notifyTelegramOrderCanceled } from "./telegram-notify";
+import { getBotTokenByPurpose } from "./telegram-bots";
+import { whatsappMeUrl } from "./whatsapp";
 
 /**
  * مساعد لترجمة حالة الطلب بالألوان والرموز الموحدة (Harmonized with Courier Bot)
@@ -281,12 +284,13 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
           data: { step: "idle", payload: "" }
         });
 
-    const waText = `طلب جديد: ${payload.type}\nالسعر: ${formatDinarAsAlf(subtotal)}\nالعنوان: ${region?.name}\nالوقت: ${payload.noteTime || 'فوري'}`;
-        const waUrl = `https://wa.me/${payload.phone.replace(/^0/, '964')}?text=${encodeURIComponent(waText)}`;
+        const waText = `طلب جديد: ${payload.type}\nالسعر: ${formatDinarAsAlf(subtotal)}\nالعنوان: ${region?.name}\nالوقت: ${payload.noteTime || 'فوري'}`;
+        const waUrl = whatsappMeUrl(payload.phone, waText);
 
         const successKb = {
           inline_keyboard: [
             [{ text: "💬 إرسال للواتساب", url: waUrl }],
+            [{ text: "❌ إلغاء الطلب الآن", callback_data: `cancel_order_id:${order.id}` }],
             [
               { text: "📦 طلب جديد", callback_data: "new_order" },
               { text: "🏠 الرئيسية", callback_data: "customer_main" }
@@ -295,6 +299,7 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
         };
 
         await answerCallbackQuery(cb.id, "تم  رفع الطلب بنجاح", true, botToken);
+
         await deleteTelegramMessage(chatId, cb.message.message_id, botToken).catch(() => {});
         await sendTelegramMessageWithKeyboardToChat(
           chatId,
@@ -307,7 +312,50 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
     }
   }
 
+  if (cb.data.startsWith("cancel_order_id:")) {
+    const orderId = cb.data.split(":")[1];
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { shop: true }
+    });
+
+    if (order && (order.status === "pending" || order.status === "assigned")) {
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { status: "canceled", archivedAt: new Date() }
+      });
+
+      await answerCallbackQuery(cb.id, "تم إلغاء الطلب بنجاح", true, botToken);
+
+      // إشعار للإدارة بإلغاء الطلب
+      void notifyTelegramOrderCanceled(orderId).catch(console.error);
+
+      let msgText = `❌ <b>تم إلغاء الطلب #${order.orderNumber}</b>\n\nحالة الطلب الآن: ${statusAr("canceled")}`;
+
+      // توليد رابط واتساب للمسؤول في حال أراد الموظف إبلاغ الإدارة يدوياً
+      const adminSettings = await prisma.appNotificationSettings.findUnique({ where: { id: 1 } });
+      const adminWhatsApp = adminSettings?.telegramAdminIds?.split(",")[0]?.trim() || "07700000000";
+
+      const waAdminMsg = `أريد إلغاء الطلب رقم ${order.orderNumber}\nالزبون: ${order.customerPhone}`;
+      const waAdminUrl = whatsappMeUrl(adminWhatsApp, waAdminMsg);
+
+      const kb = {
+        inline_keyboard: [
+          [{ text: "💬 إبلاغ الإدارة (واتساب)", url: waAdminUrl }],
+          [{ text: "🏠 الرئيسية", callback_data: "customer_main" }]
+        ]
+      };
+
+      await deleteTelegramMessage(chatId, cb.message.message_id, botToken).catch(() => {});
+      await sendTelegramMessageWithKeyboardToChat(chatId, msgText, kb, botToken);
+    } else {
+      await answerCallbackQuery(cb.id, "عذراً، لا يمكن إلغاء الطلب في حالته الحالية", true, botToken);
+    }
+    return;
+  }
+
   if (cb.data === "customer_main") {
+
     await answerCallbackQuery(cb.id, undefined, false, botToken).catch(() => {});
     await prisma.telegramBotSession.update({
       where: { telegramUserId },
