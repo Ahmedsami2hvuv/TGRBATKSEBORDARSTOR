@@ -261,6 +261,7 @@ export async function pushNotifyCourierNewAssignment(
       secondCustomerLandmark: true,
       summary: true,
       orderNoteTime: true,
+      routeMode: true,
       shop: { select: { name: true, locationUrl: true } },
       customerRegion: { select: { name: true } },
       secondCustomerRegion: { select: { name: true } },
@@ -299,12 +300,16 @@ export async function pushNotifyCourierNewAssignment(
     const loc1 = order?.customerLocationUrl || "";
     const loc2 = order?.secondCustomerLocationUrl || "";
 
+    // ذكاء اصطناعي للعنوان إذا لم يوجد لاندمارك
+    const smartHint1 = !landmark.trim() && order?.customerRegion?.name ? `${order.customerRegion.name}` : "";
+    const smartHint2 = !secondLandmark.trim() && order?.secondCustomerRegion?.name ? `${order.secondCustomerRegion.name}` : "";
+
     let text = `🏪 <b>(${escapeTelegramHtml(shopName)} — ${escapeTelegramHtml(regionName)})</b>
 🔔 تم إسناد طلب جديد إليك
-📍 ${escapeTelegramHtml(regionName)}${landmark ? ` (${escapeTelegramHtml(landmark)})` : ""}`;
+📍 ${escapeTelegramHtml(regionName)}${landmark ? ` (${escapeTelegramHtml(landmark)})` : smartHint1 ? ` (استدلال: ${escapeTelegramHtml(smartHint1)})` : ""}`;
 
     if (secondRegionName) {
-      text += `\n📍 ${escapeTelegramHtml(secondRegionName)}${secondLandmark ? ` (${escapeTelegramHtml(secondLandmark)})` : ""}`;
+      text += `\n📍 ${escapeTelegramHtml(secondRegionName)}${secondLandmark ? ` (${escapeTelegramHtml(secondLandmark)})` : smartHint2 ? ` (استدلال: ${escapeTelegramHtml(smartHint2)})` : ""}`;
     }
 
     text += `\n📦 ${escapeTelegramHtml(orderType)}
@@ -327,13 +332,31 @@ export async function pushNotifyCourierNewAssignment(
     if (shopLoc || loc1 || loc2) {
       text += `\n`;
       if (shopLoc) text += `\n📍 <a href="${escapeTelegramHtml(shopLoc)}">لوكيشن المحل</a>`;
-      if (loc1) text += `\n📍 <a href="${escapeTelegramHtml(loc1)}">لوكيشن العميل</a>`;
-      if (loc2) text += `\n📍 <a href="${escapeTelegramHtml(loc2)}">لوكيشن الزبون</a>`;
+
+      if (order?.routeMode === "double") {
+        if (loc1) text += `\n📍 <a href="${escapeTelegramHtml(loc1)}">لوكيشن المرسل</a>`;
+        if (loc2) text += `\n📍 <a href="${escapeTelegramHtml(loc2)}">لوكيشن المستلم</a>`;
+      } else {
+        if (loc1) text += `\n📍 <a href="${escapeTelegramHtml(loc1)}">لوكيشن الزبون</a>`;
+      }
     }
 
     text += `\n\nيمكنك الضغط على الأزرار أدناه للتحكم بالطلب.`;
 
     const buttons = [];
+
+    // صف أزرار اللوكيشنات
+    const locationButtons = [];
+    if (shopLoc) locationButtons.push({ text: "🏬 لوكيشن المحل", url: shopLoc });
+    if (order?.routeMode === "double") {
+      if (loc1) locationButtons.push({ text: "📍 لوكيشن المرسل", url: loc1 });
+      if (loc2) locationButtons.push({ text: "📍 لوكيشن المستلم", url: loc2 });
+    } else {
+      if (loc1) locationButtons.push({ text: "📍 لوكيشن الزبون", url: loc1 });
+    }
+    if (locationButtons.length > 0) {
+      buttons.push(locationButtons);
+    }
 
     const baseUrl = getPublicAppUrl();
     const getFullUrl = (src: string | null | undefined) => {
