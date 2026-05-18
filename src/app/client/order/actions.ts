@@ -380,3 +380,36 @@ export async function submitOrder(
     return { error: "فشل إرسال الطلب: " + (err.message || "خطأ داخلي") };
   }
 }
+
+export async function cancelClientOrder(formData: FormData) {
+  const orderNumber = Number(formData.get("orderNumber"));
+  const e = String(formData.get("e") ?? "");
+  const exp = String(formData.get("exp") ?? "");
+  const s = String(formData.get("s") ?? "");
+
+  const v = verifyEmployeeOrderPortalQuery(e, exp, s);
+  if (!v.ok) return;
+
+  const order = await prisma.order.findUnique({
+    where: { orderNumber },
+    select: { status: true, shopId: true }
+  });
+
+  if (!order || (order.status !== "pending" && order.status !== "assigned")) {
+    return;
+  }
+
+  // التأكد من أن الطلب يخص نفس المحل المرتبط بالرابط
+  const employee = await prisma.employee.findUnique({
+    where: { id: v.employeeId },
+    select: { shopId: true }
+  });
+  if (!employee || employee.shopId !== order.shopId) return;
+
+  await prisma.order.update({
+    where: { orderNumber },
+    data: { status: "cancelled" }
+  });
+
+  revalidatePath("/client/order/history");
+}
