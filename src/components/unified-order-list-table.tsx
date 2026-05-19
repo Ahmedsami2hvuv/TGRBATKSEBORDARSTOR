@@ -421,133 +421,14 @@ export function UnifiedOrderListTable({
                             )}
                           </div>
 
-                        {/* أزرار العميل (المحل): لوكيشن + صور أبواب يمكن إخفاؤهما عبر hideShopColumnLocationAndDoorPhotoButtons */}
-                        {((!hideShopColumnLocationAndDoorPhotoButtons &&
-                          ((!isDoubleRoute && o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
-                            (o.customerLocationUrl?.trim() && o.customerLocationUrl.trim().length > 2) ||
-                            (o.secondCustomerLocationUrl?.trim() && o.secondCustomerLocationUrl.trim().length > 2))) ||
-                          (!hideShopColumnLocationAndDoorPhotoButtons &&
-                            ((!isDoubleRoute && o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 2) ||
-                              (o.customerDoorPhotoUrl?.trim() && o.customerDoorPhotoUrl.trim().length > 2) ||
-                              (o.secondCustomerDoorPhotoUrl?.trim() && o.secondCustomerDoorPhotoUrl.trim().length > 2))) ||
-                          (o.audioUrl?.trim() && o.audioUrl.trim().length > 2) ||
+                        {/* أزرار اللوكيشن وصورة الباب انتقلت إلى عمود المنطقة تحت اسم المنطقة */}
+                        {
+                          ((o.audioUrl?.trim() && o.audioUrl.trim().length > 2) ||
                           (o.preparerAudioUrl?.trim() && o.preparerAudioUrl.trim().length > 2) ||
                           (o.adminAudioUrl?.trim() && o.adminAudioUrl.trim().length > 2) ||
                           (o.smartHintLine?.trim() && !o.smartHintLine.trim().startsWith("—"))) && (
                           <div className="flex items-center gap-1 border-r pr-2 mr-1 border-slate-200" onClick={e => e.stopPropagation()}>
-                             {/* زر اللوكيشن الموحد */}
-                             {!hideShopColumnLocationAndDoorPhotoButtons && o.showLocationBtn !== false &&
-                             (( !isDoubleRoute && o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
-                              (o.customerLocationUrl?.trim() && o.customerLocationUrl.trim().length > 2) ||
-                              (o.secondCustomerLocationUrl?.trim() && o.secondCustomerLocationUrl.trim().length > 2)) && (
-                               <div className="relative">
-                                 <button
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     setActiveLocId(activeLocId === o.id ? null : o.id);
-                                     setActiveCallId(null); setActiveMsgId(null); setActiveDoorId(null); setActiveAudioId(null);
-                                   }}
-                                   title="مواقع الـ GPS (المحل والزبون)"
-                                   className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeLocId === o.id ? 'bg-rose-600 text-white' : 'bg-slate-100 text-rose-500 hover:bg-rose-500 hover:text-white'}`}
-                                 >
-                                   <DynamicIcon iconKey="ui_location" config={icons} fallback="📍" className="w-3.5 h-3.5" />
-                                 </button>
-                                 {activeLocId === o.id && (
-                                   <CenterModal title="فتح الموقع الجغرافي لـ:" onClose={() => setActiveLocId(null)}>
-                                     <div className="flex flex-col gap-1">
-                                      {!isDoubleRoute && o.shopLocationUrl && o.shopLocationUrl.trim().length > 2 && (
-                                         <a href={o.shopLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
-                                           <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> موقع العميل (المحل)
-                                         </a>
-                                       )}
-                                       {o.customerLocationUrl && o.customerLocationUrl.trim().length > 2 && (
-                                         <a href={o.customerLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
-                                           <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> موقع الزبون
-                                         </a>
-                                       )}
-                                       {o.secondCustomerLocationUrl && o.secondCustomerLocationUrl.trim().length > 2 && (
-                                         <a href={o.secondCustomerLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
-                                           <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> موقع الزبون 2 / مستلم
-                                         </a>
-                                       )}
-                                      {((isDoubleRoute || !o.shopLocationUrl || o.shopLocationUrl.trim().length <= 2) && (!o.customerLocationUrl || o.customerLocationUrl.trim().length <= 2) && (!o.secondCustomerLocationUrl || o.secondCustomerLocationUrl.trim().length <= 2)) && (
-                                         <div className="p-4 text-center text-slate-500 font-bold">لا توجد روابط مواقع متوفرة لهذا الطلب</div>
-                                       )}
-                                     </div>
-                                   </CenterModal>
-                                 )}
-                               </div>
-                             )}
-
-                             {!hideShopColumnLocationAndDoorPhotoButtons && o.showDoorBtn !== false &&
-                             (( !isDoubleRoute && o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 2) ||
-                               (o.customerDoorPhotoUrl?.trim() && o.customerDoorPhotoUrl.trim().length > 2) ||
-                               (o.secondCustomerDoorPhotoUrl?.trim() && o.secondCustomerDoorPhotoUrl.trim().length > 2)) && (
-                               <div className="relative">
-                                 <button
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     setActiveDoorId(activeDoorId === o.id ? null : o.id);
-                                     setActiveCallId(null); setActiveMsgId(null); setActiveLocId(null); setActiveAudioId(null);
-                                   }}
-                                  title="صور الأبواب (المحل والزبون)"
-                                  className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeDoorId === o.id ? 'bg-amber-600 text-white' : 'bg-slate-100 text-amber-500 hover:bg-amber-500 hover:text-white'}`}
-                                >
-                                  {/*
-                                    أيقونة كاميرا SVG مدمجة بدل DynamicIcon لتفادي وميض
-                                    "باب → كاميرا" عند فتح الصفحة (قبل تحميل إعدادات الأيقونات)،
-                                    ولضمان توسيط مثالي داخل الدائرة بغضّ النظر عن نظام التشغيل.
-                                  */}
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    aria-hidden="true"
-                                    className="h-3.5 w-3.5"
-                                  >
-                                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z" />
-                                    <circle cx="12" cy="13" r="3.5" />
-                                  </svg>
-                                </button>
-
-                                 {activeDoorId === o.id && (
-                                   <CenterModal title="عرض صورة الباب لـ:" onClose={() => setActiveDoorId(null)}>
-                                     <div className="flex flex-col gap-1">
-                                      {!isDoubleRoute && o.shopDoorPhotoUrl && o.shopDoorPhotoUrl.trim().length > 2 && (
-                                         <button
-                                           onClick={() => { setModalImg({ url: o.shopDoorPhotoUrl!.trim(), title: "هذه صورة باب العميل (المحل)" }); setActiveDoorId(null); }}
-                                           className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
-                                         >
-                                           <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> باب العميل (المحل)
-                                         </button>
-                                       )}
-                                       {o.customerDoorPhotoUrl && o.customerDoorPhotoUrl.trim().length > 2 && (
-                                         <button
-                                           onClick={() => { setModalImg({ url: o.customerDoorPhotoUrl!.trim(), title: "هذه صورة باب الزبون" }); setActiveDoorId(null); }}
-                                           className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
-                                         >
-                                           <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> باب الزبون
-                                         </button>
-                                       )}
-                                       {o.secondCustomerDoorPhotoUrl && o.secondCustomerDoorPhotoUrl.trim().length > 2 && (
-                                         <button
-                                           onClick={() => { setModalImg({ url: o.secondCustomerDoorPhotoUrl!.trim(), title: "هذه صورة باب الزبون 2 / المستلم" }); setActiveDoorId(null); }}
-                                           className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
-                                         >
-                                           <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> باب الزبون 2 / مستلم
-                                         </button>
-                                       )}
-                                     </div>
-                                   </CenterModal>
-                                 )}
-                               </div>
-                             )}
-
-                             {/* زر الملاحظات الصوتية الموحد */}
+                        
                              {o.showVoiceNotesBtn !== false && ((o.audioUrl?.trim() && o.audioUrl.trim().length > 2) ||
                                (o.preparerAudioUrl?.trim() && o.preparerAudioUrl.trim().length > 2) ||
                                (o.adminAudioUrl?.trim() && o.adminAudioUrl.trim().length > 2)) && (
@@ -669,9 +550,112 @@ export function UnifiedOrderListTable({
                     >
                       <div className="flex flex-col gap-1.5">
                         <span>{o.regionLine}</span>
-                        {/* أزرار اللوكيشن والصور من الخارج (للزبون) */}
-                        <div className="flex flex-wrap items-center gap-1.5 mt-1" onClick={e => e.stopPropagation()}>
-                           {/* تم نقل أزرار اللوكيشن للزر الموحد بجانب اسم المحل لتقليل الازدحام */}
+                        <div className="flex flex-wrap items-center gap-2 mt-1" onClick={e => e.stopPropagation()}>
+                          {!hideShopColumnLocationAndDoorPhotoButtons && o.showLocationBtn !== false &&
+                          (((!isDoubleRoute && o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
+                            (o.customerLocationUrl?.trim() && o.customerLocationUrl.trim().length > 2) ||
+                            (o.secondCustomerLocationUrl?.trim() && o.secondCustomerLocationUrl.trim().length > 2))) && (
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveLocId(activeLocId === o.id ? null : o.id);
+                                  setActiveCallId(null); setActiveMsgId(null); setActiveDoorId(null); setActiveAudioId(null);
+                                }}
+                                title="مواقع الـ GPS (المحل والزبون)"
+                                className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeLocId === o.id ? 'bg-rose-600 text-white' : 'bg-slate-100 text-rose-500 hover:bg-rose-500 hover:text-white'}`}
+                              >
+                                <DynamicIcon iconKey="ui_location" config={icons} fallback="📍" className="w-3.5 h-3.5" />
+                              </button>
+                              {activeLocId === o.id && (
+                                <CenterModal title="فتح الموقع الجغرافي لـ:" onClose={() => setActiveLocId(null)}>
+                                  <div className="flex flex-col gap-1">
+                                    {!isDoubleRoute && o.shopLocationUrl && o.shopLocationUrl.trim().length > 2 && (
+                                      <a href={o.shopLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> موقع العميل (المحل)
+                                      </a>
+                                    )}
+                                    {o.customerLocationUrl && o.customerLocationUrl.trim().length > 2 && (
+                                      <a href={o.customerLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> موقع الزبون
+                                      </a>
+                                    )}
+                                    {o.secondCustomerLocationUrl && o.secondCustomerLocationUrl.trim().length > 2 && (
+                                      <a href={o.secondCustomerLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> موقع الزبون 2 / مستلم
+                                      </a>
+                                    )}
+                                    {((isDoubleRoute || !o.shopLocationUrl || o.shopLocationUrl.trim().length <= 2) && (!o.customerLocationUrl || o.customerLocationUrl.trim().length <= 2) && (!o.secondCustomerLocationUrl || o.secondCustomerLocationUrl.trim().length <= 2)) && (
+                                      <div className="p-4 text-center text-slate-500 font-bold">لا توجد روابط مواقع متوفرة لهذا الطلب</div>
+                                    )}
+                                  </div>
+                                </CenterModal>
+                              )}
+                            </div>
+                          )}
+
+                          {!hideShopColumnLocationAndDoorPhotoButtons && o.showDoorBtn !== false &&
+                          (((!isDoubleRoute && o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 2) ||
+                            (o.customerDoorPhotoUrl?.trim() && o.customerDoorPhotoUrl.trim().length > 2) ||
+                            (o.secondCustomerDoorPhotoUrl?.trim() && o.secondCustomerDoorPhotoUrl.trim().length > 2))) && (
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveDoorId(activeDoorId === o.id ? null : o.id);
+                                  setActiveCallId(null); setActiveMsgId(null); setActiveLocId(null); setActiveAudioId(null);
+                                }}
+                                title="صور الأبواب (المحل والزبون)"
+                                className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeDoorId === o.id ? 'bg-amber-600 text-white' : 'bg-slate-100 text-amber-500 hover:bg-amber-500 hover:text-white'}`}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden="true"
+                                  className="h-3.5 w-3.5"
+                                >
+                                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z" />
+                                  <circle cx="12" cy="13" r="3.5" />
+                                </svg>
+                              </button>
+
+                              {activeDoorId === o.id && (
+                                <CenterModal title="عرض صورة الباب لـ:" onClose={() => setActiveDoorId(null)}>
+                                  <div className="flex flex-col gap-1">
+                                    {!isDoubleRoute && o.shopDoorPhotoUrl && o.shopDoorPhotoUrl.trim().length > 2 && (
+                                      <button
+                                        onClick={() => { setModalImg({ url: o.shopDoorPhotoUrl!.trim(), title: "هذه صورة باب العميل (المحل)" }); setActiveDoorId(null); }}
+                                        className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
+                                      >
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> باب العميل (المحل)
+                                      </button>
+                                    )}
+                                    {o.customerDoorPhotoUrl && o.customerDoorPhotoUrl.trim().length > 2 && (
+                                      <button
+                                        onClick={() => { setModalImg({ url: o.customerDoorPhotoUrl!.trim(), title: "هذه صورة باب الزبون" }); setActiveDoorId(null); }}
+                                        className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
+                                      >
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> باب الزبون
+                                      </button>
+                                    )}
+                                    {o.secondCustomerDoorPhotoUrl && o.secondCustomerDoorPhotoUrl.trim().length > 2 && (
+                                      <button
+                                        onClick={() => { setModalImg({ url: o.secondCustomerDoorPhotoUrl!.trim(), title: "هذه صورة باب الزبون 2 / المستلم" }); setActiveDoorId(null); }}
+                                        className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-amber-50 transition-colors rounded-xl border border-slate-100 text-right w-full"
+                                      >
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> باب الزبون 2 / مستلم
+                                      </button>
+                                    )}
+                                  </div>
+                                </CenterModal>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
