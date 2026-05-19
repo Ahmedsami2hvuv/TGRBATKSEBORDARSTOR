@@ -148,15 +148,13 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
   useEffect(() => {
     if (locked) return;
     trySendOnce();
-    // Background location polling disabled to improve performance
-    // const id = window.setInterval(() => trySendOnce(), SEND_INTERVAL_MS);
-    // return () => window.clearInterval(id);
-    return () => {};
+    // Re-enable background polling so the portal sends location every SEND_INTERVAL_MS
+    const id = window.setInterval(() => trySendOnce(), SEND_INTERVAL_MS);
+    return () => window.clearInterval(id);
   }, [locked, trySendOnce]);
 
   useEffect(() => {
-    // Background staleness check disabled to improve performance
-    /*
+    // Periodically check whether server hasn't received a recent location
     const id = window.setInterval(() => {
       const lastOk = lastSuccessfulPostMsRef.current;
       const sessionStart = sessionStartMsRef.current;
@@ -168,7 +166,6 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
       }
     }, STALENESS_CHECK_MS);
     return () => window.clearInterval(id);
-    */
   }, []);
 
   const onCheckClick = useCallback(() => {

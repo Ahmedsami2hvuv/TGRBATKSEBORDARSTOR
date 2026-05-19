@@ -637,7 +637,7 @@ export function PreparerShoppingDraftEditClient({
             </div>
         )}
 
-        <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {orderedForButtons.map(({ p, idx: i }) => {
             const isMeat = isMeatProduct(p.line);
             const priced = p.buyAlf !== "" && p.sellAlf !== "";
@@ -663,13 +663,13 @@ export function PreparerShoppingDraftEditClient({
                   setPricingLinesText(priced ? `${p.buyAlf}` : "");
                   setTimeout(() => pricingTextareaRef.current?.focus(), 50);
                 }}
-                className={`w-full flex items-center justify-between rounded-xl border-2 px-4 py-3 text-start transition ${
+                className={`w-full flex flex-col items-start gap-2 rounded-xl border-2 p-2.5 text-start transition ${
                   active ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200" :
                   isOthers ? "border-slate-300 bg-slate-100 opacity-40 grayscale cursor-not-allowed" :
                   priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 bg-white shadow-sm"
                 } ${isMeat && priced ? "opacity-90 cursor-default" : ""}`}
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-2 min-w-0 w-full">
 
                   {/* صورة المنتج */}
                   {productImagesMap[p.line.trim().toLowerCase()] && (
@@ -682,7 +682,7 @@ export function PreparerShoppingDraftEditClient({
                           title: p.line
                         });
                       }}
-                      className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-slate-100 bg-slate-50 active:scale-95 transition-transform"
+                      className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-slate-100 bg-slate-50 active:scale-95 transition-transform"
                     >
                       <img
                         src={resolvePublicAssetSrc(productImagesMap[p.line.trim().toLowerCase()])!}
@@ -693,35 +693,38 @@ export function PreparerShoppingDraftEditClient({
                   )}
 
                   <div className="min-w-0 flex-1">
-                      <p className={`text-xs font-black ${priced && !isOthers ? "text-white" : "text-slate-800"}`}>{p.line}</p>
+                      <p className={`text-[11px] font-black leading-tight mb-1 line-clamp-2 ${priced && !isOthers ? "text-white" : "text-slate-800"}`}>{p.line}</p>
 
                       {/* اسم الفرع/المحل */}
                       {productBranchMap[p.line.trim().toLowerCase()] && (
-                        <p className={`text-[9px] font-black px-1.5 py-0.5 rounded-md inline-block mb-1 ${priced && !isOthers ? 'bg-emerald-800 text-emerald-200' : 'bg-slate-100 text-slate-500'}`}>
+                        <p className={`text-[8px] font-black px-1 py-0.5 rounded inline-block ${priced && !isOthers ? 'bg-emerald-800 text-emerald-200' : 'bg-slate-100 text-slate-500'}`}>
                           📍 {productBranchMap[p.line.trim().toLowerCase()]}
                         </p>
                       )}
-
-                    {isAssignedToOther ? (
-                      <p className="text-[10px] font-bold text-slate-500">مسند لمجهز آخر</p>
-                    ) : p.assignedPreparerId === preparerId ? (
-                      <p className="text-[10px] font-bold text-emerald-300">مسند لك</p>
-                    ) : priced ? (
-                      <p className={`text-[10px] font-bold ${isOthers ? "text-slate-500" : "text-emerald-300"}`}>{isPricedByOther ? "بواسطة مجهز آخر" : (p.pricedById === "auto" ? "تسعير تلقائي" : "أنت")}</p>
-                    ) : null}
                   </div>
                 </div>
-                {isMeat ? (
-                    priced ? (
-                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/50 px-2 py-1 rounded">✅ تلقائي</span>
+
+                <div className="w-full flex items-center justify-between border-t border-dashed border-slate-200 pt-2 mt-auto">
+                    {isAssignedToOther ? (
+                      <p className="text-[9px] font-bold text-slate-500">مجهز آخر</p>
+                    ) : p.assignedPreparerId === preparerId ? (
+                      <p className="text-[9px] font-bold text-emerald-300">لك</p>
+                    ) : priced ? (
+                      <p className={`text-[9px] font-bold ${isOthers ? "text-slate-500" : "text-emerald-300"}`}>{isPricedByOther ? "مجهز آخر" : (p.pricedById === "auto" ? "تلقائي" : "أنت")}</p>
+                    ) : <div />}
+
+                    {isMeat ? (
+                        priced ? (
+                            <span className="text-[8px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded">✅ تلقائي</span>
+                        ) : (
+                            <span className="text-[8px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">تسعير</span>
+                        )
+                    ) : priced ? (
+                        <span className={`font-mono text-[10px] font-black ${isOthers ? "text-slate-500" : "text-emerald-400"}`}>{p.buyAlf}</span>
                     ) : (
-                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">📝 اضغط للتسعير التلقائي</span>
-                    )
-                ) : priced ? (
-                    <span className={`font-mono text-xs font-black ${isOthers ? "text-slate-500" : "text-emerald-400"}`}>{p.buyAlf}  (شراء)</span>
-                ) : (
-                    <span className="text-[10px] text-slate-400">📝 اضغط للتسعير</span>
-                )}
+                        <span className="text-[9px] text-slate-400">📝 تسعير</span>
+                    )}
+                </div>
               </button>
             );
           })}
