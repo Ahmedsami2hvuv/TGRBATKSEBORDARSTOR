@@ -381,8 +381,8 @@ export function OrderDetailSection({
               matchesExpected: e.matchesExpected,
               mismatchReason: e.mismatchReason,
               mismatchNote: e.mismatchNote,
-              recordedAt: e.createdAt.toISOString(),
-              deletedAt: e.deletedAt ? e.deletedAt.toISOString() : null,
+              recordedAt: (e.createdAt instanceof Date ? e.createdAt : new Date(e.createdAt)).toISOString(),
+              deletedAt: e.deletedAt ? (e.deletedAt instanceof Date ? e.deletedAt : new Date(e.deletedAt)).toISOString() : null,
               deletedReason: e.deletedReason,
               deletedByDisplayName: e.deletedByDisplayName,
               performedByDisplayName:
