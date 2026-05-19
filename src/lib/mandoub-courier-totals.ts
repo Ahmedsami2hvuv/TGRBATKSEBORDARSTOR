@@ -1,6 +1,10 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import type { Decimal } from "@prisma/client/runtime/library";
 import { MONEY_KIND_DELIVERY } from "@/lib/mandoub-money-events";
 import { computeCourierDeliveryEarningDinar } from "@/lib/courier-earnings";
+
+export interface DecimalMathPlusLike {
+  plus(other: DecimalMathPlusLike | number): DecimalMathPlusLike;
+}
 
 /** لحساب «أرباحي» وحالات الطلبات الحالية — أموال الصادر/الوارد تُحسب من `fetchMandoubMoneySumsForCourier` / `computeMoneySumsFromCourierEvents` */
 export type MandoubOrderTotalsInput = {
@@ -25,7 +29,7 @@ export type MandoubOrderTotalsInput = {
 };
 
 export type MandoubCourierOrderMetrics = {
-  sumEarnings: Decimal;
+  sumEarnings: number;
   /** لقطة حالية لطلبات المندوب المسند إليه حالياً */
   ordersAssigned: number;
   ordersDelivering: number;
@@ -42,7 +46,7 @@ export function computeMandoubTotalsForCourier(
   baseline: Date | null,
   includeArchivedEarnings = false,
 ): MandoubCourierOrderMetrics {
-  let sumEarnings = new Decimal(0);
+  let sumEarnings = 0;
   let ordersAssigned = 0;
   let ordersDelivering = 0;
   let ordersDelivered = 0;
@@ -67,14 +71,14 @@ export function computeMandoubTotalsForCourier(
     if (earningOwner !== courierId) continue;
 
     // قيمة الأجر: إن كان courierEarningDinar محفوظاً نستخدمه، وإلا نحسبه من deliveryPrice + نوع مركبة المندوب.
-    let earning: Decimal | null = o.courierEarningDinar ?? null;
+    let earning: any = o.courierEarningDinar ?? null;
     if (earning == null) {
       const vehicleType = o.courierVehicleType ?? o.courier?.vehicleType ?? null;
       const deliveryPrice = o.deliveryPrice ?? null;
       if (vehicleType && deliveryPrice != null) {
         earning = computeCourierDeliveryEarningDinar(
           vehicleType as any,
-          deliveryPrice,
+          deliveryPrice as any,
         );
       }
     }
@@ -87,7 +91,8 @@ export function computeMandoubTotalsForCourier(
     }
 
     if (!skipForBaseline) {
-      sumEarnings = sumEarnings.plus(earning);
+      const val = typeof earning.toNumber === "function" ? earning.toNumber() : Number(earning);
+      sumEarnings += val;
     }
   }
 

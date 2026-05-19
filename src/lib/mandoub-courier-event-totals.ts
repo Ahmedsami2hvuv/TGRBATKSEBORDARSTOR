@@ -1,5 +1,5 @@
 import type { CourierWalletMiscDirection } from "@prisma/client";
-import { Decimal } from "@prisma/client/runtime/library";
+import type { Decimal } from "@prisma/client/runtime/library";
 import {
   MONEY_KIND_DELIVERY,
   MONEY_KIND_PICKUP,
@@ -7,10 +7,10 @@ import {
 import { prisma } from "@/lib/prisma";
 
 export type MandoubMoneySums = {
-  sumDeliveryIn: Decimal;
-  sumPickupOut: Decimal;
+  sumDeliveryIn: number;
+  sumPickupOut: number;
   /** وارد − صادر (قيمة موقّعة: سالبة عندما يتقدّم المندوب للشركة أكثر مما استلم) */
-  remainingNet: Decimal;
+  remainingNet: number;
   pickupEventsAfter: number;
   deliveryEventsAfter: number;
 };
@@ -20,15 +20,15 @@ export function computeMoneySumsFromCourierEvents(
   events: Array<{
     courierId: string | null;
     kind: string;
-    amountDinar: Decimal;
+    amountDinar: Decimal | number;
     createdAt: Date;
     recordedByCompanyPreparerId?: string | null;
   }>,
   courierId: string,
   baseline: Date | null,
 ): MandoubMoneySums {
-  let sumDeliveryIn = new Decimal(0);
-  let sumPickupOut = new Decimal(0);
+  let sumDeliveryIn = 0;
+  let sumPickupOut = 0;
   let pickupEventsAfter = 0;
   let deliveryEventsAfter = 0;
 
@@ -38,16 +38,20 @@ export function computeMoneySumsFromCourierEvents(
     if (e.recordedByCompanyPreparerId) continue;
 
     if (baseline && e.createdAt <= baseline) continue;
+    const val = typeof (e.amountDinar as any).toNumber === "function"
+      ? (e.amountDinar as any).toNumber()
+      : Number(e.amountDinar);
+
     if (e.kind === MONEY_KIND_PICKUP) {
-      sumPickupOut = sumPickupOut.plus(e.amountDinar);
+      sumPickupOut += val;
       pickupEventsAfter++;
     } else if (e.kind === MONEY_KIND_DELIVERY) {
-      sumDeliveryIn = sumDeliveryIn.plus(e.amountDinar);
+      sumDeliveryIn += val;
       deliveryEventsAfter++;
     }
   }
 
-  const remainingNet = sumDeliveryIn.minus(sumPickupOut);
+  const remainingNet = sumDeliveryIn - sumPickupOut;
 
   return {
     sumDeliveryIn,
@@ -63,7 +67,7 @@ export function mergeMiscWalletIntoSums(
   sums: MandoubMoneySums,
   miscRows: Array<{
     direction: CourierWalletMiscDirection;
-    amountDinar: Decimal;
+    amountDinar: Decimal | number;
     createdAt: Date;
   }>,
   baseline: Date | null,
@@ -74,18 +78,22 @@ export function mergeMiscWalletIntoSums(
   let deliveryEventsAfter = sums.deliveryEventsAfter;
   for (const e of miscRows) {
     if (baseline && e.createdAt <= baseline) continue;
+    const val = typeof (e.amountDinar as any).toNumber === "function"
+      ? (e.amountDinar as any).toNumber()
+      : Number(e.amountDinar);
+
     if (e.direction === "take") {
-      sumDeliveryIn = sumDeliveryIn.plus(e.amountDinar);
+      sumDeliveryIn += val;
       deliveryEventsAfter++;
     } else if (e.direction === "give") {
-      sumPickupOut = sumPickupOut.plus(e.amountDinar);
+      sumPickupOut += val;
       pickupEventsAfter++;
     }
   }
   return {
     sumDeliveryIn,
     sumPickupOut,
-    remainingNet: sumDeliveryIn.minus(sumPickupOut),
+    remainingNet: sumDeliveryIn - sumPickupOut,
     pickupEventsAfter,
     deliveryEventsAfter,
   };
