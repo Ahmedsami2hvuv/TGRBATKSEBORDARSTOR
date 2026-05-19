@@ -4,17 +4,17 @@ import { useEffect, useState, useRef } from "react";
 import { getPendingActions, deletePendingAction, type PendingWalletAction } from "@/lib/mandoub-offline-db";
 import {
   uploadShopDoorPhoto,
-  bulkSetMandoubOrdersStatus
+  bulkSetMandoubOrdersStatus,
+  uploadMandoubOrderImageSubmit
 } from "./actions";
 import {
   submitMandoubPickupMoney,
   submitMandoubDeliveryMoney,
-  submitMandoubMiscEntry,
-  deleteMandoubMiscEntry,
-  transferMandoubBalance,
+  submitMandoubMiscWalletEntry,
+  softDeleteMandoubMiscWalletEntry,
   softDeleteMandoubMoneyEvent
 } from "./cash-actions";
-import { uploadMandoubOrderImageSubmit } from "./actions"; // Assuming it's in actions
+import { createWalletPeerTransferFromCourier } from "../wallet-peer-transfer-actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { showTrayNotification } from "@/lib/client-web-notification";
@@ -67,10 +67,16 @@ export function MandoubOfflineSyncManager() {
             await uploadMandoubOrderImageSubmit(formData);
             break;
           case 'submit_misc':
-            await submitMandoubMiscEntry({}, formData);
+            await submitMandoubMiscWalletEntry({}, formData);
             break;
           case 'transfer':
-            await transferMandoubBalance({}, formData);
+            await createWalletPeerTransferFromCourier({}, formData);
+            break;
+          case 'delete_misc':
+            await softDeleteMandoubMiscWalletEntry({}, formData);
+            break;
+          case 'delete_event':
+            await softDeleteMandoubMoneyEvent({}, formData);
             break;
           // يمكن إضافة البقية هنا بنفس النمط
         }
