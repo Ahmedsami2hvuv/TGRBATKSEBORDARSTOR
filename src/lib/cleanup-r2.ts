@@ -1,9 +1,15 @@
-import { ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
-import { s3Client, BUCKET_NAME } from "./upload-storage";
+import { getS3Client, BUCKET_NAME } from "./upload-storage";
 import { prisma } from "./prisma";
 
 export async function cleanupOrphanedR2Images() {
   try {
+    const s3Client = await getS3Client();
+    if (!s3Client || !BUCKET_NAME) {
+      return { error: "R2 client or bucket name missing" };
+    }
+
+    const { ListObjectsV2Command, DeleteObjectsCommand } = await import("@aws-sdk/client-s3");
+
     // 1. جلب كل الملفات من R2
     const listCommand = new ListObjectsV2Command({
       Bucket: BUCKET_NAME,
@@ -38,7 +44,6 @@ export async function cleanupOrphanedR2Images() {
 
     const addUrl = (url: string | null | undefined) => {
       if (!url) return;
-      // استخراج الـ Key من الرابط (نفترض أنه يبدأ بعد /uploads/)
       const parts = url.split("/uploads/");
       if (parts.length > 1) usedKeys.add(parts[parts.length - 1]);
     };
@@ -51,7 +56,7 @@ export async function cleanupOrphanedR2Images() {
     branches.forEach(b => addUrl(b.photoUrl));
     profiles.forEach(p => addUrl(p.photoUrl));
 
-    // 3. تحديد المفاتيح اليتيمة (موجودة في R2 وليست في DB)
+    // 3. تحديد المفاتيح اليتيمة
     const orphans = r2Keys.filter(key => !usedKeys.has(key));
 
     if (orphans.length === 0) {
