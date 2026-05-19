@@ -8,6 +8,9 @@ import {
 import { uploadMandoubOrderImageSubmit } from "./actions";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { deletePendingAction, getPendingActions, savePendingAction, type PendingWalletAction } from "@/lib/mandoub-offline-db";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 /** نفس أزرار كاميرا/معرض `MandoubQuickDoorCapture` — حرفياً لتطابق الشكل والقياس */
 const btnCam =
@@ -32,10 +35,64 @@ export function MandoubOrderImageQuick({
   const [compressing, setCompressing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
   }, []);
+
+  const syncNow = async () => {
+    const pendingActions = await getPendingActions();
+    const myPending = pendingActions.filter(a => a.formData.orderId === orderId && a.actionType === 'upload_order_image');
+    if (myPending.length === 0) return;
+
+    for (const action of myPending) {
+      try {
+        const formData = new FormData();
+        Object.entries(action.formData).forEach(([k, v]) => formData.append(k, v));
+        if (action.fileData) {
+          const file = new File([action.fileData.blob], action.fileData.name, { type: action.fileData.type });
+          formData.append('orderImage', file);
+        }
+        await uploadMandoubOrderImageSubmit(formData);
+        await deletePendingAction(action.id);
+      } catch (e) {
+        console.error("Sync failed for order image", e);
+      }
+    }
+    router.refresh();
+  };
+
+  useEffect(() => {
+    const handleOnline = () => syncNow();
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, []);
+
+  const handleOfflineUpload = async (file: File) => {
+    const id = `local-order-img-${Date.now()}`;
+    const newAction: PendingWalletAction = {
+      id,
+      actionType: 'upload_order_image',
+      formData: {
+        orderId,
+        next: nextUrl,
+        c: auth.c,
+        exp: auth.exp,
+        s: auth.s,
+      },
+      fileData: {
+        name: file.name,
+        type: file.type,
+        blob: file,
+      },
+      timestamp: Date.now(),
+      retryCount: 0,
+    };
+
+    await savePendingAction(newAction);
+    toast.info("تم حفظ صورة الطلب محلياً.. سيتم رفعها فور توفر الإنترنت");
+  };
 
   const hidden = (
     <>
@@ -58,6 +115,12 @@ export function MandoubOrderImageQuick({
     try {
       const out = await compressImageForMandoubUpload(raw);
       assignFileToInput(input, out);
+
+      if (!navigator.onLine) {
+        await handleOfflineUpload(out);
+        setCompressing(false);
+        return;
+      }
     } catch {
       /* الملف الأصلي */
     } finally {

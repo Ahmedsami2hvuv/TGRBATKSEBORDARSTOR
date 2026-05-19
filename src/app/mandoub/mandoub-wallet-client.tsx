@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useRef, useState } from "react";
+import { useActionState, useMemo, useRef, useState, useTransition } from "react";
 import {
   createWalletPeerTransferFromCourier,
   respondWalletPeerTransferByCourier,
@@ -29,6 +29,8 @@ import { UISectionConfig } from "@/lib/ui-settings";
 import { useEffect, useState as useStateReact } from "react";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { getPendingActions, savePendingAction, deletePendingAction, type PendingWalletAction } from "@/lib/mandoub-offline-db";
+import { toast } from "sonner";
 
 export type MandoubWalletDeletionReason =
   | "manual_admin"
@@ -184,6 +186,10 @@ export function MandoubWalletClient({
   uiSettings?: UISectionConfig | null;
 }) {
   const router = useRouter();
+  const [isPendingSync, startTransition] = useTransition();
+  const [offlineActions, setOfflineActions] = useState<PendingWalletAction[]>([]);
+  const [isOnline, setIsOnline] = useState(true);
+
   const [miscPanel, setMiscPanel] = useState<null | "take" | "give">(null);
   const [transferOpen, setTransferOpen] = useState(false);
   const [toKind, setToKind] = useState<"" | "courier" | "employee" | "admin">("");
@@ -193,9 +199,83 @@ export function MandoubWalletClient({
   const [miscSubmitState, miscSubmitAction, miscSubmitPending] = useActionState(submitMandoubMiscWalletEntry, initialCash);
   const [createState, createAction, createPending] = useActionState(createWalletPeerTransferFromCourier, initialTransfer);
   const [respondState, respondAction, respondPending] = useActionState(respondWalletPeerTransferByCourier, initialTransfer);
+
   const [query, setQuery] = useState("");
   const [icons, setIcons] = useStateReact<GlobalIconsConfig | null>(null);
   const [orderModalHref, setOrderModalHref] = useState<string | null>(null);
+
+  // تحديث حالة الإنترنت
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => { setIsOnline(true); syncNow(); };
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  // جلب العمليات المعلقة من IndexedDB عند التشغيل
+  useEffect(() => {
+    getPendingActions().then(setOfflineActions);
+  }, []);
+
+  // وظيفة المزامنة التلقائية
+  const syncNow = async () => {
+    const pending = await getPendingActions();
+    if (pending.length === 0) return;
+
+    for (const action of pending) {
+      try {
+        const formData = new FormData();
+        Object.entries(action.formData).forEach(([k, v]) => formData.append(k, v));
+
+        let res: any;
+        if (action.actionType === "submit_misc") res = await submitMandoubMiscWalletEntry({}, formData);
+        else if (action.actionType === "transfer") res = await createWalletPeerTransferFromCourier({}, formData);
+        else if (action.actionType === "delete_misc") res = await softDeleteMandoubMiscWalletEntry({}, formData);
+        else if (action.actionType === "delete_event") res = await softDeleteMandoubMoneyEvent({}, formData);
+
+        // إذا نجحت العملية أو كان هناك خطأ منطقي (ليس فشل اتصال) نحذفها من المحلي
+        await deletePendingAction(action.id);
+      } catch (e) {
+        console.error("Sync failed for action", action.id, e);
+      }
+    }
+    const remain = await getPendingActions();
+    setOfflineActions(remain);
+    if (pending.length > 0 && remain.length === 0) {
+      toast.success("تم مزامنة جميع العمليات بنجاح");
+      router.refresh();
+    }
+  };
+
+  // معالجة الضغط على الأزرار بشكل فوري (Optimistic)
+  const handleOptimisticSubmit = async (e: React.FormEvent<HTMLFormElement>, actionType: PendingWalletAction['actionType']) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formDataObj = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
+    const id = `local-${Date.now()}`;
+
+    const newAction: PendingWalletAction = {
+      id,
+      actionType,
+      formData: formDataObj,
+      timestamp: Date.now(),
+      retryCount: 0
+    };
+
+    await savePendingAction(newAction);
+    setOfflineActions(prev => [...prev, newAction]);
+    setMiscPanel(null);
+    setTransferOpen(false);
+    toast.info("تم الحفظ محلياً.. جاري المزامنة");
+
+    // محاولة المزامنة فوراً إذا كان هناك إنترنت
+    if (navigator.onLine) syncNow();
+  };
   const prevCreatePendingRef = useRef(false);
   const prevRespondPendingRef = useRef(false);
   const prevMiscSubmitPendingRef = useRef(false);
@@ -246,10 +326,31 @@ export function MandoubWalletClient({
   }, [miscDelPending, miscDelState.error, router]);
 
   const filteredLedger = useMemo(() => {
+    const combined: MandoubWalletLedgerLine[] = [
+      ...offlineActions.map(oa => ({
+        source: (oa.actionType.includes("delete") ? "misc" : "misc") as any,
+        id: oa.id,
+        kind: oa.actionType === "submit_misc"
+          ? (oa.formData.direction === "take" ? MISC_LEDGER_KIND_TAKE : MISC_LEDGER_KIND_GIVE)
+          : (oa.actionType === "transfer" ? LEDGER_KIND_TRANSFER_PENDING_OUT : "pending_sync"),
+        amountDinar: Number(oa.formData.amountAlf || 0) * 1000,
+        createdAt: new Date(oa.timestamp).toISOString(),
+        orderId: "",
+        orderNumber: 0,
+        shopName: "",
+        miscLabel: (oa.formData.label || oa.formData.handoverLocation || "جاري المزامنة..."),
+        deletedAt: null,
+        deletedReason: null,
+        deletedByDisplayName: null,
+        isPendingSync: true, // علامة إضافية للتمييز البصري
+      })),
+      ...ledger
+    ];
+
     const normalizedQuery = query.trim();
-    if (!normalizedQuery) return ledger;
-    return ledger.filter((line) => matchesWalletQuery(line, normalizedQuery));
-  }, [ledger, query]);
+    if (!normalizedQuery) return combined;
+    return combined.filter((line) => matchesWalletQuery(line, normalizedQuery));
+  }, [ledger, query, offlineActions]);
 
   // ستايل المحفظة الديناميكي
   const containerStyle = uiSettings ? {
@@ -455,7 +556,10 @@ export function MandoubWalletClient({
         </div>
 
         {(miscPanel || transferOpen) && (
-          <form action={transferOpen ? createAction : miscSubmitAction} className={`mt-4 space-y-3 rounded-xl border-2 p-4 shadow-xl ${transferOpen ? "border-violet-200 bg-white dark:bg-slate-900 dark:border-slate-700" : miscPanel === "take" ? "border-red-500 bg-red-50 dark:bg-red-950/20" : "border-emerald-600 bg-lime-50 dark:bg-emerald-950/20"}`}>
+          <form
+            onSubmit={(e) => handleOptimisticSubmit(e, transferOpen ? "transfer" : "submit_misc")}
+            className={`mt-4 space-y-3 rounded-xl border-2 p-4 shadow-xl ${transferOpen ? "border-violet-200 bg-white dark:bg-slate-900 dark:border-slate-700" : miscPanel === "take" ? "border-red-500 bg-red-50 dark:bg-red-950/20" : "border-emerald-600 bg-lime-50 dark:bg-emerald-950/20"}`}
+          >
             <input type="hidden" name="c" value={auth.c} /><input type="hidden" name="exp" value={auth.exp} /><input type="hidden" name="s" value={auth.s} /><input type="hidden" name="next" value={walletPathWithQuery} />
             {!transferOpen && <input type="hidden" name="direction" value={miscPanel!} />}
             {transferOpen && (
@@ -517,6 +621,7 @@ export function MandoubWalletClient({
 
           const content = (
             <div className={`relative flex flex-col gap-1 rounded-2xl border-2 px-4 py-3 transition-all shadow-sm backdrop-blur-[2px] ${
+              (line as any).isPendingSync ? "border-amber-400 bg-amber-50/50 dark:bg-amber-900/10 animate-pulse" :
               deleted || isRejected ? "border-slate-300 bg-slate-100/90 text-slate-600 dark:bg-slate-800" :
               isInPick ? "border-rose-500/60 bg-rose-500/20 dark:bg-rose-500/25 dark:border-rose-500/50" :
               isOutPick ? "border-emerald-500/60 bg-emerald-500/20 dark:bg-emerald-500/25 dark:border-emerald-500/50" :
@@ -525,7 +630,7 @@ export function MandoubWalletClient({
               <div className="flex flex-col min-w-0 pl-10 sm:pl-12">
                 <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
                   <p className={`flex items-center gap-1.5 text-base font-black sm:text-lg truncate ${!deleted ? "text-slate-950 dark:text-white" : "text-slate-500"}`}>
-                    {dirLabel} · {formatDinarAsAlf(line.amountDinar)}{amountSuffix}
+                    {dirLabel} · {formatDinarAsAlf(line.amountDinar)}{(line as any).isPendingSync ? " ⏳" : amountSuffix}
                   </p>
 
                   {!deleted && line.source === "order" && line.expectedDinar != null && hasMismatch && (

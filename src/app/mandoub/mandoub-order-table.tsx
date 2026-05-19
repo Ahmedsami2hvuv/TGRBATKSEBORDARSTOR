@@ -13,6 +13,8 @@ import { dinarDecimalToAlfInputString } from "@/lib/money-alf";
 import { createPortal } from "react-dom";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { deletePendingAction, getPendingActions, savePendingAction, type PendingWalletAction } from "@/lib/mandoub-offline-db";
+import { toast } from "sonner";
 import { useRef } from "react";
 
 export type MandoubRow = {
@@ -153,6 +155,46 @@ export function MandoubOrderTable({
   useEffect(() => {
     getGlobalIcons().then(setIcons);
   }, []);
+
+  const syncBulkNow = async () => {
+    const pendingActions = await getPendingActions();
+    const myPending = pendingActions.filter(a => a.actionType === 'bulk_status');
+    if (myPending.length === 0) return;
+
+    for (const action of myPending) {
+      try {
+        const formData = new FormData();
+        Object.entries(action.formData).forEach(([k, v]) => formData.append(k, v));
+        await bulkSetMandoubOrdersStatus({}, formData);
+        await deletePendingAction(action.id);
+      } catch (e) {
+        console.error("Bulk sync failed", e);
+      }
+    }
+    router.refresh();
+  };
+
+  useEffect(() => {
+    const handleOnline = () => syncBulkNow();
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, []);
+
+  const handleBulkOffline = async (formData: FormData) => {
+    const dataObj = Object.fromEntries(formData.entries()) as Record<string, string>;
+    const id = `local-bulk-${Date.now()}`;
+    const newAction: PendingWalletAction = {
+      id,
+      actionType: 'bulk_status',
+      formData: dataObj,
+      timestamp: Date.now(),
+      retryCount: 0,
+    };
+    await savePendingAction(newAction);
+    setSelectedIds(new Set());
+    toast.info("تم حفظ التعديلات الجماعية محلياً.. جاري الرفع");
+    if (navigator.onLine) syncBulkNow();
+  };
 
   const displayRows = useMemo(
     () =>
@@ -503,7 +545,13 @@ export function MandoubOrderTable({
 
       {selectedIds.size > 0 ? (
         <form
-          action={bulkAction}
+          action={(fd) => {
+            if (!navigator.onLine) {
+              handleBulkOffline(fd);
+            } else {
+              bulkAction(fd);
+            }
+          }}
           className="fixed bottom-0 left-0 right-0 z-40 border-t border-red-200 bg-gradient-to-t from-red-50/98 to-white px-3 py-3 shadow-[0_-4px_20px_rgba(127,29,29,0.12)] sm:px-4"
         >
           <input type="hidden" name="c" value={auth.c} />

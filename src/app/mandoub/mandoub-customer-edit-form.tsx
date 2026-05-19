@@ -8,6 +8,9 @@ import {
 } from "./actions";
 import { MANDOUB_ORDER_EDIT_TOGGLE } from "./mandoub-order-detail-actions";
 import { MandoubLocationManageButtons } from "./mandoub-location-manage-buttons";
+import { deletePendingAction, getPendingActions, savePendingAction, type PendingWalletAction } from "@/lib/mandoub-offline-db";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const initialEdit: MandoubEditCustomerState = {};
 
@@ -43,6 +46,57 @@ export function MandoubCustomerEditForm({
     initialEdit,
   );
   const customerPhoneRef = useRef<HTMLInputElement>(null);
+
+  const router = useRouter();
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => { setIsOnline(true); syncNow(); };
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", () => setIsOnline(false));
+    return () => window.removeEventListener("online", handleOnline);
+  }, []);
+
+  const syncNow = async () => {
+    const pending = await getPendingActions();
+    const myPending = pending.filter(a => a.formData.orderId === orderId && a.actionType === "edit_customer");
+    if (myPending.length === 0) return;
+
+    for (const action of myPending) {
+      try {
+        const formData = new FormData();
+        Object.entries(action.formData).forEach(([k, v]) => formData.append(k, v));
+        await updateMandoubCustomerDetails({}, formData);
+        await deletePendingAction(action.id);
+      } catch (e) { console.error(e); }
+    }
+    if (myPending.length > 0) {
+      toast.success("تم مزامنة تعديلات الطلب");
+      router.refresh();
+    }
+  };
+
+  const handleOfflineSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    if (navigator.onLine) return; // Let default action handle it if online
+
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const dataObj = Object.fromEntries(formData.entries()) as Record<string, string>;
+    const id = `local-edit-${Date.now()}`;
+
+    const newAction: PendingWalletAction = {
+      id,
+      actionType: 'edit_customer',
+      formData: dataObj,
+      timestamp: Date.now(),
+      retryCount: 0
+    };
+
+    await savePendingAction(newAction);
+    setEditOpen(false);
+    toast.info("تم حفظ التعديلات محلياً.. سيتم الرفع عند توفر الإنترنت");
+  };
 
   useEffect(() => {
     const onToggle = () => setEditOpen((open) => !open);
@@ -86,6 +140,7 @@ export function MandoubCustomerEditForm({
           <form
             key={`${orderId}-${defaultOrderStatus}-${defaultCustomerLocationUrl}`}
             action={editAction}
+            onSubmit={handleOfflineSubmit}
             className="space-y-4"
           >
             <input type="hidden" name="orderId" value={orderId} />

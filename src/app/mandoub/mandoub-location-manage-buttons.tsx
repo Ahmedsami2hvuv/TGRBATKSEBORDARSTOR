@@ -10,6 +10,8 @@ import {
 } from "./actions";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { deletePendingAction, getPendingActions, savePendingAction, type PendingWalletAction } from "@/lib/mandoub-offline-db";
+import { toast } from "sonner";
 
 const initial: MandoubEditCustomerState = {};
 
@@ -49,6 +51,61 @@ export function MandoubLocationManageButtons({
   const clearNavDone = useRef(false);
   const gpsNavDone = useRef(false);
 
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => { setIsOnline(true); syncNow(); };
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", () => setIsOnline(false));
+    return () => window.removeEventListener("online", handleOnline);
+  }, []);
+
+  const syncNow = async () => {
+    const pending = await getPendingActions();
+    const myPending = pending.filter(a => a.formData.orderId === orderId && (a.actionType === "set_location" || a.actionType === "clear_location"));
+    if (myPending.length === 0) return;
+
+    for (const action of myPending) {
+      try {
+        const formData = new FormData();
+        Object.entries(action.formData).forEach(([k, v]) => formData.append(k, v));
+        if (action.actionType === "set_location") await setMandoubCustomerLocationFromGeolocation({}, formData);
+        else if (action.actionType === "clear_location") await clearMandoubCustomerLocation({}, formData);
+        await deletePendingAction(action.id);
+      } catch (e) { console.error(e); }
+    }
+    if (myPending.length > 0) {
+      toast.success("تم مزامنة الموقع");
+      router.refresh();
+    }
+  };
+
+  const handleOfflineAction = async (actionType: 'set_location' | 'clear_location', extraData: Record<string, string> = {}) => {
+    const dataObj: Record<string, string> = {
+      orderId,
+      c: auth.c,
+      exp: auth.exp,
+      s: auth.s,
+      next: nextUrl,
+      ...extraData
+    };
+
+    const id = `local-loc-${Date.now()}`;
+    const newAction: PendingWalletAction = {
+      id,
+      actionType,
+      formData: dataObj,
+      timestamp: Date.now(),
+      retryCount: 0
+    };
+
+    await savePendingAction(newAction);
+    setConfirmClear(false);
+    setConfirmReplace(false);
+    toast.info("تم الحفظ محلياً.. سيتم الرفع عند توفر الإنترنت");
+  };
+
   /** بدل `redirect` من الخادم — يتجنّب تعليق الواجهة وفقدان `c`/`s` على بعض الأجهزة */
   useEffect(() => {
     if (clearPending) clearNavDone.current = false;
@@ -85,6 +142,12 @@ export function MandoubLocationManageButtons({
       setConfirmReplace(false);
       return;
     }
+
+    if (!navigator.onLine) {
+      handleOfflineAction('clear_location');
+      return;
+    }
+
     setConfirmClear(false);
     const fd = new FormData();
     fd.set("orderId", orderId);
@@ -111,14 +174,22 @@ export function MandoubLocationManageButtons({
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocating(false);
+        const lat = String(pos.coords.latitude);
+        const lng = String(pos.coords.longitude);
+
+        if (!navigator.onLine) {
+          handleOfflineAction('set_location', { lat, lng, replace: "1" });
+          return;
+        }
+
         const fd = new FormData();
         fd.set("orderId", orderId);
         fd.set("next", nextUrl);
         fd.set("c", auth.c);
         fd.set("exp", auth.exp);
         fd.set("s", auth.s);
-        fd.set("lat", String(pos.coords.latitude));
-        fd.set("lng", String(pos.coords.longitude));
+        fd.set("lat", lat);
+        fd.set("lng", lng);
         fd.set("replace", "1");
         gpsAction(fd);
       },
