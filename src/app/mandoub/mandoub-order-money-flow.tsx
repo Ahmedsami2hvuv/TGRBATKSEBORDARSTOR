@@ -29,8 +29,6 @@ import {
   moneyWardSummaryBoxClass,
   moneyWardTotalValueClass,
 } from "@/lib/money-entry-ui";
-import { deletePendingAction, getPendingActions, savePendingAction, type PendingWalletAction } from "@/lib/mandoub-offline-db";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 const initialCash: MandoubCashState = {};
@@ -111,64 +109,6 @@ export function MandoubOrderMoneyFlow({
   const [deliveryAdvanceToDelivered, setDeliveryAdvanceToDelivered] = useState(false);
 
   const router = useRouter();
-  const [offlineActions, setOfflineActions] = useState<PendingWalletAction[]>([]);
-  const [isOnline, setIsOnline] = useState(true);
-
-  // تحديث حالة الإنترنت والمزامنة
-  useEffect(() => {
-    setIsOnline(navigator.onLine);
-    const handleOnline = () => { setIsOnline(true); syncNow(); };
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", () => setIsOnline(false));
-    return () => {
-      window.removeEventListener("online", handleOnline);
-    };
-  }, []);
-
-  useEffect(() => {
-    getPendingActions().then(actions => {
-      setOfflineActions(actions.filter(a => a.formData.orderId === orderId));
-    });
-  }, [orderId]);
-
-  const syncNow = async () => {
-    const pending = await getPendingActions();
-    const myPending = pending.filter(a => a.formData.orderId === orderId);
-    if (myPending.length === 0) return;
-
-    for (const action of myPending) {
-      try {
-        const formData = new FormData();
-        Object.entries(action.formData).forEach(([k, v]) => formData.append(k, v));
-        if (action.actionType === "pickup") await submitMandoubPickupMoney({}, formData);
-        else if (action.actionType === "delivery") await submitMandoubDeliveryMoney({}, formData);
-        await deletePendingAction(action.id);
-      } catch (e) { console.error(e); }
-    }
-    const remain = await getPendingActions();
-    setOfflineActions(remain.filter(a => a.formData.orderId === orderId));
-    if (myPending.length > 0) {
-      toast.success("تم مزامنة حركات الطلب");
-      router.refresh();
-    }
-  };
-
-  const handleOfflineSubmit = async (formData: FormData, type: 'pickup' | 'delivery') => {
-    const dataObj = Object.fromEntries(formData.entries()) as Record<string, string>;
-    const id = `local-ord-${Date.now()}`;
-    const newAction: PendingWalletAction = {
-      id,
-      actionType: type,
-      formData: dataObj,
-      timestamp: Date.now(),
-      retryCount: 0
-    };
-    await savePendingAction(newAction);
-    setOfflineActions(prev => [...prev, newAction]);
-    closePanels();
-    toast.info("تم التسجيل محلياً.. جاري الرفع");
-    if (navigator.onLine) syncNow();
-  };
 
   const [pickupState, pickupAction, pickupPending] = useActionState(
     submitMandoubPickupMoney,
@@ -183,25 +123,7 @@ export function MandoubOrderMoneyFlow({
     initialCash,
   );
 
-  const mergedEvents = useMemo(() => {
-    const offlineMapped: MandoubMoneyEventUi[] = offlineActions.map(oa => ({
-      id: oa.id,
-      kind: oa.actionType === "pickup" ? MONEY_KIND_PICKUP : MONEY_KIND_DELIVERY,
-      amountDinar: (parseAlfInputToDinarDecimalRequired(oa.formData.amountAlf as string).value || 0),
-      expectedDinar: oa.actionType === "pickup" ? orderSubtotalDinar : totalAmountDinar,
-      matchesExpected: true,
-      mismatchReason: "",
-      mismatchNote: oa.formData.mismatchNote as string || "",
-      recordedAt: new Date(oa.timestamp).toISOString(),
-      deletedAt: null,
-      deletedReason: null,
-      deletedByDisplayName: null,
-      performedByDisplayName: courierName,
-      recordedByCompanyPreparerId: null,
-      isPendingSync: true,
-    } as any));
-    return [...offlineMapped, ...moneyEvents];
-  }, [offlineActions, moneyEvents, orderSubtotalDinar, totalAmountDinar, courierName]);
+  const mergedEvents = moneyEvents;
 
   const pickupSum = useMemo(
     () =>
@@ -340,7 +262,7 @@ export function MandoubOrderMoneyFlow({
             pickupRemainingDinar={pickupRemaining}
             pickupSumDinar={pickupSum}
             orderSubtotalDinar={orderSubtotalDinar}
-            formAction={(fd) => handleOfflineSubmit(fd, 'pickup')}
+            formAction={pickupAction}
             pending={pickupPending}
             error={pickupState.error}
             onClose={closePanels}
@@ -362,7 +284,7 @@ export function MandoubOrderMoneyFlow({
             deliveryRemainingDinar={deliveryRemaining}
             deliverySumDinar={deliverySum}
             totalAmountDinar={totalAmountDinar}
-            formAction={(fd) => handleOfflineSubmit(fd, 'delivery')}
+            formAction={deliveryAction}
             pending={deliveryPending}
             error={deliveryState.error}
             onClose={closePanels}
@@ -394,7 +316,7 @@ export function MandoubOrderMoneyFlow({
               pickupRemainingDinar={pickupRemaining}
               pickupSumDinar={pickupSum}
               orderSubtotalDinar={orderSubtotalDinar}
-              formAction={(fd) => handleOfflineSubmit(fd, 'pickup')}
+              formAction={pickupAction}
               pending={pickupPending}
               error={pickupState.error}
               onClose={closePanels}
@@ -411,7 +333,7 @@ export function MandoubOrderMoneyFlow({
               deliveryRemainingDinar={deliveryRemaining}
               deliverySumDinar={deliverySum}
               totalAmountDinar={totalAmountDinar}
-              formAction={(fd) => handleOfflineSubmit(fd, 'delivery')}
+              formAction={deliveryAction}
               pending={deliveryPending}
               error={deliveryState.error}
               onClose={closePanels}

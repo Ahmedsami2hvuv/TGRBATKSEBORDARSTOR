@@ -13,7 +13,6 @@ import { dinarDecimalToAlfInputString } from "@/lib/money-alf";
 import { createPortal } from "react-dom";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { deletePendingAction, getPendingActions, savePendingAction, type PendingWalletAction } from "@/lib/mandoub-offline-db";
 import { toast } from "sonner";
 import { useRef } from "react";
 import { OrderDetailSection } from "./order-detail-section";
@@ -159,42 +158,11 @@ export function MandoubOrderTable({
   );
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
 
-  const handleOfflineCashSubmit = async (formData: FormData, type: 'pickup' | 'delivery') => {
-    setLocalPending(true);
-    try {
-      const dataObj = Object.fromEntries(formData.entries()) as Record<string, string>;
-      const id = `local-ord-tab-${Date.now()}`;
-      const newAction: PendingWalletAction = {
-        id,
-        actionType: type,
-        formData: dataObj,
-        timestamp: Date.now(),
-        retryCount: 0
-      };
-      await savePendingAction(newAction);
-
-      // تحديث الحالة بصرياً فوراً (Optimistic UI)
-      const orderId = dataObj.orderId;
-      if (orderId) {
-        setRowStatusOverrides((prev) => ({
-          ...prev,
-          [orderId]: type === 'pickup' ? "delivering" : "delivered"
-        }));
-      }
-
-      setPickupOrder(null);
-      setDeliveryOrder(null);
-      toast.info("تم الحفظ محلياً.. سيتم التحديث عند توفر الإنترنت");
-
-      // محاولة مزامنة إذا رجع النت
-      if (navigator.onLine) {
-        window.dispatchEvent(new Event('online'));
-      }
-    } catch (err) {
-      console.error("Offline save failed", err);
-      toast.error("فشل الحفظ المحلي. تأكد من مساحة الجهاز.");
-    } finally {
-      setLocalPending(false);
+  const handleActionSubmit = async (formData: FormData, type: 'pickup' | 'delivery') => {
+    if (type === 'pickup') {
+      pickupAction(formData);
+    } else {
+      deliveryAction(formData);
     }
   };
 
@@ -224,46 +192,6 @@ export function MandoubOrderTable({
     document.addEventListener('click', handleWalletLauncherClick);
     return () => document.removeEventListener('click', handleWalletLauncherClick);
   }, []);
-
-  const syncBulkNow = async () => {
-    const pendingActions = await getPendingActions();
-    const myPending = pendingActions.filter(a => a.actionType === 'bulk_status');
-    if (myPending.length === 0) return;
-
-    for (const action of myPending) {
-      try {
-        const formData = new FormData();
-        Object.entries(action.formData).forEach(([k, v]) => formData.append(k, v));
-        await bulkSetMandoubOrdersStatus({}, formData);
-        await deletePendingAction(action.id);
-      } catch (e) {
-        console.error("Bulk sync failed", e);
-      }
-    }
-    router.refresh();
-  };
-
-  useEffect(() => {
-    const handleOnline = () => syncBulkNow();
-    window.addEventListener("online", handleOnline);
-    return () => window.removeEventListener("online", handleOnline);
-  }, []);
-
-  const handleBulkOffline = async (formData: FormData) => {
-    const dataObj = Object.fromEntries(formData.entries()) as Record<string, string>;
-    const id = `local-bulk-${Date.now()}`;
-    const newAction: PendingWalletAction = {
-      id,
-      actionType: 'bulk_status',
-      formData: dataObj,
-      timestamp: Date.now(),
-      retryCount: 0,
-    };
-    await savePendingAction(newAction);
-    setSelectedIds(new Set());
-    toast.info("تم حفظ التعديلات الجماعية محلياً.. جاري الرفع");
-    if (navigator.onLine) syncBulkNow();
-  };
 
   const displayRows = useMemo(
     () =>
@@ -565,13 +493,7 @@ export function MandoubOrderTable({
                 }
                 pickupSumDinar={pickupOrder.pickupSumDinar || 0}
                 orderSubtotalDinar={pickupOrder.orderSubtotalDinar}
-                formAction={(fd) => {
-                  if (!navigator.onLine) {
-                    handleOfflineCashSubmit(fd, 'pickup');
-                  } else {
-                    pickupAction(fd);
-                  }
-                }}
+                formAction={(fd) => pickupAction(fd)}
                 pending={pickupPending || localPending}
                 error={pickupState.error}
                 onClose={() => setPickupOrder(null)}
@@ -611,13 +533,7 @@ export function MandoubOrderTable({
                 }
                 deliverySumDinar={deliveryOrder.deliverySumDinar || 0}
                 totalAmountDinar={deliveryOrder.totalAmountDinar}
-                formAction={(fd) => {
-                  if (!navigator.onLine) {
-                    handleOfflineCashSubmit(fd, 'delivery');
-                  } else {
-                    deliveryAction(fd);
-                  }
-                }}
+                formAction={(fd) => deliveryAction(fd)}
                 pending={deliveryPending || localPending}
                 error={deliveryState.error}
                 onClose={() => setDeliveryOrder(null)}
@@ -723,13 +639,7 @@ export function MandoubOrderTable({
 
       {selectedIds.size > 0 ? (
         <form
-          action={(fd) => {
-            if (!navigator.onLine) {
-              handleBulkOffline(fd);
-            } else {
-              bulkAction(fd);
-            }
-          }}
+          action={bulkAction}
           className="fixed bottom-0 left-0 right-0 z-40 border-t border-red-200 bg-gradient-to-t from-red-50/98 to-white px-3 py-3 shadow-[0_-4px_20px_rgba(127,29,29,0.12)] sm:px-4"
         >
           <input type="hidden" name="c" value={auth.c} />

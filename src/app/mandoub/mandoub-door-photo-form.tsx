@@ -13,8 +13,6 @@ import {
 } from "./actions";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { deletePendingAction, getPendingActions, savePendingAction, type PendingWalletAction } from "@/lib/mandoub-offline-db";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 const initial: UploadDoorPhotoState = {};
@@ -48,59 +46,6 @@ export function MandoubDoorPhotoForm({
     getGlobalIcons().then(setIcons);
   }, []);
 
-  const syncNow = async () => {
-    const pendingActions = await getPendingActions();
-    const myPending = pendingActions.filter(a => a.formData.orderId === orderId && a.actionType === 'upload_shop_door');
-    if (myPending.length === 0) return;
-
-    for (const action of myPending) {
-      try {
-        const formData = new FormData();
-        Object.entries(action.formData).forEach(([k, v]) => formData.append(k, v));
-        if (action.fileData) {
-          const file = new File([action.fileData.blob], action.fileData.name, { type: action.fileData.type });
-          formData.append('doorPhoto', file);
-        }
-        await uploadShopDoorPhoto({}, formData);
-        await deletePendingAction(action.id);
-      } catch (e) {
-        console.error("Sync failed for shop door photo", e);
-      }
-    }
-    router.refresh();
-  };
-
-  useEffect(() => {
-    const handleOnline = () => syncNow();
-    window.addEventListener("online", handleOnline);
-    return () => window.removeEventListener("online", handleOnline);
-  }, []);
-
-  const handleOfflineUpload = async (file: File) => {
-    const id = `local-shop-door-${Date.now()}`;
-    const newAction: PendingWalletAction = {
-      id,
-      actionType: 'upload_shop_door',
-      formData: {
-        orderId,
-        next: nextUrl,
-        c,
-        exp,
-        s,
-      },
-      fileData: {
-        name: file.name,
-        type: file.type,
-        blob: file,
-      },
-      timestamp: Date.now(),
-      retryCount: 0,
-    };
-
-    await savePendingAction(newAction);
-    toast.info("تم حفظ الصورة محلياً.. سيتم رفعها عند توفر الإنترنت");
-  };
-
   const busy = compressing || pending || revertPending;
 
   return (
@@ -131,12 +76,6 @@ export function MandoubDoorPhotoForm({
           try {
             const out = await compressImageForMandoubUpload(raw);
             assignFileToInput(input, out);
-
-            if (!navigator.onLine) {
-              await handleOfflineUpload(out);
-              setCompressing(false);
-              return;
-            }
           } catch {
             /* يبقى الملف الأصلي */
           } finally {
