@@ -93,7 +93,7 @@ export function PreparerOrderEditForm({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-bold text-slate-800">هاتف الزبون *</span>
+        <span className="text-sm font-bold text-slate-800">هاتف الزبون (المستلم) *</span>
         <input
           name="customerPhone"
           required

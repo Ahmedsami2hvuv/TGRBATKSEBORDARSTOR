@@ -52,7 +52,7 @@ export function StaffSubmittedClient({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (!confirm("هل أنت متأكد من إلغاء هذا الطلب؟")) return;
+                  if (!confirm("هل أنت متأكد من رفض هذا الطلب؟")) return;
                   setCancellingId(row.id);
                   const fd = new FormData();
                   fd.set("draftId", row.id);
@@ -64,7 +64,7 @@ export function StaffSubmittedClient({
                 disabled={cancellingId === row.id}
                 className="rounded-full bg-rose-600 px-2 py-1 text-[10px] font-bold text-white shadow-sm hover:bg-rose-700 disabled:opacity-50"
               >
-                {cancellingId === row.id ? "..." : "إلغاء"}
+                {cancellingId === row.id ? "..." : "رفض"}
               </button>
             </div>
           );

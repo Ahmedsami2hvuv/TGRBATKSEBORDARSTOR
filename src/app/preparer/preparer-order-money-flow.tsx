@@ -477,7 +477,7 @@ export function PickupMoneyForm(props: {
         <>
           <input type="hidden" name="advanceStatus" value="delivering" />
           <input type="hidden" name="statusAdvanceOnly" value="1" />
-          <p className={`text-sm font-bold ${dark ? "text-white" : "text-slate-900"}`}>تم الاستلام (تحويل حالة فقط)</p>
+          <p className={`text-sm font-bold ${dark ? "text-white" : "text-slate-900"}`}>دفع للعميل (المحل) - بانتظار المندوب</p>
           {showMismatch ? (
             <div
               className={
@@ -528,7 +528,7 @@ export function PickupMoneyForm(props: {
             {canAssign && (
               <div className="space-y-1">
                 <span className={`text-xs font-bold ${dark ? "text-white" : "text-slate-500"}`}>
-                  اختر المندوب للإسناد المباشر:
+                  اختر المندوب للإسناد المباشر ودفع المبلغ للعميل (المحل):
                 </span>
                 <select
                   name="assignToCourierId"
@@ -693,7 +693,7 @@ function DeliveryMoneyForm(props: {
         <>
           <input type="hidden" name="advanceStatus" value="delivered" />
           <input type="hidden" name="statusAdvanceOnly" value="1" />
-          <p className="text-sm font-bold text-slate-900">تم التسليم (تحويل حالة فقط)</p>
+          <p className="text-sm font-bold text-slate-900">تم التسليم النهائي للزبون (تحويل حالة فقط)</p>
           {showMismatch ? (
             <div className="space-y-2 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2.5">
               <p className="text-sm font-black text-amber-950">المبلغ مختلف</p>
@@ -757,7 +757,7 @@ function DeliveryMoneyForm(props: {
             <div className="space-y-2 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2.5">
               <p className="text-sm font-black text-amber-950">المبلغ مختلف</p>
               <label className="block text-sm font-bold text-slate-800">
-                سبب اختلاف الوارد *
+                سبب اختلاف الوارد من الزبون *
                 <input
                   name="mismatchNote"
                   required
@@ -776,7 +776,7 @@ function DeliveryMoneyForm(props: {
               disabled={props.pending}
               className="flex-1 rounded-xl bg-red-700 px-4 py-3 text-base font-black text-white hover:bg-red-800 disabled:opacity-60"
             >
-              {props.pending ? "..." : "تسجيل الوارد"}
+              {props.pending ? "..." : "تسجيل الوارد من الزبون"}
             </button>
             <button
               ref={statusSubmitRef}
@@ -786,7 +786,7 @@ function DeliveryMoneyForm(props: {
               disabled={props.pending}
               className="flex-1 rounded-xl bg-red-800 px-4 py-3 text-base font-black text-white hover:bg-red-900 disabled:opacity-60"
             >
-              {props.pending ? "..." : "تسجيل + تم التسليم"}
+              {props.pending ? "..." : "تسجيل + تم التسليم النهائي"}
             </button>
           </div>
         </>

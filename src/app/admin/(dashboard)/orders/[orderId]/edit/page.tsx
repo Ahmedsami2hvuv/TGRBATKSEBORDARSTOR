@@ -35,7 +35,7 @@ const STATUS_AR: Record<string, string> = {
   assigned: "مسند للمندوب",
   delivering: "قيد التوصيل",
   delivered: "تم التسليم",
-  cancelled: "ملغي",
+  cancelled: "مرفوض",
   archived: "مؤرشف",
 };
 

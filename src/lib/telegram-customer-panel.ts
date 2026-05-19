@@ -28,7 +28,7 @@ function statusAr(status: string): string {
     case "delivered":
       return "🟢 تم التسليم";
     case "canceled":
-      return "❌ ملغي";
+      return "❌ مرفوض";
     case "archived":
       return "مؤرشف";
     default:
@@ -290,7 +290,7 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
         const successKb = {
           inline_keyboard: [
             [{ text: "💬 إرسال للواتساب", url: waUrl }],
-            [{ text: "❌ إلغاء الطلب الآن", callback_data: `cancel_order_id:${order.id}` }],
+            [{ text: "❌ رفض الطلب الآن", callback_data: `cancel_order_id:${order.id}` }],
             [
               { text: "📦 طلب جديد", callback_data: "new_order" },
               { text: "🏠 الرئيسية", callback_data: "customer_main" }
@@ -325,18 +325,18 @@ export async function handleCustomerCallback(cb: any, botToken: string): Promise
         data: { status: "canceled", archivedAt: new Date() }
       });
 
-      await answerCallbackQuery(cb.id, "تم إلغاء الطلب بنجاح", true, botToken);
+      await answerCallbackQuery(cb.id, "تم رفض الطلب بنجاح", true, botToken);
 
       // إشعار للإدارة بإلغاء الطلب
       void notifyTelegramOrderCanceled(orderId).catch(console.error);
 
-      let msgText = `❌ <b>تم إلغاء الطلب #${order.orderNumber}</b>\n\nحالة الطلب الآن: ${statusAr("canceled")}`;
+      let msgText = `❌ <b>تم رفض الطلب #${order.orderNumber}</b>\n\nحالة الطلب الآن: ${statusAr("canceled")}`;
 
       // توليد رابط واتساب للمسؤول في حال أراد الموظف إبلاغ الإدارة يدوياً
       const adminSettings = await prisma.appNotificationSettings.findUnique({ where: { id: 1 } });
       const adminWhatsApp = adminSettings?.telegramAdminIds?.split(",")[0]?.trim() || "07700000000";
 
-      const waAdminMsg = `أريد إلغاء الطلب رقم ${order.orderNumber}\nالزبون: ${order.customerPhone}`;
+      const waAdminMsg = `أريد رفض الطلب رقم ${order.orderNumber}\nالزبون: ${order.customerPhone}`;
       const waAdminUrl = whatsappMeUrl(adminWhatsApp, waAdminMsg);
 
       const kb = {

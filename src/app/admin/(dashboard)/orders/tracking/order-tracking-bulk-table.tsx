@@ -19,7 +19,7 @@ const STATUS_UI: Record<string, { ar: string; dot: string }> = {
   assigned: { ar: "بانتظار المندوب", dot: "bg-amber-400 ring-2 ring-amber-200/80" },
   delivering: { ar: "عند المندوب", dot: "bg-cyan-500 ring-2 ring-cyan-200/80" },
   delivered: { ar: "تم التسليم", dot: "bg-emerald-500 ring-2 ring-emerald-200/80" },
-  cancelled: { ar: "ملغي", dot: "bg-slate-500 ring-2 ring-slate-200/80" },
+  cancelled: { ar: "مرفوض", dot: "bg-slate-500 ring-2 ring-slate-200/80" },
   archived: { ar: "مؤرشف", dot: "bg-violet-500 ring-2 ring-violet-200/80" },
 };
 
@@ -29,7 +29,7 @@ const QUICK_STATUS_VALUES = [
   { value: "assigned", label: "بانتظار المندوب" },
   { value: "delivering", label: "عند المندوب" },
   { value: "delivered", label: "تم التسليم" },
-  { value: "cancelled", label: "ملغي" },
+  { value: "cancelled", label: "مرفوض" },
   { value: "archived", label: "مؤرشف" },
 ] as const;
 
@@ -292,7 +292,7 @@ export function OrderTrackingBulkTable({
                   <option value="assigned">مسند للمندوب</option>
                   <option value="delivering">بالتوصيل</option>
                   <option value="delivered">تم التسليم</option>
-                  <option value="cancelled">ملغي/مرفوض</option>
+                  <option value="cancelled">مرفوض</option>
                   <option value="archived">مؤرشف</option>
                 </select>
               </label>

@@ -43,7 +43,7 @@ function statusAr(v: string): string {
     case "delivered":
       return "تم التسليم";
     case "cancelled":
-      return "ملغي/مرفوض";
+      return "مرفوض";
     case "archived":
       return "مؤرشف";
     default:

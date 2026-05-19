@@ -281,7 +281,7 @@ export function PreparerOrderTable({
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm overflow-y-auto sm:p-6">
             <div className="my-auto w-full max-w-md animate-in fade-in zoom-in-95 rounded-2xl border border-transparent bg-white p-5 text-slate-900 shadow-2xl dark:border-neutral-600 dark:bg-neutral-950 dark:text-white">
               <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-3 dark:border-neutral-700">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">دفع للعميل - طلب #{payOrder.shortId}</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">دفع للعميل (المحل) - طلب #{payOrder.shortId}</h3>
                 <button
                   type="button"
                   onClick={() => setPayOrder(null)}

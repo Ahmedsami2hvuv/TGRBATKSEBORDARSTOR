@@ -39,7 +39,7 @@ function statusAr(v: string): string {
     case "delivered":
       return "تم التسليم";
     case "cancelled":
-      return "ملغي/مرفوض";
+      return "مرفوض";
     case "archived":
       return "مؤرشف";
     default:
@@ -148,7 +148,7 @@ export default async function AdminSearchPage({ searchParams }: Props) {
               <option value="assigned">بانتظار المندوب</option>
               <option value="delivering">عند المندوب</option>
               <option value="delivered">تم التسليم</option>
-              <option value="cancelled">ملغي/مرفوض</option>
+              <option value="cancelled">مرفوض</option>
               <option value="archived">مؤرشف</option>
             </select>
           </label>

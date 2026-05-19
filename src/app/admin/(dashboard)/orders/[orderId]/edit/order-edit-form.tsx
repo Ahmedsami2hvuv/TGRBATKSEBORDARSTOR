@@ -30,7 +30,7 @@ const STATUS_OPTIONS = [
   { value: "assigned", label: "مسند للمندوب" },
   { value: "delivering", label: "قيد التوصيل" },
   { value: "delivered", label: "تم التسليم" },
-  { value: "cancelled", label: "ملغى" },
+  { value: "cancelled", label: "مرفوض" },
   { value: "archived", label: "مؤرشف" },
 ];
 

@@ -20,7 +20,7 @@ function translateDraftStatus(status: string): string {
     case "sent":
       return "مُرسلة";
     case "archived":
-      return "مؤرشفة";
+      return "مرفوضة/مؤرشفة";
     default:
       return status;
   }

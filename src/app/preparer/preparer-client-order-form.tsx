@@ -279,7 +279,7 @@ function ClientOrderFormInner({
 
         <section className="kse-glass-dark rounded-2xl border border-sky-200 p-5">
           <ShopSearchPicker
-            label="المحل *"
+            label="المحل (المرسل) *"
             shops={shops}
             fieldName="shopId"
             value={shopId}
@@ -378,7 +378,7 @@ function ClientOrderFormInner({
           </label>
 
           <label className="mt-4 flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-slate-800">رقم الزبون *</span>
+            <span className="text-sm font-medium text-slate-800">رقم الزبون (المستلم) *</span>
             <span className="text-xs text-slate-500">أي صيغة: 07… أو +964… أو مع مسافات — يُحوَّل تلقائياً.</span>
             <input
               name="customerPhone"
@@ -393,7 +393,7 @@ function ClientOrderFormInner({
           </label>
 
           <label className="mt-4 flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-slate-800">رقم ثانٍ للزبون (اختياري)</span>
+            <span className="text-sm font-medium text-slate-800">رقم ثانٍ للزبون (المستلم) - اختياري</span>
             <input
               name="alternatePhone"
               value={alternatePhone}
@@ -406,7 +406,7 @@ function ClientOrderFormInner({
           </label>
 
           <div className="mt-4">
-            <span className="text-sm font-medium text-slate-800">منطقة الزبون * (ابحث واختر)</span>
+            <span className="text-sm font-medium text-slate-800">منطقة الزبون (المستلم) * (ابحث واختر)</span>
             <input
               ref={regionSearchRef}
               type="text"
@@ -705,7 +705,7 @@ function ClientOrderFormInner({
             className={extraInfoOpen ? "mt-4 space-y-4" : "hidden"}
           >
             <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium text-slate-800">موقع الزبون (رابط خرائط / لوكيشن) — اختياري</span>
+              <span className="text-sm font-medium text-slate-800">موقع الزبون (المستلم) (رابط خرائط / لوكيشن) — اختياري</span>
               <input
                 name="customerLocationUrl"
                 value={customerLocationUrl}

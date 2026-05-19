@@ -29,7 +29,7 @@ const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المندوب",
   delivering: "عند المندوب (تم الاستلام)",
   delivered: "تم التسليم",
-  cancelled: "ملغي",
+  cancelled: "مرفوض",
   archived: "مؤرشف",
 };
 
@@ -259,7 +259,7 @@ export function PreparerOrderDetailSection({
             <p className="text-lg font-black leading-snug text-slate-900 dark:text-slate-100 sm:text-xl">{order.shop.name}</p>
             <div className="mt-3 flex flex-wrap items-center gap-1.5 text-base font-semibold text-slate-800 dark:text-slate-200">
               <DynamicIcon iconKey="ui_user" config={icons} className="h-4 w-4 text-slate-500" fallback={null} />
-              <span className="text-slate-600">موظف المحل (اسم العميل): </span>
+              <span className="text-slate-600">موظف المحل (المرسل): </span>
               <span className="font-bold text-slate-900">{contactName}</span>
             </div>
           </div>
@@ -279,7 +279,7 @@ export function PreparerOrderDetailSection({
           >
             <div className="mb-2 flex items-center justify-center gap-2">
               <DynamicIcon iconKey="ui_shops" config={icons} className="h-5 w-5 text-emerald-700 dark:text-emerald-300" fallback={<span>🏪</span>} />
-              <h3 className="text-center text-lg font-bold text-emerald-950 dark:text-emerald-100 sm:text-xl">صورة باب المحل</h3>
+              <h3 className="text-center text-lg font-bold text-emerald-950 dark:text-emerald-100 sm:text-xl">صورة باب المحل (جهة العميل)</h3>
             </div>
             {displaySrc ? (
               <div>
@@ -308,7 +308,7 @@ export function PreparerOrderDetailSection({
         const showSecond = routeMode === "double" && r2 && r2 !== r1;
         return (
           <div key="preparer_region" className="rounded-xl border-2 border-sky-200 bg-sky-50/40 p-4" style={blockStyle}>
-            <h3 className="mb-2 text-lg font-bold text-sky-950 sm:text-xl">منطقة الزبون</h3>
+            <h3 className="mb-2 text-lg font-bold text-sky-950 sm:text-xl">منطقة المستلم (الزبون)</h3>
             <p className="text-lg font-bold text-slate-900">{r1}</p>
             {showSecond ? (
               <p className="mt-2 text-base font-bold text-violet-900">
@@ -469,7 +469,7 @@ export function PreparerOrderDetailSection({
                   className="h-5 w-5 text-emerald-600"
                   fallback={null}
                 />
-                <h3 className="text-lg font-bold text-emerald-800 sm:text-xl">الزبون</h3>
+                <h3 className="text-lg font-bold text-emerald-800 sm:text-xl">الزبون (المستلم النهائي)</h3>
               </div>
               <div className="flex items-center gap-1.5 text-slate-800">
                 <DynamicIcon
@@ -541,7 +541,7 @@ export function PreparerOrderDetailSection({
               </div>
             </div>
             <div className="min-w-0 self-start">
-              <p className="mb-2 text-base font-bold text-slate-700 sm:text-lg">صورة باب الزبون</p>
+              <p className="mb-2 text-base font-bold text-slate-700 sm:text-lg">صورة باب الزبون (المستلم)</p>
               {customerDoorDisplay && imgSrc(customerDoorDisplay) ? (
                 <div>
                   <div className={squarePhotoFrame}>

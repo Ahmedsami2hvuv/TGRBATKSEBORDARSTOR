@@ -376,7 +376,7 @@ export async function notifyTelegramMoneyEvent(input: any): Promise<void> {
   if (!order) return;
 
   const baseUrl = getPublicAppUrl();
-  const header = input.kind === "pickup_out" ? "💸 للعميل 💸" : "💸 من الزبون 💸";
+  const header = input.kind === "pickup_out" ? "💸 للعميل (المحل) 💸" : "💸 من الزبون (المستلم) 💸";
   const body = await formatOrderBodyLines({
     ...order, 
     shopName: order.shop.name, 
@@ -505,7 +505,7 @@ export async function notifyTelegramStoreOrder(draftId: string): Promise<void> {
   const text = [
     `\u200F🛒 <b>طلب جديد من المتجر</b>`,
     `\u200F🔢 <b>رقم المسودة:</b> \u200E${draft.draftNumber}\u200E`,
-    `\u200F👤 <b>الزبون:</b> ${escapeTelegramHtml(draft.customerName || "—")}`,
+    `\u200F👤 <b>الزبون (المستلم):</b> ${escapeTelegramHtml(draft.customerName || "—")}`,
     `\u200F📍 <b>المنطقة:</b> ${escapeTelegramHtml(draft.customerRegion?.name || "—")}`,
     `\u200F🏠 <b>العنوان:</b> ${escapeTelegramHtml(draft.customerLandmark || "—")}`,
     `\u200F📞 <b>الهاتف:</b> \u200E${escapeTelegramHtml(draft.customerPhone)}\u200E`,
@@ -560,7 +560,7 @@ export async function notifyTelegramOrderCanceled(orderId: string): Promise<void
   });
   if (!order) return;
 
-  const msg = `❌ <b>تم إلغاء الطلب #${order.orderNumber}</b>\nمن قبل المحل: <b>${escapeTelegramHtml(order.shop.name)}</b>\nرقم الزبون: <code>${order.customerPhone}</code>`;
+  const msg = `❌ <b>تم رفض الطلب #${order.orderNumber}</b>\nمن قبل المحل: <b>${escapeTelegramHtml(order.shop.name)}</b>\nرقم الزبون (المستلم): <code>${order.customerPhone}</code>`;
   const notificationBotToken = await getBotTokenByPurpose("notification");
   if (notificationBotToken) {
     await sendTelegramMessage(msg, { botToken: notificationBotToken });
@@ -576,7 +576,7 @@ export async function notifyTelegramDraftCanceled(draftId: string): Promise<void
   const meta = draft.data && typeof draft.data === "object" ? (draft.data as Record<string, unknown>) : {};
   const staffName = String(meta.fromStaffEmployeeName ?? "موظف");
 
-  const msg = `❌ <b>تم إلغاء مسودة التجهيز #${draft.draftNumber}</b>\nمن قبل الموظف: <b>${escapeTelegramHtml(staffName)}</b>\nالزبون: <code>${draft.customerPhone}</code>\nالعنوان: ${escapeTelegramHtml(draft.titleLine)}`;
+  const msg = `❌ <b>تم رفض مسودة التجهيز #${draft.draftNumber}</b>\nمن قبل الموظف (المرسل): <b>${escapeTelegramHtml(staffName)}</b>\nالزبون (المستلم): <code>${draft.customerPhone}</code>\nالعنوان: ${escapeTelegramHtml(draft.titleLine)}`;
   const notificationBotToken = await getBotTokenByPurpose("notification");
   if (notificationBotToken) {
     await sendTelegramMessage(msg, { botToken: notificationBotToken });

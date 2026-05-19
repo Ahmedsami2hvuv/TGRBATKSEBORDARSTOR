@@ -248,7 +248,7 @@ export async function submitOrder(
       voiceNoteUrl = await saveVoiceNoteUploaded(voiceFile, MAX_VOICE_NOTE_BYTES).catch(() => null);
     }
 
-    // إنشاء/تحديث العميل بأمان (تجنب الحقول التي قد لا تكون موجودة في DB)
+    // إنشاء/تحديث الزبون (المستلم) بأمان
     let customerRow = await prisma.customer.findFirst({
       where: { shopId: submitter.shopId, phone: phoneLocal },
       select: { id: true }
@@ -355,16 +355,16 @@ export async function submitOrder(
     });
     const fullRegion = await prisma.region.findUnique({ where: { id: custRegion.id } });
 
-    // صياغة رسالة العميل (التاجر) الجديدة
+    // صياغة رسالة العميل (صاحب المحل) للواتساب
     const clientArea = fullShop?.region?.name || "منطقتكم";
     const customerArea = fullRegion?.name || "منطقة الزبون";
 
     const finalWaMessage = [
-      "مرحباً، لقد قمت برفع طلب جديد عبر النظام:",
+      "مرحباً، لقد قام العميل برفع طلب جديد عبر النظام:",
       `🏢 من محل: ${fullShop?.name || submitter.shopId}`,
       `📍 من منطقة (العميل): ${clientArea}`,
       `🎯 إلى منطقة (الزبون): ${customerArea}`,
-      `📞 رقم الزبون: ${phoneLocal}`,
+      `📞 رقم الزبون (المستلم): ${phoneLocal}`,
       `💰 سعر الطلب (بدون توصيل): ${subtotalNum.toLocaleString()}`,
       `🚚 أجرة التوصيل: ${delivery.toNumber().toLocaleString()}`,
       `📝 ملاحظات: ${notes || "لا يوجد"}`,

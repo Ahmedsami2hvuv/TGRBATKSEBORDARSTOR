@@ -178,10 +178,10 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
             {selectedPreparerIds.length === 0 && <p className="text-[10px] text-rose-600 font-bold">يرجى اختيار مجهز واحد على الأقل.</p>}
           </div>
 
-          <input name="titleLine" value={titleLine} onChange={e => setTitleLine(e.target.value)} placeholder="عنوان الطلب" className={inputClass} required />
-          <input name="customerPhone" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="رقم الزبون" className={inputClass} required />
+          <input name="titleLine" value={titleLine} onChange={e => setTitleLine(e.target.value)} placeholder="اسم الزبون (المستلم)" className={inputClass} required />
+          <input name="customerPhone" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="رقم هاتف الزبون (المستلم)" className={inputClass} required />
           <div className="relative">
-             <input value={q} onChange={e => {setQ(e.target.value); setSelected(null);}} placeholder="ابحث عن المنطقة للتأكيد..." className={inputClass} required />
+             <input value={q} onChange={e => {setQ(e.target.value); setSelected(null);}} placeholder="ابحث عن منطقة الزبون (جهة المستلم)..." className={inputClass} required />
              {hits.length > 0 && !selected && (
                <div className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl shadow-2xl mt-1 max-h-40 overflow-y-auto">
                  {hits.map(h => <button key={h.id} type="button" onClick={() => {setSelected(h); setQ(h.name);}} className="w-full text-right p-3 text-xs font-bold border-b hover:bg-sky-50">{h.name} ({formatDinarAsAlfWithUnit(h.deliveryPrice)})</button>)}

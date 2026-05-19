@@ -295,8 +295,9 @@ function ClientOrderFormInner({
 
           <div className="mt-5 space-y-3">
             <div className="flex flex-wrap items-center justify-center gap-2 text-2xl font-black text-slate-900">
-              <span className="opacity-80">أهلاً بك</span>
-              <span className="text-emerald-700 underline decoration-emerald-200 underline-offset-4">{customerName}</span>
+              <span className="opacity-80">أهلاً بك أيها</span>
+              <span className="text-emerald-700 underline decoration-emerald-200 underline-offset-4">العميل</span>
+              <span className="text-slate-600">({customerName})</span>
               <input type="hidden" name="customerName" value={customerName} />
             </div>
             <p className="text-base font-bold text-slate-400">من محل <span className="text-slate-700">{shopName}</span></p>
@@ -358,7 +359,7 @@ function ClientOrderFormInner({
 
             <div className="relative">
               <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-bold text-slate-600 px-1">منطقة الزبون *</span>
+                <span className="text-sm font-bold text-slate-600 px-1">منطقة الزبون (المستلم) *</span>
                 <input ref={regionSearchRef} value={q} onChange={(e) => setQ(e.target.value)} className={`${inputClass} ${isRegionErr ? inputErrorClass : ""}`} placeholder="ابحث عن المنطقة..." required />
               </label>
 
@@ -480,7 +481,7 @@ function ClientOrderFormInner({
             </div>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-bold text-slate-600 px-1">رقم الزبون *</span>
+              <span className="text-sm font-bold text-slate-600 px-1">رقم الزبون (المستلم) *</span>
               <input ref={customerPhoneRef} name="customerPhone" required value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} inputMode="numeric" className={`${inputClass} font-mono tabular-nums text-lg font-black ${isPhoneErr ? inputErrorClass : ""}`} placeholder="07XXXXXXXXX" />
             </label>
 
@@ -573,7 +574,7 @@ function ClientOrderFormInner({
           {extraInfoOpen && (
             <div className="mt-6 space-y-5 animate-in slide-in-from-top-4 duration-300">
               <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-bold text-slate-600 px-1">رقم ثاني للزبون (اختياري)</span>
+                <span className="text-sm font-bold text-slate-600 px-1">رقم ثاني للزبون (المستلم) - اختياري</span>
                 <input name="alternatePhone" value={alternatePhone} onChange={(e) => setAlternatePhone(e.target.value)} inputMode="numeric" className={`${inputClass} font-mono tabular-nums`} placeholder="07XXXXXXXXX" />
               </label>
 
@@ -593,7 +594,7 @@ function ClientOrderFormInner({
         ) : null}
 
         <button type="submit" disabled={pending} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-800 py-4 text-lg font-black text-white shadow-xl shadow-emerald-200 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50">
-          {pending ? "جارٍ إرسال الطلب..." : initialOrder ? "تحديث الطلبية الآن" : "إرسال الطلب للاداره"}
+          {pending ? "جارٍ إرسال الطلب..." : initialOrder ? "تحديث الطلبية الآن" : "رفع الطلب للمجهزين"}
         </button>
       </form>
 

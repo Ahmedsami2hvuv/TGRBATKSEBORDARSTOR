@@ -40,7 +40,7 @@ function statusAr(v: string): string {
     case "delivered":
       return "تم التسليم";
     case "cancelled":
-      return "ملغي/مرفوض";
+      return "مرفوض";
     case "archived":
       return "مؤرشف";
     default:
@@ -120,7 +120,6 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
   const e = sp.e ?? "";
   const exp = sp.exp ?? "";
   const sig = sp.s ?? "";
-  // تعديل: تمرير رقم الهاتف (viewer) ليعرف النظام اسم العميل في صفحة الطلب
   const orderFormHref = clientOrderFormPath(e, exp, sig, viewer);
   const accountHref = clientOrderAccountPath(e, exp, sig);
 
@@ -237,13 +236,13 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                               : "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
                           }`}
                         >
-                          {isYours ? "طلبي" : `زبون آخر · ${rowPhone}`}
+                          {isYours ? "طلبي (كمستلم)" : `الزبون (المستلم) · ${rowPhone}`}
                         </span>
                         {canEdit ? (
                           <div className="flex items-center gap-2">
                             <Link
                               href={clientOrderEditPath(e, exp, sig, o.orderNumber, rowPhone)}
-                              aria-label={`تعديل الطلب رقم ${o.orderNumber}`}
+                              aria-label={`تعديل بيانات طلب الزبون رقم ${o.orderNumber}`}
                               className="inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-amber-400 bg-white text-lg leading-none text-amber-600 shadow-md transition hover:scale-110 hover:bg-amber-50 active:scale-95"
                               title="تعديل بيانات الطلب"
                             >

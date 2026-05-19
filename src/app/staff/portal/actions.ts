@@ -308,11 +308,11 @@ export async function cancelStaffPreparationDraft(
   const meta = draft.data && typeof draft.data === "object" ? (draft.data as Record<string, unknown>) : {};
   const owner = String(meta.fromStaffEmployeeId ?? "").trim();
   if (owner !== staff.id) {
-    return { error: "لا صلاحية لإلغاء هذه المسودة." };
+    return { error: "لا صلاحية لرفض هذه المسودة." };
   }
 
   if (draft.status === PreparerShoppingDraftStatus.sent || draft.status === PreparerShoppingDraftStatus.archived) {
-    return { error: "لا يمكن إلغاء طلب تم إرساله أو أرشفته بالفعل." };
+    return { error: "لا يمكن رفض طلب تم إرساله أو أرشفته بالفعل." };
   }
 
   await prisma.companyPreparerShoppingDraft.update({
@@ -320,10 +320,10 @@ export async function cancelStaffPreparationDraft(
     data: { status: PreparerShoppingDraftStatus.archived },
   });
 
-  // إرسال إشعار للإدارة
+  // إرسال إشعار للإدارة برفض الطلب
   void notifyTelegramDraftCanceled(draftId).catch(console.error);
 
-  // إرسال إشعار للمجموعات (اختياري حسب الحاجة، هنا سنقوم بتحديث المسارات)
+  // تحديث المسارات
   revalidatePath("/staff/portal/submitted");
   revalidatePath("/preparer/preparation");
 

@@ -126,7 +126,7 @@ export function CustomerOrdersBulkTable({
                   <option value="assigned">مسند للمندوب</option>
                   <option value="delivering">بالتوصيل</option>
                   <option value="delivered">تم التسليم</option>
-                  <option value="cancelled">ملغي/مرفوض</option>
+                  <option value="cancelled">مرفوض</option>
                   <option value="archived">مؤرشف</option>
                 </select>
               </label>
