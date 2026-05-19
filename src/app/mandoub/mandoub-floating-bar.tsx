@@ -1,4 +1,6 @@
-import { prisma } from "@/lib/prisma";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import { OrderFabDock } from "@/components/order-fab-dock";
 import { MANDOUB_ORDER_FAB_LAYOUT_STORAGE_KEY } from "@/lib/mandoub-fab-bridge";
 import {
@@ -10,6 +12,16 @@ import {
   matchesCustomerLocationRules,
   parseCustomerLocationRules,
 } from "@/lib/order-location";
+
+export type MandoubWaButtonRow = {
+  id: string;
+  label: string;
+  iconKey: string | null;
+  templateText: string | null;
+  visibilityScope: string | null;
+  statusesCsv: string | null;
+  customerLocationRule: string | null;
+};
 
 /** مواضع موحّدة لكل طلبات المندوب (ليست لكل طلب على حدة) */
 const STORAGE_KEY = MANDOUB_ORDER_FAB_LAYOUT_STORAGE_KEY;
@@ -41,11 +53,27 @@ type Props = {
 };
 
 /** واتساب + اتصال (قائمة عميل/زبون/زبون 2) */
-export async function MandoubFloatingBar(props: Props) {
-  const rows = await prisma.mandoubWaButtonSetting.findMany({
-    where: { isActive: true },
-    orderBy: { updatedAt: "desc" },
-  });
+export function MandoubFloatingBar(props: Props) {
+  const [rows, setRows] = useState<MandoubWaButtonRow[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/mandoub-wa-buttons", { cache: "no-store" })
+      .then((res) => res.ok ? res.json() : Promise.reject(new Error("Failed to load wa buttons")))
+      .then((data) => {
+        if (!cancelled && Array.isArray(data)) {
+          setRows(data);
+        }
+      })
+      .catch((error) => {
+        console.error("MandoubFloatingBar failed to load wa button rows", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const vars = {
     clientshop: props.shopName,
@@ -60,8 +88,8 @@ export async function MandoubFloatingBar(props: Props) {
     shop_phone: props.shopPhone,
   };
 
-  const customWaButtons =
-    rows.flatMap((r) => {
+  const customWaButtons = useMemo(() => {
+    return rows.flatMap((r) => {
       const scopes = (r.visibilityScope ?? "")
         .split(",")
         .map((s) => s.trim())
@@ -88,7 +116,8 @@ export async function MandoubFloatingBar(props: Props) {
           messages,
         },
       ];
-    }) ?? [];
+    });
+  }, [rows, props]);
 
   return (
     <OrderFabDock
