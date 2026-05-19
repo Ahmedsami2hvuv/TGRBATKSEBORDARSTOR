@@ -20,7 +20,7 @@ import {
 } from "@/lib/mandoub-courier-event-totals";
 import { computeMandoubTotalsForCourier } from "@/lib/mandoub-courier-totals";
 import { computeMandoubAdminTotalAllTimeDinar } from "@/lib/mandoub-wallet-carry";
-import { mandoubOrderListInclude } from "@/lib/mandoub-order-queries";
+import { mandoubOrderDetailInclude, mandoubOrderListInclude } from "@/lib/mandoub-order-queries";
 import { extractLatLngFromLocationInput, hasCustomerLocationUrl } from "@/lib/order-location";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import {
@@ -41,6 +41,11 @@ import { getGlobalIcons } from "@/lib/icon-settings";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 import { mandoubOrdersStampSig } from "@/lib/mandoub-order-stamps";
 import { randomBytes } from "crypto";
+import { fetchWalletInOutDisplayForCourier, resolvePartyDisplayName } from "@/lib/wallet-peer-transfer";
+import { filterLedgerByRecentDays } from "@/lib/money-entry-ui";
+import { LEDGER_KIND_TRANSFER_PENDING_IN, LEDGER_KIND_TRANSFER_PENDING_OUT, MISC_LEDGER_KIND_GIVE, MISC_LEDGER_KIND_TAKE, MONEY_KIND_DELIVERY, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
+import { getUISettings } from "@/lib/ui-settings";
+import type { MandoubWalletLedgerLine } from "./mandoub-wallet-client";
 
 // هذه الصفحة تعتمد على searchParams + cookies، لذلك يجب أن تكون ديناميكية دائماً.
 export const dynamic = "force-dynamic";
@@ -210,7 +215,20 @@ export default async function MandoubPage({ searchParams }: Props) {
 
   const totalsBaseline = courier.mandoubTotalsResetAt;
 
-  const [activeOrdersRaw, orderOnlySums, handToAdmin] = await Promise.all([
+  const [
+    activeOrdersRaw,
+    orderOnlySums,
+    handToAdmin,
+    walletInOutDisplay,
+    rawMisc,
+    transferTargetCouriers,
+    companyPreparers,
+    pendingIncomingTransfers,
+    pendingOutgoingCount,
+    recentTransfers,
+    courierTips,
+    walletUiSettings,
+  ] = await Promise.all([
     prisma.order.findMany({
       where: {
         status: { in: ["assigned", "delivering", "delivered"] },
@@ -225,7 +243,201 @@ export default async function MandoubPage({ searchParams }: Props) {
     }),
     fetchOrderOnlyMoneySumsForCourier(courier.id, totalsBaseline),
     computeMandoubAdminTotalAllTimeDinar(courier.id),
+    fetchWalletInOutDisplayForCourier(courier.id, totalsBaseline),
+    prisma.courierWalletMiscEntry.findMany({
+      where: { courierId: courier.id },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.courier.findMany({
+      where: { blocked: false, id: { not: courier.id } },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.companyPreparer.findMany({
+      where: { active: true, walletEmployeeId: { not: null } },
+      select: { id: true, name: true, walletEmployeeId: true, phone: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.walletPeerTransfer.findMany({
+      where: { toCourierId: courier.id, status: "pending" },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.walletPeerTransfer.count({
+      where: { fromCourierId: courier.id, status: "pending" },
+    }),
+    prisma.walletPeerTransfer.findMany({
+      where: {
+        OR: [{ fromCourierId: courier.id }, { toCourierId: courier.id }],
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+    prisma.courierTip.findMany({
+      where: { courierId: courier.id },
+      orderBy: { createdAt: "desc" },
+    }),
+    getUISettings("mandoub", "wallet_block"),
   ]);
+
+  const ordersForWallet = activeOrdersRaw.map((o) => ({
+    ...o,
+    moneyEvents: o.moneyEvents.map((e) => ({
+      ...e,
+      courierId: e.courierId ?? undefined,
+    })),
+  }));
+
+  // حساب الإكراميات والأرباح (اليومية والشهرية)
+  const now = new Date();
+  let todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 5, 0, 0, 0);
+  if (now < todayStart) {
+    todayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+  }
+  const todayStartFinal = todayStart;
+
+  let monthlyCycleStart = new Date(now.getFullYear(), now.getMonth(), 1, 5, 0, 0, 0);
+  if (now < monthlyCycleStart) {
+    monthlyCycleStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 5, 0, 0, 0);
+  }
+  const monthlyCycleStartFinal = monthlyCycleStart;
+
+  let tipDailySum = new Decimal(0);
+  let tipMonthlySum = new Decimal(0);
+
+  for (const t of courierTips) {
+    if (t.createdAt >= todayStartFinal) tipDailySum = tipDailySum.plus(t.amountDinar);
+    if (t.createdAt >= monthlyCycleStartFinal) tipMonthlySum = tipMonthlySum.plus(t.amountDinar);
+  }
+
+  for (const m of rawMisc) {
+    if (m.label.includes("[إكرامية]") && m.direction === "take" && m.deletedAt == null) {
+      if (m.createdAt >= todayStartFinal) tipDailySum = tipDailySum.plus(m.amountDinar);
+      if (m.createdAt >= monthlyCycleStartFinal) tipMonthlySum = tipMonthlySum.plus(m.amountDinar);
+    }
+  }
+
+  const orderMetricsMonthly = computeMandoubTotalsForCourier(ordersForWallet, courier.id, monthlyCycleStartFinal, false);
+  const orderMetricsBaseline = computeMandoubTotalsForCourier(ordersForWallet, courier.id, totalsBaseline, false);
+
+  const deliveryEarningsSinceBaseline = orderMetricsBaseline.sumEarnings;
+  const cashInHand = deliveryEarningsSinceBaseline.plus(handToAdmin);
+  const cashInHandStr = formatDinarAsAlf(cashInHand);
+
+  const walletRemain = walletInOutDisplay.walletIn.minus(walletInOutDisplay.walletOut);
+  const availableForTransfer = cashInHand.plus(walletRemain).minus(walletInOutDisplay.pendingOutgoing);
+
+  const pendingIncomingForUi = await Promise.all(
+    pendingIncomingTransfers.map(async (p) => ({
+      id: p.id,
+      amountDinar: p.amountDinar.toNumber(),
+      fromLabel: await resolvePartyDisplayName(p.fromKind, p.fromCourierId, p.fromEmployeeId),
+      handoverLocation: p.handoverLocation,
+      createdAt: p.createdAt.toISOString(),
+    })),
+  );
+
+  const walletLedger: MandoubWalletLedgerLine[] = [
+    ...ordersForWallet.flatMap((o) =>
+      o.moneyEvents
+        .filter((e) => e.courierId === courier.id && e.deletedAt == null && !e.recordedByCompanyPreparerId)
+        .map((e) => ({
+          source: "order" as const,
+          id: e.id,
+          kind: e.kind,
+          amountDinar: Number(e.amountDinar),
+          createdAt: e.createdAt.toISOString(),
+          orderId: o.id,
+          orderNumber: o.orderNumber,
+          shopName: o.shop?.name || "محل",
+          regionName: o.customerRegion?.name || o.shop?.region?.name,
+          orderNotes: o.summary,
+          miscLabel: null,
+          deletedAt: e.deletedAt?.toISOString() ?? null,
+          deletedReason: e.deletedReason as any,
+          deletedByDisplayName: null,
+          expectedDinar:
+            e.kind === MONEY_KIND_DELIVERY
+              ? Number(o.totalAmount)
+              : Number(o.orderSubtotal),
+        })),
+    ),
+    ...rawMisc.map((m) => ({
+      source: "misc" as const,
+      id: m.id,
+      kind: m.direction === "take" ? MISC_LEDGER_KIND_TAKE : MISC_LEDGER_KIND_GIVE,
+      amountDinar: Number(m.amountDinar),
+      createdAt: m.createdAt.toISOString(),
+      orderId: "",
+      orderNumber: 0,
+      shopName: "",
+      miscLabel: m.label,
+      deletedAt: m.deletedAt?.toISOString() ?? null,
+      deletedReason: m.deletedReason as any,
+      deletedByDisplayName: null,
+    })),
+    ...recentTransfers
+      .filter((t) => t.status === "pending" || t.status === "rejected")
+      .map((t) => ({
+        source: t.status === "rejected" ? ("transfer_rejected" as const) : ("transfer_pending" as const),
+        id: t.id,
+        kind:
+          t.fromCourierId === courier.id
+            ? t.status === "rejected"
+              ? "transfer_rejected_out"
+              : LEDGER_KIND_TRANSFER_PENDING_OUT
+            : t.status === "rejected"
+            ? "transfer_rejected_in"
+            : LEDGER_KIND_TRANSFER_PENDING_IN,
+        amountDinar: Number(t.amountDinar),
+        createdAt: t.createdAt.toISOString(),
+        orderId: "",
+        orderNumber: 0,
+        shopName: "",
+        miscLabel: t.handoverLocation,
+        deletedAt: null,
+        deletedReason: null,
+        deletedByDisplayName: null,
+      })),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const safeWalletLedger = JSON.parse(JSON.stringify(filterLedgerByRecentDays(walletLedger)));
+  const safePendingIncoming = JSON.parse(JSON.stringify(pendingIncomingForUi));
+  const safeTransferTargetCouriers = JSON.parse(JSON.stringify(transferTargetCouriers));
+  const safeCompanyPreparers = JSON.parse(JSON.stringify(companyPreparers));
+  const safeWalletUiSettings = JSON.parse(JSON.stringify(walletUiSettings));
+
+  const walletData = {
+    walletPathWithQuery: `/mandoub/wallet?${baseQuery.toString()}`,
+    walletLedgerHrefs: {
+      site: `/mandoub/wallet?${baseQuery.toString()}&ledger=site`,
+      ward: `/mandoub/wallet?${baseQuery.toString()}&ledger=ward`,
+      sader: `/mandoub/wallet?${baseQuery.toString()}&ledger=sader`,
+      all: `/mandoub/wallet?${baseQuery.toString()}&ledger=all`,
+    },
+    siteRemainingNetStr: formatDinarAsAlf(orderOnlySums.remainingNet),
+    walletInFromWalletStr: formatDinarAsAlf(walletInOutDisplay.walletIn),
+    walletOutFromWalletStr: formatDinarAsAlf(walletInOutDisplay.walletOut),
+    pendingIncomingTransferStr: formatDinarAsAlf(walletInOutDisplay.pendingIncoming),
+    pendingOutgoingTransferStr: formatDinarAsAlf(walletInOutDisplay.pendingOutgoing),
+    sumEarningsStr: formatDinarAsAlf(deliveryEarningsSinceBaseline),
+    walletRemainStr: formatDinarAsAlf(walletRemain),
+    handToAdminStr: formatDinarAsAlf(handToAdmin),
+    cashInHandStr: cashInHandStr,
+    earningsDailyStr: formatDinarAsAlf(tipDailySum),
+    earningsMonthlyStr: formatDinarAsAlf(tipMonthlySum),
+    ledger: safeWalletLedger,
+    pendingIncoming: safePendingIncoming,
+    transferTargetCouriers: safeTransferTargetCouriers,
+    transferTargetEmployees: safeCompanyPreparers.map((p: any) => ({
+      id: p.walletEmployeeId,
+      name: p.name,
+      shopName: "",
+      phone: p.phone,
+    })),
+    availableForTransferStr: formatDinarAsAlf(availableForTransfer),
+    pendingOutgoingCount: pendingOutgoingCount,
+    uiSettings: safeWalletUiSettings,
+  };
 
   const regionIds = Array.from(
     new Set(
@@ -599,6 +811,7 @@ export default async function MandoubPage({ searchParams }: Props) {
               auth={baseAuth}
               tab={tab}
               listOrdersStampSig={listOrdersStampSig}
+              walletData={walletData}
             />
           </section>
         </div>

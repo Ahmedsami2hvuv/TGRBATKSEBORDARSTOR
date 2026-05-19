@@ -16,6 +16,8 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 import { deletePendingAction, getPendingActions, savePendingAction, type PendingWalletAction } from "@/lib/mandoub-offline-db";
 import { toast } from "sonner";
 import { useRef } from "react";
+import { OrderDetailSection } from "./order-detail-section";
+import { MandoubWalletClient } from "./mandoub-wallet-client";
 
 export type MandoubRow = {
   id: string;
@@ -121,6 +123,7 @@ export function MandoubOrderTable({
   qSearch,
   onSearchChange,
   listOrdersStampSig,
+  walletData,
 }: {
   rows: MandoubRow[];
   auth: { c: string; exp: string; s: string };
@@ -128,10 +131,13 @@ export function MandoubOrderTable({
   qSearch: string;
   onSearchChange: (q: string) => void;
   listOrdersStampSig: string;
+  walletData: any;
 }) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showQuickSelect, setShowQuickSelect] = useState(false);
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  const [showWallet, setShowWallet] = useState(false);
   const [bulkState, bulkAction, bulkPending] = useActionState(
     bulkSetMandoubOrdersStatus,
     initialBulk,
@@ -196,6 +202,29 @@ export function MandoubOrderTable({
     getGlobalIcons().then(setIcons);
   }, []);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      if (activeOrderId) setActiveOrderId(null);
+      if (showWallet) setShowWallet(false);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [activeOrderId, showWallet]);
+
+  useEffect(() => {
+    const handleWalletLauncherClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const launcher = target.closest('.fullscreen-wallet-launcher');
+      if (launcher) {
+        e.preventDefault();
+        setShowWallet(true);
+        window.history.pushState({ wallet: true }, "");
+      }
+    };
+    document.addEventListener('click', handleWalletLauncherClick);
+    return () => document.removeEventListener('click', handleWalletLauncherClick);
+  }, []);
+
   const syncBulkNow = async () => {
     const pendingActions = await getPendingActions();
     const myPending = pendingActions.filter(a => a.actionType === 'bulk_status');
@@ -246,6 +275,12 @@ export function MandoubOrderTable({
     [rows, rowStatusOverrides],
   );
   const rowIds = useMemo(() => displayRows.map((r) => r.id), [displayRows]);
+
+  const activeOrderData = useMemo(() => {
+    if (!activeOrderId) return null;
+    return displayRows.find(r => r.id === activeOrderId);
+  }, [activeOrderId, displayRows]);
+
   const rowDetailHrefs = useMemo(
     () => displayRows.map((r) => buildOrderDetailHref(auth, tab, qSearch, r.id)),
     [displayRows, auth, tab, qSearch],
@@ -449,8 +484,8 @@ export function MandoubOrderTable({
         onToggleAll={toggleAll}
         onToggleOne={toggleOne}
         onOpenRow={(id) => {
-          const href = buildOrderDetailHref(auth, tab, qSearch, id);
-          router.push(href);
+          setActiveOrderId(id);
+          window.history.pushState({ orderId: id }, "");
         }}
         selectAllTitle="تحديد الكل"
         selectAllAriaLabel="تحديد كل الطلبات الظاهرة"
@@ -593,6 +628,97 @@ export function MandoubOrderTable({
           </div>,
           document.body,
         )}
+
+      {/* نافذة تفاصيل الطلب الكاملة - تعمل أوفلاين */}
+      {activeOrderData &&
+        createPortal(
+          <div className="fixed inset-0 z-[110] bg-slate-50 dark:bg-slate-950 overflow-y-auto">
+            <div className="sticky top-0 z-[120] flex items-center gap-3 bg-white/90 dark:bg-slate-900/90 p-3 shadow-md backdrop-blur-md">
+              <button
+                onClick={() => {
+                  setActiveOrderId(null);
+                  window.history.back();
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+              >
+                <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-5 h-5" />
+              </button>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-black text-slate-900 dark:text-white truncate">تفاصيل طلب #{activeOrderData.shortId}</p>
+                <p className="text-[10px] font-bold text-slate-500">{activeOrderData.shopName}</p>
+              </div>
+            </div>
+
+            <div className="pb-20">
+              <OrderDetailSection
+                order={{
+                  ...activeOrderData as any,
+                  orderSubtotal: activeOrderData.orderSubtotalDinar,
+                  totalAmount: activeOrderData.totalAmountDinar,
+                  status: activeOrderData.orderStatus,
+                  orderNumber: Number(activeOrderData.shortId), // استخدام shortId كرقم عرض
+                  moneyEvents: [], // السموّم معروضة أصلاً في Row، الأحداث الكاملة تحتاج سيرفر
+                  shop: {
+                    name: activeOrderData.shopName,
+                    phone: activeOrderData.shopPhone,
+                    photoUrl: activeOrderData.shopDoorPhotoUrl,
+                    locationUrl: activeOrderData.shopLocationUrl,
+                    region: { name: activeOrderData.regionLine }
+                  } as any,
+                  customerRegion: { name: activeOrderData.regionLine } as any,
+                }}
+                auth={auth}
+                closeHref="#"
+                nextUrl=""
+                viewerCourierId={auth.c}
+                smartHintLine={activeOrderData.smartHintLine}
+                icons={icons}
+                courierSettings={{
+                  showDoorBtn: activeOrderData.showDoorBtn ?? true,
+                  showLocationBtn: activeOrderData.showLocationBtn ?? true,
+                  showCallBtn: activeOrderData.showCallBtn ?? true,
+                  showWhatsAppBtn: activeOrderData.showWhatsAppBtn ?? true,
+                  showNotesBtn: activeOrderData.showNotesBtn ?? true,
+                  showVoiceNotesBtn: activeOrderData.showVoiceNotesBtn ?? true,
+                }}
+              />
+            </div>
+          </div>,
+          document.body
+        )
+      }
+
+      {/* نافذة المحفظة - تعمل أوفلاين */}
+      {showWallet &&
+        createPortal(
+          <div className="fixed inset-0 z-[110] bg-slate-50 dark:bg-slate-950 overflow-y-auto">
+            <div className="sticky top-0 z-[120] flex items-center gap-3 bg-white/90 dark:bg-slate-900/90 p-3 shadow-md backdrop-blur-md">
+              <button
+                onClick={() => {
+                  setShowWallet(false);
+                  window.history.back();
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+              >
+                <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-5 h-5" />
+              </button>
+              <div className="flex-1 min-w-0 text-right" dir="rtl">
+                <p className="text-sm font-black text-slate-900 dark:text-white">محفظة المندوب</p>
+                <p className="text-[10px] font-bold text-slate-500">سجل المعاملات والتحويلات</p>
+              </div>
+            </div>
+
+            <div className="pb-20">
+              <MandoubWalletClient
+                {...walletData}
+                auth={auth}
+                ledgerFilter="all"
+              />
+            </div>
+          </div>,
+          document.body
+        )
+      }
 
 
       {selectedIds.size > 0 ? (

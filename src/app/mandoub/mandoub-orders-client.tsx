@@ -21,6 +21,7 @@ export function MandoubOrdersSection({
   auth,
   tab,
   listOrdersStampSig,
+  walletData,
 }: {
   allRows: MandoubRow[];
   searchFields: MandoubOrderSearchFields[];
@@ -28,6 +29,7 @@ export function MandoubOrdersSection({
   tab: string;
   /** توقيع طوابع الطلبات من الخادم — للكشف عن تعديل الإدارة وتحديث القائمة */
   listOrdersStampSig: string;
+  walletData: any;
 }) {
   const [query, setQuery] = useState("");
 
@@ -50,6 +52,7 @@ export function MandoubOrdersSection({
         qSearch={query}
         onSearchChange={setQuery}
         listOrdersStampSig={listOrdersStampSig}
+        walletData={walletData}
       />
 
       <p className={`${ad.orderListCountFooter} px-3 pb-3 sm:px-4`}>

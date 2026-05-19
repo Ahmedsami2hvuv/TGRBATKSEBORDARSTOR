@@ -22,7 +22,7 @@ export function FullscreenWalletLauncher({
   children,
 }: Props) {
   return (
-    <Link href={href} className={className} title={title}>
+    <Link href={href} className={`${className} fullscreen-wallet-launcher`} title={title}>
       {children}
     </Link>
   );
