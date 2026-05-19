@@ -114,6 +114,8 @@ export function PreparerShoppingDraftEditClient({
   });
   const [products, setProducts] = useState<ProductRow[]>(() => parseProducts(initialDraft.data));
   const [selectedPriceIndex, setSelectedPriceIndex] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeBranch, setActiveBranch] = useState<string | null>(null);
   const [tempBasePrice, setTempBasePrice] = useState<number | null>(null);
 
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
@@ -445,7 +447,59 @@ export function PreparerShoppingDraftEditClient({
     return () => clearTimeout(t);
   },[titleLine, customerPhone, customerName, customerLandmark, orderTime, placesCount, customDeliveryAlf, performSave, productsJson]);
 
-  function applyPricingPanel() {
+  const stats = useMemo(() => {
+    const total = products.length;
+    const priced = products.filter(p => p.buyAlf !== "" && p.sellAlf !== "").length;
+    const percent = total > 0 ? Math.round((priced / total) * 100) : 0;
+    return { total, priced, percent };
+  }, [products]);
+
+  const branches = useMemo(() => {
+    const bSet = new Set<string>();
+    products.forEach(p => {
+      const b = productBranchMap[p.line.trim().toLowerCase()] || "أخرى";
+      bSet.add(b);
+    });
+    return Array.from(bSet).sort((a, b) => a.localeCompare(b, 'ar'));
+  }, [products, productBranchMap]);
+
+  const orderedForButtons = useMemo(() => {
+    const withIndex = products.map((p, idx) => ({
+      p,
+      idx,
+      branch: productBranchMap[p.line.trim().toLowerCase()] || "أخرى"
+    }));
+
+    // تطبيق فلتر البحث
+    let filtered = searchTerm.trim()
+      ? withIndex.filter(item => item.p.line.toLowerCase().includes(searchTerm.toLowerCase()))
+      : withIndex;
+
+    // تطبيق فلتر الفرع
+    if (activeBranch) {
+      filtered = filtered.filter(item => item.branch === activeBranch);
+    }
+
+    return filtered.sort((a, b) => {
+      const aPriced = a.p.buyAlf !== "" && a.p.sellAlf !== "";
+      const bPriced = b.p.buyAlf !== "" && b.p.sellAlf !== "";
+
+      // 1. المواد غير المسعرة تظهر أولاً
+      if (aPriced !== bPriced) {
+        return aPriced ? 1 : -1;
+      }
+
+      // 2. الترتيب حسب اسم الفرع/المحل
+      if (a.branch !== b.branch) {
+        return a.branch.localeCompare(b.branch, 'ar');
+      }
+
+      // 3. الترتيب الأصلي
+      return a.idx - b.idx;
+    });
+  }, [products, productBranchMap, searchTerm, activeBranch]);
+
+  function applyPricingPanel(goToNext = false) {
     setPricingErr(null);
     if (selectedPriceIndex == null) return;
     const lines = pricingLinesText.split(/\r?\n/).map((x) => x.replace(/,/g, ".").trim()).filter(Boolean);
@@ -476,8 +530,25 @@ export function PreparerShoppingDraftEditClient({
         setProducts(nextProducts);
         performSave(nextJson);
     }
-    setSelectedPriceIndex(null);
-    setPricingLinesText("");
+
+    if (goToNext) {
+        // البحث عن المادة التالية غير المسعرة بناءً على الترتيب الظاهر (البصري)
+        const currentVisualIdx = orderedForButtons.findIndex(item => item.idx === selectedPriceIndex);
+        const nextVisualItem = orderedForButtons.slice(currentVisualIdx + 1).find(item => item.p.buyAlf === "" || item.p.sellAlf === "");
+
+        if (nextVisualItem) {
+            setSelectedPriceIndex(nextVisualItem.idx);
+            setTempBasePrice(null);
+            setPricingLinesText("");
+            setTimeout(() => pricingTextareaRef.current?.focus(), 50);
+        } else {
+            setSelectedPriceIndex(null);
+            setPricingLinesText("");
+        }
+    } else {
+        setSelectedPriceIndex(null);
+        setPricingLinesText("");
+    }
   }
 
   function unpriceProduct() {
@@ -523,32 +594,6 @@ export function PreparerShoppingDraftEditClient({
         performSave(nextJson);
     }
   }
-
-  const orderedForButtons = useMemo(() => {
-    const withIndex = products.map((p, idx) => ({
-      p,
-      idx,
-      branch: productBranchMap[p.line.trim().toLowerCase()] || "أخرى"
-    }));
-
-    return withIndex.sort((a, b) => {
-      const aPriced = a.p.buyAlf !== "" && a.p.sellAlf !== "";
-      const bPriced = b.p.buyAlf !== "" && b.p.sellAlf !== "";
-
-      // 1. المواد غير المسعرة تظهر أولاً
-      if (aPriced !== bPriced) {
-        return aPriced ? 1 : -1;
-      }
-
-      // 2. الترتيب حسب اسم الفرع/المحل
-      if (a.branch !== b.branch) {
-        return a.branch.localeCompare(b.branch, 'ar');
-      }
-
-      // 3. الترتيب الأصلي
-      return a.idx - b.idx;
-    });
-  }, [products, productBranchMap]);
 
   const canSubmit = products.length > 0 && allProductsPriced && typeof placesCount === "number";
 
@@ -607,7 +652,67 @@ export function PreparerShoppingDraftEditClient({
           </div>
         )}
 
-      <section className="kse-glass-dark rounded-2xl border border-indigo-200 p-4 shadow-sm">
+      <section className="kse-glass-dark rounded-2xl border border-indigo-200 p-4 shadow-sm relative">
+        {/* شريط الأدوات المثبت */}
+        <div className="sticky top-0 z-20 bg-inherit pb-2 space-y-3 -mx-4 px-4 border-b border-indigo-50 mb-4 pt-1">
+            {/* مؤشر الإنجاز */}
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-black text-slate-500">مستوى الإنجاز</span>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${stats.percent === 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                  {stats.priced} من {stats.total} ({stats.percent}%)
+                </span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ${
+                    stats.percent < 40 ? 'bg-rose-500' : stats.percent < 80 ? 'bg-amber-500' : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${stats.percent}%` }}
+                />
+              </div>
+            </div>
+
+            {/* شريط البحث */}
+            <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="ابحث عن مادة..."
+                    className="w-full bg-white border border-slate-200 rounded-xl py-2 pr-8 pl-3 text-xs font-bold text-slate-700 outline-none focus:border-indigo-400 transition-all shadow-sm"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 bg-slate-200 text-slate-500 rounded-full text-[8px] flex items-center justify-center"
+                    >✕</button>
+                  )}
+                </div>
+            </div>
+
+            {/* فلاتر الفروع */}
+            {branches.length > 1 && (
+                <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar -mx-1 px-1">
+                    <button
+                        onClick={() => setActiveBranch(null)}
+                        className={`shrink-0 px-3 py-1 rounded-full text-[10px] font-black transition-all ${!activeBranch ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}
+                    > الكل </button>
+                    {branches.map(b => (
+                        <button
+                            key={b}
+                            onClick={() => setActiveBranch(b === activeBranch ? null : b)}
+                            className={`shrink-0 px-3 py-1 rounded-full text-[10px] font-black transition-all ${activeBranch === b ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}
+                        >
+                            {b}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+
         <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-black text-indigo-950">قائمة المنتجات</h2>
             <div className="flex gap-1">
@@ -637,7 +742,7 @@ export function PreparerShoppingDraftEditClient({
             </div>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-1.5">
           {orderedForButtons.map(({ p, idx: i }) => {
             const isMeat = isMeatProduct(p.line);
             const priced = p.buyAlf !== "" && p.sellAlf !== "";
@@ -663,69 +768,65 @@ export function PreparerShoppingDraftEditClient({
                   setPricingLinesText(priced ? `${p.buyAlf}` : "");
                   setTimeout(() => pricingTextareaRef.current?.focus(), 50);
                 }}
-                className={`w-full flex flex-col items-start gap-2 rounded-xl border-2 p-2.5 text-start transition ${
+                className={`w-full relative flex items-center gap-2 rounded-xl border-2 p-2 text-start transition min-h-[64px] ${
                   active ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200" :
                   isOthers ? "border-slate-300 bg-slate-100 opacity-40 grayscale cursor-not-allowed" :
                   priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 bg-white shadow-sm"
                 } ${isMeat && priced ? "opacity-90 cursor-default" : ""}`}
               >
-                <div className="flex items-center gap-2 min-w-0 w-full">
-
-                  {/* صورة المنتج */}
-                  {productImagesMap[p.line.trim().toLowerCase()] && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setZoomImage({
-                          url: productImagesMap[p.line.trim().toLowerCase()]!,
-                          title: p.line
-                        });
-                      }}
-                      className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-slate-100 bg-slate-50 active:scale-95 transition-transform"
-                    >
-                      <img
-                        src={resolvePublicAssetSrc(productImagesMap[p.line.trim().toLowerCase()])!}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  )}
-
-                  <div className="min-w-0 flex-1">
-                      <p className={`text-[11px] font-black leading-tight mb-1 line-clamp-2 ${priced && !isOthers ? "text-white" : "text-slate-800"}`}>{p.line}</p>
-
-                      {/* اسم الفرع/المحل */}
-                      {productBranchMap[p.line.trim().toLowerCase()] && (
-                        <p className={`text-[8px] font-black px-1 py-0.5 rounded inline-block ${priced && !isOthers ? 'bg-emerald-800 text-emerald-200' : 'bg-slate-100 text-slate-500'}`}>
-                          📍 {productBranchMap[p.line.trim().toLowerCase()]}
-                        </p>
-                      )}
+                {/* صورة المنتج */}
+                {productImagesMap[p.line.trim().toLowerCase()] && (
+                  <div className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-slate-100 bg-white/10">
+                    <img
+                      src={resolvePublicAssetSrc(productImagesMap[p.line.trim().toLowerCase()])!}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
                   </div>
+                )}
+
+                <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 h-full">
+                    <p className={`text-[10px] font-black leading-tight line-clamp-2 pr-1 ${priced && !isOthers ? "text-white" : "text-slate-800"}`}>
+                      {p.line}
+                    </p>
+
+                    <div className="flex items-center justify-between gap-1 mt-1">
+                        <div className="flex flex-wrap items-center gap-1 min-w-0">
+                            {productBranchMap[p.line.trim().toLowerCase()] && (
+                              <p className={`text-[7px] font-black px-1 py-0.5 rounded whitespace-nowrap ${priced && !isOthers ? 'bg-emerald-800 text-emerald-200' : 'bg-slate-50 text-slate-500 border border-slate-100'}`}>
+                                📍 {productBranchMap[p.line.trim().toLowerCase()]}
+                              </p>
+                            )}
+
+                            {isAssignedToOther ? (
+                              <p className="text-[7px] font-bold text-slate-500">مجهز آخر</p>
+                            ) : p.assignedPreparerId === preparerId ? (
+                              <p className="text-[7px] font-bold text-emerald-300">لك</p>
+                            ) : priced ? (
+                              <p className={`text-[7px] font-bold ${isOthers ? "text-slate-500" : "text-emerald-300"}`}>{isPricedByOther ? "مجهز آخر" : (p.pricedById === "auto" ? "تلقائي" : "أنت")}</p>
+                            ) : null}
+                        </div>
+                    </div>
                 </div>
 
-                <div className="w-full flex items-center justify-between border-t border-dashed border-slate-200 pt-2 mt-auto">
-                    {isAssignedToOther ? (
-                      <p className="text-[9px] font-bold text-slate-500">مجهز آخر</p>
-                    ) : p.assignedPreparerId === preparerId ? (
-                      <p className="text-[9px] font-bold text-emerald-300">لك</p>
-                    ) : priced ? (
-                      <p className={`text-[9px] font-bold ${isOthers ? "text-slate-500" : "text-emerald-300"}`}>{isPricedByOther ? "مجهز آخر" : (p.pricedById === "auto" ? "تلقائي" : "أنت")}</p>
-                    ) : <div />}
-
+                {/* شارة السعر - مطلقة لتوفير المساحة الرأسية */}
+                <div className="absolute top-1 left-1">
                     {isMeat ? (
                         priced ? (
-                            <span className="text-[8px] font-bold text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded">✅ تلقائي</span>
+                            <span className="text-[7px] font-bold text-emerald-400 bg-emerald-950/50 px-1 py-0.5 rounded shadow-sm border border-emerald-800/20">تلقائي</span>
                         ) : (
-                            <span className="text-[8px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">تسعير</span>
+                            <span className="text-[7px] font-bold text-amber-600 bg-amber-50 px-1 py-0.5 rounded border border-amber-100 shadow-sm">تسعير</span>
                         )
                     ) : priced ? (
-                        <span className={`font-mono text-[10px] font-black ${isOthers ? "text-slate-500" : "text-emerald-400"}`}>{p.buyAlf}</span>
+                        <span className={`font-mono text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm ${isOthers ? "bg-slate-200 text-slate-500" : "bg-emerald-500 text-white"}`}>{p.buyAlf}</span>
                     ) : (
-                        <span className="text-[9px] text-slate-400">📝 تسعير</span>
+                        <span className="text-[7px] text-slate-400 bg-slate-50 px-1 py-0.5 rounded border border-slate-100 shadow-sm">📝 تسعير</span>
                     )}
                 </div>
               </button>
+            );
+          })}
+        </div>
             );
           })}
         </div>
@@ -766,8 +867,17 @@ export function PreparerShoppingDraftEditClient({
                               })));
                               setProducts(nextProducts);
                               performSave(nextJson);
-                              setSelectedPriceIndex(null);
-                              setPricingLinesText("");
+                              // الانتقال للتالي تلقائياً عند اختيار مقترح
+                              const currentVisualIdx = orderedForButtons.findIndex(item => item.idx === selectedPriceIndex);
+                              const nextVisualItem = orderedForButtons.slice(currentVisualIdx + 1).find(item => item.p.buyAlf === "" || item.p.sellAlf === "");
+                              if (nextVisualItem) {
+                                  setSelectedPriceIndex(nextVisualItem.idx);
+                                  setTempBasePrice(null);
+                                  setPricingLinesText("");
+                              } else {
+                                  setSelectedPriceIndex(null);
+                                  setPricingLinesText("");
+                              }
                             }
                           }}
                           className="px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded text-[10px] font-black"
@@ -808,7 +918,7 @@ export function PreparerShoppingDraftEditClient({
                               type="button"
                               onClick={() => {
                                 setPricingLinesText(String(total));
-                                // حفظ فوري
+                                // حفظ فوري وانتقال للتالي
                                 const buy = total;
                                 const sell = calculateAutoSellPrice(products[selectedPriceIndex!]!.line, buy);
                                 const nextProducts = [...products];
@@ -826,9 +936,18 @@ export function PreparerShoppingDraftEditClient({
                                   })));
                                   setProducts(nextProducts);
                                   performSave(nextJson);
-                                  setSelectedPriceIndex(null);
-                                  setPricingLinesText("");
-                                  setTempBasePrice(null);
+
+                                  const currentVisualIdx = orderedForButtons.findIndex(item => item.idx === selectedPriceIndex);
+                                  const nextVisualItem = orderedForButtons.slice(currentVisualIdx + 1).find(item => item.p.buyAlf === "" || item.p.sellAlf === "");
+                                  if (nextVisualItem) {
+                                      setSelectedPriceIndex(nextVisualItem.idx);
+                                      setTempBasePrice(null);
+                                      setPricingLinesText("");
+                                  } else {
+                                      setSelectedPriceIndex(null);
+                                      setPricingLinesText("");
+                                      setTempBasePrice(null);
+                                  }
                                 }
                               }}
                               className="py-4 bg-indigo-600 text-white rounded-xl text-sm font-black shadow-md active:scale-95 transition-all flex flex-col items-center justify-center"
@@ -850,13 +969,14 @@ export function PreparerShoppingDraftEditClient({
                   className={`${inputClass} text-center font-black text-lg`}
                   placeholder="سعر الشراء "
                   inputMode="decimal"
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPricingPanel(); } }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPricingPanel(true); } }}
                 />
                 <div className="space-y-2 mt-3">
                     <div className="grid grid-cols-2 gap-2">
-                        <button type="button" onClick={applyPricingPanel} className="bg-indigo-600 text-white rounded-xl py-3 text-sm font-black">حفظ السعر</button>
-                        <button type="button" onClick={() => setSelectedPriceIndex(null)} className="bg-slate-100 text-slate-600 rounded-xl py-3 text-sm font-bold">إغلاق</button>
+                        <button type="button" onClick={() => applyPricingPanel(true)} className="bg-emerald-600 text-white rounded-xl py-3 text-sm font-black shadow-lg shadow-emerald-100 active:scale-95 transition-all">حفظ والتالي ⬅️</button>
+                        <button type="button" onClick={() => applyPricingPanel(false)} className="bg-indigo-600 text-white rounded-xl py-3 text-sm font-black">حفظ وإغلاق</button>
                     </div>
+                    <button type="button" onClick={() => setSelectedPriceIndex(null)} className="w-full bg-slate-100 text-slate-600 rounded-xl py-2 text-xs font-bold">إلغاء</button>
                     {products[selectedPriceIndex]?.buyAlf !== "" && (
                       <button
                         type="button"

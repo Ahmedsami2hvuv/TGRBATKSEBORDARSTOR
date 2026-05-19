@@ -52,6 +52,14 @@ export async function POST(req: Request) {
       lastCourierLat: lat,
       lastCourierLng: lng,
       lastCourierLocationAt: serverTime,
+      locationPoints: {
+        create: {
+          latitude: lat,
+          longitude: lng,
+          recordedAt: serverTime,
+          source: "heartbeat",
+        },
+      },
     },
   });
 

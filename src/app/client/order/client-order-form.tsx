@@ -5,6 +5,7 @@ import { useActionState, useEffect, useRef, useState, type FormEvent } from "rea
 import { resolvePublicImageSrc } from "@/lib/image-url";
 import { ALF_PER_DINAR, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { ClientVoiceNoteField } from "./client-voice-note-field";
+import "leaflet/dist/leaflet.css";
 import { submitOrder, type ClientOrderState } from "./actions";
 import { clientOrderAccountPath } from "@/lib/client-order-portal-nav";
 import { withoutReversePickupPrefix, isReversePickupOrderType } from "@/lib/order-type-flags";
@@ -123,6 +124,10 @@ function ClientOrderFormInner({
   const [deliveryPriceOverride, setDeliveryPriceOverride] = useState<string>("");
 
   const [extraInfoOpen, setExtraInfoOpen] = useState(false);
+  const [customerLat, setCustomerLat] = useState<number | null>(null);
+  const [customerLng, setCustomerLng] = useState<number | null>(null);
+  const customerMapRef = useRef<HTMLDivElement | null>(null);
+  const customerMapInstanceRef = useRef<any | null>(null);
   const [showNoPriceConfirm, setShowNoPriceConfirm] = useState(false);
   const [allowNoPriceSubmit, setAllowNoPriceSubmit] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -223,6 +228,43 @@ function ClientOrderFormInner({
   const isTimeErr = err.includes("وقت الطلب") || err.includes("وقت التوصيل");
   const isRegionErr = err.includes("منطقة");
   const isPriceErr = err.includes("سعر الطلب");
+
+  useEffect(() => {
+    if (customerLat == null || customerLng == null || !customerMapRef.current) return;
+
+    const container = customerMapRef.current;
+    if (customerMapInstanceRef.current) {
+      customerMapInstanceRef.current.setView([customerLat, customerLng], 15);
+      return;
+    }
+
+    let mounted = true;
+    void import("leaflet").then((L) => {
+      if (!mounted || !container) return;
+
+      const map = L.map(container, {
+        center: [customerLat, customerLng],
+        zoom: 15,
+        zoomControl: false,
+        attributionControl: false,
+      });
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+      }).addTo(map);
+
+      L.marker([customerLat, customerLng]).addTo(map);
+      customerMapInstanceRef.current = map;
+    });
+
+    return () => {
+      mounted = false;
+      if (customerMapInstanceRef.current) {
+        customerMapInstanceRef.current.remove();
+        customerMapInstanceRef.current = null;
+      }
+    };
+  }, [customerLat, customerLng]);
 
   if (state.ok) {
     return (
@@ -582,6 +624,32 @@ function ClientOrderFormInner({
                 <span className="text-sm font-bold text-slate-600 px-1">أقرب نقطة دالة</span>
                 <input name="customerLandmark" value={customerLandmark} onChange={(e) => setCustomerLandmark(e.target.value)} className={inputClass} placeholder="مثال: خلف جامع البركة، قرب مدرسة …" />
               </label>
+
+              <div className="mt-2">
+                <input type="hidden" name="customerLat" value={customerLat ?? ""} />
+                <input type="hidden" name="customerLng" value={customerLng ?? ""} />
+
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => {
+                    if (typeof navigator === "undefined" || !navigator.geolocation) return alert("المتصفح لا يدعم الموقع");
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                      setCustomerLat(pos.coords.latitude);
+                      setCustomerLng(pos.coords.longitude);
+                    }, (err) => {
+                      console.warn("geolocation error", err);
+                      alert("تعذّر الحصول على الموقع. تأكد من إعطاء الإذن.");
+                    }, { enableHighAccuracy: true, timeout: 15000 });
+                  }} className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-black text-white shadow-sm hover:bg-sky-500">حدد موقعي</button>
+
+                  <div className="text-sm text-slate-600">يمكنك مشاركة موقعك ليُسهل على المندوب الوصول.</div>
+                </div>
+
+                {customerLat != null && customerLng != null && (
+                  <div className="mt-3 rounded-xl border border-slate-200 overflow-hidden" style={{height: 220}}>
+                    <div ref={customerMapRef} className="w-full h-full" />
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </section>

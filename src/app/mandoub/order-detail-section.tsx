@@ -21,6 +21,7 @@ import { MandoubLocFlashBanner } from "./mandoub-loc-flash-banner";
 import { MandoubUploadLocationInline } from "./mandoub-upload-location-inline";
 import { MandoubOrderMoneyFlow } from "./mandoub-order-money-flow";
 import { MandoubOrderImageQuick } from "./mandoub-order-image-quick";
+import { MandoubOrderRouteMap } from "./mandoub-order-route-map";
 import { MandoubQuickDoorCapture } from "./mandoub-quick-door";
 import { MandoubQuickDoorSecondCapture } from "./mandoub-quick-door-second";
 import { NotesCopyButton } from "@/components/notes-copy-button";
@@ -92,6 +93,7 @@ export function OrderDetailSection({
   smartHintLine?: string | null;
   uiSettings?: UISectionConfig | null;
   icons?: GlobalIconsConfig | null;
+  routeHistory?: { lat: number; lng: number; recordedAt: string }[];
   courierSettings?: {
     showDoorBtn: boolean;
     showLocationBtn: boolean;
@@ -278,6 +280,27 @@ export function OrderDetailSection({
             )}
           </div>
         );
+      case "route_map":
+        return (
+          <div key="route_map" className="space-y-4 rounded-3xl border border-sky-200 bg-sky-50/60 p-4 shadow-sm" style={blockStyle}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">خريطة الطريق</h3>
+                <p className="text-sm text-slate-600">المسار محدث بناءً على موقع المندوب أو موقع المحل وإحداثيات الزبون.</p>
+              </div>
+            </div>
+            <MandoubOrderRouteMap
+              orderNumber={order.orderNumber}
+              shopLocationUrl={order.shop.locationUrl ?? ""}
+              customerLocationUrl={mergedCustomerLocationUrl}
+              secondCustomerLocationUrl={secondLocMerged}
+              routeMode={order.routeMode}
+              courierLat={order.courier?.lastCourierLat ?? null}
+              courierLng={order.courier?.lastCourierLng ?? null}
+              routeHistory={order.routeHistory}
+            />
+          </div>
+        );
       case "price_details":
         return (
           <div key="pricing" className={`${gridInfoPhoto} mt-8`} style={blockStyle}>
@@ -401,7 +424,7 @@ export function OrderDetailSection({
 
   const layout = uiSettings?.layoutOrder && uiSettings.layoutOrder.length > 0
     ? uiSettings.layoutOrder
-    : ["notes_summary", "shop_info", "customer_info", "price_details", "money_flow"];
+    : ["notes_summary", "shop_info", "customer_info", "route_map", "price_details", "money_flow"];
 
   return (
     <section

@@ -219,6 +219,15 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
     order.customerRegionId,
   );
 
+  const routeHistoryRows = await prisma.courierLocationPoint.findMany({
+    where: { courierId: v.courierId },
+    orderBy: { recordedAt: "desc" },
+    take: 48,
+  });
+  const routeHistory = routeHistoryRows
+    .map((item) => ({ lat: item.latitude, lng: item.longitude, recordedAt: item.recordedAt.toISOString() }))
+    .reverse();
+
   const moneySums = await fetchOrderOnlyMoneySumsForCourier(v.courierId, courier.mandoubTotalsResetAt);
   const activeOrdersForTotals = await prisma.order.findMany({
     where: {

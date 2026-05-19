@@ -279,6 +279,21 @@ model Courier {
   walletTransfersIn           WalletPeerTransfer[]     @relation("WalletTransferToCourier")
   profitHistories             CourierProfitHistory[]
   webPushSubscriptions        WebPushSubscription[]
+  locationPoints             CourierLocationPoint[]
+}
+
+model CourierLocationPoint {
+  id          String   @id @default(cuid())
+  courierId   String
+  latitude    Float
+  longitude   Float
+  recordedAt  DateTime @default(now())
+  source      String   @default("heartbeat")
+
+  courier     Courier  @relation(fields: [courierId], references: [id], onDelete: Cascade)
+
+  @@index([courierId])
+  @@index([recordedAt])
 }
 
 model CourierTip {
