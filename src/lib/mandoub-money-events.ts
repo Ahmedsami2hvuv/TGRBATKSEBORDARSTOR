@@ -1,6 +1,3 @@
-import type { Decimal } from "@prisma/client/runtime/library";
-import type { OrderCourierMoneyDeletionReason } from "@prisma/client";
-
 export const MONEY_KIND_PICKUP = "pickup_out";
 export const MONEY_KIND_DELIVERY = "delivery_in";
 
@@ -20,22 +17,38 @@ export const LEDGER_KIND_TRANSFER_REJECTED_OUT = "transfer_rejected_out";
 export const LEDGER_KIND_TRANSFER_REJECTED_IN = "transfer_rejected_in";
 
 /**
- * Interface representing a Decimal-like object with necessary methods for the browser.
+ * A browser-safe way to represent a Decimal-like value.
+ * We avoid importing from @prisma/client to prevent browser runtime errors.
  */
 export interface DecimalLike {
-  toDecimalPlaces(places: number): {
-    equals(other: DecimalLike): boolean;
-  };
   toNumber?(): number;
+  toFixed?(decimalPlaces: number): string;
+  // Prisma's Decimal has these, we can use them if present
+  toDecimalPlaces?(places: number): {
+    equals(other: any): boolean;
+  };
 }
 
-export function dinarAmountsMatchExpected(amount: DecimalLike, expected: DecimalLike | null): boolean {
+/**
+ * Checks if two dinar amounts match, considering 2 decimal places.
+ * Works with both Prisma Decimal and standard JavaScript numbers.
+ */
+export function dinarAmountsMatchExpected(
+  amount: number | DecimalLike,
+  expected: number | DecimalLike | null | undefined,
+): boolean {
   if (expected == null) return false;
-  return amount.toDecimalPlaces(2).equals(expected.toDecimalPlaces(2));
+
+  const a = typeof amount === "number" ? amount : (amount.toNumber?.() ?? 0);
+  const e = typeof expected === "number" ? expected : (expected.toNumber?.() ?? 0);
+
+  // Use a small epsilon for float comparison after rounding to 2 decimal places
+  const factor = 100;
+  return Math.round(a * factor) === Math.round(e * factor);
 }
 
 export function isManualDeletionReason(
-  r: OrderCourierMoneyDeletionReason | null | undefined,
+  r: string | null | undefined,
 ): boolean {
   return r === "manual_admin" || r === "manual_courier" || r === "manual_preparer";
 }

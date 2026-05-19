@@ -8,8 +8,8 @@ import {
   submitMandoubDeliveryMoney,
   submitMandoubPickupMoney,
   softDeleteMandoubMoneyEvent,
-  type MandoubCashState,
 } from "./cash-actions";
+import { MandoubCashState } from "./types";
 import { MandoubOrderMoneyFloatDock } from "./mandoub-order-money-float-dock";
 import {
   dinarDecimalToAlfInputString,

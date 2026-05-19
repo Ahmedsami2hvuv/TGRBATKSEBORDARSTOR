@@ -4,11 +4,14 @@ import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   bulkSetMandoubOrdersStatus,
-  type MandoubBulkStatusState,
 } from "./actions";
+import {
+  MandoubBulkStatusState,
+  MandoubCashState,
+} from "./types";
 import { UnifiedOrderListTable } from "@/components/unified-order-list-table";
 import { PickupMoneyForm, DeliveryMoneyForm } from "./mandoub-order-money-flow";
-import { submitMandoubDeliveryMoney, submitMandoubPickupMoney, type MandoubCashState } from "./cash-actions";
+import { submitMandoubDeliveryMoney, submitMandoubPickupMoney } from "./cash-actions";
 import { dinarDecimalToAlfInputString } from "@/lib/money-alf";
 import { createPortal } from "react-dom";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";

@@ -1,5 +1,8 @@
 "use server";
 
+import {
+  MandoubCashState,
+} from "./types";
 import type { Decimal } from "@prisma/client/runtime/library";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -66,12 +69,6 @@ function mismatchNoteRequiredError(): MandoubCashState {
   };
 }
 
-export type MandoubCashState = {
-  error?: string;
-  ok?: boolean;
-  deletedEventId?: string;
-  deletedMode?: "soft" | "hard";
-};
 
 export async function submitMandoubPickupMoney(
   _prev: MandoubCashState,

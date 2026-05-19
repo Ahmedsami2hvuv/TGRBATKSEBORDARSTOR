@@ -6,8 +6,8 @@ import { appendMandoubLocFlash } from "@/lib/mandoub-loc-flash-url";
 import {
   clearMandoubCustomerLocation,
   setMandoubCustomerLocationFromGeolocation,
-  type MandoubEditCustomerState,
 } from "./actions";
+import { MandoubEditCustomerState } from "./types";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 

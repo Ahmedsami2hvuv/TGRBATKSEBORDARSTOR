@@ -4,8 +4,8 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { OrderStatusRadioGroup } from "@/components/order-status-radio-group";
 import {
   updateMandoubCustomerDetails,
-  type MandoubEditCustomerState,
 } from "./actions";
+import { MandoubEditCustomerState } from "./types";
 import { MANDOUB_ORDER_EDIT_TOGGLE } from "./mandoub-order-detail-actions";
 import { MandoubLocationManageButtons } from "./mandoub-location-manage-buttons";
 import { useRouter } from "next/navigation";

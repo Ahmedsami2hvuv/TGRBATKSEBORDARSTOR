@@ -1,3 +1,5 @@
+"use client";
+
 import { Suspense } from "react";
 import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { resolvePublicAssetSrc } from "@/lib/image-url";

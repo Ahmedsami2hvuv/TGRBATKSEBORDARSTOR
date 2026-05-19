@@ -11,6 +11,13 @@ import {
   saveCustomerDoorPhotoUploaded,
   saveShopDoorPhotoUploaded,
 } from "@/lib/order-image";
+import {
+  MandoubBulkStatusState,
+  MandoubEditCustomerState,
+  RevertShopDoorPhotoState,
+  UploadCustomerDoorState,
+  UploadDoorPhotoState,
+} from "./types";
 import type { Prisma } from "@prisma/client";
 import { isCourierPortalBlocked } from "@/lib/courier-delegate-access";
 import { verifyDelegatePortalQuery } from "@/lib/delegate-link";
@@ -145,7 +152,6 @@ export async function markOrderPickedUp(formData: FormData) {
   redirect(safeMandoubReturn(nextRaw));
 }
 
-export type UploadDoorPhotoState = { error?: string; ok?: boolean };
 
 /** رفع صورة المحل من جهاز المندوب — ملف فقط (يُخزَّن في shopDoorPhotoUrl) */
 export async function uploadShopDoorPhoto(
@@ -212,11 +218,6 @@ export async function uploadShopDoorPhoto(
   redirect(safeMandoubReturn(nextRaw));
 }
 
-export type MandoubEditCustomerState = {
-  error?: string;
-  ok?: boolean;
-  flash?: "cleared" | "saved";
-};
 
 /** تعديل بيانات الزبون على الطلب + مزامنة سجل Customer */
 export async function updateMandoubCustomerDetails(
@@ -493,7 +494,6 @@ export async function clearMandoubCustomerLocation(
   return { ok: true, flash: "cleared" as const };
 }
 
-export type UploadCustomerDoorState = { error?: string };
 
 /** رفع صورة باب الزبون — يحدّث الطلب وسجل الزبون */
 export async function uploadMandoubCustomerDoorPhoto(
@@ -744,7 +744,6 @@ export async function toggleOrderCourierCashSettled(formData: FormData) {
   redirect(r.next);
 }
 
-export type MandoubBulkStatusState = { error?: string; ok?: boolean };
 
 /** تحديد عدة طلبات من القائمة وتعيين حالتها (بانتظار المندوب / تم الاستلام / تم التسليم) */
 export async function bulkSetMandoubOrdersStatus(
@@ -794,7 +793,6 @@ export async function bulkSetMandoubOrdersStatus(
   return { ok: true };
 }
 
-export type RevertShopDoorPhotoState = { error?: string; ok?: boolean };
 
 /** الرجوع إلى صورة باب المحل الأصلية */
 export async function revertShopDoorPhotoToOriginal(
