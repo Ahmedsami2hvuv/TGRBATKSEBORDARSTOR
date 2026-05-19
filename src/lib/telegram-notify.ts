@@ -583,6 +583,38 @@ export async function notifyTelegramDraftCanceled(draftId: string): Promise<void
   }
 }
 
+export async function notifyTelegramUnavailableProducts(input: {
+  preparerName: string;
+  customerRegion: string;
+  customerPhone: string;
+  unavailableItems: { line: string; substitute?: string }[];
+}) {
+  const itemsText = input.unavailableItems
+    .map((item) => `• ${item.line}${item.substitute ? ` (البديل: ${item.substitute})` : " (بدون بديل)"}`)
+    .join("\n");
+
+  const text = [
+    `⚠️ <b>مواد غير متوفرة</b>`,
+    `<b>المجهز:</b> ${escapeTelegramHtml(input.preparerName)}`,
+    `<b>المنطقة:</b> ${escapeTelegramHtml(input.customerRegion)}`,
+    `<b>هاتف الزبون:</b> <code>${escapeTelegramHtml(input.customerPhone)}</code>`,
+    `-------------------------`,
+    `<b>المواد:</b>`,
+    itemsText,
+  ].join("\n");
+
+  const notificationBotToken = await getBotTokenByPurpose("notification");
+  const managementBotToken = await getBotTokenByPurpose("management") || notificationBotToken;
+
+  // إرسال لجروب الإشعارات
+  await sendTelegramMessage(text, { botToken: notificationBotToken });
+
+  // إرسال لبوت الإدارة (إذا كان مختلفاً)
+  if (managementBotToken !== notificationBotToken) {
+     await sendTelegramMessage(text, { botToken: managementBotToken });
+  }
+}
+
 export function buildTelegramOrderKeyboard(
   orderNumber: number,
   orderId?: string,

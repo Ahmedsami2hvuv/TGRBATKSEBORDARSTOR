@@ -18,7 +18,7 @@ import { MAX_ORDER_IMAGE_BYTES, saveOrderImageUploaded, saveShopDoorPhotoUploade
 import { deleteFromR2 } from "@/lib/upload-storage";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
-import { notifyTelegramNewOrder, notifyTelegramOrderPrepared } from "@/lib/telegram-notify";
+import { notifyTelegramNewOrder, notifyTelegramOrderPrepared, notifyTelegramUnavailableProducts } from "@/lib/telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 import { ADMIN_OFFICE_LABEL, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
 
@@ -1212,6 +1212,43 @@ export async function updatePreparerOrderFields(_prev: PreparerActionState, form
     return { error: "فشل تحديث البيانات." };
   }
 }
+
+export async function reportUnavailableProductsAction(
+  _prev: PreparerActionState,
+  formData: FormData,
+): Promise<PreparerActionState> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "الرابط غير صالح." };
+
+    const preparerName = String(formData.get("preparerName") ?? "مجهز");
+    const customerRegion = String(formData.get("customerRegion") ?? "—");
+    const customerPhone = String(formData.get("customerPhone") ?? "—");
+    const itemsJson = String(formData.get("itemsJson") ?? "[]");
+
+    let unavailableItems: { line: string; substitute?: string }[] = [];
+    try {
+      unavailableItems = JSON.parse(itemsJson);
+    } catch {
+      return { error: "بيانات غير صالحة." };
+    }
+
+    if (unavailableItems.length === 0) return { error: "لم يتم اختيار أي مواد." };
+
+    await notifyTelegramUnavailableProducts({
+      preparerName,
+      customerRegion,
+      customerPhone,
+      unavailableItems,
+    });
+
+    return { ok: true };
+  } catch (e) {
+    console.error("reportUnavailableProductsAction error:", e);
+    return { error: "فشل إرسال الإشعار." };
+  }
+}
+
 export async function setPreparerPresenceFromForm(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> { return { ok: true }; }
 export async function bulkAssignOrdersByPreparer(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> {
   const v = readPortal(formData);

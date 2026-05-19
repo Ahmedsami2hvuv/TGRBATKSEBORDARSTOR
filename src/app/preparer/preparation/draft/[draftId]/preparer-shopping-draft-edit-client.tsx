@@ -3,7 +3,7 @@
 
 import { useActionState, useMemo, useRef, useState, useTransition, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { submitPreparerShoppingDraft, updatePreparerShoppingDraft, type PreparerActionState } from "@/app/preparer/actions";
+import { submitPreparerShoppingDraft, updatePreparerShoppingDraft, reportUnavailableProductsAction, type PreparerActionState } from "@/app/preparer/actions";
 import { suggestFixedPrices } from "@/lib/fixed-prices";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
 import { calculateAutoSellPrice, isMeatProduct } from "@/lib/auto-pricing";
@@ -241,6 +241,65 @@ export function PreparerShoppingDraftEditClient({
   const [addProductsText, setAddProductsText] = useState("");
   const isDirtyRef = useRef(false);
   const lastSavedJsonRef = useRef(JSON.stringify(products));
+
+  // --- Unavailable Products Feature ---
+  const [showUnavailableModal, setShowUnavailableModal] = useState(false);
+  const [unavailableSelection, setUnavailableSelection] = useState<Record<number, string>>({}); // idx -> substitute
+  const [reportState, reportAction, reportPending] = useActionState(reportUnavailableProductsAction, initial);
+
+  const toggleUnavailableItem = (idx: number) => {
+    setUnavailableSelection(prev => {
+      const next = { ...prev };
+      if (next[idx] !== undefined) delete next[idx];
+      else next[idx] = "";
+      return next;
+    });
+  };
+
+  const updateSubstitute = (idx: number, val: string) => {
+    setUnavailableSelection(prev => ({ ...prev, [idx]: val }));
+  };
+
+  const handleSendUnavailable = async () => {
+    const items = Object.entries(unavailableSelection).map(([idx, sub]) => ({
+      line: products[Number(idx)].line,
+      substitute: sub.trim() || undefined,
+    }));
+    if (items.length === 0) return;
+
+    const fd = new FormData();
+    fd.append("p", auth.p);
+    fd.append("exp", auth.exp);
+    fd.append("s", auth.s);
+    fd.append("preparerName", preparerName);
+    fd.append("customerRegion", titleLine || initialDraft.customerRegion?.name || "—");
+    fd.append("customerPhone", customerPhone);
+    fd.append("itemsJson", JSON.stringify(items));
+
+    // Telegram Notification
+    startAutoSave(async () => {
+        await reportAction(fd);
+    });
+
+    // WhatsApp Notification
+    const waPhone = "9647733921468";
+    const waText = [
+      `⚠️ *مواد غير متوفرة*`,
+      `*المجهز:* ${preparerName}`,
+      `*المنطقة:* ${titleLine || initialDraft.customerRegion?.name || "—"}`,
+      `*هاتف الزبون:* ${customerPhone}`,
+      `-------------------------`,
+      `*المواد:*`,
+      ...items.map(i => `• ${i.line}${i.substitute ? ` (البديل: ${i.substitute})` : " (بدون بديل)"}`),
+    ].join("\n");
+
+    const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(waText)}`;
+    window.open(waUrl, "_blank");
+
+    setShowUnavailableModal(false);
+    setUnavailableSelection({});
+  };
+  // ------------------------------------
 
   // التحويل التلقائي عند نجاح الإرسال
   useEffect(() => {
@@ -565,6 +624,7 @@ export function PreparerShoppingDraftEditClient({
                   </div>
                 )}
                 <button type="button" onClick={() => { setShowAddProductsPanel(!showAddProductsPanel); setDeleteMode(false); }} className="rounded-lg bg-emerald-600 text-white px-2 py-1 text-[10px] font-bold">+ مادة</button>
+                <button type="button" onClick={() => setShowUnavailableModal(true)} className="rounded-lg bg-amber-500 text-white px-2 py-1 text-[10px] font-bold">غير متوفر</button>
                 <button type="button" onClick={() => { setDeleteMode(!deleteMode); setShowAddProductsPanel(false); }} className={`rounded-lg px-2 py-1 text-[10px] font-bold ${deleteMode ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>حذف</button>
             </div>
         </div>
@@ -899,6 +959,64 @@ export function PreparerShoppingDraftEditClient({
                   <span className="text-[10px] font-black">تم</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUnavailableModal && (
+        <div className="fixed inset-0 z-[250] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b bg-amber-50 flex items-center justify-between">
+              <h3 className="font-black text-amber-900">إبلاغ عن مواد غير متوفرة ⚠️</h3>
+              <button onClick={() => setShowUnavailableModal(false)} className="text-slate-400 font-bold p-2">✕</button>
+            </div>
+
+            <div className="p-4 overflow-y-auto flex-1 space-y-4">
+              <p className="text-[10px] font-bold text-slate-500">اختر المواد غير المتوفرة واكتب البديل إن وجد:</p>
+              {products.map((p, i) => {
+                const isSelected = unavailableSelection[i] !== undefined;
+                return (
+                  <div key={i} className={`p-3 rounded-2xl border-2 transition-all ${isSelected ? 'border-amber-500 bg-amber-50' : 'border-slate-100 bg-white'}`}>
+                    <div className="flex items-center gap-3 mb-2">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleUnavailableItem(i)}
+                        className="size-5 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                      />
+                      <span className={`text-xs font-black ${isSelected ? 'text-amber-900' : 'text-slate-700'}`}>{p.line}</span>
+                    </div>
+                    {isSelected && (
+                      <input
+                        type="text"
+                        value={unavailableSelection[i]}
+                        onChange={(e) => updateSubstitute(i, e.target.value)}
+                        placeholder="اكتب البديل المقترح..."
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-amber-200 focus:border-amber-500 outline-none"
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="p-4 border-t bg-slate-50 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setShowUnavailableModal(false)}
+                className="py-3 rounded-2xl bg-white border border-slate-200 text-slate-600 font-bold text-sm"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                disabled={Object.keys(unavailableSelection).length === 0 || reportPending}
+                onClick={handleSendUnavailable}
+                className="py-3 rounded-2xl bg-amber-600 text-white font-black text-sm shadow-lg shadow-amber-200 active:scale-95 disabled:opacity-50 transition-all"
+              >
+                {reportPending ? "جاري الإرسال..." : "إرسال للإدارة 🚀"}
+              </button>
             </div>
           </div>
         </div>
