@@ -42,6 +42,7 @@ import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launche
 import { mandoubOrdersStampSig } from "@/lib/mandoub-order-stamps";
 import { randomBytes } from "crypto";
 import { fetchWalletInOutDisplayForCourier, resolvePartyDisplayName } from "@/lib/wallet-peer-transfer";
+import { PortalAuthCookieSetter } from "@/components/portal-auth-cookie-setter";
 import { filterLedgerByRecentDays } from "@/lib/money-entry-ui";
 import { LEDGER_KIND_TRANSFER_PENDING_IN, LEDGER_KIND_TRANSFER_PENDING_OUT, MISC_LEDGER_KIND_GIVE, MISC_LEDGER_KIND_TAKE, MONEY_KIND_DELIVERY, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
 import { getUISettings } from "@/lib/ui-settings";
@@ -723,6 +724,7 @@ export default async function MandoubPage({ searchParams }: Props) {
     return (
       <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-base leading-relaxed text-slate-800">
         <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 sm:px-4 sm:py-4 sm:text-lg">
+          <PortalAuthCookieSetter auth={baseAuth} />
           <header className="kse-glass-dark mb-3 flex items-center gap-2 border border-sky-200/90 px-3 py-2.5 shadow-sm">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">

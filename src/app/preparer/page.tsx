@@ -15,6 +15,7 @@ import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launche
 import { PreparerNotificationPoller } from "./preparer-notification-poller";
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
+import { PortalAuthCookieSetter } from "@/components/portal-auth-cookie-setter";
 
 // Keep data fresh while allowing fast back/forward navigation cache.
 export const revalidate = 10;
@@ -74,7 +75,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
     );
   }
 
-  // حفظ p/exp/s يتم في middleware (src/proxy.ts) — لا نستخدم cookies().set هنا لأن Server Components لا تدعم تعديل الكوكيز أثناء العرض.
+  // حفظ p/exp/s يتم في المكون العميل PortalAuthCookieSetter لأن Server Components لا تستطيع تعديل الكوكيز أثناء العرض.
 
   const preparer = await prisma.companyPreparer.findFirst({
     where: { id: v.preparerId, active: true },
@@ -170,6 +171,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 text-base leading-relaxed sm:px-4 sm:py-4 sm:text-lg">
+      <PortalAuthCookieSetter auth={baseAuth} />
       <header className="kse-glass-dark mb-2 flex flex-wrap items-center gap-2 border border-emerald-200/90 px-3 py-2.5 shadow-sm sm:mb-3 sm:px-4">
         <div className="min-w-0 flex-1 flex items-center gap-3">
           <ThemeSwitcher />
