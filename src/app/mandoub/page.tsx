@@ -525,9 +525,9 @@ export default async function MandoubPage({ searchParams }: Props) {
     select: { phone: true, regionId: true, locationUrl: true, photoUrl: true }
   });
 
-  const orderMetrics = computeMandoubTotalsForCourier(activeOrdersNorm, courier.id, totalsBaseline);
-  const cashInHand = orderMetrics.sumEarnings.plus(handToAdmin);
-  const cashInHandStr = formatDinarAsAlf(cashInHand);
+  const activeOrderMetrics = computeMandoubTotalsForCourier(activeOrdersNorm, courier.id, totalsBaseline);
+  const activeCashInHand = activeOrderMetrics.sumEarnings.plus(handToAdmin);
+  const activeCashInHandStr = formatDinarAsAlf(activeCashInHand);
 
   // هنا نستخدم مبالغ الطلبات فقط في الواجهة الرئيسية
   const { sumDeliveryIn, sumPickupOut, remainingNet } = orderOnlySums;
@@ -761,7 +761,7 @@ export default async function MandoubPage({ searchParams }: Props) {
             sumDeliveryInDinar={Number(sumDeliveryIn)}
             sumPickupOutDinar={Number(sumPickupOut)}
             remainingNetDinar={Number(remainingNet)}
-            sumEarningsDinar={Number(orderMetrics.sumEarnings)}
+            sumEarningsDinar={Number(activeOrderMetrics.sumEarnings)}
             courierVehicleType={courier.vehicleType}
             hrefWalletLedger={(l) => `/mandoub/wallet?${baseQuery.toString()}${l !== 'all' ? '&ledger=' + l : ''}`}
             hideTitle hideResetText
