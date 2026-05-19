@@ -319,7 +319,7 @@ export default async function MandoubPage({ searchParams }: Props) {
   const orderMetricsMonthly = computeMandoubTotalsForCourier(ordersForWallet, courier.id, monthlyCycleStartFinal, false);
   const orderMetricsBaseline = computeMandoubTotalsForCourier(ordersForWallet, courier.id, totalsBaseline, false);
 
-  const deliveryEarningsSinceBaseline = orderMetricsBaseline.sumEarnings;
+  const deliveryEarningsSinceBaseline = new Decimal(orderMetricsBaseline.sumEarnings);
   const cashInHand = deliveryEarningsSinceBaseline.plus(handToAdmin);
   const cashInHandStr = formatDinarAsAlf(cashInHand);
 
@@ -526,7 +526,7 @@ export default async function MandoubPage({ searchParams }: Props) {
   });
 
   const activeOrderMetrics = computeMandoubTotalsForCourier(activeOrdersNorm, courier.id, totalsBaseline);
-  const activeCashInHand = activeOrderMetrics.sumEarnings.plus(handToAdmin);
+  const activeCashInHand = new Decimal(activeOrderMetrics.sumEarnings).plus(handToAdmin);
   const activeCashInHandStr = formatDinarAsAlf(activeCashInHand);
 
   // هنا نستخدم مبالغ الطلبات فقط في الواجهة الرئيسية

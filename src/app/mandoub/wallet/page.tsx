@@ -258,7 +258,7 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
   const siteRemainingNet = orderOnlySums.remainingNet;
 
   // 💰 أرباحي: أجور التوصيل من الطلبات منذ التصفير
-  const deliveryEarningsSinceBaseline = orderMetricsBaseline.sumEarnings;
+  const deliveryEarningsSinceBaseline = new Decimal(orderMetricsBaseline.sumEarnings);
 
   // 🏛 للإدارة: المبلغ التراكمي (لا يتصفر)
   const handToAdmin = adminTotalAllTime;
@@ -267,7 +267,7 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
   const cashInHand = deliveryEarningsSinceBaseline.plus(handToAdmin);
 
   // الراتب العلوي (بجانب كلمة محفظة): أرباح الشهر + إكراميات الشهر
-  const monthlySalaryTotal = orderMetricsMonthly.sumEarnings.plus(tipMonthlySum);
+  const monthlySalaryTotal = new Decimal(orderMetricsMonthly.sumEarnings).plus(tipMonthlySum);
 
   // 💰 متبقي: ناتجة من (وارد - صادر) للحركات اليدوية والتحويلات
   const walletRemain = walletInOutDisplay.walletIn.minus(walletInOutDisplay.walletOut);
