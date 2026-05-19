@@ -196,12 +196,16 @@ export default async function MandoubPage({ searchParams }: Props) {
   let telegramLink = null;
   if (botUsername) {
     const botStartParam = `pl_${randomBytes(8).toString("hex")}`;
-    await prisma.schemaPlaceholder.create({
-      data: {
-        id: botStartParam,
-        note: portalUrl,
-      },
-    });
+    try {
+      await prisma.schemaPlaceholder.create({
+        data: {
+          id: botStartParam,
+          note: portalUrl,
+        },
+      });
+    } catch (err) {
+      console.error("[MandoubPage] Failed to create telegram placeholder", err);
+    }
     telegramLink = `https://t.me/${botUsername}?start=${botStartParam}`;
   }
 
