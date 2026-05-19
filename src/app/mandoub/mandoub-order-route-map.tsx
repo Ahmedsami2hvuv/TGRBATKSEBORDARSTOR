@@ -23,6 +23,7 @@ type Props = {
   routeMode: string | null | undefined;
   courierLat: number | null;
   courierLng: number | null;
+  routeHistory?: { lat: number; lng: number; recordedAt: string }[];
 };
 
 function formatDistance(meters: number | null) {
@@ -117,6 +118,7 @@ export function MandoubOrderRouteMap(props: Props) {
   const [routeDuration, setRouteDuration] = useState<number | null>(null);
   const [showArrows, setShowArrows] = useState(true);
   const [voiceGuidance, setVoiceGuidance] = useState(false);
+  const [avoidHighway, setAvoidHighway] = useState(false);
   const [issue, setIssue] = useState<string | null>(null);
   const [lastSpokenRoute, setLastSpokenRoute] = useState<string | null>(null);
 
@@ -141,13 +143,23 @@ export function MandoubOrderRouteMap(props: Props) {
 
   const localStorageKey = `${STORAGE_KEY_PREFIX}:${props.orderNumber}`;
 
+  const routeHistoryPoints = useMemo(() => {
+    if (!props.routeHistory || props.routeHistory.length < 2) return [] as [number, number][];
+    return props.routeHistory.map((item) => [item.lat, item.lng] as [number, number]);
+  }, [props.routeHistory]);
+
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(localStorageKey);
       if (saved) {
-        const parsed = JSON.parse(saved) as { showArrows?: boolean; voiceGuidance?: boolean };
+        const parsed = JSON.parse(saved) as {
+          showArrows?: boolean;
+          voiceGuidance?: boolean;
+          avoidHighway?: boolean;
+        };
         if (typeof parsed.showArrows === "boolean") setShowArrows(parsed.showArrows);
         if (typeof parsed.voiceGuidance === "boolean") setVoiceGuidance(parsed.voiceGuidance);
+        if (typeof parsed.avoidHighway === "boolean") setAvoidHighway(parsed.avoidHighway);
       }
     } catch {
       // ignore
@@ -156,16 +168,20 @@ export function MandoubOrderRouteMap(props: Props) {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(localStorageKey, JSON.stringify({ showArrows, voiceGuidance }));
+      window.localStorage.setItem(
+        localStorageKey,
+        JSON.stringify({ showArrows, voiceGuidance, avoidHighway }),
+      );
     } catch {
       // ignore
     }
-  }, [showArrows, voiceGuidance, localStorageKey]);
+  }, [showArrows, voiceGuidance, avoidHighway, localStorageKey]);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
     let cancelled = false;
     let routeLayer: any = null;
+    let historyLayer: any = null;
     const arrowMarkers: any[] = [];
 
     const initializeMap = async () => {
@@ -201,6 +217,16 @@ export function MandoubOrderRouteMap(props: Props) {
         bounds.push([point.lat, point.lng]);
       }
 
+      if (routeHistoryPoints.length > 1) {
+        historyLayer = L.polyline(routeHistoryPoints, {
+          color: "#64748b",
+          weight: 4,
+          opacity: 0.55,
+          dashArray: "8,10",
+        }).addTo(map);
+        bounds.push(...routeHistoryPoints);
+      }
+
       if (bounds.length > 0) {
         map.fitBounds(bounds as [number, number][], { padding: [22, 22], maxZoom: 15 });
       }
@@ -218,7 +244,8 @@ export function MandoubOrderRouteMap(props: Props) {
       }
 
       setRouteStatus("جارٍ حساب المسار... يمكنك الانتظار قليلاً.");
-      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${primaryDestination.lng},${primaryDestination.lat}?overview=full&geometries=geojson&steps=false&annotations=duration,distance`;
+      const excludeQuery = avoidHighway ? "&exclude=motorway" : "";
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${primaryDestination.lng},${primaryDestination.lat}?overview=full&geometries=geojson&steps=false&annotations=duration,distance${excludeQuery}`;
 
       try {
         const response = await fetch(osrmUrl);
@@ -276,6 +303,22 @@ export function MandoubOrderRouteMap(props: Props) {
         console.error("Route fetch error", error);
         setIssue("تعذر الحصول على مسار. يرجى المحاولة لاحقاً أو استخدام تطبيق الخرائط المحلي.");
         setRouteStatus("فشل في تحميل المسار.");
+
+        if (origin && primaryDestination) {
+          const directCoords: [number, number][] = [
+            [origin.lat, origin.lng],
+            [primaryDestination.lat, primaryDestination.lng],
+          ];
+          routeLayer = L.polyline(directCoords, {
+            color: "#f59e0b",
+            weight: 4,
+            opacity: 0.75,
+            dashArray: "5,10",
+          }).addTo(map);
+          const directBounds = L.latLngBounds(directCoords as [number, number][]);
+          const allBounds = bounds.length > 0 ? directBounds.extend(bounds as [number, number][]) : directBounds;
+          map.fitBounds(allBounds, { padding: [22, 22], maxZoom: 15 });
+        }
       }
     };
 
@@ -289,8 +332,9 @@ export function MandoubOrderRouteMap(props: Props) {
       }
       arrowMarkers.forEach((marker) => marker.remove && marker.remove());
       if (routeLayer && routeLayer.remove) routeLayer.remove();
+      if (historyLayer && historyLayer.remove) historyLayer.remove();
     };
-  }, [origin, primaryDestination, points, showArrows, voiceGuidance, lastSpokenRoute]);
+  }, [origin, primaryDestination, points, showArrows, voiceGuidance, avoidHighway, lastSpokenRoute, routeHistoryPoints]);
 
   return (
     <div className="space-y-3" dir="rtl">
@@ -310,6 +354,11 @@ export function MandoubOrderRouteMap(props: Props) {
               <p className="font-black text-slate-900">{formatDuration(routeDuration)}</p>
             </div>
           </div>
+          {routeHistoryPoints.length > 1 ? (
+            <div className="mt-2 rounded-2xl bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-600">
+              طريق سابق محفوظ يحتوي على {routeHistoryPoints.length} نقطة تتبع.
+            </div>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -318,6 +367,13 @@ export function MandoubOrderRouteMap(props: Props) {
             className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm hover:bg-slate-50"
           >
             {showArrows ? "إخفاء الأسهم" : "إظهار الأسهم"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setAvoidHighway((prev) => !prev)}
+            className={`inline-flex items-center justify-center rounded-xl border px-3 py-2 text-xs font-black shadow-sm ${avoidHighway ? "border-emerald-500 bg-emerald-600 text-white hover:bg-emerald-500" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}
+          >
+            {avoidHighway ? "تجنب الطرق السريعة" : "استخدام الطرق السريعة"}
           </button>
           <button
             type="button"

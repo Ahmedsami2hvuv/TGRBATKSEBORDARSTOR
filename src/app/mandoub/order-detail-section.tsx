@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
-import { hasCustomerLocationUrl } from "@/lib/order-location";
+import { extractLatLngFromLocationInput, hasCustomerLocationUrl } from "@/lib/order-location";
 import { VoiceNoteAudio } from "@/components/voice-note-audio";
+import "leaflet/dist/leaflet.css";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { formatBaghdadDateTime } from "@/lib/baghdad-time";
 import {
@@ -69,6 +70,98 @@ type PhoneProfileFallback = {
   photoUrl: string;
   alternatePhone: string | null;
 } | null;
+
+type LocationTarget = {
+  title: string;
+  locationUrl: string;
+  lat: number;
+  lng: number;
+};
+
+function createLocationTarget(title: string, locationUrl: string | null | undefined): LocationTarget | null {
+  const loc = extractLatLngFromLocationInput(locationUrl);
+  if (!loc) return null;
+  return {
+    title,
+    locationUrl: locationUrl?.trim() || "",
+    lat: loc.latitude,
+    lng: loc.longitude,
+  };
+}
+
+function LocationMapModal({
+  location,
+  onClose,
+}: {
+  location: LocationTarget;
+  onClose: () => void;
+}) {
+  const mapRef = useRef<any>(null);
+  const mapElementRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let canceled = false;
+    let leafletMap: any = null;
+
+    const initMap = async () => {
+      if (!mapElementRef.current) return;
+      const L = await import("leaflet");
+      if (canceled || !mapElementRef.current) return;
+
+      leafletMap = L.map(mapElementRef.current, {
+        zoomControl: false,
+        attributionControl: false,
+      });
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "© OpenStreetMap",
+      }).addTo(leafletMap);
+
+      const marker = L.circleMarker([location.lat, location.lng], {
+        radius: 10,
+        color: "#0f766e",
+        fillColor: "#0f766e",
+        fillOpacity: 0.85,
+        weight: 2,
+      }).addTo(leafletMap);
+      marker.bindPopup(`<strong>${location.title}</strong>`).openPopup();
+
+      leafletMap.setView([location.lat, location.lng], 15);
+      mapRef.current = leafletMap;
+    };
+
+    void initMap();
+
+    return () => {
+      canceled = true;
+      if (leafletMap) {
+        leafletMap.remove();
+        leafletMap = null;
+      }
+    };
+  }, [location.lat, location.lng, location.title]);
+
+  return (
+    <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-950/90 p-4">
+      <div className="max-w-5xl w-full overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-300">
+        <div className="flex flex-col gap-2 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-black text-slate-900">{location.title}</h3>
+            <p className="truncate text-sm text-slate-500">{location.locationUrl}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-2xl border border-slate-300 bg-slate-100 px-4 py-2 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-200"
+          >
+            إغلاق
+          </button>
+        </div>
+        <div className="h-[420px] bg-slate-100" ref={mapElementRef} />
+      </div>
+    </div>
+  );
+}
 
 export function OrderDetailSection({
   order,
@@ -138,7 +231,12 @@ export function OrderDetailSection({
     secondDoorMerged && order.secondCustomerDoorPhotoUploadedByName?.trim()
       ? order.secondCustomerDoorPhotoUploadedByName
       : null;
+  const isDoubleRoute = order.routeMode === "double";
   const missingCustomerLocation = !hasCustomerLocationUrl(mergedCustomerLocationUrl, undefined);
+  const [activeLocation, setActiveLocation] = useState<LocationTarget | null>(null);
+  const shopLocationTarget = createLocationTarget("المحل", order.shop.locationUrl);
+  const customerLocationTarget = createLocationTarget(isDoubleRoute ? "المرسل" : "الزبون", mergedCustomerLocationUrl);
+  const secondCustomerLocationTarget = createLocationTarget("المستلم", secondLocMerged);
   const prepJson = order.preparerShoppingJson as any;
   const hideSubtotalInfo = prepJson?.hidePricesFromCourier === true;
   const reversePickup = isReversePickupOrderType(order.orderType);
@@ -219,7 +317,25 @@ export function OrderDetailSection({
                   </p>
                 ) : null}
                 {courierSettings?.showLocationBtn !== false && (
-                  <div className="mt-2">{mergedCustomerLocationUrl ? <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>{isDoubleRoute ? "فتح لوكيشن المرسل" : "فتح لوكيشن الزبون"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} /></a> : <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} />}</div>
+                  <div className="mt-2">
+                    {mergedCustomerLocationUrl ? (
+                      customerLocationTarget ? (
+                        <button
+                          type="button"
+                          onClick={() => setActiveLocation(customerLocationTarget)}
+                          className={locBtnEmerald}
+                        >
+                          {isDoubleRoute ? "فتح لوكيشن المرسل" : "فتح لوكيشن الزبون"}
+                        </button>
+                      ) : (
+                        <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>
+                          {isDoubleRoute ? "فتح لوكيشن المرسل" : "فتح لوكيشن الزبون"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                        </a>
+                      )
+                    ) : (
+                      <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} />
+                    )}
+                  </div>
                 )}
               </div>
               <div className="max-w-[12rem] self-start">
@@ -247,9 +363,19 @@ export function OrderDetailSection({
                   {courierSettings?.showLocationBtn !== false && (
                     <div className="mt-2">
                       {secondLocMerged ? (
-                        <a href={secondLocMerged} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>
-                          فتح لوكيشن المستلم <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
-                        </a>
+                        secondCustomerLocationTarget ? (
+                          <button
+                            type="button"
+                            onClick={() => setActiveLocation(secondCustomerLocationTarget)}
+                            className={locBtnEmerald}
+                          >
+                            فتح لوكيشن المستلم
+                          </button>
+                        ) : (
+                          <a href={secondLocMerged} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>
+                            فتح لوكيشن المستلم <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                          </a>
+                        )
                       ) : (
                         <div className="flex flex-col gap-2">
                           <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" />
@@ -477,6 +603,7 @@ export function OrderDetailSection({
         <div className="mt-5 space-y-6">
           {layout.map((blockId) => renderBlock(blockId))}
         </div>
+        {activeLocation ? <LocationMapModal location={activeLocation} onClose={() => setActiveLocation(null)} /> : null}
       </div>
     </section>
   );

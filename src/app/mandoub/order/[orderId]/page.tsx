@@ -318,6 +318,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
             smartHintLine={smartHintLine || "—"}
             uiSettings={uiSettings}
             icons={icons}
+            routeHistory={routeHistory}
             courierSettings={{
               showDoorBtn: courier.showDoorBtn,
               showLocationBtn: courier.showLocationBtn,

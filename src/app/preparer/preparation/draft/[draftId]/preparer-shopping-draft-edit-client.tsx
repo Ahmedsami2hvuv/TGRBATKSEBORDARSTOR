@@ -827,9 +827,6 @@ export function PreparerShoppingDraftEditClient({
             );
           })}
         </div>
-            );
-          })}
-        </div>
 
         {selectedPriceIndex !== null && (
             <div className="mt-4 p-4 bg-white rounded-2xl border-2 border-indigo-500 shadow-xl animate-in zoom-in-95">
