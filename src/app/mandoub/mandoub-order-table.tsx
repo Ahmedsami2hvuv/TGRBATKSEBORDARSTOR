@@ -139,6 +139,7 @@ export function MandoubOrderTable({
   const [pickupOrder, setPickupOrder] = useState<MandoubRow | null>(null);
   const [deliveryOrder, setDeliveryOrder] = useState<MandoubRow | null>(null);
   const [rowStatusOverrides, setRowStatusOverrides] = useState<Record<string, string>>({});
+  const [localPending, setLocalPending] = useState(false);
   const pickupSubmitInFlightRef = useRef(false);
   const deliverySubmitInFlightRef = useRef(false);
 
@@ -151,6 +152,45 @@ export function MandoubOrderTable({
     initialCash,
   );
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+
+  const handleOfflineCashSubmit = async (formData: FormData, type: 'pickup' | 'delivery') => {
+    setLocalPending(true);
+    try {
+      const dataObj = Object.fromEntries(formData.entries()) as Record<string, string>;
+      const id = `local-ord-tab-${Date.now()}`;
+      const newAction: PendingWalletAction = {
+        id,
+        actionType: type,
+        formData: dataObj,
+        timestamp: Date.now(),
+        retryCount: 0
+      };
+      await savePendingAction(newAction);
+
+      // تحديث الحالة بصرياً فوراً (Optimistic UI)
+      const orderId = dataObj.orderId;
+      if (orderId) {
+        setRowStatusOverrides((prev) => ({
+          ...prev,
+          [orderId]: type === 'pickup' ? "delivering" : "delivered"
+        }));
+      }
+
+      setPickupOrder(null);
+      setDeliveryOrder(null);
+      toast.info("تم الحفظ محلياً.. سيتم التحديث عند توفر الإنترنت");
+
+      // محاولة مزامنة إذا رجع النت
+      if (navigator.onLine) {
+        window.dispatchEvent(new Event('online'));
+      }
+    } catch (err) {
+      console.error("Offline save failed", err);
+      toast.error("فشل الحفظ المحلي. تأكد من مساحة الجهاز.");
+    } finally {
+      setLocalPending(false);
+    }
+  };
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
@@ -490,8 +530,14 @@ export function MandoubOrderTable({
                 }
                 pickupSumDinar={pickupOrder.pickupSumDinar || 0}
                 orderSubtotalDinar={pickupOrder.orderSubtotalDinar}
-                formAction={pickupAction}
-                pending={pickupPending}
+                formAction={(fd) => {
+                  if (!navigator.onLine) {
+                    handleOfflineCashSubmit(fd, 'pickup');
+                  } else {
+                    pickupAction(fd);
+                  }
+                }}
+                pending={pickupPending || localPending}
                 error={pickupState.error}
                 onClose={() => setPickupOrder(null)}
                 noRedirect
@@ -530,8 +576,14 @@ export function MandoubOrderTable({
                 }
                 deliverySumDinar={deliveryOrder.deliverySumDinar || 0}
                 totalAmountDinar={deliveryOrder.totalAmountDinar}
-                formAction={deliveryAction}
-                pending={deliveryPending}
+                formAction={(fd) => {
+                  if (!navigator.onLine) {
+                    handleOfflineCashSubmit(fd, 'delivery');
+                  } else {
+                    deliveryAction(fd);
+                  }
+                }}
+                pending={deliveryPending || localPending}
                 error={deliveryState.error}
                 onClose={() => setDeliveryOrder(null)}
                 missingCustomerLocation={!deliveryOrder.hasCustomerLocation}

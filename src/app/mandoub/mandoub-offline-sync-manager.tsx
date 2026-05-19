@@ -42,6 +42,9 @@ export function MandoubOfflineSyncManager() {
         const formData = new FormData();
         Object.entries(action.formData).forEach(([k, v]) => formData.append(k, v));
 
+        // إجبار الأكشن على عدم عمل Redirect أثناء المزامنة في الخلفية
+        formData.append("noRedirect", "1");
+
         if (action.fileData) {
           const file = new File([action.fileData.blob], action.fileData.name, { type: action.fileData.type });
           // تحديد اسم الحقل بناءً على نوع العملية
