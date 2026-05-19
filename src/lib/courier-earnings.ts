@@ -1,5 +1,13 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import type { Decimal } from "@prisma/client/runtime/library";
 import type { CourierVehicleType } from "@prisma/client";
+
+/**
+ * Interface representing a Decimal-like object for math operations.
+ */
+export interface DecimalMathLike {
+  div(other: number | DecimalMathLike): DecimalMathLike;
+  mul(other: number | DecimalMathLike): DecimalMathLike;
+}
 
 /**
  * أجر التوصيل للمندوب عند «تم التسليم» — من **كلفة التوصيل** فقط (لا سعر الطلب ولا الوارد):
@@ -8,8 +16,8 @@ import type { CourierVehicleType } from "@prisma/client";
  */
 export function computeCourierDeliveryEarningDinar(
   vehicle: CourierVehicleType,
-  deliveryPrice: Decimal | null,
-): Decimal | null {
+  deliveryPrice: DecimalMathLike | null,
+): DecimalMathLike | null {
   if (deliveryPrice == null) return null;
   if (vehicle === "bike") {
     return deliveryPrice.div(2);

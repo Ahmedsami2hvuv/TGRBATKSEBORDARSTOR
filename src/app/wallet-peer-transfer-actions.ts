@@ -1,7 +1,7 @@
 "use server";
 
 import { WalletPeerPartyKind } from "@prisma/client";
-import { Decimal } from "@prisma/client/runtime/library";
+import type { Decimal } from "@prisma/client/runtime/library";
 import { revalidatePath } from "next/cache";
 import { isCourierPortalBlocked } from "@/lib/courier-delegate-access";
 import { verifyDelegatePortalQuery } from "@/lib/delegate-link";

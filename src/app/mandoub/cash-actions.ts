@@ -1,6 +1,6 @@
 "use server";
 
-import { Decimal } from "@prisma/client/runtime/library";
+import type { Decimal } from "@prisma/client/runtime/library";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { isCourierPortalBlocked } from "@/lib/courier-delegate-access";

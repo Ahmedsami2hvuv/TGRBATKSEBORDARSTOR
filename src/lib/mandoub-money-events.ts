@@ -1,4 +1,4 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import type { Decimal } from "@prisma/client/runtime/library";
 import type { OrderCourierMoneyDeletionReason } from "@prisma/client";
 
 export const MONEY_KIND_PICKUP = "pickup_out";
@@ -19,7 +19,17 @@ export const LEDGER_KIND_TRANSFER_REJECTED_OUT = "transfer_rejected_out";
 /** تحويل أموال مرفوض — وارد */
 export const LEDGER_KIND_TRANSFER_REJECTED_IN = "transfer_rejected_in";
 
-export function dinarAmountsMatchExpected(amount: Decimal, expected: Decimal | null): boolean {
+/**
+ * Interface representing a Decimal-like object with necessary methods for the browser.
+ */
+export interface DecimalLike {
+  toDecimalPlaces(places: number): {
+    equals(other: DecimalLike): boolean;
+  };
+  toNumber?(): number;
+}
+
+export function dinarAmountsMatchExpected(amount: DecimalLike, expected: DecimalLike | null): boolean {
   if (expected == null) return false;
   return amount.toDecimalPlaces(2).equals(expected.toDecimalPlaces(2));
 }
