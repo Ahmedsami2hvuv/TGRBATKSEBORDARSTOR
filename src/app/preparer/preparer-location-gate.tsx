@@ -9,9 +9,19 @@ import { OneSignalInitializer } from "@/components/OneSignalInitializer";
  */
 export function PreparerLocationGate({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
-  const p = searchParams.get("p") ?? "";
-  const exp = searchParams.get("exp") ?? "";
-  const s = searchParams.get("s") ?? "";
+  const paramP = searchParams.get("p");
+  const paramExp = searchParams.get("exp");
+  const paramS = searchParams.get("s");
+
+  function readCookie(name: string) {
+    if (typeof document === "undefined") return "";
+    const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+
+  const p = paramP ?? readCookie("preparer_p") ?? readCookie("company_preparer_p") ?? "";
+  const exp = paramExp ?? readCookie("preparer_exp") ?? readCookie("company_preparer_exp") ?? "";
+  const s = paramS ?? readCookie("preparer_s") ?? readCookie("company_preparer_s") ?? "";
 
   // الربط مع OneSignal إذا كان معرف المجهز موجوداً في الرابط
   const oneSignalComponent = p.trim() ? <OneSignalInitializer externalId={p.trim()} /> : null;
