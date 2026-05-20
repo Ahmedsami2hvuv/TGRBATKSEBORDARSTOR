@@ -186,13 +186,80 @@ export function MandoubOrderMoneyFlow({
 
   return (
     <div className="mt-6 space-y-4 border-t border-sky-200 pt-5">
-      <div className="rounded bg-slate-100 p-2 text-[10px] font-mono text-slate-500">
+      {/* <div className="rounded bg-slate-100 p-2 text-[10px] font-mono text-slate-500">
         Debug: status={orderStatus} canRec={String(canRecordMoney)} pick={String(canMarkPickedUp)} deliv={String(canMarkDelivered)}
-      </div>
+      </div> */}
       <h3 className="flex items-center gap-1.5 text-lg font-bold text-slate-900">
         <DynamicIcon icon={icons?.ui_chart} fallback="📊" width={20} height={20} />
         الصادر والوارد
       </h3>
+
+      {canRecordMoney && (
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          {(orderStatus === "assigned") && (
+            <button
+              onClick={() => {
+                setPickupAdvanceToDelivering(true);
+                setDeliveryOpen(false);
+                setPickupOpen(true);
+              }}
+              className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-4 shadow-sm transition hover:bg-emerald-100 active:scale-95"
+            >
+              <div className="flex size-12 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-emerald-100">
+                <DynamicIcon icon={icons?.order_received} className="size-8 text-emerald-600" fallback="📦" />
+              </div>
+              <span className="text-sm font-black text-emerald-950">تم الاستلام</span>
+              <span className="text-[10px] font-bold text-emerald-700 opacity-75">تسجيل دفع للعميل</span>
+            </button>
+          )}
+          {(orderStatus === "delivering") && (
+            <button
+              onClick={() => {
+                setDeliveryAdvanceToDelivered(true);
+                setDeliverySession((n) => n + 1);
+                setPickupOpen(false);
+                setDeliveryOpen(true);
+              }}
+              className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-rose-200 bg-rose-50 p-4 shadow-sm transition hover:bg-rose-100 active:scale-95 col-span-2"
+            >
+              <div className="flex size-12 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-rose-100">
+                <DynamicIcon icon={icons?.order_delivered} className="size-8 text-rose-600" fallback="🚚" />
+              </div>
+              <span className="text-sm font-black text-rose-950">تم التسليم</span>
+              <span className="text-[10px] font-bold text-rose-700 opacity-75">تسجيل استلام من الزبون</span>
+            </button>
+          )}
+
+          {showPickupBtn && orderStatus !== "assigned" && (
+             <button
+              onClick={() => {
+                setPickupAdvanceToDelivering(false);
+                setPickupOpen(true);
+                setDeliveryOpen(false);
+              }}
+              className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-50"
+             >
+               <DynamicIcon iconKey="wallet_cash" config={icons} className="size-4" fallback="💸" />
+               تسجيل صادر إضافي
+             </button>
+          )}
+
+          {showDeliveryBtn && orderStatus !== "delivering" && (
+             <button
+              onClick={() => {
+                setDeliveryAdvanceToDelivered(false);
+                setDeliverySession((n) => n + 1);
+                setDeliveryOpen(true);
+                setPickupOpen(false);
+              }}
+              className={`flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-900 shadow-sm hover:bg-rose-50 ${orderStatus === "assigned" ? "col-span-2 justify-center" : ""}`}
+             >
+               <DynamicIcon iconKey="ui_inbox" config={icons} className="size-4" fallback="🫴" />
+               تسجيل وارد إضافي
+             </button>
+          )}
+        </div>
+      )}
 
       <MandoubOrderMoneyFloatDock
         showStatusFab={canMarkPickedUp || canMarkDelivered}
