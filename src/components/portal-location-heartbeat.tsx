@@ -187,16 +187,43 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
     watchIdRef.current = id;
   }, [handlePositionError, handlePositionSuccess]);
 
+  const requestInitialLocation = useCallback(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      handlePositionSuccess,
+      handlePositionError,
+      GEO_OPTS_CHECK,
+    );
+  }, [handlePositionError, handlePositionSuccess]);
+
   useEffect(() => {
     if (locked) return;
+    void (async () => {
+      if (navigator.permissions?.query) {
+        try {
+          const st = await navigator.permissions.query({
+            name: "geolocation" as PermissionName,
+          });
+          if (st.state === "denied") {
+            setLocationAlert(PERMISSION_DENIED_MESSAGE);
+            setPermissionDenied(true);
+          }
+        } catch {
+          /* */
+        }
+      }
+    })();
+
     startGeolocationWatch();
+    requestInitialLocation();
+
     return () => {
       if (watchIdRef.current != null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
       }
     };
-  }, [locked, startGeolocationWatch]);
+  }, [locked, requestInitialLocation, startGeolocationWatch]);
 
   useEffect(() => {
     if (locked) return;

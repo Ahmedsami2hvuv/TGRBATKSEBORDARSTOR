@@ -19,7 +19,6 @@ export function CouriersMapClient({ points }: { points: CourierMapPoint[] }) {
   const mapRef = useRef<LeafletMap | null>(null);
 
   useEffect(() => {
-    if (points.length === 0) return;
     if (!containerRef.current) return;
     let cancelled = false;
 
@@ -82,24 +81,19 @@ export function CouriersMapClient({ points }: { points: CourierMapPoint[] }) {
     };
   }, [points]);
 
-  if (points.length === 0) {
-    return (
-      <div
-        className="flex min-h-[280px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-600"
-        dir="rtl"
-      >
-        لا توجد مواقع مسجّلة بعد. عندما يفتح المندوب أو المجهز رابط لوحته ويمنح إذن الموقع، يُرسل الموقع كل ~20
-        ثانية طالما تبقى الصفحة مفتوحة.
-      </div>
-    );
-  }
-
   return (
-    <div
-      ref={containerRef}
-      className="z-0 h-[min(70vh,560px)] w-full rounded-xl border border-sky-200 bg-sky-50/40"
-      dir="ltr"
-    />
+    <div className="relative">
+      <div
+        ref={containerRef}
+        className="z-0 h-[min(70vh,560px)] w-full rounded-xl border border-sky-200 bg-sky-50/40"
+        dir="ltr"
+      />
+      {points.length === 0 ? (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-white/80 px-4 text-center text-slate-600">
+          لا توجد مواقع مسجّلة بعد. افتح رابط المندوب أو المجهز، وامنح إذن الموقع، ثم يبقى الموقع يُرسل كل ~20 ثانية.
+        </div>
+      ) : null}
+    </div>
   );
 }
 
