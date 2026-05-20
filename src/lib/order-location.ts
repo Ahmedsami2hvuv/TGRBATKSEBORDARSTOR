@@ -126,6 +126,29 @@ export async function resolveGoogleShortMapsUrl(raw: string | null | undefined):
   if (!value || !isGoogleShortMapsUrl(value)) return null;
 
   try {
+    // محاولة سريعة لقراءة رأس Location عند وجود إعادة توجيه (302)
+    try {
+      const headRes = await fetch(value, {
+        method: "GET",
+        redirect: "manual",
+        cache: "no-store",
+        headers: {
+          "user-agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          "accept-language": "en-US,en;q=0.9",
+        },
+      });
+
+      const locationHeader = headRes.headers && (headRes.headers.get ? headRes.headers.get("location") : null);
+      if (locationHeader) {
+        const parsedFinal = extractLatLngFromLocationInput(locationHeader);
+        if (parsedFinal) return parsedFinal;
+      }
+    } catch {
+      // تجاهل أخطاء الرأس، سنجرب التحميل الكامل كحل احتياطي
+    }
+
+    // تحميل كامل الصفحة ومحاولة العثور على روابط أو إحداثيات ضمن المحتوى
     const res = await fetch(value, {
       method: "GET",
       redirect: "follow",
