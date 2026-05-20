@@ -7,15 +7,15 @@ const STALE_AFTER_MS = 3 * 60_000;
 const STALENESS_CHECK_MS = 1_000;
 
 const GEO_OPTS_BACKGROUND: PositionOptions = {
-  enableHighAccuracy: false,
-  maximumAge: 120_000,
-  timeout: 25_000,
+  enableHighAccuracy: true,
+  maximumAge: 0,
+  timeout: 20_000,
 };
 
 const GEO_OPTS_CHECK: PositionOptions = {
-  enableHighAccuracy: false,
+  enableHighAccuracy: true,
   maximumAge: 0,
-  timeout: 10_000,
+  timeout: 15_000,
 };
 
 const LOCK_MESSAGE = "لم يصل الموقع إلى الإدارة منذ أكثر من 3 دقائق. افحص الموقع الآن.";
