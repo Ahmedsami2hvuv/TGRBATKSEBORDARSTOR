@@ -186,6 +186,9 @@ export function MandoubOrderMoneyFlow({
 
   return (
     <div className="mt-6 space-y-4 border-t border-sky-200 pt-5">
+      <div className="rounded bg-slate-100 p-2 text-[10px] font-mono text-slate-500">
+        Debug: status={orderStatus} canRec={String(canRecordMoney)} pick={String(canMarkPickedUp)} deliv={String(canMarkDelivered)}
+      </div>
       <h3 className="flex items-center gap-1.5 text-lg font-bold text-slate-900">
         <DynamicIcon icon={icons?.ui_chart} fallback="📊" width={20} height={20} />
         الصادر والوارد
