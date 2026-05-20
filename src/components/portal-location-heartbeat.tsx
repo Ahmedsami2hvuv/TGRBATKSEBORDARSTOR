@@ -67,7 +67,9 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
 
   const [locked, setLocked] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [locationAlert, setLocationAlert] = useState<string | null>(null);
+  const [locationAlert, setLocationAlert] = useState<string>(
+    "جارٍ محاولة الحصول على الموقع. إذا لم يصل الموقع خلال 20 ثانية، اضغط فحص.",
+  );
   const [permissionDenied, setPermissionDenied] = useState(false);
 
   const lastSuccessfulPostMsRef = useRef<number | null>(null);
@@ -133,27 +135,34 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
     [],
   );
 
-  const handlePositionError = useCallback((error: GeolocationPositionError) => {
-    if (error.code === error.PERMISSION_DENIED) {
-      setPermissionDenied(true);
-      setLocationAlert(PERMISSION_DENIED_MESSAGE);
-      return;
-    }
-
-    if (error.code === error.POSITION_UNAVAILABLE) {
-      setLocationAlert(
-        "الموقع غير متوفر حالياً. تأكد من تشغيل GPS والانتظار قليلاً ثم اضغط فحص.",
-      );
-      return;
-    }
-
-    setLocationAlert("لم يتم الحصول على الموقع. افتح الموقع ثم اضغط فحص.");
+  const setAlertMessage = useCallback((message: string, denied = false) => {
+    setLocationAlert(message);
+    setPermissionDenied(denied);
   }, []);
+
+  const handlePositionError = useCallback(
+    (error: GeolocationPositionError) => {
+      if (error.code === error.PERMISSION_DENIED) {
+        setAlertMessage(PERMISSION_DENIED_MESSAGE, true);
+        return;
+      }
+
+      if (error.code === error.POSITION_UNAVAILABLE) {
+        setAlertMessage(
+          "الموقع غير متوفر حالياً. تأكد من تشغيل GPS والانتظار قليلاً ثم اضغط فحص.",
+        );
+        return;
+      }
+
+      setAlertMessage("لم يتم الحصول على الموقع. افتح الموقع ثم اضغط فحص.");
+    },
+    [setAlertMessage],
+  );
 
   const handlePositionSuccess = useCallback(
     (pos: GeolocationPosition) => {
       lastLocalGeoMsRef.current = Date.now();
-      setLocationAlert(null);
+      setAlertMessage("الموقع موجود. يتم الإرسال إلى الإدارة الآن.");
       setPermissionDenied(false);
 
       const now = Date.now();
@@ -165,17 +174,24 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
           if (ok) {
             lastSuccessfulPostMsRef.current = Date.now();
             setLocked(false);
+            setLocationAlert(null);
+          } else {
+            setAlertMessage(
+              "فشل إرسال الموقع. تأكد من الإنترنت ثم اضغط فحص.",
+            );
           }
         })();
       }
     },
-    [postToServer],
+    [postToServer, setAlertMessage],
   );
 
   const startGeolocationWatch = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setPermissionDenied(true);
-      setLocationAlert("المتصفح لا يدعم الموقع. افتح التطبيق على جهاز يدعم تتبع الموقع.");
+      setAlertMessage(
+        "المتصفح لا يدعم الموقع. افتح التطبيق على جهاز يدعم تتبع الموقع.",
+        true,
+      );
       return;
     }
 
@@ -185,7 +201,7 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
       GEO_OPTS_BACKGROUND,
     );
     watchIdRef.current = id;
-  }, [handlePositionError, handlePositionSuccess]);
+  }, [handlePositionError, handlePositionSuccess, setAlertMessage]);
 
   const requestInitialLocation = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
@@ -198,6 +214,7 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
 
   useEffect(() => {
     if (locked) return;
+
     void (async () => {
       if (navigator.permissions?.query) {
         try {
@@ -205,8 +222,7 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
             name: "geolocation" as PermissionName,
           });
           if (st.state === "denied") {
-            setLocationAlert(PERMISSION_DENIED_MESSAGE);
-            setPermissionDenied(true);
+            setAlertMessage(PERMISSION_DENIED_MESSAGE, true);
           }
         } catch {
           /* */
@@ -223,7 +239,7 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
         watchIdRef.current = null;
       }
     };
-  }, [locked, requestInitialLocation, startGeolocationWatch]);
+  }, [locked, requestInitialLocation, startGeolocationWatch, setAlertMessage]);
 
   useEffect(() => {
     if (locked) return;
@@ -234,10 +250,10 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
       const lastLocal = lastLocalGeoMsRef.current;
       if (lastLocal == null) {
         if (now - sessionStartMsRef.current >= SEND_INTERVAL_MS) {
-          setLocationAlert(CHECK_MESSAGE);
+          setAlertMessage(CHECK_MESSAGE);
         }
       } else if (now - lastLocal >= SEND_INTERVAL_MS + 5_000) {
-        setLocationAlert(CHECK_MESSAGE);
+        setAlertMessage(CHECK_MESSAGE);
       }
 
       navigator.geolocation.getCurrentPosition(
@@ -248,7 +264,7 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
     }, SEND_INTERVAL_MS);
 
     return () => window.clearInterval(id);
-  }, [handlePositionError, handlePositionSuccess, locked]);
+  }, [handlePositionError, handlePositionSuccess, locked, setAlertMessage]);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -275,8 +291,7 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
             name: "geolocation" as PermissionName,
           });
           if (st.state === "denied") {
-            setLocationAlert(PERMISSION_DENIED_MESSAGE);
-            setPermissionDenied(true);
+            setAlertMessage(PERMISSION_DENIED_MESSAGE, true);
             return;
           }
         }
@@ -295,6 +310,10 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
                 setLocked(false);
                 setLocationAlert(null);
                 setPermissionDenied(false);
+              } else {
+                setAlertMessage(
+                  "فشل إرسال الموقع. تأكد من اتصال الإنترنت ثم اضغط فحص.",
+                );
               }
             } finally {
               setChecking(false);
@@ -308,7 +327,7 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
         GEO_OPTS_CHECK,
       );
     })();
-  }, [handlePositionError, postToServer]);
+  }, [handlePositionError, postToServer, setAlertMessage]);
 
   return (
     <div className={locked ? "min-h-[100dvh] pb-24" : undefined}>
