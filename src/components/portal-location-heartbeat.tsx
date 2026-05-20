@@ -18,12 +18,14 @@ const GEO_OPTS_CHECK: PositionOptions = {
   timeout: 15_000,
 };
 
-const LOCK_MESSAGE = "لم يصل الموقع إلى الإدارة منذ أكثر من 3 دقائق. افحص الموقع الآن.";
+const LOCK_MESSAGE =
+  "لم يصل موقعك إلى الإدارة منذ أكثر من 3 دقائق. تأكد أن GPS يعمل، ثم اضغط فحص الموقع الآن.";
 
-const CHECK_MESSAGE = "إذا لم يصل الموقع خلال 20 ثانية، تأكد من تشغيل GPS ومنح إذن الموقع ثم اضغط فحص.";
+const CHECK_MESSAGE =
+  "لم يتم إرسال الموقع بعد. تأكد من تشغيل GPS، ومنح إذن الموقع للمتصفح، ثم اضغط فحص الموقع الآن.";
 
 const PERMISSION_DENIED_MESSAGE =
-  "سماح الموقع مرفوض. افتح إعدادات المتصفح أو الجهاز ثم امنح إذن الموقع. بعد ذلك اضغط فحص.";
+  "إذن الموقع مرفوض. افتح إعدادات المتصفح أو الجهاز، وفعل إذن الموقع لهذه الصفحة، ثم اضغط فحص الموقع الآن.";
 
 type MandoubProps = {
   variant: "mandoub";
@@ -68,7 +70,7 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
   const [locked, setLocked] = useState(false);
   const [checking, setChecking] = useState(false);
   const [locationAlert, setLocationAlert] = useState<string>(
-    "جارٍ محاولة الحصول على الموقع. إذا لم يصل الموقع خلال 20 ثانية، اضغط فحص.",
+    "جارٍ محاولة الحصول على الموقع الآن. إذا لم تظهر نافذة طلب الإذن أو لم يصل الموقع خلال 20 ثانية، اضغط فحص الموقع الآن.",
   );
   const [permissionDenied, setPermissionDenied] = useState(false);
 
@@ -149,12 +151,14 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
 
       if (error.code === error.POSITION_UNAVAILABLE) {
         setAlertMessage(
-          "الموقع غير متوفر حالياً. تأكد من تشغيل GPS والانتظار قليلاً ثم اضغط فحص.",
+          "الموقع غير متوفر حالياً. افتح إعدادات الموقع وتأكد من تشغيل GPS ثم اضغط فحص الموقع الآن.",
         );
         return;
       }
 
-      setAlertMessage("لم يتم الحصول على الموقع. افتح الموقع ثم اضغط فحص.");
+      setAlertMessage(
+        "فشل الحصول على الموقع. تأكد من تشغيل GPS ومنح الإذن للموقع ثم اضغط فحص الموقع الآن.",
+      );
     },
     [setAlertMessage],
   );
@@ -353,7 +357,7 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
           </button>
           {permissionDenied ? (
             <p className="mt-4 max-w-md text-sm text-amber-200">
-              إذا بقيت المشكلة بعد الضغط على فحص، افتح إعدادات المتصفح أو الجهاز وامنح إذن الموقع.
+              إذن الموقع مرفوض. افتح إعدادات المتصفح أو الجهاز، فعّل الموقع لهذه الصفحة، ثم اضغط فحص الموقع الآن.
             </p>
           ) : null}
         </div>
