@@ -7,7 +7,7 @@ import { CouriersMapDynamic } from "./couriers-map-dynamic";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "خريطة المواقع — أبو الأكبر للتوصيل",
+  title: "خريطة المندوبين والمجهزين — أبو الأكبر للتوصيل",
 };
 
 export default async function AdminCouriersMapPage() {
@@ -19,15 +19,6 @@ export default async function AdminCouriersMapPage() {
   const preparers = await prisma.companyPreparer.findMany({
     where: { active: true },
     select: { id: true, name: true, phone: true, lastPreparerLat: true, lastPreparerLng: true, lastPreparerLocationAt: true }
-  });
-
-  const staff = await prisma.staffEmployee.findMany({
-    where: { active: true },
-    select: { id: true, name: true, phone: true, lastStaffLat: true, lastStaffLng: true, lastStaffLocationAt: true }
-  });
-
-  const employees = await prisma.employee.findMany({
-    select: { id: true, name: true, phone: true, lastEmployeeLat: true, lastEmployeeLng: true, lastEmployeeLocationAt: true }
   });
 
   let points: CourierMapPoint[] = couriers
@@ -44,25 +35,9 @@ export default async function AdminCouriersMapPage() {
       updatedAt: p.lastPreparerLocationAt?.toISOString() ?? null, type: "preparer"
     })));
 
-  points = points.concat(staff
-    .filter((s) => s.lastStaffLat != null && s.lastStaffLng != null && Number.isFinite(s.lastStaffLat) && Number.isFinite(s.lastStaffLng))
-    .map((s) => ({
-      id: s.id, name: s.name, phone: s.phone, lat: s.lastStaffLat as number, lng: s.lastStaffLng as number,
-      updatedAt: s.lastStaffLocationAt?.toISOString() ?? null, type: "staff"
-    })));
-
-  points = points.concat(employees
-    .filter((e) => e.lastEmployeeLat != null && e.lastEmployeeLng != null && Number.isFinite(e.lastEmployeeLat) && Number.isFinite(e.lastEmployeeLng))
-    .map((e) => ({
-      id: e.id, name: e.name, phone: e.phone, lat: e.lastEmployeeLat as number, lng: e.lastEmployeeLng as number,
-      updatedAt: e.lastEmployeeLocationAt?.toISOString() ?? null, type: "employee"
-    })));
-
   const withoutLoc = [
     ...couriers.filter(c => c.lastCourierLat == null || c.lastCourierLng == null).map(c => ({...c, typeName: "مندوب"})),
     ...preparers.filter(p => p.lastPreparerLat == null || p.lastPreparerLng == null).map(p => ({...p, typeName: "مجهز"})),
-    ...staff.filter(s => s.lastStaffLat == null || s.lastStaffLng == null).map(s => ({...s, typeName: "موظف إدارة"})),
-    ...employees.filter(e => e.lastEmployeeLat == null || e.lastEmployeeLng == null).map(e => ({...e, typeName: "موظف محل"}))
   ];
 
   return (
@@ -73,10 +48,10 @@ export default async function AdminCouriersMapPage() {
         </Link>
       </p>
       <div>
-        <h1 className={ad.h1}>خريطة مواقع جميع المستخدمين</h1>
+        <h1 className={ad.h1}>خريطة مواقع المندوبين والمجهزين</h1>
         <p className={`mt-2 max-w-3xl ${ad.lead}`}>
-          تُحدَّث المواقع عندما يفتح المندوب، أو المجهز، أو الموظف رابط لوحته
-          ويمنح المتصفح إذن الموقع؛ يُرسل الموقع كل ~20 ثانية طالما تبقى الصفحة مفتوحة.
+          تُحدَّث مواقع المندوبين والمجهزين فقط عندما يفتح المندوب أو المجهز رابط لوحته ويمنح
+          المتصفح إذن الموقع؛ يُرسل الموقع كل ~20 ثانية طالما تبقى الصفحة مفتوحة.
         </p>
       </div>
 
@@ -89,7 +64,7 @@ export default async function AdminCouriersMapPage() {
 
       {withoutLoc.length > 0 ? (
         <section className={`${ad.section} border-amber-200 bg-amber-50/40`}>
-          <h2 className={ad.h2}>مستخدمون بلا موقع بعد</h2>
+          <h2 className={ad.h2}>مندوبون ومجهزون بلا موقع بعد</h2>
           <ul className={`${ad.listDivide} mt-3`}>
             {withoutLoc.map((c) => (
               <li key={c.id} className="py-2">

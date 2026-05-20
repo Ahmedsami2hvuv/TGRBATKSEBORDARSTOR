@@ -11,7 +11,7 @@ export type CourierMapPoint = {
   lat: number;
   lng: number;
   updatedAt: string | null;
-  type: "courier" | "preparer" | "staff" | "employee";
+  type: "courier" | "preparer";
 };
 
 export function CouriersMapClient({ points }: { points: CourierMapPoint[] }) {
@@ -39,19 +39,11 @@ export function CouriersMapClient({ points }: { points: CourierMapPoint[] }) {
         let color = "#0369a1"; // courier (blue)
         let fillColor = "#38bdf8";
         let typeLabel = "مندوب";
-        
+
         if (p.type === "preparer") {
           color = "#b45309"; // amber
           fillColor = "#fbbf24";
           typeLabel = "مجهز";
-        } else if (p.type === "staff") {
-          color = "#4d7c0f"; // lime
-          fillColor = "#a3e635";
-          typeLabel = "موظف إدارة";
-        } else if (p.type === "employee") {
-          color = "#be185d"; // pink
-          fillColor = "#f472b6";
-          typeLabel = "موظف محل";
         }
 
         const m = L.circleMarker([p.lat, p.lng], {
@@ -96,7 +88,7 @@ export function CouriersMapClient({ points }: { points: CourierMapPoint[] }) {
         className="flex min-h-[280px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-600"
         dir="rtl"
       >
-        لا توجد مواقع مسجّلة بعد. عندما يفتح المندوب رابط لوحته ويمنح إذن الموقع، يُرسل الموقع كل ~20
+        لا توجد مواقع مسجّلة بعد. عندما يفتح المندوب أو المجهز رابط لوحته ويمنح إذن الموقع، يُرسل الموقع كل ~20
         ثانية طالما تبقى الصفحة مفتوحة.
       </div>
     );

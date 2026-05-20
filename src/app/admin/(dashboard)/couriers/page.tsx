@@ -46,7 +46,7 @@ export default async function AdminCouriersPage() {
           <p className="mt-2">
             <Link href="/admin/couriers/map" className={`${ad.link} flex items-center gap-2`}>
               <DynamicIcon config={icons} iconKey="ui_map" fallback="🗺️" className="w-5 h-5" />
-              خريطة مواقع المندوبين (آخر موقع مُبلّغ)
+              خريطة مواقع المندوبين والمجهزين
             </Link>
           </p>
           <p className={`mt-1 ${ad.lead}`}>

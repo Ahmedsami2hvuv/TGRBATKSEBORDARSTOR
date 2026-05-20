@@ -202,29 +202,13 @@ export async function extractLatLngFromLocationInputSmart(
   if (direct) return direct;
 
   const value = String(raw ?? "").trim();
-  if (!value) return null;
+  if (!value || !isGoogleShortMapsUrl(value)) return null;
 
   if (typeof window === "undefined") {
     return resolveGoogleShortMapsUrl(value);
   }
 
-  if (!isGoogleShortMapsUrl(value)) return null;
-
-  try {
-    const apiUrl = `/api/resolve-google-location?url=${encodeURIComponent(value)}`;
-    const response = await fetch(apiUrl, {
-      method: "GET",
-      cache: "no-store",
-    });
-    if (!response.ok) return null;
-    const data = await response.json();
-    if (typeof data?.latitude === "number" && typeof data?.longitude === "number") {
-      return buildLatLng(data.latitude, data.longitude);
-    }
-    return null;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 export function parseCustomerLocationRules(raw: string): CustomerLocationRule[] {
