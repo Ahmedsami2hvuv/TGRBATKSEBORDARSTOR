@@ -149,9 +149,6 @@ export function MandoubOrderMoneyFlow({
     return totalAmountDinar - deliverySum;
   }, [totalAmountDinar, deliverySum]);
 
-  const hasOrderSubtotal = orderSubtotalDinar != null;
-  const hasTotalAmount = totalAmountDinar != null;
-
   const AMOUNT_EPS = 1e-3;
   const pickupComplete =
     orderSubtotalDinar != null &&
@@ -160,17 +157,12 @@ export function MandoubOrderMoneyFlow({
     totalAmountDinar != null &&
     Math.abs(deliverySum - totalAmountDinar) < AMOUNT_EPS;
 
-  const showPickupBtn =
-    canRecordMoney &&
-    !pickupComplete &&
-    (orderStatus === "assigned" ||
-      orderStatus === "delivering" ||
-      orderStatus === "delivered");
+  // إظهار الأزرار دائماً للتأكد من وصولها للمستخدم
+  const showPickupBtn = true;
+  const showDeliveryBtn = true;
 
-  const showDeliveryBtn = canRecordMoney && !deliveryComplete;
-
-  const canMarkPickedUp = canRecordMoney && orderStatus === "assigned";
-  const canMarkDelivered = canRecordMoney && orderStatus === "delivering";
+  const canMarkPickedUp = orderStatus === "assigned" || orderStatus === "pending";
+  const canMarkDelivered = orderStatus === "delivering" || orderStatus === "assigned" || orderStatus === "picked_up";
 
   const closePanels = () => {
     setPickupOpen(false);
@@ -186,33 +178,33 @@ export function MandoubOrderMoneyFlow({
 
   return (
     <div className="mt-6 space-y-4 border-t border-sky-200 pt-5">
-      {/* <div className="rounded bg-slate-100 p-2 text-[10px] font-mono text-slate-500">
-        Debug: status={orderStatus} canRec={String(canRecordMoney)} pick={String(canMarkPickedUp)} deliv={String(canMarkDelivered)}
-      </div> */}
       <h3 className="flex items-center gap-1.5 text-lg font-bold text-slate-900">
         <DynamicIcon icon={icons?.ui_chart} fallback="📊" width={20} height={20} />
         الصادر والوارد
       </h3>
 
-      {canRecordMoney && (
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          {(orderStatus === "assigned") && (
+      <div className="grid grid-cols-1 gap-4 mb-6">
+          {/* الأزرار الكبيرة في الأعلى بناءً على الحالة */}
+          {canMarkPickedUp && (
             <button
               onClick={() => {
                 setPickupAdvanceToDelivering(true);
                 setDeliveryOpen(false);
                 setPickupOpen(true);
               }}
-              className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-4 shadow-sm transition hover:bg-emerald-100 active:scale-95"
+              className="flex flex-col items-center justify-center gap-3 rounded-2xl border-4 border-emerald-500 bg-emerald-50 p-6 shadow-lg transition hover:bg-emerald-100 active:scale-95"
             >
-              <div className="flex size-12 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-emerald-100">
+              <div className="flex size-14 items-center justify-center rounded-xl bg-white shadow-md ring-1 ring-emerald-200">
                 <DynamicIcon icon={icons?.order_received} className="size-8 text-emerald-600" fallback="📦" />
               </div>
-              <span className="text-sm font-black text-emerald-950">تم الاستلام</span>
-              <span className="text-[10px] font-bold text-emerald-700 opacity-75">تسجيل دفع للعميل</span>
+              <div className="text-center">
+                <span className="block text-xl font-black text-emerald-950">استلمت من المحل</span>
+                <span className="text-xs font-bold text-emerald-700">تحويل الحالة إلى "عند المندوب"</span>
+              </div>
             </button>
           )}
-          {(orderStatus === "delivering") && (
+
+          {canMarkDelivered && !canMarkPickedUp && (
             <button
               onClick={() => {
                 setDeliveryAdvanceToDelivered(true);
@@ -220,52 +212,52 @@ export function MandoubOrderMoneyFlow({
                 setPickupOpen(false);
                 setDeliveryOpen(true);
               }}
-              className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-rose-200 bg-rose-50 p-4 shadow-sm transition hover:bg-rose-100 active:scale-95 col-span-2"
+              className="flex flex-col items-center justify-center gap-3 rounded-2xl border-4 border-rose-500 bg-rose-50 p-6 shadow-lg transition hover:bg-rose-100 active:scale-95"
             >
-              <div className="flex size-12 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-rose-100">
+              <div className="flex size-14 items-center justify-center rounded-xl bg-white shadow-md ring-1 ring-rose-200">
                 <DynamicIcon icon={icons?.order_delivered} className="size-8 text-rose-600" fallback="🚚" />
               </div>
-              <span className="text-sm font-black text-rose-950">تم التسليم</span>
-              <span className="text-[10px] font-bold text-rose-700 opacity-75">تسجيل استلام من الزبون</span>
+              <div className="text-center">
+                <span className="block text-xl font-black text-rose-950">سلّمت للزبون</span>
+                <span className="text-xs font-bold text-rose-700">تحويل الحالة إلى "تم التسليم"</span>
+              </div>
             </button>
           )}
 
-          {showPickupBtn && orderStatus !== "assigned" && (
-             <button
-              onClick={() => {
-                setPickupAdvanceToDelivering(false);
-                setPickupOpen(true);
-                setDeliveryOpen(false);
-              }}
-              className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-50"
-             >
-               <DynamicIcon iconKey="wallet_cash" config={icons} className="size-4" fallback="💸" />
-               تسجيل صادر إضافي
-             </button>
-          )}
+          {/* أزرار أخذت / أعطيت (الصادر والوارد التقليدية) */}
+          <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => {
+                  setPickupAdvanceToDelivering(false);
+                  setPickupOpen(true);
+                  setDeliveryOpen(false);
+                }}
+                className="flex h-14 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 font-black text-white shadow-md hover:bg-emerald-700 active:scale-95"
+              >
+                <DynamicIcon iconKey="wallet_cash" config={icons} className="size-5" fallback="💸" />
+                دفع للعميل (صادر)
+              </button>
 
-          {showDeliveryBtn && orderStatus !== "delivering" && (
-             <button
-              onClick={() => {
-                setDeliveryAdvanceToDelivered(false);
-                setDeliverySession((n) => n + 1);
-                setDeliveryOpen(true);
-                setPickupOpen(false);
-              }}
-              className={`flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-900 shadow-sm hover:bg-rose-50 ${orderStatus === "assigned" ? "col-span-2 justify-center" : ""}`}
-             >
-               <DynamicIcon iconKey="ui_inbox" config={icons} className="size-4" fallback="🫴" />
-               تسجيل وارد إضافي
-             </button>
-          )}
-        </div>
-      )}
+              <button
+                onClick={() => {
+                  setDeliveryAdvanceToDelivered(false);
+                  setDeliverySession((n) => n + 1);
+                  setDeliveryOpen(true);
+                  setPickupOpen(false);
+                }}
+                className="flex h-14 items-center justify-center gap-2 rounded-xl bg-red-600 px-3 font-black text-white shadow-md hover:bg-red-700 active:scale-95"
+              >
+                <DynamicIcon iconKey="ui_inbox" config={icons} className="size-5" fallback="🫴" />
+                أخذت من الزبون (وارد)
+              </button>
+          </div>
+      </div>
 
       <MandoubOrderMoneyFloatDock
         showStatusFab={canMarkPickedUp || canMarkDelivered}
         statusFabMode={canMarkPickedUp ? "pickedUp" : "delivered"}
         onStatusFabClick={() => {
-          if (orderStatus === "assigned") {
+          if (canMarkPickedUp) {
             setPickupAdvanceToDelivering(true);
             setDeliveryOpen(false);
             setPickupOpen(true);
@@ -464,7 +456,6 @@ export function MandoubOrderMoneyFlow({
                     </p>
                   ) : null}
 
-                  {/* علامة الحالة (مطابق / زيادة / نقص) */}
                   {!deleted && ev.expectedDinar != null && (
                     <div className={`flex w-full flex-col items-center justify-center rounded-lg border px-1.5 py-1 text-[10px] font-black shadow-inner ${
                       !hasMismatch
@@ -555,9 +546,13 @@ export function PickupMoneyForm({
   const parsedDinar = parseAlfInputToDinarDecimalRequired(amount);
   const projectedTotal = pickupSumDinar + (parsedDinar.ok ? parsedDinar.value : 0);
   const isMismatch =
-    orderSubtotalDinar != null &&
-    !dinarTotalsMatchClient(projectedTotal, orderSubtotalDinar) &&
+    orderStatusMatchClient(orderSubtotalDinar, projectedTotal) === false &&
     (amount.trim() !== "" || (advanceToDelivering && pickupSumDinar > 0));
+
+  function orderStatusMatchClient(expected: number | null, actual: number): boolean {
+    if (expected == null) return true;
+    return Math.abs(expected - actual) < 0.01;
+  }
 
   function requestPickupMainSubmit() {
     if (pickupSubmitModeRef.current) pickupSubmitModeRef.current.value = "";
@@ -660,7 +655,6 @@ export function PickupMoneyForm({
             <button
               type="button"
               onClick={() => {
-                // منع النقرة التلقائية (Ghost Click) خلال أول 300ms من ظهور النافذة
                 if (Date.now() - mountTimeRef.current < 300) return;
                 setAmount(remainingAlfHint);
                 setTimeout(requestPickupMainSubmit, 10);
@@ -875,7 +869,6 @@ export function DeliveryMoneyForm({
   }
 
   function onSkipLocation() {
-    // إصلاح الخطأ: تفريغ الإحداثيات تماماً عند رفض رفع الموقع
     if (latRef.current) latRef.current.value = "";
     if (lngRef.current) lngRef.current.value = "";
     locationPromptDoneRef.current = true;
@@ -952,7 +945,6 @@ export function DeliveryMoneyForm({
             <button
               type="button"
               onClick={() => {
-                // منع النقرة التلقائية (Ghost Click) خلال أول 300ms من ظهور النافذة
                 if (Date.now() - mountTimeRef.current < 300) return;
                 setAmount(remainingAlfHint);
                 setTimeout(requestDeliveryMainSubmit, 10);
