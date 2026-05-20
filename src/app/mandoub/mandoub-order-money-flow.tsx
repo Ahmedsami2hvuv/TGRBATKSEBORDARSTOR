@@ -162,16 +162,15 @@ export function MandoubOrderMoneyFlow({
 
   const showPickupBtn =
     canRecordMoney &&
-    hasOrderSubtotal &&
     !pickupComplete &&
     (orderStatus === "assigned" ||
       orderStatus === "delivering" ||
       orderStatus === "delivered");
 
-  const showDeliveryBtn = canRecordMoney && hasTotalAmount && !deliveryComplete;
+  const showDeliveryBtn = canRecordMoney && !deliveryComplete;
 
-  const canMarkPickedUp = canRecordMoney && orderStatus === "assigned" && hasOrderSubtotal;
-  const canMarkDelivered = canRecordMoney && orderStatus === "delivering" && hasTotalAmount;
+  const canMarkPickedUp = canRecordMoney && orderStatus === "assigned";
+  const canMarkDelivered = canRecordMoney && orderStatus === "delivering";
 
   const closePanels = () => {
     setPickupOpen(false);
@@ -192,39 +191,6 @@ export function MandoubOrderMoneyFlow({
         الصادر والوارد
       </h3>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {showPickupBtn ? (
-          <button
-            type="button"
-            onClick={() => {
-              setPickupAdvanceToDelivering(false);
-              setPickupOpen(true);
-              setDeliveryOpen(false);
-            }}
-            className="flex min-h-[56px] items-center justify-center gap-2 rounded-xl bg-emerald-700 font-black text-white shadow-sm transition hover:bg-emerald-800"
-          >
-            <DynamicIcon icon={icons?.wallet_cash} fallback="💸" width={24} height={24} />
-            دفع للعميل (صادر)
-          </button>
-        ) : null}
-
-        {showDeliveryBtn ? (
-          <button
-            type="button"
-            onClick={() => {
-              setDeliveryAdvanceToDelivered(false);
-              setDeliverySession((n) => n + 1);
-              setDeliveryOpen(true);
-              setPickupOpen(false);
-            }}
-            className="flex min-h-[56px] items-center justify-center gap-2 rounded-xl bg-red-700 font-black text-white shadow-sm transition hover:bg-red-800"
-          >
-            <DynamicIcon icon={icons?.ui_inbox} fallback="🫴" width={24} height={24} />
-            اخذت من الزبون (وارد)
-          </button>
-        ) : null}
-      </div>
-
       <MandoubOrderMoneyFloatDock
         showStatusFab={canMarkPickedUp || canMarkDelivered}
         statusFabMode={canMarkPickedUp ? "pickedUp" : "delivered"}
@@ -240,12 +206,21 @@ export function MandoubOrderMoneyFlow({
           setPickupOpen(false);
           setDeliveryOpen(true);
         }}
-        showPickupBtn={false}
-        showDeliveryBtn={false}
-        pickupOpen={pickupOpen && pickupAdvanceToDelivering}
-        deliveryOpen={deliveryOpen && deliveryAdvanceToDelivered}
-        onOpenPickup={() => {}}
-        onOpenDelivery={() => {}}
+        showPickupBtn={showPickupBtn}
+        showDeliveryBtn={showDeliveryBtn}
+        pickupOpen={pickupOpen}
+        deliveryOpen={deliveryOpen}
+        onOpenPickup={() => {
+          setPickupAdvanceToDelivering(false);
+          setPickupOpen(true);
+          setDeliveryOpen(false);
+        }}
+        onOpenDelivery={() => {
+          setDeliveryAdvanceToDelivered(false);
+          setDeliverySession((n) => n + 1);
+          setDeliveryOpen(true);
+          setPickupOpen(false);
+        }}
         onClosePanels={closePanels}
         pickupForm={
           <PickupMoneyForm
@@ -292,56 +267,6 @@ export function MandoubOrderMoneyFlow({
           />
         }
       />
-
-      {(pickupOpen && !pickupAdvanceToDelivering) || (deliveryOpen && !deliveryAdvanceToDelivered) ? (
-        <div className="rounded-2xl border-2 border-slate-300 bg-slate-50 p-4 shadow-inner">
-          <div className="mb-3 flex items-center justify-between border-b border-slate-200 pb-2">
-            <span className="flex items-center gap-2 text-sm font-bold text-slate-600">
-              <DynamicIcon icon={pickupOpen ? icons?.order_received : icons?.order_delivered} className="w-4 h-4" fallback="💰" />
-              تسجيل الحركة المالية ({pickupOpen ? "صادر" : "وارد"})
-            </span>
-            <button onClick={closePanels} className="flex items-center gap-1 text-xs font-black text-rose-700 underline">
-              <DynamicIcon iconKey="ui_close" config={icons} className="w-3 h-3" fallback="✕" />
-              إغلاق اللوحة
-            </button>
-          </div>
-          {pickupOpen ? (
-            <PickupMoneyForm
-              orderId={orderId}
-              auth={auth}
-              nextUrl={nextUrl}
-              expectedAlfHint={orderSubtotalDinar != null ? dinarDecimalToAlfInputString(orderSubtotalDinar) : ""}
-              remainingAlfHint={pickupRemaining != null ? dinarDecimalToAlfInputString(pickupRemaining) : ""}
-              advanceToDelivering={false}
-              pickupRemainingDinar={pickupRemaining}
-              pickupSumDinar={pickupSum}
-              orderSubtotalDinar={orderSubtotalDinar}
-              formAction={pickupAction}
-              pending={pickupPending}
-              error={pickupState.error}
-              onClose={closePanels}
-            />
-          ) : (
-            <DeliveryMoneyForm
-              key={deliverySession}
-              orderId={orderId}
-              auth={auth}
-              nextUrl={nextUrl}
-              expectedAlfHint={totalAmountDinar != null ? dinarDecimalToAlfInputString(totalAmountDinar) : ""}
-              remainingAlfHint={deliveryRemaining != null ? dinarDecimalToAlfInputString(deliveryRemaining) : ""}
-              advanceToDelivered={false}
-              deliveryRemainingDinar={deliveryRemaining}
-              deliverySumDinar={deliverySum}
-              totalAmountDinar={totalAmountDinar}
-              formAction={deliveryAction}
-              pending={deliveryPending}
-              error={deliveryState.error}
-              onClose={closePanels}
-              missingCustomerLocation={missingCustomerLocation}
-            />
-          )}
-        </div>
-      ) : null}
 
       <ul className="space-y-3">
         {mergedEvents.map((ev) => {
