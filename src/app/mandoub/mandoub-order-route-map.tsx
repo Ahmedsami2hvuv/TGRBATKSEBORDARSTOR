@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Map as LeafletMap, LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { extractLatLngFromLocationInput } from "@/lib/order-location";
+import { extractLatLngFromLocationInput, extractLatLngFromLocationInputSmart } from "@/lib/order-location";
 
 const STORAGE_KEY_PREFIX = "mandoub-order-route-settings";
 
@@ -61,11 +61,21 @@ function createArrowIcon(L: typeof import("leaflet"), angle: number) {
   });
 }
 
-function buildLocationPoints(props: Props): LocationPoint[] {
+function getParsedLocation(raw: string | null | undefined) {
+  const direct = extractLatLngFromLocationInput(raw);
+  if (direct) return direct;
+  return null;
+}
+
+function buildLocationPoints(
+  props: Props,
+  resolvedCustomer: { lat: number; lng: number; label: string } | null,
+  resolvedSecond: { lat: number; lng: number; label: string } | null,
+) {
   const points: LocationPoint[] = [];
   const shopLoc = extractLatLngFromLocationInput(props.shopLocationUrl);
-  const customerLoc = extractLatLngFromLocationInput(props.customerLocationUrl);
-  const secondLoc = extractLatLngFromLocationInput(props.secondCustomerLocationUrl);
+  const customerLoc = resolvedCustomer || getParsedLocation(props.customerLocationUrl);
+  const secondLoc = resolvedSecond || getParsedLocation(props.secondCustomerLocationUrl);
 
   if (props.courierLat != null && props.courierLng != null) {
     points.push({
@@ -121,8 +131,22 @@ export function MandoubOrderRouteMap(props: Props) {
   const [avoidHighway, setAvoidHighway] = useState(false);
   const [issue, setIssue] = useState<string | null>(null);
   const [lastSpokenRoute, setLastSpokenRoute] = useState<string | null>(null);
+  const [resolvedCustomerLocation, setResolvedCustomerLocation] = useState<{
+    lat: number;
+    lng: number;
+    label: string;
+  } | null>(null);
+  const [resolvedSecondCustomerLocation, setResolvedSecondCustomerLocation] = useState<{
+    lat: number;
+    lng: number;
+    label: string;
+  } | null>(null);
 
-  const points = useMemo(() => buildLocationPoints(props), [props]);
+  const points = useMemo(
+    () => buildLocationPoints(props, resolvedCustomerLocation, resolvedSecondCustomerLocation),
+    [props, resolvedCustomerLocation, resolvedSecondCustomerLocation],
+  );
+
   const origin = useMemo(() => {
     if (props.courierLat != null && props.courierLng != null) {
       return { lat: props.courierLat, lng: props.courierLng };
@@ -132,14 +156,16 @@ export function MandoubOrderRouteMap(props: Props) {
   }, [props.courierLat, props.courierLng, props.shopLocationUrl]);
 
   const primaryDestination = useMemo(() => {
-    const customerLoc = extractLatLngFromLocationInput(props.customerLocationUrl);
+    if (resolvedCustomerLocation) return resolvedCustomerLocation;
+    const customerLoc = getParsedLocation(props.customerLocationUrl);
     if (customerLoc) return { lat: customerLoc.latitude, lng: customerLoc.longitude, label: "الزبون" };
     if (props.routeMode === "double") {
-      const secondLoc = extractLatLngFromLocationInput(props.secondCustomerLocationUrl);
+      if (resolvedSecondCustomerLocation) return resolvedSecondCustomerLocation;
+      const secondLoc = getParsedLocation(props.secondCustomerLocationUrl);
       if (secondLoc) return { lat: secondLoc.latitude, lng: secondLoc.longitude, label: "المستلم" };
     }
     return null;
-  }, [props.customerLocationUrl, props.secondCustomerLocationUrl, props.routeMode]);
+  }, [props.customerLocationUrl, props.routeMode, props.secondCustomerLocationUrl, resolvedCustomerLocation, resolvedSecondCustomerLocation]);
 
   const localStorageKey = `${STORAGE_KEY_PREFIX}:${props.orderNumber}`;
 
@@ -147,6 +173,42 @@ export function MandoubOrderRouteMap(props: Props) {
     if (!props.routeHistory || props.routeHistory.length < 2) return [] as [number, number][];
     return props.routeHistory.map((item) => [item.lat, item.lng] as [number, number]);
   }, [props.routeHistory]);
+
+  useEffect(() => {
+    let active = true;
+
+    const resolveLocations = async () => {
+      const customerDirect = getParsedLocation(props.customerLocationUrl);
+      if (customerDirect) {
+        setResolvedCustomerLocation({ lat: customerDirect.latitude, lng: customerDirect.longitude, label: "الزبون" });
+      } else if (props.customerLocationUrl) {
+        const smart = await extractLatLngFromLocationInputSmart(props.customerLocationUrl);
+        if (!active) return;
+        if (smart) {
+          setResolvedCustomerLocation({ lat: smart.latitude, lng: smart.longitude, label: "الزبون" });
+        }
+      }
+
+      if (props.routeMode === "double") {
+        const secondDirect = getParsedLocation(props.secondCustomerLocationUrl);
+        if (secondDirect) {
+          setResolvedSecondCustomerLocation({ lat: secondDirect.latitude, lng: secondDirect.longitude, label: "المستلم" });
+        } else if (props.secondCustomerLocationUrl) {
+          const smartSecond = await extractLatLngFromLocationInputSmart(props.secondCustomerLocationUrl);
+          if (!active) return;
+          if (smartSecond) {
+            setResolvedSecondCustomerLocation({ lat: smartSecond.latitude, lng: smartSecond.longitude, label: "المستلم" });
+          }
+        }
+      }
+    };
+
+    void resolveLocations();
+
+    return () => {
+      active = false;
+    };
+  }, [props.customerLocationUrl, props.routeMode, props.secondCustomerLocationUrl]);
 
   useEffect(() => {
     try {
@@ -388,6 +450,37 @@ export function MandoubOrderRouteMap(props: Props) {
       {issue ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{issue}</div>
       ) : null}
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            if (!primaryDestination) return;
+            const originQuery = origin ? `${origin.lat},${origin.lng}` : "";
+            const href = origin
+              ? `https://www.google.com/maps/dir/?api=1&origin=${originQuery}&destination=${primaryDestination.lat},${primaryDestination.lng}&travelmode=driving`
+              : `https://www.google.com/maps/dir/?api=1&destination=${primaryDestination.lat},${primaryDestination.lng}&travelmode=driving`;
+            window.open(href, "_blank");
+          }}
+          className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm hover:bg-slate-50"
+        >
+          ابدأ التوجيه
+        </button>
+        <a
+          href={
+            primaryDestination
+              ? origin
+                ? `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${primaryDestination.lat},${primaryDestination.lng}&travelmode=driving`
+                : `https://www.google.com/maps/dir/?api=1&destination=${primaryDestination.lat},${primaryDestination.lng}&travelmode=driving`
+              : "#"
+          }
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm hover:bg-slate-50"
+        >
+          فتح خارطة خارجية
+        </a>
+      </div>
 
       <div className="h-[340px] overflow-hidden rounded-3xl border border-slate-200 bg-slate-100" ref={mapContainerRef} dir="ltr" />
 

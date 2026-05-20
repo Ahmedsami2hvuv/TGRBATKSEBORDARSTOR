@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
-import { extractLatLngFromLocationInput, hasCustomerLocationUrl } from "@/lib/order-location";
+import { extractLatLngFromLocationInput, extractLatLngFromLocationInputSmart, hasCustomerLocationUrl } from "@/lib/order-location";
 import { VoiceNoteAudio } from "@/components/voice-note-audio";
 import "leaflet/dist/leaflet.css";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
@@ -237,9 +237,53 @@ export function OrderDetailSection({
   const shopLocationTarget = createLocationTarget("المحل", order.shop.locationUrl);
   const customerLocationTarget = createLocationTarget(isDoubleRoute ? "المرسل" : "الزبون", mergedCustomerLocationUrl);
   const secondCustomerLocationTarget = createLocationTarget("المستلم", secondLocMerged);
+  const [resolvedCustomerLocationTarget, setResolvedCustomerLocationTarget] = useState<LocationTarget | null>(customerLocationTarget);
+  const [resolvedSecondCustomerLocationTarget, setResolvedSecondCustomerLocationTarget] = useState<LocationTarget | null>(secondCustomerLocationTarget);
   const prepJson = order.preparerShoppingJson as any;
   const hideSubtotalInfo = prepJson?.hidePricesFromCourier === true;
   const reversePickup = isReversePickupOrderType(order.orderType);
+
+  useEffect(() => {
+    let active = true;
+
+    const resolveLocations = async () => {
+      if (customerLocationTarget) {
+        setResolvedCustomerLocationTarget(customerLocationTarget);
+      } else if (mergedCustomerLocationUrl) {
+        const resolved = await extractLatLngFromLocationInputSmart(mergedCustomerLocationUrl);
+        if (!active) return;
+        if (resolved) {
+          setResolvedCustomerLocationTarget({
+            title: isDoubleRoute ? "المرسل" : "الزبون",
+            locationUrl: mergedCustomerLocationUrl,
+            lat: resolved.latitude,
+            lng: resolved.longitude,
+          });
+        }
+      }
+
+      if (secondCustomerLocationTarget) {
+        setResolvedSecondCustomerLocationTarget(secondCustomerLocationTarget);
+      } else if (secondLocMerged) {
+        const resolved = await extractLatLngFromLocationInputSmart(secondLocMerged);
+        if (!active) return;
+        if (resolved) {
+          setResolvedSecondCustomerLocationTarget({
+            title: "المستلم",
+            locationUrl: secondLocMerged,
+            lat: resolved.latitude,
+            lng: resolved.longitude,
+          });
+        }
+      }
+    };
+
+    void resolveLocations();
+
+    return () => {
+      active = false;
+    };
+  }, [customerLocationTarget, isDoubleRoute, mergedCustomerLocationUrl, secondCustomerLocationTarget, secondLocMerged]);
 
   const customStyle = uiSettings ? {
     backgroundColor: uiSettings.statusStyles?.[order.status]?.backgroundColor || uiSettings.backgroundColor,
@@ -282,7 +326,25 @@ export function OrderDetailSection({
                 <p className="font-mono text-sm font-bold text-slate-700">{contactLine(shopContactPhone)}</p>
               </div>
               <p className="text-slate-800">{order.shop.region.name}</p>
-              <div className="mt-2">{order.shop.locationUrl?.trim() ? <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>فتح لوكيشن المحل <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} /></a> : <p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن</p>}</div>
+              <div className="mt-2">
+                {order.shop.locationUrl?.trim() ? (
+                  shopLocationTarget ? (
+                    <button
+                      type="button"
+                      onClick={() => setActiveLocation(shopLocationTarget)}
+                      className={locBtnEmerald}
+                    >
+                      فتح لوكيشن المحل
+                    </button>
+                  ) : (
+                    <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className={locBtnEmerald}>
+                      فتح لوكيشن المحل <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                    </a>
+                  )
+                ) : (
+                  <p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن</p>
+                )}
+              </div>
             </div>
             <div className="max-w-[12rem] self-start">
               {shopImageUrl ? <div className={squarePhotoFrame}><img src={imgSrc(shopImageUrl)!} alt="" className={squarePhotoCover} /></div> : <p className="text-xs text-slate-400">لا توجد صورة</p>}
@@ -319,10 +381,10 @@ export function OrderDetailSection({
                 {courierSettings?.showLocationBtn !== false && (
                   <div className="mt-2">
                     {mergedCustomerLocationUrl ? (
-                      customerLocationTarget ? (
+                      resolvedCustomerLocationTarget ? (
                         <button
                           type="button"
-                          onClick={() => setActiveLocation(customerLocationTarget)}
+                          onClick={() => setActiveLocation(resolvedCustomerLocationTarget)}
                           className={locBtnEmerald}
                         >
                           {isDoubleRoute ? "فتح لوكيشن المرسل" : "فتح لوكيشن الزبون"}
@@ -363,10 +425,10 @@ export function OrderDetailSection({
                   {courierSettings?.showLocationBtn !== false && (
                     <div className="mt-2">
                       {secondLocMerged ? (
-                        secondCustomerLocationTarget ? (
+                        resolvedSecondCustomerLocationTarget ? (
                           <button
                             type="button"
-                            onClick={() => setActiveLocation(secondCustomerLocationTarget)}
+                            onClick={() => setActiveLocation(resolvedSecondCustomerLocationTarget)}
                             className={locBtnEmerald}
                           >
                             فتح لوكيشن المستلم
