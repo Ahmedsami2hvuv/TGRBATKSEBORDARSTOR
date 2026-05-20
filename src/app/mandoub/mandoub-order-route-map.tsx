@@ -131,6 +131,7 @@ export function MandoubOrderRouteMap(props: Props) {
   const [avoidHighway, setAvoidHighway] = useState(false);
   const [issue, setIssue] = useState<string | null>(null);
   const [lastSpokenRoute, setLastSpokenRoute] = useState<string | null>(null);
+  const [mapLoading, setMapLoading] = useState(true);
   const [resolvedCustomerLocation, setResolvedCustomerLocation] = useState<{
     lat: number;
     lng: number;
@@ -249,6 +250,7 @@ export function MandoubOrderRouteMap(props: Props) {
     const initializeMap = async () => {
       setIssue(null);
       setRouteStatus("جارٍ تحميل خريطة OpenStreetMap...");
+      setMapLoading(true);
       const L = await import("leaflet");
       if (cancelled || !mapContainerRef.current) return;
 
@@ -258,10 +260,17 @@ export function MandoubOrderRouteMap(props: Props) {
         attributionControl: false,
       });
       mapRef.current = map;
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      const tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "© OpenStreetMap",
       }).addTo(map);
+
+      tileLayer.on("load", () => {
+        if (!cancelled) setMapLoading(false);
+      });
+      tileLayer.on("tileerror", () => {
+        if (!cancelled) setMapLoading(false);
+      });
 
       const markers: any[] = [];
       const bounds: any[] = [];
@@ -482,7 +491,14 @@ export function MandoubOrderRouteMap(props: Props) {
         </a>
       </div>
 
-      <div className="h-[340px] overflow-hidden rounded-3xl border border-slate-200 bg-slate-100" ref={mapContainerRef} dir="ltr" />
+      <div className="relative">
+        <div className="h-[340px] overflow-hidden rounded-3xl border border-slate-200 bg-slate-100" ref={mapContainerRef} dir="ltr" />
+        {mapLoading ? (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-3xl bg-slate-100/95 px-4 text-center text-sm font-semibold text-slate-600">
+            جاري تحميل خريطة OpenStreetMap...
+          </div>
+        ) : null}
+      </div>
 
       <div className="grid gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 sm:grid-cols-2">
         {points.map((point) => (
