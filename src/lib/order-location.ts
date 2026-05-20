@@ -121,15 +121,7 @@ function isGoogleShortMapsUrl(value: string): boolean {
   }
 }
 
-/**
- * نسخة ذكية: إذا الرابط مختصر (maps.app.goo.gl) نحاول فكّه أولاً ثم نستخرج lat/lng.
- */
-export async function extractLatLngFromLocationInputSmart(
-  raw: string | null | undefined,
-): Promise<LatLng | null> {
-  const direct = extractLatLngFromLocationInput(raw);
-  if (direct) return direct;
-
+export async function resolveGoogleShortMapsUrl(raw: string | null | undefined): Promise<LatLng | null> {
   const value = String(raw ?? "").trim();
   if (!value || !isGoogleShortMapsUrl(value)) return null;
 
@@ -150,7 +142,6 @@ export async function extractLatLngFromLocationInputSmart(
       if (parsedFinal) return parsedFinal;
     }
 
-    // fallback: أحيانًا Google يرجع صفحة وسيطة بدون redirect URL واضح.
     const body = await res.text();
     if (!body) return null;
 
@@ -159,7 +150,6 @@ export async function extractLatLngFromLocationInputSmart(
       .replace(/\\u0026/g, "&")
       .replace(/\\\//g, "/");
 
-    // 1) حاول إيجاد أي رابط خرائط داخل الـ HTML ثم حلله.
     const mapsUrlPattern = /https?:\/\/(?:www\.)?google\.[^"'\s<>]+\/maps\/[^"'\s<>]+/gi;
     const links = decodedBody.match(mapsUrlPattern) ?? [];
     for (const link of links) {
@@ -167,13 +157,47 @@ export async function extractLatLngFromLocationInputSmart(
       if (parsed) return parsed;
     }
 
-    // 2) كحل أخير: التقط أول زوج إحداثيات رقمي من الصفحة.
     const pair = decodedBody.match(/([+-]?\d{1,2}\.\d{4,})\s*[,،]\s*([+-]?\d{1,3}\.\d{4,})/);
     if (pair) {
       const parsed = buildLatLng(Number(pair[1]), Number(pair[2]));
       if (parsed) return parsed;
     }
 
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * نسخة ذكية: إذا الرابط مختصر (maps.app.goo.gl) نحاول فكّه أولاً ثم نستخرج lat/lng.
+ */
+export async function extractLatLngFromLocationInputSmart(
+  raw: string | null | undefined,
+): Promise<LatLng | null> {
+  const direct = extractLatLngFromLocationInput(raw);
+  if (direct) return direct;
+
+  const value = String(raw ?? "").trim();
+  if (!value) return null;
+
+  if (typeof window === "undefined") {
+    return resolveGoogleShortMapsUrl(value);
+  }
+
+  if (!isGoogleShortMapsUrl(value)) return null;
+
+  try {
+    const apiUrl = `/api/resolve-google-location?url=${encodeURIComponent(value)}`;
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (typeof data?.latitude === "number" && typeof data?.longitude === "number") {
+      return buildLatLng(data.latitude, data.longitude);
+    }
     return null;
   } catch {
     return null;
