@@ -14,11 +14,16 @@ const GEO_OPTS_BACKGROUND: PositionOptions = {
 
 const GEO_OPTS_CHECK: PositionOptions = {
   enableHighAccuracy: false,
-  maximumAge: 300_000,
+  maximumAge: 0,
   timeout: 10_000,
 };
 
-const LOCK_MESSAGE = "للمتابعة انقر على زر الفحص";
+const LOCK_MESSAGE = "لم يصل الموقع إلى الإدارة منذ أكثر من 3 دقائق. افحص الموقع الآن.";
+
+const CHECK_MESSAGE = "إذا لم يصل الموقع خلال 20 ثانية، تأكد من تشغيل GPS ومنح إذن الموقع ثم اضغط فحص.";
+
+const PERMISSION_DENIED_MESSAGE =
+  "سماح الموقع مرفوض. افتح إعدادات المتصفح أو الجهاز ثم امنح إذن الموقع. بعد ذلك اضغط فحص.";
 
 type MandoubProps = {
   variant: "mandoub";
@@ -52,10 +57,8 @@ type StaffProps = {
 export type PortalLocationHeartbeatProps = MandoubProps | PreparerProps | EmployeeProps | StaffProps;
 
 /**
- * القفل يعتمد فقط على هذه الجلسة في المتصفح:
- * — لا يُفتح طلب الفحص عند أول فتح للصفحة.
- * — يُطلب الفحص بعد 3 دقائق متتالية دون أي استجابة ناجحة من الخادم لطلب موقع (POST).
- * — إذا وصل الموقع للخادم (كل ~20 ثانية) لا يظهر القفل.
+ * يحاول إرسال موقع الموظف / المندوب / المجهز كل ~20 ثانية إلى الإدارة.
+ * إذا اختفى الموقع أو رفض إذن الموقع، يعرض تعليمات واضحة للفحص.
  */
 export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
   const { children } = props;
@@ -64,12 +67,16 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
 
   const [locked, setLocked] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [locationAlert, setLocationAlert] = useState<string | null>(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
 
-  /** آخر وقت نجح فيه POST بموقع في هذه الجلسة فقط (لا نقرأ قاعدة البيانات عند الفتح) */
   const lastSuccessfulPostMsRef = useRef<number | null>(null);
+  const lastLocalGeoMsRef = useRef<number | null>(null);
+  const lastSentMsRef = useRef<number | null>(null);
   const sessionStartMsRef = useRef(Date.now());
   const lockedRef = useRef(false);
   lockedRef.current = locked;
+  const watchIdRef = useRef<number | null>(null);
 
   const postToServer = useCallback(
     async (lat: number, lng: number): Promise<boolean> => {
@@ -126,41 +133,104 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
     [],
   );
 
-  const trySendOnce = useCallback(() => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) return;
-    if (lockedRef.current) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
+  const handlePositionError = useCallback((error: GeolocationPositionError) => {
+    if (error.code === error.PERMISSION_DENIED) {
+      setPermissionDenied(true);
+      setLocationAlert(PERMISSION_DENIED_MESSAGE);
+      return;
+    }
+
+    if (error.code === error.POSITION_UNAVAILABLE) {
+      setLocationAlert(
+        "الموقع غير متوفر حالياً. تأكد من تشغيل GPS والانتظار قليلاً ثم اضغط فحص.",
+      );
+      return;
+    }
+
+    setLocationAlert("لم يتم الحصول على الموقع. افتح الموقع ثم اضغط فحص.");
+  }, []);
+
+  const handlePositionSuccess = useCallback(
+    (pos: GeolocationPosition) => {
+      lastLocalGeoMsRef.current = Date.now();
+      setLocationAlert(null);
+      setPermissionDenied(false);
+
+      const now = Date.now();
+      const lastSent = lastSentMsRef.current;
+      if (lastSent == null || now - lastSent >= SEND_INTERVAL_MS) {
+        lastSentMsRef.current = now;
         void (async () => {
           const ok = await postToServer(pos.coords.latitude, pos.coords.longitude);
           if (ok) {
             lastSuccessfulPostMsRef.current = Date.now();
+            setLocked(false);
           }
         })();
-      },
-      () => {
-        /* صامت */
-      },
+      }
+    },
+    [postToServer],
+  );
+
+  const startGeolocationWatch = useCallback(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setPermissionDenied(true);
+      setLocationAlert("المتصفح لا يدعم الموقع. افتح التطبيق على جهاز يدعم تتبع الموقع.");
+      return;
+    }
+
+    const id = navigator.geolocation.watchPosition(
+      handlePositionSuccess,
+      handlePositionError,
       GEO_OPTS_BACKGROUND,
     );
-  }, [postToServer]);
+    watchIdRef.current = id;
+  }, [handlePositionError, handlePositionSuccess]);
 
   useEffect(() => {
     if (locked) return;
-    trySendOnce();
-    // Re-enable background polling so the portal sends location every SEND_INTERVAL_MS
-    const id = window.setInterval(() => trySendOnce(), SEND_INTERVAL_MS);
-    return () => window.clearInterval(id);
-  }, [locked, trySendOnce]);
+    startGeolocationWatch();
+    return () => {
+      if (watchIdRef.current != null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+    };
+  }, [locked, startGeolocationWatch]);
 
   useEffect(() => {
-    // Periodically check whether server hasn't received a recent location
+    if (locked) return;
+    const id = window.setInterval(() => {
+      if (typeof navigator === "undefined" || !navigator.geolocation) return;
+
+      const now = Date.now();
+      const lastLocal = lastLocalGeoMsRef.current;
+      if (lastLocal == null) {
+        if (now - sessionStartMsRef.current >= SEND_INTERVAL_MS) {
+          setLocationAlert(CHECK_MESSAGE);
+        }
+      } else if (now - lastLocal >= SEND_INTERVAL_MS + 5_000) {
+        setLocationAlert(CHECK_MESSAGE);
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        handlePositionSuccess,
+        handlePositionError,
+        GEO_OPTS_BACKGROUND,
+      );
+    }, SEND_INTERVAL_MS);
+
+    return () => window.clearInterval(id);
+  }, [handlePositionError, handlePositionSuccess, locked]);
+
+  useEffect(() => {
     const id = window.setInterval(() => {
       const lastOk = lastSuccessfulPostMsRef.current;
-      const sessionStart = sessionStartMsRef.current;
       const now = Date.now();
       if (lastOk == null) {
-        if (now - sessionStart > STALE_AFTER_MS) setLocked(true);
+        if (now - sessionStartMsRef.current > STALE_AFTER_MS) {
+          setLocked(true);
+        }
       } else if (now - lastOk > STALE_AFTER_MS) {
         setLocked(true);
       }
@@ -178,7 +248,8 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
             name: "geolocation" as PermissionName,
           });
           if (st.state === "denied") {
-            setChecking(false);
+            setLocationAlert(PERMISSION_DENIED_MESSAGE);
+            setPermissionDenied(true);
             return;
           }
         }
@@ -193,25 +264,29 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
               const ok = await postToServer(pos.coords.latitude, pos.coords.longitude);
               if (ok) {
                 lastSuccessfulPostMsRef.current = Date.now();
+                lastLocalGeoMsRef.current = Date.now();
                 setLocked(false);
+                setLocationAlert(null);
+                setPermissionDenied(false);
               }
             } finally {
               setChecking(false);
             }
           })();
         },
-        () => {
+        (error) => {
+          handlePositionError(error);
           setChecking(false);
         },
         GEO_OPTS_CHECK,
       );
     })();
-  }, [postToServer]);
+  }, [handlePositionError, postToServer]);
 
   return (
     <div className={locked ? "min-h-[100dvh] pb-24" : undefined}>
       {children}
-      {locked ? (
+      {(locked || locationAlert) ? (
         <div
           className="fixed inset-0 z-[250] flex flex-col items-center justify-center bg-slate-950/97 px-4 text-center text-white"
           dir="rtl"
@@ -219,15 +294,22 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
           aria-modal="true"
           aria-label="فحص الموقع"
         >
-          <p className="mb-8 max-w-md text-base font-semibold leading-relaxed text-slate-200">{LOCK_MESSAGE}</p>
+          <p className="mb-6 max-w-md text-base font-semibold leading-relaxed text-slate-200">
+            {locked ? LOCK_MESSAGE : locationAlert}
+          </p>
           <button
             type="button"
             onClick={onCheckClick}
             disabled={checking}
             className="rounded-2xl bg-emerald-500 px-10 py-4 text-lg font-black text-white shadow-xl ring-2 ring-emerald-300/60 hover:bg-emerald-400 disabled:opacity-60"
           >
-            {checking ? "جارٍ الفحص…" : "فحص"}
+            {checking ? "جارٍ الفحص…" : "فحص الموقع الآن"}
           </button>
+          {permissionDenied ? (
+            <p className="mt-4 max-w-md text-sm text-amber-200">
+              إذا بقيت المشكلة بعد الضغط على فحص، افتح إعدادات المتصفح أو الجهاز وامنح إذن الموقع.
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>
