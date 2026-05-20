@@ -365,58 +365,62 @@ export async function submitMandoubDeliveryMoney(
     ? await courierUploaderLabelForLocation(v.courierId)
     : null;
 
-  await prisma.$transaction(async (tx) => {
-    await tx.orderCourierMoneyEvent.create({
-      data: {
-        orderId,
-        courierId: v.courierId,
-        kind: MONEY_KIND_DELIVERY,
-        amountDinar,
-        expectedDinar: expected,
-        matchesExpected: matches,
-        mismatchReason: "",
-        mismatchNote,
-      },
-    });
-    if (attachCourierGpsAsCustomer && mapsUrl && order.customerId) {
-      await tx.customer.update({
-        where: { id: order.customerId },
-        data: { customerLocationUrl: mapsUrl },
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.orderCourierMoneyEvent.create({
+        data: {
+          orderId,
+          courierId: v.courierId,
+          kind: MONEY_KIND_DELIVERY,
+          amountDinar,
+          expectedDinar: expected,
+          matchesExpected: matches,
+          mismatchReason: "",
+          mismatchNote,
+        },
       });
-    }
-    if (advanceStatus === "delivered" && order.status === "delivering") {
-      await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, "delivering", "delivered");
-    }
-    await tx.order.update({
-      where: { id: orderId },
-      data: {
-        ...(attachCourierGpsAsCustomer && mapsUrl && uploadedBy
-          ? {
-              customerLocationUrl: mapsUrl,
-              customerLocationSetByCourierAt: new Date(),
-              customerLocationUploadedByName: uploadedBy,
-            }
-          : {}),
-        ...(advanceStatus === "delivered" && order.status === "delivering"
-          ? (() => {
-              const earningCourierId = v.courierId;
-              const earning =
-                order.deliveryPrice != null
-                  ? computeCourierDeliveryEarningDinar(
-                      courierRow.vehicleType,
-                      order.deliveryPrice,
-                    )
-                  : null;
-              return {
-                status: "delivered",
-                courierEarningDinar: earning,
-                courierEarningForCourierId: earning != null ? earningCourierId : null,
-              };
-            })()
-          : {}),
-      },
+      if (attachCourierGpsAsCustomer && mapsUrl && order.customerId) {
+        await tx.customer.update({
+          where: { id: order.customerId },
+          data: { customerLocationUrl: mapsUrl },
+        });
+      }
+      if (advanceStatus === "delivered" && order.status === "delivering") {
+        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, "delivering", "delivered");
+      }
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          ...(attachCourierGpsAsCustomer && mapsUrl && uploadedBy
+            ? {
+                customerLocationUrl: mapsUrl,
+                customerLocationSetByCourierAt: new Date(),
+                customerLocationUploadedByName: uploadedBy,
+              }
+            : {}),
+          ...(advanceStatus === "delivered" && order.status === "delivering"
+            ? (() => {
+                const earningCourierId = v.courierId;
+                const earning =
+                  order.deliveryPrice != null
+                    ? computeCourierDeliveryEarningDinar(
+                        courierRow.vehicleType,
+                        order.deliveryPrice,
+                      )
+                    : null;
+                return {
+                  status: "delivered",
+                  courierEarningDinar: earning,
+                  courierEarningForCourierId: earning != null ? earningCourierId : null,
+                };
+              })()
+            : {}),
+        },
+      });
     });
-  });
+  } catch (e: any) {
+    return { error: "فشل الحفظ في قاعدة البيانات: " + e.message };
+  }
   if (advanceStatus === "delivered" && order.status === "delivering") {
     revalidateAdminTrackingForStatusChange();
   }

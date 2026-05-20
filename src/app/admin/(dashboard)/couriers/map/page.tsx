@@ -61,21 +61,6 @@ export default async function AdminCouriersMapPage() {
           <CouriersMapDynamic points={points} />
         </div>
       </section>
-
-      {withoutLoc.length > 0 ? (
-        <section className={`${ad.section} border-amber-200 bg-amber-50/40`}>
-          <h2 className={ad.h2}>مندوبون ومجهزون بلا موقع بعد</h2>
-          <ul className={`${ad.listDivide} mt-3`}>
-            {withoutLoc.map((c) => (
-              <li key={c.id} className="py-2">
-                <span className="font-bold text-slate-800">{c.name}</span>
-                <span className="text-xs mr-2 px-2 py-0.5 bg-white border border-slate-200 rounded-md text-slate-600">{c.typeName}</span>
-                <span className="text-slate-500"> — {c.phone}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
     </div>
   );
 }

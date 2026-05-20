@@ -9,13 +9,13 @@ const STALENESS_CHECK_MS = 1_000;
 const GEO_OPTS_BACKGROUND: PositionOptions = {
   enableHighAccuracy: true,
   maximumAge: 0,
-  timeout: 20_000,
+  timeout: 30_000,
 };
 
 const GEO_OPTS_CHECK: PositionOptions = {
   enableHighAccuracy: true,
   maximumAge: 0,
-  timeout: 15_000,
+  timeout: 30_000,
 };
 
 const LOCK_MESSAGE =
