@@ -334,6 +334,19 @@ function ClientOrderFormInner({
         <input type="hidden" name="customerRegionId" value={selected?.id ?? ""} />
         {initialOrder && <input type="hidden" name="editOrderNumber" value={initialOrder.orderNumber} />}
 
+        {uiMode === "learn" && (
+          <>
+            <input type="hidden" name="customerPhone" value={customerPhone} />
+            <input type="hidden" name="orderType" value={orderType} />
+            <input type="hidden" name="orderSubtotal" value={orderPrice} />
+            <input type="hidden" name="orderTime" value={orderTime} />
+            <input type="hidden" name="vehiclePreference" value={vehiclePreference} />
+            <input type="hidden" name="deliveryPrice" value={deliveryPriceOverride || dPrice.toFixed(0)} />
+            <input type="hidden" name="notes" value={notes} />
+            <input type="hidden" name="alternatePhone" value={alternatePhone} />
+          </>
+        )}
+
         {uiMode === "professional" && (
           <header className="kse-glass-dark rounded-3xl border border-sky-200 p-6 text-center shadow-sm">
             <p className="text-xs font-black uppercase tracking-widest text-sky-800/60">أبو الأكبر للتوصيل</p>
@@ -617,7 +630,6 @@ function ClientOrderFormInner({
                     className="w-full rounded-2xl border-2 border-emerald-200 bg-white px-4 py-4 text-center font-mono text-2xl font-black text-emerald-900 shadow-sm focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition"
                     placeholder="07XXXXXXXXX"
                   />
-                  <input type="hidden" name="customerPhone" value={customerPhone} />
                 </div>
                 <button type="button" onClick={() => customerPhone.trim() && setLearnStep(1)} className="mt-6 w-full rounded-2xl bg-emerald-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition">تم</button>
               </div>
@@ -641,7 +653,6 @@ function ClientOrderFormInner({
                     className="w-full rounded-2xl border-2 border-sky-200 bg-white px-4 py-4 text-center text-xl font-black text-sky-900 shadow-sm focus:border-sky-500 focus:ring-4 focus:ring-sky-100 outline-none transition"
                     placeholder="مثال: كيك، ملابس..."
                   />
-                  <input type="hidden" name="orderType" value={orderType} />
                 </div>
                 <button type="button" onClick={() => orderType.trim() && setLearnStep(2)} className="mt-6 w-full rounded-2xl bg-sky-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition">تم</button>
               </div>
@@ -671,7 +682,6 @@ function ClientOrderFormInner({
                     className={`w-full rounded-2xl border-2 bg-white px-4 py-4 text-center font-mono text-3xl font-black shadow-sm outline-none transition ${!isPriceValid ? 'border-rose-400 text-rose-700 ring-4 ring-rose-50' : 'border-amber-200 text-amber-900 focus:border-amber-500 focus:ring-4 focus:ring-amber-100'}`}
                     placeholder="10, 25.5, 50..."
                   />
-                  <input type="hidden" name="orderSubtotal" value={orderPrice} />
                 </div>
                 <p className="mt-4 text-[11px] font-bold text-slate-400">
                   يمكنك كتابة كسور: 50.5 (خمسين ونص)، 10.25 (عشرة وربع)، 10.75 (عشرة إلا ربع).
@@ -730,13 +740,12 @@ function ClientOrderFormInner({
                     className="w-full rounded-2xl border-2 border-rose-200 bg-white px-4 py-4 text-center text-xl font-black text-rose-900 shadow-sm focus:border-rose-500 focus:ring-4 focus:ring-rose-100 outline-none transition"
                     placeholder="متى نرسل الطلب؟"
                   />
-                  <input type="hidden" name="orderTime" value={orderTime} />
                 </div>
                 <button type="button" onClick={() => orderTime.trim() && setLearnStep(5)} className="mt-6 w-full rounded-2xl bg-rose-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition">تم</button>
               </div>
             )}
 
-            {learnStep === 5 && (
+            <div className={learnStep === 5 ? "block" : "hidden"}>
               <div className="kse-glass-dark rounded-3xl border border-blue-200 p-8 text-center animate-in slide-in-from-left duration-300">
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-blue-50 text-4xl shadow-sm">🎤</div>
                 <h3 className="text-xl font-black text-slate-900">ملاحظة صوتية</h3>
@@ -753,7 +762,7 @@ function ClientOrderFormInner({
                   <button type="button" onClick={() => setLearnStep(6)} className="w-full rounded-2xl bg-blue-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition">تم / تخطي</button>
                 </div>
               </div>
-            )}
+            </div>
 
             {learnStep === 6 && (
               <div className="kse-glass-dark rounded-3xl border border-emerald-200 p-8 text-center animate-in slide-in-from-left duration-300">
@@ -785,7 +794,6 @@ function ClientOrderFormInner({
                     </button>
                   ))}
                 </div>
-                <input type="hidden" name="vehiclePreference" value={vehiclePreference} />
                 <button type="button" onClick={() => setLearnStep(7)} className="mt-8 w-full rounded-2xl bg-emerald-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition">تم / تخطي</button>
               </div>
             )}
@@ -828,7 +836,6 @@ function ClientOrderFormInner({
                     </button>
                   </div>
                 )}
-                <input name="deliveryPrice" type="hidden" value={deliveryPriceOverride || dPrice.toFixed(0)} />
                 <button type="button" onClick={() => setLearnStep(8)} className="mt-8 w-full rounded-2xl bg-sky-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition">تم / تخطي</button>
               </div>
             )}
@@ -842,7 +849,6 @@ function ClientOrderFormInner({
                 </p>
                 <div className="mt-6">
                   <textarea
-                    name="notes"
                     autoFocus
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
@@ -871,6 +877,12 @@ function ClientOrderFormInner({
                   <div className="flex justify-between text-sm font-bold"><span>المنطقة:</span> <span>{selected?.name}</span></div>
                   <div className="flex justify-between text-sm font-bold"><span>السعر الكلي:</span> <span className="text-emerald-700 font-black">{(subtotal || 0) + (deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice)}</span></div>
                 </div>
+
+                {state.error && !state.error.includes("محظور") ? (
+                  <div className="mt-4 rounded-2xl border-2 border-rose-200 bg-rose-50 p-4 text-center text-sm font-black text-rose-800 animate-shake">
+                    ⚠️ {state.error}
+                  </div>
+                ) : null}
 
                 <button type="submit" disabled={pending} className="mt-8 w-full rounded-3xl bg-gradient-to-r from-emerald-600 to-emerald-800 py-5 text-xl font-black text-white shadow-xl shadow-emerald-200 transition-all hover:scale-105 active:scale-95 disabled:opacity-50">
                   {pending ? "جارٍ إرسال الطلب..." : "رفع الطلب للمجهزين"}
