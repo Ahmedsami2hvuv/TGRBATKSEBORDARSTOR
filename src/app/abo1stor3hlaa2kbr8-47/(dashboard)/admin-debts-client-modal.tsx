@@ -20,6 +20,20 @@ export function AdminDebtsClientModal({ initialOrders }: { initialOrders: DebtOr
   const [orders, setOrders] = useState(initialOrders);
   const [isPending, startTransition] = useTransition();
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [selectedShopId, setSelectedShopId] = useState<string | "all">("all");
+
+  // استخراج المحلات الفريدة
+  const shopsMap = new Map();
+  orders.forEach(o => {
+    if (!shopsMap.has(o.shopId)) {
+      shopsMap.set(o.shopId, o.shop.name);
+    }
+  });
+  const uniqueShops = Array.from(shopsMap.entries()).map(([id, name]) => ({ id, name }));
+
+  const filteredOrders = selectedShopId === "all"
+    ? orders
+    : orders.filter(o => o.shopId === selectedShopId);
 
   async function handlePay(orderId: string, amountAlf: string, mismatchNote?: string, expectedAlf?: number) {
     if (!amountAlf || Number(amountAlf) <= 0) return;
@@ -102,13 +116,45 @@ export function AdminDebtsClientModal({ initialOrders }: { initialOrders: DebtOr
 
             {/* List */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50 space-y-4">
-              {orders.length === 0 ? (
+              {/* شريط الفلترة للإدارة */}
+              {orders.length > 0 && (
+                <div className="flex overflow-x-auto pb-4 gap-2 no-scrollbar sticky top-0 z-30 bg-slate-50/80 backdrop-blur-md pt-2 mb-4">
+                  <button
+                    onClick={() => setSelectedShopId("all")}
+                    className={`shrink-0 px-5 py-2.5 rounded-xl font-black text-xs transition-all shadow-sm ${
+                      selectedShopId === "all"
+                        ? "bg-rose-600 text-white"
+                        : "bg-white text-slate-500 border border-slate-200"
+                    }`}
+                  >
+                    الكل ({orders.length})
+                  </button>
+                  {uniqueShops.map(shop => {
+                      const count = orders.filter(o => o.shopId === shop.id).length;
+                      return (
+                          <button
+                          key={shop.id}
+                          onClick={() => setSelectedShopId(shop.id)}
+                          className={`shrink-0 px-5 py-2.5 rounded-xl font-black text-xs transition-all shadow-sm ${
+                              selectedShopId === shop.id
+                              ? "bg-rose-600 text-white"
+                              : "bg-white text-slate-500 border border-slate-200"
+                          }`}
+                          >
+                          {shop.name} ({count})
+                          </button>
+                      );
+                  })}
+                </div>
+              )}
+
+              {filteredOrders.length === 0 ? (
                 <div className="py-20 text-center">
-                  <p className="text-slate-400 font-bold">لا توجد ديون معلقة حالياً</p>
+                  <p className="text-slate-400 font-bold">{orders.length === 0 ? "لا توجد ديون معلقة حالياً" : "لا توجد ديون لهذا المحل"}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {orders.map((order) => (
+                  {filteredOrders.map((order) => (
                     <DebtItemRow
                       key={order.id}
                       order={order}

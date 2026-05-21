@@ -1,13 +1,18 @@
 @import "tailwindcss";
-@import "@fontsource/cairo/400.css";
-@import "@fontsource/cairo/600.css";
-@import "@fontsource/cairo/700.css";
-@import "@fontsource/cairo/800.css";
+
+/* 1. تعريف خط المهند بشكل صحيح */
+@font-face {
+  font-family: 'Al Mohanad';
+  src: url('/fonts/mohanad-bold.ttf.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 
 @font-face {
   font-family: 'Al Mohanad';
   src: url('/fonts/mohanad-bold.ttf.ttf') format('truetype');
-  font-weight: normal 900;
+  font-weight: bold;
   font-style: normal;
   font-display: swap;
 }
@@ -15,8 +20,10 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --font-mohanad: "Al Mohanad";
-  --font-cairo: "Cairo";
+  /* 2. جعل المهند هو الخط الأساسي والوحيد */
+  --font-mohanad: "Al Mohanad", Tahoma, Arial, sans-serif;
+  --font-sans: var(--font-mohanad);
+
   /* Bright Light Base (Default) */
   --background: #f0f4f8; 
   --foreground: #0f172a; 
@@ -53,13 +60,18 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-mohanad), var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-mohanad);
+}
+
+/* إجبار كل العناصر على استخدام الخط */
+* {
+  font-family: var(--font-mohanad) !important;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-mohanad), var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-mohanad) !important;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 

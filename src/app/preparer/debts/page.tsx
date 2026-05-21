@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
 import { DebtItemClient } from "./debt-item-client";
+import { DebtListContainer } from "./debt-list-container";
 
 export const dynamic = "force-dynamic";
 
@@ -132,11 +133,7 @@ export default async function PreparerDebtsPage({ searchParams }: Props) {
             <p className="text-sm mt-1">جميع الحسابات مكتملة</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {debtOrders.map(order => (
-              <DebtItemClient key={order.id} order={order} auth={baseAuth} />
-            ))}
-          </div>
+          <DebtListContainer initialOrders={debtOrders} auth={baseAuth} />
         )}
 
         <div className="fixed bottom-6 left-0 right-0 px-4 z-50">
