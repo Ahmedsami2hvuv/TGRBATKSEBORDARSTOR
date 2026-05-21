@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ClientRuntime } from "@/components/client-runtime";
 import { isChatEnabledGlobally, isTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
+import { getRoleFeatures } from "@/lib/role-features-settings";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import "./globals.css";
