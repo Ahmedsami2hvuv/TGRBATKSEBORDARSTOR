@@ -174,6 +174,8 @@ export function SettingsBlocks({
   preparerFeaturesInitial,
   telegramAdminsInitial,
   telegramBotsInitial,
+  availableFonts,
+  currentFont,
 }: {
   notificationInitial: NotificationInitial;
   globalIcons: GlobalIconsConfig;
