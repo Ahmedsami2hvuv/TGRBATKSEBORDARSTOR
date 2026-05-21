@@ -30,6 +30,16 @@ export function FontSettingsForm({
       <div className="grid grid-cols-1 gap-3">
         <label className="text-xs font-black text-slate-500 px-1">اختر الخط الأساسي للموقع</label>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <button
+            onClick={() => setSelectedFont("system-ui")}
+            className={`px-4 py-3 rounded-2xl border-2 transition-all text-sm font-bold text-center ${
+              selectedFont === "system-ui"
+                ? "border-slate-600 bg-slate-100 text-slate-900 shadow-md"
+                : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
+            }`}
+          >
+            الافتراضي ⚙️
+          </button>
           {availableFonts.map((font) => (
             <button
               key={font}
