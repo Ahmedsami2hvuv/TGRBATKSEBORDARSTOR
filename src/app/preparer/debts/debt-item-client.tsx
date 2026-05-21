@@ -180,18 +180,17 @@ export function DebtItemClient({
           {!isPaid && (
             <button
               onClick={() => setIsPaying(true)}
-              className="flex-[3] h-16 rounded-[1.5rem] bg-indigo-600 text-lg font-black text-white shadow-xl shadow-indigo-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+              className="w-full h-16 rounded-[1.5rem] bg-indigo-600 text-lg font-black text-white shadow-xl shadow-indigo-200 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               <span>💳</span>
               تسديد الدين
             </button>
           )}
-          <button
-            onClick={() => setShowConfirmHide(true)}
-            className="flex-1 h-16 rounded-[1.5rem] bg-slate-100 text-sm font-black text-slate-500 hover:bg-slate-200 active:scale-95 transition-all flex items-center justify-center gap-1"
-          >
-            إخفاء
-          </button>
+          {isPaid && (
+            <div className="w-full py-4 text-center">
+               <p className="text-sm font-black text-emerald-500 bg-emerald-50 rounded-2xl py-3 border border-emerald-100">بانتظار تدقيق الإدارة للأرشفة</p>
+            </div>
+          )}
         </div>
       ) : (
         <form onSubmit={handlePay} className="mt-5 pt-4 border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
