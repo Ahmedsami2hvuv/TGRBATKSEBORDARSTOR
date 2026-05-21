@@ -256,6 +256,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h1 className={ad.h1}>إدارة الطلبات والتجهيز</h1>
           <div className="flex gap-2">
+             <Link href={`${SECRET_ADMIN_PATH}/orders/tracking`} className={ad.btnDark}>تتبع الطلبات</Link>
              <Link href={`${SECRET_ADMIN_PATH}/preparation-orders`} className={ad.btnDark}>سجل التجهيز</Link>
              <Link href={`${SECRET_ADMIN_PATH}/orders/new`} className={ad.btnPrimary}>+ طلب إداري جديد</Link>
           </div>
