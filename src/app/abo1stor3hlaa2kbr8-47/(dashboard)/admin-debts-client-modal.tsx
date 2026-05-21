@@ -137,82 +137,108 @@ function DebtItemRow({ order, onPay, onHide, isProcessing }: any) {
   const [mismatchNote, setMismatchNote] = useState("");
   const [isInputOpen, setIsInputOpen] = useState(false);
 
-  const isPartial = Number(payVal) < order.debtAmount;
+  const isPaid = order.debtAmount <= 0;
+  const isPartiallyPaid = order.totalPaid > 0 && order.debtAmount > 0;
+  const isPartialInput = Number(payVal) < order.debtAmount;
 
   return (
-    <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm relative overflow-hidden group">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-           <div className="flex items-center gap-2">
-             <span className="text-[10px] font-black bg-rose-50 text-rose-600 px-2 py-0.5 rounded-lg">#{order.orderNumber}</span>
-             <h4 className="font-black text-slate-800">{order.shop.name}</h4>
+    <div className={`rounded-[2.5rem] p-6 border shadow-xl relative overflow-hidden group transition-all duration-300 ${
+      isPaid
+        ? "bg-emerald-50 border-emerald-200"
+        : isPartiallyPaid
+          ? "bg-amber-50 border-amber-200"
+          : "bg-white border-slate-100"
+    }`}>
+      <div className="flex justify-between items-start gap-4">
+        <div className="flex-1">
+           <div className="flex items-center gap-3 mb-2">
+             <span className={`text-sm font-black px-3 py-1 rounded-xl shadow-sm ${
+               isPaid
+                 ? "bg-emerald-100 text-emerald-700"
+                 : isPartiallyPaid
+                   ? "bg-amber-100 text-amber-700"
+                   : "bg-rose-600 text-white"
+             }`}>#{order.orderNumber}</span>
+             <h4 className="font-black text-slate-800 text-xl leading-tight">{order.shop.name}</h4>
            </div>
-           <p className="text-[10px] font-bold text-slate-400 mt-1">{order.customerRegion?.name || "منطقة غير محددة"}</p>
+           <p className="text-sm font-bold text-slate-400 mt-1">{order.customerRegion?.name || "منطقة غير محددة"}</p>
         </div>
-        <div className="text-left">
-           <p className="text-[9px] font-black text-slate-400 uppercase">المتبقي</p>
-           <p className="text-lg font-black text-rose-600 tabular-nums">{formatDinarAsAlfWithUnit(order.debtAmount)}</p>
+        <div className="text-left shrink-0">
+           <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">{isPaid ? "الحالة" : "المتبقي"}</p>
+           {isPaid ? (
+             <div className="bg-emerald-100 px-4 py-2 rounded-2xl border border-emerald-200">
+                <p className="text-xl font-black text-emerald-600">✅ مسدد</p>
+             </div>
+           ) : isPartiallyPaid ? (
+             <div className="text-left">
+                <p className="text-3xl font-black text-amber-600 tabular-nums leading-none tracking-tighter">{formatDinarAsAlfWithUnit(order.debtAmount)}</p>
+                <p className="text-xs font-black text-amber-500 mt-2 bg-amber-100/50 px-2 py-0.5 rounded-lg inline-block">مسدد جزئياً</p>
+             </div>
+           ) : (
+             <p className="text-4xl font-black text-rose-600 tabular-nums tracking-tighter">{formatDinarAsAlfWithUnit(order.debtAmount)}</p>
+           )}
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3 mt-8 pt-6 border-t-2 border-slate-50">
         {!isInputOpen ? (
-          <div className="flex gap-2">
-            <button
-              disabled={isProcessing}
-              onClick={() => setIsInputOpen(true)}
-              className="flex-1 h-10 rounded-2xl bg-indigo-600 text-white text-[11px] font-black shadow-lg shadow-indigo-100 active:scale-95 transition disabled:opacity-50"
-            >
-              تسديد
-            </button>
+          <div className="flex gap-3">
+            {!isPaid && (
+              <button
+                disabled={isProcessing}
+                onClick={() => setIsInputOpen(true)}
+                className="flex-[3] h-16 rounded-[1.5rem] bg-indigo-600 text-white text-lg font-black shadow-xl shadow-indigo-100 active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <span>💳</span>
+                تسديد
+              </button>
+            )}
             <button
               disabled={isProcessing}
               onClick={() => onHide(order.id)}
-              className="flex-1 h-10 rounded-2xl bg-slate-100 text-slate-500 text-[11px] font-black hover:bg-slate-200 active:scale-95 transition disabled:opacity-50"
+              className="flex-1 h-16 rounded-[1.5rem] bg-slate-100 text-slate-500 text-sm font-black hover:bg-slate-200 active:scale-95 transition disabled:opacity-50 flex items-center justify-center"
             >
-              إخفاء للكل
+              إخفاء
             </button>
           </div>
         ) : (
-          <div className="space-y-2 animate-in slide-in-from-right-2">
+          <div className="space-y-3 animate-in slide-in-from-right-2 duration-300">
             <div className="flex gap-2">
               <input
                 autoFocus
-                className="h-10 flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl px-3 text-xs font-black outline-none focus:border-indigo-500"
+                className="h-16 flex-1 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] px-5 text-xl font-black outline-none focus:border-indigo-500"
                 value={payVal}
                 onChange={e => setPayVal(e.target.value)}
               />
               <button
                 onClick={() => {
-                  if (isPartial && !mismatchNote.trim()) {
+                  if (isPartialInput && !mismatchNote.trim()) {
                     alert("يرجى كتابة سبب التسديد الجزئي");
                     return;
                   }
-                  // سنقوم بتمرير formData بشكل غير مباشر عبر تعديل الـ onPay لتقبل البارامترات الجديدة
-                  // لكن بما أن الـ onPay معرفة في الـ Parent، سنقوم بتعديل استدعائها هناك أو تمرير كائن
                   (onPay as any)(order.id, payVal, mismatchNote, order.debtAmount);
                 }}
                 disabled={isProcessing}
-                className="h-10 px-4 bg-emerald-600 text-white rounded-2xl text-[11px] font-black shadow-lg shadow-emerald-100"
+                className="h-16 px-8 bg-emerald-600 text-white rounded-[1.5rem] text-lg font-black shadow-xl shadow-emerald-100 flex items-center justify-center"
               >
                 {isProcessing ? ".." : "تم"}
               </button>
               <button
                 onClick={() => setIsInputOpen(false)}
-                className="h-10 w-10 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center"
+                className="h-16 w-16 bg-slate-100 text-slate-400 rounded-[1.5rem] flex items-center justify-center text-xl"
               >
                 ✕
               </button>
             </div>
 
-            {isPartial && (
+            {isPartialInput && (
               <div className="animate-in fade-in zoom-in-95 duration-200">
                 <textarea
                   required
                   placeholder="سبب النقص؟ (مطلوب)"
                   value={mismatchNote}
                   onChange={e => setMismatchNote(e.target.value)}
-                  className="w-full rounded-xl border-2 border-rose-100 bg-rose-50/50 p-2 text-[10px] font-bold outline-none focus:border-rose-400"
+                  className="w-full rounded-2xl border-2 border-rose-100 bg-rose-50/50 p-4 text-sm font-bold outline-none focus:border-rose-400"
                   rows={2}
                 />
               </div>

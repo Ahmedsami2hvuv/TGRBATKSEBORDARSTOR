@@ -29,8 +29,9 @@ export function DebtItemClient({
   const [mismatchNote, setMismatchNote] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  const isPartial = Number(amountAlf) < order.debtAmount;
   const isPaid = order.debtAmount <= 0;
+  const isPartiallyPaid = order.totalPaid > 0 && order.debtAmount > 0;
+  const isPartial = Number(amountAlf) < order.debtAmount;
 
   if (isHidingLocally) return null;
 
@@ -88,7 +89,13 @@ export function DebtItemClient({
   }
 
   return (
-    <div className={`kse-glass-dark rounded-[2rem] border p-5 shadow-sm overflow-hidden relative transition-all duration-300 ${isPaid ? "bg-emerald-50 border-emerald-200" : "bg-white border-slate-200"}`}>
+    <div className={`kse-glass-dark rounded-[2rem] border p-5 shadow-sm overflow-hidden relative transition-all duration-300 ${
+      isPaid
+        ? "bg-emerald-50 border-emerald-200"
+        : isPartiallyPaid
+          ? "bg-amber-50 border-amber-200"
+          : "bg-white border-slate-200"
+    }`}>
       {showSuccess && (
         <div className="absolute inset-0 bg-emerald-500/95 flex items-center justify-center z-20 animate-in fade-in duration-300">
            <div className="text-center text-white">
@@ -121,45 +128,57 @@ export function DebtItemClient({
          </div>
       )}
 
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-             <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${isPaid ? "bg-emerald-100 text-emerald-700" : "bg-indigo-50 text-indigo-600"}`}>#{order.orderNumber}</span>
-             <h3 className="font-black text-slate-900 text-lg leading-none">{order.shop.name}</h3>
+      <div className="flex justify-between items-start gap-4">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+             <span className={`text-sm font-black px-3 py-1 rounded-xl shadow-sm ${
+               isPaid
+                 ? "bg-emerald-100 text-emerald-700"
+                 : isPartiallyPaid
+                   ? "bg-amber-100 text-amber-700"
+                   : "bg-indigo-600 text-white"
+             }`}>#{order.orderNumber}</span>
+             <h3 className="font-black text-slate-900 text-xl leading-tight">{order.shop.name}</h3>
           </div>
-          <p className="text-xs font-bold text-slate-400">{order.customerRegion?.name || "منطقة غير محددة"}</p>
+          <p className="text-sm font-bold text-slate-500 flex items-center gap-1">
+            <span className="opacity-50">📍</span>
+            {order.customerRegion?.name || "منطقة غير محددة"}
+          </p>
         </div>
-        <div className="text-left">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{isPaid ? "الحالة" : "المتبقي"}</p>
+        <div className="text-left shrink-0">
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">{isPaid ? "الحالة" : "المتبقي"}</p>
           {isPaid ? (
-            <p className="text-lg font-black text-emerald-600">✅ مسدد</p>
+            <div className="bg-emerald-100 px-4 py-2 rounded-2xl border border-emerald-200">
+               <p className="text-xl font-black text-emerald-600">✅ مسدد</p>
+            </div>
+          ) : isPartiallyPaid ? (
+            <div className="text-left">
+               <p className="text-3xl font-black text-amber-600 tabular-nums leading-none tracking-tighter">{formatDinarAsAlfWithUnit(order.debtAmount)}</p>
+               <p className="text-xs font-black text-amber-500 mt-2 bg-amber-100/50 px-2 py-0.5 rounded-lg inline-block">مسدد جزئياً</p>
+            </div>
           ) : (
-            <p className="text-xl font-black text-rose-600 tabular-nums">{formatDinarAsAlfWithUnit(order.debtAmount)}</p>
+            <p className="text-4xl font-black text-rose-600 tabular-nums tracking-tighter">{formatDinarAsAlfWithUnit(order.debtAmount)}</p>
           )}
         </div>
       </div>
 
       {!isPaying ? (
-        <div className="flex items-center justify-between mt-5 pt-4 border-t border-slate-50">
-          <div className="text-[10px] font-bold text-slate-400">
-             الحساب: {formatDinarAsAlfWithUnit(order.orderSubtotal)}
-          </div>
-          <div className="flex gap-2">
-            {!isPaid && (
-              <button
-                onClick={() => setIsPaying(true)}
-                className="rounded-2xl bg-indigo-600 px-6 py-2.5 text-xs font-black text-white shadow-lg shadow-indigo-100 transition-all active:scale-95"
-              >
-                تسديد
-              </button>
-            )}
+        <div className="flex items-center gap-3 mt-8 pt-6 border-t-2 border-slate-50">
+          {!isPaid && (
             <button
-              onClick={() => setShowConfirmHide(true)}
-              className="rounded-2xl bg-slate-100 px-4 py-2.5 text-xs font-black text-slate-500 hover:bg-slate-200 active:scale-95 transition-all"
+              onClick={() => setIsPaying(true)}
+              className="flex-[3] h-16 rounded-[1.5rem] bg-indigo-600 text-lg font-black text-white shadow-xl shadow-indigo-200 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
-              إخفاء
+              <span>💳</span>
+              تسديد الدين
             </button>
-          </div>
+          )}
+          <button
+            onClick={() => setShowConfirmHide(true)}
+            className="flex-1 h-16 rounded-[1.5rem] bg-slate-100 text-sm font-black text-slate-500 hover:bg-slate-200 active:scale-95 transition-all flex items-center justify-center gap-1"
+          >
+            إخفاء
+          </button>
         </div>
       ) : (
         <form onSubmit={handlePay} className="mt-5 pt-4 border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">

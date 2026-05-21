@@ -1391,11 +1391,32 @@ export async function payOrderDebtAction(
            await sendTelegramMessage(msg, { botToken: managementBotToken });
         }
 
-        // إشعار للمجهزين المرتبطين بالمحل
-        const relatedPreparers = await prisma.companyPreparer.findMany({
-          where: { active: true, telegramUserId: { not: "" }, shopLinks: { some: { shopId: order.shopId } } }
+        // 1. إشعار خاص للمجهز الذي قام بالتسديد (وصل استلام)
+        const currentPreparer = await prisma.companyPreparer.findUnique({
+          where: { id: preparerId },
+          select: { telegramUserId: true }
         });
+
         const preparerBotToken = await getBotTokenByPurpose("preparer");
+        if (preparerBotToken && currentPreparer?.telegramUserId) {
+          try {
+            await sendTelegramMessage(`✅ <b>تأكيد استلام تسديد</b>\n\n${msg}`, {
+              botToken: preparerBotToken,
+              chatId: currentPreparer.telegramUserId
+            });
+          } catch (e) { console.error("Failed to send receipt to current preparer", e); }
+        }
+
+        // 2. إشعار للمجهزين الآخرين المرتبطين بهذا المحل
+        const relatedPreparers = await prisma.companyPreparer.findMany({
+          where: {
+            active: true,
+            telegramUserId: { not: "" },
+            id: { not: preparerId }, // عدم التكرار للمجهز الحالي
+            shopLinks: { some: { shopId: order.shopId } }
+          }
+        });
+
         if (preparerBotToken) {
           for (const p of relatedPreparers) {
             try {
