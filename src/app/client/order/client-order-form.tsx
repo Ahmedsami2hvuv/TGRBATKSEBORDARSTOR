@@ -586,13 +586,13 @@ function ClientOrderFormInner({
               </div>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-bold text-slate-600 px-1">ملاحظة كتابية</span>
-                <textarea name="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} className={`${inputClass} min-h-[100px] resize-none`} placeholder="اكتب تفاصيل المواد المطلوبة أو أي ملاحظات أخرى للمندوب..." />
+                <span className="text-sm font-bold text-slate-600 px-1">رقم ثاني للزبون (المستلم) - اختياري</span>
+                <input name="alternatePhone" value={alternatePhone} onChange={(e) => setAlternatePhone(e.target.value)} inputMode="numeric" className={`${inputClass} font-mono tabular-nums`} placeholder="07XXXXXXXXX" />
               </label>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-bold text-slate-600 px-1">رقم ثاني للزبون (المستلم) - اختياري</span>
-                <input name="alternatePhone" value={alternatePhone} onChange={(e) => setAlternatePhone(e.target.value)} inputMode="numeric" className={`${inputClass} font-mono tabular-nums`} placeholder="07XXXXXXXXX" />
+                <span className="text-sm font-bold text-slate-600 px-1">ملاحظة كتابية</span>
+                <textarea name="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} className={`${inputClass} min-h-[100px] resize-none`} placeholder="اكتب تفاصيل المواد المطلوبة أو أي ملاحظات أخرى للمندوب..." />
               </label>
             </div>
           </section>

@@ -881,18 +881,6 @@ export function AdminCreateOrderForm({
  {/* ملاحظة صوتية */}
  <ClientVoiceNoteField title="ملاحظة صوتية" wrapperClassName="" />
 
- {/* ملاحظة كتابية */}
- <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>ملاحظات / تفاصيل (كتابية)</span>
- <textarea
- name="summary"
- rows={3}
- className={ad.input}
- value={summary}
- onChange={(e) => setSummary(e.target.value)}
- />
- </label>
-
  {/* رقم ثاني */}
  <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>رقم الزبون الثاني</span>
@@ -916,6 +904,18 @@ export function AdminCreateOrderForm({
  placeholder="مثال: الساعة 8 مساءً"
  value={orderNoteTime}
  onChange={(e) => setOrderNoteTime(e.target.value)}
+ />
+ </label>
+
+ {/* ملاحظة كتابية */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>ملاحظات / تفاصيل (كتابية)</span>
+ <textarea
+ name="summary"
+ rows={3}
+ className={ad.input}
+ value={summary}
+ onChange={(e) => setSummary(e.target.value)}
  />
  </label>
  </>
@@ -1067,18 +1067,6 @@ export function AdminCreateOrderForm({
  {/* ملاحظة صوتية */}
  <ClientVoiceNoteField title="ملاحظة صوتية" wrapperClassName="" />
 
- {/* ملاحظة كتابية */}
- <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>ملاحظات / تفاصيل (كتابية)</span>
- <textarea
- name="summary"
- rows={3}
- className={ad.input}
- value={summary}
- onChange={(e) => setSummary(e.target.value)}
- />
- </label>
-
  {/* وقت الطلب */}
  <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>وقت الطلب (إجباري)</span>
@@ -1089,6 +1077,18 @@ export function AdminCreateOrderForm({
  placeholder="مثال: الساعة 8 مساءً"
  value={orderNoteTime}
  onChange={(e) => setOrderNoteTime(e.target.value)}
+ />
+ </label>
+
+ {/* ملاحظة كتابية */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>ملاحظات / تفاصيل (كتابية)</span>
+ <textarea
+ name="summary"
+ rows={3}
+ className={ad.input}
+ value={summary}
+ onChange={(e) => setSummary(e.target.value)}
  />
  </label>
  </>
