@@ -23,6 +23,7 @@ import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 import { ADMIN_OFFICE_LABEL, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
 import { getBotTokenByPurpose } from "@/lib/telegram-bots";
 import { escapeTelegramHtml, sendTelegramHtmlToChat, sendTelegramMessage } from "@/lib/telegram";
+import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
 
 export type PreparerActionState = { error?: string; ok?: boolean; orderNumber?: number; draftId?: string };
 
@@ -1378,6 +1379,14 @@ export async function payOrderDebtAction(
         const escapedNote = escapeTelegramHtml(mismatchNote || "");
         const escapedCustomerName = escapeTelegramHtml(order.customer?.name || order.customerPhone || "—");
 
+        let balanceText = "";
+        if (preparerId) {
+          const totals = await getPreparerMoneyTotals(preparerId);
+          if (totals) {
+            balanceText = `\u200F<b>المتبقي في المحفظة:</b> ${formatDinarAsAlfWithUnit(totals.remain)}`;
+          }
+        }
+
         const msg = [
           `\u200F💸 <b>تسديد دين للمحل</b>`,
           `\u200F<b>المحل:</b> ${escapedShopName}`,
@@ -1385,7 +1394,8 @@ export async function payOrderDebtAction(
           `\u200F<b>المبلغ:</b> ${formatDinarAsAlfWithUnit(amountDinar)}`,
           mismatchNote ? `\u200F<b>السبب:</b> ${escapedNote}` : "",
           `\u200F<b>رقم الطلب:</b> #${order.orderNumber}`,
-          `\u200F<b>الزبون:</b> ${escapedCustomerName}`,
+          `\u200F<b>العميل:</b> ${escapedCustomerName}`,
+          balanceText,
           `\u200F<b>التاريخ:</b> \u200E${new Date().toLocaleString("ar-IQ")}\u200E`,
         ].filter(Boolean).join("\n");
 
