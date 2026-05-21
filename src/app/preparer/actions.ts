@@ -1258,7 +1258,7 @@ export async function hideOrderFromPreparerDebtsAction(
 ): Promise<PreparerActionState> {
   try {
     const v = readPortal(formData);
-    const isAdmin = String(formData.get("isAdmin") === "true");
+    const isAdmin = formData.get("isAdmin") === "true";
 
     let preparerId = "";
     if (v.ok) {
@@ -1277,10 +1277,16 @@ export async function hideOrderFromPreparerDebtsAction(
         data: { preparerDebtHidden: true }
       });
 
-      // إرسال إشعار للإدارة وللبوت العام
-      const order = await prisma.order.findUnique({ where: { id: orderId }, select: { orderNumber: true } });
-      const notificationBotToken = await getBotTokenByPurpose("notification");
-      await sendTelegramMessage(`🚫 <b>المدير قام بإخفاء دين الطلب #${order?.orderNumber} عن جميع المجهزين.</b>`, { botToken: notificationBotToken });
+      // إرسال إشعار محمي
+      try {
+        const order = await prisma.order.findUnique({ where: { id: orderId }, select: { orderNumber: true } });
+        const notificationBotToken = await getBotTokenByPurpose("notification");
+        if (notificationBotToken) {
+          await sendTelegramMessage(`🚫 <b>المدير قام بإخفاء دين الطلب #${order?.orderNumber} عن جميع المجهزين.</b>`, { botToken: notificationBotToken });
+        }
+      } catch (e) {
+        console.error("Telegram hide notify error:", e);
+      }
 
     } else {
       // إذا كان مجهزاً، يخفيها عن نفسه فقط

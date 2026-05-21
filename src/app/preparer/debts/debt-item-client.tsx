@@ -30,6 +30,7 @@ export function DebtItemClient({
   const [isPending, startTransition] = useTransition();
 
   const isPartial = Number(amountAlf) < order.debtAmount;
+  const isPaid = order.debtAmount <= 0;
 
   if (isHidingLocally) return null;
 
@@ -55,12 +56,11 @@ export function DebtItemClient({
       if (res.ok) {
         setIsPaying(false);
         setShowSuccess(true);
-        // إذا سدد بالكامل، نخفيه بعد قليل
-        if (Number(amountAlf) >= order.debtAmount) {
-          setTimeout(() => setIsHidingLocally(true), 2000);
-        } else {
-          setTimeout(() => setShowSuccess(false), 3000);
-        }
+        // لا نخفيها محلياً الآن بناءً على طلب المستخدم لتبقى ظاهرة كـ "مسددة"
+        setTimeout(() => {
+          setShowSuccess(false);
+          window.location.reload();
+        }, 2000);
       } else if (res.error) {
         alert(res.error);
       }
@@ -74,18 +74,21 @@ export function DebtItemClient({
     fd.append("s", auth.s);
     fd.append("orderId", order.id);
 
-    setIsHidingLocally(true); // تختفي فوراً من الواجهة
+    // إخفاء فوري من الواجهة لراحة المستخدم
+    setIsHidingLocally(true);
+
     startTransition(async () => {
       const res = await hideOrderFromPreparerDebtsAction(null, fd);
       if (res && res.error) {
-        setIsHidingLocally(false); // إرجاعها في حال فشل الأكشن
+        // إذا فشل فعلياً في قاعدة البيانات، نعيده للظهور وننبه المستخدم
+        setIsHidingLocally(false);
         alert(res.error);
       }
     });
   }
 
   return (
-    <div className="kse-glass-dark rounded-[2rem] border border-slate-200 p-5 shadow-sm bg-white overflow-hidden relative transition-all duration-300">
+    <div className={`kse-glass-dark rounded-[2rem] border p-5 shadow-sm overflow-hidden relative transition-all duration-300 ${isPaid ? "bg-emerald-50 border-emerald-200" : "bg-white border-slate-200"}`}>
       {showSuccess && (
         <div className="absolute inset-0 bg-emerald-500/95 flex items-center justify-center z-20 animate-in fade-in duration-300">
            <div className="text-center text-white">
@@ -121,14 +124,18 @@ export function DebtItemClient({
       <div className="flex justify-between items-start mb-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
-             <span className="text-[10px] font-black bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-lg">#{order.orderNumber}</span>
+             <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${isPaid ? "bg-emerald-100 text-emerald-700" : "bg-indigo-50 text-indigo-600"}`}>#{order.orderNumber}</span>
              <h3 className="font-black text-slate-900 text-lg leading-none">{order.shop.name}</h3>
           </div>
           <p className="text-xs font-bold text-slate-400">{order.customerRegion?.name || "منطقة غير محددة"}</p>
         </div>
         <div className="text-left">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">المتبقي</p>
-          <p className="text-xl font-black text-rose-600 tabular-nums">{formatDinarAsAlfWithUnit(order.debtAmount)}</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{isPaid ? "الحالة" : "المتبقي"}</p>
+          {isPaid ? (
+            <p className="text-lg font-black text-emerald-600">✅ مسدد</p>
+          ) : (
+            <p className="text-xl font-black text-rose-600 tabular-nums">{formatDinarAsAlfWithUnit(order.debtAmount)}</p>
+          )}
         </div>
       </div>
 
@@ -138,12 +145,14 @@ export function DebtItemClient({
              الحساب: {formatDinarAsAlfWithUnit(order.orderSubtotal)}
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={() => setIsPaying(true)}
-              className="rounded-2xl bg-indigo-600 px-6 py-2.5 text-xs font-black text-white shadow-lg shadow-indigo-100 transition-all active:scale-95"
-            >
-              تسديد
-            </button>
+            {!isPaid && (
+              <button
+                onClick={() => setIsPaying(true)}
+                className="rounded-2xl bg-indigo-600 px-6 py-2.5 text-xs font-black text-white shadow-lg shadow-indigo-100 transition-all active:scale-95"
+              >
+                تسديد
+              </button>
+            )}
             <button
               onClick={() => setShowConfirmHide(true)}
               className="rounded-2xl bg-slate-100 px-4 py-2.5 text-xs font-black text-slate-500 hover:bg-slate-200 active:scale-95 transition-all"

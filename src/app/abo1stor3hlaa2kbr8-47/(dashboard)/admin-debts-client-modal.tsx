@@ -48,19 +48,28 @@ export function AdminDebtsClientModal({ initialOrders }: { initialOrders: DebtOr
   async function handleHide(orderId: string) {
     if (!confirm("هل أنت متأكد من إخفاء هذا الدين عن الجميع؟")) return;
 
+    // 1. تحديث الواجهة فوراً (حذف الطلبية من القائمة)
+    setOrders(prev => prev.filter(o => o.id !== orderId));
     setProcessingId(orderId + "-hide");
+
     const fd = new FormData();
     fd.append("orderId", orderId);
     fd.append("isAdmin", "true");
 
     startTransition(async () => {
-      const res = await hideOrderFromPreparerDebtsAction(null, fd);
-      if (res.ok) {
-        setOrders(prev => prev.filter(o => o.id !== orderId));
-      } else {
-        alert(res.error || "فشل الإخفاء");
+      try {
+        const res = await hideOrderFromPreparerDebtsAction(null, fd);
+        if (!res.ok) {
+          // إذا فشل السيرفر فعلياً (وليس التيليجرام فقط)، نعيد الطلبية للقائمة
+          alert(res.error || "فشل الإخفاء");
+          window.location.reload(); // لإعادة جلب البيانات الصحيحة
+        }
+      } catch (err) {
+        console.error("Action error:", err);
+        window.location.reload();
+      } finally {
+        setProcessingId(null);
       }
-      setProcessingId(null);
     });
   }
 
