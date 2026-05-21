@@ -21,7 +21,7 @@ export function AdminDebtsClientModal({ initialOrders }: { initialOrders: DebtOr
   const [isPending, startTransition] = useTransition();
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  async function handlePay(orderId: string, amountAlf: string) {
+  async function handlePay(orderId: string, amountAlf: string, mismatchNote?: string, expectedAlf?: number) {
     if (!amountAlf || Number(amountAlf) <= 0) return;
 
     setProcessingId(orderId + "-pay");
@@ -30,6 +30,8 @@ export function AdminDebtsClientModal({ initialOrders }: { initialOrders: DebtOr
     fd.append("amountAlf", amountAlf);
     fd.append("isAdmin", "true");
     fd.append("adminName", "الإدارة");
+    if (mismatchNote) fd.append("mismatchNote", mismatchNote);
+    if (expectedAlf) fd.append("expectedAlf", String(expectedAlf));
 
     startTransition(async () => {
       const res = await payOrderDebtAction(null, fd);
@@ -123,7 +125,10 @@ export function AdminDebtsClientModal({ initialOrders }: { initialOrders: DebtOr
 
 function DebtItemRow({ order, onPay, onHide, isProcessing }: any) {
   const [payVal, setPayVal] = useState(String(order.debtAmount));
+  const [mismatchNote, setMismatchNote] = useState("");
   const [isInputOpen, setIsInputOpen] = useState(false);
+
+  const isPartial = Number(payVal) < order.debtAmount;
 
   return (
     <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm relative overflow-hidden group">
@@ -141,9 +146,9 @@ function DebtItemRow({ order, onPay, onHide, isProcessing }: any) {
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2">
         {!isInputOpen ? (
-          <>
+          <div className="flex gap-2">
             <button
               disabled={isProcessing}
               onClick={() => setIsInputOpen(true)}
@@ -158,28 +163,51 @@ function DebtItemRow({ order, onPay, onHide, isProcessing }: any) {
             >
               إخفاء للكل
             </button>
-          </>
+          </div>
         ) : (
-          <div className="flex-1 flex gap-2 animate-in slide-in-from-right-2">
-            <input
-              autoFocus
-              className="h-10 flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl px-3 text-xs font-black outline-none focus:border-indigo-500"
-              value={payVal}
-              onChange={e => setPayVal(e.target.value)}
-            />
-            <button
-              onClick={() => onPay(order.id, payVal)}
-              disabled={isProcessing}
-              className="h-10 px-4 bg-emerald-600 text-white rounded-2xl text-[11px] font-black shadow-lg shadow-emerald-100"
-            >
-              {isProcessing ? ".." : "تم"}
-            </button>
-            <button
-              onClick={() => setIsInputOpen(false)}
-              className="h-10 w-10 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center"
-            >
-              ✕
-            </button>
+          <div className="space-y-2 animate-in slide-in-from-right-2">
+            <div className="flex gap-2">
+              <input
+                autoFocus
+                className="h-10 flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl px-3 text-xs font-black outline-none focus:border-indigo-500"
+                value={payVal}
+                onChange={e => setPayVal(e.target.value)}
+              />
+              <button
+                onClick={() => {
+                  if (isPartial && !mismatchNote.trim()) {
+                    alert("يرجى كتابة سبب التسديد الجزئي");
+                    return;
+                  }
+                  // سنقوم بتمرير formData بشكل غير مباشر عبر تعديل الـ onPay لتقبل البارامترات الجديدة
+                  // لكن بما أن الـ onPay معرفة في الـ Parent، سنقوم بتعديل استدعائها هناك أو تمرير كائن
+                  (onPay as any)(order.id, payVal, mismatchNote, order.debtAmount);
+                }}
+                disabled={isProcessing}
+                className="h-10 px-4 bg-emerald-600 text-white rounded-2xl text-[11px] font-black shadow-lg shadow-emerald-100"
+              >
+                {isProcessing ? ".." : "تم"}
+              </button>
+              <button
+                onClick={() => setIsInputOpen(false)}
+                className="h-10 w-10 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            {isPartial && (
+              <div className="animate-in fade-in zoom-in-95 duration-200">
+                <textarea
+                  required
+                  placeholder="سبب النقص؟ (مطلوب)"
+                  value={mismatchNote}
+                  onChange={e => setMismatchNote(e.target.value)}
+                  className="w-full rounded-xl border-2 border-rose-100 bg-rose-50/50 p-2 text-[10px] font-bold outline-none focus:border-rose-400"
+                  rows={2}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>

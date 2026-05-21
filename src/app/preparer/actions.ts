@@ -1328,10 +1328,20 @@ export async function payOrderDebtAction(
 
     const orderId = String(formData.get("orderId") ?? "").trim();
     const amountAlf = String(formData.get("amountAlf") ?? "").trim();
+    const mismatchNote = String(formData.get("mismatchNote") ?? "").trim();
+    const expectedAlf = String(formData.get("expectedAlf") ?? "").trim();
+
     if (!orderId || !amountAlf) return { error: "بيانات ناقصة." };
 
     const amountDinar = new Decimal(amountAlf).mul(ALF_PER_DINAR);
     if (amountDinar.lte(0)) return { error: "المبلغ يجب أن يكون أكبر من صفر." };
+
+    const expectedDinar = expectedAlf ? new Decimal(expectedAlf).mul(ALF_PER_DINAR) : null;
+    const matchesExpected = expectedDinar ? amountDinar.equals(expectedDinar) : true;
+
+    if (!matchesExpected && !mismatchNote) {
+      return { error: "يرجى كتابة سبب تسديد مبلغ أقل من المطلوب." };
+    }
 
     await prisma.orderCourierMoneyEvent.create({
       data: {
@@ -1340,7 +1350,10 @@ export async function payOrderDebtAction(
         kind: "pickup_out",
         recordedByCompanyPreparerId: preparerId,
         courierId: null,
-        notes: `تسديد دين للمحل عبر ${isAdmin ? "لوحة الإدارة" : "بوابة المجهز"} (${displayName})`,
+        expectedDinar,
+        matchesExpected,
+        mismatchNote: mismatchNote || "",
+        mismatchReason: !matchesExpected ? "تسديد جزئي" : "",
       }
     });
 
@@ -1356,6 +1369,7 @@ export async function payOrderDebtAction(
         `<b>المحل:</b> ${order.shop.name}`,
         `<b>المسدد:</b> ${displayName}`,
         `<b>المبلغ:</b> ${formatDinarAsAlfWithUnit(amountDinar)}`,
+        mismatchNote ? `<b>السبب:</b> ${mismatchNote}` : "",
         `<b>رقم الطلب:</b> #${order.orderNumber}`,
         `<b>الزبون:</b> ${order.customer?.name || "—"}`,
       ].join("\n");

@@ -26,18 +26,29 @@ export function DebtItemClient({
   const [isHidingLocally, setIsHidingLocally] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [amountAlf, setAmountAlf] = useState(String(order.debtAmount));
+  const [mismatchNote, setMismatchNote] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  const isPartial = Number(amountAlf) < order.debtAmount;
 
   if (isHidingLocally) return null;
 
   async function handlePay(e: React.FormEvent) {
     e.preventDefault();
+
+    if (isPartial && !mismatchNote.trim()) {
+      alert("يرجى كتابة سبب التسديد الجزئي");
+      return;
+    }
+
     const fd = new FormData();
     fd.append("p", auth.p);
     fd.append("exp", auth.exp);
     fd.append("s", auth.s);
     fd.append("orderId", order.id);
     fd.append("amountAlf", amountAlf);
+    fd.append("expectedAlf", String(order.debtAmount));
+    fd.append("mismatchNote", mismatchNote);
 
     startTransition(async () => {
       const res = await payOrderDebtAction(null, fd);
@@ -144,29 +155,45 @@ export function DebtItemClient({
       ) : (
         <form onSubmit={handlePay} className="mt-5 pt-4 border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
           <p className="text-xs font-black text-slate-500 mb-3">أدخل المبلغ المراد تسديده للمحل:</p>
-          <div className="flex gap-2">
-            <input
-              autoFocus
-              inputMode="decimal"
-              value={amountAlf}
-              onChange={(e) => setAmountAlf(e.target.value)}
-              className="h-12 flex-1 rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 font-black outline-none focus:border-indigo-500 focus:bg-white transition-all text-lg"
-              placeholder="المبلغ"
-            />
-            <button
-              type="submit"
-              disabled={isPending}
-              className="h-12 rounded-2xl bg-emerald-600 px-6 font-black text-white shadow-lg shadow-emerald-100 disabled:opacity-50 active:scale-95 transition-all"
-            >
-              {isPending ? "..." : "تأكيد"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsPaying(false)}
-              className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 active:scale-95 transition-all"
-            >
-              ✕
-            </button>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <input
+                autoFocus
+                inputMode="decimal"
+                value={amountAlf}
+                onChange={(e) => setAmountAlf(e.target.value)}
+                className="h-12 flex-1 rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 font-black outline-none focus:border-indigo-500 focus:bg-white transition-all text-lg"
+                placeholder="المبلغ"
+              />
+              <button
+                type="submit"
+                disabled={isPending}
+                className="h-12 rounded-2xl bg-emerald-600 px-6 font-black text-white shadow-lg shadow-emerald-100 disabled:opacity-50 active:scale-95 transition-all"
+              >
+                {isPending ? "..." : "تأكيد"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPaying(false)}
+                className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 active:scale-95 transition-all"
+              >
+                ✕
+              </button>
+            </div>
+
+            {isPartial && (
+              <div className="animate-in fade-in zoom-in-95 duration-200">
+                <p className="text-[10px] font-black text-rose-600 mb-1 mr-1">لماذا المبلغ أقل من المطلوب؟</p>
+                <textarea
+                  required
+                  placeholder="اكتب السبب هنا... (مثلاً: خصم من المحل، تم دفع الباقي مسبقاً، إلخ)"
+                  value={mismatchNote}
+                  onChange={(e) => setMismatchNote(e.target.value)}
+                  className="w-full rounded-xl border-2 border-rose-100 bg-rose-50/30 p-3 text-xs font-bold outline-none focus:border-rose-400"
+                  rows={2}
+                />
+              </div>
+            )}
           </div>
         </form>
       )}
