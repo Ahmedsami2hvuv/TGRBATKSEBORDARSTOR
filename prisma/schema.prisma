@@ -432,6 +432,7 @@ model Order {
   submittedByCompanyPreparerId          String?
   preparerShoppingJson                  Json?
   vehiclePreference                     String?
+  preparerDebtHidden                    Boolean                  @default(false)
   courier                               Courier?                 @relation(fields: [assignedCourierId], references: [id])
   courierEarningForCourier              Courier?                 @relation("OrderCourierEarning", fields: [courierEarningForCourierId], references: [id])
   customer                              Customer?                @relation(fields: [customerId], references: [id])

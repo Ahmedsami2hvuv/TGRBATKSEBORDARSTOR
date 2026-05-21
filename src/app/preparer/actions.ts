@@ -1250,6 +1250,35 @@ export async function reportUnavailableProductsAction(
 }
 
 export async function setPreparerPresenceFromForm(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> { return { ok: true }; }
+
+/** إخفاء الطلبية من قائمة الديون الخاصة بالمجهز */
+export async function hideOrderFromPreparerDebtsAction(
+  _prev: any,
+  formData: FormData
+): Promise<PreparerActionState> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "الرابط غير صالح." };
+
+    const orderId = String(formData.get("orderId") ?? "").trim();
+    if (!orderId) return { error: "معرف الطلب ناقص." };
+
+    const gate = await assertPreparerLinkedToOrderShop(v.preparerId, orderId);
+    if (!gate.ok) return { error: gate.error };
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { preparerDebtHidden: true }
+    });
+
+    revalidatePath("/preparer/debts");
+    return { ok: true };
+  } catch (e) {
+    console.error("hideOrderFromPreparerDebtsAction error:", e);
+    return { error: "فشل إخفاء الطلبية." };
+  }
+}
+
 export async function bulkAssignOrdersByPreparer(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> {
   const v = readPortal(formData);
   if (!v.ok) return { error: "جلسة المجهز غير صالحة." };

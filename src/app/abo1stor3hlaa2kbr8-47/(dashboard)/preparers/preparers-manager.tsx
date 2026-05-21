@@ -40,6 +40,7 @@ export type PreparerManagerRow = {
   preparerMonthlySalaryResetMode: "calendar_month" | "every_n_days" | "manual";
   preparerMonthlySalaryResetAt: string | null;
   preparerMonthlySalaryResetEveryDays: number | null;
+  totalDebtsAmount: number;
 };
 
 export type ShopOption = { id: string; name: string };
@@ -418,6 +419,11 @@ function PreparerCard({
                 >
                   {row.active ? "نشط" : "متوقف"}
                 </span>
+                {row.totalDebtsAmount > 0 && (
+                  <span className="rounded-full bg-rose-100 px-3 py-0.5 text-[10px] font-black text-rose-700">
+                    دين: {row.totalDebtsAmount}
+                  </span>
+                )}
               </div>
             </div>
           </div>

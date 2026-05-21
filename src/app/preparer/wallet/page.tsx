@@ -320,7 +320,15 @@ export default async function PreparerWalletPage({ searchParams }: Props) {
     <div className="kse-app-bg min-h-screen px-4 py-8 pb-24 text-slate-800">
       <div className="kse-app-inner mx-auto max-w-lg space-y-5">
         <header className="kse-glass-dark rounded-2xl border border-violet-200/90 p-5 shadow-sm">
-          <h1 className="text-xl font-black text-slate-900">محفظة {preparer.name}</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-black text-slate-900">محفظة {preparer.name}</h1>
+            <a
+              href={preparerPath("/preparer/debts", baseAuth)}
+              className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-rose-700"
+            >
+              الديون
+            </a>
+          </div>
         </header>
 
         {/* ملخص المحفظة مرتب ديناميكياً */}
