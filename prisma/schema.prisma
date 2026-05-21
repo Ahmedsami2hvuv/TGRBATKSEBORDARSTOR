@@ -555,13 +555,14 @@ model TelegramAdmin {
 }
 
 model UISystemSetting {
-  id          String   @id @default(cuid())
-  target      String
-  section     String
-  config      Json
-  chatEnabled Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  target          String
+  section         String
+  config          Json
+  chatEnabled     Boolean  @default(true)
+  trackingEnabled Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@unique([target, section])
 }

@@ -36,9 +36,11 @@ function roleLabel(role: Role): string {
 export default function PortalChatWidget({
   mandoubFeatures,
   preparerFeatures,
+  globalEnabled = true,
 }: {
   mandoubFeatures?: { chatEnabled: boolean };
   preparerFeatures?: { chatEnabled: boolean };
+  globalEnabled?: boolean;
 }) {
   const pathname = usePathname() || "";
   const searchParams = useSearchParams();
@@ -58,6 +60,7 @@ export default function PortalChatWidget({
   const isAdmin = pathname.startsWith("/admin");
 
   const isPortalPage = useMemo(() => {
+    if (!globalEnabled) return false;
     if (isAdmin) return true;
     if (isMandoub && mandoubFeatures?.chatEnabled === false) return false;
     if (isPreparer && preparerFeatures?.chatEnabled === false) return false;
@@ -174,10 +177,21 @@ export default function PortalChatWidget({
     void loadThreads();
     void loadContacts();
     const id = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
       void loadThreads();
       if (selectedThreadId) void loadMessages(selectedThreadId);
-    }, 7000);
-    return () => window.clearInterval(id);
+    }, 30000); // زيادة الوقت لـ 30 ثانية لتقليل استهلاك الطلبات
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void loadThreads();
+        if (selectedThreadId) void loadMessages(selectedThreadId);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [isPortalPage, selectedThreadId]);
 
   useEffect(() => {

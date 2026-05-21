@@ -12,7 +12,7 @@ import { IconSettingsForm } from "./icon-settings-form";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { WhatsappTemplateSettingsForm } from "./whatsapp-template-settings-form";
-import { saveChatSettingsAction, saveRoleFeaturesAction, updateCourierButtonsAction } from "./actions";
+import { saveChatSettingsAction, saveRoleFeaturesAction, updateCourierButtonsAction, saveTrackingSettingsAction } from "./actions";
 import { useRouter } from "next/navigation";
 import { RoleFeaturesConfig } from "@/lib/role-features-settings";
 import { CourierButtonsSettings } from "./courier-buttons-settings";
@@ -166,6 +166,7 @@ export function SettingsBlocks({
   customerOrderTemplate,
   telegramNewOrderTemplate,
   chatEnabledInitial,
+  trackingEnabledInitial,
   mandoubFeaturesInitial,
   preparerFeaturesInitial,
   telegramAdminsInitial,
@@ -177,6 +178,7 @@ export function SettingsBlocks({
   customerOrderTemplate: string;
   telegramNewOrderTemplate: string;
   chatEnabledInitial: boolean;
+  trackingEnabledInitial: boolean;
   mandoubFeaturesInitial: RoleFeaturesConfig;
   preparerFeaturesInitial: RoleFeaturesConfig;
   telegramAdminsInitial: Array<{ id: string; telegramUserId: string; name: string; active: boolean }>;
@@ -185,7 +187,9 @@ export function SettingsBlocks({
   const router = useRouter();
   const [openId, setOpenId] = useState<string>("ui-designer");
   const [chatEnabled, setChatEnabled] = useState(chatEnabledInitial);
+  const [trackingEnabled, setTrackingEnabled] = useState(trackingEnabledInitial);
   const [chatSaving, setChatSaving] = useState(false);
+  const [trackingSaving, setTrackingSaving] = useState(false);
 
   const [mandoubFeatures, setMandoubFeatures] = useState(mandoubFeaturesInitial);
   const [preparerFeatures, setPreparerFeatures] = useState(preparerFeaturesInitial);
@@ -226,6 +230,71 @@ export function SettingsBlocks({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Block
+        id="resource-management"
+        title="إدارة الموارد 🔋"
+        subtitle="توفير استهلاك السيرفر (Vercel Edge)."
+        open={openId === "resource-management"}
+        onToggle={() => setOpenId((x) => (x === "resource-management" ? "" : "resource-management"))}
+        tone="rose"
+        icons={globalIcons}
+      >
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-rose-100 bg-rose-50/50 p-4">
+            <div className="space-y-4">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={chatEnabled}
+                  onChange={async (e) => {
+                    const val = e.target.checked;
+                    setChatEnabled(val);
+                    setChatSaving(true);
+                    try {
+                      await saveChatSettingsAction(val);
+                    } finally {
+                      setChatSaving(false);
+                    }
+                  }}
+                  disabled={chatSaving}
+                  className="mt-1 h-5 w-5 rounded-md border-slate-300 text-rose-600 focus:ring-rose-500"
+                />
+                <span>
+                  <span className="block text-sm font-black text-slate-800">تفعيل نظام الدردشة العالمي</span>
+                  <span className="block text-[10px] text-slate-500">إيقاف الدردشة يوقف جميع طلبات الـ Polling من المتصفحات فوراً.</span>
+                </span>
+              </label>
+
+              <label className="flex cursor-pointer items-start gap-3 border-t border-rose-100 pt-4">
+                <input
+                  type="checkbox"
+                  checked={trackingEnabled}
+                  onChange={async (e) => {
+                    const val = e.target.checked;
+                    setTrackingEnabled(val);
+                    setTrackingSaving(true);
+                    try {
+                      await saveTrackingSettingsAction(val);
+                    } finally {
+                      setTrackingSaving(false);
+                    }
+                  }}
+                  disabled={trackingSaving}
+                  className="mt-1 h-5 w-5 rounded-md border-slate-300 text-rose-600 focus:ring-rose-500"
+                />
+                <span>
+                  <span className="block text-sm font-black text-slate-800">تفعيل تتبع المواقع (GPS)</span>
+                  <span className="block text-[10px] text-slate-500">إيقاف التتبع يوقف إرسال نبضات الموقع (Heartbeats) من المناديب والمجهزين.</span>
+                </span>
+              </label>
+            </div>
+          </div>
+          {(chatSaving || trackingSaving) && (
+            <p className="text-[10px] font-bold text-rose-600 animate-pulse text-center">جاري تحديث الإعدادات العالمية...</p>
+          )}
+        </div>
+      </Block>
+
       <Block
         id="telegram-bots"
         title="بوتات تليجرام 🤖"
@@ -458,41 +527,6 @@ export function SettingsBlocks({
         </div>
       </Block>
 
-      <Block
-        id="chat-settings"
-        title="نظام الدردشة 💬"
-        subtitle="تشغيل أو إيقاف المحادثات."
-        open={openId === "chat-settings"}
-        onToggle={() => setOpenId((x) => (x === "chat-settings" ? "" : "chat-settings"))}
-        tone="indigo"
-        icons={globalIcons}
-      >
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4">
-            <label className="flex cursor-pointer items-start gap-3">
-              <input
-                type="checkbox"
-                checked={chatEnabled}
-                onChange={async (e) => {
-                  const val = e.target.checked;
-                  setChatEnabled(val);
-                  setChatSaving(true);
-                  try {
-                    await saveChatSettingsAction(val);
-                  } finally {
-                    setChatSaving(false);
-                  }
-                }}
-                disabled={chatSaving}
-                className="mt-1 h-5 w-5 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <span>
-                <span className="block text-sm font-black text-slate-800">تفعيل نظام الدردشة</span>
-              </span>
-            </label>
-          </div>
-        </div>
-      </Block>
 
       <Block
         id="icon-settings"

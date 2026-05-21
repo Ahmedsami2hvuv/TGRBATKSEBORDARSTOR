@@ -30,6 +30,8 @@ type ClientRuntimeProps = {
   children: React.ReactNode;
   mandoubFeatures?: { aiEnabled: boolean; chatEnabled: boolean };
   preparerFeatures?: { aiEnabled: boolean; chatEnabled: boolean };
+  chatEnabled?: boolean;
+  trackingEnabled?: boolean;
   storeFeatures?: { aiEnabled: boolean };
   externalId?: string; // إضافة هذا الحقل
 };
@@ -38,6 +40,8 @@ export function ClientRuntime({
   children,
   mandoubFeatures,
   preparerFeatures,
+  chatEnabled,
+  trackingEnabled,
   storeFeatures,
   externalId,
 }: ClientRuntimeProps) {
@@ -54,6 +58,7 @@ export function ClientRuntime({
       <PortalChatWidget
         mandoubFeatures={mandoubFeatures}
         preparerFeatures={preparerFeatures}
+        globalEnabled={chatEnabled}
       />
       {children}
       <Toaster richColors position="top-center" dir="rtl" closeButton />

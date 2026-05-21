@@ -3,11 +3,25 @@
 import { useSearchParams } from "next/navigation";
 import { PortalLocationHeartbeat } from "@/components/portal-location-heartbeat";
 import { OneSignalInitializer } from "@/components/OneSignalInitializer";
+import { useEffect, useState } from "react";
 
 /**
  * لوحة المندوب: نبض موقع كل 20 ثانية للإدارة، وقفل الصفحة إن انقطع الإرسال أكثر من 3 دقائق.
  */
 export function MandoubLocationGateAndPing({ children }: { children: React.ReactNode }) {
+  const [globalTracking, setGlobalTracking] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/settings/resource-management")
+      .then(res => res.json())
+      .then(data => {
+        if (data.trackingEnabled !== undefined) {
+          setGlobalTracking(data.trackingEnabled);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const searchParams = useSearchParams();
   const paramC = searchParams.get("c");
   const paramExp = searchParams.get("exp");
@@ -36,7 +50,7 @@ export function MandoubLocationGateAndPing({ children }: { children: React.React
   }
 
   return (
-    <PortalLocationHeartbeat variant="mandoub" c={c} exp={exp} s={s}>
+    <PortalLocationHeartbeat variant="mandoub" c={c} exp={exp} s={s} globalEnabled={globalTracking}>
       {oneSignalComponent}
       {children}
     </PortalLocationHeartbeat>

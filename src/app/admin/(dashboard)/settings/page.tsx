@@ -7,7 +7,7 @@ import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getEmployeeWhatsappShareTemplate, getCustomerOrderWhatsappTemplate } from "@/lib/whatsapp-template-settings";
 import { getTelegramNewOrderTemplate } from "@/lib/telegram-notify";
-import { isChatEnabledGlobally } from "@/lib/portal-chat-settings";
+import { isChatEnabledGlobally, isTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 import { getRoleFeatures } from "@/lib/role-features-settings";
 
 export const metadata = {
@@ -25,6 +25,7 @@ export default async function SettingsPage() {
       getCustomerOrderWhatsappTemplate().catch(() => ""),
       getTelegramNewOrderTemplate().catch(() => ""),
       isChatEnabledGlobally().catch(() => true),
+      isTrackingEnabledGlobally().catch(() => true),
       getRoleFeatures("mandoub").catch(() => ({ chatEnabled: true, aiEnabled: false })),
       getRoleFeatures("preparer").catch(() => ({ chatEnabled: true, aiEnabled: false })),
       prisma.telegramAdmin.findMany({ orderBy: { createdAt: "desc" } }).catch(() => []),
@@ -42,6 +43,7 @@ export default async function SettingsPage() {
     customerOrderTemplate,
     telegramNewOrderTemplate,
     chatEnabled,
+    trackingEnabled,
     mandoubFeatures,
     preparerFeatures,
     telegramAdmins,
@@ -67,6 +69,7 @@ export default async function SettingsPage() {
         customerOrderTemplate={customerOrderTemplate as string}
         telegramNewOrderTemplate={telegramNewOrderTemplate as string}
         chatEnabledInitial={!!chatEnabled}
+        trackingEnabledInitial={!!trackingEnabled}
         mandoubFeaturesInitial={mandoubFeatures as any}
         preparerFeaturesInitial={preparerFeatures as any}
         telegramAdminsInitial={telegramAdmins as any}

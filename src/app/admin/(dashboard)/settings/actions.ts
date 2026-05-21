@@ -9,7 +9,7 @@ import { saveEmployeeWhatsappShareTemplate, saveCustomerOrderWhatsappTemplate } 
 import { saveTelegramNewOrderTemplate } from "@/lib/telegram-notify";
 
 import { GlobalIconsConfig, saveGlobalIcons } from "@/lib/icon-settings";
-import { setChatEnabledGlobally } from "@/lib/portal-chat-settings";
+import { setChatEnabledGlobally, setTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 import { RoleFeaturesConfig, saveRoleFeatures } from "@/lib/role-features-settings";
 import { ensureTelegramWebhookConfigured } from "@/lib/telegram";
 
@@ -24,6 +24,14 @@ export async function saveGlobalIconsAction(config: GlobalIconsConfig) {
 export async function saveChatSettingsAction(enabled: boolean) {
   if (!(await isAdminSession())) return { error: "Unauthenticated" };
   await setChatEnabledGlobally(enabled);
+  revalidatePath("/admin/settings");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function saveTrackingSettingsAction(enabled: boolean) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  await setTrackingEnabledGlobally(enabled);
   revalidatePath("/admin/settings");
   revalidatePath("/", "layout");
   return { ok: true };

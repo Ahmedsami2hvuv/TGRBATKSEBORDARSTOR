@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ClientRuntime } from "@/components/client-runtime";
-import { getRoleFeatures } from "@/lib/role-features-settings";
+import { isChatEnabledGlobally, isTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import "./globals.css";
@@ -24,9 +24,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const externalId = mandoubId || preparerId || employeeId;
 
   // استرجاع الميزات بشكل آمن جداً
-  const [mandoubFeatures, preparerFeatures] = await Promise.all([
+  const [mandoubFeatures, preparerFeatures, chatEnabled, trackingEnabled] = await Promise.all([
     getRoleFeatures("mandoub").catch(() => ({})),
     getRoleFeatures("preparer").catch(() => ({})),
+    isChatEnabledGlobally().catch(() => true),
+    isTrackingEnabledGlobally().catch(() => true),
   ]);
 
   return (
@@ -36,6 +38,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <ClientRuntime
             mandoubFeatures={mandoubFeatures}
             preparerFeatures={preparerFeatures}
+            chatEnabled={chatEnabled}
+            trackingEnabled={trackingEnabled}
             storeFeatures={{ aiEnabled: true }}
             externalId={externalId}
           >

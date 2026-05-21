@@ -45,6 +45,7 @@ export function PreparerNotificationPoller({
   useEffect(() => {
     let cancelled = false;
     const tick = async () => {
+      if (document.visibilityState !== "visible") return;
       try {
         const q = new URLSearchParams();
         q.set("p", auth.p);
@@ -168,10 +169,15 @@ export function PreparerNotificationPoller({
       }
     };
     void tick();
-    const id = window.setInterval(tick, 5000); // تقليل الوقت لـ 5 ثوانٍ لسرعة التنبيه
+    const id = window.setInterval(tick, 20000); // زيادة الوقت لـ 20 ثانية لتقليل الطلبات
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void tick();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [auth.p, auth.exp, auth.s, openUrl, perm]);
 

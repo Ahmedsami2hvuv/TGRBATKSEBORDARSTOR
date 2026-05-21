@@ -56,14 +56,16 @@ type StaffProps = {
   children: React.ReactNode;
 };
 
-export type PortalLocationHeartbeatProps = MandoubProps | PreparerProps | EmployeeProps | StaffProps;
+export type PortalLocationHeartbeatProps = (MandoubProps | PreparerProps | EmployeeProps | StaffProps) & {
+  globalEnabled?: boolean;
+};
 
 /**
  * يحاول إرسال موقع الموظف / المندوب / المجهز كل ~20 ثانية إلى الإدارة.
  * إذا اختفى الموقع أو رفض إذن الموقع، يعرض تعليمات واضحة للفحص.
  */
 export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
-  const { children } = props;
+  const { children, globalEnabled = true } = props;
   const propsRef = useRef(props);
   propsRef.current = props;
 
@@ -217,6 +219,13 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
   }, [handlePositionError, handlePositionSuccess]);
 
   useEffect(() => {
+    if (!globalEnabled) {
+      if (watchIdRef.current != null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      return;
+    }
     if (locked) return;
 
     void (async () => {
@@ -246,9 +255,18 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
   }, [locked, requestInitialLocation, startGeolocationWatch, setAlertMessage]);
 
   useEffect(() => {
+    if (!globalEnabled) {
+      if (watchIdRef.current != null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      return;
+    }
     if (locked) return;
     const id = window.setInterval(() => {
       if (typeof navigator === "undefined" || !navigator.geolocation) return;
+      // توقف عن الإرسال إذا كانت الصفحة غير مرئية لتوفير باقة فيرسل
+      if (document.visibilityState !== "visible") return;
 
       const now = Date.now();
       const lastLocal = lastLocalGeoMsRef.current;
@@ -271,6 +289,7 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
   }, [handlePositionError, handlePositionSuccess, locked, setAlertMessage]);
 
   useEffect(() => {
+    if (!globalEnabled) return;
     const id = window.setInterval(() => {
       const lastOk = lastSuccessfulPostMsRef.current;
       const now = Date.now();
@@ -334,9 +353,9 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
   }, [handlePositionError, postToServer, setAlertMessage]);
 
   return (
-    <div className={locked ? "min-h-[100dvh] pb-24" : undefined}>
+    <div className={(locked && globalEnabled) ? "min-h-[100dvh] pb-24" : undefined}>
       {children}
-      {(locked || locationAlert) ? (
+      {(globalEnabled && (locked || locationAlert)) ? (
         <div
           className="fixed inset-0 z-[250] flex flex-col items-center justify-center bg-slate-950/97 px-4 text-center text-white"
           dir="rtl"

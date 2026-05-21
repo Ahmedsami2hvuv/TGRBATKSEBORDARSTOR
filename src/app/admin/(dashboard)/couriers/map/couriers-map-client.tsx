@@ -118,6 +118,7 @@ export function CouriersMapClient({ points: initialPoints }: { points: CourierMa
 
   useEffect(() => {
     const interval = setInterval(async () => {
+      if (document.visibilityState !== "visible") return;
       setIsSyncing(true);
       try {
         const res = await fetch("/api/admin/couriers/map-points");
@@ -134,9 +135,33 @@ export function CouriersMapClient({ points: initialPoints }: { points: CourierMa
       } finally {
         setIsSyncing(false);
       }
-    }, 15000);
+    }, 60000); // زيادة وقت التحديث لـ 60 ثانية لتقليل الطلبات
 
-    return () => clearInterval(interval);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        // تحديث فوري عند العودة للنافذة
+        void (async () => {
+          setIsSyncing(true);
+          try {
+            const res = await fetch("/api/admin/couriers/map-points");
+            if (res.ok) {
+              const data = await res.json();
+              setPoints(data.points);
+              const L = await import("leaflet");
+              updateMarkers(data.points, L);
+            }
+          } finally {
+            setIsSyncing(false);
+          }
+        })();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [updateMarkers]);
 
   return (
