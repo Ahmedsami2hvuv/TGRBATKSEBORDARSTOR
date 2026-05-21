@@ -141,7 +141,7 @@ export function AdminCreateOrderForm({
  setRecipientKind("none");
  setSelectedEmployeeId("");
  setFirstSavedDoorPhotoUrl(null);
- setFirstPhone(ADMIN_PHONE_ONE_FACE_LOCAL);
+ setFirstPhone("");
  setFirstAlternatePhone("");
  setFirstRegionId("");
  setFirstLocationUrl("");
