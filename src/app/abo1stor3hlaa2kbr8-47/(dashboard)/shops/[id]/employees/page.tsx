@@ -166,12 +166,12 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
         <pre className="bg-slate-900 text-red-400 p-4 rounded overflow-auto whitespace-pre-wrap text-sm">
           {err.stack || err.message || String(err)}
         </pre>
-        <button
-          onClick={() => window.location.reload()}
-          className="bg-red-600 text-white px-4 py-2 rounded shadow"
+        <a
+          href=""
+          className="inline-block bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 transition-colors"
         >
           إعادة تحميل الصفحة
-        </button>
+        </a>
       </div>
     );
   }

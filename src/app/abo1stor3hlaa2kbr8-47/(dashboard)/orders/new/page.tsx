@@ -24,7 +24,7 @@ export default async function AdminCreateOrderPage() {
     const baseUrl = `${protocol}://${host}`;
 
     // جلب المحلات، المناطق، الزبائن (للملء التلقائي)، والموظفين (كأزرار سريعة)، والمجهزين (لطلبات التجهيز)
-    const [shopsRaw, regionsRaw, employeesRaw, preparersRaw, couriersRaw, iconsRaw] = await Promise.all([
+    const [shopsRaw, regionsRaw, preparersRaw, couriersRaw, iconsRaw] = await Promise.all([
       prisma.shop.findMany({
         orderBy: { name: "asc" },
         select: { id: true, name: true, regionId: true, locationUrl: true },
@@ -32,16 +32,6 @@ export default async function AdminCreateOrderPage() {
       prisma.region.findMany({
         orderBy: { name: "asc" },
         select: { id: true, name: true },
-      }),
-      prisma.employee.findMany({
-        select: {
-          id: true,
-          shopId: true,
-          name: true,
-          phone: true,
-          orderPortalToken: true,
-        },
-        orderBy: { name: "asc" },
       }),
       prisma.companyPreparer.findMany({
         where: { active: true },
@@ -63,14 +53,6 @@ export default async function AdminCreateOrderPage() {
     const couriers = serializePrisma(couriersRaw);
     const icons = serializePrisma(iconsRaw);
 
-    const employees = employeesRaw.map((e) => ({
-      id: e.id,
-      shopId: e.shopId,
-      name: e.name,
-      phone: e.phone,
-      portalUrl: buildEmployeeOrderPortalUrl(e.id, e.orderPortalToken, baseUrl),
-    }));
-
     return (
       <div className="space-y-4">
         <p className={ad.muted}>
@@ -87,7 +69,6 @@ export default async function AdminCreateOrderPage() {
         <AdminCreateOrderForm
           shops={shops}
           regions={regions}
-          employees={serializePrisma(employees)}
           preparers={preparers}
           couriers={couriers}
           icons={icons}
@@ -102,12 +83,12 @@ export default async function AdminCreateOrderPage() {
         <pre className="bg-slate-900 text-red-400 p-4 rounded overflow-auto whitespace-pre-wrap text-sm">
           {err.stack || err.message || String(err)}
         </pre>
-        <button
-          onClick={() => window.location.reload()}
-          className="bg-red-600 text-white px-4 py-2 rounded shadow"
+        <a
+          href=""
+          className="inline-block bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 transition-colors"
         >
           إعادة تحميل الصفحة
-        </button>
+        </a>
       </div>
     );
   }

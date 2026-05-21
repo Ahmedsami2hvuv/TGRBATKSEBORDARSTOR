@@ -57,14 +57,12 @@ function doorPhotoUrlForDisplay(url: string | null | undefined): string | null {
 export function AdminCreateOrderForm({
  shops,
  regions,
- employees,
  preparers,
  couriers,
  icons,
 }: {
  shops: ShopOpt[];
  regions: RegionOpt[];
- employees: EmployeeOpt[];
  preparers: Array<{ id: string; name: string; availableForAssignment: boolean }>;
  couriers: Array<{ id: string; name: string }>;
  icons?: GlobalIconsConfig;
@@ -73,6 +71,8 @@ export function AdminCreateOrderForm({
 
  const [submissionMode, setSubmissionMode] = useState<SubmissionMode>("admin_one_face");
  const [shopId, setShopId] = useState("");
+ const [employees, setEmployees] = useState<EmployeeOpt[]>([]);
+ const [employeesLoading, setEmployeesLoading] = useState(false);
 
  const [recipientKind, setRecipientKind] = useState<"none" | "employee" | "admin">("none");
  const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
@@ -134,6 +134,34 @@ export function AdminCreateOrderForm({
  };
 
  const routeMode = submissionMode === "two_faces" ? "double" : "single";
+
+ useEffect(() => {
+ if (submissionMode !== "from_shop" || !shopId) {
+ setEmployees([]);
+ return;
+ }
+
+ let active = true;
+ setEmployeesLoading(true);
+
+ void (async () => {
+ try {
+ const res = await fetch(`/api/shops/${shopId}/employees`);
+ if (!res.ok) throw new Error("Failed to fetch employees");
+ const data = await res.json();
+ if (active) {
+ setEmployees(data.employees || []);
+ }
+ } catch (err) {
+ console.error("Error fetching employees:", err);
+ if (active) setEmployees([]);
+ } finally {
+ if (active) setEmployeesLoading(false);
+ }
+ })();
+
+ return () => { active = false; };
+ }, [shopId, submissionMode]);
 
  useEffect(() => {
  if (submissionMode === "admin_one_face") {
@@ -721,6 +749,9 @@ export function AdminCreateOrderForm({
  ابحث عن اسم المحل واختر من النتائج.
  </span>
  </div>
+ {employeesLoading ? (
+ <p className="text-xs text-slate-500 italic mt-4">جارٍ تحميل موظفي المحل...</p>
+ ) : (
  <ShopEmployeeQuickPick
  shopId={shopId}
  employees={employees}
@@ -729,6 +760,7 @@ export function AdminCreateOrderForm({
  onPickEmployee={pickEmployee}
  onPickAdminOffice={pickAdminOffice}
  />
+ )}
  </div>
  )}
 
