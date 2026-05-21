@@ -58,7 +58,10 @@ export function FontSettingsForm({
 
       <div className="p-4 rounded-2xl bg-slate-900 text-white mt-4">
         <p className="text-[10px] text-slate-400 mb-2 font-bold">معاينة الخط المختار:</p>
-        <p style={{ fontFamily: selectedFont }} className="text-xl">
+        <p
+          className="text-xl font-preview-text"
+          style={{ "--preview-font": selectedFont === "system-ui" ? "system-ui" : `'${selectedFont}'` } as any}
+        >
           بسم الله الرحمن الرحيم - تجربة الخط المختار على واجهة النظام.
         </p>
       </div>

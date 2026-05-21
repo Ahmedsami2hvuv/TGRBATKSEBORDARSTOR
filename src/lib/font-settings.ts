@@ -2,6 +2,10 @@ import { prisma } from "./prisma";
 import fs from "fs";
 import path from "path";
 
+/**
+ * يسترجع اسم الخط المختار من قاعدة البيانات.
+ * إذا لم يوجد، يعود بالخط الافتراضي "Cairo-Regular".
+ */
 export async function getChosenFont(): Promise<string> {
   try {
     const setting = await prisma.uISystemSetting.findUnique({
@@ -10,13 +14,18 @@ export async function getChosenFont(): Promise<string> {
       }
     });
 
-    if (!setting) return "Cairo";
-    return (setting.config as { fontName: string }).fontName || "Cairo";
+    if (!setting) return "Cairo-Regular";
+    const config = setting.config as { fontName: string };
+    return config.fontName || "Cairo-Regular";
   } catch (e) {
-    return "Cairo";
+    console.error("Error fetching chosen font:", e);
+    return "Cairo-Regular";
   }
 }
 
+/**
+ * يحفظ اسم الخط المختار في قاعدة البيانات.
+ */
 export async function setChosenFont(fontName: string) {
   return await prisma.uISystemSetting.upsert({
     where: {
@@ -27,22 +36,36 @@ export async function setChosenFont(fontName: string) {
   });
 }
 
+/**
+ * يقرأ الملفات في مجلد fonts ويعيد أسماءها (بدون اللاحقة) كخطوط متاحة.
+ */
 export function getAvailableFonts(): string[] {
-  const fontsDir = path.join(process.cwd(), "public", "fonts");
-  if (!fs.existsSync(fontsDir)) return [];
+  try {
+    const fontsDir = path.join(process.cwd(), "public", "fonts");
+    if (!fs.existsSync(fontsDir)) return [];
 
-  const files = fs.readdirSync(fontsDir);
-  // نأخذ اسم الملف بدون اللاحقة كاسم للخط
-  return files
-    .filter(file => /\.(ttf|otf|woff|woff2)$/i.test(file))
-    .map(file => path.parse(file).name);
+    const files = fs.readdirSync(fontsDir);
+    return files
+      .filter(file => /\.(ttf|otf|woff|woff2)$/i.test(file))
+      .map(file => path.parse(file).name);
+  } catch (e) {
+    console.error("Error listing available fonts:", e);
+    return [];
+  }
 }
 
+/**
+ * يعيد المسار النسبي لملف الخط بناءً على اسمه.
+ */
 export function getFontFileUrl(fontName: string): string | null {
-  const fontsDir = path.join(process.cwd(), "public", "fonts");
-  if (!fs.existsSync(fontsDir)) return null;
+  try {
+    const fontsDir = path.join(process.cwd(), "public", "fonts");
+    if (!fs.existsSync(fontsDir)) return null;
 
-  const files = fs.readdirSync(fontsDir);
-  const file = files.find(f => path.parse(f).name === fontName);
-  return file ? `/fonts/${file}` : null;
+    const files = fs.readdirSync(fontsDir);
+    const file = files.find(f => path.parse(f).name === fontName);
+    return file ? `/fonts/${file}` : null;
+  } catch (e) {
+    return null;
+  }
 }

@@ -39,23 +39,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const fontFaceCss = availableFonts.map(fontName => {
     const url = getFontFileUrl(fontName);
     if (!url) return "";
+    const extension = url.split('.').pop()?.toLowerCase();
+    let format = 'truetype';
+    if (extension === 'woff') format = 'woff';
+    if (extension === 'woff2') format = 'woff2';
+    if (extension === 'otf') format = 'opentype';
+
     return `
       @font-face {
         font-family: '${fontName}';
-        src: url('${url}') format('truetype');
-        font-weight: normal;
-        font-style: normal;
-        font-display: swap;
-      }
-      @font-face {
-        font-family: '${fontName}';
-        src: url('${url}') format('truetype');
-        font-weight: bold;
-        font-style: normal;
+        src: url('${url}') format('${format}');
+        font-weight: 100 900;
         font-display: swap;
       }
     `;
   }).join("\n");
+
+  const displayFont = chosenFont === "system-ui" ? "system-ui" : `'${chosenFont}'`;
+
 
   return (
     <html lang="ar" dir="rtl" className="h-full antialiased" suppressHydrationWarning>
@@ -63,7 +64,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <style dangerouslySetInnerHTML={{ __html: `
           ${fontFaceCss}
           :root {
-            --chosen-font: "${chosenFont}", "Cairo", Tahoma, sans-serif;
+            --chosen-font: ${displayFont}, Inter, system-ui, -apple-system, sans-serif;
           }
         `}} />
       </head>
