@@ -12,6 +12,54 @@ import { useRouter } from "next/navigation";
 
 const initialEdit: MandoubEditCustomerState = {};
 
+export function MandoubCustomerEditForm({
+  orderId,
+  defaultOrderStatus,
+  defaultCustomerPhone,
+  defaultCustomerLocationUrl,
+  defaultCustomerLandmark,
+  defaultAlternatePhone,
+  auth,
+  nextUrl,
+}: {
+  orderId: string;
+  defaultOrderStatus: string;
+  defaultCustomerPhone: string;
+  defaultCustomerLocationUrl: string;
+  defaultCustomerLandmark: string;
+  defaultAlternatePhone: string;
+  auth: { c: string; exp: string; s: string };
+  nextUrl: string;
+}) {
+  const router = useRouter();
+  const [editOpen, setEditOpen] = useState(false);
+  const [editState, editAction, editPending] = useActionState(
+    updateMandoubCustomerDetails,
+    initialEdit
+  );
+
+  const customerPhoneRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleToggle = (e: CustomEvent) => {
+      if (e.detail?.orderId === orderId) {
+        setEditOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener(MANDOUB_ORDER_EDIT_TOGGLE, handleToggle as any);
+    return () => window.removeEventListener(MANDOUB_ORDER_EDIT_TOGGLE, handleToggle as any);
+  }, [orderId]);
+
+  useEffect(() => {
+    if (editState.success && !editPending) {
+      setEditOpen(false);
+      router.refresh();
+    }
+  }, [editState.success, editPending, router]);
+
+  const inputClass =
+    "w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-base font-medium text-slate-900 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 sm:text-lg";
+
   const MANDOUB_STATUS_OPTIONS = [
     { value: "assigned", label: "بانتظار المندوب" },
     { value: "delivering", label: "تم الاستلام" },
