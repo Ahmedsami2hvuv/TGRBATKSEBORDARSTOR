@@ -4,9 +4,18 @@
 @import "@fontsource/cairo/700.css";
 @import "@fontsource/cairo/800.css";
 
+@font-face {
+  font-family: 'Al Mohanad';
+  src: url('/fonts/mohanad-bold.ttf') format('truetype');
+  font-weight: normal 900; /* هذا السطر يجعل المتصفح يستخدم الخط لكل أوزان النصوص */
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  --font-mohanad: "Al Mohanad";
   --font-cairo: "Cairo";
   /* Bright Light Base (Default) */
   --background: #f0f4f8; 
@@ -44,12 +53,13 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-mohanad), var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-mohanad), var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
