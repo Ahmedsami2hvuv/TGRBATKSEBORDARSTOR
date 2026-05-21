@@ -71,7 +71,7 @@ export function AdminCreateOrderForm({
 }) {
  const [state, formAction, pending] = useActionState(createAdminOrder, initialState);
 
- const [submissionMode, setSubmissionMode] = useState<SubmissionMode>("from_shop");
+ const [submissionMode, setSubmissionMode] = useState<SubmissionMode>("admin_one_face");
  const [shopId, setShopId] = useState("");
 
  const [recipientKind, setRecipientKind] = useState<"none" | "employee" | "admin">("none");
@@ -543,18 +543,6 @@ export function AdminCreateOrderForm({
  <input
  type="radio"
  name="submissionModeUi"
- checked={submissionMode === "from_shop"}
- onChange={() => setSubmissionMode("from_shop")}
- className="mt-0.5 shrink-0"
- />
- <span>
- <strong>رفع من محل</strong> — ابحث عن المحل، ثم اختر العميل كزر جاهز أو «الإدارة».
- </span>
- </label>
- <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
- <input
- type="radio"
- name="submissionModeUi"
  checked={submissionMode === "admin_one_face"}
  onChange={() => setSubmissionMode("admin_one_face")}
  className="mt-0.5 shrink-0"
@@ -573,6 +561,18 @@ export function AdminCreateOrderForm({
  />
  <span>
  <strong>وجهتان</strong> — مرسل ومستلم (رقم ومنطقة لكل وجهة).
+ </span>
+ </label>
+ <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
+ <input
+ type="radio"
+ name="submissionModeUi"
+ checked={submissionMode === "from_shop"}
+ onChange={() => setSubmissionMode("from_shop")}
+ className="mt-0.5 shrink-0"
+ />
+ <span>
+ <strong>رفع من محل</strong> — ابحث عن المحل، ثم اختر العميل كزر جاهز أو «الإدارة».
  </span>
  </label>
  <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
@@ -627,12 +627,12 @@ export function AdminCreateOrderForm({
 
  <div className="grid gap-3 sm:grid-cols-2">
  <label className="flex flex-col gap-1">
- <span className={ad.label}>عنوان الطلب</span>
- <input name="prepTitleLine" value={titleLine} onChange={(e) => setTitleLine(e.target.value)} className={ad.input} required />
- </label>
- <label className="flex flex-col gap-1">
  <span className={ad.label}>رقم الزبون</span>
  <input name="prepCustomerPhone" value={prepCustomerPhone} onChange={(e) => setPrepCustomerPhone(e.target.value)} className={ad.input} required />
+ </label>
+ <label className="flex flex-col gap-1">
+ <span className={ad.label}>عنوان الطلب</span>
+ <input name="prepTitleLine" value={titleLine} onChange={(e) => setTitleLine(e.target.value)} className={ad.input} required />
  </label>
  <label className="flex flex-col gap-1">
  <span className={ad.label}>وقت الطلب</span>
@@ -688,32 +688,6 @@ export function AdminCreateOrderForm({
  </div>
  ) : (
  <>
- {submissionMode === "from_shop" ? (
- <div className="space-y-4">
- <div>
- <ShopSearchPicker
- shops={shops}
- fieldName="shopId"
- label="المحل"
- required
- value={shopId}
- onValueChange={setShopId}
- />
- <span className="text-[11px] leading-snug text-slate-500 block mt-1">
- ابحث عن اسم المحل واختر من النتائج.
- </span>
- </div>
- <ShopEmployeeQuickPick
- shopId={shopId}
- employees={employees}
- selectedEmployeeId={selectedEmployeeId}
- recipientKind={recipientKind}
- onPickEmployee={pickEmployee}
- onPickAdminOffice={pickAdminOffice}
- />
- </div>
- ) : null}
-
  {submissionMode === "admin_one_face" ? (
  <div className="rounded-lg border border-violet-200 bg-violet-50/70 px-3 py-2 text-sm text-violet-950">
  وضع <strong>وجهة واحدة</strong>: لا يتطلب اختيار محل. أدخل تفاصيل الزبون ونوع الطلبية والسعر.
@@ -891,6 +865,32 @@ export function AdminCreateOrderForm({
  <img src={firstSavedDoorPhotoUrl} alt="" className="mt-2 max-h-44 w-full rounded-md object-contain border" />
  )}
  </section>
+
+ {submissionMode === "from_shop" ? (
+ <div className="space-y-4">
+ <div>
+ <ShopSearchPicker
+ shops={shops}
+ fieldName="shopId"
+ label="المحل"
+ required
+ value={shopId}
+ onValueChange={setShopId}
+ />
+ <span className="text-[11px] leading-snug text-slate-500 block mt-1">
+ ابحث عن اسم المحل واختر من النتائج.
+ </span>
+ </div>
+ <ShopEmployeeQuickPick
+ shopId={shopId}
+ employees={employees}
+ selectedEmployeeId={selectedEmployeeId}
+ recipientKind={recipientKind}
+ onPickEmployee={pickEmployee}
+ onPickAdminOffice={pickAdminOffice}
+ />
+ </div>
+ ) : null}
 
  <div className="grid gap-3 sm:grid-cols-2">
  <label className="flex flex-col gap-1.5 text-base sm:text-lg">
