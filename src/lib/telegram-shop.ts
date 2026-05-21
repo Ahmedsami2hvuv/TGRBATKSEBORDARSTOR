@@ -25,6 +25,8 @@ import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 
 export const SHOP_LIST_PAGE_SIZE = 10;
 
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
 export type ShopTelegramCallback =
   | { kind: "hub"; page: number }
   | { kind: "add_start" }
@@ -274,7 +276,7 @@ async function formatShopDetail(shopId: string): Promise<{
       { text: "➕ إضافة عميل", callback_data: `sea:${shop.id}` },
       {
         text: "🔗 إدارة العملاء (لوحة)",
-        url: `${base}/admin/shops/${shop.id}/employees`,
+        url: `${base}${SECRET_ADMIN_PATH}/shops/${shop.id}/employees`,
       },
     ],
   ];
@@ -295,7 +297,7 @@ async function formatEmployeeMenu(employeeId: string): Promise<{
 } | null> {
   const emp = await prisma.employee.findUnique({
     where: { id: employeeId },
-    select: { id: true, name: true, phone: true, shop: { select: { id: true, name: true } } },
+    select: { id: true, name: true, phone: true, shop: { select: { id: true, name: true } }, shopId: true },
   });
   if (!emp) return null;
   const base = getPublicAppUrl();
@@ -316,13 +318,13 @@ async function formatEmployeeMenu(employeeId: string): Promise<{
     [
       {
         text: "🔗 تعديل في لوحة الإدارة",
-        url: `${base}/admin/shops/${emp.shopId}/employees/${emp.id}/edit`,
+        url: `${base}${SECRET_ADMIN_PATH}/shops/${emp.shopId}/employees/${emp.id}/edit`,
       },
     ],
     [
       {
         text: "🔗 صفحة عملاء المحل",
-        url: `${base}/admin/shops/${emp.shopId}/employees`,
+        url: `${base}${SECRET_ADMIN_PATH}/shops/${emp.shopId}/employees`,
       },
     ],
     [{ text: "⬅️ المحل", callback_data: `sh:${emp.shopId}` }],
@@ -374,14 +376,14 @@ async function formatCustomerMenu(customerId: string): Promise<{
   ];
   row1.push({
     text: "🔗 معلومات الزبون في اللوحة",
-    url: `${base}/admin/customers/info?phone=${phoneQ}`,
+    url: `${base}${SECRET_ADMIN_PATH}/customers/info?phone=${phoneQ}`,
   });
   const rows: TelegramInlineKeyboard["inline_keyboard"] = [row1];
   if (profile) {
     rows.push([
       {
         text: "🔗 الملف المرجعي",
-        url: `${base}/admin/customers/profiles/${profile.id}/edit`,
+        url: `${base}${SECRET_ADMIN_PATH}/customers/profiles/${profile.id}/edit`,
       },
     ]);
   }
@@ -597,7 +599,7 @@ export async function handleShopTelegramCallback(
           where: { id: p.shopId },
           data: { regionId: region.id },
         });
-        revalidatePath("/admin/shops");
+        revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
         await clearShopSession(telegramUserId);
         const d = await formatShopDetail(p.shopId);
         if (d) await editTelegramMessage(chatId, messageId, `✅ تم تحديث المنطقة.\n\n${d.text}`, d.keyboard, botToken);
@@ -640,7 +642,7 @@ export async function handleShopTelegramCallback(
             regionId: draft.regionId,
           },
         });
-        revalidatePath("/admin/shops");
+        revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
         await clearShopSession(telegramUserId);
         const hub = await renderShopsTelegramHub(0);
         await editTelegramMessage(chatId, messageId, `✅ تم إنشاء المحل.\n\n${hub.text}`, hub.keyboard, botToken);
@@ -665,7 +667,7 @@ export async function handleShopTelegramCallback(
       }
       case "delete_yes": {
         await prisma.shop.delete({ where: { id: parsed.shopId } });
-        revalidatePath("/admin/shops");
+        revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
         const hub = await renderShopsTelegramHub(0);
         await editTelegramMessage(chatId, messageId, `✅ تم حذف المحل.\n\n${hub.text}`, hub.keyboard, botToken);
         return true;
@@ -834,8 +836,8 @@ export async function handleShopTelegramCallback(
         if (!cust) return true;
         const shopId = cust.shopId;
         await prisma.customer.delete({ where: { id: parsed.customerId } });
-        revalidatePath("/admin/shops");
-        revalidatePath("/admin/customers");
+        revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+        revalidatePath(`${SECRET_ADMIN_PATH}/customers`);
         const d = await formatShopDetail(shopId);
         if (d) await editTelegramMessage(chatId, messageId, `✅ تم حذف زبون التوصيل.\n\n${d.text}`, d.keyboard, botToken);
         return true;
@@ -941,7 +943,7 @@ export async function handleShopTelegramCallback(
         });
 
         await clearShopSession(telegramUserId);
-        revalidatePath("/admin/orders/pending");
+        revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
         await notifyTelegramNewOrder(order.id).catch(() => {});
         void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
@@ -1065,7 +1067,7 @@ async function finishCreateShop(telegramUserId: string, chatId: string, draft: S
       regionId: draft.regionId,
     },
   });
-  revalidatePath("/admin/shops");
+  revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
   await clearShopSession(telegramUserId);
   const hub = await renderShopsTelegramHub(0);
   await sendTelegramMessageWithKeyboardToChat(chatId, `✅ تم إنشاء المحل.\n\n${hub.text}`, hub.keyboard);
@@ -1298,7 +1300,7 @@ export async function handleShopTelegramMessage(message: {
     const p = JSON.parse(session.payload || "{}") as { shopId?: string };
     if (!p.shopId) return true;
     await prisma.shop.update({ where: { id: p.shopId }, data: { name } });
-    revalidatePath("/admin/shops");
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
     await clearShopSession(telegramUserId);
     const d = await formatShopDetail(p.shopId);
     if (d) {
@@ -1322,7 +1324,7 @@ export async function handleShopTelegramMessage(message: {
     const p = JSON.parse(session.payload || "{}") as { shopId?: string };
     if (!p.shopId) return true;
     await prisma.shop.update({ where: { id: p.shopId }, data: { locationUrl: url } });
-    revalidatePath("/admin/shops");
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
     await clearShopSession(telegramUserId);
     const d = await formatShopDetail(p.shopId);
     if (d) await sendTelegramMessageWithKeyboardToChat(chatId, `✅ تم تحديث اللوكيشن.\n\n${d.text}`, d.keyboard);
@@ -1365,7 +1367,7 @@ export async function handleShopTelegramMessage(message: {
       const jpeg = await resizeImageBufferForShop(buf);
       const photoUrl = await saveShopPhotoFromResizedBuffer(jpeg, MAX_ORDER_IMAGE_BYTES);
       await prisma.shop.update({ where: { id: p.shopId }, data: { photoUrl } });
-      revalidatePath("/admin/shops");
+      revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
       await clearShopSession(telegramUserId);
       const d = await formatShopDetail(p.shopId);
       if (d) await sendTelegramMessageWithKeyboardToChat(chatId, `✅ تم تحديث الصورة.\n\n${d.text}`, d.keyboard);
@@ -1418,8 +1420,8 @@ export async function handleShopTelegramMessage(message: {
         phone: p.phone,
       },
     });
-    revalidatePath("/admin/shops");
-    revalidatePath(`/admin/shops/${p.shopId}/employees`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops/${p.shopId}/employees`);
     await clearShopSession(telegramUserId);
     const d = await formatShopDetail(p.shopId);
     if (d) {
@@ -1436,9 +1438,9 @@ export async function handleShopTelegramMessage(message: {
     const emp = await prisma.employee.findUnique({ where: { id: p.employeeId }, select: { shopId: true } });
     if (!emp) return true;
     await prisma.employee.update({ where: { id: p.employeeId }, data: { name } });
-    revalidatePath("/admin/shops");
-    revalidatePath(`/admin/shops/${emp.shopId}/employees`);
-    revalidatePath(`/admin/shops/${emp.shopId}/employees/${p.employeeId}/edit`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops/${emp.shopId}/employees`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops/${emp.shopId}/employees/${p.employeeId}/edit`);
     await clearShopSession(telegramUserId);
     const d = await formatEmployeeMenu(p.employeeId);
     if (d) {
@@ -1460,9 +1462,9 @@ export async function handleShopTelegramMessage(message: {
     const emp = await prisma.employee.findUnique({ where: { id: p.employeeId }, select: { shopId: true } });
     if (!emp) return true;
     await prisma.employee.update({ where: { id: p.employeeId }, data: { phone } });
-    revalidatePath("/admin/shops");
-    revalidatePath(`/admin/shops/${emp.shopId}/employees`);
-    revalidatePath(`/admin/shops/${emp.shopId}/employees/${p.employeeId}/edit`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops/${emp.shopId}/employees`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops/${emp.shopId}/employees/${p.employeeId}/edit`);
     await clearShopSession(telegramUserId);
     const d = await formatEmployeeMenu(p.employeeId);
     if (d) {
@@ -1477,8 +1479,8 @@ export async function handleShopTelegramMessage(message: {
     const p = JSON.parse(session.payload || "{}") as { customerId?: string };
     if (!p.customerId) return true;
     await prisma.customer.update({ where: { id: p.customerId }, data: { name } });
-    revalidatePath("/admin/shops");
-    revalidatePath("/admin/customers");
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/customers`);
     await clearShopSession(telegramUserId);
     const d = await formatCustomerMenu(p.customerId);
     if (d) {
@@ -1498,8 +1500,8 @@ export async function handleShopTelegramMessage(message: {
       return true;
     }
     await prisma.customer.update({ where: { id: p.customerId }, data: { phone } });
-    revalidatePath("/admin/shops");
-    revalidatePath("/admin/customers");
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/customers`);
     await clearShopSession(telegramUserId);
     const d = await formatCustomerMenu(p.customerId);
     if (d) {
@@ -1551,7 +1553,7 @@ export async function handleShopTelegramMessage(message: {
     payload.draft.orderType = type;
     await upsertShopSession(telegramUserId, chatId, "shop_emp_order_region_query", JSON.stringify(payload));
     await sendTelegramMessageWithKeyboardToChat(chatId, "اكتب اسم <b>منطقة الزبون</b> للبحث.", {
-      inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]],
+      inline_keyboard: [[{ text: "❌ إلغاء", callback_data: "shcancel" }]]
     });
     return true;
   }

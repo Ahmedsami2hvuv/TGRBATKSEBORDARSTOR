@@ -2,6 +2,9 @@
  * من الخاص: تعديل حقول «زبون الطلب» على سجل الطلب + تزامن Customer إن وُجد.
  */
 import { revalidatePath } from "next/cache";
+
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
 import { resizeImageBufferForShop } from "@/lib/image-resize";
 import { MAX_ORDER_IMAGE_BYTES, saveOrderImageFromResizedBuffer } from "@/lib/order-image";
 import { prisma } from "@/lib/prisma";
@@ -89,11 +92,11 @@ async function patchOrderAndLinkedCustomer(
 }
 
 function revalidateOrder(orderId: string): void {
-  revalidatePath("/admin/orders/tracking");
-  revalidatePath("/admin/orders/pending");
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
   revalidatePath("/mandoub");
-  revalidatePath(`/admin/orders/${orderId}/edit`);
-  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}/edit`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);
 }
 
 export async function formatOrderCustomerEditScreen(orderNumber: number): Promise<{

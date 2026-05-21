@@ -239,7 +239,7 @@ async function executeAssignOrderToCourier(payload: any) {
               title: "فتح الطلبات المعلقة",
               action: {
                 type: "NAVIGATE",
-                payload: { url: "/admin/orders/pending" },
+                payload: { url: `${SECRET_ADMIN_PATH}/orders/pending` },
               },
             },
           ],
@@ -330,7 +330,7 @@ async function executeAssignCourierToDraftGroup(payload: any) {
               title: "فتح الطلبات المعلقة",
               action: {
                 type: "NAVIGATE",
-                payload: { url: "/admin/orders/pending" },
+                payload: { url: `${SECRET_ADMIN_PATH}/orders/pending` },
               },
             },
           ],
@@ -377,6 +377,8 @@ async function executeBulkUpdateStatus(payload: any, actor: any) {
 
     return { ok: false, text: "هذا الأمر غير متاح لدورك الحالي." };
 }
+
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
 export async function POST(req: Request) {
   try {

@@ -57,7 +57,7 @@ export default function PortalChatWidget({
   const isMandoub = pathname.startsWith("/mandoub");
   const isPreparer = pathname.startsWith("/preparer");
   const isSupplier = pathname.startsWith("/supplier");
-  const isAdmin = pathname.startsWith("/admin");
+  const isAdmin = pathname.startsWith("/abo1stor3hlaa2kbr8-47");
 
   const isPortalPage = useMemo(() => {
     if (!globalEnabled) return false;
@@ -65,7 +65,7 @@ export default function PortalChatWidget({
     if (isMandoub && mandoubFeatures?.chatEnabled === false) return false;
     if (isPreparer && preparerFeatures?.chatEnabled === false) return false;
     return isAdmin || isMandoub || isPreparer || isSupplier;
-  }, [pathname, mandoubFeatures, preparerFeatures]);
+  }, [pathname, mandoubFeatures, preparerFeatures, isAdmin]);
 
   const auth = useMemo<AuthPayload>(() => {
     const c = searchParams.get("c") || undefined;
@@ -81,7 +81,7 @@ export default function PortalChatWidget({
 
   const unreadTotal = useMemo(() => threads.reduce((sum, t) => sum + t.unreadCount, 0), [threads]);
   const currentActor = useMemo<{ role: Role; actorId: string } | null>(() => {
-    if (pathname.startsWith("/admin")) return { role: "admin", actorId: "admin" };
+    if (pathname.startsWith("/abo1stor3hlaa2kbr8-47")) return { role: "admin", actorId: "admin" };
     if (pathname.startsWith("/mandoub")) {
       const c = searchParams.get("c") || "";
       return c ? { role: "mandoub", actorId: c } : null;

@@ -12,7 +12,7 @@ export function PreparerLocationGate({ children }: { children: React.ReactNode }
   const [globalTracking, setGlobalTracking] = useState(true);
 
   useEffect(() => {
-    fetch("/api/admin/settings/resource-management")
+    fetch("/api/abo1stor3hlaa2kbr8-47/settings/resource-management")
       .then(res => res.json())
       .then(data => {
         if (data.trackingEnabled !== undefined) {

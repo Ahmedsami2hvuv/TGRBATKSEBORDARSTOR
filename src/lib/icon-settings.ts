@@ -417,7 +417,7 @@ export async function getGlobalIcons(): Promise<GlobalIconsConfig> {
 
     clientIconsPromise = (async () => {
       try {
-        const res = await fetch("/api/admin/settings/icons", {
+        const res = await fetch("/api/abo1stor3hlaa2kbr8-47/settings/icons", {
           method: "GET",
           credentials: "same-origin",
           cache: "no-store",

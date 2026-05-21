@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { upsertProduct } from "@/app/admin/(dashboard)/store/actions";
+import { upsertProduct } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/store/actions";
 import { compressImageFileForUpload } from "@/lib/client-image-compress";
 import { ad } from "@/lib/admin-ui";
 

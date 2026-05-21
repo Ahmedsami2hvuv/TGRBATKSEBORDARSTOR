@@ -6,6 +6,8 @@ import { r2ObjectExistsByUrl } from "@/lib/upload-storage";
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
 function decodeBase64Image(value: string): { buffer: Buffer; contentType: string; ext: string } | null {
   const raw = value.trim();
   if (!raw) return null;
@@ -82,8 +84,8 @@ export async function migrateBase64ImagesToR2() {
       totalMigrated++;
     }
 
-    revalidatePath("/admin/customers");
-    revalidatePath("/admin/customers/profiles");
+    revalidatePath(`${SECRET_ADMIN_PATH}/customers`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/customers/profiles`);
 
     return {
       success: true,
@@ -411,10 +413,10 @@ export async function repairBrokenUploadsUrlsBatch(limit = 700): Promise<FixBatc
       }
     }
 
-    revalidatePath("/admin/customers");
-    revalidatePath("/admin/customers/profiles");
-    revalidatePath("/admin/orders/pending");
-    revalidatePath("/admin/orders/tracking");
+    revalidatePath(`${SECRET_ADMIN_PATH}/customers`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/customers/profiles`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
 
     return {
       success: true,

@@ -2,6 +2,9 @@
  * تعديل بيانات زبون (جدول Customer) من البحث الخارق في الخاص — لوكيشن، أقرب نقطة، رقم ثانٍ، صورة باب.
  */
 import { revalidatePath } from "next/cache";
+
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
 import { resizeImageBufferForShop } from "@/lib/image-resize";
 import { MAX_ORDER_IMAGE_BYTES, saveOrderImageFromResizedBuffer } from "@/lib/order-image";
 import { prisma } from "@/lib/prisma";
@@ -193,8 +196,8 @@ export async function handlePrivateCustomerEditMessage(message: {
         data: { customerDoorPhotoUrl: url },
       });
       await syncCustomerToOpenOrders(p.customerId, { customerDoorPhotoUrl: url });
-      revalidatePath("/admin/shops");
-      revalidatePath("/admin/customers");
+      revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+      revalidatePath(`${SECRET_ADMIN_PATH}/customers`);
     } catch (e) {
       console.error("[priv cust door]", e);
       await sendTelegramMessageWithKeyboardToChat(
@@ -232,8 +235,8 @@ export async function handlePrivateCustomerEditMessage(message: {
       data: { customerLocationUrl: url },
     });
     await syncCustomerToOpenOrders(p.customerId, { customerLocationUrl: url });
-    revalidatePath("/admin/shops");
-    revalidatePath("/admin/customers");
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/customers`);
     await clearPrivCustomerSession(telegramUserId);
     const d = await formatSuperSearchCustomerDetail(p.customerId);
     if (d) {
@@ -248,8 +251,8 @@ export async function handlePrivateCustomerEditMessage(message: {
       data: { customerLandmark: textIn },
     });
     await syncCustomerToOpenOrders(p.customerId, { customerLandmark: textIn });
-    revalidatePath("/admin/shops");
-    revalidatePath("/admin/customers");
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/customers`);
     await clearPrivCustomerSession(telegramUserId);
     const d = await formatSuperSearchCustomerDetail(p.customerId);
     if (d) {
@@ -273,8 +276,8 @@ export async function handlePrivateCustomerEditMessage(message: {
       data: { alternatePhone: alt },
     });
     await syncCustomerToOpenOrders(p.customerId, { alternatePhone: alt });
-    revalidatePath("/admin/shops");
-    revalidatePath("/admin/customers");
+    revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/customers`);
     await clearPrivCustomerSession(telegramUserId);
     const d = await formatSuperSearchCustomerDetail(p.customerId);
     if (d) {

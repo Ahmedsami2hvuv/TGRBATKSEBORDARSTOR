@@ -1,4 +1,7 @@
 import { revalidatePath } from "next/cache";
+
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
 import { prisma } from "@/lib/prisma";
 import { ensureEmployeeLocationColumnsIfMissing } from "@/lib/db-self-heal-employee-location";
 import {
@@ -121,7 +124,7 @@ export async function applyPreparerShopLinks(
   }
 
   try {
-    revalidatePath("/admin/preparers");
+    revalidatePath(`${SECRET_ADMIN_PATH}/preparers`);
   } catch (revErr) {
     console.error("applyPreparerShopLinks revalidatePath", revErr);
     return { error: "تم الحفظ لكن تعذّر تحديث الكاش. حدّث الصفحة يدوياً." };

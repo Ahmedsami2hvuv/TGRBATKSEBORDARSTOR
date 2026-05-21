@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
 import { pushNotifyCourierAssignmentRemoved, pushNotifyCourierNewAssignment } from "@/lib/web-push-server";
 import { notifyTelegramCourierNewAssignment } from "./telegram-notify";
 
@@ -48,11 +51,11 @@ export async function assignPendingOrderToCourierInternal(
   void pushNotifyCourierNewAssignment(courierId, order.orderNumber, orderId);
   // void notifyTelegramCourierNewAssignment(orderId).catch(e => console.error("[notifyTelegramCourierNewAssignment] failed:", e));
 
-  revalidatePath("/admin/orders/pending");
-  revalidatePath("/admin/couriers");
-  revalidatePath("/admin/orders/tracking");
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/couriers`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
   revalidatePath("/mandoub");
-  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);
   return { ok: true };
 }
 
@@ -118,10 +121,10 @@ export async function transferOrderToCourierInternal(
     });
   }
 
-  revalidatePath("/admin/orders/pending");
-  revalidatePath("/admin/couriers");
-  revalidatePath("/admin/orders/tracking");
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/couriers`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
   revalidatePath("/mandoub");
-  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);
   return { ok: true };
 }

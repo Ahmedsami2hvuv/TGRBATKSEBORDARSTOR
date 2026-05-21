@@ -363,7 +363,7 @@ export async function notifyTelegramNewOrder(orderId: string): Promise<void> {
 export async function formatNewOrderTelegramHtml(input: any, options?: any): Promise<string> {
   const lines = await formatOrderBodyLines(input, options);
   if (!options?.omitAdminLink) {
-    lines.push(`🔗 <a href="${escapeTelegramHtml(getPublicAppUrl() + '/admin/orders/' + input.orderId)}">رابط الإدارة</a>`);
+    lines.push(`🔗 <a href="${escapeTelegramHtml(getPublicAppUrl() + '/abo1stor3hlaa2kbr8-47/orders/' + input.orderId)}">رابط الإدارة</a>`);
   }
   return lines.join("\n");
 }
@@ -514,7 +514,7 @@ export async function notifyTelegramStoreOrder(draftId: string): Promise<void> {
     `\u200F<b>المحتويات:</b>`,
     ...cart.map(i => `\u200F• ${escapeTelegramHtml(i.name)} (${i.quantity || 1})`),
     `\u200F-------------------------`,
-    `\u200F🔗 <a href="${getPublicAppUrl()}/admin/orders/pending?tab=preparing">فتح لوحة التجهيز</a>`
+    `\u200F🔗 <a href="${getPublicAppUrl()}/abo1stor3hlaa2kbr8-47/orders/pending?tab=preparing">فتح لوحة التجهيز</a>`
   ].join("\n");
 
   const notificationBotToken = await getBotTokenByPurpose("notification");

@@ -15,19 +15,19 @@ export async function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
   // --- 1. حماية لوحة الإدارة (Admin Security) ---
-  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
+  if (pathname.startsWith("/abo1stor3hlaa2kbr8-47") && !pathname.startsWith("/abo1stor3hlaa2kbr8-47/login")) {
     const secret = getAdminSecret();
     if (!secret) {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
+      return NextResponse.redirect(new URL("/abo1stor3hlaa2kbr8-47/login", request.url));
     }
     const token = request.cookies.get(ADMIN_COOKIE)?.value;
     if (!token) {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
+      return NextResponse.redirect(new URL("/abo1stor3hlaa2kbr8-47/login", request.url));
     }
     try {
       await jwtVerify(token, secret);
     } catch {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
+      return NextResponse.redirect(new URL("/abo1stor3hlaa2kbr8-47/login", request.url));
     }
   }
 
@@ -83,7 +83,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/admin/:path*",
+    "/abo1stor3hlaa2kbr8-47/:path*",
     "/mandoub",
     "/mandoub/:path*",
     "/preparer",

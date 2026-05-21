@@ -10,6 +10,8 @@ import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { formatDinarAsAlf } from "@/lib/money-alf";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
 function configureVapid(): boolean {
   const pub = process.env.VAPID_PUBLIC_KEY?.trim();
   const priv = process.env.VAPID_PRIVATE_KEY?.trim();
@@ -80,7 +82,7 @@ export async function sendTestPushBroadcast(opts: {
 
     const url =
       aud === "admin"
-        ? `${base}/admin`
+        ? `${base}${SECRET_ADMIN_PATH}`
         : aud === "mandoub"
           ? `${base}/mandoub`
           : aud === "employee"
@@ -192,7 +194,7 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
   await sendToSubscriptions(subs, {
     title,
     body,
-    url: `${getPublicAppUrl()}/admin/orders/pending`,
+    url: `${getPublicAppUrl()}${SECRET_ADMIN_PATH}/orders/pending`,
     tag: `kse-push-admin-${orderNumber}`,
     sound: settings.soundPreset,
   }, adminExternalIds);
@@ -226,7 +228,7 @@ export async function pushNotifyAdminsPresenceChange(input: {
   await sendToSubscriptions(subs, {
     title,
     body,
-    url: `${getPublicAppUrl()}/admin`,
+    url: `${getPublicAppUrl()}${SECRET_ADMIN_PATH}`,
     tag: `kse-presence-${input.kind}-${Date.now()}`,
   }, adminExternalIds);
 }
@@ -620,7 +622,7 @@ export async function pushNotifyChatNewMessage(opts: {
   await sendToSubscriptions(subs, {
     title: `💬 [جديد] رسالة من ${opts.senderName}`,
     body: opts.text.slice(0, 100),
-    url: `${getPublicAppUrl()}/${opts.targetRole === "admin" ? "admin" : opts.targetRole}`,
+    url: `${getPublicAppUrl()}/${opts.targetRole === "admin" ? SECRET_ADMIN_PATH.slice(1) : opts.targetRole}`,
     tag: `portal-chat-${opts.threadId}`,
   }, externalIds.length > 0 ? externalIds : undefined);
 }

@@ -11,8 +11,10 @@ import { useEffect, useState } from "react";
 export function MandoubLocationGateAndPing({ children }: { children: React.ReactNode }) {
   const [globalTracking, setGlobalTracking] = useState(true);
 
+  const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
   useEffect(() => {
-    fetch("/api/admin/settings/resource-management")
+    fetch(`/api${SECRET_ADMIN_PATH}/settings/resource-management`)
       .then(res => res.json())
       .then(data => {
         if (data.trackingEnabled !== undefined) {

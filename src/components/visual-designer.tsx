@@ -3,6 +3,8 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
 export function VisualDesignerProvider({
   children, target, section, isAdmin
 }: {
@@ -25,7 +27,7 @@ export function VisualDesignerProvider({
       {isAdmin && (
         <div className="fixed bottom-24 left-6 z-[9999]">
           <Link
-            href={`/admin/settings/ui-designer?target=${target}&section=${section}`}
+            href={`${SECRET_ADMIN_PATH}/settings/ui-designer?target=${target}&section=${section}`}
             className="flex h-16 w-16 items-center justify-center rounded-full bg-sky-600 text-white shadow-[0_10px_40px_rgba(14,165,233,0.5)] border-4 border-white hover:scale-110 active:scale-95 transition-all animate-bounce"
             title="إعدادات الستايل (للمسؤول فقط)"
           >

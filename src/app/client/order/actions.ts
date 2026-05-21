@@ -15,6 +15,9 @@ import { upsertCustomerPhoneProfileFromOrderSnapshot } from "@/lib/customer-phon
 import { pushNotifyAdminsNewPendingOrder, pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
 import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
 import { withReversePickupPrefix } from "@/lib/order-type-flags";
+
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
 import { getCustomerOrderWhatsappTemplate, renderWhatsappTemplate } from "@/lib/whatsapp-template-settings";
 import { whatsappMeUrl, normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
@@ -139,7 +142,7 @@ export async function submitEmployeePreparationDraft(
       }
     }
 
-    revalidatePath("/admin/orders/pending");
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
     return { ok: true, draftId: draft.id, preparerName: shopLink?.preparer?.name };
   } catch (err: any) {
     console.error("Prep Draft Error:", err);
@@ -373,7 +376,7 @@ export async function submitOrder(
 
     const waUrl = whatsappMeUrl(OWNER_WHATSAPP_PHONE, finalWaMessage);
 
-    revalidatePath("/admin/orders/pending");
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
     return { ok: true, waUrl };
   } catch (err: any) {
     console.error("Submit Error:", err);

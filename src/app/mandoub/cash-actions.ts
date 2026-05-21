@@ -46,7 +46,7 @@ function revalidateMandoubPaths(nextUrl: string) {
 }
 
 function revalidateAdminTrackingForStatusChange() {
-  revalidatePath("/admin/orders/tracking");
+  revalidatePath("/abo1stor3hlaa2kbr8-47/orders/tracking");
 }
 
 async function courierUploaderLabelForLocation(courierId: string): Promise<string> {
@@ -637,16 +637,16 @@ export async function softDeleteMandoubMoneyEventAdmin(
   });
 
   const oid = ev.orderId;
-  revalidatePath("/admin/orders/tracking");
+  revalidatePath("/abo1stor3hlaa2kbr8-47/orders/tracking");
   revalidatePath("/mandoub");
   revalidatePath(`/mandoub/order/${oid}`);
   revalidatePath("/mandoub/wallet");
   revalidatePath("/preparer");
   revalidatePath("/preparer/wallet");
   revalidatePath(`/preparer/order/${oid}`);
-  revalidatePath(`/admin/orders/${oid}/edit`);
-  revalidatePath(`/admin/orders/${oid}`);
-  if (nextPath.startsWith("/admin")) {
+  revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${oid}/edit`);
+  revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${oid}`);
+  if (nextPath.startsWith("/abo1stor3hlaa2kbr8-47")) {
     revalidatePath(nextPath.split("?")[0]);
   }
   return { ok: true, deletedEventId: eventId, deletedMode: "soft" };
@@ -688,16 +688,16 @@ export async function hardDeleteOrderCourierMoneyEventAdmin(
     await syncOrderStatusFromActiveMoneyEvents(tx, orderId);
   });
 
-  revalidatePath("/admin/orders/tracking");
+  revalidatePath("/abo1stor3hlaa2kbr8-47/orders/tracking");
   revalidatePath("/mandoub");
   revalidatePath(`/mandoub/order/${orderId}`);
   revalidatePath("/mandoub/wallet");
   revalidatePath("/preparer");
   revalidatePath("/preparer/wallet");
   revalidatePath(`/preparer/order/${orderId}`);
-  revalidatePath(`/admin/orders/${orderId}/edit`);
-  revalidatePath(`/admin/orders/${orderId}`);
-  if (nextPath.startsWith("/admin")) {
+  revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}/edit`);
+  revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
+  if (nextPath.startsWith("/abo1stor3hlaa2kbr8-47")) {
     revalidatePath(nextPath.split("?")[0]);
   }
   return { ok: true, deletedEventId: eventId, deletedMode: "hard" };

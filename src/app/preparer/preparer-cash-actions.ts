@@ -27,6 +27,8 @@ function withRefreshParam(url: string): string {
   return `${url}${sep}__r=${Date.now()}`;
 }
 
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
 function revalidatePreparerPaths(nextUrl: string) {
   revalidatePath("/preparer");
   revalidatePath("/preparer/wallet");
@@ -35,7 +37,7 @@ function revalidatePreparerPaths(nextUrl: string) {
   // قد يكون هناك مندوب مسند للطلب؛ تحديث صفحات المندوب لا يضر حتى لو لم يكن.
   revalidatePath("/mandoub");
   revalidatePath("/mandoub/wallet");
-  revalidatePath("/admin/orders/tracking");
+  revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
 }
 
 function mismatchNoteRequiredError(): PreparerCashState {

@@ -26,10 +26,12 @@ export default function GlobalAIAssistant({
   const [isDraggingFab, setIsDraggingFab] = useState(false);
   const pathname = usePathname();
 
+  const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
   const isMandoub = pathname.includes("/mandoub");
   const isPreparer = pathname.includes("/preparer");
   const isStore = pathname.includes("/store") || pathname === "/";
-  const isAdmin = pathname.includes("/admin");
+  const isAdmin = pathname.includes(SECRET_ADMIN_PATH);
 
   const isVisiblePortal =
     (isAdmin) ||
@@ -114,7 +116,7 @@ export default function GlobalAIAssistant({
   }, [isDraggingFab]);
 
   function getWelcomeMessage(path: string) {
-    if (path.includes("/admin")) return "أهلاً سيادة المدير. كيف يمكنني مساعدتك في إدارة النظام اليوم؟";
+    if (path.includes(SECRET_ADMIN_PATH)) return "أهلاً سيادة المدير. كيف يمكنني مساعدتك في إدارة النظام اليوم؟";
     if (path.includes("/preparer")) return "أهلاً بك في بوابة التجهيز. هل تريد البحث عن طلب معين لتجهيزه؟";
     if (path.includes("/mandoub")) return "أهلاً بطل الميدان! كيف حالك اليوم؟";
     return "أهلاً بك في متجر أبو الأكبر. ماذا تحب أن تطلب اليوم؟";
@@ -130,7 +132,7 @@ export default function GlobalAIAssistant({
 
     const pageContext = {
       path: pathname,
-      role: pathname.includes("/admin") ? "admin" :
+      role: pathname.includes(SECRET_ADMIN_PATH) ? "admin" :
             pathname.includes("/preparer") ? "preparer" :
             pathname.includes("/mandoub") ? "courier" : "customer",
       isStore: pathname.includes("/store") || pathname === "/"
@@ -185,7 +187,7 @@ export default function GlobalAIAssistant({
     switch (action.type) {
       case "OPEN_ORDER":
         if (role === "admin") {
-          router.push(`/admin/orders/${action.payload.orderId}/edit`);
+          router.push(`${SECRET_ADMIN_PATH}/orders/${action.payload.orderId}/edit`);
         } else if (role === "preparer") {
           // المجهز يفتح صفحة التجهيز
           router.push(`/preparer/preparation?orderId=${action.payload.orderId}`);
@@ -252,14 +254,14 @@ export default function GlobalAIAssistant({
             q.set("phone", phone);
             if (regionId) q.set("regionId", regionId);
             q.set("source", "ai");
-            router.push(`/admin/customers/info?${q.toString()}`);
+            router.push(`${SECRET_ADMIN_PATH}/customers/info?${q.toString()}`);
           }
         }
         break;
       case "NAVIGATE_ADMIN_PENDING_ASSIGN":
         if (role === "admin") {
           const orderId = String(action.payload?.orderId || "").trim();
-          if (orderId) router.push(`/admin/orders/pending?assignOrder=${encodeURIComponent(orderId)}`);
+          if (orderId) router.push(`${SECRET_ADMIN_PATH}/orders/pending?assignOrder=${encodeURIComponent(orderId)}`);
         }
         break;
       default:
@@ -311,7 +313,7 @@ export default function GlobalAIAssistant({
         const parsed = JSON.parse(text);
         if (parsed?.type) {
           const role =
-            pathname.includes("/admin")
+            pathname.includes(SECRET_ADMIN_PATH)
               ? "admin"
               : pathname.includes("/preparer")
                 ? "preparer"
@@ -373,7 +375,7 @@ export default function GlobalAIAssistant({
               <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center text-xl">🤖</div>
               <div>
                 <h3 className="font-black text-sm">مساعد أبو الأكبر الذكي</h3>
-                <p className="text-[10px] text-white/70">متصل بصفحة {pathname}</p>
+                <p className="text-[10px] text-white/70">متصل بصفحة {pathname.replace(SECRET_ADMIN_PATH, "/admin")}</p>
               </div>
             </div>
             <button onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white">✕</button>

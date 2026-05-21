@@ -21,7 +21,7 @@ export default function ForgotPasswordPage() {
           </p>
           <p className="mt-8">
             <Link
-              href="/admin/login"
+              href="/abo1stor3hlaa2kbr8-47/login"
               className="inline-flex rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:from-sky-700 hover:to-cyan-700"
             >
               العودة لتسجيل الدخول

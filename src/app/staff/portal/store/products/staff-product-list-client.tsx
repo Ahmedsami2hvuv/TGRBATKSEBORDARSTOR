@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { upsertProduct, deleteProduct } from "../../../../admin/(dashboard)/store/actions";
+import { upsertProduct, deleteProduct } from "../../../../abo1stor3hlaa2kbr8-47/(dashboard)/store/actions";
 import { compressImageFileForUpload } from "@/lib/client-image-compress";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";

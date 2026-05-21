@@ -8,7 +8,7 @@ const STORAGE_KEY = "ksebordarstor:last-pwa-path";
 function shouldPreservePath(pathname: string) {
   if (!pathname) return false;
   if (pathname === "/") return false;
-  if (pathname === "/register" || pathname === "/forgot-password" || pathname === "/admin/login") return false;
+  if (pathname === "/register" || pathname === "/forgot-password" || pathname === "/abo1stor3hlaa2kbr8-47/login") return false;
   if (pathname.startsWith("/_next") || pathname.startsWith("/api")) return false;
   return true;
 }

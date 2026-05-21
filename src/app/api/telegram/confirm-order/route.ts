@@ -8,6 +8,8 @@ import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 import { revalidatePath } from "next/cache";
 import { sendTelegramHtmlToChat } from "@/lib/telegram";
 
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const telegramUserId = searchParams.get("uid");
@@ -60,7 +62,7 @@ export async function GET(req: NextRequest) {
 
     // 4. تنظيف الجلسة وإرسال الإشعارات
     await prisma.telegramBotSession.delete({ where: { telegramUserId } });
-    revalidatePath("/admin/orders/pending");
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
     await notifyTelegramNewOrder(order.id).catch(() => {});
     void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 

@@ -28,6 +28,8 @@ function writeIconsCache(icons: GlobalIconsConfig) {
   }
 }
 
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
 export function DeliveryLoading({
   message = "جاري التحميل...",
   initialIcons = null,
@@ -46,7 +48,7 @@ export function DeliveryLoading({
       writeIconsCache(initialIcons);
     }
 
-    fetch("/api/admin/settings/icons", { cache: "no-store" })
+    fetch(`/api${SECRET_ADMIN_PATH}/settings/icons`, { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && typeof data === "object") {

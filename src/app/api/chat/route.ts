@@ -14,6 +14,8 @@ type ChatResponseShape = {
   actions?: any[] | null;
 };
 
+const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
 function extractPhone(text: string): string | null {
   const m = text.match(/(?:\+964|0)?7\d{9}/);
   return m ? m[0] : null;
@@ -71,7 +73,7 @@ async function runAdminCommandRouter(prompt: string): Promise<ChatResponseShape 
   if (text.includes("افتح") && (text.includes("الاعدادات") || text.includes("الإعدادات"))) {
       return {
           text: "جاري فتح صفحة الإعدادات العامة...",
-          actions: [{ type: "NAVIGATE", payload: { url: "/admin/settings" } }]
+          actions: [{ type: "NAVIGATE", payload: { url: `${SECRET_ADMIN_PATH}/settings` } }]
       };
   }
 
@@ -79,7 +81,7 @@ async function runAdminCommandRouter(prompt: string): Promise<ChatResponseShape 
   if (text.includes("افتح") && (text.includes("المنتجات") || text.includes("الاصناف"))) {
       return {
           text: "جاري فتح قائمة المنتجات...",
-          actions: [{ type: "NAVIGATE", payload: { url: "/admin/store/products" } }]
+          actions: [{ type: "NAVIGATE", payload: { url: `${SECRET_ADMIN_PATH}/store/products` } }]
       };
   }
 
@@ -266,7 +268,7 @@ function extractJsonActions(text: string): any[] {
 function detectPortal(context: any): PortalKey {
   const role = String(context?.role || "").toLowerCase();
   const path = String(context?.path || "").toLowerCase();
-  if (role === "admin" || path.includes("/admin")) return "admin";
+  if (role === "admin" || path.includes(SECRET_ADMIN_PATH)) return "admin";
   if (role === "preparer" || path.includes("/preparer")) return "preparer";
   if (role === "courier" || role === "mandoub" || path.includes("/mandoub")) return "mandoub";
   return "store";
@@ -291,7 +293,7 @@ function basePromptByPortal(portal: PortalKey, productsText: string): string {
 الأوامر المهمة للإدارة:
 - إسناد طلبية: {"type":"NAVIGATE_ADMIN_PENDING_ASSIGN","payload":{"orderId":"ORDER_ID"}}
 - فتح معلومات زبون: {"type":"OPEN_CUSTOMER","payload":{"phone":"077...","regionId":""}}
-- فتح أي صفحة إدارة: {"type":"NAVIGATE","payload":{"url":"/admin/..."}}
+- فتح أي صفحة إدارة: {"type":"NAVIGATE","payload":{"url":"${SECRET_ADMIN_PATH}/..."}}
 - قبل الإسناد إذا يحتاج اختيار شخص، ارجع خيارات: {"type":"SHOW_OPTIONS","payload":{"items":[{"id":"...","name":"..."}]}}
 إذا المستخدم كتب نص يشبه طلب تجهيز (اسم + هاتف + مواد)، اعتبره مسودة طلب واطلب منه تأكيد الإسناد.
 تكلم بلهجة عراقية واضحة ومهنية.`;

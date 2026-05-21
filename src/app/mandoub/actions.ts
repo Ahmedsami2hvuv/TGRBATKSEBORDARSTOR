@@ -54,7 +54,7 @@ function revalidateMandoubPaths(nextUrl: string) {
 }
 
 function revalidateAdminTrackingForStatusChange() {
-  revalidatePath("/admin/orders/tracking");
+  revalidatePath("/abo1stor3hlaa2kbr8-47/orders/tracking");
 }
 
 async function updateOrderWithMandoubStatusReconcile(
