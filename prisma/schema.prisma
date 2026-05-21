@@ -129,6 +129,7 @@ model CompanyPreparer {
   submittedOrders                     Order[]                        @relation("OrderSubmittedByPreparer")
   recordedOrderMoneyEvents            OrderCourierMoneyEvent[]       @relation("OrderMoneyRecordedByCompanyPreparer")
   shopLinks                           PreparerShop[]
+  hiddenDebts                         PreparerHiddenDebt[]
   authorizedBranches                  StoreBranch[]                  @relation("AuthorizedBranches")
   webPushSubscriptions                WebPushSubscription[]
 }
@@ -433,6 +434,7 @@ model Order {
   preparerShoppingJson                  Json?
   vehiclePreference                     String?
   preparerDebtHidden                    Boolean                  @default(false)
+  preparerHiddenDebts                   PreparerHiddenDebt[]
   courier                               Courier?                 @relation(fields: [assignedCourierId], references: [id])
   courierEarningForCourier              Courier?                 @relation("OrderCourierEarning", fields: [courierEarningForCourierId], references: [id])
   customer                              Customer?                @relation(fields: [customerId], references: [id])
@@ -787,4 +789,16 @@ model PortalChatMessage {
 
   @@index([threadId, createdAt])
   @@index([senderRole, senderId])
+}
+
+model PreparerHiddenDebt {
+  orderId    String
+  preparerId String
+  hiddenAt   DateTime @default(now())
+
+  order    Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  preparer CompanyPreparer @relation(fields: [preparerId], references: [id], onDelete: Cascade)
+
+  @@id([orderId, preparerId])
+  @@index([preparerId])
 }

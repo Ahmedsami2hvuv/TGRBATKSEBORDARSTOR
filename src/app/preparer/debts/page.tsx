@@ -61,12 +61,21 @@ export default async function PreparerDebtsPage({ searchParams }: Props) {
 
   const shopIds = preparer.shopLinks.map(l => l.shopId);
 
+  // تحسين الأداء: جلب الطلبات خلال آخر 60 يوم فقط لتقليل الحمولة
+  // لأن الديون القديمة جداً غالباً ما تكون قد سُويت أو نُسيت
+  const sixtyDaysAgo = new Date();
+  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
   const orders = await prisma.order.findMany({
     where: {
       shopId: { in: shopIds },
       preparerDebtHidden: false,
+      preparerHiddenDebts: {
+        none: { preparerId: v.preparerId }
+      },
       status: { notIn: ["cancelled"] },
       orderSubtotal: { gt: 0 },
+      createdAt: { gte: sixtyDaysAgo },
     },
     include: {
       moneyEvents: {
@@ -76,6 +85,7 @@ export default async function PreparerDebtsPage({ searchParams }: Props) {
       shop: { select: { name: true } },
     },
     orderBy: { createdAt: "desc" },
+    take: 200, // حد أقصى للنتائج لضمان سرعة الاستجابة
   });
 
   const debtOrders = orders.filter(o => {

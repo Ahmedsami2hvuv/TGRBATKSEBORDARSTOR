@@ -1258,20 +1258,41 @@ export async function hideOrderFromPreparerDebtsAction(
 ): Promise<PreparerActionState> {
   try {
     const v = readPortal(formData);
-    if (!v.ok) return { error: "الرابط غير صالح." };
+    const isAdmin = String(formData.get("isAdmin") === "true");
+
+    let preparerId = "";
+    if (v.ok) {
+      preparerId = v.preparerId;
+    } else if (!isAdmin) {
+      return { error: "الرابط غير صالح." };
+    }
 
     const orderId = String(formData.get("orderId") ?? "").trim();
     if (!orderId) return { error: "معرف الطلب ناقص." };
 
-    const gate = await assertPreparerLinkedToOrderShop(v.preparerId, orderId);
-    if (!gate.ok) return { error: gate.error };
+    if (isAdmin) {
+      // إذا كان مديراً، يخفيها عن الكل (قاعدة البيانات الأصلية)
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { preparerDebtHidden: true }
+      });
 
-    await prisma.order.update({
-      where: { id: orderId },
-      data: { preparerDebtHidden: true }
-    });
+      // إرسال إشعار للإدارة وللبوت العام
+      const order = await prisma.order.findUnique({ where: { id: orderId }, select: { orderNumber: true } });
+      const notificationBotToken = await getBotTokenByPurpose("notification");
+      await sendTelegramMessage(`🚫 <b>المدير قام بإخفاء دين الطلب #${order?.orderNumber} عن جميع المجهزين.</b>`, { botToken: notificationBotToken });
+
+    } else {
+      // إذا كان مجهزاً، يخفيها عن نفسه فقط
+      await prisma.preparerHiddenDebt.upsert({
+        where: { orderId_preparerId: { orderId, preparerId } },
+        create: { orderId, preparerId },
+        update: {}
+      });
+    }
 
     revalidatePath("/preparer/debts");
+    revalidatePath("/abo1stor3hlaa2kbr8-47/preparers");
     return { ok: true };
   } catch (e) {
     console.error("hideOrderFromPreparerDebtsAction error:", e);
@@ -1286,7 +1307,24 @@ export async function payOrderDebtAction(
 ): Promise<PreparerActionState> {
   try {
     const v = readPortal(formData);
-    if (!v.ok) return { error: "الرابط غير صالح." };
+    const isAdmin = formData.get("isAdmin") === "true";
+    const adminName = String(formData.get("adminName") ?? "المدير").trim();
+
+    let preparerId: string | null = null;
+    let displayName = "";
+
+    if (v.ok) {
+      preparerId = v.preparerId;
+      const preparer = await prisma.companyPreparer.findUnique({
+        where: { id: preparerId },
+        select: { name: true }
+      });
+      displayName = preparer?.name || "مجهز";
+    } else if (isAdmin) {
+      displayName = adminName;
+    } else {
+      return { error: "الرابط غير صالح." };
+    }
 
     const orderId = String(formData.get("orderId") ?? "").trim();
     const amountAlf = String(formData.get("amountAlf") ?? "").trim();
@@ -1295,27 +1333,54 @@ export async function payOrderDebtAction(
     const amountDinar = new Decimal(amountAlf).mul(ALF_PER_DINAR);
     if (amountDinar.lte(0)) return { error: "المبلغ يجب أن يكون أكبر من صفر." };
 
-    const gate = await assertPreparerLinkedToOrderShop(v.preparerId, orderId);
-    if (!gate.ok) return { error: gate.error };
-
-    const preparer = await prisma.companyPreparer.findUnique({
-      where: { id: v.preparerId },
-      select: { name: true }
-    });
-
     await prisma.orderCourierMoneyEvent.create({
       data: {
         orderId,
         amountDinar,
         kind: "pickup_out",
-        recordedByCompanyPreparerId: v.preparerId,
-        courierId: null, // دفع مباشر للمحل من المجهز
-        notes: `تسديد دين للمحل عبر بوابة المجهز (${preparer?.name || "مجهز"})`,
+        recordedByCompanyPreparerId: preparerId,
+        courierId: null,
+        notes: `تسديد دين للمحل عبر ${isAdmin ? "لوحة الإدارة" : "بوابة المجهز"} (${displayName})`,
       }
     });
 
+    // إشعارات تيليجرام
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { shop: true, customer: true }
+    });
+
+    if (order) {
+      const msg = [
+        `💸 <b>تسديد دين للمحل</b>`,
+        `<b>المحل:</b> ${order.shop.name}`,
+        `<b>المسدد:</b> ${displayName}`,
+        `<b>المبلغ:</b> ${formatDinarAsAlfWithUnit(amountDinar)}`,
+        `<b>رقم الطلب:</b> #${order.orderNumber}`,
+        `<b>الزبون:</b> ${order.customer?.name || "—"}`,
+      ].join("\n");
+
+      const notificationBotToken = await getBotTokenByPurpose("notification");
+      await sendTelegramMessage(msg, { botToken: notificationBotToken });
+
+      const managementBotToken = await getBotTokenByPurpose("management") || notificationBotToken;
+      if (managementBotToken !== notificationBotToken) {
+         await sendTelegramMessage(msg, { botToken: managementBotToken });
+      }
+
+      // إشعار للمجهزين المرتبطين بالمحل
+      const relatedPreparers = await prisma.companyPreparer.findMany({
+        where: { active: true, telegramUserId: { not: "" }, shopLinks: { some: { shopId: order.shopId } } }
+      });
+      const preparerBotToken = await getBotTokenByPurpose("preparer");
+      for (const p of relatedPreparers) {
+        await sendTelegramMessage(msg, { botToken: preparerBotToken, chatId: p.telegramUserId });
+      }
+    }
+
     revalidatePath("/preparer/debts");
     revalidatePath("/preparer/wallet");
+    revalidatePath("/abo1stor3hlaa2kbr8-47/preparers");
     return { ok: true };
   } catch (e) {
     console.error("payOrderDebtAction error:", e);

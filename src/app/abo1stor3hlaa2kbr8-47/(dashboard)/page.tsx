@@ -1,6 +1,7 @@
 import { testTelegramAction } from "./actions";
 import { AdminHubDashboard } from "./admin-hub-dashboard";
 import { AdminProfitsWidget } from "./admin-profits-widget";
+import { AdminDebtsWidget } from "./admin-debts-widget";
 
 import { serializePrisma } from "@/lib/serialize-prisma";
 
@@ -51,6 +52,7 @@ export default async function AdminHomePage({ searchParams }: Props) {
       </section>
 
       <AdminProfitsWidget />
+      <AdminDebtsWidget />
     </div>
   );
 }
