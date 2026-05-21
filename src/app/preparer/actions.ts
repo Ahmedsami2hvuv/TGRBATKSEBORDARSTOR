@@ -1357,39 +1357,51 @@ export async function payOrderDebtAction(
       }
     });
 
-    // إشعارات تيليجرام
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: { shop: true, customer: true }
-    });
-
-    if (order) {
-      const msg = [
-        `💸 <b>تسديد دين للمحل</b>`,
-        `<b>المحل:</b> ${order.shop.name}`,
-        `<b>المسدد:</b> ${displayName}`,
-        `<b>المبلغ:</b> ${formatDinarAsAlfWithUnit(amountDinar)}`,
-        mismatchNote ? `<b>السبب:</b> ${mismatchNote}` : "",
-        `<b>رقم الطلب:</b> #${order.orderNumber}`,
-        `<b>الزبون:</b> ${order.customer?.name || "—"}`,
-      ].join("\n");
-
-      const notificationBotToken = await getBotTokenByPurpose("notification");
-      await sendTelegramMessage(msg, { botToken: notificationBotToken });
-
-      const managementBotToken = await getBotTokenByPurpose("management") || notificationBotToken;
-      if (managementBotToken !== notificationBotToken) {
-         await sendTelegramMessage(msg, { botToken: managementBotToken });
-      }
-
-      // إشعار للمجهزين المرتبطين بالمحل
-      const relatedPreparers = await prisma.companyPreparer.findMany({
-        where: { active: true, telegramUserId: { not: "" }, shopLinks: { some: { shopId: order.shopId } } }
+    // إشعارات تيليجرام - معزولة لضمان عدم تأثر التسديد بفشل الإشعار
+    try {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { shop: true, customer: true }
       });
-      const preparerBotToken = await getBotTokenByPurpose("preparer");
-      for (const p of relatedPreparers) {
-        await sendTelegramMessage(msg, { botToken: preparerBotToken, chatId: p.telegramUserId });
+
+      if (order) {
+        const msg = [
+          `💸 <b>تسديد دين للمحل</b>`,
+          `<b>المحل:</b> ${order.shop.name}`,
+          `<b>المسدد:</b> ${displayName}`,
+          `<b>المبلغ:</b> ${formatDinarAsAlfWithUnit(amountDinar)}`,
+          mismatchNote ? `<b>السبب:</b> ${mismatchNote}` : "",
+          `<b>رقم الطلب:</b> #${order.orderNumber}`,
+          `<b>الزبون:</b> ${order.customer?.name || "—"}`,
+        ].join("\n");
+
+        const notificationBotToken = await getBotTokenByPurpose("notification");
+        if (notificationBotToken) {
+          await sendTelegramMessage(msg, { botToken: notificationBotToken });
+        }
+
+        const managementBotToken = await getBotTokenByPurpose("management") || notificationBotToken;
+        if (managementBotToken && managementBotToken !== notificationBotToken) {
+           await sendTelegramMessage(msg, { botToken: managementBotToken });
+        }
+
+        // إشعار للمجهزين المرتبطين بالمحل
+        const relatedPreparers = await prisma.companyPreparer.findMany({
+          where: { active: true, telegramUserId: { not: "" }, shopLinks: { some: { shopId: order.shopId } } }
+        });
+        const preparerBotToken = await getBotTokenByPurpose("preparer");
+        if (preparerBotToken) {
+          for (const p of relatedPreparers) {
+            try {
+              await sendTelegramMessage(msg, { botToken: preparerBotToken, chatId: p.telegramUserId });
+            } catch (err) {
+              console.error(`Failed to notify preparer ${p.name}:`, err);
+            }
+          }
+        }
       }
+    } catch (notifError) {
+      console.error("Notification failed but debt was recorded:", notifError);
     }
 
     revalidatePath("/preparer/debts");
