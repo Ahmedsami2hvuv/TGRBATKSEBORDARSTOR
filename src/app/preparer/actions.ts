@@ -5,7 +5,7 @@ import { CourierWalletMiscDirection, Prisma, PreparerShoppingDraftStatus } from 
 import { Decimal } from "@prisma/client/runtime/library";
 import { revalidatePath } from "next/cache";
 import { verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-link";
-import { ALF_PER_DINAR, parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
+import { ALF_PER_DINAR, formatDinarAsAlfWithUnit, parseAlfInputToDinarDecimalRequired } from "@/lib/money-alf";
 import {
   buildCustomerInvoiceText,
   buildPreparerPurchaseSummaryText,
@@ -21,6 +21,8 @@ import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
 import { notifyTelegramNewOrder, notifyTelegramOrderPrepared, notifyTelegramUnavailableProducts } from "@/lib/telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 import { ADMIN_OFFICE_LABEL, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
+import { getBotTokenByPurpose } from "@/lib/telegram-bots";
+import { escapeTelegramHtml, sendTelegramHtmlToChat, sendTelegramMessage } from "@/lib/telegram";
 
 export type PreparerActionState = { error?: string; ok?: boolean; orderNumber?: number; draftId?: string };
 
@@ -1371,28 +1373,33 @@ export async function payOrderDebtAction(
       });
 
       if (order) {
+        const escapedShopName = escapeTelegramHtml(order.shop.name);
+        const escapedPreparerName = escapeTelegramHtml(displayName);
+        const escapedNote = escapeTelegramHtml(mismatchNote || "");
+        const escapedCustomerName = escapeTelegramHtml(order.customer?.name || order.customerPhone || "—");
+
         const msg = [
-          `💸 <b>تسديد دين للمحل</b>`,
-          `<b>المحل:</b> ${order.shop.name}`,
-          `<b>المسدد:</b> ${displayName}`,
-          `<b>المبلغ:</b> ${formatDinarAsAlfWithUnit(amountDinar)}`,
-          mismatchNote ? `<b>السبب:</b> ${mismatchNote}` : "",
-          `<b>رقم الطلب:</b> #${order.orderNumber}`,
-          `<b>الزبون:</b> ${order.customer?.name || order.customerPhone || "—"}`,
-          `<b>التاريخ:</b> ${new Date().toLocaleString("ar-IQ")}`,
+          `\u200F💸 <b>تسديد دين للمحل</b>`,
+          `\u200F<b>المحل:</b> ${escapedShopName}`,
+          `\u200F<b>المسدد:</b> ${escapedPreparerName}`,
+          `\u200F<b>المبلغ:</b> ${formatDinarAsAlfWithUnit(amountDinar)}`,
+          mismatchNote ? `\u200F<b>السبب:</b> ${escapedNote}` : "",
+          `\u200F<b>رقم الطلب:</b> #${order.orderNumber}`,
+          `\u200F<b>الزبون:</b> ${escapedCustomerName}`,
+          `\u200F<b>التاريخ:</b> \u200E${new Date().toLocaleString("ar-IQ")}\u200E`,
         ].filter(Boolean).join("\n");
 
         const notificationBotToken = await getBotTokenByPurpose("notification");
         const managementBotToken = await getBotTokenByPurpose("management");
         const preparerBotToken = await getBotTokenByPurpose("preparer");
 
-        // 1. الإرسال لبوت الإشعارات (الجروب)
+        // 1. الإرسال لبوت الإشعارات (الجروب العام)
         if (notificationBotToken) {
           await sendTelegramMessage(msg, { botToken: notificationBotToken });
         }
 
-        // 2. الإرسال لبوت الإدارة
-        if (managementBotToken) {
+        // 2. الإرسال لبوت الإدارة (إذا كان مختلفاً أو مخصصاً)
+        if (managementBotToken && managementBotToken !== notificationBotToken) {
           await sendTelegramMessage(msg, { botToken: managementBotToken });
         }
 
@@ -1404,10 +1411,7 @@ export async function payOrderDebtAction(
 
         if (preparerBotToken && currentPreparer?.telegramUserId) {
           try {
-            await sendTelegramMessage(`✅ <b>تأكيد استلام تسديدك</b>\n\n${msg}`, {
-              botToken: preparerBotToken,
-              chatId: currentPreparer.telegramUserId
-            });
+            await sendTelegramHtmlToChat(currentPreparer.telegramUserId, `\u200F✅ <b>تأكيد استلام تسديدك</b>\n\n${msg}`, preparerBotToken);
           } catch (e) { console.error("Failed to send receipt to current preparer", e); }
         }
 
@@ -1425,10 +1429,7 @@ export async function payOrderDebtAction(
           for (const p of relatedPreparers) {
             try {
               if (p.telegramUserId) {
-                await sendTelegramMessage(`📢 <b>تنبيه تسديد (زميل):</b>\n\n${msg}`, {
-                  botToken: preparerBotToken,
-                  chatId: p.telegramUserId
-                });
+                await sendTelegramHtmlToChat(p.telegramUserId, `\u200F📢 <b>تنبيه تسديد (زميل):</b>\n\n${msg}`, preparerBotToken);
               }
             } catch (err) {
               console.error(`Failed to notify preparer ${p.name}:`, err);
