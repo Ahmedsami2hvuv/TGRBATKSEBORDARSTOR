@@ -12,59 +12,13 @@ import { useRouter } from "next/navigation";
 
 const initialEdit: MandoubEditCustomerState = {};
 
-const MANDOUB_STATUS_OPTIONS = [
-  { value: "assigned", label: "بانتظار المندوب" },
-  { value: "delivering", label: "تم الاستلام" },
-  { value: "delivered", label: "تم التسليم" },
-];
-
-export function MandoubCustomerEditForm({
-  orderId,
-  defaultOrderStatus,
-  defaultCustomerPhone,
-  defaultCustomerLocationUrl,
-  defaultCustomerLandmark,
-  defaultAlternatePhone,
-  auth,
-  nextUrl,
-}: {
-  orderId: string;
-  /** حالة الطلب الحالية — يمكن للمندوب تغييرها بأي اتجاه ضمن دورة التوصيل */
-  defaultOrderStatus: string;
-  defaultCustomerPhone: string;
-  defaultCustomerLocationUrl: string;
-  defaultCustomerLandmark: string;
-  defaultAlternatePhone: string;
-  auth: { c: string; exp: string; s: string };
-  nextUrl: string;
-}) {
-  const [editOpen, setEditOpen] = useState(false);
-  const [editState, editAction, editPending] = useActionState(
-    updateMandoubCustomerDetails,
-    initialEdit,
-  );
-  const customerPhoneRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const onToggle = () => setEditOpen((open) => !open);
-    window.addEventListener(MANDOUB_ORDER_EDIT_TOGGLE, onToggle);
-    return () => window.removeEventListener(MANDOUB_ORDER_EDIT_TOGGLE, onToggle);
-  }, []);
-
-  useEffect(() => {
-    if (!editOpen) return;
-    const id = window.requestAnimationFrame(() => {
-      document.getElementById("mandoub-order-edit")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-      window.setTimeout(() => customerPhoneRef.current?.focus(), 140);
-    });
-    return () => window.cancelAnimationFrame(id);
-  }, [editOpen]);
-
-  const inputClass =
-    "w-full rounded-xl border border-sky-200 bg-white px-3 py-2.5 text-base text-slate-800 shadow-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 sm:text-lg";
+  const MANDOUB_STATUS_OPTIONS = [
+    { value: "assigned", label: "بانتظار المندوب" },
+    { value: "delivering", label: "تم الاستلام" },
+    ...(defaultOrderStatus === "delivered"
+      ? [{ value: "delivered", label: "تم التسليم" }]
+      : []),
+  ];
 
   return (
     <div id="mandoub-order-edit" className="scroll-mt-20 mt-4">
@@ -100,14 +54,16 @@ export function MandoubCustomerEditForm({
               defaultValue={
                 MANDOUB_STATUS_OPTIONS.some((o) => o.value === defaultOrderStatus)
                   ? defaultOrderStatus
-                  : "assigned"
+                  : defaultOrderStatus === "delivered" ? "delivered" : "assigned"
               }
               options={MANDOUB_STATUS_OPTIONS}
               legend="حالة الطلبية"
               legendClassName="font-bold text-slate-800"
             />
-            <p className="text-xs text-slate-600">
-              يمكنك إرجاع الحالة (مثلاً من «تم التسليم» إلى «تم الاستلام») ثم الضغط على تحديث.
+            <p className="text-xs text-slate-600 font-medium">
+              {defaultOrderStatus !== "delivered"
+                ? "ملاحظة: لتسليم الطلب نهائياً، استخدم زر «تم التسليم» في أسفل الصفحة لضمان تسجيل الحسابات والأرباح."
+                : "يمكنك إرجاع الحالة (مثلاً من «تم التسليم» إلى «تم الاستلام») ثم الضغط على تحديث."}
             </p>
 
             <label className="flex flex-col gap-1.5">

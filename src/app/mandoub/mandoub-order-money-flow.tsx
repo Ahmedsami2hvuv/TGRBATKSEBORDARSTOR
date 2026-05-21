@@ -157,12 +157,14 @@ export function MandoubOrderMoneyFlow({
     totalAmountDinar != null &&
     Math.abs(deliverySum - totalAmountDinar) < AMOUNT_EPS;
 
-  // إظهار الأزرار دائماً للتأكد من وصولها للمستخدم
-  const showPickupBtn = true;
-  const showDeliveryBtn = true;
+  // إخفاء الأزرار العائمة الإضافية لأن لدينا أزرار ثابتة
+  const showPickupBtnFab = false;
+  const showDeliveryBtnFab = false;
 
-  const canMarkPickedUp = orderStatus === "assigned" || orderStatus === "pending";
-  const canMarkDelivered = orderStatus === "delivering" || orderStatus === "assigned" || orderStatus === "picked_up";
+  // زر "تم الاستلام" يظهر فقط في حالة "بانتظار المندوب"
+  const canMarkPickedUp = orderStatus === "assigned";
+  // زر "تم التسليم" يظهر فقط في حالة "عند المندوب"
+  const canMarkDelivered = orderStatus === "delivering";
 
   const closePanels = () => {
     setPickupOpen(false);
@@ -184,47 +186,7 @@ export function MandoubOrderMoneyFlow({
       </h3>
 
       <div className="grid grid-cols-1 gap-4 mb-6">
-          {/* الأزرار الكبيرة في الأعلى بناءً على الحالة */}
-          {canMarkPickedUp && (
-            <button
-              onClick={() => {
-                setPickupAdvanceToDelivering(true);
-                setDeliveryOpen(false);
-                setPickupOpen(true);
-              }}
-              className="flex flex-col items-center justify-center gap-3 rounded-2xl border-4 border-emerald-500 bg-emerald-50 p-6 shadow-lg transition hover:bg-emerald-100 active:scale-95"
-            >
-              <div className="flex size-14 items-center justify-center rounded-xl bg-white shadow-md ring-1 ring-emerald-200">
-                <DynamicIcon icon={icons?.order_received} className="size-8 text-emerald-600" fallback="📦" />
-              </div>
-              <div className="text-center">
-                <span className="block text-xl font-black text-emerald-950">استلمت من المحل</span>
-                <span className="text-xs font-bold text-emerald-700">تحويل الحالة إلى "عند المندوب"</span>
-              </div>
-            </button>
-          )}
-
-          {canMarkDelivered && !canMarkPickedUp && (
-            <button
-              onClick={() => {
-                setDeliveryAdvanceToDelivered(true);
-                setDeliverySession((n) => n + 1);
-                setPickupOpen(false);
-                setDeliveryOpen(true);
-              }}
-              className="flex flex-col items-center justify-center gap-3 rounded-2xl border-4 border-rose-500 bg-rose-50 p-6 shadow-lg transition hover:bg-rose-100 active:scale-95"
-            >
-              <div className="flex size-14 items-center justify-center rounded-xl bg-white shadow-md ring-1 ring-rose-200">
-                <DynamicIcon icon={icons?.order_delivered} className="size-8 text-rose-600" fallback="🚚" />
-              </div>
-              <div className="text-center">
-                <span className="block text-xl font-black text-rose-950">سلّمت للزبون</span>
-                <span className="text-xs font-bold text-rose-700">تحويل الحالة إلى "تم التسليم"</span>
-              </div>
-            </button>
-          )}
-
-          {/* أزرار أخذت / أعطيت (الصادر والوارد التقليدية) */}
+          {/* أزرار أخذت / أعطيت الثابتة (الصادر والوارد) */}
           <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => {
@@ -268,8 +230,8 @@ export function MandoubOrderMoneyFlow({
           setPickupOpen(false);
           setDeliveryOpen(true);
         }}
-        showPickupBtn={showPickupBtn}
-        showDeliveryBtn={showDeliveryBtn}
+        showPickupBtn={showPickupBtnFab}
+        showDeliveryBtn={showDeliveryBtnFab}
         pickupOpen={pickupOpen}
         deliveryOpen={deliveryOpen}
         onOpenPickup={() => {
@@ -343,7 +305,6 @@ export function MandoubOrderMoneyFlow({
           const recordedByPreparer = ev.recordedByCompanyPreparerId != null;
           const canDeleteFromMandoubUi = !recordedByPreparer && !isPending;
 
-          // حساب الاختلاف للعرض تحت زر الحذف
           const diff = ev.expectedDinar != null ? ev.amountDinar - ev.expectedDinar : 0;
           const hasMismatch = ev.expectedDinar != null && Math.abs(diff) > 0.01;
 
