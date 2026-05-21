@@ -12,8 +12,16 @@ import { GlobalIconsConfig, saveGlobalIcons } from "@/lib/icon-settings";
 import { setChatEnabledGlobally, setTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 import { RoleFeaturesConfig, saveRoleFeatures } from "@/lib/role-features-settings";
 import { ensureTelegramWebhookConfigured } from "@/lib/telegram";
+import { setChosenFont } from "@/lib/font-settings";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+
+export async function saveChosenFontAction(fontName: string) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  await setChosenFont(fontName);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
 
 export async function saveGlobalIconsAction(config: GlobalIconsConfig) {
   if (!(await isAdminSession())) return { error: "Unauthenticated" };

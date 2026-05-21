@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
-/* 1. تعريف خط المهند بشكل صحيح */
+/* 1. تعريف خط Cairo الجديد */
 @font-face {
-  font-family: 'Al Mohanad';
-  src: url('/fonts/mohanad-bold.ttf.ttf') format('truetype');
+  font-family: 'Cairo';
+  src: url('/fonts/Cairo-Regular.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Al Mohanad';
-  src: url('/fonts/mohanad-bold.ttf.ttf') format('truetype');
+  font-family: 'Cairo';
+  src: url('/fonts/Cairo-Regular.ttf') format('truetype');
   font-weight: bold;
   font-style: normal;
   font-display: swap;
@@ -20,9 +20,10 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* 2. جعل المهند هو الخط الأساسي والوحيد */
-  --font-mohanad: "Al Mohanad", Tahoma, Arial, sans-serif;
-  --font-sans: var(--font-mohanad);
+  /* الخط الافتراضي كاحتياط */
+  --font-cairo: "Cairo", Tahoma, Arial, sans-serif;
+  --chosen-font: var(--font-cairo);
+  --font-sans: var(--chosen-font);
 
   /* Bright Light Base (Default) */
   --background: #f0f4f8; 
@@ -42,7 +43,7 @@
 
 .dark {
   /* Carbon Black Base */
-  --background: #09090b; 
+  --background: #09090b;
   --foreground: #f8fafc; 
   --surface: #131418;
   --surface-muted: rgba(19, 20, 24, 0.7);
@@ -60,18 +61,27 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-mohanad);
+  --font-sans: var(--font-cairo);
 }
 
 /* إجبار كل العناصر على استخدام الخط */
 * {
-  font-family: var(--font-mohanad) !important;
+  font-family: var(--font-cairo) !important;
+}
+
+/* Hide scrollbar for elements with .no-scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-mohanad) !important;
+  font-family: var(--font-cairo) !important;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -103,7 +113,7 @@ body {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: 
+  background:
     radial-gradient(circle at 15% 50%, rgba(0, 243, 255, 0.08) 0%, transparent 40%),
     radial-gradient(circle at 85% 30%, rgba(224, 40, 255, 0.08) 0%, transparent 50%),
     radial-gradient(circle at 50% 100%, rgba(255, 145, 0, 0.05) 0%, transparent 50%);
@@ -139,7 +149,7 @@ body {
 
 .dark .kse-glass-card {
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(19, 20, 24, 0.85); 
+  background: rgba(19, 20, 24, 0.85);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
@@ -239,7 +249,7 @@ body {
   border-right: 2px solid rgba(0, 243, 255, 0.4);
 }
 
-/** 
+/**
  * ==========================================
  * FORCE DARK MODE OVERRIDES FOR LEGACY COMPONENTS
  * ==========================================
@@ -255,31 +265,31 @@ body {
   box-shadow: 0 0 10px rgba(0, 243, 255, 0.2) !important;
 }
 
-.dark body .bg-white { 
-  background-color: rgba(15, 17, 21, 0.9) !important; 
+.dark body .bg-white {
+  background-color: rgba(15, 17, 21, 0.9) !important;
 }
-.dark body .bg-slate-50, .dark body .bg-sky-50, .dark body .bg-emerald-50, .dark body .bg-rose-50 { 
-  background-color: rgba(22, 24, 30, 0.9) !important; 
+.dark body .bg-slate-50, .dark body .bg-sky-50, .dark body .bg-emerald-50, .dark body .bg-rose-50 {
+  background-color: rgba(22, 24, 30, 0.9) !important;
 }
-.dark body .bg-slate-100, .dark body .bg-sky-100, .dark body .bg-emerald-100 { 
-  background-color: rgba(30, 32, 40, 0.8) !important; 
+.dark body .bg-slate-100, .dark body .bg-sky-100, .dark body .bg-emerald-100 {
+  background-color: rgba(30, 32, 40, 0.8) !important;
 }
 
 /* Invert dark text colors to light text for dark mode */
-.dark body .text-slate-800, .dark body .text-slate-900, .dark body .text-slate-700, 
+.dark body .text-slate-800, .dark body .text-slate-900, .dark body .text-slate-700,
 .dark body .text-sky-950, .dark body .text-emerald-800, .dark body .text-emerald-900,
-.dark body .text-gray-800, .dark body .text-gray-900 { 
-  color: #eef2f6 !important; 
+.dark body .text-gray-800, .dark body .text-gray-900 {
+  color: #eef2f6 !important;
 }
-.dark body .text-slate-600, .dark body .text-slate-500 { 
-  color: #94a3b8 !important; 
+.dark body .text-slate-600, .dark body .text-slate-500 {
+  color: #94a3b8 !important;
 }
 
 /* Fix harsh light borders */
 .dark body .border-slate-200, .dark body .border-slate-100, .dark body .border-slate-300,
 .dark body .border-sky-300, .dark body .border-sky-200, .dark body .border-sky-100, .dark body .border-emerald-200,
-.dark body .border-slate-400 { 
-  border-color: rgba(255, 255, 255, 0.1) !important; 
+.dark body .border-slate-400 {
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Strip harsh shadows */
@@ -309,7 +319,3 @@ body {
   transform: none !important;
   opacity: 0.4;
 }
-
-
-
-

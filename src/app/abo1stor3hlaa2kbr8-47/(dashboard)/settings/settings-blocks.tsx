@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { RoleFeaturesConfig } from "@/lib/role-features-settings";
 import { CourierButtonsSettings } from "./courier-buttons-settings";
 import { TelegramBotsForm } from "./telegram-bots-form";
+import { FontSettingsForm } from "./font-settings-form";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -185,6 +186,8 @@ export function SettingsBlocks({
   preparerFeaturesInitial: RoleFeaturesConfig;
   telegramAdminsInitial: Array<{ id: string; telegramUserId: string; name: string; active: boolean }>;
   telegramBotsInitial: any[];
+  availableFonts: string[];
+  currentFont: string;
 }) {
   const router = useRouter();
   const [openId, setOpenId] = useState<string>("ui-designer");
@@ -307,6 +310,18 @@ export function SettingsBlocks({
         icons={globalIcons}
       >
         <TelegramBotsForm initialBots={telegramBots} icons={globalIcons} />
+      </Block>
+
+      <Block
+        id="global-font"
+        title="خط الموقع 🖋️"
+        subtitle="تغيير الخط الأساسي لكل واجهات النظام."
+        open={openId === "global-font"}
+        onToggle={() => setOpenId((x) => (x === "global-font" ? "" : "global-font"))}
+        tone="indigo"
+        icons={globalIcons}
+      >
+        <FontSettingsForm availableFonts={availableFonts} currentFont={currentFont} />
       </Block>
 
       <Block

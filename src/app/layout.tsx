@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ClientRuntime } from "@/components/client-runtime";
 import { isChatEnabledGlobally, isTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 import { getRoleFeatures } from "@/lib/role-features-settings";
+import { getAvailableFonts, getChosenFont, getFontFileUrl } from "@/lib/font-settings";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import "./globals.css";
@@ -25,15 +26,47 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const externalId = mandoubId || preparerId || employeeId;
 
   // استرجاع الميزات بشكل آمن جداً
-  const [mandoubFeatures, preparerFeatures, chatEnabled, trackingEnabled] = await Promise.all([
+  const [mandoubFeatures, preparerFeatures, chatEnabled, trackingEnabled, availableFonts, chosenFont] = await Promise.all([
     getRoleFeatures("mandoub").catch(() => ({})),
     getRoleFeatures("preparer").catch(() => ({})),
     isChatEnabledGlobally().catch(() => true),
     isTrackingEnabledGlobally().catch(() => true),
+    Promise.resolve(getAvailableFonts()),
+    getChosenFont(),
   ]);
+
+  // توليد تعريفات الخطوط ديناميكياً
+  const fontFaceCss = availableFonts.map(fontName => {
+    const url = getFontFileUrl(fontName);
+    if (!url) return "";
+    return `
+      @font-face {
+        font-family: '${fontName}';
+        src: url('${url}') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: '${fontName}';
+        src: url('${url}') format('truetype');
+        font-weight: bold;
+        font-style: normal;
+        font-display: swap;
+      }
+    `;
+  }).join("\n");
 
   return (
     <html lang="ar" dir="rtl" className="h-full antialiased" suppressHydrationWarning>
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: `
+          ${fontFaceCss}
+          :root {
+            --chosen-font: "${chosenFont}", "Cairo", Tahoma, sans-serif;
+          }
+        `}} />
+      </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <ClientRuntime

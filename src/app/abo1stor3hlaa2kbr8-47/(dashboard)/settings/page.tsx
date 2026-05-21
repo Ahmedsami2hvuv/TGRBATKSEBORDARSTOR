@@ -9,6 +9,7 @@ import { getEmployeeWhatsappShareTemplate, getCustomerOrderWhatsappTemplate } fr
 import { getTelegramNewOrderTemplate } from "@/lib/telegram-notify";
 import { isChatEnabledGlobally, isTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 import { getRoleFeatures } from "@/lib/role-features-settings";
+import { getAvailableFonts, getChosenFont } from "@/lib/font-settings";
 
 export const metadata = {
   title: "الإعدادات — KSEBORDARSTOR",
@@ -30,6 +31,8 @@ export default async function SettingsPage() {
       getRoleFeatures("preparer").catch(() => ({ chatEnabled: true, aiEnabled: false })),
       prisma.telegramAdmin.findMany({ orderBy: { createdAt: "desc" } }).catch(() => []),
       prisma.telegramBot.findMany({ orderBy: { createdAt: "desc" } }).catch(() => []),
+      getAvailableFonts(),
+      getChosenFont(),
     ]);
   } catch (e) {
     console.error("Critical Settings Page Error:", e);
@@ -47,7 +50,9 @@ export default async function SettingsPage() {
     mandoubFeatures,
     preparerFeatures,
     telegramAdmins,
-    telegramBots
+    telegramBots,
+    availableFonts,
+    currentFont
   ] = data;
 
   // تأمين كائن الإشعارات في حال كان null
@@ -74,6 +79,8 @@ export default async function SettingsPage() {
         preparerFeaturesInitial={preparerFeatures as any}
         telegramAdminsInitial={telegramAdmins as any}
         telegramBotsInitial={telegramBots as any}
+        availableFonts={availableFonts}
+        currentFont={currentFont}
         notificationInitial={{
           adminEnabled: ns.adminEnabled ?? true,
           adminTitleSingle: ns.adminTitleSingle ?? "طلب جديد #{orderNumber}",
