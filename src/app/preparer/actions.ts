@@ -1279,6 +1279,50 @@ export async function hideOrderFromPreparerDebtsAction(
   }
 }
 
+/** تسجيل تسديد دين (كامل أو جزئي) للمحل */
+export async function payOrderDebtAction(
+  _prev: any,
+  formData: FormData
+): Promise<PreparerActionState> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "الرابط غير صالح." };
+
+    const orderId = String(formData.get("orderId") ?? "").trim();
+    const amountAlf = String(formData.get("amountAlf") ?? "").trim();
+    if (!orderId || !amountAlf) return { error: "بيانات ناقصة." };
+
+    const amountDinar = new Decimal(amountAlf).mul(ALF_PER_DINAR);
+    if (amountDinar.lte(0)) return { error: "المبلغ يجب أن يكون أكبر من صفر." };
+
+    const gate = await assertPreparerLinkedToOrderShop(v.preparerId, orderId);
+    if (!gate.ok) return { error: gate.error };
+
+    const preparer = await prisma.companyPreparer.findUnique({
+      where: { id: v.preparerId },
+      select: { name: true }
+    });
+
+    await prisma.orderCourierMoneyEvent.create({
+      data: {
+        orderId,
+        amountDinar,
+        kind: "pickup_out",
+        recordedByCompanyPreparerId: v.preparerId,
+        courierId: null, // دفع مباشر للمحل من المجهز
+        notes: `تسديد دين للمحل عبر بوابة المجهز (${preparer?.name || "مجهز"})`,
+      }
+    });
+
+    revalidatePath("/preparer/debts");
+    revalidatePath("/preparer/wallet");
+    return { ok: true };
+  } catch (e) {
+    console.error("payOrderDebtAction error:", e);
+    return { error: "فشل تسجيل التسديد." };
+  }
+}
+
 export async function bulkAssignOrdersByPreparer(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> {
   const v = readPortal(formData);
   if (!v.ok) return { error: "جلسة المجهز غير صالحة." };

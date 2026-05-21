@@ -3,8 +3,7 @@ import { verifyCompanyPreparerPortalQuery, type CompanyPreparerPortalVerifyReaso
 import { prisma } from "@/lib/prisma";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
-import { hideOrderFromPreparerDebtsAction } from "../actions";
-import { revalidatePath } from "next/cache";
+import { DebtItemClient } from "./debt-item-client";
 
 export const dynamic = "force-dynamic";
 
@@ -62,13 +61,11 @@ export default async function PreparerDebtsPage({ searchParams }: Props) {
 
   const shopIds = preparer.shopLinks.map(l => l.shopId);
 
-  // جلب الطلبات التي لم يكتمل دفعها للمحل (سعر الطلب > مجموع Sader)
-  // والغير مخفية يدوياً
   const orders = await prisma.order.findMany({
     where: {
       shopId: { in: shopIds },
       preparerDebtHidden: false,
-      status: { notIn: ["cancelled"] }, // الطلبات الملغاة لا تعتبر ديوناً عادة
+      status: { notIn: ["cancelled"] },
       orderSubtotal: { gt: 0 },
     },
     include: {
@@ -100,70 +97,49 @@ export default async function PreparerDebtsPage({ searchParams }: Props) {
   const baseAuth = { p: p!, exp: exp || "", s: s! };
 
   return (
-    <div className="kse-app-bg min-h-screen px-4 py-8 pb-24 text-slate-800" dir="rtl">
-      <div className="kse-app-inner mx-auto max-w-lg space-y-5">
-        <header className="kse-glass-dark rounded-2xl border border-rose-200 p-5 shadow-sm">
+    <div
+      className="min-h-screen px-4 py-8 pb-24 text-slate-800 relative bg-slate-50"
+      dir="rtl"
+      style={{
+        backgroundImage: `radial-gradient(#e2e8f0 1px, transparent 1px)`,
+        backgroundSize: '20px 20px'
+      }}
+    >
+      <div className="kse-app-inner mx-auto max-w-lg space-y-6 relative z-10">
+        <header className="bg-indigo-600 rounded-[2rem] p-6 shadow-xl shadow-indigo-100 text-white">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-black text-slate-900">ديون المحلات</h1>
-            <div className="text-left">
-              <p className="text-xs font-bold text-slate-500">إجمالي الديون</p>
-              <p className="text-lg font-black text-rose-600">{formatDinarAsAlfWithUnit(totalDebtsSum)}</p>
+            <div>
+              <h1 className="text-2xl font-black">تفاصيل الديون</h1>
+              <p className="text-indigo-100 text-xs font-bold mt-1 opacity-80">إدارة مستحقات المحلات</p>
+            </div>
+            <div className="text-left bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/20">
+              <p className="text-[10px] font-black text-indigo-100 uppercase tracking-wider mb-1">إجمالي الديون</p>
+              <p className="text-2xl font-black tabular-nums">{formatDinarAsAlfWithUnit(totalDebtsSum)}</p>
             </div>
           </div>
         </header>
 
         {debtOrders.length === 0 ? (
-          <div className="kse-glass-dark rounded-2xl p-12 text-center text-slate-500 border border-dashed border-slate-300">
-            <p className="text-lg font-bold">لا توجد ديون مسجلة حالياً</p>
+          <div className="bg-white/50 backdrop-blur-sm rounded-[2rem] p-16 text-center text-slate-400 border-2 border-dashed border-slate-200">
+            <div className="text-4xl mb-4">✨</div>
+            <p className="text-lg font-black">لا توجد ديون حالياً</p>
+            <p className="text-sm mt-1">جميع الحسابات مكتملة</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {debtOrders.map(order => (
-              <div key={order.id} className="kse-glass-dark rounded-2xl border border-slate-200 p-4 shadow-sm bg-white">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <span className="text-xs font-black text-indigo-600">#{order.orderNumber}</span>
-                    <h3 className="font-black text-slate-900">{order.shop.name}</h3>
-                    <p className="text-xs text-slate-500">{order.customerRegion?.name || "منطقة غير محددة"}</p>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-slate-400">المتبقي للمحل</p>
-                    <p className="text-base font-black text-rose-600">{formatDinarAsAlfWithUnit(order.debtAmount)}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between mt-4 border-t border-slate-50 pt-3">
-                   <div className="text-xs font-bold text-slate-400">
-                     الحساب: {formatDinarAsAlfWithUnit(order.orderSubtotal)} | المدفوع: {formatDinarAsAlfWithUnit(order.totalPaid)}
-                   </div>
-
-                   <form action={async (formData) => {
-                     "use server";
-                     await hideOrderFromPreparerDebtsAction(null, formData);
-                   }}>
-                     <input type="hidden" name="p" value={baseAuth.p} />
-                     <input type="hidden" name="exp" value={baseAuth.exp} />
-                     <input type="hidden" name="s" value={baseAuth.s} />
-                     <input type="hidden" name="orderId" value={order.id} />
-                     <button
-                        type="submit"
-                        className="rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-600 hover:bg-slate-200 transition-colors"
-                     >
-                       إخفاء
-                     </button>
-                   </form>
-                </div>
-              </div>
+              <DebtItemClient key={order.id} order={order} auth={baseAuth} />
             ))}
           </div>
         )}
 
-        <div className="fixed bottom-6 left-0 right-0 px-4 pointer-events-none">
-          <div className="mx-auto max-w-lg pointer-events-auto">
+        <div className="fixed bottom-6 left-0 right-0 px-4 z-50">
+          <div className="mx-auto max-w-lg">
             <a
               href={`/preparer/wallet?${new URLSearchParams(baseAuth).toString()}`}
-              className="flex items-center justify-center gap-2 rounded-2xl bg-slate-900 py-4 text-sm font-black text-white shadow-xl shadow-slate-200 transition hover:bg-slate-800"
+              className="flex items-center justify-center gap-2 rounded-[2rem] bg-slate-900 py-4 text-sm font-black text-white shadow-2xl shadow-slate-300 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
+              <span className="text-lg">←</span>
               العودة للمحفظة
             </a>
           </div>
