@@ -194,6 +194,7 @@ model Customer {
   updatedAt            DateTime              @updatedAt
   alternatePhone       String?
   customerDoorPhotoUrl String?
+  uiMode               String                @default("learn")
   customerRegion       Region?               @relation("CustomerRegion", fields: [customerRegionId], references: [id])
   shop                 Shop                  @relation(fields: [shopId], references: [id], onDelete: Cascade)
   orders               Order[]
@@ -211,6 +212,7 @@ model Employee {
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
   orderPortalToken         String                    @default(cuid())
+  uiMode                   String                    @default("learn")
   telegramUserId           String?                   @unique
   lastEmployeeLat          Float?
   lastEmployeeLng          Float?

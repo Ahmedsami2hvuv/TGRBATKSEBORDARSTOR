@@ -60,6 +60,7 @@ export default async function ClientOrderPage(props: Props) {
         id: true,
         name: true,
         orderPortalToken: true,
+        uiMode: true,
         shop: {
           select: {
             id: true,
@@ -137,6 +138,7 @@ export default async function ClientOrderPage(props: Props) {
         </div>
         <div className="kse-app-inner">
           <ClientOrderForm
+            shopId={shop.id}
             shopName={shop.name}
             employeeName={employee.name}
             photoUrl={shop.photoUrl}

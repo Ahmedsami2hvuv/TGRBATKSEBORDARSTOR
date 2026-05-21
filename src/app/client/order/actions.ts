@@ -384,6 +384,22 @@ export async function submitOrder(
   }
 }
 
+export async function updateCustomerUiMode(
+  formData: FormData
+) {
+  const phone = String(formData.get("phone") ?? "").trim();
+  const shopId = String(formData.get("shopId") ?? "").trim();
+  const uiMode = String(formData.get("uiMode") ?? "learn");
+
+  const phoneLocal = normalizeIraqMobileLocal11(phone);
+  if (!phoneLocal || !shopId) return;
+
+  await prisma.customer.updateMany({
+    where: { phone: phoneLocal, shopId },
+    data: { uiMode }
+  });
+}
+
 export async function cancelClientOrder(formData: FormData) {
   const orderNumber = Number(formData.get("orderNumber"));
   const e = String(formData.get("e") ?? "");

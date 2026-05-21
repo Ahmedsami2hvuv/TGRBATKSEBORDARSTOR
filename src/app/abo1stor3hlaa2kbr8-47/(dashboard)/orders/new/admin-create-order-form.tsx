@@ -625,20 +625,13 @@ export function AdminCreateOrderForm({
  <input key={id} type="hidden" name="preparerIds" value={id} />
  ))}
 
- <div className="grid gap-3 sm:grid-cols-2">
+ <div className="flex flex-col gap-4">
  <label className="flex flex-col gap-1">
  <span className={ad.label}>رقم الزبون</span>
  <input name="prepCustomerPhone" value={prepCustomerPhone} onChange={(e) => setPrepCustomerPhone(e.target.value)} className={ad.input} required />
  </label>
- <label className="flex flex-col gap-1">
- <span className={ad.label}>عنوان الطلب</span>
- <input name="prepTitleLine" value={titleLine} onChange={(e) => setTitleLine(e.target.value)} className={ad.input} required />
- </label>
- <label className="flex flex-col gap-1">
- <span className={ad.label}>وقت الطلب</span>
- <input name="prepOrderTime" value={prepOrderTime} onChange={(e) => setPrepOrderTime(e.target.value)} className={ad.input} required />
- </label>
- <div className="relative">
+
+ <div className="relative flex flex-col gap-1">
  <span className={ad.label}>تأكيد المنطقة</span>
  <input
  ref={regionSearchRef}
@@ -648,7 +641,7 @@ export function AdminCreateOrderForm({
  placeholder="ابحث بالمنطقة..."
  />
  {prepHits.length > 0 && !prepSelectedRegion ? (
- <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-auto rounded-xl border border-slate-200 bg-white text-sm shadow-md">
+ <ul className="absolute z-10 top-full mt-1 max-h-40 w-full overflow-auto rounded-xl border border-slate-200 bg-white text-sm shadow-md">
  {prepHits.map((h) => (
  <li key={h.id}>
  <button type="button" className="w-full px-3 py-2 text-start text-slate-800 hover:bg-slate-50" onClick={() => { setPrepSelectedRegion(h); setPrepRegionQ(h.name); setPrepHits([]); }}>
@@ -659,215 +652,62 @@ export function AdminCreateOrderForm({
  </ul>
  ) : null}
  </div>
- </div>
 
- <div className="pt-2">
- <span className="text-sm font-bold text-slate-800 mb-2 block">إسناد للمجهزين (اختيار متعدد متاح)</span>
- <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+ <label className="flex flex-col gap-1">
+ <span className={ad.label}>وقت الطلب</span>
+ <input name="prepOrderTime" value={prepOrderTime} onChange={(e) => setPrepOrderTime(e.target.value)} className={ad.input} required />
+ </label>
+
+ <div className="pt-2 border-t border-sky-100">
+ <span className="text-sm font-bold text-slate-800 mb-2 block">المجهزين</span>
+ <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
  {preparers.map((p) => {
  const isSelected = selectedPreparerIds.includes(p.id);
  return (
- <label key={p.id} className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition ${isSelected ? 'border-sky-500 bg-sky-50 ring-2 ring-sky-200' : 'border-slate-200 bg-white'}`}>
+ <label key={p.id} className={`flex items-center gap-1.5 p-1.5 rounded-lg border cursor-pointer transition ${isSelected ? 'border-sky-500 bg-sky-50 ring-1 ring-sky-200' : 'border-slate-200 bg-white'}`}>
  <input
  type="checkbox"
  checked={isSelected}
  onChange={() => togglePreparer(p.id)}
- className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"
+ className="w-3.5 h-3.5 rounded text-sky-600 focus:ring-sky-500"
  />
- <span className="text-[11px] font-bold text-slate-700">{p.name}</span>
+ <span className="text-[10px] font-bold text-slate-700 truncate">{p.name}</span>
  </label>
  );
  })}
  </div>
  {selectedPreparerIds.length === 0 && (
- <p className="mt-2 text-[11px] text-rose-500 font-bold">يرجى اختيار مجهز واحد على الأقل.</p>
+ <p className="mt-2 text-[10px] text-rose-500 font-bold">يرجى اختيار مجهز واحد على الأقل.</p>
  )}
+ </div>
  </div>
  </div>
  )}
  </div>
  ) : (
- <>
- {submissionMode === "admin_one_face" ? (
+ <div className="space-y-4">
+ {/* وضع وجهة واحدة / وجهتين ملاحظة */}
+ {submissionMode === "admin_one_face" && (
  <div className="rounded-lg border border-violet-200 bg-violet-50/70 px-3 py-2 text-sm text-violet-950">
  وضع <strong>وجهة واحدة</strong>: لا يتطلب اختيار محل. أدخل تفاصيل الزبون ونوع الطلبية والسعر.
  </div>
- ) : null}
+ )}
 
- {submissionMode === "two_faces" && !defaultDoubleShopId ? (
- <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-900">
- لا يوجد محل مسجّل — أضف محلاً واحداً على الأقل لاستخدام طلبات الوجهتين.
- </p>
- ) : submissionMode === "two_faces" ? (
+ {submissionMode === "two_faces" && (
  <div className="rounded-lg border border-violet-200 bg-violet-50/70 px-3 py-2 text-sm text-violet-950">
- مسار <strong>مرسل → مستلم</strong>: لا يظهر اختيار المحل؛ يُربَط الطلب داخلياً بأول محل للتسعير فقط.
- </div>
- ) : null}
-
- <section className="space-y-3 rounded-2xl border border-sky-200 bg-sky-50/40 p-4">
- <div>
- <h2 className={ad.h2}>
- {submissionMode === "two_faces"
- ? "المرسل (الوجهة الأولى)"
- : "الزبون (الوجهة)"}
- </h2>
- <p className="mt-1 text-xs text-slate-600">
- أدخل الرقم والمنطقة — يُبحث عن بيانات محفوظة لنفس الرقم والمنطقة.
- </p>
- </div>
- <div className="grid gap-3 sm:grid-cols-2">
- <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>
- {submissionMode === "two_faces" ? "رقم المرسل" : "رقم الزبون"}
- </span>
- <input
- name="firstCustomerPhone"
- className={ad.input}
- value={firstPhone}
- onChange={(e) => setFirstPhone(e.target.value)}
- inputMode="numeric"
- autoComplete="tel"
- placeholder="اكتب أو الصق الرقم"
- required
- />
- </label>
- <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>الرقم الثاني (إن وجد)</span>
- <input
- name="firstCustomerAlternatePhone"
- className={ad.input}
- value={firstAlternatePhone}
- onChange={(e) => setFirstAlternatePhone(e.target.value)}
- inputMode="numeric"
- placeholder="رقم إضافي..."
- />
- </label>
- <RegionSearchPicker
- fieldName="firstCustomerRegionId"
- label={submissionMode === "two_faces" ? "منطقة المرسل" : "منطقة الزبون"}
- required
- value={firstRegionId}
- onValueChange={setFirstRegionId}
- regionsLookup={regions}
- />
- </div>
-
- {firstPrefillLoading ? (
- <p className="text-xs text-slate-500">جارٍ البحث عن بيانات محفوظة...</p>
- ) : null}
-
- {firstPrefill ? (
- <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900 shadow-sm transition-all animate-in fade-in slide-in-from-top-1">
- <div className="flex justify-between items-start gap-3">
- <div className="space-y-1 flex-1">
- <p className="font-bold text-emerald-800 flex items-center gap-1">
- <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
- بيانات محفوظة لهذا الرقم:
- </p>
- <p className="text-xs">المنطقة: <span className="font-semibold">{regions.find(r => r.id === firstPrefill.customerRegionId)?.name || 'غير معروفة'}</span></p>
- <p className="text-xs italic text-slate-600">أقرب نقطة: {firstPrefill.customerLandmark || 'لا يوجد'}</p>
-
- {firstPrefill.customerLocationUrl && (
- <a
- href={firstPrefill.customerLocationUrl}
- target="_blank"
- rel="noreferrer"
- className="text-[10px] text-blue-600 hover:underline flex items-center gap-1 mt-1 font-bold"
- >
- <DynamicIcon icon={icons?.ui_location} fallback="📍" width={12} height={12} /> فتح الموقع المحفوظ (Google Maps)
- </a>
- )}
-
- {firstPrefill.alternatePhone && (
- <p className="text-xs text-blue-700 font-bold bg-blue-100/50 px-2 py-0.5 rounded-md w-fit mt-1 border border-blue-200">
- الرقم الثاني: {firstPrefill.alternatePhone}
- </p>
+ مسار <strong>مرسل ← مستلم</strong>: أدخل تفاصيل الطرفين.
+ {!defaultDoubleShopId && (
+ <p className="text-rose-600 font-bold mt-1">لا يوجد محل مسجّل للتسعير التلقائي.</p>
  )}
  </div>
- {firstPrefill.customerDoorPhotoUrl ? (
- <div className="flex flex-col items-center gap-1">
- <img
- src={doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl) || ""}
- className="h-24 w-24 rounded-md object-cover border-2 border-emerald-300 shadow-md bg-white"
- alt="صورة الباب"
- />
- <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1 rounded">صورة الباب</span>
- </div>
- ) : (
- <div className="h-24 w-24 rounded-md bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center">
- <span className="text-[9px] text-slate-400">لا توجد صورة</span>
- </div>
  )}
- </div>
- <button
- type="button"
- className="mt-3 w-full rounded-lg border border-emerald-500 bg-emerald-600 px-3 py-2.5 text-xs font-black text-white hover:bg-emerald-700 shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2"
- onClick={() => {
- setFirstPhone(firstPrefill.phone);
- setFirstRegionId(firstPrefill.customerRegionId ?? "");
- setFirstLocationUrl(firstPrefill.customerLocationUrl ?? "");
- setFirstLandmark(firstPrefill.customerLandmark ?? "");
- setFirstAlternatePhone(firstPrefill.alternatePhone ?? "");
- setFirstSavedDoorPhotoUrl(doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl));
- setFirstRawDoorPhotoUrl(firstPrefill.customerDoorPhotoUrl);
- setFirstPrefillApplied(true);
- }}
- >
- <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> تطبيق كافة التفاصيل المحفوظة الآن
- </button>
- {firstPrefillApplied ? (
- <p className="mt-2 text-[11px] font-bold text-emerald-800 bg-emerald-200/50 p-1 rounded text-center flex items-center justify-center gap-1">
- <DynamicIcon icon={icons?.ui_success} fallback="✅" width={12} height={12} /> تم تحميل كافة التفاصيل (بما في ذلك الصورة والرقم الثاني)
- </p>
- ) : null}
- </div>
- ) : null}
 
- <div className="grid gap-3 sm:grid-cols-2">
- <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>
- {submissionMode === "two_faces" ? "لوكيشن المرسل" : "لوكيشن الزبون"}
- </span>
- <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setFirstLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-md hover:bg-sky-200 w-fit flex items-center gap-1">
- <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> أخذ موقعي الحالي
- </button>
- <input
- name="firstCustomerLocationUrl"
- className={ad.input}
- value={firstLocationUrl}
- onChange={(e) => setFirstLocationUrl(e.target.value)}
- />
- </label>
- <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>
- {submissionMode === "two_faces" ? "أقرب نقطة دالة (مرسل)" : "أقرب نقطة دالة"}
- </span>
- <input
- name="firstCustomerLandmark"
- className={ad.input}
- value={firstLandmark}
- onChange={(e) => setFirstLandmark(e.target.value)}
- />
- </label>
- </div>
- <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>صورة باب الزبون</span>
- <input
- name="firstCustomerDoorPhoto"
- type="file"
- accept="image/*"
- capture="environment"
- className={ad.input}
- onChange={(e) => { if (e.target.files?.[0]) setFirstSavedDoorPhotoUrl(null); }}
- />
- </label>
- {firstSavedDoorPhotoUrl && (
- <img src={firstSavedDoorPhotoUrl} alt="" className="mt-2 max-h-44 w-full rounded-md object-contain border" />
- )}
- </section>
+ <div className="space-y-4 rounded-2xl border border-sky-200 bg-sky-50/40 p-4">
+ <div className="flex flex-col gap-4">
 
- {submissionMode === "from_shop" ? (
- <div className="space-y-4">
+ {/* 1. المحل (فقط في رفع من محل) */}
+ {submissionMode === "from_shop" && (
+ <div className="space-y-4 border-b border-sky-100 pb-4 mb-2">
  <div>
  <ShopSearchPicker
  shops={shops}
@@ -890,34 +730,151 @@ export function AdminCreateOrderForm({
  onPickAdminOffice={pickAdminOffice}
  />
  </div>
- ) : null}
+ )}
 
- <div className="grid gap-3 sm:grid-cols-2">
- <label className="flex flex-col gap-1.5 text-base sm:text-lg">
- <span className={`${ad.label} text-base sm:text-lg`}>نوع الطلب</span>
+ {submissionMode !== "two_faces" ? (
+ /* الترتيب لوجهة واحدة أو رفع من محل */
+ <>
+ {/* رقم أول */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>رقم الزبون</span>
+ <input
+ name="firstCustomerPhone"
+ className={ad.input}
+ value={firstPhone}
+ onChange={(e) => setFirstPhone(e.target.value)}
+ inputMode="numeric"
+ autoComplete="tel"
+ placeholder="اكتب أو الصق الرقم"
+ required
+ />
+ </label>
+
+ {/* منطقة الزبون */}
+ <RegionSearchPicker
+ fieldName="firstCustomerRegionId"
+ label="منطقة الزبون"
+ required
+ value={firstRegionId}
+ onValueChange={setFirstRegionId}
+ regionsLookup={regions}
+ />
+
+ {firstPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات محفوظة...</p>}
+ {firstPrefill && (
+ <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900 shadow-sm transition-all">
+ <div className="flex justify-between items-start gap-3">
+ <div className="space-y-1 flex-1">
+ <p className="font-bold text-emerald-800">بيانات محفوظة لهذا الرقم:</p>
+ <p className="text-xs">المنطقة: {regions.find(r => r.id === firstPrefill.customerRegionId)?.name || '—'}</p>
+ <p className="text-xs italic text-slate-600">أقرب نقطة: {firstPrefill.customerLandmark || 'لا يوجد'}</p>
+ </div>
+ {firstPrefill.customerDoorPhotoUrl && (
+ <img src={doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl) || ""} className="h-14 w-14 rounded object-cover border" alt="" />
+ )}
+ </div>
+ <button type="button" className="mt-2 w-full rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-md" onClick={() => {
+ setFirstPhone(firstPrefill.phone);
+ setFirstRegionId(firstPrefill.customerRegionId ?? "");
+ setFirstLocationUrl(firstPrefill.customerLocationUrl ?? "");
+ setFirstLandmark(firstPrefill.customerLandmark ?? "");
+ setFirstAlternatePhone(firstPrefill.alternatePhone ?? "");
+ setFirstSavedDoorPhotoUrl(doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl));
+ setFirstRawDoorPhotoUrl(firstPrefill.customerDoorPhotoUrl);
+ setFirstPrefillApplied(true);
+ }}>تطبيق كافة البيانات المحفوظة</button>
+ </div>
+ )}
+
+ {/* نوع الطلب */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>نوع الطلب</span>
  <input
  name="orderType"
  required
- className={`${ad.input} min-h-[52px] text-lg sm:text-xl`}
- placeholder="مثال: مستلزمات / مستندات / طلب خاص"
+ className={ad.input}
+ placeholder="مثال: مستلزمات"
  value={orderType}
  onChange={(e) => setOrderType(e.target.value)}
  />
  </label>
- <label className="flex flex-col gap-1.5 text-base sm:text-lg">
- <span className={`${ad.label} text-base sm:text-lg`}>سعر الطلب</span>
+
+ {/* سعر الطلب */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>سعر الطلب</span>
  <input
  name="orderSubtotal"
  required
- className={`${ad.input} min-h-[52px] text-lg font-semibold tabular-nums sm:text-xl animate-placeholder`}
- placeholder="اكتب السعر هنا"
+ className={ad.input}
+ placeholder="اكتب السعر"
  inputMode="decimal"
  value={orderSubtotal}
  onChange={(e) => setOrderSubtotal(e.target.value)}
  />
  </label>
- </div>
 
+ {/* أقرب نقطة */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>أقرب نقطة دالة</span>
+ <input
+ name="firstCustomerLandmark"
+ className={ad.input}
+ value={firstLandmark}
+ onChange={(e) => setFirstLandmark(e.target.value)}
+ />
+ </label>
+
+ {/* لكيشن */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>لكيشن الزبون</span>
+ <div className="flex flex-col gap-1.5">
+ <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setFirstLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-md hover:bg-sky-200 w-fit flex items-center gap-1">
+ <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> أخذ موقعي الحالي
+ </button>
+ <input
+ name="firstCustomerLocationUrl"
+ className={ad.input}
+ value={firstLocationUrl}
+ onChange={(e) => setFirstLocationUrl(e.target.value)}
+ />
+ </div>
+ </label>
+
+ {/* صورة الطلب */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>صورة الطلب</span>
+ <input name="orderImage" type="file" accept="image/*" className={ad.input} />
+ </label>
+
+ {/* ملاحظة صوتية */}
+ <ClientVoiceNoteField title="ملاحظة صوتية" wrapperClassName="" />
+
+ {/* ملاحظة كتابية */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>ملاحظات / تفاصيل (كتابية)</span>
+ <textarea
+ name="summary"
+ rows={3}
+ className={ad.input}
+ value={summary}
+ onChange={(e) => setSummary(e.target.value)}
+ />
+ </label>
+
+ {/* رقم ثاني */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>رقم الزبون الثاني</span>
+ <input
+ name="firstCustomerAlternatePhone"
+ className={ad.input}
+ value={firstAlternatePhone}
+ onChange={(e) => setFirstAlternatePhone(e.target.value)}
+ inputMode="numeric"
+ placeholder="رقم إضافي..."
+ />
+ </label>
+
+ {/* وقت الطلب */}
  <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>وقت الطلب (إجباري)</span>
  <input
@@ -929,121 +886,158 @@ export function AdminCreateOrderForm({
  onChange={(e) => setOrderNoteTime(e.target.value)}
  />
  </label>
-
- <div className="grid gap-3 sm:grid-cols-2">
- <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>صورة الطلب</span>
- <input name="orderImage" type="file" accept="image/*" className={ad.input} />
- </label>
- <ClientVoiceNoteField title="ملاحظة صوتية" wrapperClassName="" />
- </div>
  </>
- )}
+ ) : (
+ /* الترتيب لوجهتين */
+ <>
+ {/* رقم المرسل */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>رقم المرسل</span>
+ <input
+ name="firstCustomerPhone"
+ className={ad.input}
+ value={firstPhone}
+ onChange={(e) => setFirstPhone(e.target.value)}
+ inputMode="numeric"
+ required
+ />
+ </label>
 
- {submissionMode === "two_faces" && (
- <section className="space-y-3 rounded-2xl border border-violet-200 bg-violet-50/40 p-4">
- <h2 className={ad.h2}>المستلم (الوجهة الثانية)</h2>
- <div className="grid gap-3 sm:grid-cols-2">
+ {/* رقم المستلم */}
  <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>رقم المستلم</span>
- <input name="secondCustomerPhone" className={ad.input} value={secondPhone} onChange={(e) => setSecondPhone(e.target.value)} required />
+ <input
+ name="secondCustomerPhone"
+ className={ad.input}
+ value={secondPhone}
+ onChange={(e) => setSecondPhone(e.target.value)}
+ required
+ />
  </label>
+
+ {/* منطقة المرسل */}
+ <RegionSearchPicker
+ fieldName="firstCustomerRegionId"
+ label="منطقة المرسل"
+ required
+ value={firstRegionId}
+ onValueChange={setFirstRegionId}
+ regionsLookup={regions}
+ />
+
+ {/* منطقة المستلم */}
+ <RegionSearchPicker
+ fieldName="secondCustomerRegionId"
+ label="منطقة المستلم"
+ required
+ value={secondRegionId}
+ onValueChange={setSecondRegionId}
+ regionsLookup={regions}
+ />
+
+ {/* سعر الطلب */}
  <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>الرقم الثاني للمستلم (إن وجد)</span>
+ <span className={ad.label}>سعر الطلب</span>
+ <input
+ name="orderSubtotal"
+ required
+ className={ad.input}
+ inputMode="decimal"
+ value={orderSubtotal}
+ onChange={(e) => setOrderSubtotal(e.target.value)}
+ />
+ </label>
+
+ {/* اقرب نقطة داله للمرسل */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>أقرب نقطة دالة للمرسل</span>
+ <input
+ name="firstCustomerLandmark"
+ className={ad.input}
+ value={firstLandmark}
+ onChange={(e) => setFirstLandmark(e.target.value)}
+ />
+ </label>
+
+ {/* اقرب نقطة داله للمستلم */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>أقرب نقطة دالة للمستلم</span>
+ <input
+ name="secondCustomerLandmark"
+ className={ad.input}
+ value={secondLandmark}
+ onChange={(e) => setSecondLandmark(e.target.value)}
+ />
+ </label>
+
+ {/* لكيشن المرسل */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>لكيشن المرسل</span>
+ <div className="flex flex-col gap-1.5">
+ <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setFirstLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-md hover:bg-sky-200 w-fit flex items-center gap-1">
+ <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> أخذ موقعي الحالي
+ </button>
+ <input
+ name="firstCustomerLocationUrl"
+ className={ad.input}
+ value={firstLocationUrl}
+ onChange={(e) => setFirstLocationUrl(e.target.value)}
+ />
+ </div>
+ </label>
+
+ {/* لكيشن المستلم */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>لكيشن المستلم</span>
+ <div className="flex flex-col gap-1.5">
+ <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setSecondLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-md hover:bg-violet-200 w-fit flex items-center gap-1">
+ <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> أخذ الموقع الحالي
+ </button>
+ <input
+ name="secondCustomerLocationUrl"
+ className={ad.input}
+ value={secondLocationUrl}
+ onChange={(e) => setSecondLocationUrl(e.target.value)}
+ />
+ </div>
+ </label>
+
+ {/* رقم ثاني للمرسل */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>رقم ثاني للمرسل</span>
+ <input
+ name="firstCustomerAlternatePhone"
+ className={ad.input}
+ value={firstAlternatePhone}
+ onChange={(e) => setFirstAlternatePhone(e.target.value)}
+ inputMode="numeric"
+ />
+ </label>
+
+ {/* رقم ثاني للمستلم */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>رقم ثاني للمستلم</span>
  <input
  name="secondCustomerAlternatePhone"
  className={ad.input}
  value={secondAlternatePhone}
  onChange={(e) => setSecondAlternatePhone(e.target.value)}
  inputMode="numeric"
- placeholder="رقم إضافي..."
  />
  </label>
- <RegionSearchPicker fieldName="secondCustomerRegionId" label="منطقة المستلم" required value={secondRegionId} onValueChange={setSecondRegionId} regionsLookup={regions} />
- </div>
- {secondPrefillLoading ? (
- <p className="text-xs text-slate-500">جارٍ البحث عن بيانات محفوظة...</p>
- ) : null}
- {secondPrefill && (
- <div className="rounded-xl border border-violet-300 bg-violet-50 p-3 text-sm text-violet-900 shadow-sm transition-all animate-in fade-in slide-in-from-top-1">
- <div className="flex justify-between items-start gap-3">
- <div className="space-y-1 flex-1">
- <p className="font-bold text-violet-800">بيانات محفوظة للمستلم:</p>
- <p className="text-xs">المنطقة: <span className="font-semibold">{regions.find(r => r.id === secondPrefill.customerRegionId)?.name || 'غير معروفة'}</span></p>
- <p className="text-xs italic">أقرب نقطة: {secondPrefill.customerLandmark || 'لا يوجد'}</p>
 
- {secondPrefill.customerLocationUrl && (
- <a href={secondPrefill.customerLocationUrl} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 hover:underline flex items-center gap-1 mt-1 font-bold">
- <DynamicIcon icon={icons?.ui_location} fallback="📍" width={12} height={12} /> الموقع المحفوظ للمستلم
- </a>
- )}
-
- {secondPrefill.alternatePhone && (
- <p className="text-xs text-blue-700 font-bold bg-blue-100/50 px-2 py-0.5 rounded-md w-fit mt-1 border border-blue-200">
- الرقم الثاني: {secondPrefill.alternatePhone}
- </p>
- )}
- </div>
- {secondPrefill.customerDoorPhotoUrl ? (
- <div className="flex flex-col items-center gap-1">
- <img
- src={doorPhotoUrlForDisplay(secondPrefill.customerDoorPhotoUrl) || ""}
- className="h-20 w-20 rounded-md object-cover border-2 border-violet-200 shadow-md bg-white"
- alt="صورة الباب"
- />
- <span className="text-[9px] font-black text-violet-700 bg-violet-100 px-1 rounded">صورة الباب</span>
- </div>
- ) : (
- <div className="h-20 w-20 rounded-md bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center">
- <span className="text-[9px] text-slate-400">لا توجد صورة</span>
- </div>
- )}
- </div>
- <button
- type="button"
- className="mt-3 w-full rounded-lg border border-violet-500 bg-violet-600 px-3 py-2 text-xs font-black text-white hover:bg-violet-700 shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2"
- onClick={() => {
- setSecondPhone(secondPrefill.phone);
- setSecondRegionId(secondPrefill.customerRegionId ?? "");
- setSecondLocationUrl(secondPrefill.customerLocationUrl ?? "");
- setSecondLandmark(secondPrefill.customerLandmark ?? "");
- setSecondAlternatePhone(secondPrefill.alternatePhone ?? "");
- setSecondSavedDoorPhotoUrl(doorPhotoUrlForDisplay(secondPrefill.customerDoorPhotoUrl));
- setSecondRawDoorPhotoUrl(secondPrefill.customerDoorPhotoUrl);
- }}
- >
- <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> تطبيق تفاصيل المستلم
- </button>
- </div>
- )}
- <div className="grid gap-3 sm:grid-cols-2">
- <input name="secondCustomerLocationUrl" className={ad.input} value={secondLocationUrl} onChange={(e) => setSecondLocationUrl(e.target.value)} placeholder="لوكيشن المستلم" />
- <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setSecondLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-md hover:bg-violet-200 w-fit mt-1 flex items-center gap-1">
- <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> أخذ موقعي الحالي
- </button>
- <input name="secondCustomerLandmark" className={ad.input} value={secondLandmark} onChange={(e) => setSecondLandmark(e.target.value)} placeholder="نقطة دالة مستلم" />
- </div>
- 
+ {/* صورة الطلب */}
  <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>صورة باب المستلم</span>
- <input
- name="secondCustomerDoorPhoto"
- type="file"
- accept="image/*"
- capture="environment"
- className={ad.input}
- onChange={(e) => { if (e.target.files?.[0]) setSecondSavedDoorPhotoUrl(null); }}
- />
+ <span className={ad.label}>صورة الطلب</span>
+ <input name="orderImage" type="file" accept="image/*" className={ad.input} />
  </label>
- {secondSavedDoorPhotoUrl && (
- <img src={secondSavedDoorPhotoUrl} alt="" className="mt-2 max-h-44 w-full rounded-md object-contain border" />
- )}
- </section>
- )}
 
+ {/* ملاحظة صوتية */}
+ <ClientVoiceNoteField title="ملاحظة صوتية" wrapperClassName="" />
 
+ {/* ملاحظة كتابية */}
  <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>ملاحظات / تفاصيل</span>
+ <span className={ad.label}>ملاحظات / تفاصيل (كتابية)</span>
  <textarea
  name="summary"
  rows={3}
@@ -1052,6 +1046,27 @@ export function AdminCreateOrderForm({
  onChange={(e) => setSummary(e.target.value)}
  />
  </label>
+
+ {/* وقت الطلب */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>وقت الطلب (إجباري)</span>
+ <input
+ name="orderNoteTime"
+ required
+ className={ad.input}
+ placeholder="مثال: الساعة 8 مساءً"
+ value={orderNoteTime}
+ onChange={(e) => setOrderNoteTime(e.target.value)}
+ />
+ </label>
+ </>
+ )}
+
+ </div>
+ </div>
+ </div>
+ )}
+
 
  {state.error ? <p className={ad.error}>{state.error}</p> : null}
 
