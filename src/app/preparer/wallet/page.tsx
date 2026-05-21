@@ -322,12 +322,20 @@ export default async function PreparerWalletPage({ searchParams }: Props) {
         <header className="kse-glass-dark rounded-2xl border border-violet-200/90 p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-black text-slate-900">محفظة {preparer.name}</h1>
-            <a
-              href={preparerPath("/preparer/debts", baseAuth)}
-              className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-rose-700"
-            >
-              الديون
-            </a>
+            <div className="flex items-center gap-2">
+              <a
+                href={preparerPath("/preparer/debts", baseAuth)}
+                className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-rose-700"
+              >
+                الديون
+              </a>
+              <a
+                href={preparerPath("/preparer", baseAuth)}
+                className="rounded-xl bg-slate-100 border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 shadow-sm hover:bg-slate-200"
+              >
+                رجوع
+              </a>
+            </div>
           </div>
         </header>
 
