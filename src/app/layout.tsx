@@ -49,11 +49,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       @font-face {
         font-family: '${fontName}';
         src: url('${url}') format('${format}');
-        font-weight: 100 900;
+        font-weight: normal;
+        font-style: normal;
         font-display: swap;
       }
     `;
-  }).join("\n");
+  }).join("");
 
   const displayFont = chosenFont === "system-ui" ? "system-ui" : `'${chosenFont}'`;
 
