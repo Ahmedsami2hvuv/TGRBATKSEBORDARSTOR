@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isCourierPortalBlocked } from "@/lib/courier-delegate-access";
 import { verifyDelegatePortalQuery } from "@/lib/delegate-link";
 import { prisma } from "@/lib/prisma";
+import { assertTrackingEnabled, handleResourceDisabledError } from "@/lib/portal-chat-settings";
 
 export const runtime = "nodejs";
 
@@ -10,89 +11,101 @@ export const runtime = "nodejs";
  * تُخزَّن في Courier.lastCourier* لتعرض للإدارة (خريطة المندوبين / التتبع).
  */
 export async function POST(req: Request) {
-  let body: { c?: string; exp?: string; s?: string; lat?: number; lng?: number };
   try {
-    body = (await req.json()) as typeof body;
-  } catch {
-    return NextResponse.json({ ok: false, error: "body" }, { status: 400 });
-  }
+    await assertTrackingEnabled();
 
-  const c = String(body.c ?? "").trim();
-  const exp = body.exp != null ? String(body.exp) : undefined;
-  const s = String(body.s ?? "").trim();
-  const lat = typeof body.lat === "number" ? body.lat : Number(body.lat);
-  const lng = typeof body.lng === "number" ? body.lng : Number(body.lng);
+    let body: { c?: string; exp?: string; s?: string; lat?: number; lng?: number };
+    try {
+      body = (await req.json()) as typeof body;
+    } catch {
+      return NextResponse.json({ ok: false, error: "body" }, { status: 400 });
+    }
 
-  const v = verifyDelegatePortalQuery(c, exp, s);
-  if (!v.ok) {
-    return NextResponse.json({ ok: false, error: "auth" }, { status: 401 });
-  }
-  if (await isCourierPortalBlocked(v.courierId)) {
-    return NextResponse.json({ ok: false, error: "blocked" }, { status: 403 });
-  }
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return NextResponse.json({ ok: false, error: "coords" }, { status: 400 });
-  }
-  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-    return NextResponse.json({ ok: false, error: "range" }, { status: 400 });
-  }
+    const c = String(body.c ?? "").trim();
+    const exp = body.exp != null ? String(body.exp) : undefined;
+    const s = String(body.s ?? "").trim();
+    const lat = typeof body.lat === "number" ? body.lat : Number(body.lat);
+    const lng = typeof body.lng === "number" ? body.lng : Number(body.lng);
 
-  const row = await prisma.courier.findUnique({
-    where: { id: v.courierId },
-    select: { id: true },
-  });
-  if (!row) {
-    return NextResponse.json({ ok: false, error: "courier" }, { status: 404 });
-  }
+    const v = verifyDelegatePortalQuery(c, exp, s);
+    if (!v.ok) {
+      return NextResponse.json({ ok: false, error: "auth" }, { status: 401 });
+    }
+    if (await isCourierPortalBlocked(v.courierId)) {
+      return NextResponse.json({ ok: false, error: "blocked" }, { status: 403 });
+    }
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return NextResponse.json({ ok: false, error: "coords" }, { status: 400 });
+    }
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return NextResponse.json({ ok: false, error: "range" }, { status: 400 });
+    }
 
-  const serverTime = new Date();
-  await prisma.courier.update({
-    where: { id: v.courierId },
-    data: {
-      lastCourierLat: lat,
-      lastCourierLng: lng,
-      lastCourierLocationAt: serverTime,
-      locationPoints: {
-        create: {
-          latitude: lat,
-          longitude: lng,
-          recordedAt: serverTime,
-          source: "heartbeat",
+    const row = await prisma.courier.findUnique({
+      where: { id: v.courierId },
+      select: { id: true },
+    });
+    if (!row) {
+      return NextResponse.json({ ok: false, error: "courier" }, { status: 404 });
+    }
+
+    const serverTime = new Date();
+    await prisma.courier.update({
+      where: { id: v.courierId },
+      data: {
+        lastCourierLat: lat,
+        lastCourierLng: lng,
+        lastCourierLocationAt: serverTime,
+        locationPoints: {
+          create: {
+            latitude: lat,
+            longitude: lng,
+            recordedAt: serverTime,
+            source: "heartbeat",
+          },
         },
       },
-    },
-  });
+    });
 
-  return NextResponse.json({ ok: true, serverTime: serverTime.toISOString() });
+    return NextResponse.json({ ok: true, serverTime: serverTime.toISOString() });
+  } catch (error) {
+    return handleResourceDisabledError(error);
+  }
 }
 
 /**
  * آخر وقت وصل فيه موقع للخادم (للمزامنة مع العميل).
  */
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const c = url.searchParams.get("c")?.trim() ?? "";
-  const exp = url.searchParams.get("exp") ?? undefined;
-  const s = url.searchParams.get("s")?.trim() ?? "";
+  try {
+    await assertTrackingEnabled();
 
-  const v = verifyDelegatePortalQuery(c, exp, s);
-  if (!v.ok) {
-    return NextResponse.json({ ok: false, error: "auth" }, { status: 401 });
-  }
-  if (await isCourierPortalBlocked(v.courierId)) {
-    return NextResponse.json({ ok: false, error: "blocked" }, { status: 403 });
-  }
+    const url = new URL(req.url);
+    const c = url.searchParams.get("c")?.trim() ?? "";
+    const exp = url.searchParams.get("exp") ?? undefined;
+    const s = url.searchParams.get("s")?.trim() ?? "";
 
-  const row = await prisma.courier.findUnique({
-    where: { id: v.courierId },
-    select: { lastCourierLocationAt: true },
-  });
-  if (!row) {
-    return NextResponse.json({ ok: false, error: "courier" }, { status: 404 });
-  }
+    const v = verifyDelegatePortalQuery(c, exp, s);
+    if (!v.ok) {
+      return NextResponse.json({ ok: false, error: "auth" }, { status: 401 });
+    }
+    if (await isCourierPortalBlocked(v.courierId)) {
+      return NextResponse.json({ ok: false, error: "blocked" }, { status: 403 });
+    }
 
-  return NextResponse.json({
-    ok: true,
-    lastReceivedAt: row.lastCourierLocationAt?.toISOString() ?? null,
-  });
+    const row = await prisma.courier.findUnique({
+      where: { id: v.courierId },
+      select: { lastCourierLocationAt: true },
+    });
+    if (!row) {
+      return NextResponse.json({ ok: false, error: "courier" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      lastReceivedAt: row.lastCourierLocationAt?.toISOString() ?? null,
+    });
+  } catch (error) {
+    return handleResourceDisabledError(error);
+  }
 }

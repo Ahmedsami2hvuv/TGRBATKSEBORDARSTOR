@@ -229,7 +229,7 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
     if (locked) return;
 
     void (async () => {
-      if (navigator.permissions?.query) {
+      if (typeof navigator !== "undefined" && navigator.permissions?.query) {
         try {
           const st = await navigator.permissions.query({
             name: "geolocation" as PermissionName,
@@ -252,20 +252,18 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
         watchIdRef.current = null;
       }
     };
-  }, [locked, requestInitialLocation, startGeolocationWatch, setAlertMessage]);
+  }, [locked, requestInitialLocation, startGeolocationWatch, setAlertMessage, globalEnabled]);
 
   useEffect(() => {
     if (!globalEnabled) {
-      if (watchIdRef.current != null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
       return;
     }
     if (locked) return;
     const id = window.setInterval(() => {
       if (typeof navigator === "undefined" || !navigator.geolocation) return;
-      // توقف عن الإرسال إذا كانت الصفحة غير مرئية لتوفير باقة فيرسل
+
+      // Stop all background activity if disabled or not visible
+      if (!globalEnabled) return;
       if (document.visibilityState !== "visible") return;
 
       const now = Date.now();
@@ -286,11 +284,12 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
     }, SEND_INTERVAL_MS);
 
     return () => window.clearInterval(id);
-  }, [handlePositionError, handlePositionSuccess, locked, setAlertMessage]);
+  }, [handlePositionError, handlePositionSuccess, locked, setAlertMessage, globalEnabled]);
 
   useEffect(() => {
     if (!globalEnabled) return;
     const id = window.setInterval(() => {
+      if (!globalEnabled) return;
       const lastOk = lastSuccessfulPostMsRef.current;
       const now = Date.now();
       if (lastOk == null) {
@@ -302,7 +301,7 @@ export function PortalLocationHeartbeat(props: PortalLocationHeartbeatProps) {
       }
     }, STALENESS_CHECK_MS);
     return () => window.clearInterval(id);
-  }, []);
+  }, [globalEnabled]);
 
   const onCheckClick = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) return;

@@ -173,26 +173,34 @@ export default function PortalChatWidget({
   }
 
   useEffect(() => {
-    if (!isPortalPage) return;
+    if (!isPortalPage || !globalEnabled) return;
+
     void loadThreads();
     void loadContacts();
+
     const id = window.setInterval(() => {
+      // Hard stop if disabled or not visible
+      if (!globalEnabled) return;
       if (document.visibilityState !== "visible") return;
+
       void loadThreads();
       if (selectedThreadId) void loadMessages(selectedThreadId);
-    }, 30000); // زيادة الوقت لـ 30 ثانية لتقليل استهلاك الطلبات
+    }, 30000);
+
     const onVisibility = () => {
+      if (!globalEnabled) return;
       if (document.visibilityState === "visible") {
         void loadThreads();
         if (selectedThreadId) void loadMessages(selectedThreadId);
       }
     };
+
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [isPortalPage, selectedThreadId]);
+  }, [isPortalPage, selectedThreadId, globalEnabled]);
 
   useEffect(() => {
     if (!isPortalPage) return;

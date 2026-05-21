@@ -3,8 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { resolvePortalChatActor } from "@/lib/portal-chat-auth";
 import { runPortalChatRetentionCleanup } from "@/lib/portal-chat-retention";
 import { pushNotifyChatNewMessage } from "@/lib/web-push-server";
-
-import { isChatEnabledGlobally } from "@/lib/portal-chat-settings";
+import { assertChatEnabled, handleResourceDisabledError } from "@/lib/portal-chat-settings";
 
 function logChatGuard(event: string, meta: Record<string, unknown>) {
   console.warn("[portal-chat][guard][messages]", event, meta);
@@ -12,9 +11,7 @@ function logChatGuard(event: string, meta: Record<string, unknown>) {
 
 export async function POST(req: Request) {
   try {
-    if (!(await isChatEnabledGlobally())) {
-      return NextResponse.json({ ok: false, error: "chat_disabled" }, { status: 403 });
-    }
+    await assertChatEnabled();
     await runPortalChatRetentionCleanup();
     const body = (await req.json()) as { auth?: any; threadId?: string; text?: string };
     const actor = await resolvePortalChatActor(body.auth);
@@ -74,16 +71,14 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ ok: false, error: "server_error" }, { status: 500 });
+  } catch (error) {
+    return handleResourceDisabledError(error);
   }
 }
 
 export async function PUT(req: Request) {
   try {
-    if (!(await isChatEnabledGlobally())) {
-      return NextResponse.json({ ok: false, error: "chat_disabled", messages: [] });
-    }
+    await assertChatEnabled();
     await runPortalChatRetentionCleanup();
     const body = (await req.json()) as { auth?: any; threadId?: string };
     const actor = await resolvePortalChatActor(body.auth);
@@ -119,7 +114,7 @@ export async function PUT(req: Request) {
     });
 
     return NextResponse.json({ ok: true, messages: rows });
-  } catch {
-    return NextResponse.json({ ok: false, error: "server_error" }, { status: 500 });
+  } catch (error) {
+    return handleResourceDisabledError(error);
   }
 }

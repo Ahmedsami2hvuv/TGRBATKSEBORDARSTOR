@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import type { CourierMapPoint } from "./couriers-map-client";
 import { CouriersMapDynamic } from "./couriers-map-dynamic";
+import { isTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,8 @@ export const metadata = {
 };
 
 export default async function AdminCouriersMapPage() {
+  const trackingEnabled = await isTrackingEnabledGlobally();
+
   const couriers = await prisma.courier.findMany({
     orderBy: { name: "asc" },
     select: { id: true, name: true, phone: true, lastCourierLat: true, lastCourierLng: true, lastCourierLocationAt: true },
@@ -35,11 +38,6 @@ export default async function AdminCouriersMapPage() {
       updatedAt: p.lastPreparerLocationAt?.toISOString() ?? null, type: "preparer"
     })));
 
-  const withoutLoc = [
-    ...couriers.filter(c => c.lastCourierLat == null || c.lastCourierLng == null).map(c => ({...c, typeName: "مندوب"})),
-    ...preparers.filter(p => p.lastPreparerLat == null || p.lastPreparerLng == null).map(p => ({...p, typeName: "مجهز"})),
-  ];
-
   return (
     <div className="space-y-6" dir="rtl">
       <p className={ad.muted}>
@@ -49,6 +47,11 @@ export default async function AdminCouriersMapPage() {
       </p>
       <div>
         <h1 className={ad.h1}>خريطة مواقع المندوبين والمجهزين</h1>
+        {!trackingEnabled && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 font-bold">
+            ⚠️ التتبع معطل حالياً من الإعدادات العامة. الخريطة لن تُحدّث تلقائياً.
+          </div>
+        )}
         <p className={`mt-2 max-w-3xl ${ad.lead}`}>
           تُحدَّث مواقع المندوبين والمجهزين فقط عندما يفتح المندوب أو المجهز رابط لوحته ويمنح
           المتصفح إذن الموقع؛ يُرسل الموقع كل ~20 ثانية طالما تبقى الصفحة مفتوحة.
@@ -58,7 +61,7 @@ export default async function AdminCouriersMapPage() {
       <section className={ad.section}>
         <h2 className={ad.h2}>الخريطة</h2>
         <div className="mt-4">
-          <CouriersMapDynamic points={points} />
+          <CouriersMapDynamic points={points} trackingEnabled={trackingEnabled} />
         </div>
       </section>
     </div>

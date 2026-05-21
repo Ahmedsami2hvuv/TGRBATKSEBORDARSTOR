@@ -13,6 +13,6 @@ const CouriersMapClient = dynamic(
   },
 );
 
-export function CouriersMapDynamic({ points }: { points: CourierMapPoint[] }) {
-  return <CouriersMapClient points={points} />;
+export function CouriersMapDynamic({ points, trackingEnabled }: { points: CourierMapPoint[], trackingEnabled: boolean }) {
+  return <CouriersMapClient points={points} trackingEnabled={trackingEnabled} />;
 }

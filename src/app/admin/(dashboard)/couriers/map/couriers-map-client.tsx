@@ -21,7 +21,7 @@ type WithoutLoc = {
   typeName: string;
 };
 
-export function CouriersMapClient({ points: initialPoints }: { points: CourierMapPoint[] }) {
+export function CouriersMapClient({ points: initialPoints, trackingEnabled }: { points: CourierMapPoint[], trackingEnabled: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markersRef = useRef<{ [key: string]: CircleMarker }>({});
@@ -117,6 +117,8 @@ export function CouriersMapClient({ points: initialPoints }: { points: CourierMa
   }, []);
 
   useEffect(() => {
+    if (!trackingEnabled) return;
+
     const interval = setInterval(async () => {
       if (document.visibilityState !== "visible") return;
       setIsSyncing(true);
@@ -162,7 +164,7 @@ export function CouriersMapClient({ points: initialPoints }: { points: CourierMa
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [updateMarkers]);
+  }, [updateMarkers, trackingEnabled]);
 
   return (
     <div className="space-y-4">
