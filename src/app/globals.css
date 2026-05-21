@@ -6,8 +6,8 @@
 
 @font-face {
   font-family: 'Al Mohanad';
-  src: url('/fonts/mohanad-bold.ttf') format('truetype');
-  font-weight: normal 900; /* هذا السطر يجعل المتصفح يستخدم الخط لكل أوزان النصوص */
+  src: url('/fonts/mohanad-bold.ttf.ttf') format('truetype');
+  font-weight: normal 900;
   font-style: normal;
   font-display: swap;
 }
