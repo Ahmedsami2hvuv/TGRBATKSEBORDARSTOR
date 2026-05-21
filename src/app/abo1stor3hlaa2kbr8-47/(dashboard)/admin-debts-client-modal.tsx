@@ -162,6 +162,19 @@ function DebtItemRow({ order, onPay, onHide, isProcessing }: any) {
              <h4 className="font-black text-slate-800 text-xl leading-tight">{order.shop.name}</h4>
            </div>
            <p className="text-sm font-bold text-slate-400 mt-1">{order.customerRegion?.name || "منطقة غير محددة"}</p>
+
+           {isPartiallyPaid && (
+            <div className="mt-3 flex gap-2">
+               <div className="bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                 <p className="text-[9px] font-black text-slate-400 leading-none mb-0.5">المبلغ الكلي</p>
+                 <p className="text-xs font-black text-slate-600 leading-none">{formatDinarAsAlfWithUnit(order.orderSubtotal)}</p>
+               </div>
+               <div className="bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
+                 <p className="text-[9px] font-black text-emerald-400 leading-none mb-0.5">الواصل</p>
+                 <p className="text-xs font-black text-emerald-600 leading-none">{formatDinarAsAlfWithUnit(order.totalPaid)}</p>
+               </div>
+            </div>
+          )}
         </div>
         <div className="text-left shrink-0">
            <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">{isPaid ? "الحالة" : "المتبقي"}</p>

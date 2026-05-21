@@ -144,6 +144,19 @@ export function DebtItemClient({
             <span className="opacity-50">📍</span>
             {order.customerRegion?.name || "منطقة غير محددة"}
           </p>
+
+          {isPartiallyPaid && (
+            <div className="mt-3 flex gap-2">
+               <div className="bg-slate-100 px-2 py-1 rounded-lg">
+                 <p className="text-[9px] font-black text-slate-400 leading-none mb-0.5">المبلغ الكلي</p>
+                 <p className="text-xs font-black text-slate-600 leading-none">{formatDinarAsAlfWithUnit(order.orderSubtotal)}</p>
+               </div>
+               <div className="bg-emerald-50 px-2 py-1 rounded-lg">
+                 <p className="text-[9px] font-black text-emerald-400 leading-none mb-0.5">الواصل</p>
+                 <p className="text-xs font-black text-emerald-600 leading-none">{formatDinarAsAlfWithUnit(order.totalPaid)}</p>
+               </div>
+            </div>
+          )}
         </div>
         <div className="text-left shrink-0">
           <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">{isPaid ? "الحالة" : "المتبقي"}</p>
