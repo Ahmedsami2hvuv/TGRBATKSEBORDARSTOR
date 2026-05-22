@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Slide {
   id: string;
@@ -99,18 +98,22 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
         <div className="grid grid-cols-2 gap-3 mt-3 px-1" dir="ltr">
           <button
             onClick={prevSlide}
-            className="flex items-center justify-center h-10 md:h-12 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-xl transition-all shadow-lg shadow-violet-200 dark:shadow-none border-b-4 border-violet-800"
+            className="flex items-center justify-center h-10 md:h-12 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-xl transition-all shadow-lg shadow-violet-200 dark:shadow-none border-b-4 border-violet-800 cursor-pointer"
           >
-            <ChevronLeft className="w-6 h-6 md:w-8 md:h-8" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 md:w-8 md:h-8">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
             <span className="font-bold text-sm md:text-base mr-1">السابق</span>
           </button>
 
           <button
             onClick={nextSlide}
-            className="flex items-center justify-center h-10 md:h-12 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-xl transition-all shadow-lg shadow-violet-200 dark:shadow-none border-b-4 border-violet-800"
+            className="flex items-center justify-center h-10 md:h-12 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-xl transition-all shadow-lg shadow-violet-200 dark:shadow-none border-b-4 border-violet-800 cursor-pointer"
           >
             <span className="font-bold text-sm md:text-base ml-1">التالي</span>
-            <ChevronRight className="w-6 h-6 md:w-8 md:h-8" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 md:w-8 md:h-8">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
           </button>
         </div>
       )}
