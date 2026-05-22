@@ -146,14 +146,15 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
 
   productLines.forEach(line => {
     const lineKey = line.toLowerCase();
+    const firstWord = lineKey.split(' ')[0];
 
-    // محاولة المطابقة بالترتيب: الاسم الكامل أولاً، ثم الجزئي
-    let match = matchingProducts.find(p => p.name.trim().toLowerCase() === lineKey);
+    // محاولة المطابقة بالترتيب: الاسم الكامل أولاً، ثم الجزئي، مع تفضيل فروع معينة
+    const matches = matchingProducts.filter(p =>
+      p.name.trim().toLowerCase() === lineKey ||
+      p.name.trim().toLowerCase().includes(firstWord)
+    );
 
-    if (!match) {
-      const firstWord = lineKey.split(' ')[0];
-      match = matchingProducts.find(p => p.name.trim().toLowerCase().includes(firstWord));
-    }
+    let match = matches.find(m => m.branch?.name?.includes("خضروات") || m.branch?.name?.includes("فواكه")) || matches[0];
 
     if (match) {
       if (match.photoUrls && Array.isArray(match.photoUrls) && match.photoUrls.length > 0) {

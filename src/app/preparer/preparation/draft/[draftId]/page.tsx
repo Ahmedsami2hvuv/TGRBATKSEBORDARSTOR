@@ -115,10 +115,15 @@ export default async function PreparerShoppingDraftPage({ params, searchParams }
   productsList.forEach((p: any) => {
     const lineKey = p.line.trim().toLowerCase();
 
-    // البحث عن المنتج بالمعرف أولاً ثم بالاسم
-    const match = matchingProducts.find(mp => mp.id === p.productId)
-               || matchingProducts.find(mp => mp.name.trim().toLowerCase() === lineKey)
-               || matchingProducts.find(mp => mp.name.trim().toLowerCase() === lineKey.split(' ')[0]);
+    // البحث عن المنتج بالمعرف أولاً ثم بالاسم مع مراعاة الأولوية للفروع المنطقية (مثل الخضروات لليمون)
+    const matches = matchingProducts.filter(mp =>
+      mp.id === p.productId ||
+      mp.name.trim().toLowerCase() === lineKey ||
+      mp.name.trim().toLowerCase() === lineKey.split(' ')[0]
+    );
+
+    // اختيار الأفضل: إذا وجدنا منتجاً في فرع "الخضروات" أو "الفواكه" نعطيه الأولوية
+    let match = matches.find(m => m.branch?.name?.includes("خضروات") || m.branch?.name?.includes("فواكه")) || matches[0];
 
     if (match) {
       let url = "";
