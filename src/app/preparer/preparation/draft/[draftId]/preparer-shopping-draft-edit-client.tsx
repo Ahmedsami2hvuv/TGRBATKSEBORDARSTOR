@@ -116,7 +116,6 @@ export function PreparerShoppingDraftEditClient({
   const [selectedPriceIndex, setSelectedPriceIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeBranch, setActiveBranch] = useState<string | null>(null);
-  const [tempBasePrice, setTempBasePrice] = useState<number | null>(null);
 
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
@@ -538,7 +537,6 @@ export function PreparerShoppingDraftEditClient({
 
         if (nextVisualItem) {
             setSelectedPriceIndex(nextVisualItem.idx);
-            setTempBasePrice(null);
             setPricingLinesText("");
             setTimeout(() => pricingTextareaRef.current?.focus(), 50);
         } else {
@@ -571,7 +569,6 @@ export function PreparerShoppingDraftEditClient({
     }
     setSelectedPriceIndex(null);
     setPricingLinesText("");
-    setTempBasePrice(null);
   }
 
   function handleAutoPriceMeat(idx: number) {
@@ -764,7 +761,6 @@ export function PreparerShoppingDraftEditClient({
                   }
                   if (isAssignedToOther || isPricedByOther) return;
                   setSelectedPriceIndex(i);
-                  setTempBasePrice(null);
                   setPricingLinesText(priced ? `${p.buyAlf}` : "");
                   setTimeout(() => pricingTextareaRef.current?.focus(), 50);
                 }}
@@ -869,7 +865,6 @@ export function PreparerShoppingDraftEditClient({
                               const nextVisualItem = orderedForButtons.slice(currentVisualIdx + 1).find(item => item.p.buyAlf === "" || item.p.sellAlf === "");
                               if (nextVisualItem) {
                                   setSelectedPriceIndex(nextVisualItem.idx);
-                                  setTempBasePrice(null);
                                   setPricingLinesText("");
                               } else {
                                   setSelectedPriceIndex(null);
@@ -885,78 +880,74 @@ export function PreparerShoppingDraftEditClient({
                     </div>
                 </div>
 
-                {/* أزرار التسعير السريع المحدثة */}
-                <div className="mb-4 space-y-3">
-                  {!tempBasePrice ? (
-                    <div className="grid grid-cols-5 gap-2 animate-in fade-in zoom-in-95 duration-200">
-                      {[20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(n => (
-                        <button
-                          key={n}
-                          type="button"
-                          onClick={() => { setTempBasePrice(n); setPricingLinesText(String(n)); }}
-                          className="py-3 bg-slate-50 text-slate-800 rounded-xl text-sm font-black border border-slate-200 shadow-sm active:bg-indigo-600 active:text-white transition-all"
-                        >
-                          {n}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="bg-indigo-50 p-3 rounded-2xl border-2 border-indigo-200 animate-in slide-in-from-top-2 duration-300">
-                      <div className="flex items-center justify-between mb-3 px-1">
-                        <span className="text-xs font-black text-indigo-900">اختر الكسر لـ {tempBasePrice} :</span>
-                        <button type="button" onClick={() => setTempBasePrice(null)} className="text-[10px] font-bold text-indigo-600 bg-white px-2 py-1 rounded-lg border border-indigo-200 shadow-sm">تغيير الرقم</button>
-                      </div>
-                      <div className="grid grid-cols-4 gap-2">
-                        {[0, 0.25, 0.5, 0.75].map(frac => {
-                          const total = tempBasePrice + frac;
-                          return (
-                            <button
-                              key={frac}
-                              type="button"
-                              onClick={() => {
-                                setPricingLinesText(String(total));
-                                // حفظ فوري وانتقال للتالي
-                                const buy = total;
-                                const sell = calculateAutoSellPrice(products[selectedPriceIndex!]!.line, buy);
-                                const nextProducts = [...products];
-                                const target = nextProducts[selectedPriceIndex!];
-                                if (target) {
-                                  nextProducts[selectedPriceIndex!] = { ...target, buyAlf: buy, sellAlf: sell, pricedBy: preparerName, pricedById: preparerId };
-                                  const nextJson = JSON.stringify(nextProducts.map(p => ({
-                                    line: p.line,
-                                    buyAlf: p.buyAlf === "" ? null : p.buyAlf,
-                                    sellAlf: p.sellAlf === "" ? null : p.sellAlf,
-                                    pricedBy: p.pricedBy,
-                                    pricedById: p.pricedById,
-                                    assignedPreparerId: p.assignedPreparerId,
-                                    assignedPreparerName: p.assignedPreparerName,
-                                  })));
-                                  setProducts(nextProducts);
-                                  performSave(nextJson);
+                {/* اقتراحات الكسور الذكية (تظهر تلقائياً عند كتابة رقم صحيح) */}
+                <div className="mb-4">
+                  {(() => {
+                    const typedValue = parseFloat(pricingLinesText);
+                    if (isNaN(typedValue) || typedValue <= 0) return null;
 
-                                  const currentVisualIdx = orderedForButtons.findIndex(item => item.idx === selectedPriceIndex);
-                                  const nextVisualItem = orderedForButtons.slice(currentVisualIdx + 1).find(item => item.p.buyAlf === "" || item.p.sellAlf === "");
-                                  if (nextVisualItem) {
-                                      setSelectedPriceIndex(nextVisualItem.idx);
-                                      setTempBasePrice(null);
-                                      setPricingLinesText("");
-                                  } else {
-                                      setSelectedPriceIndex(null);
-                                      setPricingLinesText("");
-                                      setTempBasePrice(null);
+                    const base = Math.floor(typedValue);
+                    const fractions = [0, 0.25, 0.5, 0.75];
+
+                    return (
+                      <div className="bg-indigo-50 p-3 rounded-2xl border-2 border-indigo-200 animate-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-center justify-between mb-2 px-1">
+                          <p className="text-[10px] font-black text-indigo-900">إكمال السعر لـ ({base}) :</p>
+                          <span className="text-[9px] font-bold text-indigo-400">انقر للحفظ السريع</span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2">
+                          {fractions.map(frac => {
+                            const total = base + frac;
+                            // إذا كان الرقم المكتوب هو نفسه الاقتراح، نميزه بلون مختلف أو نخفيه
+                            const isCurrent = total === typedValue;
+
+                            return (
+                              <button
+                                key={frac}
+                                type="button"
+                                onClick={() => {
+                                  const buy = total;
+                                  const sell = calculateAutoSellPrice(products[selectedPriceIndex!]!.line, buy);
+                                  const nextProducts = [...products];
+                                  const target = nextProducts[selectedPriceIndex!];
+                                  if (target) {
+                                    nextProducts[selectedPriceIndex!] = { ...target, buyAlf: buy, sellAlf: sell, pricedBy: preparerName, pricedById: preparerId };
+                                    const nextJson = JSON.stringify(nextProducts.map(p => ({
+                                      line: p.line,
+                                      buyAlf: p.buyAlf === "" ? null : p.buyAlf,
+                                      sellAlf: p.sellAlf === "" ? null : p.sellAlf,
+                                      pricedBy: p.pricedBy,
+                                      pricedById: p.pricedById,
+                                      assignedPreparerId: p.assignedPreparerId,
+                                      assignedPreparerName: p.assignedPreparerName,
+                                    })));
+                                    setProducts(nextProducts);
+                                    performSave(nextJson);
+
+                                    const currentVisualIdx = orderedForButtons.findIndex(item => item.idx === selectedPriceIndex);
+                                    const nextVisualItem = orderedForButtons.slice(currentVisualIdx + 1).find(item => item.p.buyAlf === "" || item.p.sellAlf === "");
+                                    if (nextVisualItem) {
+                                        setSelectedPriceIndex(nextVisualItem.idx);
+                                        setPricingLinesText("");
+                                    } else {
+                                        setSelectedPriceIndex(null);
+                                        setPricingLinesText("");
+                                    }
                                   }
-                                }
-                              }}
-                              className="py-4 bg-indigo-600 text-white rounded-xl text-sm font-black shadow-md active:scale-95 transition-all flex flex-col items-center justify-center"
-                            >
-                              <span>{total}</span>
-                              {frac > 0 && <span className="text-[8px] opacity-80">+{frac}</span>}
-                            </button>
-                          );
-                        })}
+                                }}
+                                className={`py-4 rounded-xl text-sm font-black shadow-md active:scale-95 transition-all flex flex-col items-center justify-center ${
+                                  isCurrent ? "bg-indigo-400 text-white" : "bg-indigo-600 text-white"
+                                }`}
+                              >
+                                <span>{total}</span>
+                                {frac > 0 && <span className="text-[8px] opacity-80">+{frac}</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
 
                 <textarea
