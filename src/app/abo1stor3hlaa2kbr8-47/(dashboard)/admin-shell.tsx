@@ -356,7 +356,7 @@ export function AdminShell({
                 <span className="text-xl font-bold">−</span>
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.min(1.5, prev + 0.05)); }}
+                onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.min(5, prev + 0.05)); }}
                 className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-white hover:bg-[#00f3ff] hover:text-black transition-all active:scale-90 border border-transparent"
                 title="تكبير"
               >

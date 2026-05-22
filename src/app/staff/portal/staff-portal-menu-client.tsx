@@ -38,7 +38,7 @@ export function StaffPortalMenuClient({
             −
           </button>
           <button
-            onClick={() => setScale(prev => Math.min(1.4, prev + 0.1))}
+            onClick={() => setScale(prev => Math.min(5, prev + 0.1))}
             className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-white/10 text-xl font-bold active:scale-90 transition-all text-sky-500"
           >
             +
