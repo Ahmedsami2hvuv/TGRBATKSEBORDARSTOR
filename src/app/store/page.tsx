@@ -69,7 +69,7 @@ export default async function StoreHomePage() {
       {/* Dynamic Slider Section */}
       <section>
         {slides.length > 0 ? (
-          <StoreSlider slides={slides.map(s => ({ id: s.id, imageUrl: s.imageUrl, linkUrl: s.linkUrl }))} />
+          <StoreSlider slides={slides.map(s => ({ id: s.id, imageUrl: s.imageUrl, linkUrl: s.linkUrl, title: s.title }))} />
         ) : (
           /* Fallback if no slides are added yet */
           <div className="relative py-16 md:py-24 text-center overflow-hidden rounded-[3rem] bg-slate-50 dark:bg-slate-900 transition-colors">

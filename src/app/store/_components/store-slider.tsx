@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Slide {
   id: string;
@@ -29,67 +30,63 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
 
   return (
     <div
-      className="relative group w-full px-2 md:px-6"
+      className="w-full"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      {/* Main Slider Area */}
-      <div className="relative aspect-[16/9] md:aspect-[25/8] overflow-hidden rounded-[2rem] md:rounded-[3rem] shadow-lg shadow-slate-200/50 dark:shadow-none border-2 border-white dark:border-slate-800 bg-slate-100 dark:bg-slate-900">
+      {/* Container with rounded corners */}
+      <div className="relative aspect-[16/9] md:aspect-[21/7] overflow-hidden rounded-[2rem] md:rounded-[3rem] shadow-xl border-4 border-white dark:border-slate-800 bg-slate-100 dark:bg-slate-900">
         {slides.map((slide, index) => (
           <div
             key={slide.id}
-            className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-              index === current ? "opacity-100 scale-100 translate-x-0" : "opacity-0 scale-105 translate-x-4 pointer-events-none"
+            className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
+              index === current ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
             }`}
           >
-            <div className="relative w-full h-full">
-              {slide.linkUrl ? (
-                <Link href={slide.linkUrl} className="block w-full h-full relative">
-                  <img
-                    src={slide.imageUrl}
-                    alt={slide.title || ""}
-                    className="w-full h-full object-cover"
-                    loading={index === 0 ? "eager" : "lazy"}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  {slide.title && (
-                    <div className="absolute bottom-10 right-6 left-6 text-right animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-                      <h2 className="text-white text-xl md:text-3xl font-black drop-shadow-lg line-clamp-2">
-                        {slide.title}
-                      </h2>
-                    </div>
-                  )}
-                </Link>
-              ) : (
-                <>
-                  <img
-                    src={slide.imageUrl}
-                    alt={slide.title || ""}
-                    className="w-full h-full object-cover"
-                    loading={index === 0 ? "eager" : "lazy"}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  {slide.title && (
-                    <div className="absolute bottom-10 right-6 left-6 text-right animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-                      <h2 className="text-white text-xl md:text-3xl font-black drop-shadow-lg line-clamp-2">
-                        {slide.title}
-                      </h2>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+            {slide.linkUrl ? (
+              <Link href={slide.linkUrl} className="block w-full h-full relative">
+                <img
+                  src={slide.imageUrl}
+                  alt={slide.title || ""}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                {slide.title && (
+                  <div className="absolute bottom-6 right-6 left-6 text-right">
+                    <h2 className="text-white text-xl md:text-4xl font-black drop-shadow-2xl">
+                      {slide.title}
+                    </h2>
+                  </div>
+                )}
+              </Link>
+            ) : (
+              <div className="w-full h-full relative">
+                <img
+                  src={slide.imageUrl}
+                  alt={slide.title || ""}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                {slide.title && (
+                  <div className="absolute bottom-6 right-6 left-6 text-right">
+                    <h2 className="text-white text-xl md:text-4xl font-black drop-shadow-2xl">
+                      {slide.title}
+                    </h2>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ))}
 
-        {/* Simple Progress indicators inside slider */}
+        {/* Small indicators bottom center */}
         {slides.length > 1 && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
             {slides.map((_, index) => (
               <div
                 key={index}
-                className={`transition-all duration-500 rounded-full h-1 ${
-                  index === current ? "w-6 bg-white" : "w-1 bg-white/40"
+                className={`h-1.5 transition-all duration-300 rounded-full ${
+                  index === current ? "w-8 bg-white" : "w-2 bg-white/40"
                 }`}
               />
             ))}
@@ -97,25 +94,23 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
         )}
       </div>
 
-      {/* Slim Navigation Buttons Below Slider */}
+      {/* Navigation Buttons Below Image - Slim Rectangular Style */}
       {slides.length > 1 && (
-        <div className="grid grid-cols-2 gap-3 mt-4" dir="ltr">
-          {/* Left Button (السابق) */}
+        <div className="grid grid-cols-2 gap-3 mt-3 px-1" dir="ltr">
           <button
             onClick={prevSlide}
-            className="h-10 md:h-12 rounded-xl bg-violet-600 text-white shadow-md hover:bg-violet-700 transition-all active:scale-95 cursor-pointer flex items-center justify-center border-b-2 border-violet-800"
-            title="السابق"
+            className="flex items-center justify-center h-10 md:h-12 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-xl transition-all shadow-lg shadow-violet-200 dark:shadow-none border-b-4 border-violet-800"
           >
-            <span className="text-4xl md:text-5xl font-black pb-1">‹</span>
+            <ChevronLeft className="w-6 h-6 md:w-8 md:h-8" />
+            <span className="font-bold text-sm md:text-base mr-1">السابق</span>
           </button>
 
-          {/* Right Button (التالي) */}
           <button
             onClick={nextSlide}
-            className="h-10 md:h-12 rounded-xl bg-violet-600 text-white shadow-md hover:bg-violet-700 transition-all active:scale-95 cursor-pointer flex items-center justify-center border-b-2 border-violet-800"
-            title="التالي"
+            className="flex items-center justify-center h-10 md:h-12 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-xl transition-all shadow-lg shadow-violet-200 dark:shadow-none border-b-4 border-violet-800"
           >
-            <span className="text-4xl md:text-5xl font-black pb-1">›</span>
+            <span className="font-bold text-sm md:text-base ml-1">التالي</span>
+            <ChevronRight className="w-6 h-6 md:w-8 md:h-8" />
           </button>
         </div>
       )}
