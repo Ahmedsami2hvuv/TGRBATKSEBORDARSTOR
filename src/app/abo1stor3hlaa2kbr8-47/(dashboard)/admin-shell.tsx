@@ -266,42 +266,14 @@ export function AdminShell({
         `}
         style={{ width: navWidth }}
       >
-        <div className="flex h-16 w-full items-center justify-between px-4 border-b border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)]">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setNavOpen(false)}
-              className="text-slate-500 dark:text-slate-400 p-2 text-xl font-black lg:hidden"
-              aria-label="إغلاق القائمة"
-              title="إغلاق القائمة"
-            >
-              ✕
-            </button>
-            {/* أزرار التكبير والتصغير */}
-            <div className="flex items-center gap-1.5 bg-slate-200/50 dark:bg-[#1a1b1e] p-1 rounded-xl border border-slate-300 dark:border-white/20 shadow-sm ml-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setItemScale(prev => Math.max(0.7, prev - 0.05));
-                }}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 transition-all active:scale-95 border border-transparent hover:border-red-200"
-                title="تصغير حجم الخيارات"
-              >
-                <span className="text-xl font-black">−</span>
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setItemScale(prev => Math.min(1.5, prev + 0.05));
-                }}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-sky-50 dark:hover:bg-sky-950/30 hover:text-sky-600 transition-all active:scale-95 border border-transparent hover:border-sky-200"
-                title="تكبير حجم الخيارات"
-              >
-                <span className="text-xl font-black">+</span>
-              </button>
+        <div className="flex h-16 w-full items-center justify-between px-4 border-b border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] shrink-0">
+          <div className="flex items-center gap-2 ms-12">
+            <div className="flex w-8 h-8 rounded-full bg-gradient-to-br from-[#00f3ff] to-[#e028ff] items-center justify-center shadow-[0_0_10px_rgba(224,40,255,0.5)]">
+              <span className="text-black font-black text-xs">OR</span>
             </div>
-          </div>
-          <div className="flex w-8 h-8 rounded-full bg-gradient-to-br from-[#00f3ff] to-[#e028ff] items-center justify-center shadow-[0_0_10px_rgba(224,40,255,0.5)]">
-            <span className="text-black font-black text-xs">OR</span>
+            <span className="text-[10px] font-black tracking-widest text-slate-400 dark:text-slate-600 uppercase">
+              Admin Portal
+            </span>
           </div>
         </div>
         <nav className="flex flex-1 overflow-y-auto px-3 py-4">
@@ -368,14 +340,39 @@ export function AdminShell({
             })}
           </div>
         </nav>
-        <div className="border-t border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] p-2">
-          <form action={logout}>
+        <div className="border-t border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] p-4 flex flex-col gap-4 shrink-0 bg-slate-50 dark:bg-slate-950/50">
+          {/* أزرار التكبير والتصغير - هنا مكانها آمن جداً */}
+          <div className="flex items-center justify-between bg-white dark:bg-[#09090b] p-2 rounded-2xl border border-slate-200 dark:border-[#00f3ff]/20 shadow-sm">
+            <div className="flex flex-col ms-2">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">حجم القائمة</span>
+              <span className="text-[11px] font-black text-[#00f3ff]">{Math.round(itemScale * 100)}%</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.max(0.7, prev - 0.05)); }}
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-white hover:bg-red-500 hover:text-white transition-all active:scale-90 border border-transparent"
+                title="تصغير"
+              >
+                <span className="text-xl font-bold">−</span>
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.min(1.5, prev + 0.05)); }}
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-white hover:bg-[#00f3ff] hover:text-black transition-all active:scale-90 border border-transparent"
+                title="تكبير"
+              >
+                <span className="text-xl font-bold">+</span>
+              </button>
+            </div>
+          </div>
+
+          <form action={logout} className="w-full">
             <button
               type="submit"
-              title="خروج"
-              className="flex w-10 h-10 mx-auto items-center justify-center rounded-xl border border-[#ff3b30]/50 bg-transparent text-[#ff3b30] transition hover:bg-[#ff3b30]/20 shadow-[0_0_8px_rgba(255,59,48,0.2)]"
+              title="تسجيل الخروج"
+              className="flex w-full h-12 items-center justify-center gap-3 rounded-2xl border border-[#ff3b30]/30 bg-[#ff3b30]/5 text-[#ff3b30] transition hover:bg-[#ff3b30]/10 font-black text-xs uppercase tracking-wider"
             >
-              ⏻
+              <span className="text-lg">⏻</span>
+              <span>تسجيل الخروج</span>
             </button>
           </form>
         </div>

@@ -13,14 +13,41 @@ export function StaffPortalMenuClient({
   authQ: string;
 }) {
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  const [scale, setScale] = useState(1);
 
   useEffect(() => {
+    const saved = localStorage.getItem("kse:staff:scale");
+    if (saved) setScale(parseFloat(saved));
     getGlobalIcons().then(setIcons);
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem("kse:staff:scale", scale.toString());
+  }, [scale]);
+
   return (
-    <div className="mt-8 grid gap-3">
-      {emp.canSubmitOrders && (
+    <div className="mt-4">
+      {/* التحكم في حجم القائمة */}
+      <div className="flex items-center justify-between mb-6 bg-white/50 dark:bg-slate-900/50 p-2 rounded-2xl border border-slate-200 dark:border-white/10 backdrop-blur-sm">
+        <span className="text-xs font-black text-slate-500 dark:text-slate-400 mr-2">تغيير حجم الواجهة</span>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setScale(prev => Math.max(0.8, prev - 0.1))}
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-white/10 text-xl font-bold active:scale-90 transition-all"
+          >
+            −
+          </button>
+          <button
+            onClick={() => setScale(prev => Math.min(1.4, prev + 0.1))}
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-white/10 text-xl font-bold active:scale-90 transition-all text-sky-500"
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-3" style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
+        {emp.canSubmitOrders && (
         <>
           <Link
             href={`/staff/portal/preparation?${authQ}`}
