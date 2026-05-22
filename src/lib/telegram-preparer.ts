@@ -26,6 +26,7 @@ import {
   notifyTelegramCourierTransferEvent,
   notifyTelegramPreparerTransferEvent,
   notifyTelegramAdminTransferUpdate,
+  buildPreparerOrderKeyboard,
 } from "@/lib/telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 import { transferOrderToCourierInternal } from "@/lib/order-assign-courier";
@@ -47,6 +48,8 @@ export type PreparerTelegramCallback =
   | { kind: "assign_courier_exec"; orderId: string; courierId: string }
   | { kind: "cancel_flow" }
   | { kind: "assign_start_by_num"; orderNumber: number }
+  | { kind: "price_item"; orderId: string; itemIdx: number }
+  | { kind: "add_item"; orderId: string }
   | { kind: "wallet_take" }
   | { kind: "wallet_give" }
   | { kind: "wallet_transfer_start" }
@@ -93,6 +96,12 @@ export function parsePreparerTelegramCallback(raw: string): PreparerTelegramCall
 
   m = /^p_w_trej:(.+)$/.exec(t);
   if (m) return { kind: "wallet_transfer_reject", transferId: m[1] };
+
+  m = /^p_pri:(.+):(\d+)$/.exec(t);
+  if (m) return { kind: "price_item", orderId: m[1], itemIdx: Number(m[2]) };
+
+  m = /^p_add:(.+)$/.exec(t);
+  if (m) return { kind: "add_item", orderId: m[1] };
 
   // دعم الاختصارات من الإشعارات
   m = /^l(\d+)$/.exec(t);
@@ -729,6 +738,30 @@ export async function handlePreparerTelegramCallback(
         await editTelegramMessage(chatId, messageId, text, keyboard, botToken);
         return true;
       }
+      case "price_item": {
+        const order = await prisma.order.findUnique({ where: { id: parsed.orderId } });
+        if (!order) return true;
+        const items = Array.isArray(order.preparerShoppingJson) ? order.preparerShoppingJson as any[] : [];
+        const item = items[parsed.itemIdx];
+        if (!item) return true;
+
+        await upsertPreparerSession(telegramUserId, chatId, "preparer_price_item", JSON.stringify({ orderId: order.id, itemIdx: parsed.itemIdx }));
+        await sendTelegramMessageWithKeyboardToChat(chatId,
+          `<b>تحديد سعر المادة:</b>\n${escapeTelegramHtml(item.name)}\n\nأرسل سعر الشراء الحالي (دينار):`,
+          { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: `p_det:${order.id}` }]] },
+          botToken
+        );
+        return true;
+      }
+      case "add_item": {
+        await upsertPreparerSession(telegramUserId, chatId, "preparer_add_item", JSON.stringify({ orderId: parsed.orderId }));
+        await sendTelegramMessageWithKeyboardToChat(chatId,
+          `<b>إضافة مواد جديدة للطلب:</b>\nأرسل قائمة المواد الجديدة (كل مادة في سطر أو افصل بينهم بـ واو أو سطر جديد):`,
+          { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: `p_det:${parsed.orderId}` }]] },
+          botToken
+        );
+        return true;
+      }
     }
   } catch (e) {
     console.error("[telegram preparer panel]", e);
@@ -867,6 +900,54 @@ export async function handlePreparerTelegramMessage(
   }
 
   const session = await getPreparerSession(telegramUserId);
+
+  if (session?.step === "preparer_price_item" && txt) {
+    const payload = JSON.parse(session.payload || "{}");
+    const price = parseAlfInputToDinarNumber(txt);
+    if (price == null) {
+      await sendTelegramMessageWithKeyboardToChat(chatId, "الرجاء إرسال رقم صحيح للسعر.", { inline_keyboard: [[{ text: "❌ إلغاء", callback_data: `p_det:${payload.orderId}` }]] }, botToken);
+      return true;
+    }
+
+    const order = await prisma.order.findUnique({ where: { id: payload.orderId } });
+    if (order) {
+      const items = Array.isArray(order.preparerShoppingJson) ? [...(order.preparerShoppingJson as any[])] : [];
+      if (items[payload.itemIdx]) {
+        items[payload.itemIdx].price = price;
+        items[payload.itemIdx].priced = true;
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { preparerShoppingJson: items }
+        });
+        await clearPreparerSession(telegramUserId);
+        const kb = buildPreparerOrderKeyboard(order.id, order.orderNumber, items);
+        await sendTelegramMessageWithKeyboardToChat(chatId, `✅ تم تحديث سعر <b>${escapeTelegramHtml(items[payload.itemIdx].name)}</b> إلى <b>${formatDinarAsAlf(price)}</b>`, kb, botToken);
+      }
+    }
+    return true;
+  }
+
+  if (session?.step === "preparer_add_item" && txt) {
+    const payload = JSON.parse(session.payload || "{}");
+    const order = await prisma.order.findUnique({ where: { id: payload.orderId } });
+    if (order) {
+      const newItemsRaw = txt.split(/[\n،,]+/).map(s => s.trim()).filter(Boolean);
+      const items = Array.isArray(order.preparerShoppingJson) ? [...(order.preparerShoppingJson as any[])] : [];
+
+      newItemsRaw.forEach(name => {
+        items.push({ name, priced: false, price: 0 });
+      });
+
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { preparerShoppingJson: items }
+      });
+      await clearPreparerSession(telegramUserId);
+      const kb = buildPreparerOrderKeyboard(order.id, order.orderNumber, items);
+      await sendTelegramMessageWithKeyboardToChat(chatId, `✅ تم إضافة <b>${newItemsRaw.length}</b> مواد جديدة للطلب.`, kb, botToken);
+    }
+    return true;
+  }
 
   // معالجة جلسات المحفظة (أخذت / أعطيت)
   if (session?.step === "preparer_wallet_take" || session?.step === "preparer_wallet_give") {

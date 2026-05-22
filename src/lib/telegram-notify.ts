@@ -71,6 +71,11 @@ async function formatOrderBodyLines(input: {
 
   const vehicleEmoji = input.vehiclePreference === "bike" ? " 🏍️" : (input.vehiclePreference === "car" ? " 🚗" : "");
 
+  let text = template;
+  if (options?.omitPhone) {
+    text = text.split("\n").filter(line => !line.includes("{customerPhone}")).join("\n");
+  }
+
   const replacements: Record<string, string> = {
     "{shopName}": escapeTelegramHtml(input.shopName),
     "{customerName}": escapeTelegramHtml(input.customerName?.trim() || "—"),
@@ -349,11 +354,7 @@ export async function notifyTelegramNewOrder(orderId: string): Promise<void> {
     }, { omitPhone: true });
 
     const prepText = `🔔 <b>طلب جديد لمحل تابع لك:</b>\n\n` + bodyLines.join("\n") + `\n\n🔗 <a href="${prepOrderUrl}">فتح الطلب من حسابك</a>`;
-    const prepKb: TelegramInlineKeyboard = {
-      inline_keyboard: [
-        [{ text: "👤 إسناد لمندوب", callback_data: `l${order.orderNumber}` }]
-      ]
-    };
+    const prepKb = buildPreparerOrderKeyboard(order.id, order.orderNumber, order.preparerShoppingJson);
 
     const preparerBotToken = await getBotTokenByPurpose("preparer");
     await sendTelegramMessageWithKeyboardToChat(prep.telegramUserId, prepText, prepKb, preparerBotToken, { disable_notification: false });
@@ -696,15 +697,51 @@ export async function notifyTelegramPreparerManualAssignment(input: {
   const text = [
     `\u200F🔔 <b>تم إسناد طلب جديد إليك</b>`,
     `\u200F<b>العنوان:</b> ${escapeTelegramHtml(titleLine)}`,
-    `\u200F<b>رقم الزبون:</b> \u200E${escapeTelegramHtml(customerPhone)}\u200E`,
     `\u200F-------------------------`,
     `\u200F<b>المحتوى:</b>`,
     `\u200F${escapeTelegramHtml(summary || "—")}`,
     `\n🔗 <a href="${prepOrderUrl}">فتح الطلب في حسابك</a>`,
   ].join("\n");
 
+  let kb: TelegramInlineKeyboard;
+  if (!input.isDraft && orderNumber) {
+    const order = await prisma.order.findUnique({ where: { id: input.orderId } });
+    kb = buildPreparerOrderKeyboard(input.orderId, orderNumber, order?.preparerShoppingJson);
+  } else {
+    kb = {
+      inline_keyboard: [[{ text: "🔗 فتح الطلب", url: prepOrderUrl }]]
+    };
+  }
+
   const preparerBotToken = await getBotTokenByPurpose("preparer");
-  await sendTelegramHtmlToChat(preparer.telegramUserId, text, preparerBotToken, { disable_notification: false });
+  await sendTelegramMessageWithKeyboardToChat(preparer.telegramUserId, text, kb, preparerBotToken, { disable_notification: false });
+}
+
+export function buildPreparerOrderKeyboard(
+  orderId: string,
+  orderNumber: number,
+  shoppingJson: any
+): TelegramInlineKeyboard {
+  const items = Array.isArray(shoppingJson) ? shoppingJson : [];
+  const kb: any[][] = [];
+
+  // كل مادة في زر منفصل
+  items.forEach((item: any, idx: number) => {
+    const icon = item.priced ? "✅" : "💰";
+    const priceStr = item.price ? ` (${formatDinarAsAlf(item.price)})` : "";
+    kb.push([{
+      text: `${icon} ${item.name}${priceStr}`,
+      callback_data: `p_pri:${orderId}:${idx}`
+    }]);
+  });
+
+  // أزرار التحكم الإضافية
+  kb.push([
+    { text: "➕ إضافة مادة", callback_data: `p_add:${orderId}` },
+    { text: "👤 إسناد لمندوب", callback_data: `l${orderNumber}` }
+  ]);
+
+  return { inline_keyboard: kb };
 }
 
 export function buildTelegramOrderKeyboard(
