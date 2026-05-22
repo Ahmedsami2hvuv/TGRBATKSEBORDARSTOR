@@ -1,5 +1,5 @@
 // نستخدم الاستيرادات الديناميكية لتجنب مشاكل الـ Build مع Turbopack
-export const BUCKET_NAME = process.env.R2_BUCKET_NAME;
+export const BUCKET_NAME = process.env.R2_BUCKET_NAME || "";
 
 export async function getS3Client() {
   if (typeof window !== 'undefined') return null;
@@ -20,6 +20,10 @@ export async function getS3Client() {
 }
 
 export async function uploadToR2(buffer: Buffer, key: string, contentType: string) {
+  if (!BUCKET_NAME) {
+    console.error("R2_BUCKET_NAME is not defined");
+    return null;
+  }
   const r2Client = await getS3Client();
   if (!r2Client) return null;
 
@@ -39,8 +43,9 @@ export async function uploadToR2(buffer: Buffer, key: string, contentType: strin
 }
 
 export async function deleteFromR2(key: string | null | undefined) {
+  if (!BUCKET_NAME || !key) return;
   const r2Client = await getS3Client();
-  if (!r2Client || !key) return;
+  if (!r2Client) return;
 
   let actualKey = key;
   if (key.includes("http")) {
@@ -62,8 +67,9 @@ export async function deleteFromR2(key: string | null | undefined) {
 }
 
 export async function r2ObjectExistsByUrl(urlOrKey: string | null | undefined): Promise<boolean> {
+  if (!BUCKET_NAME || !urlOrKey) return false;
   const r2Client = await getS3Client();
-  if (!r2Client || !urlOrKey) return false;
+  if (!r2Client) return false;
 
   const raw = String(urlOrKey).trim();
   let key = raw;
@@ -81,5 +87,13 @@ export async function r2ObjectExistsByUrl(urlOrKey: string | null | undefined): 
   }
 }
 
-export function getUploadsRoot() { return ""; }
-export function uploadsAbsoluteDir() { return ""; }
+// تعديل لضمان استقبال الباراميتر وإرجاع مسار صالح
+export function getUploadsRoot() {
+  return process.env.UPLOADS_ROOT_DIR || process.cwd();
+}
+
+export function uploadsAbsoluteDir(subDir: string = "") {
+  const root = getUploadsRoot();
+  const path = require('path');
+  return path.join(root, "public", "uploads", subDir);
+}

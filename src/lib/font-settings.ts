@@ -41,7 +41,11 @@ export async function setChosenFont(fontName: string) {
  */
 export function getAvailableFonts(): string[] {
   try {
-    const fontsDir = path.join(process.cwd(), "public", "fonts");
+    const root = process.cwd();
+    const fontsDir = path.join(root, "public", "fonts");
+
+    // التحقق من أن المسار string قبل الاستخدام
+    if (typeof fontsDir !== 'string') return [];
     if (!fs.existsSync(fontsDir)) return [];
 
     const files = fs.readdirSync(fontsDir);
@@ -59,8 +63,10 @@ export function getAvailableFonts(): string[] {
  */
 export function getFontFileUrl(fontName: string): string | null {
   try {
-    const fontsDir = path.join(process.cwd(), "public", "fonts");
-    if (!fs.existsSync(fontsDir)) return null;
+    const root = process.cwd();
+    const fontsDir = path.join(root, "public", "fonts");
+
+    if (typeof fontsDir !== 'string' || !fs.existsSync(fontsDir)) return null;
 
     const files = fs.readdirSync(fontsDir);
     const file = files.find(f => path.parse(f).name === fontName);

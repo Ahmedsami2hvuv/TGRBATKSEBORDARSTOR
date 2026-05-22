@@ -47,9 +47,9 @@ async function verifyDelegateAllowed(
 function revalidateMandoubPaths(nextUrl: string) {
   revalidatePath("/mandoub");
   revalidatePath("/mandoub/wallet");
-  const path = nextUrl.split("?")[0];
-  if (path.startsWith("/mandoub/order/")) {
-    revalidatePath(path);
+  const urlPath = nextUrl.split("?")[0];
+  if (urlPath.startsWith("/mandoub/order/")) {
+    revalidatePath(urlPath);
   }
 }
 
