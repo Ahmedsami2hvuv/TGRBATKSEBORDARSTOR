@@ -18,22 +18,9 @@ import { buildCompanyPreparerPortalUrl } from "./company-preparer-portal-link";
 import { buildDelegatePortalUrl } from "./delegate-link";
 import { computeMandoubWalletRemainAllTimeDinar } from "./mandoub-wallet-carry";
 
-const TARGET = "admin";
-const SECTION_TELEGRAM_NEW_ORDER = "telegram_new_order_template";
+import { getDefaultTelegramNewOrderTemplate } from "./telegram-templates";
 
-export function getDefaultTelegramNewOrderTemplate(): string {
-  return [
-    "🏪 ({shopName} — {customerName}){vehicleEmoji}",
-    "📍 {regionName}",
-    "📦 {orderType}",
-    "💵 {subtotal}",
-    "🚚 {delivery}",
-    "💰 {total}",
-    "⏰ {noteTime}",
-    "🔢 {orderNumber}",
-    "📞 {customerPhone}",
-  ].join("\n");
-}
+const TARGET = "admin";
 
 export async function getTelegramNewOrderTemplate(): Promise<string> {
   try {
@@ -90,7 +77,6 @@ async function formatOrderBodyLines(input: {
     "{vehicleEmoji}": vehicleEmoji,
   };
 
-  let text = template;
   Object.entries(replacements).forEach(([key, val]) => {
     text = text.replaceAll(key, val);
   });

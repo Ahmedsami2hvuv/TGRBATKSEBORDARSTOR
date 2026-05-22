@@ -6,7 +6,7 @@ import {
   getDefaultEmployeeWhatsappShareTemplate,
   getDefaultCustomerOrderTemplate,
 } from "@/lib/whatsapp-template-settings";
-import { getDefaultTelegramNewOrderTemplate } from "@/lib/telegram-notify";
+import { getDefaultTelegramNewOrderTemplate } from "@/lib/telegram-templates";
 import {
   saveWhatsappTemplateSettings,
   type WhatsappTemplateSettingsState,
