@@ -53,7 +53,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         take: 250,
       }),
       prisma.order.findMany({
-        where: { status: "pending", submissionSource: { not: "company_preparer" } },
+        where: { status: "pending" },
         orderBy: { createdAt: "desc" },
         take: 200,
         include: {
