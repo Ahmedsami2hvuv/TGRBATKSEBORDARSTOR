@@ -112,6 +112,7 @@ export function StaffPortalMenuClient({
           ليس لديك أي صلاحيات نشطة حالياً. يرجى مراجعة المسؤول.
         </p>
       )}
+      </div>
     </div>
   );
 }
