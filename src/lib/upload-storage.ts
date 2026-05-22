@@ -89,8 +89,8 @@ export async function r2ObjectExistsByUrl(urlOrKey: string | null | undefined): 
 
 // دالة محسنة لضمان إرجاع مسار صالح دوماً
 export function getUploadsRoot(): string {
-  const root = process.env.UPLOADS_ROOT_DIR || (typeof process.cwd === 'function' ? process.cwd() : null) || ".";
-  return String(root);
+  const root = process.env.UPLOADS_ROOT_DIR || (typeof process.cwd === 'function' ? process.cwd() : '.') || ".";
+  return String(root || ".");
 }
 
 // دالة محسنة لضمان عدم تمرير قيم undefined لـ path.join
@@ -98,5 +98,6 @@ export function uploadsAbsoluteDir(subDir: string = ""): string {
   const root = getUploadsRoot();
   // استخدام import ديناميكي لتجنب مشاكل الـ Build
   const path = require('path');
-  return path.join(root, "public", "uploads", String(subDir || ""));
+  const safeSubDir = String(subDir || "");
+  return path.join(String(root), "public", "uploads", safeSubDir);
 }

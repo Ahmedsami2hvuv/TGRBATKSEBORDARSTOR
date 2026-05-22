@@ -129,7 +129,10 @@ async function unlinkUploadIfAny(url: string | null | undefined): Promise<void> 
   if (!u || !u.startsWith("/uploads/")) return;
   try {
     const rel = u.replace(/^\/uploads\/?/, "");
-    await unlink(path.join(getUploadsRoot(), rel));
+    const root = getUploadsRoot();
+    if (!root) return;
+    const absPath = path.join(String(root), rel);
+    await unlink(absPath);
   } catch {}
 }
 
