@@ -11,7 +11,7 @@ import {
 import { ORDER_UPLOADER_ADMIN_LABEL } from "@/lib/order-uploader-label";
 import { prisma } from "@/lib/prisma";
 import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
-import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
+import { pushNotifyAdminsNewPendingOrder, pushNotifyCourierNewAssignment } from "@/lib/web-push-server";
 import {
   MAX_VOICE_NOTE_BYTES,
   saveVoiceNoteUploaded,
