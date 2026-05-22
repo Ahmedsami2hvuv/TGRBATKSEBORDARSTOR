@@ -28,6 +28,7 @@ export function AdminShell({
 }) {
   const [navOpen, setNavOpen] = useState(false);
   const [navWidth, setNavWidth] = useState(320);
+  const [itemScale, setItemScale] = useState(1); // 1 = 100%
   const [isResizing, setIsResizing] = useState(false);
   const [isLg, setIsLg] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(0);
@@ -43,7 +44,22 @@ export function AdminShell({
   const dragThreshold = 7; // px
   const mobileDefaultOpenWidth = Math.min(420, Math.max(320, viewportWidth || 420));
   const NAV_WIDTH_STORAGE_KEY = "kse:admin:navWidth";
+  const NAV_SCALE_STORAGE_KEY = "kse:admin:navScale";
   const maxSidebarWidth = Math.max(sidebarMinWidth, (viewportWidth || 1200) - 8);
+
+  useEffect(() => {
+    try {
+      const rawScale = window.localStorage.getItem(NAV_SCALE_STORAGE_KEY);
+      const parsedScale = rawScale ? Number(rawScale) : NaN;
+      if (Number.isFinite(parsedScale)) setItemScale(parsedScale);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(NAV_SCALE_STORAGE_KEY, String(itemScale));
+    } catch {}
+  }, [itemScale]);
 
   useEffect(() => {
     const mql = window.matchMedia("(min-width: 1024px)");
@@ -260,6 +276,29 @@ export function AdminShell({
             >
               ✕
             </button>
+            {/* أزرار التكبير والتصغير */}
+            <div className="flex items-center gap-1.5 bg-slate-200/50 dark:bg-[#1a1b1e] p-1 rounded-xl border border-slate-300 dark:border-white/20 shadow-sm ml-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setItemScale(prev => Math.max(0.7, prev - 0.05));
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 transition-all active:scale-95 border border-transparent hover:border-red-200"
+                title="تصغير حجم الخيارات"
+              >
+                <span className="text-xl font-black">−</span>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setItemScale(prev => Math.min(1.5, prev + 0.05));
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-sky-50 dark:hover:bg-sky-950/30 hover:text-sky-600 transition-all active:scale-95 border border-transparent hover:border-sky-200"
+                title="تكبير حجم الخيارات"
+              >
+                <span className="text-xl font-black">+</span>
+              </button>
+            </div>
           </div>
           <div className="flex w-8 h-8 rounded-full bg-gradient-to-br from-[#00f3ff] to-[#e028ff] items-center justify-center shadow-[0_0_10px_rgba(224,40,255,0.5)]">
             <span className="text-black font-black text-xs">OR</span>
@@ -275,14 +314,15 @@ export function AdminShell({
                 onClick={() => setNavOpen(false)}
                 className={
                   navItemActive(pathname, SECRET_ADMIN_PATH)
-                    ? `inline-flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"} h-9 rounded-xl bg-sky-100 dark:bg-[#002a3a] border border-sky-400 dark:border-[#00f3ff] text-sky-700 dark:text-[#00f3ff] shadow-sm dark:shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all`
-                    : `inline-flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"} h-9 rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all`
+                    ? `inline-flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"} rounded-xl bg-sky-100 dark:bg-[#002a3a] border border-sky-400 dark:border-[#00f3ff] text-sky-700 dark:text-[#00f3ff] shadow-sm dark:shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all`
+                    : `inline-flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"} rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all`
                 }
+                style={{ height: 36 * itemScale, fontSize: 12 * itemScale }}
               >
-                <span className="text-xl shrink-0" aria-hidden>
+                <span className="shrink-0" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }} aria-hidden>
                   <DynamicIcon iconKey="ui_home" config={icons} fallback="🏠" className="w-6 h-6" />
                 </span>
-                {isCompact ? null : <span className="leading-snug font-medium text-xs block whitespace-nowrap">الرئيسية</span>}
+                {isCompact ? null : <span className="leading-snug font-medium block whitespace-nowrap">الرئيسية</span>}
               </Link>
             </div>
             {isCompact ? null : (
@@ -305,13 +345,14 @@ export function AdminShell({
                     active
                       ? `inline-flex items-center ${
                           isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"
-                        } h-9 rounded-xl bg-purple-100 dark:bg-[#1e102a] border border-purple-400 dark:border-[#e028ff] text-purple-700 dark:text-[#e028ff] shadow-sm dark:shadow-[0_0_15px_rgba(224,40,255,0.4)] transition-all relative`
+                        } rounded-xl bg-purple-100 dark:bg-[#1e102a] border border-purple-400 dark:border-[#e028ff] text-purple-700 dark:text-[#e028ff] shadow-sm dark:shadow-[0_0_15px_rgba(224,40,255,0.4)] transition-all relative`
                       : `inline-flex items-center ${
                           isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"
-                        } h-9 rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all relative`
+                        } rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all relative`
                   }
+                  style={{ height: 36 * itemScale, fontSize: 12 * itemScale }}
                 >
-                  <span className="text-xl shrink-0 relative flex justify-center items-center">
+                  <span className="shrink-0 relative flex justify-center items-center" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }}>
                     <DynamicIcon iconKey={tile.iconKey} config={icons} className="w-6 h-6" />
                     {showPendingBadge ? (
                       <span className="absolute -top-2 -right-2 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-orange-600 px-1 py-0.5 text-[10px] font-black leading-none text-white shadow-[0_0_10px_orange]">
@@ -320,7 +361,7 @@ export function AdminShell({
                     ) : null}
                   </span>
                   {isCompact ? null : (
-                    <span className="leading-snug font-medium text-xs text-slate-700 dark:text-slate-200 block whitespace-nowrap">{tile.label}</span>
+                    <span className="leading-snug font-medium text-slate-700 dark:text-slate-200 block whitespace-nowrap">{tile.label}</span>
                   )}
                 </Link>
               );
