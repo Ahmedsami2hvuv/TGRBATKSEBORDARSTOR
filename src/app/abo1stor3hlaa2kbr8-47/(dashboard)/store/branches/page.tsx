@@ -49,18 +49,19 @@ export default async function BranchesPage(props: {
     take: 500
   });
 
-  const [categories, preparers, rawBranches] = await Promise.all([
+  const [categoriesRaw, preparersRaw, rawBranches] = await Promise.all([
     categoriesPromise,
     preparersPromise,
     branchesPromise
   ]);
 
-  // تحويل البيانات لتكون قابلة للنقل للمتصفح (Serialization)
-  const branches = rawBranches.map(b => ({
+  // تحويل كافة البيانات إلى تنسيق JSON بسيط لضمان استقرار الإنتاج ومنع أخطاء الـ Serialization
+  const categories = JSON.parse(JSON.stringify(categoriesRaw));
+  const preparers = JSON.parse(JSON.stringify(preparersRaw));
+  const branches = JSON.parse(JSON.stringify(rawBranches.map(b => ({
     ...b,
     profitMargin: b.profitMargin ? Number(b.profitMargin) : 0,
-    _count: b._count
-  }));
+  }))));
 
   const icons = await getGlobalIcons();
 

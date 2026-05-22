@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CategoriesPage() {
   // جلب البيانات مباشرة في السيرفر لضمان الاستقرار في الإنتاج
-  const categories = await prisma.storeCategory.findMany({
+  const rawCategories = await prisma.storeCategory.findMany({
     select: {
       id: true,
       name: true,
@@ -16,6 +16,9 @@ export default async function CategoriesPage() {
     },
     orderBy: { sequence: "desc" },
   });
+
+  // تحويل البيانات لنصوص بسيطة (JSON) لمنع أخطاء الـ Serialization
+  const categories = JSON.parse(JSON.stringify(rawCategories));
 
   const icons = await getGlobalIcons();
 
