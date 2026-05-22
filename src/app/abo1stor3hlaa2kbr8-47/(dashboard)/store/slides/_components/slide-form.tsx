@@ -39,6 +39,14 @@ export function SlideForm() {
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
       >
         <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-bold text-slate-400 mr-2">عنوان السلايد (اختياري)</label>
+          <input
+            name="title"
+            placeholder="مثال: عرض الصيف"
+            className="p-3 rounded-xl bg-slate-50 border-none font-bold text-sm"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
           <label className="text-[10px] font-bold text-slate-400 mr-2">تحميل صورة</label>
           <input
             name="imageFile"

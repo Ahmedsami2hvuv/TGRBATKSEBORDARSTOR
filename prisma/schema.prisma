@@ -678,6 +678,7 @@ model StoreProductVariant {
 
 model StoreSlide {
   id        String   @id @default(cuid())
+  title     String   @default("")
   imageUrl  String
   linkUrl   String   @default("")
   active    Boolean  @default(true)

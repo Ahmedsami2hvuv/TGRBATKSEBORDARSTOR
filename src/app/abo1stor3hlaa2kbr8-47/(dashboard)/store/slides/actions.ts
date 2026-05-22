@@ -11,10 +11,12 @@ export async function createSlide(formData: FormData) {
   try {
     const imageUrlField = formData.get("imageUrl");
     const imageFileField = formData.get("imageFile");
+    const titleField = formData.get("title");
     const linkUrlField = formData.get("linkUrl");
     const sequenceField = formData.get("sequence");
 
     let imageUrl = typeof imageUrlField === "string" ? imageUrlField.trim() : "";
+    const title = typeof titleField === "string" ? titleField.trim() : "";
     const linkUrl = typeof linkUrlField === "string" ? linkUrlField.trim() : "";
 
     let sequence = 0;
@@ -52,6 +54,7 @@ export async function createSlide(formData: FormData) {
       await prisma.storeSlide.create({
         data: {
           imageUrl,
+          title,
           linkUrl,
           sequence,
           active: true,
@@ -69,6 +72,7 @@ export async function createSlide(formData: FormData) {
     // 4. تحديث الصفحات
     revalidatePath("/abo1stor3hlaa2kbr8-47/store/slides");
     revalidatePath("/store");
+    revalidatePath("/abo1stor3hlaa2kbr8-47/store");
 
     return { success: true };
   } catch (error: any) {
@@ -85,6 +89,7 @@ export async function toggleSlideStatus(id: string, currentStatus: boolean) {
     });
     revalidatePath("/abo1stor3hlaa2kbr8-47/store/slides");
     revalidatePath("/store");
+    revalidatePath("/abo1stor3hlaa2kbr8-47/store");
     return { success: true };
   } catch (error) {
     console.error("Toggle Status Error:", error);
@@ -99,6 +104,7 @@ export async function deleteSlide(id: string) {
     });
     revalidatePath("/abo1stor3hlaa2kbr8-47/store/slides");
     revalidatePath("/store");
+    revalidatePath("/abo1stor3hlaa2kbr8-47/store");
     return { success: true };
   } catch (error) {
     console.error("Delete Error:", error);
@@ -113,6 +119,7 @@ export async function bulkDeleteSlides(ids: string[]) {
     });
     revalidatePath("/abo1stor3hlaa2kbr8-47/store/slides");
     revalidatePath("/store");
+    revalidatePath("/abo1stor3hlaa2kbr8-47/store");
     return { success: true };
   } catch (error) {
     console.error("Bulk Delete Error:", error);
@@ -132,6 +139,7 @@ export async function updateSlidesOrder(orderedIds: string[]) {
     );
     revalidatePath("/abo1stor3hlaa2kbr8-47/store/slides");
     revalidatePath("/store");
+    revalidatePath("/abo1stor3hlaa2kbr8-47/store");
     return { success: true };
   } catch (error) {
     console.error("Update Order Error:", error);
@@ -141,22 +149,56 @@ export async function updateSlidesOrder(orderedIds: string[]) {
 
 export async function updateSlide(id: string, formData: FormData) {
   try {
-    const linkUrl = formData.get("linkUrl") as string;
-    const sequence = parseInt(formData.get("sequence") as string || "0");
+    const imageUrlField = formData.get("imageUrl");
+    const imageFileField = formData.get("imageFile");
+    const titleField = formData.get("title");
+    const linkUrlField = formData.get("linkUrl");
+    const sequenceField = formData.get("sequence");
+
+    let imageUrl = typeof imageUrlField === "string" ? imageUrlField.trim() : undefined;
+    const title = typeof titleField === "string" ? titleField.trim() : "";
+    const linkUrl = typeof linkUrlField === "string" ? linkUrlField.trim() : "";
+
+    let sequence = 0;
+    if (typeof sequenceField === "string" && sequenceField) {
+      const parsed = parseInt(sequenceField);
+      if (!isNaN(parsed)) sequence = parsed;
+    }
+
+    // معالجة الملف المرفوع إذا وجد
+    if (imageFileField instanceof File && imageFileField.size > 0) {
+      try {
+        const uploadedUrl = await saveStoreSlideImageUploaded(imageFileField, MAX_ORDER_IMAGE_BYTES);
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      } catch (uploadError: any) {
+        console.error("Upload Error:", uploadError);
+        return { success: false, error: "فشل في رفع الصورة: " + (uploadError.message || "حجم الملف كبير جداً") };
+      }
+    }
+
+    const updateData: any = {
+      title,
+      linkUrl,
+      sequence,
+    };
+
+    if (imageUrl) {
+      updateData.imageUrl = imageUrl;
+    }
 
     await prisma.storeSlide.update({
       where: { id },
-      data: {
-        linkUrl: linkUrl || "",
-        sequence,
-      },
+      data: updateData,
     });
 
     revalidatePath("/abo1stor3hlaa2kbr8-47/store/slides");
     revalidatePath("/store");
+    revalidatePath("/abo1stor3hlaa2kbr8-47/store");
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Update Slide Error:", error);
-    throw new Error("فشل في تحديث السلايد");
+    return { success: false, error: "فشل في تحديث السلايد: " + (error.message || "فشل النظام") };
   }
 }
