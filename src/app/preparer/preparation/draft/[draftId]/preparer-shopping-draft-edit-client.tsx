@@ -119,6 +119,19 @@ export function PreparerShoppingDraftEditClient({
 
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
+  // --- إجبار الكيبورد على البقاء مفتوحاً عند الانتقال بين المواد ---
+  useEffect(() => {
+    if (selectedPriceIndex !== null) {
+      // ننتظر جزء بسيط جداً من الثانية لضمان ظهور النافذة في المتصفح ثم نطلب الكيبورد
+      const timer = setTimeout(() => {
+        pricingTextareaRef.current?.focus();
+        // لضمان التمرير في الموبايل ليكون الحقل واضحاً
+        pricingTextareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedPriceIndex]);
+
   // --- Floating Bubble Logic ---
   const [bubblePos, setBubblePos] = useState({ x: 20, y: 150 });
   const [dragging, setDragging] = useState(false);
@@ -538,7 +551,6 @@ export function PreparerShoppingDraftEditClient({
         if (nextVisualItem) {
             setSelectedPriceIndex(nextVisualItem.idx);
             setPricingLinesText("");
-            setTimeout(() => pricingTextareaRef.current?.focus(), 50);
         } else {
             setSelectedPriceIndex(null);
             setPricingLinesText("");
@@ -762,7 +774,6 @@ export function PreparerShoppingDraftEditClient({
                   if (isAssignedToOther || isPricedByOther) return;
                   setSelectedPriceIndex(i);
                   setPricingLinesText(priced ? `${p.buyAlf}` : "");
-                  setTimeout(() => pricingTextareaRef.current?.focus(), 50);
                 }}
                 className={`w-full relative flex items-center gap-2 rounded-xl border-2 p-2 text-start transition min-h-[64px] ${
                   active ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200" :
@@ -856,6 +867,7 @@ export function PreparerShoppingDraftEditClient({
                             <button
                               key={hi}
                               type="button"
+                              onPointerDown={(e) => e.preventDefault()} // منع إغلاق الكيبورد
                               onClick={() => {
                                 setPricingLinesText(String(h.buyAlf));
                                 const buy = h.buyAlf;
@@ -881,6 +893,7 @@ export function PreparerShoppingDraftEditClient({
                                   if (nextVisualItem) {
                                       setSelectedPriceIndex(nextVisualItem.idx);
                                       setPricingLinesText("");
+                                      pricingTextareaRef.current?.focus(); // فوكس فوري
                                   } else {
                                       setSelectedPriceIndex(null);
                                       setPricingLinesText("");
@@ -923,6 +936,7 @@ export function PreparerShoppingDraftEditClient({
                                   <button
                                     key={frac}
                                     type="button"
+                                    onPointerDown={(e) => e.preventDefault()} // يمنع فقدان الفوكس والكيبورد
                                     onClick={() => {
                                       const buy = total;
                                       const sell = calculateAutoSellPrice(products[selectedPriceIndex!]!.line, buy);
@@ -947,6 +961,7 @@ export function PreparerShoppingDraftEditClient({
                                         if (nextVisualItem) {
                                             setSelectedPriceIndex(nextVisualItem.idx);
                                             setPricingLinesText("");
+                                            pricingTextareaRef.current?.focus(); // فوكس فوري للمادة التالية
                                         } else {
                                             setSelectedPriceIndex(null);
                                             setPricingLinesText("");
@@ -982,7 +997,17 @@ export function PreparerShoppingDraftEditClient({
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 mb-3">
-                        <button type="button" onClick={() => applyPricingPanel(true)} className="bg-emerald-600 text-white rounded-2xl py-4 text-sm font-black shadow-xl shadow-emerald-100 active:scale-95 transition-all">حفظ والتالي ⬅️</button>
+                        <button
+                            type="button"
+                            onPointerDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                                applyPricingPanel(true);
+                                pricingTextareaRef.current?.focus();
+                            }}
+                            className="bg-emerald-600 text-white rounded-2xl py-4 text-sm font-black shadow-xl shadow-emerald-100 active:scale-95 transition-all"
+                        >
+                            حفظ والتالي ⬅️
+                        </button>
                         <button type="button" onClick={() => applyPricingPanel(false)} className="bg-indigo-600 text-white rounded-2xl py-4 text-sm font-black">حفظ وإغلاق</button>
                     </div>
 
