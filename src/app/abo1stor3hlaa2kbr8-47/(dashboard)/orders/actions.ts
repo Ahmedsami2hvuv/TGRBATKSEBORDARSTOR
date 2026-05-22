@@ -9,6 +9,7 @@ import {
 } from "@/lib/order-image";
 import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
 import { pushNotifyCourierNewAssignment, pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
+import { notifyTelegramPreparerManualAssignment } from "@/lib/telegram-notify";
 import { revalidatePath } from "next/cache";
 
 export type AssignOrderState = { error?: string; ok?: boolean };
@@ -238,6 +239,13 @@ export async function assignOrderToPreparer(
       orderId: isDraft ? undefined : (sentOrderId || undefined),
       draftId: isDraft ? (orderId || undefined) : undefined
     }).catch(() => {});
+
+    // إرسال إشعار تيليجرام
+    void notifyTelegramPreparerManualAssignment({
+      preparerId,
+      orderId,
+      isDraft,
+    }).catch((e) => console.error("Telegram notify error:", e));
   }
 
   // تحديث الطلب الأصلي ليعكس أول مجهز تم إسناده (للعرض في لوحة التحكم)
@@ -247,6 +255,13 @@ export async function assignOrderToPreparer(
       data: { submittedByCompanyPreparerId: preparerIds[0] }
     });
   }
+
+  // إرسال إشعار تيليجرام للمجهز الجديد
+  void notifyTelegramPreparerManualAssignment({
+    preparerId,
+    orderId: id,
+    isDraft,
+  }).catch((e) => console.error("Telegram notify error (reassign):", e));
 
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);
@@ -315,6 +330,13 @@ export async function reassignOrderToPreparer(
       }
     });
   }
+
+  // إرسال إشعار تيليجرام للمجهز الجديد
+  void notifyTelegramPreparerManualAssignment({
+    preparerId,
+    orderId: id,
+    isDraft,
+  }).catch((e) => console.error("Telegram notify error (reassign):", e));
 
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/${id}`);

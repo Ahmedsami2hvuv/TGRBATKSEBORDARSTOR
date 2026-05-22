@@ -646,6 +646,66 @@ export async function notifyTelegramUnavailableProducts(input: {
   }
 }
 
+/** إشعار للمجهز عند إسناد طلب له يدوياً من الإدارة */
+export async function notifyTelegramPreparerManualAssignment(input: {
+  preparerId: string;
+  orderId: string;
+  isDraft: boolean;
+}): Promise<void> {
+  const preparer = await prisma.companyPreparer.findUnique({ where: { id: input.preparerId } });
+  if (!preparer?.telegramUserId) return;
+
+  let titleLine = "";
+  let summary = "";
+  let customerPhone = "";
+  let orderNumber: number | null = null;
+
+  if (input.isDraft) {
+    const draft = await prisma.companyPreparerShoppingDraft.findUnique({
+      where: { id: input.orderId },
+    });
+    if (!draft) return;
+    titleLine = draft.titleLine;
+    summary = draft.rawListText;
+    customerPhone = draft.customerPhone;
+  } else {
+    const order = await prisma.order.findUnique({
+      where: { id: input.orderId },
+    });
+    if (!order) return;
+    titleLine = `طلب #${order.orderNumber} - ${order.orderType}`;
+    summary = order.summary;
+    customerPhone = order.customerPhone;
+    orderNumber = order.orderNumber;
+  }
+
+  const baseUrl = getPublicAppUrl();
+  const prepUrl = buildCompanyPreparerPortalUrl(preparer.id, preparer.portalToken, baseUrl);
+
+  // بناء رابط الطلب للمجهز
+  let prepOrderUrl = prepUrl;
+  if (input.isDraft) {
+    // الرابط الصحيح للمسودات هو /preparer/preparation/draft/[draftId]
+    prepOrderUrl = `${prepUrl.replace("/preparer", `/preparer/preparation/draft/${input.orderId}`)}`;
+  } else {
+    // الرابط الصحيح للطلبات هو /preparer/order/[orderId]
+    prepOrderUrl = `${prepUrl.replace("/preparer", `/preparer/order/${input.orderId}`)}`;
+  }
+
+  const text = [
+    `\u200F🔔 <b>تم إسناد طلب جديد إليك</b>`,
+    `\u200F<b>العنوان:</b> ${escapeTelegramHtml(titleLine)}`,
+    `\u200F<b>رقم الزبون:</b> \u200E${escapeTelegramHtml(customerPhone)}\u200E`,
+    `\u200F-------------------------`,
+    `\u200F<b>المحتوى:</b>`,
+    `\u200F${escapeTelegramHtml(summary || "—")}`,
+    `\n🔗 <a href="${prepOrderUrl}">فتح الطلب في حسابك</a>`,
+  ].join("\n");
+
+  const preparerBotToken = await getBotTokenByPurpose("preparer");
+  await sendTelegramHtmlToChat(preparer.telegramUserId, text, preparerBotToken, { disable_notification: false });
+}
+
 export function buildTelegramOrderKeyboard(
   orderNumber: number,
   orderId?: string,
