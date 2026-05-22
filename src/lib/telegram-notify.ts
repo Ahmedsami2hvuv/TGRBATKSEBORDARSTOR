@@ -339,8 +339,25 @@ export async function notifyTelegramNewOrder(orderId: string): Promise<void> {
       regionName: order.customerRegion?.name ?? "—"
     }, { omitPhone: true });
 
-    const prepText = `🔔 <b>طلب جديد لمحل تابع لك:</b>\n\n` + bodyLines.join("\n") + `\n\n🔗 <a href="${prepOrderUrl}">فتح الطلب من حسابك</a>`;
-    const prepKb = buildPreparerOrderKeyboard(order.id, order.orderNumber, order.preparerShoppingJson);
+    // تحويل المواد إلى JSON إذا كانت فارغة لكي تظهر كأزرار
+    let shoppingJson = order.preparerShoppingJson;
+    if (!shoppingJson || (Array.isArray(shoppingJson) && shoppingJson.length === 0)) {
+      const summaryItems = order.summary?.split("\n")
+        .map(s => s.trim())
+        .filter(s => s && !s.includes("طلب سريع") && !s.includes("فوري"));
+
+      if (summaryItems && summaryItems.length > 0) {
+        shoppingJson = summaryItems.map(name => ({ name, priced: false, price: 0 }));
+        // تحديث الطلب لمرة واحدة لكي تستمر الأزرار بالعمل
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { preparerShoppingJson: shoppingJson }
+        }).catch(() => {});
+      }
+    }
+
+    const prepText = `🔔 <b>طلب جديد لمحل تابع لك:</b>\n\n` + bodyLines.join("\n") + `\n\nاختر مادة لتسعيرها:`;
+    const prepKb = buildPreparerOrderKeyboard(order.id, order.orderNumber, shoppingJson);
 
     const preparerBotToken = await getBotTokenByPurpose("preparer");
     await sendTelegramMessageWithKeyboardToChat(prep.telegramUserId, prepText, prepKb, preparerBotToken, { disable_notification: false });
