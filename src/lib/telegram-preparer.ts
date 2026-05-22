@@ -50,6 +50,8 @@ export type PreparerTelegramCallback =
   | { kind: "assign_start_by_num"; orderNumber: number }
   | { kind: "price_item"; orderId: string; itemIdx: number }
   | { kind: "add_item"; orderId: string }
+  | { kind: "delete_list"; orderId: string }
+  | { kind: "delete_exec"; orderId: string; itemIdx: number }
   | { kind: "wallet_take" }
   | { kind: "wallet_give" }
   | { kind: "wallet_transfer_start" }
@@ -102,6 +104,12 @@ export function parsePreparerTelegramCallback(raw: string): PreparerTelegramCall
 
   m = /^p_add:(.+)$/.exec(t);
   if (m) return { kind: "add_item", orderId: m[1] };
+
+  m = /^p_del_list:(.+)$/.exec(t);
+  if (m) return { kind: "delete_list", orderId: m[1] };
+
+  m = /^p_del_exec:(.+):(\d+)$/.exec(t);
+  if (m) return { kind: "delete_exec", orderId: m[1], itemIdx: Number(m[2]) };
 
   // دعم الاختصارات من الإشعارات
   m = /^l(\d+)$/.exec(t);
@@ -709,27 +717,61 @@ export async function handlePreparerTelegramCallback(
         const baseUrl = getPublicAppUrl();
         const portalUrl = buildCompanyPreparerPortalUrl(preparer.id, preparer.portalToken, baseUrl);
         const orderUrl = portalUrl.replace("/preparer", `/preparer/order/${order.id}`);
-        const courierLine = order.courier ? `المندوب: ${escapeTelegramHtml(order.courier.name)}` : "";
+        const courierLine = order.courier ? `👤 المندوب: ${escapeTelegramHtml(order.courier.name)}` : "👤 المندوب: (غير محدد)";
 
         const text = [
-          `<b>📦 طلب #${order.orderNumber}</b>`,
+          `<b>تسعير الطلب (#${order.orderNumber}):</b>`,
           `🏪 المحل: ${escapeTelegramHtml(order.shop.name)}`,
           `📍 المنطقة: ${escapeTelegramHtml(order.customerRegion?.name || "—")}`,
-          `💰 السعر: ${formatDinarAsAlf(order.totalAmount || 0)}`,
+          `💰 المجموع الحالي: <b>${formatDinarAsAlf(order.totalAmount || 0)}</b>`,
           `📝 الملاحظة: ${escapeTelegramHtml(order.orderNoteTime || "—")}`,
+          `-------------------------`,
           courierLine,
           `-------------------------`,
-          `اضغط على الرابط أدناه لتجهيز الطلب أو إسناده لمندوب.`
-        ].filter(Boolean).join("\n");
+          `اختر منتجاً لتعديل سعره أو أضف مواد جديدة:`,
+          `🔗 <a href="${orderUrl}">رابط التجهيز الكامل</a>`
+        ].join("\n");
+
+        const kb = buildPreparerOrderKeyboard(order.id, order.orderNumber, order.preparerShoppingJson);
+        // إضافة زر فتح البوابة في نهاية اللوحة
+        kb.inline_keyboard.push([{ text: "🛠️ فتح بوابة التجهيز", url: orderUrl }]);
+
+        await editTelegramMessage(chatId, messageId, text, kb, botToken);
+        return true;
+      }
+      case "delete_list": {
+        const order = await prisma.order.findUnique({ where: { id: parsed.orderId } });
+        if (!order) return true;
+        const items = Array.isArray(order.preparerShoppingJson) ? order.preparerShoppingJson as any[] : [];
 
         const kb: TelegramInlineKeyboard = {
           inline_keyboard: [
-            [{ text: "🛠️ فتح وتجهيز الطلب", url: orderUrl }],
-            [{ text: order.assignedCourierId ? "🔄 تغيير المندوب" : "🧑‍✈️ إسند للمندوب", callback_data: `p_ac:${order.id}` }],
-            [{ text: "⬅️ قائمة الطلبات", callback_data: "p_orders_0" }]
+            ...items.map((item, idx) => ([{
+              text: `🗑️ مسح: ${item.name}`,
+              callback_data: `p_del_exec:${order.id}:${idx}`
+            }])),
+            [{ text: "⬅️ رجوع", callback_data: `p_det:${order.id}` }]
           ]
         };
-        await editTelegramMessage(chatId, messageId, text, kb, botToken);
+
+        await editTelegramMessage(chatId, messageId, "<b>اختر المادة التي ترغب بحذفها من الطلب:</b>", kb, botToken);
+        return true;
+      }
+      case "delete_exec": {
+        const order = await prisma.order.findUnique({ where: { id: parsed.orderId } });
+        if (!order) return true;
+        let items = Array.isArray(order.preparerShoppingJson) ? [...(order.preparerShoppingJson as any[])] : [];
+
+        const removedItem = items[parsed.itemIdx];
+        items = items.filter((_, idx) => idx !== parsed.itemIdx);
+
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { preparerShoppingJson: items }
+        });
+
+        const kb = buildPreparerOrderKeyboard(order.id, order.orderNumber, items);
+        await editTelegramMessage(chatId, messageId, `✅ تم مسح <b>${escapeTelegramHtml(removedItem?.name || "")}</b> من الطلب.`, kb, botToken);
         return true;
       }
       case "cancel_flow": {
@@ -915,13 +957,21 @@ export async function handlePreparerTelegramMessage(
       if (items[payload.itemIdx]) {
         items[payload.itemIdx].price = price;
         items[payload.itemIdx].priced = true;
+
+        // حساب المجموع الجديد تلقائياً
+        const newTotal = items.reduce((sum: number, it: any) => sum + (Number(it.price) || 0), 0);
+
         await prisma.order.update({
           where: { id: order.id },
-          data: { preparerShoppingJson: items }
+          data: {
+            preparerShoppingJson: items,
+            orderSubtotal: new Decimal(newTotal),
+            totalAmount: new Decimal(newTotal)
+          }
         });
         await clearPreparerSession(telegramUserId);
         const kb = buildPreparerOrderKeyboard(order.id, order.orderNumber, items);
-        await sendTelegramMessageWithKeyboardToChat(chatId, `✅ تم تحديث سعر <b>${escapeTelegramHtml(items[payload.itemIdx].name)}</b> إلى <b>${formatDinarAsAlf(price)}</b>`, kb, botToken);
+        await sendTelegramMessageWithKeyboardToChat(chatId, `✅ تم تحديث سعر <b>${escapeTelegramHtml(items[payload.itemIdx].name)}</b> إلى <b>${formatDinarAsAlf(price)}</b>\n💰 المجموع الكلي للطلب: <b>${formatDinarAsAlf(newTotal)}</b>`, kb, botToken);
       }
     }
     return true;

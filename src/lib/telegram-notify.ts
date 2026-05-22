@@ -711,7 +711,13 @@ export function buildPreparerOrderKeyboard(
   const items = Array.isArray(shoppingJson) ? shoppingJson : [];
   const kb: any[][] = [];
 
-  // كل مادة في زر منفصل
+  // الصف الأول: إضافة ومسح (مثل الصورة)
+  kb.push([
+    { text: "➕ إضافة منتج", callback_data: `p_add:${orderId}` },
+    { text: "🗑️ مسح منتج", callback_data: `p_del_list:${orderId}` }
+  ]);
+
+  // قائمة المنتجات
   items.forEach((item: any, idx: number) => {
     const icon = item.priced ? "✅" : "💰";
     const priceStr = item.price ? ` (${formatDinarAsAlf(item.price)})` : "";
@@ -721,10 +727,10 @@ export function buildPreparerOrderKeyboard(
     }]);
   });
 
-  // أزرار التحكم الإضافية
+  // خيارات الإسناد والرجوع
   kb.push([
-    { text: "➕ إضافة مادة", callback_data: `p_add:${orderId}` },
-    { text: "👤 إسناد لمندوب", callback_data: `l${orderNumber}` }
+    { text: "👤 إسناد لمندوب", callback_data: `l${orderNumber}` },
+    { text: "🏠 الرئيسية", callback_data: "p_main" }
   ]);
 
   return { inline_keyboard: kb };
