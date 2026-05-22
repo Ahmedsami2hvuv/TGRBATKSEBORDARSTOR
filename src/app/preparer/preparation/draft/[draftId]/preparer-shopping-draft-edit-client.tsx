@@ -772,7 +772,16 @@ export function PreparerShoppingDraftEditClient({
               >
                 {/* صورة المنتج */}
                 {productImagesMap[p.line.trim().toLowerCase()] && (
-                  <div className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-slate-100 bg-white/10">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setZoomImage({
+                        url: productImagesMap[p.line.trim().toLowerCase()],
+                        title: p.line
+                      });
+                    }}
+                    className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-slate-100 bg-white/10 active:scale-90 transition-transform cursor-zoom-in"
+                  >
                     <img
                       src={resolvePublicAssetSrc(productImagesMap[p.line.trim().toLowerCase()])!}
                       alt=""
@@ -816,7 +825,7 @@ export function PreparerShoppingDraftEditClient({
                     ) : priced ? (
                         <span className={`font-mono text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm ${isOthers ? "bg-slate-200 text-slate-500" : "bg-emerald-500 text-white"}`}>{p.buyAlf}</span>
                     ) : (
-                        <span className="text-[7px] text-slate-400 bg-slate-50 px-1 py-0.5 rounded border border-slate-100 shadow-sm">📝 تسعير</span>
+                        null
                     )}
                 </div>
               </button>
@@ -825,155 +834,170 @@ export function PreparerShoppingDraftEditClient({
         </div>
 
         {selectedPriceIndex !== null && (
-            <div className="mt-4 p-4 bg-white rounded-2xl border-2 border-indigo-500 shadow-xl animate-in zoom-in-95">
-                <p className="text-xs font-black text-slate-500 mb-2">تسعير: {products[selectedPriceIndex]?.line}</p>
-                {pricingErr && <p className="text-[10px] text-rose-600 font-bold mb-2">{pricingErr}</p>}
-
-                {/* اقتراحات الأسعار */}
-                <div className="mb-3">
-                    <p className="text-[10px] font-bold text-slate-400 mb-1">
-                      {(priceHistory[products[selectedPriceIndex]!.line] || []).length > 0 ? "اقتراحات من طلبات سابقة:" : "اقتراحات أسعار شائعة:"}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {(priceHistory[products[selectedPriceIndex]!.line] || [
-                        { buyAlf: 0.5 }, { buyAlf: 0.75 }, { buyAlf: 1 }, { buyAlf: 1.25 }, { buyAlf: 1.5 }, { buyAlf: 2 }, { buyAlf: 3 }, { buyAlf: 5 }
-                      ]).map((h, hi) => (
-                        <button
-                          key={hi}
-                          type="button"
-                          onClick={() => {
-                            setPricingLinesText(String(h.buyAlf));
-                            const buy = h.buyAlf;
-                            const sell = calculateAutoSellPrice(products[selectedPriceIndex!]!.line, buy);
-                            const nextProducts =[...products];
-                            const target = nextProducts[selectedPriceIndex!];
-                            if (target) {
-                              nextProducts[selectedPriceIndex!] = { ...target, buyAlf: buy, sellAlf: sell, pricedBy: preparerName, pricedById: preparerId };
-                              const nextJson = JSON.stringify(nextProducts.map(p => ({
-                                line: p.line,
-                                buyAlf: p.buyAlf === "" ? null : p.buyAlf,
-                                sellAlf: p.sellAlf === "" ? null : p.sellAlf,
-                                pricedBy: p.pricedBy,
-                                pricedById: p.pricedById,
-                                assignedPreparerId: p.assignedPreparerId,
-                                assignedPreparerName: p.assignedPreparerName,
-                              })));
-                              setProducts(nextProducts);
-                              performSave(nextJson);
-                              // الانتقال للتالي تلقائياً عند اختيار مقترح
-                              const currentVisualIdx = orderedForButtons.findIndex(item => item.idx === selectedPriceIndex);
-                              const nextVisualItem = orderedForButtons.slice(currentVisualIdx + 1).find(item => item.p.buyAlf === "" || item.p.sellAlf === "");
-                              if (nextVisualItem) {
-                                  setSelectedPriceIndex(nextVisualItem.idx);
-                                  setPricingLinesText("");
-                              } else {
-                                  setSelectedPriceIndex(null);
-                                  setPricingLinesText("");
-                              }
-                            }
-                          }}
-                          className="px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded text-[10px] font-black"
-                        >
-                          {h.buyAlf} 
-                        </button>
-                      ))}
-                    </div>
-                </div>
-
-                {/* اقتراحات الكسور الذكية (تظهر تلقائياً عند كتابة رقم صحيح) */}
-                <div className="mb-4">
-                  {(() => {
-                    const typedValue = parseFloat(pricingLinesText);
-                    if (isNaN(typedValue) || typedValue <= 0) return null;
-
-                    const base = Math.floor(typedValue);
-                    const fractions = [0, 0.25, 0.5, 0.75];
-
-                    return (
-                      <div className="bg-indigo-50 p-3 rounded-2xl border-2 border-indigo-200 animate-in slide-in-from-top-2 duration-300">
-                        <div className="flex items-center justify-between mb-2 px-1">
-                          <p className="text-[10px] font-black text-indigo-900">إكمال السعر لـ ({base}) :</p>
-                          <span className="text-[9px] font-bold text-indigo-400">انقر للحفظ السريع</span>
+            <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+                <div className="w-full max-w-lg bg-white rounded-t-[2.5rem] sm:rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-10 duration-300 overflow-y-auto max-h-[95vh]">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">واجهة التسعير الذكي</p>
+                            <h3 className="text-sm font-black text-slate-900 leading-tight">{products[selectedPriceIndex]?.line}</h3>
                         </div>
-                        <div className="grid grid-cols-4 gap-2">
-                          {fractions.map(frac => {
-                            const total = base + frac;
-                            // إذا كان الرقم المكتوب هو نفسه الاقتراح، نميزه بلون مختلف أو نخفيه
-                            const isCurrent = total === typedValue;
+                        <button onClick={() => setSelectedPriceIndex(null)} className="size-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-400">✕</button>
+                    </div>
 
-                            return (
-                              <button
-                                key={frac}
-                                type="button"
-                                onClick={() => {
-                                  const buy = total;
-                                  const sell = calculateAutoSellPrice(products[selectedPriceIndex!]!.line, buy);
-                                  const nextProducts = [...products];
-                                  const target = nextProducts[selectedPriceIndex!];
-                                  if (target) {
-                                    nextProducts[selectedPriceIndex!] = { ...target, buyAlf: buy, sellAlf: sell, pricedBy: preparerName, pricedById: preparerId };
-                                    const nextJson = JSON.stringify(nextProducts.map(p => ({
-                                      line: p.line,
-                                      buyAlf: p.buyAlf === "" ? null : p.buyAlf,
-                                      sellAlf: p.sellAlf === "" ? null : p.sellAlf,
-                                      pricedBy: p.pricedBy,
-                                      pricedById: p.pricedById,
-                                      assignedPreparerId: p.assignedPreparerId,
-                                      assignedPreparerName: p.assignedPreparerName,
-                                    })));
-                                    setProducts(nextProducts);
-                                    performSave(nextJson);
+                    {pricingErr && <p className="text-[10px] text-rose-600 font-bold mb-3 p-2 bg-rose-50 rounded-lg border border-rose-100">⚠️ {pricingErr}</p>}
 
-                                    const currentVisualIdx = orderedForButtons.findIndex(item => item.idx === selectedPriceIndex);
-                                    const nextVisualItem = orderedForButtons.slice(currentVisualIdx + 1).find(item => item.p.buyAlf === "" || item.p.sellAlf === "");
-                                    if (nextVisualItem) {
-                                        setSelectedPriceIndex(nextVisualItem.idx);
-                                        setPricingLinesText("");
-                                    } else {
-                                        setSelectedPriceIndex(null);
-                                        setPricingLinesText("");
-                                    }
+                    {/* اقتراحات الأسعار */}
+                    <div className="mb-4">
+                        <p className="text-[10px] font-bold text-slate-400 mb-2">اقتراحات سابقة أو شائعة:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {(priceHistory[products[selectedPriceIndex]!.line] || [
+                            { buyAlf: 0.5 }, { buyAlf: 0.75 }, { buyAlf: 1 }, { buyAlf: 1.25 }, { buyAlf: 1.5 }, { buyAlf: 2 }, { buyAlf: 3 }, { buyAlf: 5 }
+                          ]).map((h, hi) => (
+                            <button
+                              key={hi}
+                              type="button"
+                              onClick={() => {
+                                setPricingLinesText(String(h.buyAlf));
+                                const buy = h.buyAlf;
+                                const sell = calculateAutoSellPrice(products[selectedPriceIndex!]!.line, buy);
+                                const nextProducts =[...products];
+                                const target = nextProducts[selectedPriceIndex!];
+                                if (target) {
+                                  nextProducts[selectedPriceIndex!] = { ...target, buyAlf: buy, sellAlf: sell, pricedBy: preparerName, pricedById: preparerId };
+                                  const nextJson = JSON.stringify(nextProducts.map(p => ({
+                                    line: p.line,
+                                    buyAlf: p.buyAlf === "" ? null : p.buyAlf,
+                                    sellAlf: p.sellAlf === "" ? null : p.sellAlf,
+                                    pricedBy: p.pricedBy,
+                                    pricedById: p.pricedById,
+                                    assignedPreparerId: p.assignedPreparerId,
+                                    assignedPreparerName: p.assignedPreparerName,
+                                  })));
+                                  setProducts(nextProducts);
+                                  performSave(nextJson);
+                                  // الانتقال للتالي تلقائياً عند اختيار مقترح
+                                  const currentVisualIdx = orderedForButtons.findIndex(item => item.idx === selectedPriceIndex);
+                                  const nextVisualItem = orderedForButtons.slice(currentVisualIdx + 1).find(item => item.p.buyAlf === "" || item.p.sellAlf === "");
+                                  if (nextVisualItem) {
+                                      setSelectedPriceIndex(nextVisualItem.idx);
+                                      setPricingLinesText("");
+                                  } else {
+                                      setSelectedPriceIndex(null);
+                                      setPricingLinesText("");
                                   }
-                                }}
-                                className={`py-4 rounded-xl text-sm font-black shadow-md active:scale-95 transition-all flex flex-col items-center justify-center ${
-                                  isCurrent ? "bg-indigo-400 text-white" : "bg-indigo-600 text-white"
-                                }`}
-                              >
-                                <span>{total}</span>
-                                {frac > 0 && <span className="text-[8px] opacity-80">+{frac}</span>}
-                              </button>
-                            );
-                          })}
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-xs font-black active:bg-amber-600 active:text-white transition-all"
+                            >
+                              {h.buyAlf}
+                            </button>
+                          ))}
                         </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                <textarea
-                  ref={pricingTextareaRef}
-                  value={pricingLinesText}
-                  onChange={(e) => setPricingLinesText(e.target.value)}
-                  className={`${inputClass} text-center font-black text-lg`}
-                  placeholder="سعر الشراء "
-                  inputMode="decimal"
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPricingPanel(true); } }}
-                />
-                <div className="space-y-2 mt-3">
-                    <div className="grid grid-cols-2 gap-2">
-                        <button type="button" onClick={() => applyPricingPanel(true)} className="bg-emerald-600 text-white rounded-xl py-3 text-sm font-black shadow-lg shadow-emerald-100 active:scale-95 transition-all">حفظ والتالي ⬅️</button>
-                        <button type="button" onClick={() => applyPricingPanel(false)} className="bg-indigo-600 text-white rounded-xl py-3 text-sm font-black">حفظ وإغلاق</button>
                     </div>
-                    <button type="button" onClick={() => setSelectedPriceIndex(null)} className="w-full bg-slate-100 text-slate-600 rounded-xl py-2 text-xs font-bold">إلغاء</button>
-                    {products[selectedPriceIndex]?.buyAlf !== "" && (
-                      <button
-                        type="button"
-                        onClick={unpriceProduct}
-                        className="w-full bg-rose-50 text-rose-600 border border-rose-200 rounded-xl py-2.5 text-xs font-black active:bg-rose-600 active:text-white transition-all"
-                      >
-                        🗑️ إلغاء التسعير (إرجاع للحالة الأولى)
-                      </button>
-                    )}
+
+                    {/* اقتراحات الكسور الذكية */}
+                    <div className="mb-6">
+                      {(() => {
+                        const typedValue = parseFloat(pricingLinesText);
+                        if (isNaN(typedValue) || typedValue <= 0) return (
+                            <div className="bg-slate-50 p-4 rounded-2xl border-2 border-dashed border-slate-200 text-center">
+                                <p className="text-[10px] font-bold text-slate-400">اكتب الرقم الأول ليظهر لك شريط الكسور هنا...</p>
+                            </div>
+                        );
+
+                        const base = Math.floor(typedValue);
+                        const fractions = [0, 0.25, 0.5, 0.75];
+
+                        return (
+                          <div className="bg-indigo-50 p-4 rounded-2xl border-2 border-indigo-200 animate-in slide-in-from-top-2 duration-300 shadow-inner">
+                            <div className="flex items-center justify-between mb-3 px-1">
+                              <p className="text-[10px] font-black text-indigo-900">إكمال السعر لـ ({base}) :</p>
+                              <span className="text-[9px] font-bold text-indigo-400 animate-pulse">توفير وقت! انقر للكسر</span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2">
+                              {fractions.map(frac => {
+                                const total = base + frac;
+                                const isCurrent = total === typedValue;
+
+                                return (
+                                  <button
+                                    key={frac}
+                                    type="button"
+                                    onClick={() => {
+                                      const buy = total;
+                                      const sell = calculateAutoSellPrice(products[selectedPriceIndex!]!.line, buy);
+                                      const nextProducts = [...products];
+                                      const target = nextProducts[selectedPriceIndex!];
+                                      if (target) {
+                                        nextProducts[selectedPriceIndex!] = { ...target, buyAlf: buy, sellAlf: sell, pricedBy: preparerName, pricedById: preparerId };
+                                        const nextJson = JSON.stringify(nextProducts.map(p => ({
+                                          line: p.line,
+                                          buyAlf: p.buyAlf === "" ? null : p.buyAlf,
+                                          sellAlf: p.sellAlf === "" ? null : p.sellAlf,
+                                          pricedBy: p.pricedBy,
+                                          pricedById: p.pricedById,
+                                          assignedPreparerId: p.assignedPreparerId,
+                                          assignedPreparerName: p.assignedPreparerName,
+                                        })));
+                                        setProducts(nextProducts);
+                                        performSave(nextJson);
+
+                                        const currentVisualIdx = orderedForButtons.findIndex(item => item.idx === selectedPriceIndex);
+                                        const nextVisualItem = orderedForButtons.slice(currentVisualIdx + 1).find(item => item.p.buyAlf === "" || item.p.sellAlf === "");
+                                        if (nextVisualItem) {
+                                            setSelectedPriceIndex(nextVisualItem.idx);
+                                            setPricingLinesText("");
+                                        } else {
+                                            setSelectedPriceIndex(null);
+                                            setPricingLinesText("");
+                                        }
+                                      }
+                                    }}
+                                    className={`py-5 rounded-2xl text-base font-black shadow-md active:scale-95 transition-all flex flex-col items-center justify-center ${
+                                      isCurrent ? "bg-indigo-400 text-white" : "bg-indigo-600 text-white"
+                                    }`}
+                                  >
+                                    <span>{total}</span>
+                                    {frac > 0 && <span className="text-[10px] opacity-80">+{frac}</span>}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    <div className="relative mb-6">
+                        <textarea
+                          ref={pricingTextareaRef}
+                          value={pricingLinesText}
+                          onChange={(e) => setPricingLinesText(e.target.value)}
+                          className={`${inputClass} text-center font-black text-2xl h-16 pt-3 border-2 border-indigo-100 focus:border-indigo-500`}
+                          placeholder="0.00"
+                          inputMode="decimal"
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPricingPanel(true); } }}
+                        />
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">ألف د.ع</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                        <button type="button" onClick={() => applyPricingPanel(true)} className="bg-emerald-600 text-white rounded-2xl py-4 text-sm font-black shadow-xl shadow-emerald-100 active:scale-95 transition-all">حفظ والتالي ⬅️</button>
+                        <button type="button" onClick={() => applyPricingPanel(false)} className="bg-indigo-600 text-white rounded-2xl py-4 text-sm font-black">حفظ وإغلاق</button>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        {products[selectedPriceIndex]?.buyAlf !== "" && (
+                          <button
+                            type="button"
+                            onClick={unpriceProduct}
+                            className="w-full bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl py-3 text-xs font-black active:bg-rose-600 active:text-white transition-all"
+                          >
+                            🗑️ مسح السعر الحالي
+                          </button>
+                        )}
+                        <button type="button" onClick={() => setSelectedPriceIndex(null)} className="w-full bg-slate-50 text-slate-500 rounded-2xl py-3 text-xs font-bold">إلغاء وتراجع</button>
+                    </div>
                 </div>
             </div>
         )}
