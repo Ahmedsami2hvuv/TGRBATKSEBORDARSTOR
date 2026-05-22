@@ -29,10 +29,10 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
       {slides.length > 1 && (
         <button
           onClick={() => setCurrent((prev) => (prev - 1 + slides.length) % slides.length)}
-          className="flex flex-none w-7 md:w-14 h-24 md:h-56 rounded-2xl md:rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none items-center justify-center text-slate-400 hover:text-violet-600 hover:border-violet-200 dark:hover:border-violet-800 transition-all duration-300 active:scale-90 z-10 cursor-pointer"
+          className="flex flex-none w-12 md:w-20 h-36 md:h-80 rounded-[2.5rem] md:rounded-[4.5rem] bg-violet-600 text-white shadow-[0_20px_50px_-12px_rgba(124,58,237,0.5)] items-center justify-center hover:bg-violet-700 hover:scale-105 transition-all duration-500 active:scale-90 z-10 cursor-pointer group/btn border-4 border-white dark:border-slate-900"
           title="السابق"
         >
-          <span className="text-2xl md:text-4xl font-light leading-none">›</span>
+          <span className="text-6xl md:text-9xl font-black leading-none pb-4 transition-transform group-hover/btn:scale-110 drop-shadow-2xl">›</span>
         </button>
       )}
 
@@ -93,10 +93,10 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
       {slides.length > 1 && (
         <button
           onClick={() => setCurrent((prev) => (prev + 1) % slides.length)}
-          className="flex flex-none w-7 md:w-14 h-24 md:h-56 rounded-2xl md:rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none items-center justify-center text-slate-400 hover:text-violet-600 hover:border-violet-200 dark:hover:border-violet-800 transition-all duration-300 active:scale-90 z-10 cursor-pointer"
+          className="flex flex-none w-12 md:w-20 h-36 md:h-80 rounded-[2.5rem] md:rounded-[4.5rem] bg-violet-600 text-white shadow-[0_20px_50px_-12px_rgba(124,58,237,0.5)] items-center justify-center hover:bg-violet-700 hover:scale-105 transition-all duration-500 active:scale-90 z-10 cursor-pointer group/btn border-4 border-white dark:border-slate-900"
           title="التالي"
         >
-          <span className="text-2xl md:text-4xl font-light leading-none">‹</span>
+          <span className="text-6xl md:text-9xl font-black leading-none pb-4 transition-transform group-hover/btn:scale-110 drop-shadow-2xl">‹</span>
         </button>
       )}
     </div>

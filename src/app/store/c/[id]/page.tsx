@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { CustomProductRequest } from "@/components/custom-product-request";
 import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
+import { StoreSlider } from "../../_components/store-slider";
 
 export const dynamic = "force-dynamic";
 
@@ -104,8 +105,19 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
   const params = await props.params;
   const id = params.id;
 
+  const slides = await prisma.storeSlide.findMany({
+    where: { active: true },
+    orderBy: { sequence: "asc" }
+  });
+
   return (
     <div className="space-y-4 md:space-y-8" dir="rtl">
+      {slides.length > 0 && (
+        <section className="mb-6 md:mb-10">
+          <StoreSlider slides={slides.map(s => ({ id: s.id, imageUrl: s.imageUrl, linkUrl: s.linkUrl }))} />
+        </section>
+      )}
+
       <Suspense fallback={
         <div className="h-32 md:h-48 bg-white dark:bg-slate-900 rounded-[2rem] md:rounded-[3rem] animate-pulse" />
       }>

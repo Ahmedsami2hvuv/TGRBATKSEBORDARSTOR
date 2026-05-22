@@ -3,13 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CustomProductRequest } from "@/components/custom-product-request";
 import { ProductListClient } from "./product-list-client";
+import { StoreSlider } from "../../_components/store-slider";
 
 export const revalidate = 3600; // تحديث الصفحة كل ساعة بدلاً من جلبها في كل ثانية
 
 export default async function BranchPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
 
-  const [branch, storeSettings] = await Promise.all([
+  const [branch, storeSettings, slides] = await Promise.all([
     prisma.storeBranch.findUnique({
       where: { id },
       select: {
@@ -26,6 +27,10 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
     prisma.uISystemSetting.findUnique({
       where: { target_section: { target: "customer", section: "store_general" } },
       select: { config: true }
+    }),
+    prisma.storeSlide.findMany({
+      where: { active: true },
+      orderBy: { sequence: "asc" }
     })
   ]);
 
@@ -37,6 +42,12 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
 
   return (
     <div className="space-y-6 md:space-y-10 pb-10 px-2" dir="rtl">
+      {slides.length > 0 && (
+        <section className="mb-6 md:mb-10">
+          <StoreSlider slides={slides.map(s => ({ id: s.id, imageUrl: s.imageUrl, linkUrl: s.linkUrl }))} />
+        </section>
+      )}
+
       <nav className="flex flex-wrap items-center gap-2 text-xs md:text-sm font-bold text-slate-400 mb-4">
         <Link href="/store" className="hover:text-violet-600 transition">🏠 المتجر</Link>
         <span>/</span>
