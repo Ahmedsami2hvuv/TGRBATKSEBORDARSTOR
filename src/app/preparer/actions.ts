@@ -18,7 +18,7 @@ import { MAX_ORDER_IMAGE_BYTES, saveOrderImageUploaded, saveShopDoorPhotoUploade
 import { deleteFromR2 } from "@/lib/upload-storage";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
-import { notifyTelegramNewOrder, notifyTelegramOrderPrepared, notifyTelegramUnavailableProducts } from "@/lib/telegram-notify";
+import { notifyTelegramNewOrder, notifyTelegramOrderPrepared, notifyTelegramUnavailableProducts, notifyTelegramNewPreparerShoppingOrder } from "@/lib/telegram-notify";
 import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 import { ADMIN_OFFICE_LABEL, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
 import { getBotTokenByPurpose } from "@/lib/telegram-bots";
@@ -479,6 +479,7 @@ export async function submitPreparerShoppingDraft(
     }
 
     revalidatePath("/preparer");
+    void notifyTelegramNewPreparerShoppingOrder(order.id);
     return { ok: true, orderNumber: order.orderNumber };
   } catch (e) {
     console.error(e);
@@ -658,6 +659,7 @@ export async function submitPreparerOrder(
     void pushNotifyAdminsNewPendingOrder(order.orderNumber);
 
     revalidatePath("/preparer");
+    void notifyTelegramNewPreparerShoppingOrder(order.id);
     return { ok: true, orderNumber: order.orderNumber };
   } catch (e) {
     console.error("Submit Order Error:", e);

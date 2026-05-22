@@ -360,6 +360,37 @@ export async function notifyTelegramNewOrder(orderId: string): Promise<void> {
   }
 }
 
+/** إشعار خاص عند إكمال قائمة تجهيز تسوق كاملة من قبل المجهزين */
+export async function notifyTelegramNewPreparerShoppingOrder(orderId: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { shop: true, customer: true, customerRegion: true }
+  });
+  if (!order) return;
+
+  const bodyLines = await formatOrderBodyLines({
+    ...order,
+    shopName: order.shop.name,
+    customerName: order.customer?.name ?? "—",
+    regionName: order.customerRegion?.name ?? "—"
+  });
+
+  const text = [
+    `\u200F📦 <b>تم إكمال تجهيز قائمة تسوق جديدة</b>`,
+    `\u200F🔢 <b>رقم الطلب:</b> \u200E#${order.orderNumber}\u200E`,
+    ...bodyLines.filter(l => !l.includes(String(order.orderNumber))),
+    `\u200F-------------------------`,
+    `\u200F<b>تفاصيل المواد المجهزة:</b>`,
+    `\u200F${order.summary || "—"}`,
+    `\u200F-------------------------`,
+    `\u200F🔗 <a href="${getPublicAppUrl()}/abo1stor3hlaa2kbr8-47/orders/${order.id}">فتح في لوحة الإدارة</a>`
+  ].join("\n");
+
+  const notificationBotToken = await getBotTokenByPurpose("notification");
+  const kb = buildTelegramOrderKeyboard(order.orderNumber, order.id);
+  await sendTelegramMessageWithKeyboard(text, kb, notificationBotToken);
+}
+
 export async function formatNewOrderTelegramHtml(input: any, options?: any): Promise<string> {
   const lines = await formatOrderBodyLines(input, options);
   if (!options?.omitAdminLink) {
