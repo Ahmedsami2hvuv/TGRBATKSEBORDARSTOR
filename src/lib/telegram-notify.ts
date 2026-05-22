@@ -682,15 +682,16 @@ export async function notifyTelegramPreparerManualAssignment(input: {
   const baseUrl = getPublicAppUrl();
   const prepUrl = buildCompanyPreparerPortalUrl(preparer.id, preparer.portalToken, baseUrl);
 
-  // بناء رابط الطلب للمجهز
-  let prepOrderUrl = prepUrl;
+  // بناء رابط الطلب للمجهز بشكل آمن باستخدام URL object
+  const u = new URL(prepUrl);
   if (input.isDraft) {
     // الرابط الصحيح للمسودات هو /preparer/preparation/draft/[draftId]
-    prepOrderUrl = `${prepUrl.replace("/preparer", `/preparer/preparation/draft/${input.orderId}`)}`;
+    u.pathname = `/preparer/preparation/draft/${input.orderId}`;
   } else {
     // الرابط الصحيح للطلبات هو /preparer/order/[orderId]
-    prepOrderUrl = `${prepUrl.replace("/preparer", `/preparer/order/${input.orderId}`)}`;
+    u.pathname = `/preparer/order/${input.orderId}`;
   }
+  const prepOrderUrl = u.toString();
 
   const text = [
     `\u200F🔔 <b>تم إسناد طلب جديد إليك</b>`,

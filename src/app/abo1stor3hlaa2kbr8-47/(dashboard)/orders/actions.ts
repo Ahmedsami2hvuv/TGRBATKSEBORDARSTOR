@@ -122,10 +122,10 @@ export async function assignOrderToPreparer(
             const isPriced = p.buyAlf && p.buyAlf !== "0";
             if (ext) {
                 if ((!ext.buyAlf || ext.buyAlf === "0") && isPriced) {
-                    ext.buyAlf = p.buyAlf; ext.sellAlf = p.sellAlf; ext.pricedBy = r.preparer.name;
+                    ext.buyAlf = p.buyAlf; ext.sellAlf = p.sellAlf; ext.pricedBy = r.preparer?.name || "—";
                 }
             } else {
-                mergedProducts.push({...p, pricedBy: isPriced ? r.preparer.name : null});
+                mergedProducts.push({...p, pricedBy: isPriced ? (r.preparer?.name || "—") : null});
             }
         });
     });
@@ -243,8 +243,8 @@ export async function assignOrderToPreparer(
     // إرسال إشعار تيليجرام
     void notifyTelegramPreparerManualAssignment({
       preparerId,
-      orderId,
-      isDraft,
+      orderId: unassignedDraftToUse || (isDraft ? orderId : (sentOrderId || orderId)),
+      isDraft: isDraft || !!unassignedDraftToUse,
     }).catch((e) => console.error("Telegram notify error:", e));
   }
 
@@ -255,13 +255,6 @@ export async function assignOrderToPreparer(
       data: { submittedByCompanyPreparerId: preparerIds[0] }
     });
   }
-
-  // إرسال إشعار تيليجرام للمجهز الجديد
-  void notifyTelegramPreparerManualAssignment({
-    preparerId,
-    orderId: id,
-    isDraft,
-  }).catch((e) => console.error("Telegram notify error (reassign):", e));
 
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);
