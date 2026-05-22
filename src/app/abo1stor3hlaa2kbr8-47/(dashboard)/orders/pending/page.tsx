@@ -41,8 +41,8 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     const activeTab = sp.tab ?? "new";
     const assignOrder = (sp.assignOrder ?? "").trim();
 
-    // جلب كافة المسودات النشطة مع المناطق
-    const [allActiveDrafts, newOrders, preparedOrders, couriers, shops, preparers, icons] = await Promise.all([
+    // 1. جلب البيانات الثقيلة أولاً (الطلبات والمسودات)
+    const [allActiveDrafts, allPendingOrders] = await Promise.all([
       prisma.companyPreparerShoppingDraft.findMany({
         where: { status: { in: ["draft", "priced"] } },
         include: {
@@ -55,19 +55,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       prisma.order.findMany({
         where: { status: "pending" },
         orderBy: { createdAt: "desc" },
-        take: 200,
-        include: {
-          shop: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
-          submittedBy: { select: { id: true, name: true } },
-          customerRegion: { select: { id: true, name: true } },
-          customer: { select: { id: true, customerLocationUrl: true, customerLandmark: true, customerDoorPhotoUrl: true, alternatePhone: true } },
-          moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true } },
-        },
-      }),
-      prisma.order.findMany({
-        where: { status: "pending", submissionSource: "company_preparer" },
-        orderBy: { createdAt: "desc" },
-        take: 200,
+        take: 300,
         include: {
           shop: { select: { id: true, name: true, region: { select: { id: true, name: true } } } },
           submittedBy: { select: { id: true, name: true } },
@@ -77,6 +65,10 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
           moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true } },
         },
       }),
+    ]);
+
+    // 2. جلب البيانات المساعدة (Metadata) بعد الانتهاء من الثقيلة لتقليل الضغط على الـ Connection Pool
+    const [couriers, shops, preparers, icons] = await Promise.all([
       prisma.courier.findMany({
         where: courierAssignableWhere,
         orderBy: { name: "asc" },
@@ -90,6 +82,10 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       }),
       getGlobalIcons(),
     ]);
+
+    // تقسيم الطلبات برمجياً
+    const newOrders = allPendingOrders;
+    const preparedOrders = allPendingOrders.filter(o => o.submissionSource === "company_preparer");
 
     // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
     const safeAllActiveDrafts = serializePrisma(allActiveDrafts);
