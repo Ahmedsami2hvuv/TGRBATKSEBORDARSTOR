@@ -65,11 +65,14 @@ export async function saveVoiceNoteUploaded(
   // إذا حدث، نحاول fallback إلى رفع ملف (قد يفشل على Railway بدون Volume).
   try {
     const absDir = uploadsAbsoluteDir("voice-notes");
-    const absFile = path.join(absDir, name);
+    if (!absDir) throw new Error("ABS_DIR_UNDEFINED");
+
+    const absFile = path.join(String(absDir), name);
     await mkdir(absDir, { recursive: true });
     await writeFile(absFile, buf);
     return rel;
-  } catch {
+  } catch (e) {
+    console.error("Voice storage failure:", e);
     throw new Error("VOICE_STORAGE_FAILED");
   }
 }
