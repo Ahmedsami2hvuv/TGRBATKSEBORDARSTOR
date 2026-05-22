@@ -7,6 +7,7 @@ interface Slide {
   id: string;
   imageUrl: string;
   linkUrl: string;
+  title?: string | null;
 }
 
 export function StoreSlider({ slides }: { slides: Slide[] }) {
@@ -23,55 +24,85 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
 
   if (slides.length === 0) return null;
 
-  return (
-    <div className="flex items-center gap-2 md:gap-6 group">
-      {/* Previous Button - Right Side (RTL) */}
-      {slides.length > 1 && (
-        <button
-          onClick={() => setCurrent((prev) => (prev - 1 + slides.length) % slides.length)}
-          className="flex flex-none w-12 md:w-20 h-36 md:h-80 rounded-[2.5rem] md:rounded-[4.5rem] bg-violet-600 text-white shadow-[0_20px_50px_-12px_rgba(124,58,237,0.5)] items-center justify-center hover:bg-violet-700 hover:scale-105 transition-all duration-500 active:scale-90 z-10 cursor-pointer group/btn border-4 border-white dark:border-slate-900"
-          title="السابق"
-        >
-          <span className="text-6xl md:text-9xl font-black leading-none pb-4 transition-transform group-hover/btn:scale-110 drop-shadow-2xl">›</span>
-        </button>
-      )}
+  const nextSlide = () => setCurrent((prev) => (prev + 1) % slides.length);
+  const prevSlide = () => setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
 
+  return (
+    <div
+      className="relative group w-full px-1 md:px-4"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       {/* Main Slider Area */}
-      <div
-        className="relative flex-1 aspect-[21/9] md:aspect-[25/9] overflow-hidden rounded-[2rem] md:rounded-[3rem] shadow-2xl shadow-slate-200/50 dark:shadow-none"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-      >
+      <div className="relative aspect-[16/9] md:aspect-[25/8] overflow-hidden rounded-[2rem] md:rounded-[3rem] shadow-xl shadow-slate-200/50 dark:shadow-none border-2 border-white dark:border-slate-800 bg-slate-100 dark:bg-slate-900">
         {slides.map((slide, index) => (
           <div
             key={slide.id}
-            className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
-              index === current ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-110 -rotate-1 pointer-events-none"
+            className={`absolute inset-0 transition-all duration-700 ease-in-out ${
+              index === current ? "opacity-100 scale-100 translate-x-0" : "opacity-0 scale-105 translate-x-4 pointer-events-none"
             }`}
           >
-            {slide.linkUrl ? (
-              <Link href={slide.linkUrl} className="block w-full h-full relative">
-                <img
-                  src={slide.imageUrl}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  loading={index === 0 ? "eager" : "lazy"}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-              </Link>
-            ) : (
-              <div className="w-full h-full relative">
-                <img
-                  src={slide.imageUrl}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  loading={index === 0 ? "eager" : "lazy"}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-              </div>
-            )}
+            <div className="relative w-full h-full">
+              {slide.linkUrl ? (
+                <Link href={slide.linkUrl} className="block w-full h-full relative">
+                  <img
+                    src={slide.imageUrl}
+                    alt={slide.title || ""}
+                    className="w-full h-full object-cover"
+                    loading={index === 0 ? "eager" : "lazy"}
+                  />
+                  {/* Overlay for Title */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  {slide.title && (
+                    <div className="absolute bottom-10 right-6 left-6 text-right animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+                      <h2 className="text-white text-xl md:text-3xl font-black drop-shadow-lg line-clamp-2">
+                        {slide.title}
+                      </h2>
+                    </div>
+                  )}
+                </Link>
+              ) : (
+                <>
+                  <img
+                    src={slide.imageUrl}
+                    alt={slide.title || ""}
+                    className="w-full h-full object-cover"
+                    loading={index === 0 ? "eager" : "lazy"}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  {slide.title && (
+                    <div className="absolute bottom-10 right-6 left-6 text-right animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+                      <h2 className="text-white text-xl md:text-3xl font-black drop-shadow-lg line-clamp-2">
+                        {slide.title}
+                      </h2>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         ))}
+
+        {/* Navigation Buttons Overlay */}
+        {slides.length > 1 && (
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-3 md:px-6 z-20 pointer-events-none" dir="ltr">
+            {/* Left Button (السهم لليسار) */}
+            <button
+              onClick={prevSlide}
+              className="w-10 h-10 md:w-14 md:h-14 flex items-center justify-center rounded-full bg-white/20 hover:bg-violet-600 backdrop-blur-md text-white border border-white/40 shadow-lg transition-all duration-300 hover:scale-110 active:scale-90 pointer-events-auto cursor-pointer"
+            >
+              <span className="text-2xl md:text-4xl font-black pb-1 leading-none">‹</span>
+            </button>
+
+            {/* Right Button (السهم لليمين) */}
+            <button
+              onClick={nextSlide}
+              className="w-10 h-10 md:w-14 md:h-14 flex items-center justify-center rounded-full bg-white/20 hover:bg-violet-600 backdrop-blur-md text-white border border-white/40 shadow-lg transition-all duration-300 hover:scale-110 active:scale-90 pointer-events-auto cursor-pointer"
+            >
+              <span className="text-2xl md:text-4xl font-black pb-1 leading-none">›</span>
+            </button>
+          </div>
+        )}
 
         {/* Navigation Dots */}
         {slides.length > 1 && (
@@ -80,25 +111,14 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
               <button
                 key={index}
                 onClick={() => setCurrent(index)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  index === current ? "w-8 bg-white" : "w-2 bg-white/50"
-                }`}
+                className={`transition-all duration-500 rounded-full ${
+                  index === current ? "w-10 bg-white" : "w-2 bg-white/40"
+                } h-1.5`}
               />
             ))}
           </div>
         )}
       </div>
-
-      {/* Next Button - Left Side (RTL) */}
-      {slides.length > 1 && (
-        <button
-          onClick={() => setCurrent((prev) => (prev + 1) % slides.length)}
-          className="flex flex-none w-12 md:w-20 h-36 md:h-80 rounded-[2.5rem] md:rounded-[4.5rem] bg-violet-600 text-white shadow-[0_20px_50px_-12px_rgba(124,58,237,0.5)] items-center justify-center hover:bg-violet-700 hover:scale-105 transition-all duration-500 active:scale-90 z-10 cursor-pointer group/btn border-4 border-white dark:border-slate-900"
-          title="التالي"
-        >
-          <span className="text-6xl md:text-9xl font-black leading-none pb-4 transition-transform group-hover/btn:scale-110 drop-shadow-2xl">‹</span>
-        </button>
-      )}
     </div>
   );
 }
