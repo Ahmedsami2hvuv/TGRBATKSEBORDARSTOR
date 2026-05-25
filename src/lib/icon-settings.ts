@@ -282,7 +282,7 @@ export const DEFAULT_ICONS: GlobalIconsConfig = {
     type: "emoji"
   },
   "ui_employee": {
-    url: "👨🏼‍💻",
+    url: "👤",
     type: "emoji"
   },
   "ui_ai": {
