@@ -29,7 +29,7 @@ export function cleanIconUrl(url: string): string {
 export function isLottieDirectAssetUrl(url: string): boolean {
   if (!url) return false;
   const cleaned = cleanIconUrl(url).toLowerCase();
-  return cleaned.includes("lottie") || cleaned.endsWith(".json");
+  return cleaned.includes("lottie") || cleaned.endsWith(".json") || cleaned.endsWith(".lottie");
 }
 
 /**
@@ -40,8 +40,8 @@ export function getLottieDisplayUrl(url: string): string {
 
   // لروابط lottie.host، نحولها لرابط الـ Embed المستقر جداً
   if (cleaned.includes("lottie.host") && !cleaned.includes("/embed/")) {
-    // يحول من: https://lottie.host/xxxx/yyyy.json
-    // إلى: https://lottie.host/embed/xxxx/yyyy.json
+    // إذا كان الرابط ينتهي بـ .lottie، يفضل استخدامه كما هو مع مشغل dotLottie أو التأكد من أن الـ embed يدعمه
+    // لكن للضمان، سنحوله لصيغة الـ embed العالمية للموقع
     return cleaned.replace("lottie.host/", "lottie.host/embed/");
   }
 

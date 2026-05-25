@@ -43,6 +43,9 @@ export function DynamicIcon({
   // فحص ذكي: إذا كان الرابط يحتوي على lottie أو gif، نحدد طريقة العرض
   const isLottie = isLottieDirectAssetUrl(iconUrl) || resolvedIcon.type === 'lottie';
   const isGif = iconUrl.toLowerCase().endsWith('.gif') || resolvedIcon.type === 'gif';
+
+  // روابط lottie.host تدعم الـ embed بشكل ممتاز لكل الصيغ بما فيها .lottie والـ json
+  // نستخدم الـ embed دائماً لهذه الروابط لضمان التوافق العالي في المربعات
   const displayUrl = getLottieDisplayUrl(iconUrl);
   const isEmbed = displayUrl.includes("/embed/");
   const hasFillClass =
