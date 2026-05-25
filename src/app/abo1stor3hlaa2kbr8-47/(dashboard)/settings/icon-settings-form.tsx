@@ -15,6 +15,7 @@ const ICON_KEYS = [
   { id: "ui_user", label: "أيقونة المستخدم/العميل" },
   { id: "ui_courier", label: "أيقونة المندوب" },
   { id: "ui_preparer", label: "أيقونة المجهز" },
+  { id: "ui_employee", label: "أيقونة الموظف" },
   { id: "ui_shop", label: "أيقونة المحل" },
   { id: "ui_package", label: "أيقونة الطرد/المنتج" },
   { id: "ui_note", label: "أيقونة الملاحظات 📝" },

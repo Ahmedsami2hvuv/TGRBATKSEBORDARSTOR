@@ -12,7 +12,7 @@ export type GlobalIconsConfig = Record<string, IconConfig>;
 
 export { isLottieDirectAssetUrl };
 
-const CLIENT_ICONS_CACHE_KEY = "kse:global-icons-cache:v1";
+const CLIENT_ICONS_CACHE_KEY = "kse:global-icons-cache:v2";
 const CLIENT_ICONS_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 const SERVER_ICONS_CACHE_MAX_AGE_MS = 60 * 1000;
 
