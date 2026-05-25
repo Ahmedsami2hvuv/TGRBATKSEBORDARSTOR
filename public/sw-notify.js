@@ -1,4 +1,10 @@
 /* Enhanced Service Worker for Notifications - KSE BORDAR */
+
+// إضافة مستمع الرسائل في البداية لتجنب تحذير المتصفح
+self.addEventListener("message", (event) => {
+  // يمكن استخدامه لاحقاً للتحكم في الـ Worker من التطبيق
+});
+
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
 });

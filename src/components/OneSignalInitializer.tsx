@@ -12,11 +12,14 @@ export function OneSignalInitializer({ externalId }: { externalId?: string }) {
         const OneSignal = (window as any).OneSignal;
         if (OneSignal) {
           try {
-            await OneSignal.init({
-              appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
-              allowLocalhostAsSecureOrigin: true,
-              serviceWorkerPath: "OneSignalSDKWorker.js",
-            });
+            // التحقق مما إذا كان قد تم التهيئة مسبقاً لتجنب الخطأ
+            if (!OneSignal.initialized) {
+              await OneSignal.init({
+                appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
+                allowLocalhostAsSecureOrigin: true,
+                serviceWorkerPath: "OneSignalSDKWorker.js",
+              });
+            }
 
             if (externalId) {
               await OneSignal.login(externalId);
