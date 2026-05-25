@@ -12,7 +12,7 @@ export type GlobalIconsConfig = Record<string, IconConfig>;
 
 export { isLottieDirectAssetUrl };
 
-const CLIENT_ICONS_CACHE_KEY = "kse:global-icons-cache:v2";
+const CLIENT_ICONS_CACHE_KEY = "kse:global-icons-cache:v4";
 const CLIENT_ICONS_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 const SERVER_ICONS_CACHE_MAX_AGE_MS = 60 * 1000;
 
@@ -281,7 +281,7 @@ export const DEFAULT_ICONS: GlobalIconsConfig = {
     url: "🍎",
     type: "emoji"
   },
-  "ui_employee": {
+  "ui_staff_member": {
     url: "👤",
     type: "emoji"
   },

@@ -17,7 +17,7 @@ export const ADMIN_TILES: AdminTile[] = [
   { slug: "shops", label: "المحلات", iconKey: "ui_shops", href: "/abo1stor3hlaa2kbr8-47/shops" },
   { slug: "couriers", label: "المندوبين", iconKey: "ui_courier", href: "/abo1stor3hlaa2kbr8-47/couriers" },
   { slug: "preparers", label: "المجهزين", iconKey: "ui_preparer", href: "/abo1stor3hlaa2kbr8-47/preparers" },
-  { slug: "employees", label: "الموظفين", iconKey: "ui_employee", href: "/abo1stor3hlaa2kbr8-47/employees" },
+  { slug: "employees", label: "الموظفين", iconKey: "ui_staff_member", href: "/abo1stor3hlaa2kbr8-47/employees" },
   { slug: "suppliers", label: "الموردين", iconKey: "ui_supplier", href: "/abo1stor3hlaa2kbr8-47/suppliers" },
   { slug: "reports", label: "التقارير", iconKey: "ui_chart", href: "/abo1stor3hlaa2kbr8-47/reports" },
   { slug: "customers", label: "بيانات الزبائن", iconKey: "ui_users", href: "/abo1stor3hlaa2kbr8-47/customers" },
