@@ -21,8 +21,6 @@ export const ADMIN_TILES: AdminTile[] = [
   { slug: "suppliers", label: "الموردين", iconKey: "ui_supplier", href: "/abo1stor3hlaa2kbr8-47/suppliers" },
   { slug: "reports", label: "التقارير", iconKey: "ui_chart", href: "/abo1stor3hlaa2kbr8-47/reports" },
   { slug: "customers", label: "بيانات الزبائن", iconKey: "ui_users", href: "/abo1stor3hlaa2kbr8-47/customers" },
-  { slug: "ai-settings", label: "مساعد أبو الأكبر (AI)", iconKey: "ui_ai", href: "/abo1stor3hlaa2kbr8-47/settings/ai" },
-  { slug: "settings", label: "الإعدادات", iconKey: "ui_settings", href: "/abo1stor3hlaa2kbr8-47/settings" },
   { slug: "archived-orders", label: "الطلبات المؤرشفة", iconKey: "ui_package", href: "/abo1stor3hlaa2kbr8-47/orders/archived" },
   { slug: "rejected-orders", label: "المرفوضة", iconKey: "ui_error", href: "/abo1stor3hlaa2kbr8-47/orders/tracking?status=cancelled" },
   { slug: "legacy-kse-profiles-batch", label: "استيراد زبائن KSE (دفعات)", iconKey: "ui_package", href: "/abo1stor3hlaa2kbr8-47/customers/profiles/import-legacy-kse" },
@@ -32,7 +30,9 @@ export const ADMIN_TILES: AdminTile[] = [
   { slug: "regions", label: "المناطق", iconKey: "ui_map", href: "/abo1stor3hlaa2kbr8-47/regions" },
   { slug: "super-search", label: "البحث الخارق", iconKey: "ui_search", href: "/abo1stor3hlaa2kbr8-47/search" },
   { slug: "prep-notices", label: "إشعارات تجهيز المجهزين", iconKey: "ui_announcement", href: "/abo1stor3hlaa2kbr8-47/prep-notices" },
+  { slug: "ai-settings", label: "مساعد أبو الأكبر (AI)", iconKey: "ui_ai", href: "/abo1stor3hlaa2kbr8-47/settings/ai" },
   { slug: "notification-settings", label: "إشعارات المتصفح", iconKey: "ui_notification", href: "/abo1stor3hlaa2kbr8-47/settings#notifications" },
+  { slug: "settings", label: "الإعدادات", iconKey: "ui_settings", href: "/abo1stor3hlaa2kbr8-47/settings" },
 ];
 
 export function tileHref(tile: AdminTile): string {
