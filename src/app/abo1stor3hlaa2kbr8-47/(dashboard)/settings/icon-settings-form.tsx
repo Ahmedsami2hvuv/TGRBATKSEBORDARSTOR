@@ -82,7 +82,7 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
     if (!url) return 'image';
     const lowerUrl = url.toLowerCase().trim();
     if (lowerUrl.includes('.gif') || url.startsWith('data:image/gif')) return 'gif';
-    if (lowerUrl.includes('lottiefiles.com') || lowerUrl.includes('.json') || lowerUrl.includes('lottie.host')) return 'lottie';
+    if (lowerUrl.includes('lottiefiles.com') || lowerUrl.includes('.json') || lowerUrl.includes('lottie.host') || lowerUrl.endsWith('.lottie')) return 'lottie';
     if (url.startsWith('<svg')) return 'svg';
     if (url.length <= 4) return 'emoji';
     return 'image';
