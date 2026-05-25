@@ -39,6 +39,7 @@ const ICON_KEYS = [
   { id: "ui_ai", label: "أيقونة الذكاء الاصطناعي" },
   { id: "ui_external_link", label: "أيقونة الرابط الخارجي ↗" },
   { id: "ui_shops", label: "أيقونة المحلات (القائمة)" },
+  { id: "ui_user_add", label: "أيقونة إضافة زبون مرجعي" },
   { id: "ui_map", label: "أيقونة الخريطة العامة" },
   { id: "ui_arrow_right", label: "أيقونة السهم الأيسر ←" },
   { id: "wallet", label: "أيقونة المحفظة" },
