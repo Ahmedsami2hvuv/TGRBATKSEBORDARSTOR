@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { GlobalIconsConfig, IconConfig, DEFAULT_ICONS } from "@/lib/icon-settings";
 import { saveGlobalIconsAction } from "./actions";
+import { getLottieDisplayUrl, cleanIconUrl } from "@/lib/icon-utils";
+import { DynamicIcon } from "@/components/dynamic-icon";
 
 const ICON_KEYS = [
   { id: "loading_main", label: "واجهة التحميل الرئيسية (Loading Animation)" },
@@ -330,18 +332,11 @@ export function IconSettingsForm({ initial }: { initial: GlobalIconsConfig }) {
               {/* معاينة ذكية ومحسنة */}
               <div className="h-32 bg-slate-50 rounded-2xl border border-dashed border-slate-200 flex items-center justify-center relative overflow-hidden group">
                 {config.url ? (
-                  <>
-                    {(config.type === 'image' || config.type === 'gif') && (
-                      <img src={config.url} className="max-w-full max-h-full object-contain p-2 drop-shadow-sm" alt="Preview" />
-                    )}
-                    {config.type === 'emoji' && <span className="text-5xl drop-shadow-md">{config.url}</span>}
-                    {config.type === 'lottie' && (
-                      <div className="flex flex-col items-center gap-2 text-slate-400">
-                        <span className="text-3xl">🎬</span>
-                        <span className="text-[10px] font-bold">أنيميشن Lottie (يظهر في الواجهة)</span>
-                      </div>
-                    )}
-                  </>
+                  <DynamicIcon
+                    icon={config}
+                    className="w-full h-full p-2"
+                    respectConfiguredSize={false}
+                  />
                 ) : (
                   <span className="text-[10px] font-bold text-slate-300">لا توجد أيقونة مسجلة</span>
                 )}
