@@ -733,7 +733,24 @@ export function AdminCreateOrderForm({
  <div className="space-y-4 rounded-2xl border border-sky-200 bg-sky-50/40 p-4">
  <div className="flex flex-col gap-4">
 
- {/* 1. المحل (فقط في رفع من محل) */}
+ {/* 1. رقم الزبون أولاً (فقط في رفع من محل) */}
+ {submissionMode === "from_shop" && (
+ <label className="flex flex-col gap-1 text-sm border-b border-sky-100 pb-4">
+ <span className={ad.label}>رقم الزبون</span>
+ <input
+ name="firstCustomerPhone"
+ className={ad.input}
+ value={firstPhone}
+ onChange={(e) => setFirstPhone(e.target.value)}
+ inputMode="numeric"
+ autoComplete="tel"
+ placeholder="اكتب أو الصق الرقم أولاً"
+ required
+ />
+ </label>
+ )}
+
+ {/* 2. المحل (فقط في رفع من محل) */}
  {submissionMode === "from_shop" && (
  <div className="space-y-4 border-b border-sky-100 pb-4 mb-2">
  <div>
@@ -767,7 +784,8 @@ export function AdminCreateOrderForm({
  {submissionMode !== "two_faces" ? (
  /* الترتيب لوجهة واحدة أو رفع من محل */
  <>
- {/* رقم أول */}
+ {/* رقم الزبون (تم نقله للأعلى في وضع رفع من محل) */}
+ {submissionMode !== "from_shop" && (
  <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>رقم الزبون</span>
  <input
@@ -781,6 +799,7 @@ export function AdminCreateOrderForm({
  required
  />
  </label>
+ )}
 
  {/* منطقة الزبون */}
  <RegionSearchPicker
