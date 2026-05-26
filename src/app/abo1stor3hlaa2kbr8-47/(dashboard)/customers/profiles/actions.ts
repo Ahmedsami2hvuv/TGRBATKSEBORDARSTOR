@@ -1368,6 +1368,84 @@ export async function updateCustomerPhoneProfile(
   return { ok: true };
 }
 
+export async function toggleCustomerRegionsBlock(args: {
+  phone: string;
+  regionIds: string[];
+  block: boolean;
+}): Promise<{ ok: boolean; error?: string }> {
+  if (!(await isAdminSession())) {
+    return { ok: false, error: "غير مصرّح" };
+  }
+
+  const { phone, regionIds, block } = args;
+  const n = normalizeIraqMobileLocal11(phone);
+  if (!n) return { ok: false, error: "رقم هاتف غير صالح" };
+
+  const BLOCKED_PREFIX = "🔴 الزبون ممنوع من التوصيل";
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 1. Update profiles in specified regions
+      const profiles = await tx.customerPhoneProfile.findMany({
+        where: { phone: n, regionId: { in: regionIds } },
+      });
+
+      for (const p of profiles) {
+        let newLandmark = p.landmark;
+        if (block && !newLandmark.includes(BLOCKED_PREFIX)) {
+          newLandmark = `${BLOCKED_PREFIX} ${newLandmark}`.trim();
+        } else if (!block && newLandmark.includes(BLOCKED_PREFIX)) {
+          newLandmark = newLandmark.replace(BLOCKED_PREFIX, "").trim();
+        }
+
+        await tx.customerPhoneProfile.update({
+          where: { id: p.id },
+          data: { isBlocked: block, landmark: newLandmark },
+        });
+
+        // Update active orders for this profile
+        await tx.order.updateMany({
+          where: {
+            customerPhone: n,
+            customerRegionId: p.regionId,
+            status: { in: ["pending", "assigned", "delivering"] },
+          },
+          data: { customerLandmark: newLandmark },
+        });
+      }
+
+      // 2. Global block status
+      // If we are blocking ANY region, we might want to keep it in global?
+      // Or only if ALL are blocked?
+      // User says: "والزبون يحضر من ان يرفع له طلب لجميع المناطق"
+      // If they block for "all", then it's global.
+
+      const allProfiles = await tx.customerPhoneProfile.findMany({
+        where: { phone: n },
+      });
+      const anyBlocked = allProfiles.some(p => p.isBlocked);
+
+      if (anyBlocked) {
+        await tx.globalBlockedPhone.upsert({
+          where: { phone: n },
+          create: { phone: n },
+          update: {},
+        });
+      } else {
+        await tx.globalBlockedPhone.deleteMany({
+          where: { phone: n },
+        });
+      }
+    });
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/customers");
+    return { ok: true };
+  } catch (e) {
+    console.error(e);
+    return { ok: false, error: "حدث خطأ أثناء تحديث حالة الحظر" };
+  }
+}
+
 export async function deleteCustomerPhoneProfile(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
   if (!id) {

@@ -8,6 +8,7 @@ import { Client } from "pg";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 
 import { CustomerSearchInput } from "./customer-search-input";
+import { CustomerBlockActions } from "./customer-block-actions";
 export const dynamic = "force-dynamic";
 export const revalidate = 0; // منع الكاش نهائياً
 
@@ -45,16 +46,18 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
   const page = parseInt(searchParams.page || "1") || 1;
   const take = 100;
   
-  const [allProfiles, icons, profilesCount] = await Promise.all([
+  const [allProfiles, icons, profilesCount, globalBlockedPhones] = await Promise.all([
     prisma.customerPhoneProfile.findMany({
       orderBy: { createdAt: "desc" },
       include: { region: { select: { name: true } } },
     }),
     getGlobalIcons(),
     prisma.customerPhoneProfile.count(),
+    prisma.globalBlockedPhone.findMany({ select: { phone: true } }),
   ]);
 
-  const blockedCount = allProfiles.filter(p => p.isBlocked).length;
+  const globalBlockedSet = new Set(globalBlockedPhones.map(p => p.phone.trim()));
+  const blockedCount = globalBlockedSet.size;
 
   // مفاتيح (phone|region) + phones القادمة من ريلوي
   const railwayKeys = new Set<string>();
@@ -90,11 +93,14 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
   }
 
   const classifiedProfiles = allProfiles.map((p) => {
-    const key = `${p.phone.trim()}|${p.regionId.trim()}`;
+    const phoneTrim = p.phone.trim();
+    const key = `${phoneTrim}|${p.regionId.trim()}`;
     let sourceKind: SourceFilter = "reference";
-    if (railwayKeys.has(key) || railwayPhones.has(p.phone.trim())) sourceKind = "railway";
+    if (railwayKeys.has(key) || railwayPhones.has(phoneTrim)) sourceKind = "railway";
     else if (orderKeys.has(key)) sourceKind = "orders";
-    return { ...p, sourceKind };
+
+    const isGloballyBlocked = globalBlockedSet.has(phoneTrim);
+    return { ...p, sourceKind, isGloballyBlocked };
   });
 
   const searchFiltered = q
@@ -106,7 +112,7 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
 
   const bySourceFiltered =
     source === "all" ? searchFiltered :
-    source === "blocked" ? searchFiltered.filter((p) => p.isBlocked) :
+    source === "blocked" ? searchFiltered.filter((p) => p.isGloballyBlocked || p.isBlocked) :
     searchFiltered.filter((p) => p.sourceKind === source);
 
   const filteredCount = bySourceFiltered.length;
@@ -130,6 +136,7 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
   // تجميع الزبائن حسب رقم الهاتف
   const groupedProfiles = new Map<string, {
     phone: string;
+    isGloballyBlocked: boolean;
     regions: {
       id: string;
       regionId: string;
@@ -139,12 +146,17 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
       landmark: string;
       photoUrl: string;
       locationUrl: string;
+      isBlocked: boolean;
     }[];
   }>();
 
   for (const p of profiles) {
     if (!groupedProfiles.has(p.phone)) {
-      groupedProfiles.set(p.phone, { phone: p.phone, regions: [] });
+      groupedProfiles.set(p.phone, {
+        phone: p.phone,
+        regions: [],
+        isGloballyBlocked: (p as any).isGloballyBlocked
+      });
     }
     groupedProfiles.get(p.phone)!.regions.push({
       id: p.id,
@@ -292,7 +304,19 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
                    </div>
                 </div>
                 <div className="flex flex-col items-end gap-1">
-                   <span className="text-xl font-black text-gray-800 tracking-tighter" dir="ltr">{group.phone}</span>
+                   <div className="flex items-center gap-2">
+                     {group.isGloballyBlocked && (
+                       <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                         محظور عام
+                       </span>
+                     )}
+                     <span className="text-xl font-black text-gray-800 tracking-tighter" dir="ltr">{group.phone}</span>
+                   </div>
+                   <CustomerBlockActions
+                     phone={group.phone}
+                     regions={group.regions}
+                     icons={icons}
+                   />
                 </div>
               </div>
 
