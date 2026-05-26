@@ -37,7 +37,7 @@ export function ShopSearchPicker({
   const hasSelection = Boolean(value);
 
   return (
-    <div className="flex flex-col gap-1 text-sm">
+    <div className="relative flex flex-col gap-1 text-sm">
       <span className={ad.label}>{label}</span>
       <input type="hidden" name={fieldName} value={value} required={required} />
       <input
@@ -49,20 +49,20 @@ export function ShopSearchPicker({
           if (value) onValueChange("");
         }}
         className={ad.input}
-        placeholder="ابحث عن اسم المحل واختر من القائمة…"
+        placeholder="ابحث عن اسم المحل…"
         autoComplete="off"
       />
       {hits.length > 0 && !hasSelection ? (
         <ul
-          className="max-h-48 overflow-auto rounded-xl border border-sky-200 bg-white text-sm shadow-md"
+          className="absolute z-50 top-full left-0 mt-1 max-h-60 w-fit min-w-[160px] overflow-auto rounded-2xl border border-sky-200 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-200"
           role="listbox"
           dir="rtl"
         >
           {hits.map((s) => (
-            <li key={s.id}>
+            <li key={s.id} className="border-b border-slate-50 last:border-0">
               <button
                 type="button"
-                className="w-full px-3 py-2.5 text-end text-slate-800 hover:bg-sky-50"
+                className="w-full px-4 py-2 text-right text-[11px] font-bold text-slate-700 hover:bg-sky-50 transition-colors whitespace-nowrap"
                 onClick={() => {
                   onValueChange(s.id);
                   setSearchText(s.name);
@@ -75,7 +75,7 @@ export function ShopSearchPicker({
         </ul>
       ) : null}
       {hasSelection ? (
-        <p className="text-xs font-medium text-emerald-800">تم اختيار المحل.</p>
+        <p className="text-[10px] font-bold text-emerald-600 mt-0.5">✅ تم اختيار المحل</p>
       ) : null}
     </div>
   );
