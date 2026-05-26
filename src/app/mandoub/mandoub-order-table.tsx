@@ -160,6 +160,56 @@ export function MandoubOrderTable({
     initialCash,
   );
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  const [isSortingMode, setIsSortingMode] = useState(false);
+  const [customSortIds, setCustomSortIds] = useState<string[]>([]);
+
+  // تحميل الترتيب المخصص من التخزين المحلي
+  useEffect(() => {
+    const saved = localStorage.getItem(`mandoub_sort_${auth.c}`);
+    if (saved) {
+      try {
+        setCustomSortIds(JSON.parse(saved));
+      } catch (e) {}
+    }
+  }, [auth.c]);
+
+  // حفظ الترتيب المخصص
+  const saveSortOrder = (newOrder: string[]) => {
+    setCustomSortIds(newOrder);
+    localStorage.setItem(`mandoub_sort_${auth.c}`, JSON.stringify(newOrder));
+  };
+
+  const smartSortByRegion = () => {
+    const sorted = [...displayRows].sort((a, b) => {
+      // أولاً حسب الحالة (المستلم أولاً)
+      const statusOrder: Record<string, number> = { "delivering": 0, "assigned": 1, "delivered": 2 };
+      const statusDiff = (statusOrder[a.orderStatus] ?? 9) - (statusOrder[b.orderStatus] ?? 9);
+      if (statusDiff !== 0) return statusDiff;
+
+      // ثانياً حسب المنطقة
+      return a.regionLine.localeCompare(b.regionLine, 'ar');
+    });
+
+    const newIds = sorted.map(r => r.id);
+    saveSortOrder(newIds);
+    toast.success("تم الترتيب ذكياً حسب الحالة والمنطقة");
+  };
+
+  const moveRow = (id: string, direction: 'up' | 'down') => {
+    const currentIds = displayRows.map(r => r.id);
+    const index = currentIds.indexOf(id);
+    if (index === -1) return;
+
+    const newIds = [...currentIds];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+
+    if (targetIndex >= 0 && targetIndex < newIds.length) {
+      const temp = newIds[index];
+      newIds[index] = newIds[targetIndex];
+      newIds[targetIndex] = temp!;
+      saveSortOrder(newIds);
+    }
+  };
 
   const handleActionSubmit = async (formData: FormData, type: 'pickup' | 'delivery') => {
     if (type === 'pickup') {
@@ -196,15 +246,31 @@ export function MandoubOrderTable({
     return () => document.removeEventListener('click', handleWalletLauncherClick);
   }, []);
 
-  const displayRows = useMemo(
-    () =>
-      rows.map((r) =>
-        rowStatusOverrides[r.id]
-          ? { ...r, orderStatus: rowStatusOverrides[r.id] }
-          : r,
-      ),
-    [rows, rowStatusOverrides],
-  );
+  const displayRows = useMemo(() => {
+    const base = rows.map((r) =>
+      rowStatusOverrides[r.id]
+        ? { ...r, orderStatus: rowStatusOverrides[r.id] }
+        : r,
+    );
+
+    // إذا كان هناك ترتيب مخصص، نطبقه على الطلبات النشطة فقط
+    if (customSortIds.length > 0) {
+      const sorted = [...base].sort((a, b) => {
+        const idxA = customSortIds.indexOf(a.id);
+        const idxB = customSortIds.indexOf(b.id);
+
+        // إذا كانا كلاهما في الترتيب المخصص
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        // إذا كان أحدهما فقط، المذكور يظهر أولاً
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return 0;
+      });
+      return sorted;
+    }
+
+    return base;
+  }, [rows, rowStatusOverrides, customSortIds]);
   const rowIds = useMemo(() => displayRows.map((r) => r.id), [displayRows]);
 
   const activeOrderData = useMemo(() => {
@@ -342,6 +408,35 @@ export function MandoubOrderTable({
               </span>
             </button>
           )}
+
+          {rowIds.length > 1 && (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsSortingMode((v) => !v)}
+                className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition-all ${
+                  isSortingMode
+                    ? "bg-indigo-600 border-indigo-700 text-white shadow-inner"
+                    : "bg-indigo-50 border-indigo-200 text-indigo-900 hover:bg-indigo-100"
+                }`}
+              >
+                <DynamicIcon iconKey="ui_sort" config={icons} className="w-3.5 h-3.5" fallback="⇅" />
+                {isSortingMode ? "إنهاء الترتيب" : "ترتيب المسار"}
+              </button>
+
+              {isSortingMode && (
+                <button
+                  type="button"
+                  onClick={smartSortByRegion}
+                  className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-100 animate-in fade-in slide-in-from-right-2"
+                >
+                  <DynamicIcon iconKey="ui_flash" config={icons} className="w-3.5 h-3.5 text-emerald-600" fallback="✨" />
+                  ترتيب ذكي
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="min-w-0 flex-1 relative">
             <input
               type="search"
@@ -415,6 +510,7 @@ export function MandoubOrderTable({
         onToggleAll={toggleAll}
         onToggleOne={toggleOne}
         onOpenRow={(id) => {
+          if (isSortingMode) return;
           setActiveOrderId(id);
           window.history.pushState({ orderId: id }, "");
         }}
@@ -423,8 +519,27 @@ export function MandoubOrderTable({
         selectedTitle="تحديد"
         selectedAriaPrefix="تحديد الطلب"
         showStatusDotInSelectCol={false}
-        renderOrderIdBadge={() => null}
+        renderOrderIdBadge={(o) => {
+          if (!isSortingMode) return null;
+          return (
+            <div className="flex flex-col gap-1 -mt-1" onClick={e => e.stopPropagation()}>
+              <button
+                onClick={() => moveRow(o.id, 'up')}
+                className="flex size-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+              >
+                ▲
+              </button>
+              <button
+                onClick={() => moveRow(o.id, 'down')}
+                className="flex size-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+              >
+                ▼
+              </button>
+            </div>
+          );
+        }}
         renderBelowOrderId={(o) => {
+          if (isSortingMode) return null;
           if (o.orderStatus === "assigned") {
             return (
               <button
