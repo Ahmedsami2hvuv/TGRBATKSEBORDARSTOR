@@ -24,9 +24,9 @@ export function ShopForm({
 
   const [regionId, setRegionId] = useState<string>("");
   const [name, setName] = useState("");
-  const [ownerName, setOwnerName] = useState("");
-  const [phone, setPhone] = useState("");
   const [locationUrl, setLocationUrl] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerName, setCustomerName] = useState("");
 
   if (regions.length === 0) {
     return (
@@ -37,9 +37,10 @@ export function ShopForm({
   }
 
   return (
-    <form action={formAction} encType="multipart/form-data" className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+    <form action={formAction} encType="multipart/form-data" className="space-y-4">
+      <div className="flex flex-col gap-4">
+        {/* 1. اسم المحل */}
+        <label className="flex flex-col gap-1 text-sm">
           <span className={ad.label}>اسم المحل</span>
           <input
             name="name"
@@ -47,87 +48,13 @@ export function ShopForm({
             className={ad.input}
             value={name}
             onChange={(e) => setName(e.target.value)}
+            placeholder="مثال: محل النور"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-          <span className={ad.label}>اسم صاحب المحل (يظهر في صفحة رفع الطلب)</span>
-          <input
-            name="ownerName"
-            className={ad.input}
-            placeholder="مثال: مصطفى"
-            value={ownerName}
-            onChange={(e) => setOwnerName(e.target.value)}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-          <span className={ad.label}>هاتف المحل (للمندوب — 11 رقماً، اختياري)</span>
-          <input
-            name="phone"
-            inputMode="numeric"
-            className={ad.input}
-            placeholder="07xxxxxxxxx"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-        </label>
-        
-        {/* بداية التعديل: أزرار الكاميرا والمعرض */}
-        <div className="flex flex-col gap-1 text-sm sm:col-span-2">
-          <span className={ad.label}>صورة المحل (اختياري)</span>
-          <input
-            ref={shopPhotoRef}
-            name="shopPhoto"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="sr-only"
-            onChange={(e) => {
-              if (e.target.files?.[0]) setShopPhotoName(e.target.files[0].name);
-            }}
-          />
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-sky-400 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100"
-              onClick={() => {
-                shopPhotoRef.current?.setAttribute("capture", "environment");
-                shopPhotoRef.current?.click();
-              }}
-            >
-              <DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="w-4 h-4" /> كاميرا
-            </button>
-            <button
-              type="button"
-              className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-50"
-              onClick={() => {
-                shopPhotoRef.current?.removeAttribute("capture");
-                shopPhotoRef.current?.click();
-              }}
-            >
-              <DynamicIcon iconKey="ui_image" config={icons} fallback="🖼" className="w-4 h-4" /> معرض
-            </button>
-          </div>
-          {shopPhotoName ? (
-            <p className="mt-1 text-xs font-bold text-emerald-700">تم اختيار: {shopPhotoName}</p>
-          ) : null}
-          <span className="mt-1 text-xs text-slate-500">
-            JPG أو PNG أو Webp — حتى 10 ميجابايت
-          </span>
-        </div>
-        {/* نهاية التعديل */}
 
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-          <span className={ad.label}>المنطقة</span>
-          <AdminRegionSearchPicker
-            name="regionId"
-            regions={regions}
-            value={regionId}
-            onValueChange={setRegionId}
-            allowEmpty={false}
-            placeholder="اكتب جزءاً من اسم المنطقة للبحث…"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-          <span className={ad.label}>رابط الموقع / اللوكيشن</span>
+        {/* 2. لكيشن المحل */}
+        <label className="flex flex-col gap-1 text-sm">
+          <span className={ad.label}>لكيشن المحل (رابط الخريطة)</span>
           <input
             name="locationUrl"
             type="text"
@@ -139,19 +66,105 @@ export function ShopForm({
             onChange={(e) => setLocationUrl(e.target.value)}
           />
         </label>
+
+        {/* 3. منطقة المحل */}
+        <label className="flex flex-col gap-1 text-sm">
+          <span className={ad.label}>منطقة المحل</span>
+          <AdminRegionSearchPicker
+            name="regionId"
+            regions={regions}
+            value={regionId}
+            onValueChange={setRegionId}
+            allowEmpty={false}
+            placeholder="ابحث عن المنطقة..."
+          />
+        </label>
+
+        {/* 4. صورة باب المحل */}
+        <div className="flex flex-col gap-1 text-sm">
+          <span className={ad.label}>صورة باب المحل (اختياري)</span>
+          <input
+            ref={shopPhotoRef}
+            name="shopPhoto"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            onChange={(e) => {
+              if (e.target.files?.[0]) setShopPhotoName(e.target.files[0].name);
+            }}
+          />
+          <div className="mt-1 flex items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex flex-1 min-h-[44px] items-center justify-center gap-2 rounded-xl border border-sky-400 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100"
+              onClick={() => {
+                shopPhotoRef.current?.setAttribute("capture", "environment");
+                shopPhotoRef.current?.click();
+              }}
+            >
+              <DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="w-4 h-4" /> كاميرا
+            </button>
+            <button
+              type="button"
+              className="inline-flex flex-1 min-h-[44px] items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-slate-50"
+              onClick={() => {
+                shopPhotoRef.current?.removeAttribute("capture");
+                shopPhotoRef.current?.click();
+              }}
+            >
+              <DynamicIcon iconKey="ui_image" config={icons} fallback="🖼" className="w-4 h-4" /> معرض
+            </button>
+          </div>
+          {shopPhotoName ? (
+            <p className="mt-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 p-1.5 rounded-lg border border-emerald-100">✅ تم اختيار: {shopPhotoName}</p>
+          ) : null}
+        </div>
+
+        <div className="mt-2 pt-4 border-t border-sky-100 space-y-4">
+          <p className="text-xs font-black text-sky-700">بيانات العميل الأول للمحل</p>
+
+          {/* 5. رقم العميل الأول */}
+          <label className="flex flex-col gap-1 text-sm">
+            <span className={ad.label}>رقم العميل الأول</span>
+            <input
+              name="customerPhone"
+              required
+              inputMode="numeric"
+              className={ad.input}
+              placeholder="07xxxxxxxxx"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+            />
+          </label>
+
+          {/* 6. اسم العميل الأول */}
+          <label className="flex flex-col gap-1 text-sm">
+            <span className={ad.label}>اسم العميل الأول (اختياري)</span>
+            <input
+              name="customerName"
+              className={ad.input}
+              placeholder="مثال: الإدارة أو اسم الموظف"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+            />
+          </label>
+        </div>
       </div>
+
       {state.error ? (
-        <p className={ad.error} role="alert">
+        <p className={`${ad.error} mt-2`} role="alert">
           {state.error}
         </p>
       ) : null}
-      {state.ok ? <p className={ad.success}>تمت إضافة المحل.</p> : null}
+
+      {state.ok ? <p className={`${ad.success} mt-2`}>✅ تمت إضافة المحل والعميل بنجاح.</p> : null}
+
       <button
         type="submit"
         disabled={pending}
-        className={ad.btnPrimary}
+        className={`${ad.btnPrimary} w-full mt-4 min-h-[48px]`}
       >
-        {pending ? "جارٍ الحفظ…" : "إضافة محل"}
+        {pending ? "جارٍ الحفظ..." : "إضافة المحل والعميل"}
       </button>
     </form>
   );
