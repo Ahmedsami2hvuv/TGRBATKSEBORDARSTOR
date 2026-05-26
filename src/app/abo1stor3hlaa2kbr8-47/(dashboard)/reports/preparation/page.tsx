@@ -4,6 +4,7 @@ import { ad } from "@/lib/admin-ui";
 import { ALF_PER_DINAR, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { formatYMDLocal } from "@/lib/report-dates";
 import { ReportTableClient } from "./report-table-client";
+import { AdminDebtsWidget } from "../../admin-debts-widget";
 
 export const dynamic = "force-dynamic";
 
@@ -161,6 +162,8 @@ export default async function PreparationReportPage({ searchParams }: { searchPa
               </div>
             </div>
           </div>
+
+          <AdminDebtsWidget />
 
           <ReportTableClient orders={orderSummaries} />
         </div>

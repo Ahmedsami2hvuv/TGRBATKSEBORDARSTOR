@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons } from "@/lib/icon-settings";
+import { AdminDebtsWidget } from "../admin-debts-widget";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -94,6 +95,14 @@ export default async function ReportsHubPage() {
           </div>
         </Link>
 
+      </div>
+
+      <div className="mt-8 border-t pt-8">
+        <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+           <span className="w-2 h-8 bg-rose-600 rounded-full" />
+           نظام الديون (المحلات)
+        </h2>
+        <AdminDebtsWidget />
       </div>
     </div>
   );
