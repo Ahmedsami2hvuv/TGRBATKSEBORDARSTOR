@@ -16,10 +16,10 @@ function fixPhotoUrl(url: string | null): string {
 export async function POST(req: Request) {
   const client = new Client({ connectionString: OLD_DB_URL, connectionTimeoutMillis: 30000 });
   try {
-    const { offset = 0, limit = 10 } = await req.json().catch(() => ({}));
+    const { offset = 0, limit = 5 } = await req.json().catch(() => ({}));
     await client.connect();
 
-    // 1. جلب المحلات مع الـ regionId الأصلي
+    // 1. جلب المحلات
     const resShops = await client.query(`
       SELECT s.id as "oldId", s.name, s."locationUrl", s."ownerName", s."photoUrl", s."phone",
              s."regionId", r.name as "regionName"
@@ -31,7 +31,6 @@ export async function POST(req: Request) {
 
     if (resShops.rows.length === 0) return NextResponse.json({ success: true, count: 0, done: true });
 
-    // جلب المناطق الحالية للمطابقة بالـ ID أو الاسم
     const allRegions = await prisma.region.findMany();
     const regionIdMap = new Set(allRegions.map(r => r.id));
     const regionNameMap = new Map(allRegions.map(r => [r.name.trim(), r.id]));
@@ -42,7 +41,6 @@ export async function POST(req: Request) {
     let customersImported = 0;
 
     for (const oldShop of resShops.rows) {
-      // مطابقة المنطقة بالترتيب: ID ثم Name
       let targetRegionId = fallbackRegionId;
       if (regionIdMap.has(oldShop.regionId)) {
         targetRegionId = oldShop.regionId;
@@ -50,7 +48,14 @@ export async function POST(req: Request) {
         targetRegionId = regionNameMap.get(oldShop.regionName.trim())!;
       }
 
-      const finalShopPhotoUrl = await uploadRemoteImageToR2(fixPhotoUrl(oldShop.photoUrl), "shops");
+      const existingShop = await prisma.shop.findUnique({ where: { id: oldShop.oldId } });
+      let finalShopPhotoUrl = existingShop?.photoUrl || "";
+
+      const oldPhotoUrl = fixPhotoUrl(oldShop.photoUrl);
+      if (oldPhotoUrl && (!finalShopPhotoUrl || (!finalShopPhotoUrl.includes("/uploads/") && !finalShopPhotoUrl.includes("r2.dev")))) {
+        finalShopPhotoUrl = await uploadRemoteImageToR2(oldPhotoUrl, "shops");
+      }
+
       const newShop = await prisma.shop.upsert({
         where: { id: oldShop.oldId },
         update: {
@@ -73,65 +78,84 @@ export async function POST(req: Request) {
       });
       shopsImported++;
 
-      // 2. سحب الموظفين
-      const resEmp = await client.query(`
-        SELECT id, name, phone, "orderPortalToken"
-        FROM "Employee"
-        WHERE "shopId" = $1
-      `, [oldShop.oldId]);
+      // 2. سحب الموظفين - تحسين: جلب الكل مرة واحدة وفحص التغييرات
+      const resEmp = await client.query(`SELECT id, name, phone, "orderPortalToken" FROM "Employee" WHERE "shopId" = $1`, [oldShop.oldId]);
+      const oldEmployees = resEmp.rows;
+      if (oldEmployees.length > 0) {
+        const existingEmps = await prisma.employee.findMany({ where: { id: { in: oldEmployees.map(e => e.id) } } });
+        const existingEmpMap = new Map(existingEmps.map(e => [e.id, e]));
 
-      for (const oldEmp of resEmp.rows) {
-        await prisma.employee.upsert({
-          where: { id: oldEmp.id },
-          update: {
-            name: oldEmp.name,
-            phone: oldEmp.phone,
-            shopId: newShop.id,
-            orderPortalToken: oldEmp.orderPortalToken
-          },
-          create: {
-            id: oldEmp.id,
-            name: oldEmp.name,
-            phone: oldEmp.phone,
-            shopId: newShop.id,
-            orderPortalToken: oldEmp.orderPortalToken
+        for (const oldEmp of oldEmployees) {
+          const ext = existingEmpMap.get(oldEmp.id);
+          // إذا كان الموظف موجوداً ومطابقاً تماماً، نتجاوزه لتوفير الوقت
+          if (ext &&
+              ext.name === oldEmp.name &&
+              ext.phone === oldEmp.phone &&
+              ext.shopId === newShop.id &&
+              ext.orderPortalToken === oldEmp.orderPortalToken) {
+            continue;
           }
-        });
-        employeesImported++;
+
+          await prisma.employee.upsert({
+            where: { id: oldEmp.id },
+            update: { name: oldEmp.name, phone: oldEmp.phone, shopId: newShop.id, orderPortalToken: oldEmp.orderPortalToken },
+            create: { id: oldEmp.id, name: oldEmp.name, phone: oldEmp.phone, shopId: newShop.id, orderPortalToken: oldEmp.orderPortalToken }
+          });
+          employeesImported++;
+        }
       }
 
-      // 3. سحب الزبائن المرتبطين بالمحل
-      const resCust = await client.query(`
-        SELECT id, name, phone, "customerLocationUrl", "customerLandmark", "alternatePhone", "customerDoorPhotoUrl"
-        FROM "Customer"
-        WHERE "shopId" = $1
-      `, [oldShop.oldId]);
+      // 3. سحب الزبائن - تحسين: جلب الكل مرة واحدة وفحص التغييرات
+      const resCust = await client.query(`SELECT id, name, phone, "customerLocationUrl", "customerLandmark", "alternatePhone", "customerDoorPhotoUrl" FROM "Customer" WHERE "shopId" = $1`, [oldShop.oldId]);
+      const oldCustomers = resCust.rows;
+      if (oldCustomers.length > 0) {
+        const existingCusts = await prisma.customer.findMany({ where: { id: { in: oldCustomers.map(c => c.id) } } });
+        const existingCustMap = new Map(existingCusts.map(c => [c.id, c]));
 
-      for (const oldCust of resCust.rows) {
-        const finalCustomerPhotoUrl = await uploadRemoteImageToR2(fixPhotoUrl(oldCust.customerDoorPhotoUrl), "customers");
-        await prisma.customer.upsert({
-          where: { id: oldCust.id },
-          update: {
-            name: oldCust.name || "",
-            phone: oldCust.phone,
-            shopId: newShop.id,
-            customerLocationUrl: oldCust.customerLocationUrl || "",
-            customerLandmark: oldCust.customerLandmark || "",
-            alternatePhone: oldCust.alternatePhone,
-            customerDoorPhotoUrl: finalCustomerPhotoUrl
-          },
-          create: {
-            id: oldCust.id,
-            name: oldCust.name || "",
-            phone: oldCust.phone,
-            shopId: newShop.id,
-            customerLocationUrl: oldCust.customerLocationUrl || "",
-            customerLandmark: oldCust.customerLandmark || "",
-            alternatePhone: oldCust.alternatePhone,
-            customerDoorPhotoUrl: finalCustomerPhotoUrl
+        for (const oldCust of oldCustomers) {
+          const ext = existingCustMap.get(oldCust.id);
+          const oldCustPhoto = fixPhotoUrl(oldCust.customerDoorPhotoUrl);
+          let finalCustomerPhotoUrl = ext?.customerDoorPhotoUrl || "";
+
+          if (oldCustPhoto && (!finalCustomerPhotoUrl || (!finalCustomerPhotoUrl.includes("/uploads/") && !finalCustomerPhotoUrl.includes("r2.dev")))) {
+             finalCustomerPhotoUrl = await uploadRemoteImageToR2(oldCustPhoto, "customers");
           }
-        });
-        customersImported++;
+
+          // إذا كان الزبون موجوداً ومطابقاً تماماً، نتجاوزه
+          if (ext &&
+              ext.name === (oldCust.name || "") &&
+              ext.phone === oldCust.phone &&
+              ext.shopId === newShop.id &&
+              ext.customerDoorPhotoUrl === finalCustomerPhotoUrl &&
+              ext.customerLocationUrl === (oldCust.customerLocationUrl || "") &&
+              ext.customerLandmark === (oldCust.customerLandmark || "")) {
+            continue;
+          }
+
+          await prisma.customer.upsert({
+            where: { id: oldCust.id },
+            update: {
+              name: oldCust.name || "",
+              phone: oldCust.phone,
+              shopId: newShop.id,
+              customerLocationUrl: oldCust.customerLocationUrl || "",
+              customerLandmark: oldCust.customerLandmark || "",
+              alternatePhone: oldCust.alternatePhone,
+              customerDoorPhotoUrl: finalCustomerPhotoUrl
+            },
+            create: {
+              id: oldCust.id,
+              name: oldCust.name || "",
+              phone: oldCust.phone,
+              shopId: newShop.id,
+              customerLocationUrl: oldCust.customerLocationUrl || "",
+              customerLandmark: oldCust.customerLandmark || "",
+              alternatePhone: oldCust.alternatePhone,
+              customerDoorPhotoUrl: finalCustomerPhotoUrl
+            }
+          });
+          customersImported++;
+        }
       }
     }
 
@@ -142,7 +166,6 @@ export async function POST(req: Request) {
       customersCount: customersImported,
       done: resShops.rows.length < limit
     });
-
   } catch (error: any) {
     console.error("IMPORT ERROR:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });

@@ -60,7 +60,7 @@ export function ImportShopsButton() {
     try {
       const signal = startCancelableTask();
       let offset = 0;
-      const limit = 5; // عدد قليل لضمان سحب الزبائن مع كل محل بدون مشاكل
+      const limit = 3; // تقليل العدد لضمان عدم حدوث Timeout
       let isDone = false;
       let totalShops = 0;
       let totalCust = 0;
