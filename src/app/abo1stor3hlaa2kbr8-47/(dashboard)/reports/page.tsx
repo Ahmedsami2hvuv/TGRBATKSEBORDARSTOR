@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons } from "@/lib/icon-settings";
-import { AdminDebtsWidget } from "../admin-debts-widget";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -95,14 +94,24 @@ export default async function ReportsHubPage() {
           </div>
         </Link>
 
-      </div>
+        <Link
+          href={`${SECRET_ADMIN_PATH}/reports/debts`}
+          className="group block cursor-pointer rounded-3xl border border-rose-200 bg-rose-50/30 p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:border-rose-300"
+          role="button"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-rose-600">ديون المحلات (المجهزين)</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600 font-bold">
+                متابعة وتسديد المبالغ المعلقة التي بذمة المجهزين للمحلات بشكل مركزي.
+              </p>
+            </div>
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 text-2xl text-white shadow-lg">
+              <DynamicIcon iconKey="ui_credit_card" config={icons} fallback="💳" className="w-6 h-6" />
+            </div>
+          </div>
+        </Link>
 
-      <div className="mt-8 border-t pt-8">
-        <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
-           <span className="w-2 h-8 bg-rose-600 rounded-full" />
-           نظام الديون (المحلات)
-        </h2>
-        <AdminDebtsWidget />
       </div>
     </div>
   );
