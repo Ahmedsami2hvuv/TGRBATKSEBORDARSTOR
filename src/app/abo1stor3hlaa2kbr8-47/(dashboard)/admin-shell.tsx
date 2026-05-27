@@ -10,6 +10,7 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig, getGlobalIcons } from "@/lib/icon-settings";
 import { OneSignalInitializer } from "@/components/OneSignalInitializer";
+import { FloatingAdminMenu } from "@/components/floating-admin-menu";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -224,6 +225,7 @@ export function AdminShell({
       } lg:overflow-visible`}
     >
       <OneSignalInitializer externalId="admin_global" />
+      <FloatingAdminMenu />
       <button
         type="button"
         onClick={() => setNavOpen((o) => !o)}
