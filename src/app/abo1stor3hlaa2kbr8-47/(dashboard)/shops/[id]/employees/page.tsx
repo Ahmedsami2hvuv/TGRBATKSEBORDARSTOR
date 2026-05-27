@@ -23,13 +23,22 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
     const { id: shopId } = await props.params;
     const baseUrl = getPublicAppUrl();
 
-    // جلب المحل أولاً، ثم جلب الإعدادات في خطوة واحدة لتقليل استهلاك الـ Pool
+    // جلب بيانات المحل والموظفين في استعلام واحد لتقليل الضغط على الـ Pool
     const shopRaw = await prisma.shop.findUnique({
       where: { id: shopId },
       select: {
         id: true,
         name: true,
         locationUrl: true,
+        employees: {
+          orderBy: { name: "asc" },
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            orderPortalToken: true,
+          },
+        }
       },
     });
 
@@ -37,20 +46,11 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
       notFound();
     }
 
-    const [employeesRaw, iconsRaw, employeeShareTemplate] = await Promise.all([
-      prisma.employee.findMany({
-        where: { shopId },
-        orderBy: { name: "asc" },
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-          orderPortalToken: true,
-        },
-      }),
-      getGlobalIcons(),
-      getEmployeeWhatsappShareTemplate(),
-    ]);
+    // جلب الإعدادات الأخرى بتتابع وليس توازي لضمان عدم استهلاك أكثر من اتصال
+    const iconsRaw = await getGlobalIcons();
+    const employeeShareTemplate = await getEmployeeWhatsappShareTemplate();
+
+    const employeesRaw = shopRaw.employees;
 
     // تطهير البيانات قبل أي معالجة أخرى - استخدام الدالة المركزية لضمان التوافق مع Next.js 15
     const shop = serializePrisma(shopRaw);
