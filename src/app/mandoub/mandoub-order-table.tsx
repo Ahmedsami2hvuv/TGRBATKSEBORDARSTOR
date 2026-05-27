@@ -428,13 +428,14 @@ export function MandoubOrderTable({
             <button
               type="button"
               onClick={() => setShowQuickSelect((v) => !v)}
-              className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-900 hover:bg-red-100"
+              className={`flex items-center justify-center h-[40px] px-3 rounded-xl border transition-all ${
+                showQuickSelect
+                  ? "bg-red-600 border-red-700 text-white shadow-inner"
+                  : "bg-red-50 border-red-200 text-red-900 hover:bg-red-100"
+              }`}
+              title="تحديد سريع"
             >
-              <DynamicIcon iconKey="ui_flash" config={icons} className="w-3.5 h-3.5" fallback="⚡" />
-              تحديد سريع
-              <span className="text-red-400">
-                <DynamicIcon iconKey={showQuickSelect ? "ui_chevron_up" : "ui_chevron_down"} config={icons} fallback={showQuickSelect ? "▲" : "▼"} className="w-3 h-3" />
-              </span>
+              <DynamicIcon iconKey="ui_success" config={icons} className="w-5 h-5" fallback="✅" />
             </button>
           )}
 
@@ -443,14 +444,14 @@ export function MandoubOrderTable({
               <button
                 type="button"
                 onClick={() => setIsSortingMode((v) => !v)}
-                className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition-all ${
+                className={`flex items-center justify-center h-[40px] px-3 rounded-xl border transition-all ${
                   isSortingMode
                     ? "bg-indigo-600 border-indigo-700 text-white shadow-inner"
                     : "bg-indigo-50 border-indigo-200 text-indigo-900 hover:bg-indigo-100"
                 }`}
+                title="ترتيب المسار"
               >
-                <DynamicIcon iconKey="ui_sort" config={icons} className="w-3.5 h-3.5" fallback="⇅" />
-                {isSortingMode ? "إنهاء الترتيب" : "ترتيب المسار"}
+                <DynamicIcon iconKey="ui_sort" config={icons} className="w-5 h-5" fallback="⇅" />
               </button>
 
               {isSortingMode && (
