@@ -131,6 +131,30 @@ export async function assignProductsToSupplier(_prev: SupplierFormState, formDat
   }
 }
 
+export async function assignBranchesToSupplier(_prev: SupplierFormState, formData: FormData): Promise<SupplierFormState> {
+  try {
+    const supplierId = String(formData.get("supplierId") ?? "");
+    const branchIds = formData.getAll("branchIds").map(id => String(id));
+
+    if (!supplierId) return { error: "المورد غير محدد" };
+
+    await prisma.storeSupplier.update({
+      where: { id: supplierId },
+      data: {
+        branches: {
+          set: branchIds.map(id => ({ id }))
+        }
+      }
+    });
+
+    revalidatePath(`${SECRET_ADMIN_PATH}/suppliers`);
+    return { ok: true };
+  } catch (e) {
+    console.error(e);
+    return { error: "فشل ربط الأفرع" };
+  }
+}
+
 export async function toggleSupplierChat(id: string, disabled: boolean) {
   try {
     const { isAdminSession } = await import("@/lib/admin-session");

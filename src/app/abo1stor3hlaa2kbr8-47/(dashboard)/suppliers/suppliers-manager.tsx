@@ -8,6 +8,7 @@ import {
   deleteStoreSupplier,
   renewSupplierPortalToken,
   assignProductsToSupplier,
+  assignBranchesToSupplier,
   toggleSupplierChat,
   type SupplierFormState,
 } from "./actions";
@@ -27,9 +28,11 @@ export type SupplierManagerRow = {
   chatDisabled: boolean;
   portalUrl: string;
   productIds: string[];
+  branchIds: string[];
 };
 
 export type ProductOption = { id: string; name: string };
+export type BranchOption = { id: string; name: string };
 
 function AddSupplierForm({ icons }: { icons: GlobalIconsConfig | null }) {
   const [state, formAction, pending] = useActionState(createStoreSupplier, initial);
@@ -85,14 +88,16 @@ function AddSupplierForm({ icons }: { icons: GlobalIconsConfig | null }) {
   );
 }
 
-function SupplierCard({ row, allProducts, icons }: { row: SupplierManagerRow; allProducts: ProductOption[]; icons: GlobalIconsConfig | null }) {
-  const [activeTab, setActiveTab] = useState<"products" | "edit" | null>(null);
+function SupplierCard({ row, allProducts, allBranches, icons }: { row: SupplierManagerRow; allProducts: ProductOption[]; allBranches: BranchOption[]; icons: GlobalIconsConfig | null }) {
+  const [activeTab, setActiveTab] = useState<"products" | "branches" | "edit" | null>(null);
   const [uState, updateAction, uPending] = useActionState(updateStoreSupplier, initial);
   const [pState, productsAction, pPending] = useActionState(assignProductsToSupplier, initial);
+  const [bState, branchesAction, bPending] = useActionState(assignBranchesToSupplier, initial);
   const [dState, deleteAction, dPending] = useActionState(deleteStoreSupplier, initial);
   const [copied, setCopied] = useState(false);
 
   const linked = new Set(row.productIds);
+  const linkedBranches = new Set(row.branchIds);
 
   return (
     <div className="bg-white rounded-[2rem] border-2 border-slate-100 shadow-sm overflow-hidden">
@@ -109,10 +114,13 @@ function SupplierCard({ row, allProducts, icons }: { row: SupplierManagerRow; al
           </div>
 
           <div className="flex gap-2">
-             <button onClick={() => setActiveTab(activeTab === "products" ? null : "products")} className="px-4 py-2 bg-sky-50 text-sky-700 rounded-xl text-xs font-black hover:bg-sky-100 transition flex items-center gap-1.5">
+             <button onClick={() => setActiveTab(activeTab === "products" ? null : "products")} className={`px-4 py-2 ${activeTab === "products" ? "bg-sky-200" : "bg-sky-50"} text-sky-700 rounded-xl text-xs font-black hover:bg-sky-100 transition flex items-center gap-1.5`}>
                <DynamicIcon iconKey="ui_tasks" config={icons} fallback="📦" className="w-3.5 h-3.5" /> المنتجات ({row.productIds.length})
              </button>
-             <button onClick={() => setActiveTab(activeTab === "edit" ? null : "edit")} className="px-4 py-2 bg-slate-50 text-slate-700 rounded-xl text-xs font-black hover:bg-slate-100 transition flex items-center gap-1.5">
+             <button onClick={() => setActiveTab(activeTab === "branches" ? null : "branches")} className={`px-4 py-2 ${activeTab === "branches" ? "bg-amber-200" : "bg-amber-50"} text-amber-700 rounded-xl text-xs font-black hover:bg-amber-100 transition flex items-center gap-1.5`}>
+               <DynamicIcon iconKey="ui_folder" config={icons} fallback="📁" className="w-3.5 h-3.5" /> الأفرع ({row.branchIds?.length || 0})
+             </button>
+             <button onClick={() => setActiveTab(activeTab === "edit" ? null : "edit")} className={`px-4 py-2 ${activeTab === "edit" ? "bg-slate-200" : "bg-slate-50"} text-slate-700 rounded-xl text-xs font-black hover:bg-slate-100 transition flex items-center gap-1.5`}>
                <DynamicIcon iconKey="ui_settings" config={icons} fallback="⚙️" className="w-3.5 h-3.5" /> تعديل
              </button>
              <form action={deleteAction} onSubmit={e => !confirm("حذف المورد؟") && e.preventDefault()}>
@@ -172,6 +180,26 @@ function SupplierCard({ row, allProducts, icons }: { row: SupplierManagerRow; al
         </div>
       )}
 
+      {activeTab === "branches" && (
+        <div className="bg-slate-50 p-6 border-t border-slate-100">
+           <h4 className="font-black text-slate-800 mb-4">اختيار أفرع المورد</h4>
+           <form action={branchesAction} className="space-y-4">
+              <input type="hidden" name="supplierId" value={row.id} />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-60 overflow-y-auto p-2">
+                 {allBranches.map(b => (
+                   <label key={b.id} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer hover:border-amber-500 transition">
+                      <input type="checkbox" name="branchIds" value={b.id} defaultChecked={linkedBranches.has(b.id)} className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500" />
+                      <span className="text-xs font-bold truncate">{b.name}</span>
+                   </label>
+                 ))}
+              </div>
+              <button type="submit" disabled={bPending} className={`${ad.btnPrimary} !bg-amber-600 hover:!bg-amber-700 w-full mt-4`}>
+                {bPending ? "جارٍ الحفظ..." : "حفظ قائمة الأفرع"}
+              </button>
+           </form>
+        </div>
+      )}
+
       {activeTab === "edit" && (
         <div className="bg-slate-50 p-6 border-t border-slate-100">
           <form action={updateAction} className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -204,13 +232,13 @@ function SupplierCard({ row, allProducts, icons }: { row: SupplierManagerRow; al
   );
 }
 
-export function SuppliersManager({ rows, allProducts, icons }: { rows: SupplierManagerRow[]; allProducts: ProductOption[]; icons?: GlobalIconsConfig | null }) {
+export function SuppliersManager({ rows, allProducts, allBranches, icons }: { rows: SupplierManagerRow[]; allProducts: ProductOption[]; allBranches: BranchOption[]; icons?: GlobalIconsConfig | null }) {
   return (
     <div className="space-y-8">
       <AddSupplierForm icons={icons ?? null} />
       <div className="grid grid-cols-1 gap-6">
         {rows.map(row => (
-          <SupplierCard key={row.id} row={row} allProducts={allProducts} icons={icons ?? null} />
+          <SupplierCard key={row.id} row={row} allProducts={allProducts} allBranches={allBranches} icons={icons ?? null} />
         ))}
         {rows.length === 0 && (
           <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 text-slate-400 font-bold">

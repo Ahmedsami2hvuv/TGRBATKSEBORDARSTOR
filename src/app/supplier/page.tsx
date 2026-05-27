@@ -19,11 +19,8 @@ export default async function SupplierPortalPage({ searchParams }: Props) {
 
     const supplier = await prisma.storeSupplier.findFirst({
       where: { id: p, portalToken: t, active: true },
-      select: {
-        id: true,
-        name: true,
-        profitMargin: true,
-        portalToken: true,
+      include: {
+        branches: { select: { id: true } }
       }
     });
 
@@ -40,11 +37,15 @@ export default async function SupplierPortalPage({ searchParams }: Props) {
     }
 
     const profitMargin = Number(supplier.profitMargin) || 0.25;
+    const branchIds = supplier.branches.map(b => b.id);
 
     const productsRaw = await prisma.storeProduct.findMany({
       where: {
         active: true,
-        supplierId: supplier.id
+        OR: [
+          { supplierId: supplier.id },
+          ...(branchIds.length > 0 ? [{ branchId: { in: branchIds } }] : [])
+        ]
       },
       select: {
         id: true,

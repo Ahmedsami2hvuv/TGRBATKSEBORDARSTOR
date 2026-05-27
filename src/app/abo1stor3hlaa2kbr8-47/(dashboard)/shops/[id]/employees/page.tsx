@@ -100,7 +100,7 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
               <span className="text-xs font-normal text-slate-400 bg-slate-50 px-2 py-1 rounded-full">العملاء</span>
             </h1>
             <p className={`mt-2 ${ad.lead} max-w-2xl`}>
-              هؤلاء هم موظفوك الذين يملكون صلاحية رفع طلبات التوصيل إلى النظام عبر روابط خاصة ومحمية.
+              هؤلاء هم عملاء المحل الذين يملكون صلاحية رفع طلبات التوصيل إلى النظام عبر روابط خاصة ومحمية.
             </p>
             {(shop.locationUrl?.trim()?.length ?? 0) > 5 ? (
               <a

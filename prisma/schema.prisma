@@ -626,6 +626,7 @@ model StoreBranch {
   subBranches          StoreBranch[]    @relation("SubBranches")
   products             StoreProduct[]
   managedStaff         StaffEmployee[]  @relation("StaffManagedBranches")
+  suppliers            StoreSupplier[]  @relation("StoreSupplierBranches")
 
   @@index([categoryId])
   @@index([parentBranchId])
@@ -668,6 +669,7 @@ model StoreSupplier {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   products     StoreProduct[]
+  branches     StoreBranch[]  @relation("StoreSupplierBranches")
 }
 
 model StoreProductVariant {

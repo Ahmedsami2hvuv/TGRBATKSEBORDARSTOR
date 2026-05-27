@@ -24,6 +24,7 @@ export function FloatingAdminMenu() {
   const [isLocked, setIsLocked] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
+  const [menuScale, setMenuScale] = useState(1);
   const [isActuallyDragging, setIsActuallyDragging] = useState(false);
   const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
   const dragStartTime = useRef(0);
@@ -37,15 +38,32 @@ export function FloatingAdminMenu() {
   const outerRadius = 80; // Compact (was 100)
   const subRingRadius = 135; // Compact (was 170)
 
-  // Persistence
+  // Persistence & Data Cleanup
   useEffect(() => {
     if (typeof window === "undefined") return;
     const savedData = localStorage.getItem("kse_admin_floating_data");
-    if (savedData) try { setCategories(JSON.parse(savedData)); } catch(e){}
+    if (savedData) {
+      try {
+        let parsed = JSON.parse(savedData);
+        // Nuclear cleanup: remove any folder emojis from existing data
+        const folderEmojis = ["📂", "📁", "🗂️", "💼", "🗄️"];
+        const cleaned = parsed.map((cat: any) => ({
+          ...cat,
+          icon: folderEmojis.includes(cat.icon?.trim()) ? "" : (cat.icon || ""),
+          links: (cat.links || []).map((link: any) => ({
+            ...link,
+            name: link.name || "رابط"
+          }))
+        }));
+        setCategories(cleaned);
+      } catch(e){}
+    }
     const savedPos = localStorage.getItem("kse_admin_floating_pos");
     if (savedPos) try { setPosition(JSON.parse(savedPos)); } catch(e){}
     const savedLocked = localStorage.getItem("kse_admin_floating_locked");
     if (savedLocked) setIsLocked(savedLocked === "true");
+    const savedScale = localStorage.getItem("kse_admin_floating_scale");
+    if (savedScale) setMenuScale(parseFloat(savedScale));
   }, []);
 
   useEffect(() => {
@@ -55,6 +73,10 @@ export function FloatingAdminMenu() {
   useEffect(() => {
     localStorage.setItem("kse_admin_floating_locked", isLocked.toString());
   }, [isLocked]);
+
+  useEffect(() => {
+    localStorage.setItem("kse_admin_floating_scale", menuScale.toString());
+  }, [menuScale]);
 
   // Drag & Interaction Logic
   const startDrag = (clientX: number, clientY: number) => {
@@ -155,7 +177,7 @@ export function FloatingAdminMenu() {
   const isLeft = position.x < (typeof window !== 'undefined' ? window.innerWidth / 2 : 500);
   const totalAngle = 260;
   const startAngle = isLeft ? 50 : 250;
-  const count = categories.length + 1;
+  const count = categories.length + 2; // +1 for settings, +1 for add
   const step = totalAngle / count;
 
   return (
@@ -173,40 +195,42 @@ export function FloatingAdminMenu() {
         The large container only catches pointer events when the menu is open.
       */}
       <div
-        className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center bg-transparent pointer-events-none"
+        className="absolute rounded-full flex items-center justify-center bg-transparent pointer-events-none"
         style={{
             width: 450,
             height: 450,
+            transform: `translate(-50%, -50%) scale(${menuScale})`,
+            left: 0,
+            top: 0,
+            transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            touchAction: isDragging ? "none" : "auto"
         }}
       >
         {/* Main Button Container */}
         <div
             className="pointer-events-auto flex items-center justify-center"
-            style={{ width: btnSize + 20, height: btnSize + 20 }}
+            style={{ width: btnSize + 20, height: btnSize + 20, touchAction: isDragging ? "none" : "auto" }}
             onMouseEnter={() => {
                 handleMouseEnter();
                 setHoveredCategory(null);
             }}
             onMouseLeave={handleMouseLeave}
         >
-            <div
-                onMouseDown={(e) => { e.stopPropagation(); startDrag(e.clientX, e.clientY); }}
-                onTouchStart={(e) => { e.stopPropagation(); startDrag(e.touches[0].clientX, e.touches[0].clientY); }}
-                className={`relative z-[1000] flex h-14 w-14 items-center justify-center shadow-2xl transform-gpu transition-all duration-300 ${
-                    isActuallyDragging ? "cursor-grabbing scale-95" : "cursor-grab"
-                } ${isHovered && !isActuallyDragging ? "bg-[#00f3ff] rotate-45 scale-90 border-2 border-white/50" : "bg-white rounded-2xl rotate-0"}`}
-            >
+          <div
+            onMouseDown={(e) => { e.stopPropagation(); startDrag(e.clientX, e.clientY); }}
+            onTouchStart={(e) => { e.stopPropagation(); startDrag(e.touches[0].clientX, e.touches[0].clientY); }}
+            className={`relative z-[1000] flex h-14 w-14 items-center justify-center shadow-2xl transform-gpu transition-all duration-300 ${
+                isActuallyDragging ? "cursor-grabbing scale-95" : "cursor-grab"
+            } ${isHovered && !isActuallyDragging ? "bg-[#00f3ff] rotate-45 scale-90 border-2 border-white/50" : "bg-white rounded-2xl rotate-0"}`}
+            style={{
+              transform: isHovered && !isActuallyDragging ? `rotate(45deg) scale(0.9)` : `scale(1)`,
+              touchAction: "none"
+            }}
+          >
                 <div className="pointer-events-none transition-transform duration-300 flex items-center justify-center w-full h-full">
                     {isHovered && !isActuallyDragging ? (
                     <div className="flex flex-col items-center justify-center -rotate-45">
-                        <span className="text-2xl font-black text-black select-none leading-none">✕</span>
-                        <div
-                        className="mt-1 pointer-events-auto cursor-pointer p-0.5 bg-black/5 rounded-full hover:bg-black/20 transition-colors"
-                        onClick={(e) => { e.stopPropagation(); setIsLocked(!isLocked); }}
-                        title={isLocked ? "Unlock Position" : "Lock Position"}
-                        >
-                        {isLocked ? "🔒" : "🔓"}
-                        </div>
+                        <span className="text-3xl font-black text-black select-none leading-none">✕</span>
                     </div>
                     ) : (
                     <div className="grid grid-cols-2 gap-1 p-1">
@@ -225,6 +249,9 @@ export function FloatingAdminMenu() {
           className={`absolute transition-all duration-300 transform-gpu ${
             isHovered && !isActuallyDragging ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-50 pointer-events-none"
           }`}
+          style={{
+            transform: isHovered && !isActuallyDragging ? "scale(1)" : "scale(0.5)"
+          }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
@@ -236,7 +263,7 @@ export function FloatingAdminMenu() {
           >
             {/* Hover Guard Circle: ensures no gaps between button and menu */}
             <circle
-                r={outerRadius + 35}
+                r={subRingRadius + 20}
                 fill="rgba(255,255,255,0.01)"
                 className="pointer-events-auto"
                 onMouseEnter={handleMouseEnter}
@@ -249,6 +276,9 @@ export function FloatingAdminMenu() {
               const midRad = (midA - 90) * Math.PI / 180;
               const tx = Math.cos(midRad) * ((innerRadius + outerRadius) / 2);
               const ty = Math.sin(midRad) * ((innerRadius + outerRadius) / 2);
+
+              // Strict filter to ensure no folder emoji ever shows up
+              const displayIcon = cat.icon && cat.icon.trim() !== "" && !["📂", "📁", "🗂️", "💼", "🗄️"].includes(cat.icon.trim()) ? cat.icon : null;
 
               return (
                 <g
@@ -265,8 +295,14 @@ export function FloatingAdminMenu() {
                 >
                   <path d={getArcPath(sA, eA, innerRadius, outerRadius)} fill={cat.color} stroke="#000" strokeWidth="0.5" className="hover:brightness-110 transition-all" />
                   <text x={tx} y={ty} textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none select-none">
-                     <tspan x={tx} dy="-2" fontSize="16">{cat.icon || "📂"}</tspan>
-                     <tspan x={tx} dy="12" fontSize="8" fill="white" fontWeight="900" className="uppercase">{cat.name.substring(0,8)}</tspan>
+                     {displayIcon ? (
+                        <>
+                           <tspan x={tx} dy="-6" fontSize="16">{displayIcon}</tspan>
+                           <tspan x={tx} dy="14" fontSize="9" fill="white" fontWeight="900" className="uppercase">{cat.name.substring(0,10)}</tspan>
+                        </>
+                     ) : (
+                        <tspan x={tx} dy="0" fontSize="11" fill="white" fontWeight="900" className="uppercase">{cat.name.substring(0,10)}</tspan>
+                     )}
                   </text>
 
                   {/* Sub Links Ring (Outer) */}
@@ -353,12 +389,19 @@ export function FloatingAdminMenu() {
                         e.stopPropagation();
                         if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
                         const newName = prompt("اسم القسم الجديد:", cat.name);
-                        const newIcon = prompt("أيقونة القسم (Emoji):", cat.icon);
-                        if(newName || newIcon) {
+                        let newIcon = prompt("أيقونة القسم (Emoji):", cat.icon);
+
+                        // Prevent folder icons during edit
+                        const folderEmojis = ["📂", "📁", "🗂️", "💼", "🗄️"];
+                        if (newIcon && folderEmojis.includes(newIcon.trim())) {
+                            newIcon = "";
+                        }
+
+                        if(newName !== null || newIcon !== null) {
                           setCategories(prev => prev.map(c => c.id === cat.id ? {
                             ...c,
-                            name: newName || c.name,
-                            icon: newIcon || c.icon
+                            name: newName !== null ? (newName || c.name) : c.name,
+                            icon: newIcon !== null ? newIcon : c.icon
                           } : c));
                         }
                         setIsHovered(true);
@@ -379,6 +422,101 @@ export function FloatingAdminMenu() {
               );
             })}
 
+            {/* Settings Segment (⚙️) */}
+            {(() => {
+              const i = categories.length;
+              const sA = startAngle + (i * step);
+              const eA = sA + step - 1;
+              const midA = (sA + eA) / 2;
+              const midRad = (midA - 90) * Math.PI / 180;
+              const tx = Math.cos(midRad) * ((innerRadius + outerRadius) / 2);
+              const ty = Math.sin(midRad) * ((innerRadius + outerRadius) / 2);
+              return (
+                <g
+                  onMouseEnter={() => { handleMouseEnter(); setHoveredCategory("system_settings"); }}
+                  onClick={(e) => { e.stopPropagation(); setHoveredCategory(hoveredCategory === "system_settings" ? null : "system_settings"); }}
+                  className="cursor-pointer group pointer-events-auto"
+                >
+                  <path d={getArcPath(sA, eA, innerRadius, outerRadius)} fill="#475569" stroke="#000" strokeWidth="0.5" className="hover:fill-slate-500 transition-all" />
+                  <text x={tx} y={ty} textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none select-none">
+                     <tspan x={tx} dy="0" fontSize="18">⚙️</tspan>
+                  </text>
+
+                  {/* Settings Sub Ring */}
+                  {hoveredCategory === "system_settings" && (
+                    <g className="animate-in fade-in zoom-in duration-200">
+                       {/* Lock Toggle */}
+                       {(() => {
+                          const lStep = (eA - sA) / 3;
+                          const lsA = sA;
+                          const leA = lsA + lStep - 0.5;
+                          const lmidA = (lsA + leA) / 2;
+                          const lmidRad = (lmidA - 90) * Math.PI / 180;
+                          const ltx = Math.cos(lmidRad) * ((outerRadius + subRingRadius)/2);
+                          const lty = Math.sin(lmidRad) * ((outerRadius + subRingRadius)/2);
+                          return (
+                            <g className="cursor-pointer pointer-events-auto" onClick={(e) => { e.stopPropagation(); setIsLocked(!isLocked); }}>
+                              <path d={getArcPath(lsA, leA, outerRadius + 2, subRingRadius)} fill={isLocked ? "#ef4444" : "#10b981"} className="hover:brightness-110 transition-all" />
+                              <text x={ltx} y={lty} fill="white" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none">
+                                <tspan x={ltx} dy="-2" fontSize="12">{isLocked ? "🔒" : "🔓"}</tspan>
+                                <tspan x={ltx} dy="10" fontSize="6" fontWeight="bold" className="uppercase">{isLocked ? "Unlock" : "Lock"}</tspan>
+                              </text>
+                            </g>
+                          )
+                       })()}
+                       {/* Scale Cycle */}
+                       {(() => {
+                          const lStep = (eA - sA) / 3;
+                          const lsA = sA + lStep;
+                          const leA = lsA + lStep - 0.5;
+                          const lmidA = (lsA + leA) / 2;
+                          const lmidRad = (lmidA - 90) * Math.PI / 180;
+                          const ltx = Math.cos(lmidRad) * ((outerRadius + subRingRadius)/2);
+                          const lty = Math.sin(lmidRad) * ((outerRadius + subRingRadius)/2);
+                          return (
+                            <g className="cursor-pointer pointer-events-auto" onClick={(e) => { e.stopPropagation(); setMenuScale(prev => prev >= 1.5 ? 0.5 : prev + 0.25); }}>
+                              <path d={getArcPath(lsA, leA, outerRadius + 2, subRingRadius)} fill="#3b82f6" className="hover:brightness-110 transition-all" />
+                              <text x={ltx} y={lty} fill="white" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none">
+                                <tspan x={ltx} dy="-2" fontSize="12">📏</tspan>
+                                <tspan x={ltx} dy="10" fontSize="6" fontWeight="bold" className="uppercase">{menuScale}x</tspan>
+                              </text>
+                            </g>
+                          )
+                       })()}
+                       {/* Reset Data */}
+                       {(() => {
+                          const lStep = (eA - sA) / 3;
+                          const lsA = sA + (2 * lStep);
+                          const leA = lsA + lStep - 0.5;
+                          const lmidA = (lsA + leA) / 2;
+                          const lmidRad = (lmidA - 90) * Math.PI / 180;
+                          const ltx = Math.cos(lmidRad) * ((outerRadius + subRingRadius)/2);
+                          const lty = Math.sin(lmidRad) * ((outerRadius + subRingRadius)/2);
+                          return (
+                            <g className="cursor-pointer pointer-events-auto" onClick={(e) => {
+                              e.stopPropagation();
+                              if(confirm("إعادة تعيين كافة البيانات؟")) {
+                                setCategories([]);
+                                setMenuScale(1);
+                                setIsLocked(false);
+                                setPosition({ x: 80, y: 300 });
+                                localStorage.removeItem("kse_admin_floating_pos");
+                              }
+                            }}>
+                              <path d={getArcPath(lsA, leA, outerRadius + 2, subRingRadius)} fill="#475569" className="hover:fill-red-600 transition-colors" />
+                              <text x={ltx} y={lty} fill="white" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none">
+                                <tspan x={ltx} dy="-2" fontSize="12">🔄</tspan>
+                                <tspan x={ltx} dy="10" fontSize="6" fontWeight="bold">RESET</tspan>
+                              </text>
+                            </g>
+                          )
+                       })()}
+                    </g>
+                  )}
+                </g>
+              )
+            })()}
+
             {/* Add Category Slot (+) */}
             <g
               onMouseEnter={handleMouseEnter}
@@ -386,13 +524,13 @@ export function FloatingAdminMenu() {
                 e.stopPropagation();
                 if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
                 const n=prompt("اسم القسم الجديد:");
-                if(n) setCategories([...categories,{id:Date.now().toString(),name:n,icon:"📂",color:COLORS[categories.length%COLORS.length],links:[]}]);
+                if(n) setCategories([...categories,{id:Date.now().toString(),name:n,icon:"",color:COLORS[categories.length%COLORS.length],links:[]}]);
                 setIsHovered(true);
               }}
               className="cursor-pointer group pointer-events-auto"
             >
-              <path d={getArcPath(startAngle+(categories.length*step), startAngle+(categories.length*step)+step-1, innerRadius, outerRadius)} fill="rgba(255,255,255,0.02)" stroke="#555" strokeDasharray="4 2" className="hover:fill-white/10 transition-colors" />
-              <text x={Math.cos((startAngle+(categories.length*step)+step/2-90)*Math.PI/180)*(innerRadius+35)} y={Math.sin((startAngle+(categories.length*step)+step/2-90)*Math.PI/180)*(innerRadius+35)} fill="#666" fontSize="30" textAnchor="middle" alignmentBaseline="middle" className="group-hover:fill-white pointer-events-none transition-colors">+</text>
+              <path d={getArcPath(startAngle+((categories.length+1)*step), startAngle+((categories.length+1)*step)+step-1, innerRadius, outerRadius)} fill="rgba(255,255,255,0.02)" stroke="#555" strokeDasharray="4 2" className="hover:fill-white/10 transition-colors" />
+              <text x={Math.cos((startAngle+((categories.length+1)*step)+step/2-90)*Math.PI/180)*(innerRadius+35)} y={Math.sin((startAngle+((categories.length+1)*step)+step/2-90)*Math.PI/180)*(innerRadius+35)} fill="#666" fontSize="30" textAnchor="middle" alignmentBaseline="middle" className="group-hover:fill-white pointer-events-none transition-colors">+</text>
             </g>
           </svg>
         </div>

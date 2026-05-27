@@ -13,9 +13,9 @@ export const metadata = {
 };
 
 export default async function SuppliersPage() {
-  const [suppliersRes, productsRes, icons] = await Promise.all([
+  const [suppliersRes, productsRes, branchesRes, icons] = await Promise.all([
     prisma.storeSupplier.findMany({
-      include: { products: { select: { id: true } } },
+      include: { products: { select: { id: true } }, branches: { select: { id: true } } },
       orderBy: { createdAt: "desc" },
     }),
     prisma.storeProduct.findMany({
@@ -23,11 +23,17 @@ export default async function SuppliersPage() {
       orderBy: { name: "asc" },
       select: { id: true, name: true, description: true }
     }),
+    prisma.storeBranch.findMany({
+      where: { active: true },
+      orderBy: { sequence: "asc" },
+      select: { id: true, name: true }
+    }),
     getGlobalIcons()
   ]);
 
   const suppliers = suppliersRes || [];
   const products = productsRes || [];
+  const branches = branchesRes || [];
 
   const baseUrl = getPublicAppUrl();
   const rows: SupplierManagerRow[] = suppliers.map((s) => {
@@ -40,6 +46,7 @@ export default async function SuppliersPage() {
       chatDisabled: s.chatDisabled,
       portalUrl: `${baseUrl}/supplier?p=${s.id}&t=${s.portalToken}`,
       productIds: s.products.map((p: any) => p.id),
+      branchIds: s.branches.map((b: any) => b.id),
     };
   });
 
@@ -62,7 +69,7 @@ export default async function SuppliersPage() {
         </p>
       </div>
 
-      <SuppliersManager rows={rows} allProducts={products} icons={icons} />
+      <SuppliersManager rows={rows} allProducts={products} allBranches={branches} icons={icons} />
     </div>
   );
 }
