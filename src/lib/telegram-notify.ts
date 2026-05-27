@@ -597,8 +597,47 @@ export async function notifyTelegramOrderCanceled(orderId: string): Promise<void
 
   const msg = `❌ <b>تم رفض الطلب #${order.orderNumber}</b>\nمن قبل المحل: <b>${escapeTelegramHtml(order.shop.name)}</b>\nرقم الزبون (المستلم): <code>${order.customerPhone}</code>`;
   const notificationBotToken = await getBotTokenByPurpose("notification");
+  const managementBotToken = (await getBotTokenByPurpose("management")) || notificationBotToken;
+
   if (notificationBotToken) {
     await sendTelegramMessage(msg, { botToken: notificationBotToken });
+  }
+
+  if (managementBotToken && managementBotToken !== notificationBotToken) {
+    await sendTelegramMessage(msg, { botToken: managementBotToken });
+  }
+}
+
+export async function notifyTelegramOrderCanceledByClient(orderId: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { shop: true, customerRegion: true }
+  });
+  if (!order) return;
+
+  const amountStr = order.totalAmount ? formatDinarAsAlfWithUnit(order.totalAmount) : "—";
+
+  const msg = [
+    `⚠️ <b>إلغاء طلب من قبل العميل</b>`,
+    `🔢 <b>رقم الطلب:</b> <code>#${order.orderNumber}</code>`,
+    `🏢 <b>المحل:</b> ${escapeTelegramHtml(order.shop.name)}`,
+    `📍 <b>المنطقة:</b> ${escapeTelegramHtml(order.customerRegion?.name || "—")}`,
+    `📞 <b>رقم المستلم:</b> <code>${order.customerPhone}</code>`,
+    `💰 <b>المبلغ الكلي:</b> ${amountStr}`,
+    `📝 <b>النوع:</b> ${escapeTelegramHtml(order.orderType || "—")}`,
+    `-------------------------`,
+    `تم إلغاء الطلب الآن من قبل العميل عبر رابط سجل الطلبات.`
+  ].join("\n");
+
+  const notificationBotToken = await getBotTokenByPurpose("notification");
+  const managementBotToken = (await getBotTokenByPurpose("management")) || notificationBotToken;
+
+  if (notificationBotToken) {
+    await sendTelegramMessage(msg, { botToken: notificationBotToken });
+  }
+
+  if (managementBotToken && managementBotToken !== notificationBotToken) {
+    await sendTelegramMessage(msg, { botToken: managementBotToken });
   }
 }
 
@@ -613,8 +652,14 @@ export async function notifyTelegramDraftCanceled(draftId: string): Promise<void
 
   const msg = `❌ <b>تم رفض مسودة التجهيز #${draft.draftNumber}</b>\nمن قبل الموظف (المرسل): <b>${escapeTelegramHtml(staffName)}</b>\nالزبون (المستلم): <code>${draft.customerPhone}</code>\nالعنوان: ${escapeTelegramHtml(draft.titleLine)}`;
   const notificationBotToken = await getBotTokenByPurpose("notification");
+  const managementBotToken = (await getBotTokenByPurpose("management")) || notificationBotToken;
+
   if (notificationBotToken) {
     await sendTelegramMessage(msg, { botToken: notificationBotToken });
+  }
+
+  if (managementBotToken && managementBotToken !== notificationBotToken) {
+    await sendTelegramMessage(msg, { botToken: managementBotToken });
   }
 }
 

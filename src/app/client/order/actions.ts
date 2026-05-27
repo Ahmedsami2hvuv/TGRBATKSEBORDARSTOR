@@ -13,7 +13,7 @@ import { MAX_VOICE_NOTE_BYTES, saveVoiceNoteUploaded } from "@/lib/voice-note";
 import { prisma } from "@/lib/prisma";
 import { upsertCustomerPhoneProfileFromOrderSnapshot } from "@/lib/customer-phone-profile-sync";
 import { pushNotifyAdminsNewPendingOrder, pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
-import { notifyTelegramNewOrder } from "@/lib/telegram-notify";
+import { notifyTelegramNewOrder, notifyTelegramOrderCanceledByClient } from "@/lib/telegram-notify";
 import { withReversePickupPrefix } from "@/lib/order-type-flags";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
@@ -400,35 +400,54 @@ export async function updateCustomerUiMode(
   });
 }
 
-export async function cancelClientOrder(formData: FormData) {
-  const orderNumber = Number(formData.get("orderNumber"));
-  const e = String(formData.get("e") ?? "");
-  const exp = String(formData.get("exp") ?? "");
-  const s = String(formData.get("s") ?? "");
+export async function cancelClientOrder(formData: FormData): Promise<{ ok?: boolean; error?: string }> {
+  try {
+    const orderNumber = Number(formData.get("orderNumber"));
+    const e = String(formData.get("e") ?? "");
+    const exp = String(formData.get("exp") ?? "");
+    const s = String(formData.get("s") ?? "");
 
-  const v = verifyEmployeeOrderPortalQuery(e, exp, s);
-  if (!v.ok) return;
+    const v = verifyEmployeeOrderPortalQuery(e, exp, s);
+    if (!v.ok) return { error: "الرابط غير صالح أو منتهي الصلاحية." };
 
-  const order = await prisma.order.findUnique({
-    where: { orderNumber },
-    select: { status: true, shopId: true }
-  });
+    const order = await prisma.order.findUnique({
+      where: { orderNumber },
+      select: { id: true, status: true, shopId: true }
+    });
 
-  if (!order || (order.status !== "pending" && order.status !== "assigned")) {
-    return;
+    if (!order) {
+      return { error: "الطلب غير موجود." };
+    }
+
+    if (order.status !== "pending" && order.status !== "assigned") {
+      return { error: "عذراً، لا يمكن إلغاء الطلب في حالته الحالية (ربما تم استلامه من المندوب)." };
+    }
+
+    // التأكد من أن الطلب يخص نفس المحل المرتبط بالرابط
+    const employee = await prisma.employee.findUnique({
+      where: { id: v.employeeId },
+      select: { shopId: true }
+    });
+
+    if (!employee || employee.shopId !== order.shopId) {
+      return { error: "غير مصرح لك بإلغاء هذا الطلب." };
+    }
+
+    await prisma.order.update({
+      where: { orderNumber },
+      data: { status: "cancelled" }
+    });
+
+    // إرسال إشعار تليجرام عند الإلغاء
+    void notifyTelegramOrderCanceledByClient(order.id).catch(() => null);
+
+    revalidatePath("/client/order/history");
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
+
+    return { ok: true };
+  } catch (err: any) {
+    console.error("Cancel Order Error:", err);
+    return { error: "فشل إلغاء الطلب: " + (err.message || "خطأ داخلي") };
   }
-
-  // التأكد من أن الطلب يخص نفس المحل المرتبط بالرابط
-  const employee = await prisma.employee.findUnique({
-    where: { id: v.employeeId },
-    select: { shopId: true }
-  });
-  if (!employee || employee.shopId !== order.shopId) return;
-
-  await prisma.order.update({
-    where: { orderNumber },
-    data: { status: "cancelled" }
-  });
-
-  revalidatePath("/client/order/history");
 }
