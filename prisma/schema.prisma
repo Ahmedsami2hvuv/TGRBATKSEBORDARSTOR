@@ -85,6 +85,13 @@ model LegacyKseOrderImportLog {
   @@index([outcome])
 }
 
+model GlobalSettings {
+  id              String   @id @default("system")
+  allOrdersPaused Boolean  @default(false)
+  pauseMessage    String   @default("")
+  updatedAt       DateTime @updatedAt
+}
+
 model Shop {
   id            String         @id @default(cuid())
   name          String

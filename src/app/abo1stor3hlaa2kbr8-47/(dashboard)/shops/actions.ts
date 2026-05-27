@@ -201,3 +201,25 @@ export async function togglePauseOrders(formData: FormData) {
   revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
 }
 
+export async function toggleGlobalPause(formData: FormData) {
+  const pauseMessage = String(formData.get("pauseMessage") ?? "").trim();
+  const shouldPause = formData.get("shouldPause") === "true";
+
+  await prisma.globalSettings.upsert({
+    where: { id: "system" },
+    update: {
+      allOrdersPaused: shouldPause,
+      pauseMessage: shouldPause ? pauseMessage : "",
+    },
+    create: {
+      id: "system",
+      allOrdersPaused: shouldPause,
+      pauseMessage: shouldPause ? pauseMessage : "",
+    },
+  });
+
+  revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+  revalidatePath(`/client/order`);
+}
+
+
