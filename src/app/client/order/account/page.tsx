@@ -115,14 +115,12 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
   const dayBounds = baghdadDayRangeUtc(ymd);
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  const [todayCount, weekCount, totalCount, deliveredCount, activeCount, recent] =
-    await Promise.all([
+  // تحسين: تقليل عدد الطلبات المتوازية لتقليل الضغط على الاتصالات
+  const [counts, recent] = await Promise.all([
+    prisma.$transaction([
       dayBounds
         ? prisma.order.count({
-            where: {
-              ...baseWhere,
-              createdAt: { gte: dayBounds.gte, lt: dayBounds.lt },
-            },
+            where: { ...baseWhere, createdAt: { gte: dayBounds.gte, lt: dayBounds.lt } },
           })
         : Promise.resolve(0),
       prisma.order.count({
@@ -131,24 +129,24 @@ export default async function ClientOrderAccountPage({ searchParams }: Props) {
       prisma.order.count({ where: baseWhere }),
       prisma.order.count({ where: { ...baseWhere, status: "delivered" } }),
       prisma.order.count({
-        where: {
-          ...baseWhere,
-          status: { in: ["pending", "assigned", "delivering"] },
-        },
+        where: { ...baseWhere, status: { in: ["pending", "assigned", "delivering"] } },
       }),
-      prisma.order.findMany({
-        where: baseWhere,
-        orderBy: { createdAt: "desc" },
-        take: 25,
-        select: {
-          orderNumber: true,
-          status: true,
-          orderType: true,
-          createdAt: true,
-          totalAmount: true,
-        },
-      }),
-    ]);
+    ]),
+    prisma.order.findMany({
+      where: baseWhere,
+      orderBy: { createdAt: "desc" },
+      take: 15, // تقليل العدد قليلاً لسرعة التحميل الأولية
+      select: {
+        orderNumber: true,
+        status: true,
+        orderType: true,
+        createdAt: true,
+        totalAmount: true,
+      },
+    }),
+  ]);
+
+  const [todayCount, weekCount, totalCount, deliveredCount, activeCount] = counts;
 
   const shopPhoto = resolvePublicImageSrc(employee.shop.photoUrl);
 
