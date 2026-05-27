@@ -597,14 +597,20 @@ export async function notifyTelegramOrderCanceled(orderId: string): Promise<void
 
   const msg = `❌ <b>تم رفض الطلب #${order.orderNumber}</b>\nمن قبل المحل: <b>${escapeTelegramHtml(order.shop.name)}</b>\nرقم الزبون (المستلم): <code>${order.customerPhone}</code>`;
   const notificationBotToken = await getBotTokenByPurpose("notification");
-  const managementBotToken = (await getBotTokenByPurpose("management")) || notificationBotToken;
+  const adminBotToken = (await getBotTokenByPurpose("admin")) || (await getBotTokenByPurpose("management")) || notificationBotToken;
 
   if (notificationBotToken) {
-    await sendTelegramMessage(msg, { botToken: notificationBotToken });
+    await sendTelegramMessage(msg, { botToken: notificationBotToken }).catch(() => null);
   }
 
-  if (managementBotToken && managementBotToken !== notificationBotToken) {
-    await sendTelegramMessage(msg, { botToken: managementBotToken });
+  // إرسال للإداريين في الخاص عبر بوت الإدارة
+  if (adminBotToken) {
+    const admins = await prisma.telegramAdmin.findMany({ where: { active: true } });
+    for (const admin of admins) {
+      if (admin.telegramUserId) {
+        await sendTelegramHtmlToChat(admin.telegramUserId, msg, adminBotToken).catch(() => null);
+      }
+    }
   }
 }
 
@@ -630,7 +636,7 @@ export async function notifyTelegramOrderCanceledByClient(orderId: string): Prom
   ].join("\n");
 
   const notificationBotToken = await getBotTokenByPurpose("notification");
-  const managementBotToken = (await getBotTokenByPurpose("management")) || notificationBotToken;
+  const adminBotToken = (await getBotTokenByPurpose("admin")) || (await getBotTokenByPurpose("management")) || notificationBotToken;
 
   // إرسال لجروب الإشعارات
   if (notificationBotToken) {
@@ -638,11 +644,11 @@ export async function notifyTelegramOrderCanceledByClient(orderId: string): Prom
   }
 
   // إرسال لبوت الإدارة (لجميع الإداريين النشطين في الخاص)
-  if (managementBotToken) {
+  if (adminBotToken) {
     const admins = await prisma.telegramAdmin.findMany({ where: { active: true } });
     for (const admin of admins) {
       if (admin.telegramUserId) {
-        await sendTelegramHtmlToChat(admin.telegramUserId, msg, managementBotToken).catch(() => null);
+        await sendTelegramHtmlToChat(admin.telegramUserId, msg, adminBotToken).catch(() => null);
       }
     }
   }
@@ -659,14 +665,20 @@ export async function notifyTelegramDraftCanceled(draftId: string): Promise<void
 
   const msg = `❌ <b>تم رفض مسودة التجهيز #${draft.draftNumber}</b>\nمن قبل الموظف (المرسل): <b>${escapeTelegramHtml(staffName)}</b>\nالزبون (المستلم): <code>${draft.customerPhone}</code>\nالعنوان: ${escapeTelegramHtml(draft.titleLine)}`;
   const notificationBotToken = await getBotTokenByPurpose("notification");
-  const managementBotToken = (await getBotTokenByPurpose("management")) || notificationBotToken;
+  const adminBotToken = (await getBotTokenByPurpose("admin")) || (await getBotTokenByPurpose("management")) || notificationBotToken;
 
   if (notificationBotToken) {
-    await sendTelegramMessage(msg, { botToken: notificationBotToken });
+    await sendTelegramMessage(msg, { botToken: notificationBotToken }).catch(() => null);
   }
 
-  if (managementBotToken && managementBotToken !== notificationBotToken) {
-    await sendTelegramMessage(msg, { botToken: managementBotToken });
+  // إرسال للإداريين في الخاص عبر بوت الإدارة
+  if (adminBotToken) {
+    const admins = await prisma.telegramAdmin.findMany({ where: { active: true } });
+    for (const admin of admins) {
+      if (admin.telegramUserId) {
+        await sendTelegramHtmlToChat(admin.telegramUserId, msg, adminBotToken).catch(() => null);
+      }
+    }
   }
 }
 
@@ -691,14 +703,19 @@ export async function notifyTelegramUnavailableProducts(input: {
   ].join("\n");
 
   const notificationBotToken = await getBotTokenByPurpose("notification");
-  const managementBotToken = await getBotTokenByPurpose("management") || notificationBotToken;
+  const adminBotToken = await getBotTokenByPurpose("admin") || await getBotTokenByPurpose("management") || notificationBotToken;
 
   // إرسال لجروب الإشعارات
   await sendTelegramMessage(text, { botToken: notificationBotToken });
 
-  // إرسال لبوت الإدارة (إذا كان مختلفاً)
-  if (managementBotToken !== notificationBotToken) {
-     await sendTelegramMessage(text, { botToken: managementBotToken });
+  // إرسال لبوت الإدارة (لجميع الإداريين النشطين في الخاص)
+  if (adminBotToken) {
+    const admins = await prisma.telegramAdmin.findMany({ where: { active: true } });
+    for (const admin of admins) {
+      if (admin.telegramUserId) {
+        await sendTelegramHtmlToChat(admin.telegramUserId, text, adminBotToken).catch(() => null);
+      }
+    }
   }
 }
 

@@ -982,6 +982,9 @@ export async function rejectOrderFromPreparerAction(
       data: { status: "cancelled" }
     });
 
+    const { notifyTelegramOrderCanceled } = await import("@/lib/telegram-notify");
+    void notifyTelegramOrderCanceled(orderId).catch(() => null);
+
     // أرشفة كافة المسودات المرتبطة بهذا الطلب
     await prisma.companyPreparerShoppingDraft.updateMany({
       where: { sentOrderId: orderId },
