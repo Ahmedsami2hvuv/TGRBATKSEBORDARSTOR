@@ -25,10 +25,9 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
   const [isLocked, setIsLocked] = useState(false);
   const [menuScale, setMenuScale] = useState(1);
   const [mounted, setMounted] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setMounted(true);
     fetch("/api/abo1stor3hlaa2kbr8-47/settings/floating-menu")
       .then(res => res.json())
       .then(data => {
@@ -36,46 +35,47 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
         if (data.isLocked !== undefined) setIsLocked(data.isLocked);
         if (data.menuScale !== undefined) setMenuScale(data.menuScale);
       })
-      .catch(err => console.error("Failed to fetch menu settings", err));
+      .catch(err => console.error("Failed to fetch menu settings", err))
+      .finally(() => {
+        setMounted(true);
+        setLoading(false);
+      });
   }, []);
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const res = await fetch("/api/abo1stor3hlaa2kbr8-47/settings/floating-menu", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ categories, isLocked, menuScale })
-      });
-      if (res.ok) {
-        alert("تم حفظ الإعدادات بنجاح ✅");
-        // Update local storage too so the current session reflects changes immediately without refresh if needed
+  // Auto-save logic
+  useEffect(() => {
+    if (!mounted || loading) return;
+
+    const timeout = setTimeout(async () => {
+      try {
+        await fetch("/api/abo1stor3hlaa2kbr8-47/settings/floating-menu", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ categories, isLocked, menuScale })
+        });
+
+        // Update local storage for immediate feedback in the floating menu component
         localStorage.setItem("kse_admin_floating_data", JSON.stringify(categories));
         localStorage.setItem("kse_admin_floating_locked", isLocked.toString());
         localStorage.setItem("kse_admin_floating_scale", menuScale.toString());
         window.dispatchEvent(new Event("storage"));
-      } else {
-        alert("فشل حفظ الإعدادات ❌");
+      } catch (e) {
+        console.error("Auto-save failed", e);
       }
-    } catch (e) {
-      alert("حدث خطأ أثناء الاتصال بالسيرفر");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    }, 1000);
+
+    return () => clearTimeout(timeout);
+  }, [categories, isLocked, menuScale, mounted, loading]);
 
   const addCategory = () => {
-    const name = prompt("اسم القسم الجديد:");
-    if (name) {
-      const newCat: CustomCategory = {
-        id: Date.now().toString(),
-        name,
-        icon: "",
-        color: COLORS[categories.length % COLORS.length],
-        links: []
-      };
-      setCategories([...categories, newCat]);
-    }
+    const newCat: CustomCategory = {
+      id: Date.now().toString(),
+      name: "قسم جديد",
+      icon: "⭐",
+      color: COLORS[categories.length % COLORS.length],
+      links: []
+    };
+    setCategories([...categories, newCat]);
   };
 
   const deleteCategory = (id: string) => {
@@ -85,13 +85,9 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
   };
 
   const addLink = (catId: string) => {
-    const name = prompt("اسم الرابط:");
-    const url = prompt("الرابط (URL):", "https://");
-    if (name && url) {
-      setCategories(prev => prev.map(c =>
-        c.id === catId ? { ...c, links: [...c.links, { id: Date.now().toString(), name, url }] } : c
-      ));
-    }
+    setCategories(prev => prev.map(c =>
+      c.id === catId ? { ...c, links: [...c.links, { id: Date.now().toString(), name: "رابط جديد", url: "https://" }] } : c
+    ));
   };
 
   const deleteLink = (catId: string, linkId: string) => {
@@ -134,22 +130,16 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-black text-slate-800">الأقسام والروابط</h3>
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-4 py-1.5 bg-emerald-600 text-white text-xs font-black rounded-xl hover:bg-emerald-700 transition disabled:opacity-50"
-            >
-              {isSaving ? "جاري الحفظ..." : "💾 حفظ التغييرات"}
-            </button>
-            <button
-              onClick={addCategory}
-              className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition"
-            >
-              + إضافة قسم
-            </button>
-          </div>
+          <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+            الأقسام والروابط
+            {!loading && <span className="text-[10px] text-emerald-500 font-bold bg-emerald-50 px-2 py-0.5 rounded-full animate-pulse">● مزامنة تلقائية</span>}
+          </h3>
+          <button
+            onClick={addCategory}
+            className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition"
+          >
+            + إضافة قسم
+          </button>
         </div>
 
         <div className="grid grid-cols-1 gap-4">
@@ -231,12 +221,11 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
         </div>
       </div>
 
-      <div className="bg-indigo-50 border border-indigo-200 p-4 rounded-2xl">
-         <p className="text-xs text-indigo-800 font-bold leading-relaxed">
-            💡 ملاحظة: يتم مزامنة هذه البيانات مع قاعدة البيانات السحابية (Supabase).
-            ستظهر القائمة على جميع أجهزتك طالما أنك تستخدم نفس حساب الإدارة.
-         </p>
-      </div>
+      {loading && (
+        <div className="text-center py-4">
+          <p className="text-xs text-slate-500 font-bold animate-bounce">جاري جلب البيانات من السحابة...</p>
+        </div>
+      )}
     </div>
   );
 }
