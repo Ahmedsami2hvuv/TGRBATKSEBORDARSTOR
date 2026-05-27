@@ -236,7 +236,13 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                         <span className="text-lg font-black tabular-nums text-slate-900 dark:text-slate-100">
                           #{o.orderNumber}
                         </span>
-                        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${o.status === 'pending' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/80 dark:text-blue-200' : 'bg-sky-100 text-sky-800 dark:bg-sky-900/70 dark:text-sky-200'}`}>
+                        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                          o.status === 'pending'
+                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/80 dark:text-blue-200'
+                            : o.status === 'cancelled'
+                            ? 'bg-red-100 text-red-700 dark:bg-red-900/80 dark:text-red-200'
+                            : 'bg-sky-100 text-sky-800 dark:bg-sky-900/70 dark:text-sky-200'
+                        }`}>
                           {statusAr(o.status)}
                         </span>
                         {o.prepaidAll && (
