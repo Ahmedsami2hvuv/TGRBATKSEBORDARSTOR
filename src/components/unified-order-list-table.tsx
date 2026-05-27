@@ -132,6 +132,10 @@ type Props = {
   hideShopColumnLocationAndDoorPhotoButtons?: boolean;
   /** خاصية إعادة الترتيب بالسحب والإفلات */
   onRowReorder?: (draggedId: string, targetId: string) => void;
+  /** تحديد ما إذا كان الصف قابلاً للسحب */
+  canDragRow?: (row: MandoubRow) => boolean;
+  /** تحديد ما إذا كان الصف قابلاً للاستقبال كهدف للإفلات */
+  canDropOnRow?: (row: MandoubRow) => boolean;
 };
 
 export function UnifiedOrderListTable({
@@ -159,6 +163,8 @@ export function UnifiedOrderListTable({
   hidePhoneColumn = false,
   hideShopColumnLocationAndDoorPhotoButtons = false,
   onRowReorder,
+  canDragRow,
+  canDropOnRow,
 }: Props) {
   const [modalImg, setModalImg] = useState<{ url: string, title: string } | null>(null);
   const [showNotes, setShowNotes] = useState<string | null>(null);
@@ -268,9 +274,12 @@ export function UnifiedOrderListTable({
                         onOpenRow(o.id);
                       }
                     }}
-                    draggable={!!onRowReorder}
+                    draggable={!!onRowReorder && (!canDragRow || canDragRow(o))}
                     onDragStart={(e) => {
-                      if (!onRowReorder) return;
+                      if (!onRowReorder || (canDragRow && !canDragRow(o))) {
+                        e.preventDefault();
+                        return;
+                      }
                       setDraggedId(o.id);
                       e.dataTransfer.effectAllowed = "move";
                       // إضافة معاينة شفافة
@@ -285,6 +294,7 @@ export function UnifiedOrderListTable({
                     }}
                     onDragOver={(e) => {
                       if (!onRowReorder || !draggedId || draggedId === o.id) return;
+                      if (canDropOnRow && !canDropOnRow(o)) return;
                       e.preventDefault();
                       setDragOverId(o.id);
                       e.dataTransfer.dropEffect = "move";
@@ -294,6 +304,7 @@ export function UnifiedOrderListTable({
                     }}
                     onDrop={(e) => {
                       if (!onRowReorder || !draggedId || draggedId === o.id) return;
+                      if (canDropOnRow && !canDropOnRow(o)) return;
                       e.preventDefault();
                       onRowReorder(draggedId, o.id);
                       setDraggedId(null);
@@ -388,21 +399,21 @@ export function UnifiedOrderListTable({
                               $
                             </span>
                           ) : null}
-                          <div className="flex flex-col items-center gap-1.5">
-                            {renderOrderIdBadge ? (
-                              renderOrderIdBadge(o)
-                            ) : !showSelectColumn || !showStatusDotInSelectCol ? (
-                              <span
-                                className={`inline-flex h-8 w-8 shrink-0 rounded-full sm:h-9 sm:w-9 ${o.statusClass}`}
-                                title={o.statusAr}
-                                aria-label={o.statusAr}
-                                role="img"
-                              />
-                            ) : null}
-                            {!hideShortIdInBadgeCol && (
-                              <span className="tabular-nums font-bold text-[11px] text-slate-400">#{o.shortId}</span>
-                            )}
-                          </div>
+                        <div className="flex flex-col items-center gap-1.5">
+                          {renderOrderIdBadge ? (
+                            renderOrderIdBadge(o)
+                          ) : !showSelectColumn || !showStatusDotInSelectCol ? (
+                            <span
+                              className={`inline-flex h-8 w-8 shrink-0 rounded-full sm:h-9 sm:w-9 ${o.statusClass}`}
+                              title={o.statusAr}
+                              aria-label={o.statusAr}
+                              role="img"
+                            />
+                          ) : null}
+                          {!hideShortIdInBadgeCol && (
+                            <span className="tabular-nums font-bold text-[11px] text-slate-400">#{o.shortId}</span>
+                          )}
+                        </div>
                           {o.vehiclePreference === "bike" && (
                             <span className="text-sm" title="يفضل دراجة">🏍️</span>
                           )}

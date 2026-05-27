@@ -202,13 +202,16 @@ export function MandoubOrderTable({
   };
 
   const handleRowReorder = (draggedId: string, targetId: string) => {
-    const currentIds = displayRows.map(r => r.id);
-    const draggedIdx = currentIds.indexOf(draggedId);
-    const targetIdx = currentIds.indexOf(targetId);
+    // نأخذ الطلبات النشطة فقط للترتيب (المستلمة وبانتظار المندوب)
+    const activeRows = displayRows.filter(r => r.orderStatus !== "delivered");
+    const activeIds = activeRows.map(r => r.id);
+
+    const draggedIdx = activeIds.indexOf(draggedId);
+    const targetIdx = activeIds.indexOf(targetId);
 
     if (draggedIdx === -1 || targetIdx === -1) return;
 
-    const newIds = [...currentIds];
+    const newIds = [...activeIds];
     const [movedItem] = newIds.splice(draggedIdx, 1);
     newIds.splice(targetIdx, 0, movedItem!);
 
@@ -216,11 +219,12 @@ export function MandoubOrderTable({
   };
 
   const moveRow = (id: string, direction: 'up' | 'down') => {
-    const currentIds = displayRows.map(r => r.id);
-    const index = currentIds.indexOf(id);
+    const activeRows = displayRows.filter(r => r.orderStatus !== "delivered");
+    const activeIds = activeRows.map(r => r.id);
+    const index = activeIds.indexOf(id);
     if (index === -1) return;
 
-    const newIds = [...currentIds];
+    const newIds = [...activeIds];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
 
     if (targetIndex >= 0 && targetIndex < newIds.length) {
@@ -228,6 +232,11 @@ export function MandoubOrderTable({
       newIds[index] = newIds[targetIndex];
       newIds[targetIndex] = temp!;
       saveSortOrder(newIds);
+
+      // تغذية راجعة للاهتزاز على الموبايل
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(10);
+      }
     }
   };
 
@@ -273,23 +282,23 @@ export function MandoubOrderTable({
         : r,
     );
 
-    // إذا كان هناك ترتيب مخصص، نطبقه على الطلبات النشطة فقط
-    if (customSortIds.length > 0) {
-      const sorted = [...base].sort((a, b) => {
-        const idxA = customSortIds.indexOf(a.id);
-        const idxB = customSortIds.indexOf(b.id);
+    const active = base.filter(r => r.orderStatus !== "delivered");
+    const delivered = base.filter(r => r.orderStatus === "delivered");
 
-        // إذا كانا كلاهما في الترتيب المخصص
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        // إذا كان أحدهما فقط، المذكور يظهر أولاً
-        if (idxA !== -1) return -1;
-        if (idxB !== -1) return 1;
-        return 0;
-      });
-      return sorted;
-    }
+    // نطبق الترتيب المخصص على الطلبات النشطة فقط
+    const sortedActive = customSortIds.length > 0
+      ? [...active].sort((a, b) => {
+          const idxA = customSortIds.indexOf(a.id);
+          const idxB = customSortIds.indexOf(b.id);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
+          return 0;
+        })
+      : active;
 
-    return base;
+    // الطلبات المسلمة تبقى دائماً في النهاية ولا تتأثر بالترتيب اليدوي للنشطة
+    return [...sortedActive, ...delivered];
   }, [rows, rowStatusOverrides, customSortIds]);
   const rowIds = useMemo(() => displayRows.map((r) => r.id), [displayRows]);
 
@@ -545,28 +554,48 @@ export function MandoubOrderTable({
           window.history.pushState({ orderId: id }, "");
         }}
         onRowReorder={isSortingMode ? handleRowReorder : undefined}
+        canDragRow={(o) => o.orderStatus !== "delivered"}
+        canDropOnRow={(o) => o.orderStatus !== "delivered"}
         selectAllTitle="تحديد الكل"
         selectAllAriaLabel="تحديد كل الطلبات الظاهرة"
         selectedTitle="تحديد"
         selectedAriaPrefix="تحديد الطلب"
         showStatusDotInSelectCol={false}
         renderOrderIdBadge={(o) => {
-          if (!isSortingMode) return null;
+          if (!isSortingMode || o.orderStatus === "delivered") return null;
           return (
-            <div className="flex items-center justify-center py-2" onClick={e => e.stopPropagation()}>
+            <div className="flex flex-col items-center gap-1.5 py-1.5" onClick={e => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => moveRow(o.id, 'up')}
+                className="flex size-8 items-center justify-center rounded-lg bg-white text-indigo-500 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
+                title="تحريك للأعلى"
+              >
+                <DynamicIcon iconKey="ui_chevron_up" config={icons} fallback="▲" className="w-4 h-4" />
+              </button>
+
               <div
-                className="cursor-grab active:cursor-grabbing p-2 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                className="cursor-grab active:cursor-grabbing flex size-10 items-center justify-center bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-md group/handle"
                 title="اضغط واسحب للترتيب"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                  <circle cx="9" cy="5" r="1" fill="currentColor"></circle>
-                  <circle cx="9" cy="12" r="1" fill="currentColor"></circle>
-                  <circle cx="9" cy="19" r="1" fill="currentColor"></circle>
-                  <circle cx="15" cy="5" r="1" fill="currentColor"></circle>
-                  <circle cx="15" cy="12" r="1" fill="currentColor"></circle>
-                  <circle cx="15" cy="19" r="1" fill="currentColor"></circle>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                  <circle cx="9" cy="5" r="1.5" fill="currentColor"></circle>
+                  <circle cx="9" cy="12" r="1.5" fill="currentColor"></circle>
+                  <circle cx="9" cy="19" r="1.5" fill="currentColor"></circle>
+                  <circle cx="15" cy="5" r="1.5" fill="currentColor"></circle>
+                  <circle cx="15" cy="12" r="1.5" fill="currentColor"></circle>
+                  <circle cx="15" cy="19" r="1.5" fill="currentColor"></circle>
                 </svg>
               </div>
+
+              <button
+                type="button"
+                onClick={() => moveRow(o.id, 'down')}
+                className="flex size-8 items-center justify-center rounded-lg bg-white text-indigo-500 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
+                title="تحريك للأسفل"
+              >
+                <DynamicIcon iconKey="ui_chevron_down" config={icons} fallback="▼" className="w-4 h-4" />
+              </button>
             </div>
           );
         }}
