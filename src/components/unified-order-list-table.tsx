@@ -130,6 +130,8 @@ type Props = {
   hidePhoneColumn?: boolean;
   /** إخفاء زرّي الموقع وصور الأبواب بجانب اسم المحل (قائمة المجهز وغيرها) */
   hideShopColumnLocationAndDoorPhotoButtons?: boolean;
+  /** خاصية إعادة الترتيب بالسحب والإفلات */
+  onRowReorder?: (draggedId: string, targetId: string) => void;
 };
 
 export function UnifiedOrderListTable({
@@ -156,6 +158,7 @@ export function UnifiedOrderListTable({
   hidePhoneData = false,
   hidePhoneColumn = false,
   hideShopColumnLocationAndDoorPhotoButtons = false,
+  onRowReorder,
 }: Props) {
   const [modalImg, setModalImg] = useState<{ url: string, title: string } | null>(null);
   const [showNotes, setShowNotes] = useState<string | null>(null);
@@ -166,6 +169,8 @@ export function UnifiedOrderListTable({
   const [activeAudioId, setActiveAudioId] = useState<string | null>(null);
   const [activeSmartHintId, setActiveSmartHintId] = useState<string | null>(null);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
@@ -263,13 +268,44 @@ export function UnifiedOrderListTable({
                         onOpenRow(o.id);
                       }
                     }}
+                    draggable={!!onRowReorder}
+                    onDragStart={(e) => {
+                      if (!onRowReorder) return;
+                      setDraggedId(o.id);
+                      e.dataTransfer.effectAllowed = "move";
+                      // إضافة معاينة شفافة
+                      const target = e.currentTarget as HTMLElement;
+                      target.style.opacity = '0.4';
+                    }}
+                    onDragEnd={(e) => {
+                      setDraggedId(null);
+                      setDragOverId(null);
+                      const target = e.currentTarget as HTMLElement;
+                      target.style.opacity = '1';
+                    }}
+                    onDragOver={(e) => {
+                      if (!onRowReorder || !draggedId || draggedId === o.id) return;
+                      e.preventDefault();
+                      setDragOverId(o.id);
+                      e.dataTransfer.dropEffect = "move";
+                    }}
+                    onDragLeave={() => {
+                      setDragOverId(null);
+                    }}
+                    onDrop={(e) => {
+                      if (!onRowReorder || !draggedId || draggedId === o.id) return;
+                      e.preventDefault();
+                      onRowReorder(draggedId, o.id);
+                      setDraggedId(null);
+                      setDragOverId(null);
+                    }}
                     tabIndex={0}
                     role="link"
-                    className={`group cursor-pointer border-b border-slate-100 transition-colors ${
+                    className={`group cursor-pointer border-b border-slate-100 transition-all ${
                       o.reversePickup
                         ? "bg-violet-100 hover:bg-violet-200"
                         : "bg-white hover:bg-sky-50/90"
-                    }`}
+                    } ${dragOverId === o.id ? "border-t-4 border-t-indigo-500 scale-[1.01] shadow-lg" : ""}`}
                   >
                     {showSelectColumn ? (
                       <td

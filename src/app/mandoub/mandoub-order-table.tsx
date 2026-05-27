@@ -179,6 +179,12 @@ export function MandoubOrderTable({
     localStorage.setItem(`mandoub_sort_${auth.c}`, JSON.stringify(newOrder));
   };
 
+  const resetSortOrder = () => {
+    setCustomSortIds([]);
+    localStorage.removeItem(`mandoub_sort_${auth.c}`);
+    toast.success("تمت العودة للترتيب الأصلي");
+  };
+
   const smartSortByRegion = () => {
     const sorted = [...displayRows].sort((a, b) => {
       // أولاً حسب الحالة (المستلم أولاً)
@@ -193,6 +199,20 @@ export function MandoubOrderTable({
     const newIds = sorted.map(r => r.id);
     saveSortOrder(newIds);
     toast.success("تم الترتيب ذكياً حسب الحالة والمنطقة");
+  };
+
+  const handleRowReorder = (draggedId: string, targetId: string) => {
+    const currentIds = displayRows.map(r => r.id);
+    const draggedIdx = currentIds.indexOf(draggedId);
+    const targetIdx = currentIds.indexOf(targetId);
+
+    if (draggedIdx === -1 || targetIdx === -1) return;
+
+    const newIds = [...currentIds];
+    const [movedItem] = newIds.splice(draggedIdx, 1);
+    newIds.splice(targetIdx, 0, movedItem!);
+
+    saveSortOrder(newIds);
   };
 
   const moveRow = (id: string, direction: 'up' | 'down') => {
@@ -425,14 +445,24 @@ export function MandoubOrderTable({
               </button>
 
               {isSortingMode && (
-                <button
-                  type="button"
-                  onClick={smartSortByRegion}
-                  className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-100 animate-in fade-in slide-in-from-right-2"
-                >
-                  <DynamicIcon iconKey="ui_flash" config={icons} className="w-3.5 h-3.5 text-emerald-600" fallback="✨" />
-                  ترتيب ذكي
-                </button>
+                <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-right-2">
+                  <button
+                    type="button"
+                    onClick={smartSortByRegion}
+                    className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-100"
+                  >
+                    <DynamicIcon iconKey="ui_flash" config={icons} className="w-3.5 h-3.5 text-emerald-600" fallback="✨" />
+                    ترتيب ذكي
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetSortOrder}
+                    className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                  >
+                    <DynamicIcon iconKey="ui_refresh" config={icons} className="w-3.5 h-3.5 text-slate-500" fallback="🔄" />
+                    الترتيب الأصلي
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -514,6 +544,7 @@ export function MandoubOrderTable({
           setActiveOrderId(id);
           window.history.pushState({ orderId: id }, "");
         }}
+        onRowReorder={isSortingMode ? handleRowReorder : undefined}
         selectAllTitle="تحديد الكل"
         selectAllAriaLabel="تحديد كل الطلبات الظاهرة"
         selectedTitle="تحديد"
@@ -522,19 +553,20 @@ export function MandoubOrderTable({
         renderOrderIdBadge={(o) => {
           if (!isSortingMode) return null;
           return (
-            <div className="flex flex-col gap-1 -mt-1" onClick={e => e.stopPropagation()}>
-              <button
-                onClick={() => moveRow(o.id, 'up')}
-                className="flex size-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+            <div className="flex items-center justify-center py-2" onClick={e => e.stopPropagation()}>
+              <div
+                className="cursor-grab active:cursor-grabbing p-2 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                title="اضغط واسحب للترتيب"
               >
-                ▲
-              </button>
-              <button
-                onClick={() => moveRow(o.id, 'down')}
-                className="flex size-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
-              >
-                ▼
-              </button>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                  <circle cx="9" cy="5" r="1" fill="currentColor"></circle>
+                  <circle cx="9" cy="12" r="1" fill="currentColor"></circle>
+                  <circle cx="9" cy="19" r="1" fill="currentColor"></circle>
+                  <circle cx="15" cy="5" r="1" fill="currentColor"></circle>
+                  <circle cx="15" cy="12" r="1" fill="currentColor"></circle>
+                  <circle cx="15" cy="19" r="1" fill="currentColor"></circle>
+                </svg>
+              </div>
             </div>
           );
         }}
