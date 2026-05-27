@@ -10,7 +10,6 @@ export type AdminTile = {
 
 export const ADMIN_TILES: AdminTile[] = [
   { slug: "store", label: "المتجر", iconKey: "ui_shops", href: "/abo1stor3hlaa2kbr8-47/store" },
-  { slug: "slides", label: "السلايدر", iconKey: "ui_image", href: "/abo1stor3hlaa2kbr8-47/store/slides" },
   { slug: "admin-create-order", label: "إضافة طلب من الإدارة", iconKey: "ui_add", href: "/abo1stor3hlaa2kbr8-47/orders/new" },
   { slug: "new-orders", label: "الطلبات الجديدة", iconKey: "ui_inbox", href: "/abo1stor3hlaa2kbr8-47/orders/pending" },
   { slug: "order-tracking", label: "تتبع الطلبات", iconKey: "ui_location", href: "/abo1stor3hlaa2kbr8-47/orders/tracking" },

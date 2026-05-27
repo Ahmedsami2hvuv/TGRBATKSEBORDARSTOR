@@ -16,17 +16,28 @@ export async function updateSupplierProductPrice(formData: FormData) {
 
     const supplier = await prisma.storeSupplier.findFirst({
       where: { id: supplierId, portalToken: token, active: true },
-      select: { id: true, profitMargin: true }
+      select: {
+        id: true,
+        profitMargin: true,
+        branches: { select: { id: true } }
+      }
     });
 
     if (!supplier) throw new Error("غير مصرح لك");
 
+    const branchIds = supplier.branches.map(b => b.id);
     const profitMargin = Number(supplier.profitMargin) || 0.25;
     const salePrice = purchasePrice + profitMargin;
 
-    // التأكد من أن المنتج ينتمي لهذا المورد
+    // التأكد من أن المنتج ينتمي لهذا المورد أو لأحد أفرعه المخولة
     const product = await prisma.storeProduct.findFirst({
-      where: { id: productId, supplierId: supplier.id }
+      where: {
+        id: productId,
+        OR: [
+          { supplierId: supplier.id },
+          { branchId: { in: branchIds } }
+        ]
+      }
     });
 
     if (!product) throw new Error("منتج غير مصرح");

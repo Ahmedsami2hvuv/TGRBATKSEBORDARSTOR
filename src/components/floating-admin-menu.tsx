@@ -323,7 +323,29 @@ export function FloatingAdminMenu() {
                           >
                             <path d={getArcPath(lsA, leA, outerRadius + 2, subRingRadius)} fill="#1e293b" className="hover:fill-slate-700 transition-colors" />
                             <text x={ltx} y={lty} fill="white" fontSize="9" fontWeight="bold" textAnchor="middle" className="pointer-events-none uppercase">{link.name.substring(0,10)}</text>
-                            <circle cx={Math.cos((lsA-90)*Math.PI/180)*subRingRadius} cy={Math.sin((lsA-90)*Math.PI/180)*subRingRadius} r="7" fill="#ef4444" className="opacity-0 group-hover/link:opacity-100 transition-opacity" onClick={(e)=>{e.stopPropagation(); setCategories(prev=>prev.map(c=>c.id===cat.id?{...c,links:c.links.filter(l=>l.id!==link.id)}:c))}} />
+                            <circle
+                              cx={Math.cos((lsA-90)*Math.PI/180)*subRingRadius}
+                              cy={Math.sin((lsA-90)*Math.PI/180)*subRingRadius}
+                              r="9"
+                              fill="#ef4444"
+                              className="opacity-0 group-hover/link:opacity-100 transition-opacity shadow-lg cursor-pointer"
+                              onClick={(e)=>{
+                                e.stopPropagation();
+                                if(confirm("هل أنت متأكد من حذف هذا الرابط نهائياً؟")) {
+                                  setCategories(prev=>prev.map(c=>c.id===cat.id?{...c,links:c.links.filter(l=>l.id!==link.id)}:c))
+                                }
+                              }}
+                            />
+                            <text
+                              x={Math.cos((lsA-90)*Math.PI/180)*subRingRadius}
+                              y={Math.sin((lsA-90)*Math.PI/180)*subRingRadius}
+                              fill="white"
+                              fontSize="11"
+                              fontWeight="black"
+                              textAnchor="middle"
+                              alignmentBaseline="middle"
+                              className="pointer-events-none opacity-0 group-hover/link:opacity-100"
+                            >×</text>
                           </g>
                         );
                       })}
@@ -340,8 +362,24 @@ export function FloatingAdminMenu() {
                         }}
                         className="cursor-pointer pointer-events-auto"
                       >
-                        <path d={getArcPath(eA - (eA-sA)/(cat.links.length+1), eA, outerRadius + 2, subRingRadius)} fill="rgba(255,255,255,0.15)" className="hover:fill-white/30 transition-colors" />
-                        <text x={Math.cos((eA - ((eA-sA)/(cat.links.length+1))/2 - 90)*Math.PI/180)*(outerRadius+30)} y={Math.sin((eA - ((eA-sA)/(cat.links.length+1))/2 - 90)*Math.PI/180)*(outerRadius+30)} fill="white" fontSize="22" fontWeight="bold" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none">+</text>
+                        <path
+                          d={getArcPath(eA - (eA-sA)/(cat.links.length+1), eA, outerRadius + 2, subRingRadius)}
+                          fill="#10b981"
+                          stroke="white"
+                          strokeWidth="1"
+                          className="hover:brightness-110 transition-all"
+                        />
+                        <text
+                          x={Math.cos((eA - ((eA-sA)/(cat.links.length+1))/2 - 90)*Math.PI/180)*((outerRadius + subRingRadius)/2)}
+                          y={Math.sin((eA - ((eA-sA)/(cat.links.length+1))/2 - 90)*Math.PI/180)*((outerRadius + subRingRadius)/2)}
+                          fill="white"
+                          textAnchor="middle"
+                          alignmentBaseline="middle"
+                          className="pointer-events-none"
+                        >
+                          <tspan x={Math.cos((eA - ((eA-sA)/(cat.links.length+1))/2 - 90)*Math.PI/180)*((outerRadius + subRingRadius)/2)} dy="-2" fontSize="16" fontWeight="900">+</tspan>
+                          <tspan x={Math.cos((eA - ((eA-sA)/(cat.links.length+1))/2 - 90)*Math.PI/180)*((outerRadius + subRingRadius)/2)} dy="12" fontSize="8" fontWeight="900">رابط جديد</tspan>
+                        </text>
                       </g>
                     </g>
                   )}
@@ -529,8 +567,24 @@ export function FloatingAdminMenu() {
               }}
               className="cursor-pointer group pointer-events-auto"
             >
-              <path d={getArcPath(startAngle+((categories.length+1)*step), startAngle+((categories.length+1)*step)+step-1, innerRadius, outerRadius)} fill="rgba(255,255,255,0.02)" stroke="#555" strokeDasharray="4 2" className="hover:fill-white/10 transition-colors" />
-              <text x={Math.cos((startAngle+((categories.length+1)*step)+step/2-90)*Math.PI/180)*(innerRadius+35)} y={Math.sin((startAngle+((categories.length+1)*step)+step/2-90)*Math.PI/180)*(innerRadius+35)} fill="#666" fontSize="30" textAnchor="middle" alignmentBaseline="middle" className="group-hover:fill-white pointer-events-none transition-colors">+</text>
+              <path
+                d={getArcPath(startAngle+((categories.length+1)*step), startAngle+((categories.length+1)*step)+step-1, innerRadius, outerRadius)}
+                fill="#3b82f6"
+                stroke="white"
+                strokeWidth="2"
+                className="hover:brightness-110 transition-all"
+              />
+              <text
+                x={Math.cos((startAngle+((categories.length+1)*step)+step/2-90)*Math.PI/180)*((innerRadius+outerRadius)/2)}
+                y={Math.sin((startAngle+((categories.length+1)*step)+step/2-90)*Math.PI/180)*((innerRadius+outerRadius)/2)}
+                fill="white"
+                textAnchor="middle"
+                alignmentBaseline="middle"
+                className="pointer-events-none transition-all"
+              >
+                <tspan x={Math.cos((startAngle+((categories.length+1)*step)+step/2-90)*Math.PI/180)*((innerRadius+outerRadius)/2)} dy="-2" fontSize="24" fontWeight="bold">+</tspan>
+                <tspan x={Math.cos((startAngle+((categories.length+1)*step)+step/2-90)*Math.PI/180)*((innerRadius+outerRadius)/2)} dy="14" fontSize="8" fontWeight="bold">إضافة قسم</tspan>
+              </text>
             </g>
           </svg>
         </div>

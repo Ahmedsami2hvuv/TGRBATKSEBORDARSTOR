@@ -17,7 +17,7 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-  const SLIDE_DURATION = 6000; // 6 seconds for a professional feel
+  const SLIDE_DURATION = 6000;
   const minSwipeDistance = 50;
 
   const nextSlide = useCallback(() => {
@@ -64,7 +64,7 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
       onMouseLeave={() => setIsPaused(false)}
     >
       <div
-        className="relative aspect-[16/9] md:aspect-[21/7] overflow-hidden rounded-[2rem] md:rounded-[3.5rem] shadow-2xl border-4 border-white dark:border-slate-800 bg-slate-900 touch-pan-y"
+        className="relative aspect-[16/9] md:aspect-[21/7] overflow-hidden rounded-[2.5rem] md:rounded-[4rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] border-[6px] border-white dark:border-slate-800 bg-slate-950 touch-pan-y"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -74,47 +74,47 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
           return (
             <div
               key={slide.id}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+              className={`absolute inset-0 transition-all duration-[1200ms] cubic-bezier(0.4, 0, 0.2, 1) ${
+                isActive ? "opacity-100 scale-100 z-10" : "opacity-0 scale-105 z-0 pointer-events-none"
               }`}
             >
               <div className="relative w-full h-full overflow-hidden">
-                {/* Image with Ken Burns Effect */}
+                {/* Advanced Ken Burns Effect */}
                 <Image
                   src={slide.imageUrl}
                   alt={slide.title || ""}
                   fill
                   priority={index === 0}
-                  className={`object-cover transition-transform duration-[6000ms] ease-linear ${
-                    isActive ? "scale-110" : "scale-100"
+                  className={`object-cover transition-transform duration-[8000ms] ease-out ${
+                    isActive ? "scale-110 rotate-1" : "scale-100 rotate-0"
                   }`}
-                  sizes="(max-width: 768px) 100vw, 80vw"
+                  sizes="(max-width: 768px) 100vw, 90vw"
                 />
 
-                {/* Professional Overlays */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-70" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40 opacity-30" />
+                {/* Layered Overlays */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-80" />
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-950/20 via-transparent to-transparent opacity-40" />
 
                 {/* Content Overlay */}
                 {slide.title && (
-                  <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-16 text-right">
-                    <h2
-                      className={`text-white text-2xl md:text-6xl font-black drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)] transition-all duration-1000 delay-300 transform ${
-                        isActive ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-                      }`}
-                      style={{ fontFamily: "Cairo, sans-serif" }}
-                    >
-                      {slide.title}
-                    </h2>
-                    <div className={`mt-4 h-1 w-24 bg-violet-500 rounded-full transition-all duration-1000 delay-500 ml-auto ${
-                      isActive ? "w-32 opacity-100" : "w-0 opacity-0"
-                    }`} />
+                  <div className="absolute inset-0 flex flex-col justify-end p-10 md:p-20 text-right">
+                    <div className={`transition-all duration-1000 delay-300 transform ${isActive ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"}`}>
+                      <h2
+                        className="text-white text-3xl md:text-7xl font-black tracking-tight leading-tight drop-shadow-[0_8px_30px_rgba(0,0,0,0.8)]"
+                        style={{ fontFamily: "Cairo, sans-serif" }}
+                      >
+                        {slide.title}
+                      </h2>
+                      <div className={`mt-6 h-2 bg-gradient-to-l from-violet-500 to-fuchsia-500 rounded-full transition-all duration-1000 delay-700 ml-auto shadow-[0_0_20px_rgba(168,85,247,0.6)] ${
+                        isActive ? "w-48 opacity-100" : "w-0 opacity-0"
+                      }`} />
+                    </div>
                   </div>
                 )}
 
                 {slide.linkUrl && (
                   <Link href={slide.linkUrl} className="absolute inset-0 z-20 cursor-pointer">
-                    <span className="sr-only">مشاهدة المزيد</span>
+                    <span className="sr-only">التفاصيل</span>
                   </Link>
                 )}
               </div>
@@ -122,71 +122,79 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
           );
         })}
 
-        {/* Floating Navigation Controls (Only visible on hover/group) */}
+        {/* Floating Glass Navigation Controls */}
         {slides.length > 1 && (
-           <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between z-30 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex">
-             <button onClick={prevSlide} className="p-3 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-2xl hover:bg-white/20 transition-all">
-               <svg className="w-6 h-6 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
+           <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 flex justify-between z-30 opacity-0 group-hover:opacity-100 transition-all duration-500 hidden md:flex">
+             <button
+                onClick={prevSlide}
+                className="group/btn p-5 bg-white/5 backdrop-blur-xl border border-white/20 text-white rounded-[2rem] hover:bg-white/20 hover:scale-110 active:scale-90 transition-all shadow-2xl"
+             >
+               <svg className="w-8 h-8 rotate-180 group-hover/btn:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
              </button>
-             <button onClick={nextSlide} className="p-3 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-2xl hover:bg-white/20 transition-all">
-               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
+             <button
+                onClick={nextSlide}
+                className="group/btn p-5 bg-white/5 backdrop-blur-xl border border-white/20 text-white rounded-[2rem] hover:bg-white/20 hover:scale-110 active:scale-90 transition-all shadow-2xl"
+             >
+               <svg className="w-8 h-8 group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
              </button>
            </div>
         )}
 
-        {/* Elegant Minimal Indicators */}
+        {/* Premium Indicators */}
         {slides.length > 1 && (
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-30">
+          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-4 z-30">
             {slides.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrent(index)}
-                className={`h-1.5 rounded-full transition-all duration-500 ${
-                  index === current ? "w-10 bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]" : "w-2.5 bg-white/30 hover:bg-white/50"
+                className={`h-2.5 rounded-full transition-all duration-700 ${
+                  index === current
+                    ? "w-16 bg-white shadow-[0_0_25px_rgba(255,255,255,1)]"
+                    : "w-3 bg-white/20 hover:bg-white/40 backdrop-blur-sm"
                 }`}
               />
             ))}
           </div>
         )}
 
-        {/* Dynamic Progress Bar */}
+        {/* Smooth Progress Bar with Glow */}
         {slides.length > 1 && (
-          <div className="absolute bottom-0 left-0 h-1.5 w-full z-40 bg-white/10">
+          <div className="absolute bottom-0 left-0 h-2 w-full z-40 bg-black/20 backdrop-blur-sm">
             <div
               key={current + (isPaused ? "-paused" : "-active")}
-              className={`h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 shadow-[0_0_15px_rgba(139,92,246,0.5)] ${
-                isPaused ? "w-full opacity-30" : "animate-slider-progress"
+              className={`h-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-violet-600 shadow-[0_0_20px_rgba(168,85,247,0.8)] ${
+                isPaused ? "w-full opacity-20" : "animate-slider-progress"
               }`}
             />
           </div>
         )}
       </div>
 
-      {/* Touch-Friendly Action Buttons */}
+      {/* Mobile-First Premium Controls */}
       {slides.length > 1 && (
-        <div className="grid grid-cols-2 gap-4 mt-5" dir="ltr">
+        <div className="grid grid-cols-2 gap-4 mt-6" dir="ltr">
           <button
             onClick={prevSlide}
-            className="flex items-center justify-center gap-2 h-14 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-900 dark:text-white rounded-2xl transition-all shadow-sm border-2 border-slate-100 dark:border-slate-700 active:scale-95"
+            className="flex items-center justify-center gap-3 h-16 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-900 dark:text-white rounded-[1.5rem] transition-all shadow-lg border border-slate-200 dark:border-slate-800 active:scale-95 group"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-5 h-5"><path d="M15 18l-6-6 6-6" /></svg>
-            <span className="font-bold tracking-tight">السابق</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-6 h-6 group-hover:-translate-x-1 transition-transform"><path d="M15 18l-6-6 6-6" /></svg>
+            <span className="font-black text-lg uppercase tracking-wider">السابق</span>
           </button>
 
           <button
             onClick={nextSlide}
-            className="flex items-center justify-center gap-2 h-14 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl transition-all shadow-lg shadow-violet-200 dark:shadow-none active:scale-95"
+            className="flex items-center justify-center gap-3 h-16 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-[1.5rem] transition-all shadow-xl shadow-violet-200 dark:shadow-none active:scale-95 group"
           >
-            <span className="font-bold tracking-tight">التالي</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-5 h-5"><path d="M9 18l6-6-6-6" /></svg>
+            <span className="font-black text-lg uppercase tracking-wider">التالي</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-6 h-6 group-hover:translate-x-1 transition-transform"><path d="M9 18l6-6-6-6" /></svg>
           </button>
         </div>
       )}
 
       <style jsx global>{`
         @keyframes slider-progress {
-          from { width: 0%; }
-          to { width: 100%; }
+          0% { width: 0%; }
+          100% { width: 100%; }
         }
         .animate-slider-progress {
           animation: slider-progress ${SLIDE_DURATION}ms linear forwards;
