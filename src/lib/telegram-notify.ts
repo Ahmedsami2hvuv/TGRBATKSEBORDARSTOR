@@ -632,12 +632,19 @@ export async function notifyTelegramOrderCanceledByClient(orderId: string): Prom
   const notificationBotToken = await getBotTokenByPurpose("notification");
   const managementBotToken = (await getBotTokenByPurpose("management")) || notificationBotToken;
 
+  // إرسال لجروب الإشعارات
   if (notificationBotToken) {
-    await sendTelegramMessage(msg, { botToken: notificationBotToken });
+    await sendTelegramMessage(msg, { botToken: notificationBotToken }).catch(() => null);
   }
 
-  if (managementBotToken && managementBotToken !== notificationBotToken) {
-    await sendTelegramMessage(msg, { botToken: managementBotToken });
+  // إرسال لبوت الإدارة (لجميع الإداريين النشطين في الخاص)
+  if (managementBotToken) {
+    const admins = await prisma.telegramAdmin.findMany({ where: { active: true } });
+    for (const admin of admins) {
+      if (admin.telegramUserId) {
+        await sendTelegramHtmlToChat(admin.telegramUserId, msg, managementBotToken).catch(() => null);
+      }
+    }
   }
 }
 
