@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ad } from "@/lib/admin-ui";
-import { deleteShop } from "./actions";
+import { deleteShop, togglePauseOrders } from "./actions";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 
@@ -12,6 +12,8 @@ export type ShopRow = {
   name: string;
   locationUrl: string;
   regionName: string;
+  ordersPaused: boolean;
+  pauseMessage: string;
 };
 
 export function ShopsList({ shops, icons }: { shops: ShopRow[]; icons: GlobalIconsConfig | null }) {
@@ -132,6 +134,42 @@ export function ShopsList({ shops, icons }: { shops: ShopRow[]; icons: GlobalIco
                   </button>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (s.ordersPaused) {
+                        if (confirm("هل تريد استئناف تلقي الطلبات لهذا المحل؟")) {
+                          const fd = new FormData();
+                          fd.append("id", s.id);
+                          fd.append("shouldPause", "false");
+                          togglePauseOrders(fd);
+                        }
+                      } else {
+                        const msg = prompt("أدخل رسالة التوقف (مثلاً: نفتح بعد العيد):", "نفتح بعد العيد");
+                        if (msg !== null) {
+                          const fd = new FormData();
+                          fd.append("id", s.id);
+                          fd.append("shouldPause", "true");
+                          fd.append("pauseMessage", msg);
+                          togglePauseOrders(fd);
+                        }
+                      }
+                    }}
+                    className={`text-sm font-bold px-2 py-1 rounded-md transition-colors flex items-center gap-1 ${
+                      s.ordersPaused
+                        ? "bg-green-100 text-green-700 hover:bg-green-200"
+                        : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                    }`}
+                  >
+                    <DynamicIcon
+                      iconKey={s.ordersPaused ? "ui_play" : "ui_pause"}
+                      config={icons}
+                      fallback={s.ordersPaused ? "▶️" : "⏸️"}
+                      className="w-3 h-3"
+                    />
+                    {s.ordersPaused ? "استئناف الطلبات" : "إيقاف الطلبات"}
+                  </button>
+
                   <Link
                     href={`/abo1stor3hlaa2kbr8-47/shops/${s.id}/employees`}
                     className={`text-sm font-bold bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md hover:bg-indigo-100 transition-colors flex items-center gap-1`}

@@ -182,3 +182,22 @@ export async function updateShop(
   revalidatePath(`${SECRET_ADMIN_PATH}/shops/${id}/edit`);
   return { ok: true };
 }
+
+export async function togglePauseOrders(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const pauseMessage = String(formData.get("pauseMessage") ?? "").trim();
+  const shouldPause = formData.get("shouldPause") === "true";
+
+  if (!id) return;
+
+  await prisma.shop.update({
+    where: { id },
+    data: {
+      ordersPaused: shouldPause,
+      pauseMessage: shouldPause ? pauseMessage : "",
+    },
+  });
+
+  revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+}
+

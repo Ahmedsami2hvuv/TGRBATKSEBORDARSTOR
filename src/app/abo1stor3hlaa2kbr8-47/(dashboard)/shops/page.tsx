@@ -30,6 +30,8 @@ export default async function ShopsPage() {
     name: s.name || "محل بدون اسم",
     locationUrl: s.locationUrl || "",
     regionName: s.region?.name || "غير محدد",
+    ordersPaused: !!s.ordersPaused,
+    pauseMessage: s.pauseMessage || "",
   }));
 
   return (

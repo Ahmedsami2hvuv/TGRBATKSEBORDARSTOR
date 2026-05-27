@@ -66,6 +66,8 @@ export default async function ClientOrderPage(props: Props) {
             id: true,
             name: true,
             photoUrl: true,
+            ordersPaused: true,
+            pauseMessage: true,
             region: {
               select: {
                 name: true,
@@ -98,6 +100,38 @@ export default async function ClientOrderPage(props: Props) {
     }
 
     const shop = employee.shop;
+
+    // معالجة حالة إيقاف الطلبات
+    if (shop.ordersPaused && sp.force !== "true") {
+      return (
+        <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800" dir="rtl">
+          <div className="kse-app-inner mx-auto max-w-md">
+            <div className="kse-glass-dark rounded-3xl border-2 border-orange-300 p-8 text-center shadow-2xl bg-white/80 backdrop-blur-md">
+              <div className="mb-4 text-5xl">📢</div>
+              <h2 className="text-2xl font-black text-orange-700 mb-4">{shop.name}</h2>
+              <div className="bg-orange-50 rounded-2xl p-6 mb-8 border border-orange-100">
+                <p className="text-xl font-bold text-slate-800 leading-relaxed">
+                  {shop.pauseMessage || "نعتذر، استقبال الطلبات متوقف حالياً."}
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-sm font-medium text-slate-500">
+                  هل ترغب في رفع طلبية ليتم تجهيزها بعد انتهاء فترة التوقف؟
+                </p>
+                <Link
+                  href={`/client/order?e=${sp.e}&exp=${sp.exp}&s=${sp.s}&force=true`}
+                  className="block w-full py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl font-black text-lg transition-all shadow-lg shadow-orange-200 active:scale-95"
+                >
+                  نعم، أريد رفع طلبية لبعد العطلة
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const shopDeliveryAlf = shop?.region
       ? Number(shop.region.deliveryPrice.toString()) / ALF_PER_DINAR
       : 0;

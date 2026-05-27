@@ -95,6 +95,8 @@ model Shop {
   ownerName     String         @default("")
   photoUrl      String         @default("")
   phone         String         @default("")
+  ordersPaused  Boolean        @default(false)
+  pauseMessage  String         @default("")
   customers     Customer[]
   employees     Employee[]
   orders        Order[]
