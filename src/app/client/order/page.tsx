@@ -34,6 +34,61 @@ type Props = {
   searchParams: Promise<{ e?: string; exp?: string; s?: string; edit?: string; phone?: string }>;
 };
 
+function PausedOverlay({
+  title,
+  message,
+  color = "rose",
+  icon = "🛑",
+  params
+}: {
+  title: string;
+  message: string;
+  color?: "rose" | "orange";
+  icon?: string;
+  params: { e?: string; exp?: string; s?: string }
+}) {
+  const colorClasses = {
+    rose: {
+      border: "border-rose-300",
+      text: "text-rose-700",
+      bg: "bg-rose-50",
+      btn: "bg-rose-500 hover:bg-rose-600 shadow-rose-200"
+    },
+    orange: {
+      border: "border-orange-300",
+      text: "text-orange-700",
+      bg: "bg-orange-50",
+      btn: "bg-orange-500 hover:bg-orange-600 shadow-orange-200"
+    }
+  }[color];
+
+  return (
+    <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800" dir="rtl">
+      <div className="kse-app-inner mx-auto max-w-md">
+        <div className={`kse-glass-dark rounded-3xl border-2 ${colorClasses.border} p-8 text-center shadow-2xl bg-white/80 backdrop-blur-md`}>
+          <div className="mb-4 text-5xl">{icon}</div>
+          <h2 className={`text-2xl font-black ${colorClasses.text} mb-4`}>{title}</h2>
+          <div className={`${colorClasses.bg} rounded-2xl p-6 mb-8 border border-slate-100`}>
+            <p className="text-xl font-bold text-slate-800 leading-relaxed">{message}</p>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-sm font-medium text-slate-500">
+              هل ترغب في رفع طلبية ليتم توصيلها بعد انتهاء فترة التوقف؟
+            </p>
+            <Link
+              href={`/client/order?e=${params.e}&exp=${params.exp}&s=${params.s}&force=true`}
+              className={`block w-full py-4 ${colorClasses.btn} text-white rounded-2xl font-black text-lg transition-all shadow-lg active:scale-95`}
+            >
+              نعم، أريد رفع طلبية لبعد العطلة
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default async function ClientOrderPage(props: Props) {
   const sp = await props.searchParams;
 
@@ -58,31 +113,13 @@ export default async function ClientOrderPage(props: Props) {
 
     if (globalSettings?.allOrdersPaused && sp.force !== "true") {
       return (
-        <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800" dir="rtl">
-          <div className="kse-app-inner mx-auto max-w-md">
-            <div className="kse-glass-dark rounded-3xl border-2 border-rose-300 p-8 text-center shadow-2xl bg-white/80 backdrop-blur-md">
-              <div className="mb-4 text-5xl">🛑</div>
-              <h2 className="text-2xl font-black text-rose-700 mb-4">توقف مؤقت للنظام</h2>
-              <div className="bg-rose-50 rounded-2xl p-6 mb-8 border border-rose-100">
-                <p className="text-xl font-bold text-slate-800 leading-relaxed">
-                  {globalSettings.pauseMessage || "نعتذر، استقبال الطلبات متوقف حالياً في النظام بالكامل."}
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <p className="text-sm font-medium text-slate-500">
-                  هل ترغب في رفع طلبية ليتم تجهيزها بعد انتهاء فترة التوقف؟
-                </p>
-                <Link
-                  href={`/client/order?e=${sp.e}&exp=${sp.exp}&s=${sp.s}&force=true`}
-                  className="block w-full py-4 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-black text-lg transition-all shadow-lg shadow-rose-200 active:scale-95"
-                >
-                  نعم، أريد رفع طلبية لبعد العطلة
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PausedOverlay
+          title="توقف التوصيل حاليا"
+          message={globalSettings.pauseMessage || "نعتذر، استقبال الطلبات متوقف حالياً في النظام بالكامل."}
+          color="rose"
+          icon="🛑"
+          params={sp}
+        />
       );
     }
 
@@ -135,34 +172,16 @@ export default async function ClientOrderPage(props: Props) {
 
     const shop = employee.shop;
 
-    // معالجة حالة إيقاف الطلبات
+    // معالجة حالة إيقاف الطلبات الخاصة بالمحل
     if (shop.ordersPaused && sp.force !== "true") {
       return (
-        <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800" dir="rtl">
-          <div className="kse-app-inner mx-auto max-w-md">
-            <div className="kse-glass-dark rounded-3xl border-2 border-orange-300 p-8 text-center shadow-2xl bg-white/80 backdrop-blur-md">
-              <div className="mb-4 text-5xl">📢</div>
-              <h2 className="text-2xl font-black text-orange-700 mb-4">{shop.name}</h2>
-              <div className="bg-orange-50 rounded-2xl p-6 mb-8 border border-orange-100">
-                <p className="text-xl font-bold text-slate-800 leading-relaxed">
-                  {shop.pauseMessage || "نعتذر، استقبال الطلبات متوقف حالياً."}
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <p className="text-sm font-medium text-slate-500">
-                  هل ترغب في رفع طلبية ليتم تجهيزها بعد انتهاء فترة التوقف؟
-                </p>
-                <Link
-                  href={`/client/order?e=${sp.e}&exp=${sp.exp}&s=${sp.s}&force=true`}
-                  className="block w-full py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl font-black text-lg transition-all shadow-lg shadow-orange-200 active:scale-95"
-                >
-                  نعم، أريد رفع طلبية لبعد العطلة
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PausedOverlay
+          title={shop.name}
+          message={shop.pauseMessage || "نعتذر، استقبال الطلبات متوقف حالياً."}
+          color="orange"
+          icon="📢"
+          params={sp}
+        />
       );
     }
 
