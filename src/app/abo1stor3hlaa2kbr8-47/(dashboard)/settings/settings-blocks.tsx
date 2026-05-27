@@ -18,6 +18,7 @@ import { RoleFeaturesConfig } from "@/lib/role-features-settings";
 import { CourierButtonsSettings } from "./courier-buttons-settings";
 import { TelegramBotsForm } from "./telegram-bots-form";
 import { FontSettingsForm } from "./font-settings-form";
+import { FloatingMenuSettings } from "./floating-menu-settings";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -237,6 +238,18 @@ export function SettingsBlocks({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Block
+        id="floating-menu"
+        title="القائمة الدائرية 🔘"
+        subtitle="تخصيص الروابط والأقسام العائمة."
+        open={openId === "floating-menu"}
+        onToggle={() => setOpenId((x) => (x === "floating-menu" ? "" : "floating-menu"))}
+        tone="sky"
+        icons={globalIcons}
+      >
+        <FloatingMenuSettings icons={globalIcons} />
+      </Block>
+
       <Block
         id="resource-management"
         title="إدارة الموارد 🔋"

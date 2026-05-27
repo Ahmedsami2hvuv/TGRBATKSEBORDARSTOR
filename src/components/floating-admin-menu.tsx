@@ -177,8 +177,8 @@ export function FloatingAdminMenu() {
   const isLeft = position.x < (typeof window !== 'undefined' ? window.innerWidth / 2 : 500);
   const totalAngle = 260;
   const startAngle = isLeft ? 50 : 250;
-  const count = categories.length + 2; // +1 for settings, +1 for add
-  const step = totalAngle / count;
+  const count = categories.length; // Removed +2 (settings and add)
+  const step = count > 0 ? totalAngle / count : 0;
 
   return (
     <div
@@ -310,7 +310,7 @@ export function FloatingAdminMenu() {
                     <g className="animate-in fade-in zoom-in duration-200">
                       {(() => {
                         const linkStep = 32; // زاوية توزيع ثابتة لكل رابط
-                        const totalLinks = cat.links.length + 1; // الروابط + زر الإضافة
+                        const totalLinks = cat.links.length;
                         const totalSubAngle = (totalLinks - 1) * linkStep;
                         const subStartAngle = midA - (totalSubAngle / 2);
 
@@ -324,6 +324,9 @@ export function FloatingAdminMenu() {
                               const ltx = Math.cos(lmidRad) * ((outerRadius + subRingRadius) / 2);
                               const lty = Math.sin(lmidRad) * ((outerRadius + subRingRadius) / 2);
 
+                              // Automatic color for sub-links based on index
+                              const subLinkColor = COLORS[li % COLORS.length];
+
                               return (
                                 <g
                                   key={link.id}
@@ -333,286 +336,26 @@ export function FloatingAdminMenu() {
                                 >
                                   <path
                                     d={getArcPath(lsA, leA, outerRadius + 4, subRingRadius)}
-                                    fill="#1e293b"
+                                    fill={subLinkColor}
                                     stroke="white"
-                                    strokeWidth="0.5"
-                                    className="hover:fill-slate-700 transition-colors shadow-xl"
+                                    strokeWidth="1"
+                                    className="hover:brightness-110 transition-all shadow-xl"
                                   />
-                                  <text x={ltx} y={lty} fill="white" fontSize="9" fontWeight="bold" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none uppercase">
+                                  <text x={ltx} y={lty} fill="white" fontSize="9" fontWeight="bold" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none uppercase drop-shadow-sm">
                                     {link.name.substring(0,12)}
                                   </text>
-
-                                  {/* Delete Link Button */}
-                                  <circle
-                                    cx={Math.cos((lsA-90)*Math.PI/180)*subRingRadius}
-                                    cy={Math.sin((lsA-90)*Math.PI/180)*subRingRadius}
-                                    r="9"
-                                    fill="#ef4444"
-                                    className="opacity-0 group-hover/link:opacity-100 transition-opacity shadow-lg cursor-pointer"
-                                    onClick={(e)=>{
-                                      e.stopPropagation();
-                                      if(confirm("هل تريد حذف هذا الرابط؟")) {
-                                        setCategories(prev=>prev.map(c=>c.id===cat.id?{...c,links:c.links.filter(l=>l.id!==link.id)}:c))
-                                      }
-                                    }}
-                                  />
-                                  <text
-                                    x={Math.cos((lsA-90)*Math.PI/180)*subRingRadius}
-                                    y={Math.sin((lsA-90)*Math.PI/180)*subRingRadius}
-                                    fill="white"
-                                    fontSize="11"
-                                    fontWeight="black"
-                                    textAnchor="middle"
-                                    alignmentBaseline="middle"
-                                    className="pointer-events-none opacity-0 group-hover/link:opacity-100"
-                                  >×</text>
                                 </g>
                               );
                             })}
-
-                            {/* Enhanced Add Link Button (+) */}
-                            {(() => {
-                              const lsA = subStartAngle + (cat.links.length * linkStep);
-                              const leA = lsA + linkStep - 2;
-                              const lmidA = (lsA + leA) / 2;
-                              const lmidRad = (lmidA - 90) * Math.PI / 180;
-                              const ltx = Math.cos(lmidRad) * ((outerRadius + subRingRadius) / 2);
-                              const lty = Math.sin(lmidRad) * ((outerRadius + subRingRadius) / 2);
-                              return (
-                                <g
-                                  onMouseEnter={handleMouseEnter}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-                                    const n=prompt("اسم الرابط:");
-                                    const u=prompt("URL:");
-                                    if(n&&u) setCategories(prev=>prev.map(c=>c.id===cat.id?{...c,links:[...c.links,{id:Date.now().toString(),name:n,url:u}]}:c));
-                                    setIsHovered(true);
-                                  }}
-                                  className="cursor-pointer pointer-events-auto"
-                                >
-                                  <path
-                                    d={getArcPath(lsA, leA, outerRadius + 4, subRingRadius)}
-                                    fill="#10b981"
-                                    stroke="white"
-                                    strokeWidth="1.5"
-                                    className="hover:brightness-110 transition-all shadow-lg"
-                                  />
-                                  <text x={ltx} y={lty} fill="white" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none">
-                                    <tspan x={ltx} dy="-3" fontSize="14" fontWeight="900">+</tspan>
-                                    <tspan x={ltx} dy="11" fontSize="7" fontWeight="900">إضافة</tspan>
-                                  </text>
-                                </g>
-                              );
-                            })()}
                           </>
                         );
                       })()}
                     </g>
                   )}
-                  {/* Delete Category Button */}
-                  <g className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <circle cx={Math.cos((sA-90)*Math.PI/180)*outerRadius} cy={Math.sin((sA-90)*Math.PI/180)*outerRadius} r="10" fill="#ef4444" onClick={(e)=>{e.stopPropagation(); if(confirm("حذف القسم؟")) setCategories(categories.filter(c=>c.id!==cat.id))}} />
-                    <text x={Math.cos((sA-90)*Math.PI/180)*outerRadius} y={Math.sin((sA-90)*Math.PI/180)*outerRadius} fill="white" fontSize="14" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none">×</text>
-                  </g>
-
-                  {/* Color Cycle Button */}
-                  <g className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <circle
-                      cx={Math.cos((eA-90)*Math.PI/180)*outerRadius}
-                      cy={Math.sin((eA-90)*Math.PI/180)*outerRadius}
-                      r="10"
-                      fill="white"
-                      stroke="#444"
-                      strokeWidth="1"
-                      onClick={(e)=>{
-                        e.stopPropagation();
-                        const currentIndex = COLORS.indexOf(cat.color);
-                        const nextColor = COLORS[(currentIndex + 1) % COLORS.length];
-                        setCategories(prev => prev.map(c => c.id === cat.id ? {...c, color: nextColor} : c));
-                      }}
-                    />
-                    <circle
-                      cx={Math.cos((eA-90)*Math.PI/180)*outerRadius}
-                      cy={Math.sin((eA-90)*Math.PI/180)*outerRadius}
-                      r="6"
-                      fill={cat.color}
-                      className="pointer-events-none"
-                    />
-                  </g>
-
-                  {/* Edit Icon/Name Button */}
-                  <g className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <circle
-                      cx={Math.cos(((sA+eA)/2 - 90)*Math.PI/180)*(outerRadius + 12)}
-                      cy={Math.sin(((sA+eA)/2 - 90)*Math.PI/180)*(outerRadius + 12)}
-                      r="10"
-                      fill="white"
-                      stroke="#444"
-                      strokeWidth="1"
-                      onClick={(e)=>{
-                        e.stopPropagation();
-                        if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-                        const newName = prompt("اسم القسم الجديد:", cat.name);
-                        let newIcon = prompt("أيقونة القسم (Emoji):", cat.icon);
-
-                        // Prevent folder icons during edit
-                        const folderEmojis = ["📂", "📁", "🗂️", "💼", "🗄️"];
-                        if (newIcon && folderEmojis.includes(newIcon.trim())) {
-                            newIcon = "";
-                        }
-
-                        if(newName !== null || newIcon !== null) {
-                          setCategories(prev => prev.map(c => c.id === cat.id ? {
-                            ...c,
-                            name: newName !== null ? (newName || c.name) : c.name,
-                            icon: newIcon !== null ? newIcon : c.icon
-                          } : c));
-                        }
-                        setIsHovered(true);
-                      }}
-                    />
-                    <text
-                      x={Math.cos(((sA+eA)/2 - 90)*Math.PI/180)*(outerRadius + 12)}
-                      y={Math.sin(((sA+eA)/2 - 90)*Math.PI/180)*(outerRadius + 12)}
-                      fontSize="10"
-                      textAnchor="middle"
-                      alignmentBaseline="middle"
-                      className="pointer-events-none"
-                    >
-                      ✏️
-                    </text>
-                  </g>
                 </g>
               );
             })}
 
-            {/* Settings Segment (⚙️) */}
-            {(() => {
-              const i = categories.length;
-              const sA = startAngle + (i * step);
-              const eA = sA + step - 1;
-              const midA = (sA + eA) / 2;
-              const midRad = (midA - 90) * Math.PI / 180;
-              const tx = Math.cos(midRad) * ((innerRadius + outerRadius) / 2);
-              const ty = Math.sin(midRad) * ((innerRadius + outerRadius) / 2);
-              return (
-                <g
-                  onMouseEnter={() => { handleMouseEnter(); setHoveredCategory("system_settings"); }}
-                  onClick={(e) => { e.stopPropagation(); setHoveredCategory(hoveredCategory === "system_settings" ? null : "system_settings"); }}
-                  className="cursor-pointer group pointer-events-auto"
-                >
-                  <path d={getArcPath(sA, eA, innerRadius, outerRadius)} fill="#475569" stroke="#000" strokeWidth="0.5" className="hover:fill-slate-500 transition-all" />
-                  <text x={tx} y={ty} textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none select-none">
-                     <tspan x={tx} dy="0" fontSize="18">⚙️</tspan>
-                  </text>
-
-                  {/* Settings Sub Ring */}
-                  {hoveredCategory === "system_settings" && (
-                    <g className="animate-in fade-in zoom-in duration-200">
-                       {/* Lock Toggle */}
-                       {(() => {
-                          const lStep = (eA - sA) / 3;
-                          const lsA = sA;
-                          const leA = lsA + lStep - 0.5;
-                          const lmidA = (lsA + leA) / 2;
-                          const lmidRad = (lmidA - 90) * Math.PI / 180;
-                          const ltx = Math.cos(lmidRad) * ((outerRadius + subRingRadius)/2);
-                          const lty = Math.sin(lmidRad) * ((outerRadius + subRingRadius)/2);
-                          return (
-                            <g className="cursor-pointer pointer-events-auto" onClick={(e) => { e.stopPropagation(); setIsLocked(!isLocked); }}>
-                              <path d={getArcPath(lsA, leA, outerRadius + 2, subRingRadius)} fill={isLocked ? "#ef4444" : "#10b981"} className="hover:brightness-110 transition-all" />
-                              <text x={ltx} y={lty} fill="white" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none">
-                                <tspan x={ltx} dy="-2" fontSize="12">{isLocked ? "🔒" : "🔓"}</tspan>
-                                <tspan x={ltx} dy="10" fontSize="6" fontWeight="bold" className="uppercase">{isLocked ? "Unlock" : "Lock"}</tspan>
-                              </text>
-                            </g>
-                          )
-                       })()}
-                       {/* Scale Cycle */}
-                       {(() => {
-                          const lStep = (eA - sA) / 3;
-                          const lsA = sA + lStep;
-                          const leA = lsA + lStep - 0.5;
-                          const lmidA = (lsA + leA) / 2;
-                          const lmidRad = (lmidA - 90) * Math.PI / 180;
-                          const ltx = Math.cos(lmidRad) * ((outerRadius + subRingRadius)/2);
-                          const lty = Math.sin(lmidRad) * ((outerRadius + subRingRadius)/2);
-                          return (
-                            <g className="cursor-pointer pointer-events-auto" onClick={(e) => { e.stopPropagation(); setMenuScale(prev => prev >= 1.5 ? 0.5 : prev + 0.25); }}>
-                              <path d={getArcPath(lsA, leA, outerRadius + 2, subRingRadius)} fill="#3b82f6" className="hover:brightness-110 transition-all" />
-                              <text x={ltx} y={lty} fill="white" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none">
-                                <tspan x={ltx} dy="-2" fontSize="12">📏</tspan>
-                                <tspan x={ltx} dy="10" fontSize="6" fontWeight="bold" className="uppercase">{menuScale}x</tspan>
-                              </text>
-                            </g>
-                          )
-                       })()}
-                       {/* Reset Data */}
-                       {(() => {
-                          const lStep = (eA - sA) / 3;
-                          const lsA = sA + (2 * lStep);
-                          const leA = lsA + lStep - 0.5;
-                          const lmidA = (lsA + leA) / 2;
-                          const lmidRad = (lmidA - 90) * Math.PI / 180;
-                          const ltx = Math.cos(lmidRad) * ((outerRadius + subRingRadius)/2);
-                          const lty = Math.sin(lmidRad) * ((outerRadius + subRingRadius)/2);
-                          return (
-                            <g className="cursor-pointer pointer-events-auto" onClick={(e) => {
-                              e.stopPropagation();
-                              if(confirm("إعادة تعيين كافة البيانات؟")) {
-                                setCategories([]);
-                                setMenuScale(1);
-                                setIsLocked(false);
-                                setPosition({ x: 80, y: 300 });
-                                localStorage.removeItem("kse_admin_floating_pos");
-                              }
-                            }}>
-                              <path d={getArcPath(lsA, leA, outerRadius + 2, subRingRadius)} fill="#475569" className="hover:fill-red-600 transition-colors" />
-                              <text x={ltx} y={lty} fill="white" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none">
-                                <tspan x={ltx} dy="-2" fontSize="12">🔄</tspan>
-                                <tspan x={ltx} dy="10" fontSize="6" fontWeight="bold">RESET</tspan>
-                              </text>
-                            </g>
-                          )
-                       })()}
-                    </g>
-                  )}
-                </g>
-              )
-            })()}
-
-            {/* Add Category Slot (+) */}
-            <g
-              onMouseEnter={handleMouseEnter}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-                const n=prompt("اسم القسم الجديد:");
-                if(n) setCategories([...categories,{id:Date.now().toString(),name:n,icon:"",color:COLORS[categories.length%COLORS.length],links:[]}]);
-                setIsHovered(true);
-              }}
-              className="cursor-pointer group pointer-events-auto"
-            >
-              <path
-                d={getArcPath(startAngle+((categories.length+1)*step), startAngle+((categories.length+1)*step)+step-1, innerRadius, outerRadius)}
-                fill="#3b82f6"
-                stroke="white"
-                strokeWidth="2"
-                className="hover:brightness-110 transition-all"
-              />
-              <text
-                x={Math.cos((startAngle+((categories.length+1)*step)+step/2-90)*Math.PI/180)*((innerRadius+outerRadius)/2)}
-                y={Math.sin((startAngle+((categories.length+1)*step)+step/2-90)*Math.PI/180)*((innerRadius+outerRadius)/2)}
-                fill="white"
-                textAnchor="middle"
-                alignmentBaseline="middle"
-                className="pointer-events-none transition-all"
-              >
-                <tspan x={Math.cos((startAngle+((categories.length+1)*step)+step/2-90)*Math.PI/180)*((innerRadius+outerRadius)/2)} dy="-2" fontSize="24" fontWeight="bold">+</tspan>
-                <tspan x={Math.cos((startAngle+((categories.length+1)*step)+step/2-90)*Math.PI/180)*((innerRadius+outerRadius)/2)} dy="14" fontSize="8" fontWeight="bold">إضافة قسم</tspan>
-              </text>
-            </g>
           </svg>
         </div>
       </div>
