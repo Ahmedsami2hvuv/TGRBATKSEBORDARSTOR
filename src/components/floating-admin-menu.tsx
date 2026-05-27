@@ -308,79 +308,106 @@ export function FloatingAdminMenu() {
                   {/* Sub Links Ring (Outer) */}
                   {hoveredCategory === cat.id && (
                     <g className="animate-in fade-in zoom-in duration-200">
-                      {cat.links.map((link, li) => {
-                        const lStep = (eA - sA) / (cat.links.length + 1);
-                        const lsA = sA + (li * lStep);
-                        const leA = lsA + lStep - 0.5;
-                        const ltx = Math.cos(((lsA+leA)/2 - 90)*Math.PI/180) * ((outerRadius + subRingRadius)/2);
-                        const lty = Math.sin(((lsA+leA)/2 - 90)*Math.PI/180) * ((outerRadius + subRingRadius)/2);
+                      {(() => {
+                        const linkStep = 32; // زاوية توزيع ثابتة لكل رابط
+                        const totalLinks = cat.links.length + 1; // الروابط + زر الإضافة
+                        const totalSubAngle = (totalLinks - 1) * linkStep;
+                        const subStartAngle = midA - (totalSubAngle / 2);
+
                         return (
-                          <g
-                            key={link.id}
-                            className="group/link cursor-pointer pointer-events-auto"
-                            onMouseEnter={handleMouseEnter}
-                            onClick={(e) => { e.stopPropagation(); window.open(link.url, "_blank"); }}
-                          >
-                            <path d={getArcPath(lsA, leA, outerRadius + 2, subRingRadius)} fill="#1e293b" className="hover:fill-slate-700 transition-colors" />
-                            <text x={ltx} y={lty} fill="white" fontSize="9" fontWeight="bold" textAnchor="middle" className="pointer-events-none uppercase">{link.name.substring(0,10)}</text>
-                            <circle
-                              cx={Math.cos((lsA-90)*Math.PI/180)*subRingRadius}
-                              cy={Math.sin((lsA-90)*Math.PI/180)*subRingRadius}
-                              r="9"
-                              fill="#ef4444"
-                              className="opacity-0 group-hover/link:opacity-100 transition-opacity shadow-lg cursor-pointer"
-                              onClick={(e)=>{
-                                e.stopPropagation();
-                                if(confirm("هل أنت متأكد من حذف هذا الرابط نهائياً؟")) {
-                                  setCategories(prev=>prev.map(c=>c.id===cat.id?{...c,links:c.links.filter(l=>l.id!==link.id)}:c))
-                                }
-                              }}
-                            />
-                            <text
-                              x={Math.cos((lsA-90)*Math.PI/180)*subRingRadius}
-                              y={Math.sin((lsA-90)*Math.PI/180)*subRingRadius}
-                              fill="white"
-                              fontSize="11"
-                              fontWeight="black"
-                              textAnchor="middle"
-                              alignmentBaseline="middle"
-                              className="pointer-events-none opacity-0 group-hover/link:opacity-100"
-                            >×</text>
-                          </g>
+                          <>
+                            {cat.links.map((link, li) => {
+                              const lsA = subStartAngle + (li * linkStep);
+                              const leA = lsA + linkStep - 2;
+                              const lmidA = (lsA + leA) / 2;
+                              const lmidRad = (lmidA - 90) * Math.PI / 180;
+                              const ltx = Math.cos(lmidRad) * ((outerRadius + subRingRadius) / 2);
+                              const lty = Math.sin(lmidRad) * ((outerRadius + subRingRadius) / 2);
+
+                              return (
+                                <g
+                                  key={link.id}
+                                  className="group/link cursor-pointer pointer-events-auto"
+                                  onMouseEnter={handleMouseEnter}
+                                  onClick={(e) => { e.stopPropagation(); window.open(link.url, "_blank"); }}
+                                >
+                                  <path
+                                    d={getArcPath(lsA, leA, outerRadius + 4, subRingRadius)}
+                                    fill="#1e293b"
+                                    stroke="white"
+                                    strokeWidth="0.5"
+                                    className="hover:fill-slate-700 transition-colors shadow-xl"
+                                  />
+                                  <text x={ltx} y={lty} fill="white" fontSize="9" fontWeight="bold" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none uppercase">
+                                    {link.name.substring(0,12)}
+                                  </text>
+
+                                  {/* Delete Link Button */}
+                                  <circle
+                                    cx={Math.cos((lsA-90)*Math.PI/180)*subRingRadius}
+                                    cy={Math.sin((lsA-90)*Math.PI/180)*subRingRadius}
+                                    r="9"
+                                    fill="#ef4444"
+                                    className="opacity-0 group-hover/link:opacity-100 transition-opacity shadow-lg cursor-pointer"
+                                    onClick={(e)=>{
+                                      e.stopPropagation();
+                                      if(confirm("هل تريد حذف هذا الرابط؟")) {
+                                        setCategories(prev=>prev.map(c=>c.id===cat.id?{...c,links:c.links.filter(l=>l.id!==link.id)}:c))
+                                      }
+                                    }}
+                                  />
+                                  <text
+                                    x={Math.cos((lsA-90)*Math.PI/180)*subRingRadius}
+                                    y={Math.sin((lsA-90)*Math.PI/180)*subRingRadius}
+                                    fill="white"
+                                    fontSize="11"
+                                    fontWeight="black"
+                                    textAnchor="middle"
+                                    alignmentBaseline="middle"
+                                    className="pointer-events-none opacity-0 group-hover/link:opacity-100"
+                                  >×</text>
+                                </g>
+                              );
+                            })}
+
+                            {/* Enhanced Add Link Button (+) */}
+                            {(() => {
+                              const lsA = subStartAngle + (cat.links.length * linkStep);
+                              const leA = lsA + linkStep - 2;
+                              const lmidA = (lsA + leA) / 2;
+                              const lmidRad = (lmidA - 90) * Math.PI / 180;
+                              const ltx = Math.cos(lmidRad) * ((outerRadius + subRingRadius) / 2);
+                              const lty = Math.sin(lmidRad) * ((outerRadius + subRingRadius) / 2);
+                              return (
+                                <g
+                                  onMouseEnter={handleMouseEnter}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+                                    const n=prompt("اسم الرابط:");
+                                    const u=prompt("URL:");
+                                    if(n&&u) setCategories(prev=>prev.map(c=>c.id===cat.id?{...c,links:[...c.links,{id:Date.now().toString(),name:n,url:u}]}:c));
+                                    setIsHovered(true);
+                                  }}
+                                  className="cursor-pointer pointer-events-auto"
+                                >
+                                  <path
+                                    d={getArcPath(lsA, leA, outerRadius + 4, subRingRadius)}
+                                    fill="#10b981"
+                                    stroke="white"
+                                    strokeWidth="1.5"
+                                    className="hover:brightness-110 transition-all shadow-lg"
+                                  />
+                                  <text x={ltx} y={lty} fill="white" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none">
+                                    <tspan x={ltx} dy="-3" fontSize="14" fontWeight="900">+</tspan>
+                                    <tspan x={ltx} dy="11" fontSize="7" fontWeight="900">إضافة</tspan>
+                                  </text>
+                                </g>
+                              );
+                            })()}
+                          </>
                         );
-                      })}
-                      {/* Add Link (+) Segment */}
-                      <g
-                        onMouseEnter={handleMouseEnter}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-                          const n=prompt("اسم الرابط:");
-                          const u=prompt("URL:");
-                          if(n&&u) setCategories(prev=>prev.map(c=>c.id===cat.id?{...c,links:[...c.links,{id:Date.now().toString(),name:n,url:u}]}:c));
-                          setIsHovered(true);
-                        }}
-                        className="cursor-pointer pointer-events-auto"
-                      >
-                        <path
-                          d={getArcPath(eA - (eA-sA)/(cat.links.length+1), eA, outerRadius + 2, subRingRadius)}
-                          fill="#10b981"
-                          stroke="white"
-                          strokeWidth="1"
-                          className="hover:brightness-110 transition-all"
-                        />
-                        <text
-                          x={Math.cos((eA - ((eA-sA)/(cat.links.length+1))/2 - 90)*Math.PI/180)*((outerRadius + subRingRadius)/2)}
-                          y={Math.sin((eA - ((eA-sA)/(cat.links.length+1))/2 - 90)*Math.PI/180)*((outerRadius + subRingRadius)/2)}
-                          fill="white"
-                          textAnchor="middle"
-                          alignmentBaseline="middle"
-                          className="pointer-events-none"
-                        >
-                          <tspan x={Math.cos((eA - ((eA-sA)/(cat.links.length+1))/2 - 90)*Math.PI/180)*((outerRadius + subRingRadius)/2)} dy="-2" fontSize="16" fontWeight="900">+</tspan>
-                          <tspan x={Math.cos((eA - ((eA-sA)/(cat.links.length+1))/2 - 90)*Math.PI/180)*((outerRadius + subRingRadius)/2)} dy="12" fontSize="8" fontWeight="900">رابط جديد</tspan>
-                        </text>
-                      </g>
+                      })()}
                     </g>
                   )}
                   {/* Delete Category Button */}
