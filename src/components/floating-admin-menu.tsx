@@ -24,6 +24,8 @@ export function FloatingAdminMenu() {
   const [isLocked, setIsLocked] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
+  const [isActuallyDragging, setIsActuallyDragging] = useState(false);
+  const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
   const dragStartTime = useRef(0);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
@@ -57,8 +59,9 @@ export function FloatingAdminMenu() {
   // Drag & Interaction Logic
   const startDrag = (clientX: number, clientY: number) => {
     if (isLocked) return;
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
     setIsDragging(true);
-    setIsHovered(false);
+    setIsActuallyDragging(false);
     dragStartTime.current = Date.now();
     dragStartPos.current = { x: clientX, y: clientY };
     setDragOffset({ x: clientX - position.x, y: clientY - position.y });
@@ -66,37 +69,63 @@ export function FloatingAdminMenu() {
 
   const handleMove = useCallback((clientX: number, clientY: number) => {
     if (isDragging) {
-      const nx = Math.max(btnSize/2, Math.min(window.innerWidth - btnSize/2, clientX - dragOffset.x));
-      const ny = Math.max(btnSize/2, Math.min(window.innerHeight - btnSize/2, clientY - dragOffset.y));
-      setPosition({ x: nx, y: ny });
-    }
-  }, [isDragging, dragOffset]);
+      const dist = Math.sqrt(Math.pow(clientX - dragStartPos.current.x, 2) + Math.pow(clientY - dragStartPos.current.y, 2));
 
-  const stopDrag = useCallback((clientX: number, clientY: number) => {
+      if (dist > 5 && !isActuallyDragging) {
+        setIsActuallyDragging(true);
+        setIsHovered(false);
+      }
+
+      if (dist > 5 || isActuallyDragging) {
+        const nx = Math.max(btnSize/2, Math.min(window.innerWidth - btnSize/2, clientX - dragOffset.x));
+        const ny = Math.max(btnSize/2, Math.min(window.innerHeight - btnSize/2, clientY - dragOffset.y));
+        setPosition({ x: nx, y: ny });
+      }
+    }
+  }, [isDragging, isActuallyDragging, dragOffset]);
+
+  const stopDrag = useCallback((clientX: number, clientY: number, isTouch: boolean) => {
     if (isDragging) {
       setIsDragging(false);
+      const wasActuallyDragging = isActuallyDragging;
+      setIsActuallyDragging(false);
+
       localStorage.setItem("kse_admin_floating_pos", JSON.stringify(position));
 
       const dist = Math.sqrt(Math.pow(clientX - dragStartPos.current.x, 2) + Math.pow(clientY - dragStartPos.current.y, 2));
       const duration = Date.now() - dragStartTime.current;
 
-      // If it was a quick tap/click, toggle the menu
-      if (dist < 10 && duration < 250) {
+      // If it was a quick tap/click and NOT a significant drag
+      if (dist < 10 && duration < 250 && !wasActuallyDragging) {
         setIsHovered(prev => !prev);
       }
     }
-  }, [isDragging, position]);
+  }, [isDragging, isActuallyDragging, position]);
+
+  const handleMouseEnter = () => {
+    if (isDragging) return;
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    hoverTimeout.current = setTimeout(() => {
+      setIsHovered(false);
+      setHoveredCategory(null);
+    }, 400); // Increased to 400ms to prevent flickering as per AnyDesk logic
+  };
 
   useEffect(() => {
     const mm = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
-    const mu = (e: MouseEvent) => stopDrag(e.clientX, e.clientY);
+    const mu = (e: MouseEvent) => stopDrag(e.clientX, e.clientY, false);
     const tm = (e: TouchEvent) => {
         if (isDragging) {
             handleMove(e.touches[0].clientX, e.touches[0].clientY);
             if (e.cancelable) e.preventDefault();
         }
     };
-    const tu = (e: TouchEvent) => stopDrag(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    const tu = (e: TouchEvent) => stopDrag(e.changedTouches[0].clientX, e.changedTouches[0].clientY, true);
 
     if (isDragging) {
       window.addEventListener("mousemove", mm);
@@ -132,56 +161,87 @@ export function FloatingAdminMenu() {
   return (
     <div
       className="fixed z-[9999] pointer-events-none"
-      style={{ left: position.x, top: position.y }}
+      style={{
+        transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+        left: 0,
+        top: 0,
+        willChange: "transform"
+      }}
     >
       {/*
         Container for Hover Area:
-        Creates a large invisible area to maintain the hover state.
+        The large container only catches pointer events when the menu is open.
       */}
       <div
-        className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-auto flex items-center justify-center"
+        className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center bg-transparent pointer-events-none"
         style={{
-            width: isHovered ? subRingRadius * 2.6 : btnSize + 20,
-            height: isHovered ? subRingRadius * 2.6 : btnSize + 20,
-            backgroundColor: "transparent"
+            width: 450,
+            height: 450,
         }}
-        onMouseEnter={() => !isDragging && setIsHovered(true)}
-        onMouseLeave={() => { setIsHovered(false); setHoveredCategory(null); }}
       >
-        {/* Main Button (Always on Top for Draggable) */}
+        {/* Main Button Container */}
         <div
-          onMouseDown={(e) => { e.stopPropagation(); startDrag(e.clientX, e.clientY); }}
-          onTouchStart={(e) => { e.stopPropagation(); startDrag(e.touches[0].clientX, e.touches[0].clientY); }}
-          className={`relative z-[1000] flex h-14 w-14 items-center justify-center shadow-2xl transition-all duration-300 transform-gpu ${
-            isDragging ? "cursor-grabbing scale-95" : "cursor-grab"
-          } ${isHovered && !isDragging ? "bg-[#00f3ff] rotate-45 scale-90 border-2 border-white/50" : "bg-white rounded-2xl rotate-0"}`}
+            className="pointer-events-auto flex items-center justify-center"
+            style={{ width: btnSize + 20, height: btnSize + 20 }}
+            onMouseEnter={() => {
+                handleMouseEnter();
+                setHoveredCategory(null);
+            }}
+            onMouseLeave={handleMouseLeave}
         >
-          <div className="pointer-events-none transition-transform duration-300 flex items-center justify-center w-full h-full">
-             {isHovered && !isDragging ? (
-               <div className="flex flex-col items-center justify-center -rotate-45">
-                 <span className="text-2xl font-black text-black select-none leading-none">✕</span>
-                 <div
-                   className="mt-1 pointer-events-auto cursor-pointer p-0.5 bg-black/5 rounded-full hover:bg-black/20 transition-colors"
-                   onClick={(e) => { e.stopPropagation(); setIsLocked(!isLocked); }}
-                   title={isLocked ? "Unlock Position" : "Lock Position"}
-                 >
-                   {isLocked ? "🔒" : "🔓"}
-                 </div>
-               </div>
-             ) : (
-               <div className="grid grid-cols-2 gap-1 p-1">
-                  <div className="w-2 h-2 bg-slate-800 rounded-sm" />
-                  <div className="w-2 h-2 bg-slate-800 rounded-sm" />
-                  <div className="w-2 h-2 bg-slate-800 rounded-sm" />
-                  <div className="w-2 h-2 bg-slate-800 rounded-sm" />
-               </div>
-             )}
-          </div>
+            <div
+                onMouseDown={(e) => { e.stopPropagation(); startDrag(e.clientX, e.clientY); }}
+                onTouchStart={(e) => { e.stopPropagation(); startDrag(e.touches[0].clientX, e.touches[0].clientY); }}
+                className={`relative z-[1000] flex h-14 w-14 items-center justify-center shadow-2xl transform-gpu transition-all duration-300 ${
+                    isActuallyDragging ? "cursor-grabbing scale-95" : "cursor-grab"
+                } ${isHovered && !isActuallyDragging ? "bg-[#00f3ff] rotate-45 scale-90 border-2 border-white/50" : "bg-white rounded-2xl rotate-0"}`}
+            >
+                <div className="pointer-events-none transition-transform duration-300 flex items-center justify-center w-full h-full">
+                    {isHovered && !isActuallyDragging ? (
+                    <div className="flex flex-col items-center justify-center -rotate-45">
+                        <span className="text-2xl font-black text-black select-none leading-none">✕</span>
+                        <div
+                        className="mt-1 pointer-events-auto cursor-pointer p-0.5 bg-black/5 rounded-full hover:bg-black/20 transition-colors"
+                        onClick={(e) => { e.stopPropagation(); setIsLocked(!isLocked); }}
+                        title={isLocked ? "Unlock Position" : "Lock Position"}
+                        >
+                        {isLocked ? "🔒" : "🔓"}
+                        </div>
+                    </div>
+                    ) : (
+                    <div className="grid grid-cols-2 gap-1 p-1">
+                        <div className="w-2 h-2 bg-slate-800 rounded-sm" />
+                        <div className="w-2 h-2 bg-slate-800 rounded-sm" />
+                        <div className="w-2 h-2 bg-slate-800 rounded-sm" />
+                        <div className="w-2 h-2 bg-slate-800 rounded-sm" />
+                    </div>
+                    )}
+                </div>
+            </div>
         </div>
 
-        {/* Radial Menu SVG */}
-        <div className={`absolute transition-all duration-300 transform-gpu ${isHovered && !isDragging ? "opacity-100 scale-100" : "opacity-0 scale-50 pointer-events-none"}`}>
-          <svg width="400" height="400" viewBox="-200 -200 400 400" className="overflow-visible drop-shadow-2xl pointer-events-none">
+        {/* Radial Menu SVG Container */}
+        <div
+          className={`absolute transition-all duration-300 transform-gpu ${
+            isHovered && !isActuallyDragging ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-50 pointer-events-none"
+          }`}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          <svg
+            width="450"
+            height="450"
+            viewBox="-225 -225 450 450"
+            className="overflow-visible drop-shadow-2xl pointer-events-none"
+          >
+            {/* Hover Guard Circle: ensures no gaps between button and menu */}
+            <circle
+                r={outerRadius + 35}
+                fill="rgba(255,255,255,0.01)"
+                className="pointer-events-auto"
+                onMouseEnter={handleMouseEnter}
+            />
+
             {categories.map((cat, i) => {
               const sA = startAngle + (i * step);
               const eA = sA + step - 1;
@@ -193,7 +253,10 @@ export function FloatingAdminMenu() {
               return (
                 <g
                   key={cat.id}
-                  onMouseEnter={() => setHoveredCategory(cat.id)}
+                  onMouseEnter={() => {
+                    handleMouseEnter();
+                    setHoveredCategory(cat.id);
+                  }}
                   onClick={(e) => {
                     e.stopPropagation();
                     setHoveredCategory(hoveredCategory === cat.id ? null : cat.id);
@@ -216,7 +279,12 @@ export function FloatingAdminMenu() {
                         const ltx = Math.cos(((lsA+leA)/2 - 90)*Math.PI/180) * ((outerRadius + subRingRadius)/2);
                         const lty = Math.sin(((lsA+leA)/2 - 90)*Math.PI/180) * ((outerRadius + subRingRadius)/2);
                         return (
-                          <g key={link.id} className="group/link cursor-pointer pointer-events-auto" onClick={(e) => { e.stopPropagation(); window.open(link.url, "_blank"); }}>
+                          <g
+                            key={link.id}
+                            className="group/link cursor-pointer pointer-events-auto"
+                            onMouseEnter={handleMouseEnter}
+                            onClick={(e) => { e.stopPropagation(); window.open(link.url, "_blank"); }}
+                          >
                             <path d={getArcPath(lsA, leA, outerRadius + 2, subRingRadius)} fill="#1e293b" className="hover:fill-slate-700 transition-colors" />
                             <text x={ltx} y={lty} fill="white" fontSize="9" fontWeight="bold" textAnchor="middle" className="pointer-events-none uppercase">{link.name.substring(0,10)}</text>
                             <circle cx={Math.cos((lsA-90)*Math.PI/180)*subRingRadius} cy={Math.sin((lsA-90)*Math.PI/180)*subRingRadius} r="7" fill="#ef4444" className="opacity-0 group-hover/link:opacity-100 transition-opacity" onClick={(e)=>{e.stopPropagation(); setCategories(prev=>prev.map(c=>c.id===cat.id?{...c,links:c.links.filter(l=>l.id!==link.id)}:c))}} />
@@ -224,7 +292,18 @@ export function FloatingAdminMenu() {
                         );
                       })}
                       {/* Add Link (+) Segment */}
-                      <g onClick={(e) => {e.stopPropagation(); const n=prompt("اسم الرابط:"); const u=prompt("URL:"); if(n&&u) setCategories(prev=>prev.map(c=>c.id===cat.id?{...c,links:[...c.links,{id:Date.now().toString(),name:n,url:u}]}:c))}} className="cursor-pointer pointer-events-auto">
+                      <g
+                        onMouseEnter={handleMouseEnter}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+                          const n=prompt("اسم الرابط:");
+                          const u=prompt("URL:");
+                          if(n&&u) setCategories(prev=>prev.map(c=>c.id===cat.id?{...c,links:[...c.links,{id:Date.now().toString(),name:n,url:u}]}:c));
+                          setIsHovered(true);
+                        }}
+                        className="cursor-pointer pointer-events-auto"
+                      >
                         <path d={getArcPath(eA - (eA-sA)/(cat.links.length+1), eA, outerRadius + 2, subRingRadius)} fill="rgba(255,255,255,0.15)" className="hover:fill-white/30 transition-colors" />
                         <text x={Math.cos((eA - ((eA-sA)/(cat.links.length+1))/2 - 90)*Math.PI/180)*(outerRadius+30)} y={Math.sin((eA - ((eA-sA)/(cat.links.length+1))/2 - 90)*Math.PI/180)*(outerRadius+30)} fill="white" fontSize="22" fontWeight="bold" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none">+</text>
                       </g>
@@ -272,6 +351,7 @@ export function FloatingAdminMenu() {
                       strokeWidth="1"
                       onClick={(e)=>{
                         e.stopPropagation();
+                        if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
                         const newName = prompt("اسم القسم الجديد:", cat.name);
                         const newIcon = prompt("أيقونة القسم (Emoji):", cat.icon);
                         if(newName || newIcon) {
@@ -281,6 +361,7 @@ export function FloatingAdminMenu() {
                             icon: newIcon || c.icon
                           } : c));
                         }
+                        setIsHovered(true);
                       }}
                     />
                     <text
@@ -299,7 +380,17 @@ export function FloatingAdminMenu() {
             })}
 
             {/* Add Category Slot (+) */}
-            <g onClick={(e) => {e.stopPropagation(); const n=prompt("اسم القسم الجديد:"); if(n) setCategories([...categories,{id:Date.now().toString(),name:n,icon:"📂",color:COLORS[categories.length%COLORS.length],links:[]}])}} className="cursor-pointer group pointer-events-auto">
+            <g
+              onMouseEnter={handleMouseEnter}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+                const n=prompt("اسم القسم الجديد:");
+                if(n) setCategories([...categories,{id:Date.now().toString(),name:n,icon:"📂",color:COLORS[categories.length%COLORS.length],links:[]}]);
+                setIsHovered(true);
+              }}
+              className="cursor-pointer group pointer-events-auto"
+            >
               <path d={getArcPath(startAngle+(categories.length*step), startAngle+(categories.length*step)+step-1, innerRadius, outerRadius)} fill="rgba(255,255,255,0.02)" stroke="#555" strokeDasharray="4 2" className="hover:fill-white/10 transition-colors" />
               <text x={Math.cos((startAngle+(categories.length*step)+step/2-90)*Math.PI/180)*(innerRadius+35)} y={Math.sin((startAngle+(categories.length*step)+step/2-90)*Math.PI/180)*(innerRadius+35)} fill="#666" fontSize="30" textAnchor="middle" alignmentBaseline="middle" className="group-hover:fill-white pointer-events-none transition-colors">+</text>
             </g>
