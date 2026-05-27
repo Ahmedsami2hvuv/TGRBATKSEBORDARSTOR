@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import {
   clientOrderAccountPath,
   clientOrderEditPath,
@@ -114,6 +115,7 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
         where: { deletedAt: null, kind: "delivery_in", matchesExpected: true },
         select: { id: true }
       },
+      courier: { select: { name: true } },
     }
   });
 
@@ -189,7 +191,11 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
             </p>
           ) : (
             <ul className="space-y-3">
-              {orders.map((o) => {
+              {orders.map((o, idx) => {
+                const prevOrder = orders[idx - 1];
+                const showSeparator = !prevOrder ||
+                  o.createdAt.toLocaleDateString("en-US") !== prevOrder.createdAt.toLocaleDateString("en-US");
+
                 const rowPhone = o.customerPhone?.trim() ?? "";
                 const rowNorm = normalizeIraqMobileLocal11(rowPhone);
                 const isYours = Boolean(viewer && rowNorm && rowNorm === viewer);
@@ -201,14 +207,30 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                 const summary = o.summary?.trim();
 
                 return (
-                  <li
-                    key={o.orderNumber}
-                    className={`rounded-2xl border px-4 py-4 shadow-sm transition-all ${
-                      isYours
-                        ? "border-emerald-300 bg-emerald-50/90 ring-1 ring-emerald-200 dark:border-emerald-500/80 dark:bg-emerald-900/70 dark:ring-emerald-400/30"
-                        : "border-slate-200 bg-white/90 dark:border-slate-700 dark:bg-slate-950/90"
-                    } ${o.prepaidAll ? "ring-2 ring-emerald-300/50 dark:ring-emerald-400/40" : ""}`}
-                  >
+                  <Fragment key={o.orderNumber}>
+                    {showSeparator && (
+                      <li className="pt-4 pb-1">
+                        <div className="flex items-center gap-3">
+                          <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                          <span className="text-[10px] font-black text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm whitespace-nowrap">
+                            {o.createdAt.toLocaleDateString("ar-IQ", {
+                              weekday: "long",
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            })}
+                          </span>
+                          <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                        </div>
+                      </li>
+                    )}
+                    <li
+                      className={`rounded-2xl border px-4 py-4 shadow-sm transition-all ${
+                        isYours
+                          ? "border-emerald-300 bg-emerald-50/90 ring-1 ring-emerald-200 dark:border-emerald-500/80 dark:bg-emerald-900/70 dark:ring-emerald-400/30"
+                          : "border-slate-200 bg-white/90 dark:border-slate-700 dark:bg-slate-950/90"
+                      } ${o.prepaidAll ? "ring-2 ring-emerald-300/50 dark:ring-emerald-400/40" : ""}`}
+                    >
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-3 dark:border-slate-700">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-lg font-black tabular-nums text-slate-900 dark:text-slate-100">
@@ -303,11 +325,17 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                             🕒 وقت الطلب: {timeNote}
                           </span>
                         )}
+                        {o.courier?.name && (
+                          <span className="font-bold text-sky-700 dark:text-sky-400">
+                            🚚 المندوب: {o.courier.name}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </li>
-                );
-              })}
+                </Fragment>
+              );
+            })}
             </ul>
           )}
         </section>
