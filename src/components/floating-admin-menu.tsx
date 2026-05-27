@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 
 interface CustomLink {
   id: string;
@@ -33,11 +33,9 @@ export function FloatingAdminMenu() {
         console.error("Failed to parse saved links", e);
       }
     } else {
-      // Default: Delegates category
       setCategories([{ id: "delegates", name: "المندوبين", links: [] }]);
     }
 
-    // Load position
     const savedPos = localStorage.getItem("kse_admin_floating_pos");
     if (savedPos) {
       try {
@@ -46,7 +44,6 @@ export function FloatingAdminMenu() {
     }
   }, []);
 
-  // Save to localStorage
   useEffect(() => {
     localStorage.setItem("kse_admin_floating_links", JSON.stringify(categories));
   }, [categories]);
@@ -124,27 +121,24 @@ export function FloatingAdminMenu() {
     }
   };
 
-  // Radial positioning logic
   const getRadialStyle = (index: number, total: number, radius: number, angleOffset: number = 0) => {
     if (total === 0) return {};
-
-    // Determine side (right or left) to expand to
     const isLeft = position.x < (typeof window !== 'undefined' ? window.innerWidth / 2 : 500);
 
-    // Half circle (180 degrees)
-    const angleRange = 180;
-    const baseAngle = isLeft ? -90 : 90;
+    // Half circle arc - tight and fan-like
+    const angleRange = 160;
+    const baseAngle = isLeft ? -80 : 100;
+
     const step = total > 1 ? angleRange / (total - 1) : 0;
     const angle = baseAngle + (index * step) + angleOffset;
 
     const radian = (angle * Math.PI) / 180;
-
     const tx = Math.cos(radian) * radius;
     const ty = Math.sin(radian) * radius;
 
     return {
       transform: `translate(${tx}px, ${ty}px)`,
-      transitionDelay: `${index * 50}ms`,
+      transitionDelay: `${index * 10}ms`,
       opacity: 1,
       scale: 1,
     };
@@ -160,60 +154,48 @@ export function FloatingAdminMenu() {
         setHoveredCategory(null);
       }}
     >
-      {/* Decorative Sun Rays (visual lines) */}
-      <div className={`absolute left-7 top-7 -translate-x-1/2 -translate-y-1/2 transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-        {Array.from({ length: 12 }).map((_, i) => (
-           <div
-             key={i}
-             className="absolute w-[120px] h-[1px] bg-gradient-to-r from-[#00f3ff]/40 to-transparent origin-left"
-             style={{ transform: `rotate(${i * 30}deg)` }}
-           />
-        ))}
-      </div>
-
       {/* Main Button */}
       <button
         onMouseDown={handleMouseDown}
-        className={`relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#00f3ff] to-[#e028ff] text-black shadow-[0_0_20px_rgba(0,243,255,0.6)] transition-all duration-300 active:scale-95 ${
+        className={`relative z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#00f3ff] text-black shadow-lg transition-all duration-300 active:scale-95 ${
           isDragging ? "cursor-grabbing" : "cursor-grab"
-        } ${isHovered ? "scale-110 shadow-[0_0_30px_rgba(224,40,255,0.8)]" : ""}`}
+        } ${isHovered ? "scale-105 bg-[#009edc] text-white" : ""}`}
       >
-        <span className="text-2xl font-black">⚙️</span>
-        <div className={`absolute inset-0 rounded-full bg-[#00f3ff]/20 animate-pulse ${isHovered ? 'hidden' : ''}`} />
+        <span className="text-2xl font-black">{isHovered ? "✕" : "⚙️"}</span>
       </button>
 
       {/* Radial Menu - Categories */}
-      <div className={`absolute left-7 top-7 -translate-x-1/2 -translate-y-1/2 pointer-events-none`}>
+      <div className={`absolute left-7 top-7 -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all duration-200 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
         {categories.map((cat, idx) => (
           <div
             key={cat.id}
-            style={isHovered ? getRadialStyle(idx, categories.length + 1, 130) : { opacity: 0, scale: 0 }}
-            className={`absolute flex h-12 w-32 items-center justify-center rounded-xl border border-[#00f3ff]/30 bg-slate-900/95 text-[11px] font-bold text-[#00f3ff] backdrop-blur-md transition-all duration-300 pointer-events-auto hover:bg-[#00f3ff] hover:text-black shadow-[0_0_15px_rgba(0,243,255,0.3)] group/cat`}
+            style={isHovered ? getRadialStyle(idx, categories.length + 1, 56) : {}} // radius 56 makes them touch the edges of the 56px button
+            className={`absolute flex h-14 w-14 items-center justify-center rounded-full bg-[#009edc] text-[10px] font-bold text-white border-2 border-[#131418] shadow-md transition-all duration-200 pointer-events-auto hover:bg-[#00f3ff] hover:text-black hover:scale-110 group/cat`}
             onMouseEnter={() => setHoveredCategory(cat.id)}
           >
-            <span className="truncate px-2">{cat.name}</span>
+            <span className="text-center leading-tight px-1 break-words">{cat.name}</span>
 
             <button
               onClick={(e) => { e.stopPropagation(); removeCategory(cat.id); }}
-              className="absolute -top-2 -right-2 hidden group-hover/cat:flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] shadow-lg"
+              className="absolute -top-1 -right-1 hidden group-hover/cat:flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[9px] shadow-lg border border-white"
             >
               ×
             </button>
 
-            {/* Sub-menu for Links (Sun rays from category) */}
+            {/* Sub-menu for Links (Very close to category) */}
             <div className={`absolute inset-0 pointer-events-none`}>
               {cat.links.map((link, lIdx) => (
                 <div
                   key={link.id}
-                  style={hoveredCategory === cat.id ? getRadialStyle(lIdx, cat.links.length + 1, 100, 0) : { opacity: 0, scale: 0 }}
-                  className={`absolute flex h-10 w-32 items-center justify-between px-2 rounded-lg border border-[#e028ff]/30 bg-slate-900/95 text-[10px] text-white backdrop-blur-md transition-all duration-300 pointer-events-auto hover:border-[#e028ff] shadow-[0_0_10px_rgba(224,40,255,0.3)] group/link`}
+                  style={hoveredCategory === cat.id ? getRadialStyle(lIdx, cat.links.length + 1, 54, 0) : { opacity: 0, scale: 0 }}
+                  className={`absolute flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-[9px] text-white border-2 border-[#131418] shadow-lg transition-all duration-200 pointer-events-auto hover:bg-[#e028ff] hover:scale-110 group/link overflow-hidden`}
                 >
-                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="flex-1 truncate hover:text-[#e028ff] transition-colors">
+                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-center leading-tight px-1 w-full h-full flex items-center justify-center font-bold">
                     {link.name}
                   </a>
                   <button
                     onClick={(e) => { e.stopPropagation(); removeLink(cat.id, link.id); }}
-                    className="ms-1 text-red-400 hover:text-red-600 font-bold text-sm opacity-0 group-hover/link:opacity-100 transition-opacity"
+                    className="absolute top-0 right-0 hidden group-hover/link:flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-white text-[7px]"
                   >
                     ×
                   </button>
@@ -223,9 +205,8 @@ export function FloatingAdminMenu() {
               {/* Add Link Button in Sub-menu */}
               <button
                 onClick={(e) => { e.stopPropagation(); addLink(cat.id); }}
-                style={hoveredCategory === cat.id ? getRadialStyle(cat.links.length, cat.links.length + 1, 100, 0) : { opacity: 0, scale: 0 }}
-                className={`absolute flex h-10 w-10 items-center justify-center rounded-full border border-dashed border-[#e028ff]/50 bg-slate-900/50 text-[#e028ff] backdrop-blur-md transition-all duration-300 pointer-events-auto hover:bg-[#e028ff] hover:text-white shadow-[0_0_10px_rgba(224,40,255,0.2)]`}
-                title="إضافة رابط"
+                style={hoveredCategory === cat.id ? getRadialStyle(cat.links.length, cat.links.length + 1, 54, 0) : { opacity: 0, scale: 0 }}
+                className={`absolute flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-[#00f3ff] border border-dashed border-[#00f3ff]/50 transition-all duration-200 pointer-events-auto hover:bg-[#e028ff] hover:text-white`}
               >
                 +
               </button>
@@ -236,11 +217,11 @@ export function FloatingAdminMenu() {
         {/* Add Category Button */}
         <button
           onClick={addCategory}
-          style={isHovered ? getRadialStyle(categories.length, categories.length + 1, 130) : { opacity: 0, scale: 0 }}
-          className={`absolute flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-[#00f3ff]/50 bg-slate-900/50 text-[#00f3ff] backdrop-blur-md transition-all duration-300 pointer-events-auto hover:bg-[#00f3ff] hover:text-black shadow-[0_0_15px_rgba(0,243,255,0.2)]`}
+          style={isHovered ? getRadialStyle(categories.length, categories.length + 1, 56) : {}}
+          className={`absolute flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-[#00f3ff] border-2 border-dashed border-[#00f3ff]/30 transition-all duration-200 pointer-events-auto hover:bg-[#00f3ff] hover:text-black shadow-lg`}
           title="إضافة قسم"
         >
-          +
+          <span className="text-xl">+</span>
         </button>
       </div>
     </div>
