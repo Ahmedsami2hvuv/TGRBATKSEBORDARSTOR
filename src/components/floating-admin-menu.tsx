@@ -6,224 +6,172 @@ interface CustomLink {
   id: string;
   name: string;
   url: string;
+  icon?: string;
 }
 
 interface CustomCategory {
   id: string;
   name: string;
+  color: string;
+  icon: string;
   links: CustomLink[];
 }
 
+const DEFAULT_CATEGORIES: CustomCategory[] = [
+  { id: "1", name: "أدوات", color: "#3498db", icon: "🔧", links: [
+      { id: "l1", name: "F1", url: "#", icon: "⌨️" },
+      { id: "l2", name: "كيبورد", url: "#", icon: "⌨️" }
+  ]},
+  { id: "2", name: "تحكم", color: "#f39c12", icon: "⌨️", links: [] },
+  { id: "3", name: "عرض", color: "#3498db", icon: "🖥️", links: [] },
+  { id: "4", name: "خروج", color: "#3498db", icon: "➡️", links: [] },
+  { id: "5", name: "دردشة", color: "#3498db", icon: "💬", links: [] },
+  { id: "6", name: "كهرباء", color: "#3498db", icon: "⚡", links: [] },
+  { id: "7", name: "ملفات", color: "#2ecc71", icon: "📁", links: [] },
+  { id: "8", name: "إعدادات", color: "#95a5a6", icon: "👆", links: [] },
+  { id: "9", name: "حذف", color: "#e74c3c", icon: "✕", links: [] },
+];
+
 export function FloatingAdminMenu() {
-  const [position, setPosition] = useState({ x: 20, y: 100 });
+  const [position, setPosition] = useState({ x: 40, y: 300 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
-
   const [categories, setCategories] = useState<CustomCategory[]>([]);
 
-  // Load from localStorage
+  const innerR = 45;
+  const outerR = 130;
+  const subR = 210;
+
   useEffect(() => {
     const saved = localStorage.getItem("kse_admin_floating_links");
     if (saved) {
-      try {
-        setCategories(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse saved links", e);
-      }
+      try { setCategories(JSON.parse(saved)); } catch { setCategories(DEFAULT_CATEGORIES); }
     } else {
-      setCategories([{ id: "delegates", name: "المندوبين", links: [] }]);
+      setCategories(DEFAULT_CATEGORIES);
     }
-
     const savedPos = localStorage.getItem("kse_admin_floating_pos");
     if (savedPos) {
-      try {
-        setPosition(JSON.parse(savedPos));
-      } catch {}
+      try { setPosition(JSON.parse(savedPos)); } catch {}
     }
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("kse_admin_floating_links", JSON.stringify(categories));
-  }, [categories]);
-
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
-    setDragOffset({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    });
+    setDragOffset({ x: e.clientX - position.x, y: e.clientY - position.y });
   };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
-        const newX = e.clientX - dragOffset.x;
-        const newY = e.clientY - dragOffset.y;
-        setPosition({ x: newX, y: newY });
+        setPosition({ x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y });
       }
     };
-
     const handleMouseUp = () => {
       if (isDragging) {
         setIsDragging(false);
         localStorage.setItem("kse_admin_floating_pos", JSON.stringify(position));
       }
     };
-
     if (isDragging) {
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
     }
-
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDragging, dragOffset, position]);
+  }, [isDragging, dragOffset]);
 
-  const addCategory = () => {
-    const name = window.prompt("اسم القسم الجديد:");
-    if (name) {
-      setCategories([...categories, { id: Date.now().toString(), name, links: [] }]);
-    }
+  const getArcPath = (startAngle: number, endAngle: number, ir: number, or: number) => {
+    const startRad = ((startAngle - 90) * Math.PI) / 180.0;
+    const endRad = ((endAngle - 90) * Math.PI) / 180.0;
+    const x1 = Math.cos(startRad) * or;
+    const y1 = Math.sin(startRad) * or;
+    const x2 = Math.cos(endRad) * or;
+    const y2 = Math.sin(endRad) * or;
+    const x3 = Math.cos(endRad) * ir;
+    const y3 = Math.sin(endRad) * ir;
+    const x4 = Math.cos(startRad) * ir;
+    const y4 = Math.sin(startRad) * ir;
+    const largeArc = endAngle - startAngle <= 180 ? "0" : "1";
+    return `M ${x1} ${y1} A ${or} ${or} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${ir} ${ir} 0 ${largeArc} 0 ${x4} ${y4} Z`;
   };
 
-  const removeCategory = (categoryId: string) => {
-    if (window.confirm("هل أنت متأكد من حذف هذا القسم بالكامل؟")) {
-      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
-    }
-  };
-
-  const addLink = (categoryId: string) => {
-    const name = window.prompt("اسم الرابط:");
-    if (!name) return;
-    const url = window.prompt("رابط الصفحة:");
-    if (url) {
-      setCategories(prev => prev.map(cat => {
-        if (cat.id === categoryId) {
-          return { ...cat, links: [...cat.links, { id: Date.now().toString(), name, url }] };
-        }
-        return cat;
-      }));
-    }
-  };
-
-  const removeLink = (categoryId: string, linkId: string) => {
-    if (window.confirm("هل أنت متأكد من حذف هذا الرابط؟")) {
-      setCategories(prev => prev.map(cat => {
-        if (cat.id === categoryId) {
-          return { ...cat, links: cat.links.filter(l => l.id !== linkId) };
-        }
-        return cat;
-      }));
-    }
-  };
-
-  const getRadialStyle = (index: number, total: number, radius: number, angleOffset: number = 0) => {
-    if (total === 0) return {};
-    const isLeft = position.x < (typeof window !== 'undefined' ? window.innerWidth / 2 : 500);
-
-    // Half circle arc - tight and fan-like
-    const angleRange = 160;
-    const baseAngle = isLeft ? -80 : 100;
-
-    const step = total > 1 ? angleRange / (total - 1) : 0;
-    const angle = baseAngle + (index * step) + angleOffset;
-
-    const radian = (angle * Math.PI) / 180;
-    const tx = Math.cos(radian) * radius;
-    const ty = Math.sin(radian) * radius;
-
-    return {
-      transform: `translate(${tx}px, ${ty}px)`,
-      transitionDelay: `${index * 10}ms`,
-      opacity: 1,
-      scale: 1,
-    };
-  };
+  const isLeft = position.x < (typeof window !== 'undefined' ? window.innerWidth / 2 : 500);
+  const angleRange = 220;
+  const startAngle = isLeft ? 70 : 250;
+  const step = angleRange / categories.length;
 
   return (
-    <div
-      className="fixed z-[999] touch-none select-none"
-      style={{ left: position.x, top: position.y }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        setHoveredCategory(null);
-      }}
-    >
-      {/* Main Button */}
-      <button
-        onMouseDown={handleMouseDown}
-        className={`relative z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#00f3ff] text-black shadow-lg transition-all duration-300 active:scale-95 ${
-          isDragging ? "cursor-grabbing" : "cursor-grab"
-        } ${isHovered ? "scale-105 bg-[#009edc] text-white" : ""}`}
-      >
-        <span className="text-2xl font-black">{isHovered ? "✕" : "⚙️"}</span>
-      </button>
+    <div className="fixed z-[9999] touch-none select-none" style={{ left: position.x, top: position.y }}>
 
-      {/* Radial Menu - Categories */}
-      <div className={`absolute left-7 top-7 -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all duration-200 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
-        {categories.map((cat, idx) => (
-          <div
-            key={cat.id}
-            style={isHovered ? getRadialStyle(idx, categories.length + 1, 56) : {}} // radius 56 makes them touch the edges of the 56px button
-            className={`absolute flex h-14 w-14 items-center justify-center rounded-full bg-[#009edc] text-[10px] font-bold text-white border-2 border-[#131418] shadow-md transition-all duration-200 pointer-events-auto hover:bg-[#00f3ff] hover:text-black hover:scale-110 group/cat`}
-            onMouseEnter={() => setHoveredCategory(cat.id)}
-          >
-            <span className="text-center leading-tight px-1 break-words">{cat.name}</span>
+      {/* Radial Menu SVG */}
+      <div className={`absolute transition-all duration-500 ease-out ${isHovered ? "opacity-100 scale-100" : "opacity-0 scale-0 pointer-events-none"}`}
+           style={{ transform: "translate(-50%, -50%)" }}>
+        <svg width="500" height="500" viewBox="-250 -250 500 500" className="overflow-visible drop-shadow-2xl">
+          {categories.map((cat, i) => {
+            const sA = startAngle + (i * step);
+            const eA = sA + step;
+            const midA = (sA + eA) / 2;
+            const iconR = (innerR + outerR) / 2;
+            const ix = Math.cos((midA - 90) * Math.PI / 180) * iconR;
+            const iy = Math.sin((midA - 90) * Math.PI / 180) * iconR;
 
-            <button
-              onClick={(e) => { e.stopPropagation(); removeCategory(cat.id); }}
-              className="absolute -top-1 -right-1 hidden group-hover/cat:flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[9px] shadow-lg border border-white"
-            >
-              ×
-            </button>
+            return (
+              <g key={cat.id} className="group cursor-pointer" onMouseEnter={() => setHoveredCategory(cat.id)}>
+                <path d={getArcPath(sA, eA, innerR, outerR)} fill={cat.color} stroke="#1a1a1a" strokeWidth="1" className="hover:brightness-110 transition-all"/>
+                <text x={ix} y={iy} fill="white" fontSize="20" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none drop-shadow-sm">
+                  {cat.icon}
+                </text>
 
-            {/* Sub-menu for Links (Very close to category) */}
-            <div className={`absolute inset-0 pointer-events-none`}>
-              {cat.links.map((link, lIdx) => (
-                <div
-                  key={link.id}
-                  style={hoveredCategory === cat.id ? getRadialStyle(lIdx, cat.links.length + 1, 54, 0) : { opacity: 0, scale: 0 }}
-                  className={`absolute flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-[9px] text-white border-2 border-[#131418] shadow-lg transition-all duration-200 pointer-events-auto hover:bg-[#e028ff] hover:scale-110 group/link overflow-hidden`}
-                >
-                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-center leading-tight px-1 w-full h-full flex items-center justify-center font-bold">
-                    {link.name}
-                  </a>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); removeLink(cat.id, link.id); }}
-                    className="absolute top-0 right-0 hidden group-hover/link:flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-white text-[7px]"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-
-              {/* Add Link Button in Sub-menu */}
-              <button
-                onClick={(e) => { e.stopPropagation(); addLink(cat.id); }}
-                style={hoveredCategory === cat.id ? getRadialStyle(cat.links.length, cat.links.length + 1, 54, 0) : { opacity: 0, scale: 0 }}
-                className={`absolute flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-[#00f3ff] border border-dashed border-[#00f3ff]/50 transition-all duration-200 pointer-events-auto hover:bg-[#e028ff] hover:text-white`}
-              >
-                +
-              </button>
-            </div>
-          </div>
-        ))}
-
-        {/* Add Category Button */}
-        <button
-          onClick={addCategory}
-          style={isHovered ? getRadialStyle(categories.length, categories.length + 1, 56) : {}}
-          className={`absolute flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-[#00f3ff] border-2 border-dashed border-[#00f3ff]/30 transition-all duration-200 pointer-events-auto hover:bg-[#00f3ff] hover:text-black shadow-lg`}
-          title="إضافة قسم"
-        >
-          <span className="text-xl">+</span>
-        </button>
+                {/* Outer Ring for Links */}
+                {hoveredCategory === cat.id && cat.links.map((link, li) => {
+                  const lsA = sA + (li * (step/cat.links.length));
+                  const leA = lsA + (step/cat.links.length);
+                  const lmidA = (lsA + leA) / 2;
+                  const lix = Math.cos((lmidA - 90) * Math.PI / 180) * (outerR + 40);
+                  const liy = Math.sin((lmidA - 90) * Math.PI / 180) * (outerR + 40);
+                  return (
+                    <a key={link.id} href={link.url} target="_blank" rel="noreferrer">
+                      <path d={getArcPath(lsA, leA, outerR + 2, subR)} fill="#2980b9" stroke="#1a1a1a" strokeWidth="1" className="hover:fill-[#3498db] transition-all"/>
+                      <text x={lix} y={liy} fill="white" fontSize="14" textAnchor="middle" alignmentBaseline="middle">
+                        {link.icon || "🔗"}
+                      </text>
+                    </a>
+                  );
+                })}
+              </g>
+            );
+          })}
+        </svg>
       </div>
+
+      {/* Center Diamond Button (AnyDesk Style) */}
+      <div
+        onMouseDown={handleMouseDown}
+        onMouseEnter={() => setIsHovered(true)}
+        className={`relative z-50 flex h-14 w-14 items-center justify-center shadow-xl transition-all duration-300 border-2 border-slate-800/20 ${
+          isDragging ? "cursor-grabbing" : "cursor-grab"
+        } ${isHovered ? "bg-[#00d1ff] rotate-45 scale-90" : "bg-white rounded-xl rotate-0"}`}
+      >
+        <div className={`transition-transform duration-300 flex flex-col items-center ${isHovered ? "-rotate-45" : ""}`}>
+           {isHovered ? (
+             <span className="text-xl font-bold text-white">✕</span>
+           ) : (
+             <div className="flex flex-col items-center leading-none">
+                <div className="w-4 h-4 bg-slate-800 rotate-45 mb-1" />
+                <div className="w-4 h-4 bg-slate-800 rotate-45" />
+             </div>
+           )}
+        </div>
+      </div>
+
+      {/* Backdrop to close when clicking outside */}
+      {isHovered && (
+        <div className="fixed inset-0 -z-10" onClick={() => { setIsHovered(false); setHoveredCategory(null); }} />
+      )}
     </div>
   );
 }
