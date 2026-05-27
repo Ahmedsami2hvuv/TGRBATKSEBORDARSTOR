@@ -105,8 +105,8 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
                       >
                         {slide.title}
                       </h2>
-                      <div className={`mt-6 h-2 bg-gradient-to-l from-violet-500 to-fuchsia-500 rounded-full transition-all duration-1000 delay-700 ml-auto shadow-[0_0_20px_rgba(168,85,247,0.6)] ${
-                        isActive ? "w-48 opacity-100" : "w-0 opacity-0"
+                      <div className={`mt-6 h-1 bg-gradient-to-l from-violet-500 to-fuchsia-500 rounded-full transition-all duration-1000 delay-700 ml-auto shadow-[0_0_20px_rgba(168,85,247,0.6)] ${
+                        isActive ? "w-32 opacity-100" : "w-0 opacity-0"
                       }`} />
                     </div>
                   </div>
@@ -142,15 +142,15 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
 
         {/* Premium Indicators */}
         {slides.length > 1 && (
-          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-4 z-30">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-30">
             {slides.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrent(index)}
-                className={`h-2.5 rounded-full transition-all duration-700 ${
+                className={`h-1.5 rounded-full transition-all duration-700 ${
                   index === current
-                    ? "w-16 bg-white shadow-[0_0_25px_rgba(255,255,255,1)]"
-                    : "w-3 bg-white/20 hover:bg-white/40 backdrop-blur-sm"
+                    ? "w-10 bg-white shadow-[0_0_20px_rgba(255,255,255,0.8)]"
+                    : "w-2 bg-white/20 hover:bg-white/40 backdrop-blur-sm"
                 }`}
               />
             ))}
@@ -159,7 +159,7 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
 
         {/* Smooth Progress Bar with Glow */}
         {slides.length > 1 && (
-          <div className="absolute bottom-0 left-0 h-2 w-full z-40 bg-black/20 backdrop-blur-sm">
+          <div className="absolute bottom-0 left-0 h-1 w-full z-40 bg-black/20 backdrop-blur-sm">
             <div
               key={current + (isPaused ? "-paused" : "-active")}
               className={`h-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-violet-600 shadow-[0_0_20px_rgba(168,85,247,0.8)] ${
@@ -175,18 +175,18 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
         <div className="grid grid-cols-2 gap-4 mt-6" dir="ltr">
           <button
             onClick={prevSlide}
-            className="flex items-center justify-center gap-3 h-16 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-900 dark:text-white rounded-[1.5rem] transition-all shadow-lg border border-slate-200 dark:border-slate-800 active:scale-95 group"
+            className="flex items-center justify-center gap-3 h-12 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-900 dark:text-white rounded-2xl transition-all shadow-lg border border-slate-200 dark:border-slate-800 active:scale-95 group"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-6 h-6 group-hover:-translate-x-1 transition-transform"><path d="M15 18l-6-6 6-6" /></svg>
-            <span className="font-black text-lg uppercase tracking-wider">السابق</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-5 h-5 group-hover:-translate-x-1 transition-transform"><path d="M15 18l-6-6 6-6" /></svg>
+            <span className="font-bold text-base uppercase tracking-wider">السابق</span>
           </button>
 
           <button
             onClick={nextSlide}
-            className="flex items-center justify-center gap-3 h-16 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-[1.5rem] transition-all shadow-xl shadow-violet-200 dark:shadow-none active:scale-95 group"
+            className="flex items-center justify-center gap-3 h-12 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-2xl transition-all shadow-xl shadow-violet-200 dark:shadow-none active:scale-95 group"
           >
-            <span className="font-black text-lg uppercase tracking-wider">التالي</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-6 h-6 group-hover:translate-x-1 transition-transform"><path d="M9 18l6-6-6-6" /></svg>
+            <span className="font-bold text-base uppercase tracking-wider">التالي</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-5 h-5 group-hover:translate-x-1 transition-transform"><path d="M9 18l6-6-6-6" /></svg>
           </button>
         </div>
       )}
