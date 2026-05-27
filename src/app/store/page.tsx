@@ -26,9 +26,13 @@ async function CategoriesGrid() {
               <img
                 src={cat.photoUrl}
                 alt={cat.name}
-                loading="lazy"
-                decoding="async"
                 className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (target.src.includes('?')) {
+                    target.src = target.src.split('?')[0];
+                  }
+                }}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-700">
@@ -65,7 +69,7 @@ export default async function StoreHomePage() {
   const config = (storeSettings?.config as any) || {};
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-4">
       {/* Dynamic Slider Section */}
       <section>
         {slides.length > 0 ? (
@@ -89,7 +93,7 @@ export default async function StoreHomePage() {
       </section>
 
       {/* Categories Grid */}
-      <div id="categories" className="space-y-8 pt-10">
+      <div id="categories" className="space-y-8">
         <div className="flex items-center justify-between px-2">
             <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
                 <span className="w-2 h-8 bg-violet-600 rounded-full" />

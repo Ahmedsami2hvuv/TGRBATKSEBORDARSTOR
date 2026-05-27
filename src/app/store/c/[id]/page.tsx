@@ -44,7 +44,17 @@ async function BranchesList({ categoryId }: { categoryId: string }) {
             >
               <div className="relative aspect-video mb-3 md:mb-4 overflow-hidden rounded-xl md:rounded-2xl bg-slate-50 dark:bg-slate-800">
                 {branch.photoUrl ? (
-                  <img src={branch.photoUrl} alt={branch.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                  <img
+                    src={branch.photoUrl}
+                    alt={branch.name}
+                    className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (target.src.includes('?')) {
+                        target.src = target.src.split('?')[0];
+                      }
+                    }}
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-2xl">🌿</div>
                 )}
@@ -86,7 +96,17 @@ async function CategoryHeader({ id }: { id: string }) {
       <section className="flex flex-col md:flex-row items-center gap-2 md:gap-8 p-4 md:p-8 bg-white dark:bg-slate-900 rounded-[2rem] md:rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
         <div className="w-16 h-16 md:w-32 md:h-32 rounded-2xl md:rounded-[2rem] overflow-hidden bg-slate-50 dark:bg-slate-800 shrink-0">
           {category.photoUrl ? (
-            <img src={category.photoUrl} alt={category.name} className="w-full h-full object-cover" />
+            <img
+              src={category.photoUrl}
+              alt={category.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                if (target.src.includes('?')) {
+                  target.src = target.src.split('?')[0];
+                }
+              }}
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-3xl md:text-4xl">📁</div>
           )}
