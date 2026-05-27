@@ -94,6 +94,9 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
                   }}
                 />
 
+                {/* Premium Gradient Overlay for Text Readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-[5]" />
+
                 {/* Content Overlay */}
                 {slide.title && (
                   <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-20 text-right">

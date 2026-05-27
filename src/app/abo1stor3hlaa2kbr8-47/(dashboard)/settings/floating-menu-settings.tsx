@@ -25,29 +25,44 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
   const [isLocked, setIsLocked] = useState(false);
   const [menuScale, setMenuScale] = useState(1);
   const [mounted, setMounted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const savedData = localStorage.getItem("kse_admin_floating_data");
-    if (savedData) {
-      try {
-        setCategories(JSON.parse(savedData));
-      } catch (e) {}
-    }
-    const savedLocked = localStorage.getItem("kse_admin_floating_locked");
-    if (savedLocked) setIsLocked(savedLocked === "true");
-    const savedScale = localStorage.getItem("kse_admin_floating_scale");
-    if (savedScale) setMenuScale(parseFloat(savedScale));
+    fetch("/api/abo1stor3hlaa2kbr8-47/settings/floating-menu")
+      .then(res => res.json())
+      .then(data => {
+        if (data.categories) setCategories(data.categories);
+        if (data.isLocked !== undefined) setIsLocked(data.isLocked);
+        if (data.menuScale !== undefined) setMenuScale(data.menuScale);
+      })
+      .catch(err => console.error("Failed to fetch menu settings", err));
   }, []);
 
-  useEffect(() => {
-    if (!mounted) return;
-    localStorage.setItem("kse_admin_floating_data", JSON.stringify(categories));
-    localStorage.setItem("kse_admin_floating_locked", isLocked.toString());
-    localStorage.setItem("kse_admin_floating_scale", menuScale.toString());
-    // Trigger storage event for the floating menu component to update
-    window.dispatchEvent(new Event("storage"));
-  }, [categories, isLocked, menuScale, mounted]);
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/abo1stor3hlaa2kbr8-47/settings/floating-menu", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categories, isLocked, menuScale })
+      });
+      if (res.ok) {
+        alert("تم حفظ الإعدادات بنجاح ✅");
+        // Update local storage too so the current session reflects changes immediately without refresh if needed
+        localStorage.setItem("kse_admin_floating_data", JSON.stringify(categories));
+        localStorage.setItem("kse_admin_floating_locked", isLocked.toString());
+        localStorage.setItem("kse_admin_floating_scale", menuScale.toString());
+        window.dispatchEvent(new Event("storage"));
+      } else {
+        alert("فشل حفظ الإعدادات ❌");
+      }
+    } catch (e) {
+      alert("حدث خطأ أثناء الاتصال بالسيرفر");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const addCategory = () => {
     const name = prompt("اسم القسم الجديد:");
@@ -120,12 +135,21 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-black text-slate-800">الأقسام والروابط</h3>
-          <button
-            onClick={addCategory}
-            className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition"
-          >
-            + إضافة قسم
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-4 py-1.5 bg-emerald-600 text-white text-xs font-black rounded-xl hover:bg-emerald-700 transition disabled:opacity-50"
+            >
+              {isSaving ? "جاري الحفظ..." : "💾 حفظ التغييرات"}
+            </button>
+            <button
+              onClick={addCategory}
+              className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition"
+            >
+              + إضافة قسم
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4">
@@ -207,10 +231,10 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
         </div>
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl">
-         <p className="text-xs text-amber-800 font-bold leading-relaxed">
-            💡 ملاحظة: يتم حفظ هذه البيانات محلياً في متصفحك الحالي فقط.
-            تأكد من إعداد القائمة على الجهاز الذي تستخدمه لإدارة المتجر.
+      <div className="bg-indigo-50 border border-indigo-200 p-4 rounded-2xl">
+         <p className="text-xs text-indigo-800 font-bold leading-relaxed">
+            💡 ملاحظة: يتم مزامنة هذه البيانات مع قاعدة البيانات السحابية (Supabase).
+            ستظهر القائمة على جميع أجهزتك طالما أنك تستخدم نفس حساب الإدارة.
          </p>
       </div>
     </div>

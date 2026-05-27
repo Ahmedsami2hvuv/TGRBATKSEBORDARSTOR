@@ -41,21 +41,13 @@ export function FloatingAdminMenu() {
   // Persistence & Data Cleanup
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    // 1. Initial Load from LocalStorage (Fast UI)
     const savedData = localStorage.getItem("kse_admin_floating_data");
     if (savedData) {
       try {
         let parsed = JSON.parse(savedData);
-        // Nuclear cleanup: remove any folder emojis from existing data
-        const folderEmojis = ["📂", "📁", "🗂️", "💼", "🗄️"];
-        const cleaned = parsed.map((cat: any) => ({
-          ...cat,
-          icon: folderEmojis.includes(cat.icon?.trim()) ? "" : (cat.icon || ""),
-          links: (cat.links || []).map((link: any) => ({
-            ...link,
-            name: link.name || "رابط"
-          }))
-        }));
-        setCategories(cleaned);
+        setCategories(parsed);
       } catch(e){}
     }
     const savedPos = localStorage.getItem("kse_admin_floating_pos");
@@ -64,6 +56,37 @@ export function FloatingAdminMenu() {
     if (savedLocked) setIsLocked(savedLocked === "true");
     const savedScale = localStorage.getItem("kse_admin_floating_scale");
     if (savedScale) setMenuScale(parseFloat(savedScale));
+
+    // 2. Sync from Database (Cross-device consistency)
+    fetch("/api/abo1stor3hlaa2kbr8-47/settings/floating-menu")
+      .then(res => res.json())
+      .then(data => {
+        if (data.categories) {
+           setCategories(data.categories);
+           localStorage.setItem("kse_admin_floating_data", JSON.stringify(data.categories));
+        }
+        if (data.isLocked !== undefined) {
+           setIsLocked(data.isLocked);
+           localStorage.setItem("kse_admin_floating_locked", data.isLocked.toString());
+        }
+        if (data.menuScale !== undefined) {
+           setMenuScale(data.menuScale);
+           localStorage.setItem("kse_admin_floating_scale", data.menuScale.toString());
+        }
+      })
+      .catch(err => console.error("Failed to sync floating menu", err));
+
+    // Listen for changes from settings tab
+    const handleStorage = () => {
+        const newData = localStorage.getItem("kse_admin_floating_data");
+        if (newData) setCategories(JSON.parse(newData));
+        const newLocked = localStorage.getItem("kse_admin_floating_locked");
+        if (newLocked) setIsLocked(newLocked === "true");
+        const newScale = localStorage.getItem("kse_admin_floating_scale");
+        if (newScale) setMenuScale(parseFloat(newScale));
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   useEffect(() => {
