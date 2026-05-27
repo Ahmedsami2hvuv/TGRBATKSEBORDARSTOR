@@ -30,15 +30,6 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
         id: true,
         name: true,
         locationUrl: true,
-        employees: {
-          orderBy: { name: "asc" },
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            orderPortalToken: true,
-          },
-        },
       },
     });
 
@@ -46,16 +37,27 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
       notFound();
     }
 
-    const [iconsRaw, employeeShareTemplate] = await Promise.all([
+    const [employeesRaw, iconsRaw, employeeShareTemplate] = await Promise.all([
+      prisma.employee.findMany({
+        where: { shopId },
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          orderPortalToken: true,
+        },
+      }),
       getGlobalIcons(),
       getEmployeeWhatsappShareTemplate(),
     ]);
 
     // تطهير البيانات قبل أي معالجة أخرى - استخدام الدالة المركزية لضمان التوافق مع Next.js 15
     const shop = serializePrisma(shopRaw);
+    const employees = serializePrisma(employeesRaw);
     const icons = serializePrisma(iconsRaw);
 
-    const employeesWithLinks: EmployeeRow[] = (shop.employees || []).map((emp: any) => {
+    const employeesWithLinks: EmployeeRow[] = (employees || []).map((emp: any) => {
       const orderPortalUrl = buildEmployeeOrderPortalUrl(emp.id, emp.orderPortalToken, baseUrl);
 
       let whatsappLink = "";

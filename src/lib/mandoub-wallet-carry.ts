@@ -8,35 +8,22 @@ import { prisma } from "@/lib/prisma";
  * المعادلة: (إجمالي الوارد) - (إجمالي الصادر) - (الأرباح المستحقة) - (التحويلات المقبولة للإدارة).
  */
 export async function computeMandoubAdminTotalAllTimeDinar(courierId: string): Promise<Decimal> {
-  const [sumOrderWard, sumOrderSader, sumMiscTake, sumMiscGive, earnings, tips, sumTransfersToAdmin] = await Promise.all([
-    prisma.orderCourierMoneyEvent.aggregate({
+  const [orderSums, miscGroups, earnings, sumTransfersToAdmin, tipsTakeRes] = await Promise.all([
+    prisma.orderCourierMoneyEvent.groupBy({
+      by: ['kind'],
       where: {
         courierId,
         deletedAt: null,
-        kind: MONEY_KIND_DELIVERY,
         recordedByCompanyPreparerId: null
       },
       _sum: { amountDinar: true },
     }),
-    prisma.orderCourierMoneyEvent.aggregate({
-      where: {
-        courierId,
-        deletedAt: null,
-        kind: MONEY_KIND_PICKUP,
-        recordedByCompanyPreparerId: null
-      },
-      _sum: { amountDinar: true },
-    }),
-    prisma.courierWalletMiscEntry.aggregate({
-      where: { courierId, deletedAt: null, direction: CourierWalletMiscDirection.take },
-      _sum: { amountDinar: true },
-    }),
-    prisma.courierWalletMiscEntry.aggregate({
-      where: { courierId, deletedAt: null, direction: CourierWalletMiscDirection.give },
+    prisma.courierWalletMiscEntry.groupBy({
+      by: ['direction'],
+      where: { courierId, deletedAt: null },
       _sum: { amountDinar: true },
     }),
     computeMandoubEarningsAllTimeDinar(courierId),
-    computeMandoubTipsAllTimeDinar(courierId),
     // جلب مجموع التحويلات المقبولة التي أرسلها المندوب للإدارة
     prisma.walletPeerTransfer.aggregate({
       where: {
@@ -45,17 +32,23 @@ export async function computeMandoubAdminTotalAllTimeDinar(courierId: string): P
         status: "accepted"
       },
       _sum: { amountDinar: true }
+    }),
+    prisma.courierWalletMiscEntry.aggregate({
+      where: { courierId, deletedAt: null, direction: CourierWalletMiscDirection.take, label: { contains: "[إكرامية]" } },
+      _sum: { amountDinar: true }
     })
   ]);
 
-  const ward = (sumOrderWard._sum.amountDinar ?? new Decimal(0)).plus(sumMiscTake._sum.amountDinar ?? new Decimal(0));
-  const sader = (sumOrderSader._sum.amountDinar ?? new Decimal(0)).plus(sumMiscGive._sum.amountDinar ?? new Decimal(0));
+  const sumOrderWard = orderSums.find(g => g.kind === MONEY_KIND_DELIVERY)?._sum.amountDinar ?? new Decimal(0);
+  const sumOrderSader = orderSums.find(g => g.kind === MONEY_KIND_PICKUP)?._sum.amountDinar ?? new Decimal(0);
+
+  const sumMiscTake = miscGroups.find(g => g.direction === CourierWalletMiscDirection.take)?._sum.amountDinar ?? new Decimal(0);
+  const sumMiscGive = miscGroups.find(g => g.direction === CourierWalletMiscDirection.give)?._sum.amountDinar ?? new Decimal(0);
+
+  const ward = sumOrderWard.plus(sumMiscTake);
+  const sader = sumOrderSader.plus(sumMiscGive);
   const transfers = sumTransfersToAdmin._sum.amountDinar ?? new Decimal(0);
 
-  const tipsTakeRes = await prisma.courierWalletMiscEntry.aggregate({
-    where: { courierId, deletedAt: null, direction: CourierWalletMiscDirection.take, label: { contains: "[إكرامية]" } },
-    _sum: { amountDinar: true }
-  });
   const tipsTakeDinar = tipsTakeRes._sum.amountDinar ?? new Decimal(0);
 
   // الخصم يتم من ذمة الإدارة هنا: نخصم الأرباح (التوصيل) ونخصم الإكراميات التي نوعها take لأنها تزيد الوارد. أما give فمخصومة مسبقاً من الصادر.
@@ -64,39 +57,35 @@ export async function computeMandoubAdminTotalAllTimeDinar(courierId: string): P
 
 /** متبقي المحفظة (الكاش الفعلي من الطلبات) - لا يتأثر بالتحويلات للإدارة */
 export async function computeMandoubWalletRemainAllTimeDinar(courierId: string): Promise<Decimal> {
-  const [sumOrderWard, sumOrderSader, sumMiscTake, sumMiscGive] = await Promise.all([
-    prisma.orderCourierMoneyEvent.aggregate({
+  const [orderSums, miscGroups] = await Promise.all([
+    prisma.orderCourierMoneyEvent.groupBy({
+      by: ['kind'],
       where: {
         courierId,
         deletedAt: null,
-        kind: MONEY_KIND_DELIVERY,
         recordedByCompanyPreparerId: null
       },
       _sum: { amountDinar: true }
     }),
-    prisma.orderCourierMoneyEvent.aggregate({
-      where: {
-        courierId,
-        deletedAt: null,
-        kind: MONEY_KIND_PICKUP,
-        recordedByCompanyPreparerId: null
-      },
-      _sum: { amountDinar: true }
-    }),
-    prisma.courierWalletMiscEntry.aggregate({
-      where: { courierId, deletedAt: null, direction: CourierWalletMiscDirection.take },
-      _sum: { amountDinar: true }
-    }),
-    prisma.courierWalletMiscEntry.aggregate({
-      where: { courierId, deletedAt: null, direction: CourierWalletMiscDirection.give },
+    prisma.courierWalletMiscEntry.groupBy({
+      by: ['direction'],
+      where: { courierId, deletedAt: null },
       _sum: { amountDinar: true }
     }),
   ]);
-  const ward = (sumOrderWard._sum.amountDinar ?? new Decimal(0)).plus(sumMiscTake._sum.amountDinar ?? new Decimal(0));
-  const sader = (sumOrderSader._sum.amountDinar ?? new Decimal(0)).plus(sumMiscGive._sum.amountDinar ?? new Decimal(0));
+
+  const sumOrderWard = orderSums.find(g => g.kind === MONEY_KIND_DELIVERY)?._sum.amountDinar ?? new Decimal(0);
+  const sumOrderSader = orderSums.find(g => g.kind === MONEY_KIND_PICKUP)?._sum.amountDinar ?? new Decimal(0);
+
+  const sumMiscTake = miscGroups.find(g => g.direction === CourierWalletMiscDirection.take)?._sum.amountDinar ?? new Decimal(0);
+  const sumMiscGive = miscGroups.find(g => g.direction === CourierWalletMiscDirection.give)?._sum.amountDinar ?? new Decimal(0);
+
+  const ward = sumOrderWard.plus(sumMiscTake);
+  const sader = sumOrderSader.plus(sumMiscGive);
 
   return ward.minus(sader);
 }
+
 
 export function mandoubWalletRemainDinar(
   carryOverDinar: Decimal | null | undefined,
