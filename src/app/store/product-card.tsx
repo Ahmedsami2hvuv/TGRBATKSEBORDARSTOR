@@ -81,9 +81,13 @@ export function ProductCard({
               <img
                 src={photos[0]}
                 alt={product.name}
-                loading="lazy"
-                decoding="async"
                 className="w-full h-auto max-h-[250px] object-contain transition-transform duration-700 group-hover:scale-105 relative z-10 p-2"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (target.src.includes('?')) {
+                    target.src = target.src.split('?')[0];
+                  }
+                }}
               />
               {/* التوقيع أسفل الصورة في الكارت - ملاصق تماماً وتصميم أنيق */}
               <div className="mt-[-20px] mb-0 px-3 py-0.5 bg-violet-600 rounded-full shadow-lg shadow-violet-200 dark:shadow-none z-20 border border-white dark:border-slate-900">
@@ -155,7 +159,12 @@ export function ProductCard({
                     className="w-full h-auto object-contain relative z-10"
                     style={{ maxHeight: 'none' }}
                     alt={product.name}
-                    decoding="async"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (target.src.includes('?')) {
+                        target.src = target.src.split('?')[0];
+                      }
+                    }}
                   />
                   {/* التوقيع - ملاصق تماماً للصورة ومنكمش في سطر واحد */}
                   <div className="mt-[-28px] mb-2 w-full flex justify-center px-4 z-20 scale-90 md:scale-100">
