@@ -323,8 +323,6 @@ export function FloatingAdminMenu() {
     </>
   );
 }
-  );
-}
 
 function getArcPath(startAngle: number, endAngle: number, ir: number, or: number) {
     const startRad = ((startAngle - 90) * Math.PI) / 180.0;

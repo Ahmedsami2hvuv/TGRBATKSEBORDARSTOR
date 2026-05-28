@@ -95,22 +95,23 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
                 />
 
                 {/* Premium Gradient Overlay for Text Readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-[5]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent z-[5]" />
 
                 {/* Content Overlay */}
                 {slide.title && (
-                  <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-24 text-right">
-                    <div className={`transition-all duration-1000 delay-300 transform ${isActive ? "translate-y-0 opacity-100 blur-0" : "translate-y-12 opacity-0 blur-md"}`}>
+                  <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-24 text-right">
+                    <div className={`transition-all duration-1000 delay-300 transform ${isActive ? "translate-y-0 opacity-100 blur-0 scale-100" : "translate-y-16 opacity-0 blur-xl scale-95"}`}>
                       <h2
-                        className="text-white text-3xl md:text-7xl font-black tracking-tighter leading-tight drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]"
+                        className="text-white text-2xl md:text-7xl font-black tracking-tighter leading-[1.1] drop-shadow-[0_20px_20px_rgba(0,0,0,0.8)]"
                         style={{
                           fontFamily: "Cairo, sans-serif",
-                          textShadow: "2px 2px 20px rgba(0,0,0,0.8)",
-                          letterSpacing: "-0.02em"
+                          textShadow: "0px 4px 30px rgba(0,0,0,0.9)",
+                          letterSpacing: "-0.03em"
                         }}
                       >
                         {slide.title}
                       </h2>
+                      <div className={`h-1 w-20 bg-indigo-500 mt-4 mr-0 transition-all duration-1000 delay-500 ${isActive ? "w-32 opacity-100" : "w-0 opacity-0"}`} />
                     </div>
                   </div>
                 )}
@@ -168,23 +169,27 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
         )}
       </div>
 
-      {/* Mobile-First Premium Controls */}
+      {/* Mobile-First Premium Controls (Glassmorphism) */}
       {slides.length > 1 && (
-        <div className="grid grid-cols-2 mt-0" dir="ltr">
+        <div className="grid grid-cols-2 mt-0 relative z-40" dir="ltr">
           <button
             onClick={prevSlide}
-            className="flex items-center justify-center gap-2 h-9 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-900 dark:text-white transition-all border-x-2 border-b-2 border-slate-100 dark:border-slate-800 rounded-bl-[2.5rem] active:scale-95 group"
+            className="flex items-center justify-center gap-3 h-11 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl hover:bg-white dark:hover:bg-slate-900 text-slate-900 dark:text-white transition-all border-x-2 border-b-2 border-slate-100/50 dark:border-slate-800/50 rounded-bl-[2.5rem] active:scale-95 group shadow-lg"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-4 h-4 group-hover:-translate-x-1 transition-transform"><path d="M15 18l-6-6 6-6" /></svg>
-            <span className="font-bold text-[10px] uppercase tracking-wider">السابق</span>
+            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><path d="M15 18l-6-6 6-6" /></svg>
+            </div>
+            <span className="font-black text-[11px] uppercase tracking-widest">السابق</span>
           </button>
 
           <button
             onClick={nextSlide}
-            className="flex items-center justify-center gap-2 h-9 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white transition-all border-r-2 border-b-2 border-slate-100 dark:border-slate-800 rounded-br-[2.5rem] active:scale-95 group"
+            className="flex items-center justify-center gap-3 h-11 bg-gradient-to-r from-indigo-600/90 to-violet-600/90 backdrop-blur-xl hover:from-indigo-600 hover:to-violet-600 text-white transition-all border-r-2 border-b-2 border-indigo-500/30 rounded-br-[2.5rem] active:scale-95 group shadow-lg"
           >
-            <span className="font-bold text-[10px] uppercase tracking-wider">التالي</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-4 h-4 group-hover:translate-x-1 transition-transform"><path d="M9 18l6-6-6-6" /></svg>
+            <span className="font-black text-[11px] uppercase tracking-widest">التالي</span>
+            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-white/20 group-hover:bg-white group-hover:text-indigo-600 transition-colors">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><path d="M9 18l6-6-6-6" /></svg>
+            </div>
           </button>
         </div>
       )}
