@@ -148,17 +148,27 @@ export function FloatingAdminMenu() {
   }, [isDragging, isActuallyDragging, position]);
 
   const handleMouseEnter = () => {
-    if (isDragging) return;
+    if (isDragging || isActuallyDragging) return;
     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
     setIsHovered(true);
   };
 
   const handleMouseLeave = () => {
+    // On touch devices, we don't want to auto-close on "leave" as there is no real cursor
+    if (typeof window !== 'undefined' && window.matchMedia("(pointer: coarse)").matches) return;
+
     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
     hoverTimeout.current = setTimeout(() => {
       setIsHovered(false);
       setHoveredCategory(null);
-    }, 400); // Increased to 400ms to prevent flickering as per AnyDesk logic
+    }, 400);
+  };
+
+  const toggleMenu = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    if (isActuallyDragging) return;
+    setIsHovered(!isHovered);
+    if (isHovered) setHoveredCategory(null);
   };
 
   useEffect(() => {
