@@ -95,15 +95,15 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
                 />
 
                 {/* Premium Gradient Overlay for Text Readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-[5]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-[5]" />
 
                 {/* Content Overlay */}
                 {slide.title && (
-                  <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-20 text-right">
+                  <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-24 text-right">
                     <div className={`transition-all duration-1000 delay-300 transform ${isActive ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"}`}>
                       <h2
-                        className="text-white text-2xl md:text-6xl font-black tracking-tight leading-tight"
-                        style={{ fontFamily: "Cairo, sans-serif" }}
+                        className="text-white text-3xl md:text-7xl font-black tracking-tighter leading-tight drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]"
+                        style={{ fontFamily: "Cairo, sans-serif", textShadow: "2px 2px 20px rgba(0,0,0,0.8)" }}
                       >
                         {slide.title}
                       </h2>
@@ -162,18 +162,18 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
         <div className="grid grid-cols-2 mt-0" dir="ltr">
           <button
             onClick={prevSlide}
-            className="flex items-center justify-center gap-2 h-7 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-900 dark:text-white transition-all border-x-2 border-b-2 border-slate-100 dark:border-slate-800 rounded-bl-[2.5rem] active:scale-95 group"
+            className="flex items-center justify-center gap-2 h-9 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-900 dark:text-white transition-all border-x-2 border-b-2 border-slate-100 dark:border-slate-800 rounded-bl-[2.5rem] active:scale-95 group"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform"><path d="M15 18l-6-6 6-6" /></svg>
-            <span className="font-bold text-[9px] uppercase tracking-wider">السابق</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-4 h-4 group-hover:-translate-x-1 transition-transform"><path d="M15 18l-6-6 6-6" /></svg>
+            <span className="font-bold text-[10px] uppercase tracking-wider">السابق</span>
           </button>
 
           <button
             onClick={nextSlide}
-            className="flex items-center justify-center gap-2 h-7 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white transition-all border-r-2 border-b-2 border-slate-100 dark:border-slate-800 rounded-br-[2.5rem] active:scale-95 group"
+            className="flex items-center justify-center gap-2 h-9 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white transition-all border-r-2 border-b-2 border-slate-100 dark:border-slate-800 rounded-br-[2.5rem] active:scale-95 group"
           >
-            <span className="font-bold text-[9px] uppercase tracking-wider">التالي</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform"><path d="M9 18l6-6-6-6" /></svg>
+            <span className="font-bold text-[10px] uppercase tracking-wider">التالي</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-4 h-4 group-hover:translate-x-1 transition-transform"><path d="M9 18l6-6-6-6" /></svg>
           </button>
         </div>
       )}

@@ -30,146 +30,129 @@ export function FloatingAdminMenu() {
   const dragStartTime = useRef(0);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const [activeLinkId, setActiveLinkId] = useState<string | null>(null);
   const [categories, setCategories] = useState<CustomCategory[]>([]);
+  const isTouchDevice = useRef(false);
 
-  // AnyDesk Ultra-Compact Dimensions
-  const btnSize = 56;
-  const innerRadius = 28; // Adheres perfectly to button (56/2)
-  const outerRadius = 80; // Compact (was 100)
-  const subRingRadius = 135; // Compact (was 170)
+  const btnVisualSize = 56;
+  const hitAreaSize = 120; // منطقة لمس واسعة جداً لضمان الاستجابة من كل الجهات
+  const innerRadius = 28;
+  const outerRadius = 80;
+  const subRingRadius = 135;
 
-  // Persistence & Data Cleanup
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // 1. Initial Load from LocalStorage (Fast UI)
-    const savedData = localStorage.getItem("kse_admin_floating_data");
-    if (savedData) {
-      try {
-        let parsed = JSON.parse(savedData);
-        setCategories(parsed);
-      } catch(e){}
-    }
-    const savedPos = localStorage.getItem("kse_admin_floating_pos");
-    if (savedPos) try { setPosition(JSON.parse(savedPos)); } catch(e){}
-    const savedLocked = localStorage.getItem("kse_admin_floating_locked");
-    if (savedLocked) setIsLocked(savedLocked === "true");
-    const savedScale = localStorage.getItem("kse_admin_floating_scale");
-    if (savedScale) setMenuScale(parseFloat(savedScale));
+    const loadSaved = () => {
+      const savedData = localStorage.getItem("kse_admin_floating_data");
+      if (savedData) try { setCategories(JSON.parse(savedData)); } catch(e){}
+      const savedPos = localStorage.getItem("kse_admin_floating_pos");
+      if (savedPos) try { setPosition(JSON.parse(savedPos)); } catch(e){}
+      const savedLocked = localStorage.getItem("kse_admin_floating_locked");
+      if (savedLocked) setIsLocked(savedLocked === "true");
+      const savedScale = localStorage.getItem("kse_admin_floating_scale");
+      if (savedScale) setMenuScale(parseFloat(savedScale));
+    };
 
-    // 2. Sync from Database (Cross-device consistency)
+    loadSaved();
+    window.addEventListener("storage", loadSaved);
+
     fetch("/api/abo1stor3hlaa2kbr8-47/settings/floating-menu")
       .then(res => res.json())
       .then(data => {
-        if (data.categories) {
-           setCategories(data.categories);
-           localStorage.setItem("kse_admin_floating_data", JSON.stringify(data.categories));
-        }
-        if (data.isLocked !== undefined) {
-           setIsLocked(data.isLocked);
-           localStorage.setItem("kse_admin_floating_locked", data.isLocked.toString());
-        }
-        if (data.menuScale !== undefined) {
-           setMenuScale(data.menuScale);
-           localStorage.setItem("kse_admin_floating_scale", data.menuScale.toString());
-        }
+        if (data.categories) setCategories(data.categories);
+        if (data.isLocked !== undefined) setIsLocked(data.isLocked);
       })
-      .catch(err => console.error("Failed to sync floating menu", err));
-
-    // Listen for changes from settings tab
-    const handleStorage = () => {
-        const newData = localStorage.getItem("kse_admin_floating_data");
-        if (newData) setCategories(JSON.parse(newData));
-        const newLocked = localStorage.getItem("kse_admin_floating_locked");
-        if (newLocked) setIsLocked(newLocked === "true");
-        const newScale = localStorage.getItem("kse_admin_floating_scale");
-        if (newScale) setMenuScale(parseFloat(newScale));
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+      .catch(err => console.error("Failed to sync", err));
+    return () => window.removeEventListener("storage", loadSaved);
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("kse_admin_floating_data", JSON.stringify(categories));
-  }, [categories]);
+  const updateActiveItemFromPoint = (x: number, y: number) => {
+    if (typeof document === 'undefined') return;
+    const elements = document.elementsFromPoint(x, y);
+    let foundCatId = null;
+    let foundLinkId = null;
 
-  useEffect(() => {
-    localStorage.setItem("kse_admin_floating_locked", isLocked.toString());
-  }, [isLocked]);
+    for (const el of elements) {
+      if (!el) continue;
+      const c = el.getAttribute('data-category-id');
+      const l = el.getAttribute('data-link-id');
+      if (c && !foundCatId) foundCatId = c;
+      if (l && !foundLinkId) foundLinkId = l;
+    }
 
-  useEffect(() => {
-    localStorage.setItem("kse_admin_floating_scale", menuScale.toString());
-  }, [menuScale]);
+    if (foundCatId) setHoveredCategory(foundCatId);
+    setActiveLinkId(foundLinkId);
+  };
 
-  // Drag & Interaction Logic
-  const startDrag = (clientX: number, clientY: number) => {
-    if (isLocked) return;
-    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+  const startDrag = (clientX: number, clientY: number, isTouch: boolean) => {
+    isTouchDevice.current = isTouch;
     setIsDragging(true);
     setIsActuallyDragging(false);
     dragStartTime.current = Date.now();
     dragStartPos.current = { x: clientX, y: clientY };
+
+    // حساب الإزاحة بدقة
     setDragOffset({ x: clientX - position.x, y: clientY - position.y });
+
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
   };
 
   const handleMove = useCallback((clientX: number, clientY: number) => {
-    if (isDragging) {
-      const dist = Math.sqrt(Math.pow(clientX - dragStartPos.current.x, 2) + Math.pow(clientY - dragStartPos.current.y, 2));
+    if (!isDragging) return;
 
-      if (dist > 5 && !isActuallyDragging) {
-        setIsActuallyDragging(true);
-        setIsHovered(false);
-      }
+    const dist = Math.sqrt(Math.pow(clientX - dragStartPos.current.x, 2) + Math.pow(clientY - dragStartPos.current.y, 2));
 
-      if (dist > 5 || isActuallyDragging) {
-        const nx = Math.max(btnSize/2, Math.min(window.innerWidth - btnSize/2, clientX - dragOffset.x));
-        const ny = Math.max(btnSize/2, Math.min(window.innerHeight - btnSize/2, clientY - dragOffset.y));
-        setPosition({ x: nx, y: ny });
-      }
+    if (dist > 10 && !isActuallyDragging) {
+      setIsActuallyDragging(true);
+      // في الهاتف، الحركة تعني أن المستخدم يريد التفاعل مع القائمة أو تحريك الزر
+      if (isTouchDevice.current) setIsHovered(true);
     }
-  }, [isDragging, isActuallyDragging, dragOffset]);
+
+    if (isActuallyDragging && !isLocked) {
+      const nx = Math.max(btnVisualSize/2, Math.min(window.innerWidth - btnVisualSize/2, clientX - dragOffset.x));
+      const ny = Math.max(btnVisualSize/2, Math.min(window.innerHeight - btnVisualSize/2, clientY - dragOffset.y));
+      setPosition({ x: nx, y: ny });
+    }
+
+    if (isHovered) {
+      updateActiveItemFromPoint(clientX, clientY);
+    }
+  }, [isDragging, isActuallyDragging, dragOffset, isLocked, isHovered]);
 
   const stopDrag = useCallback((clientX: number, clientY: number, isTouch: boolean) => {
-    if (isDragging) {
-      setIsDragging(false);
-      const wasActuallyDragging = isActuallyDragging;
-      setIsActuallyDragging(false);
+    if (!isDragging) return;
 
-      localStorage.setItem("kse_admin_floating_pos", JSON.stringify(position));
+    const dist = Math.sqrt(Math.pow(clientX - dragStartPos.current.x, 2) + Math.pow(clientY - dragStartPos.current.y, 2));
+    const duration = Date.now() - dragStartTime.current;
 
-      const dist = Math.sqrt(Math.pow(clientX - dragStartPos.current.x, 2) + Math.pow(clientY - dragStartPos.current.y, 2));
-      const duration = Date.now() - dragStartTime.current;
-
-      // If it was a quick tap/click and NOT a significant drag
-      if (dist < 10 && duration < 250 && !wasActuallyDragging) {
-        setIsHovered(prev => !prev);
+    // حالة النقر السريع (Tap)
+    if (dist < 10 && duration < 300) {
+      setIsHovered(prev => !prev);
+      setHoveredCategory(null);
+      setActiveLinkId(null);
+    }
+    // حالة الإفلات بعد السحب (Drag-to-Select)
+    else if (isHovered && isActuallyDragging) {
+      const elements = document.elementsFromPoint(clientX, clientY);
+      let url = null;
+      for (const el of elements) {
+        const u = el.getAttribute('data-url');
+        if (u) { url = u; break; }
+      }
+      if (url) {
+        window.open(url, "_blank");
+        setIsHovered(false);
+      } else if (isTouch) {
+        // إذا لم يتم اختيار رابط في وضع اللمس، نقوم بإغلاق القائمة
+        setIsHovered(false);
       }
     }
-  }, [isDragging, isActuallyDragging, position]);
 
-  const handleMouseEnter = () => {
-    if (isDragging || isActuallyDragging) return;
-    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-    setIsHovered(true);
-  };
-
-  const handleMouseLeave = () => {
-    // On touch devices, we don't want to auto-close on "leave" as there is no real cursor
-    if (typeof window !== 'undefined' && window.matchMedia("(pointer: coarse)").matches) return;
-
-    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-    hoverTimeout.current = setTimeout(() => {
-      setIsHovered(false);
-      setHoveredCategory(null);
-    }, 400);
-  };
-
-  const toggleMenu = (e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
-    if (isActuallyDragging) return;
-    setIsHovered(!isHovered);
-    if (isHovered) setHoveredCategory(null);
-  };
+    setIsDragging(false);
+    setIsActuallyDragging(false);
+    localStorage.setItem("kse_admin_floating_pos", JSON.stringify(position));
+  }, [isDragging, isActuallyDragging, position, isHovered]);
 
   useEffect(() => {
     const mm = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
@@ -196,21 +179,10 @@ export function FloatingAdminMenu() {
     };
   }, [isDragging, handleMove, stopDrag]);
 
-  const getArcPath = (startAngle: number, endAngle: number, ir: number, or: number) => {
-    const startRad = ((startAngle - 90) * Math.PI) / 180.0;
-    const endRad = ((endAngle - 90) * Math.PI) / 180.0;
-    const x1 = Math.cos(startRad) * or; const y1 = Math.sin(startRad) * or;
-    const x2 = Math.cos(endRad) * or;   const y2 = Math.sin(endRad) * or;
-    const x3 = Math.cos(endRad) * ir;   const y3 = Math.sin(endRad) * ir;
-    const x4 = Math.cos(startRad) * ir; const y4 = Math.sin(startRad) * ir;
-    const largeArc = endAngle - startAngle <= 180 ? "0" : "1";
-    return `M ${x1} ${y1} A ${or} ${or} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${ir} ${ir} 0 ${largeArc} 0 ${x4} ${y4} Z`;
-  };
-
   const isLeft = position.x < (typeof window !== 'undefined' ? window.innerWidth / 2 : 500);
   const totalAngle = 260;
   const startAngle = isLeft ? 50 : 250;
-  const count = categories.length; // Removed +2 (settings and add)
+  const count = categories.length;
   const step = count > 0 ? totalAngle / count : 0;
 
   return (
@@ -218,90 +190,43 @@ export function FloatingAdminMenu() {
       className="fixed z-[9999] pointer-events-none"
       style={{
         transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
-        left: 0,
-        top: 0,
+        left: 0, top: 0,
         willChange: "transform"
       }}
     >
-      {/*
-        Container for Hover Area:
-        The large container only catches pointer events when the menu is open.
-      */}
+      {/* Container لمنطقة اللمس - متمركزة بدقة */}
       <div
-        className="absolute rounded-full flex items-center justify-center bg-transparent pointer-events-none"
+        className="absolute pointer-events-auto flex items-center justify-center"
         style={{
-            width: 450,
-            height: 450,
-            transform: `translate(-50%, -50%) scale(${menuScale})`,
-            left: 0,
-            top: 0,
-            transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
-            touchAction: isDragging ? "none" : "auto"
+          width: hitAreaSize, height: hitAreaSize,
+          left: -hitAreaSize/2, top: -hitAreaSize/2,
+          touchAction: "none"
+        }}
+        onMouseDown={(e) => { e.stopPropagation(); startDrag(e.clientX, e.clientY, false); }}
+        onTouchStart={(e) => { e.stopPropagation(); startDrag(e.touches[0].clientX, e.touches[0].clientY, true); }}
+        onMouseEnter={() => !isTouchDevice.current && setIsHovered(true)}
+        onMouseLeave={() => {
+            if (!isTouchDevice.current) {
+                hoverTimeout.current = setTimeout(() => {
+                    setIsHovered(false);
+                    setHoveredCategory(null);
+                }, 400);
+            }
         }}
       >
-        {/* Main Button Container */}
-        <div
-            className="pointer-events-auto flex items-center justify-center"
-            style={{ width: btnSize + 20, height: btnSize + 20, touchAction: isDragging ? "none" : "auto" }}
-            onMouseEnter={() => {
-                handleMouseEnter();
-                setHoveredCategory(null);
-            }}
-            onMouseLeave={handleMouseLeave}
-        >
-          <div
-            onMouseDown={(e) => { e.stopPropagation(); startDrag(e.clientX, e.clientY); }}
-            onTouchStart={(e) => { e.stopPropagation(); startDrag(e.touches[0].clientX, e.touches[0].clientY); }}
-            className={`relative z-[1000] flex h-14 w-14 items-center justify-center shadow-2xl transform-gpu transition-all duration-300 ${
-                isActuallyDragging ? "cursor-grabbing scale-95" : "cursor-grab"
-            } ${isHovered && !isActuallyDragging ? "bg-[#00f3ff] rotate-45 scale-90 border-2 border-white/50" : "bg-white rounded-2xl rotate-0"}`}
-            style={{
-              transform: isHovered && !isActuallyDragging ? `rotate(45deg) scale(0.9)` : `scale(1)`,
-              touchAction: "none"
-            }}
-          >
-                <div className="pointer-events-none transition-transform duration-300 flex items-center justify-center w-full h-full">
-                    {isHovered && !isActuallyDragging ? (
-                    <div className="flex flex-col items-center justify-center -rotate-45">
-                        <span className="text-3xl font-black text-black select-none leading-none">✕</span>
-                    </div>
-                    ) : (
-                    <div className="grid grid-cols-2 gap-1 p-1">
-                        <div className="w-2 h-2 bg-slate-800 rounded-sm" />
-                        <div className="w-2 h-2 bg-slate-800 rounded-sm" />
-                        <div className="w-2 h-2 bg-slate-800 rounded-sm" />
-                        <div className="w-2 h-2 bg-slate-800 rounded-sm" />
-                    </div>
-                    )}
-                </div>
-            </div>
-        </div>
-
-        {/* Radial Menu SVG Container */}
+        {/* Radial Menu - يتبع الزر بدقة */}
         <div
           className={`absolute transition-all duration-300 transform-gpu ${
-            isHovered && !isActuallyDragging ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-50 pointer-events-none"
+            isHovered ? "opacity-100 scale-100" : "opacity-0 scale-50 pointer-events-none"
           }`}
           style={{
-            transform: isHovered && !isActuallyDragging ? "scale(1)" : "scale(0.5)"
+            width: 450, height: 450,
+            left: '50%', top: '50%',
+            transform: `translate(-50%, -50%) scale(${menuScale})`,
+            zIndex: 10
           }}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
         >
-          <svg
-            width="450"
-            height="450"
-            viewBox="-225 -225 450 450"
-            className="overflow-visible drop-shadow-2xl pointer-events-none"
-          >
-            {/* Hover Guard Circle: ensures no gaps between button and menu */}
-            <circle
-                r={subRingRadius + 20}
-                fill="rgba(255,255,255,0.01)"
-                className="pointer-events-auto"
-                onMouseEnter={handleMouseEnter}
-            />
-
+          <svg width="450" height="450" viewBox="-225 -225 450 450" className="overflow-visible drop-shadow-2xl">
             {categories.map((cat, i) => {
               const sA = startAngle + (i * step);
               const eA = sA + step - 1;
@@ -310,88 +235,87 @@ export function FloatingAdminMenu() {
               const tx = Math.cos(midRad) * ((innerRadius + outerRadius) / 2);
               const ty = Math.sin(midRad) * ((innerRadius + outerRadius) / 2);
 
-              // Strict filter to ensure no folder emoji ever shows up
-              const displayIcon = cat.icon && cat.icon.trim() !== "" && !["📂", "📁", "🗂️", "💼", "🗄️"].includes(cat.icon.trim()) ? cat.icon : null;
-
               return (
-                <g
-                  key={cat.id}
-                  onMouseEnter={() => {
-                    handleMouseEnter();
-                    setHoveredCategory(cat.id);
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setHoveredCategory(hoveredCategory === cat.id ? null : cat.id);
-                  }}
-                  className="cursor-pointer group pointer-events-auto"
-                >
-                  <path d={getArcPath(sA, eA, innerRadius, outerRadius)} fill={cat.color} stroke="#000" strokeWidth="0.5" className="hover:brightness-110 transition-all" />
+                <g key={cat.id} data-category-id={cat.id} className="cursor-pointer">
+                  <path
+                    d={getArcPath(sA, eA, innerRadius, outerRadius)}
+                    fill={cat.color}
+                    stroke="#000"
+                    strokeWidth="0.5"
+                    data-category-id={cat.id}
+                    onMouseEnter={() => !isTouchDevice.current && setHoveredCategory(cat.id)}
+                  />
                   <text x={tx} y={ty} textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none select-none">
-                     {displayIcon ? (
-                        <>
-                           <tspan x={tx} dy="-6" fontSize="16">{displayIcon}</tspan>
-                           <tspan x={tx} dy="14" fontSize="9" fill="white" fontWeight="900" className="uppercase">{cat.name.substring(0,10)}</tspan>
-                        </>
-                     ) : (
-                        <tspan x={tx} dy="0" fontSize="11" fill="white" fontWeight="900" className="uppercase">{cat.name.substring(0,10)}</tspan>
-                     )}
+                     <tspan x={tx} dy="0" fontSize="10" fill="white" fontWeight="900" className="uppercase">{cat.icon} {cat.name.substring(0,8)}</tspan>
                   </text>
 
-                  {/* Sub Links Ring (Outer) */}
                   {hoveredCategory === cat.id && (
                     <g className="animate-in fade-in zoom-in duration-200">
-                      {(() => {
-                        const linkStep = 32; // زاوية توزيع ثابتة لكل رابط
-                        const totalLinks = cat.links.length;
-                        const totalSubAngle = (totalLinks - 1) * linkStep;
+                      {cat.links.map((link, li) => {
+                        const linkStep = 32;
+                        const totalSubAngle = (cat.links.length - 1) * linkStep;
                         const subStartAngle = midA - (totalSubAngle / 2);
+                        const lsA = subStartAngle + (li * linkStep);
+                        const leA = lsA + linkStep - 2;
+                        const lmidRad = ((lsA + leA) / 2 - 90) * Math.PI / 180;
+                        const ltx = Math.cos(lmidRad) * ((outerRadius + subRingRadius) / 2);
+                        const lty = Math.sin(lmidRad) * ((outerRadius + subRingRadius) / 2);
+                        const isActive = activeLinkId === link.id;
 
                         return (
-                          <>
-                            {cat.links.map((link, li) => {
-                              const lsA = subStartAngle + (li * linkStep);
-                              const leA = lsA + linkStep - 2;
-                              const lmidA = (lsA + leA) / 2;
-                              const lmidRad = (lmidA - 90) * Math.PI / 180;
-                              const ltx = Math.cos(lmidRad) * ((outerRadius + subRingRadius) / 2);
-                              const lty = Math.sin(lmidRad) * ((outerRadius + subRingRadius) / 2);
-
-                              // Automatic color for sub-links based on index
-                              const subLinkColor = COLORS[li % COLORS.length];
-
-                              return (
-                                <g
-                                  key={link.id}
-                                  className="group/link cursor-pointer pointer-events-auto"
-                                  onMouseEnter={handleMouseEnter}
-                                  onClick={(e) => { e.stopPropagation(); window.open(link.url, "_blank"); }}
-                                >
-                                  <path
-                                    d={getArcPath(lsA, leA, outerRadius + 4, subRingRadius)}
-                                    fill={subLinkColor}
-                                    stroke="white"
-                                    strokeWidth="1"
-                                    className="hover:brightness-110 transition-all shadow-xl"
-                                  />
-                                  <text x={ltx} y={lty} fill="white" fontSize="9" fontWeight="bold" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none uppercase drop-shadow-sm">
-                                    {link.name.substring(0,12)}
-                                  </text>
-                                </g>
-                              );
-                            })}
-                          </>
+                          <g key={link.id} data-link-id={link.id} data-url={link.url} className="cursor-pointer">
+                            <path
+                              d={getArcPath(lsA, leA, outerRadius + 4, subRingRadius)}
+                              fill={isActive ? "#fff" : COLORS[li % COLORS.length]}
+                              stroke={isActive ? "#000" : "white"}
+                              strokeWidth={isActive ? "2" : "1"}
+                              data-link-id={link.id}
+                              data-url={link.url}
+                              className="transition-all"
+                            />
+                            <text x={ltx} y={lty} fill={isActive ? "#000" : "white"} fontSize="8" fontWeight="black" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none uppercase">
+                              {link.name.substring(0,10)}
+                            </text>
+                          </g>
                         );
-                      })()}
+                      })}
                     </g>
                   )}
                 </g>
               );
             })}
-
           </svg>
+        </div>
+
+        {/* زر الواجهة - متمركز تماماً في منطقة اللمس */}
+        <div
+          className={`flex h-14 w-14 items-center justify-center shadow-2xl transition-all duration-300 relative z-[100] ${
+              isActuallyDragging ? "scale-90 opacity-80 shadow-inner" : "scale-100"
+          } ${isHovered ? "bg-[#00f3ff] rotate-45 rounded-full border-2 border-white" : "bg-white rounded-2xl rotate-0"}`}
+        >
+           {isHovered ? (
+              <span className="text-2xl font-black text-black -rotate-45 select-none">✕</span>
+           ) : (
+              <div className="grid grid-cols-2 gap-1 p-1">
+                  <div className="w-2 h-2 bg-slate-800 rounded-sm" />
+                  <div className="w-2 h-2 bg-slate-800 rounded-sm" />
+                  <div className="w-2 h-2 bg-slate-800 rounded-sm" />
+                  <div className="w-2 h-2 bg-slate-800 rounded-sm" />
+              </div>
+           )}
         </div>
       </div>
     </div>
   );
+}
+
+function getArcPath(startAngle: number, endAngle: number, ir: number, or: number) {
+    const startRad = ((startAngle - 90) * Math.PI) / 180.0;
+    const endRad = ((endAngle - 90) * Math.PI) / 180.0;
+    const x1 = Math.cos(startRad) * or; const y1 = Math.sin(startRad) * or;
+    const x2 = Math.cos(endRad) * or;   const y2 = Math.sin(endRad) * or;
+    const x3 = Math.cos(endRad) * ir;   const y3 = Math.sin(endRad) * ir;
+    const x4 = Math.cos(startRad) * ir; const y4 = Math.sin(startRad) * ir;
+    const largeArc = endAngle - startAngle <= 180 ? "0" : "1";
+    return `M ${x1} ${y1} A ${or} ${or} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${ir} ${ir} 0 ${largeArc} 0 ${x4} ${y4} Z`;
 }
