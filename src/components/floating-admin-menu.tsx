@@ -62,6 +62,7 @@ export function FloatingAdminMenu() {
       .then(data => {
         if (data.categories) setCategories(data.categories);
         if (data.isLocked !== undefined) setIsLocked(data.isLocked);
+        if (data.menuScale !== undefined) setMenuScale(data.menuScale);
       })
       .catch(err => console.error("Failed to sync", err));
     return () => window.removeEventListener("storage", loadSaved);
@@ -103,9 +104,10 @@ export function FloatingAdminMenu() {
 
     const dist = Math.sqrt(Math.pow(clientX - dragStartPos.current.x, 2) + Math.pow(clientY - dragStartPos.current.y, 2));
 
-    if (dist > 10 && !isActuallyDragging) {
+    // السحب يتم فقط إذا تحرك الإصبع مسافة (أكبر من 25 بكسل)
+    if (dist > 25 && !isActuallyDragging) {
       setIsActuallyDragging(true);
-      // في الهاتف، الحركة تعني أن المستخدم يريد التفاعل مع القائمة أو تحريك الزر
+      // في الهاتف، السحب يفتح القائمة فوراً لاختيار سريع (AnyDesk style)
       if (isTouchDevice.current) setIsHovered(true);
     }
 
@@ -124,15 +126,14 @@ export function FloatingAdminMenu() {
     if (!isDragging) return;
 
     const dist = Math.sqrt(Math.pow(clientX - dragStartPos.current.x, 2) + Math.pow(clientY - dragStartPos.current.y, 2));
-    const duration = Date.now() - dragStartTime.current;
 
-    // حالة النقر السريع (Tap)
-    if (dist < 10 && duration < 300) {
+    // أي لمسة بحركة أقل من 25 بكسل تعتبر نقرة لفتح/إغلاق القائمة
+    if (dist < 25) {
       setIsHovered(prev => !prev);
       setHoveredCategory(null);
       setActiveLinkId(null);
     }
-    // حالة الإفلات بعد السحب (Drag-to-Select)
+    // اختيار الرابط عند السحب والإفلات (اختياري)
     else if (isHovered && isActuallyDragging) {
       const elements = document.elementsFromPoint(clientX, clientY);
       let url = null;
@@ -142,9 +143,6 @@ export function FloatingAdminMenu() {
       }
       if (url) {
         window.open(url, "_blank");
-        setIsHovered(false);
-      } else if (isTouch) {
-        // إذا لم يتم اختيار رابط في وضع اللمس، نقوم بإغلاق القائمة
         setIsHovered(false);
       }
     }
@@ -186,126 +184,145 @@ export function FloatingAdminMenu() {
   const step = count > 0 ? totalAngle / count : 0;
 
   return (
-    <div
-      className="fixed z-[9999] pointer-events-none"
-      style={{
-        transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
-        left: 0, top: 0,
-        willChange: "transform"
-      }}
-    >
-      {/* Container لمنطقة اللمس - متمركزة بدقة */}
+    <>
+      {/* Premium Backdrop */}
       <div
-        className="absolute pointer-events-auto flex items-center justify-center"
-        style={{
-          width: hitAreaSize, height: hitAreaSize,
-          left: -hitAreaSize/2, top: -hitAreaSize/2,
-          touchAction: "none"
+        className={`fixed inset-0 z-[9998] transition-all duration-500 ${
+          isHovered ? "bg-black/60 backdrop-blur-[6px] opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => {
+          setIsHovered(false);
+          setHoveredCategory(null);
         }}
-        onMouseDown={(e) => { e.stopPropagation(); startDrag(e.clientX, e.clientY, false); }}
-        onTouchStart={(e) => { e.stopPropagation(); startDrag(e.touches[0].clientX, e.touches[0].clientY, true); }}
-        onMouseEnter={() => !isTouchDevice.current && setIsHovered(true)}
-        onMouseLeave={() => {
-            if (!isTouchDevice.current) {
-                hoverTimeout.current = setTimeout(() => {
-                    setIsHovered(false);
-                    setHoveredCategory(null);
-                }, 400);
-            }
+      />
+      <div
+        className="fixed z-[9999] pointer-events-none"
+        style={{
+          transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+          left: 0, top: 0,
+          willChange: "transform",
+          transition: isDragging ? "none" : "transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)"
         }}
       >
-        {/* Radial Menu - يتبع الزر بدقة */}
+        {/* Container لمنطقة اللمس - متمركزة بدقة */}
         <div
-          className={`absolute transition-all duration-300 transform-gpu ${
-            isHovered ? "opacity-100 scale-100" : "opacity-0 scale-50 pointer-events-none"
-          }`}
+          className="absolute pointer-events-auto flex items-center justify-center"
           style={{
-            width: 450, height: 450,
-            left: '50%', top: '50%',
-            transform: `translate(-50%, -50%) scale(${menuScale})`,
-            zIndex: 10
+            width: hitAreaSize, height: hitAreaSize,
+            left: -hitAreaSize/2, top: -hitAreaSize/2,
+            touchAction: "none"
+          }}
+          onMouseDown={(e) => { e.stopPropagation(); startDrag(e.clientX, e.clientY, false); }}
+          onTouchStart={(e) => { e.stopPropagation(); startDrag(e.touches[0].clientX, e.touches[0].clientY, true); }}
+          onMouseEnter={() => !isTouchDevice.current && setIsHovered(true)}
+          onMouseLeave={() => {
+              if (!isTouchDevice.current) {
+                  hoverTimeout.current = setTimeout(() => {
+                      setIsHovered(false);
+                      setHoveredCategory(null);
+                  }, 400);
+              }
           }}
         >
-          <svg width="450" height="450" viewBox="-225 -225 450 450" className="overflow-visible drop-shadow-2xl">
-            {categories.map((cat, i) => {
-              const sA = startAngle + (i * step);
-              const eA = sA + step - 1;
-              const midA = (sA + eA) / 2;
-              const midRad = (midA - 90) * Math.PI / 180;
-              const tx = Math.cos(midRad) * ((innerRadius + outerRadius) / 2);
-              const ty = Math.sin(midRad) * ((innerRadius + outerRadius) / 2);
+          {/* Radial Menu - يتبع الزر بدقة */}
+          <div
+            className={`absolute transition-all duration-300 transform-gpu ${
+              isHovered ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-50 pointer-events-none"
+            }`}
+            style={{
+              width: 450, height: 450,
+              left: '50%', top: '50%',
+              transform: `translate(-50%, -50%) scale(${menuScale})`,
+              zIndex: 10
+            }}
+          >
+            <svg width="450" height="450" viewBox="-225 -225 450 450" className="overflow-visible drop-shadow-2xl">
+              {categories.map((cat, i) => {
+                const sA = startAngle + (i * step) + 2;
+                const eA = sA + step - 4;
+                const midA = (sA + eA) / 2;
+                const midRad = (midA - 90) * Math.PI / 180;
+                const tx = Math.cos(midRad) * ((innerRadius + outerRadius) / 2);
+                const ty = Math.sin(midRad) * ((innerRadius + outerRadius) / 2);
 
-              return (
-                <g key={cat.id} data-category-id={cat.id} className="cursor-pointer">
-                  <path
-                    d={getArcPath(sA, eA, innerRadius, outerRadius)}
-                    fill={cat.color}
-                    stroke="#000"
-                    strokeWidth="0.5"
-                    data-category-id={cat.id}
-                    onMouseEnter={() => !isTouchDevice.current && setHoveredCategory(cat.id)}
-                  />
-                  <text x={tx} y={ty} textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none select-none">
-                     <tspan x={tx} dy="0" fontSize="10" fill="white" fontWeight="900" className="uppercase">{cat.icon} {cat.name.substring(0,8)}</tspan>
-                  </text>
+                return (
+                  <g key={cat.id} data-category-id={cat.id} className="cursor-pointer group">
+                    <path
+                      d={getArcPath(sA, eA, innerRadius, outerRadius)}
+                      fill={cat.color}
+                      stroke="rgba(0,0,0,0.2)"
+                      strokeWidth="1"
+                      className="transition-all duration-300 hover:brightness-110"
+                      data-category-id={cat.id}
+                      onMouseEnter={() => !isTouchDevice.current && setHoveredCategory(cat.id)}
+                    />
+                    <text x={tx} y={ty} textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none select-none">
+                       <tspan x={tx} dy="0" fontSize="11" fill="white" fontWeight="900" className="uppercase drop-shadow-md">{cat.icon} {cat.name.substring(0,8)}</tspan>
+                    </text>
 
-                  {hoveredCategory === cat.id && (
-                    <g className="animate-in fade-in zoom-in duration-200">
-                      {cat.links.map((link, li) => {
-                        const linkStep = 32;
-                        const totalSubAngle = (cat.links.length - 1) * linkStep;
-                        const subStartAngle = midA - (totalSubAngle / 2);
-                        const lsA = subStartAngle + (li * linkStep);
-                        const leA = lsA + linkStep - 2;
-                        const lmidRad = ((lsA + leA) / 2 - 90) * Math.PI / 180;
-                        const ltx = Math.cos(lmidRad) * ((outerRadius + subRingRadius) / 2);
-                        const lty = Math.sin(lmidRad) * ((outerRadius + subRingRadius) / 2);
-                        const isActive = activeLinkId === link.id;
+                    {hoveredCategory === cat.id && (
+                      <g className="animate-in fade-in zoom-in duration-200">
+                        {cat.links.map((link, li) => {
+                          const linkStep = 32;
+                          const totalSubAngle = (cat.links.length - 1) * linkStep;
+                          const subStartAngle = midA - (totalSubAngle / 2);
+                          const lsA = subStartAngle + (li * linkStep);
+                          const leA = lsA + linkStep - 4;
+                          const lmidRad = ((lsA + leA) / 2 - 90) * Math.PI / 180;
+                          const ltx = Math.cos(lmidRad) * ((outerRadius + subRingRadius) / 2);
+                          const lty = Math.sin(lmidRad) * ((outerRadius + subRingRadius) / 2);
+                          const isActive = activeLinkId === link.id;
 
-                        return (
-                          <g key={link.id} data-link-id={link.id} data-url={link.url} className="cursor-pointer">
-                            <path
-                              d={getArcPath(lsA, leA, outerRadius + 4, subRingRadius)}
-                              fill={isActive ? "#fff" : COLORS[li % COLORS.length]}
-                              stroke={isActive ? "#000" : "white"}
-                              strokeWidth={isActive ? "2" : "1"}
-                              data-link-id={link.id}
-                              data-url={link.url}
-                              className="transition-all"
-                            />
-                            <text x={ltx} y={lty} fill={isActive ? "#000" : "white"} fontSize="8" fontWeight="black" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none uppercase">
-                              {link.name.substring(0,10)}
-                            </text>
-                          </g>
-                        );
-                      })}
-                    </g>
-                  )}
-                </g>
-              );
-            })}
-          </svg>
-        </div>
+                          return (
+                            <g key={link.id} data-link-id={link.id} data-url={link.url} className="cursor-pointer">
+                              <path
+                                d={getArcPath(lsA, leA, outerRadius + 6, subRingRadius)}
+                                fill={isActive ? "#fff" : COLORS[li % COLORS.length]}
+                                stroke={isActive ? "#fff" : "white"}
+                                strokeWidth={isActive ? "3" : "1"}
+                                data-link-id={link.id}
+                                data-url={link.url}
+                                className="transition-all duration-200"
+                                style={{
+                                  filter: isActive ? "drop-shadow(0 0 8px rgba(255,255,255,0.8))" : "none"
+                                }}
+                              />
+                              <text x={ltx} y={lty} fill={isActive ? "#000" : "white"} fontSize="9" fontWeight="900" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none uppercase">
+                                {link.name.substring(0,12)}
+                              </text>
+                            </g>
+                          );
+                        })}
+                      </g>
+                    )}
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
 
-        {/* زر الواجهة - متمركز تماماً في منطقة اللمس */}
-        <div
-          className={`flex h-14 w-14 items-center justify-center shadow-2xl transition-all duration-300 relative z-[100] ${
-              isActuallyDragging ? "scale-90 opacity-80 shadow-inner" : "scale-100"
-          } ${isHovered ? "bg-[#00f3ff] rotate-45 rounded-full border-2 border-white" : "bg-white rounded-2xl rotate-0"}`}
-        >
-           {isHovered ? (
-              <span className="text-2xl font-black text-black -rotate-45 select-none">✕</span>
-           ) : (
-              <div className="grid grid-cols-2 gap-1 p-1">
-                  <div className="w-2 h-2 bg-slate-800 rounded-sm" />
-                  <div className="w-2 h-2 bg-slate-800 rounded-sm" />
-                  <div className="w-2 h-2 bg-slate-800 rounded-sm" />
-                  <div className="w-2 h-2 bg-slate-800 rounded-sm" />
-              </div>
-           )}
+          {/* زر الواجهة - متمركز تماماً في منطقة اللمس */}
+          <div
+            className={`flex h-14 w-14 items-center justify-center shadow-2xl transition-all duration-500 relative z-[100] ${
+                isActuallyDragging ? "scale-90 opacity-80 shadow-inner" : "scale-100"
+            } ${isHovered ? "bg-[#00f3ff] rotate-45 rounded-full border-2 border-white shadow-[0_0_20px_rgba(0,243,255,0.5)]" : "bg-white rounded-2xl rotate-0"}`}
+          >
+             {isHovered ? (
+                <span className="text-2xl font-black text-black -rotate-45 select-none">✕</span>
+             ) : (
+                <div className="grid grid-cols-2 gap-1.5 p-1">
+                    <div className="w-2.5 h-2.5 bg-slate-800 rounded-sm" />
+                    <div className="w-2.5 h-2.5 bg-slate-800 rounded-sm" />
+                    <div className="w-2.5 h-2.5 bg-slate-800 rounded-sm" />
+                    <div className="w-2.5 h-2.5 bg-slate-800 rounded-sm" />
+                </div>
+             )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
+  );
+}
   );
 }
 

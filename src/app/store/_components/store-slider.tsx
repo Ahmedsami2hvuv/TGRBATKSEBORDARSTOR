@@ -83,8 +83,8 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
                 <img
                   src={slide.imageUrl}
                   alt={slide.title || ""}
-                  className={`absolute inset-0 w-full h-full object-cover transition-transform duration-[8000ms] ease-out ${
-                    isActive ? "scale-110 rotate-1" : "scale-100 rotate-0"
+                  className={`absolute inset-0 w-full h-full object-cover transition-transform duration-[10000ms] ease-out ${
+                    isActive ? "scale-115 rotate-[1.5deg] translate-x-2" : "scale-100 rotate-0 translate-x-0"
                   }`}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -100,10 +100,14 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
                 {/* Content Overlay */}
                 {slide.title && (
                   <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-24 text-right">
-                    <div className={`transition-all duration-1000 delay-300 transform ${isActive ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"}`}>
+                    <div className={`transition-all duration-1000 delay-300 transform ${isActive ? "translate-y-0 opacity-100 blur-0" : "translate-y-12 opacity-0 blur-md"}`}>
                       <h2
                         className="text-white text-3xl md:text-7xl font-black tracking-tighter leading-tight drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]"
-                        style={{ fontFamily: "Cairo, sans-serif", textShadow: "2px 2px 20px rgba(0,0,0,0.8)" }}
+                        style={{
+                          fontFamily: "Cairo, sans-serif",
+                          textShadow: "2px 2px 20px rgba(0,0,0,0.8)",
+                          letterSpacing: "-0.02em"
+                        }}
                       >
                         {slide.title}
                       </h2>
@@ -139,19 +143,26 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
            </div>
         )}
 
-        {/* Premium Indicators */}
+        {/* Premium Indicators with Progress Bar */}
         {slides.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 z-30">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-30">
             {slides.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrent(index)}
-                className={`h-1.5 rounded-full transition-all duration-700 ${
+                className={`h-1.5 rounded-full transition-all duration-700 relative overflow-hidden ${
                   index === current
-                    ? "w-10 bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]"
-                    : "w-2 bg-white/20 hover:bg-white/40 backdrop-blur-sm"
+                    ? "w-12 bg-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                    : "w-2 bg-white/10 hover:bg-white/40 backdrop-blur-md"
                 }`}
-              />
+              >
+                {index === current && (
+                  <div
+                    className="absolute inset-y-0 left-0 bg-white shadow-[0_0_10px_#fff] animate-slider-progress"
+                    style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
+                  />
+                )}
+              </button>
             ))}
           </div>
         )}
