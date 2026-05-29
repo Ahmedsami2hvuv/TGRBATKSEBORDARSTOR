@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 
 interface Slide {
   id: string;
@@ -17,9 +16,6 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-  const SLIDE_DURATION = 6000;
-  const minSwipeDistance = 50;
-
   const nextSlide = useCallback(() => {
     setCurrent((prev) => (prev + 1) % slides.length);
   }, [slides.length]);
@@ -28,30 +24,9 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
     setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
   }, [slides.length]);
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe) nextSlide();
-    else if (isRightSwipe) prevSlide();
-  };
-
   useEffect(() => {
     if (slides.length <= 1 || isPaused) return;
-    const timer = setInterval(() => {
-      nextSlide();
-    }, SLIDE_DURATION);
+    const timer = setInterval(nextSlide, 6000);
     return () => clearInterval(timer);
   }, [slides.length, isPaused, nextSlide]);
 
@@ -59,150 +34,92 @@ export function StoreSlider({ slides }: { slides: Slide[] }) {
 
   return (
     <div
-      className="w-full group select-none"
+      className="w-full group select-none relative"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
       <div
-        className="relative aspect-[16/9] md:aspect-[21/7] overflow-hidden rounded-t-[2.5rem] border-x-2 border-t-2 border-slate-100 dark:border-slate-800 bg-slate-950 touch-pan-y"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
+        className="relative aspect-[16/9] md:aspect-[21/7] overflow-hidden rounded-[2.5rem] bg-slate-950 touch-pan-y shadow-2xl"
+        onTouchStart={(e) => setTouchStart(e.targetTouches[0].clientX)}
+        onTouchMove={(e) => setTouchEnd(e.targetTouches[0].clientX)}
+        onTouchEnd={() => {
+          if (!touchStart || !touchEnd) return;
+          const dist = touchStart - touchEnd;
+          if (dist > 50) nextSlide();
+          if (dist < -50) prevSlide();
+          setTouchStart(null);
+          setTouchEnd(null);
+        }}
       >
         {slides.map((slide, index) => {
           const isActive = index === current;
           return (
             <div
               key={slide.id}
-              className={`absolute inset-0 transition-all duration-[1200ms] cubic-bezier(0.4, 0, 0.2, 1) ${
+              className={`absolute inset-0 transition-all duration-[1000ms] ease-in-out ${
                 isActive ? "opacity-100 scale-100 z-10" : "opacity-0 scale-105 z-0 pointer-events-none"
               }`}
             >
-              <div className="relative w-full h-full overflow-hidden">
-                {/* Advanced Ken Burns Effect */}
+              <div className="relative w-full h-full">
                 <img
                   src={slide.imageUrl}
                   alt={slide.title || ""}
-                  className={`absolute inset-0 w-full h-full object-cover transition-transform duration-[10000ms] ease-out ${
-                    isActive ? "scale-115 rotate-[1.5deg] translate-x-2" : "scale-100 rotate-0 translate-x-0"
+                  className={`absolute inset-0 w-full h-full object-cover transition-transform duration-[8000ms] ${
+                    isActive ? "scale-110" : "scale-100"
                   }`}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    if (target.src.includes('?')) {
-                      target.src = target.src.split('?')[0];
-                    }
-                  }}
                 />
+                {/* تدرج لضمان وضوح النص فقط */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
 
-                {/* Premium Gradient Overlay for Text Readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent z-[5]" />
-
-                {/* Content Overlay */}
                 {slide.title && (
-                  <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-24 text-right">
-                    <div className={`transition-all duration-1000 delay-300 transform ${isActive ? "translate-y-0 opacity-100 blur-0 scale-100" : "translate-y-16 opacity-0 blur-xl scale-95"}`}>
-                      <h2
-                        className="text-white text-2xl md:text-7xl font-black tracking-tighter leading-[1.1] drop-shadow-[0_20px_20px_rgba(0,0,0,0.8)]"
-                        style={{
-                          fontFamily: "Cairo, sans-serif",
-                          textShadow: "0px 4px 30px rgba(0,0,0,0.9)",
-                          letterSpacing: "-0.03em"
-                        }}
-                      >
-                        {slide.title}
-                      </h2>
-                      <div className={`h-1 w-20 bg-indigo-500 mt-4 mr-0 transition-all duration-1000 delay-500 ${isActive ? "w-32 opacity-100" : "w-0 opacity-0"}`} />
-                    </div>
+                  <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-20 text-right z-20">
+                    <h2 className={`text-white text-2xl md:text-5xl font-black transition-all duration-700 ${isActive ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}>
+                      {slide.title}
+                    </h2>
                   </div>
                 )}
 
                 {slide.linkUrl && (
-                  <Link href={slide.linkUrl} className="absolute inset-0 z-20 cursor-pointer">
-                    <span className="sr-only">التفاصيل</span>
-                  </Link>
+                  <Link href={slide.linkUrl} className="absolute inset-0 z-30" />
                 )}
               </div>
             </div>
           );
         })}
 
-        {/* Floating Glass Navigation Controls */}
+        {/* نقاط التنقل بدون أي خطوط متحركة */}
         {slides.length > 1 && (
-           <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 flex justify-between z-30 opacity-0 group-hover:opacity-100 transition-all duration-500 hidden md:flex">
-             <button
-                onClick={prevSlide}
-                className="group/btn p-5 bg-white/5 backdrop-blur-xl border border-white/20 text-white rounded-[2rem] hover:bg-white/20 hover:scale-110 active:scale-90 transition-all shadow-xl"
-             >
-               <svg className="w-8 h-8 rotate-180 group-hover/btn:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-             </button>
-             <button
-                onClick={nextSlide}
-                className="group/btn p-5 bg-white/5 backdrop-blur-xl border border-white/20 text-white rounded-[2rem] hover:bg-white/20 hover:scale-110 active:scale-90 transition-all shadow-xl"
-             >
-               <svg className="w-8 h-8 group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-             </button>
-           </div>
-        )}
-
-        {/* Premium Indicators with Progress Bar */}
-        {slides.length > 1 && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-30">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-40">
             {slides.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrent(index)}
-                className={`h-1.5 rounded-full transition-all duration-700 relative overflow-hidden ${
-                  index === current
-                    ? "w-12 bg-white/20 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-                    : "w-2 bg-white/10 hover:bg-white/40 backdrop-blur-md"
+                className={`h-2 rounded-full transition-all duration-500 ${
+                  index === current ? "w-10 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]" : "w-2 bg-white/40 hover:bg-white/60"
                 }`}
-              >
-                {index === current && (
-                  <div
-                    className="absolute inset-y-0 left-0 bg-white shadow-[0_0_10px_#fff] animate-slider-progress"
-                    style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
-                  />
-                )}
-              </button>
+              />
             ))}
           </div>
         )}
       </div>
 
-      {/* Mobile-First Premium Controls (Glassmorphism) */}
+      {/* أزرار الموبايل (نظيفة بدون حدود بيضاء) */}
       {slides.length > 1 && (
-        <div className="grid grid-cols-2 mt-0 relative z-40" dir="ltr">
+        <div className="grid grid-cols-2 mt-0 overflow-hidden rounded-b-[2.5rem] relative z-40" dir="ltr">
           <button
             onClick={prevSlide}
-            className="flex items-center justify-center gap-3 h-11 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl hover:bg-white dark:hover:bg-slate-900 text-slate-900 dark:text-white transition-all border-x-2 border-b-2 border-slate-100/50 dark:border-slate-800/50 rounded-bl-[2.5rem] active:scale-95 group shadow-lg"
+            className="h-12 bg-white/5 dark:bg-slate-900/40 backdrop-blur-md text-slate-700 dark:text-white font-black text-[11px] uppercase tracking-widest active:bg-white/20 transition-colors"
           >
-            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
-               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><path d="M15 18l-6-6 6-6" /></svg>
-            </div>
-            <span className="font-black text-[11px] uppercase tracking-widest">السابق</span>
+            السابق
           </button>
-
           <button
             onClick={nextSlide}
-            className="flex items-center justify-center gap-3 h-11 bg-gradient-to-r from-indigo-600/90 to-violet-600/90 backdrop-blur-xl hover:from-indigo-600 hover:to-violet-600 text-white transition-all border-r-2 border-b-2 border-indigo-500/30 rounded-br-[2.5rem] active:scale-95 group shadow-lg"
+            className="h-12 bg-indigo-600/90 text-white font-black text-[11px] uppercase tracking-widest active:bg-indigo-700 transition-colors"
           >
-            <span className="font-black text-[11px] uppercase tracking-widest">التالي</span>
-            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-white/20 group-hover:bg-white group-hover:text-indigo-600 transition-colors">
-               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><path d="M9 18l6-6-6-6" /></svg>
-            </div>
+            التالي
           </button>
         </div>
       )}
-
-      <style jsx global>{`
-        @keyframes slider-progress {
-          0% { width: 0%; }
-          100% { width: 100%; }
-        }
-        .animate-slider-progress {
-          animation: slider-progress ${SLIDE_DURATION}ms linear forwards;
-        }
-      `}</style>
     </div>
   );
 }
