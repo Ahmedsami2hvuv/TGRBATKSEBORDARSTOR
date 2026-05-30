@@ -817,9 +817,6 @@ export function PendingAssignPanel({
           )}
         </button>
       </div>
-    </form>
-  );
-
       <div className="pt-2">
         <button type="submit" disabled={pending} className="w-full rounded-2xl bg-gradient-to-r from-slate-800 to-black py-4 text-xs font-black text-white shadow-2xl active:scale-[0.98] transition-all border-b-4 border-slate-950 flex items-center justify-center gap-2">
           {pending ? "جاري معالجة الطلب..." : (

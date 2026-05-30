@@ -497,9 +497,7 @@ export function OrderViewContent({
         customWaButtons={customWaButtons}
         editUrl={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
       />
-    </div>
-  );
-      <OrderFabDock
+    <OrderFabDock
         storageKey="adminFab_v1"
         orderId={order.id}
         shopPhone={submitterPhone}
