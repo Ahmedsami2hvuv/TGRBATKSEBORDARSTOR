@@ -203,8 +203,8 @@ export function FloatingAdminMenu() {
                       className="transition-all duration-200 hover:brightness-110"
                       data-category-id={cat.id}
                     />
-                    <text x={tx} y={ty} textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none fill-white text-[10px] font-bold">
-                       {cat.icon}
+                    <text x={tx} y={ty} textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none fill-white text-[8px] font-bold">
+                       {cat.icon ? cat.icon + " " : ""}{cat.name.substring(0, 10)}
                     </text>
 
                     {hoveredCategory === cat.id && cat.links.map((link, li) => {
