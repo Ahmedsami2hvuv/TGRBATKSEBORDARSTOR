@@ -169,47 +169,20 @@ export function AdminCreateOrderForm({
  setRecipientKind("none");
  setSelectedEmployeeId("");
  setFirstSavedDoorPhotoUrl(null);
- setFirstPhone("");
- setFirstAlternatePhone("");
- setFirstRegionId("");
- setFirstLocationUrl("");
- setFirstLandmark("");
- setSecondPhone("");
- setSecondAlternatePhone("");
- setSecondRegionId("");
- setSecondLocationUrl("");
- setSecondLandmark("");
+ // setFirstPhone(""); // Prevent clearing when switching modes if possible, but usually needed for fresh start
+ // setFirstRegionId("");
  } else if (submissionMode === "two_faces") {
  setShopId("");
  setRecipientKind("none");
  setSelectedEmployeeId("");
  setFirstSavedDoorPhotoUrl(null);
  setSecondSavedDoorPhotoUrl(null);
- setFirstPhone("");
- setFirstAlternatePhone("");
- setFirstRegionId("");
- setFirstLocationUrl("");
- setFirstLandmark("");
- setSecondPhone("");
- setSecondAlternatePhone("");
- setSecondRegionId("");
- setSecondLocationUrl("");
- setSecondLandmark("");
  } else if (submissionMode === "prep_draft") {
  // Optional reset
  } else {
+ // from_shop mode or other
  setFirstSavedDoorPhotoUrl(null);
  setSecondSavedDoorPhotoUrl(null);
- setFirstPhone("");
- setFirstAlternatePhone("");
- setFirstRegionId("");
- setFirstLocationUrl("");
- setFirstLandmark("");
- setSecondPhone("");
- setSecondAlternatePhone("");
- setSecondRegionId("");
- setSecondLocationUrl("");
- setSecondLandmark("");
  setRecipientKind("none");
  setSelectedEmployeeId("");
  }
@@ -252,7 +225,7 @@ export function AdminCreateOrderForm({
  setRecipientKind("admin");
  setSelectedEmployeeId("");
  setFirstSavedDoorPhotoUrl(null);
- setFirstPhone(ADMIN_PHONE_FROM_SHOP_LOCAL);
+ // Removed setFirstPhone(ADMIN_PHONE_FROM_SHOP_LOCAL); to prevent overwriting customer phone
  setFirstRegionId("");
  setFirstLocationUrl("");
  setFirstLandmark(ADMIN_OFFICE_LABEL);
