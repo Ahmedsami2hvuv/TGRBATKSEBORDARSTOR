@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { ALF_PER_DINAR, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { calculateAutoSellPrice } from "@/lib/auto-pricing";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
@@ -155,242 +155,291 @@ export function PreparerSiteOrderPrepEditClient({
 
   if (state.ok) {
     return (
-      <div className="kse-glass-dark rounded-2xl border border-emerald-300 p-8 text-center shadow-sm">
-        <div className="flex justify-center">
-          <DynamicIcon
-            iconKey="ui_success"
-            config={icons}
-            className="h-12 w-12 text-emerald-600"
-            fallback={<span className="text-4xl">✓</span>}
-          />
-        </div>
-        <h2 className="mt-3 text-xl font-bold text-emerald-800">تم تحديث الطلب #{orderNumber}</h2>
-        <p className="mt-2 text-sm text-slate-700">تم حفظ الأسعار الجديدة وتحديث أثرها المالي تلقائياً.</p>
-        <div className="mt-5 flex flex-col gap-2">
-          <Link href={prepHref} className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-black text-white">
-            العودة إلى تجهيز الطلبات
-          </Link>
-          <Link href={homeHref} className="rounded-xl border border-sky-300 px-4 py-3 text-sm font-bold text-sky-900">
-            الطلبات
-          </Link>
+      <div className="mx-auto max-w-lg">
+        <div className="kse-glass-dark overflow-hidden border border-emerald-300 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70 p-8 text-center">
+          <div className="flex justify-center">
+            <DynamicIcon
+              iconKey="ui_success"
+              config={icons}
+              className="h-12 w-12 text-emerald-600"
+              fallback={<span className="text-4xl">✓</span>}
+            />
+          </div>
+          <h2 className="mt-4 text-xl font-black text-emerald-800 dark:text-emerald-400">تم تحديث الطلب #{orderNumber}</h2>
+          <p className="mt-2 text-sm font-bold text-slate-600 dark:text-slate-400">تم حفظ الأسعار الجديدة وتحديث أثرها المالي تلقائياً.</p>
+          <div className="mt-8 flex flex-col gap-3">
+            <Link href={prepHref} className="flex h-12 items-center justify-center rounded-2xl bg-violet-600 text-sm font-black text-white shadow-lg transition hover:bg-violet-700">
+              العودة إلى تجهيز الطلبات
+            </Link>
+            <Link href={homeHref} className="flex h-12 items-center justify-center rounded-2xl border-2 border-sky-200 text-sm font-bold text-sky-900 dark:border-white/10 dark:text-sky-400">
+              سجل الطلبات
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <section className="kse-glass-dark rounded-2xl border border-violet-200/90 p-4 shadow-sm">
-        <p className="text-xs font-semibold text-amber-900">المجهز: {preparerName.trim() || "—"}</p>
-        <h2 className="text-base font-black text-violet-950">تعديل تسعير الطلب #{orderNumber}</h2>
-      </section>
-
-      <section className="kse-glass-dark rounded-2xl border border-orange-200/90 p-4 shadow-sm">
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-slate-800">عنوان المنطقة للفاتورة</span>
-          <input value={titleLine} onChange={(e) => setTitleLine(e.target.value)} className={inputClass} />
-        </label>
-        <p className="mt-2 text-xs text-slate-600">المنطقة: {initialData.customerRegionName}</p>
-      </section>
-
-      <section className="kse-glass-dark rounded-2xl border border-sky-200 p-4 shadow-sm">
-        <h2 className="text-sm font-black text-sky-950">المنتجات والتسعير</h2>
-        <div className="mt-3 flex flex-col gap-2">
-          {products.map((line, i) => {
-            const row = priceRows[i] ?? { buy: "" };
-            return (
-              <button
-                key={`${i}-${line.slice(0, 18)}`}
-                type="button"
-                onClick={() => {
-                  const b = row.buy.trim().replace(/,/g, ".");
-                  setSelectedPriceIndex(i);
-                  setPricingErr(null);
-                  setPricingLinesText(b);
-                }}
-                className="flex w-full items-center justify-between gap-3 rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-start hover:border-sky-300"
-              >
-                <span className="min-w-0 flex-1 text-sm font-bold text-slate-900">{line}</span>
-                <span className="font-mono text-sm font-black tabular-nums text-slate-700" dir="ltr">
-                  {row.buy.replace(/,/g, ".") || "⋯"}
-                </span>
-              </button>
-            );
-          })}
+    <div className="mx-auto max-w-lg space-y-6 pb-24">
+      <section className="kse-glass-dark overflow-hidden border border-violet-200/50 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70">
+        <div className="bg-violet-600/5 px-4 py-3 border-b border-violet-100 dark:border-white/5 flex items-center justify-between">
+           <h2 className="text-sm font-black text-violet-950 dark:text-violet-200">تعديل طلب #{orderNumber}</h2>
+           <p className="text-[10px] font-bold text-violet-600/70 dark:text-violet-400/70">المجهز: {preparerName.trim() || "—"}</p>
         </div>
-
-        {selectedPriceIndex != null ? (
-          <div className="mt-4 rounded-2xl border-2 border-violet-300 bg-violet-50/50 p-4">
-            <p className="text-sm font-bold text-slate-900">تعديل سعر: {products[selectedPriceIndex]}</p>
-            <textarea
-              value={pricingLinesText}
-              onChange={(e) => setPricingLinesText(e.target.value)}
-              rows={4}
-              dir="ltr"
-              placeholder={"سطر 1: سعر الشراء فقط"}
-              className={`${inputClass} mt-2 font-mono`}
-            />
-            {pricingErr ? <p className="mt-2 text-xs font-bold text-rose-700">{pricingErr}</p> : null}
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={applyPricingPanel}
-                className="flex-1 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-black text-white"
-              >
-                حفظ
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedPriceIndex(null);
-                  setPricingErr(null);
-                  setPricingLinesText("");
-                }}
-                className="flex-1 rounded-xl border-2 border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-800"
-              >
-                إلغاء
-              </button>
-            </div>
+        <div className="p-4 space-y-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">عنوان المنطقة (للفاتورة)</span>
+            <input value={titleLine} onChange={(e) => setTitleLine(e.target.value)} className={`${inputClass} dark:bg-slate-950/50 dark:border-white/10 dark:text-white`} />
+          </label>
+          <div className="rounded-xl bg-violet-50/50 p-2.5 dark:bg-white/5">
+             <p className="text-[10px] font-black text-violet-800 dark:text-violet-400">المنطقة المسجلة:</p>
+             <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{initialData.customerRegionName}</p>
           </div>
-        ) : null}
-      </section>
-
-      <section className="kse-glass-dark rounded-2xl border border-indigo-200/90 p-4 shadow-sm">
-        <h2 className="text-sm font-black text-indigo-950">عدد المحلات</h2>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {Array.from({ length: 10 }, (_, k) => k + 1).map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => setPlacesCount(n)}
-              className={`min-h-[44px] min-w-[44px] rounded-xl border-2 px-2 text-sm font-black ${
-                placesCount === n ? "border-indigo-600 bg-indigo-600 text-white" : "border-indigo-200 bg-white text-indigo-950"
-              }`}
-            >
-              {n}
-            </button>
-          ))}
         </div>
-        {placesCount != null ? (
-          <p className="mt-2 text-xs text-slate-700">
-            إضافة تجهيز: <strong>{calculateExtraAlfFromPlacesCount(placesCount)} </strong>
-          </p>
-        ) : null}
-        <p className="mt-3 text-xs text-slate-500">
-          أسعار البيع لا تظهر للمجهز هنا، ويتم حسابها تلقائياً من سعر الشراء.
-        </p>
       </section>
 
-      <section className="kse-glass-dark rounded-2xl border border-sky-200 p-4 shadow-sm">
-        <h2 className="text-sm font-black text-sky-950">بيانات الطلب</h2>
-        <label className="mt-3 flex flex-col gap-1">
-          <span className="text-xs font-medium text-slate-800">المحل</span>
-          <select value={shopId} onChange={(e) => setShopId(e.target.value)} className={inputClass}>
-            {shops.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
+      <section className="kse-glass-dark overflow-hidden border border-sky-200/50 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70">
+        <div className="bg-sky-500/5 px-4 py-3 border-b border-sky-100 dark:border-white/5">
+           <h2 className="text-sm font-black text-sky-950 dark:text-sky-200">المنتجات والتسعير</h2>
+        </div>
+        <div className="p-4">
+          <div className="grid grid-cols-1 gap-2.5">
+            {products.map((line, i) => {
+              const row = priceRows[i] ?? { buy: "" };
+              const priced = row.buy.trim().length > 0;
+              return (
+                <button
+                  key={`${i}-${line.slice(0, 18)}`}
+                  type="button"
+                  onClick={() => {
+                    const b = row.buy.trim().replace(/,/g, ".");
+                    setSelectedPriceIndex(i);
+                    setPricingErr(null);
+                    setPricingLinesText(b);
+                  }}
+                  className={`group relative flex min-h-[56px] w-full items-center justify-between gap-3 overflow-hidden rounded-2xl border-2 px-4 py-3 text-start transition-all active:scale-[0.98] ${
+                    selectedPriceIndex === i
+                      ? "border-sky-500 bg-sky-50 shadow-md ring-4 ring-sky-500/10 dark:bg-sky-500/10"
+                      : priced
+                        ? "border-emerald-600 bg-emerald-600 text-white"
+                        : "border-slate-100 bg-white/50 hover:border-sky-200 dark:border-white/5 dark:bg-slate-950/40"
+                  }`}
+                >
+                  <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                     <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${priced ? "bg-white" : "bg-slate-300 group-hover:bg-sky-400 dark:bg-slate-700"}`} />
+                     <span className={`truncate text-sm font-bold ${priced ? "text-white" : "text-slate-800 dark:text-slate-200"}`}>{line}</span>
+                  </div>
+                  <div className="flex flex-col items-end shrink-0">
+                    <span className={`font-mono text-sm font-black tabular-nums ${priced ? "text-white" : "text-slate-500 dark:text-slate-400"}`} dir="ltr">
+                      {row.buy.replace(/,/g, ".") || "⋯"}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {selectedPriceIndex != null && (
+            <div className="fixed inset-x-0 bottom-0 z-50 animate-in slide-in-from-bottom duration-300">
+               <div className="mx-auto max-w-lg">
+                 <div className="kse-glass-dark m-4 overflow-hidden border border-sky-200 shadow-2xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/90">
+                    <div className="bg-sky-600 px-4 py-3 text-white">
+                       <p className="text-xs font-bold opacity-80">تعديل سعر:</p>
+                       <p className="truncate text-sm font-black">{products[selectedPriceIndex]}</p>
+                    </div>
+                    <div className="p-5">
+                       <textarea
+                         value={pricingLinesText}
+                         onChange={(e) => setPricingLinesText(e.target.value)}
+                         onKeyDown={(e) => {
+                           if (e.key === "Enter") {
+                              e.preventDefault();
+                              applyPricingPanel();
+                           }
+                         }}
+                         rows={2}
+                         dir="ltr"
+                         placeholder="سعر الشراء"
+                         className="w-full rounded-2xl border-2 border-sky-100 bg-slate-50 px-4 py-4 text-center font-mono text-2xl font-black tabular-nums text-sky-950 outline-none transition focus:border-sky-500 focus:bg-white dark:border-white/5 dark:bg-black/20 dark:text-white"
+                         inputMode="decimal"
+                         autoFocus
+                       />
+                       {pricingErr && <p className="mt-2 text-center text-xs font-bold text-rose-600">{pricingErr}</p>}
+                       <div className="mt-5 grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPriceIndex(null)}
+                            className="rounded-2xl border border-slate-200 bg-white py-3.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-white/5 dark:bg-white/5 dark:text-slate-300"
+                          >
+                            إلغاء
+                          </button>
+                          <button
+                            type="button"
+                            onClick={applyPricingPanel}
+                            className="rounded-2xl bg-sky-600 py-3.5 text-sm font-black text-white shadow-lg shadow-sky-200 transition hover:bg-sky-700 active:scale-95 dark:shadow-none"
+                          >
+                            حفظ
+                          </button>
+                       </div>
+                    </div>
+                 </div>
+               </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="kse-glass-dark overflow-hidden border border-indigo-200/50 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70">
+        <div className="bg-indigo-500/5 px-4 py-3 border-b border-indigo-100 dark:border-white/5">
+           <h2 className="text-sm font-black text-indigo-950 dark:text-indigo-200">عدد المحلات</h2>
+        </div>
+        <div className="p-4">
+          <div className="grid grid-cols-5 gap-2">
+            {Array.from({ length: 10 }, (_, k) => k + 1).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setPlacesCount(n)}
+                className={`flex h-12 items-center justify-center rounded-xl border-2 text-sm font-black transition-all ${
+                  placesCount === n
+                    ? "border-indigo-600 bg-indigo-600 text-white shadow-lg dark:border-indigo-500 dark:bg-indigo-500"
+                    : "border-slate-100 bg-white/50 text-slate-400 hover:border-indigo-200 hover:text-indigo-600 dark:border-white/5 dark:bg-slate-950/40"
+                }`}
+              >
+                {n}
+              </button>
             ))}
-          </select>
-        </label>
-        <label className="mt-3 flex flex-col gap-1">
-          <span className="text-xs font-medium text-slate-800">هاتف الزبون</span>
-          <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className={inputClass} />
-        </label>
-        <label className="mt-3 flex flex-col gap-1">
-          <span className="text-xs font-medium text-slate-800">اسم الزبون</span>
-          <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={inputClass} />
-        </label>
-        <label className="mt-3 flex flex-col gap-1">
-          <span className="text-xs font-medium text-slate-800">وقت الطلب</span>
-          <input value={orderTime} onChange={(e) => setOrderTime(e.target.value)} className={inputClass} />
-        </label>
-        <label className="mt-3 flex flex-col gap-1">
-          <span className="text-xs font-medium text-slate-800">أقرب نقطة دالة</span>
-          <input value={customerLandmark} onChange={(e) => setCustomerLandmark(e.target.value)} className={inputClass} />
-        </label>
+          </div>
+          {placesCount != null && (
+            <div className="mt-4 flex items-center justify-between rounded-xl bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
+              <span>إضافة تجهيز:</span>
+              <span className="font-mono tabular-nums">+{calculateExtraAlfFromPlacesCount(placesCount)}</span>
+            </div>
+          )}
+        </div>
       </section>
 
-      <section className="kse-glass-dark rounded-2xl border border-violet-200 p-4 shadow-sm">
-        <h2 className="text-sm font-black text-violet-950">تعديل التوصيل والمركبة</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => setVehiclePreference("bike")}
-            className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 py-3 transition ${
-              vehiclePreference === "bike" ? "border-sky-600 bg-sky-50 text-sky-900" : "border-slate-200 bg-white text-slate-500"
-            }`}
-          >
-            <span className="text-2xl">🏍️</span>
-            <span className="text-xs font-bold">دراجة</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setVehiclePreference("car")}
-            className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 py-3 transition ${
-              vehiclePreference === "car" ? "border-sky-600 bg-sky-50 text-sky-900" : "border-slate-200 bg-white text-slate-500"
-            }`}
-          >
-            <span className="text-2xl">🚗</span>
-            <span className="text-xs font-bold">سيارة</span>
-          </button>
+      <section className="kse-glass-dark overflow-hidden border border-emerald-200/50 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70">
+        <div className="bg-emerald-500/5 px-4 py-3 border-b border-emerald-100 dark:border-white/5">
+           <h2 className="text-sm font-black text-emerald-950 dark:text-emerald-200">بيانات الشحن والمركبة</h2>
         </div>
+        <div className="p-4 space-y-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">المحل *</span>
+            <select value={shopId} onChange={(e) => setShopId(e.target.value)} className={`${inputClass} dark:bg-slate-950/50 dark:border-white/10 dark:text-white`}>
+              {shops.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </label>
 
-        <label className="mt-4 flex flex-col gap-1">
-          <span className="text-xs font-bold text-slate-800">تعديل سعر التوصيل الأساسي (اختياري)</span>
-          <div className="relative">
-            <input
-              type="text"
-              inputMode="decimal"
-              value={deliveryPriceOverride}
-              onChange={(e) => setDeliveryPriceOverride(e.target.value)}
-              placeholder={`السعر الأساسي الحالي: ${regionDeliveryAlf}`}
-              className={`${inputClass} font-mono`}
-            />
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <span className="text-xs font-bold text-slate-400">ألف</span>
+          <div className="grid grid-cols-2 gap-3">
+             <label className="flex flex-col gap-1.5">
+               <span className="text-xs font-bold text-slate-600 dark:text-slate-400">هاتف الزبون</span>
+               <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className={`${inputClass} font-mono dark:bg-slate-950/50 dark:border-white/10`} />
+             </label>
+             <label className="flex flex-col gap-1.5">
+               <span className="text-xs font-bold text-slate-600 dark:text-slate-400">اسم الزبون</span>
+               <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={`${inputClass} dark:bg-slate-950/50 dark:border-white/10`} />
+             </label>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+             <label className="flex flex-col gap-1.5">
+               <span className="text-xs font-bold text-slate-600 dark:text-slate-400">وقت الطلب</span>
+               <input value={orderTime} onChange={(e) => setOrderTime(e.target.value)} className={`${inputClass} dark:bg-slate-950/50 dark:border-white/10`} />
+             </label>
+             <label className="flex flex-col gap-1.5">
+               <span className="text-xs font-bold text-slate-600 dark:text-slate-400">أقرب نقطة دالة</span>
+               <input value={customerLandmark} onChange={(e) => setCustomerLandmark(e.target.value)} className={`${inputClass} dark:bg-slate-950/50 dark:border-white/10`} />
+             </label>
+          </div>
+
+          <div className="pt-2">
+            <p className="mb-2 text-xs font-black text-slate-500 dark:text-slate-400">تفضيل المركبة:</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setVehiclePreference("bike")}
+                className={`flex flex-col items-center justify-center gap-1 rounded-2xl border-2 py-3 transition ${
+                  vehiclePreference === "bike" ? "border-sky-600 bg-sky-50 text-sky-900 dark:bg-sky-500/20 dark:text-sky-300" : "border-slate-100 bg-white/50 text-slate-400 dark:border-white/5 dark:bg-slate-950/40"
+                }`}
+              >
+                <span className="text-2xl">🏍️</span>
+                <span className="text-[10px] font-black uppercase tracking-wider">دراجة</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setVehiclePreference("car")}
+                className={`flex flex-col items-center justify-center gap-1 rounded-2xl border-2 py-3 transition ${
+                  vehiclePreference === "car" ? "border-sky-600 bg-sky-50 text-sky-900 dark:bg-sky-500/20 dark:text-sky-300" : "border-slate-100 bg-white/50 text-slate-400 dark:border-white/5 dark:bg-slate-950/40"
+                }`}
+              >
+                <span className="text-2xl">🚗</span>
+                <span className="text-[10px] font-black uppercase tracking-wider">سيارة</span>
+              </button>
             </div>
           </div>
-          <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
-            * سيتم اعتماد السعر الأكبر بين (المحل) و (المنطقة أو هذا التعديل).
-          </p>
-        </label>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">تعديل التوصيل الأساسي (اختياري)</span>
+            <div className="relative">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={deliveryPriceOverride}
+                onChange={(e) => setDeliveryPriceOverride(e.target.value)}
+                placeholder={`الحالي: ${regionDeliveryAlf}`}
+                className={`${inputClass} font-mono dark:bg-slate-950/50 dark:border-white/10`}
+              />
+              <span className="absolute inset-y-0 left-3 flex items-center text-[10px] font-bold text-slate-400">ألف</span>
+            </div>
+          </label>
+        </div>
       </section>
 
-      <form action={formAction} className="space-y-3">
-        <input type="hidden" name="p" value={auth.p} />
-        <input type="hidden" name="exp" value={auth.exp} />
-        <input type="hidden" name="s" value={auth.s} />
-        <input type="hidden" name="orderId" value={orderId} />
-        <input type="hidden" name="shopId" value={shopId} />
-        <input type="hidden" name="customerRegionId" value={initialData.customerRegionId} />
-        <input type="hidden" name="shoppingPayload" value={previewPayload ? JSON.stringify(previewPayload) : ""} />
+      {/* Sticky Bottom Action Bar */}
+      <div className="fixed inset-x-0 bottom-0 z-40 animate-in slide-in-from-bottom duration-300">
+         <div className="kse-glass-dark mx-auto max-w-lg rounded-t-3xl border-t border-sky-200 bg-white/80 p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.1)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/90">
+            <form action={formAction} className="flex gap-3">
+              <input type="hidden" name="p" value={auth.p} />
+              <input type="hidden" name="exp" value={auth.exp} />
+              <input type="hidden" name="s" value={auth.s} />
+              <input type="hidden" name="orderId" value={orderId} />
+              <input type="hidden" name="shopId" value={shopId} />
+              <input type="hidden" name="customerRegionId" value={initialData.customerRegionId} />
+              <input type="hidden" name="shoppingPayload" value={previewPayload ? JSON.stringify(previewPayload) : ""} />
+              <input type="hidden" name="customerPhone" value={customerPhone} />
+              <input type="hidden" name="customerName" value={customerName} />
+              <input type="hidden" name="orderTime" value={orderTime} />
+              <input type="hidden" name="customerLandmark" value={customerLandmark} />
+              <input type="hidden" name="vehiclePreference" value={vehiclePreference || ""} />
+              <input type="hidden" name="deliveryPriceOverride" value={deliveryPriceOverride} />
 
-        <input type="hidden" name="customerPhone" value={customerPhone} />
-        <input type="hidden" name="customerName" value={customerName} />
-        <input type="hidden" name="orderTime" value={orderTime} />
-        <input type="hidden" name="customerLandmark" value={customerLandmark} />
-        <input type="hidden" name="vehiclePreference" value={vehiclePreference || ""} />
-        <input type="hidden" name="deliveryPriceOverride" value={deliveryPriceOverride} />
+              <Link href={preparerPath("/preparer/preparation", auth)} className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                 <span className="text-xl">🔙</span>
+              </Link>
 
-        {state.error ? (
-          <div className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{state.error}</div>
-        ) : null}
+              <button
+                type="submit"
+                disabled={pending || !canSubmit}
+                className="flex h-14 flex-1 items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-sky-600 px-6 text-sm font-black text-white shadow-xl shadow-emerald-200/50 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 dark:shadow-none"
+              >
+                <span>{pending ? "جارٍ التحديث..." : "حفظ التعديلات"}</span>
+                {!pending && <DynamicIcon iconKey="ui_flash" config={icons} className="h-5 w-5" fallback={null} />}
+              </button>
+            </form>
+         </div>
+      </div>
 
-        <button
-          type="submit"
-          disabled={pending || !canSubmit}
-          className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-sky-600 px-4 py-3.5 text-sm font-black text-white disabled:opacity-50"
-        >
-          {pending ? "جارٍ التحديث..." : "حفظ تحديث الطلب"}
-        </button>
-      </form>
-
-      <p className="text-center text-xs text-slate-500">
-        <Link href={preparerPath("/preparer/preparation", auth)} className="font-bold text-sky-700 hover:underline">
-          العودة إلى تجهيز الطلبات
-        </Link>
-      </p>
+      {state.error && (
+        <div className="fixed bottom-24 left-4 right-4 z-30">
+           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-800 shadow-xl dark:border-rose-500/30 dark:bg-rose-950/90 dark:text-rose-200">
+              {state.error}
+           </div>
+        </div>
+      )}
     </div>
   );
 }

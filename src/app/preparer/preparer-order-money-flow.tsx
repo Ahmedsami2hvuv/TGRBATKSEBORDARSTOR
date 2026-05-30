@@ -412,6 +412,7 @@ export function PickupMoneyForm(props: {
   orderStatus?: string;
   /** نافذة دفع من قائمة المجهز ليلاً: نص أبيض وحقول واضحة */
   forDarkModalSurface?: boolean;
+  hideContainer?: boolean;
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
   const mismatchRef = useRef<HTMLInputElement>(null);
@@ -457,8 +458,10 @@ export function PickupMoneyForm(props: {
     ? "w-full rounded-xl border-2 border-white/50 bg-neutral-900 px-3 py-2.5 text-lg font-black tabular-nums text-white shadow-inner placeholder:text-white/45"
     : moneySaderAmountInputClass;
 
+  const containerClass = props.hideContainer ? "space-y-3" : "space-y-3";
+
   return (
-    <form ref={formRef} action={props.formAction} className="space-y-3">
+    <form ref={formRef} action={props.formAction} className={containerClass}>
       <input type="hidden" name="p" value={props.auth.p} />
       <input type="hidden" name="exp" value={props.auth.exp} />
       <input type="hidden" name="s" value={props.auth.s} />

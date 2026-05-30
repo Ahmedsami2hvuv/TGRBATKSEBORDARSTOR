@@ -91,6 +91,7 @@ export function AssignToPreparerPanel({
   initialPreparerIds?: string[];
   onSuccess?: () => void;
   icons?: GlobalIconsConfig;
+  hideContainer?: boolean;
 }) {
   const [selectedPreparers, setSelectedPreparers] = useState<string[]>(initialPreparerIds);
   const bound = assignOrderToPreparer.bind(null);
@@ -107,9 +108,10 @@ export function AssignToPreparerPanel({
   if (preparers.length === 0) return <p className="p-3 bg-amber-50 text-amber-900 rounded-lg text-xs font-bold border border-amber-200 text-center flex items-center justify-center gap-2"><DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={14} height={14} /> لا يوجد مجهزون متاحون حالياً.</p>;
 
   return (
-    <form action={formAction} className="relative overflow-hidden rounded-[2rem] border border-sky-200/50 dark:border-sky-900/30 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-4 shadow-xl ring-1 ring-white/20 dark:ring-white/10 text-right animate-in zoom-in-95 duration-300" dir="rtl">
-      {/* Decorative Blur */}
-      <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-sky-400/10 blur-2xl" />
+    <form action={formAction} className={hideContainer ? "relative text-right" : "relative overflow-hidden rounded-[2rem] border border-sky-200/50 dark:border-sky-900/30 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-4 shadow-xl ring-1 ring-white/20 dark:ring-white/10 text-right animate-in zoom-in-95 duration-300"} dir="rtl">
+      {!hideContainer && (
+        <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-sky-400/10 blur-2xl" />
+      )}
 
       <input type="hidden" name="orderId" value={orderId} />
       <input type="hidden" name="isDraft" value={String(!!isDraft)} />
@@ -209,6 +211,7 @@ export function AdminPricingPanel({
   icons = null,
   onSuccess,
   extraActions,
+  hideContainer = false,
 }: {
   orderId: string;
   initialData: any;
@@ -221,6 +224,7 @@ export function AdminPricingPanel({
   onSuccess?: () => void;
   icons?: GlobalIconsConfig | null;
   extraActions?: React.ReactNode;
+  hideContainer?: boolean;
 }) {
   const findPreparerName = (id: string | null | undefined) => {
     return preparers.find((p) => p.id === id)?.name ?? null;
@@ -409,12 +413,16 @@ export function AdminPricingPanel({
   }, [state.ok, onSuccess]);
 
   return (
-    <div className="relative overflow-hidden rounded-[2.5rem] border border-white/40 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-white/20 dark:ring-white/10 text-right transition-colors" dir="rtl">
-      {/* Background Decor */}
-      <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-amber-200/30 dark:bg-amber-900/10 blur-[60px]" />
-      <div className="absolute -right-20 -bottom-20 h-40 w-40 rounded-full bg-violet-200/30 dark:bg-violet-900/10 blur-[60px]" />
+    <div className={hideContainer ? "relative text-right" : "relative overflow-hidden rounded-[2.5rem] border border-white/40 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-white/20 dark:ring-white/10 text-right transition-colors"} dir="rtl">
+      {!hideContainer && (
+        <>
+          {/* Background Decor */}
+          <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-amber-200/30 dark:bg-amber-900/10 blur-[60px]" />
+          <div className="absolute -right-20 -bottom-20 h-40 w-40 rounded-full bg-violet-200/30 dark:bg-violet-900/10 blur-[60px]" />
+        </>
+      )}
 
-      <div className="relative p-3 sm:p-5">
+      <div className={hideContainer ? "" : "relative p-3 sm:p-5"}>
         {/* Floating Header - Now Sticky and Opaque */}
         <div className="sticky top-0 z-40 flex items-center justify-between gap-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl p-2.5 rounded-2xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/40 dark:shadow-none mb-4 -mx-1">
           <div className="flex items-center gap-2">
@@ -434,19 +442,19 @@ export function AdminPricingPanel({
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            {extraActions}
+            {!hideContainer && extraActions}
             <button type="button" onClick={() => setShowReassign(!showReassign)} className="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm hover:scale-105 active:scale-95 transition-all border border-slate-200 dark:border-white/10" title="إسناد لمجهز">
               <DynamicIcon icon={icons?.ui_plus} fallback="🏢" width={14} height={14} />
             </button>
             <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="h-9 w-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-md hover:scale-105 active:scale-95 transition-all" title="إضافة منتجات">
               <DynamicIcon icon={icons?.ui_plus} fallback="➕" width={14} height={14} />
             </button>
-            <DeleteFullOrderButton id={orderId} isDraft={Boolean(isDraft)} onSuccess={onSuccess} icons={icons} />
+            {!hideContainer && <DeleteFullOrderButton id={orderId} isDraft={Boolean(isDraft)} onSuccess={onSuccess} icons={icons} />}
           </div>
         </div>
 
       <div className="space-y-4">
-        {showReassign && <div className="animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); onSuccess?.(); }} icons={icons || undefined} /></div>}
+        {showReassign && <div className="animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); onSuccess?.(); }} icons={icons || undefined} hideContainer={true} /></div>}
 
         {showBulkAdd && (
           <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border-2 border-violet-200 dark:border-violet-900/50 animate-in zoom-in-95 shadow-inner">
@@ -793,6 +801,7 @@ export function PendingAssignPanel({
   defaultCustomerDoorPhotoUrl: string;
   icons: GlobalIconsConfig | null;
   onSuccess?: () => void;
+  hideContainer?: boolean;
 }) {
   const bound = assignPendingOrderToCourier.bind(null);
   const [state, formAction, pending] = useActionState(bound, {} as AssignOrderState);
@@ -809,9 +818,10 @@ export function PendingAssignPanel({
   const labelClass = "text-[10px] font-black text-emerald-800 dark:text-emerald-400 mb-1 block pr-1 uppercase tracking-wider";
 
   return (
-    <form action={formAction} encType="multipart/form-data" className="relative overflow-hidden rounded-[2rem] border border-white/60 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/60 backdrop-blur-xl p-5 shadow-2xl ring-1 ring-white/20 dark:ring-white/10 animate-in zoom-in-95 text-right" dir="rtl">
-      {/* Decorative Blur */}
-      <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-emerald-400/10 dark:bg-emerald-900/5 blur-3xl" />
+    <form action={formAction} encType="multipart/form-data" className={hideContainer ? "relative text-right" : "relative overflow-hidden rounded-[2rem] border border-white/60 dark:border-slate-700/50 bg-white/40 dark:bg-slate-900/60 backdrop-blur-xl p-5 shadow-2xl ring-1 ring-white/20 dark:ring-white/10 animate-in zoom-in-95 text-right"} dir="rtl">
+      {!hideContainer && (
+        <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-emerald-400/10 dark:bg-emerald-900/5 blur-3xl" />
+      )}
 
       <input type="hidden" name="orderId" value={orderId} />
 
@@ -1402,7 +1412,7 @@ export function PendingOrdersClient({
             </div>
 
             {pricingOpen && (
-              <div className="relative z-10 p-4 border-t border-amber-100 dark:border-amber-900/50 bg-amber-50/20 dark:bg-amber-900/5 animate-in slide-in-from-top-4 duration-500" onClick={e => e.stopPropagation()}>
+              <div className="relative z-10 p-4 border-t border-amber-100 dark:border-amber-900/50 bg-amber-50/10 dark:bg-amber-900/5 animate-in slide-in-from-top-4 duration-500" onClick={e => e.stopPropagation()}>
                 <AdminPricingPanel
                   orderId={o.id}
                   initialData={o.preparerShoppingJson}
@@ -1415,12 +1425,13 @@ export function PendingOrdersClient({
                   onSuccess={() => { setPricingOpenId(null); isDraftMode && router.refresh(); }}
                   icons={icons}
                   extraActions={<RejectButton orderId={o.id} icons={icons} />}
+                  hideContainer={true}
                 />
               </div>
             )}
 
             {assignOpen && (
-              <div className="relative z-10 p-4 border-t border-emerald-100 dark:border-emerald-900/50 bg-emerald-50/20 dark:bg-emerald-900/5 animate-in slide-in-from-top-4 duration-500" onClick={e => e.stopPropagation()}>
+              <div className="relative z-10 p-4 border-t border-emerald-100 dark:border-emerald-900/50 bg-emerald-50/10 dark:bg-emerald-900/5 animate-in slide-in-from-top-4 duration-500" onClick={e => e.stopPropagation()}>
                 <PendingAssignPanel
                   orderId={o.id}
                   couriers={couriers}
@@ -1431,6 +1442,7 @@ export function PendingOrdersClient({
                   defaultCustomerDoorPhotoUrl={o.customerDoorPhotoUrl}
                   icons={icons}
                   onSuccess={() => { setAssignOpenId(null); router.refresh(); }}
+                  hideContainer={true}
                 />
               </div>
             )}
@@ -1440,35 +1452,36 @@ export function PendingOrdersClient({
 
       {isDraftMode && pricingModalOrder ? (
         <div
-          className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/60 dark:bg-black/80 p-2 sm:p-4 backdrop-blur-md"
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/80 dark:bg-black/90 p-2 sm:p-6 backdrop-blur-xl"
           onClick={() => setPricingOpenId(null)}
         >
           <div
-            className="w-full max-w-4xl max-h-[96vh] flex flex-col animate-in zoom-in-95 duration-300 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl rounded-[3rem] border border-white/20 dark:border-slate-700/50 shadow-2xl overflow-hidden ring-1 ring-white/20 dark:ring-white/10"
+            className="w-full max-w-4xl max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-300 bg-white/90 dark:bg-slate-900/90 backdrop-blur-3xl rounded-[3rem] border border-white/40 dark:border-slate-700/50 shadow-[0_30px_70px_rgba(0,0,0,0.3)] overflow-hidden ring-1 ring-white/20 dark:ring-white/10"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/20 dark:border-slate-800/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shrink-0">
-               <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white flex items-center justify-center shadow-lg">
-                     <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={22} height={22} />
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md shrink-0">
+               <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white flex items-center justify-center shadow-lg shadow-violet-200 dark:shadow-none">
+                     <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={26} height={26} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">نافذة التسعير — #{pricingModalOrder.orderNumber}</h3>
-                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{pricingModalOrder.orderType || "مسودة"}</p>
+                    <h3 className="text-base font-black text-slate-900 dark:text-slate-100">نافذة التسعير الإدارية</h3>
+                    <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">#{pricingModalOrder.orderNumber}</span>
+                      {pricingModalOrder.orderType || "مسودة"}
+                    </p>
                   </div>
                </div>
-               <button
-                 type="button"
-                 onClick={() => setPricingOpenId(null)}
-                 className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg hover:bg-rose-600 transition-all active:scale-90"
-               >
-                 <DynamicIcon icon={icons?.ui_close} fallback="✕" width={18} height={18} />
-               </button>
+               <div className="flex items-center gap-2">
+                 <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 border border-amber-100 dark:border-amber-900/50">
+                    <DynamicIcon icon={icons?.ui_flash} fallback="⚡" width={20} height={20} />
+                 </div>
+               </div>
             </div>
 
             {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-slate-50/30 dark:bg-black/10">
               <AdminPricingPanel
                 orderId={pricingModalOrder.id}
                 initialData={pricingModalOrder.preparerShoppingJson}
@@ -1483,8 +1496,27 @@ export function PendingOrdersClient({
                   router.refresh();
                 }}
                 icons={icons}
-                extraActions={<RejectDraftButton draftId={pricingModalOrder.id} icons={icons} />}
+                hideContainer={true}
               />
+            </div>
+
+            {/* Modal Footer - New Action Bar */}
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 flex items-center justify-between gap-3">
+               <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPricingOpenId(null)}
+                    className="h-12 px-6 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-black hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95 flex items-center gap-2"
+                  >
+                    <DynamicIcon icon={icons?.ui_close} fallback="✕" width={16} height={16} />
+                    إغلاق النافذة
+                  </button>
+                  <RejectDraftButton draftId={pricingModalOrder.id} icons={icons} />
+               </div>
+
+               <div className="flex items-center gap-2">
+                  <DeleteFullOrderButton id={pricingModalOrder.id} isDraft={true} onSuccess={() => { setPricingOpenId(null); router.refresh(); }} icons={icons} />
+               </div>
             </div>
           </div>
         </div>

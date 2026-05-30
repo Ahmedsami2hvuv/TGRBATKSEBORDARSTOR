@@ -315,6 +315,7 @@ export function PreparerOrderTable({
                 couriers={couriers}
                 currentCourierId={payOrder.assignedCourierId}
                 orderStatus={payOrder.orderStatus}
+                hideContainer={true}
               />
             </div>
           </div>,

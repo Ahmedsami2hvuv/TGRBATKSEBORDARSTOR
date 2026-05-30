@@ -189,132 +189,206 @@ export function PreparerSiteOrderDraftClient({
 
   if (state.ok && state.draftId) {
     return (
-      <div className="kse-glass-dark rounded-2xl border border-emerald-300 p-8 text-center shadow-sm">
-        <div className="flex justify-center">
-          <DynamicIcon
-            iconKey="ui_success"
-            config={icons}
-            className="h-12 w-12 text-emerald-600"
-            fallback={<span className="text-4xl">✓</span>}
-          />
-        </div>
-        <h2 className="mt-3 text-xl font-bold text-emerald-800">تمت إضافة الطلب</h2>
-        <div className="mt-5 flex flex-col gap-2">
-          <Link href={preparerPath(`/preparer/preparation/draft/${state.draftId}`, auth)} className="rounded-xl bg-violet-600 px-4 py-3 text-sm font-black text-white">فتح الطلب للتسعير</Link>
-          <Link href={preparerPath("/preparer/preparation", auth)} className="rounded-xl border border-sky-300 px-4 py-3 text-sm font-bold text-sky-900">العودة إلى الخانة</Link>
+      <div className="mx-auto max-w-lg">
+        <div className="kse-glass-dark overflow-hidden border border-emerald-300 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70 p-8 text-center">
+          <div className="flex justify-center">
+            <DynamicIcon
+              iconKey="ui_success"
+              config={icons}
+              className="h-12 w-12 text-emerald-600"
+              fallback={<span className="text-4xl">✓</span>}
+            />
+          </div>
+          <h2 className="mt-4 text-xl font-black text-emerald-800 dark:text-emerald-400">تمت إضافة الطلب بنجاح</h2>
+          <p className="mt-2 text-sm font-bold text-slate-600 dark:text-slate-400">يمكنك الآن البدء بتسعير المنتجات في قائمة التجهيز.</p>
+          <div className="mt-8 flex flex-col gap-3">
+            <Link href={preparerPath(`/preparer/preparation/draft/${state.draftId}`, auth)} className="flex h-12 items-center justify-center rounded-2xl bg-violet-600 text-sm font-black text-white shadow-lg transition hover:bg-violet-700">
+               فتح الطلب للتسعير
+            </Link>
+            <Link href={preparerPath("/preparer/preparation", auth)} className="flex h-12 items-center justify-center rounded-2xl border-2 border-sky-200 text-sm font-bold text-sky-900 dark:border-white/10 dark:text-sky-400">
+               العودة لقائمة التجهيز
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <section className="kse-glass-dark rounded-2xl border border-violet-200/90 p-4 shadow-sm">
-        <p className="text-xs font-semibold text-amber-900">المجهز: {preparerName.trim() || "—"}</p>
-        <h2 className="text-base font-black text-violet-950">1) الصق قائمة الطلب</h2>
-        <textarea
-          value={pasteText}
-          onChange={(e) => setPasteText(e.target.value)}
-          rows={8}
-          dir="rtl"
-          placeholder={PASTE_HELP}
-          className={`${inputClass} mt-3 min-h-[10rem] resize-y font-mono text-sm leading-relaxed`}
-        />
-        <button
-          type="button"
-          onClick={runParse}
-          className="mt-3 w-full rounded-xl border-2 border-violet-500 bg-violet-600 px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-violet-700"
-        >
-          تحليل القائمة
-        </button>
-        {parseError ? (
-          <p className="mt-2 text-sm font-semibold text-rose-700" role="alert">
-            {parseError}
-          </p>
-        ) : null}
+    <div className="mx-auto max-w-lg space-y-6 pb-24">
+      <section className="kse-glass-dark overflow-hidden border border-violet-200/50 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70">
+        <div className="bg-violet-600/5 px-4 py-3 border-b border-violet-100 dark:border-white/5 flex items-center justify-between">
+           <h2 className="text-sm font-black text-violet-950 dark:text-violet-200">1) إضافة طلب جديد</h2>
+           <p className="text-[10px] font-bold text-violet-600/70 dark:text-violet-400/70">المجهز: {preparerName.trim() || "—"}</p>
+        </div>
+        <div className="p-4">
+          <textarea
+            value={pasteText}
+            onChange={(e) => setPasteText(e.target.value)}
+            rows={6}
+            dir="rtl"
+            placeholder={PASTE_HELP}
+            className={`${inputClass} min-h-[8rem] resize-y font-mono text-sm leading-relaxed dark:bg-slate-950/50 dark:border-white/10 dark:text-white`}
+          />
+          <button
+            type="button"
+            onClick={runParse}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-3.5 text-sm font-black text-white shadow-lg shadow-violet-200/50 transition hover:bg-violet-700 active:scale-95 dark:shadow-none"
+          >
+            <DynamicIcon iconKey="ui_search" config={icons} className="h-4 w-4" fallback={null} />
+            تحليل القائمة
+          </button>
+          {parseError ? (
+            <div className="mt-3 rounded-xl bg-rose-50 p-3 text-xs font-bold text-rose-700 dark:bg-rose-900/20 dark:text-rose-400" role="alert">
+              {parseError}
+            </div>
+          ) : null}
+        </div>
       </section>
 
       {products.length > 0 && regionGate === "need_pick" && !selected ? (
-        <section className="kse-glass-dark rounded-2xl border border-amber-200/90 p-4 shadow-sm">
-          <h2 className="text-sm font-black text-amber-950">اختر المنطقة</h2>
-          <label className="mt-3 flex flex-col gap-1">
-            <span className="text-xs font-medium text-slate-800">بحث عن المنطقة *</span>
-            <input
-              ref={regionSearchRef}
-              type="text"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              className={inputClass}
-              placeholder="ابحث واختر…"
-              autoComplete="off"
-            />
-          </label>
-          {hits.length > 0 ? (
-            <ul className="mt-2 max-h-48 overflow-auto rounded-xl border border-sky-200 bg-white text-sm shadow-md">
-              {hits.map((h) => (
-                <li key={h.id}>
-                  <button
-                    type="button"
-                    className="w-full px-3 py-2.5 text-end text-slate-800 hover:bg-sky-50"
-                    onClick={() => {
-                      setSelected(h);
-                      setQ(h.name);
-                      setTitleLine(h.name);
-                      setDeliveryPrice(h.deliveryPrice || "");
-                      setHits([]);
-                      setRegionGate("ready");
-                    }}
-                  >
-                    {h.name}{" "}
-                    <span className="text-xs text-slate-500">
-                      ({formatDinarAsAlfWithUnit(h.deliveryPrice)})
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
+        <section className="kse-glass-dark overflow-hidden border border-amber-200/50 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70">
+          <div className="bg-amber-500/5 px-4 py-3 border-b border-amber-100 dark:border-white/5">
+             <h2 className="text-sm font-black text-amber-950 dark:text-amber-200">تحديد المنطقة</h2>
+          </div>
+          <div className="p-4">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-400">بحث عن المنطقة *</span>
+              <input
+                ref={regionSearchRef}
+                type="text"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                className={`${inputClass} dark:bg-slate-950/50 dark:border-white/10 dark:text-white`}
+                placeholder="ابحث واختر…"
+                autoComplete="off"
+              />
+            </label>
+            {hits.length > 0 ? (
+              <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-sky-100 bg-white/80 shadow-lg dark:divide-white/5 dark:border-white/10 dark:bg-slate-950/80">
+                {hits.map((h) => (
+                  <li key={h.id}>
+                    <button
+                      type="button"
+                      className="w-full px-4 py-3.5 text-end text-sm font-bold text-slate-800 transition hover:bg-sky-50 dark:text-slate-200 dark:hover:bg-white/5"
+                      onClick={() => {
+                        setSelected(h);
+                        setQ(h.name);
+                        setTitleLine(h.name);
+                        setDeliveryPrice(h.deliveryPrice || "");
+                        setHits([]);
+                        setRegionGate("ready");
+                      }}
+                    >
+                      {h.name}{" "}
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                        ({formatDinarAsAlfWithUnit(h.deliveryPrice)})
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         </section>
       ) : null}
 
       {products.length > 0 && regionGate === "ready" && selected ? (
         <>
-          <section className="kse-glass-dark rounded-2xl border border-sky-200 p-4 shadow-sm">
-            <h2 className="text-sm font-black text-sky-950">2) تأكيد البيانات</h2>
-            <label className="mt-3 flex flex-col gap-1"><span className="text-xs font-medium text-slate-800">عنوان المنطقة</span><input value={titleLine} onChange={(ev) => setTitleLine(ev.target.value)} className={inputClass} /></label>
-            <label className="mt-3 flex flex-col gap-1"><span className="text-xs font-medium text-slate-800">رقم الزبون *</span><input value={customerPhone} onChange={(ev) => setCustomerPhone(ev.target.value)} className={`${inputClass} font-mono`} /></label>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1"><span className="text-xs font-medium text-slate-800">نوع الطلب</span><input value={orderType} onChange={(ev) => setOrderType(ev.target.value)} className={inputClass} /></label>
-              <label className="flex flex-col gap-1"><span className="text-xs font-medium text-slate-800">سعر الطلب (اختياري)</span><input value={orderSubtotal} onChange={(ev) => setOrderSubtotal(ev.target.value)} className={`${inputClass} font-mono`} placeholder="سعر المواد..." inputMode="decimal" /></label>
+          <section className="kse-glass-dark overflow-hidden border border-sky-200/50 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70">
+            <div className="bg-sky-500/5 px-4 py-3 border-b border-sky-100 dark:border-white/5 flex items-center justify-between">
+               <h2 className="text-sm font-black text-sky-950 dark:text-sky-200">2) تأكيد البيانات</h2>
+               <span className="rounded-lg bg-sky-100 px-2 py-0.5 text-[10px] font-black text-sky-700 dark:bg-sky-500/20 dark:text-sky-400">
+                  {products.length} منتجات
+               </span>
             </div>
-            <label className="mt-3 flex flex-col gap-1"><span className="text-xs font-medium text-slate-800">سعر التوصيل (اختياري)</span><input value={deliveryPrice} onChange={(ev) => setDeliveryPrice(ev.target.value)} className={`${inputClass} font-mono`} placeholder="تعديل سعر التوصيل..." inputMode="decimal" /></label>
-            <label className="mt-3 flex flex-col gap-1"><span className="text-xs font-medium text-slate-800">وقت الطلب *</span><input value={orderTime} onChange={(ev) => setOrderTime(ev.target.value)} className={inputClass} /></label>
-            <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
-              <p className="text-xs font-semibold text-slate-600">المنتجات ({products.length})</p>
-              <div className="mt-2 max-h-40 space-y-1 overflow-auto text-sm text-slate-900">{products.map((p, i) => <p key={`${i}-${p}`}>- {p}</p>)}</div>
+            <div className="p-4 space-y-4">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400">عنوان المنطقة</span>
+                <input value={titleLine} onChange={(ev) => setTitleLine(ev.target.value)} className={`${inputClass} dark:bg-slate-950/50 dark:border-white/10 dark:text-white`} />
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                 <label className="flex flex-col gap-1.5">
+                   <span className="text-xs font-bold text-slate-600 dark:text-slate-400">رقم الزبون *</span>
+                   <input value={customerPhone} onChange={(ev) => setCustomerPhone(ev.target.value)} className={`${inputClass} font-mono dark:bg-slate-950/50 dark:border-white/10`} />
+                 </label>
+                 <label className="flex flex-col gap-1.5">
+                   <span className="text-xs font-bold text-slate-600 dark:text-slate-400">وقت الطلب *</span>
+                   <input value={orderTime} onChange={(ev) => setOrderTime(ev.target.value)} className={`${inputClass} dark:bg-slate-950/50 dark:border-white/10`} />
+                 </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-400">نوع الطلب</span>
+                  <input value={orderType} onChange={(ev) => setOrderType(ev.target.value)} className={`${inputClass} dark:bg-slate-950/50 dark:border-white/10`} />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-400">سعر المواد (اختياري)</span>
+                  <input value={orderSubtotal} onChange={(ev) => setOrderSubtotal(ev.target.value)} className={`${inputClass} font-mono dark:bg-slate-950/50 dark:border-white/10`} placeholder="سعر المواد..." inputMode="decimal" />
+                </label>
+              </div>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400">سعر التوصيل (اختياري)</span>
+                <input value={deliveryPrice} onChange={(ev) => setDeliveryPrice(ev.target.value)} className={`${inputClass} font-mono dark:bg-slate-950/50 dark:border-white/10`} placeholder="تعديل سعر التوصيل..." inputMode="decimal" />
+              </label>
+
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3 dark:border-white/5 dark:bg-white/5">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">قائمة المنتجات:</p>
+                <div className="mt-2 max-h-32 space-y-1.5 overflow-auto pr-1">
+                   {products.map((p, i) => (
+                     <div key={`${i}-${p}`} className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+                        <div className="h-1 w-1 shrink-0 rounded-full bg-slate-300" />
+                        <span>{p}</span>
+                     </div>
+                   ))}
+                </div>
+              </div>
             </div>
           </section>
 
-          <form action={formAction} className="space-y-3">
-            <input type="hidden" name="p" value={auth.p} />
-            <input type="hidden" name="exp" value={auth.exp} />
-            <input type="hidden" name="s" value={auth.s} />
-            <input type="hidden" name="titleLine" value={titleLine.trim()} />
-            <input type="hidden" name="rawListText" value={rawListText.trim()} />
-            <input type="hidden" name="productsCsv" value={products.join("\n")} />
-            <input type="hidden" name="customerRegionId" value={selected.id} />
-            <input type="hidden" name="customerPhone" value={customerPhone} />
-            <input type="hidden" name="customerName" value={customerName} />
-            <input type="hidden" name="customerLandmark" value={customerLandmark} />
-            <input type="hidden" name="deliveryPrice" value={deliveryPrice} />
-            <input type="hidden" name="orderTime" value={orderTime} />
-            <input type="hidden" name="orderType" value={orderType} />
-            <input type="hidden" name="orderSubtotal" value={orderSubtotal} />
-            {state.error ? <div className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{state.error}</div> : null}
-            <button type="submit" disabled={pending || !canSubmit} className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-sky-600 px-4 py-3.5 text-sm font-black text-white disabled:opacity-50">{pending ? "جارٍ الحفظ…" : "إضافة إلى خانة التجهيز"}</button>
-          </form>
+          {/* Sticky Action Bar */}
+          <div className="fixed inset-x-0 bottom-0 z-40 animate-in slide-in-from-bottom duration-300">
+             <div className="kse-glass-dark mx-auto max-w-lg rounded-t-3xl border-t border-sky-200 bg-white/80 p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.1)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/90">
+                <form action={formAction} className="flex gap-3">
+                  <input type="hidden" name="p" value={auth.p} />
+                  <input type="hidden" name="exp" value={auth.exp} />
+                  <input type="hidden" name="s" value={auth.s} />
+                  <input type="hidden" name="titleLine" value={titleLine.trim()} />
+                  <input type="hidden" name="rawListText" value={rawListText.trim()} />
+                  <input type="hidden" name="productsCsv" value={products.join("\n")} />
+                  <input type="hidden" name="customerRegionId" value={selected.id} />
+                  <input type="hidden" name="customerPhone" value={customerPhone} />
+                  <input type="hidden" name="customerName" value={customerName} />
+                  <input type="hidden" name="customerLandmark" value={customerLandmark} />
+                  <input type="hidden" name="deliveryPrice" value={deliveryPrice} />
+                  <input type="hidden" name="orderTime" value={orderTime} />
+                  <input type="hidden" name="orderType" value={orderType} />
+                  <input type="hidden" name="orderSubtotal" value={orderSubtotal} />
+
+                  <button
+                    type="submit"
+                    disabled={pending || !canSubmit}
+                    className="flex h-14 flex-1 items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-sky-600 px-6 text-sm font-black text-white shadow-xl shadow-emerald-200/50 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 dark:shadow-none"
+                  >
+                    <span>{pending ? "جارٍ الحفظ…" : "إضافة لخانة التجهيز"}</span>
+                    {!pending && <DynamicIcon iconKey="ui_flash" config={icons} className="h-5 w-5" fallback={null} />}
+                  </button>
+                </form>
+             </div>
+          </div>
         </>
       ) : null}
+
+      {state.error && (
+        <div className="fixed bottom-24 left-4 right-4 z-30">
+           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-800 shadow-xl dark:border-rose-500/30 dark:bg-rose-950/90 dark:text-rose-200">
+              {state.error}
+           </div>
+        </div>
+      )}
     </div>
   );
 }
