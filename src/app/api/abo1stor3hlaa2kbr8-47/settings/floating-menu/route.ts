@@ -8,7 +8,7 @@ export async function GET() {
       target_section: { target: "admin", section: "floating_menu" }
     }
   });
-  return NextResponse.json(setting?.config || { categories: [], isLocked: false, menuScale: 1 });
+  return NextResponse.json(setting?.config || { categories: [], isLocked: false, menuScale: 1, menuFontSize: 8 });
 }
 
 export async function POST(req: Request) {
@@ -18,12 +18,13 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { categories, isLocked, menuScale } = body;
+    const { categories, isLocked, menuScale, menuFontSize } = body;
 
     const config = {
       categories,
       isLocked,
       menuScale,
+      menuFontSize: menuFontSize !== undefined ? Number(menuFontSize) : 8,
     };
 
     await prisma.uISystemSetting.upsert({

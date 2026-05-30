@@ -24,6 +24,7 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
   const [categories, setCategories] = useState<CustomCategory[]>([]);
   const [isLocked, setIsLocked] = useState(false);
   const [menuScale, setMenuScale] = useState(1);
+  const [menuFontSize, setMenuFontSize] = useState(8);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -34,6 +35,7 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
         if (data.categories) setCategories(data.categories);
         if (data.isLocked !== undefined) setIsLocked(data.isLocked);
         if (data.menuScale !== undefined) setMenuScale(data.menuScale);
+        if (data.menuFontSize !== undefined) setMenuFontSize(data.menuFontSize);
       })
       .catch(err => console.error("Failed to fetch menu settings", err))
       .finally(() => {
@@ -51,13 +53,14 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
         await fetch("/api/abo1stor3hlaa2kbr8-47/settings/floating-menu", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ categories, isLocked, menuScale })
+          body: JSON.stringify({ categories, isLocked, menuScale, menuFontSize })
         });
 
         // Update local storage for immediate feedback in the floating menu component
         localStorage.setItem("kse_admin_floating_data", JSON.stringify(categories));
         localStorage.setItem("kse_admin_floating_locked", isLocked.toString());
         localStorage.setItem("kse_admin_floating_scale", menuScale.toString());
+        localStorage.setItem("kse_admin_floating_fontsize", menuFontSize.toString());
         window.dispatchEvent(new Event("storage"));
       } catch (e) {
         console.error("Auto-save failed", e);
@@ -65,7 +68,7 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
     }, 1000);
 
     return () => clearTimeout(timeout);
-  }, [categories, isLocked, menuScale, mounted, loading]);
+  }, [categories, isLocked, menuScale, menuFontSize, mounted, loading]);
 
   const addCategory = () => {
     const newCat: CustomCategory = {
@@ -104,7 +107,7 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
            <label className="flex items-center gap-3 cursor-pointer">
               <input
@@ -123,6 +126,15 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
               type="range" min="0.5" max="1.5" step="0.1"
               value={menuScale}
               onChange={e => setMenuScale(parseFloat(e.target.value))}
+              className="w-full"
+           />
+        </div>
+        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+           <label className="block text-sm font-black text-slate-800 mb-2">حجم الخط ({menuFontSize}px)</label>
+           <input
+              type="range" min="6" max="16" step="1"
+              value={menuFontSize}
+              onChange={e => setMenuFontSize(parseInt(e.target.value))}
               className="w-full"
            />
         </div>

@@ -25,6 +25,7 @@ export function FloatingAdminMenu() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
   const [menuScale, setMenuScale] = useState(1);
+  const [menuFontSize, setMenuFontSize] = useState(8);
   const [isActuallyDragging, setIsActuallyDragging] = useState(false);
 
   const dragStartPos = useRef({ x: 0, y: 0 });
@@ -49,6 +50,8 @@ export function FloatingAdminMenu() {
       if (savedLocked) setIsLocked(savedLocked === "true");
       const savedScale = localStorage.getItem("kse_admin_floating_scale");
       if (savedScale) setMenuScale(parseFloat(savedScale));
+      const savedFontSize = localStorage.getItem("kse_admin_floating_fontsize");
+      if (savedFontSize) setMenuFontSize(parseInt(savedFontSize));
     };
     loadSaved();
     window.addEventListener("storage", loadSaved);
@@ -58,6 +61,7 @@ export function FloatingAdminMenu() {
         if (data.categories) setCategories(data.categories);
         if (data.isLocked !== undefined) setIsLocked(data.isLocked);
         if (data.menuScale !== undefined) setMenuScale(data.menuScale);
+        if (data.menuFontSize !== undefined) setMenuFontSize(data.menuFontSize);
       }).catch(() => {});
     return () => window.removeEventListener("storage", loadSaved);
   }, []);
@@ -203,7 +207,7 @@ export function FloatingAdminMenu() {
                       className="transition-all duration-200 hover:brightness-110"
                       data-category-id={cat.id}
                     />
-                    <text x={tx} y={ty} textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none fill-white text-[8px] font-bold">
+                    <text x={tx} y={ty} fill="white" fontSize={menuFontSize} fontWeight="bold" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none">
                        {cat.icon ? cat.icon + " " : ""}{cat.name.substring(0, 10)}
                     </text>
 
@@ -223,7 +227,7 @@ export function FloatingAdminMenu() {
                               strokeWidth="1"
                               data-url={link.url}
                             />
-                            <text x={ltx} y={lty} fill="white" fontSize="8" fontWeight="bold" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none uppercase">
+                            <text x={ltx} y={lty} fill="white" fontSize={Math.max(6, menuFontSize - 1)} fontWeight="bold" textAnchor="middle" alignmentBaseline="middle" className="pointer-events-none uppercase">
                               {link.name.substring(0,8)}
                             </text>
                           </g>
