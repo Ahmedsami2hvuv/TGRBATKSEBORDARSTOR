@@ -89,6 +89,7 @@ export function PreparerOrderMoneyFlow({
   nextUrl,
   preparerId,
   icons,
+  couriers,
 }: {
   orderId: string;
   orderNumber: number;
@@ -103,6 +104,7 @@ export function PreparerOrderMoneyFlow({
   nextUrl: string;
   preparerId: string;
   icons?: GlobalIconsConfig | null;
+  couriers?: { id: string; name: string }[];
 }) {
   const [pickupOpen, setPickupOpen] = useState(false);
   const [deliveryOpen, setDeliveryOpen] = useState(false);
@@ -245,6 +247,8 @@ export function PreparerOrderMoneyFlow({
             pending={pickupPending}
             error={pickupState.error}
             onClose={closePanels}
+            couriers={couriers}
+            currentCourierId={assignedCourierId}
           />
         }
         deliveryForm={

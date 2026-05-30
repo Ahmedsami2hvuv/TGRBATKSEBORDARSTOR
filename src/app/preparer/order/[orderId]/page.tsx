@@ -241,6 +241,7 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
         icons={icons}
         productImagesMap={productImagesMap}
         productBranchMap={productBranchMap}
+        couriers={couriers.map((c) => ({ id: c.id, name: c.name }))}
       />
 
       {canAssign && (

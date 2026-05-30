@@ -121,6 +121,7 @@ export function PreparerOrderDetailSection({
   pricingEditHref?: string;
   productImagesMap?: Record<string, string>;
   productBranchMap?: Record<string, string>;
+  couriers?: { id: string; name: string }[];
 }) {
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
@@ -664,9 +665,34 @@ export function PreparerOrderDetailSection({
       case "money_flow":
         return (
           <PreparerOrderMoneyFlow
-            key="money" orderId={order.id} orderNumber={order.orderNumber} courierName={order.courier?.name?.trim() || "—"} assignedCourierId={order.assignedCourierId} orderStatus={order.status} orderSubtotalDinar={order.orderSubtotal != null ? Number(order.orderSubtotal) : null} totalAmountDinar={order.totalAmount != null ? Number(order.totalAmount) : null}
-            moneyEvents={order.moneyEvents.map((e) => ({ id: e.id, kind: e.kind, amountDinar: Number(e.amountDinar), expectedDinar: e.expectedDinar != null ? Number(e.expectedDinar) : null, matchesExpected: e.matchesExpected, mismatchReason: e.mismatchReason, mismatchNote: e.mismatchNote, recordedAt: e.createdAt, deletedAt: e.deletedAt, deletedReason: e.deletedReason, deletedByDisplayName: e.deletedByDisplayName, performedByDisplayName: e.recordedByCompanyPreparer?.name?.trim() || e.courier?.name?.trim() || "—", recordedByCompanyPreparerId: e.recordedByCompanyPreparerId ?? null }))}
-            auth={auth} nextUrl={nextUrl} preparerId={preparerId} icons={icons}
+            key="money"
+            orderId={order.id}
+            orderNumber={order.orderNumber}
+            courierName={order.courier?.name?.trim() || "—"}
+            assignedCourierId={order.assignedCourierId}
+            orderStatus={order.status}
+            orderSubtotalDinar={order.orderSubtotal != null ? Number(order.orderSubtotal) : null}
+            totalAmountDinar={order.totalAmount != null ? Number(order.totalAmount) : null}
+            moneyEvents={order.moneyEvents.map((e) => ({
+              id: e.id,
+              kind: e.kind,
+              amountDinar: Number(e.amountDinar),
+              expectedDinar: e.expectedDinar != null ? Number(e.expectedDinar) : null,
+              matchesExpected: e.matchesExpected,
+              mismatchReason: e.mismatchReason,
+              mismatchNote: e.mismatchNote,
+              recordedAt: e.createdAt,
+              deletedAt: e.deletedAt,
+              deletedReason: e.deletedReason,
+              deletedByDisplayName: e.deletedByDisplayName,
+              performedByDisplayName: e.recordedByCompanyPreparer?.name?.trim() || e.courier?.name?.trim() || "—",
+              recordedByCompanyPreparerId: e.recordedByCompanyPreparerId ?? null
+            }))}
+            auth={auth}
+            nextUrl={nextUrl}
+            preparerId={preparerId}
+            icons={icons}
+            couriers={couriers}
           />
         );
       default: return null;

@@ -119,82 +119,91 @@ export async function submitPreparerPickupMoney(
     }
   }
 
-  const expected = a.order.orderSubtotal;
-  if (expected == null) return { error: "سعر الطلب غير محدد في النظام." };
+  // إذا لم يكن هناك مندوب مسند، ولا يوجد اختيار لمندوب جديد، نمنع التسجيل إذا كان النظام يتطلب ذلك
+  // ولكن غالباً المجهز يدفع للمحل قبل إسناد المندوب أحياناً، لذا سنتأكد من المعالجة داخل الـ try catch
 
-  const agg = await prisma.orderCourierMoneyEvent.aggregate({
-    where: { orderId, kind: MONEY_KIND_PICKUP, deletedAt: null },
-    _sum: { amountDinar: true },
-  });
-  const paidSoFar = agg._sum.amountDinar ?? new Decimal(0);
+  try {
+    const expected = a.order.orderSubtotal;
+    if (expected == null) return { error: "سعر الطلب غير محدد في النظام." };
 
-  const pickupStatusOnly =
-    advanceStatus === "delivering" &&
-    (a.order.status === "assigned" || (a.order.status === "pending" && finalCourierId)) &&
-    (statusAdvanceOnly || submitMode === "statusOnlyNoAmount");
+    const agg = await prisma.orderCourierMoneyEvent.aggregate({
+      where: { orderId, kind: MONEY_KIND_PICKUP, deletedAt: null },
+      _sum: { amountDinar: true },
+    });
+    const paidSoFar = agg._sum.amountDinar ?? new Decimal(0);
 
-  if (pickupStatusOnly) {
-    if (paidSoFar.greaterThan(0) && !dinarAmountsMatchExpected(paidSoFar, expected) && !mismatchNote.trim()) {
-      return mismatchNoteRequiredError();
+    const pickupStatusOnly =
+      advanceStatus === "delivering" &&
+      (a.order.status === "assigned" || (a.order.status === "pending" && finalCourierId)) &&
+      (statusAdvanceOnly || submitMode === "statusOnlyNoAmount");
+
+    if (pickupStatusOnly) {
+      if (paidSoFar.greaterThan(0) && !dinarAmountsMatchExpected(paidSoFar, expected) && !mismatchNote.trim()) {
+        return mismatchNoteRequiredError();
+      }
+      await prisma.$transaction(async (tx) => {
+        if (assignToCourierId && !a.order.assignedCourierId) {
+          await tx.order.update({ where: { id: orderId }, data: { assignedCourierId: assignToCourierId } });
+        }
+        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, a.order.status as any, "delivering");
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: "delivering",
+            customerPaymentReceivedAt: new Date(),
+          },
+        });
+      });
+      revalidatePreparerPaths(nextRaw);
+      redirect(safePreparerReturn(nextRaw));
     }
+
+    const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
+    if (!parsed.ok) return { error: "أدخل المبلغ  بشكل صحيح." };
+    const amountDinar = new Decimal(parsed.value);
+    if (amountDinar.lte(0)) return { error: "أدخل مبلغاً أكبر من صفر." };
+
+    const nextPaid = paidSoFar.plus(amountDinar);
+    const matches = dinarAmountsMatchExpected(nextPaid, expected);
+    if (!matches && !mismatchNote.trim()) return mismatchNoteRequiredError();
+
     await prisma.$transaction(async (tx) => {
+      // إسناد المندوب إذا لم يكن مسنداً وتم اختياره
       if (assignToCourierId && !a.order.assignedCourierId) {
         await tx.order.update({ where: { id: orderId }, data: { assignedCourierId: assignToCourierId } });
       }
-      await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, a.order.status as any, "delivering");
-      await tx.order.update({
-        where: { id: orderId },
+
+      await tx.orderCourierMoneyEvent.create({
         data: {
-          status: "delivering",
-          customerPaymentReceivedAt: new Date(),
+          orderId,
+          courierId: finalCourierId,
+          kind: MONEY_KIND_PICKUP,
+          amountDinar,
+          expectedDinar: expected,
+          matchesExpected: matches,
+          mismatchReason: "",
+          mismatchNote,
+          recordedByCompanyPreparerId: a.preparer.id,
         },
       });
+      if (advanceStatus === "delivering" && (a.order.status === "assigned" || (a.order.status === "pending" && finalCourierId))) {
+        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, a.order.status as any, "delivering");
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: "delivering",
+            customerPaymentReceivedAt: new Date(),
+          },
+        });
+      }
     });
+
     revalidatePreparerPaths(nextRaw);
-    redirect(safePreparerReturn(nextRaw));
+  } catch (err: any) {
+    console.error("submitPreparerPickupMoney error:", err);
+    return { error: "فشل في حفظ البيانات. تأكد من إسناد مندوب إذا لزم الأمر." };
   }
 
-  const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
-  if (!parsed.ok) return { error: "أدخل المبلغ  بشكل صحيح." };
-  const amountDinar = new Decimal(parsed.value);
-  if (amountDinar.lte(0)) return { error: "أدخل مبلغاً أكبر من صفر." };
-
-  const nextPaid = paidSoFar.plus(amountDinar);
-  const matches = dinarAmountsMatchExpected(nextPaid, expected);
-  if (!matches && !mismatchNote.trim()) return mismatchNoteRequiredError();
-
-  await prisma.$transaction(async (tx) => {
-    // إسناد المندوب إذا لم يكن مسنداً وتم اختياره
-    if (assignToCourierId && !a.order.assignedCourierId) {
-      await tx.order.update({ where: { id: orderId }, data: { assignedCourierId: assignToCourierId } });
-    }
-
-    await tx.orderCourierMoneyEvent.create({
-      data: {
-        orderId,
-        courierId: finalCourierId,
-        kind: MONEY_KIND_PICKUP,
-        amountDinar,
-        expectedDinar: expected,
-        matchesExpected: matches,
-        mismatchReason: "",
-        mismatchNote,
-        recordedByCompanyPreparerId: a.preparer.id,
-      },
-    });
-    if (advanceStatus === "delivering" && (a.order.status === "assigned" || (a.order.status === "pending" && finalCourierId))) {
-      await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, a.order.status as any, "delivering");
-      await tx.order.update({
-        where: { id: orderId },
-        data: {
-          status: "delivering",
-          customerPaymentReceivedAt: new Date(),
-        },
-      });
-    }
-  });
-
-  revalidatePreparerPaths(nextRaw);
   redirect(withRefreshParam(safePreparerReturn(nextRaw)));
 }
 
@@ -218,82 +227,95 @@ export async function submitPreparerDeliveryMoney(
   const a = await loadPreparerAndAssertAccess({ p, exp, s, orderId, requireAssignedCourier: false });
   if (!a.ok) return { error: a.error };
 
-  const expected = a.order.totalAmount;
-  if (expected == null) return { error: "السعر الكلي غير محدد في النظام." };
+  try {
+    const expected = a.order.totalAmount;
+    if (expected == null) return { error: "السعر الكلي (المبلغ المطلوب من الزبون) غير محدد في النظام." };
 
-  const agg = await prisma.orderCourierMoneyEvent.aggregate({
-    where: { orderId, kind: MONEY_KIND_DELIVERY, deletedAt: null },
-    _sum: { amountDinar: true },
-  });
-  const receivedSoFar = agg._sum.amountDinar ?? new Decimal(0);
+    const agg = await prisma.orderCourierMoneyEvent.aggregate({
+      where: { orderId, kind: MONEY_KIND_DELIVERY, deletedAt: null },
+      _sum: { amountDinar: true },
+    });
+    const receivedSoFar = agg._sum.amountDinar ?? new Decimal(0);
 
-  const deliveryStatusOnly =
-    advanceStatus === "delivered" &&
-    a.order.status === "delivering" &&
-    (statusAdvanceOnly || submitMode === "statusOnlyNoAmount");
+    const deliveryStatusOnly =
+      advanceStatus === "delivered" &&
+      a.order.status === "delivering" &&
+      (statusAdvanceOnly || submitMode === "statusOnlyNoAmount");
 
-  if (deliveryStatusOnly) {
-    if (receivedSoFar.greaterThan(0) && !dinarAmountsMatchExpected(receivedSoFar, expected) && !mismatchNote.trim()) {
-      return mismatchNoteRequiredError();
-    }
-    await prisma.$transaction(async (tx) => {
-      await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, "delivering", "delivered");
-      const deliveryEv = await tx.orderCourierMoneyEvent.findFirst({
-        where: { orderId, kind: MONEY_KIND_DELIVERY, deletedAt: null },
-        orderBy: { createdAt: "desc" },
-      });
-      const earningCourierId = deliveryEv?.courierId ?? a.courierId;
-      let earning: Decimal | null = null;
-      let earningFor: string | null = null;
-      if (earningCourierId && a.order.deliveryPrice != null) {
-        const cr = await tx.courier.findUnique({ where: { id: earningCourierId } });
-        if (cr) {
-          earning = computeCourierDeliveryEarningDinar(cr.vehicleType, a.order.deliveryPrice);
-          earningFor = earning != null ? earningCourierId : null;
+    if (deliveryStatusOnly) {
+      if (receivedSoFar.greaterThan(0) && !dinarAmountsMatchExpected(receivedSoFar, expected) && !mismatchNote.trim()) {
+        return mismatchNoteRequiredError();
+      }
+      await prisma.$transaction(async (tx) => {
+        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, "delivering", "delivered");
+        const deliveryEv = await tx.orderCourierMoneyEvent.findFirst({
+          where: { orderId, kind: MONEY_KIND_DELIVERY, deletedAt: null },
+          orderBy: { createdAt: "desc" },
+        });
+
+        // محاولة تحديد المندوب المستحق للأرباح
+        const earningCourierId = deliveryEv?.courierId ?? a.courierId;
+        let earning: Decimal | null = null;
+        let earningFor: string | null = null;
+
+        if (earningCourierId && a.order.deliveryPrice != null) {
+          const cr = await tx.courier.findUnique({ where: { id: earningCourierId } });
+          if (cr) {
+            earning = computeCourierDeliveryEarningDinar(cr.vehicleType, a.order.deliveryPrice);
+            earningFor = earningCourierId;
+          }
         }
+
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: "delivered",
+            courierEarningDinar: earning,
+            courierEarningForCourierId: earningFor
+          },
+        });
+      });
+      revalidatePreparerPaths(nextRaw);
+      redirect(safePreparerReturn(nextRaw));
+    }
+
+    const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
+    if (!parsed.ok) return { error: "أدخل المبلغ  بشكل صحيح." };
+    const amountDinar = new Decimal(parsed.value);
+    if (amountDinar.lte(0)) return { error: "أدخل مبلغاً أكبر من صفر." };
+
+    const nextReceived = receivedSoFar.plus(amountDinar);
+    const matches = dinarAmountsMatchExpected(nextReceived, expected);
+    if (!matches && !mismatchNote.trim()) return mismatchNoteRequiredError();
+
+    await prisma.$transaction(async (tx) => {
+      await tx.orderCourierMoneyEvent.create({
+        data: {
+          orderId,
+          courierId: a.courierId,
+          kind: MONEY_KIND_DELIVERY,
+          amountDinar,
+          expectedDinar: expected,
+          matchesExpected: matches,
+          mismatchReason: "",
+          mismatchNote,
+          recordedByCompanyPreparerId: a.preparer.id,
+        },
+      });
+      if (advanceStatus === "delivered" && a.order.status === "delivering") {
+        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, "delivering", "delivered");
       }
       await tx.order.update({
         where: { id: orderId },
-        data: { status: "delivered", courierEarningDinar: earning, courierEarningForCourierId: earningFor },
+        data: advanceStatus === "delivered" && a.order.status === "delivering" ? { status: "delivered" } : {},
       });
     });
+
     revalidatePreparerPaths(nextRaw);
-    redirect(safePreparerReturn(nextRaw));
+  } catch (err: any) {
+    console.error("submitPreparerDeliveryMoney error:", err);
+    return { error: "فشل في تسجيل الوارد. يرجى المحاولة مرة أخرى." };
   }
-
-  const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
-  if (!parsed.ok) return { error: "أدخل المبلغ  بشكل صحيح." };
-  const amountDinar = new Decimal(parsed.value);
-  if (amountDinar.lte(0)) return { error: "أدخل مبلغاً أكبر من صفر." };
-
-  const nextReceived = receivedSoFar.plus(amountDinar);
-  const matches = dinarAmountsMatchExpected(nextReceived, expected);
-  if (!matches && !mismatchNote.trim()) return mismatchNoteRequiredError();
-
-  await prisma.$transaction(async (tx) => {
-    await tx.orderCourierMoneyEvent.create({
-      data: {
-        orderId,
-        courierId: a.courierId,
-        kind: MONEY_KIND_DELIVERY,
-        amountDinar,
-        expectedDinar: expected,
-        matchesExpected: matches,
-        mismatchReason: "",
-        mismatchNote,
-        recordedByCompanyPreparerId: a.preparer.id,
-      },
-    });
-    if (advanceStatus === "delivered" && a.order.status === "delivering") {
-      await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, "delivering", "delivered");
-    }
-    await tx.order.update({
-      where: { id: orderId },
-      data: advanceStatus === "delivered" && a.order.status === "delivering" ? { status: "delivered" } : {},
-    });
-  });
-
-  revalidatePreparerPaths(nextRaw);
   redirect(safePreparerReturn(nextRaw));
 }
 
