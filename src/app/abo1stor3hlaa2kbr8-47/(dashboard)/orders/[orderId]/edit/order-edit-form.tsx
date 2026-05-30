@@ -677,6 +677,25 @@ export function OrderEditForm({
             <div className="flex flex-col gap-1">
               <button
                 type="button"
+                onClick={onReplaceCustomerLocationGps}
+                disabled={locBusy || pending}
+                className={`${ad.btnSecondary} ${confirmReplaceLoc ? "animate-pulse ring-2 ring-sky-600" : ""}`}
+              >
+                {confirmReplaceLoc ? "تأكيد أخذ الموقع؟" : "أخذ موقعي الحالي"}
+              </button>
+              {confirmReplaceLoc && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmReplaceLoc(false)}
+                  className="text-[10px] font-bold text-sky-600 underline"
+                >
+                  إلغاء
+                </button>
+              )}
+            </div>
+            <div className="flex flex-col gap-1">
+              <button
+                type="button"
                 onClick={onClearCustomerLocation}
                 disabled={locBusy || pending || !custLocationUrl.trim()}
                 className={`${ad.btnDanger} ${confirmClearLoc ? "animate-pulse ring-2 ring-rose-600" : ""}`}
@@ -688,34 +707,6 @@ export function OrderEditForm({
                   type="button"
                   onClick={() => setConfirmClearLoc(false)}
                   className="text-[10px] font-bold text-rose-600 underline"
-                >
-                  إلغاء
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <button
-                type="button"
-                onClick={onReplaceCustomerLocationGps}
-                disabled={locBusy || pending}
-                className={`rounded-xl border-2 px-3 py-1.5 text-sm font-bold text-white shadow-md ring-2 ring-white/30 transition disabled:opacity-50 ${
-                  confirmReplaceLoc
-                    ? "animate-pulse border-orange-600 bg-orange-600"
-                    : "border-amber-200 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
-                }`}
-              >
-                {locBusy
-                  ? "جارٍ التحديث…"
-                  : confirmReplaceLoc
-                    ? "تأكيد التبديل؟"
-                    : "تبديل الموقع (GPS)"}
-              </button>
-              {confirmReplaceLoc && (
-                <button
-                  type="button"
-                  onClick={() => setConfirmReplaceLoc(false)}
-                  className="text-[10px] font-bold text-orange-700 underline"
                 >
                   إلغاء
                 </button>

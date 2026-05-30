@@ -219,6 +219,8 @@ export function AdminCreateOrderForm({
  setRecipientKind("employee");
  setSelectedEmployeeId(emp.id);
  setFirstSavedDoorPhotoUrl(null);
+ // Keep landmark as is, or if you want to prevent overwriting it:
+ // setFirstLandmark(emp.name); // This was likely causing the issue if added elsewhere or implied
  }
 
  function pickAdminOffice() {
@@ -228,7 +230,7 @@ export function AdminCreateOrderForm({
  // Removed setFirstPhone(ADMIN_PHONE_FROM_SHOP_LOCAL); to prevent overwriting customer phone
  setFirstRegionId("");
  setFirstLocationUrl("");
- setFirstLandmark(ADMIN_OFFICE_LABEL);
+ // setFirstLandmark(ADMIN_OFFICE_LABEL); // Removed to prevent overwriting the landmark field
  }
 
  const firstPhoneNormalized = useMemo(
@@ -852,9 +854,6 @@ export function AdminCreateOrderForm({
  <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>لكيشن الزبون</span>
  <div className="flex flex-col gap-1.5">
- <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setFirstLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-md hover:bg-sky-200 w-fit flex items-center gap-1">
- <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> أخذ موقعي الحالي
- </button>
  <input
  name="firstCustomerLocationUrl"
  className={ad.input}
@@ -998,9 +997,6 @@ export function AdminCreateOrderForm({
  <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>لكيشن المرسل</span>
  <div className="flex flex-col gap-1.5">
- <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setFirstLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-md hover:bg-sky-200 w-fit flex items-center gap-1">
- <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> أخذ موقعي الحالي
- </button>
  <input
  name="firstCustomerLocationUrl"
  className={ad.input}
@@ -1014,9 +1010,6 @@ export function AdminCreateOrderForm({
  <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>لكيشن المستلم</span>
  <div className="flex flex-col gap-1.5">
- <button type="button" onClick={() => navigator.geolocation.getCurrentPosition(p => setSecondLocationUrl(`https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`))} className="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-md hover:bg-violet-200 w-fit flex items-center gap-1">
- <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> أخذ الموقع الحالي
- </button>
  <input
  name="secondCustomerLocationUrl"
  className={ad.input}
