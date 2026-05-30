@@ -155,53 +155,58 @@ export async function submitPreparerPickupMoney(
         });
       });
       revalidatePreparerPaths(nextRaw);
-      redirect(safePreparerReturn(nextRaw));
-    }
+      // التوجيه سيحدث في نهاية الدالة لتجنب اعتراضه من قبل catch
+    } else {
+      const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
+      if (!parsed.ok) return { error: "أدخل المبلغ  بشكل صحيح." };
+      const amountDinar = new Decimal(parsed.value);
+      if (amountDinar.lte(0)) return { error: "أدخل مبلغاً أكبر من صفر." };
 
-    const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
-    if (!parsed.ok) return { error: "أدخل المبلغ  بشكل صحيح." };
-    const amountDinar = new Decimal(parsed.value);
-    if (amountDinar.lte(0)) return { error: "أدخل مبلغاً أكبر من صفر." };
+      const nextPaid = paidSoFar.plus(amountDinar);
+      const matches = dinarAmountsMatchExpected(nextPaid, expected);
+      if (!matches && !mismatchNote.trim()) return mismatchNoteRequiredError();
 
-    const nextPaid = paidSoFar.plus(amountDinar);
-    const matches = dinarAmountsMatchExpected(nextPaid, expected);
-    if (!matches && !mismatchNote.trim()) return mismatchNoteRequiredError();
+      await prisma.$transaction(async (tx) => {
+        // إسناد المندوب إذا تم اختياره
+        if (assignToCourierId && !a.order.assignedCourierId) {
+          await tx.order.update({ where: { id: orderId }, data: { assignedCourierId: assignToCourierId } });
+        }
 
-    await prisma.$transaction(async (tx) => {
-      // إسناد المندوب إذا لم يكن مسنداً وتم اختياره
-      if (assignToCourierId && !a.order.assignedCourierId) {
-        await tx.order.update({ where: { id: orderId }, data: { assignedCourierId: assignToCourierId } });
-      }
-
-      await tx.orderCourierMoneyEvent.create({
-        data: {
-          orderId,
-          courierId: finalCourierId,
-          kind: MONEY_KIND_PICKUP,
-          amountDinar,
-          expectedDinar: expected,
-          matchesExpected: matches,
-          mismatchReason: "",
-          mismatchNote,
-          recordedByCompanyPreparerId: a.preparer.id,
-        },
-      });
-      if (advanceStatus === "delivering" && (a.order.status === "assigned" || (a.order.status === "pending" && finalCourierId))) {
-        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, a.order.status as any, "delivering");
-        await tx.order.update({
-          where: { id: orderId },
+        await tx.orderCourierMoneyEvent.create({
           data: {
-            status: "delivering",
-            customerPaymentReceivedAt: new Date(),
+            orderId,
+            courierId: finalCourierId || null,
+            kind: MONEY_KIND_PICKUP,
+            amountDinar,
+            expectedDinar: expected,
+            matchesExpected: matches,
+            mismatchReason: "",
+            mismatchNote,
+            recordedByCompanyPreparerId: a.preparer.id,
           },
         });
-      }
-    });
 
-    revalidatePreparerPaths(nextRaw);
+        // تحديث الحالة فقط إذا توفر مندوب
+        if (advanceStatus === "delivering" && (a.order.status === "assigned" || (a.order.status === "pending" && finalCourierId))) {
+          await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, a.order.status as any, "delivering");
+          await tx.order.update({
+            where: { id: orderId },
+            data: {
+              status: "delivering",
+              customerPaymentReceivedAt: new Date(),
+            },
+          });
+        }
+      });
+
+      revalidatePreparerPaths(nextRaw);
+    }
   } catch (err: any) {
+    // إذا كان الخطأ هو توجيه من Next.js، نقوم برميه مجدداً للسماح للمتصفح بالانتقال
+    if (err.digest?.startsWith("NEXT_REDIRECT")) throw err;
+
     console.error("submitPreparerPickupMoney error:", err);
-    return { error: "فشل في حفظ البيانات. تأكد من إسناد مندوب إذا لزم الأمر." };
+    return { error: `فشل في حفظ البيانات: ${err.message || "خطأ غير معروف"}` };
   }
 
   redirect(withRefreshParam(safePreparerReturn(nextRaw)));
@@ -276,45 +281,45 @@ export async function submitPreparerDeliveryMoney(
         });
       });
       revalidatePreparerPaths(nextRaw);
-      redirect(safePreparerReturn(nextRaw));
+    } else {
+      const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
+      if (!parsed.ok) return { error: "أدخل المبلغ  بشكل صحيح." };
+      const amountDinar = new Decimal(parsed.value);
+      if (amountDinar.lte(0)) return { error: "أدخل مبلغاً أكبر من صفر." };
+
+      const nextReceived = receivedSoFar.plus(amountDinar);
+      const matches = dinarAmountsMatchExpected(nextReceived, expected);
+      if (!matches && !mismatchNote.trim()) return mismatchNoteRequiredError();
+
+      await prisma.$transaction(async (tx) => {
+        await tx.orderCourierMoneyEvent.create({
+          data: {
+            orderId,
+            courierId: a.courierId || null,
+            kind: MONEY_KIND_DELIVERY,
+            amountDinar,
+            expectedDinar: expected,
+            matchesExpected: matches,
+            mismatchReason: "",
+            mismatchNote,
+            recordedByCompanyPreparerId: a.preparer.id,
+          },
+        });
+        if (advanceStatus === "delivered" && a.order.status === "delivering") {
+          await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, "delivering", "delivered");
+          await tx.order.update({
+            where: { id: orderId },
+            data: { status: "delivered" },
+          });
+        }
+      });
+
+      revalidatePreparerPaths(nextRaw);
     }
-
-    const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
-    if (!parsed.ok) return { error: "أدخل المبلغ  بشكل صحيح." };
-    const amountDinar = new Decimal(parsed.value);
-    if (amountDinar.lte(0)) return { error: "أدخل مبلغاً أكبر من صفر." };
-
-    const nextReceived = receivedSoFar.plus(amountDinar);
-    const matches = dinarAmountsMatchExpected(nextReceived, expected);
-    if (!matches && !mismatchNote.trim()) return mismatchNoteRequiredError();
-
-    await prisma.$transaction(async (tx) => {
-      await tx.orderCourierMoneyEvent.create({
-        data: {
-          orderId,
-          courierId: a.courierId,
-          kind: MONEY_KIND_DELIVERY,
-          amountDinar,
-          expectedDinar: expected,
-          matchesExpected: matches,
-          mismatchReason: "",
-          mismatchNote,
-          recordedByCompanyPreparerId: a.preparer.id,
-        },
-      });
-      if (advanceStatus === "delivered" && a.order.status === "delivering") {
-        await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, "delivering", "delivered");
-      }
-      await tx.order.update({
-        where: { id: orderId },
-        data: advanceStatus === "delivered" && a.order.status === "delivering" ? { status: "delivered" } : {},
-      });
-    });
-
-    revalidatePreparerPaths(nextRaw);
   } catch (err: any) {
+    if (err.digest?.startsWith("NEXT_REDIRECT")) throw err;
     console.error("submitPreparerDeliveryMoney error:", err);
-    return { error: "فشل في تسجيل الوارد. يرجى المحاولة مرة أخرى." };
+    return { error: `فشل في تسجيل الوارد: ${err.message || "خطأ غير معروف"}` };
   }
   redirect(safePreparerReturn(nextRaw));
 }
