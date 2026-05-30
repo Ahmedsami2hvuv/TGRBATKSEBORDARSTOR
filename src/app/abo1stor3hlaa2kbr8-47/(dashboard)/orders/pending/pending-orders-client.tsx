@@ -211,6 +211,7 @@ export function AdminPricingPanel({
   icons = null,
   onSuccess,
   extraActions,
+  footerActions,
   hideContainer = false,
 }: {
   orderId: string;
@@ -224,6 +225,7 @@ export function AdminPricingPanel({
   onSuccess?: () => void;
   icons?: GlobalIconsConfig | null;
   extraActions?: React.ReactNode;
+  footerActions?: React.ReactNode;
   hideContainer?: boolean;
 }) {
   const findPreparerName = (id: string | null | undefined) => {
@@ -424,13 +426,15 @@ export function AdminPricingPanel({
 
       <div className={hideContainer ? "" : "relative p-3 sm:p-5"}>
         {/* Floating Header - Now Sticky and Opaque */}
-        <div className="sticky top-0 z-40 flex items-center justify-between gap-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl p-2.5 rounded-2xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/40 dark:shadow-none mb-4 -mx-1">
+        <div className={`sticky top-0 z-40 flex items-center justify-between gap-2 transition-all ${hideContainer ? "bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-3 -mx-4 -mt-4 mb-4 border-b border-slate-200 dark:border-slate-800" : "bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl p-2.5 mb-4 -mx-1 rounded-2xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/40 dark:shadow-none"}`}>
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-200 dark:shadow-none shrink-0">
-              <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={22} height={22} />
-            </div>
+            {!hideContainer && (
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-200 dark:shadow-none shrink-0">
+                <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={22} height={22} />
+              </div>
+            )}
             <div className="min-w-0">
-              <p className="text-xs font-black text-slate-800 dark:text-slate-100 leading-tight truncate">
+              <p className={`font-black text-slate-800 dark:text-slate-100 leading-tight truncate ${hideContainer ? "text-sm" : "text-xs"}`}>
                 {isDraft ? "تسعير المسودة" : "تعديل التسعير"}
               </p>
               {isSaving && (
@@ -443,17 +447,17 @@ export function AdminPricingPanel({
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             {!hideContainer && extraActions}
-            <button type="button" onClick={() => setShowReassign(!showReassign)} className="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm hover:scale-105 active:scale-95 transition-all border border-slate-200 dark:border-white/10" title="إسناد لمجهز">
+            <button type="button" onClick={() => setShowReassign(!showReassign)} className="h-9 w-9 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm hover:scale-105 active:scale-95 transition-all border border-slate-200 dark:border-white/10" title="إسناد لمجهز">
               <DynamicIcon icon={icons?.ui_plus} fallback="🏢" width={14} height={14} />
             </button>
-            <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="h-9 w-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-md hover:scale-105 active:scale-95 transition-all" title="إضافة منتجات">
+            <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="h-9 w-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md hover:scale-105 active:scale-95 transition-all" title="إضافة منتجات">
               <DynamicIcon icon={icons?.ui_plus} fallback="➕" width={14} height={14} />
             </button>
             {!hideContainer && <DeleteFullOrderButton id={orderId} isDraft={Boolean(isDraft)} onSuccess={onSuccess} icons={icons} />}
           </div>
         </div>
 
-      <div className="space-y-4">
+      <div className={hideContainer ? "px-1" : "space-y-4"}>
         {showReassign && <div className="animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); onSuccess?.(); }} icons={icons || undefined} hideContainer={true} /></div>}
 
         {showBulkAdd && (
@@ -489,7 +493,7 @@ export function AdminPricingPanel({
           </div>
         )}
 
-        <div className="grid gap-1.5 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
+        <div className={`grid gap-1.5 ${hideContainer ? "" : "max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar"}`}>
           {products.length > 0 && (
             <button type="button" onClick={toggleSelectAllProducts} className="text-[10px] font-bold text-slate-400 dark:text-slate-500 text-right pr-2 pb-1 hover:text-amber-600 transition-colors">
               {selectedProductIndexes.length === products.length ? "إلغاء تحديد الكل" : "تحديد الكل للمهام الجماعية"}
@@ -634,11 +638,11 @@ export function AdminPricingPanel({
       </div>
 
       {/* Floating Summary Bar */}
-      <div className="sticky bottom-0 z-40 mt-6 -mx-3 -mb-3 sm:-mx-5 sm:-mb-5 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-white/60 dark:border-slate-700/50 rounded-t-[2.5rem] shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
+      <div className={`sticky bottom-0 z-40 mt-6 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-slate-200 dark:border-slate-800 transition-all ${hideContainer ? "-mx-4 -mb-4 rounded-none shadow-[0_-10px_30px_rgba(0,0,0,0.05)]" : "-mx-3 -mb-3 sm:-mx-5 sm:-mb-5 rounded-t-[2.5rem] shadow-[0_-10px_30px_rgba(0,0,0,0.1)]"}`}>
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-3 gap-2">
             <div className="relative group">
-              <select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="w-full appearance-none rounded-2xl bg-slate-100 dark:bg-slate-800 p-2 pr-8 text-[11px] font-black text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-900/50 transition-all border border-transparent focus:border-amber-400">
+              <select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="w-full appearance-none rounded-xl bg-slate-100 dark:bg-slate-800 p-2 pr-8 text-[11px] font-black text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-900/50 transition-all border border-transparent focus:border-amber-400">
                 {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n} محل</option>)}
               </select>
               <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
@@ -646,73 +650,79 @@ export function AdminPricingPanel({
               </div>
             </div>
 
-            <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50">
+            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50">
               <span className="text-[7px] font-black text-emerald-500 dark:text-emerald-400 uppercase tracking-tighter">المنتجات</span>
               <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-300 font-mono leading-none mt-0.5">{totals.subtotal.toLocaleString()}</span>
             </div>
 
-            <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-900/50">
+            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-900/50">
               <span className="text-[7px] font-black text-sky-500 dark:text-sky-400 uppercase tracking-tighter">التوصيل</span>
               <span className="text-[11px] font-black text-sky-700 dark:text-sky-300 font-mono leading-none mt-0.5">{deliveryAlfVal > 0 ? deliveryAlfVal.toLocaleString() : "—"}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-950 text-white shadow-xl shadow-slate-200 dark:shadow-none border border-white/10">
+            <div className="flex-1 flex items-center justify-between p-3 rounded-2xl bg-slate-900 dark:bg-black text-white shadow-xl border border-white/10">
                <div className="flex flex-col">
-                 <span className="text-[8px] font-bold text-slate-400">المجموع النهائي</span>
-                 <span className="text-lg font-black font-mono leading-none">{totals.total.toLocaleString()} <span className="text-[10px] font-bold text-slate-500">الف</span></span>
+                 <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">المجموع النهائي</span>
+                 <span className="text-xl font-black font-mono leading-none">{totals.total.toLocaleString()} <span className="text-[10px] font-bold text-slate-500">الف</span></span>
                </div>
                <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
-                 <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={20} height={20} />
+                 <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={22} height={22} />
                </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => { setDeleteMode(!deleteMode); setEditingIndex(null); }}
-              className={`h-14 w-14 flex items-center justify-center rounded-2xl border-2 transition-all ${deleteMode ? "bg-rose-500 text-white border-rose-400 shadow-lg shadow-rose-200 scale-110" : "bg-white dark:bg-slate-800 text-rose-500 border-rose-100 dark:border-slate-700 shadow-sm"}`}
-            >
-              <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={24} height={24} />
-            </button>
+            {!footerActions && (
+              <button
+                type="button"
+                onClick={() => { setDeleteMode(!deleteMode); setEditingIndex(null); }}
+                className={`h-14 w-14 flex items-center justify-center rounded-2xl border-2 transition-all ${deleteMode ? "bg-rose-500 text-white border-rose-400 shadow-lg" : "bg-white dark:bg-slate-800 text-rose-500 border-rose-100 dark:border-slate-700 shadow-sm"}`}
+              >
+                <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={24} height={24} />
+              </button>
+            )}
           </div>
 
-      <form action={formAction} className="space-y-3">
+      <form action={formAction} className="space-y-4">
         <input type="hidden" name="productsJson" value={JSON.stringify(products)} />
         <input type="hidden" name="placesCount" value={placesCount} />
         {isDraft && <input type="hidden" name="autoCourierId" value={String(initialData?.autoCourierId ?? "")} />}
         {isDraft && <input type="hidden" name="shopId" value={selectedShopId} />}
         {isDraft && <input type="hidden" name="isDraft" value="true" />}
 
-        <div className="flex items-center gap-2 px-1">
+        <div className="flex items-center justify-between px-1">
           <label className="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" name="skipWallet" id="skip-w" className="sr-only peer" />
             <div className="w-9 h-5 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:bg-emerald-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:-translate-x-4"></div>
-            <span className="mr-2 text-[10px] font-black text-slate-500 dark:text-slate-400">تخطي محفظة المجهز (تجهيز إداري)</span>
+            <span className="mr-2 text-[10px] font-black text-slate-500 dark:text-slate-400">تخطي محفظة المجهز</span>
           </label>
+
+          {footerActions && (
+            <div className="flex items-center gap-2">
+               {footerActions}
+            </div>
+          )}
         </div>
 
         {state.error && <p className="text-[10px] text-rose-600 font-bold p-2 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-2xl animate-shake">⚠️ {state.error}</p>}
 
         {isDraft ? (
-          <div className="grid grid-cols-2 gap-2">
-            <button type="submit" name="submitType" value="admin_approve" disabled={pending} className="group relative overflow-hidden rounded-2xl bg-emerald-600 py-3 text-[11px] font-black text-white shadow-xl shadow-emerald-200 dark:shadow-none active:scale-95 transition-all">
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform" />
-              <span className="relative flex items-center justify-center gap-1.5">
-                {pending ? "جارٍ..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد المسودة</>}
+          <div className="grid grid-cols-2 gap-3">
+            <button type="submit" name="submitType" value="admin_approve" disabled={pending} className="group relative overflow-hidden rounded-2xl bg-emerald-600 py-3.5 text-[11px] font-black text-white shadow-lg active:scale-95 transition-all">
+              <span className="relative flex items-center justify-center gap-2">
+                {pending ? "جارٍ..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={16} height={16} /> اعتماد المسودة</>}
               </span>
             </button>
-            <button type="submit" name="submitType" value="final_send" disabled={pending || !canSubmitFinal} className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 py-3 text-[11px] font-black text-white shadow-xl shadow-indigo-200 dark:shadow-none active:scale-95 transition-all">
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform" />
-              <span className="relative flex items-center justify-center gap-1.5">
-                {pending ? "جارٍ..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={14} height={14} /> إرسال نهائي</>}
+            <button type="submit" name="submitType" value="final_send" disabled={pending || !canSubmitFinal} className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 py-3.5 text-[11px] font-black text-white shadow-lg active:scale-95 transition-all">
+              <span className="relative flex items-center justify-center gap-2">
+                {pending ? "جارٍ..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={16} height={16} /> إرسال نهائي</>}
               </span>
             </button>
           </div>
         ) : (
-          <button type="submit" disabled={pending} className="w-full relative overflow-hidden rounded-2xl bg-slate-900 dark:bg-slate-800 py-4 text-xs font-black text-white shadow-2xl active:scale-[0.98] transition-all border border-white/10">
+          <button type="submit" disabled={pending} className="w-full relative overflow-hidden rounded-2xl bg-slate-900 dark:bg-slate-800 py-4 text-xs font-black text-white shadow-xl active:scale-[0.98] transition-all border border-white/10">
              <span className="relative flex items-center justify-center gap-2">
-               {pending ? "جارٍ الحفظ..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={16} height={16} /> حفظ التعديلات وإرسال للمندوب</>}
+               {pending ? "جارٍ الحفظ..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={18} height={18} /> حفظ التعديلات وإرسال للمندوب</>}
              </span>
           </button>
         )}
@@ -1481,7 +1491,7 @@ export function PendingOrdersClient({
             </div>
 
             {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-slate-50/30 dark:bg-black/10">
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-slate-50/50 dark:bg-black/20">
               <AdminPricingPanel
                 orderId={pricingModalOrder.id}
                 initialData={pricingModalOrder.preparerShoppingJson}
@@ -1497,26 +1507,21 @@ export function PendingOrdersClient({
                 }}
                 icons={icons}
                 hideContainer={true}
+                footerActions={
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setPricingOpenId(null)}
+                      className="h-9 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-black hover:bg-slate-200 transition-all flex items-center gap-1.5"
+                    >
+                      <DynamicIcon icon={icons?.ui_close} fallback="✕" width={12} height={12} />
+                      إغلاق
+                    </button>
+                    <RejectDraftButton draftId={pricingModalOrder.id} icons={icons} />
+                    <DeleteFullOrderButton id={pricingModalOrder.id} isDraft={true} onSuccess={() => { setPricingOpenId(null); router.refresh(); }} icons={icons} />
+                  </div>
+                }
               />
-            </div>
-
-            {/* Modal Footer - New Action Bar */}
-            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 flex items-center justify-between gap-3">
-               <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPricingOpenId(null)}
-                    className="h-12 px-6 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-black hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95 flex items-center gap-2"
-                  >
-                    <DynamicIcon icon={icons?.ui_close} fallback="✕" width={16} height={16} />
-                    إغلاق النافذة
-                  </button>
-                  <RejectDraftButton draftId={pricingModalOrder.id} icons={icons} />
-               </div>
-
-               <div className="flex items-center gap-2">
-                  <DeleteFullOrderButton id={pricingModalOrder.id} isDraft={true} onSuccess={() => { setPricingOpenId(null); router.refresh(); }} icons={icons} />
-               </div>
             </div>
           </div>
         </div>
