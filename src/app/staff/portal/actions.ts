@@ -211,7 +211,7 @@ export async function updateStaffPreparationDraft(
 
   const titleLine = String(formData.get("titleLine") ?? "").trim();
   const rawListText = String(formData.get("rawListText") ?? "").trim();
-  const productsCsv = String(formData.get("productsCsv") ?? "").trim();
+  const productsJsonStr = String(formData.get("productsJson") ?? "").trim();
   const customerRegionId = String(formData.get("customerRegionId") ?? "").trim();
   const customerPhone = String(formData.get("customerPhone") ?? "").trim();
   const customerName = String(formData.get("customerName") ?? "").trim();
@@ -219,9 +219,20 @@ export async function updateStaffPreparationDraft(
   const orderTime = String(formData.get("orderTime") ?? "").trim();
   const newPreparerId = String(formData.get("preparerId") ?? "").trim() || null;
 
-  if (!titleLine || !productsCsv || !customerRegionId || !orderTime) {
+  if (!titleLine || !productsJsonStr || !customerRegionId || !orderTime) {
     return { error: "بيانات ناقصة — تأكد من عنوان الطلب والمنطقة والمنتجات ووقت الطلب." };
   }
+
+  let parsedProducts: Array<{ id: string; line: string; preparerId: string | null }> = [];
+  try {
+    parsedProducts = JSON.parse(productsJsonStr);
+  } catch {
+    return { error: "خطأ في تنسيق المنتجات." };
+  }
+  
+  parsedProducts = parsedProducts.filter((p) => p.line.trim() !== "");
+  if (parsedProducts.length === 0) return { error: "لا توجد منتجات في القائمة." };
+
   const phoneLocal = normalizeIraqMobileLocal11(customerPhone);
   if (!phoneLocal) return { error: "رقم الزبون غير صالح." };
 
@@ -243,12 +254,6 @@ export async function updateStaffPreparationDraft(
     }
   }
 
-  const lines = productsCsv
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-  if (lines.length === 0) return { error: "لا توجد منتجات في القائمة." };
-
   const existingProducts = Array.isArray(meta.products) ? meta.products : [];
   const priceBuckets = new Map<string, Array<{ buyAlf: number | null; sellAlf: number | null }>>();
   for (const item of existingProducts) {
@@ -256,37 +261,38 @@ export async function updateStaffPreparationDraft(
     const row = item as Record<string, unknown>;
     const line = String(row.line ?? "").trim();
     if (!line) continue;
-    const buyNum =
-      row.buyAlf == null
-        ? null
-        : typeof row.buyAlf === "number" && Number.isFinite(row.buyAlf)
-          ? row.buyAlf
-          : null;
-    const sellNum =
-      row.sellAlf == null
-        ? null
-        : typeof row.sellAlf === "number" && Number.isFinite(row.sellAlf)
-          ? row.sellAlf
-          : null;
+    const buyNum = row.buyAlf == null ? null : typeof row.buyAlf === "number" && Number.isFinite(row.buyAlf) ? row.buyAlf : null;
+    const sellNum = row.sellAlf == null ? null : typeof row.sellAlf === "number" && Number.isFinite(row.sellAlf) ? row.sellAlf : null;
     const bucket = priceBuckets.get(line);
     const entry = { buyAlf: buyNum, sellAlf: sellNum };
     if (bucket) bucket.push(entry);
     else priceBuckets.set(line, [entry]);
   }
 
-  const products = lines.map((line) => {
-    const preserved = priceBuckets.get(line)?.shift();
-    return {
-      line,
+  const groups = new Map<string | null, Array<{ line: string; buyAlf: number | null; sellAlf: number | null }>>();
+  for (const p of parsedProducts) {
+    const lineStr = p.line.trim();
+    const pId = p.preparerId || newPreparerId;
+    const preserved = priceBuckets.get(lineStr)?.shift();
+    const finalProduct = {
+      line: lineStr,
       buyAlf: preserved?.buyAlf ?? null,
       sellAlf: preserved?.sellAlf ?? null,
     };
-  });
+    const group = groups.get(pId);
+    if (group) group.push(finalProduct);
+    else groups.set(pId, [finalProduct]);
+  }
 
-  const nextData = {
+  const groupEntries = Array.from(groups.entries());
+  if (groupEntries.length === 0) return { error: "لا توجد منتجات مقبولة." };
+
+  const [firstGroup, ...otherGroups] = groupEntries;
+
+  const nextDataFirst = {
     ...meta,
     version: 1,
-    products,
+    products: firstGroup[1],
     ...(rawListText ? { rawListText } : {}),
   };
 
@@ -302,10 +308,46 @@ export async function updateStaffPreparationDraft(
       orderTime,
       placesCount: null,
       status: PreparerShoppingDraftStatus.draft,
-      data: nextData,
-      preparerId: newPreparerId,
+      data: nextDataFirst,
+      preparerId: firstGroup[0],
     },
   });
+
+  if (otherGroups.length > 0) {
+    const groupId = String(meta.groupId || `GRP-${Date.now()}-${Math.floor(Math.random() * 1000)}`);
+    // تحديث مسودة الأولى بمعرف المجموعة
+    await prisma.companyPreparerShoppingDraft.update({
+      where: { id: draft.id },
+      data: {
+        data: { ...nextDataFirst, groupId }
+      }
+    });
+
+    for (const [prepId, prods] of otherGroups) {
+      const nextDataOther = {
+        ...meta,
+        version: 1,
+        products: prods,
+        groupId,
+        ...(rawListText ? { rawListText } : {}),
+      };
+      await prisma.companyPreparerShoppingDraft.create({
+        data: {
+          preparerId: prepId,
+          status: PreparerShoppingDraftStatus.draft,
+          titleLine,
+          rawListText,
+          customerRegionId,
+          customerPhone: phoneLocal,
+          customerName,
+          customerLandmark,
+          orderTime,
+          placesCount: null,
+          data: nextDataOther,
+        },
+      });
+    }
+  }
 
   revalidatePath("/staff/portal/submitted");
   revalidatePath(`/staff/portal/submitted/${draft.id}`);

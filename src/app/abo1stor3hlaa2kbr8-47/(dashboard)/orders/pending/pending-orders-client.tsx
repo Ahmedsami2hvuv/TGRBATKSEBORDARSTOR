@@ -208,6 +208,7 @@ export function AdminPricingPanel({
   rawDeliveryPriceDinar = null,
   icons = null,
   onSuccess,
+  extraActions,
 }: {
   orderId: string;
   initialData: any;
@@ -219,6 +220,7 @@ export function AdminPricingPanel({
   rawDeliveryPriceDinar?: number | null;
   onSuccess?: () => void;
   icons?: GlobalIconsConfig | null;
+  extraActions?: React.ReactNode;
 }) {
   const findPreparerName = (id: string | null | undefined) => {
     return preparers.find((p) => p.id === id)?.name ?? null;
@@ -412,220 +414,219 @@ export function AdminPricingPanel({
       <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-amber-200/30 dark:bg-amber-900/10 blur-[60px]" />
       <div className="absolute -right-20 -bottom-20 h-40 w-40 rounded-full bg-violet-200/30 dark:bg-violet-900/10 blur-[60px]" />
 
-      <div className="relative p-3 sm:p-5 space-y-4">
-        {/* Floating Header */}
-        <div className="flex items-center justify-between gap-2 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md p-2 rounded-2xl border border-white/60 dark:border-slate-700/50 shadow-lg shadow-slate-200/20 dark:shadow-none">
+      <div className="relative p-3 sm:p-5">
+        {/* Floating Header - Now Sticky and Opaque */}
+        <div className="sticky top-0 z-40 flex items-center justify-between gap-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl p-2.5 rounded-2xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/40 dark:shadow-none mb-4 -mx-1">
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-200 dark:shadow-none">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-200 dark:shadow-none shrink-0">
               <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={22} height={22} />
             </div>
-            <div>
-              <p className="text-xs font-black text-slate-800 dark:text-slate-100 leading-tight">
+            <div className="min-w-0">
+              <p className="text-xs font-black text-slate-800 dark:text-slate-100 leading-tight truncate">
                 {isDraft ? "تسعير المسودة" : "تعديل التسعير"}
               </p>
               {isSaving && (
                 <div className="flex items-center gap-1 mt-0.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-sky-500 animate-pulse" />
-                  <span className="text-[8px] font-bold text-sky-600 dark:text-sky-400">جاري الحفظ التلقائي...</span>
+                  <span className="h-1 w-1 rounded-full bg-sky-500 animate-pulse" />
+                  <span className="text-[8px] font-bold text-sky-600 dark:text-sky-400">جاري الحفظ...</span>
                 </div>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <button type="button" onClick={() => setShowReassign(!showReassign)} className="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-900 dark:bg-slate-800 text-white shadow-md hover:scale-105 active:scale-95 transition-all border border-white/10">
+          <div className="flex items-center gap-1.5 shrink-0">
+            {extraActions}
+            <button type="button" onClick={() => setShowReassign(!showReassign)} className="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm hover:scale-105 active:scale-95 transition-all border border-slate-200 dark:border-white/10" title="إسناد لمجهز">
               <DynamicIcon icon={icons?.ui_plus} fallback="🏢" width={14} height={14} />
             </button>
-            <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="h-9 w-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-md hover:scale-105 active:scale-95 transition-all">
+            <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="h-9 w-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-md hover:scale-105 active:scale-95 transition-all" title="إضافة منتجات">
               <DynamicIcon icon={icons?.ui_plus} fallback="➕" width={14} height={14} />
             </button>
             <DeleteFullOrderButton id={orderId} isDraft={Boolean(isDraft)} onSuccess={onSuccess} icons={icons} />
           </div>
         </div>
 
-      {showReassign && <div className="animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); onSuccess?.(); }} icons={icons || undefined} /></div>}
+      <div className="space-y-4">
+        {showReassign && <div className="animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); onSuccess?.(); }} icons={icons || undefined} /></div>}
 
-      {showBulkAdd && (
-        <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border-2 border-violet-200 dark:border-violet-900/50 animate-in zoom-in-95 shadow-inner">
-          <p className="text-[10px] font-bold text-violet-900 dark:text-violet-300 mb-2">أدخل المنتجات الجديدة (سطر لكل منتج):</p>
-          <textarea className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 text-sm min-h-[80px] outline-none focus:ring-2 focus:ring-violet-300 dark:focus:ring-violet-700 font-bold text-slate-900 dark:text-slate-100" placeholder="لحم شرح 1ك&#10;خيار 2 كيلو" onBlur={(e) => {
-              const lines = e.target.value.split("\n").map(l => l.trim()).filter(l => l.length > 1);
-              if (lines.length) { setProducts([...products, ...lines.map(line => ({ line, buyAlf: "0", sellAlf: "0", pricedBy: null, assignedPreparerId: null, assignedPreparerName: null }))]); setShowBulkAdd(false); }
-              e.target.value = "";
-            }} />
-        </div>
-      )}
+        {showBulkAdd && (
+          <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border-2 border-violet-200 dark:border-violet-900/50 animate-in zoom-in-95 shadow-inner">
+            <p className="text-[10px] font-bold text-violet-900 dark:text-violet-300 mb-2">أدخل المنتجات الجديدة (سطر لكل منتج):</p>
+            <textarea className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 text-sm min-h-[80px] outline-none focus:ring-2 focus:ring-violet-300 dark:focus:ring-violet-700 font-bold text-slate-900 dark:text-slate-100" placeholder="لحم شرح 1ك&#10;خيار 2 كيلو" onBlur={(e) => {
+                const lines = e.target.value.split("\n").map(l => l.trim()).filter(l => l.length > 1);
+                if (lines.length) { setProducts([...products, ...lines.map(line => ({ line, buyAlf: "0", sellAlf: "0", pricedBy: null, assignedPreparerId: null, assignedPreparerName: null }))]); setShowBulkAdd(false); }
+                e.target.value = "";
+              }} />
+          </div>
+        )}
 
-      {products.length > 0 && selectedProductIndexes.length > 0 && (
-        <div className="rounded-xl bg-sky-900 dark:bg-sky-950 p-2 shadow-lg animate-in slide-in-from-top-1">
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-black text-white">تخصيص {selectedProductIndexes.length} منتج لـ:</p>
-              <button type="button" onClick={clearSelection} className="text-[9px] font-bold text-sky-200 hover:text-white">إلغاء</button>
-            </div>
-            <div className="flex gap-1">
-              <select value={productAssigneeId} onChange={(e) => setProductAssigneeId(e.target.value)} className="flex-1 rounded-lg border-none bg-white dark:bg-slate-800 p-1.5 text-[10px] font-black outline-none text-slate-900 dark:text-slate-100">
-                <option value="">اختر المجهز</option>
-                {preparers.map((prep) => (
-                  <option key={prep.id} value={prep.id}>{prep.name}</option>
-                ))}
-              </select>
-              <button type="button" onClick={assignSelectedProductsToPreparer} disabled={!productAssigneeId} className="rounded-lg bg-emerald-500 px-3 text-[10px] font-black text-white shadow-sm disabled:opacity-40">
-                تطبيق
-              </button>
+        {products.length > 0 && selectedProductIndexes.length > 0 && (
+          <div className="rounded-xl bg-sky-900 dark:bg-sky-950 p-2 shadow-lg animate-in slide-in-from-top-1">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black text-white">تخصيص {selectedProductIndexes.length} منتج لـ:</p>
+                <button type="button" onClick={clearSelection} className="text-[9px] font-bold text-sky-200 hover:text-white">إلغاء</button>
+              </div>
+              <div className="flex gap-1">
+                <select value={productAssigneeId} onChange={(e) => setProductAssigneeId(e.target.value)} className="flex-1 rounded-lg border-none bg-white dark:bg-slate-800 p-1.5 text-[10px] font-black outline-none text-slate-900 dark:text-slate-100">
+                  <option value="">اختر المجهز</option>
+                  {preparers.map((prep) => (
+                    <option key={prep.id} value={prep.id}>{prep.name}</option>
+                  ))}
+                </select>
+                <button type="button" onClick={assignSelectedProductsToPreparer} disabled={!productAssigneeId} className="rounded-lg bg-emerald-500 px-3 text-[10px] font-black text-white shadow-sm disabled:opacity-40">
+                  تطبيق
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-
-
-
-
-
-      <div className="grid gap-1.5 max-h-[450px] overflow-y-auto pr-1">
-        {products.length > 0 && (
-          <button type="button" onClick={toggleSelectAllProducts} className="text-[10px] font-bold text-slate-400 dark:text-slate-500 text-right pr-2 pb-1 hover:text-amber-600 transition-colors">
-            {selectedProductIndexes.length === products.length ? "إلغاء تحديد الكل" : "تحديد الكل للمهام الجماعية"}
-          </button>
         )}
-        {products.map((p, i) => {
-          const isEditing = editingIndex === i;
-          const priced = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) > 0;
-          const isSelected = selectedProductIndexes.includes(i);
-          return (
-            <div key={i} className={`rounded-xl transition-all ${isSelected ? "ring-2 ring-sky-500 shadow-md" : ""}`}>
-              <div className="flex gap-2">
-                <label className="flex items-center pr-1">
-                  <input type="checkbox" checked={isSelected} onChange={() => toggleProductSelection(i)} className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sky-600 focus:ring-sky-500" />
-                </label>
-                <div
-                  className={`relative flex-1 flex items-center justify-between p-1 rounded-2xl border transition-all duration-300 overflow-hidden ${
-                    deleteMode
-                    ? "border-rose-400 bg-rose-50/80 dark:bg-rose-900/20"
-                    : priced
-                    ? "border-emerald-500/30 bg-white dark:bg-slate-800/80 shadow-[0_4px_15px_rgba(16,185,129,0.05)]"
-                    : "border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 hover:border-amber-400 shadow-sm"
-                  }`}
-                  onClick={() => {
-                    if (!deleteMode) {
-                      setEditingIndex(isEditing ? null : i);
-                    }
-                  }}
-                >
-                  {priced && <div className="absolute inset-y-0 right-0 w-1 bg-emerald-500" />}
 
-                  <div className="flex flex-1 items-center gap-2.5 p-1">
-                    <div className="relative">
-                      {p?.productId && productPhotoById[p.productId] ? (
-                        <div className="h-11 w-11 overflow-hidden rounded-xl border-2 border-white dark:border-slate-700 shadow-md shrink-0">
-                          <img src={productPhotoById[p.productId]} alt="" className="h-full w-full object-cover" />
-                        </div>
-                      ) : (
-                        <div className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 border-2 border-white dark:border-slate-700 shadow-inner ${priced ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500" : "bg-slate-100 dark:bg-slate-900/50 text-slate-400"}`}>
-                          <DynamicIcon icon={icons?.store_cart} fallback="📦" width={18} height={18} />
-                        </div>
-                      )}
-                      {priced && (
-                        <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-800 flex items-center justify-center">
-                          <DynamicIcon icon={icons?.ui_success} fallback="✓" width={8} height={8} className="text-white" />
-                        </div>
-                      )}
-                    </div>
+        <div className="grid gap-1.5 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
+          {products.length > 0 && (
+            <button type="button" onClick={toggleSelectAllProducts} className="text-[10px] font-bold text-slate-400 dark:text-slate-500 text-right pr-2 pb-1 hover:text-amber-600 transition-colors">
+              {selectedProductIndexes.length === products.length ? "إلغاء تحديد الكل" : "تحديد الكل للمهام الجماعية"}
+            </button>
+          )}
+          {products.map((p, i) => {
+            const isEditing = editingIndex === i;
+            const priced = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) > 0;
+            const isSelected = selectedProductIndexes.includes(i);
+            return (
+              <div key={i} className={`rounded-xl transition-all ${isSelected ? "ring-2 ring-sky-500 shadow-md" : ""}`}>
+                <div className="flex gap-2">
+                  <label className="flex items-center pr-1">
+                    <input type="checkbox" checked={isSelected} onChange={() => toggleProductSelection(i)} className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sky-600 focus:ring-sky-500" />
+                  </label>
+                  <div
+                    className={`relative flex-1 flex items-center justify-between p-1 rounded-2xl border transition-all duration-300 overflow-hidden ${
+                      deleteMode
+                      ? "border-rose-400 bg-rose-50/80 dark:bg-rose-900/20"
+                      : priced
+                      ? "border-emerald-500/30 bg-white dark:bg-slate-800/80 shadow-[0_4px_15px_rgba(16,185,129,0.05)]"
+                      : "border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 hover:border-amber-400 shadow-sm"
+                    }`}
+                    onClick={() => {
+                      if (!deleteMode) {
+                        setEditingIndex(isEditing ? null : i);
+                      }
+                    }}
+                  >
+                    {priced && <div className="absolute inset-y-0 right-0 w-1 bg-emerald-500" />}
 
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-black truncate leading-tight ${priced ? "text-slate-800 dark:text-slate-100" : "text-slate-500 dark:text-slate-400"}`}>{p?.line}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {priced ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] font-black border border-amber-100 dark:border-amber-900/50">💰 {p?.buyAlf} → {p?.sellAlf}</span>
-                            {(findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName) && (
-                              <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-0.5">
-                                <DynamicIcon icon={icons?.ui_user} fallback="👤" width={8} height={8} />
-                                {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName}
-                              </span>
-                            )}
+                    <div className="flex-1 min-w-0 flex items-center gap-2.5 p-1">
+                      <div className="relative">
+                        {p?.productId && productPhotoById[p.productId] ? (
+                          <div className="h-11 w-11 overflow-hidden rounded-xl border-2 border-white dark:border-slate-700 shadow-md shrink-0">
+                            <img src={productPhotoById[p.productId]} alt="" className="h-full w-full object-cover" />
                           </div>
                         ) : (
-                          <span className="text-[9px] font-bold text-rose-400 animate-pulse">لم يتم التسعير بعد</span>
+                          <div className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 border-2 border-white dark:border-slate-700 shadow-inner ${priced ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500" : "bg-slate-100 dark:bg-slate-900/50 text-slate-400"}`}>
+                            <DynamicIcon icon={icons?.store_cart} fallback="📦" width={18} height={18} />
+                          </div>
+                        )}
+                        {priced && (
+                          <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-800 flex items-center justify-center">
+                            <DynamicIcon icon={icons?.ui_success} fallback="✓" width={8} height={8} className="text-white" />
+                          </div>
                         )}
                       </div>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-1 px-2">
-                    {deleteMode ? (
-                      <button type="button" onClick={(e) => { e.stopPropagation(); setProducts(products.filter((_, idx) => idx !== i)); }} className="h-8 w-8 flex items-center justify-center rounded-xl bg-rose-500 text-white shadow-lg shadow-rose-200">
-                        <DynamicIcon icon={icons?.ui_close} fallback="✕" width={12} height={12} />
-                      </button>
-                    ) : (
-                      <div className={`h-8 w-8 flex items-center justify-center rounded-xl transition-all ${isEditing ? "bg-amber-500 text-white shadow-lg shadow-amber-200" : "bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-300"}`}>
-                        <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" width={14} height={14} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {isEditing && !deleteMode && (
-                <div className="mt-2 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 p-3 rounded-[1.5rem] border-2 border-amber-400/50 shadow-xl shadow-amber-100/50 dark:shadow-none animate-in slide-in-from-top-2">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
-                      <input
-                        type="text"
-                        value={p?.line}
-                        onChange={(e) => updateProduct(i, "line", e.target.value)}
-                        className="w-full bg-transparent text-sm font-black text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-700 pb-1.5 focus:border-amber-500 outline-none transition-colors"
-                        placeholder="اسم المنتج"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 mr-1 uppercase tracking-wider">سعر الشراء</label>
-                      <div className="relative">
-                        <input type="text" inputMode="decimal" value={p?.buyAlf ?? ""} onChange={(e) => updateProduct(i, "buyAlf", e.target.value)} className="w-full rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 text-sm font-black font-mono shadow-sm focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-900/50 outline-none transition-all text-slate-900 dark:text-slate-100" autoFocus placeholder="0" />
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-bold text-slate-300 dark:text-slate-600">IQD</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 mr-1 uppercase tracking-wider">سعر البيع</label>
-                      <div className="relative">
-                        <input type="text" inputMode="decimal" value={p?.sellAlf ?? ""} onChange={(e) => updateProduct(i, "sellAlf", e.target.value)} className="w-full rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800 p-2 text-sm font-black font-mono text-emerald-700 dark:text-emerald-300 shadow-sm focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-900/50 outline-none transition-all" placeholder="0" />
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-bold text-emerald-400 dark:text-emerald-600">IQD</span>
-                      </div>
-                    </div>
-
-                    <div className="col-span-2 space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 mr-1 uppercase tracking-wider">تخصيص المجهز</label>
-                      <select value={p?.assignedPreparerId ?? ""} onChange={(e) => updateProduct(i, "assignedPreparerId", e.target.value)} className="w-full rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 text-xs font-black outline-none shadow-sm transition-all focus:border-amber-400 dark:focus:border-amber-600 text-slate-900 dark:text-slate-100">
-                        <option value="">-- بدون تخصيص (الكل) --</option>
-                        {preparers.map((prep) => (
-                          <option key={prep.id} value={prep.id}>{prep.name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="col-span-2 flex items-center justify-between py-1 px-1 bg-white/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                      <div className="flex items-center gap-2">
-                        <div className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" id={`priced-by-me-${i}`} checked={Boolean(p?.pricedBy === "الإدارة")} onChange={(e) => updateProduct(i, "pricedBy", e.target.checked)} className="sr-only peer" />
-                          <div className="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:bg-emerald-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:-translate-x-4 peer-checked:after:border-white"></div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-black truncate leading-tight ${priced ? "text-slate-800 dark:text-slate-100" : "text-slate-500 dark:text-slate-400"}`}>{p?.line}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {priced ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] font-black border border-amber-100 dark:border-amber-900/50">💰 {p?.buyAlf} → {p?.sellAlf}</span>
+                              {(findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName) && (
+                                <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-0.5">
+                                  <DynamicIcon icon={icons?.ui_user} fallback="👤" width={8} height={8} />
+                                  {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[9px] font-bold text-rose-400 animate-pulse">لم يتم التسعير بعد</span>
+                          )}
                         </div>
-                        <label htmlFor={`priced-by-me-${i}`} className="text-[9px] font-black text-slate-700 dark:text-slate-300">تجهيز شخصي</label>
                       </div>
-                      <button type="button" onClick={() => setEditingIndex(null)} className="h-8 px-4 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[10px] font-black shadow-lg hover:bg-black dark:hover:bg-slate-700 transition-all border border-white/10">
-                        تثبيت السعر
-                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1 px-2">
+                      {deleteMode ? (
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setProducts(products.filter((_, idx) => idx !== i)); }} className="h-8 w-8 flex items-center justify-center rounded-xl bg-rose-500 text-white shadow-lg shadow-rose-200">
+                          <DynamicIcon icon={icons?.ui_close} fallback="✕" width={12} height={12} />
+                        </button>
+                      ) : (
+                        <div className={`h-8 w-8 flex items-center justify-center rounded-xl transition-all ${isEditing ? "bg-amber-500 text-white shadow-lg shadow-amber-200" : "bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-300"}`}>
+                          <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" width={14} height={14} />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-          );
-        })}
+
+                {isEditing && !deleteMode && (
+                  <div className="mt-2 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 p-3 rounded-[1.5rem] border-2 border-amber-400/50 shadow-xl shadow-amber-100/50 dark:shadow-none animate-in slide-in-from-top-2">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <input
+                          type="text"
+                          value={p?.line}
+                          onChange={(e) => updateProduct(i, "line", e.target.value)}
+                          className="w-full bg-transparent text-sm font-black text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-700 pb-1.5 focus:border-amber-500 outline-none transition-colors"
+                          placeholder="اسم المنتج"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 mr-1 uppercase tracking-wider">سعر الشراء</label>
+                        <div className="relative">
+                          <input type="text" inputMode="decimal" value={p?.buyAlf ?? ""} onChange={(e) => updateProduct(i, "buyAlf", e.target.value)} className="w-full rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 text-sm font-black font-mono shadow-sm focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-900/50 outline-none transition-all text-slate-900 dark:text-slate-100" autoFocus placeholder="0" />
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-bold text-slate-300 dark:text-slate-600">IQD</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 mr-1 uppercase tracking-wider">سعر البيع</label>
+                        <div className="relative">
+                          <input type="text" inputMode="decimal" value={p?.sellAlf ?? ""} onChange={(e) => updateProduct(i, "sellAlf", e.target.value)} className="w-full rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800 p-2 text-sm font-black font-mono text-emerald-700 dark:text-emerald-300 shadow-sm focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-900/50 outline-none transition-all" placeholder="0" />
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-bold text-emerald-400 dark:text-emerald-600">IQD</span>
+                        </div>
+                      </div>
+
+                      <div className="col-span-2 space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 mr-1 uppercase tracking-wider">تخصيص المجهز</label>
+                        <select value={p?.assignedPreparerId ?? ""} onChange={(e) => updateProduct(i, "assignedPreparerId", e.target.value)} className="w-full rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 text-xs font-black outline-none shadow-sm transition-all focus:border-amber-400 dark:focus:border-amber-600 text-slate-900 dark:text-slate-100">
+                          <option value="">-- بدون تخصيص (الكل) --</option>
+                          {preparers.map((prep) => (
+                            <option key={prep.id} value={prep.id}>{prep.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="col-span-2 flex items-center justify-between py-1 px-1 bg-white/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                        <div className="flex items-center gap-2">
+                          <div className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id={`priced-by-me-${i}`} checked={Boolean(p?.pricedBy === "الإدارة")} onChange={(e) => updateProduct(i, "pricedBy", e.target.checked)} className="sr-only peer" />
+                            <div className="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:bg-emerald-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:-translate-x-4 peer-checked:after:border-white"></div>
+                          </div>
+                          <label htmlFor={`priced-by-me-${i}`} className="text-[9px] font-black text-slate-700 dark:text-slate-300">تجهيز شخصي</label>
+                        </div>
+                        <button type="button" onClick={() => setEditingIndex(null)} className="h-8 px-4 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[10px] font-black shadow-lg hover:bg-black dark:hover:bg-slate-700 transition-all border border-white/10">
+                          تثبيت السعر
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Floating Summary Bar */}
-      <div className="sticky bottom-0 z-20 mt-6 -mx-3 -mb-3 sm:-mx-5 sm:-mb-5 p-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl border-t border-white/60 dark:border-slate-700/50 rounded-t-[2.5rem] shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+      <div className="sticky bottom-0 z-40 mt-6 -mx-3 -mb-3 sm:-mx-5 sm:-mb-5 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-white/60 dark:border-slate-700/50 rounded-t-[2.5rem] shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-3 gap-2">
             <div className="relative group">
@@ -1177,7 +1178,7 @@ export function PendingOrdersClient({
           return (
             <div key={o.id} className="group relative">
               <div
-                className={`relative overflow-hidden rounded-[2.5rem] border transition-all duration-500 cursor-pointer ${
+                className={`relative rounded-[2.5rem] border transition-all duration-500 cursor-pointer ${
                   open
                   ? "border-violet-400 bg-white dark:bg-slate-900 shadow-[0_30px_60px_rgba(139,92,246,0.15)] ring-2 ring-violet-200 dark:ring-violet-900/50"
                   : "border-white/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:border-violet-200 dark:hover:border-violet-800 ring-1 ring-white/20 dark:ring-white/10"
@@ -1312,7 +1313,7 @@ export function PendingOrdersClient({
         return (
           <div
             key={o.id}
-            className={`group relative overflow-hidden rounded-[2.5rem] border transition-all duration-500 ${
+            className={`group relative rounded-[2.5rem] border transition-all duration-500 ${
               pricingOpen
               ? "border-amber-400 bg-white dark:bg-slate-900 shadow-[0_30px_60px_rgba(245,158,11,0.15)] ring-2 ring-amber-200 dark:ring-amber-900/50"
               : assignOpen
@@ -1413,6 +1414,7 @@ export function PendingOrdersClient({
                   rawDeliveryPriceDinar={o.rawDeliveryPriceDinar}
                   onSuccess={() => { setPricingOpenId(null); isDraftMode && router.refresh(); }}
                   icons={icons}
+                  extraActions={<RejectButton orderId={o.id} icons={icons} />}
                 />
               </div>
             )}
@@ -1438,40 +1440,52 @@ export function PendingOrdersClient({
 
       {isDraftMode && pricingModalOrder ? (
         <div
-          className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/60 dark:bg-black/80 p-4 backdrop-blur-md overflow-y-auto"
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/60 dark:bg-black/80 p-2 sm:p-4 backdrop-blur-md"
           onClick={() => setPricingOpenId(null)}
         >
           <div
-            className="w-full max-w-3xl animate-in zoom-in-95 duration-300"
+            className="w-full max-w-4xl max-h-[96vh] flex flex-col animate-in zoom-in-95 duration-300 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl rounded-[3rem] border border-white/20 dark:border-slate-700/50 shadow-2xl overflow-hidden ring-1 ring-white/20 dark:ring-white/10"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-3 flex items-center justify-between rounded-2xl bg-white/90 dark:bg-slate-800/90 p-3 shadow-xl border border-white/20 dark:border-slate-700/50 backdrop-blur-xl">
-              <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">نافذة التسعير — {pricingModalOrder.orderType || "مسودة"}</h3>
-              <button
-                type="button"
-                onClick={() => setPricingOpenId(null)}
-                className="relative z-[410] flex h-9 w-9 items-center justify-center rounded-full bg-rose-600 text-white shadow-lg hover:bg-rose-700 transition active:scale-90"
-                aria-label="إغلاق نافذة التسعير"
-              >
-                ✕
-              </button>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-white/20 dark:border-slate-800/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shrink-0">
+               <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white flex items-center justify-center shadow-lg">
+                     <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={22} height={22} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">نافذة التسعير — #{pricingModalOrder.orderNumber}</h3>
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{pricingModalOrder.orderType || "مسودة"}</p>
+                  </div>
+               </div>
+               <button
+                 type="button"
+                 onClick={() => setPricingOpenId(null)}
+                 className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg hover:bg-rose-600 transition-all active:scale-90"
+               >
+                 <DynamicIcon icon={icons?.ui_close} fallback="✕" width={18} height={18} />
+               </button>
             </div>
 
-            <AdminPricingPanel
-              orderId={pricingModalOrder.id}
-              initialData={pricingModalOrder.preparerShoppingJson}
-              isDraft={true}
-              initialPreparerIds={pricingModalOrder.assignedPreparerIds}
-              orderSummary={pricingModalOrder.summary}
-              shops={shops}
-              preparers={preparers}
-              rawDeliveryPriceDinar={pricingModalOrder.rawDeliveryPriceDinar}
-              onSuccess={() => {
-                setPricingOpenId(null);
-                router.refresh();
-              }}
-              icons={icons}
-            />
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+              <AdminPricingPanel
+                orderId={pricingModalOrder.id}
+                initialData={pricingModalOrder.preparerShoppingJson}
+                isDraft={true}
+                initialPreparerIds={pricingModalOrder.assignedPreparerIds}
+                orderSummary={pricingModalOrder.summary}
+                shops={shops}
+                preparers={preparers}
+                rawDeliveryPriceDinar={pricingModalOrder.rawDeliveryPriceDinar}
+                onSuccess={() => {
+                  setPricingOpenId(null);
+                  router.refresh();
+                }}
+                icons={icons}
+                extraActions={<RejectDraftButton draftId={pricingModalOrder.id} icons={icons} />}
+              />
+            </div>
           </div>
         </div>
       ) : null}

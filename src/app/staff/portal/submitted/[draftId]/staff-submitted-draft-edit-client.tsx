@@ -35,19 +35,28 @@ type PreparerRow = {
   phone: string;
 };
 
-function extractProductsCsv(draft: Draft): string {
+type ProductItem = { id: string; line: string; preparerId: string | null };
+
+function extractProductsArray(draft: Draft): ProductItem[] {
   const d = draft.data;
-  if (!d || typeof d !== "object") return "";
+  if (!d || typeof d !== "object") return [];
   const o = d as Record<string, unknown>;
   const products = o.products;
-  if (!Array.isArray(products)) return "";
-  const lines: string[] = [];
+  if (!Array.isArray(products)) return [];
+  
+  const items: ProductItem[] = [];
   for (const p of products) {
     if (!p || typeof p !== "object") continue;
     const line = String((p as Record<string, unknown>).line ?? "").trim();
-    if (line) lines.push(line);
+    if (line) {
+      items.push({
+        id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2),
+        line,
+        preparerId: draft.preparerId || null,
+      });
+    }
   }
-  return lines.join("\n");
+  return items;
 }
 
 export function StaffSubmittedDraftEditClient({
@@ -68,7 +77,7 @@ export function StaffSubmittedDraftEditClient({
   const [customerPhone, setCustomerPhone] = useState(draft.customerPhone || "");
   const [orderTime, setOrderTime] = useState(draft.orderTime || "فوري");
   const [rawListText, setRawListText] = useState(draft.rawListText || "");
-  const [productsCsv, setProductsCsv] = useState(extractProductsCsv(draft));
+  const [products, setProducts] = useState<ProductItem[]>(extractProductsArray(draft));
   const [selectedPreparerId, setSelectedPreparerId] = useState(draft.preparerId || "");
 
   const [q, setQ] = useState(draft.customerRegion?.name ?? "");
@@ -109,12 +118,21 @@ export function StaffSubmittedDraftEditClient({
     if (err.includes("منطقة")) regionSearchRef.current?.focus();
   }, [state.error]);
 
-  const productsCount = useMemo(() => {
-    return productsCsv
-      .split(/\r?\n/)
-      .map((x) => x.trim())
-      .filter(Boolean).length;
-  }, [productsCsv]);
+  const productsCount = products.length;
+
+  const addProduct = () => {
+    setProducts([...products, { id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2), line: "", preparerId: null }]);
+  };
+
+  const updateProduct = (idx: number, updates: Partial<ProductItem>) => {
+    const next = [...products];
+    next[idx] = { ...next[idx], ...updates };
+    setProducts(next);
+  };
+
+  const removeProduct = (idx: number) => {
+    setProducts(products.filter((_, i) => i !== idx));
+  };
 
   function translateDraftStatus(status: string): string {
     switch (status) {
@@ -250,20 +268,64 @@ export function StaffSubmittedDraftEditClient({
           />
         </label>
 
-        <label className="mt-3 flex flex-col gap-1">
-          <span className="text-xs font-medium text-slate-800">
-            المنتجات * <span className="text-slate-500">({productsCount})</span>
-          </span>
-          <textarea
-            name="productsCsv"
-            value={productsCsv}
-            onChange={(e) => setProductsCsv(e.target.value)}
-            className={`${inputClass} min-h-[10rem] resize-y font-mono`}
-            placeholder="سطر لكل منتج"
-            disabled={!canEdit}
-            required
-          />
-        </label>
+        <div className="mt-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-800">
+              المنتجات * <span className="text-slate-500">({productsCount})</span>
+            </span>
+            <button
+              type="button"
+              onClick={addProduct}
+              disabled={!canEdit}
+              className="text-xs font-bold text-sky-700 bg-sky-50 px-2 py-1 rounded hover:bg-sky-100 transition disabled:opacity-50"
+            >
+              + إضافة منتج
+            </button>
+          </div>
+          
+          <input type="hidden" name="productsJson" value={JSON.stringify(products)} />
+
+          <div className="flex flex-col gap-2 max-h-96 overflow-y-auto pr-1">
+            {products.map((p, idx) => (
+              <div key={p.id} className="flex flex-col sm:flex-row gap-2 items-start sm:items-center bg-slate-50 p-2 rounded-xl border border-slate-200">
+                <input
+                  type="text"
+                  value={p.line}
+                  onChange={(e) => updateProduct(idx, { line: e.target.value })}
+                  placeholder={`المنتج ${idx + 1}...`}
+                  className={`${inputClass} !py-1.5 flex-1`}
+                  disabled={!canEdit}
+                  required
+                />
+                <select
+                  value={p.preparerId || ""}
+                  onChange={(e) => updateProduct(idx, { preparerId: e.target.value || null })}
+                  className={`${inputClass} !py-1.5 w-full sm:w-48 text-xs bg-white`}
+                  disabled={!canEdit}
+                >
+                  <option value="">(المجهز الافتراضي)</option>
+                  {preparers.map((prep) => (
+                    <option key={prep.id} value={prep.id}>
+                      {prep.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => removeProduct(idx)}
+                  disabled={!canEdit}
+                  className="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 p-1.5 rounded-lg transition disabled:opacity-50"
+                  title="حذف المنتج"
+                >
+                  <DynamicIcon icon={icons?.ui_delete || icons?.ui_error} className="w-4 h-4" fallback={<span>❌</span>} />
+                </button>
+              </div>
+            ))}
+            {products.length === 0 && (
+              <p className="text-xs text-rose-600 font-bold bg-rose-50 p-3 rounded-xl border border-rose-200 text-center">لا توجد منتجات، يرجى إضافة منتج واحد على الأقل.</p>
+            )}
+          </div>
+        </div>
 
         <label className="mt-3 flex flex-col gap-1">
           <span className="text-xs font-medium text-slate-800">نص القائمة الخام (اختياري)</span>
