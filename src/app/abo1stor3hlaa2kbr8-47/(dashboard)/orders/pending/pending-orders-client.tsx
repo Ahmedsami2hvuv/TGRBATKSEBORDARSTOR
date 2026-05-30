@@ -83,7 +83,8 @@ export function AssignToPreparerPanel({
   isDraft,
   initialPreparerIds = [],
   onSuccess,
-  icons
+  icons,
+  hideContainer = false,
 }: {
   orderId: string;
   preparers: { id: string; name: string }[];
@@ -268,6 +269,31 @@ export function AdminPricingPanel({
   const [productPhotoById, setProductPhotoById] = useState<Record<string, string>>({});
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);
+
+  const [pricingErr, setPricingErr] = useState<string | null>(null);
+  const [pricingLinesText, setPricingLinesText] = useState("");
+
+  const applyPricingPanel = () => {
+    if (editingIndex === null) return;
+    const item = products[editingIndex];
+    const buyAlf = parseFloat(normalizeNumerals(pricingLinesText)) || 0;
+    if (buyAlf <= 0) {
+      setPricingErr("اكتب سعر الشراء.");
+      return;
+    }
+    const sellAlf = calculateAutoSellPrice(item.line, buyAlf);
+    updateProduct(editingIndex, "buyAlf", buyAlf.toString());
+    updateProduct(editingIndex, "sellAlf", sellAlf.toString());
+    setEditingIndex(null);
+    setPricingLinesText("");
+    setPricingErr(null);
+  };
+
+  const cancelPricingPanel = () => {
+    setEditingIndex(null);
+    setPricingLinesText("");
+    setPricingErr(null);
+  };
 
   const bound = updateOrderPricingByAdmin.bind(null, orderId);
   const [state, formAction, pending] = useActionState(bound, {} as any);
@@ -493,148 +519,161 @@ export function AdminPricingPanel({
           </div>
         )}
 
-        <div className={`grid gap-1.5 ${hideContainer ? "" : "max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar"}`}>
+        <div className={`grid gap-2.5 ${hideContainer ? "" : "max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar"}`}>
           {products.length > 0 && (
             <button type="button" onClick={toggleSelectAllProducts} className="text-[10px] font-bold text-slate-400 dark:text-slate-500 text-right pr-2 pb-1 hover:text-amber-600 transition-colors">
               {selectedProductIndexes.length === products.length ? "إلغاء تحديد الكل" : "تحديد الكل للمهام الجماعية"}
             </button>
           )}
           {products.map((p, i) => {
-            const isEditing = editingIndex === i;
             const priced = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) > 0;
             const isSelected = selectedProductIndexes.includes(i);
+            const isEditing = editingIndex === i;
+
             return (
-              <div key={i} className={`rounded-xl transition-all ${isSelected ? "ring-2 ring-sky-500 shadow-md" : ""}`}>
-                <div className="flex gap-2">
-                  <label className="flex items-center pr-1">
-                    <input type="checkbox" checked={isSelected} onChange={() => toggleProductSelection(i)} className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sky-600 focus:ring-sky-500" />
-                  </label>
-                  <div
-                    className={`relative flex-1 flex items-center justify-between p-1 rounded-2xl border transition-all duration-300 overflow-hidden ${
-                      deleteMode
-                      ? "border-rose-400 bg-rose-50/80 dark:bg-rose-900/20"
-                      : priced
-                      ? "border-emerald-500/30 bg-white dark:bg-slate-800/80 shadow-[0_4px_15px_rgba(16,185,129,0.05)]"
-                      : "border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 hover:border-amber-400 shadow-sm"
-                    }`}
-                    onClick={() => {
-                      if (!deleteMode) {
-                        setEditingIndex(isEditing ? null : i);
-                      }
-                    }}
-                  >
-                    {priced && <div className="absolute inset-y-0 right-0 w-1 bg-emerald-500" />}
-
-                    <div className="flex-1 min-w-0 flex items-center gap-2.5 p-1">
-                      <div className="relative">
-                        {p?.productId && productPhotoById[p.productId] ? (
-                          <div className="h-11 w-11 overflow-hidden rounded-xl border-2 border-white dark:border-slate-700 shadow-md shrink-0">
-                            <img src={productPhotoById[p.productId]} alt="" className="h-full w-full object-cover" />
-                          </div>
-                        ) : (
-                          <div className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 border-2 border-white dark:border-slate-700 shadow-inner ${priced ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500" : "bg-slate-100 dark:bg-slate-900/50 text-slate-400"}`}>
-                            <DynamicIcon icon={icons?.store_cart} fallback="📦" width={18} height={18} />
-                          </div>
-                        )}
-                        {priced && (
-                          <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-800 flex items-center justify-center">
-                            <DynamicIcon icon={icons?.ui_success} fallback="✓" width={8} height={8} className="text-white" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-black truncate leading-tight ${priced ? "text-slate-800 dark:text-slate-100" : "text-slate-500 dark:text-slate-400"}`}>{p?.line}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {priced ? (
-                            <div className="flex items-center gap-1.5">
-                              <span className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] font-black border border-amber-100 dark:border-amber-900/50">💰 {p?.buyAlf} → {p?.sellAlf}</span>
-                              {(findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName) && (
-                                <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-0.5">
-                                  <DynamicIcon icon={icons?.ui_user} fallback="👤" width={8} height={8} />
-                                  {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-[9px] font-bold text-rose-400 animate-pulse">لم يتم التسعير بعد</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1 px-2">
-                      {deleteMode ? (
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setProducts(products.filter((_, idx) => idx !== i)); }} className="h-8 w-8 flex items-center justify-center rounded-xl bg-rose-500 text-white shadow-lg shadow-rose-200">
-                          <DynamicIcon icon={icons?.ui_close} fallback="✕" width={12} height={12} />
-                        </button>
-                      ) : (
-                        <div className={`h-8 w-8 flex items-center justify-center rounded-xl transition-all ${isEditing ? "bg-amber-500 text-white shadow-lg shadow-amber-200" : "bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-300"}`}>
-                          <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" width={14} height={14} />
-                        </div>
-                      )}
-                    </div>
+              <div key={i} className={`flex gap-2 items-center`}>
+                <label className="flex items-center">
+                  <input type="checkbox" checked={isSelected} onChange={() => toggleProductSelection(i)} className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sky-600 focus:ring-sky-500" />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (deleteMode) {
+                      setProducts(products.filter((_, idx) => idx !== i));
+                    } else {
+                      setEditingIndex(i);
+                      setPricingLinesText(priced ? p.buyAlf : "");
+                    }
+                  }}
+                  className={`group relative flex min-h-[56px] flex-1 items-center justify-between gap-3 overflow-hidden rounded-2xl border-2 px-4 py-3 text-start transition-all active:scale-[0.98] ${
+                    isEditing
+                      ? "border-sky-500 bg-sky-50 shadow-md ring-4 ring-sky-500/10 dark:bg-sky-500/10"
+                      : deleteMode
+                        ? "border-rose-400 bg-rose-50 dark:bg-rose-500/10"
+                        : priced
+                          ? "border-emerald-600 bg-emerald-600 text-white shadow-emerald-200/50 dark:shadow-none"
+                          : "border-slate-100 bg-white/50 hover:border-sky-200 hover:bg-white dark:border-white/5 dark:bg-slate-950/40 dark:hover:bg-slate-950"
+                  }`}
+                >
+                  <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                     {priced ? (
+                       <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
+                         <DynamicIcon icon={icons?.ui_success} fallback="✓" className="h-3 w-3 text-white" />
+                       </div>
+                     ) : (
+                       <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300 group-hover:bg-sky-400 dark:bg-slate-700" />
+                     )}
+                     <div className="flex flex-col min-w-0">
+                       <span className={`truncate text-sm font-bold ${priced ? "text-white" : "text-slate-800 dark:text-slate-200"}`}>
+                         {p?.line}
+                       </span>
+                       {(findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName) && (
+                          <span className={`text-[8px] font-bold flex items-center gap-0.5 ${priced ? "text-white/70" : "text-slate-400"}`}>
+                            <DynamicIcon icon={icons?.ui_user} fallback="👤" width={8} height={8} />
+                            {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName}
+                          </span>
+                       )}
+                     </div>
                   </div>
-                </div>
 
-                {isEditing && !deleteMode && (
-                  <div className="mt-2 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 p-3 rounded-[1.5rem] border-2 border-amber-400/50 shadow-xl shadow-amber-100/50 dark:shadow-none animate-in slide-in-from-top-2">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="col-span-2">
-                        <input
-                          type="text"
-                          value={p?.line}
-                          onChange={(e) => updateProduct(i, "line", e.target.value)}
-                          className="w-full bg-transparent text-sm font-black text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-700 pb-1.5 focus:border-amber-500 outline-none transition-colors"
-                          placeholder="اسم المنتج"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 mr-1 uppercase tracking-wider">سعر الشراء</label>
-                        <div className="relative">
-                          <input type="text" inputMode="decimal" value={p?.buyAlf ?? ""} onChange={(e) => updateProduct(i, "buyAlf", e.target.value)} className="w-full rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 text-sm font-black font-mono shadow-sm focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-900/50 outline-none transition-all text-slate-900 dark:text-slate-100" autoFocus placeholder="0" />
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-bold text-slate-300 dark:text-slate-600">IQD</span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 mr-1 uppercase tracking-wider">سعر البيع</label>
-                        <div className="relative">
-                          <input type="text" inputMode="decimal" value={p?.sellAlf ?? ""} onChange={(e) => updateProduct(i, "sellAlf", e.target.value)} className="w-full rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800 p-2 text-sm font-black font-mono text-emerald-700 dark:text-emerald-300 shadow-sm focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-900/50 outline-none transition-all" placeholder="0" />
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-bold text-emerald-400 dark:text-emerald-600">IQD</span>
-                        </div>
-                      </div>
-
-                      <div className="col-span-2 space-y-1">
-                        <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 mr-1 uppercase tracking-wider">تخصيص المجهز</label>
-                        <select value={p?.assignedPreparerId ?? ""} onChange={(e) => updateProduct(i, "assignedPreparerId", e.target.value)} className="w-full rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2 text-xs font-black outline-none shadow-sm transition-all focus:border-amber-400 dark:focus:border-amber-600 text-slate-900 dark:text-slate-100">
-                          <option value="">-- بدون تخصيص (الكل) --</option>
-                          {preparers.map((prep) => (
-                            <option key={prep.id} value={prep.id}>{prep.name}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="col-span-2 flex items-center justify-between py-1 px-1 bg-white/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                        <div className="flex items-center gap-2">
-                          <div className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id={`priced-by-me-${i}`} checked={Boolean(p?.pricedBy === "الإدارة")} onChange={(e) => updateProduct(i, "pricedBy", e.target.checked)} className="sr-only peer" />
-                            <div className="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:bg-emerald-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:-translate-x-4 peer-checked:after:border-white"></div>
-                          </div>
-                          <label htmlFor={`priced-by-me-${i}`} className="text-[9px] font-black text-slate-700 dark:text-slate-300">تجهيز شخصي</label>
-                        </div>
-                        <button type="button" onClick={() => setEditingIndex(null)} className="h-8 px-4 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[10px] font-black shadow-lg hover:bg-black dark:hover:bg-slate-700 transition-all border border-white/10">
-                          تثبيت السعر
-                        </button>
-                      </div>
+                  {priced ? (
+                    <div className="flex flex-col items-end shrink-0">
+                      <span className={`font-mono text-[9px] font-black ${priced ? "text-emerald-100/80" : "text-slate-400"}`} dir="ltr">
+                         {p?.buyAlf}
+                      </span>
+                      <span className="font-mono text-sm font-black tabular-nums" dir="ltr">
+                         {p?.sellAlf}
+                      </span>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 dark:bg-white/5">
+                       <span className="text-lg text-slate-400 group-hover:text-sky-500">💰</span>
+                    </div>
+                  )}
+                </button>
               </div>
             );
           })}
         </div>
+
+        {editingIndex !== null && (
+          <div className="fixed inset-x-0 bottom-0 z-[100] animate-in slide-in-from-bottom duration-300 pb-safe">
+            <div className="mx-auto max-w-lg">
+              <div className="kse-glass-dark m-4 overflow-hidden border border-sky-200 shadow-2xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/95 rounded-[2.5rem]">
+                <div className="bg-sky-600 px-4 py-3 text-white flex justify-between items-center">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold opacity-80 uppercase tracking-wider">تسعير المنتج:</p>
+                    <p className="truncate text-sm font-black">{products[editingIndex]?.line}</p>
+                  </div>
+                  <button onClick={cancelPricingPanel} className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 transition">✕</button>
+                </div>
+                <div className="p-5">
+                  <div className="mb-4">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1 block">تعديل اسم المنتج (اختياري)</label>
+                    <input
+                      type="text"
+                      value={products[editingIndex]?.line}
+                      onChange={(e) => updateProduct(editingIndex, "line", e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-sm font-bold outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1 block">تخصيص المجهز</label>
+                    <select
+                      value={products[editingIndex]?.assignedPreparerId ?? ""}
+                      onChange={(e) => updateProduct(editingIndex, "assignedPreparerId", e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-sm font-bold outline-none focus:ring-2 focus:ring-sky-500"
+                    >
+                      <option value="">-- بدون تخصيص (الكل) --</option>
+                      {preparers.map((prep) => (
+                        <option key={prep.id} value={prep.id}>{prep.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <p className="text-center text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2">
+                     اكتب سعر الشراء فقط وسيتم حساب سعر البيع تلقائياً.
+                  </p>
+                  <input
+                    value={pricingLinesText}
+                    onChange={(e) => setPricingLinesText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        applyPricingPanel();
+                      }
+                    }}
+                    dir="ltr"
+                    placeholder="سعر الشراء"
+                    className="w-full rounded-2xl border-2 border-sky-100 bg-slate-50 px-4 py-4 text-center font-mono text-2xl font-black tabular-nums text-sky-950 outline-none transition focus:border-sky-500 focus:bg-white dark:border-white/5 dark:bg-black/20 dark:text-white"
+                    inputMode="decimal"
+                    autoFocus
+                  />
+                  {pricingErr && (
+                    <p className="mt-2 text-center text-xs font-bold text-rose-600">{pricingErr}</p>
+                  )}
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                     <button
+                       type="button"
+                       onClick={cancelPricingPanel}
+                       className="rounded-2xl border border-slate-200 bg-white py-3.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-white/5 dark:bg-white/5 dark:text-slate-300"
+                     >
+                       إلغاء
+                     </button>
+                     <button
+                       type="button"
+                       onClick={applyPricingPanel}
+                       className="rounded-2xl bg-sky-600 py-3.5 text-sm font-black text-white shadow-lg shadow-sky-200 transition hover:bg-sky-700 active:scale-95 dark:shadow-none"
+                     >
+                       حفظ السعر
+                     </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Floating Summary Bar */}
@@ -801,6 +840,7 @@ export function PendingAssignPanel({
   defaultCustomerDoorPhotoUrl,
   icons,
   onSuccess,
+  hideContainer = false,
 }: {
   orderId: string;
   couriers: { id: string; name: string }[];
