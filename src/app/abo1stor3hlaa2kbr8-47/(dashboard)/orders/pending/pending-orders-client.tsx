@@ -107,27 +107,27 @@ export function AssignToPreparerPanel({
   if (preparers.length === 0) return <p className="p-3 bg-amber-50 text-amber-900 rounded-lg text-xs font-bold border border-amber-200 text-center flex items-center justify-center gap-2"><DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={14} height={14} /> لا يوجد مجهزون متاحون حالياً.</p>;
 
   return (
-    <form action={formAction} className="space-y-4 rounded-xl border border-sky-200 bg-sky-50/60 p-4 shadow-inner text-right" dir="rtl">
+    <form action={formAction} className="space-y-3 rounded-xl border border-sky-200 bg-sky-50/60 p-3 shadow-inner text-right" dir="rtl">
       <input type="hidden" name="orderId" value={orderId} />
       <input type="hidden" name="isDraft" value={String(!!isDraft)} />
       {selectedPreparers.map(id => <input key={id} type="hidden" name="preparerIds" value={id} />)}
-      <p className="text-sm font-black text-sky-900 border-b border-sky-100 pb-2 flex items-center gap-2">
-        <DynamicIcon icon={icons?.ui_shop} fallback="🛒" width={16} height={16} /> إسناد الطلب للمجهزين
+      <p className="text-[11px] font-black text-sky-900 border-b border-sky-100 pb-1.5 flex items-center gap-2">
+        <DynamicIcon icon={icons?.ui_shop} fallback="🛒" width={14} height={14} /> إسناد الطلب للمجهزين
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 py-1">
         {preparers.map((p) => (
-          <label key={p.id} className={`flex items-center gap-2 p-2 rounded-xl border-2 transition-all cursor-pointer ${selectedPreparers.includes(p.id) ? "border-sky-600 bg-sky-100 shadow-sm" : "border-white bg-white/50 hover:border-sky-200"}`}>
-            <input type="checkbox" checked={selectedPreparers.includes(p.id)} onChange={() => togglePreparer(p.id)} className="h-5 w-5 rounded border-sky-300 text-sky-600 focus:ring-sky-500" />
-            <span className={`text-xs font-black ${selectedPreparers.includes(p.id) ? "text-sky-900" : "text-slate-600"}`}>{p.name}</span>
+          <label key={p.id} className={`flex items-center gap-1 p-1 rounded-lg border transition-all cursor-pointer ${selectedPreparers.includes(p.id) ? "border-sky-500 bg-sky-100 shadow-sm" : "border-white bg-white/50 hover:border-sky-200"}`}>
+            <input type="checkbox" checked={selectedPreparers.includes(p.id)} onChange={() => togglePreparer(p.id)} className="h-3 w-3 rounded border-sky-300 text-sky-600 focus:ring-sky-500" />
+            <span className={`text-[10px] font-bold truncate ${selectedPreparers.includes(p.id) ? "text-sky-900" : "text-slate-600"}`}>{p.name}</span>
           </label>
         ))}
       </div>
-      {state.error && <p className="text-xs text-rose-600 font-bold p-2 bg-rose-50 rounded-lg border border-rose-200">{state.error}</p>}
-      <button type="submit" disabled={pending} className="w-full rounded-xl bg-sky-600 py-3.5 text-sm font-black text-white shadow-lg active:scale-95 disabled:opacity-50 transition-all hover:bg-sky-700 flex items-center justify-center gap-2">
+      {state.error && <p className="text-[10px] text-rose-600 font-bold p-1.5 bg-rose-50 rounded-lg border border-rose-200">{state.error}</p>}
+      <button type="submit" disabled={pending} className="w-full rounded-lg bg-sky-600 py-2.5 text-xs font-black text-white shadow hover:bg-sky-700 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
         {pending ? "جارٍ الحفظ..." : (
           <>
-            <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} />
-            {selectedPreparers.length === 0 ? "إلغاء الإسناد (حذف من المجهزين)" : (initialPreparerIds.length > 0 ? "تحديث المجهزين" : `إسناد إلى ${selectedPreparers.length} مجهز`)}
+            <DynamicIcon icon={icons?.ui_success} fallback="✅" width={12} height={12} />
+            {selectedPreparers.length === 0 ? "إلغاء الإسناد" : (initialPreparerIds.length > 0 ? "تحديث المجهزين" : `إسناد (${selectedPreparers.length})`)}
           </>
         )}
       </button>
@@ -370,30 +370,32 @@ export function AdminPricingPanel({
   }, [state.ok, onSuccess]);
 
   return (
-    <div className="space-y-4 rounded-2xl border-2 border-amber-300 bg-amber-50/90 p-5 shadow-xl text-right" dir="rtl">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200 pb-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm font-black text-amber-900 flex items-center gap-2 ml-2">
-            <span className="text-xl">
+    <div className="space-y-2.5 rounded-2xl border-2 border-amber-300 bg-amber-50/90 p-2 sm:p-4 shadow-xl text-right" dir="rtl">
+      <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-amber-200 pb-2">
+        <div className="flex items-center gap-1.5">
+          <p className="text-[11px] font-black text-amber-900 flex items-center gap-1">
+            <span className="text-base">
               <DynamicIcon icon={icons?.admin_pricing} fallback="💰" />
-            </span> {isDraft ? "تجهيز وتسعير المسودة" : "تعديل تسعير الطلب"}
-            {isSaving && <span className="text-[9px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded animate-pulse">جاري الحفظ التلقائي...</span>}
+            </span>
+            {isDraft ? "تسعير المسودة" : "تعديل التسعير"}
+            {isSaving && <span className="mr-1 h-1.5 w-1.5 rounded-full bg-sky-500 animate-pulse" title="جاري الحفظ التلقائي"></span>}
           </p>
           <DeleteFullOrderButton id={orderId} isDraft={Boolean(isDraft)} onSuccess={onSuccess} icons={icons} />
         </div>
-        <div className="flex gap-2">
-        <button type="button" onClick={() => setShowReassign(!showReassign)} className="rounded-xl bg-slate-800 text-white px-3 py-1.5 text-[10px] font-black shadow-sm transition hover:bg-black flex items-center gap-1">
-          <DynamicIcon icon={icons?.ui_plus} fallback={isDraft ? "➕" : "🔄"} width={10} height={10} />
-          {isDraft ? "إضافة مجهز" : "تغيير المجهز"}
-        </button>
-        <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="rounded-xl bg-violet-600 text-white px-3 py-1.5 text-[10px] font-black shadow-sm transition active:scale-95 flex items-center gap-1">
-          <DynamicIcon icon={icons?.ui_plus} fallback="➕" width={10} height={10} /> قائمة كاملة
-        </button>
-        <button type="button" onClick={() => { setDeleteMode(!deleteMode); setEditingIndex(null); }} className={`rounded-xl px-3 py-1.5 text-[10px] font-black shadow-sm transition flex items-center gap-1 ${deleteMode ? "bg-rose-600 text-white" : "bg-white border border-rose-300 text-rose-700"}`}>
-          <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={10} height={10} />
-          {deleteMode ? "إلغاء الحذف" : "مسح أسطر"}
-        </button>
-      </div>
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={() => setShowReassign(!showReassign)} className="h-8 px-2 rounded-lg bg-slate-800 text-white text-[9px] font-black shadow-sm transition hover:bg-black flex items-center gap-1">
+            <DynamicIcon icon={icons?.ui_plus} fallback="🏢" width={9} height={9} />
+            <span className="hidden xs:inline">{isDraft ? "إضافة مجهز" : "تغيير المجهز"}</span>
+          </button>
+          <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="h-8 px-2 rounded-lg bg-violet-600 text-white text-[9px] font-black shadow-sm transition active:scale-95 flex items-center gap-1">
+            <DynamicIcon icon={icons?.ui_plus} fallback="➕" width={9} height={9} />
+            <span className="hidden xs:inline">قائمة</span>
+          </button>
+          <button type="button" onClick={() => { setDeleteMode(!deleteMode); setEditingIndex(null); }} className={`h-8 px-2 rounded-lg text-[9px] font-black shadow-sm transition flex items-center gap-1 ${deleteMode ? "bg-rose-600 text-white" : "bg-white border border-rose-300 text-rose-700"}`}>
+            <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={9} height={9} />
+            <span className="hidden xs:inline">{deleteMode ? "إلغاء" : "حذف"}</span>
+          </button>
+        </div>
       </div>
 
       {showReassign && <div className="animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); onSuccess?.(); }} /></div>}
@@ -409,36 +411,24 @@ export function AdminPricingPanel({
         </div>
       )}
 
-      {products.length > 0 && (
-        <div className="mb-3 rounded-2xl bg-slate-50 border border-slate-200 p-3 animate-in fade-in duration-200">
-          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-black text-slate-900">اختر اسم المجهز لتعيين المنتجات المحددة</p>
-              <p className="text-[10px] text-slate-500">
-                {selectedProductIndexes.length > 0
-                  ? `تم اختيار ${selectedProductIndexes.length} منتج${selectedProductIndexes.length === 1 ? "" : "ات"}.`
-                  : "اضغط على مربعات الاختيار الموجودة بجانب المنتجات لتفعيل التعيين."}
-              </p>
+      {products.length > 0 && selectedProductIndexes.length > 0 && (
+        <div className="rounded-xl bg-sky-900 p-2 shadow-lg animate-in slide-in-from-top-1">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-black text-white">تخصيص {selectedProductIndexes.length} منتج لـ:</p>
+              <button type="button" onClick={clearSelection} className="text-[9px] font-bold text-sky-200 hover:text-white">إلغاء</button>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button type="button" onClick={clearSelection} className="rounded-xl bg-slate-100 px-3 py-2 text-[10px] font-black text-slate-700 hover:bg-slate-200">
-                مسح التحديد
-              </button>
-              <button type="button" onClick={toggleSelectAllProducts} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-[10px] font-black text-slate-700 hover:bg-slate-50">
-                {selectedProductIndexes.length === products.length ? "إلغاء تحديد الكل" : "تحديد الكل"}
+            <div className="flex gap-1">
+              <select value={productAssigneeId} onChange={(e) => setProductAssigneeId(e.target.value)} className="flex-1 rounded-lg border-none bg-white p-1.5 text-[10px] font-black outline-none">
+                <option value="">اختر المجهز</option>
+                {preparers.map((prep) => (
+                  <option key={prep.id} value={prep.id}>{prep.name}</option>
+                ))}
+              </select>
+              <button type="button" onClick={assignSelectedProductsToPreparer} disabled={!productAssigneeId} className="rounded-lg bg-emerald-500 px-3 text-[10px] font-black text-white shadow-sm disabled:opacity-40">
+                تطبيق
               </button>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <select value={productAssigneeId} onChange={(e) => setProductAssigneeId(e.target.value)} className="min-w-[14rem] rounded-xl border border-slate-200 bg-white p-2 text-xs font-black outline-none">
-              <option value="">اختر المجهز</option>
-              {preparers.map((prep) => (
-                <option key={prep.id} value={prep.id}>{prep.name}</option>
-              ))}
-            </select>
-            <button type="button" onClick={assignSelectedProductsToPreparer} disabled={!productAssigneeId || selectedProductIndexes.length === 0} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white shadow-sm disabled:opacity-40">
-              ✅ إسناد المنتجات المحددة
-            </button>
           </div>
         </div>
       )}
@@ -447,26 +437,31 @@ export function AdminPricingPanel({
 
 
 
-      <div className="grid gap-2 max-h-[400px] overflow-y-auto pr-1">
+      <div className="grid gap-1.5 max-h-[450px] overflow-y-auto pr-1">
+        {products.length > 0 && (
+          <button type="button" onClick={toggleSelectAllProducts} className="text-[10px] font-bold text-slate-400 text-right pr-2 pb-1 hover:text-amber-600 transition-colors">
+            {selectedProductIndexes.length === products.length ? "إلغاء تحديد الكل" : "تحديد الكل للمهام الجماعية"}
+          </button>
+        )}
         {products.map((p, i) => {
           const isEditing = editingIndex === i;
           const priced = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) > 0;
           const isSelected = selectedProductIndexes.includes(i);
           return (
-            <div key={i} className={isSelected ? "ring-2 ring-sky-400 rounded-2xl" : ""}>
-              <div className="flex gap-3">
-                <label className="flex items-center">
-                  <input type="checkbox" checked={isSelected} onChange={() => toggleProductSelection(i)} className="h-4 w-4 rounded border-slate-300" />
+            <div key={i} className={`rounded-xl transition-all ${isSelected ? "ring-2 ring-sky-500 shadow-md" : ""}`}>
+              <div className="flex gap-2">
+                <label className="flex items-center pr-1">
+                  <input type="checkbox" checked={isSelected} onChange={() => toggleProductSelection(i)} className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
                 </label>
                 <div
-                  className={`flex-1 flex items-center justify-between p-3.5 rounded-xl border-2 transition-all ${deleteMode ? "border-rose-300 bg-rose-50" : priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 bg-white hover:border-amber-400 shadow-sm"}`}
+                  className={`flex-1 flex items-center justify-between p-1.5 rounded-lg border-2 transition-all cursor-pointer ${deleteMode ? "border-rose-300 bg-rose-50" : priced ? "border-emerald-700 bg-emerald-800 text-white" : "border-slate-200 bg-white hover:border-amber-400 shadow-sm"}`}
                   onClick={() => {
                     if (!deleteMode) {
                       setEditingIndex(isEditing ? null : i);
                     }
                   }}
                 >
-                  <div className="flex flex-1 items-center gap-3">
+                  <div className="flex flex-1 items-center gap-2">
                     {p?.productId && productPhotoById[p.productId] ? (
                       <button
                         type="button"
@@ -475,26 +470,21 @@ export function AdminPricingPanel({
                           setPreviewImageUrl(productPhotoById[p.productId]);
                           setPreviewZoom(1);
                         }}
-                        className="h-14 w-14 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shrink-0"
-                        title="عرض الصورة بحجم أكبر"
+                        className="h-8 w-8 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shrink-0"
                       >
-                        <img
-                          src={productPhotoById[p.productId]}
-                          alt={p?.line || "صورة المنتج"}
-                          className="h-full w-full object-cover"
-                        />
+                        <img src={productPhotoById[p.productId]} alt="" className="h-full w-full object-cover" />
                       </button>
                     ) : null}
-                    <div className="flex-1">
-                      <p className="text-xs font-black">{p?.line} {p?.pricedBy && ` (بواسطة: ${p.pricedBy})`}</p>
-                    {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName ? (
-                      <p className="text-[10px] text-slate-500">مخصص لـ {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName}</p>
-                    ) : p?.supplierId ? (
-                      <p className="text-[10px] text-orange-600 font-bold">المورد: {p?.supplierName || "مورد خارجي"}</p>
-                    ) : (
-                      <p className="text-[10px] text-slate-400">بدون تخصيص</p>
-                    )}
-                    {priced && <p className="text-[10px] text-emerald-300 font-mono">شراء: {p?.buyAlf} | بيع: {p?.sellAlf}</p>}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-black truncate leading-tight">{p?.line}</p>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName ? (
+                          <p className={`text-[8px] font-bold ${priced ? "text-emerald-200" : "text-slate-500"}`}>👤 {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName}</p>
+                        ) : p?.supplierId ? (
+                          <p className="text-[8px] text-orange-600 font-bold">🏢 {p?.supplierName || "مورد"}</p>
+                        ) : null}
+                        {priced && <p className="text-[8px] font-bold text-amber-300">💰 {p?.buyAlf}→{p?.sellAlf}</p>}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -508,27 +498,48 @@ export function AdminPricingPanel({
                           setEditingIndex(isEditing ? null : i);
                         }
                       }}
-                      className="min-h-[32px] min-w-[32px] flex items-center justify-center rounded-lg px-2 text-sm transition-all"
+                      className="h-6 w-6 flex items-center justify-center rounded-lg transition-all"
                     >
-                      {deleteMode ? <DynamicIcon icon={icons?.ui_close} fallback="❌" width={14} height={14} /> : priced ? <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> : <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" width={14} height={14} />}
+                      {deleteMode ? <DynamicIcon icon={icons?.ui_close} fallback="❌" width={10} height={10} /> : priced ? <DynamicIcon icon={icons?.ui_success} fallback="✅" width={10} height={10} /> : <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" width={10} height={10} />}
                     </button>
                   </div>
                 </div>
               </div>
 
               {isEditing && !deleteMode && (
-                <div className="mt-2 bg-white p-4 rounded-xl border-2 border-amber-400 grid grid-cols-2 gap-3 shadow-inner animate-in slide-in-from-top-2">
-                  <input type="text" value={p?.line} onChange={(e) => updateProduct(i, "line", e.target.value)} className="col-span-2 border-b-2 border-slate-100 p-1 text-sm font-black outline-none" />
-                  <label className="flex flex-col"><span className="text-[10px] font-bold text-slate-400">شراء</span><input type="text" inputMode="decimal" value={p?.buyAlf ?? ""} onChange={(e) => updateProduct(i, "buyAlf", e.target.value)} className="rounded-lg border border-slate-200 p-2 text-sm font-black font-mono bg-slate-50 outline-none focus:ring-2 focus:ring-amber-200" autoFocus /></label>
-                  <label className="flex flex-col"><span className="text-[10px] font-bold text-emerald-700">بيع</span><input type="text" inputMode="decimal" value={p?.sellAlf ?? ""} onChange={(e) => updateProduct(i, "sellAlf", e.target.value)} className="rounded-lg border-2 border-emerald-300 p-2 text-sm font-black font-mono bg-emerald-50 outline-none focus:ring-2 focus:ring-emerald-400" /></label>
-                  <label className="col-span-2 flex flex-col gap-1"><span className="text-[10px] font-bold text-slate-400">تخصيص المجهز</span><select value={p?.assignedPreparerId ?? ""} onChange={(e) => updateProduct(i, "assignedPreparerId", e.target.value)} className="rounded-lg border border-slate-200 p-2 text-sm outline-none bg-slate-50">
-                    <option value="">بدون تخصيص</option>
-                    {preparers.map((prep) => (
-                      <option key={prep.id} value={prep.id}>{prep.name}</option>
-                    ))}
-                  </select></label>
-                  <label className="col-span-2 flex items-center gap-2 py-1"><input type="checkbox" checked={Boolean(p?.pricedBy === "الإدارة")} onChange={(e) => updateProduct(i, "pricedBy", e.target.checked)} className="h-4 w-4 rounded border-amber-400" /><span className="text-[10px] font-black text-amber-900">تم تجهيز هذا المنتج من قبلي (أنا)</span></label>
-                  <button type="button" onClick={() => setEditingIndex(null)} className="col-span-2 bg-slate-800 text-white rounded-lg py-2 text-xs font-black active:scale-95 transition-transform shadow-md">حفظ السطر</button>
+                <div className="mt-1 bg-white p-2 rounded-lg border-2 border-amber-400 grid grid-cols-2 gap-1.5 shadow-inner animate-in slide-in-from-top-1">
+                  <div className="col-span-2 flex items-center gap-2 border-b border-slate-100 pb-1">
+                    <input type="text" value={p?.line} onChange={(e) => updateProduct(i, "line", e.target.value)} className="flex-1 text-[11px] font-black outline-none bg-transparent" placeholder="اسم المنتج" />
+                    {p?.pricedBy && <span className="text-[8px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">بواسطة: {p.pricedBy}</span>}
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <label className="text-[8px] font-bold text-slate-400 pr-1">سعر الشراء</label>
+                    <input type="text" inputMode="decimal" value={p?.buyAlf ?? ""} onChange={(e) => updateProduct(i, "buyAlf", e.target.value)} className="w-full rounded-lg border border-slate-200 p-1.5 text-xs font-black font-mono bg-slate-50 outline-none focus:ring-2 focus:ring-amber-200" autoFocus placeholder="0" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <label className="text-[8px] font-bold text-emerald-700 pr-1">سعر البيع</label>
+                    <input type="text" inputMode="decimal" value={p?.sellAlf ?? ""} onChange={(e) => updateProduct(i, "sellAlf", e.target.value)} className="w-full rounded-lg border-2 border-emerald-300 p-1.5 text-xs font-black font-mono bg-emerald-50 outline-none focus:ring-2 focus:ring-emerald-400" placeholder="0" />
+                  </div>
+
+                  <div className="col-span-2 space-y-0.5">
+                    <label className="text-[8px] font-bold text-slate-400 pr-1">تخصيص المجهز لهذا السطر</label>
+                    <select value={p?.assignedPreparerId ?? ""} onChange={(e) => updateProduct(i, "assignedPreparerId", e.target.value)} className="w-full rounded-lg border border-slate-200 p-1.5 text-[10px] font-bold outline-none bg-slate-50">
+                      <option value="">بدون تخصيص</option>
+                      {preparers.map((prep) => (
+                        <option key={prep.id} value={prep.id}>{prep.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-span-2 flex items-center gap-2 py-0.5">
+                    <input type="checkbox" id={`priced-by-me-${i}`} checked={Boolean(p?.pricedBy === "الإدارة")} onChange={(e) => updateProduct(i, "pricedBy", e.target.checked)} className="h-3 w-3 rounded border-amber-400 text-amber-600" />
+                    <label htmlFor={`priced-by-me-${i}`} className="text-[9px] font-black text-amber-900 cursor-pointer select-none">تم تجهيز هذا المنتج من قبلي شخصياً</label>
+                  </div>
+
+                  <button type="button" onClick={() => setEditingIndex(null)} className="col-span-2 bg-slate-800 text-white rounded-lg py-1.5 text-[11px] font-black active:scale-95 transition-transform shadow-md">
+                    حفظ وتصغير
+                  </button>
                 </div>
               )}
             </div>
@@ -536,11 +547,24 @@ export function AdminPricingPanel({
         })}
       </div>
 
-      <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded-xl border border-amber-200 text-center shadow-inner">
-        <div className="col-span-3 pb-2"><select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="w-full rounded-lg border border-amber-200 p-2 text-xs font-black outline-none bg-amber-50/50">{[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n} محلات</option>)}</select></div>
-        <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-100"><p className="text-[8px] font-bold text-emerald-600">المنتجات</p><p className="text-xs font-black font-mono">{totals.subtotal} </p></div>
-        <div className="p-2 bg-sky-50 rounded-lg border border-sky-100"><p className="text-[8px] font-bold text-sky-600">توصيل</p><p className="text-xs font-black font-mono">{deliveryAlfVal > 0 ? deliveryAlfVal : "—"} </p></div>
-        <div className="p-2 bg-violet-600 text-white rounded-lg shadow-md border border-violet-700"><p className="text-[8px] font-bold">المجموع</p><p className="text-sm font-black font-mono">{totals.total} </p></div>
+      <div className="grid grid-cols-3 gap-1 bg-white p-1.5 rounded-xl border border-amber-200 text-center shadow-inner">
+        <div className="col-span-3 pb-1 border-b border-amber-50 mb-0.5">
+          <select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="w-full rounded-lg border border-amber-100 p-1 text-[11px] font-black outline-none bg-amber-50/30">
+            {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n} محلات / أماكن تجهيز</option>)}
+          </select>
+        </div>
+        <div className="p-1 bg-emerald-50 rounded-lg border border-emerald-100">
+          <p className="text-[7px] font-bold text-emerald-600">المنتجات</p>
+          <p className="text-[10px] font-black font-mono">{totals.subtotal}</p>
+        </div>
+        <div className="p-1 bg-sky-50 rounded-lg border border-sky-100">
+          <p className="text-[7px] font-bold text-sky-600">توصيل</p>
+          <p className="text-[10px] font-black font-mono">{deliveryAlfVal > 0 ? deliveryAlfVal : "—"}</p>
+        </div>
+        <div className="p-1 bg-violet-600 text-white rounded-lg shadow-md border border-violet-700">
+          <p className="text-[7px] font-bold">المجموع</p>
+          <p className="text-[11px] font-black font-mono">{totals.total}</p>
+        </div>
       </div>
 
       <form action={formAction} className="space-y-3">
@@ -549,31 +573,34 @@ export function AdminPricingPanel({
         {isDraft && <input type="hidden" name="autoCourierId" value={String(initialData?.autoCourierId ?? "")} />}
         {isDraft && <input type="hidden" name="shopId" value={selectedShopId} />}
         {isDraft && <input type="hidden" name="isDraft" value="true" />}
-        <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-amber-200 shadow-sm"><input type="checkbox" id="skip-w" name="skipWallet" className="h-4 w-4 rounded border-emerald-400" /><label htmlFor="skip-w" className="text-[10px] font-black text-emerald-950 cursor-pointer">تجهيز إداري كامل (تخطي حساب المجهز)</label></div>
-        {state.error && <p className="text-xs text-rose-600 font-bold p-2 bg-rose-50 border border-rose-200 rounded-lg animate-shake">⚠️ {state.error}</p>}
+        <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-emerald-100 shadow-sm">
+          <input type="checkbox" id="skip-w" name="skipWallet" className="h-3.5 w-3.5 rounded border-emerald-400 text-emerald-600" />
+          <label htmlFor="skip-w" className="text-[10px] font-black text-emerald-950 cursor-pointer">تجهيز إداري كامل (تخطي محفظة المجهز)</label>
+        </div>
+        {state.error && <p className="text-[10px] text-rose-600 font-bold p-1.5 bg-rose-50 border border-rose-200 rounded-lg animate-shake">⚠️ {state.error}</p>}
 
         {isDraft ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button type="submit" name="submitType" value="admin_approve" disabled={pending || !selectedShopId} className="w-full rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-900 py-4 text-[11px] font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-emerald-950 flex items-center justify-center gap-2">
+          <div className="grid grid-cols-2 gap-2">
+            <button type="submit" name="submitType" value="admin_approve" disabled={pending || !selectedShopId} className="rounded-xl bg-emerald-700 py-2.5 text-[10px] font-black text-white shadow-lg active:scale-95 transition-all border-b-4 border-emerald-900 flex items-center justify-center gap-1.5">
               {pending ? "جارٍ الحفظ..." : (
                 <>
-                  <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد المسودة لطلب إداري
+                  <DynamicIcon icon={icons?.ui_success} fallback="✅" width={12} height={12} /> اعتماد مسودة
                 </>
               )}
             </button>
-            <button type="submit" name="submitType" value="final_send" disabled={pending || !canSubmitFinal} className="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-violet-800 py-4 text-[11px] font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-violet-950 flex items-center justify-center gap-2">
+            <button type="submit" name="submitType" value="final_send" disabled={pending || !canSubmitFinal} className="rounded-xl bg-violet-600 py-2.5 text-[10px] font-black text-white shadow-lg active:scale-95 transition-all border-b-4 border-violet-900 flex items-center justify-center gap-1.5">
               {pending ? "جارٍ الإرسال..." : (
                 <>
-                  <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={14} height={14} /> إرسال الطلب النهائي للنظام
+                  <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={12} height={12} /> إرسال نهائي
                 </>
               )}
             </button>
           </div>
         ) : (
-          <button type="submit" disabled={pending} className="w-full rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-900 py-4 text-sm font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-emerald-950 flex items-center justify-center gap-2">
-            {pending ? "جارٍ معالجة البيانات..." : (
+          <button type="submit" disabled={pending} className="w-full rounded-xl bg-emerald-800 py-3 text-xs font-black text-white shadow-lg active:scale-95 transition-all border-b-4 border-emerald-950 flex items-center justify-center gap-2">
+            {pending ? "جارٍ الحفظ..." : (
               <>
-                <DynamicIcon icon={icons?.ui_success} fallback="✅" width={16} height={16} /> اعتماد التسعير والرفع للمندوب <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={16} height={16} />
+                <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد التسعير ورفعه للمندوب
               </>
             )}
           </button>
@@ -671,76 +698,76 @@ export function PendingAssignPanel({
   }, [state.ok, onSuccess]);
 
   if (couriers.length === 0) return <p className="p-3 bg-amber-50 text-amber-900 rounded-lg text-sm font-bold border border-amber-200 text-center flex items-center justify-center gap-2"><DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={16} height={16} /> لا يوجد مندوبون مسجلون.</p>;
-  const inputClass = "w-full rounded-xl border border-slate-200 p-2.5 text-xs font-mono outline-none text-left bg-white focus:ring-2 focus:ring-emerald-300";
-  const labelClass = "text-[11px] font-bold text-slate-500 mb-1 block pr-1";
+  const inputClass = "w-full rounded-lg border border-slate-200 p-2 text-xs font-mono outline-none text-left bg-white focus:ring-2 focus:ring-emerald-300";
+  const labelClass = "text-[10px] font-bold text-slate-500 mb-0.5 block pr-1";
 
   return (
-    <form action={formAction} encType="multipart/form-data" className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 shadow-inner text-right" dir="rtl">
+    <form action={formAction} encType="multipart/form-data" className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-2.5 shadow-inner text-right" dir="rtl">
       <input type="hidden" name="orderId" value={orderId} />
-      <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
-        <p className="text-sm font-black text-emerald-900 flex items-center gap-2">
-          <DynamicIcon icon={icons?.ui_package} fallback="📦" width={16} height={16} /> إسناد فوري للمندوب
+      <div className="flex items-center justify-between border-b border-emerald-100 pb-1.5">
+        <p className="text-xs font-black text-emerald-900 flex items-center gap-2">
+          <DynamicIcon icon={icons?.ui_package} fallback="📦" width={14} height={14} /> إسناد فوري للمندوب
         </p>
-        <span className="text-[10px] font-bold text-slate-500">الزبون: {customerPhone}</span>
+        <span className="text-[9px] font-bold text-slate-500">الزبون: {customerPhone}</span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* العمود الأول: المندوب والخيارات */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <OrderStatusRadioGroup name="courierId" defaultValue="" required legend="اختر المندوب المتوفر" options={couriers.map((c) => ({ value: c.id, label: c.name }))} />
 
-          <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-emerald-200 shadow-sm">
-            <input type="checkbox" id="direct-receipt" name="directReceipt" className="h-4 w-4 rounded border-emerald-400" />
-            <label htmlFor="direct-receipt" className="text-[11px] font-black text-emerald-950 cursor-pointer select-none flex items-center gap-1">
-              استلام مباشر للمندوب (تخطي الموافقة) <DynamicIcon icon={icons?.ui_flash} fallback="⚡" width={12} height={12} />
+          <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-emerald-200 shadow-sm">
+            <input type="checkbox" id="direct-receipt" name="directReceipt" className="h-3.5 w-3.5 rounded border-emerald-400" />
+            <label htmlFor="direct-receipt" className="text-[10px] font-black text-emerald-950 cursor-pointer select-none flex items-center gap-1">
+              استلام مباشر للمندوب (تخطي الموافقة) <DynamicIcon icon={icons?.ui_flash} fallback="⚡" width={10} height={10} />
             </label>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-0.5">
              <label className={labelClass}>رقم ثانٍ / بديل</label>
              <input type="text" name="customerAlternatePhone" defaultValue={customerAlternatePhone} className={inputClass} placeholder="07XXXXXXXX" />
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-0.5">
              <label className={labelClass}>أقرب نقطة دالة</label>
              <input type="text" name="customerLandmark" defaultValue={defaultCustomerLandmark} className={inputClass} style={{ textAlign: 'right' }} placeholder="مثال: قرب صيدلية السلام" />
           </div>
         </div>
 
         {/* العمود الثاني: اللوكيشن والصورة */}
-        <div className="space-y-3">
-          <div className="space-y-1">
+        <div className="space-y-2">
+          <div className="space-y-0.5">
             <label className={labelClass}>رابط اللوكيشن الرسمي (GPS)</label>
-            <textarea name="customerLocationUrl" rows={3} defaultValue={defaultCustomerLocationUrl} className={inputClass} dir="ltr" placeholder="https://maps.app.goo.gl/..." />
+            <textarea name="customerLocationUrl" rows={2} defaultValue={defaultCustomerLocationUrl} className={inputClass} dir="ltr" placeholder="https://maps.app.goo.gl/..." />
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             <label className={labelClass}>صورة باب الزبون</label>
-            <div className="flex flex-col gap-2 rounded-xl border border-dashed border-emerald-300 bg-white p-3">
+            <div className="flex flex-col gap-1.5 rounded-xl border border-dashed border-emerald-300 bg-white p-2">
               {defaultCustomerDoorPhotoUrl ? (
                 <div className="relative group aspect-video w-full overflow-hidden rounded-lg border border-emerald-100">
                   <img src={resolvePublicAssetSrc(defaultCustomerDoorPhotoUrl)!} alt="صورة الباب" className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="text-[10px] text-white font-bold">تغيير الصورة بالأسفل</p>
+                    <p className="text-[9px] text-white font-bold">تغيير الصورة</p>
                   </div>
                 </div>
               ) : (
-                <div className="aspect-video w-full flex items-center justify-center bg-slate-50 rounded-lg text-[10px] text-slate-400 font-bold border border-slate-100">
-                  لا توجد صورة حالياً
+                <div className="aspect-video w-full flex items-center justify-center bg-slate-50 rounded-lg text-[9px] text-slate-400 font-bold border border-slate-100">
+                  لا توجد صورة
                 </div>
               )}
-              <input type="file" name="doorPhoto" accept="image/*" className="text-[10px] file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer" />
+              <input type="file" name="doorPhoto" accept="image/*" className="text-[9px] file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[9px] file:font-black file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer" />
             </div>
           </div>
         </div>
       </div>
 
-      {state.error && <p className="text-xs text-rose-600 font-bold p-2 bg-rose-50 rounded-lg border border-rose-200">⚠️ {state.error}</p>}
-      {state.ok && <p className="text-xs text-emerald-700 font-bold p-2 bg-emerald-50 rounded-lg border border-emerald-200">✅ تم إسناد الطلب للمندوب بنجاح.</p>}
+      {state.error && <p className="text-[10px] text-rose-600 font-bold p-1.5 bg-rose-50 rounded-lg border border-rose-200">⚠️ {state.error}</p>}
+      {state.ok && <p className="text-[10px] text-emerald-700 font-bold p-1.5 bg-emerald-50 rounded-lg border border-emerald-200">✅ تم بنجاح.</p>}
 
-      <div className="pt-2">
-        <button type="submit" disabled={pending} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-800 py-4 text-sm font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-emerald-950">
-          {pending ? "جارٍ معالجة البيانات..." : "✅ موافقة وإرسال للمندوب 🚀"}
+      <div className="pt-1">
+        <button type="submit" disabled={pending} className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-800 py-3 text-xs font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-emerald-950">
+          {pending ? "جارٍ الإرسال..." : "✅ موافقة وإرسال للمندوب 🚀"}
         </button>
       </div>
     </form>
@@ -1029,20 +1056,20 @@ export function PendingOrdersClient({
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                   <button
                     type="button"
                     onClick={() => setDraftPreparerOpenId(draftPreparerOpen ? null : o.id)}
-                    className="flex-1 rounded-2xl bg-white border-2 border-sky-200 py-3.5 text-xs font-black text-sky-800 shadow-sm hover:bg-sky-50 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 rounded-lg bg-white border border-sky-200 py-1.5 text-[10px] font-black text-sky-800 shadow-sm hover:bg-sky-50 transition-all flex items-center justify-center gap-1.5"
                   >
-                    <DynamicIcon icon={icons?.ui_shop} fallback="🛒" width={16} height={16} /> تخصيص المجهزين
+                    <DynamicIcon icon={icons?.ui_shop} fallback="🏢" width={12} height={12} /> تخصيص المجهزين
                   </button>
                   <button
                     type="button"
                     onClick={() => setDraftCourierOpenId(draftCourierOpen ? null : o.id)}
-                    className="flex-1 rounded-2xl bg-white border-2 border-indigo-200 py-3.5 text-xs font-black text-indigo-800 shadow-sm hover:bg-indigo-50 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 rounded-lg bg-white border border-indigo-200 py-1.5 text-[10px] font-black text-indigo-800 shadow-sm hover:bg-indigo-50 transition-all flex items-center justify-center gap-1.5"
                   >
-                    <DynamicIcon icon={icons?.ui_package} fallback="📦" width={16} height={16} /> اختيار مندوب التحويل
+                    <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} /> اختيار المندوب
                   </button>
                 </div>
 
