@@ -107,6 +107,7 @@ export function PreparerOrderDetailSection({
   pricingEditHref,
   productImagesMap,
   productBranchMap,
+  couriers,
 }: {
   order: MandoubOrderDetailPayload;
   closeHref: string;
