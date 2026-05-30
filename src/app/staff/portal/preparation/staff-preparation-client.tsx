@@ -114,6 +114,15 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
 
   return (
     <div className="space-y-4" dir="rtl">
+      {state.error && (
+        <div className="rounded-2xl border-2 border-rose-200 bg-rose-50 p-4 text-sm font-black text-rose-800 animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-2">
+            <DynamicIcon icon={icons?.ui_error} className="h-5 w-5 shrink-0" fallback={<span>⚠️</span>} />
+            {state.error}
+          </div>
+        </div>
+      )}
+
       <section className="kse-glass-dark rounded-2xl border border-violet-200 p-5 shadow-sm">
         <h2 className="text-base font-black text-violet-950 mb-3">1) لصق الرسالة (واتساب أو موقع)</h2>
         <textarea value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={6} className={`${inputClass} font-mono text-xs`} placeholder="الصق هنا..." />
@@ -133,6 +142,7 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
         <form action={formAction} className="kse-glass-dark rounded-2xl border border-sky-200 p-5 shadow-sm space-y-4">
           <input type="hidden" name="se" value={auth.se} /><input type="hidden" name="exp" value={auth.exp} /><input type="hidden" name="s" value={auth.s} />
           <input type="hidden" name="productsCsv" value={products.join("\n")} />
+          <input type="hidden" name="rawListText" value={pasteText} />
           <input type="hidden" name="customerRegionId" value={selected?.id || ""} />
 
           {selectedPreparerIds.map(id => <input key={id} type="hidden" name="preparerIds" value={id} />)}
@@ -140,7 +150,7 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
           <h2 className="text-sm font-black text-sky-950">2) مراجعة وإرسال للمجهز</h2>
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-            <span className="text-xs font-black text-slate-800 mb-2 block">إسناد للمجهزين (تحديد متعدد متاح) *</span>
+            <span className="text-xs font-black text-slate-800 mb-2 block">إسناد للمجهزين (اختياري)</span>
             <div className="grid grid-cols-2 gap-2">
               {preparers.map((p: any) => {
                 const isSelected = selectedPreparerIds.includes(p.id);
@@ -175,20 +185,36 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
                 );
               })}
             </div>
-            {selectedPreparerIds.length === 0 && <p className="text-[10px] text-rose-600 font-bold">يرجى اختيار مجهز واحد على الأقل.</p>}
+            {selectedPreparerIds.length === 0 && <p className="text-[10px] text-amber-600 font-bold">سيتم إرسال الطلب كـ "غير مسند" ليقوم المسؤول بتوزيعه لاحقاً.</p>}
           </div>
 
-          <input name="titleLine" value={titleLine} onChange={e => setTitleLine(e.target.value)} placeholder="اسم الزبون (المستلم)" className={inputClass} required />
-          <input name="customerPhone" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="رقم هاتف الزبون (المستلم)" className={inputClass} required />
-          <div className="relative">
-             <input value={q} onChange={e => {setQ(e.target.value); setSelected(null);}} placeholder="ابحث عن منطقة الزبون (جهة المستلم)..." className={inputClass} required />
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-slate-500 mr-1">اسم الزبون / العنوان القصير *</label>
+            <input name="titleLine" value={titleLine} onChange={e => setTitleLine(e.target.value)} placeholder="مثلاً: محمد - المنصور" className={inputClass} required />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-slate-500 mr-1">رقم هاتف الزبون *</label>
+            <input name="customerPhone" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="07XXXXXXXXX" className={inputClass} required />
+          </div>
+
+          <div className="space-y-1 relative">
+             <label className="text-[11px] font-bold text-slate-500 mr-1">منطقة الزبون *</label>
+             <input value={q} onChange={e => {setQ(e.target.value); setSelected(null);}} placeholder="ابحث عن المنطقة..." className={inputClass} required />
              {hits.length > 0 && !selected && (
                <div className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl shadow-2xl mt-1 max-h-40 overflow-y-auto">
                  {hits.map(h => <button key={h.id} type="button" onClick={() => {setSelected(h); setQ(h.name);}} className="w-full text-right p-3 text-xs font-bold border-b hover:bg-sky-50">{h.name} ({formatDinarAsAlfWithUnit(h.deliveryPrice)})</button>)}
                </div>
              )}
+             {!selected && q.length > 2 && hits.length === 0 && (
+                <p className="mt-1 text-[10px] font-bold text-rose-600">يجب اختيار منطقة من القائمة الظاهرة أثناء البحث.</p>
+             )}
           </div>
-          <input name="orderTime" value={orderTime} onChange={e => setOrderTime(e.target.value)} placeholder="وقت الطلب" className={inputClass} required />
+
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-slate-500 mr-1">وقت الطلب *</label>
+            <input name="orderTime" value={orderTime} onChange={e => setOrderTime(e.target.value)} placeholder="فوري، غداً صباحاً، الخ..." className={inputClass} required />
+          </div>
 
           <button type="submit" disabled={pending || !selected} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-sky-600 py-4 text-white font-black shadow-xl disabled:opacity-50 mt-4 flex items-center justify-center gap-2">
              {pending ? "جاري الإرسال..." : (

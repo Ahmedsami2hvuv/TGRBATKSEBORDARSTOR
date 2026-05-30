@@ -28,9 +28,8 @@ export async function submitStaffPreparationDraft(
     return { error: "الحساب غير مفعّل أو الرابط غير صالح." };
   }
 
-  // التعديل: استقبال عدة مجهزين كـ مصفوفة بدلاً من مجهز واحد
+  // التعديل: استقبال عدة مجهزين كـ مصفوفة (اختياري الآن)
   const preparerIds = formData.getAll("preparerIds").map(String).map(s => s.trim()).filter(Boolean);
-  if (preparerIds.length === 0) return { error: "اختر مجهّزاً واحداً على الأقل." };
 
   const titleLine = String(formData.get("titleLine") ?? "").trim();
   const rawListText = String(formData.get("rawListText") ?? "").trim();
@@ -49,7 +48,7 @@ export async function submitStaffPreparationDraft(
   if (!phoneLocal) {
     return {
       error:
-        "رقم الزبون غير صالح. يمكنك إدخاله بأي صيغة شائعة (مثل 07… أو +964… أو مع مسافات).",
+        "رقم الزبون غير صالح. يجب أن يبدأ بـ 07 أو 7 وتأكد من عدد الأرقام.",
     };
   }
 
@@ -84,17 +83,11 @@ export async function submitStaffPreparationDraft(
   const createdDraftIds: string[] = [];
   const preparerNames: string[] = [];
 
-  // التعديل: الدوران على جميع المجهزين وإرسال المسودة لكل واحد منهم مع ربطهم
-  for (const preparerId of preparerIds) {
-    const preparer = await prisma.companyPreparer.findFirst({
-      where: { id: preparerId, active: true },
-      select: { id: true, name: true },
-    });
-    if (!preparer) continue;
-
+  // إذا لم يتم اختيار مجهزين، يتم إنشاء مسودة واحدة بدون مجهز (للمسؤول)
+  if (preparerIds.length === 0) {
     const draft = await prisma.companyPreparerShoppingDraft.create({
       data: {
-        preparerId: preparer.id,
+        preparerId: null, // طلب غير مسند
         status: PreparerShoppingDraftStatus.draft,
         titleLine,
         rawListText,
@@ -114,24 +107,58 @@ export async function submitStaffPreparationDraft(
       },
       select: { id: true },
     });
-
     createdDraftIds.push(draft.id);
-    preparerNames.push(preparer.name);
+    preparerNames.push("غير مسند (عام)");
+  } else {
+    // التعديل: الدوران على جميع المجهزين وإرسال المسودة لكل واحد منهم مع ربطهم
+    for (const preparerId of preparerIds) {
+      const preparer = await prisma.companyPreparer.findFirst({
+        where: { id: preparerId, active: true },
+        select: { id: true, name: true },
+      });
+      if (!preparer) continue;
 
-    await prisma.companyPreparerPrepNotice.create({
-      data: {
+      const draft = await prisma.companyPreparerShoppingDraft.create({
+        data: {
+          preparerId: preparer.id,
+          status: PreparerShoppingDraftStatus.draft,
+          titleLine,
+          rawListText,
+          customerRegionId,
+          customerPhone: phoneLocal,
+          customerName,
+          customerLandmark,
+          orderTime,
+          placesCount: null,
+          data: {
+            version: 1,
+            products,
+            groupId,
+            fromStaffEmployeeId: staff.id,
+            fromStaffEmployeeName: staff.name,
+          },
+        },
+        select: { id: true },
+      });
+
+      createdDraftIds.push(draft.id);
+      preparerNames.push(preparer.name);
+
+      await prisma.companyPreparerPrepNotice.create({
+        data: {
+          preparerId: preparer.id,
+          title: titleLine,
+          body: `طلب تجهيز جديد: ${customerRegionId} - ${phoneLocal}`,
+        },
+      });
+
+      await pushNotifyPreparerNewNotice({
         preparerId: preparer.id,
         title: titleLine,
-        body: `طلب تجهيز جديد: ${customerRegionId} - ${phoneLocal}`,
-      },
-    });
-
-    await pushNotifyPreparerNewNotice({
-      preparerId: preparer.id,
-      title: titleLine,
-      body: rawListText,
-      draftId: draft.id,
-    }).catch(e => console.error("Web Push failed for staff portal submission:", e));
+        body: rawListText,
+        draftId: draft.id,
+      }).catch(e => console.error("Web Push failed for staff portal submission:", e));
+    }
   }
 
   if (createdDraftIds.length === 0) {
