@@ -25,7 +25,14 @@ type Draft = {
   customerLandmark: string;
   orderTime: string;
   data: unknown;
+  preparerId: string | null;
   preparer: { name: string } | null;
+};
+
+type PreparerRow = {
+  id: string;
+  name: string;
+  phone: string;
 };
 
 function extractProductsCsv(draft: Draft): string {
@@ -47,10 +54,12 @@ export function StaffSubmittedDraftEditClient({
   auth,
   staffName,
   draft,
+  preparers,
 }: {
   auth: { se: string; exp: string; s: string };
   staffName: string;
   draft: Draft;
+  preparers: PreparerRow[];
 }) {
   const [state, formAction, pending] = useActionState(updateStaffPreparationDraft, initial);
   const regionSearchRef = useRef<HTMLInputElement>(null);
@@ -60,6 +69,7 @@ export function StaffSubmittedDraftEditClient({
   const [orderTime, setOrderTime] = useState(draft.orderTime || "فوري");
   const [rawListText, setRawListText] = useState(draft.rawListText || "");
   const [productsCsv, setProductsCsv] = useState(extractProductsCsv(draft));
+  const [selectedPreparerId, setSelectedPreparerId] = useState(draft.preparerId || "");
 
   const [q, setQ] = useState(draft.customerRegion?.name ?? "");
   const [hits, setHits] = useState<RegionHit[]>([]);
@@ -158,6 +168,24 @@ export function StaffSubmittedDraftEditClient({
             required
             disabled={!canEdit}
           />
+        </label>
+
+        <label className="mt-3 flex flex-col gap-1">
+          <span className="text-xs font-medium text-slate-800">المُجهّز (الموظف المكلّف)</span>
+          <select
+            name="preparerId"
+            value={selectedPreparerId}
+            onChange={(e) => setSelectedPreparerId(e.target.value)}
+            className={inputClass}
+            disabled={!canEdit}
+          >
+            <option value="">-- غير مسند (طلب عام للمسؤول) --</option>
+            {preparers.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className="mt-3 flex flex-col gap-1">

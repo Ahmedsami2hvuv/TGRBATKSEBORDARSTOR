@@ -217,6 +217,7 @@ export async function updateStaffPreparationDraft(
   const customerName = String(formData.get("customerName") ?? "").trim();
   const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
   const orderTime = String(formData.get("orderTime") ?? "").trim();
+  const newPreparerId = String(formData.get("preparerId") ?? "").trim() || null;
 
   if (!titleLine || !productsCsv || !customerRegionId || !orderTime) {
     return { error: "بيانات ناقصة — تأكد من عنوان الطلب والمنطقة والمنتجات ووقت الطلب." };
@@ -234,6 +235,13 @@ export async function updateStaffPreparationDraft(
 
   const region = await prisma.region.findUnique({ where: { id: customerRegionId }, select: { id: true } });
   if (!region) return { error: "منطقة الزبون غير صالحة." };
+
+  if (newPreparerId) {
+    const preparer = await prisma.companyPreparer.findUnique({ where: { id: newPreparerId } });
+    if (!preparer || !preparer.active) {
+      return { error: "المجهز المحدد غير موجود أو غير مفعل." };
+    }
+  }
 
   const lines = productsCsv
     .split(/\r?\n/)
@@ -295,6 +303,7 @@ export async function updateStaffPreparationDraft(
       placesCount: null,
       status: PreparerShoppingDraftStatus.draft,
       data: nextData,
+      preparerId: newPreparerId,
     },
   });
 

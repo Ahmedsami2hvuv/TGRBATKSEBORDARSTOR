@@ -8,7 +8,7 @@ import { formatBaghdadDateTime } from "@/lib/baghdad-time";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: { se?: string; exp?: string; s?: string };
+  searchParams: Promise<{ se?: string; exp?: string; s?: string }>;
 };
 
 function translateDraftStatus(status: string): string {
@@ -37,7 +37,7 @@ function getStatusClass(status: string): string {
 
 export default async function StaffSubmittedDraftsPage({ searchParams }: Props) {
   try {
-    const sp = searchParams;
+    const sp = await searchParams;
     const v = verifyStaffEmployeePortalQuery(sp.se, sp.exp, sp.s);
     if (!v.ok) {
       return <div className="p-8 text-center font-bold text-rose-600">الرابط غير صالح.</div>;

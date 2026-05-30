@@ -7,8 +7,8 @@ import { StaffSubmittedDraftEditClient } from "./staff-submitted-draft-edit-clie
 export const dynamic = "force-dynamic";
 
 type Props = {
-  params: { draftId: string };
-  searchParams: { se?: string; exp?: string; s?: string };
+  params: Promise<{ draftId: string }>;
+  searchParams: Promise<{ se?: string; exp?: string; s?: string }>;
 };
 
 function invalidMessage(reason: StaffEmployeePortalVerifyReason): string {
@@ -24,8 +24,8 @@ function invalidMessage(reason: StaffEmployeePortalVerifyReason): string {
 
 export default async function StaffSubmittedDraftEditPage({ params, searchParams }: Props) {
   try {
-    const { draftId } = params;
-    const sp = searchParams;
+    const { draftId } = await params;
+    const sp = await searchParams;
     const v = verifyStaffEmployeePortalQuery(sp.se, sp.exp, sp.s);
     if (!v.ok) {
       return (
@@ -40,10 +40,20 @@ export default async function StaffSubmittedDraftEditPage({ params, searchParams
       );
     }
 
-    const staff = await prisma.staffEmployee.findUnique({
-      where: { id: v.staffEmployeeId },
-      select: { id: true, name: true, active: true, portalToken: true },
-    });
+    const [staff, preparers] = await Promise.all([
+      prisma.staffEmployee.findUnique({
+        where: { id: v.staffEmployeeId },
+        select: { id: true, name: true, active: true, portalToken: true },
+      }),
+      prisma.companyPreparer.findMany({
+        where: {
+          active: true,
+          notes: { not: { contains: "[SUPPLIER]" } },
+        },
+        select: { id: true, name: true, phone: true },
+        orderBy: { createdAt: "asc" },
+      })
+    ]);
     if (!staff || !staff.active || staff.portalToken !== v.token) {
       return (
         <div className="kse-app-bg flex min-h-screen flex-col px-4 py-16 text-slate-800">
@@ -74,6 +84,7 @@ export default async function StaffSubmittedDraftEditPage({ params, searchParams
           orderTime: true,
           data: true,
           createdAt: true,
+          preparerId: true,
           preparer: { select: { name: true } },
         },
       });
@@ -142,6 +153,7 @@ export default async function StaffSubmittedDraftEditPage({ params, searchParams
             auth={{ se: sp.se ?? "", exp: sp.exp ?? "", s: sp.s ?? "" }}
             staffName={staff.name}
             draft={draftForClient}
+            preparers={preparers}
           />
         </div>
       </div>
