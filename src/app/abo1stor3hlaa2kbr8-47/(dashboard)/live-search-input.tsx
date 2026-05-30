@@ -39,7 +39,7 @@ export function AdminLiveSearchInput({
   };
 
   return (
-    <form onSubmit={onSubmit} className="flex w-full flex-wrap gap-2">
+    <form onSubmit={onSubmit} className="flex w-full flex-wrap gap-2 items-center">
       <label className="sr-only" htmlFor={id}>
         {ariaLabel}
       </label>
@@ -51,7 +51,7 @@ export function AdminLiveSearchInput({
         placeholder={placeholder}
         className={className}
       />
-      <button type="submit" className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-sky-700">
+      <button type="submit" className="rounded-2xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-700 shadow-sm active:scale-95">
         بحث
       </button>
     </form>

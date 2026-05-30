@@ -248,27 +248,40 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     const safeIcons = serializePrisma(icons);
 
     return (
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className={ad.h1}>إدارة الطلبات والتجهيز</h1>
-          <div className="flex gap-2">
-             <Link href={`${SECRET_ADMIN_PATH}/orders/tracking`} className={ad.btnDark}>تتبع الطلبات</Link>
-             <Link href={`${SECRET_ADMIN_PATH}/preparation-orders`} className={ad.btnDark}>سجل التجهيز</Link>
-             <Link href={`${SECRET_ADMIN_PATH}/orders/new`} className={ad.btnPrimary}>+ طلب إداري جديد</Link>
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
+          <div className="space-y-1">
+            <h1 className={ad.h1}>إدارة الطلبات والتجهيز</h1>
+            <p className="text-slate-500 text-sm font-medium">متابعة الطلبات الجديدة، المسودات، والطلبات المكتملة</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+             <Link href={`${SECRET_ADMIN_PATH}/orders/tracking`} className={ad.btnSecondary}>
+               تتبع الطلبات
+             </Link>
+             <Link href={`${SECRET_ADMIN_PATH}/preparation-orders`} className={ad.btnSecondary}>
+               سجل التجهيز
+             </Link>
+             <Link href={`${SECRET_ADMIN_PATH}/orders/new`} className={ad.btnPrimary}>
+               <span className="text-lg">+</span> طلب إداري جديد
+             </Link>
           </div>
         </div>
 
-        <div className="flex border-b border-slate-200 overflow-x-auto no-scrollbar">
-          <Link href="?tab=new" className={`px-6 py-3 text-sm font-bold whitespace-nowrap transition-colors border-b-2 ${activeTab === 'new' ? 'border-sky-600 text-sky-700 bg-sky-50/50' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+        <div className="bg-slate-100/50 p-1.5 rounded-[2rem] inline-flex flex-wrap gap-1 border border-slate-200/60 shadow-inner">
+          <Link href="?tab=new" className={`px-8 py-3 text-xs font-black rounded-[1.5rem] transition-all duration-300 flex items-center gap-2 ${activeTab === 'new' ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'}`}>
+            <span className={`h-2 w-2 rounded-full ${activeTab === 'new' ? 'bg-indigo-500 animate-pulse' : 'bg-slate-300'}`}></span>
             الطلبات الجديدة ({newRows.length})
           </Link>
-          <Link href="?tab=preparing" className={`px-6 py-3 text-sm font-bold whitespace-nowrap transition-colors border-b-2 ${activeTab === 'preparing' ? 'border-amber-500 text-amber-700 bg-amber-50/50' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+          <Link href="?tab=preparing" className={`px-8 py-3 text-xs font-black rounded-[1.5rem] transition-all duration-300 flex items-center gap-2 ${activeTab === 'preparing' ? 'bg-white text-amber-600 shadow-md ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'}`}>
+            <span className={`h-2 w-2 rounded-full ${activeTab === 'preparing' ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'}`}></span>
             قيد التجهيز ({safeGroupedDraftRows.length})
           </Link>
-          <Link href="?tab=completed" className={`px-6 py-3 text-sm font-bold whitespace-nowrap transition-colors border-b-2 ${activeTab === 'completed' ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+          <Link href="?tab=completed" className={`px-8 py-3 text-xs font-black rounded-[1.5rem] transition-all duration-300 flex items-center gap-2 ${activeTab === 'completed' ? 'bg-white text-emerald-600 shadow-md ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'}`}>
+            <span className={`h-2 w-2 rounded-full ${activeTab === 'completed' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
             مكتمل التجهيز ({preparedRows.length})
           </Link>
         </div>
+
 
         {activeTab === "new" && (
           <div className="space-y-4">

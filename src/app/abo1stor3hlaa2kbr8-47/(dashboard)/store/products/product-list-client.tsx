@@ -342,57 +342,58 @@ export function ProductListClient({
   return (
     <div className="space-y-6 pb-20" dir="rtl">
       {/* Search & Action Bar */}
-      <div className="flex flex-col xl:flex-row gap-4 justify-between items-center bg-white p-4 rounded-3xl border border-slate-100 shadow-sm transition-all">
-        <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto">
+      <div className="flex flex-col xl:flex-row gap-4 justify-between items-center bg-white p-4 rounded-3xl border border-slate-200 shadow-sm transition-all">
+        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
           <div className="relative flex-1 min-w-[200px]">
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
               <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-4 h-4" />
             </span>
             <input
               type="text"
-              placeholder="ابحث عن منتج..."
+              placeholder="ابحث عن منتج بالاسم أو الفرع..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pr-12 pl-4 py-3 rounded-2xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-sm transition-all"
+              className="w-full pr-11 pl-4 py-3 rounded-2xl bg-slate-50 border-none outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white font-bold text-sm transition-all placeholder:text-slate-400"
             />
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2 w-full xl:w-auto">
-          <div className="flex bg-slate-100 p-1 rounded-2xl items-center border border-slate-200">
+          <div className="flex bg-slate-50 p-1 rounded-2xl items-center border border-slate-200">
              <input
                 placeholder="رابط الموقع القديم..."
-                className="bg-transparent border-none outline-none px-4 py-2 text-xs font-bold w-40"
+                className="bg-transparent border-none outline-none px-4 py-2 text-xs font-bold w-40 placeholder:text-slate-400"
                 value={importUrl}
                 onChange={(e) => setImportUrl(e.target.value)}
              />
-             <label className="mx-2 inline-flex items-center gap-1.5 text-[10px] font-black text-slate-700 whitespace-nowrap">
+             <label className="mx-2 inline-flex items-center gap-1.5 text-[10px] font-black text-slate-600 whitespace-nowrap cursor-pointer">
                <input
                  type="checkbox"
                  checked={smartRemoveBg}
                  onChange={(e) => setSmartRemoveBg(e.target.checked)}
-                 className="h-3.5 w-3.5 rounded border-slate-300"
+                 className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                />
                قص الخلفية
              </label>
              <button
                 onClick={handleImportUrl}
                 disabled={importLoading}
-                className="bg-violet-600 text-white px-4 py-2 rounded-xl text-[10px] font-black hover:bg-violet-700 transition disabled:opacity-50 min-w-[80px] flex items-center justify-center gap-1.5"
+                className="bg-indigo-600 text-white px-5 py-2 rounded-xl text-[10px] font-black hover:bg-indigo-700 transition-all disabled:opacity-50 min-w-[100px] flex items-center justify-center gap-1.5 shadow-md shadow-indigo-100"
              >
                 {importLoading ? (
-                  <span className="flex items-center gap-1">
-                    ⏳ {totalToImport > 0 ? `${importProgress}/${totalToImport}` : "..."}
+                  <span className="flex items-center gap-2">
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                    {totalToImport > 0 ? `${importProgress}/${totalToImport}` : "..."}
                   </span>
                 ) : (
                   <>
-                    <DynamicIcon iconKey="ui_flash" config={icons} fallback="⚡" className="w-3 h-3" />
+                    <DynamicIcon iconKey="ui_flash" config={icons} fallback="⚡" className="w-3.5 h-3.5" />
                     سحب ذكي
                   </>
                 )}
              </button>
           </div>
-          <label className="flex-1 md:flex-none px-6 py-3 bg-violet-600 text-white font-black rounded-2xl hover:bg-violet-700 transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2 text-xs">
+          <label className="flex-1 md:flex-none px-6 py-3 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 cursor-pointer flex items-center justify-center gap-2 text-xs">
             <DynamicIcon iconKey="ui_image" config={icons} fallback="🖼️" className="w-4 h-4" />
             إضافة متعددة
             <input type="file" multiple accept="image/*" className="hidden" onChange={handleBulkPhotoSelect} />
@@ -402,7 +403,7 @@ export function ProductListClient({
               setEditing(null);
               setShowForm(!showForm);
             }}
-            className="flex-1 md:flex-none px-8 py-3 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95 text-xs flex items-center justify-center gap-2"
+            className="flex-1 md:flex-none px-8 py-3 bg-slate-900 text-white font-black rounded-2xl hover:bg-indigo-600 transition-all shadow-lg active:scale-95 text-xs flex items-center justify-center gap-2"
           >
             {showForm ? "✕ إغلاق" : (
               <>
@@ -414,122 +415,126 @@ export function ProductListClient({
         </div>
       </div>
 
+
       {showBulkModal && (
-        <div className="fixed inset-0 z-[200] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-[3rem] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95">
-                <div className="p-8 border-b flex items-center justify-between bg-slate-50">
+        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-6xl max-h-[90vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95">
+                <div className="p-6 border-b flex items-center justify-between bg-slate-50">
                     <div>
-                        <h2 className="text-2xl font-black text-slate-900">إضافة مجموعة منتجات ({bulkFiles.length})</h2>
-                        <p className="text-sm text-slate-500 font-bold">قم بتعبئة البيانات لكل صورة وسيتم حفظها جميعاً فوراً</p>
+                        <h2 className="text-xl font-black text-slate-900">استيراد مجموعة منتجات ({bulkFiles.length})</h2>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">قم بمراجعة وتعديل بيانات المنتجات قبل الحفظ النهائي</p>
                     </div>
-                    <button onClick={() => setShowBulkModal(false)} className="w-12 h-12 flex items-center justify-center bg-white rounded-2xl shadow-sm text-xl">✕</button>
+                    <button onClick={() => setShowBulkModal(false)} className="w-10 h-10 flex items-center justify-center bg-white rounded-2xl shadow-sm text-lg hover:text-rose-600 transition-colors">✕</button>
                 </div>
 
-                <div className="p-8 space-y-4">
-                   <div className="bg-violet-50 p-6 rounded-2xl border border-violet-100 flex flex-col md:flex-row items-center gap-6 mb-6">
+                <div className="p-6 space-y-4">
+                   <div className="bg-indigo-500/10 p-5 rounded-2xl border border-indigo-100 flex flex-col md:flex-row items-center gap-6 mb-2">
                       <div className="flex items-center gap-4">
-                        <label className="font-black text-violet-900 text-sm">اختر الفرع لجميع هذه المنتجات:</label>
+                        <label className="font-black text-indigo-900 text-xs">الفرع الموحد:</label>
                         <select
                           value={bulkBranchId}
                           onChange={(e) => setBulkBranchId(e.target.value)}
-                          className="px-4 py-2 rounded-xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                          className="px-4 py-2.5 rounded-xl border-none font-bold text-xs outline-none focus:ring-4 focus:ring-indigo-500/10 shadow-sm"
                         >
                           <option value="">اختر الفرع...</option>
-                          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                          {branches.map(b => <option key={b.id} value={b.id}>{b.category?.name} - {b.name}</option>)}
                         </select>
                       </div>
 
-                      <div className="h-8 w-px bg-violet-200 hidden md:block" />
+                      <div className="h-6 w-px bg-indigo-200 hidden md:block" />
+                      <p className="text-[10px] font-bold text-indigo-600/70 max-w-md">ملاحظة: سيتم رفع الصور ومعالجتها تلقائياً عند الضغط على زر الحفظ.</p>
                    </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-8 pt-0">
-                    <div className="grid grid-cols-1 gap-4">
-                        {bulkFiles.map((item, idx) => (
-                            <div key={idx} className="flex flex-col md:flex-row gap-6 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 items-center">
-                                <div className="w-32 h-32 rounded-2xl overflow-hidden shadow-md shrink-0 border-4 border-white">
-                                    <img src={item.preview} className="w-full h-full object-cover" />
-                                </div>
-                                <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 mr-2">اسم المنتج</label>
-                                        <input
-                                            value={item.name}
-                                            onChange={(e) => {
-                                                const newBulk = [...bulkFiles];
-                                                newBulk[idx].name = e.target.value;
-                                                setBulkFiles(newBulk);
-                                            }}
-                                            className="w-full px-5 py-3 rounded-xl bg-white border-none font-black text-sm"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 mr-2">الوصف</label>
-                                        <input
-                                            value={item.description || ""}
-                                            onChange={(e) => {
-                                                const newBulk = [...bulkFiles];
-                                                newBulk[idx].description = e.target.value;
-                                                setBulkFiles(newBulk);
-                                            }}
-                                            placeholder="لا يوجد وصف"
-                                            className="w-full px-5 py-3 rounded-xl bg-white border-none font-black text-xs text-slate-500 italic"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-emerald-600 mr-2">سعر الشراء </label>
-                                        <input
-                                            type="number"
-                                            value={item.purchasePrice}
-                                            onChange={(e) => {
-                                                const newBulk = [...bulkFiles];
-                                                newBulk[idx].purchasePrice = e.target.value;
-                                                // تطبيق التسعير التلقائي
-                                                const p = parseFloat(e.target.value);
-                                                if (!isNaN(p)) {
-                                                    newBulk[idx].salePrice = calculateAutoSalePrice(p).toString();
-                                                }
-                                                setBulkFiles(newBulk);
-                                            }}
-                                            className="w-full px-5 py-3 rounded-xl bg-white border-none font-black text-sm text-emerald-600"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-violet-600 mr-2">سعر البيع</label>
-                                        <input
-                                            type="number"
-                                            value={item.salePrice}
-                                            onChange={(e) => {
-                                                const newBulk = [...bulkFiles];
-                                                newBulk[idx].salePrice = e.target.value;
-                                                setBulkFiles(newBulk);
-                                            }}
-                                            className="w-full px-5 py-3 rounded-xl bg-white border-none font-black text-sm text-violet-600"
-                                        />
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setBulkFiles(bulkFiles.filter((_, i) => i !== idx))}
-                                    className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition flex items-center justify-center"
-                                >
-                                    <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-4 h-4" />
-                                </button>
+                <div className="flex-1 overflow-y-auto p-6 pt-0 space-y-3">
+                    {bulkFiles.map((item, idx) => (
+                        <div key={idx} className="flex flex-col md:flex-row gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-200 items-center transition-all hover:bg-white hover:shadow-lg group">
+                            <div className="w-20 h-20 rounded-xl overflow-hidden shadow-md shrink-0 border-2 border-white transition-transform group-hover:scale-105">
+                                <img src={item.preview} className="w-full h-full object-cover" />
                             </div>
-                        ))}
-                    </div>
+                            <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3 w-full">
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mr-1">الاسم</span>
+                                    <input
+                                        value={item.name}
+                                        onChange={(e) => {
+                                            const newBulk = [...bulkFiles];
+                                            newBulk[idx].name = e.target.value;
+                                            setBulkFiles(newBulk);
+                                        }}
+                                        className="w-full px-4 py-2 rounded-xl bg-white border border-slate-200 font-black text-xs focus:ring-4 focus:ring-indigo-500/10 outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mr-1">الوصف</span>
+                                    <input
+                                        value={item.description || ""}
+                                        onChange={(e) => {
+                                            const newBulk = [...bulkFiles];
+                                            newBulk[idx].description = e.target.value;
+                                            setBulkFiles(newBulk);
+                                        }}
+                                        placeholder="بدون وصف..."
+                                        className="w-full px-4 py-2 rounded-xl bg-white border border-slate-200 font-bold text-[10px] text-slate-500 italic focus:ring-4 focus:ring-indigo-500/10 outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mr-1">الشراء</span>
+                                    <input
+                                        type="number"
+                                        value={item.purchasePrice}
+                                        onChange={(e) => {
+                                            const newBulk = [...bulkFiles];
+                                            newBulk[idx].purchasePrice = e.target.value;
+                                            const p = parseFloat(e.target.value);
+                                            if (!isNaN(p)) {
+                                                newBulk[idx].salePrice = calculateAutoSalePrice(p).toString();
+                                            }
+                                            setBulkFiles(newBulk);
+                                        }}
+                                        className="w-full px-4 py-2 rounded-xl bg-white border border-slate-200 font-black text-xs text-indigo-600 focus:ring-4 focus:ring-indigo-500/10 outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mr-1">البيع</span>
+                                    <input
+                                        type="number"
+                                        value={item.salePrice}
+                                        onChange={(e) => {
+                                            const newBulk = [...bulkFiles];
+                                            newBulk[idx].salePrice = e.target.value;
+                                            setBulkFiles(newBulk);
+                                        }}
+                                        className="w-full px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-100 font-black text-xs text-indigo-700 focus:ring-4 focus:ring-indigo-500/10 outline-none"
+                                    />
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setBulkFiles(bulkFiles.filter((_, i) => i !== idx))}
+                                className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-all flex items-center justify-center shrink-0 active:scale-90"
+                            >
+                                <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-4 h-4" />
+                            </button>
+                        </div>
+                    ))}
                 </div>
 
-                <div className="p-8 bg-slate-50 border-t flex gap-4">
+                <div className="p-6 bg-slate-50 border-t flex gap-3">
                     <button
                         onClick={handleBulkSave}
-                        disabled={loading || bulkFiles.length === 0}
-                        className="flex-1 py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 shadow-xl shadow-emerald-100 disabled:opacity-50 transition-all active:scale-95"
+                        disabled={loading || bulkFiles.length === 0 || !bulkBranchId}
+                        className="flex-[2] py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 disabled:opacity-30 disabled:pointer-events-none transition-all active:scale-[0.98] text-sm"
                     >
-                        {loading ? "جاري حفظ كل المنتجات..." : `🚀 حفظ كل الـ (${bulkFiles.length}) منتجات الآن`}
+                        {loading ? (
+                            <div className="flex items-center justify-center gap-3">
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                                <span>جاري الحفظ...</span>
+                            </div>
+                        ) : `🚀 حفظ كل الـ (${bulkFiles.length}) منتجات`}
                     </button>
                     <button
                         onClick={() => setShowBulkModal(false)}
-                        className="px-8 py-4 bg-white text-slate-500 font-bold rounded-2xl border border-slate-200 hover:bg-slate-100 transition-all"
+                        className="flex-1 py-4 bg-white text-slate-600 font-black rounded-2xl border border-slate-200 hover:bg-slate-100 transition-all active:scale-[0.98] text-sm"
                     >
                         إلغاء
                     </button>
@@ -538,11 +543,15 @@ export function ProductListClient({
         </div>
       )}
 
+
       {(showForm || editing) && (
-        <div className="bg-white p-8 rounded-[2.5rem] border-2 border-emerald-100 shadow-2xl animate-in fade-in zoom-in duration-300" id="product-form">
-          <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-50">
-            <h2 className="text-2xl font-black text-slate-900">{editing ? "تعديل بيانات المنتج" : "إضافة منتج جديد للمتجر"}</h2>
-            <button onClick={() => { setEditing(null); setShowForm(false); }} className="text-slate-400 hover:text-rose-500 transition">✕</button>
+        <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-2xl animate-in fade-in zoom-in duration-300" id="product-form">
+          <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
+            <div>
+                <h2 className="text-xl font-black text-slate-900">{editing ? "تعديل المنتج" : "إضافة منتج جديد"}</h2>
+                <p className="text-[10px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider">تأكد من دقة البيانات لضمان تجربة مستخدم أفضل</p>
+            </div>
+            <button onClick={() => { setEditing(null); setShowForm(false); }} className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-2xl text-slate-400 hover:text-rose-500 transition-all active:scale-90">✕</button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -551,12 +560,12 @@ export function ProductListClient({
             <input type="hidden" name="active" value={editing ? String(editing.active) : "true"} />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">الفرع التابع له</label>
+                <div className="space-y-1.5">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">الفرع *</span>
                     <select
                         name="branchId"
                         defaultValue={editing?.branchId || defaultBranchId || ""}
-                        className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white outline-none font-bold transition-all text-sm"
+                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-100 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold transition-all text-xs shadow-sm"
                         required
                     >
                         <option value="">اختر الفرع...</option>
@@ -568,114 +577,121 @@ export function ProductListClient({
                     </select>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">اسم المنتج</label>
+                <div className="space-y-1.5">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">الاسم *</span>
                     <input
                         name="name"
                         defaultValue={editing?.name || ""}
-                        className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white outline-none font-bold transition-all text-sm"
-                        placeholder="اسم المنتج بوضوح..."
+                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-100 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold transition-all text-xs shadow-sm"
+                        placeholder="مثلاً: بيبسي 330 مل"
                         required
                     />
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">تسلسل العرض</label>
+                <div className="space-y-1.5">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">الترتيب</span>
                     <input
                         name="sequence"
                         type="number"
                         defaultValue={editing?.sequence || 0}
-                        className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white outline-none font-bold transition-all text-sm"
+                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-100 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold transition-all text-xs shadow-sm"
                     />
                 </div>
 
-                <div className="space-y-2 md:col-span-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">وصف المنتج (اختياري)</label>
+                <div className="space-y-1.5 md:col-span-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">وصف المنتج</span>
                     <textarea
                         name="description"
                         defaultValue={editing?.description || ""}
                         rows={2}
-                        className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white outline-none font-bold transition-all text-sm"
-                        placeholder="أضف تفاصيل المنتج هنا..."
+                        className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-100 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold transition-all text-xs shadow-sm"
+                        placeholder="أضف وصفاً مختصراً للمنتج..."
                     />
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2 flex items-center gap-2">
-                      صور المنتج
-                      <label className="inline-flex items-center gap-1.5 text-[10px] font-black text-violet-600 bg-violet-50 px-2 py-1 rounded-md cursor-pointer border border-violet-100">
-                         <input
-                           type="checkbox"
-                           checked={manualRemoveBg}
-                           onChange={(e) => setManualRemoveBg(e.target.checked)}
-                           className="h-3 w-3 rounded"
-                         />
-                         تفعيل القص الذكي
-                      </label>
-                    </label>
+                <div className="space-y-1.5">
+                    <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">الصور</span>
+                        <label className="inline-flex items-center gap-1 text-[9px] font-black text-indigo-600 bg-indigo-500/10 px-2 py-1 rounded-lg cursor-pointer border border-indigo-100 transition-all hover:bg-indigo-100">
+                           <input
+                             type="checkbox"
+                             checked={manualRemoveBg}
+                             onChange={(e) => setManualRemoveBg(e.target.checked)}
+                             className="h-3 w-3 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
+                           />
+                           قص الخلفية
+                        </label>
+                    </div>
                     <input
                         name="photos"
                         type="file"
                         accept="image/*"
                         multiple
-                        className="w-full px-4 py-2 text-xs font-bold text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                        className="w-full px-3 py-2 text-[10px] font-bold text-slate-400 file:mr-3 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer bg-slate-50 rounded-2xl border border-slate-100 shadow-sm"
                     />
                 </div>
             </div>
 
             {/* Has Variants Toggle */}
-            <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
+            <div className="bg-slate-50/50 p-6 rounded-3xl border border-slate-200">
               <div className="flex items-center gap-4 mb-6">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${hasVariants ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'}`}>
+                <label className="flex items-center gap-3 cursor-pointer group select-none">
+                  <div className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all ${hasVariants ? 'bg-indigo-600 border-indigo-600 shadow-lg shadow-indigo-100' : 'border-slate-300 bg-white group-hover:border-indigo-400'}`}>
                     <input
                         type="checkbox"
                         checked={hasVariants}
                         onChange={(e) => setHasVariants(e.target.checked)}
                         className="hidden"
                     />
-                    {hasVariants && <span className="text-white text-xs">✓</span>}
+                    {hasVariants && (
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" />
+                        </svg>
+                    )}
                   </div>
-                  <span className="font-black text-slate-900 text-sm">هذا المنتج يحتوي على أحجام أو أوزان مختلفة</span>
+                  <div>
+                    <span className="font-black text-slate-900 text-sm block">تعدد الخيارات (أحجام/أوزان)</span>
+                    <p className="text-[10px] font-bold text-slate-500">للمنتجات ذات الأحجام أو الأوزان المختلفة</p>
+                  </div>
                 </label>
               </div>
 
               {!hasVariants ? (
-                <div className="space-y-6">
+                <div className="space-y-6 animate-in slide-in-from-top-2 duration-300">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">سعر الكلفة (شراء)</label>
-                      <div className="relative">
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">سعر الشراء</span>
+                      <div className="relative group">
                           <input
                               name="purchasePrice"
                               type="number"
                               step="0.001"
                               value={purchasePrice}
                               onChange={(e) => handlePurchasePriceChange(Number(e.target.value))}
-                              className="w-full px-5 py-3 rounded-2xl bg-white border-2 border-transparent focus:border-emerald-500 outline-none font-black text-emerald-600 transition-all shadow-sm"
+                              className="w-full px-5 py-3 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none font-black text-slate-800 transition-all shadow-sm text-base"
                           />
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">د.ع</span>
+                          <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within:text-indigo-500 transition-colors">د.ع</span>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">سعر البيع للمستهلك</label>
-                      <div className="relative">
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">سعر البيع النهائي</span>
+                      <div className="relative group">
                           <input
                               name="salePrice"
                               type="number"
                               step="0.001"
                               value={salePrice}
                               onChange={(e) => setSalePrice(Number(e.target.value))}
-                              className="w-full px-5 py-3 rounded-2xl bg-white border-2 border-transparent focus:border-emerald-500 outline-none font-black text-violet-600 transition-all shadow-sm"
+                              className="w-full px-5 py-3 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none font-black text-indigo-600 transition-all shadow-sm text-base"
                           />
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">د.ع</span>
+                          <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 group-focus-within:text-indigo-500 transition-colors">د.ع</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-white p-4 rounded-[2rem] border border-slate-100">
-                    <label className="text-xs font-black text-slate-400 mb-3 block mr-2">تطبيق هامش ربح سريع:</label>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block mr-1">هوامش الربح المقترحة:</label>
+                    <div className="grid grid-cols-4 md:grid-cols-7 gap-1.5">
                       {[0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50].map(m => (
                         <button
                           key={m}
@@ -684,7 +700,7 @@ export function ProductListClient({
                             setProfitMargin(m);
                             setSalePrice(purchasePrice * (1 + m));
                           }}
-                          className={`flex-1 min-w-[70px] py-2 text-xs font-black rounded-xl border transition-all ${profitMargin === m ? 'bg-violet-600 text-white border-violet-600 shadow-lg shadow-violet-100' : 'bg-slate-50 text-slate-500 border-transparent hover:bg-slate-100'}`}
+                          className={`py-2.5 text-[10px] font-black rounded-xl border transition-all active:scale-95 ${profitMargin === m ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200 hover:bg-white'}`}
                         >
                           %{m * 100}
                         </button>
@@ -693,15 +709,15 @@ export function ProductListClient({
                   </div>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  <div className="flex flex-col md:flex-row gap-4 items-end bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <div className="flex-1 space-y-2">
-                      <label className="text-xs font-black text-slate-500 uppercase tracking-widest">نوع المتغير</label>
+                <div className="space-y-6 animate-in slide-in-from-top-2 duration-300">
+                  <div className="flex flex-col md:flex-row gap-4 items-end bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <div className="flex-1 space-y-1.5">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">نوع المتغير</span>
                       <select
                         name="variantType"
                         value={variantType}
                         onChange={(e) => setVariantType(e.target.value)}
-                        className="w-full px-5 py-3 rounded-xl bg-slate-50 border-none outline-none font-bold text-sm"
+                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 outline-none font-bold text-xs focus:ring-4 focus:ring-indigo-500/10 transition-all"
                       >
                         <option value="الوزن">الوزن (1 كغم، 500 غم...)</option>
                         <option value="القياس">القياس (XL, Large, 42...)</option>
@@ -712,54 +728,56 @@ export function ProductListClient({
                     <button
                       type="button"
                       onClick={addVariant}
-                      className="px-8 py-3 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 transition shadow-lg shadow-emerald-100 active:scale-95"
+                      className="px-8 py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95 flex items-center justify-center gap-2 text-xs"
                     >
-                      + إضافة قيمة
+                      <DynamicIcon iconKey="ui_plus" config={icons} fallback="+" className="w-4 h-4" />
+                      إضافة خيار
                     </button>
                   </div>
 
                   <div className="space-y-3">
                     {variants.map((v, idx) => (
-                      <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-2xl border border-slate-50 shadow-sm items-center">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-slate-400">القيمة</label>
+                      <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm items-center transition-all hover:shadow-md group">
+                        <div className="md:col-span-3 space-y-1">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">القيمة</span>
                           <input
                             value={v.name}
                             onChange={(e) => updateVariant(idx, "name", e.target.value)}
-                            placeholder="مثلاً: 1 كغم"
-                            className="w-full px-4 py-2 rounded-xl bg-slate-50 border-none font-black text-sm"
+                            className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border-none font-black text-xs outline-none focus:ring-4 focus:ring-indigo-500/10"
                             required
                           />
                         </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-emerald-600">كلفة الشراء</label>
+                        <div className="md:col-span-3 space-y-1">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">الكلفة</span>
                           <input
                             type="number"
                             step="0.001"
                             value={v.purchasePrice}
                             onChange={(e) => updateVariant(idx, "purchasePrice", e.target.value)}
-                            className="w-full px-4 py-2 rounded-xl bg-emerald-50 border-none font-black text-sm text-emerald-700"
+                            className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border-none font-black text-xs outline-none focus:ring-4 focus:ring-indigo-500/10"
                             required
                           />
                         </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-violet-600">سعر البيع</label>
+                        <div className="md:col-span-3 space-y-1">
+                          <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">البيع</span>
                           <input
                             type="number"
                             step="0.001"
                             value={v.salePrice}
                             onChange={(e) => updateVariant(idx, "salePrice", e.target.value)}
-                            className="w-full px-4 py-2 rounded-xl bg-violet-50 border-none font-black text-sm text-violet-700"
+                            className="w-full px-4 py-2.5 rounded-xl bg-indigo-500/10 border-none font-black text-xs text-indigo-700 outline-none focus:ring-4 focus:ring-indigo-500/10"
                             required
                           />
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => removeVariant(idx)}
-                          className="mt-4 p-2 bg-rose-50 text-rose-600 rounded-xl font-black text-xs hover:bg-rose-100 transition"
-                        >
-                          ✕ حذف
-                        </button>
+                        <div className="md:col-span-3 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => removeVariant(idx)}
+                                className="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center transition-all hover:bg-rose-100 active:scale-90"
+                            >
+                                <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-4 h-4" />
+                            </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -767,79 +785,99 @@ export function ProductListClient({
               )}
             </div>
 
-            <div className="flex gap-3 pt-6 border-t border-slate-50">
+            <div className="flex flex-col md:flex-row gap-4 pt-8 border-t border-slate-100">
               <button
                 disabled={loading}
-                className="flex-1 md:flex-none px-12 py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 disabled:opacity-50 shadow-xl shadow-emerald-100 transition-all active:scale-95"
+                className="flex-[2] py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-indigo-600 disabled:opacity-50 shadow-xl shadow-slate-200 transition-all active:scale-[0.98] text-base flex items-center justify-center gap-3"
               >
-                {loading ? "جاري الحفظ..." : "حفظ المنتج الآن"}
+                {loading ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                ) : (
+                    <>
+                        <DynamicIcon iconKey="ui_save" config={icons} fallback="💾" className="w-5 h-5" />
+                        <span>حفظ بيانات المنتج</span>
+                    </>
+                )}
               </button>
               <button
                 type="button"
                 onClick={() => { setEditing(null); setShowForm(false); }}
-                className="px-8 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all"
+                className="flex-1 py-4 bg-white text-slate-500 font-black rounded-2xl border border-slate-200 hover:bg-slate-100 transition-all active:scale-[0.98] text-base"
               >
-                إلغاء
+                إلغاء وإغلاق
               </button>
             </div>
           </form>
         </div>
       )}
 
+
       {/* Grid Display */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {displayedProducts.map((p) => (
           <div
             key={p.id}
-            className={`relative group bg-white rounded-[2.5rem] border-2 transition-all duration-300 flex flex-col overflow-hidden ${p.active ? 'border-transparent shadow-xl shadow-slate-200/50 hover:border-emerald-100' : 'border-slate-100 bg-slate-50/50 grayscale'}`}
+            className={`relative group bg-white rounded-3xl border border-slate-200 transition-all duration-500 flex flex-col overflow-hidden hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1 ${!p.active ? 'opacity-60 grayscale' : ''}`}
           >
             {/* Status Badge */}
-            <div className={`absolute top-4 left-4 z-10 w-3 h-3 rounded-full border-2 border-white shadow-sm ${p.active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+            <div className={`absolute top-3 left-3 z-10 px-2.5 py-1 rounded-full text-[8px] font-black border backdrop-blur-md shadow-sm transition-all group-hover:scale-110 ${p.active ? 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
+                {p.active ? "نشط" : "مخفي"}
+            </div>
 
-            <div className="relative aspect-square bg-slate-50 overflow-hidden shadow-inner flex flex-col items-center justify-center">
+            <div className="relative aspect-square bg-slate-50/50 overflow-hidden flex flex-col items-center justify-center p-4">
               {p.photoUrls?.[0] ? (
                 <img
                   src={p.photoUrls[0]}
                   alt={p.name}
                   loading="lazy"
-                  className="relative z-10 w-full h-full object-contain transition-transform duration-700 group-hover:scale-110"
+                  className="relative z-10 w-full h-full object-contain transition-transform duration-700 group-hover:scale-110 drop-shadow-lg"
                 />
               ) : (
-                <div className="relative z-10 w-full h-full flex items-center justify-center text-slate-300 text-5xl">
-                  <DynamicIcon iconKey="ui_box" config={icons} fallback="📦" className="w-16 h-16 opacity-20" />
+                <div className="relative z-10 w-full h-full flex items-center justify-center text-slate-200">
+                  <DynamicIcon iconKey="ui_box" config={icons} fallback="📦" className="w-12 h-12 opacity-30" />
                 </div>
               )}
-              <div className="absolute bottom-3 right-3 z-20 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[9px] font-black text-emerald-600 shadow-sm">
-                {p.branch?.name || "عام"}
+              <div className="absolute bottom-3 inset-x-3 flex justify-center translate-y-10 group-hover:translate-y-0 transition-transform duration-500">
+                  <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[9px] font-black text-indigo-600 shadow-xl border border-indigo-50">
+                    {p.branch?.name || "عام"}
+                  </div>
               </div>
             </div>
 
             <div className="p-4 flex-1 flex flex-col">
-              <h3 className="font-black text-slate-900 line-clamp-2 mb-1 group-hover:text-emerald-600 transition-colors h-10 leading-tight">{p.name}</h3>
+              <h3 className="font-black text-slate-900 line-clamp-2 mb-2 group-hover:text-indigo-600 transition-colors h-9 leading-snug text-xs">{p.name}</h3>
 
-              <div className="flex flex-col gap-0.5 mb-4">
-                <p className="text-[10px] font-black text-emerald-600">
-                    {p.hasVariants ? "تبدأ من:" : "السعر:"} {Number(p.salePrice).toLocaleString()} د.ع
-                </p>
-                <p className="text-[8px] font-bold text-slate-400">التكلفة: {Number(p.purchasePrice).toLocaleString()} د.ع</p>
+              <div className="flex flex-col gap-1 mb-4">
+                <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">السعر</span>
+                    <span className="text-xs font-black text-indigo-600">
+                        {Number(p.salePrice).toLocaleString()} <span className="text-[9px]">د.ع</span>
+                    </span>
+                </div>
+                <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">التكلفة</span>
+                    <span className="text-[9px] font-black text-slate-400">
+                        {Number(p.purchasePrice).toLocaleString()} د.ع
+                    </span>
+                </div>
               </div>
 
               {/* Actions */}
-              <div className="mt-auto grid grid-cols-3 gap-2 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
+              <div className="mt-auto grid grid-cols-3 gap-1.5 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                 <button
                   onClick={() => {
                     setEditing(p);
                     setShowForm(true);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="p-2 bg-sky-50 text-sky-700 rounded-xl text-[10px] font-black hover:bg-sky-100 transition-colors flex items-center justify-center"
+                  className="p-2.5 bg-indigo-500/10 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center shadow-sm"
                   title="تعديل"
                 >
                   <DynamicIcon iconKey="ui_edit" config={icons} fallback="✏️" className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => handleToggleActive(p)}
-                  className={`p-2 rounded-xl text-[10px] font-black transition-colors flex items-center justify-center ${p.active ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}
+                  className={`p-2.5 rounded-xl transition-all flex items-center justify-center shadow-sm ${p.active ? 'bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white'}`}
                   title={p.active ? "إخفاء" : "إظهار"}
                 >
                   {p.active ? (
@@ -850,7 +888,7 @@ export function ProductListClient({
                 </button>
                 <button
                   onClick={() => setConfirmDelete(p.id)}
-                  className="p-2 bg-rose-50 text-rose-700 rounded-xl text-[10px] font-black hover:bg-rose-100 transition-colors flex items-center justify-center"
+                  className="p-2.5 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center shadow-sm"
                   title="حذف"
                 >
                   <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-3.5 h-3.5" />
@@ -860,8 +898,11 @@ export function ProductListClient({
 
             {/* Delete Overlay */}
             {confirmDelete === p.id && (
-                <div className="absolute inset-0 z-20 bg-rose-600/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in duration-200">
-                    <p className="text-white font-black text-sm mb-6 leading-relaxed">حذف المنتج نهائياً من المتجر؟</p>
+                <div className="absolute inset-0 z-30 bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
+                    <div className="w-12 h-12 bg-rose-500/20 text-rose-500 rounded-full flex items-center justify-center mb-3">
+                        <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-6 h-6" />
+                    </div>
+                    <p className="text-white font-black text-xs mb-6 leading-relaxed">هل أنت متأكد من الحذف؟</p>
                     <div className="flex gap-2 w-full">
                         <button
                             onClick={async () => {
@@ -869,11 +910,11 @@ export function ProductListClient({
                                 setConfirmDelete(null);
                                 router.refresh();
                             }}
-                            className="flex-1 py-3 bg-white text-rose-600 rounded-2xl font-black text-xs"
-                        >نعم، احذف</button>
+                            className="flex-1 py-2.5 bg-rose-600 text-white rounded-xl font-black text-[10px] hover:bg-rose-700 transition-all active:scale-95 shadow-lg shadow-rose-900/20"
+                        >حذف</button>
                         <button
                             onClick={() => setConfirmDelete(null)}
-                            className="flex-1 py-3 bg-rose-800 text-white rounded-2xl font-black text-xs"
+                            className="flex-1 py-2.5 bg-white/10 text-white rounded-xl font-black text-[10px] hover:bg-white/20 transition-all"
                         >إلغاء</button>
                     </div>
                 </div>
@@ -886,12 +927,16 @@ export function ProductListClient({
         <div className="flex justify-center pt-8">
           <button
             onClick={() => setVisibleCount(prev => prev + 50)}
-            className="px-12 py-4 bg-white text-slate-900 font-black rounded-2xl border-2 border-slate-100 hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm active:scale-95"
+            className="px-12 py-4 bg-white text-slate-900 font-black rounded-2xl border border-slate-200 hover:border-indigo-500 hover:text-indigo-600 transition-all shadow-xl shadow-slate-200/50 active:scale-95 flex items-center gap-3 text-sm"
           >
-            عرض المزيد من المنتجات ({filteredProducts.length - visibleCount} إضافية)
+            <span>عرض المزيد</span>
+            <span className="bg-slate-100 px-2 py-0.5 rounded-full text-[10px] text-slate-500">
+                {filteredProducts.length - visibleCount}
+            </span>
           </button>
         </div>
       )}
+
     </div>
   );
 }

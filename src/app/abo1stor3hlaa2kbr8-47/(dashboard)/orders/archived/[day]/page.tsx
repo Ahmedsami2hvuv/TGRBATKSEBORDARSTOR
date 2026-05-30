@@ -137,27 +137,32 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
           الرئيسية
         </Link>
       </p>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-6">
+        <div className="space-y-1">
           <h1 className={ad.h1}>{formatBaghdadDateLabel(day)}</h1>
-          <p className={`mt-1 ${ad.muted}`}>
+          <p className={ad.lead}>
             طلبات أُرشِفت في هذا اليوم مرتبة تسلسلياً (يظهر المندوب الذي قام بالتوصيل).
           </p>
         </div>
-        <form className="flex-1 max-w-sm">
+        <form className="relative flex-1 max-w-sm group">
+          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
           <input
             name="q"
             defaultValue={q}
             placeholder="بحث (محل، رقم طلب، مندوب)..."
-            className={ad.input}
+            className={`${ad.input} w-full pr-11`}
           />
         </form>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         <OrderTrackingBulkTable rows={tableRows} couriers={couriers} />
         <p className={ad.orderListCountFooter}>
-          عدد الطلبات: <span className="font-bold text-sky-900">{tableRows.length}</span>
+          عدد الطلبات المنسحبة: <span className="font-bold text-indigo-900 tabular-nums">{tableRows.length}</span>
         </p>
       </div>
     </div>

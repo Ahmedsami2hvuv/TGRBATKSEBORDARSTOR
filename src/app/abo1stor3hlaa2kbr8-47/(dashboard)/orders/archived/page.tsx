@@ -72,30 +72,35 @@ export default async function ArchivedOrdersIndexPage({ searchParams }: Props) {
           تتبع الطلبات
         </Link>
       </p>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-6">
+        <div className="space-y-1">
           <h1 className={ad.h1}>الطلبات المؤرشفة</h1>
-          <p className={`mt-1 ${ad.lead}`}>
+          <p className={ad.lead}>
             ابحث عن طلب مؤرشف برقم الطلب أو الهاتف، أو تصفح حسب يوم الأرشفة.
           </p>
         </div>
 
-        <form className="flex-1 max-w-md w-full">
+        <form className="relative flex-1 max-w-md w-full group">
+          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
           <input
             name="q"
             defaultValue={q}
             placeholder="بحث سريع في الأرشيف (رقم طلب أو هاتف)..."
-            className={ad.input}
+            className={`${ad.input} w-full pr-11`}
           />
         </form>
       </div>
 
       {q ? (
-        <section className="space-y-3">
+        <section className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-500">
           <h2 className={ad.h2}>نتائج البحث في الأرشيف ({searchResults.length})</h2>
           {searchResults.length === 0 ? (
             <div className={ad.section}>
-              <p className="text-center text-slate-500">لم يتم العثور على طلبات مؤرشفة تطابق "{q}"</p>
+              <p className="text-center text-slate-500 font-medium py-4">لم يتم العثور على طلبات مؤرشفة تطابق "{q}"</p>
             </div>
           ) : (
             <div className="grid gap-3">
@@ -103,17 +108,21 @@ export default async function ArchivedOrdersIndexPage({ searchParams }: Props) {
                 <Link
                   key={o.id}
                   href={`${SECRET_ADMIN_PATH}/orders/${o.id}`}
-                  className="flex items-center justify-between gap-4 rounded-xl border border-sky-200 bg-white p-4 shadow-sm hover:bg-sky-50"
+                  className={`${ad.card} group flex items-center justify-between gap-4 p-4 hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-500/5`}
                 >
-                  <div>
-                    <span className="font-black text-sky-700">#{o.orderNumber}</span>
-                    <span className="mx-2 text-slate-300">|</span>
-                    <span className="font-bold text-slate-800">{o.shop.name}</span>
-                    <p className="text-xs text-slate-500">{o.customerPhone} — {o.summary?.slice(0, 50)}</p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="font-black text-indigo-600 tabular-nums">#{o.orderNumber}</span>
+                      <span className="h-1 w-1 rounded-full bg-slate-300" />
+                      <span className="font-bold text-slate-900 truncate">{o.shop.name}</span>
+                    </div>
+                    <p className="text-xs font-bold text-slate-500 truncate">
+                      {o.customerPhone} <span className="mx-1 text-slate-300">•</span> {o.summary?.slice(0, 60)}
+                    </p>
                   </div>
-                  <div className="text-left">
-                    <p className="text-[10px] text-slate-400">أُرشف في:</p>
-                    <p className="text-xs font-bold text-slate-600">
+                  <div className="shrink-0 text-left">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-0.5">أُرشف في</p>
+                    <p className="text-sm font-black text-slate-700 tabular-nums">
                       {o.archivedAt ? new Date(o.archivedAt).toLocaleDateString("ar-IQ") : "—"}
                     </p>
                   </div>
@@ -121,17 +130,23 @@ export default async function ArchivedOrdersIndexPage({ searchParams }: Props) {
               ))}
             </div>
           )}
-          <hr className="my-6 border-slate-200" />
-          <h2 className={ad.h2}>تصفح حسب اليوم</h2>
+          <div className="pt-4 border-t border-slate-100">
+            <h2 className={ad.h2}>تصفح حسب اليوم</h2>
+          </div>
         </section>
       ) : null}
 
       {rows.length === 0 ? (
-        <div className={`${ad.section} border-dashed border-violet-200 bg-violet-50/40`}>
-          <p className="text-center text-slate-600">لا توجد طلبات مؤرشفة بعد.</p>
+        <div className={`${ad.section} border-dashed border-indigo-200 bg-indigo-50/30 flex flex-col items-center justify-center py-12`}>
+          <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 mb-3">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+          </div>
+          <p className="font-bold text-slate-600">لا توجد طلبات مؤرشفة بعد.</p>
         </div>
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {rows.map((r) => {
             const day = r.day;
             const cnt = Number(r.cnt);
@@ -139,10 +154,14 @@ export default async function ArchivedOrdersIndexPage({ searchParams }: Props) {
               <li key={day}>
                 <Link
                   href={`${SECRET_ADMIN_PATH}/orders/archived/${encodeURIComponent(day)}`}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-violet-200 bg-white px-4 py-3.5 text-sm font-bold text-slate-800 shadow-sm transition hover:border-violet-400 hover:bg-violet-50/80"
+                  className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition-all hover:border-indigo-400 hover:shadow-lg hover:shadow-indigo-500/5"
                 >
-                  <span className="min-w-0 text-right leading-snug">{formatBaghdadDateLabel(day)}</span>
-                  <span className="shrink-0 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-extrabold text-violet-900 tabular-nums">
+                  <div className="min-w-0">
+                    <span className="block text-sm font-black text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">
+                      {formatBaghdadDateLabel(day)}
+                    </span>
+                  </div>
+                  <span className="shrink-0 flex items-center justify-center min-w-[2.5rem] h-8 rounded-xl bg-slate-100 px-2 text-xs font-black text-slate-700 tabular-nums group-hover:bg-indigo-600 group-hover:text-white transition-all">
                     {cnt}
                   </span>
                 </Link>

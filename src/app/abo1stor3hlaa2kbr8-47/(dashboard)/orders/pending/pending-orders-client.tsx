@@ -104,36 +104,54 @@ export function AssignToPreparerPanel({
     setSelectedPreparers(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  if (preparers.length === 0) return <p className="p-3 bg-amber-50 text-amber-900 rounded-lg text-xs font-bold border border-amber-200 text-center flex items-center justify-center gap-2"><DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={14} height={14} /> لا يوجد مجهزون متاحون حالياً.</p>;
+  if (preparers.length === 0) return <p className="p-4 bg-rose-50 text-rose-600 rounded-2xl text-[10px] font-black border border-rose-100 text-center flex items-center justify-center gap-2">⚠️ لا يوجد مجهزون متاحون.</p>;
 
   return (
-    <form action={formAction} className="space-y-4 rounded-xl border border-sky-200 bg-sky-50/60 p-4 shadow-inner text-right" dir="rtl">
+    <form action={formAction} className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-xl text-right animate-in zoom-in-95" dir="rtl">
       <input type="hidden" name="orderId" value={orderId} />
       <input type="hidden" name="isDraft" value={String(!!isDraft)} />
       {selectedPreparers.map(id => <input key={id} type="hidden" name="preparerIds" value={id} />)}
-      <p className="text-sm font-black text-sky-900 border-b border-sky-100 pb-2 flex items-center gap-2">
-        <DynamicIcon icon={icons?.ui_shop} fallback="🛒" width={16} height={16} /> إسناد الطلب للمجهزين
-      </p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-2">
-        {preparers.map((p) => (
-          <label key={p.id} className={`flex items-center gap-2 p-2 rounded-xl border-2 transition-all cursor-pointer ${selectedPreparers.includes(p.id) ? "border-sky-600 bg-sky-100 shadow-sm" : "border-white bg-white/50 hover:border-sky-200"}`}>
-            <input type="checkbox" checked={selectedPreparers.includes(p.id)} onChange={() => togglePreparer(p.id)} className="h-5 w-5 rounded border-sky-300 text-sky-600 focus:ring-sky-500" />
-            <span className={`text-xs font-black ${selectedPreparers.includes(p.id) ? "text-sky-900" : "text-slate-600"}`}>{p.name}</span>
-          </label>
-        ))}
+
+      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <p className="text-xs font-black text-slate-900 flex items-center gap-2">
+          <DynamicIcon icon={icons?.preparer_delegate} fallback="🛒" width={16} height={16} className="text-indigo-600" /> إسناد للمجهزين
+        </p>
+        <span className="text-[10px] font-black bg-indigo-50 px-2.5 py-1 rounded-xl border border-indigo-100 text-indigo-600">
+          تم اختيار {selectedPreparers.length}
+        </span>
       </div>
-      {state.error && <p className="text-xs text-rose-600 font-bold p-2 bg-rose-50 rounded-lg border border-rose-200">{state.error}</p>}
-      <button type="submit" disabled={pending} className="w-full rounded-xl bg-sky-600 py-3.5 text-sm font-black text-white shadow-lg active:scale-95 disabled:opacity-50 transition-all hover:bg-sky-700 flex items-center justify-center gap-2">
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 py-2">
+        {preparers.map((p) => {
+          const isSelected = selectedPreparers.includes(p.id);
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => togglePreparer(p.id)}
+              className={`flex items-center justify-center gap-2 p-3.5 rounded-2xl border-2 transition-all duration-200 text-[11px] font-black ${isSelected ? "border-indigo-600 bg-indigo-600 text-white shadow-lg scale-[1.02]" : "border-slate-100 bg-slate-50 text-slate-500 hover:border-indigo-200 hover:bg-white shadow-sm"}`}
+            >
+              {isSelected && <DynamicIcon icon={icons?.ui_success} fallback="✓" width={12} height={12} />}
+              {p.name}
+            </button>
+          );
+        })}
+      </div>
+
+      {state.error && <p className="text-xs text-rose-600 font-bold p-3 bg-rose-50 rounded-2xl border border-rose-100">{state.error}</p>}
+
+      <button type="submit" disabled={pending} className="w-full rounded-2xl bg-slate-900 py-4 text-xs font-black text-white shadow-xl active:scale-95 disabled:opacity-50 transition-all hover:bg-black flex items-center justify-center gap-2">
         {pending ? "جارٍ الحفظ..." : (
           <>
             <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} />
-            {selectedPreparers.length === 0 ? "إلغاء الإسناد (حذف من المجهزين)" : (initialPreparerIds.length > 0 ? "تحديث المجهزين" : `إسناد إلى ${selectedPreparers.length} مجهز`)}
+            {selectedPreparers.length === 0 ? "إخلاء الطلب (بدون مجهز)" : "تحديث قائمة المجهزين"}
           </>
         )}
       </button>
     </form>
   );
 }
+
 
 /** زر حذف الطلب بالكامل مع طلب تأكيد */
 function DeleteFullOrderButton({ id, isDraft, onSuccess, icons }: { id: string, isDraft: boolean, onSuccess?: () => void, icons: GlobalIconsConfig | null }) {
@@ -143,21 +161,22 @@ function DeleteFullOrderButton({ id, isDraft, onSuccess, icons }: { id: string, 
   useEffect(() => { if (state.ok && onSuccess) onSuccess(); }, [state.ok, onSuccess]);
   if (confirm) {
     return (
-      <form action={formAction} className="flex items-center gap-1 animate-in fade-in slide-in-from-left-2 bg-rose-50 p-1 px-2 rounded-xl border border-rose-200 shadow-sm">
+      <form action={formAction} className="flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 bg-rose-50 p-1.5 px-3 rounded-2xl border border-rose-200 shadow-sm">
         <input type="hidden" name="id" value={id} />
         <input type="hidden" name="isDraft" value={String(isDraft)} />
         <span className="text-[10px] font-black text-rose-700">حذف نهائي؟</span>
-        <button type="submit" disabled={pending} className="bg-rose-600 text-white px-3 py-1 rounded-lg text-[10px] font-black shadow-sm active:scale-90">نعم</button>
-        <button type="button" onClick={() => setConfirm(false)} className="bg-white text-slate-700 px-3 py-1 rounded-lg text-[10px] font-black border border-slate-200">لا</button>
+        <button type="submit" disabled={pending} className="bg-rose-600 text-white px-4 py-1.5 rounded-xl text-[10px] font-black shadow-sm active:scale-90 transition-transform">نعم</button>
+        <button type="button" onClick={() => setConfirm(false)} className="bg-white text-slate-700 px-4 py-1.5 rounded-xl text-[10px] font-black border border-slate-200 transition-colors hover:bg-slate-50">لا</button>
       </form>
     );
   }
   return (
-    <button type="button" onClick={() => setConfirm(true)} className="flex items-center gap-1 text-rose-600 hover:bg-rose-600 hover:text-white px-3 py-1.5 rounded-xl border-2 border-rose-600 transition-all text-[11px] font-black bg-white shadow-sm active:scale-95">
-      <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={12} height={12} /> مسح الطلب
+    <button type="button" onClick={() => setConfirm(true)} className="flex items-center gap-2 text-rose-600 hover:bg-rose-600 hover:text-white px-4 py-2 rounded-2xl border-2 border-rose-100 transition-all text-[11px] font-black bg-rose-50/30 active:scale-95">
+      <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={14} height={14} /> مسح الطلب
     </button>
   );
 }
+
 
 /** لوحة تسعير إدارية ذكية تدعم الإضافة الجماعية والتسعير التلقائي والحفظ التلقائي */
 export function AdminPricingPanel({
@@ -183,6 +202,9 @@ export function AdminPricingPanel({
   onSuccess?: () => void;
   icons?: GlobalIconsConfig | null;
 }) {
+  const buyInputRef = useRef<HTMLInputElement>(null);
+  const sellInputRef = useRef<HTMLInputElement>(null);
+
   const findPreparerName = (id: string | null | undefined) => {
     return preparers.find((p) => p.id === id)?.name ?? null;
   };
@@ -366,169 +388,220 @@ export function AdminPricingPanel({
   const canSubmitFinal = allProductsPriced && placesCount > 0;
 
   useEffect(() => {
+    if (editingIndex !== null) {
+      setTimeout(() => buyInputRef.current?.focus(), 100);
+    }
+  }, [editingIndex]);
+
+  useEffect(() => {
     if (state.ok && onSuccess) onSuccess();
   }, [state.ok, onSuccess]);
 
   return (
-    <div className="space-y-4 rounded-2xl border-2 border-amber-300 bg-amber-50/90 p-5 shadow-xl text-right" dir="rtl">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200 pb-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm font-black text-amber-900 flex items-center gap-2 ml-2">
-            <span className="text-xl">
-              <DynamicIcon icon={icons?.admin_pricing} fallback="💰" />
-            </span> {isDraft ? "تجهيز وتسعير المسودة" : "تعديل تسعير الطلب"}
-            {isSaving && <span className="text-[9px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded animate-pulse">جاري الحفظ التلقائي...</span>}
-          </p>
+    <div className={`space-y-5 ${ad.section} bg-slate-50/60 border-slate-300 shadow-xl`} dir="rtl">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-lg">
+              <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={20} height={20} />
+            </div>
+            <div>
+              <p className={ad.h2}>{isDraft ? "تجهيز السلة الذكي" : "تعديل التسعير"}</p>
+              {isSaving && <span className="text-[10px] font-black text-indigo-600 animate-pulse flex items-center gap-1 mt-0.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-indigo-600"></span> جارٍ المزامنة...
+              </span>}
+            </div>
+          </div>
           <DeleteFullOrderButton id={orderId} isDraft={Boolean(isDraft)} onSuccess={onSuccess} icons={icons} />
         </div>
         <div className="flex gap-2">
-        <button type="button" onClick={() => setShowReassign(!showReassign)} className="rounded-xl bg-slate-800 text-white px-3 py-1.5 text-[10px] font-black shadow-sm transition hover:bg-black flex items-center gap-1">
-          <DynamicIcon icon={icons?.ui_plus} fallback={isDraft ? "➕" : "🔄"} width={10} height={10} />
-          {isDraft ? "إضافة مجهز" : "تغيير المجهز"}
-        </button>
-        <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="rounded-xl bg-violet-600 text-white px-3 py-1.5 text-[10px] font-black shadow-sm transition active:scale-95 flex items-center gap-1">
-          <DynamicIcon icon={icons?.ui_plus} fallback="➕" width={10} height={10} /> قائمة كاملة
-        </button>
-        <button type="button" onClick={() => { setDeleteMode(!deleteMode); setEditingIndex(null); }} className={`rounded-xl px-3 py-1.5 text-[10px] font-black shadow-sm transition flex items-center gap-1 ${deleteMode ? "bg-rose-600 text-white" : "bg-white border border-rose-300 text-rose-700"}`}>
-          <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={10} height={10} />
-          {deleteMode ? "إلغاء الحذف" : "مسح أسطر"}
-        </button>
-      </div>
+          <button type="button" onClick={() => setShowReassign(!showReassign)} className={ad.navButton}>
+            <DynamicIcon icon={icons?.ui_plus} fallback={isDraft ? "➕" : "🔄"} width={12} height={12} className="ml-1" />
+            {isDraft ? "إضافة مجهز" : "إعادة تعيين"}
+          </button>
+          <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className={`${ad.btnPrimary} !px-3 !py-1.5 !rounded-2xl !shadow-md`}>
+            <DynamicIcon icon={icons?.ui_plus} fallback="➕" width={12} height={12} /> قائمة منتجات
+          </button>
+          <button type="button" onClick={() => { setDeleteMode(!deleteMode); setEditingIndex(null); }} className={`${deleteMode ? ad.btnDanger : ad.btnSecondary} !px-3 !py-1.5 !rounded-2xl !shadow-md`}>
+            <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={12} height={12} />
+            {deleteMode ? "إنهاء الحذف" : "حذف أسطر"}
+          </button>
+        </div>
       </div>
 
       {showReassign && <div className="animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); onSuccess?.(); }} /></div>}
 
       {showBulkAdd && (
-        <div className="bg-white p-3 rounded-xl border-2 border-violet-200 animate-in zoom-in-95 shadow-inner">
-          <p className="text-[10px] font-bold text-violet-900 mb-2">أدخل المنتجات الجديدة (سطر لكل منتج):</p>
-          <textarea className="w-full rounded-lg border border-slate-200 p-2 text-sm min-h-[80px] outline-none focus:ring-2 focus:ring-violet-300 font-bold" placeholder="لحم شرح 1ك&#10;خيار 2 كيلو" onBlur={(e) => {
+        <div className={`${ad.card} p-4 border-2 border-indigo-200 animate-in zoom-in-95 shadow-xl mb-4 bg-white`}>
+          <div className="flex items-center justify-between mb-4">
+            <p className={ad.h3}>إضافة قائمة منتجات سريعة</p>
+            <button type="button" onClick={() => setShowBulkAdd(false)} className="text-slate-400 hover:text-rose-600 transition-colors">✕</button>
+          </div>
+          <textarea
+            className={`${ad.input} w-full min-h-[120px] font-bold`}
+            placeholder="اكتب كل منتج في سطر جديد...&#10;طماطم 2 كيلو&#10;خبز 3 كيس"
+            onBlur={(e) => {
               const lines = e.target.value.split("\n").map(l => l.trim()).filter(l => l.length > 1);
-              if (lines.length) { setProducts([...products, ...lines.map(line => ({ line, buyAlf: "0", sellAlf: "0", pricedBy: null, assignedPreparerId: null, assignedPreparerName: null }))]); setShowBulkAdd(false); }
+              if (lines.length) {
+                setProducts([...products, ...lines.map(line => ({ line, buyAlf: "0", sellAlf: "0", pricedBy: null, assignedPreparerId: null, assignedPreparerName: null }))]);
+                setShowBulkAdd(false);
+              }
               e.target.value = "";
-            }} />
+            }}
+          />
+          <p className={ad.muted + " mt-2 italic"}>* سيتم إضافة المنتجات تلقائياً عند النقر خارج المربع.</p>
         </div>
       )}
 
       {products.length > 0 && (
-        <div className="mb-3 rounded-2xl bg-slate-50 border border-slate-200 p-3 animate-in fade-in duration-200">
+        <div className="mb-4 rounded-3xl bg-indigo-50/50 border border-indigo-100 p-4 shadow-inner">
           <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-black text-slate-900">اختر اسم المجهز لتعيين المنتجات المحددة</p>
-              <p className="text-[10px] text-slate-500">
-                {selectedProductIndexes.length > 0
-                  ? `تم اختيار ${selectedProductIndexes.length} منتج${selectedProductIndexes.length === 1 ? "" : "ات"}.`
-                  : "اضغط على مربعات الاختيار الموجودة بجانب المنتجات لتفعيل التعيين."}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button type="button" onClick={clearSelection} className="rounded-xl bg-slate-100 px-3 py-2 text-[10px] font-black text-slate-700 hover:bg-slate-200">
-                مسح التحديد
-              </button>
-              <button type="button" onClick={toggleSelectAllProducts} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-[10px] font-black text-slate-700 hover:bg-slate-50">
-                {selectedProductIndexes.length === products.length ? "إلغاء تحديد الكل" : "تحديد الكل"}
+            <p className={ad.h3 + " !text-indigo-900"}>إسناد جماعي ({selectedProductIndexes.length})</p>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={clearSelection} className={ad.navButton}>إلغاء التحديد</button>
+              <button type="button" onClick={toggleSelectAllProducts} className={ad.navButton}>
+                {selectedProductIndexes.length === products.length ? "إلغاء الكل" : "تحديد الكل"}
               </button>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <select value={productAssigneeId} onChange={(e) => setProductAssigneeId(e.target.value)} className="min-w-[14rem] rounded-xl border border-slate-200 bg-white p-2 text-xs font-black outline-none">
-              <option value="">اختر المجهز</option>
+            <select value={productAssigneeId} onChange={(e) => setProductAssigneeId(e.target.value)} className={`${ad.select} flex-1 min-w-[14rem]`}>
+              <option value="">اختر المجهز للتعيين...</option>
               {preparers.map((prep) => (
                 <option key={prep.id} value={prep.id}>{prep.name}</option>
               ))}
             </select>
-            <button type="button" onClick={assignSelectedProductsToPreparer} disabled={!productAssigneeId || selectedProductIndexes.length === 0} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white shadow-sm disabled:opacity-40">
-              ✅ إسناد المنتجات المحددة
+            <button type="button" onClick={assignSelectedProductsToPreparer} disabled={!productAssigneeId || selectedProductIndexes.length === 0} className={ad.btnPrimary}>
+              تأكيد التعيين
             </button>
           </div>
         </div>
       )}
 
-
-
-
-
-      <div className="grid gap-2 max-h-[400px] overflow-y-auto pr-1">
+      <div className="grid gap-2 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
         {products.map((p, i) => {
           const isEditing = editingIndex === i;
-          const priced = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) > 0;
+          const buyVal = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) || 0;
+          const priced = buyVal > 0;
           const isSelected = selectedProductIndexes.includes(i);
           return (
-            <div key={i} className={isSelected ? "ring-2 ring-sky-400 rounded-2xl" : ""}>
-              <div className="flex gap-3">
-                <label className="flex items-center">
-                  <input type="checkbox" checked={isSelected} onChange={() => toggleProductSelection(i)} className="h-4 w-4 rounded border-slate-300" />
-                </label>
+            <div key={i} className={`transition-all duration-200 ${isSelected ? "ring-2 ring-indigo-500 ring-offset-2 rounded-2xl" : ""}`}>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={isSelected} onChange={() => toggleProductSelection(i)} className="h-5 w-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" />
                 <div
-                  className={`flex-1 flex items-center justify-between p-3.5 rounded-xl border-2 transition-all ${deleteMode ? "border-rose-300 bg-rose-50" : priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 bg-white hover:border-amber-400 shadow-sm"}`}
-                  onClick={() => {
-                    if (!deleteMode) {
-                      setEditingIndex(isEditing ? null : i);
-                    }
-                  }}
+                  className={`flex-1 flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer ${deleteMode ? "border-rose-300 bg-rose-50" : priced ? "border-slate-800 bg-slate-900 text-white shadow-lg" : isEditing ? "border-indigo-500 bg-white ring-4 ring-indigo-50" : "border-slate-200 bg-white hover:border-indigo-400"}`}
+                  onClick={() => !deleteMode && setEditingIndex(isEditing ? null : i)}
                 >
                   <div className="flex flex-1 items-center gap-3">
-                    {p?.productId && productPhotoById[p.productId] ? (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPreviewImageUrl(productPhotoById[p.productId]);
-                          setPreviewZoom(1);
-                        }}
-                        className="h-14 w-14 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shrink-0"
-                        title="عرض الصورة بحجم أكبر"
-                      >
-                        <img
-                          src={productPhotoById[p.productId]}
-                          alt={p?.line || "صورة المنتج"}
-                          className="h-full w-full object-cover"
-                        />
-                      </button>
-                    ) : null}
-                    <div className="flex-1">
-                      <p className="text-xs font-black">{p?.line} {p?.pricedBy && ` (بواسطة: ${p.pricedBy})`}</p>
-                    {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName ? (
-                      <p className="text-[10px] text-slate-500">مخصص لـ {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName}</p>
-                    ) : p?.supplierId ? (
-                      <p className="text-[10px] text-orange-600 font-bold">المورد: {p?.supplierName || "مورد خارجي"}</p>
-                    ) : (
-                      <p className="text-[10px] text-slate-400">بدون تخصيص</p>
+                    {p?.productId && productPhotoById[p.productId] && (
+                      <div className="h-12 w-12 rounded-xl border border-slate-200 overflow-hidden bg-white shrink-0 shadow-sm">
+                        <img src={productPhotoById[p.productId]} className="h-full w-full object-cover" alt="" />
+                      </div>
                     )}
-                    {priced && <p className="text-[10px] text-emerald-300 font-mono">شراء: {p?.buyAlf} | بيع: {p?.sellAlf}</p>}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-black truncate ${priced ? "text-white" : "text-slate-900"}`}>{p?.line}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {(findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName) ? (
+                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black ${priced ? "bg-white/10 text-indigo-200" : "bg-slate-100 text-slate-500"}`}>
+                            👤 {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName}
+                          </span>
+                        ) : p?.supplierId ? (
+                          <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">🛒 {p?.supplierName || "مورد"}</span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-slate-400">بدون تخصيص</span>
+                        )}
+                        {priced && <span className="text-xs font-black tabular-nums text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-lg">S: {p?.sellAlf}</span>}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (deleteMode) {
-                          setProducts(products.filter((_, idx) => idx !== i));
-                        } else {
-                          setEditingIndex(isEditing ? null : i);
-                        }
-                      }}
-                      className="min-h-[32px] min-w-[32px] flex items-center justify-center rounded-lg px-2 text-sm transition-all"
-                    >
-                      {deleteMode ? <DynamicIcon icon={icons?.ui_close} fallback="❌" width={14} height={14} /> : priced ? <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> : <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" width={14} height={14} />}
-                    </button>
+                  <div className="flex items-center">
+                    {deleteMode ? (
+                      <button type="button" onClick={(e) => { e.stopPropagation(); setProducts(products.filter((_, idx) => idx !== i)); }} className="h-9 w-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center hover:bg-rose-200 transition-colors">
+                        <DynamicIcon icon={icons?.ui_delete} fallback="✕" width={16} height={16} />
+                      </button>
+                    ) : isEditing ? (
+                      <div className="h-9 w-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center animate-pulse shadow-lg shadow-indigo-200">
+                        <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" width={18} height={18} />
+                      </div>
+                    ) : priced ? (
+                      <div className="h-9 w-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                        <DynamicIcon icon={icons?.ui_success} fallback="✓" width={18} height={18} />
+                      </div>
+                    ) : (
+                      <div className="h-9 w-9 rounded-xl bg-slate-50 text-slate-300 flex items-center justify-center border border-slate-100 group-hover:text-indigo-400 group-hover:border-indigo-100 transition-all">
+                        <DynamicIcon icon={icons?.ui_settings} fallback="⚙️" width={18} height={18} />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
               {isEditing && !deleteMode && (
-                <div className="mt-2 bg-white p-4 rounded-xl border-2 border-amber-400 grid grid-cols-2 gap-3 shadow-inner animate-in slide-in-from-top-2">
-                  <input type="text" value={p?.line} onChange={(e) => updateProduct(i, "line", e.target.value)} className="col-span-2 border-b-2 border-slate-100 p-1 text-sm font-black outline-none" />
-                  <label className="flex flex-col"><span className="text-[10px] font-bold text-slate-400">شراء</span><input type="text" inputMode="decimal" value={p?.buyAlf ?? ""} onChange={(e) => updateProduct(i, "buyAlf", e.target.value)} className="rounded-lg border border-slate-200 p-2 text-sm font-black font-mono bg-slate-50 outline-none focus:ring-2 focus:ring-amber-200" autoFocus /></label>
-                  <label className="flex flex-col"><span className="text-[10px] font-bold text-emerald-700">بيع</span><input type="text" inputMode="decimal" value={p?.sellAlf ?? ""} onChange={(e) => updateProduct(i, "sellAlf", e.target.value)} className="rounded-lg border-2 border-emerald-300 p-2 text-sm font-black font-mono bg-emerald-50 outline-none focus:ring-2 focus:ring-emerald-400" /></label>
-                  <label className="col-span-2 flex flex-col gap-1"><span className="text-[10px] font-bold text-slate-400">تخصيص المجهز</span><select value={p?.assignedPreparerId ?? ""} onChange={(e) => updateProduct(i, "assignedPreparerId", e.target.value)} className="rounded-lg border border-slate-200 p-2 text-sm outline-none bg-slate-50">
-                    <option value="">بدون تخصيص</option>
-                    {preparers.map((prep) => (
-                      <option key={prep.id} value={prep.id}>{prep.name}</option>
-                    ))}
-                  </select></label>
-                  <label className="col-span-2 flex items-center gap-2 py-1"><input type="checkbox" checked={Boolean(p?.pricedBy === "الإدارة")} onChange={(e) => updateProduct(i, "pricedBy", e.target.checked)} className="h-4 w-4 rounded border-amber-400" /><span className="text-[10px] font-black text-amber-900">تم تجهيز هذا المنتج من قبلي (أنا)</span></label>
-                  <button type="button" onClick={() => setEditingIndex(null)} className="col-span-2 bg-slate-800 text-white rounded-lg py-2 text-xs font-black active:scale-95 transition-transform shadow-md">حفظ السطر</button>
+                <div className="mt-3 bg-white p-5 rounded-3xl border-2 border-indigo-500 shadow-2xl animate-in slide-in-from-top-4 z-10 relative">
+                  <div className="space-y-4">
+                    <input type="text" value={p?.line} onChange={(e) => updateProduct(i, "line", e.target.value)} className="w-full text-lg font-black text-slate-900 border-b-2 border-slate-100 pb-2 outline-none focus:border-indigo-500 transition-colors" placeholder="اسم المنتج..." />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className={ad.label}>كلفة الشراء</label>
+                        <input
+                          ref={buyInputRef}
+                          type="text"
+                          inputMode="decimal"
+                          value={p?.buyAlf ?? ""}
+                          onChange={(e) => updateProduct(i, "buyAlf", e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), sellInputRef.current?.focus())}
+                          className={`${ad.input} w-full font-mono text-center text-lg`}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className={ad.label + " !text-emerald-600"}>سعر البيع</label>
+                        <input
+                          ref={sellInputRef}
+                          type="text"
+                          inputMode="decimal"
+                          value={p?.sellAlf ?? ""}
+                          onChange={(e) => updateProduct(i, "sellAlf", e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), setEditingIndex(null))}
+                          className={`${ad.input} w-full font-mono text-center text-lg !border-emerald-200 !bg-emerald-50 focus:!border-emerald-500 focus:!ring-emerald-500/10`}
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className={ad.label}>تخصيص المجهز</label>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => updateProduct(i, "assignedPreparerId", "")}
+                          className={`py-2.5 rounded-xl text-[10px] font-black border transition-all ${!p?.assignedPreparerId ? "bg-slate-900 text-white border-slate-900 shadow-lg" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
+                        >
+                          بدون مجهز
+                        </button>
+                        {preparers.map((prep) => (
+                          <button
+                            key={prep.id}
+                            type="button"
+                            onClick={() => updateProduct(i, "assignedPreparerId", prep.id)}
+                            className={`py-2.5 rounded-xl text-[10px] font-black border transition-all truncate ${p?.assignedPreparerId === prep.id ? "bg-indigo-600 text-white border-indigo-700 shadow-lg" : "bg-indigo-50/50 text-indigo-900 border-indigo-100 hover:bg-indigo-100"}`}
+                          >
+                            {prep.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <label className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100 cursor-pointer group hover:bg-white transition-colors">
+                      <input type="checkbox" checked={Boolean(p?.pricedBy === "الإدارة")} onChange={(e) => updateProduct(i, "pricedBy", e.target.checked)} className="h-5 w-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                      <span className="text-xs font-black text-slate-700">تم التجهيز بواسطة الإدارة مباشرة</span>
+                    </label>
+
+                    <button type="button" onClick={() => setEditingIndex(null)} className={`${ad.btnDark} w-full py-4 !rounded-2xl shadow-2xl`}>
+                       تأكيد وحفظ السطر (Enter)
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -536,105 +609,89 @@ export function AdminPricingPanel({
         })}
       </div>
 
-      <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded-xl border border-amber-200 text-center shadow-inner">
-        <div className="col-span-3 pb-2"><select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="w-full rounded-lg border border-amber-200 p-2 text-xs font-black outline-none bg-amber-50/50">{[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n} محلات</option>)}</select></div>
-        <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-100"><p className="text-[8px] font-bold text-emerald-600">المنتجات</p><p className="text-xs font-black font-mono">{totals.subtotal} </p></div>
-        <div className="p-2 bg-sky-50 rounded-lg border border-sky-100"><p className="text-[8px] font-bold text-sky-600">توصيل</p><p className="text-xs font-black font-mono">{deliveryAlfVal > 0 ? deliveryAlfVal : "—"} </p></div>
-        <div className="p-2 bg-violet-600 text-white rounded-lg shadow-md border border-violet-700"><p className="text-[8px] font-bold">المجموع</p><p className="text-sm font-black font-mono">{totals.total} </p></div>
+      <div className="grid grid-cols-3 gap-3 bg-white p-4 rounded-3xl border border-slate-200 shadow-inner">
+        <div className="col-span-3 pb-3 border-b border-slate-100">
+          <select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className={`${ad.select} w-full !bg-white border-slate-200`}>
+            {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n} أماكن شراء / محلات</option>)}
+          </select>
+        </div>
+        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+          <p className={ad.label + " !mb-0 text-center"}>المنتجات</p>
+          <p className="text-sm font-black tabular-nums text-slate-900">{totals.subtotal.toLocaleString()}</p>
+        </div>
+        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+          <p className={ad.label + " !mb-0 text-center"}>التوصيل</p>
+          <p className="text-sm font-black tabular-nums text-slate-900">{deliveryAlfVal > 0 ? deliveryAlfVal.toLocaleString() : "—"}</p>
+        </div>
+        <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-100 text-center flex flex-col justify-center">
+          <p className="text-[9px] font-black opacity-80 uppercase tracking-widest mb-0.5">الإجمالي</p>
+          <p className="text-lg font-black tabular-nums leading-none">{totals.total.toLocaleString()}</p>
+        </div>
       </div>
 
-      <form action={formAction} className="space-y-3">
+      <form action={formAction} className="space-y-4">
         <input type="hidden" name="productsJson" value={JSON.stringify(products)} />
         <input type="hidden" name="placesCount" value={placesCount} />
         {isDraft && <input type="hidden" name="autoCourierId" value={String(initialData?.autoCourierId ?? "")} />}
         {isDraft && <input type="hidden" name="shopId" value={selectedShopId} />}
         {isDraft && <input type="hidden" name="isDraft" value="true" />}
-        <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-amber-200 shadow-sm"><input type="checkbox" id="skip-w" name="skipWallet" className="h-4 w-4 rounded border-emerald-400" /><label htmlFor="skip-w" className="text-[10px] font-black text-emerald-950 cursor-pointer">تجهيز إداري كامل (تخطي حساب المجهز)</label></div>
-        {state.error && <p className="text-xs text-rose-600 font-bold p-2 bg-rose-50 border border-rose-200 rounded-lg animate-shake">⚠️ {state.error}</p>}
+
+        <label className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-100 cursor-pointer transition-colors hover:bg-emerald-100/50">
+          <input type="checkbox" id="skip-w" name="skipWallet" className="h-6 w-6 rounded-lg border-emerald-300 text-emerald-600 focus:ring-emerald-500" />
+          <div>
+            <p className="text-xs font-black text-emerald-900">تجهيز إداري كامل</p>
+            <p className="text-[10px] font-bold text-emerald-600 opacity-80">سيتم تخطي خصم المبلغ من محفظة المجهز</p>
+          </div>
+        </label>
+
+        {state.error && <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 flex items-center gap-3 animate-shake">
+          <span className="text-xl">⚠️</span>
+          <p className="text-xs font-black text-rose-600">{state.error}</p>
+        </div>}
 
         {isDraft ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button type="submit" name="submitType" value="admin_approve" disabled={pending || !selectedShopId} className="w-full rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-900 py-4 text-[11px] font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-emerald-950 flex items-center justify-center gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button type="submit" name="submitType" value="admin_approve" disabled={pending || !selectedShopId} className={`${ad.btnSecondary} !py-4 shadow-xl border-slate-300 hover:bg-slate-100`}>
               {pending ? "جارٍ الحفظ..." : (
                 <>
-                  <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد المسودة لطلب إداري
+                  <DynamicIcon icon={icons?.ui_success} fallback="✅" width={18} height={18} /> اعتماد المسودة كطلب
                 </>
               )}
             </button>
-            <button type="submit" name="submitType" value="final_send" disabled={pending || !canSubmitFinal} className="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-violet-800 py-4 text-[11px] font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-violet-950 flex items-center justify-center gap-2">
+            <button type="submit" name="submitType" value="final_send" disabled={pending || !canSubmitFinal} className={`${ad.btnPrimary} !py-4 shadow-2xl`}>
               {pending ? "جارٍ الإرسال..." : (
                 <>
-                  <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={14} height={14} /> إرسال الطلب النهائي للنظام
+                  <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={18} height={18} /> إرسال الطلب النهائي
                 </>
               )}
             </button>
           </div>
         ) : (
-          <button type="submit" disabled={pending} className="w-full rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-900 py-4 text-sm font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-emerald-950 flex items-center justify-center gap-2">
+          <button type="submit" disabled={pending} className={`${ad.btnPrimary} w-full !py-5 shadow-2xl !text-base`}>
             {pending ? "جارٍ معالجة البيانات..." : (
               <>
-                <DynamicIcon icon={icons?.ui_success} fallback="✅" width={16} height={16} /> اعتماد التسعير والرفع للمندوب <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={16} height={16} />
+                <DynamicIcon icon={icons?.ui_success} fallback="✅" width={20} height={20} />
+                اعتماد التسعير والرفع للمندوب
+                <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={20} height={20} />
               </>
             )}
           </button>
         )}
       </form>
 
-      {previewImageUrl ? (
-        <div
-          className="fixed inset-0 z-[450] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-          onClick={() => {
-            setPreviewImageUrl(null);
-            setPreviewZoom(1);
-          }}
-        >
-          <div className="relative max-h-[88vh] max-w-[88vw]" onClick={(e) => e.stopPropagation()}>
-            <div className="absolute left-2 top-2 z-10 flex items-center gap-2 rounded-xl bg-black/60 p-1.5">
-              <button
-                type="button"
-                onClick={() => setPreviewZoom((z) => Math.max(0.5, Number((z - 0.25).toFixed(2))))}
-                className="rounded-md bg-white/90 px-2 py-1 text-xs font-black text-slate-900 hover:bg-white"
-                aria-label="تصغير الصورة"
-              >
-                −
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewZoom(1)}
-                className="rounded-md bg-white/90 px-2 py-1 text-xs font-black text-slate-900 hover:bg-white"
-                aria-label="إرجاع الحجم الطبيعي"
-              >
-                100%
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewZoom((z) => Math.min(3, Number((z + 0.25).toFixed(2))))}
-                className="rounded-md bg-white/90 px-2 py-1 text-xs font-black text-slate-900 hover:bg-white"
-                aria-label="تكبير الصورة"
-              >
-                +
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setPreviewImageUrl(null);
-                setPreviewZoom(1);
-              }}
-              className="absolute -right-3 -top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-md hover:bg-red-700"
-              aria-label="إغلاق الصورة"
-            >
-              ✕
-            </button>
-            <img
-              src={previewImageUrl}
-              alt="معاينة صورة المنتج"
-              className="max-h-[88vh] max-w-[88vw] rounded-2xl border-2 border-white object-contain shadow-2xl transition-transform duration-150"
-              style={{ transform: `scale(${previewZoom})` }}
-            />
+      {previewImageUrl && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/90 p-4 backdrop-blur-md animate-in fade-in duration-300" onClick={() => (setPreviewImageUrl(null), setPreviewZoom(1))}>
+          <div className="relative max-h-full max-w-full" onClick={e => e.stopPropagation()}>
+             <button onClick={() => (setPreviewImageUrl(null), setPreviewZoom(1))} className="absolute -top-12 right-0 h-10 w-10 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-rose-600 transition-colors">✕</button>
+             <img src={previewImageUrl} alt="" className="max-h-[85vh] rounded-3xl border-4 border-white/20 shadow-2xl transition-transform duration-200" style={{ transform: `scale(${previewZoom})` }} />
+             <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/10 backdrop-blur-xl px-4 py-2 rounded-full border border-white/20">
+                <button onClick={() => setPreviewZoom(z => Math.max(0.5, z - 0.2))} className="text-white font-black text-xl hover:text-indigo-400 transition-colors">−</button>
+                <span className="text-white font-black text-xs min-w-[3rem] text-center">{Math.round(previewZoom * 100)}%</span>
+                <button onClick={() => setPreviewZoom(z => Math.min(3, z + 0.2))} className="text-white font-black text-xl hover:text-indigo-400 transition-colors">+</button>
+             </div>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
@@ -670,77 +727,107 @@ export function PendingAssignPanel({
     }
   }, [state.ok, onSuccess]);
 
-  if (couriers.length === 0) return <p className="p-3 bg-amber-50 text-amber-900 rounded-lg text-sm font-bold border border-amber-200 text-center flex items-center justify-center gap-2"><DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={16} height={16} /> لا يوجد مندوبون مسجلون.</p>;
-  const inputClass = "w-full rounded-xl border border-slate-200 p-2.5 text-xs font-mono outline-none text-left bg-white focus:ring-2 focus:ring-emerald-300";
-  const labelClass = "text-[11px] font-bold text-slate-500 mb-1 block pr-1";
+  if (couriers.length === 0) return <p className="p-4 bg-amber-50 text-amber-900 rounded-2xl text-[11px] font-bold border border-amber-100 text-center flex items-center justify-center gap-2">⚠️ لا يوجد مناديب متوفرون حالياً.</p>;
+
+  const inputClass = "w-full rounded-2xl border border-slate-200 p-3 text-[11px] font-bold outline-none text-right bg-white focus:ring-2 focus:ring-sky-300 transition-all placeholder:text-slate-300";
+  const labelClass = "text-[10px] font-black text-slate-400 mb-1.5 block pr-1 uppercase tracking-wider";
 
   return (
-    <form action={formAction} encType="multipart/form-data" className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 shadow-inner text-right" dir="rtl">
+    <form action={formAction} encType="multipart/form-data" className={`space-y-5 ${ad.section} bg-slate-50 shadow-2xl animate-in slide-in-from-bottom-4 border-slate-300`} dir="rtl">
       <input type="hidden" name="orderId" value={orderId} />
-      <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
-        <p className="text-sm font-black text-emerald-900 flex items-center gap-2">
-          <DynamicIcon icon={icons?.ui_package} fallback="📦" width={16} height={16} /> إسناد فوري للمندوب
-        </p>
-        <span className="text-[10px] font-bold text-slate-500">الزبون: {customerPhone}</span>
+
+      <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-2xl bg-sky-600 flex items-center justify-center text-white shadow-lg shadow-sky-100">
+            <DynamicIcon icon={icons?.ui_package} fallback="📦" width={20} height={20} />
+          </div>
+          <p className={ad.h2}>إسناد المندوب</p>
+        </div>
+        <div className="text-left">
+          <p className={ad.label}>الزبون</p>
+          <p className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-xl border border-indigo-100">{customerPhone}</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* العمود الأول: المندوب والخيارات */}
-        <div className="space-y-3">
-          <OrderStatusRadioGroup name="courierId" defaultValue="" required legend="اختر المندوب المتوفر" options={couriers.map((c) => ({ value: c.id, label: c.name }))} />
-
-          <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-emerald-200 shadow-sm">
-            <input type="checkbox" id="direct-receipt" name="directReceipt" className="h-4 w-4 rounded border-emerald-400" />
-            <label htmlFor="direct-receipt" className="text-[11px] font-black text-emerald-950 cursor-pointer select-none flex items-center gap-1">
-              استلام مباشر للمندوب (تخطي الموافقة) <DynamicIcon icon={icons?.ui_flash} fallback="⚡" width={12} height={12} />
-            </label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-5">
+          <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+            <OrderStatusRadioGroup name="courierId" defaultValue="" required legend="اختر المندوب المناسب" options={couriers.map((c) => ({ value: c.id, label: c.name }))} />
           </div>
 
-          <div className="space-y-1">
-             <label className={labelClass}>رقم ثانٍ / بديل</label>
-             <input type="text" name="customerAlternatePhone" defaultValue={customerAlternatePhone} className={inputClass} placeholder="07XXXXXXXX" />
-          </div>
+          <label className="flex items-center gap-4 bg-slate-900 p-5 rounded-3xl border border-black shadow-xl cursor-pointer group hover:scale-[1.01] active:scale-95 transition-all">
+            <input type="checkbox" id="direct-receipt" name="directReceipt" className="h-6 w-6 rounded-xl border-slate-700 bg-slate-800 text-sky-500 focus:ring-0" />
+            <div className="flex-1">
+              <p className="text-sm font-black text-white group-hover:text-sky-300 transition-colors flex items-center gap-2">
+                تفعيل الاستلام المباشر <DynamicIcon icon={icons?.ui_flash} fallback="⚡" width={14} height={14} />
+              </p>
+              <p className="text-[10px] text-slate-400 font-bold mt-0.5">يتخطى مرحلة موافقة المندوب (إرسال فوري)</p>
+            </div>
+          </label>
 
-          <div className="space-y-1">
-             <label className={labelClass}>أقرب نقطة دالة</label>
-             <input type="text" name="customerLandmark" defaultValue={defaultCustomerLandmark} className={inputClass} style={{ textAlign: 'right' }} placeholder="مثال: قرب صيدلية السلام" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+               <label className={ad.label}>رقم بديل</label>
+               <input type="text" name="customerAlternatePhone" defaultValue={customerAlternatePhone} className={ad.input + " w-full font-mono"} placeholder="07XXXXXXXX" />
+            </div>
+            <div className="space-y-1.5">
+               <label className={ad.label}>نقطة دالة</label>
+               <input type="text" name="customerLandmark" defaultValue={defaultCustomerLandmark} className={ad.input + " w-full"} placeholder="قرب معلَم معروف" />
+            </div>
           </div>
         </div>
 
-        {/* العمود الثاني: اللوكيشن والصورة */}
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <label className={labelClass}>رابط اللوكيشن الرسمي (GPS)</label>
-            <textarea name="customerLocationUrl" rows={3} defaultValue={defaultCustomerLocationUrl} className={inputClass} dir="ltr" placeholder="https://maps.app.goo.gl/..." />
+        <div className="space-y-5">
+          <div className="space-y-1.5">
+            <label className={ad.label}>موقع الزبون (GPS)</label>
+            <textarea name="customerLocationUrl" rows={3} defaultValue={defaultCustomerLocationUrl} className={`${ad.input} w-full font-mono text-[11px] text-left leading-relaxed`} dir="ltr" placeholder="https://maps.app.goo.gl/..." />
           </div>
 
-          <div className="space-y-1">
-            <label className={labelClass}>صورة باب الزبون</label>
-            <div className="flex flex-col gap-2 rounded-xl border border-dashed border-emerald-300 bg-white p-3">
+          <div className="space-y-1.5">
+            <label className={ad.label}>صورة الباب / الواجهة</label>
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-3xl border-2 border-dashed border-slate-200 bg-white p-2 transition-all hover:border-sky-500 group">
               {defaultCustomerDoorPhotoUrl ? (
-                <div className="relative group aspect-video w-full overflow-hidden rounded-lg border border-emerald-100">
-                  <img src={resolvePublicAssetSrc(defaultCustomerDoorPhotoUrl)!} alt="صورة الباب" className="h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="text-[10px] text-white font-bold">تغيير الصورة بالأسفل</p>
-                  </div>
-                </div>
+                <img src={resolvePublicAssetSrc(defaultCustomerDoorPhotoUrl)!} alt="Door" className="h-full w-full object-cover rounded-2xl" />
               ) : (
-                <div className="aspect-video w-full flex items-center justify-center bg-slate-50 rounded-lg text-[10px] text-slate-400 font-bold border border-slate-100">
-                  لا توجد صورة حالياً
+                <div className="h-full w-full flex flex-col items-center justify-center gap-3 text-slate-400">
+                  <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-sky-50 transition-colors">
+                    <DynamicIcon icon={icons?.ui_image} fallback="🖼️" width={24} height={24} className="group-hover:text-sky-500" />
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-widest">اضغط لرفع صورة</p>
                 </div>
               )}
-              <input type="file" name="doorPhoto" accept="image/*" className="text-[10px] file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer" />
+              <input type="file" name="doorPhoto" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" title="تغيير الصورة" />
             </div>
           </div>
         </div>
       </div>
 
-      {state.error && <p className="text-xs text-rose-600 font-bold p-2 bg-rose-50 rounded-lg border border-rose-200">⚠️ {state.error}</p>}
-      {state.ok && <p className="text-xs text-emerald-700 font-bold p-2 bg-emerald-50 rounded-lg border border-emerald-200">✅ تم إسناد الطلب للمندوب بنجاح.</p>}
+      {state.error && <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 flex items-center gap-3 animate-shake">
+        <span className="text-xl">⚠️</span>
+        <p className="text-xs font-black text-rose-600">{state.error}</p>
+      </div>}
 
       <div className="pt-2">
-        <button type="submit" disabled={pending} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-800 py-4 text-sm font-black text-white shadow-xl active:scale-[0.98] transition-all border-b-4 border-emerald-950">
-          {pending ? "جارٍ معالجة البيانات..." : "✅ موافقة وإرسال للمندوب 🚀"}
+        <button type="submit" disabled={pending} className={`${ad.btnDark} w-full !py-5 !text-base shadow-2xl`}>
+          {pending ? "جاري معالجة الطلب..." : (
+            <>
+              <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={20} height={20} />
+              اعتماد الإسناد للمندوب
+            </>
+          )}
+        </button>
+      </div>
+    </form>
+  );
+
+      <div className="pt-2">
+        <button type="submit" disabled={pending} className="w-full rounded-2xl bg-gradient-to-r from-slate-800 to-black py-4 text-xs font-black text-white shadow-2xl active:scale-[0.98] transition-all border-b-4 border-slate-950 flex items-center justify-center gap-2">
+          {pending ? "جاري معالجة الطلب..." : (
+            <>
+              <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={16} height={16} />
+              اعتماد الإسناد للمندوب
+            </>
+          )}
         </button>
       </div>
     </form>
@@ -770,18 +857,22 @@ function DraftAutoCourierPanel({
   }, [state.ok, onSuccess]);
 
   return (
-    <form ref={formRef} action={formAction} className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-3 space-y-2" dir="rtl">
+    <form ref={formRef} action={formAction} className={`${ad.card} p-5 space-y-5 bg-indigo-50/50 border-indigo-200 shadow-xl animate-in zoom-in-95`} dir="rtl">
       <input type="hidden" name="draftId" value={draftId} />
       <input type="hidden" name="courierId" value={selectedCourierId} />
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-black text-indigo-900">اختيار المندوب للتحويل التلقائي عند الإرسال</p>
-        {currentCourierName ? (
-          <span className="rounded-md bg-indigo-100 px-2 py-1 text-[10px] font-black text-indigo-800">
+
+      <div className="flex items-center justify-between border-b border-indigo-100 pb-3">
+        <p className={ad.h3 + " !text-indigo-900 flex items-center gap-2"}>
+           🔄 التحويل التلقائي عند الإرسال
+        </p>
+        {currentCourierName && (
+          <span className="rounded-xl bg-indigo-600 text-white px-3 py-1.5 text-[10px] font-black shadow-lg">
             الحالي: {currentCourierName}
           </span>
-        ) : null}
+        )}
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <button
           type="button"
           disabled={pending}
@@ -789,13 +880,13 @@ function DraftAutoCourierPanel({
             setSelectedCourierId("");
             setTimeout(() => formRef.current?.requestSubmit(), 0);
           }}
-          className={`rounded-xl px-3 py-2 text-xs font-black border transition ${
+          className={`p-4 rounded-2xl text-[11px] font-black border transition-all ${
             selectedCourierId === ""
-              ? "bg-indigo-600 text-white border-indigo-700"
-              : "bg-white text-indigo-800 border-indigo-200 hover:bg-indigo-50"
+              ? "bg-slate-900 text-white border-slate-950 shadow-xl scale-[1.02]"
+              : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50 shadow-md"
           } disabled:opacity-50`}
         >
-          بدون تحويل تلقائي
+          تعطيل التحويل
         </button>
         {couriers.map((c) => (
           <button
@@ -806,39 +897,43 @@ function DraftAutoCourierPanel({
               setSelectedCourierId(c.id);
               setTimeout(() => formRef.current?.requestSubmit(), 0);
             }}
-            className={`rounded-xl px-3 py-2 text-xs font-black border transition ${
+            className={`p-4 rounded-2xl text-[11px] font-black border transition-all truncate ${
               selectedCourierId === c.id
-                ? "bg-indigo-600 text-white border-indigo-700"
-                : "bg-white text-indigo-800 border-indigo-200 hover:bg-indigo-50"
+                ? "bg-indigo-600 text-white border-indigo-700 shadow-xl scale-[1.02]"
+                : "bg-white text-indigo-900 border-indigo-200 hover:bg-indigo-50 shadow-md"
             } disabled:opacity-50`}
           >
             {c.name}
           </button>
         ))}
       </div>
-      {state.error ? <p className="text-[11px] font-bold text-rose-600">{state.error}</p> : null}
+      {state.error ? <p className="text-xs font-black text-rose-600 bg-rose-50 p-3 rounded-2xl border border-rose-100">{state.error}</p> : null}
     </form>
   );
 }
 
-function RejectButton({ orderId }: { orderId: string }) {
+function RejectButton({ orderId, icons }: { orderId: string, icons: GlobalIconsConfig | null }) {
   const bound = rejectPendingOrder.bind(null);
   const [state, formAction, pending] = useActionState(bound, {} as RejectOrderState);
   return (
     <form action={formAction} onSubmit={(e) => { if(!confirm("هل أنت متأكد من رفض هذا الطلب؟")) e.preventDefault(); }}>
       <input type="hidden" name="orderId" value={orderId} />
-      <button type="submit" disabled={pending} className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-800 hover:bg-rose-600 hover:text-white transition-all disabled:opacity-50">رفض</button>
+      <button type="submit" disabled={pending} title="رفض الطلب" className="h-9 w-9 flex items-center justify-center rounded-xl border border-rose-200 bg-white text-rose-600 hover:bg-rose-600 hover:text-white transition-all disabled:opacity-50 shadow-sm active:scale-90">
+        <DynamicIcon icon={icons?.ui_close} fallback="✕" width={14} height={14} />
+      </button>
     </form>
   );
 }
 
-function RejectDraftButton({ draftId }: { draftId: string }) {
+function RejectDraftButton({ draftId, icons }: { draftId: string, icons: GlobalIconsConfig | null }) {
   const bound = rejectPreparerDraft.bind(null);
   const [state, formAction, pending] = useActionState(bound, {} as RejectOrderState);
   return (
     <form action={formAction} onSubmit={(e) => { if(!confirm("هل أنت متأكد من رفض هذه المسودة؟")) e.preventDefault(); }}>
       <input type="hidden" name="draftId" value={draftId} />
-      <button type="submit" disabled={pending} className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-800 hover:bg-rose-600 hover:text-white transition-all disabled:opacity-50">رفض المسودة</button>
+      <button type="submit" disabled={pending} className="h-7 px-3 flex items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-600 hover:bg-rose-600 hover:text-white transition-all disabled:opacity-50 text-[10px] font-black shadow-sm gap-1 active:scale-95">
+        <DynamicIcon icon={icons?.ui_delete} fallback="✕" width={12} height={12} /> رفض المسودة
+      </button>
     </form>
   );
 }
@@ -912,31 +1007,33 @@ export function PendingOrdersClient({
       )}
 
       {selected.size > 0 && (
-        <div className="p-3 bg-white/70 border border-sky-200 rounded-2xl animate-in slide-in-from-top-2 shadow-sm">
-          <form action={bulkAction} className="flex flex-wrap items-end gap-2">
+        <div className="sticky top-2 z-[100] p-4 bg-slate-900/90 text-white rounded-3xl animate-in slide-in-from-top-4 shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-slate-700 mx-2 backdrop-blur-xl ring-4 ring-indigo-500/20">
+          <form action={bulkAction} className="flex flex-wrap items-center gap-4">
             {Array.from(selected).map(id => <input key={id} type="hidden" name="orderIds" value={id} />)}
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-slate-500 pr-1">الإجراء</span>
+
+            <div className="flex-1 min-w-[160px]">
+              <label className="text-[10px] font-black text-slate-400 mb-1.5 uppercase tracking-widest block pr-1">تغيير الحالة</label>
               <select
                 name="targetStatus"
                 value={targetStatus}
                 onChange={(e) => setTargetStatus(e.target.value)}
-                className="rounded-xl border border-sky-200 p-2 text-xs font-black outline-none"
+                className="w-full rounded-2xl bg-slate-800 border border-slate-700 p-3 text-xs font-black outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
               >
-                <option value="pending">قيد الانتظار</option>
-                <option value="assigned">مسند</option>
-                <option value="delivering">قيد التوصيل</option>
-                <option value="delivered">مسلم</option>
+                <option value="pending">⏳ قيد الانتظار</option>
+                <option value="assigned">📦 مسند للمندوب</option>
+                <option value="delivering">🚚 قيد التوصيل</option>
+                <option value="delivered">✅ تم التسليم</option>
               </select>
             </div>
+
             {(targetStatus === "assigned" || targetStatus === "delivering" || targetStatus === "delivered") && (
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-bold text-slate-500 pr-1">اختر المندوب</span>
+              <div className="flex-1 min-w-[160px]">
+                <label className="text-[10px] font-black text-slate-400 mb-1.5 uppercase tracking-widest block pr-1">المندوب</label>
                 <select
                   name="courierId"
                   value={courierId}
                   onChange={(e) => setCourierId(e.target.value)}
-                  className="rounded-xl border border-slate-200 p-2 text-xs font-black outline-none"
+                  className="w-full rounded-2xl bg-slate-800 border border-slate-700 p-3 text-xs font-black outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
                 >
                   <option value="">-- اختر مندوباً --</option>
                   {couriers.map((courier) => (
@@ -945,17 +1042,14 @@ export function PendingOrdersClient({
                 </select>
               </div>
             )}
-            {(targetStatus === "assigned" || targetStatus === "delivering" || targetStatus === "delivered") && (
-              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-sky-200">
-                <input type="checkbox" id="bulk-direct-admin" name="directReceipt" className="h-4 w-4 rounded border-sky-400" />
-                <label htmlFor="bulk-direct-admin" className="text-[10px] font-black text-sky-950 cursor-pointer select-none">استلام مباشر للمندوب ⚡</label>
-              </div>
-            )}
-            <button type="submit" disabled={bulkPending || ((targetStatus === "assigned" || targetStatus === "delivering" || targetStatus === "delivered") && !courierId)} className="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-xl text-xs font-black shadow-md transition-all active:scale-95">
-              تطبيق الإجراء
-            </button>
+
+            <div className="flex items-end self-end">
+              <button type="submit" disabled={bulkPending || ((targetStatus === "assigned" || targetStatus === "delivering" || targetStatus === "delivered") && !courierId)} className={`${ad.btnPrimary} !bg-indigo-500 hover:!bg-indigo-400 !py-3.5 shadow-indigo-500/20`}>
+                <DynamicIcon icon={icons?.ui_success} fallback="✓" width={16} height={16} />
+                تحديث {selected.size} طلب
+              </button>
+            </div>
           </form>
-          {bulkState.error ? <p className="mt-2 text-xs font-bold text-rose-600">⚠️ {bulkState.error}</p> : null}
         </div>
       )}
 
@@ -973,18 +1067,20 @@ export function PendingOrdersClient({
           const currentAutoCourierId = String(o.preparerShoppingJson?.autoCourierId ?? "").trim() || null;
           const currentAutoCourierName = String(o.preparerShoppingJson?.autoCourierName ?? "").trim() || null;
           return (
-            <div key={o.id} className="space-y-2">
+            <div key={o.id} className="space-y-2 animate-in fade-in slide-in-from-right-4">
               <div
-                className={`kse-glass-dark rounded-2xl border border-slate-200 bg-white p-4 shadow-sm cursor-pointer transition hover:border-violet-300 ${open ? "ring-2 ring-violet-300" : ""}`}
+                className={`group relative overflow-hidden rounded-3xl border transition-all duration-300 hover:shadow-2xl cursor-pointer ${open ? "border-indigo-400 bg-indigo-50/30 ring-4 ring-indigo-100 shadow-indigo-100" : "border-slate-200 bg-white shadow-sm hover:border-indigo-300"}`}
                 onClick={() => setPricingOpenId(o.id)}
               >
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className={`h-1.5 w-full transition-colors ${open ? "bg-indigo-600" : "bg-slate-100 group-hover:bg-indigo-200"}`} />
+                <div className="p-4 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-50 pb-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="bg-violet-100 text-violet-900 px-2 py-0.5 rounded-md font-black text-xs tabular-nums">
+                      <span className="bg-slate-900 text-white px-2 py-0.5 rounded-lg font-black text-[10px] tabular-nums shadow-sm">
                         مسودة
                       </span>
-                      <span className="bg-sky-100 text-sky-900 px-2 py-0.5 rounded-md font-black text-xs tabular-nums">
+                      <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-lg font-black text-[10px] tabular-nums border border-indigo-100">
                         #{o.orderNumber > 0 ? o.orderNumber : "—"}
                       </span>
                       <p className="font-black text-slate-900 leading-snug line-clamp-1">
@@ -993,16 +1089,17 @@ export function PendingOrdersClient({
                         {o.vehiclePreference === "car" && <span className="mr-2 text-indigo-600" title="طلب سيارة">🚗</span>}
                       </p>
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-slate-600">
-                      <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px]">{o.regionName}</span>
-                      <span className="text-emerald-700">{o.shopCustomerLabel || o.shopName || "—"}</span>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="bg-slate-100 px-2 py-0.5 rounded-lg text-[10px] font-bold text-slate-500">{o.regionName}</span>
+                      <span className="text-indigo-600 text-[10px] font-black">{o.shopCustomerLabel || o.shopName || "—"}</span>
                     </div>
-                    <p className="mt-2 text-xs font-black text-slate-700 bg-amber-50 inline-block px-2 py-1 rounded-lg border border-amber-200 shadow-sm">
-                      👤 المجهز: <span className="text-amber-900 text-sm">{o.submittedByName || "—"}</span>
+                    <p className="mt-3 text-[10px] font-black text-slate-700 bg-white inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-100 shadow-sm">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      المجهز: <span className="text-slate-900">{o.submittedByName || "—"}</span>
                     </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
-                      <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-black text-emerald-800 border border-emerald-200">
-                        رقم الزبون: {customerPhone}
+                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                      <span className="rounded-lg bg-slate-100 px-2 py-1 font-black text-slate-700 text-[10px] border border-slate-200 tabular-nums">
+                         {customerPhone}
                       </span>
                       {waLink ? (
                         <a
@@ -1010,21 +1107,23 @@ export function PendingOrdersClient({
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="rounded-md bg-green-600 px-2.5 py-1 font-black text-white hover:bg-green-700"
+                          className="flex h-7 items-center justify-center rounded-lg bg-emerald-600 px-3 text-[10px] font-black text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"
                         >
-                          واتساب
+                          <DynamicIcon icon={icons?.ui_whatsapp} fallback="WA" width={10} height={10} className="ml-1" /> واتساب
                         </a>
                       ) : null}
                       {telLink ? (
                         <a
                           href={telLink}
                           onClick={(e) => e.stopPropagation()}
-                          className="rounded-md bg-sky-600 px-2.5 py-1 font-black text-white hover:bg-sky-700"
+                          className="flex h-7 items-center justify-center rounded-lg bg-indigo-600 px-3 text-[10px] font-black text-white shadow-sm hover:bg-indigo-700 transition-all active:scale-95"
                         >
-                          اتصال
+                          <DynamicIcon icon={icons?.ui_call} fallback="📞" width={10} height={10} className="ml-1" /> اتصال
                         </a>
                       ) : null}
-                      <RejectDraftButton draftId={o.id} />
+                      <div className="mr-auto" onClick={e => e.stopPropagation()}>
+                        <RejectDraftButton draftId={o.id} icons={icons} />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1033,25 +1132,26 @@ export function PendingOrdersClient({
                   <button
                     type="button"
                     onClick={() => setDraftPreparerOpenId(draftPreparerOpen ? null : o.id)}
-                    className="flex-1 rounded-2xl bg-white border-2 border-sky-200 py-3.5 text-xs font-black text-sky-800 shadow-sm hover:bg-sky-50 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 rounded-2xl bg-indigo-50 border-2 border-indigo-100 py-3 text-[11px] font-black text-indigo-900 shadow-sm hover:bg-indigo-100 transition-all flex items-center justify-center gap-2"
                   >
-                    <DynamicIcon icon={icons?.ui_shop} fallback="🛒" width={16} height={16} /> تخصيص المجهزين
+                    <DynamicIcon icon={icons?.preparer_delegate} fallback="🛒" width={14} height={14} /> المجهزين
                   </button>
                   <button
                     type="button"
                     onClick={() => setDraftCourierOpenId(draftCourierOpen ? null : o.id)}
-                    className="flex-1 rounded-2xl bg-white border-2 border-indigo-200 py-3.5 text-xs font-black text-indigo-800 shadow-sm hover:bg-indigo-50 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 rounded-2xl bg-emerald-50 border-2 border-emerald-100 py-3 text-[11px] font-black text-emerald-900 shadow-sm hover:bg-emerald-100 transition-all flex items-center justify-center gap-2"
                   >
-                    <DynamicIcon icon={icons?.ui_package} fallback="📦" width={16} height={16} /> اختيار مندوب التحويل
+                    <DynamicIcon icon={icons?.ui_package} fallback="📦" width={14} height={14} /> إسناد مندوب
                   </button>
+                </div>
                 </div>
 
                 {currentAutoCourierName && (
-                  <div className="mt-3 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-900 p-4 shadow-lg border-b-4 border-indigo-950 animate-in fade-in zoom-in duration-300">
-                    <p className="text-[11px] font-black text-indigo-100 flex items-center gap-2 opacity-90">
-                       🔄 التحويل التلقائي مفعل إلى:
+                  <div className="m-4 mt-0 rounded-2xl bg-slate-900 p-4 shadow-xl border-b-4 border-black animate-in fade-in zoom-in duration-300">
+                    <p className="text-[10px] font-black text-slate-400 flex items-center gap-2 uppercase tracking-tighter">
+                       🔄 التحويل التلقائي مفعل إلى
                     </p>
-                    <p className="text-xl font-black text-white mt-1.5 text-center drop-shadow-md">
+                    <p className="text-lg font-black text-white mt-1 flex items-center justify-center gap-2">
                        🚀 {currentAutoCourierName}
                     </p>
                   </div>
@@ -1097,67 +1197,68 @@ export function PendingOrdersClient({
         return (
           <div
             key={o.id}
-            className={`overflow-hidden rounded-xl border transition-all duration-200 ${pricingOpen ? "ring-2 ring-amber-400 shadow-lg" : assignOpen ? "border-emerald-400 bg-emerald-50/20 shadow-md" : orderStatusPendingCardBorderBg()}`}
+            className={`group relative overflow-hidden rounded-3xl border transition-all duration-300 animate-in fade-in slide-in-from-left-4 ${pricingOpen ? "border-indigo-400 ring-4 ring-indigo-50 shadow-2xl" : assignOpen ? "border-emerald-400 bg-emerald-50/20 shadow-lg" : "border-slate-200 bg-white shadow-sm hover:shadow-md"}`}
           >
+            <div className={`h-1 w-full transition-colors ${pricingOpen ? "bg-indigo-600" : assignOpen ? "bg-emerald-600" : "bg-slate-50"}`} />
             <div
-              className={`flex flex-col sm:flex-row gap-3 p-3 cursor-pointer ${pricingOpen ? "bg-amber-50/20" : ""}`}
+              className={`flex flex-col sm:flex-row gap-4 p-4 cursor-pointer ${pricingOpen ? "bg-indigo-50/10" : ""}`}
               onClick={() => router.push(`${SECRET_ADMIN_PATH}/orders/${o.id}`)}
             >
-              <div className="flex sm:flex-col gap-2 border-sky-100 sm:border-e sm:pe-2" onClick={e => e.stopPropagation()}>
-                <label className="h-10 w-10 flex items-center justify-center rounded-xl border border-sky-200 bg-white/80 cursor-pointer shadow-sm">
-                  <input type="checkbox" checked={selected.has(o.id)} onChange={() => toggleOne(o.id)} className="h-5 w-5 rounded border-sky-300" />
+              <div className="flex sm:flex-col gap-2 border-slate-100 sm:border-e sm:pe-3" onClick={e => e.stopPropagation()}>
+                <label className="h-10 w-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white cursor-pointer shadow-sm hover:border-indigo-400 transition-all">
+                  <input type="checkbox" checked={selected.has(o.id)} onChange={() => toggleOne(o.id)} className="h-5 w-5 rounded border-slate-300 text-indigo-600" />
                 </label>
                 <button
                   type="button"
                   onClick={() => { setPricingOpenId(pricingOpen ? null : o.id); setAssignOpenId(null); setPrepOpenId(null); }}
-                  className={`h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm transition-all ${pricingOpen ? "bg-amber-600 text-white border-amber-700 ring-2 ring-amber-200" : "bg-white text-amber-600 border-amber-200 hover:bg-amber-50"}`}
+                  className={`h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm transition-all ${pricingOpen ? "bg-slate-900 text-white border-slate-950 ring-4 ring-indigo-100" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"}`}
                 >
                   <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={18} height={18} />
                 </button>
                 <button
                   type="button"
                   onClick={() => { setAssignOpenId(assignOpen ? null : o.id); setPricingOpenId(null); setPrepOpenId(null); }}
-                  className={`h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm transition-all ${assignOpen ? "bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-200" : "bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"}`}
+                  className={`h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm transition-all ${assignOpen ? "bg-emerald-600 text-white border-emerald-700 ring-4 ring-emerald-100" : "bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"}`}
                 >
                   <CheckIcon icons={icons} />
                 </button>
               </div>
 
-              <div className="flex-1 text-right space-y-1">
+              <div className="flex-1 text-right space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="bg-sky-100 text-sky-900 px-2 py-0.5 rounded-md font-black text-xs tabular-nums">{`#${o.orderNumber}`}</span>
+                  <span className="bg-slate-900 text-white px-2 py-0.5 rounded-lg font-black text-[10px] tabular-nums shadow-sm">{`#${o.orderNumber}`}</span>
                   {o.submissionLabel === "طلب متجر" && (
-                    <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-black text-[10px] border border-amber-200 shadow-sm animate-pulse flex items-center gap-1">
-                      <DynamicIcon icon={icons?.store_cart} fallback="🛒" width={12} height={12} /> طلب متجر
+                    <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg font-black text-[9px] border border-amber-200 flex items-center gap-1 shadow-sm">
+                      <DynamicIcon icon={icons?.store_cart} fallback="🛒" width={10} height={10} /> متجر
                     </span>
                   )}
-                  <p className="font-black text-slate-900 leading-snug">
+                  <p className="font-black text-slate-900 leading-snug text-sm sm:text-base">
                     {o.shopCustomerLabel || o.shopName?.trim() || "—"}
                     {o.vehiclePreference === "bike" && <span className="mr-2 text-indigo-600" title="طلب دراجة">🏍️</span>}
                     {o.vehiclePreference === "car" && <span className="mr-2 text-indigo-600" title="طلب سيارة">🚗</span>}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-slate-600">
-                  <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px]">{o.regionName}</span>
-                  <span className="text-emerald-700">{o.orderType}</span>
-                  {o.totalAmount != null && <span className="text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 tabular-nums">{o.totalAmount}</span>}
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="bg-slate-100 px-2 py-0.5 rounded-lg text-[10px] font-bold text-slate-500">{o.regionName}</span>
+                  <span className="text-indigo-600 text-[10px] font-black bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-50">{o.orderType}</span>
+                  {o.totalAmount != null && <span className="text-emerald-700 font-black tabular-nums text-[11px]">{o.totalAmount}</span>}
                 </div>
-                <p className="text-[10px] text-slate-400 font-medium">{o.customerOrderTime}</p>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{o.customerOrderTime}</p>
 
                 {(o.voiceNoteUrl || o.adminVoiceNoteUrl) && (
                   <div className="pt-2 flex flex-col gap-2" onClick={e => e.stopPropagation()}>
                     {o.voiceNoteUrl && (
-                      <div className="bg-sky-50 p-2 rounded-lg border border-sky-100">
-                        <p className="text-[9px] font-bold text-sky-700 mb-1 flex items-center gap-1">
-                          <DynamicIcon icon={icons?.ui_audio} fallback="🎤" width={10} height={10} /> بصمة الزبون:
+                      <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-100 shadow-inner">
+                        <p className="text-[9px] font-black text-slate-500 mb-1.5 flex items-center gap-1">
+                          <DynamicIcon icon={icons?.ui_audio} fallback="🎤" width={10} height={10} /> بصمة الزبون
                         </p>
                         <VoiceNoteAudio src={resolvePublicAssetSrc(o.voiceNoteUrl) || ""} />
                       </div>
                     )}
                     {o.adminVoiceNoteUrl && (
-                      <div className="bg-amber-50 p-2 rounded-lg border border-amber-100">
-                        <p className="text-[9px] font-bold text-amber-700 mb-1 flex items-center gap-1">
-                          <DynamicIcon icon={icons?.ui_audio} fallback="🎧" width={10} height={10} /> ملاحظة الإدارة الصوتية:
+                      <div className="bg-indigo-50/50 p-2.5 rounded-2xl border border-indigo-100 shadow-inner">
+                        <p className="text-[9px] font-black text-indigo-600 mb-1.5 flex items-center gap-1">
+                          <DynamicIcon icon={icons?.ui_audio} fallback="🎧" width={10} height={10} /> ملاحظة الإدارة
                         </p>
                         <VoiceNoteAudio src={resolvePublicAssetSrc(o.adminVoiceNoteUrl) || ""} />
                       </div>
@@ -1166,8 +1267,8 @@ export function PendingOrdersClient({
                 )}
               </div>
 
-              <div className="hidden sm:flex items-start" onClick={(e) => e.stopPropagation()}>
-                <RejectButton orderId={o.id} />
+              <div className="flex items-start mr-auto sm:mr-0" onClick={(e) => e.stopPropagation()}>
+                <RejectButton orderId={o.id} icons={icons} />
               </div>
             </div>
 
@@ -1209,40 +1310,50 @@ export function PendingOrdersClient({
 
       {isDraftMode && pricingModalOrder ? (
         <div
-          className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm overflow-y-auto"
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md overflow-y-auto animate-in fade-in duration-300"
           onClick={() => setPricingOpenId(null)}
         >
           <div
             className="w-full max-w-3xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-3 flex items-center justify-between rounded-2xl bg-white p-3 shadow-sm border border-slate-200">
-              <h3 className="text-sm font-black text-slate-900">نافذة التسعير — {pricingModalOrder.orderType || "مسودة"}</h3>
+            <div className="mb-4 flex items-center justify-between rounded-full bg-white/90 p-2 pl-4 shadow-2xl border border-white/50 backdrop-blur-xl">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-slate-900 flex items-center justify-center text-white shadow-lg">
+                   <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={20} height={20} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-slate-900">نافذة المعالجة الذكية</h3>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{pricingModalOrder.orderType || "تجهيز طلب"}</p>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={() => setPricingOpenId(null)}
-                className="relative z-[410] flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-sm hover:bg-red-700 transition"
-                aria-label="إغلاق نافذة التسعير"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-90 font-black"
+                aria-label="إغلاق"
               >
                 ✕
               </button>
             </div>
 
-            <AdminPricingPanel
-              orderId={pricingModalOrder.id}
-              initialData={pricingModalOrder.preparerShoppingJson}
-              isDraft={true}
-              initialPreparerIds={pricingModalOrder.assignedPreparerIds}
-              orderSummary={pricingModalOrder.summary}
-              shops={shops}
-              preparers={preparers}
-              rawDeliveryPriceDinar={pricingModalOrder.rawDeliveryPriceDinar}
-              onSuccess={() => {
-                setPricingOpenId(null);
-                router.refresh();
-              }}
-              icons={icons}
-            />
+            <div className="animate-in slide-in-from-bottom-8 duration-500">
+              <AdminPricingPanel
+                orderId={pricingModalOrder.id}
+                initialData={pricingModalOrder.preparerShoppingJson}
+                isDraft={true}
+                initialPreparerIds={pricingModalOrder.assignedPreparerIds}
+                orderSummary={pricingModalOrder.summary}
+                shops={shops}
+                preparers={preparers}
+                rawDeliveryPriceDinar={pricingModalOrder.rawDeliveryPriceDinar}
+                onSuccess={() => {
+                  setPricingOpenId(null);
+                  router.refresh();
+                }}
+                icons={icons}
+              />
+            </div>
           </div>
         </div>
       ) : null}

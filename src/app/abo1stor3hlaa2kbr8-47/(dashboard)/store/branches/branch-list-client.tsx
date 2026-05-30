@@ -439,35 +439,35 @@ export function BranchListClient({
     <div className="space-y-6" dir="rtl">
       {/* Bulk Actions Bar */}
       {selectedIds.length > 0 && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-8 py-4 rounded-[2.5rem] shadow-2xl flex items-center gap-6 animate-in slide-in-from-bottom-8 duration-500 border border-slate-700">
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 backdrop-blur-xl text-white px-8 py-5 rounded-3xl shadow-2xl flex items-center gap-6 animate-in slide-in-from-bottom-8 duration-500 border border-white/10">
           <div className="flex flex-col">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">تم تحديد</span>
-            <span className="text-xl font-black text-violet-400">{selectedIds.length} فرع</span>
+            <span className="text-xl font-black text-indigo-400">{selectedIds.length} فرع</span>
           </div>
 
-          <div className="h-10 w-[1px] bg-slate-700" />
+          <div className="h-10 w-[1px] bg-white/10" />
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <select
               onChange={(e) => handleBulkMove(e.target.value)}
               disabled={bulkActionLoading}
-              className="bg-slate-800 border-none rounded-xl px-4 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-violet-500"
+              className="bg-white/10 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
             >
-              <option value="">نقل إلى قسم...</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              <option value="" className="bg-slate-900 text-white">نقل إلى قسم...</option>
+              {categories.map(c => <option key={c.id} value={c.id} className="bg-slate-900 text-white">{c.name}</option>)}
             </select>
 
             <button
               onClick={handleBulkDelete}
               disabled={bulkActionLoading}
-              className="px-6 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+              className="px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-black rounded-xl transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-rose-500/20"
             >
-              {bulkActionLoading ? "جاري الحذف..." : <><DynamicIcon icon={icons?.ui_delete} fallback="🗑️" className="w-3.5 h-3.5" /> حذف المحدد</>}
+              {bulkActionLoading ? "جاري الحذف..." : <><DynamicIcon icon={icons?.ui_delete} fallback="🗑️" className="w-4 h-4" /> حذف المحدد</>}
             </button>
 
             <button
               onClick={() => setSelectedIds([])}
-              className="p-2 text-slate-400 hover:text-white transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all"
             >
               ✕
             </button>
@@ -476,22 +476,24 @@ export function BranchListClient({
       )}
 
       {/* Search & Actions Header */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-3xl border border-slate-100 shadow-sm transition-all">
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-3xl border border-slate-200/60 shadow-sm transition-all">
         <div className="flex items-center gap-3 w-full md:w-auto">
           <button
             onClick={toggleSelectAll}
-            className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${selectedIds.length === filteredBranches.length ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all border ${selectedIds.length === filteredBranches.length ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100'}`}
           >
             {selectedIds.length === filteredBranches.length ? "✓" : "☐"}
           </button>
           <div className="relative flex-1 md:w-80">
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+                <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-4 h-4" />
+            </span>
             <input
               type="text"
               placeholder="بحث في الأفرع..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pr-12 pl-4 py-3 rounded-2xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-violet-500 font-bold text-sm transition-all"
+              className="w-full pr-12 pl-4 py-3.5 rounded-2xl bg-slate-50 border-none outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-sm transition-all"
             />
           </div>
         </div>
@@ -517,7 +519,7 @@ export function BranchListClient({
               cursor: isDragging ? 'grabbing' : 'grab',
               touchAction: 'none'
             }}
-            className={`fixed z-[110] w-16 h-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center text-2xl hover:bg-indigo-700 hover:scale-110 active:scale-95 transition-transform ${isDragging ? '' : 'animate-bounce-subtle'}`}
+            className={`fixed z-[110] w-16 h-16 bg-indigo-600 text-white rounded-[1.75rem] shadow-2xl flex items-center justify-center text-2xl hover:bg-indigo-700 hover:scale-105 active:scale-95 transition-all shadow-indigo-500/30 ${isDragging ? '' : 'animate-bounce-subtle'}`}
             title={showScraper ? "إغلاق السحب" : "✨ سحب فرع ذكي (اسحب لتغيير مكاني)"}
           >
             {showScraper ? <DynamicIcon icon={icons?.ui_close} fallback="✕" className="w-6 h-6" /> : <DynamicIcon icon={icons?.ui_flash} fallback="✨" className="w-8 h-8" />}
@@ -529,14 +531,14 @@ export function BranchListClient({
               setShowForm(!showForm);
               setShowScraper(false);
             }}
-            className="flex-1 md:flex-none px-8 py-3 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+            className="flex-1 md:flex-none px-8 py-3.5 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
           >
             {showForm ? <><DynamicIcon icon={icons?.ui_close} fallback="✕" className="w-4 h-4" /> إغلاق</> : <><DynamicIcon icon={icons?.ui_add} fallback="+" className="w-4 h-4" /> إضافة فرع</>}
           </button>
           {defaultCategoryId && (
              <Link
                 href={`${SECRET_ADMIN_PATH}/store/products?categoryId=${defaultCategoryId}`}
-                className="flex-1 md:flex-none px-8 py-3 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 transition shadow-lg shadow-emerald-100 text-center active:scale-95 flex items-center justify-center gap-2"
+                className="flex-1 md:flex-none px-8 py-3.5 bg-indigo-50 text-indigo-700 font-black rounded-2xl hover:bg-indigo-100 transition shadow-sm border border-indigo-100 text-center active:scale-95 flex items-center justify-center gap-2"
              >
                 <DynamicIcon icon={icons?.ui_box} fallback="📦" className="w-4 h-4" /> المنتجات
              </Link>
@@ -546,42 +548,48 @@ export function BranchListClient({
 
       {/* Smart Scraper Panel (Fixed Overlay) */}
       {showScraper && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
-          <div className="bg-gradient-to-br from-indigo-50 to-white w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-[3rem] border-2 border-indigo-100 shadow-2xl flex flex-col animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-[2.5rem] border border-slate-200/60 shadow-2xl flex flex-col animate-in zoom-in-95 duration-300">
             <div className="p-8 pb-4 flex items-center justify-between shrink-0">
-                <h2 className="text-xl font-black text-indigo-900 flex items-center gap-2">
-                    <span>🚀 السحب الذكي للأفرع</span>
-                </h2>
                 <div className="flex items-center gap-4">
-                    <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-indigo-100/50 rounded-xl">
-                        <span className="text-xs font-black text-indigo-600">القسم المستهدف:</span>
+                    <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
+                        <DynamicIcon iconKey="ui_flash" config={icons} fallback="⚡" className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-black text-slate-900">السحب الذكي للأفرع</h2>
+                        <p className="text-xs text-slate-500 font-bold">استيراد جماعي للأفرع والمنتجات من الروابط</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-4">
+                    <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">القسم المستهدف:</span>
                         <select
                             id="bulkCategoryGlobal"
                             defaultValue={defaultCategoryId || ""}
-                            className="bg-transparent border-none outline-none text-xs font-black text-indigo-900"
+                            className="bg-transparent border-none outline-none text-xs font-black text-slate-900 cursor-pointer"
                         >
                             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                     </div>
                     <button
                         onClick={() => setShowScraper(false)}
-                        className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm hover:bg-rose-50 hover:text-rose-500 transition-colors"
+                        className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all border border-slate-100"
                     >✕</button>
                 </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 pt-0 space-y-4 custom-scrollbar">
                 {/* Tabs to switch between Input and Processing */}
-                <div className="flex gap-2 mb-6 sticky top-0 bg-white/80 backdrop-blur-md z-30 py-2 border-b border-indigo-50">
+                <div className="flex gap-2 mb-6 sticky top-0 bg-white/80 backdrop-blur-md z-30 py-4 border-b border-slate-100">
                     <button
                         onClick={() => setShowActiveList(false)}
-                        className={`flex-1 py-3 rounded-2xl font-black text-[11px] transition-all ${!showActiveList ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                        className={`flex-1 py-3.5 rounded-2xl font-black text-[11px] transition-all border ${!showActiveList ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100'}`}
                     >
                         📝 إضافة روابط ({importSessions.filter(s => !s.url && s.status === 'idle').length})
                     </button>
                     <button
                         onClick={() => setShowActiveList(true)}
-                        className={`flex-1 py-3 rounded-2xl font-black text-[11px] transition-all ${showActiveList ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                        className={`flex-1 py-3.5 rounded-2xl font-black text-[11px] transition-all border ${showActiveList ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100'}`}
                     >
                         ⏳ المعالجة ({importSessions.filter(s => s.url || s.status !== 'idle').length})
                     </button>
@@ -589,12 +597,13 @@ export function BranchListClient({
 
                 {/* Quick Add More Button (Only in Input tab) */}
                 {!showActiveList && importSessions.length > 0 && (
-                    <div className="flex justify-between items-center mb-4 px-4">
+                    <div className="flex justify-between items-center mb-6 px-2">
                         <button
                             onClick={() => document.getElementById('bulk-image-input-more')?.click()}
-                            className="px-6 py-2 bg-indigo-100 text-indigo-700 rounded-xl text-xs font-black hover:bg-indigo-200 transition-colors flex items-center gap-2"
+                            className="px-6 py-2.5 bg-indigo-50 text-indigo-700 rounded-xl text-[10px] font-black hover:bg-indigo-100 transition-all flex items-center gap-2 border border-indigo-100"
                         >
-                            <span>📷 إضافة من الصور</span>
+                            <DynamicIcon iconKey="ui_image" config={icons} fallback="📷" className="w-3.5 h-3.5" />
+                            <span>إضافة من الصور</span>
                         </button>
                         <input
                             id="bulk-image-input-more"
@@ -605,8 +614,8 @@ export function BranchListClient({
                             onChange={(e) => e.target.files && handleBulkImageUpload(e.target.files)}
                         />
                         <button
-                            onClick={() => setImportSessions([])}
-                            className="text-[10px] font-bold text-rose-400 hover:text-rose-600"
+                            onClick={() => setConfirmDelete("ALL_SESSIONS" as any)} // Using confirmDelete state temporarily for UI feedback
+                            className="text-[10px] font-black text-rose-400 hover:text-rose-600 transition-colors uppercase tracking-widest"
                         >✕ مسح الكل</button>
                     </div>
                 )}
@@ -616,18 +625,21 @@ export function BranchListClient({
                     .map((session, index) => (
                     <div
                         key={session.id}
-                        className="p-5 rounded-[2rem] border-2 mb-4 bg-white border-indigo-50 shadow-sm animate-in fade-in slide-in-from-bottom-2"
+                        className="p-6 rounded-3xl border border-slate-100 mb-4 bg-slate-50/50 hover:bg-white hover:shadow-xl hover:shadow-slate-200/40 transition-all group"
                     >
-                        <div className="flex flex-col md:flex-row gap-4 items-center">
-                            <div className="w-full md:w-16 h-16 shrink-0 relative group">
+                        <div className="flex flex-col md:flex-row gap-6 items-center">
+                            <div className="w-full md:w-20 h-20 shrink-0 relative group/img">
                                 <div
                                     onClick={() => document.getElementById(`file-${session.id}`)?.click()}
-                                    className="w-full h-full rounded-2xl bg-indigo-50 border-2 border-dashed border-indigo-200 flex items-center justify-center cursor-pointer overflow-hidden"
+                                    className="w-full h-full rounded-2xl bg-white border-2 border-dashed border-slate-200 flex items-center justify-center cursor-pointer overflow-hidden group-hover/img:border-indigo-300 transition-all"
                                 >
                                     {session.manualImageUrl || session.branchData?.imageUrl ? (
                                         <img src={session.manualImageUrl || session.branchData?.imageUrl} className="w-full h-full object-cover" />
                                     ) : (
-                                        <span className="text-xl">📷</span>
+                                        <div className="flex flex-col items-center gap-1 text-slate-300">
+                                            <DynamicIcon iconKey="ui_image" config={icons} fallback="📷" className="w-6 h-6" />
+                                            <span className="text-[8px] font-black uppercase">صورة</span>
+                                        </div>
                                     )}
                                 </div>
                                 <input
@@ -638,65 +650,74 @@ export function BranchListClient({
                                 />
                             </div>
 
-                            <div className="flex-1 w-full space-y-1">
+                            <div className="flex-1 w-full space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <label className="text-[10px] font-black text-indigo-400 mr-2">فرع رقم {index + 1}:</label>
-                                    {session.status === 'scraping' && <span className="text-[10px] font-bold text-indigo-600 animate-pulse">⏳ جاري الفحص...</span>}
-                                    {session.status === 'importing' && <span className="text-[10px] font-bold text-amber-600 animate-pulse">🚚 جاري سحب {session.total} منتج...</span>}
-                                    {session.status === 'completed' && <span className="text-[10px] font-bold text-emerald-600">✅ اكتمل بنجاح</span>}
-                                    {session.status === 'error' && <span className="text-[10px] font-bold text-rose-500">❌ {session.error}</span>}
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">فرع رقم {index + 1}:</label>
+                                    {session.status === 'scraping' && <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-black animate-pulse border border-indigo-100">⏳ جاري الفحص...</span>}
+                                    {session.status === 'importing' && <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-600 text-[10px] font-black animate-pulse border border-amber-100">🚚 جاري سحب {session.total} منتج...</span>}
+                                    {session.status === 'completed' && <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black border border-emerald-100">✅ اكتمل بنجاح</span>}
+                                    {session.status === 'error' && <span className="px-3 py-1 rounded-full bg-rose-50 text-rose-500 text-[10px] font-black border border-rose-100">❌ {session.error}</span>}
                                 </div>
                                 <input
                                     value={session.url}
                                     onChange={(e) => handleSessionChange(session.id, e.target.value)}
                                     placeholder="ضع رابط الفرع هنا..."
-                                    className="w-full px-5 py-3 rounded-xl bg-slate-50 border-2 border-transparent focus:border-indigo-500 font-bold outline-none transition-all text-sm"
+                                    className="w-full px-5 py-3.5 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-bold outline-none transition-all text-sm shadow-sm"
                                 />
-                                <div className="flex items-center justify-between px-2">
+                                <div className="flex items-center justify-between px-1">
                                     {session.branchData ? (
-                                        <p className="text-[11px] font-black text-slate-600 flex items-center gap-2">
-                                            🏷️ <span className="text-indigo-600">{session.branchData.name}</span>
-                                            • 📦 <span className="text-slate-400">{session.total} منتج</span>
-                                        </p>
+                                        <div className="flex items-center gap-3">
+                                            <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-black rounded-lg border border-indigo-100/50">{session.branchData.name}</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase">• {session.total} منتج</span>
+                                        </div>
                                     ) : (
                                         <div />
                                     )}
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-4">
                                         {session.branchId && (
                                             <>
                                                 <button
                                                     onClick={() => handleResetSession(session.id)}
-                                                    className="text-[10px] font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"
+                                                    className="text-[10px] font-black text-amber-600 hover:text-amber-700 transition-colors uppercase"
                                                 >
-                                                    🔄 إعادة
+                                                    🔄 إعادة السحب
                                                 </button>
                                                 <button
                                                     onClick={() => handleContinueSession(session.id)}
-                                                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                                                    className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 transition-colors uppercase"
                                                 >
-                                                    ✨ تكملة
+                                                    ✨ تكملة النواقص
                                                 </button>
                                             </>
                                         )}
                                         <button
                                             onClick={() => handleCancelSession(session.id)}
-                                            className="text-[10px] font-bold text-rose-500 hover:text-rose-700 flex items-center gap-1"
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors border border-rose-100/50"
                                         >
-                                            🗑️ إلغاء ومسح
+                                            <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
                             {session.status !== 'idle' && (
-                                <div className="w-full md:w-32 shrink-0">
-                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                                        <div
-                                            className={`h-full transition-all duration-300 ${session.status === 'completed' ? 'bg-emerald-500' : 'bg-indigo-500 animate-pulse'}`}
-                                            style={{ width: `${session.total > 0 ? (session.progress / session.total) * 100 : 0}%` }}
-                                        ></div>
+                                <div className="w-full md:w-32 shrink-0 flex flex-col items-center">
+                                    <div className="relative w-16 h-16 mb-2">
+                                        <svg className="w-full h-full -rotate-90">
+                                            <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" strokeWidth="4" className="text-slate-100" />
+                                            <circle
+                                                cx="32" cy="32" r="28" fill="none" stroke="currentColor" strokeWidth="4"
+                                                className={session.status === 'completed' ? 'text-emerald-500' : 'text-indigo-600'}
+                                                strokeDasharray={175.9}
+                                                strokeDashoffset={175.9 - (175.9 * (session.total > 0 ? (session.progress / session.total) : 0))}
+                                                strokeLinecap="round"
+                                            />
+                                        </svg>
+                                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black">
+                                            {Math.round(session.total > 0 ? (session.progress / session.total) * 100 : 0)}%
+                                        </div>
                                     </div>
-                                    <p className="text-[9px] font-black text-center mt-1 text-slate-400">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
                                         {session.progress} / {session.total}
                                     </p>
                                 </div>
@@ -706,29 +727,31 @@ export function BranchListClient({
                 ))}
 
                 {importSessions.length > 0 && !importSessions.some(s => s.status === 'idle' && !s.url && !s.manualImage) && (
-                  <div className="flex justify-center pt-2">
+                  <div className="flex justify-center pt-4">
                     <button
                       onClick={() => setImportSessions(prev => [...prev, createEmptySession()])}
-                      className="px-6 py-2 bg-white border border-indigo-200 text-indigo-700 rounded-xl text-xs font-black hover:bg-indigo-50 transition-colors"
+                      className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[10px] font-black hover:bg-slate-50 transition-all hover:border-indigo-300 hover:text-indigo-600 flex items-center gap-2"
                     >
-                      ➕ إضافة فرع آخر
+                      <DynamicIcon iconKey="ui_plus" config={icons} fallback="+" className="w-3.5 h-3.5" />
+                      إضافة حقل فرع آخر
                     </button>
                   </div>
                 )}
             </div>
 
-            <div className="p-8 border-t flex flex-col items-center gap-4 bg-slate-50 shrink-0">
+            <div className="p-8 border-t flex flex-col items-center gap-6 bg-slate-50/50 shrink-0">
                 {importSessions.some(s => s.status === 'scraping' || s.status === 'importing') && (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-full border border-amber-100">
-                        <span className="w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
-                        <span className="text-[10px] font-black text-amber-700">جاري معالجة بعض الأفرع... يفضل الانتظار حتى الانتهاء</span>
+                    <div className="flex items-center gap-3 px-6 py-2.5 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-500/20 border border-indigo-400/30">
+                        <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">جاري معالجة البيانات...</span>
                     </div>
                 )}
                 <button
                     onClick={() => window.location.reload()}
-                    className="w-full md:w-auto px-12 py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 shadow-xl shadow-emerald-100 transition-all active:scale-95 flex items-center justify-center gap-3"
+                    className="w-full md:w-auto px-16 py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3"
                 >
-                    <span>🚀 إنهاء وتحديث الصفحة</span>
+                    <DynamicIcon iconKey="ui_check" config={icons} fallback="✓" className="w-5 h-5" />
+                    <span>إنهاء العمل وتحديث البيانات</span>
                 </button>
             </div>
           </div>
@@ -737,10 +760,18 @@ export function BranchListClient({
 
       {/* Upsert Form */}
       {(showForm || editing) && (
-        <div className="bg-white p-8 rounded-[2.5rem] border-2 border-violet-100 shadow-2xl animate-in fade-in zoom-in duration-300">
+        <div className="bg-white p-8 rounded-3xl border border-indigo-100 shadow-2xl shadow-indigo-500/5 animate-in fade-in zoom-in duration-300">
           <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-50">
-            <h2 className="text-2xl font-black text-slate-900">{editing ? "تعديل بيانات الفرع" : "إضافة فرع جديد للقسم"}</h2>
-            <button onClick={() => { setEditing(null); setShowForm(false); }} className="text-slate-400 hover:text-rose-500 transition">✕</button>
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
+                    <DynamicIcon iconKey={editing ? "ui_edit" : "ui_plus"} config={icons} fallback="+" className="w-6 h-6" />
+                </div>
+                <div>
+                    <h2 className="text-2xl font-black text-slate-900">{editing ? "تعديل بيانات الفرع" : "إضافة فرع جديد للقسم"}</h2>
+                    <p className="text-sm text-slate-500 font-bold">إدارة تفاصيل الفرع ومستويات التسعير</p>
+                </div>
+            </div>
+            <button onClick={() => { setEditing(null); setShowForm(false); }} className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:text-rose-500 transition-all border border-slate-100">✕</button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -748,13 +779,16 @@ export function BranchListClient({
             <input type="hidden" name="currentPhotoUrl" value={editing?.photoUrl || ""} />
             <input type="hidden" name="active" value={editing ? String(editing.active) : "true"} />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">القسم الرئيسي</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="space-y-3">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                        القسم الرئيسي
+                    </label>
                     <select
                         name="categoryId"
                         defaultValue={editing?.categoryId || defaultCategoryId || ""}
-                        className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-violet-500 focus:bg-white outline-none font-bold transition-all text-sm"
+                        className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold transition-all text-sm cursor-pointer"
                         required
                     >
                         <option value="">اختر القسم...</option>
@@ -762,92 +796,116 @@ export function BranchListClient({
                     </select>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">اسم الفرع</label>
+                <div className="space-y-3">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                        اسم الفرع
+                    </label>
                     <input
                         name="name"
                         defaultValue={editing?.name || ""}
-                        className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-violet-500 focus:bg-white outline-none font-bold transition-all text-sm"
+                        className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold transition-all text-sm"
                         placeholder="مثلاً: خضروات ورقية..."
                         required
                     />
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">الفرع الأب (اختياري)</label>
+                <div className="space-y-3">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                        الفرع الأب (اختياري)
+                    </label>
                     <select
                         name="parentBranchId"
                         defaultValue={editing?.parentBranchId || ""}
-                        className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-violet-500 focus:bg-white outline-none font-bold transition-all text-sm"
+                        className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold transition-all text-sm cursor-pointer"
                     >
                         <option value="">لا يوجد (فرع رئيسي)</option>
                         {potentialParents.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">تسلسل العرض</label>
+                <div className="space-y-3">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                        تسلسل العرض
+                    </label>
                     <input
                         name="sequence"
                         type="number"
                         defaultValue={editing?.sequence || 0}
-                        className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-violet-500 focus:bg-white outline-none font-bold transition-all text-sm"
+                        className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold transition-all text-sm"
                     />
                 </div>
 
-                <div className="space-y-2 lg:col-span-2">
-                    <label className="text-xs font-black text-violet-600 uppercase tracking-widest mr-2">المجهز المفوّض بالتسعير</label>
+                <div className="space-y-3 lg:col-span-2">
+                    <label className="text-xs font-black text-indigo-600 uppercase tracking-widest mr-2 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                        المجهز المفوّض بالتسعير
+                    </label>
                     <select
                         name="authorizedPreparerId"
                         defaultValue={editing?.authorizedPreparerId || ""}
-                        className="w-full px-5 py-3 rounded-2xl bg-violet-50/50 border-2 border-violet-100 focus:border-violet-500 focus:bg-white outline-none font-black transition-all text-sm text-violet-900"
+                        className="w-full px-5 py-4 rounded-2xl bg-indigo-50/30 border-2 border-indigo-100/50 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none font-black transition-all text-sm text-indigo-900 cursor-pointer"
                     >
                         <option value="">غير مفوّض (الإدارة فقط)</option>
                         {preparers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                 </div>
 
-                <div className="space-y-2 lg:col-span-1">
-                    <label className="text-xs font-black text-emerald-600 uppercase tracking-widest mr-2">هامش الربح</label>
+                <div className="space-y-3 lg:col-span-1">
+                    <label className="text-xs font-black text-emerald-600 uppercase tracking-widest mr-2 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                        هامش الربح
+                    </label>
                     <div className="relative">
                         <input
                             name="profitMargin"
                             type="number"
                             step="0.01"
                             defaultValue={editing?.profitMargin || 0.25}
-                            className="w-full px-5 py-3 rounded-2xl bg-emerald-50/50 border-2 border-emerald-100 focus:border-emerald-500 focus:bg-white outline-none font-black transition-all text-sm text-emerald-900"
+                            className="w-full px-5 py-4 rounded-2xl bg-emerald-50/30 border-2 border-emerald-100/50 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 outline-none font-black transition-all text-sm text-emerald-900"
                         />
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-emerald-600">%</span>
+                        <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xs font-black text-emerald-600">%</span>
                     </div>
                 </div>
 
-                <div className="space-y-2 lg:col-span-1">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">صورة الفرع</label>
-                    <input
-                        name="photo"
-                        type="file"
-                        accept="image/*"
-                        className="w-full px-4 py-2 text-xs font-bold text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer"
-                    />
+                <div className="space-y-3 lg:col-span-1">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                        صورة الفرع
+                    </label>
+                    <div className="relative group">
+                        <input
+                            name="photo"
+                            type="file"
+                            accept="image/*"
+                            className="w-full px-4 py-3 text-xs font-bold text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 hover:border-indigo-300 transition-all"
+                        />
+                    </div>
                 </div>
 
-                <div className="space-y-2 lg:col-span-4">
-                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">ملاحظة تظهر للزبون عند فتح هذا الفرع</label>
+                <div className="space-y-3 lg:col-span-4">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                        ملاحظة تظهر للزبون عند فتح هذا الفرع
+                    </label>
                     <textarea
                         name="notes"
                         defaultValue={editing?.notes || ""}
                         rows={2}
-                        className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-violet-500 focus:bg-white outline-none font-bold transition-all resize-none text-sm"
+                        className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold transition-all resize-none text-sm"
                         placeholder="مثلاً: جميع هذه المنتجات طازجة وتصلنا يومياً..."
                     />
                 </div>
             </div>
 
-            <div className="flex gap-3 pt-6 border-t border-slate-50">
+            <div className="flex gap-4 pt-8 border-t border-slate-100">
               <button
                 disabled={loading}
-                className="flex-1 md:flex-none px-12 py-4 bg-violet-600 text-white font-black rounded-2xl hover:bg-violet-700 disabled:opacity-50 shadow-xl shadow-violet-100 transition-all active:scale-95"
+                className="flex-1 md:flex-none px-12 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 disabled:opacity-50 shadow-xl shadow-indigo-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
+                {loading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                 {loading ? "جاري الحفظ..." : "حفظ بيانات الفرع"}
               </button>
               <button
@@ -867,52 +925,57 @@ export function BranchListClient({
         {filteredBranches.map((br) => (
           <div
             key={br.id}
-            className={`relative group bg-white p-4 rounded-[2.5rem] border-2 transition-all duration-300 flex flex-col ${selectedIds.includes(br.id) ? 'border-violet-500 ring-4 ring-violet-50 shadow-2xl' : br.active ? 'border-transparent shadow-xl shadow-slate-200/50 hover:border-violet-100' : 'border-slate-100 bg-slate-50/50 grayscale'}`}
+            className={`relative group bg-white p-4 rounded-3xl border-2 transition-all duration-300 flex flex-col ${selectedIds.includes(br.id) ? 'border-indigo-500 ring-4 ring-indigo-50 shadow-2xl' : br.active ? 'border-transparent shadow-xl shadow-slate-200/40 hover:border-indigo-100' : 'border-slate-100 bg-slate-50/50 grayscale opacity-80'}`}
           >
             {/* Selection Checkbox Overlay */}
             <div
               onClick={() => toggleSelect(br.id)}
-              className={`absolute top-4 right-4 z-20 w-8 h-8 rounded-xl border-2 cursor-pointer flex items-center justify-center transition-all ${selectedIds.includes(br.id) ? 'bg-violet-600 border-violet-600 text-white' : 'bg-white/80 border-slate-200 text-transparent hover:border-violet-300'}`}
+              className={`absolute top-4 right-4 z-20 w-8 h-8 rounded-xl border-2 cursor-pointer flex items-center justify-center transition-all ${selectedIds.includes(br.id) ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white/80 border-slate-200 text-transparent hover:border-indigo-300'}`}
             >
               ✓
             </div>
 
             {/* Status Badge */}
-            <div className={`absolute top-6 left-6 z-10 w-3 h-3 rounded-full border-2 border-white shadow-sm ${br.active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+            <div className={`absolute top-6 left-6 z-10 px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter shadow-sm border ${br.active ? 'bg-indigo-600 text-white border-indigo-400' : 'bg-slate-200 text-slate-500 border-slate-300'}`}>
+                {br.active ? 'نشط' : 'مخفي'}
+            </div>
 
             <Link href={`${SECRET_ADMIN_PATH}/store/products?branchId=${br.id}`} className="flex-1 block">
-              <div className="relative aspect-square mb-4 overflow-hidden rounded-[2rem] bg-slate-50 shadow-inner">
+              <div className="relative aspect-square mb-4 overflow-hidden rounded-2xl bg-slate-50 shadow-inner group-hover:shadow-indigo-100 transition-all">
                 {br.photoUrl ? (
                   <img src={br.photoUrl} alt={br.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-5xl">🌿</div>
+                  <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-slate-50 to-indigo-50/30">
+                    <DynamicIcon iconKey="ui_branch" config={icons} fallback="🌿" className="w-16 h-16 text-indigo-200" />
+                  </div>
                 )}
               </div>
               <div className="text-center pb-2">
-                <span className="text-[10px] font-black text-violet-500 bg-violet-50 px-2 py-0.5 rounded-full mb-1 inline-block">
+                <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2.5 py-1 rounded-lg mb-2 inline-block border border-indigo-100/50">
                     {br.category?.name}
                 </span>
-                <h3 className="font-black text-slate-900 group-hover:text-violet-600 transition-colors line-clamp-1">{br.name}</h3>
-                <div className="flex items-center justify-center gap-2 mt-1">
-                    <span className="text-[10px] text-slate-400 font-black uppercase">
+                <h3 className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1 text-lg">{br.name}</h3>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">
                         {br.parentBranch ? `تابع لـ: ${br.parentBranch.name}` : "فرع رئيسي"}
                     </span>
-                    <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-                    <span className="text-[10px] text-emerald-600 font-black">
-                        📦 {br._count?.products || 0}
+                    <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
+                    <span className="text-[10px] text-indigo-600 font-black flex items-center gap-1">
+                        <DynamicIcon iconKey="ui_box" config={icons} fallback="📦" className="w-3 h-3" />
+                        {br._count?.products || 0}
                     </span>
                 </div>
               </div>
             </Link>
 
             {/* Actions Bar */}
-            <div className="mt-4 grid grid-cols-4 gap-2">
+            <div className="mt-4 grid grid-cols-4 gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <button
                 onClick={() => startSyncForBranch(br, 'continue')}
-                className="p-2 bg-indigo-50 text-indigo-700 rounded-xl text-[10px] font-black hover:bg-indigo-100 transition-colors flex items-center justify-center"
+                className="p-2.5 bg-indigo-50 text-indigo-700 rounded-xl text-[10px] font-black hover:bg-indigo-100 transition-colors flex items-center justify-center border border-indigo-100/50"
                 title="تكملة سحب المنتجات"
               >
-                <DynamicIcon icon={icons?.ui_flash} fallback="✨" className="w-3.5 h-3.5" />
+                <DynamicIcon iconKey="ui_flash" config={icons} fallback="✨" className="w-4 h-4" />
               </button>
               <button
                 onClick={() => {
@@ -920,30 +983,33 @@ export function BranchListClient({
                   setShowForm(true);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="p-2 bg-sky-50 text-sky-700 rounded-xl text-[10px] font-black hover:bg-sky-100 transition-colors flex items-center justify-center"
+                className="p-2.5 bg-sky-50 text-sky-700 rounded-xl text-[10px] font-black hover:bg-sky-100 transition-colors flex items-center justify-center border border-sky-100/50"
                 title="تعديل"
               >
-                <DynamicIcon icon={icons?.ui_edit} fallback="✏️" className="w-3.5 h-3.5" />
+                <DynamicIcon iconKey="ui_edit" config={icons} fallback="✏️" className="w-4 h-4" />
               </button>
               <button
                 onClick={() => handleToggleActive(br)}
-                className={`p-2 rounded-xl text-[10px] font-black transition-colors flex items-center justify-center ${br.active ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}
+                className={`p-2.5 rounded-xl text-[10px] font-black transition-colors flex items-center justify-center border ${br.active ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100/50' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100/50'}`}
                 title={br.active ? "إخفاء من المتجر" : "إظهار في المتجر"}
               >
-                <DynamicIcon icon={br.active ? icons?.ui_visibility_on : icons?.ui_visibility_off} fallback={br.active ? "👁️" : "🕶️"} className="w-3.5 h-3.5" />
+                <DynamicIcon iconKey={br.active ? "ui_eye_off" : "ui_eye"} config={icons} fallback={br.active ? "👁️" : "🕶️"} className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setConfirmDelete(br.id)}
-                className="p-2 bg-rose-50 text-rose-700 rounded-xl text-[10px] font-black hover:bg-rose-100 transition-colors flex items-center justify-center"
+                className="p-2.5 bg-rose-50 text-rose-700 rounded-xl text-[10px] font-black hover:bg-rose-100 transition-colors flex items-center justify-center border border-rose-100/50"
                 title="حذف نهائي"
               >
-                <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" className="w-3.5 h-3.5" />
+                <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-4 h-4" />
               </button>
             </div>
 
             {/* Delete Overlay */}
             {confirmDelete === br.id && (
-                <div className="absolute inset-0 z-20 bg-rose-600/95 backdrop-blur-sm rounded-[2.5rem] flex flex-col items-center justify-center p-4 text-center animate-in fade-in zoom-in duration-200">
+                <div className="absolute inset-0 z-20 bg-slate-900/90 backdrop-blur-sm rounded-3xl flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in duration-200">
+                    <div className="w-12 h-12 bg-rose-500 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-rose-500/20">
+                        <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-6 h-6" />
+                    </div>
                     <p className="text-white font-black text-xs mb-4 leading-relaxed">سيتم حذف الفرع وربما يؤثر على المنتجات التابعة له. هل أنت متأكد؟</p>
                     <div className="flex gap-2 w-full">
                         <button
@@ -951,11 +1017,11 @@ export function BranchListClient({
                                 await deleteBranch(br.id);
                                 window.location.reload();
                             }}
-                            className="flex-1 py-2 bg-white text-rose-600 rounded-xl font-black text-[10px]"
+                            className="flex-1 py-3 bg-rose-600 text-white rounded-xl font-black text-[10px] hover:bg-rose-700 transition-colors"
                         >نعم، احذف</button>
                         <button
                             onClick={() => setConfirmDelete(null)}
-                            className="flex-1 py-2 bg-rose-800 text-white rounded-xl font-black text-[10px]"
+                            className="flex-1 py-3 bg-white/10 text-white rounded-xl font-black text-[10px] hover:bg-white/20 transition-colors"
                         >إلغاء</button>
                     </div>
                 </div>

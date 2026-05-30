@@ -229,7 +229,7 @@ export function AdminShell({
       <button
         type="button"
         onClick={() => setNavOpen((o) => !o)}
-        className="fixed start-4 top-4 z-[170] flex h-10 min-w-10 items-center justify-center gap-2 rounded-xl border border-slate-700 bg-[#09090b] px-2 text-[#00f3ff] shadow-[0_0_10px_rgba(0,243,255,0.2)]"
+        className="fixed start-4 top-4 z-[170] flex h-10 min-w-10 items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 text-indigo-600 dark:text-indigo-400 shadow-lg shadow-indigo-500/10"
         title={navOpen ? "إخفاء القائمة" : "إظهار القائمة"}
       >
         <span className="sr-only">{navOpen ? "إخفاء القائمة" : "إظهار القائمة"}</span>
@@ -241,7 +241,7 @@ export function AdminShell({
         <button
           type="button"
           onClick={() => setNavOpen(false)}
-          className="fixed start-4 top-16 z-[170] hidden h-8 items-center justify-center rounded-lg border border-slate-300 bg-white/90 px-2 text-xs font-bold text-slate-700 shadow-sm dark:border-white/20 dark:bg-[#0f1115]/90 dark:text-slate-200 lg:flex"
+          className="fixed start-4 top-16 z-[170] hidden h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 lg:flex"
           title="إخفاء القائمة"
         >
           إخفاء
@@ -259,8 +259,8 @@ export function AdminShell({
       {/* Sidebar */}
       <aside
         className={`
-          fixed z-[160] flex flex-col border-e border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)]
-          bg-white/95 dark:bg-[#09090b]/95 shadow-[4px_0_20px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_20px_rgba(0,0,0,0.8)]
+          fixed z-[160] flex flex-col border-e border-slate-200 dark:border-slate-800
+          bg-slate-50/95 dark:bg-slate-950/95 shadow-xl dark:shadow-2xl
           backdrop-blur-md ${isResizing ? "transition-none" : "transition-[width,transform] duration-200 ease-out"}
           inset-y-0 start-0 w-72
           ${effectiveNavOpen ? "translate-x-0 pointer-events-auto" : "translate-x-full pointer-events-none"}
@@ -268,12 +268,12 @@ export function AdminShell({
         `}
         style={{ width: navWidth }}
       >
-        <div className="flex h-16 w-full items-center justify-between px-4 border-b border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] shrink-0">
+        <div className="flex h-16 w-full items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-2 ms-12">
-            <div className="flex w-8 h-8 rounded-full bg-gradient-to-br from-[#00f3ff] to-[#e028ff] items-center justify-center shadow-[0_0_10px_rgba(224,40,255,0.5)]">
-              <span className="text-black font-black text-xs">OR</span>
+            <div className="flex w-8 h-8 rounded-full bg-indigo-600 items-center justify-center shadow-lg shadow-indigo-500/20">
+              <span className="text-white font-black text-xs">OR</span>
             </div>
-            <span className="text-[10px] font-black tracking-widest text-slate-400 dark:text-slate-600 uppercase">
+            <span className="text-[10px] font-black tracking-widest text-slate-500 dark:text-slate-400 uppercase">
               Admin Portal
             </span>
           </div>
@@ -288,19 +288,19 @@ export function AdminShell({
                 onClick={() => setNavOpen(false)}
                 className={
                   navItemActive(pathname, SECRET_ADMIN_PATH)
-                    ? `inline-flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"} rounded-xl bg-sky-100 dark:bg-[#002a3a] border border-sky-400 dark:border-[#00f3ff] text-sky-700 dark:text-[#00f3ff] shadow-sm dark:shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all`
-                    : `inline-flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"} rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all`
+                    ? `inline-flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"} rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 shadow-sm transition-all`
+                    : `inline-flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"} rounded-2xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-all`
                 }
                 style={{ height: 36 * itemScale, fontSize: 12 * itemScale }}
               >
                 <span className="shrink-0" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }} aria-hidden>
-                  <DynamicIcon iconKey="ui_home" config={icons} fallback="🏠" className="w-6 h-6" />
+                  <DynamicIcon iconKey="ui_home" config={icons} fallback="🏠" className="w-5 h-5" />
                 </span>
-                {isCompact ? null : <span className="leading-snug font-medium block whitespace-nowrap">الرئيسية</span>}
+                {isCompact ? null : <span className="leading-snug font-semibold block whitespace-nowrap">الرئيسية</span>}
               </Link>
             </div>
             {isCompact ? null : (
-              <p className="basis-full mt-2 px-1 text-[11px] font-bold tracking-wider text-sky-700 dark:text-[#00f3ff] block">
+              <p className="basis-full mt-2 px-1 text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase block">
                 الأقسام
               </p>
             )}
@@ -319,50 +319,50 @@ export function AdminShell({
                     active
                       ? `inline-flex items-center ${
                           isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"
-                        } rounded-xl bg-purple-100 dark:bg-[#1e102a] border border-purple-400 dark:border-[#e028ff] text-purple-700 dark:text-[#e028ff] shadow-sm dark:shadow-[0_0_15px_rgba(224,40,255,0.4)] transition-all relative`
+                        } rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 shadow-sm transition-all relative`
                       : `inline-flex items-center ${
                           isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"
-                        } rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all relative`
+                        } rounded-2xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-all relative`
                   }
                   style={{ height: 36 * itemScale, fontSize: 12 * itemScale }}
                 >
                   <span className="shrink-0 relative flex justify-center items-center" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }}>
-                    <DynamicIcon iconKey={tile.iconKey} config={icons} className="w-6 h-6" />
+                    <DynamicIcon iconKey={tile.iconKey} config={icons} className="w-5 h-5" />
                     {showPendingBadge ? (
-                      <span className="absolute -top-2 -right-2 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-orange-600 px-1 py-0.5 text-[10px] font-black leading-none text-white shadow-[0_0_10px_orange]">
+                      <span className="absolute -top-2 -right-2 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-indigo-600 px-1 py-0.5 text-[10px] font-black leading-none text-white shadow-lg shadow-indigo-500/30">
                         {pendingCount > 99 ? "99+" : pendingCount}
                       </span>
                     ) : null}
                   </span>
                   {isCompact ? null : (
-                    <span className="leading-snug font-medium text-slate-700 dark:text-slate-200 block whitespace-nowrap">{tile.label}</span>
+                    <span className="leading-snug font-medium block whitespace-nowrap">{tile.label}</span>
                   )}
                 </Link>
               );
             })}
           </div>
         </nav>
-        <div className="border-t border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] p-4 flex flex-col gap-4 shrink-0 bg-slate-50 dark:bg-slate-950/50">
-          {/* أزرار التكبير والتصغير - هنا مكانها آمن جداً */}
-          <div className="flex items-center justify-between bg-white dark:bg-[#09090b] p-2 rounded-2xl border border-slate-200 dark:border-[#00f3ff]/20 shadow-sm">
+        <div className="border-t border-slate-200 dark:border-slate-800 p-4 flex flex-col gap-4 shrink-0 bg-slate-100/50 dark:bg-slate-900/50">
+          {/* أزرار التكبير والتصغير */}
+          <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="flex flex-col ms-2">
               <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">حجم القائمة</span>
-              <span className="text-[11px] font-black text-[#00f3ff]">{Math.round(itemScale * 100)}%</span>
+              <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400">{Math.round(itemScale * 100)}%</span>
             </div>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.max(0.7, prev - 0.05)); }}
-                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-white hover:bg-red-500 hover:text-white transition-all active:scale-90 border border-transparent"
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90 border border-slate-200 dark:border-slate-700"
                 title="تصغير"
               >
-                <span className="text-xl font-bold">−</span>
+                <span className="text-xl font-medium">−</span>
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); setItemScale(prev => Math.min(5, prev + 0.05)); }}
-                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-white hover:bg-[#00f3ff] hover:text-black transition-all active:scale-90 border border-transparent"
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90 border border-slate-200 dark:border-slate-700"
                 title="تكبير"
               >
-                <span className="text-xl font-bold">+</span>
+                <span className="text-xl font-medium">+</span>
               </button>
             </div>
           </div>
@@ -371,13 +371,14 @@ export function AdminShell({
             <button
               type="submit"
               title="تسجيل الخروج"
-              className="flex w-full h-12 items-center justify-center gap-3 rounded-2xl border border-[#ff3b30]/30 bg-[#ff3b30]/5 text-[#ff3b30] transition hover:bg-[#ff3b30]/10 font-black text-xs uppercase tracking-wider"
+              className="flex w-full h-12 items-center justify-center gap-3 rounded-2xl border border-rose-200 dark:border-rose-900/30 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 transition hover:bg-rose-100 dark:hover:bg-rose-900/30 font-bold text-xs uppercase tracking-wider shadow-sm"
             >
               <span className="text-lg">⏻</span>
               <span>تسجيل الخروج</span>
             </button>
           </form>
         </div>
+
 
         {/* Resize handle (drag) */}
         <div
@@ -396,17 +397,16 @@ export function AdminShell({
       </aside>
 
       <div className="kse-app-inner relative min-h-screen min-w-0 flex-1 flex flex-col">
-        {/* Sleek Top Bar matching Mockup */}
-         <header className="h-16 w-full bg-white/80 dark:bg-[#131418]/80 backdrop-blur-md border-b border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.05)] px-4 sm:px-8 flex items-center justify-between z-40 relative">
-            <div className="absolute top-0 bottom-0 left-0 w-32 bg-gradient-to-r from-[rgba(0,243,255,0.1)] to-transparent pointer-events-none" />
+        {/* Sleek Top Bar */}
+         <header className="h-16 w-full bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8 flex items-center justify-between z-40 relative">
             <div className="flex items-center gap-4 w-full h-full justify-between ms-12">
               <div className="flex items-center gap-3">
                 <ThemeSwitcher />
                 <AdminLiveSearchInput
                    id="admin-super-search-header"
                    ariaLabel="البحث"
-                   placeholder="ابحث بأي شيء: كسر، رقم طلب، وارد..."
-                   className="rounded-full border border-slate-300 dark:border-[rgba(255,255,255,0.1)] bg-slate-100 dark:bg-[#09090b] px-4 py-2 w-[240px] text-sm text-slate-900 dark:text-[#f8fafc] placeholder:text-slate-500 shadow-inner focus:border-sky-500 dark:focus:border-[#00f3ff] focus:ring-1 focus:ring-sky-500 dark:focus:ring-[#00f3ff] outline-none transition-all hidden md:block"
+                   placeholder="ابحث بأي شيء..."
+                   className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-4 py-2 w-[240px] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-500 shadow-sm focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none transition-all hidden md:block"
                  />
               </div>
             </div>

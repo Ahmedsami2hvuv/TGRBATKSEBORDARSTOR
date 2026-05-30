@@ -304,11 +304,11 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
     });
 
     const statusTabs = [
-      { key: "all", label: "الكل" },
-      { key: "pending", label: "جديد" },
-      { key: "assigned", label: "مسند" },
-      { key: "delivering", label: "بالتوصيل" },
-      { key: "delivered", label: "مسلّم" },
+      { key: "all", label: "الكل", icon: "clipboard_list" },
+      { key: "pending", label: "جديد", icon: "order_new" },
+      { key: "assigned", label: "مسند", icon: "preparer_delegate" },
+      { key: "delivering", label: "بالتوصيل", icon: "delivery_scooter" },
+      { key: "delivered", label: "مسلّم", icon: "order_delivered" },
     ];
 
     // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
@@ -322,16 +322,19 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
             ← الرئيسية
           </Link>
         </p>
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <h1 className={ad.h1}>
-            {statusFilter === "cancelled" ? "المرفوضة" : "تتبع الطلبات"}
+            {statusFilter === "cancelled" ? "الطلبات المرفوضة" : "تتبع الطلبات"}
           </h1>
           <Link href={`${SECRET_ADMIN_PATH}/orders/new`} className={ad.btnPrimary}>
-            + إضافة طلب من الإدارة
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+            إضافة طلب جديد
           </Link>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 p-1 bg-slate-100/50 rounded-2xl w-fit">
           {statusTabs.map((t) => {
             const active =
               t.key === "all" ? statusFilter === "all" : statusFilter === t.key;
@@ -339,31 +342,36 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
               <Link
                 key={t.key}
                 href={hrefTracking({ status: t.key })}
-                className={`rounded-full px-3 py-1.5 text-sm font-bold transition ${
+                className={`relative flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-all ${
                   active
-                    ? "bg-sky-600 text-white ring-2 ring-sky-400 shadow-sm"
-                    : "border border-sky-200 bg-white text-sky-800 hover:bg-sky-50"
+                    ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
                 }`}
               >
-                <span className="inline-flex items-center gap-1">
-                  {t.label}
-                  {t.key === "pending" && pendingTabCount > 0 ? (
-                    <span className="inline-flex min-w-[1.15rem] items-center justify-center rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-black leading-none text-white">
-                      {pendingTabCount > 99 ? "99+" : pendingTabCount}
-                    </span>
-                  ) : null}
-                </span>
+                <span>{t.label}</span>
+                {t.key === "pending" && pendingTabCount > 0 ? (
+                  <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-lg bg-rose-500 px-1 text-[10px] font-black tabular-nums text-white ring-2 ring-white">
+                    {pendingTabCount > 99 ? "99+" : pendingTabCount}
+                  </span>
+                ) : null}
+                {active && (
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-600" />
+                )}
               </Link>
             );
           })}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
           <Link
             href={hrefTracking({ status: "checkSader", saderFilter })}
-            className={`rounded-full px-3 py-1.5 text-sm font-bold transition ${
+            className={`group flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-black transition-all ${
               statusFilter === "checkSader"
-                ? "bg-emerald-600 text-white ring-2 ring-emerald-400 shadow-sm"
-                : "border border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100"
+                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200"
+                : "bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100"
             }`}
           >
+            <div className={`w-2 h-2 rounded-full ${statusFilter === 'checkSader' ? 'bg-white' : 'bg-emerald-500'}`} />
             فحص الصادر
           </Link>
           <Link
@@ -371,79 +379,95 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
               status: "checkWard",
               wardFilter,
             })}
-            className={`rounded-full px-3 py-1.5 text-sm font-bold transition ${
+            className={`group flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-black transition-all ${
               statusFilter === "checkWard"
-                ? "bg-red-600 text-white ring-2 ring-red-400 shadow-sm"
-                : "border border-red-200 bg-red-50 text-red-950 hover:bg-red-100"
+                ? "bg-rose-600 text-white shadow-lg shadow-rose-200"
+                : "bg-rose-50 text-rose-700 border border-rose-100 hover:bg-rose-100"
             }`}
           >
+            <div className={`w-2 h-2 rounded-full ${statusFilter === 'checkWard' ? 'bg-white' : 'bg-rose-500'}`} />
             فحص الوارد
           </Link>
           <Link
             href={hrefTracking({ status: "cancelled" })}
-            className={`rounded-full px-3 py-1.5 text-sm font-bold transition ${
+            className={`group flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-black transition-all ${
               statusFilter === "cancelled"
-                ? "bg-red-600 text-white ring-2 ring-red-400 shadow-sm"
-                : "border-2 border-red-600 bg-red-50 text-red-800 hover:bg-red-100"
+                ? "bg-slate-800 text-white shadow-lg shadow-slate-200"
+                : "bg-white text-slate-600 border-2 border-slate-200 hover:border-slate-300"
             }`}
           >
+            {statusFilter !== 'cancelled' && <div className="w-2 h-2 rounded-full bg-slate-400" />}
             المرفوضة
           </Link>
         </div>
 
         {statusFilter === "checkSader" ? (
-          <div className="space-y-2">
-            <p className="rounded-xl border border-emerald-200 bg-emerald-50/90 px-3 py-2 text-sm text-emerald-950">
-              <strong>فحص الصادر:</strong> طلبات حيث المبلغ المدفوع للمحل يختلف عن سعر البضاعة.
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold text-slate-600">فلتر:</span>
+          <div className="space-y-3 animate-in fade-in slide-in-from-right-2 duration-300">
+            <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/50 px-4 py-3">
+              <div className="shrink-0 w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-sm font-bold text-emerald-900 leading-relaxed">
+                <strong>فحص الصادر:</strong> يتم هنا عرض الطلبات التي سُددت للمحل بمبلغ يختلف عن صافي قيمة البضاعة المسجل في الطلب.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 pr-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">تصنيف الخلل:</span>
               <Link
                 href={hrefTracking({ status: "checkSader", saderFilter: "lower" })}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                className={`rounded-xl px-4 py-2 text-xs font-black transition-all ${
                   saderFilter === "lower"
-                    ? "bg-emerald-600 text-white ring-2 ring-emerald-400"
-                    : "border border-emerald-200 bg-white text-emerald-900 hover:bg-emerald-50"
+                    ? "bg-emerald-600 text-white"
+                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                 }`}
               >
-                المبلغ أقل من سعر البضاعة
+                المبلغ أقل من السعر
               </Link>
               <Link
                 href={hrefTracking({ status: "checkSader", saderFilter: "higher" })}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                className={`rounded-xl px-4 py-2 text-xs font-black transition-all ${
                   saderFilter === "higher"
-                    ? "bg-emerald-600 text-white ring-2 ring-emerald-400"
-                    : "border border-emerald-200 bg-white text-emerald-900 hover:bg-emerald-50"
+                    ? "bg-emerald-600 text-white"
+                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                 }`}
               >
-                المبلغ أعلى من سعر البضاعة
+                المبلغ أعلى من السعر
               </Link>
             </div>
           </div>
         ) : null}
         {statusFilter === "checkWard" ? (
-          <div className="space-y-2">
-            <p className="rounded-xl border border-red-200 bg-red-50/90 px-3 py-2 text-sm text-red-950">
-              <strong>فحص الوارد:</strong> طلبات مسلّمة حيث المبلغ المستلم من الزبون يختلف عن المجموع الكلي.
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold text-slate-600">فلتر:</span>
+          <div className="space-y-3 animate-in fade-in slide-in-from-right-2 duration-300">
+            <div className="flex items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50/50 px-4 py-3">
+              <div className="shrink-0 w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <p className="text-sm font-bold text-rose-900 leading-relaxed">
+                <strong>فحص الوارد:</strong> يتم هنا عرض الطلبات المسلّمة التي استُلم منها مبلغ كلي يختلف عن (سعر البضاعة + التوصيل) المتوقع.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 pr-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">تصنيف الخلل:</span>
               <Link
                 href={hrefTracking({ status: "checkWard", wardFilter: "lower" })}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                className={`rounded-xl px-4 py-2 text-xs font-black transition-all ${
                   wardFilter === "lower"
-                    ? "bg-red-600 text-white ring-2 ring-red-400"
-                    : "border border-red-200 bg-white text-red-900 hover:bg-red-50"
+                    ? "bg-rose-600 text-white"
+                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                 }`}
               >
                 المبلغ أقل من المتوقع
               </Link>
               <Link
                 href={hrefTracking({ status: "checkWard", wardFilter: "higher" })}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                className={`rounded-xl px-4 py-2 text-xs font-black transition-all ${
                   wardFilter === "higher"
-                    ? "bg-red-600 text-white ring-2 ring-red-400"
-                    : "border border-red-200 bg-white text-red-900 hover:bg-red-50"
+                    ? "bg-rose-600 text-white"
+                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                 }`}
               >
                 المبلغ أعلى من المتوقع
@@ -452,11 +476,16 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
           </div>
         ) : null}
 
-        <div className="space-y-3">
-          <div>
+        <div className="space-y-4">
+          <div className="relative group">
+            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500 transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
             <Suspense
               fallback={
-                <div className="h-10 animate-pulse rounded-xl bg-sky-100" aria-hidden />
+                <div className="h-12 animate-pulse rounded-2xl bg-slate-100" aria-hidden />
               }
             >
               <OrderTrackingSearch
@@ -470,8 +499,8 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
 
           <OrderTrackingBulkTable rows={safeTableRows} couriers={safeCouriers} />
           <p className={ad.orderListCountFooter}>
-            عدد الطلبات في هذه الصفحة:{" "}
-            <span className="font-bold text-sky-900">{safeTableRows.length}</span>
+            عدد الطلبات المعروضة:{" "}
+            <span className="font-black text-indigo-900 tabular-nums">{safeTableRows.length}</span>
           </p>
         </div>
       </div>

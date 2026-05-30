@@ -539,57 +539,32 @@ export function AdminCreateOrderForm({
  </div>
  )}
 
- <div className="rounded-xl border border-sky-200 bg-white/70 p-3">
- <p className="text-sm font-bold text-slate-800">نوع المسار / الطلب</p>
- <div className="mt-2 flex flex-col gap-3">
- <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
- <input
- type="radio"
- name="submissionModeUi"
- checked={submissionMode === "admin_one_face"}
- onChange={() => setSubmissionMode("admin_one_face")}
- className="mt-0.5 shrink-0"
- />
- <span>
- <strong>وجهة واحدة (إداري)</strong> — طلبية مباشرة بدون محل.
- </span>
- </label>
- <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
- <input
- type="radio"
- name="submissionModeUi"
- checked={submissionMode === "two_faces"}
- onChange={() => setSubmissionMode("two_faces")}
- className="mt-0.5 shrink-0"
- />
- <span>
- <strong>وجهتان</strong> — مرسل ومستلم (رقم ومنطقة لكل وجهة).
- </span>
- </label>
- <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
- <input
- type="radio"
- name="submissionModeUi"
- checked={submissionMode === "from_shop"}
- onChange={() => setSubmissionMode("from_shop")}
- className="mt-0.5 shrink-0"
- />
- <span>
- <strong>رفع من محل</strong> — ابحث عن المحل، ثم اختر العميل كزر جاهز أو «الإدارة».
- </span>
- </label>
- <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
- <input
- type="radio"
- name="submissionModeUi"
- checked={submissionMode === "prep_draft"}
- onChange={() => setSubmissionMode("prep_draft")}
- className="mt-0.5 shrink-0"
- />
- <span>
- <strong className="text-violet-700">طلب تجهيز (تحليل رسالة)</strong> — إرسال مسودة تسوق للمجهزين من خلال نص رسالة.
- </span>
- </label>
+ <div className="rounded-3xl border border-indigo-100 bg-white p-4 shadow-sm">
+ <p className="text-sm font-black text-slate-800 mb-3 flex items-center gap-2">
+   <div className="w-1.5 h-4 bg-indigo-500 rounded-full" />
+   نوع المسار / الطلب
+ </p>
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+   {[
+     { id: "admin_one_face", label: "وجهة واحدة", desc: "طلب مباشر" },
+     { id: "two_faces", label: "وجهتان", desc: "مرسل ومستلم" },
+     { id: "from_shop", label: "رفع من محل", desc: "اختيار محل مسجل" },
+     { id: "prep_draft", label: "طلب تجهيز", desc: "تحليل رسالة" },
+   ].map((m) => (
+     <button
+       key={m.id}
+       type="button"
+       onClick={() => setSubmissionMode(m.id as SubmissionMode)}
+       className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all text-center ${
+         submissionMode === m.id
+           ? "border-indigo-600 bg-indigo-50 text-indigo-900 shadow-md ring-4 ring-indigo-500/10"
+           : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:bg-white"
+       }`}
+     >
+       <span className="text-sm font-black">{m.label}</span>
+       <span className="text-[10px] font-bold opacity-60 mt-0.5">{m.desc}</span>
+     </button>
+   ))}
  </div>
  </div>
 
@@ -691,22 +666,32 @@ export function AdminCreateOrderForm({
  <div className="space-y-4">
  {/* وضع وجهة واحدة / وجهتين ملاحظة */}
  {submissionMode === "admin_one_face" && (
- <div className="rounded-lg border border-violet-200 bg-violet-50/70 px-3 py-2 text-sm text-violet-950">
+ <div className="flex items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/50 px-4 py-3 text-sm text-indigo-900 animate-in fade-in slide-in-from-top-2">
+ <div className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+ <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+ </div>
+ <p className="font-bold leading-relaxed">
  وضع <strong>وجهة واحدة</strong>: لا يتطلب اختيار محل. أدخل تفاصيل الزبون ونوع الطلبية والسعر.
+ </p>
  </div>
  )}
 
  {submissionMode === "two_faces" && (
- <div className="rounded-lg border border-violet-200 bg-violet-50/70 px-3 py-2 text-sm text-violet-950">
- مسار <strong>مرسل ← مستلم</strong>: أدخل تفاصيل الطرفين.
+ <div className="flex items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/50 px-4 py-3 text-sm text-indigo-900 animate-in fade-in slide-in-from-top-2">
+ <div className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+ <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+ </div>
+ <div>
+ <p className="font-bold leading-relaxed">مسار <strong>مرسل ← مستلم</strong>: أدخل تفاصيل الطرفين.</p>
  {!defaultDoubleShopId && (
- <p className="text-rose-600 font-bold mt-1">لا يوجد محل مسجّل للتسعير التلقائي.</p>
+ <p className="text-rose-600 font-black mt-1">⚠️ لا يوجد محل مسجّل للتسعير التلقائي.</p>
  )}
+ </div>
  </div>
  )}
 
- <div className="space-y-4 rounded-2xl border border-sky-200 bg-sky-50/40 p-4">
- <div className="flex flex-col gap-4">
+ <div className="space-y-6 rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-sm">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
  {/* 1. رقم الزبون أولاً (فقط في رفع من محل) */}
  {submissionMode === "from_shop" && (
@@ -727,8 +712,9 @@ export function AdminCreateOrderForm({
 
  {/* 2. المحل (فقط في رفع من محل) */}
  {submissionMode === "from_shop" && (
- <div className="space-y-4 border-b border-sky-100 pb-4 mb-2">
- <div>
+ <div className="space-y-4 border-b border-slate-100 pb-6 mb-2 col-span-full">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+ <div className="space-y-1.5">
  <ShopSearchPicker
  shops={shops}
  fieldName="shopId"
@@ -737,12 +723,15 @@ export function AdminCreateOrderForm({
  value={shopId}
  onValueChange={setShopId}
  />
- <span className="text-[11px] leading-snug text-slate-500 block mt-1">
- ابحث عن اسم المحل واختر من النتائج.
+ <span className="text-[10px] font-bold text-slate-400 block pr-1">
+ ابحث عن اسم المحل واختر من النتائج المعروضة.
  </span>
  </div>
  {employeesLoading ? (
- <p className="text-xs text-slate-500 italic mt-4">جارٍ تحميل موظفي المحل...</p>
+ <div className="flex items-center gap-2 text-xs font-bold text-slate-400 py-3 animate-pulse">
+   <div className="w-2 h-2 rounded-full bg-slate-300" />
+   جارٍ تحميل الموظفين...
+ </div>
  ) : (
  <ShopEmployeeQuickPick
  shopId={shopId}
@@ -753,6 +742,7 @@ export function AdminCreateOrderForm({
  onPickAdminOffice={pickAdminOffice}
  />
  )}
+ </div>
  </div>
  )}
 
@@ -788,18 +778,20 @@ export function AdminCreateOrderForm({
 
  {firstPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات محفوظة...</p>}
  {firstPrefill && (
- <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900 shadow-sm transition-all">
- <div className="flex justify-between items-start gap-3">
- <div className="space-y-1 flex-1">
- <p className="font-bold text-emerald-800">بيانات محفوظة لهذا الرقم:</p>
- <p className="text-xs">المنطقة: {regions.find(r => r.id === firstPrefill.customerRegionId)?.name || '—'}</p>
- <p className="text-xs italic text-slate-600">أقرب نقطة: {firstPrefill.customerLandmark || 'لا يوجد'}</p>
- </div>
+ <div className="col-span-full rounded-2xl border-2 border-emerald-100 bg-emerald-50/50 p-4 animate-in slide-in-from-right-2">
+ <div className="flex justify-between items-center gap-4">
+ <div className="flex items-center gap-4">
  {firstPrefill.customerDoorPhotoUrl && (
- <img src={doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl) || ""} className="h-14 w-14 rounded object-cover border" alt="" />
+ <img src={doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl) || ""} className="h-16 w-16 rounded-xl object-cover border-2 border-white shadow-sm shrink-0" alt="" />
  )}
+ <div className="space-y-1">
+ <p className="text-sm font-black text-emerald-900">بيانات محفوظه لهذا الرقم ✨</p>
+ <p className="text-xs font-bold text-emerald-700/80">
+ {regions.find(r => r.id === firstPrefill.customerRegionId)?.name || 'بدون منطقة'} • {firstPrefill.customerLandmark || 'لا توجد نقطة دالة'}
+ </p>
  </div>
- <button type="button" className="mt-2 w-full rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-md" onClick={() => {
+ </div>
+ <button type="button" className="shrink-0 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700 active:scale-95 transition-all" onClick={() => {
  setFirstPhone(firstPrefill.phone);
  setFirstRegionId(firstPrefill.customerRegionId ?? "");
  setFirstLocationUrl(firstPrefill.customerLocationUrl ?? "");
@@ -808,7 +800,8 @@ export function AdminCreateOrderForm({
  setFirstSavedDoorPhotoUrl(doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl));
  setFirstRawDoorPhotoUrl(firstPrefill.customerDoorPhotoUrl);
  setFirstPrefillApplied(true);
- }}>تطبيق كافة البيانات المحفوظة</button>
+ }}>تطبيق التلقائي</button>
+ </div>
  </div>
  )}
 
