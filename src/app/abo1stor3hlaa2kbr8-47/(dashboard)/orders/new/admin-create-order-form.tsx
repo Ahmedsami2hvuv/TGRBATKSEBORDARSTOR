@@ -169,6 +169,8 @@ export function AdminCreateOrderForm({
  setRecipientKind("none");
  setSelectedEmployeeId("");
  setFirstSavedDoorPhotoUrl(null);
+ // setFirstPhone(""); // Prevent clearing when switching modes if possible, but usually needed for fresh start
+ // setFirstRegionId("");
  } else if (submissionMode === "two_faces") {
  setShopId("");
  setRecipientKind("none");
@@ -217,15 +219,30 @@ export function AdminCreateOrderForm({
  setRecipientKind("employee");
  setSelectedEmployeeId(emp.id);
  setFirstSavedDoorPhotoUrl(null);
+ // Keep landmark as is, or if you want to prevent overwriting it:
+ // setFirstLandmark(emp.name); // This was likely causing the issue if added elsewhere or implied
  }
 
  function pickAdminOffice() {
  setRecipientKind("admin");
  setSelectedEmployeeId("");
  setFirstSavedDoorPhotoUrl(null);
+ // Removed setFirstPhone(ADMIN_PHONE_FROM_SHOP_LOCAL); to prevent overwriting customer phone
  setFirstRegionId("");
  setFirstLocationUrl("");
+ // setFirstLandmark(ADMIN_OFFICE_LABEL); // Removed to prevent overwriting the landmark field
  }
+
+ const firstPhoneNormalized = useMemo(
+ () => normalizeIraqMobileLocal11(firstPhone),
+ [firstPhone],
+ );
+ const secondPhoneNormalized = useMemo(
+ () => normalizeIraqMobileLocal11(secondPhone),
+ [secondPhone],
+ );
+
+ const defaultDoubleShopId = shops[0]?.id ?? "";
 
  async function fetchCustomerPrefill(
  phoneRaw: string,
@@ -274,7 +291,7 @@ export function AdminCreateOrderForm({
  setFirstPrefill(profile);
  setFirstPrefillLoading(false);
  })();
- }, 400);
+ }, 400); // زيادة بسيطة في التأخير لمنع التكرار
 
  return () => {
  active = false;
@@ -310,18 +327,8 @@ export function AdminCreateOrderForm({
  if (!firstPrefill) setFirstPrefillApplied(false);
  }, [firstPrefill]);
 
-  // --- Prep Parse Logic ---
-  function resetPrep() {
-    setPasteText("");
-    setProducts([]);
-    setPrepCustomerPhone("");
-    setPrepRegionQ("");
-    setPrepSelectedRegion(null);
-    setParseError(null);
-    setTitleLine("");
-  }
-
-  function extractRegionCandidates(rawText: string, knownProducts?: string[]) {
+ // --- Prep Parse Logic ---
+ function extractRegionCandidates(rawText: string, knownProducts?: string[]) {
  const lines = rawText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
  const productSet = new Set((knownProducts ?? []).map((x) => x.trim()).filter(Boolean));
  return lines.filter((line) => {
@@ -429,7 +436,7 @@ export function AdminCreateOrderForm({
  Boolean(orderSubtotal.trim()) &&
  Boolean(firstPhone.trim()) &&
  Boolean(firstRegionId.trim()) &&
- (submissionMode !== "two_faces" || (Boolean(secondPhone.trim()) && Boolean(secondRegionId.trim()))) &&
+ (submissionMode !== "two_faces" || (Boolean(defaultDoubleShopId) && Boolean(secondPhone.trim()) && Boolean(secondRegionId.trim()))) &&
  (submissionMode !== "from_shop" || Boolean(shopId.trim()))
  )
  );
@@ -444,106 +451,163 @@ export function AdminCreateOrderForm({
  <a href={`${SECRET_ADMIN_PATH}/orders/tracking`} className="rounded-xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100">
  فتح تتبع الطلبات
  </a>
+ <a href={`${SECRET_ADMIN_PATH}/orders/pending`} className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100">
+ فتح الطلبات الجديدة
+ </a>
+ <a href={SECRET_ADMIN_PATH} className="rounded-xl border border-violet-300 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-900 shadow-sm transition hover:bg-violet-100">
+ القائمة الرئيسية
+ </a>
  </div>
  </div>
  );
  }
 
-   return (
-     <>
-       <form action={formAction} className="space-y-4" encType="multipart/form-data">
-         <input type="hidden" name="adminSubmissionMode" value={submissionMode} />
-         <input type="hidden" name="routeMode" value={routeMode} />
-         <input type="hidden" name="linkedCustomerId" value={selectedEmployeeId} />
-         <input type="hidden" name="firstExistingDoorPhotoUrl" value={firstRawDoorPhotoUrl || ""} />
-         <input type="hidden" name="secondExistingDoorPhotoUrl" value={secondRawDoorPhotoUrl || ""} />
+ return (
+ <>
+ <form action={formAction} className="space-y-4" encType="multipart/form-data">
+ <input type="hidden" name="adminSubmissionMode" value={submissionMode} />
+ <input type="hidden" name="routeMode" value={routeMode} />
+ <input type="hidden" name="linkedCustomerId" value={selectedEmployeeId} />
+ <input type="hidden" name="firstExistingDoorPhotoUrl" value={firstRawDoorPhotoUrl || ""} />
+ <input type="hidden" name="secondExistingDoorPhotoUrl" value={secondRawDoorPhotoUrl || ""} />
 
-         <div className="rounded-3xl border border-indigo-100 bg-white p-4 shadow-sm">
-           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-             {[
-               { id: "admin_one_face", label: "وجهة واحدة", desc: "طلب مباشر", icon: icons?.ui_order },
-               { id: "two_faces", label: "وجهتان", desc: "مرسل ومستلم", icon: icons?.ui_route },
-               { id: "from_shop", label: "رفع من محل", desc: "اختيار محل مسجل", icon: icons?.ui_shop },
-               { id: "prep_draft", label: "طلب تجهيز", desc: "تحليل رسالة", icon: icons?.ui_ai },
-             ].map((m) => (
-               <button
-                 key={m.id}
-                 type="button"
-                 onClick={() => setSubmissionMode(m.id as SubmissionMode)}
-                 className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all text-center group ${
-                   submissionMode === m.id
-                     ? "border-indigo-600 bg-indigo-50 text-indigo-900 shadow-md ring-4 ring-indigo-500/10"
-                     : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:bg-white"
-                 }`}
-               >
-                 <div className={`mb-2 rounded-xl p-2 transition-colors ${submissionMode === m.id ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'}`}>
-                   <DynamicIcon icon={m.icon} fallback="📦" width={20} height={20} />
-                 </div>
-                 <span className="text-sm font-black">{m.label}</span>
-                 <span className="text-[10px] font-bold opacity-60 mt-0.5">{m.desc}</span>
-               </button>
-             ))}
-           </div>
-         </div>
+ {/* --- إسناد تلقائي لمندوب (في بداية الصفحة) --- */}
+ {submissionMode !== "prep_draft" && (
+ <div className={`rounded-2xl border-2 border-emerald-500 bg-emerald-50/30 p-4 shadow-sm transition-opacity ${pending ? 'opacity-50 pointer-events-none' : ''}`}>
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+ <div className="flex items-center gap-2">
+ <span className="text-sm font-black text-emerald-900 flex items-center gap-2">
+ <DynamicIcon icon={icons?.ui_user} fallback="👤" width={20} height={20} />
+ إسناد مباشر لمندوب
+ </span>
+ <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">إسناد فوري</span>
+ </div>
+ {couriers.length > 6 && (
+ <div className="relative">
+ <input
+ type="text"
+ placeholder="ابحث عن مندوب..."
+ value={courierSearch}
+ onChange={(e) => setCourierSearch(e.target.value)}
+ className="text-[11px] border border-emerald-200 rounded-lg px-8 py-1 focus:ring-1 focus:ring-emerald-400 outline-none w-full sm:w-44"
+ />
+ <div className="absolute left-2 top-1.5 opacity-40">
+ <DynamicIcon icon={icons?.ui_search} fallback="🔍" width={12} height={12} />
+ </div>
+ </div>
+ )}
+ </div>
 
-         {submissionMode !== "prep_draft" && (
-           <div className={`rounded-2xl border-2 border-emerald-500 bg-emerald-50/30 p-4 shadow-sm transition-opacity ${pending ? 'opacity-50 pointer-events-none' : ''}`}>
-             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-               <div className="flex items-center gap-2">
-                 <span className="text-sm font-black text-emerald-900 flex items-center gap-2">
-                   <DynamicIcon icon={icons?.ui_user} fallback="👤" width={20} height={20} />
-                   إسناد مباشر لمندوب
-                 </span>
-               </div>
-             </div>
-             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-               <button
-                 type="button"
-                 onClick={() => setAssignedCourierId("")}
-                 className={`relative flex flex-col items-center justify-center p-2 rounded-xl border-2 transition h-16 text-center leading-tight ${assignedCourierId === "" ? "border-emerald-600 bg-emerald-100 shadow-sm ring-2 ring-emerald-200 text-emerald-900" : "border-slate-200 bg-white text-slate-400 hover:border-slate-300"}`}
-               >
-                 <span className="text-[12px] font-black">بدون إسناد</span>
-               </button>
-               {filteredCouriers.map((c) => {
-                 const isSelected = assignedCourierId === c.id;
-                 return (
-                   <button
-                     key={c.id}
-                     type="button"
-                     onClick={() => setAssignedCourierId(isSelected ? "" : c.id)}
-                     className={`relative flex flex-col items-center justify-center p-2 rounded-xl border-2 transition h-16 leading-tight ${isSelected ? "border-emerald-600 bg-white shadow-md ring-2 ring-emerald-200" : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/30"}`}
-                   >
-                     <span className={`text-[12px] font-black truncate w-full px-1 ${isSelected ? 'text-emerald-700' : ''}`}>{c.name}</span>
-                   </button>
-                 );
-               })}
-             </div>
-             <input type="hidden" name="assignedCourierId" value={assignedCourierId} />
-           </div>
-         )}
+ <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+ <button
+ type="button"
+ onClick={() => setAssignedCourierId("")}
+ className={`relative flex flex-col items-center justify-center p-2 rounded-xl border-2 transition h-16 text-center leading-tight ${assignedCourierId === "" ? "border-emerald-600 bg-emerald-100 shadow-sm ring-2 ring-emerald-200 text-emerald-900" : "border-slate-200 bg-white text-slate-400 hover:border-slate-300"}`}
+ >
+ <span className="text-[12px] font-black">بدون إسناد</span>
+ <span className="text-[10px] font-normal opacity-70">(طلبات جديدة)</span>
+ {assignedCourierId === "" && (
+ <div className="absolute top-1 right-1 bg-emerald-600 text-white rounded-full p-0.5 shadow-sm">
+ <DynamicIcon icon={icons?.ui_success} fallback="✓" width={12} height={12} />
+ </div>
+ )}
+ </button>
+ {filteredCouriers.map((c) => {
+ const isSelected = assignedCourierId === c.id;
+ return (
+ <button
+ key={c.id}
+ type="button"
+ onClick={() => setAssignedCourierId(isSelected ? "" : c.id)}
+ className={`relative flex flex-col items-center justify-center p-2 rounded-xl border-2 transition h-16 leading-tight ${isSelected ? "border-emerald-600 bg-white shadow-md ring-2 ring-emerald-200" : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/30"}`}
+ >
+ <span className={`text-[12px] font-black truncate w-full px-1 ${isSelected ? 'text-emerald-700' : ''}`}>{c.name}</span>
+ <span className="text-[10px] font-medium opacity-60 mt-0.5">إسناد مباشر</span>
+ {isSelected && (
+ <div className="absolute top-1 right-1 bg-emerald-600 text-white rounded-full p-0.5 shadow-sm">
+ <DynamicIcon icon={icons?.ui_success} fallback="✓" width={12} height={12} />
+ </div>
+ )}
+ </button>
+ );
+ })}
+ </div>
+ <input type="hidden" name="assignedCourierId" value={assignedCourierId} />
+ <p className="mt-2 text-[11px] text-slate-500 italic">
+ إذا اخترت مندوب، سيتم إرسال إشعار فوري له وسينتقل الطلب لحالة "قيد التوصيل".
+ </p>
+ </div>
+ )}
+
+ <div className="rounded-xl border border-sky-200 bg-white/70 p-3">
+ <p className="text-sm font-bold text-slate-800">نوع المسار / الطلب</p>
+ <div className="mt-2 flex flex-col gap-3">
+ <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
+ <input
+ type="radio"
+ name="submissionModeUi"
+ checked={submissionMode === "admin_one_face"}
+ onChange={() => setSubmissionMode("admin_one_face")}
+ className="mt-0.5 shrink-0"
+ />
+ <span>
+ <strong>وجهة واحدة (إداري)</strong> — طلبية مباشرة بدون محل.
+ </span>
+ </label>
+ <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
+ <input
+ type="radio"
+ name="submissionModeUi"
+ checked={submissionMode === "two_faces"}
+ onChange={() => setSubmissionMode("two_faces")}
+ className="mt-0.5 shrink-0"
+ />
+ <span>
+ <strong>وجهتان</strong> — مرسل ومستلم (رقم ومنطقة لكل وجهة).
+ </span>
+ </label>
+ <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
+ <input
+ type="radio"
+ name="submissionModeUi"
+ checked={submissionMode === "from_shop"}
+ onChange={() => setSubmissionMode("from_shop")}
+ className="mt-0.5 shrink-0"
+ />
+ <span>
+ <strong>رفع من محل</strong> — ابحث عن المحل، ثم اختر العميل كزر جاهز أو «الإدارة».
+ </span>
+ </label>
+ <label className="inline-flex max-w-full items-start gap-2 text-sm leading-snug">
+ <input
+ type="radio"
+ name="submissionModeUi"
+ checked={submissionMode === "prep_draft"}
+ onChange={() => setSubmissionMode("prep_draft")}
+ className="mt-0.5 shrink-0"
+ />
+ <span>
+ <strong className="text-violet-700">طلب تجهيز (تحليل رسالة)</strong> — إرسال مسودة تسوق للمجهزين من خلال نص رسالة.
+ </span>
+ </label>
+ </div>
+ </div>
 
  {submissionMode === "prep_draft" ? (
  <div className="space-y-4">
  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
- <div className="flex items-center justify-between mb-2">
-   <h2 className="text-sm font-black text-slate-800">الصق نص الطلب هنا</h2>
-   {pasteText && (
-     <button type="button" onClick={resetPrep} className="text-[10px] font-bold text-rose-500 hover:underline">
-       مسح الكل
-     </button>
-   )}
- </div>
+ <h2 className="mb-2 text-sm font-black text-slate-800">الصق نص الطلب هنا</h2>
  <textarea
  value={pasteText}
  onChange={(ev) => setPasteText(ev.target.value)}
  rows={5}
  placeholder="الصق رسالة الموقع أو قائمة واتساب..."
- className={`${ad.input} font-mono text-sm w-full`}
+ className={`${ad.input} font-mono text-sm`}
  />
  <button
  type="button"
  onClick={runParse}
- className="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 flex items-center justify-center gap-2 transition-all active:scale-95"
+ className="mt-3 w-full rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-violet-700 flex items-center justify-center gap-2"
  >
  <DynamicIcon icon={icons?.ui_ai} fallback="✨" width={16} height={16} /> تحليل النص واستخراج البيانات
  </button>
@@ -551,29 +615,27 @@ export function AdminCreateOrderForm({
  </div>
 
  {products.length > 0 && (
- <div className="space-y-4 rounded-[2rem] border border-sky-200 bg-sky-50/30 p-6">
-   <div className="flex items-center gap-2 mb-2">
-     <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs font-black">1</div>
-     <h3 className="text-sm font-black text-sky-900 uppercase tracking-tight">مراجعة البيانات المستخرجة</h3>
-   </div>
-
+ <div className="space-y-4 rounded-2xl border border-sky-200 bg-sky-50/40 p-4">
  <input type="hidden" name="rawListText" value={rawListText} />
  <input type="hidden" name="productsCsv" value={products.join("\n")} />
  <input type="hidden" name="customerRegionId" value={prepSelectedRegion?.id ?? ""} />
  <input type="hidden" name="firstCustomerRegionId" value={prepSelectedRegion?.id ?? ""} />
  <input type="hidden" name="orderType" value={titleLine} />
  <input type="hidden" name="firstCustomerPhone" value={prepCustomerPhone} />
+ <input type="hidden" name="firstCustomerLandmark" value="" />
+
  {selectedPreparerIds.map(id => (
  <input key={id} type="hidden" name="preparerIds" value={id} />
  ))}
 
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div className="flex flex-col gap-4">
  <label className="flex flex-col gap-1">
  <span className={ad.label}>رقم الزبون</span>
  <input name="prepCustomerPhone" value={prepCustomerPhone} onChange={(e) => setPrepCustomerPhone(e.target.value)} className={ad.input} required />
  </label>
+
  <div className="relative flex flex-col gap-1">
- <span className={ad.label}>المنطقة</span>
+ <span className={ad.label}>تأكيد المنطقة</span>
  <input
  ref={regionSearchRef}
  value={prepRegionQ}
@@ -593,48 +655,33 @@ export function AdminCreateOrderForm({
  </ul>
  ) : null}
  </div>
- <label className="flex flex-col gap-1">
- <span className={ad.label}>عنوان الطلب (نوع الطلب)</span>
- <input name="prepTitleLine" value={titleLine} onChange={(e) => setTitleLine(e.target.value)} className={ad.input} required />
- </label>
+
  <label className="flex flex-col gap-1">
  <span className={ad.label}>وقت الطلب</span>
  <input name="prepOrderTime" value={prepOrderTime} onChange={(e) => setPrepOrderTime(e.target.value)} className={ad.input} required />
  </label>
- </div>
 
- <div className="bg-white/60 rounded-2xl p-4 border border-sky-100">
-   <span className="text-[11px] font-black text-slate-500 uppercase mb-2 block">المنتجات المستخرجة</span>
-   <div className="space-y-1">
-     {products.map((p, idx) => (
-       <div key={idx} className="flex items-center gap-2 text-xs font-bold text-slate-700 bg-white p-2 rounded-lg border border-slate-100">
-         <span className="text-sky-500">#{idx+1}</span>
-         {p}
-       </div>
-     ))}
-   </div>
- </div>
-
- <div className="pt-4 border-t border-sky-100">
- <div className="flex items-center gap-2 mb-3">
-   <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs font-black">2</div>
-   <h3 className="text-sm font-black text-sky-900 uppercase tracking-tight">إسناد للمجهزين</h3>
- </div>
- <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+ <div className="pt-2 border-t border-sky-100">
+ <span className="text-sm font-bold text-slate-800 mb-2 block">المجهزين</span>
+ <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
  {preparers.map((p) => {
  const isSelected = selectedPreparerIds.includes(p.id);
  return (
- <label key={p.id} className={`flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition ${isSelected ? 'border-sky-500 bg-sky-50 shadow-sm' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'}`}>
+ <label key={p.id} className={`flex items-center gap-1.5 p-1.5 rounded-lg border cursor-pointer transition ${isSelected ? 'border-sky-500 bg-sky-50 ring-1 ring-sky-200' : 'border-slate-200 bg-white'}`}>
  <input
  type="checkbox"
  checked={isSelected}
  onChange={() => togglePreparer(p.id)}
- className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 border-slate-300"
+ className="w-3.5 h-3.5 rounded text-sky-600 focus:ring-sky-500"
  />
- <span className="text-xs font-black truncate">{p.name}</span>
+ <span className="text-[10px] font-bold text-slate-700 truncate">{p.name}</span>
  </label>
  );
  })}
+ </div>
+ {selectedPreparerIds.length === 0 && (
+ <p className="mt-2 text-[10px] text-rose-500 font-bold">يرجى اختيار مجهز واحد على الأقل.</p>
+ )}
  </div>
  </div>
  </div>
@@ -642,45 +689,436 @@ export function AdminCreateOrderForm({
  </div>
  ) : (
  <div className="space-y-4">
- <div className="space-y-6 rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-sm">
- <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
- {submissionMode === "from_shop" && (
- <div className="space-y-4 border-b border-slate-100 pb-6 mb-2 col-span-full">
- <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
- <ShopSearchPicker shops={shops} fieldName="shopId" label="المحل" required value={shopId} onValueChange={setShopId} />
- <ShopEmployeeQuickPick shopId={shopId} employees={employees} selectedEmployeeId={selectedEmployeeId} recipientKind={recipientKind} onPickEmployee={pickEmployee} onPickAdminOffice={pickAdminOffice} />
- </div>
+ {/* وضع وجهة واحدة / وجهتين ملاحظة */}
+ {submissionMode === "admin_one_face" && (
+ <div className="rounded-lg border border-violet-200 bg-violet-50/70 px-3 py-2 text-sm text-violet-950">
+ وضع <strong>وجهة واحدة</strong>: لا يتطلب اختيار محل. أدخل تفاصيل الزبون ونوع الطلبية والسعر.
  </div>
  )}
+
+ {submissionMode === "two_faces" && (
+ <div className="rounded-lg border border-violet-200 bg-violet-50/70 px-3 py-2 text-sm text-violet-950">
+ مسار <strong>مرسل ← مستلم</strong>: أدخل تفاصيل الطرفين.
+ {!defaultDoubleShopId && (
+ <p className="text-rose-600 font-bold mt-1">لا يوجد محل مسجّل للتسعير التلقائي.</p>
+ )}
+ </div>
+ )}
+
+ <div className="space-y-4 rounded-2xl border border-sky-200 bg-sky-50/40 p-4">
+ <div className="flex flex-col gap-4">
+
+ {/* 1. رقم الزبون أولاً (فقط في رفع من محل) */}
+ {submissionMode === "from_shop" && (
+ <label className="flex flex-col gap-1 text-sm border-b border-sky-100 pb-4">
+ <span className={ad.label}>رقم الزبون</span>
+ <input
+ name="firstCustomerPhone"
+ className={ad.input}
+ value={firstPhone}
+ onChange={(e) => setFirstPhone(e.target.value)}
+ inputMode="numeric"
+ autoComplete="tel"
+ placeholder="اكتب أو الصق الرقم أولاً"
+ required
+ />
+ </label>
+ )}
+
+ {/* 2. المحل (فقط في رفع من محل) */}
+ {submissionMode === "from_shop" && (
+ <div className="space-y-4 border-b border-sky-100 pb-4 mb-2">
+ <div>
+ <ShopSearchPicker
+ shops={shops}
+ fieldName="shopId"
+ label="المحل"
+ required
+ value={shopId}
+ onValueChange={setShopId}
+ />
+ <span className="text-[11px] leading-snug text-slate-500 block mt-1">
+ ابحث عن اسم المحل واختر من النتائج.
+ </span>
+ </div>
+ {employeesLoading ? (
+ <p className="text-xs text-slate-500 italic mt-4">جارٍ تحميل موظفي المحل...</p>
+ ) : (
+ <ShopEmployeeQuickPick
+ shopId={shopId}
+ employees={employees}
+ selectedEmployeeId={selectedEmployeeId}
+ recipientKind={recipientKind}
+ onPickEmployee={pickEmployee}
+ onPickAdminOffice={pickAdminOffice}
+ />
+ )}
+ </div>
+ )}
+
+ {submissionMode !== "two_faces" ? (
+ /* الترتيب لوجهة واحدة أو رفع من محل */
+ <>
+ {/* رقم الزبون (تم نقله للأعلى في وضع رفع من محل) */}
+ {submissionMode !== "from_shop" && (
  <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>رقم الزبون</span>
- <input name="firstCustomerPhone" className={ad.input} value={firstPhone} onChange={(e) => setFirstPhone(e.target.value)} inputMode="numeric" required />
+ <input
+ name="firstCustomerPhone"
+ className={ad.input}
+ value={firstPhone}
+ onChange={(e) => setFirstPhone(e.target.value)}
+ inputMode="numeric"
+ autoComplete="tel"
+ placeholder="اكتب أو الصق الرقم"
+ required
+ />
  </label>
- <RegionSearchPicker fieldName="firstCustomerRegionId" label="منطقة الزبون" required value={firstRegionId} onValueChange={setFirstRegionId} regionsLookup={regions} />
+ )}
+
+ {/* منطقة الزبون */}
+ <RegionSearchPicker
+ fieldName="firstCustomerRegionId"
+ label="منطقة الزبون"
+ required
+ value={firstRegionId}
+ onValueChange={setFirstRegionId}
+ regionsLookup={regions}
+ />
+
+ {firstPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات محفوظة...</p>}
+ {firstPrefill && (
+ <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900 shadow-sm transition-all">
+ <div className="flex justify-between items-start gap-3">
+ <div className="space-y-1 flex-1">
+ <p className="font-bold text-emerald-800">بيانات محفوظة لهذا الرقم:</p>
+ <p className="text-xs">المنطقة: {regions.find(r => r.id === firstPrefill.customerRegionId)?.name || '—'}</p>
+ <p className="text-xs italic text-slate-600">أقرب نقطة: {firstPrefill.customerLandmark || 'لا يوجد'}</p>
+ </div>
+ {firstPrefill.customerDoorPhotoUrl && (
+ <img src={doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl) || ""} className="h-14 w-14 rounded object-cover border" alt="" />
+ )}
+ </div>
+ <button type="button" className="mt-2 w-full rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-md" onClick={() => {
+ setFirstPhone(firstPrefill.phone);
+ setFirstRegionId(firstPrefill.customerRegionId ?? "");
+ setFirstLocationUrl(firstPrefill.customerLocationUrl ?? "");
+ setFirstLandmark(firstPrefill.customerLandmark ?? "");
+ setFirstAlternatePhone(firstPrefill.alternatePhone ?? "");
+ setFirstSavedDoorPhotoUrl(doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl));
+ setFirstRawDoorPhotoUrl(firstPrefill.customerDoorPhotoUrl);
+ setFirstPrefillApplied(true);
+ }}>تطبيق كافة البيانات المحفوظة</button>
+ </div>
+ )}
+
+ {/* نوع الطلب */}
  <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>نوع الطلب</span>
- <input name="orderType" required className={ad.input} value={orderType} onChange={(e) => setOrderType(e.target.value)} />
+ <input
+ name="orderType"
+ required
+ className={ad.input}
+ placeholder="مثال: مستلزمات"
+ value={orderType}
+ onChange={(e) => setOrderType(e.target.value)}
+ />
  </label>
+
+ {/* سعر الطلب */}
  <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>سعر الطلب</span>
- <input name="orderSubtotal" required className={ad.input} inputMode="decimal" value={orderSubtotal} onChange={(e) => setOrderSubtotal(e.target.value)} />
+ <input
+ name="orderSubtotal"
+ required
+ className={ad.input}
+ placeholder="اكتب السعر"
+ inputMode="decimal"
+ value={orderSubtotal}
+ onChange={(e) => setOrderSubtotal(e.target.value)}
+ />
  </label>
+
+ {/* أقرب نقطة */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>أقرب نقطة دالة</span>
+ <input
+ name="firstCustomerLandmark"
+ className={ad.input}
+ value={firstLandmark}
+ onChange={(e) => setFirstLandmark(e.target.value)}
+ />
+ </label>
+
+ {/* لكيشن */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>لكيشن الزبون</span>
+ <div className="flex flex-col gap-1.5">
+ <input
+ name="firstCustomerLocationUrl"
+ className={ad.input}
+ value={firstLocationUrl}
+ onChange={(e) => setFirstLocationUrl(e.target.value)}
+ />
+ </div>
+ </label>
+
+ {/* صورة الطلب */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>صورة الطلب</span>
+ <input name="orderImage" type="file" accept="image/*" className={ad.input} />
+ </label>
+
+ {/* ملاحظة صوتية */}
+ <ClientVoiceNoteField title="ملاحظة صوتية" wrapperClassName="" />
+
+ {/* رقم ثاني */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>رقم الزبون الثاني</span>
+ <input
+ name="firstCustomerAlternatePhone"
+ className={ad.input}
+ value={firstAlternatePhone}
+ onChange={(e) => setFirstAlternatePhone(e.target.value)}
+ inputMode="numeric"
+ placeholder="رقم إضافي..."
+ />
+ </label>
+
+ {/* وقت الطلب */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>وقت الطلب (إجباري)</span>
+ <input
+ name="orderNoteTime"
+ required
+ className={ad.input}
+ placeholder="مثال: الساعة 8 مساءً"
+ value={orderNoteTime}
+ onChange={(e) => setOrderNoteTime(e.target.value)}
+ />
+ </label>
+
+ {/* ملاحظة كتابية */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>ملاحظات / تفاصيل (كتابية)</span>
+ <textarea
+ name="summary"
+ rows={3}
+ className={ad.input}
+ value={summary}
+ onChange={(e) => setSummary(e.target.value)}
+ />
+ </label>
+ </>
+ ) : (
+ /* الترتيب لوجهتين */
+ <>
+ {/* رقم المرسل */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>رقم المرسل</span>
+ <input
+ name="firstCustomerPhone"
+ className={ad.input}
+ value={firstPhone}
+ onChange={(e) => setFirstPhone(e.target.value)}
+ inputMode="numeric"
+ required
+ />
+ </label>
+
+ {/* رقم المستلم */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>رقم المستلم</span>
+ <input
+ name="secondCustomerPhone"
+ className={ad.input}
+ value={secondPhone}
+ onChange={(e) => setSecondPhone(e.target.value)}
+ required
+ />
+ </label>
+
+ {/* منطقة المرسل */}
+ <RegionSearchPicker
+ fieldName="firstCustomerRegionId"
+ label="منطقة المرسل"
+ required
+ value={firstRegionId}
+ onValueChange={setFirstRegionId}
+ regionsLookup={regions}
+ />
+
+ {/* منطقة المستلم */}
+ <RegionSearchPicker
+ fieldName="secondCustomerRegionId"
+ label="منطقة المستلم"
+ required
+ value={secondRegionId}
+ onValueChange={setSecondRegionId}
+ regionsLookup={regions}
+ />
+
+ {/* سعر الطلب */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>سعر الطلب</span>
+ <input
+ name="orderSubtotal"
+ required
+ className={ad.input}
+ inputMode="decimal"
+ value={orderSubtotal}
+ onChange={(e) => setOrderSubtotal(e.target.value)}
+ />
+ </label>
+
+ {/* اقرب نقطة داله للمرسل */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>أقرب نقطة دالة للمرسل</span>
+ <input
+ name="firstCustomerLandmark"
+ className={ad.input}
+ value={firstLandmark}
+ onChange={(e) => setFirstLandmark(e.target.value)}
+ />
+ </label>
+
+ {/* اقرب نقطة داله للمستلم */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>أقرب نقطة دالة للمستلم</span>
+ <input
+ name="secondCustomerLandmark"
+ className={ad.input}
+ value={secondLandmark}
+ onChange={(e) => setSecondLandmark(e.target.value)}
+ />
+ </label>
+
+ {/* لكيشن المرسل */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>لكيشن المرسل</span>
+ <div className="flex flex-col gap-1.5">
+ <input
+ name="firstCustomerLocationUrl"
+ className={ad.input}
+ value={firstLocationUrl}
+ onChange={(e) => setFirstLocationUrl(e.target.value)}
+ />
+ </div>
+ </label>
+
+ {/* لكيشن المستلم */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>لكيشن المستلم</span>
+ <div className="flex flex-col gap-1.5">
+ <input
+ name="secondCustomerLocationUrl"
+ className={ad.input}
+ value={secondLocationUrl}
+ onChange={(e) => setSecondLocationUrl(e.target.value)}
+ />
+ </div>
+ </label>
+
+ {/* رقم ثاني للمرسل */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>رقم ثاني للمرسل</span>
+ <input
+ name="firstCustomerAlternatePhone"
+ className={ad.input}
+ value={firstAlternatePhone}
+ onChange={(e) => setFirstAlternatePhone(e.target.value)}
+ inputMode="numeric"
+ />
+ </label>
+
+ {/* رقم ثاني للمستلم */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>رقم ثاني للمستلم</span>
+ <input
+ name="secondCustomerAlternatePhone"
+ className={ad.input}
+ value={secondAlternatePhone}
+ onChange={(e) => setSecondAlternatePhone(e.target.value)}
+ inputMode="numeric"
+ />
+ </label>
+
+ {/* صورة الطلب */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>صورة الطلب</span>
+ <input name="orderImage" type="file" accept="image/*" className={ad.input} />
+ </label>
+
+ {/* ملاحظة صوتية */}
+ <ClientVoiceNoteField title="ملاحظة صوتية" wrapperClassName="" />
+
+ {/* وقت الطلب */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>وقت الطلب (إجباري)</span>
+ <input
+ name="orderNoteTime"
+ required
+ className={ad.input}
+ placeholder="مثال: الساعة 8 مساءً"
+ value={orderNoteTime}
+ onChange={(e) => setOrderNoteTime(e.target.value)}
+ />
+ </label>
+
+ {/* ملاحظة كتابية */}
+ <label className="flex flex-col gap-1 text-sm">
+ <span className={ad.label}>ملاحظات / تفاصيل (كتابية)</span>
+ <textarea
+ name="summary"
+ rows={3}
+ className={ad.input}
+ value={summary}
+ onChange={(e) => setSummary(e.target.value)}
+ />
+ </label>
+ </>
+ )}
+
  </div>
  </div>
  </div>
  )}
 
+
  {state.error ? <p className={ad.error}>{state.error}</p> : null}
- <button type="submit" className={`${ad.btnPrimary} w-full flex items-center justify-center gap-2`} disabled={!canSubmit || pending}>
- {pending ? "جارٍ التنفيذ..." : "إرسال"}
+
+ <button type="submit" className={`${ad.btnPrimary} flex items-center justify-center gap-2`} disabled={!canSubmit || pending}>
+ {pending ? "جارٍ التنفيذ..." : (
+ <>
+ {submissionMode === "prep_draft" ? (
+ <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={18} height={18} /> إرسال طلب التجهيز</>
+ ) : (
+ <><DynamicIcon icon={icons?.ui_plus} fallback="+" width={18} height={18} /> إنشاء الطلب</>
+ )}
+ </>
+ )}
  </button>
  </form>
 
  {blockedPhone && (
- <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
- <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center">
+ <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+ <div className="w-full max-w-sm rounded-3xl border-2 border-rose-100 bg-white p-6 shadow-2xl text-center animate-in zoom-in duration-300">
+ <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+ <span className="text-3xl">🚫</span>
+ </div>
  <h3 className="text-xl font-black text-slate-900">زبون محظور!</h3>
- <button type="button" onClick={() => setBlockedPhone(null)} className="mt-6 w-full rounded-2xl bg-slate-900 py-3 text-white">فهمت</button>
+ <p className="mt-3 text-sm font-bold leading-relaxed text-slate-600">
+ عذراً، هذا الرقم محظور من التوصيل حالياً.
+ <br/>
+ <span className="font-mono text-rose-600 mt-1 block" dir="ltr">{blockedPhone}</span>
+ </p>
+ <button
+ type="button"
+ onClick={() => setBlockedPhone(null)}
+ className="mt-6 w-full rounded-2xl bg-slate-900 py-3 text-sm font-black text-white shadow-lg active:scale-95 transition"
+ >
+ فهمت ذلك
+ </button>
  </div>
  </div>
  )}

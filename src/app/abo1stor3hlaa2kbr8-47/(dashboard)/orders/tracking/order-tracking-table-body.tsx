@@ -118,7 +118,7 @@ export function OrderTrackingTableBody({ rows }: { rows: TrackingTableRow[] }) {
           <Fragment key={o.id}>
             {separator}
             <tr
-              className={`cursor-pointer border-b border-sky-100 transition ${pricingOpen ? "bg-indigo-50/50 ring-2 ring-inset ring-indigo-200" : orderStatusRowClassInteractive(o.orderStatus)}`}
+              className={`cursor-pointer border-b border-sky-100 transition ${pricingOpen ? "bg-amber-50 ring-2 ring-inset ring-amber-200" : orderStatusRowClassInteractive(o.orderStatus)}`}
               onClick={() => router.push(`${SECRET_ADMIN_PATH}/orders/${o.id}`)}
             >
               <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
@@ -132,8 +132,8 @@ export function OrderTrackingTableBody({ rows }: { rows: TrackingTableRow[] }) {
                     onClick={() => setPricingOpenId(pricingOpen ? null : o.id)}
                     className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border shadow-sm transition ${
                       pricingOpen
-                        ? "border-indigo-600 bg-indigo-600 text-white"
-                        : "border-indigo-400 bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                        ? "border-amber-600 bg-amber-600 text-white"
+                        : "border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100"
                     }`}
                     title="تعديل الأسعار"
                   >
@@ -217,8 +217,8 @@ export function OrderTrackingTableBody({ rows }: { rows: TrackingTableRow[] }) {
             </tr>
             {pricingOpen && (
               <tr onClick={(e) => e.stopPropagation()}>
-                <td colSpan={11} className="p-4 bg-indigo-50/20">
-                  <div className="max-w-4xl mx-auto animate-in slide-in-from-top-4 duration-300">
+                <td colSpan={11} className="p-4 bg-amber-50/30">
+                  <div className="max-w-3xl mx-auto">
                     <AdminPricingPanel
                       orderId={o.id}
                       initialData={o.preparerShoppingJson}

@@ -15,12 +15,12 @@ import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 
 const STATUS_UI: Record<string, { ar: string; dot: string }> = {
-  pending: { ar: "جديد", dot: "bg-rose-500 ring-4 ring-rose-500/10 shadow-[0_0_8px_rgba(244,63,94,0.4)]" },
-  assigned: { ar: "مسند", dot: "bg-amber-400 ring-4 ring-amber-400/10" },
-  delivering: { ar: "بالتوصيل", dot: "bg-indigo-500 ring-4 ring-indigo-500/10" },
-  delivered: { ar: "تم التسليم", dot: "bg-emerald-500 ring-4 ring-emerald-500/10" },
-  cancelled: { ar: "مرفوض", dot: "bg-slate-400 ring-4 ring-slate-400/10" },
-  archived: { ar: "مؤرشف", dot: "bg-slate-800 ring-4 ring-slate-800/10" },
+  pending: { ar: "جديد", dot: "bg-red-500 ring-2 ring-red-200/70" },
+  assigned: { ar: "بانتظار المندوب", dot: "bg-amber-400 ring-2 ring-amber-200/80" },
+  delivering: { ar: "عند المندوب", dot: "bg-cyan-500 ring-2 ring-cyan-200/80" },
+  delivered: { ar: "تم التسليم", dot: "bg-emerald-500 ring-2 ring-emerald-200/80" },
+  cancelled: { ar: "مرفوض", dot: "bg-slate-500 ring-2 ring-slate-200/80" },
+  archived: { ar: "مؤرشف", dot: "bg-violet-500 ring-2 ring-violet-200/80" },
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
@@ -183,7 +183,7 @@ export function OrderTrackingBulkTable({
   return (
     <div className="space-y-3">
       {visibleIds.length > 0 ? (
-        <div className="flex items-center gap-2">
+        <div>
           <button
             type="button"
             onClick={() =>
@@ -192,105 +192,103 @@ export function OrderTrackingBulkTable({
                 return !v;
               })
             }
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition-all ${
-              showQuickSelect
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
-                : "bg-white border border-slate-200 text-slate-600 hover:border-indigo-200 hover:text-indigo-600 shadow-sm"
-            }`}
+            className="mb-1.5 flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-900 hover:bg-sky-100"
           >
-            <svg className={`w-3.5 h-3.5 transition-transform duration-300 ${showQuickSelect ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
-            </svg>
-            ⚡ تحديد ذكي
+            ⚡ تحديد سريع
+            <span className="text-sky-400">{showQuickSelect ? "▲" : "▼"}</span>
           </button>
 
-          {selectedCount > 0 && (
-            <button
-              onClick={clearSelection}
-              className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-black text-rose-600 transition-all hover:bg-rose-100"
-            >
-              إلغاء ({selectedCount})
-            </button>
+          {showQuickSelect && (
+            <div className="rounded-xl border border-sky-200 bg-sky-50/60 px-3 py-2.5">
+              <p className="mb-2 text-xs font-bold text-slate-700">
+                اختر حالة و/أو مندوباً ثم اضغط «تحديد المطابقين»
+              </p>
+              <div className="flex flex-wrap items-end gap-2">
+                <label className="flex flex-col gap-0.5 text-xs font-bold text-slate-600">
+                  الحالة الحالية
+                  <select
+                    value={quickStatus}
+                    onChange={(e) => setQuickStatus(e.target.value)}
+                    className="min-h-[40px] rounded-lg border border-sky-200 bg-white px-2 py-1.5 text-sm font-bold text-slate-800 outline-none"
+                  >
+                    {QUICK_STATUS_VALUES.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-0.5 text-xs font-bold text-slate-600">
+                  المندوب المسند
+                  <select
+                    value={quickCourier}
+                    onChange={(e) => setQuickCourier(e.target.value)}
+                    className="min-h-[40px] min-w-[10rem] rounded-lg border border-sky-200 bg-white px-2 py-1.5 text-sm font-bold text-slate-800 outline-none"
+                  >
+                    <option value="any">أي مندوب</option>
+                    {couriers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={selectMatchingQuickFilters}
+                  className="min-h-[40px] rounded-lg bg-sky-700 px-3 py-2 text-sm font-bold text-white shadow-sm hover:bg-sky-800"
+                >
+                  تحديد المطابقين
+                </button>
+                <button
+                  type="button"
+                  onClick={selectAllVisible}
+                  className="min-h-[40px] rounded-lg border border-sky-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 hover:bg-sky-50"
+                >
+                  تحديد الكل الظاهر
+                </button>
+                <button
+                  type="button"
+                  onClick={clearSelection}
+                  className="min-h-[40px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50"
+                >
+                  إفراغ التحديد
+                </button>
+              </div>
+            </div>
           )}
         </div>
       ) : null}
 
-      {showQuickSelect && (
-        <div className="rounded-3xl border border-indigo-100 bg-indigo-50/30 p-4 animate-in zoom-in-95 duration-200">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex flex-col gap-1.5 flex-1 min-w-[140px]">
-              <span className={ad.label}>الحالة المستهدفة</span>
-              <select
-                value={quickStatus}
-                onChange={(e) => setQuickStatus(e.target.value)}
-                className={ad.select}
-              >
-                {QUICK_STATUS_VALUES.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1.5 flex-1 min-w-[180px]">
-              <span className={ad.label}>المندوب المسند</span>
-              <select
-                value={quickCourier}
-                onChange={(e) => setQuickCourier(e.target.value)}
-                className={ad.select}
-              >
-                <option value="any">أي مندوب</option>
-                {couriers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={selectMatchingQuickFilters}
-                className={ad.btnDark}
-              >
-                تحديد المطابق
-              </button>
-              <button
-                type="button"
-                onClick={selectAllVisible}
-                className={ad.btnSecondary}
-              >
-                الكل
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedCount > 0 && (
-        <div className="sticky top-4 z-50 rounded-3xl border-2 border-indigo-500 bg-white/90 p-4 shadow-2xl backdrop-blur-xl animate-in slide-in-from-top-4">
-          <div className="flex flex-wrap items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-200">
-                <span className="text-lg font-black">{selectedCount}</span>
-              </div>
-              <div>
-                <p className="text-sm font-black text-slate-900 leading-tight">طلب محدد</p>
-                <p className="text-xs font-bold text-slate-500">جاهز للتعديل الجماعي</p>
-              </div>
+      {selectedCount ? (
+        <div className="rounded-2xl border border-sky-200 bg-white/70 p-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold text-slate-800">
+                تم اختيار {selectedCount} طلب
+              </p>
+              {bulkState.error ? (
+                <p className="mt-1 text-sm font-bold text-rose-600">
+                  {bulkState.error}
+                </p>
+              ) : null}
+              {bulkPending ? (
+                <p className="mt-1 text-xs font-bold text-sky-800">جارٍ التطبيق…</p>
+              ) : null}
             </div>
 
-            <form action={bulkAction} className="flex flex-wrap items-center gap-3">
+            <form action={bulkAction} className="flex flex-wrap items-end gap-2">
               {selectedIdsArr.map((id) => (
                 <input key={id} type="hidden" name="orderIds" value={id} />
               ))}
 
-              <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-xs font-bold text-slate-600">الحالة الجديدة</span>
                 <select
                   name="targetStatus"
                   value={targetStatus}
                   onChange={(e) => setTargetStatus(e.target.value)}
-                  className="bg-transparent border-none text-sm font-black text-slate-800 focus:ring-0 cursor-pointer"
+                  className="rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 outline-none"
                 >
                   <option value="pending">قيد الانتظار</option>
                   <option value="assigned">مسند للمندوب</option>
@@ -299,52 +297,47 @@ export function OrderTrackingBulkTable({
                   <option value="cancelled">مرفوض</option>
                   <option value="archived">مؤرشف</option>
                 </select>
+              </label>
 
-                {needsCourier && (
-                  <>
-                    <div className="w-px h-6 bg-slate-200 mx-1" />
-                    <select
-                      name="courierId"
-                      value={courierId}
-                      onChange={(e) => setCourierId(e.target.value)}
-                      className="bg-transparent border-none text-sm font-black text-slate-800 focus:ring-0 cursor-pointer min-w-[120px]"
-                    >
-                      <option value="">اختر مندوب…</option>
-                      {couriers.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </>
-                )}
-              </div>
+              {needsCourier ? (
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="text-xs font-bold text-slate-600">المندوب</span>
+                  <select
+                    name="courierId"
+                    value={courierId}
+                    onChange={(e) => setCourierId(e.target.value)}
+                    className="rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 outline-none"
+                  >
+                    <option value="">اختر مندوب…</option>
+                    {couriers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <input type="hidden" name="courierId" value="" />
+              )}
 
               {needsCourier && (
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <div className="relative">
-                    <input type="checkbox" name="directReceipt" className="peer sr-only" />
-                    <div className="h-6 w-11 rounded-full bg-slate-200 transition-colors peer-checked:bg-emerald-500" />
-                    <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5" />
-                  </div>
-                  <span className="text-xs font-black text-slate-600 group-hover:text-emerald-600 transition-colors">⚡ استلام مباشر</span>
-                </label>
+                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-sky-200">
+                  <input type="checkbox" id="bulk-direct-tracking" name="directReceipt" className="h-4 w-4 rounded border-sky-400" />
+                  <label htmlFor="bulk-direct-tracking" className="text-[10px] font-black text-sky-950 cursor-pointer select-none">استلام مباشر ⚡</label>
+                </div>
               )}
 
               <button
                 type="submit"
                 disabled={bulkPending || (needsCourier && !courierId)}
-                className={ad.btnPrimary}
+                className="rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-sky-200/80 ring-1 ring-sky-400/30 transition hover:from-sky-700 hover:to-cyan-700 disabled:opacity-60"
               >
-                {bulkPending ? "جاري الحفظ..." : "تحديث الطلبات"}
+                تطبيق
               </button>
             </form>
           </div>
-          {bulkState.error && (
-            <p className="mt-2 text-center text-xs font-black text-rose-600 bg-rose-50 py-2 rounded-xl border border-rose-100">{bulkState.error}</p>
-          )}
         </div>
-      )}
+      ) : null}
 
       <UnifiedOrderListTable
         rows={unifiedRows}

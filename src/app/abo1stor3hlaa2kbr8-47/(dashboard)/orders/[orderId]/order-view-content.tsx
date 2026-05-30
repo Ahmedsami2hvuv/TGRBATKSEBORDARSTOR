@@ -27,13 +27,12 @@ import { OrderFabDock } from "@/components/order-fab-dock";
 import { NotesCopyButton } from "@/components/notes-copy-button";
 import { AdminPricingPanel } from "../pending/pending-orders-client";
 import { isAdminShopName } from "@/lib/admin-order-from-admin-constants";
-import { DynamicIcon } from "@/components/dynamic-icon";
 
-const squarePhotoFrame = "aspect-square w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 shadow-sm transition-all hover:shadow-md group cursor-zoom-in";
-const squarePhotoImg = "h-full w-full object-cover transition-transform duration-500 group-hover:scale-110";
-const squarePhotoContain = "h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-110";
-const gridInfoPhoto = "grid grid-cols-1 items-start gap-4 sm:grid-cols-[1fr_200px] sm:gap-8";
-const compactPhoneText = "font-mono text-base font-black text-slate-900 tabular-nums sm:text-lg [direction:ltr] break-all group-hover:text-indigo-600 transition-colors";
+const squarePhotoFrame = "aspect-square w-full overflow-hidden rounded-xl border border-sky-200 bg-slate-50";
+const squarePhotoImg = "h-full w-full object-cover";
+const squarePhotoContain = "h-full w-full object-contain";
+const gridInfoPhoto = "grid grid-cols-[minmax(0,1fr)_minmax(0,12rem)] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.32fr)] sm:gap-6";
+const compactPhoneText = "font-mono text-base font-black text-emerald-900 tabular-nums sm:text-lg [direction:ltr] break-all";
 
 const STATUS_AR: Record<string, string> = {
   pending: "قيد الانتظار", assigned: "مسند للمندوب", delivering: "قيد التوصيل",
@@ -127,377 +126,335 @@ export function OrderViewContent({
   const parsedShoppingJson = parsePreparerShoppingJson(order.preparerShoppingJson);
 
   return (
-    <div className={`relative mt-6 ${ad.section} !p-0 overflow-hidden shadow-2xl ${orderStatusStartStripeClass(order.status)}`} dir="rtl">
-      {/* Background Status Tint */}
-      <div className={`absolute inset-0 opacity-[0.03] pointer-events-none ${order.prepaidAll ? "bg-emerald-500" : isReversePickup ? "bg-violet-500" : isDoubleRoute ? "bg-fuchsia-500" : "bg-indigo-500"}`}></div>
+    <div className={`kse-glass-dark relative mt-4 border p-4 pb-24 text-base leading-relaxed sm:p-5 sm:pb-32 ${orderStatusStartStripeClass(order.status)} ${order.prepaidAll ? "border-emerald-300 bg-gradient-to-b from-emerald-50 to-teal-50" : isReversePickup ? "border-violet-400 bg-violet-100" : isDoubleRoute ? "border-fuchsia-300 bg-gradient-to-b from-fuchsia-50 to-violet-50" : `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}`}`} dir="rtl">
 
-      <div className="relative p-5 sm:p-8 pb-24 sm:pb-32">
-        {order.isBlocked && (
-          <div className="mb-6 animate-pulse rounded-2xl border-4 border-rose-600 bg-rose-50 p-4 text-center text-xl font-black text-rose-900 shadow-xl" role="alert">
-            🛑 تنبيه: هذا الزبون محظور (Blocklist)
-          </div>
-        )}
-
-        {/* بصمات الصوت */}
-        {(voiceSrc || adminVoiceSrc) && (
-          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {voiceSrc && (
-              <div className="rounded-3xl border border-amber-100 bg-amber-50/30 p-4 shadow-sm">
-                <p className="mb-2 text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
-                  <span>🗣️</span> بصمة الزبون / المحل
-                </p>
-                <VoiceNoteAudio src={voiceSrc} streamKey={`${order.id}-voice`} className="w-full" />
-              </div>
-            )}
-            <AdminVoiceNoteSection variant="standalone" orderId={order.id} defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl} />
-          </div>
-        )}
-
-        {pricingOpen && (
-          <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="w-full max-w-2xl bg-white rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.3)] overflow-hidden border border-slate-200">
-              <div className="flex items-center justify-between bg-slate-50 px-6 py-4 border-b border-slate-100">
-                <h3 className={ad.h2}>تعديل تسعير الطلب <span className="text-indigo-600">#{order.orderNumber}</span></h3>
-                <button onClick={() => setPricingOpen(false)} className="h-10 w-10 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 shadow-sm transition-all">✕</button>
-              </div>
-              <div className="p-0 overflow-y-auto max-h-[85vh]">
-                <AdminPricingPanel
-                  orderId={order.id}
-                  initialData={parsedShoppingJson}
-                  orderSummary={order.summary}
-                  shops={[]}
-                  preparers={preparers}
-                  rawDeliveryPriceDinar={order.deliveryPrice != null ? Number(order.deliveryPrice) : null}
-                  onSuccess={() => { setPricingOpen(false); window.location.reload(); }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          {isReversePickup && <span className="px-3 py-1 rounded-full bg-violet-600 text-white text-[10px] font-black shadow-lg shadow-violet-200">طلب عكسي</span>}
-          {isDoubleRoute && <span className="px-3 py-1 rounded-full bg-fuchsia-600 text-white text-[10px] font-black shadow-lg shadow-fuchsia-200">وجهتين</span>}
-          {order.prepaidAll && <span className="px-3 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-black shadow-lg shadow-emerald-200">مدفوع مسبقاً</span>}
+      {order.isBlocked && (
+        <div
+          className="mb-4 animate-pulse rounded-2xl border-4 border-red-600 bg-red-100 p-4 text-center text-xl font-black text-red-900 shadow-xl"
+          role="alert"
+        >
+          🛑 تنبيه: هذا الزبون محظور من التوصيل (Blocklist)
         </div>
+      )}
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-slate-100 pb-6 mb-8">
-          <div>
-            <h2 className={ad.h1}>رقم الطلب <span className="tabular-nums text-indigo-600">#{order.orderNumber}</span></h2>
-            <p className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-widest">بتاريخ: {formatBaghdadDateTime(new Date(order.createdAt))}</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`} className={ad.navButton}>تعديل البيانات</Link>
-              <button onClick={() => setPricingOpen(true)} className={`${ad.btnPrimary} !bg-amber-500 hover:!bg-amber-600 !shadow-amber-100`}>
-                💰 تعديل التسعير
-              </button>
-              {order.status === "pending" && <Link href={`${SECRET_ADMIN_PATH}/orders/pending?assignOrder=${order.id}`} className={ad.btnPrimary}>إسناد للمندوب</Link>}
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <span className={ad.label}>حالة الطلب الآن</span>
-            <span className={`rounded-2xl px-5 py-2 text-sm font-black shadow-xl ${statusBadgeClass}`}>{STATUS_AR[order.status] ?? order.status}</span>
-          </div>
-        </div>
-
-        <div className="space-y-12">
-          {/* --- SENDER / SHOP --- */}
-          <section className={gridInfoPhoto}>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm">
-                  <span className="text-lg">🏪</span>
-                </div>
-                <h3 className={ad.h2 + " !text-emerald-700"}>{order.routeMode === "double" ? "جهة الإرسال (1)" : "معلومات المحل / المصدر"}</h3>
+      {/* بصمات الصوت في بداية الصفحة بتنسيق مرتب */}
+      {(voiceSrc || adminVoiceSrc) && (
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {voiceSrc && (
+            <div className="rounded-2xl border-2 border-amber-100 bg-white p-3 shadow-sm">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-black text-amber-600 flex items-center gap-1"><span>🗣️</span> بصمة الزبون (المحل)</span>
               </div>
-
-              <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-4 group">
-                {order.routeMode === "double" ? (
-                  <>
-                    <p className="text-xl font-black text-slate-900">{displayCustomerName || "—"}</p>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-black border border-emerald-100">{order.customerRegion?.name ?? "غير محدد"}</span>
-                    </div>
-                    <div className="space-y-1">
-                      <span className={compactPhoneText}>{order.customerPhone}</span>
-                      {order.alternatePhone && <div className="pt-1 border-t border-slate-50"><span className={compactPhoneText}>{order.alternatePhone}</span></div>}
-                    </div>
-                    <p className="text-sm font-bold text-slate-600">نقطة دالة: {order.customerLandmark?.trim() || "—"}</p>
-                    <div className="pt-2 flex flex-wrap gap-2">
-                      {order.customerLocationUrl?.trim() ? (
-                        <div className="space-y-2 w-full">
-                          <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className={ad.btnPrimary + " !py-2 !text-xs !bg-emerald-600 w-fit"}>لوكيشن المرسل ↗</a>
-                          <ImageUploaderCaption name={order.customerLocationUploadedByName} />
-                        </div>
-                      ) : <AdminCustomerLocationQuick orderId={order.id} />}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {isSystemAdminOrder ? (
-                      <div className="space-y-2">
-                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">طلب إداري مباشر</p>
-                        <p className="text-3xl font-black text-slate-900 tabular-nums">{SYSTEM_ADMIN_PHONE}</p>
-                      </div>
-                    ) : (
-                      <>
-                        <p className="text-xl font-black text-slate-900">{order.shop.name}</p>
-                        <div className="flex items-center gap-2 text-sm">
-                          <span className="text-slate-400 font-bold">المسؤول:</span>
-                          <span className="font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">{order.submittedByCompanyPreparer?.name || order.submittedBy?.name || "—"}</span>
-                        </div>
-                        <div className="pt-2">
-                          {order.shopLocationUrl?.trim() ? (
-                            <a href={order.shopLocationUrl} target="_blank" rel="noopener noreferrer" className={ad.btnPrimary + " !py-2 !text-xs !bg-emerald-600 w-fit"}>لوكيشن المحل ↗</a>
-                          ) : <p className={ad.warn + " text-[10px]"}>لا يوجد لوكيشن مسجل</p>}
-                        </div>
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <span className={ad.label}>الصورة المرفقة</span>
-              <div className={squarePhotoFrame}>
-                {order.routeMode === "double" ? (
-                  imgCustDoor ? <img src={imgCustDoor} alt="" className={squarePhotoImg} /> : <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-300"><span className="text-2xl">🖼️</span><p className="text-[9px] font-black">لا توجد صورة</p></div>
-                ) : (
-                  !isSystemAdminOrder && (imgShopDoor ? <img src={imgShopDoor} alt="" className={squarePhotoImg} /> : <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-300"><span className="text-2xl">🖼️</span><p className="text-[9px] font-black">لا توجد صورة</p></div>)
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                {order.routeMode === "double" ? (
-                  <>
-                    <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.customerDoorPhotoUrl} />
-                    <ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} />
-                  </>
-                ) : (!isSystemAdminOrder && (
-                  <>
-                    <AdminOrderPhotoQuick orderId={order.id} kind="shop" hasImage={!!(order.shopPhotoUrl || order.shopDoorPhotoUrl)} />
-                    <ImageUploaderCaption name={order.shopDoorPhotoUploadedByName} />
-                  </>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* --- RECEIVER / CUSTOMER --- */}
-          <section className={gridInfoPhoto}>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center shadow-sm">
-                  <span className="text-lg">👤</span>
-                </div>
-                <h3 className={ad.h2 + " !text-sky-700"}>{order.routeMode === "double" ? "جهة الاستلام (2)" : "معلومات الزبون / المستلم"}</h3>
-              </div>
-
-              <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-4 group">
-                {order.routeMode === "double" ? (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-lg bg-sky-50 text-sky-700 text-[10px] font-black border border-sky-100">{order.secondCustomerRegion?.name ?? "غير محدد"}</span>
-                    </div>
-                    <div className="space-y-1">
-                      <span className={compactPhoneText}>{order.secondCustomerPhone || "—"}</span>
-                    </div>
-                    <p className="text-sm font-bold text-slate-600">نقطة دالة: {order.secondCustomerLandmark?.trim() || "—"}</p>
-                    <div className="pt-2 flex flex-wrap gap-2">
-                      {order.secondCustomerLocationUrl?.trim() ? (
-                        <div className="space-y-2 w-full">
-                          <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className={ad.btnPrimary + " !py-2 !text-xs !bg-sky-600 w-fit"}>لوكيشن المستلم ↗</a>
-                          <ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} />
-                        </div>
-                      ) : <AdminCustomerLocationQuick orderId={order.id} target="second" />}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-xl font-black text-slate-900">{displayCustomerName || "—"}</p>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-lg bg-sky-50 text-sky-700 text-[10px] font-black border border-sky-100">{order.customerRegion?.name ?? "غير محدد"}</span>
-                    </div>
-                    <div className="space-y-1">
-                      <span className={compactPhoneText}>{order.customerPhone}</span>
-                      {(order.alternatePhone || order.secondCustomerPhone) && (
-                        <div className="flex flex-col gap-1 pt-1 border-t border-slate-50">
-                          {order.alternatePhone && <span className={compactPhoneText}>{order.alternatePhone}</span>}
-                          {order.secondCustomerPhone && order.secondCustomerPhone !== order.alternatePhone && <span className={compactPhoneText}>{order.secondCustomerPhone}</span>}
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-sm font-bold text-slate-600">نقطة دالة: {order.customerLandmark?.trim() || "—"}</p>
-                    <div className="pt-2 space-y-3">
-                      {order.customerLocationUrl?.trim() ? (
-                        <div className="space-y-2 w-full">
-                          <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className={ad.btnPrimary + " !py-2 !text-xs !bg-sky-600 w-fit"}>لوكيشن الزبون ↗</a>
-                          <ImageUploaderCaption name={order.customerLocationUploadedByName} />
-                        </div>
-                      ) : <AdminCustomerLocationQuick orderId={order.id} />}
-
-                      <div className="flex flex-wrap gap-2">
-                        <AdminCustomerOrderHistory
-                          phone={order.customerPhone}
-                          regionId={order.customerRegionId}
-                          currentOrderId={order.id}
-                          customerName={order.customer?.name}
-                          customerRegionName={order.customerRegion?.name ?? null}
-                          alternatePhone={order.alternatePhone}
-                          customerLocationUrl={order.customerLocationUrl}
-                          customerLandmark={order.customerLandmark}
-                          customerProfileId={order.customerProfileId}
-                        />
-                        {order.customerProfileId && (
-                          <Link href={`${SECRET_ADMIN_PATH}/customers/profiles/${order.customerProfileId}/edit`} className={ad.navButton + " !text-[10px]"}>فتح البروفايل</Link>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <span className={ad.label}>صورة الواجهة</span>
-              <div className={squarePhotoFrame}>
-                {order.routeMode === "double" ? (
-                  imgCustDoor2 ? <img src={imgCustDoor2} alt="" className={squarePhotoImg} /> : <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-300"><span className="text-2xl">🖼️</span><p className="text-[9px] font-black">لا توجد صورة</p></div>
-                ) : (
-                  imgCustDoor ? <img src={imgCustDoor} alt="" className={squarePhotoImg} /> : <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-300"><span className="text-2xl">🖼️</span><p className="text-[9px] font-black">لا توجد صورة</p></div>
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                {order.routeMode !== "double" && <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.customerDoorPhotoUrl} />}
-                <ImageUploaderCaption name={order.routeMode === "double" ? order.secondCustomerDoorPhotoUploadedByName : order.customerDoorPhotoUploadedByName} />
-              </div>
-            </div>
-          </section>
-
-          {/* قسم المندوب */}
-          {order.courier && (
-            <div className="rounded-[2.5rem] bg-slate-900 p-8 shadow-2xl relative overflow-hidden group">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-500/20 transition-all duration-700"></div>
-               <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-2xl shadow-xl shadow-indigo-500/20">🚚</div>
-                    <div>
-                       <p className={ad.label + " !text-indigo-400 !mb-0.5"}>المندوب المكلّف</p>
-                       <p className="text-2xl font-black text-white">{order.courier.name}</p>
-                    </div>
-                  </div>
-                  <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 group-hover:border-indigo-500/30 transition-all">
-                     <p className="font-mono text-xl font-black text-indigo-400 tabular-nums [direction:ltr]">{order.courier.phone}</p>
-                  </div>
-               </div>
+              <VoiceNoteAudio src={voiceSrc} streamKey={`${order.id}-voice`} className="w-full" />
             </div>
           )}
+          <AdminVoiceNoteSection variant="standalone" orderId={order.id} defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl} />
+        </div>
+      )}
 
-          {/* تفاصيل المبالغ والنوع */}
-          <section className={gridInfoPhoto}>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-sm">
-                  <span className="text-lg">📋</span>
-                </div>
-                <h3 className={ad.h2}>تفاصيل الطلبية والنوع</h3>
-              </div>
+      {pricingOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border-2 border-amber-400">
+            <div className="flex items-center justify-between bg-amber-50 px-6 py-4 border-b border-amber-200">
+              <h3 className="text-lg font-black text-amber-900 flex items-center gap-2"><span>💰</span> لوحة تسعير الطلب #{order.orderNumber}</h3>
+              <button onClick={() => setPricingOpen(false)} className="h-10 w-10 flex items-center justify-center rounded-xl bg-red-600 text-white font-bold shadow-sm hover:bg-red-700 transition-colors">✕</button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[80vh]">
+              <AdminPricingPanel
+                orderId={order.id}
+                initialData={parsedShoppingJson}
+                orderSummary={order.summary}
+                shops={[]}
+                preparers={preparers}
+                rawDeliveryPriceDinar={order.deliveryPrice != null ? Number(order.deliveryPrice) : null}
+                onSuccess={() => { setPricingOpen(false); window.location.reload(); }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
-              <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <p className={ad.label}>نوع الخدمة</p>
-                    <OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-indigo-600 text-lg" restClassName="text-sm font-bold text-slate-700" />
+      {isReversePickup && <div className="mb-4 rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-bold text-violet-950">تنبيه طلب عكسي</div>}
+      {isDoubleRoute && (
+        <div className="mb-4 inline-flex rounded-xl border border-fuchsia-300 bg-fuchsia-100 px-3 py-1.5 text-sm font-black text-fuchsia-900">
+          وجهتين
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto]">
+        <div>
+          <h2 className="text-xl font-black text-slate-900 sm:text-2xl">رقم الطلب <span className="tabular-nums text-sky-800">#{order.orderNumber}</span></h2>
+          <p className="text-xs font-black text-sky-700 mt-1 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 w-fit">تاريخ الرفع للنظام: {formatBaghdadDateTime(new Date(order.createdAt))}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Link href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`} className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm">تعديل البيانات</Link>
+            <button onClick={() => setPricingOpen(true)} className="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition-colors"><span>💰</span> تعديل التسعير</button>
+            {order.status === "pending" && <Link href={`${SECRET_ADMIN_PATH}/orders/pending?assignOrder=${order.id}`} className="inline-flex items-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm">إسناد للمندوب</Link>}
+          </div>
+        </div>
+        <div className="flex flex-shrink-0 flex-wrap items-center gap-2"><span className={`rounded-full px-3 py-1.5 text-xs font-bold ${statusBadgeClass}`}>{STATUS_AR[order.status] ?? order.status}</span></div>
+      </div>
+
+
+      <div className="mt-5 space-y-6 sm:space-y-8">
+        
+        {/* --- SENDER / SHOP --- */}
+        <div className={gridInfoPhoto}>
+          <div className="space-y-2">
+            <h3 className="text-lg font-bold text-emerald-800">
+              {order.routeMode === "double" ? "المرسل (الوجهة الأولى)" : "المحل"}
+            </h3>
+            {order.routeMode === "double" ? (
+              <>
+                <p className="text-lg font-black text-slate-900">{displayCustomerName || "—"}</p>
+                <p className="text-slate-800 font-bold">{order.customerRegion?.name ?? "—"}</p>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
+                  <div className="min-w-0">
+                    <span className={compactPhoneText}>{order.customerPhone}</span>
                   </div>
-                  {order.orderNoteTime && (
-                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                      <p className={ad.label}>وقت التسليم</p>
-                      <p className="text-lg font-black text-slate-900">{order.orderNoteTime}</p>
+                  {order.alternatePhone && (
+                    <div className="mt-2 min-w-0 border-t border-emerald-100 pt-2">
+                      <span className={compactPhoneText}>{order.alternatePhone}</span>
                     </div>
                   )}
                 </div>
+                <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark?.trim() || "—"}</p>
+                {!order.customerLandmark?.trim() ? (
+                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.smartHintLine?.trim() || "—"}</p>
+                ) : null}
+                <div className="mt-2 space-y-2">
+                  {order.customerLocationUrl?.trim() ? (
+                    <div className="space-y-1">
+                      <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">لوكيشن المرسل ↗</a>
+                      <ImageUploaderCaption name={order.customerLocationUploadedByName} />
+                    </div>
+                  ) : (
+                    <div className="mt-2"><AdminCustomerLocationQuick orderId={order.id} /></div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                {isSystemAdminOrder ? <p className="text-3xl font-black text-indigo-700 tabular-nums">{SYSTEM_ADMIN_PHONE}</p> :
+                  <>
+                    <p className="font-bold text-slate-900">{order.shop.name}</p>
+                    <p className="text-sm font-medium"><span className="text-slate-500">المسؤول: </span><span className="font-bold text-sky-900">{order.submittedByCompanyPreparer?.name || order.submittedBy?.name || "—"}</span></p>
+                    <div className="mt-2">{order.shopLocationUrl?.trim() ? <a href={order.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">فتح لوكيشن المحل ↗</a> : <p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن</p>}</div>
+                  </>
+                }
+              </>
+            )}
+          </div>
+          <div className="self-start">
+            {order.routeMode === "double" ? (
+              <>
+                {imgCustDoor ? <div className={squarePhotoFrame}><img src={imgCustDoor} alt="" className={squarePhotoImg} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                <div className="mt-2 space-y-2">
+                  <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.customerDoorPhotoUrl} />
+                  <ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} />
+                </div>
+              </>
+            ) : (
+              !isSystemAdminOrder && (
+                <>
+                  {imgShopDoor ? <div className={squarePhotoFrame}><img src={imgShopDoor} alt="" className={squarePhotoImg} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                  <div className="mt-2 space-y-2">
+                    <AdminOrderPhotoQuick orderId={order.id} kind="shop" hasImage={!!(order.shopPhotoUrl || order.shopDoorPhotoUrl)} />
+                    <ImageUploaderCaption name={order.shopDoorPhotoUploadedByName} />
+                  </div>
+                </>
+              )
+            )}
+          </div>
+        </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <p className={ad.label + " !pr-0"}>البضاعة</p>
-                    <p className="text-lg font-black text-slate-900 font-mono">{order.orderSubtotal || "0"}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className={ad.label + " !pr-0"}>التوصيل</p>
-                    <p className="text-lg font-black text-slate-900 font-mono">{order.deliveryPrice || "0"}</p>
-                  </div>
-                  <div className="bg-indigo-600 text-white rounded-2xl p-3 shadow-lg shadow-indigo-100 flex flex-col items-center justify-center">
-                    <p className="text-[9px] font-black opacity-80 uppercase tracking-widest mb-0.5">الإجمالي</p>
-                    <p className="text-xl font-black font-mono leading-none">{order.totalAmount || "—"}</p>
+        {/* --- RECEIVER / CUSTOMER --- */}
+        <div className={gridInfoPhoto}>
+          <div className="space-y-2">
+            <h3 className="text-lg font-bold text-emerald-800">
+              {order.routeMode === "double" ? "المستلم (الوجهة الثانية)" : "الزبون"}
+            </h3>
+            {order.routeMode === "double" ? (
+              <>
+                <p className="text-slate-800 font-bold">{order.secondCustomerRegion?.name ?? "—"}</p>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
+                  <div className="min-w-0">
+                    <span className={compactPhoneText}>{order.secondCustomerPhone || "—"}</span>
                   </div>
                 </div>
-              </div>
-            </div>
+                <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.secondCustomerLandmark?.trim() || "—"}</p>
+                {!order.secondCustomerLandmark?.trim() ? (
+                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.secondSmartHintLine?.trim() || "—"}</p>
+                ) : null}
+                <div className="mt-2 space-y-2">
+                  {order.secondCustomerLocationUrl?.trim() ? (
+                    <div className="space-y-1">
+                      <a href={order.secondCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">لوكيشن المستلم ↗</a>
+                      <ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} />
+                    </div>
+                  ) : (
+                    <div className="mt-2"><AdminCustomerLocationQuick orderId={order.id} target="second" /></div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-black text-slate-900">{displayCustomerName || "—"}</p>
+                <p className="text-slate-800 font-bold">{order.customerRegion?.name ?? "—"}</p>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
+                  <div className="min-w-0">
+                    <span className={compactPhoneText}>{order.customerPhone}</span>
+                  </div>
+                  {(order.alternatePhone || order.secondCustomerPhone) && (
+                    <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-emerald-100">
+                      {order.alternatePhone && (
+                        <div className="min-w-0">
+                          <span className={compactPhoneText}>{order.alternatePhone}</span>
+                        </div>
+                      )}
+                      {order.secondCustomerPhone && order.secondCustomerPhone !== order.alternatePhone && (
+                        <div className="min-w-0">
+                          <span className={compactPhoneText}>{order.secondCustomerPhone}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark?.trim() || "—"}</p>
+                {!order.customerLandmark?.trim() ? (
+                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.smartHintLine?.trim() || "—"}</p>
+                ) : null}
+                <div className="mt-2 space-y-2">
+                  {order.customerLocationUrl?.trim() ? (
+                    <div className="space-y-1">
+                      <a href={order.customerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">لوكيشن الزبون ↗</a>
+                      <ImageUploaderCaption name={order.customerLocationUploadedByName} />
+                    </div>
+                  ) : (
+                    <div className="mt-2"><AdminCustomerLocationQuick orderId={order.id} /></div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    <AdminCustomerOrderHistory
+                      phone={order.customerPhone}
+                      regionId={order.customerRegionId}
+                      currentOrderId={order.id}
+                      customerName={order.customer?.name}
+                      customerRegionName={order.customerRegion?.name ?? null}
+                      alternatePhone={order.alternatePhone}
+                      customerLocationUrl={order.customerLocationUrl}
+                      customerLandmark={order.customerLandmark}
+                      customerProfileId={order.customerProfileId}
+                    />
+                    {order.customerProfileId ? (
+                      <Link href={`${SECRET_ADMIN_PATH}/customers/profiles/${order.customerProfileId}/edit`} className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-900 shadow-sm hover:bg-slate-50 transition-colors">ملف الزبون المباشر</Link>
+                    ) : null}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <div className="self-start">
+            {order.routeMode === "double" ? (
+              <>
+                {imgCustDoor2 ? <div className={squarePhotoFrame}><img src={imgCustDoor2} alt="" className={squarePhotoImg} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                <div className="mt-2 space-y-2">
+                  {/* NEED SECOND CUSTOMER DOOR PHOTO UPLOADER HERE. WE'LL LEAVE IT READ ONLY FOR NOW */}
+                  <ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} />
+                </div>
+              </>
+            ) : (
+              <>
+                {imgCustDoor ? <div className={squarePhotoFrame}><img src={imgCustDoor} alt="" className={squarePhotoImg} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                <div className="mt-2 space-y-2">
+                  <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.customerDoorPhotoUrl} />
+                  <ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
 
-            <div className="space-y-3">
-              <span className={ad.label}>صورة الطلب</span>
-              <div className={squarePhotoFrame}>
-                {imgOrder ? <img src={imgOrder} alt="" className={squarePhotoContain} /> : <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-300"><span className="text-2xl">🖼️</span><p className="text-[9px] font-black">لا توجد صورة</p></div>}
-              </div>
+
+        {/* قسم المندوب - مضاف حديثاً بناءً على طلبك */}
+        {order.courier && (
+          <div className="rounded-2xl border-2 border-purple-200 bg-purple-50/40 p-5 shadow-sm">
+             <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">🚚</span>
+                <h3 className="text-lg font-black text-purple-900">المندوب المسجل على الطلب</h3>
+             </div>
+             <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                   <p className="text-2xl font-black text-slate-900">{order.courier.name}</p>
+                   <p className="font-mono text-base font-bold text-purple-800 tabular-nums sm:text-lg [direction:ltr] break-all">{order.courier.phone}</p>
+                </div>
+             </div>
+          </div>
+        )}
+
+        <div className={gridInfoPhoto}>
+          <div className="space-y-4 rounded-xl border border-sky-100 bg-sky-50/50 p-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div><p className="text-sm font-bold text-slate-700 mb-1">نوع الطلب</p><OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-violet-950 bg-violet-100 px-2 py-1 rounded-lg text-lg ring-1 ring-violet-300" restClassName="text-lg font-black text-slate-900" /></div>
+              {order.orderNoteTime && <div><p className="text-sm font-bold text-slate-700 mb-1">وقت الطلب</p><p className="text-sm font-black text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md border border-indigo-200 inline-block">{order.orderNoteTime}</p></div>}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><p className="text-xs font-bold text-slate-500">سعر البضاعة</p><p className="font-mono text-lg font-black text-slate-900">{order.orderSubtotal || "0"} </p></div>
+              <div><p className="text-xs font-bold text-slate-500">التوصيل</p><p className="font-mono text-lg font-black text-slate-900">{order.deliveryPrice || "0"} </p></div>
+            </div>
+            <div className="rounded-lg border-2 border-violet-500/30 bg-violet-500/10 p-3 shadow-sm"><p className="text-xs font-black text-violet-900 mb-1">المبلغ الكلي</p><p className="font-mono text-3xl font-black text-violet-950 tabular-nums">{order.totalAmount || "—"}</p></div>
+          </div>
+          <div className="self-start">
+            <p className="mb-1.5 text-sm font-bold text-slate-700">صورة الطلبية</p>
+            {imgOrder ? <div className={squarePhotoFrame}><img src={imgOrder} alt="" className={squarePhotoContain} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+            <div className="mt-2 space-y-2">
               <AdminOrderPhotoQuick orderId={order.id} kind="order" hasImage={!!order.imageUrl} />
               <ImageUploaderCaption name={order.orderImageUploadedByName} />
             </div>
-          </section>
+          </div>
         </div>
+      </div>
 
-        {/* الملاحظات والسلة */}
-        {(() => {
-          const hasNotes = Boolean(order.summary?.trim());
-          const cartItems = order.submissionSource === "web_store" && parsedShoppingJson && Array.isArray(parsedShoppingJson.webStoreCart) ? (parsedShoppingJson.webStoreCart as any[]) : [];
-          const hasCart = cartItems.length > 0;
-          if (!hasNotes && !hasCart) return null;
-          return (
-            <div className="mt-12 pt-8 border-t border-slate-100">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-8 w-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
-                  <span className="text-lg">📝</span>
-                </div>
-                <h3 className={ad.h2 + " !text-amber-700"}>المواد والملاحظات</h3>
-              </div>
+      {(() => {
+        const hasNotes = Boolean(order.summary?.trim());
+        const cartItems =
+          order.submissionSource === "web_store" &&
+          parsedShoppingJson &&
+          Array.isArray(parsedShoppingJson.webStoreCart)
+            ? (parsedShoppingJson.webStoreCart as any[])
+            : [];
+        const hasCart = cartItems.length > 0;
+        if (!hasNotes && !hasCart) return null;
+        return (
+          <div className="mt-6 border-t border-sky-100 pt-5">
+            <p className="text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">قائمة المواد والملاحظات</p>
 
-              {hasCart && (
-                <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {hasCart && (
+              <div className="mb-4 space-y-2">
+                <p className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-100 w-fit">تفاصيل السلة (المتجر)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {cartItems.map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between items-center p-4 rounded-2xl bg-white border border-slate-100 shadow-sm hover:border-indigo-200 transition-colors group">
+                    <div key={idx} className="flex justify-between items-center p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
                       <div className="flex flex-col">
-                        <span className="text-sm font-black text-slate-900 group-hover:text-indigo-600 transition-colors">{item.name}</span>
-                        <span className="text-[10px] font-bold text-slate-400 tabular-nums">{item.price?.toLocaleString()} × {item.quantity}</span>
+                        <span className="text-sm font-black text-slate-900">{item.name}</span>
+                        <span className="text-[10px] font-bold text-slate-500">{item.price?.toLocaleString()} د.ع × {item.quantity}</span>
                       </div>
-                      <span className="text-sm font-mono font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">{(item.price * item.quantity).toLocaleString()}</span>
+                      <span className="text-sm font-mono font-black text-violet-600">{(item.price * item.quantity).toLocaleString()} د.ع</span>
                     </div>
                   ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {hasNotes && (
-                <div className="relative rounded-[2rem] border border-amber-200 bg-amber-50/20 p-6 sm:p-8 overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 blur-2xl -mr-12 -mt-12"></div>
-                  <div className="absolute left-6 top-6 z-10">
-                    <NotesCopyButton text={order.summary ?? ""} />
-                  </div>
-                  <div className="whitespace-pre-wrap text-base font-bold text-slate-800 leading-relaxed relative z-0">{order.summary}</div>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-      </div>
+            {hasNotes && (
+              <div className="relative rounded-xl border-2 border-amber-200 bg-amber-50/30 p-4 pe-16">
+                <div className="absolute end-3 top-3"><NotesCopyButton text={order.summary ?? ""} /></div>
+                <div className="whitespace-pre-wrap text-sm font-bold text-slate-800 leading-relaxed">{order.summary}</div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <OrderFabDock
-        storageKey="adminFab_v2"
-        orderId={order.id}
-        shopPhone={submitterPhone}
-        shopLabel={isDoubleRoute ? "المرسل" : "المحل"}
-        customerPhone={order.customerPhone}
-        customerAlternatePhone={order.alternatePhone ?? undefined}
-        customWaButtons={customWaButtons}
-        editUrl={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
-      />
-    <OrderFabDock
         storageKey="adminFab_v1"
         orderId={order.id}
         shopPhone={submitterPhone}

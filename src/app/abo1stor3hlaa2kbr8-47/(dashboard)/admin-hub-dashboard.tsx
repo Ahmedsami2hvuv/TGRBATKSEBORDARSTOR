@@ -15,7 +15,7 @@ function HubMenuButton() {
     <button
       type="button"
       onClick={() => window.dispatchEvent(new Event("kse:open-admin-nav"))}
-      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm transition hover:bg-slate-50 dark:hover:bg-slate-800 lg:hidden"
+      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[rgba(0,243,255,0.4)] bg-[#09090b] text-[#00f3ff] shadow-[0_0_15px_rgba(0,243,255,0.2)] transition hover:border-[#00f3ff] hover:bg-[#131418] lg:hidden"
       aria-label="فتح القائمة"
     >
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -27,23 +27,15 @@ function HubMenuButton() {
 
 function NeonBox({ t, colorClass, sizeClass, icons }: { t: AdminTile | undefined; colorClass: string; sizeClass?: string; icons: GlobalIconsConfig | null }) {
   if (!t) return null;
-
-  const isIndigo = colorClass.includes('cyan') || colorClass.includes('purple');
-  const themeClasses = isIndigo
-    ? "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 hover:shadow-indigo-500/10"
-    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-rose-500/50 dark:hover:border-rose-500/50 hover:shadow-rose-500/10";
-
-  const iconColor = isIndigo ? "text-indigo-600 dark:text-indigo-400" : "text-rose-600 dark:text-rose-400";
-
   return (
     <Link
       href={tileHref(t)}
-      className={`rounded-3xl border ${themeClasses} shadow-sm ${sizeClass ?? ''} p-5 md:p-6 flex flex-col justify-center items-center text-center group transition-all duration-300`}
+      className={`neon-box ${colorClass} ${sizeClass ?? ''} p-5 md:p-6 flex flex-col justify-center items-center text-center group`}
     >
-      <div className={`text-4xl md:text-5xl transition-transform group-hover:scale-110 mb-3 ${iconColor}`} aria-hidden>
+      <div className="text-4xl md:text-5xl drop-shadow-md transition-transform group-hover:scale-110 mb-3" aria-hidden>
         <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-12 h-12 md:w-16 md:h-16" />
       </div>
-      <span className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 tracking-tight">{t.label}</span>
+      <span className="text-base md:text-lg font-bold text-slate-800 dark:text-[#eef2f6] tracking-wide">{t.label}</span>
     </Link>
   );
 }
@@ -51,11 +43,14 @@ function NeonBox({ t, colorClass, sizeClass, icons }: { t: AdminTile | undefined
 function NeonPill({ t, colorClass, icons }: { t: AdminTile | undefined; colorClass: string; icons: GlobalIconsConfig | null }) {
   if (!t) return null;
   return (
-    <div className="relative group w-[280px] flex justify-end items-center mb-4">
-      <Link href={tileHref(t)} className={`w-full p-4 pl-6 pr-4 flex justify-between items-center z-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:border-indigo-500/50 transition-all duration-300 hover:scale-[1.02]`}>
-        <span className="font-bold text-slate-700 dark:text-slate-200 text-[15px]">{t.label}</span>
-        <div className="text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform" aria-hidden>
-          <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-7 h-7" />
+    <div className="relative group w-[280px] flex justify-end items-center mb-5">
+      {/* Connector line simulating graphic tree - pointing physically to the right (dashboard center) */}
+      <div className={`hidden lg:block absolute top-1/2 w-[40px] h-[2px] -right-[40px] bg-gradient-to-r opacity-60 ${colorClass.includes('orange') ? 'from-[#ff9100]' : (colorClass.includes('purple') ? 'from-[#e028ff]' : 'from-[#00f3ff]')} to-transparent rounded-full`} />
+      
+      <Link href={tileHref(t)} className={`neon-pill ${colorClass} w-full p-3 pl-6 pr-4 flex justify-between items-center z-10 hover:scale-105`}>
+        <span className="font-bold text-slate-800 dark:text-slate-200 text-[15px]">{t.label}</span>
+        <div className="text-3xl drop-shadow-sm group-hover:scale-110 transition-transform" aria-hidden>
+          <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-8 h-8" />
         </div>
       </Link>
     </div>
@@ -127,8 +122,18 @@ export function AdminHubDashboard() {
           )}
         </div>
 
-        {/* Right Side Connected Pills Panel */}
+        {/* Right Side Connected Pills Panel (RTL places it physically to the left side if flex-row, wait. 
+            flex-row in RTL means the first child is on the Right! So the flex-1 container above is right.
+            We want pills to be on the opposite end, or exactly mapped? 
+            Mockup: Big Cards on Left, Pills on Right. 
+            If website is Arabic RTL, "اليمين" means start. 
+            To force physical layout matching mockup, I'll use lg:flex-row-reverse.
+        */}
         <div className="w-full lg:w-[320px] flex-shrink-0 relative hidden sm:flex flex-col items-center lg:items-end justify-start pt-8 lg:pt-10">
+            
+            {/* The underlying connecting network line */}
+            <div className="hidden lg:block absolute right-0 top-16 h-[380px] w-16 border-r-2 border-y-2 border-[rgba(0,243,255,0.15)] rounded-r-full -z-10" />
+
             <div className="flex flex-col w-[280px] relative z-10">
                <NeonPill t={bySlug["shops"]} colorClass="neon-pill-cyan" icons={icons} />
                <NeonPill t={bySlug["couriers"]} colorClass="neon-pill-cyan" icons={icons} />
@@ -136,6 +141,7 @@ export function AdminHubDashboard() {
                <NeonPill t={bySlug["employees"]} colorClass="neon-pill-cyan" icons={icons} />
                <NeonPill t={bySlug["regions"]} colorClass="neon-pill-cyan" icons={icons} />
             </div>
+            
         </div>
       </div>
     </div>
