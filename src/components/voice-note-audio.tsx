@@ -104,6 +104,7 @@ export function VoiceNoteAudio({
   }, [src, streamKey]);
 
   const effectiveSrc = useMemo(() => {
+    if (!src) return "";
     const raw = src.trim().toLowerCase();
     // لا تضف query على data URL (قد يجعلها غير صالحة في WebKit/الجوال)
     if (raw.startsWith("data:")) return src;
@@ -115,6 +116,7 @@ export function VoiceNoteAudio({
   const audioKey = `${streamKey ?? ""}|${effectiveSrc}|${retryBust}`;
 
   useEffect(() => {
+    if (!src) return;
     const el = document.createElement("audio");
     let hintedMime = "";
     const s = src.trim().toLowerCase();

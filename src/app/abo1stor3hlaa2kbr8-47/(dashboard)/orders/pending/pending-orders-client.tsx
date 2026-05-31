@@ -939,7 +939,7 @@ export default function PendingOrdersClient({
 
                 {order.voiceNoteUrl && (
                   <div className="p-4 bg-violet-50 dark:bg-violet-900/10 rounded-2xl border border-violet-100 dark:border-violet-900/30">
-                     <VoiceNoteAudio url={order.voiceNoteUrl} />
+                     <VoiceNoteAudio src={order.voiceNoteUrl} />
                   </div>
                 )}
 

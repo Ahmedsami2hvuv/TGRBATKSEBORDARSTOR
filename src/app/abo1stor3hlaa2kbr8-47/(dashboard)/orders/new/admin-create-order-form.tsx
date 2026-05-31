@@ -48,7 +48,7 @@ const initialState: AdminCreateOrderState = {};
 type SubmissionMode = "from_shop" | "admin_one_face" | "two_faces" | "prep_draft";
 
 function doorPhotoUrlForDisplay(url: string | null | undefined): string | null {
- const u = url?.trim();
+ const u = url?.toString().trim();
  if (!u) return null;
  if (u.startsWith("http://") || u.startsWith("https://")) return u;
  return u.startsWith("/") ? u : `/${u}`;
@@ -250,15 +250,15 @@ export function AdminCreateOrderForm({
  shopIdValue: string | null,
  ): Promise<CustomerPrefill | null> {
  const phone = normalizeIraqMobileLocal11(phoneRaw);
- const region = regionId.trim();
+ const region = (regionId || "").toString().trim();
  if (!phone || !region) return null;
 
  const params = new URLSearchParams({
  phone,
  regionId: region,
  });
- if (shopIdValue?.trim()) {
- params.set("shopId", shopIdValue.trim());
+ if (shopIdValue?.toString().trim()) {
+ params.set("shopId", shopIdValue.toString().trim());
  }
 
  try {
@@ -342,11 +342,11 @@ export function AdminCreateOrderForm({
 
  async function resolveRegionAfterParse(rawText: string, fallbackTitle: string, knownProducts?: string[]) {
  const candidates = extractRegionCandidates(rawText, knownProducts);
- const fallback = fallbackTitle.trim();
+ const fallback = (fallbackTitle || "").toString().trim();
  if (fallback && fallback.length >= 2 && !candidates.includes(fallback)) candidates.unshift(fallback);
  const limited = candidates.slice(0, 6);
  for (const cand of limited) {
- const qq = cand.trim();
+ const qq = (cand || "").toString().trim();
  if (qq.length < 2) continue;
  try {
  const r = await fetch(`/api/regions/search?q=${encodeURIComponent(qq)}`);

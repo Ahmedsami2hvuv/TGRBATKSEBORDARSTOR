@@ -17,10 +17,10 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
     if (!q.trim()) return rows;
     const t = q.toLowerCase();
     return rows.filter(r => 
-      r.shortId.includes(t) || 
-      r.shopName.toLowerCase().includes(t) || 
-      r.customerPhone.includes(t) ||
-      r.regionLine.toLowerCase().includes(t)
+      (r.shortId || "").includes(t) ||
+      (r.shopName || "").toLowerCase().includes(t) ||
+      (r.customerPhone || "").includes(t) ||
+      (r.regionLine || "").toLowerCase().includes(t)
     );
   }, [q, rows]);
 
@@ -52,12 +52,12 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
       const template = templates.length > 0 ? templates[Math.floor(Math.random() * templates.length)] : "";
       
       const text = template
-        .replace(/{{{clientshop}}}/g, order.shopName || "")
-        .replace(/{{{city}}}/g, order.regionLine || "")
-        .replace(/{{{total_price}}}/g, order.priceStr || "")
-        .replace(/{{{delivery}}}/g, order.assignedCourierName || "")
-        .replace(/{{{order_number}}}/g, order.shortId || "")
-        .replace(/{{{customer_phone}}}/g, order.customerPhone || "");
+        .replace(/{{{clientshop}}}/g, String(order.shopName || "").trim())
+        .replace(/{{{city}}}/g, String(order.regionLine || "").trim())
+        .replace(/{{{total_price}}}/g, String(order.priceStr || "").trim())
+        .replace(/{{{delivery}}}/g, String(order.assignedCourierName || "").trim())
+        .replace(/{{{order_number}}}/g, String(order.shortId || "").trim())
+        .replace(/{{{customer_phone}}}/g, String(order.customerPhone || "").trim());
 
       return {
         id: btn.id,

@@ -51,11 +51,11 @@ export async function POST(req: Request) {
 
     const existingKeys = new Set(
       localProfiles.map(
-        (p) => `${normalizeIraqMobileLocal11(p.phone.trim()) || p.phone.trim()}|${p.regionId.trim()}`
+        (p) => `${normalizeIraqMobileLocal11(String(p.phone || "").trim()) || String(p.phone || "").trim()}|${String(p.regionId || "").trim()}`
       )
     );
-    const regionIdMap = new Set(allRegions.map((r) => r.id));
-    const regionNameMap = new Map(allRegions.map((r) => [r.name.trim(), r.id]));
+    const regionIdMap = new Set(allRegions.map((r) => String(r.id || "").trim()));
+    const regionNameMap = new Map(allRegions.map((r) => [String(r.name || "").trim(), String(r.id || "").trim()]));
 
     let imported = 0;
     let skippedExisting = 0;

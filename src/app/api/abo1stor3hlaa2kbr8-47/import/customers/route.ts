@@ -32,8 +32,8 @@ export async function POST(req: Request) {
 
     // 2. جلب المناطق الحالية لضمان الربط
     const allRegions = await prisma.region.findMany();
-    const regionIdMap = new Set(allRegions.map(r => r.id));
-    const regionNameMap = new Map(allRegions.map(r => [r.name.trim(), r.id]));
+    const regionIdMap = new Set(allRegions.map(r => String(r.id || "").trim()));
+    const regionNameMap = new Map(allRegions.map(r => [String(r.name || "").trim(), String(r.id || "").trim()]));
 
     let addedOrUpdated = 0;
     let skippedExisting = 0;
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
         select: { phone: true, regionId: true },
       });
       for (const profile of localProfiles) {
-        localKeys.add(`${String(profile.phone).trim()}::${profile.regionId}`);
+        localKeys.add(`${String(profile.phone || "").trim()}::${String(profile.regionId || "").trim()}`);
       }
     }
 
@@ -53,21 +53,21 @@ export async function POST(req: Request) {
       let targetRegionId = null;
 
       // محاولة 1: الربط عن طريق الـ ID (لأنك سحبت المناطق بنفس الـ ID)
-      if (regionIdMap.has(row.regionId)) {
-        targetRegionId = row.regionId;
+      if (regionIdMap.has(String(row.regionId || "").trim())) {
+        targetRegionId = String(row.regionId || "").trim();
       }
       // محاولة 2: الربط عن طريق الاسم
-      else if (row.regionName && regionNameMap.has(row.regionName.trim())) {
-        targetRegionId = regionNameMap.get(row.regionName.trim());
+      else if (row.regionName && regionNameMap.has(String(row.regionName || "").trim())) {
+        targetRegionId = regionNameMap.get(String(row.regionName || "").trim());
       }
       // محاولة 3: إنشاء المنطقة إذا لم توجد (لضمان عدم التخطي)
       else if (row.regionName) {
         const newReg = await prisma.region.create({
-          data: { id: row.regionId, name: row.regionName, deliveryPrice: 0 }
+          data: { id: String(row.regionId || "").trim(), name: String(row.regionName || "").trim(), deliveryPrice: 0 as any }
         });
         targetRegionId = newReg.id;
         regionIdMap.add(newReg.id);
-        regionNameMap.set(newReg.name.trim(), newReg.id);
+        regionNameMap.set(String(newReg.name || "").trim(), newReg.id);
       }
 
       if (!targetRegionId) {

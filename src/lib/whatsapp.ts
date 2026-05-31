@@ -17,8 +17,9 @@ function defaultCountryDigits(): string {
 }
 
 /** أرقام فقط بعد إزالة الرموز */
-export function digitsOnly(raw: string): string {
-  return normalizeDigits(raw);
+export function digitsOnly(raw: string | null | undefined): string {
+  if (!raw) return "";
+  return normalizeDigits(raw.toString());
 }
 
 /** رابط اتصال هاتفي — يستخدم الأرقام فقط */
@@ -72,8 +73,9 @@ export function normalizePhoneDigits(raw: string): string {
  * يحوّل إدخالاً عراقياً بأي شكل شائع (+964، مسافات، 07…، 10 أرقام تبدأ بـ 7)
  * إلى صيغة التخزين المحلية: 11 رقماً تبدأ بـ 07.
  */
-export function normalizeIraqMobileLocal11(raw: string): string | null {
-  const t = raw.trim();
+export function normalizeIraqMobileLocal11(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const t = raw.toString().trim();
   if (!t) return null;
 
   const normalized = normalizePhoneDigits(t);
