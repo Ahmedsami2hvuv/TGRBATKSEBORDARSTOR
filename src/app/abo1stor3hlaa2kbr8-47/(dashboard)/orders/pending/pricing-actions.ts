@@ -29,7 +29,7 @@ async function getOrCreateSystemAdminShop(): Promise<{ id: string; regionId: str
         name: ADMIN_OFFICE_LABEL,
         phone: SYSTEM_ADMIN_PHONE,
         locationUrl: "",
-        regionId: firstRegion.id,
+        region: { connect: { id: firstRegion.id } },
       },
     });
   } else {
@@ -292,15 +292,15 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
         const updated = await tx.order.update({
           where: { id: draftData!.sentOrderId },
           data: {
-            shopId: shop!.id,
+            shop: { connect: { id: shop!.id } },
             customerPhone: draftData!.customerPhone,
-            customerRegionId: draftData!.customerRegionId,
+            customerRegion: draftData!.customerRegionId ? { connect: { id: draftData!.customerRegionId } } : undefined,
             customerLandmark: draftData!.customerLandmark,
             orderNoteTime: draftData!.orderTime,
             orderSubtotal: subtotalDinar,
             deliveryPrice: deliveryDinar,
             totalAmount: totalDinar,
-            assignedCourierId: autoCourierId,
+            courier: autoCourierId ? { connect: { id: autoCourierId } } : { disconnect: true },
             status: autoCourierId ? "assigned" : "pending",
             summary: summaryCombined,
             preparerShoppingJson: {
@@ -335,16 +335,16 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
         // إنشاء طلب جديد فقط إذا لم يكن هناك طلب مرتبط
         const newOrder = await tx.order.create({
           data: {
-            shopId: shop!.id,
+            shop: { connect: { id: shop!.id } },
             customerPhone: draftData!.customerPhone,
-            customerRegionId: draftData!.customerRegionId,
+            customerRegion: draftData!.customerRegionId ? { connect: { id: draftData!.customerRegionId } } : undefined,
             customerLandmark: draftData!.customerLandmark,
-            orderNoteTime: draftData!.orderTime,
+            orderNoteTime: draftData!.orderNoteTime || draftData!.orderTime, // Ensuring fallback if needed
             status: autoCourierId ? "assigned" : "pending",
             orderType: "تجهيز تسوق",
             submissionSource: "company_preparer",
-            submittedByCompanyPreparerId: null,
-            assignedCourierId: autoCourierId,
+            submittedByCompanyPreparer: undefined,
+            courier: autoCourierId ? { connect: { id: autoCourierId } } : undefined,
             orderSubtotal: subtotalDinar,
             deliveryPrice: deliveryDinar,
             totalAmount: totalDinar,
@@ -461,7 +461,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
         if (preparer && preparer.walletEmployeeId && chargeBuyAlf > 0) {
           await tx.employeeWalletMiscEntry.create({
             data: {
-              employeeId: preparer.walletEmployeeId,
+              employee: { connect: { id: preparer.walletEmployeeId } },
               direction: CourierWalletMiscDirection.give,
               amountDinar: new Decimal(chargeBuyAlf).mul(ALF_PER_DINAR),
               label: `فاتورة تجهيز طلب #${finalOrderNumber} (${preparerWalletLabelTitle})`

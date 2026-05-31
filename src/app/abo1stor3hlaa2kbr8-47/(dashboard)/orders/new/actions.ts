@@ -50,7 +50,7 @@ async function getOrCreateSystemAdminShop(): Promise<{ id: string, regionId: str
         name: SYSTEM_ADMIN_SHOP_NAME,
         phone: SYSTEM_ADMIN_PHONE,
         locationUrl: "",
-        regionId: firstRegion.id,
+        region: { connect: { id: firstRegion.id } },
       }
     });
   } else {
@@ -85,7 +85,7 @@ async function upsertCustomerByPhone(opts: {
   });
 
   const data = {
-    customerRegionId: regionId,
+    customerRegion: regionId ? { connect: { id: regionId } } : { disconnect: true },
     customerLocationUrl: locationUrl ?? "",
     customerLandmark: landmark ?? "",
     customerDoorPhotoUrl: doorPhotoUrl ?? null,
@@ -102,7 +102,7 @@ async function upsertCustomerByPhone(opts: {
 
   return prisma.customer.create({
     data: {
-      shopId,
+      shop: { connect: { id: shopId } },
       phone,
       name: "",
       ...data,
@@ -351,25 +351,25 @@ export async function createAdminOrder(
 
   const order = await prisma.order.create({
     data: {
-      shopId: targetShopId,
-      customerId: firstCustomerRow.id,
+      shop: { connect: { id: targetShopId } },
+      customer: firstCustomerRow.id ? { connect: { id: firstCustomerRow.id } } : { disconnect: true },
       status: assignedCourierId ? "assigned" : "pending",
       routeMode,
       adminOrderCode,
       submissionSource: "admin_portal",
-      submittedByEmployeeId,
-      assignedCourierId,
+      submittedBy: submittedByEmployeeId ? { connect: { id: submittedByEmployeeId } } : { disconnect: true },
+      courier: assignedCourierId ? { connect: { id: assignedCourierId } } : { disconnect: true },
       summary,
       orderType,
       orderNoteTime,
       customerPhone: firstPhone,
       alternatePhone: firstAlternatePhone || null,
-      customerRegionId: firstRegionIdRaw,
+      customerRegion: { connect: { id: firstRegionIdRaw } },
       customerLocationUrl: firstLocationUrl,
       customerLandmark: firstLandmark,
       customerDoorPhotoUrl: firstDoorUrl || null,
       secondCustomerPhone: routeMode === "double" ? secondPhone : null,
-      secondCustomerRegionId: routeMode === "double" ? secondRegionId : null,
+      secondCustomerRegion: routeMode === "double" ? { connect: { id: secondRegionId } } : { disconnect: true },
       secondCustomerLocationUrl: routeMode === "double" ? secondLocationUrl : "",
       secondCustomerLandmark: routeMode === "double" ? secondLandmark : "",
       secondCustomerDoorPhotoUrl: routeMode === "double" ? (secondDoorUrl || null) : null,

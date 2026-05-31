@@ -96,17 +96,17 @@ export async function createShop(
           phone: "",     // تم إلغاؤه كما طلب المستخدم
           photoUrl: uploaded.photoUrl,
           locationUrl: url,
-          regionId,
+          region: { connect: { id: regionId } },
         },
       });
 
       // إنشاء العميل الأول للمحل تلقائياً
       await tx.customer.create({
         data: {
-          shopId: shop.id,
+          shop: { connect: { id: shop.id } },
           phone: customerPhone,
           name: customerName || "العميل الأول",
-          customerRegionId: regionId, // افتراضياً نفس منطقة المحل
+          customerRegion: { connect: { id: regionId } }, // افتراضياً نفس منطقة المحل
           customerLocationUrl: url,
         },
       });
@@ -174,7 +174,7 @@ export async function updateShop(
       name,
       photoUrl,
       locationUrl: url,
-      regionId,
+      region: { connect: { id: regionId } },
     },
   });
 

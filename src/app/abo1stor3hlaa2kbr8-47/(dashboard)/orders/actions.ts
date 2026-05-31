@@ -44,7 +44,7 @@ export async function assignOrderToPreparer(
             await prisma.companyPreparerShoppingDraft.updateMany({
               where: { data: { path: ["groupId"], equals: groupId } },
               data: {
-                preparerId: null,
+                preparer: { disconnect: true },
                 status: "draft"
               }
             });
@@ -52,7 +52,7 @@ export async function assignOrderToPreparer(
             await prisma.companyPreparerShoppingDraft.update({
               where: { id: orderId },
               data: {
-                preparerId: null,
+                preparer: { disconnect: true },
                 status: "draft"
               }
             });
@@ -61,13 +61,13 @@ export async function assignOrderToPreparer(
       } else {
         await prisma.order.update({
           where: { id: orderId },
-          data: { submittedByCompanyPreparerId: null }
+          data: { submittedByCompanyPreparer: { disconnect: true } }
         });
         // المسودات المرتبطة بطلب حقيقي نعيدها لحالة مسودة بدون مجهز
         await prisma.companyPreparerShoppingDraft.updateMany({
           where: { sentOrderId: orderId },
           data: {
-            preparerId: null,
+            preparer: { disconnect: true },
             status: "draft"
           }
         });
@@ -202,12 +202,12 @@ export async function assignOrderToPreparer(
         const preparer = await prisma.companyPreparer.findUnique({ where: { id: preparerId } });
         await prisma.companyPreparerShoppingDraft.create({
           data: {
-            preparerId,
+            preparer: { connect: { id: preparerId } },
             titleLine,
             rawListText: summary,
             customerPhone,
             customerName: customerPhone,
-            customerRegionId,
+            customerRegion: customerRegionId ? { connect: { id: customerRegionId } } : undefined,
             customerLandmark,
             orderTime: orderNoteTime,
             sentOrderId,
@@ -225,7 +225,7 @@ export async function assignOrderToPreparer(
 
     const notice = await prisma.companyPreparerPrepNotice.create({
       data: {
-        preparerId,
+        preparer: { connect: { id: preparerId } },
         title: titleLine,
         body: summary || titleLine,
       },
@@ -252,7 +252,7 @@ export async function assignOrderToPreparer(
   if (!isDraft && sentOrderId && preparerIds.length > 0) {
     await prisma.order.update({
       where: { id: sentOrderId },
-      data: { submittedByCompanyPreparerId: preparerIds[0] }
+      data: { submittedByCompanyPreparer: { connect: { id: preparerIds[0] } } }
     });
   }
 
@@ -299,7 +299,7 @@ export async function reassignOrderToPreparer(
     await prisma.companyPreparerShoppingDraft.update({
       where: { id },
       data: { 
-        preparerId,
+        preparer: { connect: { id: preparerId } },
         data: { ...draftData, products }
       }
     });
@@ -318,7 +318,7 @@ export async function reassignOrderToPreparer(
     await prisma.order.update({
       where: { id },
       data: { 
-        submittedByCompanyPreparerId: preparerId,
+        submittedByCompanyPreparer: { connect: { id: preparerId } },
         preparerShoppingJson: { ...orderData, products }
       }
     });
@@ -399,7 +399,7 @@ export async function assignPendingOrderToCourier(
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: {
-        assignedCourierId: courierId,
+        courier: { connect: { id: courierId } },
         status: directReceipt ? "delivering" : "assigned",
         customerPaymentReceivedAt: directReceipt ? new Date() : null,
         customerLocationUrl: customerLocationUrl || undefined,
