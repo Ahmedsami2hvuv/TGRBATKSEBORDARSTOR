@@ -75,7 +75,7 @@ export default async function EditOrderPage({ params }: Props) {
               regionId: order.customerRegionId,
             },
           },
-          select: { id: true, photoUrl: true },
+          select: { id: true, photoUrl: true, isBlocked: true },
         })
       : null;
 
@@ -242,6 +242,7 @@ export default async function EditOrderPage({ params }: Props) {
           }))}
           couriers={couriers.map((c) => ({ id: c.id, name: c.name }))}
           defaultPrepaidAll={order.prepaidAll}
+          defaultIsBlocked={customerPhoneProfile?.isBlocked ?? false}
         />
       </section>
       <AdminOrderMoneyEvents

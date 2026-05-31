@@ -52,6 +52,20 @@ type CustomerOpt = {
 
 type EmployeeOpt = { id: string; shopId: string; name: string };
 
+type CustomerPrefill = {
+  id: string;
+  source: "customer" | "phoneProfile";
+  shopId: string | null;
+  name: string;
+  phone: string;
+  customerRegionId: string | null;
+  customerLocationUrl: string;
+  customerLandmark: string;
+  customerDoorPhotoUrl: string | null;
+  alternatePhone: string | null;
+  isBlocked?: boolean;
+};
+
 export function OrderEditForm({
   orderId,
   orderNumber,
@@ -154,6 +168,13 @@ export function OrderEditForm({
   const [secondCustLandmark, setSecondCustLandmark] = useState(defaultSecondCustomerLandmark);
 
   const [isBlocked, setIsBlocked] = useState(!!defaultIsBlocked);
+  const [firstPrefill, setFirstPrefill] = useState<CustomerPrefill | null>(null);
+  const [secondPrefill, setSecondPrefill] = useState<CustomerPrefill | null>(null);
+  const [firstPrefillLoading, setFirstPrefillLoading] = useState(false);
+  const [secondPrefillLoading, setSecondPrefillLoading] = useState(false);
+  const [firstDoorPhotoUrl, setFirstDoorPhotoUrl] = useState<string | null>(defaultCustomerDoorPhotoUrl);
+  const [secondDoorPhotoUrl, setSecondDoorPhotoUrl] = useState<string | null>(defaultSecondCustomerDoorPhotoUrl);
+
   const [locBusy, setLocBusy] = useState(false);
   const [confirmClearLoc, setConfirmClearLoc] = useState(false);
   const [confirmReplaceLoc, setConfirmReplaceLoc] = useState(false);
@@ -255,6 +276,89 @@ export function OrderEditForm({
   useEffect(() => {
     setPrepaidAllEnabled(defaultPrepaidAll);
   }, [defaultPrepaidAll]);
+
+  useEffect(() => {
+    if (!customerPhone.trim() || !customerRegionId.trim()) {
+      setFirstPrefill(null);
+      setFirstPrefillLoading(false);
+      return;
+    }
+    let active = true;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        setFirstPrefillLoading(true);
+        try {
+          const params = new URLSearchParams({
+            phone: customerPhone,
+            regionId: customerRegionId,
+            shopId: shopId,
+          });
+          const res = await fetch(`/api/abo1stor3hlaa2kbr8-47/customer-prefill?${params.toString()}`);
+          if (!res.ok) throw new Error();
+          const json = await res.json();
+          if (active) setFirstPrefill(json.profile || null);
+        } catch {
+          if (active) setFirstPrefill(null);
+        } finally {
+          if (active) setFirstPrefillLoading(false);
+        }
+      })();
+    }, 500);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [customerPhone, customerRegionId, shopId]);
+
+  useEffect(() => {
+    if (!secondCustomerPhone.trim() || !secondCustomerRegionId.trim()) {
+      setSecondPrefill(null);
+      setSecondPrefillLoading(false);
+      return;
+    }
+    let active = true;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        setSecondPrefillLoading(true);
+        try {
+          const params = new URLSearchParams({
+            phone: secondCustomerPhone,
+            regionId: secondCustomerRegionId,
+            // Second customer prefill might not care about shopId if it's just a recipient
+          });
+          const res = await fetch(`/api/abo1stor3hlaa2kbr8-47/customer-prefill?${params.toString()}`);
+          if (!res.ok) throw new Error();
+          const json = await res.json();
+          if (active) setSecondPrefill(json.profile || null);
+        } catch {
+          if (active) setSecondPrefill(null);
+        } finally {
+          if (active) setSecondPrefillLoading(false);
+        }
+      })();
+    }, 500);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [secondCustomerPhone, secondCustomerRegionId]);
+
+  const applyFirstPrefill = () => {
+    if (!firstPrefill) return;
+    setCustLocationUrl(firstPrefill.customerLocationUrl || "");
+    setCustLandmark(firstPrefill.customerLandmark || "");
+    if (firstPrefill.alternatePhone) setAlternatePhone(firstPrefill.alternatePhone);
+    if (firstPrefill.customerDoorPhotoUrl) setFirstDoorPhotoUrl(firstPrefill.customerDoorPhotoUrl);
+    if (firstPrefill.isBlocked !== undefined) setIsBlocked(firstPrefill.isBlocked);
+  };
+
+  const applySecondPrefill = () => {
+    if (!secondPrefill) return;
+    setSecondCustLocationUrl(secondPrefill.customerLocationUrl || "");
+    setSecondCustLandmark(secondPrefill.customerLandmark || "");
+    if (secondPrefill.alternatePhone) setSecondAlternatePhone(secondPrefill.alternatePhone);
+    if (secondPrefill.customerDoorPhotoUrl) setSecondDoorPhotoUrl(secondPrefill.customerDoorPhotoUrl);
+  };
 
   const customersForShop = useMemo(
     () => customers.filter((c) => c.shopId === shopId),
@@ -361,8 +465,8 @@ export function OrderEditForm({
   );
 
   const imgSrc = resolvePublicAssetSrc(defaultImageUrl);
-  const customerDoorSrc = resolvePublicAssetSrc(defaultCustomerDoorPhotoUrl);
-  const secondCustomerDoorSrc = resolvePublicAssetSrc(defaultSecondCustomerDoorPhotoUrl);
+  const customerDoorSrc = resolvePublicAssetSrc(firstDoorPhotoUrl);
+  const secondCustomerDoorSrc = resolvePublicAssetSrc(secondDoorPhotoUrl);
   const voiceSrc = resolvePublicAssetSrc(defaultVoiceNoteUrl);
 
   return (
@@ -668,13 +772,20 @@ export function OrderEditForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           <span className={ad.label}>رقم الزبون (الأول)</span>
-          <input
-            name="customerPhone"
-            value={customerPhone}
-            onChange={(e) => setCustomerPhone(e.target.value)}
-            className={ad.input}
-            dir="ltr"
-          />
+          <div className="relative">
+            <input
+              name="customerPhone"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              className={ad.input}
+              dir="ltr"
+            />
+            {firstPrefillLoading && (
+              <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-sky-600 border-t-transparent"></div>
+              </div>
+            )}
+          </div>
         </label>
         <label className="flex flex-col gap-1 text-sm">
           <span className={ad.label}>رقم الزبون (الثاني)</span>
@@ -687,6 +798,27 @@ export function OrderEditForm({
           />
         </label>
       </div>
+
+      {firstPrefill && (
+        <div className="animate-in fade-in slide-in-from-top-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-bold text-emerald-900">بيانات محفوظة لهذا الرقم والمنطقة</span>
+              <p className="text-[10px] text-emerald-700">
+                {firstPrefill.source === "customer" ? "من سجلات زبائن المحل" : "من قاعدة بيانات الأرقام العامة"}
+                {firstPrefill.name ? ` — اسم الزبون: ${firstPrefill.name}` : ""}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={applyFirstPrefill}
+              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-colors"
+            >
+              تطبيق البيانات المحفوظة
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1 text-sm">
@@ -805,13 +937,20 @@ export function OrderEditForm({
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
               <span className={ad.label}>رقم المستلم الثاني</span>
-              <input
-                name="secondCustomerPhone"
-                value={secondCustomerPhone}
-                onChange={(e) => setSecondCustomerPhone(e.target.value)}
-                className={ad.input}
-                dir="ltr"
-              />
+              <div className="relative">
+                <input
+                  name="secondCustomerPhone"
+                  value={secondCustomerPhone}
+                  onChange={(e) => setSecondCustomerPhone(e.target.value)}
+                  className={ad.input}
+                  dir="ltr"
+                />
+                {secondPrefillLoading && (
+                  <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-sky-600 border-t-transparent"></div>
+                  </div>
+                )}
+              </div>
             </label>
             <label className="flex flex-col gap-1 text-sm">
               <span className={ad.label}>رقم ثانٍ للمستلم</span>
@@ -824,6 +963,26 @@ export function OrderEditForm({
               />
             </label>
           </div>
+
+          {secondPrefill && (
+            <div className="animate-in fade-in slide-in-from-top-2 rounded-xl border border-sky-200 bg-sky-50 p-3 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-bold text-sky-900">بيانات محفوظة للوجهة الثانية</span>
+                  <p className="text-[10px] text-sky-700">
+                    {secondPrefill.source === "customer" ? "من سجلات زبائن المحل" : "من قاعدة بيانات الأرقام العامة"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={applySecondPrefill}
+                  className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-sky-700 transition-colors"
+                >
+                  تطبيق البيانات المحفوظة
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
