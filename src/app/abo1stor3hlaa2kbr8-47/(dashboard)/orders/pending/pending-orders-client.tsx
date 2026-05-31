@@ -418,12 +418,20 @@ export function AdminPricingPanel({
   };
 
   const totals = useMemo(() => {
-    const sumSell = products.reduce((acc, p) => {
-      const val = (p?.sellAlf ?? "0").toString();
-      return acc + (parseFloat(normalizeNumerals(val)) || 0);
-    }, 0);
+    let sumSell = 0;
+    let sumBuy = 0;
+    products.forEach((p) => {
+      sumSell += parseFloat(normalizeNumerals((p?.sellAlf ?? "0").toString())) || 0;
+      sumBuy += parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) || 0;
+    });
     const extra = calculateExtraAlfFromPlacesCount(placesCount);
-    return { subtotal: sumSell + extra, total: sumSell + extra + deliveryAlfVal };
+    const subtotal = sumSell + extra;
+    return {
+      subtotal,
+      total: subtotal + (deliveryAlfVal || 0),
+      buyTotal: sumBuy,
+      profit: subtotal - sumBuy
+    };
   }, [products, placesCount, deliveryAlfVal]);
 
   const allProductsPriced = useMemo(() => {
@@ -519,22 +527,31 @@ export function AdminPricingPanel({
           </div>
         )}
 
-        <div className={`grid gap-2.5 ${hideContainer ? "" : "max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar"}`}>
-          {products.length > 0 && (
-            <button type="button" onClick={toggleSelectAllProducts} className="text-[10px] font-bold text-slate-400 dark:text-slate-500 text-right pr-2 pb-1 hover:text-amber-600 transition-colors">
-              {selectedProductIndexes.length === products.length ? "إلغاء تحديد الكل" : "تحديد الكل للمهام الجماعية"}
+        <div className="flex items-center justify-between px-1 mb-2 mt-4">
+           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">قائمة المنتجات</p>
+           {products.length > 0 && (
+            <button type="button" onClick={toggleSelectAllProducts} className="text-[10px] font-bold text-sky-600 dark:text-sky-400 hover:underline">
+              {selectedProductIndexes.length === products.length ? "إلغاء التحديد" : "تحديد الكل"}
             </button>
           )}
+        </div>
+
+        <div className={`grid grid-cols-2 gap-2.5 ${hideContainer ? "" : "max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar"}`}>
           {products.map((p, i) => {
             const priced = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) > 0;
             const isSelected = selectedProductIndexes.includes(i);
             const isEditing = editingIndex === i;
 
             return (
-              <div key={i} className={`flex gap-2 items-center`}>
-                <label className="flex items-center">
-                  <input type="checkbox" checked={isSelected} onChange={() => toggleProductSelection(i)} className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sky-600 focus:ring-sky-500" />
-                </label>
+              <div key={i} className="relative group">
+                <div className="absolute top-2 right-2 z-10">
+                   <input
+                     type="checkbox"
+                     checked={isSelected}
+                     onChange={() => toggleProductSelection(i)}
+                     className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sky-600 focus:ring-sky-500 cursor-pointer shadow-sm transition-transform active:scale-125"
+                   />
+                </div>
                 <button
                   type="button"
                   onClick={() => {
@@ -545,49 +562,48 @@ export function AdminPricingPanel({
                       setPricingLinesText(priced ? p.buyAlf : "");
                     }
                   }}
-                  className={`group relative flex min-h-[56px] flex-1 items-center justify-between gap-3 overflow-hidden rounded-2xl border-2 px-4 py-3 text-start transition-all active:scale-[0.98] ${
+                  className={`group w-full flex flex-col p-3 rounded-2xl border-2 transition-all active:scale-[0.97] text-right overflow-hidden ${
                     isEditing
-                      ? "border-sky-500 bg-sky-50 shadow-md ring-4 ring-sky-500/10 dark:bg-sky-500/10"
+                      ? "border-sky-500 bg-sky-50 dark:bg-sky-500/10 shadow-lg ring-2 ring-sky-500/20"
                       : deleteMode
                         ? "border-rose-400 bg-rose-50 dark:bg-rose-500/10"
                         : priced
-                          ? "border-emerald-600 bg-emerald-600 text-white shadow-emerald-200/50 dark:shadow-none"
-                          : "border-slate-100 bg-white/50 hover:border-sky-200 hover:bg-white dark:border-white/5 dark:bg-slate-950/40 dark:hover:bg-slate-950"
+                          ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10 shadow-sm"
+                          : "border-slate-100 bg-white/50 dark:border-white/5 dark:bg-slate-950/40"
                   }`}
                 >
-                  <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                     {priced ? (
-                       <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
-                         <DynamicIcon icon={icons?.ui_success} fallback="✓" className="h-3 w-3 text-white" />
-                       </div>
-                     ) : (
-                       <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300 group-hover:bg-sky-400 dark:bg-slate-700" />
-                     )}
-                     <div className="flex flex-col min-w-0">
-                       <span className={`truncate text-sm font-bold ${priced ? "text-white" : "text-slate-800 dark:text-slate-200"}`}>
-                         {p?.line}
+                  <div className="min-w-0 w-full mb-3">
+                    <p className={`truncate text-[11px] font-black leading-tight ${priced ? "text-emerald-900 dark:text-emerald-100" : "text-slate-800 dark:text-slate-200"}`}>
+                      {p?.line}
+                    </p>
+                    {(findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName) && (
+                       <span className="text-[8px] font-bold text-slate-400 flex items-center gap-0.5 mt-0.5">
+                         <DynamicIcon icon={icons?.ui_user} fallback="👤" width={8} height={8} />
+                         {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName}
                        </span>
-                       {(findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName) && (
-                          <span className={`text-[8px] font-bold flex items-center gap-0.5 ${priced ? "text-white/70" : "text-slate-400"}`}>
-                            <DynamicIcon icon={icons?.ui_user} fallback="👤" width={8} height={8} />
-                            {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName}
-                          </span>
-                       )}
+                    )}
+                  </div>
+
+                  <div className="mt-auto w-full flex flex-col gap-1.5 pt-2 border-t border-slate-100/50 dark:border-white/5">
+                     <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-bold text-slate-400">شراء</span>
+                        <span className={`font-mono text-[10px] font-black ${priced ? "text-slate-600 dark:text-slate-400" : "text-slate-300"}`} dir="ltr">
+                           {priced ? `${p?.buyAlf}` : "—"}
+                        </span>
+                     </div>
+                     <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-bold text-slate-400">بيع</span>
+                        <span className={`font-mono text-[11px] font-black ${priced ? "text-emerald-600 dark:text-emerald-400" : "text-slate-300"}`} dir="ltr">
+                           {priced ? `${p?.sellAlf}` : "—"}
+                        </span>
                      </div>
                   </div>
 
-                  {priced ? (
-                    <div className="flex flex-col items-end shrink-0">
-                      <span className={`font-mono text-[9px] font-black ${priced ? "text-emerald-100/80" : "text-slate-400"}`} dir="ltr">
-                         {p?.buyAlf}
-                      </span>
-                      <span className="font-mono text-sm font-black tabular-nums" dir="ltr">
-                         {p?.sellAlf}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 dark:bg-white/5">
-                       <span className="text-lg text-slate-400 group-hover:text-sky-500">💰</span>
+                  {!priced && !isEditing && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-black/20 backdrop-blur-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+                       <div className="bg-sky-600 text-white p-2 rounded-xl shadow-lg">
+                          <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={16} height={16} />
+                       </div>
                     </div>
                   )}
                 </button>
@@ -679,31 +695,39 @@ export function AdminPricingPanel({
       {/* Floating Summary Bar */}
       <div className={`sticky bottom-0 z-40 mt-6 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-slate-200 dark:border-slate-800 transition-all ${hideContainer ? "-mx-4 -mb-4 rounded-none shadow-[0_-10px_30px_rgba(0,0,0,0.05)]" : "-mx-3 -mb-3 sm:-mx-5 sm:-mb-5 rounded-t-[2.5rem] shadow-[0_-10px_30px_rgba(0,0,0,0.1)]"}`}>
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <div className="relative group">
-              <select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="w-full appearance-none rounded-xl bg-slate-100 dark:bg-slate-800 p-2 pr-8 text-[11px] font-black text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-900/50 transition-all border border-transparent focus:border-amber-400">
+              <select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="w-full appearance-none rounded-xl bg-slate-100 dark:bg-slate-800 p-2 pr-8 text-[10px] font-black text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-900/50 transition-all border border-transparent focus:border-amber-400">
                 {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n} محل</option>)}
               </select>
               <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                <DynamicIcon icon={icons?.ui_shop} fallback="🛒" width={12} height={12} />
+                <DynamicIcon icon={icons?.ui_shop} fallback="🛒" width={10} height={10} />
               </div>
             </div>
 
-            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50">
-              <span className="text-[7px] font-black text-emerald-500 dark:text-emerald-400 uppercase tracking-tighter">المنتجات</span>
-              <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-300 font-mono leading-none mt-0.5">{totals.subtotal.toLocaleString()}</span>
+            <div className="flex flex-col items-center justify-center p-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50">
+              <span className="text-[6px] font-black text-emerald-500 dark:text-emerald-400 uppercase tracking-tighter">البيع</span>
+              <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 font-mono leading-none mt-0.5">{totals.subtotal.toLocaleString()}</span>
             </div>
 
-            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-900/50">
-              <span className="text-[7px] font-black text-sky-500 dark:text-sky-400 uppercase tracking-tighter">التوصيل</span>
-              <span className="text-[11px] font-black text-sky-700 dark:text-sky-300 font-mono leading-none mt-0.5">{deliveryAlfVal > 0 ? deliveryAlfVal.toLocaleString() : "—"}</span>
+            <div className="flex flex-col items-center justify-center p-1.5 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/50">
+              <span className="text-[6px] font-black text-rose-500 dark:text-rose-400 uppercase tracking-tighter">الشراء</span>
+              <span className="text-[10px] font-black text-rose-700 dark:text-rose-300 font-mono leading-none mt-0.5">{totals.buyTotal.toLocaleString()}</span>
+            </div>
+
+            <div className="flex flex-col items-center justify-center p-1.5 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-900/50">
+              <span className="text-[6px] font-black text-violet-500 dark:text-violet-400 uppercase tracking-tighter">الأرباح</span>
+              <span className="text-[10px] font-black text-violet-700 dark:text-violet-300 font-mono leading-none mt-0.5">{totals.profit.toLocaleString()}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <div className="flex-1 flex items-center justify-between p-3 rounded-2xl bg-slate-900 dark:bg-black text-white shadow-xl border border-white/10">
                <div className="flex flex-col">
-                 <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">المجموع النهائي</span>
+                 <div className="flex items-center gap-1.5">
+                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">المجموع النهائي (مع التوصيل)</span>
+                   {deliveryAlfVal > 0 && <span className="text-[8px] font-bold text-sky-400">+{deliveryAlfVal}</span>}
+                 </div>
                  <span className="text-xl font-black font-mono leading-none">{totals.total.toLocaleString()} <span className="text-[10px] font-bold text-slate-500">الف</span></span>
                </div>
                <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
