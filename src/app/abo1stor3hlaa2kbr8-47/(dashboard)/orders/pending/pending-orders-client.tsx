@@ -1412,7 +1412,8 @@ export function PendingOrdersClient({
         </div>
       )}
 
-      {orders.map((o) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {orders.map((o) => {
         // في تبويب "قيد التجهيز" نخلي شكل الإدارة قريب من شكل "تجهيز الطلب" عند المجهز:
         // كارت مرتب + زر كبير يفتح نافذة التسعير (Modal) فقط.
         if (isDraftMode) {
