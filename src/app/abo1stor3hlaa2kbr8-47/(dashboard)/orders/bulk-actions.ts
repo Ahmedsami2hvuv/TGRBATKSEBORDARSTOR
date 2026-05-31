@@ -60,20 +60,29 @@ export async function bulkUpdateOrdersStatus(
   }
 
   // عند الأرشفة: لا نمسح المندوب الحالي لكي يبقى مسجلاً مع الطلبية في الأرشيف
-  const data: any = {
+  const baseData: any = {
     status: directReceipt ? "delivering" : targetStatus,
     customerPaymentReceivedAt: directReceipt ? new Date() : (targetStatus === "archived" ? undefined : null),
-    ...(targetStatus === "archived"
-      ? { archivedAt: new Date() }
-      : {
-          archivedAt: null,
-          assignedCourierId: needsCourier ? courierId : null
-        }),
+    archivedAt: targetStatus === "archived" ? new Date() : null,
   };
 
-  await prisma.order.updateMany({
-    where: { id: { in: orderIds } },
-    data,
+  await prisma.$transaction(async (tx) => {
+    for (const orderId of orderIds) {
+      const updateData = { ...baseData };
+
+      if (targetStatus !== "archived") {
+        if (needsCourier && courierId) {
+          updateData.courier = { connect: { id: courierId } };
+        } else {
+          updateData.courier = { disconnect: true };
+        }
+      }
+
+      await tx.order.update({
+        where: { id: orderId },
+        data: updateData,
+      });
+    }
   });
 
   if (targetStatus === "assigned" && courierId) {

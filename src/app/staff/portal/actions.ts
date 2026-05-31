@@ -89,11 +89,11 @@ export async function submitStaffPreparationDraft(
   if (preparerIds.length === 0) {
     const draft = await prisma.companyPreparerShoppingDraft.create({
       data: {
-        preparerId: null, // طلب غير مسند
+        preparer: { disconnect: true }, // طلب غير مسند
         status: PreparerShoppingDraftStatus.draft,
         titleLine,
         rawListText,
-        customerRegionId,
+        customerRegion: { connect: { id: customerRegionId } },
         customerPhone: phoneLocal,
         customerName,
         customerLandmark,
@@ -122,11 +122,11 @@ export async function submitStaffPreparationDraft(
 
       const draft = await prisma.companyPreparerShoppingDraft.create({
         data: {
-          preparerId: preparer.id,
+          preparer: { connect: { id: preparer.id } },
           status: PreparerShoppingDraftStatus.draft,
           titleLine,
           rawListText,
-          customerRegionId,
+          customerRegion: { connect: { id: customerRegionId } },
           customerPhone: phoneLocal,
           customerName,
           customerLandmark,
@@ -266,17 +266,17 @@ export async function submitStaffDoubleOrder(
 
     const order = await prisma.order.create({
       data: {
-        shopId: doubleShop.id,
+        shop: { connect: { id: doubleShop.id } },
         routeMode: "double",
         status: "pending",
         customerPhone: sPhone,
-        customerRegionId: sellerRegionId,
+        customerRegion: { connect: { id: sellerRegionId } },
         customerLandmark: finalSellerLandmark,
         customerLocationUrl: finalSellerLoc,
         customerDoorPhotoUrl: finalSellerPhoto,
         alternatePhone: finalSellerAltPhone,
         secondCustomerPhone: bPhone,
-        secondCustomerRegionId: buyerRegionId,
+        secondCustomerRegion: { connect: { id: buyerRegionId } },
         secondCustomerLandmark: finalBuyerLandmark,
         secondCustomerLocationUrl: finalBuyerLoc,
         secondCustomerDoorPhotoUrl: finalBuyerPhoto,
@@ -287,7 +287,7 @@ export async function submitStaffDoubleOrder(
         imageUrl: imageUrl || null,
         voiceNoteUrl: voiceNoteUrl || null,
         adminOrderCode: orderNoteText,
-        submittedByEmployeeId: null,
+        submittedBy: { disconnect: true },
         submissionSource: "staff_portal",
         summary: `طلب وجهتين (${orderType}): من ${sPhone} إلى ${bPhone}${orderNoteText ? `\n\nملاحظة الموظف: ${orderNoteText}` : ""}`,
         // تخزين بيانات الربح والموظف في حقل JSON
@@ -496,7 +496,7 @@ export async function updateStaffPreparationDraft(
     data: {
       titleLine,
       rawListText,
-      customerRegionId,
+      customerRegion: { connect: { id: customerRegionId } },
       customerPhone: phoneLocal,
       customerName,
       customerLandmark,
@@ -504,7 +504,7 @@ export async function updateStaffPreparationDraft(
       placesCount: null,
       status: PreparerShoppingDraftStatus.draft,
       data: nextDataFirst,
-      preparerId: firstGroup[0],
+      preparer: firstGroup[0] ? { connect: { id: firstGroup[0] } } : { disconnect: true },
     },
   });
 
@@ -528,11 +528,11 @@ export async function updateStaffPreparationDraft(
       };
       await prisma.companyPreparerShoppingDraft.create({
         data: {
-          preparerId: prepId,
+          preparer: prepId ? { connect: { id: prepId } } : { disconnect: true },
           status: PreparerShoppingDraftStatus.draft,
           titleLine,
           rawListText,
-          customerRegionId,
+          customerRegion: { connect: { id: customerRegionId } },
           customerPhone: phoneLocal,
           customerName,
           customerLandmark,

@@ -322,8 +322,16 @@ export async function updateOrderAdmin(
           new Decimal(delVal),
         );
         updateData.courierEarningDinar = earning;
-        updateData.courierEarningForCourier = earning != null ? { connect: { id: assignedCourierId } } : { disconnect: true };
+        if (earning != null) {
+          updateData.courierEarningForCourier = { connect: { id: assignedCourierId } };
+        } else {
+          updateData.courierEarningForCourier = { disconnect: true };
+        }
       }
+    } else {
+      // إذا لم يكن التسليم تم، أو لم يوجد مندوب، نفصل علاقة الربح
+      updateData.courierEarningDinar = null;
+      updateData.courierEarningForCourier = { disconnect: true };
     }
 
     await tx.order.update({
