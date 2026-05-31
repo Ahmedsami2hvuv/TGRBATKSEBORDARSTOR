@@ -7,9 +7,9 @@ import { getGlobalIcons } from "@/lib/icon-settings";
 export default async function StaffProfitsHistoryPage({
   searchParams,
 }: {
-  searchParams: { se?: string; exp?: string; s?: string };
+  searchParams: Promise<{ se?: string; exp?: string; s?: string }>;
 }) {
-  const { se, exp, s } = searchParams;
+  const { se, exp, s } = await searchParams;
   const v = verifyStaffEmployeePortalQuery(se || "", exp || "", s || "");
 
   const icons = await getGlobalIcons();
