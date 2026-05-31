@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useActionState, useEffect, useState, useMemo, useRef } from "react";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
@@ -63,6 +64,7 @@ export type PendingOrderRow = {
   preparerShoppingJson?: any;
   vehiclePreference?: string | null;
   assignedPreparerIds: string[];
+  orderSubtotal: string | null;
 };
 
 function CheckIcon({ icons }: { icons: GlobalIconsConfig | null }) {
@@ -691,7 +693,7 @@ function RejectButton({ orderId, icons }: { orderId: string, icons?: GlobalIcons
         className="flex items-center gap-1.5 px-4 py-2 rounded-xl border-2 border-rose-100 bg-white dark:bg-slate-900 text-rose-600 hover:bg-rose-600 hover:text-white transition-all duration-200 disabled:opacity-40 shadow-sm"
       >
         <DynamicIcon icon={icons?.ui_close || icons?.ui_trash} fallback="✖" width={14} height={14} />
-        <span className="text-[10px] font-black">{pending ? "جاري الرفض..." : "رفض الطلب"}</span>
+        <span className="text-[10px] font-black">{pending ? "جاري الرفض..." : "نقل للمرفوضة"}</span>
       </button>
     </form>
   );
@@ -724,7 +726,7 @@ function DeleteFullOrderButton({ id, isDraft, onSuccess, icons }: { id: string, 
       className="flex items-center gap-2 h-10 px-4 rounded-xl border-2 border-rose-600 bg-white dark:bg-slate-900 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-95 group"
     >
       <DynamicIcon icon={icons?.ui_trash} fallback="🗑️" width={14} height={14} />
-      <span className="text-[10px] font-black">حذف الطلب</span>
+      <span className="text-[10px] font-black">حذف نهائي</span>
     </button>
   );
 }
@@ -958,27 +960,35 @@ export default function PendingOrdersClient({
               {/* Header */}
               <div className="p-5 pb-3 flex flex-wrap items-center justify-between gap-4 border-b border-slate-105 dark:border-slate-900 bg-slate-50/30 dark:bg-slate-900/10">
                 <div className="flex items-center gap-4">
-                  <div className={`h-14 w-14 rounded-2xl flex flex-col items-center justify-center border shadow-sm ${
-                    !hasLocation 
-                      ? "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/50 text-amber-700 dark:text-amber-400"
-                      : "bg-slate-50 border-slate-100 dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300"
-                  }`}>
+                  <Link
+                    href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
+                    className={`h-14 w-14 rounded-2xl flex flex-col items-center justify-center border shadow-sm transition hover:scale-105 active:scale-[0.96] ${
+                      !hasLocation 
+                        ? "bg-amber-50 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/30 dark:border-amber-900/50 text-amber-700 dark:text-amber-400"
+                        : "bg-slate-50 border-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300"
+                    }`}
+                    title="عرض الطلب بالكامل"
+                  >
                     <span className="text-[9px] font-black opacity-60 leading-none">رقم</span>
                     <span className="text-base font-black leading-none mt-1">#{order.orderNumber}</span>
-                  </div>
+                  </Link>
                   <div>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">{order.shopName}</h3>
+                    <Link
+                      href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
+                      className="hover:underline hover:text-emerald-600 transition-colors"
+                      title="عرض الطلب بالكامل"
+                    >
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">{order.shopName}</h3>
+                    </Link>
                     <div className="flex flex-wrap items-center gap-2 mt-1">
                       <span className="flex items-center gap-1 text-[10px] font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-2.5 py-1 rounded-full border border-sky-100 dark:border-sky-900/30">
                         <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> {order.regionName}
                       </span>
+                      <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 dark:bg-indigo-950/10 dark:text-indigo-400 px-2.5 py-1 rounded-full border border-indigo-100 dark:border-indigo-900/30">
+                        نوع الطلب: {order.orderType || "عادي"}
+                      </span>
                       {order.routeMode === 'double' && (
                         <span className="text-[10px] font-black bg-amber-50 text-amber-700 dark:bg-amber-950/10 dark:text-amber-400 px-2.5 py-1 rounded-full border border-amber-100 dark:border-amber-900/30">توصيل مضاعف</span>
-                      )}
-                      {order.totalAmount && (
-                        <span className="text-[10px] font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">
-                          {order.totalAmount}
-                        </span>
                       )}
                     </div>
                   </div>
@@ -997,6 +1007,22 @@ export default function PendingOrdersClient({
                   <div className="bg-slate-50/50 dark:bg-slate-900/20 rounded-2xl p-4 border border-slate-100/60 dark:border-white/5">
                     <p className="text-[9px] font-black text-slate-400 pr-1 mb-1">تفاصيل الطلب</p>
                     <p className="text-sm font-black text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{order.summary}</p>
+                  </div>
+
+                  {/* تفاصيل الأسعار المضافة بناءً على طلب المستخدم */}
+                  <div className="grid grid-cols-3 gap-2 bg-sky-50/30 dark:bg-sky-950/10 rounded-2xl p-3 border border-sky-100/40 dark:border-sky-900/10 text-center font-bold">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9px] font-black text-slate-400">سعر المواد</span>
+                      <span className="text-xs font-black text-slate-700 dark:text-slate-300 font-mono">{order.orderSubtotal || "—"}</span>
+                    </div>
+                    <div className="flex flex-col gap-0.5 border-x border-slate-200/50 dark:border-white/5">
+                      <span className="text-[9px] font-black text-slate-400">سعر التوصيل</span>
+                      <span className="text-xs font-black text-slate-700 dark:text-slate-300 font-mono">{order.deliveryPrice || "—"}</span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">المبلغ الكلي</span>
+                      <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 font-mono">{order.totalAmount || "—"}</span>
+                    </div>
                   </div>
 
                   {order.voiceNoteUrl && (
@@ -1078,15 +1104,26 @@ export default function PendingOrdersClient({
             {/* Header */}
             <div className="p-6 pb-0 flex flex-wrap items-start justify-between gap-4">
                <div className="flex gap-4">
-                  <div className="h-16 w-16 rounded-[1.5rem] bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center border-2 border-white dark:border-white/5 shadow-inner">
+                  <Link
+                    href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
+                    className="h-16 w-16 rounded-[1.5rem] bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center border-2 border-white dark:border-white/5 shadow-inner transition hover:scale-105 active:scale-95"
+                  >
                      <span className="text-[10px] font-black text-slate-400 leading-none">رقم</span>
                      <span className="text-xl font-black text-slate-900 dark:text-white leading-none mt-1">#{order.orderNumber}</span>
-                  </div>
+                  </Link>
                   <div>
-                     <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{order.shopName}</h3>
+                     <Link
+                       href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
+                       className="hover:underline hover:text-sky-600 transition-colors"
+                     >
+                       <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{order.shopName}</h3>
+                     </Link>
                      <div className="flex items-center gap-2 mt-1">
                         <span className="flex items-center gap-1 text-[10px] font-black bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 px-2.5 py-1 rounded-full">
                            <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> {order.regionName}
+                        </span>
+                        <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 dark:bg-indigo-950/10 dark:text-indigo-400 px-2.5 py-1 rounded-full border border-indigo-100 dark:border-indigo-900/30">
+                          نوع الطلب: {order.orderType || "عادي"}
                         </span>
                         {order.routeMode === 'double' && (
                           <span className="text-[10px] font-black bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2.5 py-1 rounded-full">توصيل مضاعف</span>
@@ -1115,6 +1152,22 @@ export default function PendingOrdersClient({
                         </button>
                      </div>
                      <p className="text-sm font-black text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{order.summary}</p>
+                  </div>
+
+                  {/* تفاصيل الأسعار المضافة بناءً على طلب المستخدم */}
+                  <div className="grid grid-cols-3 gap-2 bg-sky-50/30 dark:bg-sky-950/10 rounded-2xl p-3 border border-sky-100/40 dark:border-sky-900/10 text-center font-bold">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9px] font-black text-slate-400">سعر المواد</span>
+                      <span className="text-xs font-black text-slate-700 dark:text-slate-300 font-mono">{order.orderSubtotal || "—"}</span>
+                    </div>
+                    <div className="flex flex-col gap-0.5 border-x border-slate-200/50 dark:border-white/5">
+                      <span className="text-[9px] font-black text-slate-400">سعر التوصيل</span>
+                      <span className="text-xs font-black text-slate-700 dark:text-slate-300 font-mono">{order.deliveryPrice || "—"}</span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">المبلغ الكلي</span>
+                      <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 font-mono">{order.totalAmount || "—"}</span>
+                    </div>
                   </div>
 
                   {order.voiceNoteUrl && (
