@@ -164,6 +164,41 @@ export function AssignToPreparerPanel({
 }
 
 /** لوحة تسعير الطلب (للمسودات والطلبات المعلقة) */
+export function AdminPricingPanel({
+  orderId,
+  initialData,
+  preparers,
+  isDraft,
+  onSuccess,
+  hideContainer = false,
+  footerActions,
+  extraActions,
+  icons = null,
+}: {
+  orderId: string;
+  initialData: any;
+  preparers: { id: string; name: string }[];
+  isDraft?: boolean;
+  onSuccess?: () => void;
+  hideContainer?: boolean;
+  footerActions?: React.ReactNode;
+  extraActions?: React.ReactNode;
+  icons?: GlobalIconsConfig | null;
+}) {
+  // Alias for backward compatibility if needed elsewhere
+  return <OrderPricingPanel
+    orderId={orderId}
+    initialData={initialData}
+    preparers={preparers}
+    isDraft={isDraft}
+    onSuccess={onSuccess}
+    hideContainer={hideContainer}
+    footerActions={footerActions}
+    extraActions={extraActions}
+    icons={icons}
+  />;
+}
+
 export function OrderPricingPanel({
   orderId,
   initialData,
