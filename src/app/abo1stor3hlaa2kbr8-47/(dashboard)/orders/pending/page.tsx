@@ -16,7 +16,7 @@ import {
 } from "@/lib/mandoub-money";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { serializePrisma } from "@/lib/serialize-prisma";
-import { PendingOrdersClient, type PendingOrderRow } from "./pending-orders-client";
+import PendingOrdersClient, { type PendingOrderRow } from "./pending-orders-client";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 

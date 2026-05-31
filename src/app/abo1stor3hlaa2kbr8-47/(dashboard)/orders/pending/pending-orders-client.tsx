@@ -853,18 +853,28 @@ export default function PendingOrdersClient({
   shops = [],
   preparers = [],
   isDraftMode,
+  icons: initialIcons = null,
+  initialAssignOrderId = null,
+  initialPricingId = null,
 }: {
   orders: PendingOrderRow[];
   couriers: { id: string; name: string }[];
   shops?: { id: string; name: string }[];
   preparers?: { id: string; name: string }[];
   isDraftMode?: boolean;
+  icons?: GlobalIconsConfig | null;
+  initialAssignOrderId?: string | null;
+  initialPricingId?: string | null;
 }) {
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(initialIcons);
+  const [activeAssignOrderId, setActiveAssignOrderId] = useState<string | null>(initialAssignOrderId);
+  const [activePricingOrderId, setActivePricingOrderId] = useState<string | null>(initialPricingId);
 
   useEffect(() => {
-    getGlobalIcons().then(setIcons);
-  }, []);
+    if (!icons) {
+      getGlobalIcons().then(setIcons);
+    }
+  }, [icons]);
 
   if (orders.length === 0) {
     return (
@@ -915,7 +925,15 @@ export default function PendingOrdersClient({
           <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
              <div className="space-y-4">
                 <div className="bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] p-5 border border-slate-100 dark:border-white/5">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">تفاصيل الطلب</p>
+                   <div className="flex items-center justify-between mb-3">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">تفاصيل الطلب</p>
+                      <button
+                        onClick={() => setActiveAssignOrderId(order.id)}
+                        className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1 hover:underline"
+                      >
+                         <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} /> فتح لوحة الإسناد
+                      </button>
+                   </div>
                    <p className="text-sm font-black text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{order.summary}</p>
                 </div>
 
@@ -925,18 +943,29 @@ export default function PendingOrdersClient({
                   </div>
                 )}
 
-                <PendingAssignPanel
-                   orderId={order.id}
-                   couriers={couriers}
-                   customerPhone={order.customerPhone}
-                   customerAlternatePhone={order.customerAlternatePhone}
-                   customerLandmark={order.customerLandmark}
-                   defaultCustomerLocationUrl={order.customerLocationUrl}
-                   icons={icons}
-                />
+                <div className="hidden lg:block">
+                  <PendingAssignPanel
+                    orderId={order.id}
+                    couriers={couriers}
+                    customerPhone={order.customerPhone}
+                    customerAlternatePhone={order.customerAlternatePhone}
+                    customerLandmark={order.customerLandmark}
+                    defaultCustomerLocationUrl={order.customerLocationUrl}
+                    icons={icons}
+                  />
+                </div>
              </div>
 
-             <div className="h-[600px] lg:h-auto">
+             <div className="h-[600px] lg:h-auto flex flex-col">
+                <div className="flex items-center justify-between mb-2 lg:hidden">
+                   <p className="text-[10px] font-black text-slate-400 uppercase">لوحة التسعير</p>
+                   <button
+                     onClick={() => setActivePricingOrderId(order.id)}
+                     className="text-[10px] font-black text-sky-600 hover:underline"
+                   >
+                      توسيع التسعير ↗
+                   </button>
+                </div>
                 <OrderPricingPanel
                    orderId={order.id}
                    initialData={order.preparerShoppingJson || {}}
@@ -963,6 +992,63 @@ export default function PendingOrdersClient({
           )}
         </div>
       ))}
+
+      {/* Floating Modal for Assign */}
+      {activeAssignOrderId && (
+        <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+           <div className="absolute inset-0" onClick={() => setActiveAssignOrderId(null)} />
+           <div className="relative w-full max-w-lg animate-in zoom-in-95 duration-200">
+             <div className="absolute -top-12 left-0 right-0 flex justify-center">
+                <button onClick={() => setActiveAssignOrderId(null)} className="h-10 px-6 rounded-full bg-white text-slate-900 text-xs font-black shadow-xl">إغلاق النافذة ✕</button>
+             </div>
+             {(() => {
+                const o = orders.find(x => x.id === activeAssignOrderId);
+                if (!o) return null;
+                return (
+                  <PendingAssignPanel
+                    orderId={o.id}
+                    couriers={couriers}
+                    customerPhone={o.customerPhone}
+                    customerAlternatePhone={o.customerAlternatePhone}
+                    customerLandmark={o.customerLandmark}
+                    defaultCustomerLocationUrl={o.customerLocationUrl}
+                    icons={icons}
+                  />
+                );
+             })()}
+           </div>
+        </div>
+      )}
+
+      {/* Floating Modal for Pricing (Mobile Friendly) */}
+      {activePricingOrderId && (
+        <div className="fixed inset-0 z-[1100] bg-slate-50 dark:bg-slate-950 flex flex-col animate-in slide-in-from-bottom duration-300">
+           <div className="h-14 shrink-0 bg-white dark:bg-slate-900 border-b flex items-center justify-between px-4">
+              <span className="text-sm font-black">تسعير الطلب #{orders.find(x => x.id === activePricingOrderId)?.orderNumber}</span>
+              <button onClick={() => setActivePricingOrderId(null)} className="h-9 px-4 rounded-xl bg-slate-100 text-slate-600 text-[10px] font-black">إغلاق</button>
+           </div>
+           <div className="flex-1 overflow-hidden">
+             {(() => {
+                const o = orders.find(x => x.id === activePricingOrderId);
+                if (!o) return null;
+                return (
+                  <OrderPricingPanel
+                    orderId={o.id}
+                    initialData={o.preparerShoppingJson || {}}
+                    preparers={preparers}
+                    isDraft={isDraftMode}
+                    icons={icons}
+                    hideContainer={true}
+                    onSuccess={() => {
+                       window.location.reload();
+                    }}
+                  />
+                );
+             })()}
+           </div>
+        </div>
+      )}
     </div>
   );
 }
+
