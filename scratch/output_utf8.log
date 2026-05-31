@@ -3,11 +3,11 @@
 Response Status: 200
 Success: true
 Logs: [
-  "Starting database schema repair for secondCustomerAlternatePhone...",
-  "Fetching current columns of the 'Order' table...",
-  "Adding column 'secondCustomerAlternatePhone' to 'Order' table if not exists...",
-  "Column 'secondCustomerAlternatePhone' added or verified.",
-  "Fetching updated columns of the 'Order' table...",
+  "Starting database schema repair for Courier.showMoneyBoxes...",
+  "Fetching current columns of the 'Courier' table...",
+  "Adding column 'showMoneyBoxes' to 'Courier' table if not exists...",
+  "Column 'showMoneyBoxes' added or verified.",
+  "Fetching updated columns of the 'Courier' table...",
   "Database schema repair completed successfully!"
 ]
 --------------------------------------------------
