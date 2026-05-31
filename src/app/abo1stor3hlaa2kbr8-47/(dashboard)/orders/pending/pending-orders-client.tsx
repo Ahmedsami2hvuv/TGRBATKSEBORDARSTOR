@@ -272,22 +272,30 @@ export function AdminPricingPanel({
 
   const [buyText, setBuyText] = useState("");
   const [sellText, setSellText] = useState("");
+  const [pricingErr, setPricingErr] = useState<string | null>(null);
 
   const applyPricingPanel = () => {
     if (editingIndex === null) return;
     const item = products[editingIndex];
-    const buyAlf = parseFloat(normalizeNumerals(buyText)) || 0;
-    const sellAlf = parseFloat(normalizeNumerals(sellText)) || 0;
+    const buyAlfRaw = normalizeNumerals(buyText);
+    const sellAlfRaw = normalizeNumerals(sellText);
+    const buyAlfNum = parseFloat(buyAlfRaw) || 0;
+    const sellAlfNum = parseFloat(sellAlfRaw) || 0;
 
-    if (buyAlf <= 0) {
+    if (buyAlfNum <= 0) {
       setPricingErr("اكتب سعر الشراء.");
       return;
     }
 
-    updateProduct(editingIndex, "buyAlf", buyAlf.toString());
+    const next = [...products];
+    const updatedItem = { ...next[editingIndex] };
+    updatedItem.buyAlf = buyAlfRaw;
     // إذا كان المستخدم لم يدخل سعر بيع يدوياً، نستخدم التلقائي
-    const finalSell = sellAlf > 0 ? sellAlf : calculateAutoSellPrice(item.line, buyAlf);
-    updateProduct(editingIndex, "sellAlf", finalSell.toString());
+    updatedItem.sellAlf = sellAlfNum > 0 ? sellAlfRaw : calculateAutoSellPrice(item.line, buyAlfNum).toString();
+    updatedItem.pricedBy = "الإدارة";
+
+    next[editingIndex] = updatedItem;
+    setProducts(next);
 
     setEditingIndex(null);
     setBuyText("");
@@ -316,10 +324,15 @@ export function AdminPricingPanel({
     const timer = setTimeout(async () => {
       if (products.length > 0) {
         setIsSaving(true);
-        await savePricingProgress(orderId, !!isDraft, products, placesCount);
-        setIsSaving(false);
+        try {
+          await savePricingProgress(orderId, !!isDraft, products, placesCount);
+        } catch (err) {
+          console.error("Auto-save failed:", err);
+        } finally {
+          setIsSaving(false);
+        }
       }
-    }, 2000);
+    }, 1000);
     return () => clearTimeout(timer);
   }, [products, placesCount, orderId, isDraft]);
 
@@ -456,7 +469,7 @@ export function AdminPricingPanel({
   }, [state.ok, onSuccess]);
 
   return (
-    <div className={hideContainer ? "relative text-right" : "relative overflow-hidden rounded-[2.5rem] border border-white/40 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-white/20 dark:ring-white/10 text-right transition-colors"} dir="rtl">
+    <div className={hideContainer ? "relative text-right h-full flex flex-col" : "relative overflow-hidden rounded-[2.5rem] border border-white/40 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-white/20 dark:ring-white/10 text-right transition-colors"} dir="rtl">
       {!hideContainer && (
         <>
           {/* Background Decor */}
@@ -465,41 +478,63 @@ export function AdminPricingPanel({
         </>
       )}
 
-      <div className={hideContainer ? "" : "relative p-3 sm:p-5"}>
-        {/* Floating Header - Now Sticky and Opaque */}
-        <div className={`sticky top-0 z-40 flex items-center justify-between gap-2 transition-all ${hideContainer ? "bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-3 -mx-4 -mt-4 mb-4 border-b border-slate-200 dark:border-slate-800" : "bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl p-2.5 mb-4 -mx-1 rounded-2xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/40 dark:shadow-none"}`}>
-          <div className="flex items-center gap-2">
-            {!hideContainer && (
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-200 dark:shadow-none shrink-0">
-                <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={22} height={22} />
+      <div className={hideContainer ? "flex-1 flex flex-col overflow-hidden" : "relative p-3 sm:p-5"}>
+        {/* شريط الإحصائيات والأزرار العلوي - مدمج وكثيف */}
+        <div className={`sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-2 border-b border-slate-200 dark:border-slate-800 -mx-1 shadow-sm`}>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5">
+                 <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="h-9 px-2.5 flex items-center gap-1.5 rounded-lg bg-amber-500 text-white text-[10px] font-black shadow-sm active:scale-95 transition-all shrink-0">
+                    <DynamicIcon icon={icons?.ui_plus} fallback="+" width={12} height={12} /> <span className="hidden min-[380px]:inline">إضافة</span>
+                 </button>
+                 <button type="button" onClick={() => setShowReassign(!showReassign)} className="h-9 px-2.5 flex items-center gap-1.5 rounded-lg bg-slate-700 text-white text-[10px] font-black shadow-sm active:scale-95 transition-all shrink-0">
+                    <DynamicIcon icon={icons?.ui_user} fallback="👤" width={12} height={12} /> <span className="hidden min-[380px]:inline">إسناد</span>
+                 </button>
+                 <button type="button" onClick={() => setDeleteMode(!deleteMode)} className={`h-9 w-9 flex items-center justify-center rounded-lg text-[10px] font-black transition-all shrink-0 ${deleteMode ? "bg-rose-600 text-white" : "bg-rose-50 text-rose-600 border border-rose-200"}`}>
+                    <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={14} height={14} />
+                 </button>
               </div>
-            )}
-            <div className="min-w-0">
-              <p className={`font-black text-slate-800 dark:text-slate-100 leading-tight truncate ${hideContainer ? "text-sm" : "text-xs"}`}>
-                {isDraft ? "تسعير المسودة" : "تعديل التسعير"}
-              </p>
-              {isSaving && (
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className="h-1 w-1 rounded-full bg-sky-500 animate-pulse" />
-                  <span className="text-[8px] font-bold text-sky-600 dark:text-sky-400">جاري الحفظ...</span>
-                </div>
-              )}
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                 <select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="h-9 rounded-lg bg-slate-100 dark:bg-slate-800 border-none px-1 text-[10px] font-black outline-none focus:ring-2 focus:ring-amber-500 max-w-[60px]">
+                    {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n} محل</option>)}
+                 </select>
+                 <div className="h-9 bg-slate-900 text-white px-2 rounded-lg flex flex-col items-center justify-center shadow-lg min-w-[70px]">
+                    <span className="text-[7px] font-bold text-slate-400 leading-none">الإجمالي</span>
+                    <span className="text-[10px] font-black font-mono leading-none mt-0.5">{(totals.total).toLocaleString()}</span>
+                 </div>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {!hideContainer && extraActions}
-            <button type="button" onClick={() => setShowReassign(!showReassign)} className="h-9 w-9 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm hover:scale-105 active:scale-95 transition-all border border-slate-200 dark:border-white/10" title="إسناد لمجهز">
-              <DynamicIcon icon={icons?.ui_plus} fallback="🏢" width={14} height={14} />
-            </button>
-            <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="h-9 w-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md hover:scale-105 active:scale-95 transition-all" title="إضافة منتجات">
-              <DynamicIcon icon={icons?.ui_plus} fallback="➕" width={14} height={14} />
-            </button>
-            {!hideContainer && <DeleteFullOrderButton id={orderId} isDraft={Boolean(isDraft)} onSuccess={onSuccess} icons={icons} />}
+
+            <div className="flex items-center justify-between bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-lg border border-slate-200/50 dark:border-slate-800">
+               <div className="flex-1 flex items-center justify-around px-1 gap-2">
+                  <div className="flex flex-col items-center">
+                     <span className="text-[7px] font-black text-slate-500 uppercase leading-none mb-0.5">بيع</span>
+                     <span className="text-[10px] font-black text-emerald-600 font-mono leading-none">{totals.subtotal.toLocaleString()}</span>
+                  </div>
+                  <div className="w-[1px] h-3 bg-slate-300 dark:bg-slate-600 shrink-0" />
+                  <div className="flex flex-col items-center">
+                     <span className="text-[7px] font-black text-slate-500 uppercase leading-none mb-0.5">شراء</span>
+                     <span className="text-[10px] font-black text-rose-600 font-mono leading-none">{totals.buyTotal.toLocaleString()}</span>
+                  </div>
+                  <div className="w-[1px] h-3 bg-slate-300 dark:bg-slate-600 shrink-0" />
+                  <div className="flex flex-col items-center">
+                     <span className="text-[7px] font-black text-slate-500 uppercase leading-none mb-0.5">ربح</span>
+                     <span className="text-[10px] font-black text-sky-600 font-mono leading-none">{totals.profit.toLocaleString()}</span>
+                  </div>
+               </div>
+               {isSaving && (
+                 <div className="text-[7px] font-bold text-amber-500 animate-pulse flex flex-col items-center justify-center border-r border-slate-300 dark:border-slate-700 pr-1.5 mr-1.5 shrink-0 leading-[1.1]">
+                   <span>حفظ</span>
+                   <span>تلقائي</span>
+                 </div>
+               )}
+            </div>
           </div>
         </div>
 
-      <div className={hideContainer ? "px-1" : "space-y-4"}>
-        {showReassign && <div className="animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); onSuccess?.(); }} icons={icons || undefined} hideContainer={true} /></div>}
+      <div className={hideContainer ? "flex-1 overflow-y-auto px-1 custom-scrollbar pb-32" : "space-y-4"}>
+        {showReassign && <div className="mt-2 animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); onSuccess?.(); }} icons={icons || undefined} hideContainer={true} /></div>}
 
         {showBulkAdd && (
           <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border-2 border-violet-200 dark:border-violet-900/50 animate-in zoom-in-95 shadow-inner">
@@ -534,96 +569,92 @@ export function AdminPricingPanel({
           </div>
         )}
 
-        <div className="flex items-center justify-between px-1 mb-2 mt-4">
-           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">قائمة المنتجات</p>
+        <div className="flex items-center justify-between px-2 mb-2 mt-4">
+           <div className="flex items-center gap-2">
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">قائمة المنتجات</p>
+             <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded text-[9px] font-bold">{products.length}</span>
+           </div>
            {products.length > 0 && (
-            <button type="button" onClick={toggleSelectAllProducts} className="text-[10px] font-bold text-sky-600 dark:text-sky-400 hover:underline">
+            <button type="button" onClick={toggleSelectAllProducts} className="text-[10px] font-black text-sky-600 dark:text-sky-400 hover:underline">
               {selectedProductIndexes.length === products.length ? "إلغاء التحديد" : "تحديد الكل"}
             </button>
           )}
         </div>
 
-        <div className={`grid grid-cols-2 gap-2.5 ${hideContainer ? "" : "max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar"}`}>
+        <div className="space-y-0.5">
           {products.map((p, i) => {
             const priced = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) > 0;
             const isSelected = selectedProductIndexes.includes(i);
             const isEditing = editingIndex === i;
+            const prepName = findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName;
 
             return (
               <div key={i} className="relative group">
-                <div className="absolute top-2 right-2 z-10">
-                   <input
-                     type="checkbox"
-                     checked={isSelected}
-                     onChange={() => toggleProductSelection(i)}
-                     className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sky-600 focus:ring-sky-500 cursor-pointer shadow-sm transition-transform active:scale-125"
-                   />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (deleteMode) {
-                      setProducts(products.filter((_, idx) => idx !== i));
-                    } else {
-                      setEditingIndex(i);
-                      setBuyText(priced ? p.buyAlf : "");
-                      setSellText(priced ? p.sellAlf : "");
-                    }
-                  }}
-                  className={`group w-full flex flex-col p-3 rounded-2xl border-2 transition-all active:scale-[0.97] text-right overflow-hidden ${
+                <div
+                  className={`group w-full flex items-center gap-1.5 p-1 rounded-lg border transition-all text-right ${
                     isEditing
-                      ? "border-sky-500 bg-sky-50 dark:bg-sky-500/10 shadow-lg ring-2 ring-sky-500/20"
+                      ? "border-sky-500 bg-sky-50 dark:bg-sky-500/10 shadow-sm"
                       : deleteMode
-                        ? "border-rose-400 bg-rose-50 dark:bg-rose-500/10"
+                        ? "border-rose-300 bg-rose-50"
                         : priced
-                          ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10 shadow-sm"
-                          : "border-slate-100 bg-white/50 dark:border-white/5 dark:bg-slate-950/40"
+                          ? "border-emerald-100 bg-emerald-50/30 dark:border-emerald-900/20 dark:bg-emerald-900/5"
+                          : "border-slate-100 bg-white dark:border-white/5 dark:bg-slate-900/50"
                   }`}
                 >
-                  <div className="min-w-0 w-full mb-3">
-                    <p className={`truncate text-[11px] font-black leading-tight ${priced ? "text-emerald-900 dark:text-emerald-100" : "text-slate-800 dark:text-slate-200"}`}>
-                      {p?.line}
-                    </p>
-                    {(findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName) && (
-                       <span className="text-[8px] font-bold text-slate-400 flex items-center gap-0.5 mt-0.5">
-                         <DynamicIcon icon={icons?.ui_user} fallback="👤" width={8} height={8} />
-                         {findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName}
-                       </span>
-                    )}
-                  </div>
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleProductSelection(i)}
+                    className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer"
+                  />
 
-                  <div className="mt-auto w-full flex flex-col gap-1.5 pt-2 border-t border-slate-100/50 dark:border-white/5">
-                     <div className="flex items-center justify-between">
-                        <span className="text-[8px] font-bold text-slate-400">شراء</span>
-                        <span className={`font-mono text-[10px] font-black ${priced ? "text-slate-600 dark:text-slate-400" : "text-slate-300"}`} dir="ltr">
-                           {priced ? `${p?.buyAlf}` : "—"}
+                  <div
+                    className="flex-1 min-w-0 flex items-center justify-between cursor-pointer h-7"
+                    onClick={() => {
+                      if (deleteMode) {
+                        setProducts(products.filter((_, idx) => idx !== i));
+                      } else {
+                        setEditingIndex(i);
+                        setBuyText(priced ? p.buyAlf : "");
+                        setSellText(priced ? p.sellAlf : "");
+                      }
+                    }}
+                  >
+                    <div className="flex flex-col min-w-0 text-right">
+                      <p className={`truncate text-[10px] font-black leading-tight ${priced ? "text-emerald-900 dark:text-emerald-100" : "text-slate-700 dark:text-slate-300"}`}>
+                        {p?.line}
+                      </p>
+                      {prepName && (
+                        <span className="text-[7px] font-bold text-slate-400 flex items-center gap-0.5">
+                          <DynamicIcon icon={icons?.ui_user} fallback="👤" width={7} height={7} />
+                          {prepName}
                         </span>
-                     </div>
-                     <div className="flex items-center justify-between">
-                        <span className="text-[8px] font-bold text-slate-400">بيع</span>
-                        <span className={`font-mono text-[11px] font-black ${priced ? "text-emerald-600 dark:text-emerald-400" : "text-slate-300"}`} dir="ltr">
-                           {priced ? `${p?.sellAlf}` : "—"}
-                        </span>
-                     </div>
-                  </div>
+                      )}
+                    </div>
 
-                  {!priced && !isEditing && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-black/20 backdrop-blur-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity">
-                       <div className="bg-sky-600 text-white p-2 rounded-xl shadow-lg">
-                          <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={16} height={16} />
+                    <div className="flex items-center gap-1 shrink-0 mr-1.5">
+                       <div className="flex flex-col items-center justify-center min-w-[38px] h-6 rounded bg-slate-100/50 dark:bg-black/20 border border-slate-100 dark:border-white/5">
+                          <span className={`font-mono text-[9px] font-black leading-none ${priced ? "text-slate-600 dark:text-slate-400" : "text-slate-300"}`} dir="ltr">
+                            {priced ? p.buyAlf : "—"}
+                          </span>
+                       </div>
+                       <div className="flex flex-col items-center justify-center min-w-[38px] h-6 rounded bg-emerald-100/20 dark:bg-emerald-900/20 border border-emerald-100/30 dark:border-emerald-800/20">
+                          <span className={`font-mono text-[9px] font-black leading-none ${priced ? "text-emerald-600 dark:text-emerald-400" : "text-slate-300"}`} dir="ltr">
+                            {priced ? p.sellAlf : "—"}
+                          </span>
                        </div>
                     </div>
-                  )}
-                </button>
+                  </div>
+                </div>
               </div>
             );
           })}
         </div>
 
         {editingIndex !== null && (
-          <div className="fixed inset-x-0 bottom-0 z-[100] animate-in slide-in-from-bottom duration-300 pb-safe">
-            <div className="mx-auto max-w-lg">
-              <div className="kse-glass-dark m-4 overflow-hidden border border-sky-200 shadow-2xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/95 rounded-[2.5rem]">
+          <div className="fixed inset-0 z-[700] bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-lg mx-auto pb-safe">
+              <div className="kse-glass-dark m-0 sm:m-4 overflow-hidden border-t sm:border border-sky-200 shadow-2xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/95 rounded-t-[2.5rem] sm:rounded-[2.5rem] animate-in slide-in-from-bottom duration-300">
                 <div className="bg-sky-600 px-4 py-3 text-white flex justify-between items-center">
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] font-bold opacity-80 uppercase tracking-wider">تسعير المنتج:</p>
@@ -716,104 +747,51 @@ export function AdminPricingPanel({
         )}
       </div>
 
-      {/* Floating Summary Bar */}
-      <div className={`sticky bottom-0 z-40 mt-6 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-slate-200 dark:border-slate-800 transition-all ${hideContainer ? "-mx-4 -mb-4 rounded-none shadow-[0_-10px_30px_rgba(0,0,0,0.05)]" : "-mx-3 -mb-3 sm:-mx-5 sm:-mb-5 rounded-t-[2.5rem] shadow-[0_-10px_30px_rgba(0,0,0,0.1)]"}`}>
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-4 gap-2">
-            <div className="relative group">
-              <select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="w-full appearance-none rounded-xl bg-slate-100 dark:bg-slate-800 p-2 pr-8 text-[10px] font-black text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-900/50 transition-all border border-transparent focus:border-amber-400">
-                {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n} محل</option>)}
-              </select>
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                <DynamicIcon icon={icons?.ui_shop} fallback="🛒" width={10} height={10} />
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center justify-center p-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50">
-              <span className="text-[6px] font-black text-emerald-500 dark:text-emerald-400 uppercase tracking-tighter">البيع</span>
-              <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 font-mono leading-none mt-0.5">{totals.subtotal.toLocaleString()}</span>
-            </div>
-
-            <div className="flex flex-col items-center justify-center p-1.5 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/50">
-              <span className="text-[6px] font-black text-rose-500 dark:text-rose-400 uppercase tracking-tighter">الشراء</span>
-              <span className="text-[10px] font-black text-rose-700 dark:text-rose-300 font-mono leading-none mt-0.5">{totals.buyTotal.toLocaleString()}</span>
-            </div>
-
-            <div className="flex flex-col items-center justify-center p-1.5 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-900/50">
-              <span className="text-[6px] font-black text-violet-500 dark:text-violet-400 uppercase tracking-tighter">الأرباح</span>
-              <span className="text-[10px] font-black text-violet-700 dark:text-violet-300 font-mono leading-none mt-0.5">{totals.profit.toLocaleString()}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center justify-between p-3 rounded-2xl bg-slate-900 dark:bg-black text-white shadow-xl border border-white/10">
+      {/* Floating Summary Bar / Action Footer - مدمج جداً */}
+      <div className={`sticky bottom-0 z-40 p-3 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] ${hideContainer ? "-mx-1 -mb-1" : "-mx-3 -mb-3 sm:-mx-5 sm:-mb-5 rounded-t-[2.5rem]"}`}>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 flex items-center justify-between p-2 rounded-xl bg-slate-900 text-white shadow-lg border border-white/10">
                <div className="flex flex-col">
-                 <div className="flex items-center gap-1.5">
-                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">المجموع النهائي (مع التوصيل)</span>
-                   {deliveryAlfVal > 0 && <span className="text-[8px] font-bold text-sky-400">+{deliveryAlfVal}</span>}
-                 </div>
-                 <span className="text-xl font-black font-mono leading-none">{totals.total.toLocaleString()} <span className="text-[10px] font-bold text-slate-500">الف</span></span>
+                 <span className="text-[7px] font-bold text-slate-400 uppercase tracking-wider">الإجمالي (توصيل: {deliveryAlfVal})</span>
+                 <span className="text-lg font-black font-mono leading-none">{totals.total.toLocaleString()} <span className="text-[8px] font-bold text-slate-500">الف</span></span>
                </div>
-               <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
-                 <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={22} height={22} />
+               <div className="h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center">
+                 <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={18} height={18} />
                </div>
             </div>
 
-            {!footerActions && (
-              <button
-                type="button"
-                onClick={() => { setDeleteMode(!deleteMode); setEditingIndex(null); }}
-                className={`h-14 w-14 flex items-center justify-center rounded-2xl border-2 transition-all ${deleteMode ? "bg-rose-500 text-white border-rose-400 shadow-lg" : "bg-white dark:bg-slate-800 text-rose-500 border-rose-100 dark:border-slate-700 shadow-sm"}`}
-              >
-                <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={24} height={24} />
-              </button>
-            )}
+            <form action={formAction} className="flex-1 flex gap-2">
+              <input type="hidden" name="productsJson" value={JSON.stringify(products)} />
+              <input type="hidden" name="placesCount" value={placesCount} />
+              {isDraft && <input type="hidden" name="autoCourierId" value={String(initialData?.autoCourierId ?? "")} />}
+              {isDraft && <input type="hidden" name="shopId" value={selectedShopId} />}
+              {isDraft && <input type="hidden" name="isDraft" value="true" />}
+
+              {isDraft ? (
+                <div className="flex-1 grid grid-cols-2 gap-1.5">
+                  <button id="pricing-submit-btn" type="submit" name="submitType" value="admin_approve" disabled={pending} className="h-12 rounded-xl bg-emerald-600 text-[10px] font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                    {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد</>}
+                  </button>
+                  <button type="submit" name="submitType" value="final_send" disabled={pending || !canSubmitFinal} className="h-12 rounded-xl bg-violet-600 text-[10px] font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                    {pending ? "..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={14} height={14} /> إرسال</>}
+                  </button>
+                </div>
+              ) : (
+                <button type="submit" disabled={pending} className="flex-1 h-12 rounded-xl bg-slate-900 text-[10px] font-black text-white shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                   {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> حفظ وإرسال للمندوب</>}
+                </button>
+              )}
+            </form>
           </div>
-
-      <form action={formAction} className="space-y-4">
-        <input type="hidden" name="productsJson" value={JSON.stringify(products)} />
-        <input type="hidden" name="placesCount" value={placesCount} />
-        {isDraft && <input type="hidden" name="autoCourierId" value={String(initialData?.autoCourierId ?? "")} />}
-        {isDraft && <input type="hidden" name="shopId" value={selectedShopId} />}
-        {isDraft && <input type="hidden" name="isDraft" value="true" />}
-
-        <div className="flex items-center justify-between px-1">
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" name="skipWallet" id="skip-w" className="sr-only peer" />
-            <div className="w-9 h-5 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:bg-emerald-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:-translate-x-4"></div>
-            <span className="mr-2 text-[10px] font-black text-slate-500 dark:text-slate-400">تخطي محفظة المجهز</span>
-          </label>
 
           {footerActions && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center gap-2 border-t border-slate-100 dark:border-slate-800 pt-2">
                {footerActions}
             </div>
           )}
         </div>
-
-        {state.error && <p className="text-[10px] text-rose-600 font-bold p-2 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-2xl animate-shake">⚠️ {state.error}</p>}
-
-        {isDraft ? (
-          <div className="grid grid-cols-2 gap-3">
-            <button type="submit" name="submitType" value="admin_approve" disabled={pending} className="group relative overflow-hidden rounded-2xl bg-emerald-600 py-3.5 text-[11px] font-black text-white shadow-lg active:scale-95 transition-all">
-              <span className="relative flex items-center justify-center gap-2">
-                {pending ? "جارٍ..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={16} height={16} /> اعتماد المسودة</>}
-              </span>
-            </button>
-            <button type="submit" name="submitType" value="final_send" disabled={pending || !canSubmitFinal} className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 py-3.5 text-[11px] font-black text-white shadow-lg active:scale-95 transition-all">
-              <span className="relative flex items-center justify-center gap-2">
-                {pending ? "جارٍ..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={16} height={16} /> إرسال نهائي</>}
-              </span>
-            </button>
-          </div>
-        ) : (
-          <button type="submit" disabled={pending} className="w-full relative overflow-hidden rounded-2xl bg-slate-900 dark:bg-slate-800 py-4 text-xs font-black text-white shadow-xl active:scale-[0.98] transition-all border border-white/10">
-             <span className="relative flex items-center justify-center gap-2">
-               {pending ? "جارٍ الحفظ..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={18} height={18} /> حفظ التعديلات وإرسال للمندوب</>}
-             </span>
-          </button>
-        )}
-      </form>
+      </div>
         </div>
       </div>
     </div>
@@ -1216,23 +1194,38 @@ export function PendingOrdersClient({
   if (pricingOpenId && (isDraftMode || orders.some(o => o.id === pricingOpenId))) {
     const order = orders.find(o => o.id === pricingOpenId)!;
     return (
-      <div className="fixed inset-0 z-[500] bg-slate-50 dark:bg-slate-950 flex flex-col animate-in slide-in-from-left duration-300">
-        <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm">
-          <button
-            onClick={() => setPricingOpenId(null)}
-            className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
-          >
-            <DynamicIcon icon={icons?.ui_close} fallback="✕" width={20} height={20} />
-          </button>
-          <div className="text-center">
-            <h2 className="text-sm font-black text-slate-900 dark:text-white">تسعير الطلب #{order.orderNumber}</h2>
-            <p className="text-[10px] font-bold text-slate-500">{order.shopName || order.orderType}</p>
+      <div className="fixed inset-0 z-[500] bg-white dark:bg-slate-950 flex flex-col overflow-hidden">
+        {/* Header الحفظ والإجراءات الأساسية */}
+        <div className="sticky top-0 z-[600] flex items-center justify-between p-2 sm:p-3 bg-slate-900 text-white shadow-xl">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPricingOpenId(null)}
+              className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all"
+            >
+              <DynamicIcon icon={icons?.ui_close} fallback="✕" width={20} height={20} />
+            </button>
+            <div className="pr-1">
+              <h2 className="text-xs font-black leading-none">طلب #{order.orderNumber}</h2>
+              <p className="text-[9px] font-bold text-slate-400 mt-1">{order.shopName || order.orderType}</p>
+            </div>
           </div>
-          <div className="h-10 w-10" /> {/* Spacer */}
+
+          <div className="flex items-center gap-2">
+             <button
+                onClick={() => {
+                  const el = document.getElementById('pricing-submit-btn');
+                  if (el) el.click();
+                }}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-[11px] font-black shadow-lg shadow-emerald-900/20 active:scale-95 transition-all flex items-center gap-2"
+              >
+                <DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} />
+                اعتماد وحفظ
+              </button>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 pb-safe">
-          <div className="max-w-2xl mx-auto">
+        <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900/50">
+          <div className="max-w-7xl mx-auto p-2 sm:p-4">
              <AdminPricingPanel
                 orderId={order.id}
                 initialData={order.preparerShoppingJson}
