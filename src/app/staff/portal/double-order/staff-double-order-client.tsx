@@ -116,6 +116,8 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
   };
 
   const commonOrderTypes = ["توصيل فقط", "تجهيز وتسوق", "نقل بضائع", "أخرى"];
+  
+  const totalAmount = sellerAmount + profit + deliveryPrice;
 
   if (state.ok) return (
     <div className="kse-glass-dark rounded-2xl border border-emerald-300 p-6 text-center shadow-lg animate-in zoom-in">
