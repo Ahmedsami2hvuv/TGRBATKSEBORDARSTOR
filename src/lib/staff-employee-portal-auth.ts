@@ -21,7 +21,7 @@ function parseCookieHeader(cookieHeader: string | null): Record<string, string> 
   }, {});
 }
 
-function getCookieValue(cookieStore: unknown, name: string): string | undefined {
+async function getCookieValue(cookieStore: any, name: string): Promise<string | undefined> {
   if (cookieStore && typeof cookieStore === "object") {
     const getter = (cookieStore as { get?: unknown }).get;
     if (typeof getter === "function") {
@@ -32,7 +32,8 @@ function getCookieValue(cookieStore: unknown, name: string): string | undefined 
     }
   }
 
-  const cookieHeader = headers().get("cookie");
+  const headerList = await headers();
+  const cookieHeader = headerList.get("cookie");
   const parsed = parseCookieHeader(cookieHeader);
   return parsed[name];
 }
@@ -40,14 +41,14 @@ function getCookieValue(cookieStore: unknown, name: string): string | undefined 
 export async function getStaffPortalAuth(searchParams: StaffPortalSearchParams): Promise<{ se?: string; exp?: string; s?: string }> {
   let cookieStore: unknown;
   try {
-    cookieStore = cookies();
+    cookieStore = await cookies();
   } catch {
     cookieStore = undefined;
   }
 
   return {
-    se: normalizeSearchParam(searchParams.se) ?? getCookieValue(cookieStore, "staff_se"),
-    exp: normalizeSearchParam(searchParams.exp) ?? getCookieValue(cookieStore, "staff_exp"),
-    s: normalizeSearchParam(searchParams.s) ?? getCookieValue(cookieStore, "staff_s"),
+    se: normalizeSearchParam(searchParams.se) ?? await getCookieValue(cookieStore, "staff_se"),
+    exp: normalizeSearchParam(searchParams.exp) ?? await getCookieValue(cookieStore, "staff_exp"),
+    s: normalizeSearchParam(searchParams.s) ?? await getCookieValue(cookieStore, "staff_s"),
   };
 }

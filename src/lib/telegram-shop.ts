@@ -13,6 +13,7 @@ import {
   answerCallbackQuery,
   editTelegramMessage,
   escapeTelegramHtml,
+  sendTelegramHtmlToChat,
   sendTelegramMessageWithKeyboardToChat,
   telegramDownloadFileById,
   type TelegramInlineKeyboard,

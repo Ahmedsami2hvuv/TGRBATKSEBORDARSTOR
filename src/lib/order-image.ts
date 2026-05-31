@@ -1,4 +1,4 @@
-﻿import { resizeImageBufferForShop } from "@/lib/image-resize";
+import { resizeImageBufferForShop } from "@/lib/image-resize";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 import { uploadToR2 } from "@/lib/upload-storage";
@@ -230,7 +230,7 @@ async function processAndUploadImage(
 
           try {
             const formData = new FormData();
-            formData.append("image_file", new Blob([buf], { type: "image/png" }), "image.png");
+            formData.append("image_file", new Blob([new Uint8Array(buf)], { type: "image/png" }), "image.png");
             const response = await fetch("https://api.remove.bg/v1.0/removebg", {
               method: "POST",
               headers: { "X-Api-Key": config.apiKey },

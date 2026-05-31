@@ -91,11 +91,11 @@ export async function resyncOrdersAfterRegionPriceChange(
       }
 
       const delivery = computeDeliveryPriceFromRegions({
-        shopRegionDelivery: o.shop.region.deliveryPrice,
-        customerRegionDelivery: o.customerRegion.deliveryPrice,
-        secondRegionDelivery: o.secondCustomerRegion?.deliveryPrice ?? null,
+        shopRegionDelivery: o.shop.region.deliveryPrice as any,
+        customerRegionDelivery: o.customerRegion.deliveryPrice as any,
+        secondRegionDelivery: (o.secondCustomerRegion?.deliveryPrice ?? null) as any,
         routeMode: o.routeMode,
-      });
+      }) as any;
 
       const sub = o.orderSubtotal;
       const total = sub != null ? sub.plus(delivery) : null;
@@ -123,7 +123,7 @@ export async function resyncOrdersAfterRegionPriceChange(
             courier.vehicleType,
             delivery,
           );
-          data.courierEarningDinar = earning;
+          data.courierEarningDinar = earning as any;
           data.courierEarningForCourierId =
             earning != null ? earningCourierId : null;
         }

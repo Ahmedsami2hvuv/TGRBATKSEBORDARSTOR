@@ -21,6 +21,7 @@ import { computeMandoubWalletRemainAllTimeDinar } from "./mandoub-wallet-carry";
 import { getDefaultTelegramNewOrderTemplate } from "./telegram-templates";
 
 const TARGET = "admin";
+const SECTION_TELEGRAM_NEW_ORDER = "telegram_new_order_template";
 
 export async function getTelegramNewOrderTemplate(): Promise<string> {
   try {
@@ -113,7 +114,7 @@ export async function notifyTelegramPreparerWalletEvent(input: {
   ].join("\n");
 
   const notificationBotToken = await getBotTokenByPurpose("notification");
-  await sendTelegramMessage(text, { botToken: notificationBotToken });
+  await sendTelegramMessage(text, { botToken: notificationBotToken || "" });
 
   if (preparer?.telegramUserId) {
     const preparerBotToken = await getBotTokenByPurpose("preparer");
@@ -244,7 +245,7 @@ export async function notifyTelegramAdminTransferUpdate(transferId: string, stat
   }
 
   const notificationBotToken = await getBotTokenByPurpose("notification");
-  await sendTelegramMessage(text, { botToken: notificationBotToken });
+  await sendTelegramMessage(text, { botToken: notificationBotToken || "" });
 }
 
 /** إشعار للمندوب عند استلام أو قبول/رفض تحويله */
@@ -428,7 +429,7 @@ export async function notifyTelegramMoneyEvent(input: any): Promise<void> {
 
   // إرسال للإدارة
   const notificationBotToken = await getBotTokenByPurpose("notification");
-  await sendTelegramMessage(textBase, { botToken: notificationBotToken });
+  await sendTelegramMessage(textBase, { botToken: notificationBotToken || "" });
 
   // إرسال للمندوب (رابط حسابه)
   if (order.courier?.telegramUserId) {
@@ -480,7 +481,7 @@ export async function notifyTelegramOrderPrepared(input: { orderId: string; botT
   const courierBotToken = input.botToken || await getBotTokenByPurpose("courier");
   await sendTelegramHtmlToChat(order.courier.telegramUserId, text, courierBotToken, { disable_notification: false });
 
-  await sendTelegramMessage(`\u200F✅ <b>تم تجهيز طلب #${order.orderNumber} وإسناده للمندوب ${escapeTelegramHtml(order.courier.name)}</b>`, { botToken: notificationBotToken });
+  await sendTelegramMessage(`\u200F✅ <b>تم تجهيز طلب #${order.orderNumber} وإسناده للمندوب ${escapeTelegramHtml(order.courier.name)}</b>`, { botToken: notificationBotToken || "" });
 }
 
 /** إشعار للمندوب عند إسناد طلب جديد له */
@@ -553,14 +554,14 @@ export async function notifyTelegramStoreOrder(draftId: string): Promise<void> {
   ].join("\n");
 
   const notificationBotToken = await getBotTokenByPurpose("notification");
-  await sendTelegramMessage(text, { botToken: notificationBotToken });
+  await sendTelegramMessage(text, { botToken: notificationBotToken || "" });
 }
 
 export async function notifyTelegramPresenceChange(input: any): Promise<void> {
   const label = input.kind === "courier" ? "مندوب" : "مجهز";
   const text = `<b>${label}:</b> ${escapeTelegramHtml(input.name)} \n${input.available ? "✅ متاح" : "⏸ غير متاح"}`;
   const notificationBotToken = await getBotTokenByPurpose("notification");
-  await sendTelegramMessage(text, { botToken: notificationBotToken });
+  await sendTelegramMessage(text, { botToken: notificationBotToken || "" });
 }
 
 export async function notifyTelegramSupplierPriceUpdate(input: {
@@ -585,7 +586,8 @@ export async function notifyTelegramSupplierPriceUpdate(input: {
   ].join("\n");
 
   const notificationBotToken = await getBotTokenByPurpose("notification");
-  await sendTelegramMessage(text, { botToken: notificationBotToken });
+  // إرسال لجروب الإشعارات
+  await sendTelegramMessage(text, { botToken: notificationBotToken || "" });
 }
 
 export async function notifyTelegramOrderCanceled(orderId: string): Promise<void> {
@@ -743,7 +745,7 @@ export async function notifyTelegramUnavailableProducts(input: {
   const adminBotToken = await getBotTokenByPurpose("admin") || await getBotTokenByPurpose("management") || notificationBotToken;
 
   // إرسال لجروب الإشعارات
-  await sendTelegramMessage(text, { botToken: notificationBotToken });
+  await sendTelegramMessage(text, { botToken: notificationBotToken || "" });
 
   // إرسال لبوت الإدارة (لجميع الإداريين النشطين في الخاص)
   if (adminBotToken) {

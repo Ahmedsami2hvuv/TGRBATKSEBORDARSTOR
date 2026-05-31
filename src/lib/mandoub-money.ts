@@ -105,7 +105,7 @@ export function deliveredSaderMismatch(
   totalAmount: Decimal | null,
   orderSubtotal: Decimal | null,
   deliveryPrice: Decimal | null,
-  deliveryEventAmount?: Decimal | null,
+  deliveryEventAmount?: Decimal | number | string | null,
 ): boolean {
   return isWardMismatch(status, totalAmount, deliveryEventAmount).type === "excess";
 }
@@ -116,7 +116,7 @@ export function deliveredWardMismatch(
   totalAmount: Decimal | null,
   orderSubtotal: Decimal | null,
   deliveryPrice: Decimal | null,
-  deliveryEventAmount?: Decimal | null,
+  deliveryEventAmount?: Decimal | number | string | null,
 ): boolean {
   return isWardMismatch(status, totalAmount, deliveryEventAmount).type === "deficit";
 }
