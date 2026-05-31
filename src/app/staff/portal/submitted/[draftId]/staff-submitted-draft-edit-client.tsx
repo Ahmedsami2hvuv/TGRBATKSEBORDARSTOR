@@ -79,6 +79,8 @@ export function StaffSubmittedDraftEditClient({
   const [rawListText, setRawListText] = useState(draft.rawListText || "");
   const [products, setProducts] = useState<ProductItem[]>(extractProductsArray(draft));
   const [selectedPreparerId, setSelectedPreparerId] = useState(draft.preparerId || "");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkPreparerId, setBulkPreparerId] = useState("");
 
   const [q, setQ] = useState(draft.customerRegion?.name ?? "");
   const [hits, setHits] = useState<RegionHit[]>([]);
@@ -132,6 +134,35 @@ export function StaffSubmittedDraftEditClient({
 
   const removeProduct = (idx: number) => {
     setProducts(products.filter((_, i) => i !== idx));
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const selectAll = () => {
+    if (selectedIds.length === products.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(products.map(p => p.id));
+    }
+  };
+
+  const bulkDelete = () => {
+    if (!confirm("هل أنت متأكد من حذف المنتجات المحددة؟")) return;
+    setProducts(products.filter(p => !selectedIds.includes(p.id)));
+    setSelectedIds([]);
+  };
+
+  const bulkAssign = (prepId: string) => {
+    if (!prepId) return;
+    setProducts(products.map(p =>
+      selectedIds.includes(p.id) ? { ...p, preparerId: prepId } : p
+    ));
+    setBulkPreparerId("");
+    setSelectedIds([]);
   };
 
   function translateDraftStatus(status: string): string {
@@ -286,41 +317,90 @@ export function StaffSubmittedDraftEditClient({
           <input type="hidden" name="productsJson" value={JSON.stringify(products)} />
 
           <div className="flex flex-col gap-2 max-h-96 overflow-y-auto pr-1">
-            {products.map((p, idx) => (
-              <div key={p.id} className="flex flex-col sm:flex-row gap-2 items-start sm:items-center bg-slate-50 p-2 rounded-xl border border-slate-200">
-                <input
-                  type="text"
-                  value={p.line}
-                  onChange={(e) => updateProduct(idx, { line: e.target.value })}
-                  placeholder={`المنتج ${idx + 1}...`}
-                  className={`${inputClass} !py-1.5 flex-1`}
-                  disabled={!canEdit}
-                  required
-                />
-                <select
-                  value={p.preparerId || ""}
-                  onChange={(e) => updateProduct(idx, { preparerId: e.target.value || null })}
-                  className={`${inputClass} !py-1.5 w-full sm:w-48 text-xs bg-white`}
-                  disabled={!canEdit}
-                >
-                  <option value="">(المجهز الافتراضي)</option>
-                  {preparers.map((prep) => (
-                    <option key={prep.id} value={prep.id}>
-                      {prep.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => removeProduct(idx)}
-                  disabled={!canEdit}
-                  className="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 p-1.5 rounded-lg transition disabled:opacity-50"
-                  title="حذف المنتج"
-                >
-                  <DynamicIcon icon={icons?.ui_delete || icons?.ui_error} className="w-4 h-4" fallback={<span>❌</span>} />
-                </button>
+            {selectedIds.length > 0 && canEdit && (
+              <div className="sticky top-0 z-10 bg-white p-3 rounded-xl border-2 border-indigo-100 shadow-sm flex flex-col gap-3 mb-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-indigo-900">التحكم بالمحدد ({selectedIds.length})</span>
+                  <button
+                    type="button"
+                    onClick={bulkDelete}
+                    className="text-[10px] font-black bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg border border-rose-100 hover:bg-rose-100 transition"
+                  >
+                    حذف المحددة
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    className={`${inputClass} !py-1.5 flex-1 text-xs`}
+                    value={bulkPreparerId}
+                    onChange={(e) => bulkAssign(e.target.value)}
+                  >
+                    <option value="">تخصيص مجهز للمحدد...</option>
+                    {preparers.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            ))}
+            )}
+
+            {products.map((p, idx) => {
+              const isSelected = selectedIds.includes(p.id);
+              return (
+                <div key={p.id} className={`flex flex-col gap-2 bg-white p-3 rounded-2xl border-2 transition-all ${isSelected ? 'border-indigo-400 bg-indigo-50/30' : 'border-slate-100'}`}>
+                  {/* شريط الأدوات فوق المنتج */}
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelect(p.id)}
+                        disabled={!canEdit}
+                        className="w-5 h-5 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-[10px] font-black text-slate-400"># {idx + 1}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={p.preparerId || ""}
+                        onChange={(e) => updateProduct(idx, { preparerId: e.target.value || null })}
+                        className="text-[10px] font-bold bg-sky-50 text-sky-800 border-none rounded-lg px-2 py-1 outline-none"
+                        disabled={!canEdit}
+                      >
+                        <option value="">(المجهز الافتراضي)</option>
+                        {preparers.map((prep) => (
+                          <option key={prep.id} value={prep.id}>
+                            {prep.name}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => removeProduct(idx)}
+                        disabled={!canEdit}
+                        className="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 p-1.5 rounded-lg transition disabled:opacity-50"
+                        title="حذف المنتج"
+                      >
+                        <DynamicIcon icon={icons?.ui_delete || icons?.ui_error} className="w-3.5 h-3.5" fallback={<span>❌</span>} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={p.line}
+                    onChange={(e) => updateProduct(idx, { line: e.target.value })}
+                    placeholder={`اكتب تفاصيل المنتج ${idx + 1}...`}
+                    className={`${inputClass} !border-none !shadow-none !bg-transparent !px-1 font-bold text-sm`}
+                    disabled={!canEdit}
+                    required
+                  />
+                </div>
+              );
+            })}
+
             {products.length === 0 && (
               <p className="text-xs text-rose-600 font-bold bg-rose-50 p-3 rounded-xl border border-rose-200 text-center">لا توجد منتجات، يرجى إضافة منتج واحد على الأقل.</p>
             )}
