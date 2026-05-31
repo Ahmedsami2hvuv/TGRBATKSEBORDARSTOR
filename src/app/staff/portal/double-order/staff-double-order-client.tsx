@@ -14,8 +14,8 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
 
   const [sellerPhone, setSellerPhone] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
-  const [orderTime, setOrderTime] = useState("فوري");
-  const [orderType, setOrderType] = useState("سيارة");
+  const [orderTime, setOrderTime] = useState("");
+  const [orderType, setOrderType] = useState("");
 
   const [sellerAmount, setSellerAmount] = useState(0);
   const [profit, setProfit] = useState(0);
