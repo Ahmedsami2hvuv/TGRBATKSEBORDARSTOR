@@ -792,9 +792,6 @@ export function AdminPricingPanel({
           )}
         </div>
       </div>
-        </div>
-      </div>
-    </div>
 
       {previewImageUrl ? (
         <div
