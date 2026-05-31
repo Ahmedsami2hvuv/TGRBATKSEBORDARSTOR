@@ -279,6 +279,7 @@ model Courier {
   showWhatsAppBtn             Boolean                  @default(true)
   showNotesBtn                Boolean                  @default(true)
   showVoiceNotesBtn           Boolean                  @default(true)
+  showMoneyBoxes              Boolean                  @default(true)
   mandoubTotalsResetAt        DateTime?
   mandoubWalletCarryOverDinar Decimal                  @default(0) @db.Decimal(14, 4)
   telegramUserId              String?                  @unique
