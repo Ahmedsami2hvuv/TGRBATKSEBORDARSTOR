@@ -1690,8 +1690,7 @@ export function PendingOrdersClient({
           </div>
         );
       })}
-
-
+    </div>
     </div>
   );
 }
