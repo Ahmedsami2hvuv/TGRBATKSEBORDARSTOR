@@ -254,6 +254,7 @@ export function AdminPricingPanel({
         pricedBy: null,
         assignedPreparerId: null,
         assignedPreparerName: null,
+        isFulfilledByAdmin: false,
       }));
   });
 
@@ -265,6 +266,7 @@ export function AdminPricingPanel({
   const [productAssigneeId, setProductAssigneeId] = useState("");
   const [deleteMode, setDeleteMode] = useState(false);
   const [showReassign, setShowReassign] = useState(false);
+  const [showBulkAdd, setShowBulkAdd] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [productPhotoById, setProductPhotoById] = useState<Record<string, string>>({});
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -298,6 +300,8 @@ export function AdminPricingPanel({
     if (isAdminFulfilled) {
       updatedItem.assignedPreparerId = null;
       updatedItem.assignedPreparerName = "تجهيز الإدارة 🏛️";
+    } else if (updatedItem.assignedPreparerName === "تجهيز الإدارة 🏛️") {
+      updatedItem.assignedPreparerName = null;
     }
 
     next[editingIndex] = updatedItem;
@@ -554,6 +558,7 @@ export function AdminPricingPanel({
             <div className="flex items-center justify-between border-t border-white/5 pt-2">
                <div className="flex items-center gap-2">
                   {footerActions}
+                  {extraActions}
                </div>
                <div className="flex items-center gap-2">
                   <div className="h-8 flex items-center gap-2 px-2.5 rounded-xl bg-white/5 border border-white/10">
@@ -916,8 +921,7 @@ export function AdminPricingPanel({
         </div>
       ) : null}
     </div>
-  </div>
-);
+  );
 }
 
 /** مكون إسناد الطلب للمندوب */
