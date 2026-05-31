@@ -428,18 +428,19 @@ export function AdminCreateOrderForm({
  }
 
  const canSubmit =
- !pending &&
- (submissionMode === "prep_draft"
- ? (products.length > 0 && selectedPreparerIds.length > 0 && Boolean(prepSelectedRegion))
- : (
- Boolean(orderType.trim()) &&
- Boolean(orderSubtotal.trim()) &&
- Boolean(firstPhone.trim()) &&
- Boolean(firstRegionId.trim()) &&
- (submissionMode !== "two_faces" || (Boolean(defaultDoubleShopId) && Boolean(secondPhone.trim()) && Boolean(secondRegionId.trim()))) &&
- (submissionMode !== "from_shop" || Boolean(shopId.trim()))
- )
- );
+   !pending &&
+   (submissionMode === "prep_draft"
+     ? (products.length > 0 && selectedPreparerIds.length > 0 && Boolean(prepSelectedRegion))
+     : (
+         Boolean(orderType.trim()) &&
+         Boolean(orderSubtotal.trim()) &&
+         Boolean(orderNoteTime.trim()) &&
+         Boolean(firstPhone.trim()) &&
+         Boolean(firstRegionId.trim()) &&
+         (submissionMode !== "two_faces" || (Boolean(secondPhone.trim()) && Boolean(secondRegionId.trim()))) &&
+         (submissionMode !== "from_shop" || Boolean(shopId.trim()))
+       )
+   );
 
  if (state.ok) {
  return (
@@ -823,19 +824,32 @@ export function AdminCreateOrderForm({
  />
  </label>
 
- {/* سعر الطلب */}
- <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>سعر الطلب</span>
- <input
- name="orderSubtotal"
- required
- className={ad.input}
- placeholder="اكتب السعر"
- inputMode="decimal"
- value={orderSubtotal}
- onChange={(e) => setOrderSubtotal(e.target.value)}
- />
- </label>
+                 {/* سعر الطلب */}
+                 <label className="flex flex-col gap-1 text-sm">
+                   <span className={ad.label}>سعر الطلب</span>
+                   <input
+                     name="orderSubtotal"
+                     required
+                     className={ad.input}
+                     placeholder="اكتب السعر"
+                     inputMode="decimal"
+                     value={orderSubtotal}
+                     onChange={(e) => setOrderSubtotal(e.target.value)}
+                   />
+                 </label>
+
+                 {/* وقت الطلب */}
+                 <label className="flex flex-col gap-1 text-sm">
+                   <span className={ad.label}>وقت الطلب (إجباري)</span>
+                   <input
+                     name="orderNoteTime"
+                     required
+                     className={ad.input}
+                     placeholder="مثال: الان"
+                     value={orderNoteTime}
+                     onChange={(e) => setOrderNoteTime(e.target.value)}
+                   />
+                 </label>
 
  {/* أقرب نقطة */}
  <label className="flex flex-col gap-1 text-sm">
@@ -883,18 +897,7 @@ export function AdminCreateOrderForm({
  />
  </label>
 
- {/* وقت الطلب */}
- <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>وقت الطلب (إجباري)</span>
- <input
- name="orderNoteTime"
- required
- className={ad.input}
- placeholder="مثال: الساعة 8 مساءً"
- value={orderNoteTime}
- onChange={(e) => setOrderNoteTime(e.target.value)}
- />
- </label>
+
 
  {/* ملاحظة كتابية */}
  <label className="flex flex-col gap-1 text-sm">
@@ -956,18 +959,44 @@ export function AdminCreateOrderForm({
  regionsLookup={regions}
  />
 
- {/* سعر الطلب */}
- <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>سعر الطلب</span>
- <input
- name="orderSubtotal"
- required
- className={ad.input}
- inputMode="decimal"
- value={orderSubtotal}
- onChange={(e) => setOrderSubtotal(e.target.value)}
- />
- </label>
+                 {/* نوع الطلب */}
+                 <label className="flex flex-col gap-1 text-sm">
+                   <span className={ad.label}>نوع الطلب</span>
+                   <input
+                     name="orderType"
+                     required
+                     className={ad.input}
+                     placeholder="مثال: مستلزمات"
+                     value={orderType}
+                     onChange={(e) => setOrderType(e.target.value)}
+                   />
+                 </label>
+
+                 {/* سعر الطلب */}
+                 <label className="flex flex-col gap-1 text-sm">
+                   <span className={ad.label}>سعر الطلب</span>
+                   <input
+                     name="orderSubtotal"
+                     required
+                     className={ad.input}
+                     inputMode="decimal"
+                     value={orderSubtotal}
+                     onChange={(e) => setOrderSubtotal(e.target.value)}
+                   />
+                 </label>
+
+                 {/* وقت الطلب */}
+                 <label className="flex flex-col gap-1 text-sm">
+                   <span className={ad.label}>وقت الطلب (إجباري)</span>
+                   <input
+                     name="orderNoteTime"
+                     required
+                     className={ad.input}
+                     placeholder="مثال: الان"
+                     value={orderNoteTime}
+                     onChange={(e) => setOrderNoteTime(e.target.value)}
+                   />
+                 </label>
 
  {/* اقرب نقطة داله للمرسل */}
  <label className="flex flex-col gap-1 text-sm">
@@ -1050,18 +1079,7 @@ export function AdminCreateOrderForm({
  {/* ملاحظة صوتية */}
  <ClientVoiceNoteField title="ملاحظة صوتية" wrapperClassName="" />
 
- {/* وقت الطلب */}
- <label className="flex flex-col gap-1 text-sm">
- <span className={ad.label}>وقت الطلب (إجباري)</span>
- <input
- name="orderNoteTime"
- required
- className={ad.input}
- placeholder="مثال: الساعة 8 مساءً"
- value={orderNoteTime}
- onChange={(e) => setOrderNoteTime(e.target.value)}
- />
- </label>
+
 
  {/* ملاحظة كتابية */}
  <label className="flex flex-col gap-1 text-sm">
