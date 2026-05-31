@@ -36,7 +36,15 @@ async function run() {
     const result = await getJson(url);
     console.log("--------------------------------------------------");
     console.log(`Response Status: ${result.statusCode}`);
-    console.log("Response Body:", JSON.stringify(result.body, null, 2));
+    if (result.body && typeof result.body === 'object') {
+      console.log(`Success: ${result.body.success}`);
+      console.log(`Logs:`, JSON.stringify(result.body.log, null, 2));
+      if (result.body.error) {
+        console.error(`Error:`, result.body.error);
+      }
+    } else {
+      console.log("Response Body (Raw):", result.body);
+    }
     console.log("--------------------------------------------------");
   } catch (err: any) {
     console.error("Request failed:", err.message || err);
