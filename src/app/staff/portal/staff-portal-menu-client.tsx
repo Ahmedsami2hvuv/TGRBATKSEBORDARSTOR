@@ -49,6 +49,21 @@ export function StaffPortalMenuClient({
       <div className="grid gap-3" style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
         {emp.canSubmitOrders && (
         <>
+          <a
+            href={`https://t.me/modf_Aboakbr_Bot?start=staff_${emp.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group w-full rounded-2xl bg-[#0088cc] py-4 text-sm font-black text-white shadow-lg transition active:scale-95 flex items-center justify-center gap-2"
+          >
+            <DynamicIcon
+              iconKey="ui_telegram"
+              config={icons}
+              className="w-5 h-5"
+              fallback={<span>🔹</span>}
+            />
+            {emp.telegramUserId ? "الحساب مرتبط بالتيليجرام ✅" : "ربط الحساب ببوت التيليجرام"}
+          </a>
+
           <Link
             href={`/staff/portal/preparation?${authQ}`}
             className="group w-full rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-700 py-4 text-sm font-black text-white shadow-lg transition active:scale-95 flex items-center justify-center gap-2"

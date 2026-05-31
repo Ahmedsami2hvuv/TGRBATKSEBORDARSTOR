@@ -24,6 +24,10 @@ import {
   handleCustomerCallback,
   handleCustomerPrivateMessage,
 } from "./telegram-customer-panel";
+import {
+  handleStaffTelegramCallback,
+  handleStaffTelegramMessage,
+} from "./telegram-staff-panel";
 
 /**
  * معالج الـ Webhook الرئيسي.
@@ -84,6 +88,8 @@ export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promis
     }
     else if (botPurpose === "customer") {
       await handleCustomerCallback(cb, botToken);
+    } else if (botPurpose === "employee" || botPurpose === "staff") {
+      await handleStaffTelegramCallback(cb, botToken);
     } else {
       console.warn(`[handleTelegramWebhook] No handler for bot purpose: ${botPurpose}`);
       const { answerCallbackQuery } = await import("./telegram");
@@ -147,6 +153,17 @@ export async function handleTelegramWebhook(body: any, bot: TelegramBot): Promis
     }
     else if (botPurpose === "customer") {
       await handleCustomerPrivateMessage(msg, botToken);
+    }
+    else if (botPurpose === "employee" || botPurpose === "staff") {
+      const handled = await handleStaffTelegramMessage(msg, botToken);
+      if (!handled) {
+        const { sendTelegramHtmlToChat } = await import("./telegram");
+        await sendTelegramHtmlToChat(
+          String(msg.from.id),
+          `<b>👨‍💼 بوت الموظفين</b>\n\nحسابك غير مرتبط بالنظام.\nيرجى الدخول من بوابة الموظف والضغط على زر "ربط التيليجرام".`,
+          botToken
+        );
+      }
     }
     else {
       // رد الطوارئ: إذا وصل البوت إلى هنا ولم يرد، نرسل رسالة ترحيبية بسيطة للتأكد من الاتصال

@@ -20,6 +20,10 @@ import { computeCourierDeliveryEarningDinar } from "@/lib/courier-earnings";
 import { reconcileMoneyEventsOnOrderStatusChange } from "@/lib/order-money-reconcile";
 import { syncOrderStatusFromActiveMoneyEvents } from "@/lib/mandoub-order-status-from-money";
 import { CourierWalletMiscDirection } from "@prisma/client";
+import {
+  notifyStaffOrderPickedUp,
+  notifyStaffOrderDelivered
+} from "@/lib/telegram-staff-panel";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { adminCookieName, verifyAdminToken } from "@/lib/auth";
@@ -138,6 +142,7 @@ export async function submitMandoubPickupMoney(
         data: { status: "delivering" },
       });
     });
+    void notifyStaffOrderPickedUp(orderId).catch(() => {});
     revalidateAdminTrackingForStatusChange();
     revalidateMandoubPaths(nextRaw);
     if (noRedirect) {
@@ -187,6 +192,7 @@ export async function submitMandoubPickupMoney(
     }
   });
   if (advanceStatus === "delivering" && order.status === "assigned") {
+    void notifyStaffOrderPickedUp(orderId).catch(() => {});
     revalidateAdminTrackingForStatusChange();
   }
 
@@ -309,6 +315,7 @@ export async function submitMandoubDeliveryMoney(
         },
       });
     });
+    void notifyStaffOrderDelivered(orderId).catch(() => {});
     revalidateAdminTrackingForStatusChange();
     revalidateMandoubPaths(nextRaw);
     if (noRedirect) {
@@ -422,6 +429,7 @@ export async function submitMandoubDeliveryMoney(
     return { error: "فشل الحفظ في قاعدة البيانات: " + e.message };
   }
   if (advanceStatus === "delivered" && order.status === "delivering") {
+    void notifyStaffOrderDelivered(orderId).catch(() => {});
     revalidateAdminTrackingForStatusChange();
   }
 

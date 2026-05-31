@@ -246,6 +246,7 @@ model StaffEmployee {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   portalToken         String        @default(cuid())
+  telegramUserId      String?       @unique
   canManageStore      Boolean       @default(false)
   canSubmitOrders     Boolean       @default(true)
   canViewArchived     Boolean       @default(false)
