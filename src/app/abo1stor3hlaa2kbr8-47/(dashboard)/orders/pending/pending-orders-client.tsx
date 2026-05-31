@@ -513,7 +513,21 @@ export function AdminPricingPanel({
         </>
       )}
 
-      <form action={formAction} className={hideContainer ? "flex-1 flex flex-col overflow-hidden" : "relative p-3 sm:p-5"}>
+      <form
+        action={formAction}
+        className={hideContainer ? "flex-1 flex flex-col overflow-hidden" : "relative p-3 sm:p-5"}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
+            const input = e.target as HTMLInputElement;
+            if (input.inputMode === "decimal" || input.type === "text") {
+              // إذا كنا في وضع تعديل سعر منتج، نمنع الـ Submit التلقائي للنموذج
+              if (editingIndex !== null) {
+                e.preventDefault();
+              }
+            }
+          }
+        }}
+      >
         <input type="hidden" name="productsJson" value={JSON.stringify(products)} />
         <input type="hidden" name="placesCount" value={placesCount} />
         {isDraft && <input type="hidden" name="autoCourierId" value={String(initialData?.autoCourierId ?? "")} />}
@@ -1264,7 +1278,7 @@ export function PendingOrdersClient({
 
   const pricingModalOrder = useMemo(() => {
     if (!pricingOpenId) return null;
-    return orders.find((o) => o.id === pricingOpenId) ?? null;
+    return orders.find((o) => o.id === pricingOpenId) || null;
   }, [pricingOpenId, orders]);
 
   useEffect(() => {
@@ -1295,8 +1309,8 @@ export function PendingOrdersClient({
     }
   }, [targetStatus]);
 
-  if (pricingOpenId && (isDraftMode || orders.some(o => o.id === pricingOpenId))) {
-    const order = orders.find(o => o.id === pricingOpenId)!;
+  if (pricingOpenId && pricingModalOrder) {
+    const order = pricingModalOrder;
     return (
       <div className="fixed inset-0 z-[500] bg-white dark:bg-slate-950 flex flex-col overflow-hidden">
         {/* Header الحفظ والإجراءات الأساسية */}
@@ -1310,8 +1324,8 @@ export function PendingOrdersClient({
               <span className="text-[11px] font-black">إغلاق</span>
             </button>
             <div className="pr-1">
-              <h2 className="text-xs font-black leading-none">طلب #{order.orderNumber}</h2>
-              <p className="text-[9px] font-bold text-slate-400 mt-1">{order.shopName || order.orderType}</p>
+              <h2 className="text-xs font-black leading-none">طلب #{order?.orderNumber || "—"}</h2>
+              <p className="text-[9px] font-bold text-slate-400 mt-1">{order?.shopName || order?.orderType || "—"}</p>
             </div>
           </div>
 
