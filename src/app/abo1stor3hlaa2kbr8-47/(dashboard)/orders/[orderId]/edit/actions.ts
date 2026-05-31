@@ -277,10 +277,10 @@ export async function updateOrderAdmin(
       }
     }
 
-    const updateData: Parameters<typeof tx.order.update>[0]["data"] = {
-      shopId,
-      submittedByEmployeeId: submittedByEmployeeIdRaw || null,
-      customerId: effectiveLinkedCustomerId,
+    const updateData: any = {
+      shop: { connect: { id: shopId } },
+      submittedBy: submittedByEmployeeIdRaw ? { connect: { id: submittedByEmployeeIdRaw } } : { disconnect: true },
+      customer: effectiveLinkedCustomerId ? { connect: { id: effectiveLinkedCustomerId } } : { disconnect: true },
       status,
       orderType,
       summary,
@@ -288,24 +288,31 @@ export async function updateOrderAdmin(
       alternatePhone: alternatePhone.trim() ? normalizeIraqMobileLocal11(alternatePhone) : null,
       customerLocationUrl: effectiveLocationUrl,
       customerLandmark: effectiveLandmark,
-      customerRegionId: customerRegionId || null,
+      customerRegion: customerRegionId ? { connect: { id: customerRegionId } } : { disconnect: true },
 
       secondCustomerPhone: secondCustomerPhone ? normalizeIraqMobileLocal11(secondCustomerPhone) : null,
       secondCustomerAlternatePhone: secondCustomerAlternatePhone ? normalizeIraqMobileLocal11(secondCustomerAlternatePhone) : null,
       secondCustomerLocationUrl,
       secondCustomerLandmark,
-      secondCustomerRegionId: secondCustomerRegionId || null,
+      secondCustomerRegion: secondCustomerRegionId ? { connect: { id: secondCustomerRegionId } } : { disconnect: true },
 
       orderSubtotal: subVal,
       deliveryPrice: delVal,
       totalAmount: totalFromSubDel,
       orderNoteTime,
-      assignedCourierId,
+      courier: assignedCourierId ? { connect: { id: assignedCourierId } } : { disconnect: true },
       preparerShoppingJson: nextPreparerShoppingJson || undefined,
-      ...(nextImageUrl != null ? { imageUrl: nextImageUrl, orderImageUploadedByName: ORDER_UPLOADER_ADMIN_LABEL } : {}),
       prepaidAll,
-      ...(nextArchivedAt !== undefined ? { archivedAt: nextArchivedAt } : {}),
     };
+
+    if (nextImageUrl != null) {
+      updateData.imageUrl = nextImageUrl;
+      updateData.orderImageUploadedByName = ORDER_UPLOADER_ADMIN_LABEL;
+    }
+
+    if (nextArchivedAt !== undefined) {
+      updateData.archivedAt = nextArchivedAt;
+    }
 
     if (status === "delivered" && assignedCourierId && delVal != null) {
       const courier = await tx.courier.findUnique({ where: { id: assignedCourierId } });
@@ -315,7 +322,7 @@ export async function updateOrderAdmin(
           new Decimal(delVal),
         );
         updateData.courierEarningDinar = earning;
-        updateData.courierEarningForCourierId = earning != null ? assignedCourierId : null;
+        updateData.courierEarningForCourier = earning != null ? { connect: { id: assignedCourierId } } : { disconnect: true };
       }
     }
 

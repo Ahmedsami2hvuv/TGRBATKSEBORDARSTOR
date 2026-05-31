@@ -115,7 +115,7 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
     }
   };
 
-  const totalAmount = sellerAmount + profit + deliveryPrice;
+  const commonOrderTypes = ["توصيل فقط", "تجهيز وتسوق", "نقل بضائع", "أخرى"];
 
   if (state.ok) return (
     <div className="kse-glass-dark rounded-2xl border border-emerald-300 p-6 text-center shadow-lg animate-in zoom-in">
@@ -265,25 +265,43 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
       <section className="space-y-4 rounded-2xl border border-sky-200 bg-sky-50/30 p-4">
         <h2 className="text-xs font-black text-sky-700 uppercase tracking-widest">تفاصيل المبلغ والتوقيت</h2>
 
-        <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-500 mr-1">نوع الطلب</label>
+        <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-2">
+                <label className="text-[11px] font-bold text-slate-500 mr-1">نوع الطلب *</label>
+                <div className="flex flex-wrap gap-2">
+                  {commonOrderTypes.map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setOrderType(t)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                        orderType === t
+                        ? "bg-sky-600 text-white shadow-md scale-105"
+                        : "bg-white border border-slate-200 text-slate-600 hover:bg-sky-50"
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
                 <input
                     name="orderType"
                     value={orderType}
                     onChange={e => setOrderType(e.target.value)}
-                    placeholder="اكتب نوع الطلب هنا"
+                    placeholder="أو اكتب نوعاً مخصصاً هنا..."
                     className={inputClass}
+                    required
                 />
             </div>
             <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-500 mr-1">وقت الطلب</label>
+                <label className="text-[11px] font-bold text-slate-500 mr-1">وقت الطلب *</label>
                 <input
                     name="orderTime"
                     value={orderTime}
                     onChange={e => setOrderTime(e.target.value)}
-                    placeholder="فوري، غداً..."
+                    placeholder="فوري، غداً، الساعة ٤..."
                     className={inputClass}
+                    required
                 />
             </div>
         </div>
