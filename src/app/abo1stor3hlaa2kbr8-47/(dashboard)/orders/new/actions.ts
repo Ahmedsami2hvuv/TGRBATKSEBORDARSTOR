@@ -369,6 +369,7 @@ export async function createAdminOrder(
       customerLandmark: firstLandmark,
       customerDoorPhotoUrl: firstDoorUrl || null,
       secondCustomerPhone: routeMode === "double" ? secondPhone : null,
+      secondCustomerAlternatePhone: routeMode === "double" ? (secondAlternatePhone || null) : null,
       secondCustomerRegion: routeMode === "double" ? { connect: { id: secondRegionId } } : { disconnect: true },
       secondCustomerLocationUrl: routeMode === "double" ? secondLocationUrl : "",
       secondCustomerLandmark: routeMode === "double" ? secondLandmark : "",

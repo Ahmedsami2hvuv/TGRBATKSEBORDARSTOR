@@ -428,6 +428,7 @@ model Order {
   routeMode                             String                   @default("single")
   adminOrderCode                        String                   @default("")
   secondCustomerPhone                   String?
+  secondCustomerAlternatePhone          String?
   secondCustomerRegionId                String?
   secondCustomerLocationUrl             String                   @default("")
   secondCustomerLandmark                String                   @default("")
