@@ -33,13 +33,14 @@ function customerOrderTimeLabel(orderNoteTime: string | null): string {
   return t.replace(/^وقت الطلب:\s*/i, "").trim() || t;
 }
 
-type PageProps = { searchParams: Promise<{ tab?: string; assignOrder?: string }> };
+type PageProps = { searchParams: Promise<{ tab?: string; assignOrder?: string; pricing?: string }> };
 
 export default async function PendingOrdersPage({ searchParams }: PageProps) {
   try {
     const sp = await searchParams;
     const activeTab = sp.tab ?? "new";
     const assignOrder = (sp.assignOrder ?? "").trim();
+    const pricingId = (sp.pricing ?? "").trim();
 
     // 1. جلب البيانات الثقيلة أولاً (الطلبات والمسودات)
     const [allActiveDrafts, allPendingOrders] = await Promise.all([
@@ -272,7 +273,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
         {activeTab === "new" && (
           <div className="space-y-4">
-            <PendingOrdersClient orders={newRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} initialAssignOrderId={activeTab === 'new' ? assignOrder : null} />
+            <PendingOrdersClient orders={newRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} initialAssignOrderId={activeTab === 'new' ? assignOrder : null} initialPricingId={pricingId} />
           </div>
         )}
 
@@ -282,7 +283,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
               <p className="text-center py-12 text-slate-400">لا توجد مسودات قيد التجهيز حالياً.</p>
             ) : (
               <div className="grid gap-3">
-                <PendingOrdersClient orders={safeGroupedDraftRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} isDraftMode />
+                <PendingOrdersClient orders={safeGroupedDraftRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} isDraftMode initialPricingId={pricingId} />
               </div>
             )}
           </div>
@@ -290,7 +291,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
 
         {activeTab === "completed" && (
           <div className="space-y-4">
-            <PendingOrdersClient orders={preparedRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} initialAssignOrderId={activeTab === 'completed' ? assignOrder : null} />
+            <PendingOrdersClient orders={preparedRows} couriers={safeCouriers} shops={safeShops} preparers={safePreparers} icons={safeIcons} initialAssignOrderId={activeTab === 'completed' ? assignOrder : null} initialPricingId={pricingId} />
           </div>
         )}
       </div>

@@ -1207,6 +1207,7 @@ export function PendingOrdersClient({
   shops = [],
   preparers = [],
   initialAssignOrderId,
+  initialPricingId,
   isDraftMode,
   icons: initialIcons,
 }: {
@@ -1215,6 +1216,7 @@ export function PendingOrdersClient({
   shops?: { id: string; name: string }[];
   preparers?: { id: string; name: string }[];
   initialAssignOrderId?: string | null;
+  initialPricingId?: string | null;
   isDraftMode?: boolean;
   icons?: GlobalIconsConfig | null;
 }) {
@@ -1223,9 +1225,21 @@ export function PendingOrdersClient({
   const [draftPreparerOpenId, setDraftPreparerOpenId] = useState<string | null>(null);
   const [draftCourierOpenId, setDraftCourierOpenId] = useState<string | null>(null);
   const [prepOpenId, setPrepOpenId] = useState<string | null>(null);
-  const [pricingOpenId, setPricingOpenId] = useState<string | null>(null);
+  const [pricingOpenId, setPricingOpenId] = useState<string | null>(initialPricingId || null);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(initialIcons || null);
+
+  // تحديث الرابط عند فتح أو إغلاق التسعير
+  const updatePricingUrl = (id: string | null) => {
+    setPricingOpenId(id);
+    const params = new URLSearchParams(window.location.search);
+    if (id) {
+      params.set("pricing", id);
+    } else {
+      params.delete("pricing");
+    }
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
 
   const pricingModalOrder = useMemo(() => {
     if (!pricingOpenId) return null;
@@ -1268,7 +1282,7 @@ export function PendingOrdersClient({
         <div className="sticky top-0 z-[600] flex items-center justify-between p-2 sm:p-3 bg-slate-900 text-white shadow-xl">
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setPricingOpenId(null)}
+              onClick={() => updatePricingUrl(null)}
               className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all"
             >
               <DynamicIcon icon={icons?.ui_close} fallback="✕" width={20} height={20} />
@@ -1305,7 +1319,7 @@ export function PendingOrdersClient({
                 preparers={preparers}
                 rawDeliveryPriceDinar={order.rawDeliveryPriceDinar}
                 onSuccess={() => {
-                  setPricingOpenId(null);
+                  updatePricingUrl(null);
                   router.refresh();
                 }}
                 icons={icons}
@@ -1313,7 +1327,7 @@ export function PendingOrdersClient({
                 footerActions={
                   <div className="flex items-center gap-2">
                     <RejectDraftButton draftId={order.id} icons={icons} />
-                    <DeleteFullOrderButton id={order.id} isDraft={true} onSuccess={() => { setPricingOpenId(null); router.refresh(); }} icons={icons} />
+                    <DeleteFullOrderButton id={order.id} isDraft={true} onSuccess={() => { updatePricingUrl(null); router.refresh(); }} icons={icons} />
                   </div>
                 }
               />
@@ -1401,7 +1415,7 @@ export function PendingOrdersClient({
                   ? "border-violet-400 bg-white dark:bg-slate-900 shadow-[0_30px_60px_rgba(139,92,246,0.15)] ring-2 ring-violet-200 dark:ring-violet-900/50"
                   : "border-white/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:border-violet-200 dark:hover:border-violet-800 ring-1 ring-white/20 dark:ring-white/10"
                 }`}
-                onClick={() => setPricingOpenId(o.id)}
+                onClick={() => updatePricingUrl(o.id)}
               >
                 {/* Visual Flair */}
                 <div className="absolute -left-10 -top-10 h-24 w-24 rounded-full bg-violet-400/5 dark:bg-violet-900/5 blur-2xl group-hover:bg-violet-400/10 transition-colors" />
@@ -1431,7 +1445,7 @@ export function PendingOrdersClient({
                           <DynamicIcon icon={icons?.ui_whatsapp} fallback="WA" width={16} height={16} />
                         </a>
                       )}
-                      <button onClick={(e) => { e.stopPropagation(); setPricingOpenId(o.id); }} className="h-10 px-4 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-black shadow-lg shadow-slate-200 dark:shadow-none hover:scale-105 active:scale-95 transition-all border border-white/10">
+                      <button onClick={(e) => { e.stopPropagation(); updatePricingUrl(o.id); }} className="h-10 px-4 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-black shadow-lg shadow-slate-200 dark:shadow-none hover:scale-105 active:scale-95 transition-all border border-white/10">
                         تعديل و تسعير
                       </button>
                     </div>
@@ -1552,14 +1566,14 @@ export function PendingOrdersClient({
                 </label>
                 <button
                   type="button"
-                  onClick={() => { setPricingOpenId(pricingOpen ? null : o.id); setAssignOpenId(null); setPrepOpenId(null); }}
+                  onClick={() => { updatePricingUrl(pricingOpen ? null : o.id); setAssignOpenId(null); setPrepOpenId(null); }}
                   className={`h-11 w-11 flex items-center justify-center rounded-2xl border shadow-lg transition-all hover:scale-110 active:scale-90 ${pricingOpen ? "bg-amber-500 text-white border-amber-600 shadow-amber-200 dark:shadow-none" : "bg-white dark:bg-slate-800 text-amber-500 border-amber-100 dark:border-amber-900/50"}`}
                 >
                   <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={22} height={22} />
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setAssignOpenId(assignOpen ? null : o.id); setPricingOpenId(null); setPrepOpenId(null); }}
+                  onClick={() => { setAssignOpenId(assignOpen ? null : o.id); updatePricingUrl(null); setPrepOpenId(null); }}
                   className={`h-11 w-11 flex items-center justify-center rounded-2xl border shadow-lg transition-all hover:scale-110 active:scale-90 ${assignOpen ? "bg-emerald-500 text-white border-emerald-600 shadow-emerald-200 dark:shadow-none" : "bg-white dark:bg-slate-800 text-emerald-500 border-emerald-100 dark:border-emerald-900/50"}`}
                 >
                   <CheckIcon icons={icons} />
@@ -1630,7 +1644,7 @@ export function PendingOrdersClient({
                   shops={shops}
                   preparers={preparers}
                   rawDeliveryPriceDinar={o.rawDeliveryPriceDinar}
-                  onSuccess={() => { setPricingOpenId(null); isDraftMode && router.refresh(); }}
+                  onSuccess={() => { updatePricingUrl(null); isDraftMode && router.refresh(); }}
                   icons={icons}
                   extraActions={<RejectButton orderId={o.id} icons={icons} />}
                   hideContainer={true}
