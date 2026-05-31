@@ -10,7 +10,7 @@ import {
 import { ORDER_UPLOADER_ADMIN_LABEL } from "@/lib/order-uploader-label";
 import { prisma } from "@/lib/prisma";
 import { deleteFromR2 } from "@/lib/upload-storage";
-import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
+import { syncPhoneProfileFromOrder, syncSecondPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -36,14 +36,18 @@ export async function uploadCustomerDoorPhotoFromView(
   }
 
   const file = formData.get("customerDoorPhoto");
+  const targetRaw = String(formData.get("target") ?? "first");
+  const isSecond = targetRaw === "second";
+
   if (!(file instanceof File) || file.size <= 0) {
     return { error: "اختر صورة أولاً" };
   }
 
   let photoUrl: string;
   try {
-    if (order.customerDoorPhotoUrl) {
-      await deleteFromR2(order.customerDoorPhotoUrl);
+    const currentUrl = isSecond ? order.secondCustomerDoorPhotoUrl : order.customerDoorPhotoUrl;
+    if (currentUrl) {
+      await deleteFromR2(currentUrl);
     }
     photoUrl = await saveCustomerDoorPhotoUploaded(file, MAX_ORDER_IMAGE_BYTES);
   } catch (e) {
@@ -62,13 +66,19 @@ export async function uploadCustomerDoorPhotoFromView(
 
   await prisma.order.update({
     where: { id: order.id },
-    data: {
+    data: isSecond ? {
+      secondCustomerDoorPhotoUrl: photoUrl,
+    } : {
       customerDoorPhotoUrl: photoUrl,
       customerDoorPhotoUploadedByName: ORDER_UPLOADER_ADMIN_LABEL,
     },
   });
 
-  await syncPhoneProfileFromOrder(order.id);
+  if (isSecond) {
+    await syncSecondPhoneProfileFromOrder(order.id);
+  } else {
+    await syncPhoneProfileFromOrder(order.id);
+  }
 
   // ملاحظة: لا نستدعي revalidatePath هنا لأن المستخدم قد يكون في صفحة التعديل
   // ويريد متابعة إدخال البيانات دون انتظار لحاقة الصفحة. سيتم التحديث عند حفظ الطلب.
@@ -223,7 +233,11 @@ export async function uploadCustomerLocationFromView(
       },
     });
 
-    await syncPhoneProfileFromOrder(orderId);
+    if (isSecond) {
+      await syncSecondPhoneProfileFromOrder(orderId);
+    } else {
+      await syncPhoneProfileFromOrder(orderId);
+    }
 
     revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
     revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
@@ -249,14 +263,29 @@ export async function deleteOrderImageAction(orderId: string): Promise<CustomerD
   return { ok: true };
 }
 
-export async function deleteCustomerDoorPhotoAction(orderId: string): Promise<CustomerDoorPhotoState> {
-  const existing = await prisma.order.findUnique({ where: { id: orderId }, select: { customerDoorPhotoUrl: true } });
-  if (existing?.customerDoorPhotoUrl) {
-    await deleteFromR2(existing.customerDoorPhotoUrl);
+export async function deleteCustomerDoorPhotoAction(
+  orderId: string,
+  isSecond: boolean = false
+): Promise<CustomerDoorPhotoState> {
+  const existing = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { customerDoorPhotoUrl: true, secondCustomerDoorPhotoUrl: true }
+  });
+
+  const urlToDelete = isSecond ? existing?.secondCustomerDoorPhotoUrl : existing?.customerDoorPhotoUrl;
+
+  if (urlToDelete) {
+    await deleteFromR2(urlToDelete);
   }
+
   await prisma.order.update({
     where: { id: orderId },
-    data: { customerDoorPhotoUrl: null, customerDoorPhotoUploadedByName: null },
+    data: isSecond ? {
+      secondCustomerDoorPhotoUrl: null
+    } : {
+      customerDoorPhotoUrl: null,
+      customerDoorPhotoUploadedByName: null
+    },
   });
   // ملاحظة: قد تحتاج لمزامنة PhoneProfile إن كان هذا السلوك مطلوباً
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);

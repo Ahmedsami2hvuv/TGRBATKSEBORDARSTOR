@@ -4,7 +4,7 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { unlink } from "fs/promises";
 import path from "path";
 import { cookies } from "next/headers";
-import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
+import { syncPhoneProfileFromOrder, syncSecondPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
 import { computeCourierDeliveryEarningDinar } from "@/lib/courier-earnings";
 import {
   MAX_ORDER_IMAGE_BYTES,
@@ -96,6 +96,7 @@ export async function setAdminOrderCustomerLocationFromGeolocation(
     },
   });
   await syncPhoneProfileFromOrder(orderId);
+  await syncSecondPhoneProfileFromOrder(orderId);
   revalidateAdminOrderPaths(orderId);
   return { ok: true, locationUrl: mapsUrl };
 }
@@ -170,6 +171,13 @@ export async function updateOrderAdmin(
   const customerLocationUrl = String(formData.get("customerLocationUrl") ?? "").trim();
   const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
   const customerRegionId = String(formData.get("customerRegionId") ?? "").trim();
+
+  const secondCustomerPhone = String(formData.get("secondCustomerPhone") ?? "").trim();
+  const secondCustomerAlternatePhone = String(formData.get("secondCustomerAlternatePhone") ?? "").trim();
+  const secondCustomerLocationUrl = String(formData.get("secondCustomerLocationUrl") ?? "").trim();
+  const secondCustomerLandmark = String(formData.get("secondCustomerLandmark") ?? "").trim();
+  const secondCustomerRegionId = String(formData.get("secondCustomerRegionId") ?? "").trim();
+
   const orderNoteTime = String(formData.get("orderNoteTime") ?? "").trim();
   const courierRaw = String(formData.get("assignedCourierId") ?? "").trim();
   const customerIdRaw = String(formData.get("customerId") ?? "").trim();
@@ -264,6 +272,13 @@ export async function updateOrderAdmin(
       customerLocationUrl: effectiveLocationUrl,
       customerLandmark: effectiveLandmark,
       customerRegionId: customerRegionId || null,
+
+      secondCustomerPhone: secondCustomerPhone ? normalizeIraqMobileLocal11(secondCustomerPhone) : null,
+      secondCustomerAlternatePhone: secondCustomerAlternatePhone ? normalizeIraqMobileLocal11(secondCustomerAlternatePhone) : null,
+      secondCustomerLocationUrl,
+      secondCustomerLandmark,
+      secondCustomerRegionId: secondCustomerRegionId || null,
+
       orderSubtotal: subVal,
       deliveryPrice: delVal,
       totalAmount: totalFromSubDel,
@@ -294,6 +309,7 @@ export async function updateOrderAdmin(
   });
 
   await syncPhoneProfileFromOrder(orderId);
+  await syncSecondPhoneProfileFromOrder(orderId);
 
   if (isBlocked) {
     await blockCustomerAction(phoneLocal);

@@ -17,9 +17,11 @@ const initial: CustomerDoorPhotoState = {};
 export function CustomerDoorPhotoQuick({
   orderId,
   hasImage,
+  isSecondCustomer = false,
 }: {
   orderId: string;
   hasImage?: boolean;
+  isSecondCustomer?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [state, formAction, pending] = useActionState(
@@ -32,7 +34,7 @@ export function CustomerDoorPhotoQuick({
     if (!confirm("هل أنت متأكد من مسح صورة باب الزبون؟")) return;
     setDeleting(true);
     try {
-      await deleteCustomerDoorPhotoAction(orderId);
+      await deleteCustomerDoorPhotoAction(orderId, isSecondCustomer);
     } finally {
       setDeleting(false);
     }
@@ -53,6 +55,9 @@ export function CustomerDoorPhotoQuick({
 
     const fd = new FormData();
     fd.set("customerDoorPhoto", photoToUpload);
+    if (isSecondCustomer) {
+      fd.set("target", "second");
+    }
     await formAction(fd);
 
     if (fileRef.current) {

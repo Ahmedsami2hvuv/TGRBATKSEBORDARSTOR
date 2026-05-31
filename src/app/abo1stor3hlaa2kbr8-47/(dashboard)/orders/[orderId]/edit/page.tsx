@@ -186,6 +186,7 @@ export default async function EditOrderPage({ params }: Props) {
         <OrderEditForm
           orderId={order.id}
           orderNumber={order.orderNumber}
+          routeMode={order.routeMode as "single" | "double"}
           defaultShopId={order.shopId}
           defaultSubmittedByEmployeeId={defaultSubmittedByEmployeeId}
           employees={employeesAll}
@@ -199,6 +200,12 @@ export default async function EditOrderPage({ params }: Props) {
           defaultCustomerId={order.customerId ?? ""}
           customers={customers}
           defaultCustomerRegionId={order.customerRegionId ?? ""}
+          defaultSecondCustomerPhone={order.secondCustomerPhone ?? ""}
+          defaultSecondAlternatePhone={order.secondCustomerAlternatePhone ?? ""}
+          defaultSecondCustomerRegionId={order.secondCustomerRegionId ?? ""}
+          defaultSecondCustomerLocationUrl={order.secondCustomerLocationUrl ?? ""}
+          defaultSecondCustomerLandmark={order.secondCustomerLandmark ?? ""}
+          defaultSecondCustomerDoorPhotoUrl={order.secondCustomerDoorPhotoUrl}
           defaultImageUrl={order.imageUrl?.startsWith("data:") ? `/api/image/order/${order.id}/image` : order.imageUrl}
           defaultOrderImageUploadedByName={order.orderImageUploadedByName}
           defaultCustomerDoorPhotoUrl={defaultCustomerDoorPhotoUrlEffective}

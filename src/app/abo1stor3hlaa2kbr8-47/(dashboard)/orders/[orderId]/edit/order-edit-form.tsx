@@ -55,6 +55,7 @@ type EmployeeOpt = { id: string; shopId: string; name: string };
 export function OrderEditForm({
   orderId,
   orderNumber,
+  routeMode = "single",
   defaultShopId,
   defaultSubmittedByEmployeeId,
   employees,
@@ -68,6 +69,12 @@ export function OrderEditForm({
   defaultCustomerId,
   customers,
   defaultCustomerRegionId,
+  defaultSecondCustomerPhone = "",
+  defaultSecondAlternatePhone = "",
+  defaultSecondCustomerRegionId = "",
+  defaultSecondCustomerLocationUrl = "",
+  defaultSecondCustomerLandmark = "",
+  defaultSecondCustomerDoorPhotoUrl = null,
   defaultImageUrl,
   defaultOrderImageUploadedByName,
   defaultCustomerDoorPhotoUrl,
@@ -88,6 +95,7 @@ export function OrderEditForm({
 }: {
   orderId: string;
   orderNumber: number;
+  routeMode?: "single" | "double";
   defaultShopId: string;
   defaultSubmittedByEmployeeId: string;
   employees: EmployeeOpt[];
@@ -101,6 +109,12 @@ export function OrderEditForm({
   defaultCustomerId: string;
   customers: CustomerOpt[];
   defaultCustomerRegionId: string;
+  defaultSecondCustomerPhone?: string;
+  defaultSecondAlternatePhone?: string;
+  defaultSecondCustomerRegionId?: string;
+  defaultSecondCustomerLocationUrl?: string;
+  defaultSecondCustomerLandmark?: string;
+  defaultSecondCustomerDoorPhotoUrl?: string | null;
   defaultImageUrl: string | null;
   defaultOrderImageUploadedByName: string | null;
   defaultCustomerDoorPhotoUrl: string | null;
@@ -132,6 +146,13 @@ export function OrderEditForm({
   const [customerRegionId, setCustomerRegionId] = useState(defaultCustomerRegionId);
   const [custLocationUrl, setCustLocationUrl] = useState(defaultCustomerLocationUrl);
   const [custLandmark, setCustLandmark] = useState(defaultCustomerLandmark);
+
+  const [secondCustomerPhone, setSecondCustomerPhone] = useState(defaultSecondCustomerPhone);
+  const [secondAlternatePhone, setSecondAlternatePhone] = useState(defaultSecondAlternatePhone);
+  const [secondCustomerRegionId, setSecondCustomerRegionId] = useState(defaultSecondCustomerRegionId);
+  const [secondCustLocationUrl, setSecondCustLocationUrl] = useState(defaultSecondCustomerLocationUrl);
+  const [secondCustLandmark, setSecondCustLandmark] = useState(defaultSecondCustomerLandmark);
+
   const [isBlocked, setIsBlocked] = useState(!!defaultIsBlocked);
   const [locBusy, setLocBusy] = useState(false);
   const [confirmClearLoc, setConfirmClearLoc] = useState(false);
@@ -326,6 +347,11 @@ export function OrderEditForm({
     return regions.find((r) => r.id === customerRegionId)?.name ?? null;
   }, [customerRegionId, regions]);
 
+  const secondSelectedRegionName = useMemo(() => {
+    if (!secondCustomerRegionId.trim()) return null;
+    return regions.find((r) => r.id === secondCustomerRegionId)?.name ?? null;
+  }, [secondCustomerRegionId, regions]);
+
   const courierRadioOptions = useMemo(
     () => [
       { value: "", label: "بدون إسناد" },
@@ -336,6 +362,7 @@ export function OrderEditForm({
 
   const imgSrc = resolvePublicAssetSrc(defaultImageUrl);
   const customerDoorSrc = resolvePublicAssetSrc(defaultCustomerDoorPhotoUrl);
+  const secondCustomerDoorSrc = resolvePublicAssetSrc(defaultSecondCustomerDoorPhotoUrl);
   const voiceSrc = resolvePublicAssetSrc(defaultVoiceNoteUrl);
 
   return (
@@ -731,7 +758,7 @@ export function OrderEditForm({
 
       <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className={ad.label}>صورة باب الزبون</span>
+          <span className={ad.label}>صورة باب الزبون (المستلم/الوجهة الأولى)</span>
           <CustomerDoorPhotoQuick orderId={orderId} hasImage={!!defaultCustomerDoorPhotoUrl} />
         </div>
         {customerDoorSrc ? (
@@ -748,6 +775,98 @@ export function OrderEditForm({
           <p className="mt-2 text-xs text-slate-500">لا توجد صورة باب زبون مرفوعة حالياً.</p>
         )}
       </div>
+
+      {routeMode === "double" && (
+        <div className="space-y-6 rounded-2xl border-2 border-dashed border-sky-300 bg-sky-50/20 p-4 shadow-sm">
+          <div className="flex items-center gap-2 border-b border-sky-100 pb-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-600 text-[10px] font-bold text-white">2</div>
+            <h2 className="text-sm font-black text-sky-900">بيانات الوجهة الثانية (المستلم الثاني)</h2>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className={ad.label}>منطقة الوجهة الثانية</span>
+              <AdminRegionSearchPicker
+                name="secondCustomerRegionId"
+                regions={regions.map((r) => ({ id: r.id, name: r.name }))}
+                value={secondCustomerRegionId}
+                onValueChange={setSecondCustomerRegionId}
+                allowEmpty
+                placeholder="اكتب جزءاً من اسم المنطقة للبحث…"
+              />
+            </label>
+            {secondSelectedRegionName && (
+              <p className={`text-xs leading-relaxed ${ad.muted}`}>
+                المنطقة المختارة: <strong className="text-slate-900">{secondSelectedRegionName}</strong>.
+              </p>
+            )}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className={ad.label}>رقم المستلم الثاني</span>
+              <input
+                name="secondCustomerPhone"
+                value={secondCustomerPhone}
+                onChange={(e) => setSecondCustomerPhone(e.target.value)}
+                className={ad.input}
+                dir="ltr"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className={ad.label}>رقم ثانٍ للمستلم</span>
+              <input
+                name="secondCustomerAlternatePhone"
+                value={secondAlternatePhone}
+                onChange={(e) => setSecondAlternatePhone(e.target.value)}
+                className={ad.input}
+                dir="ltr"
+              />
+            </label>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className={ad.label}>موقع الوجهة الثانية (رابط)</span>
+              <input
+                name="secondCustomerLocationUrl"
+                value={secondCustLocationUrl}
+                onChange={(e) => setSecondCustLocationUrl(e.target.value)}
+                className={ad.input}
+                dir="ltr"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className={ad.label}>نقطة دالة للوجهة الثانية</span>
+              <input
+                name="secondCustomerLandmark"
+                value={secondCustLandmark}
+                onChange={(e) => setSecondCustLandmark(e.target.value)}
+                className={ad.input}
+              />
+            </label>
+          </div>
+
+          <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className={ad.label}>صورة باب الوجهة الثانية</span>
+              <CustomerDoorPhotoQuick orderId={orderId} hasImage={!!defaultSecondCustomerDoorPhotoUrl} isSecondCustomer />
+            </div>
+            {secondCustomerDoorSrc ? (
+              <div className="mt-3">
+                <a href={secondCustomerDoorSrc} target="_blank" rel="noopener noreferrer" className="block">
+                  <div className="aspect-square max-w-xs overflow-hidden rounded-lg border border-sky-200 bg-slate-50">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={secondCustomerDoorSrc} alt="صورة باب الوجهة الثانية" className="h-full w-full object-cover" />
+                  </div>
+                </a>
+              </div>
+            ) : (
+              <p className="mt-2 text-xs text-slate-500">لا توجد صورة باب مرفوعة حالياً.</p>
+            )}
+          </div>
+        </div>
+      )}
 
       <label className="flex flex-col gap-1 text-sm">
         <span className={summaryText.trim() ? "text-sm font-bold text-rose-800" : ad.label}>

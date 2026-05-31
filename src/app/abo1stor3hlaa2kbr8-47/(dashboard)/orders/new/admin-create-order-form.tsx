@@ -949,6 +949,30 @@ export function AdminCreateOrderForm({
  regionsLookup={regions}
  />
 
+ {firstPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات المرسل...</p>}
+ {firstPrefill && (
+ <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900 shadow-sm transition-all">
+ <div className="flex justify-between items-start gap-3">
+ <div className="space-y-1 flex-1">
+ <p className="font-bold text-emerald-800">بيانات محفوظة للمرسل:</p>
+ <p className="text-xs">المنطقة: {regions.find(r => r.id === firstPrefill.customerRegionId)?.name || '—'}</p>
+ <p className="text-xs italic text-slate-600">أقرب نقطة: {firstPrefill.customerLandmark || 'لا يوجد'}</p>
+ </div>
+ {firstPrefill.customerDoorPhotoUrl && (
+ <img src={doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl) || ""} className="h-14 w-14 rounded object-cover border" alt="" />
+ )}
+ </div>
+ <button type="button" className="mt-2 w-full rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-md" onClick={() => {
+ setFirstRegionId(firstPrefill.customerRegionId ?? "");
+ setFirstLocationUrl(firstPrefill.customerLocationUrl ?? "");
+ setFirstLandmark(firstPrefill.customerLandmark ?? "");
+ setFirstAlternatePhone(firstPrefill.alternatePhone ?? "");
+ setFirstSavedDoorPhotoUrl(doorPhotoUrlForDisplay(firstPrefill.customerDoorPhotoUrl));
+ setFirstRawDoorPhotoUrl(firstPrefill.customerDoorPhotoUrl);
+ }}>تطبيق بيانات المرسل</button>
+ </div>
+ )}
+
  {/* منطقة المستلم */}
  <RegionSearchPicker
  fieldName="secondCustomerRegionId"
@@ -958,6 +982,30 @@ export function AdminCreateOrderForm({
  onValueChange={setSecondRegionId}
  regionsLookup={regions}
  />
+
+ {secondPrefillLoading && <p className="text-xs text-slate-500 italic">جارٍ البحث عن بيانات المستلم...</p>}
+ {secondPrefill && (
+ <div className="rounded-xl border border-sky-300 bg-sky-50 p-3 text-sm text-sky-900 shadow-sm transition-all">
+ <div className="flex justify-between items-start gap-3">
+ <div className="space-y-1 flex-1">
+ <p className="font-bold text-sky-800">بيانات محفوظة للمستلم:</p>
+ <p className="text-xs">المنطقة: {regions.find(r => r.id === secondPrefill.customerRegionId)?.name || '—'}</p>
+ <p className="text-xs italic text-slate-600">أقرب نقطة: {secondPrefill.customerLandmark || 'لا يوجد'}</p>
+ </div>
+ {secondPrefill.customerDoorPhotoUrl && (
+ <img src={doorPhotoUrlForDisplay(secondPrefill.customerDoorPhotoUrl) || ""} className="h-14 w-14 rounded object-cover border" alt="" />
+ )}
+ </div>
+ <button type="button" className="mt-2 w-full rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-md" onClick={() => {
+ setSecondRegionId(secondPrefill.customerRegionId ?? "");
+ setSecondLocationUrl(secondPrefill.customerLocationUrl ?? "");
+ setSecondLandmark(secondPrefill.customerLandmark ?? "");
+ setSecondAlternatePhone(secondPrefill.alternatePhone ?? "");
+ setSecondSavedDoorPhotoUrl(doorPhotoUrlForDisplay(secondPrefill.customerDoorPhotoUrl));
+ setSecondRawDoorPhotoUrl(secondPrefill.customerDoorPhotoUrl);
+ }}>تطبيق بيانات المستلم</button>
+ </div>
+ )}
 
                  {/* نوع الطلب */}
                  <label className="flex flex-col gap-1 text-sm">
