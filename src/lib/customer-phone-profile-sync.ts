@@ -149,10 +149,11 @@ export async function upsertCustomerPhoneProfileFromOrderSnapshot(input: {
   forceClearLocation?: boolean;
 }): Promise<void> {
   const phone = normalizeIraqMobileLocal11(input.phone.trim()) ?? "";
-  if (!phone || !input.regionId) return;
+  const regionId = input.regionId?.trim();
+  if (!phone || !regionId) return;
 
   const existing = await prisma.customerPhoneProfile.findUnique({
-    where: { phone_regionId: { phone, regionId: input.regionId } },
+    where: { phone_regionId: { phone, regionId } },
   });
 
   const nextDoor = input.doorPhotoUrl.trim() || existing?.photoUrl?.trim() || "";
@@ -163,10 +164,10 @@ export async function upsertCustomerPhoneProfileFromOrderSnapshot(input: {
   const nextAlt = input.alternatePhone ?? existing?.alternatePhone ?? null;
 
   await prisma.customerPhoneProfile.upsert({
-    where: { phone_regionId: { phone, regionId: input.regionId } },
+    where: { phone_regionId: { phone, regionId } },
     create: {
       phone,
-      regionId: input.regionId,
+      regionId,
       locationUrl: nextLoc,
       landmark: nextLandmark,
       photoUrl: nextDoor,

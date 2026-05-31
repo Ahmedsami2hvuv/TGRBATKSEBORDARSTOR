@@ -682,6 +682,43 @@ export async function notifyTelegramDraftCanceled(draftId: string): Promise<void
   }
 }
 
+/** إشعار للموظف عند تسوية أرباحه أو تحديث حالة طلبه */
+export async function notifyTelegramStaffOrderUpdate(input: {
+  staffId: string;
+  orderNumber: number;
+  orderId: string;
+  status: string;
+  profitSettled?: boolean;
+  profitAmount?: number;
+}): Promise<void> {
+  const staff = await prisma.staffEmployee.findUnique({ where: { id: input.staffId } });
+  if (!staff?.telegramUserId) return;
+
+  let title = "🔔 تحديث على طلبك";
+  let statusText = input.status;
+  if (input.status === "delivered") statusText = "✅ تم التوصيل";
+  else if (input.status === "cancelled") statusText = "❌ تم الإلغاء";
+  else if (input.status === "archived") statusText = "📦 تمت الأرشفة";
+
+  const lines = [
+    `<b>${title}</b>`,
+    `🔢 <b>رقم الطلب:</b> <code>#${input.orderNumber}</code>`,
+    `📍 <b>الحالة الجديدة:</b> ${statusText}`,
+  ];
+
+  if (input.profitAmount !== undefined) {
+    lines.push(`💰 <b>مبلغ الربح:</b> ${formatDinarAsAlfWithUnit(input.profitAmount)}`);
+  }
+
+  if (input.profitSettled) {
+    lines.push(`✅ <b>تم تسوية الربح بنجاح</b>`);
+  }
+
+  const text = lines.join("\n");
+  const notificationBotToken = await getBotTokenByPurpose("notification");
+  await sendTelegramHtmlToChat(staff.telegramUserId, text, notificationBotToken).catch(console.error);
+}
+
 export async function notifyTelegramUnavailableProducts(input: {
   preparerName: string;
   customerRegion: string;

@@ -6,6 +6,7 @@ import path from "path";
 import { cookies } from "next/headers";
 import { syncPhoneProfileFromOrder, syncSecondPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
 import { computeCourierDeliveryEarningDinar } from "@/lib/courier-earnings";
+import { notifyTelegramStaffOrderUpdate } from "@/lib/telegram-notify";
 import {
   MAX_ORDER_IMAGE_BYTES,
   saveOrderImageUploaded,
@@ -260,6 +261,22 @@ export async function updateOrderAdmin(
       await reconcileMoneyEventsOnOrderStatusChange(tx, orderId, existing.status, status);
     }
 
+    // منطق تحديث أرباح الموظف إذا كان الطلب من بوابة الموظفين (routeMode = double)
+    let nextPreparerShoppingJson = existing.preparerShoppingJson;
+    if (existing.routeMode === "double" && nextPreparerShoppingJson && typeof nextPreparerShoppingJson === "object") {
+      const json = { ...(nextPreparerShoppingJson as any) };
+      const oldSub = existing.orderSubtotal ? new Decimal(existing.orderSubtotal) : new Decimal(0);
+      const newSub = subVal ? new Decimal(subVal) : new Decimal(0);
+
+      if (!oldSub.equals(newSub)) {
+        const diff = newSub.minus(oldSub);
+        const oldProfit = new Decimal(json.staffProfit || 0);
+        // الربح الجديد = الربح القديم + الفرق (سواء زيادة أو نقصان)
+        json.staffProfit = oldProfit.plus(diff).toNumber();
+        nextPreparerShoppingJson = json;
+      }
+    }
+
     const updateData: Parameters<typeof tx.order.update>[0]["data"] = {
       shopId,
       submittedByEmployeeId: submittedByEmployeeIdRaw || null,
@@ -284,6 +301,7 @@ export async function updateOrderAdmin(
       totalAmount: totalFromSubDel,
       orderNoteTime,
       assignedCourierId,
+      preparerShoppingJson: nextPreparerShoppingJson || undefined,
       ...(nextImageUrl != null ? { imageUrl: nextImageUrl, orderImageUploadedByName: ORDER_UPLOADER_ADMIN_LABEL } : {}),
       prepaidAll,
       ...(nextArchivedAt !== undefined ? { archivedAt: nextArchivedAt } : {}),
@@ -307,6 +325,20 @@ export async function updateOrderAdmin(
     });
     await syncOrderCourierMoneyExpectations(tx, orderId);
   });
+
+  // إشعار الموظف في حال تغير حالة الطلب
+  if (existing.routeMode === "double" && existing.preparerShoppingJson && typeof existing.preparerShoppingJson === "object") {
+    const json = existing.preparerShoppingJson as any;
+    if (json.staffId && existing.status !== status) {
+      void notifyTelegramStaffOrderUpdate({
+        staffId: json.staffId,
+        orderNumber: existing.orderNumber,
+        orderId: existing.id,
+        status: status,
+        profitAmount: json.staffProfit
+      }).catch(console.error);
+    }
+  }
 
   await syncPhoneProfileFromOrder(orderId);
   await syncSecondPhoneProfileFromOrder(orderId);

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyStaffEmployeePortalQuery } from "@/lib/staff-employee-portal-link";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
-import { notifyTelegramDraftCanceled, notifyTelegramNewOrder } from "@/lib/telegram-notify";
+import { notifyTelegramDraftCanceled, notifyTelegramNewOrder, notifyTelegramStaffOrderUpdate } from "@/lib/telegram-notify";
 import { saveOrderImageUploaded } from "@/lib/order-image";
 import { MAX_VOICE_NOTE_BYTES, saveVoiceNoteUploaded } from "@/lib/voice-note";
 
@@ -351,6 +351,16 @@ export async function settleStaffProfit(
       },
     },
   });
+
+  // إرسال إشعار تيليجرام للموظف بتسوية الأرباح
+  void notifyTelegramStaffOrderUpdate({
+    staffId: staff.id,
+    orderNumber: order.orderNumber,
+    orderId: order.id,
+    status: order.status,
+    profitSettled: true,
+    profitAmount: json.staffProfit
+  }).catch(console.error);
 
   revalidatePath("/staff/portal/profits");
   return { ok: true };
