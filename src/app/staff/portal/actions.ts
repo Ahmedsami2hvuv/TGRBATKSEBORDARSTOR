@@ -7,6 +7,8 @@ import { verifyStaffEmployeePortalQuery } from "@/lib/staff-employee-portal-link
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
 import { notifyTelegramDraftCanceled, notifyTelegramNewOrder } from "@/lib/telegram-notify";
+import { saveOrderImageUploaded } from "@/lib/order-image";
+import { MAX_VOICE_NOTE_BYTES, saveVoiceNoteUploaded } from "@/lib/voice-note";
 
 export type StaffPrepState = { error?: string; ok?: boolean; draftId?: string; preparerName?: string };
 
@@ -202,6 +204,10 @@ export async function submitStaffDoubleOrder(
   const buyerLandmark = String(formData.get("buyerLandmark") ?? "").trim();
   const buyerLocationUrl = String(formData.get("buyerLocationUrl") ?? "").trim();
 
+  const imageFile = formData.get("imageFile") as File | null;
+  const voiceFile = formData.get("voiceFile") as File | null;
+  const orderNoteText = String(formData.get("orderNoteText") ?? "").trim();
+
   if (!sellerPhone || !sellerRegionId || !buyerPhone || !buyerRegionId || !orderTime) {
     return { error: "يرجى ملء كافة الحقول المطلوبة." };
   }
@@ -209,6 +215,24 @@ export async function submitStaffDoubleOrder(
   const sPhone = normalizeIraqMobileLocal11(sellerPhone);
   const bPhone = normalizeIraqMobileLocal11(buyerPhone);
   if (!sPhone || !bPhone) return { error: "أرقام الهاتف غير صالحة." };
+
+  let imageUrl: string | null = null;
+  if (imageFile && imageFile.size > 0) {
+    try {
+      imageUrl = await saveOrderImageUploaded(imageFile, 0);
+    } catch (e) {
+      console.error("Image upload failed:", e);
+    }
+  }
+
+  let voiceNoteUrl: string | null = null;
+  if (voiceFile && voiceFile.size > 0) {
+    try {
+      voiceNoteUrl = await saveVoiceNoteUploaded(voiceFile, MAX_VOICE_NOTE_BYTES);
+    } catch (e) {
+      console.error("Voice upload failed:", e);
+    }
+  }
 
   const totalAmount = sellerAmount + profit + deliveryPrice;
 
@@ -236,9 +260,18 @@ export async function submitStaffDoubleOrder(
         orderSubtotal: sellerAmount + profit,
         deliveryPrice: deliveryPrice,
         totalAmount: totalAmount,
+        imageUrl: imageUrl || null,
+        voiceNoteUrl: voiceNoteUrl || null,
+        adminOrderCode: orderNoteText,
         submittedByEmployeeId: null,
         submissionSource: "staff_portal",
-        summary: `طلب وجهتين: من ${sPhone} إلى ${bPhone}`,
+        summary: `طلب وجهتين: من ${sPhone} إلى ${bPhone}${orderNoteText ? `\n\nملاحظة الموظف: ${orderNoteText}` : ""}`,
+        // تخزين بيانات الربح والموظف في حقل JSON
+        preparerShoppingJson: {
+          staffId: staff.id,
+          staffProfit: profit,
+          profitSettled: false
+        }
       }
     });
 
@@ -250,6 +283,50 @@ export async function submitStaffDoubleOrder(
   } catch (err: any) {
     return { error: "فشل في حفظ الطلب: " + err.message };
   }
+}
+
+export async function settleStaffProfit(
+  _prev: any,
+  formData: FormData,
+): Promise<{ error?: string; ok?: boolean }> {
+  const se = String(formData.get("se") ?? "").trim();
+  const exp = String(formData.get("exp") ?? "").trim();
+  const sig = String(formData.get("s") ?? "").trim();
+  const v = verifyStaffEmployeePortalQuery(se, exp, sig);
+  if (!v.ok) return { error: "الرابط غير صالح." };
+
+  const staff = await prisma.staffEmployee.findUnique({
+    where: { id: v.staffEmployeeId },
+  });
+  if (!staff || !staff.active) return { error: "الحساب غير مفعّل." };
+
+  const orderId = String(formData.get("orderId") ?? "").trim();
+  if (!orderId) return { error: "معرف الطلب مفقود." };
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+  });
+
+  if (!order) return { error: "الطلب غير موجود." };
+
+  const json = order.preparerShoppingJson as any;
+  if (!json || json.staffId !== staff.id) {
+    return { error: "لا تملك صلاحية لتسوية هذا الطلب." };
+  }
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      preparerShoppingJson: {
+        ...json,
+        profitSettled: true,
+        settledAt: new Date().toISOString(),
+      },
+    },
+  });
+
+  revalidatePath("/staff/portal/profits");
+  return { ok: true };
 }
 
 export type StaffDraftEditState = { error?: string; ok?: boolean };

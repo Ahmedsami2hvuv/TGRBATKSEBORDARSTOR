@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { submitStaffDoubleOrder, type StaffDoubleOrderState } from "../actions";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { ClientVoiceNoteField } from "@/app/client/order/client-voice-note-field";
 
 const inputClass = "w-full rounded-xl border border-sky-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100";
 
@@ -95,6 +96,23 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
     }, 500);
     return () => clearTimeout(t);
   }, [buyerPhone, selectedBuyerRegion, auth]);
+
+  const [orderNoteText, setOrderNoteText] = useState("");
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImagePreview(null);
+    }
+  };
 
   const totalAmount = sellerAmount + profit + deliveryPrice;
 
@@ -259,13 +277,25 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
             </div>
             <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-500 mr-1">الربح</label>
-                <input
-                    type="number"
-                    value={profit || ""}
-                    onChange={e => setProfit(parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                    className={inputClass}
-                />
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-white border border-sky-200 rounded-xl px-3 py-2.5 text-sm font-black text-slate-800 shadow-sm">
+                    {formatDinarAsAlfWithUnit(profit)}
+                  </div>
+                  <button
+                      type="button"
+                      onClick={() => setProfit(prev => Math.max(0, prev - 1))}
+                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-rose-500 font-bold active:scale-90 shadow-sm"
+                  >
+                      -1
+                  </button>
+                  <button
+                      type="button"
+                      onClick={() => setProfit(prev => prev + 1)}
+                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-sky-100 text-sky-700 font-bold active:scale-90 shadow-sm"
+                  >
+                      +1
+                  </button>
+                </div>
             </div>
         </div>
 
@@ -277,20 +307,24 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
                 </div>
                 <button
                     type="button"
-                    onClick={() => setDeliveryPrice(prev => prev + 1)}
-                    className="w-12 h-10 flex items-center justify-center rounded-xl bg-white border border-sky-200 text-sky-600 font-bold active:scale-90 shadow-sm"
+                    onClick={() => {
+                      const basePrice = parseFloat(selectedBuyerRegion?.deliveryPrice || "0");
+                      setDeliveryPrice(prev => Math.max(basePrice, prev - 1));
+                    }}
+                    className="w-12 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-rose-500 font-bold active:scale-90 shadow-sm disabled:opacity-30"
+                    disabled={deliveryPrice <= parseFloat(selectedBuyerRegion?.deliveryPrice || "0")}
                 >
-                    +1
+                    -1
                 </button>
                 <button
                     type="button"
-                    onClick={() => setDeliveryPrice(prev => prev + 2)}
+                    onClick={() => setDeliveryPrice(prev => prev + 1)}
                     className="w-12 h-10 flex items-center justify-center rounded-xl bg-sky-600 text-white font-bold active:scale-90 shadow-lg"
                 >
-                    +2
+                    +1
                 </button>
             </div>
-            <p className="text-[9px] font-bold text-slate-400 italic">* يمكنك زيادة سعر التوصيل فقط كما هو مطلوب.</p>
+            <p className="text-[9px] font-bold text-slate-400 italic">* يمكنك زيادة سعر التوصيل، ولا يمكن تقليله عن السعر الأصلي للمنطقة ({formatDinarAsAlfWithUnit(selectedBuyerRegion?.deliveryPrice || 0)}).</p>
         </div>
 
         <div className="space-y-1">
@@ -311,6 +345,70 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
             </div>
             <p className="text-[10px] mt-1 opacity-50 text-center">(مبلغ البائع + الربح + التوصيل)</p>
         </div>
+      </section>
+
+      {/* وسائط وملاحظات إضافية */}
+      <section className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
+        <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest">المرفقات والملاحظات (اختياري)</h2>
+
+        {/* ملاحظة نصية */}
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold text-slate-500 mr-1">ملاحظات الطلب</label>
+          <textarea
+            name="orderNoteText"
+            value={orderNoteText}
+            onChange={e => setOrderNoteText(e.target.value)}
+            placeholder="مثلاً: المحل بجانب الصيدلية، أو أي ملاحظات أخرى..."
+            className={`${inputClass} min-h-[80px] py-3 resize-none`}
+          />
+        </div>
+
+        {/* رفع صورة */}
+        <div className="space-y-2">
+          <label className="text-[11px] font-bold text-slate-500 mr-1 flex items-center gap-1">
+            <DynamicIcon iconKey="ui_image" config={icons} className="w-3 h-3" fallback={<span>🖼️</span>} />
+            صورة الطلب / القائمة
+          </label>
+          <div className="flex flex-col gap-3">
+            <input
+              type="file"
+              name="imageFile"
+              accept="image/*"
+              className="hidden"
+              ref={imageInputRef}
+              onChange={handleImageChange}
+            />
+            {!imagePreview ? (
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-white p-6 text-slate-500 transition hover:border-sky-400 hover:bg-sky-50 active:scale-95"
+              >
+                <DynamicIcon iconKey="ui_plus" config={icons} className="w-8 h-8 opacity-20" />
+                <span className="text-xs font-bold">اضغط لإضافة صورة</span>
+              </button>
+            ) : (
+              <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-slate-200 bg-black shadow-inner">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imagePreview} alt="Preview" className="h-full w-full object-contain" />
+                <button
+                  type="button"
+                  onClick={() => {setImagePreview(null); if(imageInputRef.current) imageInputRef.current.value="";}}
+                  className="absolute left-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-rose-600 text-white shadow-lg active:scale-90"
+                >
+                  <DynamicIcon iconKey="ui_close" config={icons} className="w-4 h-4" fallback={<span>✕</span>} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ملاحظة صوتية */}
+        <ClientVoiceNoteField
+          fieldName="voiceFile"
+          title="تسجيل صوتي للملاحظات"
+          wrapperClassName="mt-2"
+        />
       </section>
 
       <button

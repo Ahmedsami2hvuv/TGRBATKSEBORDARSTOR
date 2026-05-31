@@ -52,48 +52,38 @@ export default async function StaffSubmittedDraftsPage({ searchParams }: Props) 
       return <div className="p-8 text-center font-bold text-rose-600">الحساب غير مفعّل أو الرابط غير صالح.</div>;
     }
 
-    const drafts = await prisma.companyPreparerShoppingDraft.findMany({
-      where: {
-        OR: [
-          { preparerId: staff.id },
-          {
-            data: {
-              path: ["fromStaffEmployeeId"],
-              equals: staff.id,
-            },
-          }
-        ]
-      },
-      orderBy: { createdAt: "desc" },
-      take: 100,
-      include: {
-        preparer: { select: { name: true } },
-        customerRegion: { select: { name: true } },
-      }
-    });
+    const [drafts, doubleOrders] = await Promise.all([
+      prisma.companyPreparerShoppingDraft.findMany({
+        where: {
+          OR: [
+            { preparerId: staff.id },
+            { data: { path: ["fromStaffEmployeeId"], equals: staff.id } }
+          ]
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: {
+          preparer: { select: { name: true } },
+          customerRegion: { select: { name: true } },
+        }
+      }),
+      prisma.order.findMany({
+        where: {
+          submissionSource: "staff_portal",
+          preparerShoppingJson: { path: ["staffId"], equals: staff.id }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: {
+          customerRegion: { select: { name: true } },
+        }
+      })
+    ]);
 
     const authQ = new URLSearchParams({ se: sp.se ?? "", exp: sp.exp ?? "", s: sp.s ?? "" }).toString();
 
-    // Nuclear Sanitization for Next.js 15 Serialization Safety
-    function deepSanitize(obj: any): any {
-      if (obj === null || obj === undefined) return obj;
-      if (typeof obj === "bigint") return obj.toString();
-      if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
-      if (obj instanceof Date) return obj.toISOString();
-      if (Array.isArray(obj)) return obj.map(deepSanitize);
-      if (typeof obj === "object") {
-        // Handle Decimal.js / Prisma Decimal
-        if (obj.d && obj.s && obj.e !== undefined) return Number(obj.toString());
-        const newObj: any = {};
-        for (const key in obj) {
-          if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
-        }
-        return newObj;
-      }
-      return obj;
-    }
-
-    const tableRows: MandoubRow[] = drafts.map((d) => {
+    // دمج وتنسيق البيانات للعرض في الجدول
+    const draftRows: MandoubRow[] = drafts.map((d) => {
       const draftData = (d.data as any) || {};
       return {
         id: d.id,
@@ -119,7 +109,6 @@ export default async function StaffSubmittedDraftsPage({ searchParams }: Props) 
         noWardRecorded: true,
         noSaderRecorded: true,
         createdAt: d.createdAt,
-        // بيانات الوصول السريع الموحدة
         audioUrl: draftData.audioUrl || null,
         summary: d.rawListText,
         shopPhone: "",
@@ -135,6 +124,49 @@ export default async function StaffSubmittedDraftsPage({ searchParams }: Props) 
         adminAudioUrl: null,
       };
     });
+
+    const orderRows: MandoubRow[] = doubleOrders.map((o) => ({
+      id: o.id,
+      shortId: `#${o.orderNumber}`,
+      orderStatus: o.status,
+      shopName: "طلب وجهتين",
+      shopNameHighlightClass: "text-fuchsia-700 font-black",
+      regionLine: o.customerRegion?.name || "—",
+      orderType: "وجهتين",
+      priceStr: o.totalAmount?.toString() || "—",
+      delStr: o.deliveryPrice?.toString() || "—",
+      customerPhone: o.customerPhone || "—",
+      timeLine: formatBaghdadDateTime(o.createdAt, { dateStyle: "short", timeStyle: "short" }),
+      statusAr: translateDraftStatus(o.status === "pending" ? "draft" : "sent"), // تقريب الحالة للموظف
+      statusClass: "text-[10px] px-2 py-0.5 rounded-full border bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200",
+      prepaidAll: o.prepaidAll,
+      reversePickup: false,
+      hasCustomerLocation: !!o.customerLocationUrl,
+      hasCourierUploadedLocation: false,
+      hasMoneyDeletedBadge: false,
+      wardMismatchType: "none",
+      saderMismatchType: "none",
+      noWardRecorded: true,
+      noSaderRecorded: true,
+      createdAt: o.createdAt,
+      audioUrl: o.voiceNoteUrl,
+      summary: o.summary,
+      shopPhone: "",
+      alternatePhone: o.alternatePhone || "",
+      secondCustomerPhone: o.secondCustomerPhone || "",
+      shopLocationUrl: "",
+      customerLocationUrl: o.customerLocationUrl,
+      secondCustomerLocationUrl: o.secondCustomerLocationUrl,
+      shopDoorPhotoUrl: "",
+      customerDoorPhotoUrl: o.customerDoorPhotoUrl,
+      routeMode: "double",
+      preparerAudioUrl: null,
+      adminAudioUrl: null,
+    }));
+
+    const tableRows = [...draftRows, ...orderRows].sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 
     const sanitizedRows = deepSanitize(tableRows);
 
