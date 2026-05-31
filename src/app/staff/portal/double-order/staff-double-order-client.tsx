@@ -15,7 +15,7 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
   const [sellerPhone, setSellerPhone] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
   const [orderTime, setOrderTime] = useState("فوري");
-  const [orderType, setOrderType] = useState("توصيل فقط");
+  const [orderType, setOrderType] = useState("سيارة");
 
   const [sellerAmount, setSellerAmount] = useState(0);
   const [profit, setProfit] = useState(0);
@@ -302,9 +302,13 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
             <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-500 mr-1">الربح</label>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-white border border-sky-200 rounded-xl px-3 py-2.5 text-sm font-black text-slate-800 shadow-sm">
-                    {formatDinarAsAlfWithUnit(profit)}
-                  </div>
+                  <input
+                    type="number"
+                    value={profit || ""}
+                    onChange={e => setProfit(parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    className={`${inputClass} flex-1`}
+                  />
                   <button
                       type="button"
                       onClick={() => setProfit(prev => Math.max(0, prev - 1))}
@@ -326,9 +330,13 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
         <div className="space-y-2">
             <label className="text-[11px] font-bold text-slate-500 mr-1">سعر التوصيل</label>
             <div className="flex items-center gap-2">
-                <div className="flex-1 bg-white border border-sky-200 rounded-xl px-3 py-2.5 text-sm font-black text-sky-900 shadow-sm">
-                    {formatDinarAsAlfWithUnit(deliveryPrice)}
-                </div>
+                <input
+                    type="number"
+                    value={deliveryPrice || ""}
+                    onChange={e => setDeliveryPrice(parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    className={`${inputClass} flex-1 text-sky-900`}
+                />
                 <button
                     type="button"
                     onClick={() => {
