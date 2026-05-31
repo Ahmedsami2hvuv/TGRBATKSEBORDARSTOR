@@ -15,6 +15,7 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
   const [sellerPhone, setSellerPhone] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
   const [orderTime, setOrderTime] = useState("فوري");
+  const [orderType, setOrderType] = useState("توصيل فقط");
 
   const [sellerAmount, setSellerAmount] = useState(0);
   const [profit, setProfit] = useState(0);
@@ -266,6 +267,33 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
 
         <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-500 mr-1">نوع الطلب</label>
+                <select
+                    name="orderType"
+                    value={orderType}
+                    onChange={e => setOrderType(e.target.value)}
+                    className={inputClass}
+                >
+                    <option value="توصيل فقط">توصيل فقط</option>
+                    <option value="شراء وتوصيل">شراء وتوصيل</option>
+                    <option value="استبدال">استبدال</option>
+                    <option value="ترجيع">ترجيع</option>
+                </select>
+            </div>
+            <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-500 mr-1">وقت الطلب</label>
+                <input
+                    name="orderTime"
+                    value={orderTime}
+                    onChange={e => setOrderTime(e.target.value)}
+                    placeholder="فوري، غداً..."
+                    className={inputClass}
+                />
+            </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-500 mr-1">المبلغ للبائع</label>
                 <input
                     type="number"
@@ -325,17 +353,6 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
                 </button>
             </div>
             <p className="text-[9px] font-bold text-slate-400 italic">* يمكنك زيادة سعر التوصيل، ولا يمكن تقليله عن السعر الأصلي للمنطقة ({formatDinarAsAlfWithUnit(selectedBuyerRegion?.deliveryPrice || 0)}).</p>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-[11px] font-bold text-slate-500 mr-1">وقت الطلب</label>
-          <input
-            name="orderTime"
-            value={orderTime}
-            onChange={e => setOrderTime(e.target.value)}
-            placeholder="فوري، غداً..."
-            className={inputClass}
-          />
         </div>
 
         <div className="mt-4 p-4 rounded-2xl bg-slate-900 text-white">

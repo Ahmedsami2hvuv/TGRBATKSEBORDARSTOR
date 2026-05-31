@@ -44,10 +44,20 @@ export async function GET(request: Request) {
 
   const regionId = searchParams.get("regionId")?.trim() ?? "";
   const phoneRaw = searchParams.get("phone")?.trim() ?? "";
+  const phone = normalizeIraqMobileLocal11(phoneRaw) || phoneRaw;
 
-  const globalBlock = await prisma.globalBlockedPhone.findUnique({
-    where: { phone },
-  });
+  if (!phone || !regionId) {
+     return NextResponse.json({ profile: null });
+  }
+
+  const [profile, globalBlock] = await Promise.all([
+    prisma.customerPhoneProfile.findUnique({
+        where: { phone_regionId: { phone, regionId } }
+    }),
+    prisma.globalBlockedPhone.findUnique({
+        where: { phone }
+    })
+  ]);
 
   if (!profile && !globalBlock) {
     return NextResponse.json({ profile: null });

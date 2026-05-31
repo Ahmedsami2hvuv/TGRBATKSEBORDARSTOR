@@ -195,14 +195,15 @@ export async function submitStaffDoubleOrder(
   const buyerPhone = String(formData.get("buyerPhone") ?? "").trim();
   const buyerRegionId = String(formData.get("buyerRegionId") ?? "").trim();
   const orderTime = String(formData.get("orderTime") ?? "").trim();
+  const orderType = String(formData.get("orderType") ?? "توصيل فقط").trim();
   const sellerAmount = parseFloat(String(formData.get("sellerAmount") ?? "0"));
   const profit = parseFloat(String(formData.get("profit") ?? "0"));
   const deliveryPrice = parseFloat(String(formData.get("deliveryPrice") ?? "0"));
 
-  const sellerLandmark = String(formData.get("sellerLandmark") ?? "").trim();
-  const sellerLocationUrl = String(formData.get("sellerLocationUrl") ?? "").trim();
-  const buyerLandmark = String(formData.get("buyerLandmark") ?? "").trim();
-  const buyerLocationUrl = String(formData.get("buyerLocationUrl") ?? "").trim();
+  let sellerLandmark = String(formData.get("sellerLandmark") ?? "").trim();
+  let sellerLocationUrl = String(formData.get("sellerLocationUrl") ?? "").trim();
+  let buyerLandmark = String(formData.get("buyerLandmark") ?? "").trim();
+  let buyerLocationUrl = String(formData.get("buyerLocationUrl") ?? "").trim();
 
   const imageFile = formData.get("imageFile") as File | null;
   const voiceFile = formData.get("voiceFile") as File | null;
@@ -215,6 +216,26 @@ export async function submitStaffDoubleOrder(
   const sPhone = normalizeIraqMobileLocal11(sellerPhone);
   const bPhone = normalizeIraqMobileLocal11(buyerPhone);
   if (!sPhone || !bPhone) return { error: "أرقام الهاتف غير صالحة." };
+
+  // Fetch profiles on server for extra reliability if client-side didn't provide them
+  const [sProf, bProf] = await Promise.all([
+    prisma.customerPhoneProfile.findUnique({
+      where: { phone_regionId: { phone: sPhone, regionId: sellerRegionId } }
+    }),
+    prisma.customerPhoneProfile.findUnique({
+      where: { phone_regionId: { phone: bPhone, regionId: buyerRegionId } }
+    })
+  ]);
+
+  // Merge Data: Priority to manual input, fallback to stored profile
+  const finalSellerLandmark = sellerLandmark || sProf?.landmark || "";
+  const finalSellerLoc = sellerLocationUrl || sProf?.locationUrl || "";
+  const finalSellerPhoto = sProf?.photoUrl || null;
+  const finalSellerAltPhone = sProf?.alternatePhone || null;
+
+  const finalBuyerLandmark = buyerLandmark || bProf?.landmark || "";
+  const finalBuyerLoc = buyerLocationUrl || bProf?.locationUrl || "";
+  const finalBuyerPhoto = bProf?.photoUrl || null;
 
   let imageUrl: string | null = null;
   if (imageFile && imageFile.size > 0) {
@@ -250,13 +271,16 @@ export async function submitStaffDoubleOrder(
         status: "pending",
         customerPhone: sPhone,
         customerRegionId: sellerRegionId,
-        customerLandmark: sellerLandmark,
-        customerLocationUrl: sellerLocationUrl,
+        customerLandmark: finalSellerLandmark,
+        customerLocationUrl: finalSellerLoc,
+        customerDoorPhotoUrl: finalSellerPhoto,
+        alternatePhone: finalSellerAltPhone,
         secondCustomerPhone: bPhone,
         secondCustomerRegionId: buyerRegionId,
-        secondCustomerLandmark: buyerLandmark,
-        secondCustomerLocationUrl: buyerLocationUrl,
-        orderNoteTime: orderTime,
+        secondCustomerLandmark: finalBuyerLandmark,
+        secondCustomerLocationUrl: finalBuyerLoc,
+        secondCustomerDoorPhotoUrl: finalBuyerPhoto,
+        orderNoteTime: `${orderType} - ${orderTime}`,
         orderSubtotal: sellerAmount + profit,
         deliveryPrice: deliveryPrice,
         totalAmount: totalAmount,
@@ -265,7 +289,7 @@ export async function submitStaffDoubleOrder(
         adminOrderCode: orderNoteText,
         submittedByEmployeeId: null,
         submissionSource: "staff_portal",
-        summary: `طلب وجهتين: من ${sPhone} إلى ${bPhone}${orderNoteText ? `\n\nملاحظة الموظف: ${orderNoteText}` : ""}`,
+        summary: `طلب وجهتين (${orderType}): من ${sPhone} إلى ${bPhone}${orderNoteText ? `\n\nملاحظة الموظف: ${orderNoteText}` : ""}`,
         // تخزين بيانات الربح والموظف في حقل JSON
         preparerShoppingJson: {
           staffId: staff.id,
@@ -286,9 +310,12 @@ export async function submitStaffDoubleOrder(
 }
 
 export async function settleStaffProfit(
-  _prev: any,
-  formData: FormData,
+  arg1: any,
+  arg2?: any,
 ): Promise<{ error?: string; ok?: boolean }> {
+  // دعم الاستدعاء المباشر من النموذج (formData) أو من useActionState (prevState, formData)
+  const formData = arg2 instanceof FormData ? arg2 : (arg1 as FormData);
+
   const se = String(formData.get("se") ?? "").trim();
   const exp = String(formData.get("exp") ?? "").trim();
   const sig = String(formData.get("s") ?? "").trim();
