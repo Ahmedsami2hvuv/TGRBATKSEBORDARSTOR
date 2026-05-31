@@ -272,6 +272,8 @@ export function AdminPricingPanel({
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);
 
+  const sellInputRef = useRef<HTMLInputElement>(null);
+
   const [buyText, setBuyText] = useState("");
   const [sellText, setSellText] = useState("");
   const [isAdminFulfilled, setIsAdminFulfilled] = useState(false);
@@ -817,7 +819,8 @@ export function AdminPricingPanel({
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
-                            document.getElementById('sell-price-input')?.focus();
+                            e.stopPropagation();
+                            sellInputRef.current?.focus();
                           }
                         }}
                         dir="ltr"
@@ -830,12 +833,13 @@ export function AdminPricingPanel({
                     <div>
                       <label className="text-[10px] font-black text-sky-600 mb-1 block text-center">سعر البيع</label>
                       <input
-                        id="sell-price-input"
+                        ref={sellInputRef}
                         value={sellText}
                         onChange={(e) => setSellText(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
+                            e.stopPropagation();
                             applyPricingPanel();
                           }
                         }}
