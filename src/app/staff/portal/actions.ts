@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyStaffEmployeePortalQuery } from "@/lib/staff-employee-portal-link";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
-import { notifyTelegramDraftCanceled } from "@/lib/telegram-notify";
+import { notifyTelegramDraftCanceled, notifyTelegramNewOrder } from "@/lib/telegram-notify";
 
 export type StaffPrepState = { error?: string; ok?: boolean; draftId?: string; preparerName?: string };
 
@@ -169,6 +169,87 @@ export async function submitStaffPreparationDraft(
   revalidatePath("/preparer");
   revalidatePath("/staff/portal/submitted");
   return { ok: true, draftId: createdDraftIds[0], preparerName: preparerNames.join(" + ") };
+}
+
+export type StaffDoubleOrderState = { error?: string; ok?: boolean; orderId?: string; orderNumber?: number };
+
+export async function submitStaffDoubleOrder(
+  _prev: StaffDoubleOrderState,
+  formData: FormData,
+): Promise<StaffDoubleOrderState> {
+  const se = String(formData.get("se") ?? "").trim();
+  const exp = String(formData.get("exp") ?? "").trim();
+  const sig = String(formData.get("s") ?? "").trim();
+  const v = verifyStaffEmployeePortalQuery(se, exp, sig);
+  if (!v.ok) return { error: "الرابط غير صالح." };
+
+  const staff = await prisma.staffEmployee.findUnique({
+    where: { id: v.staffEmployeeId },
+  });
+  if (!staff || !staff.active) return { error: "الحساب غير مفعّل." };
+
+  const sellerPhone = String(formData.get("sellerPhone") ?? "").trim();
+  const sellerRegionId = String(formData.get("sellerRegionId") ?? "").trim();
+  const buyerPhone = String(formData.get("buyerPhone") ?? "").trim();
+  const buyerRegionId = String(formData.get("buyerRegionId") ?? "").trim();
+  const orderTime = String(formData.get("orderTime") ?? "").trim();
+  const sellerAmount = parseFloat(String(formData.get("sellerAmount") ?? "0"));
+  const profit = parseFloat(String(formData.get("profit") ?? "0"));
+  const deliveryPrice = parseFloat(String(formData.get("deliveryPrice") ?? "0"));
+
+  const sellerLandmark = String(formData.get("sellerLandmark") ?? "").trim();
+  const sellerLocationUrl = String(formData.get("sellerLocationUrl") ?? "").trim();
+  const buyerLandmark = String(formData.get("buyerLandmark") ?? "").trim();
+  const buyerLocationUrl = String(formData.get("buyerLocationUrl") ?? "").trim();
+
+  if (!sellerPhone || !sellerRegionId || !buyerPhone || !buyerRegionId || !orderTime) {
+    return { error: "يرجى ملء كافة الحقول المطلوبة." };
+  }
+
+  const sPhone = normalizeIraqMobileLocal11(sellerPhone);
+  const bPhone = normalizeIraqMobileLocal11(buyerPhone);
+  if (!sPhone || !bPhone) return { error: "أرقام الهاتف غير صالحة." };
+
+  const totalAmount = sellerAmount + profit + deliveryPrice;
+
+  try {
+    const doubleShop = await prisma.shop.findFirst({
+      where: { name: { contains: "وجهتين" } }
+    }) || await prisma.shop.findFirst();
+
+    if (!doubleShop) return { error: "لا يوجد محل معرف في النظام لاستقبال الطلب." };
+
+    const order = await prisma.order.create({
+      data: {
+        shopId: doubleShop.id,
+        routeMode: "double",
+        status: "pending",
+        customerPhone: sPhone,
+        customerRegionId: sellerRegionId,
+        customerLandmark: sellerLandmark,
+        customerLocationUrl: sellerLocationUrl,
+        secondCustomerPhone: bPhone,
+        secondCustomerRegionId: buyerRegionId,
+        secondCustomerLandmark: buyerLandmark,
+        secondCustomerLocationUrl: buyerLocationUrl,
+        orderNoteTime: orderTime,
+        orderSubtotal: sellerAmount + profit,
+        deliveryPrice: deliveryPrice,
+        totalAmount: totalAmount,
+        submittedByEmployeeId: null,
+        submissionSource: "staff_portal",
+        summary: `طلب وجهتين: من ${sPhone} إلى ${bPhone}`,
+      }
+    });
+
+    // إشعار الإدارة بطلب جديد
+    void notifyTelegramNewOrder(order.id).catch(err => console.error("Telegram notify failed:", err));
+
+    revalidatePath("/staff/portal/submitted");
+    return { ok: true, orderId: order.id, orderNumber: order.orderNumber };
+  } catch (err: any) {
+    return { error: "فشل في حفظ الطلب: " + err.message };
+  }
 }
 
 export type StaffDraftEditState = { error?: string; ok?: boolean };

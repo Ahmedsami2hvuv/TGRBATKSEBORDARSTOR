@@ -63,6 +63,19 @@ export function StaffPortalMenuClient({
           </Link>
 
           <Link
+            href={`/staff/portal/double-order?${authQ}`}
+            className="group w-full rounded-2xl bg-gradient-to-r from-sky-600 to-blue-700 py-4 text-sm font-black text-white shadow-lg transition active:scale-95 flex items-center justify-center gap-2"
+          >
+            <DynamicIcon
+              iconKey="ui_map"
+              config={icons}
+              className="w-5 h-5"
+              fallback={<span>📍</span>}
+            />
+            رفع طلب ذو وجهتين (مرسل-مستلم)
+          </Link>
+
+          <Link
             href={`/staff/portal/submitted?${authQ}`}
             className="group w-full rounded-2xl border-2 border-sky-400 bg-white py-4 text-sm font-black text-sky-900 shadow-sm transition hover:bg-sky-50 active:scale-95 flex items-center justify-center gap-2"
           >
