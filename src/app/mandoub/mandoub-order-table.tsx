@@ -98,6 +98,7 @@ export type MandoubRow = {
   showWhatsAppBtn?: boolean;
   showNotesBtn?: boolean;
   showVoiceNotesBtn?: boolean;
+  showMoneyBoxes?: boolean;
 };
 
 function buildOrderDetailHref(

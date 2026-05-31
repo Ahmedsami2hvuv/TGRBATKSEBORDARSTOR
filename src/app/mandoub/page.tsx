@@ -675,6 +675,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       showWhatsAppBtn: courier.showWhatsAppBtn,
       showNotesBtn: courier.showNotesBtn,
       showVoiceNotesBtn: courier.showVoiceNotesBtn,
+      showMoneyBoxes: courier.showMoneyBoxes,
     };
   });
 
@@ -733,7 +734,13 @@ export default async function MandoubPage({ searchParams }: Props) {
               </div>
               <p className="text-[10px] font-bold text-slate-500 sm:text-xs ms-7">{courier.phone}</p>
             </div>
-            <ThemeSwitcher />
+            <Link
+              href={`/mandoub/settings?${baseQuery.toString()}`}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 text-lg shadow-sm transition hover:scale-105"
+              title="الإعدادات"
+            >
+              ⚙️
+            </Link>
             {telegramLink && (
               <a
                 href={telegramLink}

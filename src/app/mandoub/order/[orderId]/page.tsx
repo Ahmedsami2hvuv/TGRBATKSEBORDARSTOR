@@ -97,6 +97,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
       showWhatsAppBtn: true,
       showNotesBtn: true,
       showVoiceNotesBtn: true,
+      showMoneyBoxes: true,
     },
   });
   if (!courier || courier.blocked) {
@@ -262,7 +263,13 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
                   <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-[#00f3ff]">{courier.name}</p>
                   <p className="text-[10px] font-bold text-slate-500 sm:text-xs">{courier.phone}</p>
                 </div>
-                <ThemeSwitcher />
+                <Link
+                  href={`/mandoub/settings?${baseQuery.toString()}`}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 text-lg shadow-sm transition hover:scale-105"
+                  title="الإعدادات"
+                >
+                  ⚙️
+                </Link>
                 <MandoubPresenceToggle auth={baseAuth} availableForAssignment={courier.availableForAssignment} />
                 <FullscreenWalletLauncher
                   href={`/mandoub/wallet?${baseQuery.toString()}`}
@@ -326,6 +333,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
               showWhatsAppBtn: courier.showWhatsAppBtn,
               showNotesBtn: courier.showNotesBtn,
               showVoiceNotesBtn: courier.showVoiceNotesBtn,
+              showMoneyBoxes: courier.showMoneyBoxes,
             }}
           />
         </div>

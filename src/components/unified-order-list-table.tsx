@@ -64,6 +64,7 @@ function ImageModal({ url, title, onClose }: { url: string, title: string, onClo
 }
 
 function MoneyMiniBadges({ row }: { row: MandoubRow }) {
+  if (row.showMoneyBoxes === false) return null;
   // المطلوب: تظهر "من الخارج" فقط عند تم التسليم
   if (row.orderStatus !== "delivered") return null;
 
@@ -557,31 +558,31 @@ export function UnifiedOrderListTable({
                       </div>
                       {/* علامات الصادر والوارد المالية "من الخارج" */}
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {o.wardMismatchType === "deficit" && (
+                          {o.showMoneyBoxes !== false && o.wardMismatchType === "deficit" && (
                             <span className="rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-rose-400 flex items-center gap-1">
                               <DynamicIcon iconKey="finance_deficit" config={icons} fallback="🔴" className="w-2.5 h-2.5" />
                               نقص بالوارد
                             </span>
                           )}
-                          {o.wardMismatchType === "excess" && (
+                          {o.showMoneyBoxes !== false && o.wardMismatchType === "excess" && (
                             <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-emerald-400 flex items-center gap-1">
                               <DynamicIcon iconKey="finance_excess" config={icons} fallback="🟢" className="w-2.5 h-2.5" />
                               زيادة بالوارد
                             </span>
                           )}
-                          {o.saderMismatchType === "deficit" && (
+                          {o.showMoneyBoxes !== false && o.saderMismatchType === "deficit" && (
                             <span className="rounded bg-orange-500 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-orange-300 flex items-center gap-1">
                               <DynamicIcon iconKey="finance_sader_deficit" config={icons} fallback="📉" className="w-2.5 h-2.5" />
                               نقص بالصادر
                             </span>
                           )}
-                          {o.saderMismatchType === "excess" && (
+                          {o.showMoneyBoxes !== false && o.saderMismatchType === "excess" && (
                             <span className="rounded bg-sky-500 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-sky-300 flex items-center gap-1">
                               <DynamicIcon iconKey="finance_sader_excess" config={icons} fallback="📈" className="w-2.5 h-2.5" />
                               زيادة بالصادر
                             </span>
                           )}
-                          {o.orderStatus === "delivered" && o.noWardRecorded && (
+                          {o.showMoneyBoxes !== false && o.orderStatus === "delivered" && o.noWardRecorded && (
                             <span className="rounded bg-slate-950 px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm ring-1 ring-slate-600 animate-pulse flex items-center gap-1">
                               <DynamicIcon iconKey="ui_warning" config={icons} fallback="⚠️" className="w-2.5 h-2.5" />
                               بدون وارد
