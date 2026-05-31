@@ -8,7 +8,7 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 /** يستمع إليه `MandoubCustomerEditForm` لتبديل إظهار نموذج التعديل (فتح / إخفاء) */
 export const MANDOUB_ORDER_EDIT_TOGGLE = "mandoub-order-edit-toggle";
 
-export function MandoubOrderDetailActions({ closeHref }: { closeHref: string }) {
+export function MandoubOrderDetailActions({ closeHref, orderId }: { closeHref: string; orderId: string }) {
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const router = useRouter();
 
@@ -25,7 +25,7 @@ export function MandoubOrderDetailActions({ closeHref }: { closeHref: string }) 
       <button
         type="button"
         onClick={() => {
-          window.dispatchEvent(new CustomEvent(MANDOUB_ORDER_EDIT_TOGGLE));
+          window.dispatchEvent(new CustomEvent(MANDOUB_ORDER_EDIT_TOGGLE, { detail: { orderId } }));
         }}
         className="flex items-center gap-2 rounded-xl border border-emerald-600 bg-emerald-50 px-4 py-2 text-base font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100"
       >

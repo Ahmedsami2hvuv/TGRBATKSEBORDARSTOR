@@ -75,7 +75,14 @@ export default async function EditOrderPage({ params }: Props) {
               regionId: order.customerRegionId,
             },
           },
-          select: { id: true, photoUrl: true, isBlocked: true },
+          select: {
+            id: true,
+            photoUrl: true,
+            isBlocked: true,
+            locationUrl: true,
+            landmark: true,
+            alternatePhone: true,
+          },
         })
       : null;
 
@@ -89,6 +96,23 @@ export default async function EditOrderPage({ params }: Props) {
     return customerPhoneProfile?.photoUrl?.trim() || null;
   };
   const defaultCustomerDoorPhotoUrlEffective: string | null = getCustomerDoorUrl();
+
+  const defaultCustomerLocationUrlEffective =
+    order.customerLocationUrl?.trim() ||
+    order.customer?.customerLocationUrl?.trim() ||
+    customerPhoneProfile?.locationUrl?.trim() ||
+    "";
+
+  const defaultCustomerLandmarkEffective =
+    order.customerLandmark?.trim() ||
+    order.customer?.customerLandmark?.trim() ||
+    customerPhoneProfile?.landmark?.trim() ||
+    "";
+
+  const defaultAlternatePhoneEffective =
+    order.alternatePhone?.trim() ||
+    customerPhoneProfile?.alternatePhone?.trim() ||
+    "";
 
   const courierWhere: Prisma.CourierWhereInput = {
     OR: [
@@ -194,9 +218,9 @@ export default async function EditOrderPage({ params }: Props) {
           defaultOrderType={order.orderType}
           defaultSummary={order.summary}
           defaultCustomerPhone={order.customerPhone}
-          defaultAlternatePhone={order.alternatePhone ?? ""}
-          defaultCustomerLocationUrl={order.customerLocationUrl}
-          defaultCustomerLandmark={order.customerLandmark}
+          defaultAlternatePhone={defaultAlternatePhoneEffective}
+          defaultCustomerLocationUrl={defaultCustomerLocationUrlEffective}
+          defaultCustomerLandmark={defaultCustomerLandmarkEffective}
           defaultCustomerId={order.customerId ?? ""}
           customers={customers}
           defaultCustomerRegionId={order.customerRegionId ?? ""}

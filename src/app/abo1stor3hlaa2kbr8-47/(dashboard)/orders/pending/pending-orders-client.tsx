@@ -13,6 +13,7 @@ import {
   deleteOrderPermanently,
   rejectPendingOrder,
   rejectPreparerDraft,
+  saveOrderLocationOnly,
   type AssignOrderState,
   type RejectOrderState,
 } from "../actions";
@@ -845,6 +846,50 @@ export function PendingAssignPanel({
   );
 }
 
+/** نموذج حفظ اللوكيشن السريع مباشرة من بطاقة الطلب */
+function QuickLocationSaveForm({
+  orderId,
+  defaultLocation,
+  icons,
+}: {
+  orderId: string;
+  defaultLocation: string;
+  icons?: GlobalIconsConfig | null;
+}) {
+  const bound = saveOrderLocationOnly.bind(null);
+  const [state, formAction, pending] = useActionState(bound, {});
+  const [url, setUrl] = useState(defaultLocation || "");
+
+  useEffect(() => {
+    setUrl(defaultLocation || "");
+  }, [defaultLocation]);
+
+  return (
+    <form action={formAction} className="flex gap-1.5 w-full items-center">
+      <input type="hidden" name="orderId" value={orderId} />
+      <input
+        type="text"
+        name="customerLocationUrl"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        placeholder="الصق رابط اللوكيشن هنا..."
+        className="flex-1 h-9 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 px-2.5 text-[10px] font-medium outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 font-mono transition-all text-right"
+        dir="ltr"
+      />
+      <button
+        type="submit"
+        disabled={pending || !url.trim()}
+        className="h-9 px-3 shrink-0 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black transition-all disabled:opacity-40 disabled:hover:bg-emerald-600 flex items-center justify-center gap-1 shadow-sm"
+      >
+        {pending ? "حفظ..." : "حفظ"}
+      </button>
+      {state.error && (
+        <span className="absolute bottom-[-15px] right-2 text-[8px] font-bold text-rose-600">{state.error}</span>
+      )}
+    </form>
+  );
+}
+
 
 /** المكون الرئيسي لإدارة الطلبات المعلقة */
 export default function PendingOrdersClient({
@@ -995,10 +1040,26 @@ export default function PendingOrdersClient({
                     </span>
                   </div>
 
+                  {hasLocation && (
+                    <a
+                      href={order.customerLocationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full h-11 rounded-2xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-black transition-all flex items-center justify-center gap-2 border border-emerald-100 dark:border-emerald-900/30 shadow-sm"
+                    >
+                      📍 فتح موقع الزبون
+                    </a>
+                  )}
+
+                  <div className="space-y-1 mt-1 border-t border-slate-100 dark:border-slate-800/60 pt-2 relative">
+                     <p className="text-[9px] font-black text-slate-400 pr-1 mb-1 text-right">تحديث / رفع اللوكيشن</p>
+                     <QuickLocationSaveForm orderId={order.id} defaultLocation={order.customerLocationUrl} icons={icons} />
+                  </div>
+
                   {/* زر إسناد للمندوب */}
                   <button
                     onClick={() => setActiveAssignOrderId(order.id)}
-                    className="w-full h-12 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-xs font-black shadow-lg shadow-emerald-200/50 dark:shadow-none transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                    className="w-full h-12 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-xs font-black shadow-lg shadow-emerald-200/50 dark:shadow-none transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-1"
                   >
                     <DynamicIcon icon={icons?.ui_package} fallback="📦" width={14} height={14} />
                     إسناد للمندوب

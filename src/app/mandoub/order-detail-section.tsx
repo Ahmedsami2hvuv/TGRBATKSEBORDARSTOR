@@ -464,7 +464,7 @@ export function OrderDetailSection({
             <p className="text-[11px] font-black text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">تاريخ الرفع: {formatBaghdadDateTime(order.createdAt)}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <MandoubOrderDetailActions closeHref={closeHref} />
+            <MandoubOrderDetailActions closeHref={closeHref} orderId={order.id} />
             <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${orderStatusBadgeClass(order.status)}`}>{STATUS_AR[order.status] ?? order.status}</span>
           </div>
         </div>

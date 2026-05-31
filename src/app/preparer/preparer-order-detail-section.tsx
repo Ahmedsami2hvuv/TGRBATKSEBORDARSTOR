@@ -726,7 +726,7 @@ export function PreparerOrderDetailSection({
           </p>
         </div>
         <div className="flex flex-shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-self-start">
-          <MandoubOrderDetailActions closeHref={closeHref} />
+          <MandoubOrderDetailActions closeHref={closeHref} orderId={order.id} />
           {canEditPricing && pricingEditHref ? (
             <Link href={pricingEditHref} className="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition-colors">
               <DynamicIcon

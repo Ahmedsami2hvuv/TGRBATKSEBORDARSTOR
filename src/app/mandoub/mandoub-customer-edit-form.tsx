@@ -42,7 +42,7 @@ export function MandoubCustomerEditForm({
 
   useEffect(() => {
     const handleToggle = (e: CustomEvent) => {
-      if (e.detail?.orderId === orderId) {
+      if (!e.detail?.orderId || e.detail?.orderId === orderId) {
         setEditOpen((prev) => !prev);
       }
     };

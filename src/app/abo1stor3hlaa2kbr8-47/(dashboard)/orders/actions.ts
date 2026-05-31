@@ -570,3 +570,35 @@ export async function setDraftAutoCourier(
     return { error: "فشل حفظ مندوب التحويل التلقائي" };
   }
 }
+
+/** تحديث رابط لوكيشن الطلب فقط */
+export async function saveOrderLocationOnly(
+  _prev: any,
+  formData: FormData,
+): Promise<{ ok?: boolean; error?: string }> {
+  const orderId = String(formData.get("orderId") ?? "").trim();
+  const customerLocationUrl = String(formData.get("customerLocationUrl") ?? "").trim();
+
+  if (!orderId) return { error: "معرف الطلب مفقود" };
+  if (!customerLocationUrl) return { error: "رابط الموقع مطلوب" };
+
+  try {
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        customerLocationUrl: customerLocationUrl,
+      },
+    });
+
+    if (updatedOrder.customerPhone) {
+      await syncPhoneProfileFromOrder(updatedOrder.id);
+    }
+
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);
+    return { ok: true };
+  } catch (e: any) {
+    console.error("Error in saveOrderLocationOnly:", e);
+    return { error: "حدث خطأ أثناء حفظ الموقع: " + (e.message || "خطأ غير معروف") };
+  }
+}
