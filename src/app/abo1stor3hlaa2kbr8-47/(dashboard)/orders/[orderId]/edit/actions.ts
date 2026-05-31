@@ -277,7 +277,7 @@ export async function updateOrderAdmin(
       }
     }
 
-    const updateData: any = {
+  const updateData: any = {
       shop: { connect: { id: shopId } },
       submittedBy: submittedByEmployeeIdRaw ? { connect: { id: submittedByEmployeeIdRaw } } : { disconnect: true },
       customer: effectiveLinkedCustomerId ? { connect: { id: effectiveLinkedCustomerId } } : { disconnect: true },
