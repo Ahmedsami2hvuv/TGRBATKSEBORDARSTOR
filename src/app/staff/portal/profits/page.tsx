@@ -49,15 +49,15 @@ export default async function StaffProfitsPage({
     orderBy: { createdAt: "desc" },
   });
 
-  // تصفية الطلبات برمجياً للتأكد من حالة profitSettled
-  const pendingProfits = orders.filter((o) => {
+  // تصفية الطلبات برمجياً
+  const displayProfits = orders.filter((o) => {
     const json = o.preparerShoppingJson as any;
-    return json && json.staffProfit && !json.profitSettled;
+    return json && json.staffProfit;
   });
 
-  const totalPendingProfit = pendingProfits.reduce((acc, o) => {
+  const totalPendingProfit = displayProfits.reduce((acc, o) => {
     const json = o.preparerShoppingJson as any;
-    return acc + (Number(json.staffProfit) || 0);
+    return acc + (!json.profitSettled ? (Number(json.staffProfit) || 0) : 0);
   }, 0);
 
   const authQ = `se=${se}&exp=${exp}&s=${s}`;
@@ -82,7 +82,7 @@ export default async function StaffProfitsPage({
         <div className="mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-teal-500 to-emerald-600 p-6 text-white shadow-lg shadow-emerald-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium opacity-90">إجمالي الأرباح المستحقة</p>
+              <p className="text-sm font-medium opacity-90">إجمالي الأرباح المعلقة</p>
               <div className="mt-1 flex items-baseline gap-2">
                 <span className="text-4xl font-black">{totalPendingProfit.toLocaleString()}</span>
                 <span className="text-sm font-bold opacity-80">د.ع</span>
@@ -99,18 +99,22 @@ export default async function StaffProfitsPage({
 
         {/* Orders List */}
         <div className="space-y-4">
-          <h2 className="px-2 text-sm font-bold text-slate-500">طلبات تم تسليمها (انتظار الاستلام)</h2>
-          {pendingProfits.length === 0 ? (
+          <h2 className="px-2 text-sm font-bold text-slate-500">سجل الأرباح الأخيرة</h2>
+          {displayProfits.length === 0 ? (
             <div className="rounded-3xl bg-white p-12 text-center shadow-sm">
-              <p className="text-slate-400">لا توجد أرباح معلقة حالياً.</p>
+              <p className="text-slate-400">لا توجد أرباح حالياً.</p>
             </div>
           ) : (
-            pendingProfits.map((order) => {
+            displayProfits.map((order) => {
               const json = order.preparerShoppingJson as any;
+              const isSettled = !!json.profitSettled;
+
               return (
                 <div
                   key={order.id}
-                  className="group relative overflow-hidden rounded-3xl bg-white p-5 shadow-sm transition hover:shadow-md"
+                  className={`group relative overflow-hidden rounded-3xl p-5 transition shadow-sm ${
+                    isSettled ? "bg-emerald-50 border border-emerald-100" : "bg-white hover:shadow-md"
+                  }`}
                 >
                   <div className="flex items-start justify-between">
                     <div>
@@ -118,27 +122,38 @@ export default async function StaffProfitsPage({
                       <p className="mt-1 font-bold text-slate-800">{order.summary || "طلب ذو وجهتين"}</p>
                     </div>
                     <div className="text-left">
-                      <p className="text-lg font-black text-emerald-600">+{json.staffProfit} د.ع</p>
+                      <p className={`text-lg font-black ${isSettled ? "text-slate-400 line-through" : "text-emerald-600"}`}>
+                        +{json.staffProfit} د.ع
+                      </p>
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between border-t border-slate-50 pt-4">
-                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-600">
-                      تم التسليم بنجاح
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-100/50 pt-4">
+                    <span className={`rounded-full px-3 py-1 text-[10px] font-bold ${
+                      isSettled ? "bg-emerald-100 text-emerald-700" : "bg-emerald-50 text-emerald-600"
+                    }`}>
+                      {isSettled ? "تم استلام المبلغ" : "تم التسليم بنجاح"}
                     </span>
 
-                    <form action={settleStaffProfit}>
-                      <input type="hidden" name="se" value={se} />
-                      <input type="hidden" name="exp" value={exp} />
-                      <input type="hidden" name="s" value={s} />
-                      <input type="hidden" name="orderId" value={order.id} />
-                      <button
-                        type="submit"
-                        className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-black text-white shadow-sm transition active:scale-95"
-                      >
-                        تم الاستلام مني
-                      </button>
-                    </form>
+                    {isSettled ? (
+                      <div className="flex items-center gap-1 text-emerald-600 font-black text-xs">
+                        <DynamicIcon iconKey="ui_success" config={icons} className="w-4 h-4" />
+                        تم التسوية
+                      </div>
+                    ) : (
+                      <form action={settleStaffProfit}>
+                        <input type="hidden" name="se" value={se} />
+                        <input type="hidden" name="exp" value={exp} />
+                        <input type="hidden" name="s" value={s} />
+                        <input type="hidden" name="orderId" value={order.id} />
+                        <button
+                          type="submit"
+                          className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-black text-white shadow-sm transition active:scale-95"
+                        >
+                          تم الاستلام مني
+                        </button>
+                      </form>
+                    )}
                   </div>
                 </div>
               );

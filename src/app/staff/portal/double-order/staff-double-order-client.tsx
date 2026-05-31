@@ -268,17 +268,13 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
         <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-500 mr-1">نوع الطلب</label>
-                <select
+                <input
                     name="orderType"
                     value={orderType}
                     onChange={e => setOrderType(e.target.value)}
+                    placeholder="مثلاً: توصيل فقط..."
                     className={inputClass}
-                >
-                    <option value="توصيل فقط">توصيل فقط</option>
-                    <option value="شراء وتوصيل">شراء وتوصيل</option>
-                    <option value="استبدال">استبدال</option>
-                    <option value="ترجيع">ترجيع</option>
-                </select>
+                />
             </div>
             <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-500 mr-1">وقت الطلب</label>
