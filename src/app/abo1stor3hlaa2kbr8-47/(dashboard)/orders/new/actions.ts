@@ -124,6 +124,16 @@ export async function createAdminOrder(
       ? (modeRaw === "prep_draft" ? "preparation" : modeRaw)
       : "from_shop";
 
+  // الحصول على معلومات المندوب المختار للإسناد المباشر أو التلقائي
+  const assignedCourierRaw = String(formData.get("assignedCourierId") ?? "").trim();
+  let selectedCourier: { id: string; name: string } | null = null;
+  if (assignedCourierRaw) {
+    selectedCourier = await prisma.courier.findFirst({
+      where: { ...courierAssignableWhere, id: assignedCourierRaw },
+      select: { id: true, name: true },
+    });
+  }
+
   // --- Handling Preparation Draft Mode ---
   if (adminSubmissionMode === "preparation") {
     const preparerIds = formData.getAll("preparerIds").map(String).map(s => s.trim()).filter(Boolean);
@@ -175,7 +185,9 @@ export async function createAdminOrder(
             products,
             groupId,
             fromAdminId: "admin",
-            fromAdminName: "الإدارة"
+            fromAdminName: "الإدارة",
+            autoCourierId: selectedCourier?.id || null,
+            autoCourierName: selectedCourier?.name || null,
           },
         },
         select: { id: true },
@@ -335,16 +347,7 @@ export async function createAdminOrder(
   const total = new Decimal(subtotalParsed.value).plus(delivery);
 
   const submittedByEmployeeId = String(formData.get("linkedCustomerId") ?? "").trim() || null;
-  const assignedCourierRaw = String(formData.get("assignedCourierId") ?? "").trim();
-  let assignedCourierId: string | null = null;
-  if (assignedCourierRaw) {
-    const courier = await prisma.courier.findFirst({
-      where: { ...courierAssignableWhere, id: assignedCourierRaw },
-      select: { id: true },
-    });
-    if (!courier) return { error: "المندوب المختار غير متاح للإسناد حالياً." };
-    assignedCourierId = courier.id;
-  }
+  const assignedCourierId = selectedCourier?.id || null;
 
   const order = await prisma.order.create({
     data: {

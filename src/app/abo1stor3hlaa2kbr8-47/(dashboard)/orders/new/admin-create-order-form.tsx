@@ -472,7 +472,6 @@ export function AdminCreateOrderForm({
  <input type="hidden" name="secondExistingDoorPhotoUrl" value={secondRawDoorPhotoUrl || ""} />
 
  {/* --- إسناد تلقائي لمندوب (في بداية الصفحة) --- */}
- {submissionMode !== "prep_draft" && (
  <div className={`rounded-2xl border-2 border-emerald-500 bg-emerald-50/30 p-4 shadow-sm transition-opacity ${pending ? 'opacity-50 pointer-events-none' : ''}`}>
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
  <div className="flex items-center gap-2">
@@ -537,7 +536,6 @@ export function AdminCreateOrderForm({
  إذا اخترت مندوب، سيتم إرسال إشعار فوري له وسينتقل الطلب لحالة "قيد التوصيل".
  </p>
  </div>
- )}
 
  <div className="rounded-xl border border-sky-200 bg-white/70 p-3">
  <p className="text-sm font-bold text-slate-800">نوع المسار / الطلب</p>
