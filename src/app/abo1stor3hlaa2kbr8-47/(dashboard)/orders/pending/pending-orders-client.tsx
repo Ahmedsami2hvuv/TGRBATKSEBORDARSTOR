@@ -849,7 +849,8 @@ export function AdminPricingPanel({
         </div>
       ) : null}
     </div>
-  );
+  </div>
+);
 }
 
 /** مكون إسناد الطلب للمندوب */
