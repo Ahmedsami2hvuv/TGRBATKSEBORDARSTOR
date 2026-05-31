@@ -146,6 +146,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
     pricedById: uiProd.pricedById || null,
     assignedPreparerId: typeof uiProd.assignedPreparerId === "string" && uiProd.assignedPreparerId.trim() ? uiProd.assignedPreparerId.trim() : null,
     assignedPreparerName: typeof uiProd.assignedPreparerName === "string" ? uiProd.assignedPreparerName : null,
+    isFulfilledByAdmin: !!uiProd.isFulfilledByAdmin,
   }));
 
   // --- التحقق من الإرسال النهائي ---
@@ -447,12 +448,14 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
       });
 
       for (const inv of preparerInvoices) {
+        if (inv.preparerName === "تجهيز الإدارة 🏛️") continue;
+
         const preparer = inv.preparerId
           ? allPreparers.find(p => p.id === inv.preparerId)
           : allPreparers.find(p => p.name.trim() === inv.preparerName.trim());
 
         const chargeBuyAlf = inv.products.reduce(
-          (sum: number, p: any) => sum + (isMeatProduct(p.line) ? 0 : Number(p.buyAlf || 0)),
+          (sum: number, p: any) => sum + (isMeatProduct(p.line) || p.isFulfilledByAdmin ? 0 : Number(p.buyAlf || 0)),
           0,
         );
         if (preparer && preparer.walletEmployeeId && chargeBuyAlf > 0) {

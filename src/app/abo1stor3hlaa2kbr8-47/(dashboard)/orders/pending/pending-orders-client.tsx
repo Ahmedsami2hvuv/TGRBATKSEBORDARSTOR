@@ -259,11 +259,11 @@ export function AdminPricingPanel({
 
   const [placesCount, setPlacesCount] = useState(initialData?.placesCount || 1);
   const [selectedShopId, setSelectedShopId] = useState("");
-  const [deleteMode, setDeleteMode] = useState(false);
-  const [showBulkAdd, setShowBulkAdd] = useState(false);
+  const [bulkText, setBulkText] = useState("");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [selectedProductIndexes, setSelectedProductIndexes] = useState<number[]>([]);
   const [productAssigneeId, setProductAssigneeId] = useState("");
+  const [deleteMode, setDeleteMode] = useState(false);
   const [showReassign, setShowReassign] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [productPhotoById, setProductPhotoById] = useState<Record<string, string>>({});
@@ -272,6 +272,7 @@ export function AdminPricingPanel({
 
   const [buyText, setBuyText] = useState("");
   const [sellText, setSellText] = useState("");
+  const [isAdminFulfilled, setIsAdminFulfilled] = useState(false);
   const [pricingErr, setPricingErr] = useState<string | null>(null);
 
   const applyPricingPanel = () => {
@@ -282,7 +283,7 @@ export function AdminPricingPanel({
     const buyAlfNum = parseFloat(buyAlfRaw) || 0;
     const sellAlfNum = parseFloat(sellAlfRaw) || 0;
 
-    if (buyAlfNum <= 0) {
+    if (buyAlfNum <= 0 && !isAdminFulfilled) {
       setPricingErr("اكتب سعر الشراء.");
       return;
     }
@@ -290,9 +291,14 @@ export function AdminPricingPanel({
     const next = [...products];
     const updatedItem = { ...next[editingIndex] };
     updatedItem.buyAlf = buyAlfRaw;
-    // إذا كان المستخدم لم يدخل سعر بيع يدوياً، نستخدم التلقائي
     updatedItem.sellAlf = sellAlfNum > 0 ? sellAlfRaw : calculateAutoSellPrice(item.line, buyAlfNum).toString();
     updatedItem.pricedBy = "الإدارة";
+    updatedItem.isFulfilledByAdmin = isAdminFulfilled;
+
+    if (isAdminFulfilled) {
+      updatedItem.assignedPreparerId = null;
+      updatedItem.assignedPreparerName = "تجهيز الإدارة 🏛️";
+    }
 
     next[editingIndex] = updatedItem;
     setProducts(next);
@@ -300,6 +306,7 @@ export function AdminPricingPanel({
     setEditingIndex(null);
     setBuyText("");
     setSellText("");
+    setIsAdminFulfilled(false);
     setPricingErr(null);
   };
 
@@ -307,7 +314,22 @@ export function AdminPricingPanel({
     setEditingIndex(null);
     setBuyText("");
     setSellText("");
+    setIsAdminFulfilled(false);
     setPricingErr(null);
+  };
+
+  const resetProductPricing = (index: number) => {
+    const next = [...products];
+    next[index] = {
+      ...next[index],
+      buyAlf: "0",
+      sellAlf: "0",
+      pricedBy: null,
+      isFulfilledByAdmin: false,
+      assignedPreparerId: null,
+      assignedPreparerName: null,
+    };
+    setProducts(next);
   };
 
   const bound = updateOrderPricingByAdmin.bind(null, orderId);
@@ -432,7 +454,15 @@ export function AdminPricingPanel({
 
   const handleBulkAdd = (text: string) => {
     const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 1);
-    const newProds = lines.map(line => ({ line, buyAlf: "0", sellAlf: "0", pricedBy: null, assignedPreparerId: null, assignedPreparerName: null }));
+    const newProds = lines.map(line => ({
+      line,
+      buyAlf: "0",
+      sellAlf: "0",
+      pricedBy: null,
+      assignedPreparerId: null,
+      assignedPreparerName: null,
+      isFulfilledByAdmin: false
+    }));
     setProducts([...products, ...newProds]);
     setShowBulkAdd(false);
   };
@@ -472,80 +502,138 @@ export function AdminPricingPanel({
     <div className={hideContainer ? "relative text-right h-full flex flex-col" : "relative overflow-hidden rounded-[2.5rem] border border-white/40 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-white/20 dark:ring-white/10 text-right transition-colors"} dir="rtl">
       {!hideContainer && (
         <>
-          {/* Background Decor */}
           <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-amber-200/30 dark:bg-amber-900/10 blur-[60px]" />
           <div className="absolute -right-20 -bottom-20 h-40 w-40 rounded-full bg-violet-200/30 dark:bg-violet-900/10 blur-[60px]" />
         </>
       )}
 
-      <div className={hideContainer ? "flex-1 flex flex-col overflow-hidden" : "relative p-3 sm:p-5"}>
-        {/* شريط الإحصائيات والأزرار العلوي - مدمج وكثيف */}
-        <div className={`sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-2 border-b border-slate-200 dark:border-slate-800 -mx-1 shadow-sm`}>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-1.5">
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5">
-                 <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="h-9 px-2.5 flex items-center gap-1.5 rounded-lg bg-amber-500 text-white text-[10px] font-black shadow-sm active:scale-95 transition-all shrink-0">
-                    <DynamicIcon icon={icons?.ui_plus} fallback="+" width={12} height={12} /> <span className="hidden min-[380px]:inline">إضافة</span>
-                 </button>
-                 <button type="button" onClick={() => setShowReassign(!showReassign)} className="h-9 px-2.5 flex items-center gap-1.5 rounded-lg bg-slate-700 text-white text-[10px] font-black shadow-sm active:scale-95 transition-all shrink-0">
-                    <DynamicIcon icon={icons?.ui_user} fallback="👤" width={12} height={12} /> <span className="hidden min-[380px]:inline">إسناد</span>
-                 </button>
-                 <button type="button" onClick={() => setDeleteMode(!deleteMode)} className={`h-9 w-9 flex items-center justify-center rounded-lg text-[10px] font-black transition-all shrink-0 ${deleteMode ? "bg-rose-600 text-white" : "bg-rose-50 text-rose-600 border border-rose-200"}`}>
-                    <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={14} height={14} />
-                 </button>
+      <form action={formAction} className={hideContainer ? "flex-1 flex flex-col overflow-hidden" : "relative p-3 sm:p-5"}>
+        <input type="hidden" name="productsJson" value={JSON.stringify(products)} />
+        <input type="hidden" name="placesCount" value={placesCount} />
+        {isDraft && <input type="hidden" name="autoCourierId" value={String(initialData?.autoCourierId ?? "")} />}
+        {isDraft && <input type="hidden" name="shopId" value={selectedShopId} />}
+        {isDraft && <input type="hidden" name="isDraft" value="true" />}
+
+        {/* Master Top Bar - Elegant & Compact */}
+        <div className="sticky top-0 z-[100] bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur-md p-3 border-b border-white/10 -mx-1 shadow-2xl rounded-b-[1.5rem] mb-2">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">الإجمالي الكلي</span>
+                  <span className="text-xl font-black font-mono leading-none text-white">
+                    {totals.total.toLocaleString()} <span className="text-[10px] text-amber-400">الف</span>
+                  </span>
+                </div>
+                {isSaving && (
+                  <div className="h-6 px-2 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center gap-1.5 animate-pulse">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    <span className="text-[8px] font-black text-emerald-400">حفظ تلقائي</span>
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
-                 <select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="h-9 rounded-lg bg-slate-100 dark:bg-slate-800 border-none px-1 text-[10px] font-black outline-none focus:ring-2 focus:ring-amber-500 max-w-[60px]">
-                    {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n} محل</option>)}
-                 </select>
-                 <div className="h-9 bg-slate-900 text-white px-2 rounded-lg flex flex-col items-center justify-center shadow-lg min-w-[70px]">
-                    <span className="text-[7px] font-bold text-slate-400 leading-none">الإجمالي</span>
-                    <span className="text-[10px] font-black font-mono leading-none mt-0.5">{(totals.total).toLocaleString()}</span>
-                 </div>
+              <div className="flex items-center gap-1.5">
+                {isDraft ? (
+                  <div className="flex gap-1.5">
+                    <button id="pricing-submit-btn" type="submit" name="submitType" value="admin_approve" disabled={pending} className="h-10 px-4 rounded-xl bg-emerald-600 text-[11px] font-black text-white shadow-lg shadow-emerald-900/40 active:scale-95 transition-all flex items-center gap-2">
+                      {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد</>}
+                    </button>
+                    <button type="submit" name="submitType" value="final_send" disabled={pending || !canSubmitFinal} className="h-10 px-4 rounded-xl bg-violet-600 text-[11px] font-black text-white shadow-lg shadow-violet-900/40 active:scale-95 transition-all flex items-center gap-2">
+                      {pending ? "..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={14} height={14} /> إرسال</>}
+                    </button>
+                  </div>
+                ) : (
+                  <button id="pricing-submit-btn" type="submit" disabled={pending} className="h-10 px-5 rounded-xl bg-sky-600 text-[11px] font-black text-white shadow-lg shadow-sky-900/40 active:scale-95 transition-all flex items-center gap-2">
+                     {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> حفظ وإرسال</>}
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="flex items-center justify-between bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-lg border border-slate-200/50 dark:border-slate-800">
-               <div className="flex-1 flex items-center justify-around px-1 gap-2">
-                  <div className="flex flex-col items-center">
-                     <span className="text-[7px] font-black text-slate-500 uppercase leading-none mb-0.5">بيع</span>
-                     <span className="text-[10px] font-black text-emerald-600 font-mono leading-none">{totals.subtotal.toLocaleString()}</span>
-                  </div>
-                  <div className="w-[1px] h-3 bg-slate-300 dark:bg-slate-600 shrink-0" />
-                  <div className="flex flex-col items-center">
-                     <span className="text-[7px] font-black text-slate-500 uppercase leading-none mb-0.5">شراء</span>
-                     <span className="text-[10px] font-black text-rose-600 font-mono leading-none">{totals.buyTotal.toLocaleString()}</span>
-                  </div>
-                  <div className="w-[1px] h-3 bg-slate-300 dark:bg-slate-600 shrink-0" />
-                  <div className="flex flex-col items-center">
-                     <span className="text-[7px] font-black text-slate-500 uppercase leading-none mb-0.5">ربح</span>
-                     <span className="text-[10px] font-black text-sky-600 font-mono leading-none">{totals.profit.toLocaleString()}</span>
+            <div className="flex items-center justify-between border-t border-white/5 pt-2">
+               <div className="flex items-center gap-2">
+                  {footerActions}
+               </div>
+               <div className="flex items-center gap-2">
+                  <div className="h-8 flex items-center gap-2 px-2.5 rounded-xl bg-white/5 border border-white/10">
+                     <span className="text-[9px] font-black text-slate-400">المحلات:</span>
+                     <select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="bg-transparent border-none p-0 text-[10px] font-black text-amber-400 outline-none cursor-pointer">
+                        {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n} className="bg-slate-900 text-white">{n}</option>)}
+                     </select>
                   </div>
                </div>
-               {isSaving && (
-                 <div className="text-[7px] font-bold text-amber-500 animate-pulse flex flex-col items-center justify-center border-r border-slate-300 dark:border-slate-700 pr-1.5 mr-1.5 shrink-0 leading-[1.1]">
-                   <span>حفظ</span>
-                   <span>تلقائي</span>
-                 </div>
-               )}
             </div>
           </div>
         </div>
 
-      <div className={hideContainer ? "flex-1 overflow-y-auto px-1 custom-scrollbar pb-32" : "space-y-4"}>
-        {showReassign && <div className="mt-2 animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); onSuccess?.(); }} icons={icons || undefined} hideContainer={true} /></div>}
+        {/* Quick Toolbar */}
+        <div className="flex items-center justify-between gap-1.5 p-2 bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700/50 mb-2">
+          <div className="flex items-center gap-1.5">
+             <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="h-9 px-3 flex items-center gap-2 rounded-xl bg-amber-500 text-white text-[10px] font-black shadow-md active:scale-95 transition-all">
+                <DynamicIcon icon={icons?.ui_plus} fallback="+" width={12} height={12} /> إضافة منتجات
+             </button>
+             <button type="button" onClick={() => setShowReassign(!showReassign)} className="h-9 px-3 flex items-center gap-2 rounded-xl bg-slate-800 text-white text-[10px] font-black shadow-md active:scale-95 transition-all">
+                <DynamicIcon icon={icons?.ui_user} fallback="👤" width={12} height={12} /> إسناد
+             </button>
+             <button type="button" onClick={() => { setDeleteMode(!deleteMode); setEditingIndex(null); }} className={`h-9 px-3 flex items-center gap-2 rounded-xl text-[10px] font-black shadow-md active:scale-95 transition-all ${deleteMode ? "bg-rose-600 text-white" : "bg-white dark:bg-slate-800 text-rose-600 border border-rose-100 dark:border-rose-900/50"}`}>
+                <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={12} height={12} /> {deleteMode ? "إيقاف الحذف" : "حذف مواد"}
+             </button>
+          </div>
+          <div className="flex items-center gap-4 px-3">
+             <div className="flex flex-col items-center">
+                <span className="text-[8px] font-black text-emerald-600">بيع: {totals.subtotal.toLocaleString()}</span>
+             </div>
+             <div className="w-[1px] h-4 bg-slate-300 dark:bg-slate-700" />
+             <div className="flex flex-col items-center">
+                <span className="text-[8px] font-black text-rose-600">شراء: {totals.buyTotal.toLocaleString()}</span>
+             </div>
+             <div className="w-[1px] h-4 bg-slate-300 dark:bg-slate-700" />
+             <div className="flex flex-col items-center">
+                <span className="text-[8px] font-black text-sky-600">ربح: {totals.profit.toLocaleString()}</span>
+             </div>
+          </div>
+        </div>
 
         {showBulkAdd && (
-          <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border-2 border-violet-200 dark:border-violet-900/50 animate-in zoom-in-95 shadow-inner">
-            <p className="text-[10px] font-bold text-violet-900 dark:text-violet-300 mb-2">أدخل المنتجات الجديدة (سطر لكل منتج):</p>
-            <textarea className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 text-sm min-h-[80px] outline-none focus:ring-2 focus:ring-violet-300 dark:focus:ring-violet-700 font-bold text-slate-900 dark:text-slate-100" placeholder="لحم شرح 1ك&#10;خيار 2 كيلو" onBlur={(e) => {
-                const lines = e.target.value.split("\n").map(l => l.trim()).filter(l => l.length > 1);
-                if (lines.length) { setProducts([...products, ...lines.map(line => ({ line, buyAlf: "0", sellAlf: "0", pricedBy: null, assignedPreparerId: null, assignedPreparerName: null }))]); setShowBulkAdd(false); }
-                e.target.value = "";
-              }} />
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border-2 border-amber-400/50 animate-in zoom-in-95 shadow-2xl mb-4">
+            <p className="text-[11px] font-black text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
+               <DynamicIcon icon={icons?.ui_plus} width={14} height={14} className="text-amber-500" />
+               أدخل المنتجات الجديدة (كل منتج في سطر):
+            </p>
+            <textarea
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-sm min-h-[100px] outline-none focus:ring-2 focus:ring-amber-500 font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+              placeholder="لحم شرح 1ك&#10;خيار 2 كيلو"
+              value={bulkText}
+              onChange={(e) => setBulkText(e.target.value)}
+            />
+            <div className="mt-3 flex justify-end gap-2">
+               <button
+                 type="button"
+                 onClick={() => { setShowBulkAdd(false); setBulkText(""); }}
+                 className="px-4 py-2 rounded-xl text-[10px] font-black text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all"
+               >
+                 إلغاء
+               </button>
+               <button
+                 type="button"
+                 onClick={() => {
+                   if (bulkText.trim()) {
+                     handleBulkAdd(bulkText);
+                     setBulkText("");
+                   }
+                   setShowBulkAdd(false);
+                 }}
+                 className="px-6 py-2 rounded-xl text-[10px] font-black text-white bg-amber-600 shadow-lg shadow-amber-900/20 hover:bg-amber-700 active:scale-95 transition-all"
+               >
+                 تم إضافة المواد
+               </button>
+            </div>
           </div>
         )}
+
+      <div className={hideContainer ? "flex-1 overflow-y-auto px-1 custom-scrollbar pb-32" : "space-y-4"}>
+        {showReassign && <div className="mt-2 animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); onSuccess?.(); }} icons={icons || undefined} hideContainer={true} /></div>}
 
         {products.length > 0 && selectedProductIndexes.length > 0 && (
           <div className="rounded-xl bg-sky-900 dark:bg-sky-950 p-2 shadow-lg animate-in slide-in-from-top-1">
@@ -617,6 +705,7 @@ export function AdminPricingPanel({
                         setEditingIndex(i);
                         setBuyText(priced ? p.buyAlf : "");
                         setSellText(priced ? p.sellAlf : "");
+                        setIsAdminFulfilled(!!p.isFulfilledByAdmin);
                       }
                     }}
                   >
@@ -625,8 +714,8 @@ export function AdminPricingPanel({
                         {p?.line}
                       </p>
                       {prepName && (
-                        <span className="text-[7px] font-bold text-slate-400 flex items-center gap-0.5">
-                          <DynamicIcon icon={icons?.ui_user} fallback="👤" width={7} height={7} />
+                        <span className={`text-[7px] font-bold flex items-center gap-0.5 ${p.isFulfilledByAdmin ? "text-amber-600" : "text-slate-400"}`}>
+                          <DynamicIcon icon={p.isFulfilledByAdmin ? (icons?.ui_flash) : (icons?.ui_user)} fallback="👤" width={7} height={7} />
                           {prepName}
                         </span>
                       )}
@@ -673,18 +762,38 @@ export function AdminPricingPanel({
                     />
                   </div>
 
-                  <div className="mb-6">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1 block">تخصيص المجهز</label>
-                    <select
-                      value={products[editingIndex]?.assignedPreparerId ?? ""}
-                      onChange={(e) => updateProduct(editingIndex, "assignedPreparerId", e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-sm font-bold outline-none focus:ring-2 focus:ring-sky-500"
-                    >
-                      <option value="">-- بدون تخصيص (الكل) --</option>
-                      {preparers.map((prep) => (
-                        <option key={prep.id} value={prep.id}>{prep.name}</option>
-                      ))}
-                    </select>
+                  <div className="mb-6 space-y-4">
+                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 shadow-sm">
+                      <div className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isAdminFulfilled}
+                          onChange={(e) => setIsAdminFulfilled(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:bg-amber-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:right-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:-translate-x-5 shadow-inner"></div>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-black text-amber-950 dark:text-amber-100">تجهيز من الإدارة 🏛️</span>
+                        <span className="text-[9px] font-bold text-amber-700/70 dark:text-amber-400/70">تجاوز المجهز - لا يتم استقطاع المبلغ منه</span>
+                      </div>
+                    </div>
+
+                    {!isAdminFulfilled && (
+                      <div>
+                        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1 block">تخصيص المجهز</label>
+                        <select
+                          value={products[editingIndex]?.assignedPreparerId ?? ""}
+                          onChange={(e) => updateProduct(editingIndex, "assignedPreparerId", e.target.value)}
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-sm font-bold outline-none focus:ring-2 focus:ring-sky-500"
+                        >
+                          <option value="">-- بدون تخصيص (الكل) --</option>
+                          {preparers.map((prep) => (
+                            <option key={prep.id} value={prep.id}>{prep.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -727,10 +836,13 @@ export function AdminPricingPanel({
                   <div className="mt-5 grid grid-cols-2 gap-3">
                      <button
                        type="button"
-                       onClick={cancelPricingPanel}
-                       className="rounded-2xl border border-slate-200 bg-white py-3.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-white/5 dark:bg-white/5 dark:text-slate-300"
+                       onClick={() => {
+                         resetProductPricing(editingIndex);
+                         cancelPricingPanel();
+                       }}
+                       className="rounded-2xl border border-rose-200 bg-rose-50 py-3.5 text-sm font-black text-rose-600 transition hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-400"
                      >
-                       إلغاء
+                       إلغاء التسعير
                      </button>
                      <button
                        type="button"
@@ -746,52 +858,7 @@ export function AdminPricingPanel({
           </div>
         )}
       </div>
-
-      {/* Floating Summary Bar / Action Footer - مدمج جداً */}
-      <div className={`sticky bottom-0 z-40 p-3 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] ${hideContainer ? "-mx-1 -mb-1" : "-mx-3 -mb-3 sm:-mx-5 sm:-mb-5 rounded-t-[2.5rem]"}`}>
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex-1 flex items-center justify-between p-2 rounded-xl bg-slate-900 text-white shadow-lg border border-white/10">
-               <div className="flex flex-col">
-                 <span className="text-[7px] font-bold text-slate-400 uppercase tracking-wider">الإجمالي (توصيل: {deliveryAlfVal})</span>
-                 <span className="text-lg font-black font-mono leading-none">{totals.total.toLocaleString()} <span className="text-[8px] font-bold text-slate-500">الف</span></span>
-               </div>
-               <div className="h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center">
-                 <DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={18} height={18} />
-               </div>
-            </div>
-
-            <form action={formAction} className="flex-1 flex gap-2">
-              <input type="hidden" name="productsJson" value={JSON.stringify(products)} />
-              <input type="hidden" name="placesCount" value={placesCount} />
-              {isDraft && <input type="hidden" name="autoCourierId" value={String(initialData?.autoCourierId ?? "")} />}
-              {isDraft && <input type="hidden" name="shopId" value={selectedShopId} />}
-              {isDraft && <input type="hidden" name="isDraft" value="true" />}
-
-              {isDraft ? (
-                <div className="flex-1 grid grid-cols-2 gap-1.5">
-                  <button id="pricing-submit-btn" type="submit" name="submitType" value="admin_approve" disabled={pending} className="h-12 rounded-xl bg-emerald-600 text-[10px] font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5">
-                    {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد</>}
-                  </button>
-                  <button type="submit" name="submitType" value="final_send" disabled={pending || !canSubmitFinal} className="h-12 rounded-xl bg-violet-600 text-[10px] font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5">
-                    {pending ? "..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={14} height={14} /> إرسال</>}
-                  </button>
-                </div>
-              ) : (
-                <button type="submit" disabled={pending} className="flex-1 h-12 rounded-xl bg-slate-900 text-[10px] font-black text-white shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                   {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> حفظ وإرسال للمندوب</>}
-                </button>
-              )}
-            </form>
-          </div>
-
-          {footerActions && (
-            <div className="flex items-center justify-center gap-2 border-t border-slate-100 dark:border-slate-800 pt-2">
-               {footerActions}
-            </div>
-          )}
-        </div>
-      </div>
+    </form>
 
       {previewImageUrl ? (
         <div
