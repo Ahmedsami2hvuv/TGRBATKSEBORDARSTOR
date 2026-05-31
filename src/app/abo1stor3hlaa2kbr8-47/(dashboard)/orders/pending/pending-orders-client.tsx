@@ -809,10 +809,15 @@ export function AdminPricingPanel({
                         onChange={(e) => {
                           const val = e.target.value;
                           setBuyText(val);
-                          // حساب سعر البيع تلقائياً عند تغيير الشراء، لكن يمكن للمستخدم تعديله لاحقاً
                           const buyNum = parseFloat(normalizeNumerals(val)) || 0;
                           if (buyNum > 0) {
                             setSellText(calculateAutoSellPrice(products[editingIndex].line, buyNum).toString());
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            document.getElementById('sell-price-input')?.focus();
                           }
                         }}
                         dir="ltr"
@@ -825,8 +830,15 @@ export function AdminPricingPanel({
                     <div>
                       <label className="text-[10px] font-black text-sky-600 mb-1 block text-center">سعر البيع</label>
                       <input
+                        id="sell-price-input"
                         value={sellText}
                         onChange={(e) => setSellText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            applyPricingPanel();
+                          }
+                        }}
                         dir="ltr"
                         placeholder="0"
                         className="w-full rounded-2xl border-2 border-sky-100 bg-sky-50 px-3 py-4 text-center font-mono text-xl font-black tabular-nums text-sky-900 outline-none transition focus:border-sky-500 focus:bg-white dark:border-sky-900/10 dark:text-sky-400"
