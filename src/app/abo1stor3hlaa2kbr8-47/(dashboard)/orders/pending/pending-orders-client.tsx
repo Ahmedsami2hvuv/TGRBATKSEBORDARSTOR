@@ -1229,6 +1229,11 @@ export function PendingOrdersClient({
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(initialIcons || null);
 
+  // مراقبة التغيير في الرابط (مهم جداً لعمل زر الرجوع في المتصفح)
+  useEffect(() => {
+    setPricingOpenId(initialPricingId || null);
+  }, [initialPricingId]);
+
   // تحديث الرابط عند فتح أو إغلاق التسعير
   const updatePricingUrl = (id: string | null) => {
     setPricingOpenId(id);
@@ -1283,9 +1288,10 @@ export function PendingOrdersClient({
           <div className="flex items-center gap-2">
             <button
               onClick={() => updatePricingUrl(null)}
-              className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all"
+              className="h-10 px-3 flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all border border-white/5"
             >
-              <DynamicIcon icon={icons?.ui_close} fallback="✕" width={20} height={20} />
+              <DynamicIcon icon={icons?.ui_close} fallback="✕" width={18} height={18} />
+              <span className="text-[11px] font-black">إغلاق</span>
             </button>
             <div className="pr-1">
               <h2 className="text-xs font-black leading-none">طلب #{order.orderNumber}</h2>
