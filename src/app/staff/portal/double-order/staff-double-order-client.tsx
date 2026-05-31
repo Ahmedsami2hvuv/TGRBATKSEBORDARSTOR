@@ -272,7 +272,7 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
                     name="orderType"
                     value={orderType}
                     onChange={e => setOrderType(e.target.value)}
-                    placeholder="مثلاً: سياره ..."
+                    placeholder="اكتب نوع الطلب هنا"
                     className={inputClass}
                 />
             </div>
