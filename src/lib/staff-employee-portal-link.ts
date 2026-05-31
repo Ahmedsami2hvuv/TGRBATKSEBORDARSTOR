@@ -1,4 +1,6 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { prisma } from "./prisma";
+import { getPublicAppUrl } from "./app-url";
 
 function getSecret(): string {
   const a = process.env.STAFF_EMPLOYEE_PORTAL_SECRET?.trim();
@@ -23,6 +25,20 @@ export function buildStaffEmployeePortalUrl(staffEmployeeId: string, token: stri
   u.searchParams.set("exp", token);
   u.searchParams.set("s", sig);
   return u.toString();
+}
+
+/**
+ * دالة مساعدة لجلب رابط البوابة لموظف معين (تستخدم في البوت)
+ */
+export async function getStaffPortalLink(staffEmployeeId: string): Promise<string> {
+  const staff = await prisma.staffEmployee.findUnique({
+    where: { id: staffEmployeeId },
+    select: { portalToken: true }
+  });
+
+  if (!staff) return "#";
+
+  return buildStaffEmployeePortalUrl(staffEmployeeId, staff.portalToken, getPublicAppUrl());
 }
 
 export type StaffEmployeePortalVerifyReason = "missing" | "bad_signature" | "no_secret";
@@ -59,4 +75,3 @@ export function verifyStaffEmployeePortalQuery(
   }
   return { ok: true, staffEmployeeId: se, token };
 }
-

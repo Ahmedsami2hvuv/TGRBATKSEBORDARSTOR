@@ -79,7 +79,7 @@ export async function handleStaffTelegramCallback(cb: any, botToken: string) {
 }
 
 async function getStaffMainMenuData(staff: any) {
-    const portalLink = getStaffPortalLink(staff.id);
+    const portalLink = await getStaffPortalLink(staff.id);
     const text = `<b>👋 أهلاً بك يا ${staff.name}</b>\n\nيمكنك متابعة أرباحك وإشعارات طلباتك من هنا.`;
     const keyboard: TelegramInlineKeyboard = {
         inline_keyboard: [
