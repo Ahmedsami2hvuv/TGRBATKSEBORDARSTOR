@@ -270,28 +270,35 @@ export function AdminPricingPanel({
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);
 
-  const [pricingErr, setPricingErr] = useState<string | null>(null);
-  const [pricingLinesText, setPricingLinesText] = useState("");
+  const [buyText, setBuyText] = useState("");
+  const [sellText, setSellText] = useState("");
 
   const applyPricingPanel = () => {
     if (editingIndex === null) return;
     const item = products[editingIndex];
-    const buyAlf = parseFloat(normalizeNumerals(pricingLinesText)) || 0;
+    const buyAlf = parseFloat(normalizeNumerals(buyText)) || 0;
+    const sellAlf = parseFloat(normalizeNumerals(sellText)) || 0;
+
     if (buyAlf <= 0) {
       setPricingErr("اكتب سعر الشراء.");
       return;
     }
-    const sellAlf = calculateAutoSellPrice(item.line, buyAlf);
+
     updateProduct(editingIndex, "buyAlf", buyAlf.toString());
-    updateProduct(editingIndex, "sellAlf", sellAlf.toString());
+    // إذا كان المستخدم لم يدخل سعر بيع يدوياً، نستخدم التلقائي
+    const finalSell = sellAlf > 0 ? sellAlf : calculateAutoSellPrice(item.line, buyAlf);
+    updateProduct(editingIndex, "sellAlf", finalSell.toString());
+
     setEditingIndex(null);
-    setPricingLinesText("");
+    setBuyText("");
+    setSellText("");
     setPricingErr(null);
   };
 
   const cancelPricingPanel = () => {
     setEditingIndex(null);
-    setPricingLinesText("");
+    setBuyText("");
+    setSellText("");
     setPricingErr(null);
   };
 
@@ -559,7 +566,8 @@ export function AdminPricingPanel({
                       setProducts(products.filter((_, idx) => idx !== i));
                     } else {
                       setEditingIndex(i);
-                      setPricingLinesText(priced ? p.buyAlf : "");
+                      setBuyText(priced ? p.buyAlf : "");
+                      setSellText(priced ? p.sellAlf : "");
                     }
                   }}
                   className={`group w-full flex flex-col p-3 rounded-2xl border-2 transition-all active:scale-[0.97] text-right overflow-hidden ${
@@ -634,7 +642,7 @@ export function AdminPricingPanel({
                     />
                   </div>
 
-                  <div className="mb-4">
+                  <div className="mb-6">
                     <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1 block">تخصيص المجهز</label>
                     <select
                       value={products[editingIndex]?.assignedPreparerId ?? ""}
@@ -648,24 +656,40 @@ export function AdminPricingPanel({
                     </select>
                   </div>
 
-                  <p className="text-center text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2">
-                     اكتب سعر الشراء فقط وسيتم حساب سعر البيع تلقائياً.
-                  </p>
-                  <input
-                    value={pricingLinesText}
-                    onChange={(e) => setPricingLinesText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        applyPricingPanel();
-                      }
-                    }}
-                    dir="ltr"
-                    placeholder="سعر الشراء"
-                    className="w-full rounded-2xl border-2 border-sky-100 bg-slate-50 px-4 py-4 text-center font-mono text-2xl font-black tabular-nums text-sky-950 outline-none transition focus:border-sky-500 focus:bg-white dark:border-white/5 dark:bg-black/20 dark:text-white"
-                    inputMode="decimal"
-                    autoFocus
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 mb-1 block text-center">سعر الشراء</label>
+                      <input
+                        value={buyText}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setBuyText(val);
+                          // حساب سعر البيع تلقائياً عند تغيير الشراء، لكن يمكن للمستخدم تعديله لاحقاً
+                          const buyNum = parseFloat(normalizeNumerals(val)) || 0;
+                          if (buyNum > 0) {
+                            setSellText(calculateAutoSellPrice(products[editingIndex].line, buyNum).toString());
+                          }
+                        }}
+                        dir="ltr"
+                        placeholder="0"
+                        className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 px-3 py-4 text-center font-mono text-xl font-black tabular-nums text-slate-900 outline-none transition focus:border-sky-500 focus:bg-white dark:border-white/5 dark:bg-black/20 dark:text-white"
+                        inputMode="decimal"
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-sky-600 mb-1 block text-center">سعر البيع</label>
+                      <input
+                        value={sellText}
+                        onChange={(e) => setSellText(e.target.value)}
+                        dir="ltr"
+                        placeholder="0"
+                        className="w-full rounded-2xl border-2 border-sky-100 bg-sky-50 px-3 py-4 text-center font-mono text-xl font-black tabular-nums text-sky-900 outline-none transition focus:border-sky-500 focus:bg-white dark:border-sky-900/10 dark:text-sky-400"
+                        inputMode="decimal"
+                      />
+                    </div>
+                  </div>
+
                   {pricingErr && (
                     <p className="mt-2 text-center text-xs font-bold text-rose-600">{pricingErr}</p>
                   )}
@@ -1189,6 +1213,54 @@ export function PendingOrdersClient({
     }
   }, [targetStatus]);
 
+  if (pricingOpenId && (isDraftMode || orders.some(o => o.id === pricingOpenId))) {
+    const order = orders.find(o => o.id === pricingOpenId)!;
+    return (
+      <div className="fixed inset-0 z-[500] bg-slate-50 dark:bg-slate-950 flex flex-col animate-in slide-in-from-left duration-300">
+        <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm">
+          <button
+            onClick={() => setPricingOpenId(null)}
+            className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+          >
+            <DynamicIcon icon={icons?.ui_close} fallback="✕" width={20} height={20} />
+          </button>
+          <div className="text-center">
+            <h2 className="text-sm font-black text-slate-900 dark:text-white">تسعير الطلب #{order.orderNumber}</h2>
+            <p className="text-[10px] font-bold text-slate-500">{order.shopName || order.orderType}</p>
+          </div>
+          <div className="h-10 w-10" /> {/* Spacer */}
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 pb-safe">
+          <div className="max-w-2xl mx-auto">
+             <AdminPricingPanel
+                orderId={order.id}
+                initialData={order.preparerShoppingJson}
+                isDraft={isDraftMode}
+                initialPreparerIds={order.assignedPreparerIds}
+                orderSummary={order.summary}
+                shops={shops}
+                preparers={preparers}
+                rawDeliveryPriceDinar={order.rawDeliveryPriceDinar}
+                onSuccess={() => {
+                  setPricingOpenId(null);
+                  router.refresh();
+                }}
+                icons={icons}
+                hideContainer={true}
+                footerActions={
+                  <div className="flex items-center gap-2">
+                    <RejectDraftButton draftId={order.id} icons={icons} />
+                    <DeleteFullOrderButton id={order.id} isDraft={true} onSuccess={() => { setPricingOpenId(null); router.refresh(); }} icons={icons} />
+                  </div>
+                }
+              />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2 text-right" dir="rtl">
       {orders.length > 0 && !isDraftMode && (
@@ -1524,72 +1596,7 @@ export function PendingOrdersClient({
         );
       })}
 
-      {isDraftMode && pricingModalOrder ? (
-        <div
-          className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/80 dark:bg-black/90 p-2 sm:p-6 backdrop-blur-xl"
-          onClick={() => setPricingOpenId(null)}
-        >
-          <div
-            className="w-full max-w-4xl max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-300 bg-white/90 dark:bg-slate-900/90 backdrop-blur-3xl rounded-[3rem] border border-white/40 dark:border-slate-700/50 shadow-[0_30px_70px_rgba(0,0,0,0.3)] overflow-hidden ring-1 ring-white/20 dark:ring-white/10"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md shrink-0">
-               <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white flex items-center justify-center shadow-lg shadow-violet-200 dark:shadow-none">
-                     <DynamicIcon icon={icons?.admin_pricing} fallback="💰" width={26} height={26} />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-black text-slate-900 dark:text-slate-100">نافذة التسعير الإدارية</h3>
-                    <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                      <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">#{pricingModalOrder.orderNumber}</span>
-                      {pricingModalOrder.orderType || "مسودة"}
-                    </p>
-                  </div>
-               </div>
-               <div className="flex items-center gap-2">
-                 <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 border border-amber-100 dark:border-amber-900/50">
-                    <DynamicIcon icon={icons?.ui_flash} fallback="⚡" width={20} height={20} />
-                 </div>
-               </div>
-            </div>
 
-            {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-slate-50/50 dark:bg-black/20">
-              <AdminPricingPanel
-                orderId={pricingModalOrder.id}
-                initialData={pricingModalOrder.preparerShoppingJson}
-                isDraft={true}
-                initialPreparerIds={pricingModalOrder.assignedPreparerIds}
-                orderSummary={pricingModalOrder.summary}
-                shops={shops}
-                preparers={preparers}
-                rawDeliveryPriceDinar={pricingModalOrder.rawDeliveryPriceDinar}
-                onSuccess={() => {
-                  setPricingOpenId(null);
-                  router.refresh();
-                }}
-                icons={icons}
-                hideContainer={true}
-                footerActions={
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setPricingOpenId(null)}
-                      className="h-9 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-black hover:bg-slate-200 transition-all flex items-center gap-1.5"
-                    >
-                      <DynamicIcon icon={icons?.ui_close} fallback="✕" width={12} height={12} />
-                      إغلاق
-                    </button>
-                    <RejectDraftButton draftId={pricingModalOrder.id} icons={icons} />
-                    <DeleteFullOrderButton id={pricingModalOrder.id} isDraft={true} onSuccess={() => { setPricingOpenId(null); router.refresh(); }} icons={icons} />
-                  </div>
-                }
-              />
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

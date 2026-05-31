@@ -47,12 +47,13 @@ function extractProductsArray(draft: Draft): ProductItem[] {
   const items: ProductItem[] = [];
   for (const p of products) {
     if (!p || typeof p !== "object") continue;
-    const line = String((p as Record<string, unknown>).line ?? "").trim();
+    const pObj = p as Record<string, unknown>;
+    const line = String(pObj.line ?? "").trim();
     if (line) {
       items.push({
-        id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2),
+        id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
         line,
-        preparerId: draft.preparerId || null,
+        preparerId: (pObj.preparerId as string) || null,
       });
     }
   }
@@ -123,17 +124,19 @@ export function StaffSubmittedDraftEditClient({
   const productsCount = products.length;
 
   const addProduct = () => {
-    setProducts([...products, { id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2), line: "", preparerId: null }]);
+    const newId = (typeof crypto !== "undefined" && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
+    setProducts(prev => [...prev, { id: newId, line: "", preparerId: null }]);
   };
 
-  const updateProduct = (idx: number, updates: Partial<ProductItem>) => {
-    const next = [...products];
-    next[idx] = { ...next[idx], ...updates };
-    setProducts(next);
+  const updateProduct = (id: string, updates: Partial<ProductItem>) => {
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
   };
 
-  const removeProduct = (idx: number) => {
-    setProducts(products.filter((_, i) => i !== idx));
+  const removeProduct = (id: string) => {
+    setProducts(prev => prev.filter(p => p.id !== id));
+    setSelectedIds(prev => prev.filter(x => x !== id));
   };
 
   const toggleSelect = (id: string) => {
@@ -350,22 +353,22 @@ export function StaffSubmittedDraftEditClient({
                 <div key={p.id} className={`flex flex-col gap-2 bg-white p-3 rounded-2xl border-2 transition-all ${isSelected ? 'border-indigo-400 bg-indigo-50/30' : 'border-slate-100'}`}>
                   {/* شريط الأدوات فوق المنتج */}
                   <div className="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
-                    <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelect(p.id)}
                         disabled={!canEdit}
-                        className="w-5 h-5 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        className="w-5 h-5 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                       />
                       <span className="text-[10px] font-black text-slate-400"># {idx + 1}</span>
-                    </div>
+                    </label>
 
                     <div className="flex items-center gap-2">
                       <select
                         value={p.preparerId || ""}
-                        onChange={(e) => updateProduct(idx, { preparerId: e.target.value || null })}
-                        className="text-[10px] font-bold bg-sky-50 text-sky-800 border-none rounded-lg px-2 py-1 outline-none"
+                        onChange={(e) => updateProduct(p.id, { preparerId: e.target.value || null })}
+                        className="text-[10px] font-bold bg-sky-50 text-sky-800 border-none rounded-lg px-2 py-1 outline-none cursor-pointer"
                         disabled={!canEdit}
                       >
                         <option value="">(المجهز الافتراضي)</option>
@@ -378,12 +381,12 @@ export function StaffSubmittedDraftEditClient({
 
                       <button
                         type="button"
-                        onClick={() => removeProduct(idx)}
+                        onClick={() => removeProduct(p.id)}
                         disabled={!canEdit}
-                        className="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 p-1.5 rounded-lg transition disabled:opacity-50"
+                        className="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 p-2 rounded-lg transition disabled:opacity-50"
                         title="حذف المنتج"
                       >
-                        <DynamicIcon icon={icons?.ui_delete || icons?.ui_error} className="w-3.5 h-3.5" fallback={<span>❌</span>} />
+                        <DynamicIcon icon={icons?.ui_delete || icons?.ui_error} className="w-4 h-4" fallback={<span>❌</span>} />
                       </button>
                     </div>
                   </div>
@@ -391,7 +394,7 @@ export function StaffSubmittedDraftEditClient({
                   <input
                     type="text"
                     value={p.line}
-                    onChange={(e) => updateProduct(idx, { line: e.target.value })}
+                    onChange={(e) => updateProduct(p.id, { line: e.target.value })}
                     placeholder={`اكتب تفاصيل المنتج ${idx + 1}...`}
                     className={`${inputClass} !border-none !shadow-none !bg-transparent !px-1 font-bold text-sm`}
                     disabled={!canEdit}
