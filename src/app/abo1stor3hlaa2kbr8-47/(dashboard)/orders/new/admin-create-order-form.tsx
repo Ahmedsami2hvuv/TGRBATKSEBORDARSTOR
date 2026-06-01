@@ -84,6 +84,10 @@ export function AdminCreateOrderForm({
  const [assignedCourierId, setAssignedCourierId] = useState("");
  const [courierSearch, setCourierSearch] = useState("");
 
+ const [deliveryAdjustment, setDeliveryAdjustment] = useState(0);
+ const [isPrepaidAll, setIsPrepaidAll] = useState(false);
+ const [isReverse, setIsReverse] = useState(false);
+
  const filteredCouriers = useMemo(() => {
  if (!courierSearch.trim()) return couriers;
  return couriers.filter((c) =>
@@ -471,6 +475,9 @@ export function AdminCreateOrderForm({
  <input type="hidden" name="linkedCustomerId" value={selectedEmployeeId} />
  <input type="hidden" name="firstExistingDoorPhotoUrl" value={firstRawDoorPhotoUrl || ""} />
  <input type="hidden" name="secondExistingDoorPhotoUrl" value={secondRawDoorPhotoUrl || ""} />
+ <input type="hidden" name="deliveryAdjustment" value={deliveryAdjustment} />
+ <input type="hidden" name="prepaidAll" value={isPrepaidAll ? "true" : "false"} />
+ <input type="hidden" name="isReverse" value={isReverse ? "true" : "false"} />
 
  {/* --- إسناد تلقائي لمندوب (في بداية الصفحة) --- */}
  <div className={`rounded-2xl border-2 border-emerald-500 bg-emerald-50/30 p-4 shadow-sm transition-opacity ${pending ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -825,18 +832,62 @@ export function AdminCreateOrderForm({
  </label>
 
                  {/* سعر الطلب */}
-                 <label className="flex flex-col gap-1 text-sm">
-                   <span className={ad.label}>سعر الطلب</span>
-                   <input
-                     name="orderSubtotal"
-                     required
-                     className={ad.input}
-                     placeholder="اكتب السعر"
-                     inputMode="decimal"
-                     value={orderSubtotal}
-                     onChange={(e) => setOrderSubtotal(e.target.value)}
-                   />
-                 </label>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   <label className="flex flex-col gap-1 text-sm">
+                     <span className={ad.label}>سعر الطلب</span>
+                     <input
+                       name="orderSubtotal"
+                       required
+                       className={ad.input}
+                       placeholder="اكتب السعر"
+                       inputMode="decimal"
+                       value={orderSubtotal}
+                       onChange={(e) => setOrderSubtotal(e.target.value)}
+                     />
+                   </label>
+
+                   <div className="flex flex-col gap-1 text-sm">
+                     <span className={ad.label}>تعديل كلفة التوصيل</span>
+                     <div className="flex items-center gap-2">
+                       <button
+                         type="button"
+                         onClick={() => setDeliveryAdjustment(prev => prev - 500)}
+                         className="flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition shadow-sm font-black"
+                       >
+                         -
+                       </button>
+                       <div className="flex-1 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white font-mono font-bold text-slate-700">
+                         {deliveryAdjustment > 0 ? "+" : ""}{deliveryAdjustment}
+                       </div>
+                       <button
+                         type="button"
+                         onClick={() => setDeliveryAdjustment(prev => prev + 500)}
+                         className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition shadow-sm font-black"
+                       >
+                         +
+                       </button>
+                     </div>
+                   </div>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-3 mt-2">
+                   <button
+                     type="button"
+                     onClick={() => setIsPrepaidAll(!isPrepaidAll)}
+                     className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black transition shadow-sm border-2 ${isPrepaidAll ? 'bg-emerald-600 border-emerald-400 text-white' : 'bg-white border-slate-200 text-slate-600'}`}
+                   >
+                     {isPrepaidAll ? <DynamicIcon icon={icons?.ui_success} fallback="✓" width={14} height={14} /> : null}
+                     واصل كلشي
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => setIsReverse(!isReverse)}
+                     className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black transition shadow-sm border-2 ${isReverse ? 'bg-violet-600 border-violet-400 text-white' : 'bg-white border-slate-200 text-slate-600'}`}
+                   >
+                     {isReverse ? <DynamicIcon icon={icons?.ui_ai} fallback="🔄" width={14} height={14} /> : null}
+                     طلب عكسي
+                   </button>
+                 </div>
 
                  {/* وقت الطلب */}
                  <label className="flex flex-col gap-1 text-sm">
@@ -1021,17 +1072,61 @@ export function AdminCreateOrderForm({
                  </label>
 
                  {/* سعر الطلب */}
-                 <label className="flex flex-col gap-1 text-sm">
-                   <span className={ad.label}>سعر الطلب</span>
-                   <input
-                     name="orderSubtotal"
-                     required
-                     className={ad.input}
-                     inputMode="decimal"
-                     value={orderSubtotal}
-                     onChange={(e) => setOrderSubtotal(e.target.value)}
-                   />
-                 </label>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   <label className="flex flex-col gap-1 text-sm">
+                     <span className={ad.label}>سعر الطلب</span>
+                     <input
+                       name="orderSubtotal"
+                       required
+                       className={ad.input}
+                       inputMode="decimal"
+                       value={orderSubtotal}
+                       onChange={(e) => setOrderSubtotal(e.target.value)}
+                     />
+                   </label>
+
+                   <div className="flex flex-col gap-1 text-sm">
+                     <span className={ad.label}>تعديل كلفة التوصيل</span>
+                     <div className="flex items-center gap-2">
+                       <button
+                         type="button"
+                         onClick={() => setDeliveryAdjustment(prev => prev - 500)}
+                         className="flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition shadow-sm font-black"
+                       >
+                         -
+                       </button>
+                       <div className="flex-1 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white font-mono font-bold text-slate-700">
+                         {deliveryAdjustment > 0 ? "+" : ""}{deliveryAdjustment}
+                       </div>
+                       <button
+                         type="button"
+                         onClick={() => setDeliveryAdjustment(prev => prev + 500)}
+                         className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition shadow-sm font-black"
+                       >
+                         +
+                       </button>
+                     </div>
+                   </div>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-3 mt-2">
+                   <button
+                     type="button"
+                     onClick={() => setIsPrepaidAll(!isPrepaidAll)}
+                     className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black transition shadow-sm border-2 ${isPrepaidAll ? 'bg-emerald-600 border-emerald-400 text-white' : 'bg-white border-slate-200 text-slate-600'}`}
+                   >
+                     {isPrepaidAll ? <DynamicIcon icon={icons?.ui_success} fallback="✓" width={14} height={14} /> : null}
+                     واصل كلشي
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => setIsReverse(!isReverse)}
+                     className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black transition shadow-sm border-2 ${isReverse ? 'bg-violet-600 border-violet-400 text-white' : 'bg-white border-slate-200 text-slate-600'}`}
+                   >
+                     {isReverse ? <DynamicIcon icon={icons?.ui_ai} fallback="🔄" width={14} height={14} /> : null}
+                     طلب عكسي
+                   </button>
+                 </div>
 
                  {/* وقت الطلب */}
                  <label className="flex flex-col gap-1 text-sm">

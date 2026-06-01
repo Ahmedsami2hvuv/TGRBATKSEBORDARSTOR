@@ -124,6 +124,10 @@ export async function createAdminOrder(
       ? (modeRaw === "prep_draft" ? "preparation" : modeRaw)
       : "from_shop";
 
+  const deliveryAdjustmentRaw = Number(formData.get("deliveryAdjustment") ?? "0");
+  const prepaidAll = formData.get("prepaidAll") === "true";
+  const isReverse = formData.get("isReverse") === "true";
+
   // الحصول على معلومات المندوب المختار للإسناد المباشر أو التلقائي
   const assignedCourierRaw = String(formData.get("assignedCourierId") ?? "").trim();
   let selectedCourier: { id: string; name: string } | null = null;
@@ -223,7 +227,10 @@ export async function createAdminOrder(
     targetShopId = systemShop.id;
   }
 
-  const orderType = String(formData.get("orderType") ?? "").trim();
+  let orderType = String(formData.get("orderType") ?? "").trim();
+  if (isReverse && orderType && !orderType.startsWith("طلب عكسي:")) {
+    orderType = `طلب عكسي: ${orderType}`;
+  }
   const summary = String(formData.get("summary") ?? "").trim();
   const orderNoteTime = String(formData.get("orderNoteTime") ?? "").trim();
 
@@ -338,11 +345,15 @@ export async function createAdminOrder(
   const firstDel = firstRegion.deliveryPrice;
   const secondDel = secondRegion?.deliveryPrice ?? new Decimal(0);
 
-  const delivery = adminSubmissionMode === "admin_one_face"
+  let delivery = adminSubmissionMode === "admin_one_face"
     ? firstDel
     : (routeMode === "double"
         ? Decimal.max(shopDel, firstDel, secondDel)
         : Decimal.max(shopDel, firstDel));
+
+  if (deliveryAdjustmentRaw !== 0) {
+    delivery = delivery.plus(deliveryAdjustmentRaw);
+  }
 
   const total = new Decimal(subtotalParsed.value).plus(delivery);
 
@@ -377,6 +388,7 @@ export async function createAdminOrder(
       orderSubtotal: subtotalParsed.value,
       deliveryPrice: delivery,
       totalAmount: total,
+      prepaidAll,
       imageUrl,
       voiceNoteUrl,
       shopDoorPhotoUrl: shop.photoUrl?.trim() || null,
