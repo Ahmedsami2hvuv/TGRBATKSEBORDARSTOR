@@ -44,6 +44,9 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
       where: { id },
       data: { name, sequence, photoUrl, notes, profitMargin }
     });
+    // مزامنة الأسعار للمنتجات التابعة لهذا القسم
+    const { syncCategoryProductsPrice } = await import("@/lib/store-profit-sync");
+    await syncCategoryProductsPrice(id);
   } else {
     await prisma.storeCategory.create({
       data: { name, sequence, photoUrl, notes, profitMargin }
@@ -134,6 +137,10 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
       where: { id },
       data
     });
+    // مزامنة الأسعار لهذا الفرع
+    const { syncBranchProductsPrice } = await import("@/lib/store-profit-sync");
+    await syncBranchProductsPrice(id);
+
     if (!skipRevalidate) {
         revalidatePath(`${SECRET_ADMIN_PATH}/store/branches`);
         revalidatePath("/staff/portal/store/branches");
@@ -246,13 +253,17 @@ export async function upsertProduct(_prev: any, formData: FormData): Promise<For
       }
     }
 
+    const { getEffectiveProfitMargin } = await import("@/lib/store-profit-sync");
+    const activeMargin = await getEffectiveProfitMargin(branchId);
+    const finalSalePrice = salePrice > 0 ? salePrice : (purchasePrice + activeMargin);
+
     const data: any = {
       name,
       description,
       branchId,
       sequence,
       purchasePrice,
-      salePrice,
+      salePrice: finalSalePrice,
       photoUrls,
       hasVariants,
       variantType: hasVariants ? variantType : null,
@@ -269,7 +280,7 @@ export async function upsertProduct(_prev: any, formData: FormData): Promise<For
               productId: id,
               name: v.name,
               purchasePrice: parseFloat(v.purchasePrice || 0),
-              salePrice: parseFloat(v.salePrice || 0),
+              salePrice: parseFloat(v.salePrice || 0) || (parseFloat(v.purchasePrice || 0) + activeMargin),
               sequence: idx,
             }))
           });
@@ -283,7 +294,7 @@ export async function upsertProduct(_prev: any, formData: FormData): Promise<For
             productId: product.id,
             name: v.name,
             purchasePrice: parseFloat(v.purchasePrice || 0),
-            salePrice: parseFloat(v.salePrice || 0),
+            salePrice: parseFloat(v.salePrice || 0) || (parseFloat(v.purchasePrice || 0) + activeMargin),
             sequence: idx,
           }))
         });

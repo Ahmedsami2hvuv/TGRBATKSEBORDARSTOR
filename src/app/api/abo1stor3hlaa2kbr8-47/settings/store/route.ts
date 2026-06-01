@@ -36,6 +36,10 @@ export async function POST(req: Request) {
     create: { id: "system", profitMargin: global_profit_margin }
   });
 
+  // مزامنة كافة أسعار المتجر بناءً على الربح العام الجديد
+  const { syncAllStoreProductsPrice } = await import("@/lib/store-profit-sync");
+  await syncAllStoreProductsPrice();
+
   // إذا تم رفع ملف جديد، نقوم بمعالجته وحفظه
   if (product_card_bg_file && product_card_bg_file.size > 0) {
     try {

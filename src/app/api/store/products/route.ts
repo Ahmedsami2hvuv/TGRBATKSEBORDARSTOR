@@ -5,23 +5,13 @@ import { unstable_cache } from "next/cache";
 // دالة مخزنة لجلب المنتجات بسرعة مع حساب الربح
 const getCachedProductsByBranch = unstable_cache(
   async (branchId: string) => {
-    const [branch, globalSettings] = await Promise.all([
-      prisma.storeBranch.findUnique({
-        where: { id: branchId },
-        select: {
-          profitMargin: true,
-          category: { select: { profitMargin: true } }
-        }
-      }),
-      prisma.globalSettings.findUnique({ where: { id: "system" }, select: { profitMargin: true } })
-    ]);
-
     const products = await prisma.storeProduct.findMany({
       where: { branchId, active: true },
       select: {
         id: true,
         name: true,
         purchasePrice: true,
+        salePrice: true,
         description: true,
         photoUrls: true,
         hasVariants: true,
@@ -30,28 +20,21 @@ const getCachedProductsByBranch = unstable_cache(
             id: true,
             name: true,
             purchasePrice: true,
+            salePrice: true,
           }
         }
       },
       orderBy: { sequence: "desc" },
     });
 
-    // تحديد مقدار الربح المعتمد (فرع -> قسم -> عام)
-    const branchMargin = Number(branch?.profitMargin || 0);
-    const categoryMargin = Number(branch?.category?.profitMargin || 0);
-    const globalMargin = Number(globalSettings?.profitMargin || 0);
-
-    const activeMargin = branchMargin > 0 ? branchMargin : (categoryMargin > 0 ? categoryMargin : globalMargin);
-
     return products.map(p => {
-      const pPrice = Number(p.purchasePrice || 0);
       return {
         ...p,
-        salePrice: pPrice + activeMargin,
+        salePrice: Number(p.salePrice),
         photoUrls: Array.isArray(p.photoUrls) ? p.photoUrls : [],
         variants: p.variants?.map(v => ({
           ...v,
-          salePrice: Number(v.purchasePrice || 0) + activeMargin
+          salePrice: Number(v.salePrice)
         }))
       };
     });

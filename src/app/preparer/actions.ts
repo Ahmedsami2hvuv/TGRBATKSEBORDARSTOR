@@ -910,7 +910,8 @@ export async function updateStoreProductPrice(
       return { error: "الفرع غير موجود أو ليس لديك صلاحية تسعير عليه." };
     }
 
-    const profitMargin = (branch as any).profitMargin ? Number((branch as any).profitMargin) : 0.5;
+    const { getEffectiveProfitMargin } = await import("@/lib/store-profit-sync");
+    const profitMargin = await getEffectiveProfitMargin(branchId);
     const salePriceValue = purchasePriceValue + profitMargin;
 
     // استخدام SQL مباشر لتجنب أي تداخل مع حقول مفقودة في بريزما
@@ -919,6 +920,11 @@ export async function updateStoreProductPrice(
       SET "purchasePrice" = ${purchasePriceValue}, "salePrice" = ${salePriceValue}
       WHERE "id" = ${productId} AND "branchId" = ${branchId}
     `;
+
+    // تحديث أسعار المتغيرات إذا وجدت لنفس المنتج (اختياري حسب منطق العمل، هنا سنحدث المنتج الأساسي فقط كما في الطلب)
+
+    const { revalidateTag } = await import("next/cache");
+    revalidateTag("products");
 
     revalidatePath(`/preparer/store-pricing/${branchId}`);
     return { ok: true };
