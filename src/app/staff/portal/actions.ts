@@ -268,6 +268,7 @@ export async function submitStaffDoubleOrder(
       data: {
         shop: { connect: { id: doubleShop.id } },
         routeMode: "double",
+        orderType: orderType,
         status: "pending",
         customerPhone: sPhone,
         customerRegion: { connect: { id: sellerRegionId } },

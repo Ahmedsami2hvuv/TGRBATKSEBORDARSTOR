@@ -58,6 +58,8 @@ export type MandoubRow = {
   assignedCourierId?: string | null;
   /** سعر الطلب (بدون توصيل) بالدينار */
   orderSubtotalDinar?: number | null;
+  /** سعر التوصيل بالدينار */
+  deliveryPriceDinar?: number | null;
   /** سعر الطلب الكلي (مع التوصيل) بالدينار */
   totalAmountDinar?: number | null;
   /** مجموع ما تم دفعه للعميل بالدينار */
@@ -751,6 +753,7 @@ export function MandoubOrderTable({
                 order={{
                   ...activeOrderData as any,
                   orderSubtotal: activeOrderData.orderSubtotalDinar,
+                  deliveryPrice: activeOrderData.deliveryPriceDinar,
                   totalAmount: activeOrderData.totalAmountDinar,
                   status: activeOrderData.orderStatus,
                   orderNumber: Number(activeOrderData.shortId), // استخدام shortId كرقم عرض

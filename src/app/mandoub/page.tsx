@@ -551,7 +551,7 @@ export default async function MandoubPage({ searchParams }: Props) {
   // هنا نستخدم مبالغ الطلبات فقط في الواجهة الرئيسية
   const { sumDeliveryIn, sumPickupOut, remainingNet } = orderOnlySums;
 
-  const filteredByTab = activeOrders.filter((o) => {
+  const filteredByTab = activeOrdersNorm.filter((o) => {
     if (!isMandoubActiveListStatus(o.status)) return false;
     if (tab === "all") return true;
 
@@ -664,6 +664,7 @@ export default async function MandoubPage({ searchParams }: Props) {
         ? Number(sumDeliveryInFromOrderMoneyEvents(o.moneyEvents))
         : 0,
       orderSubtotalDinar: o.orderSubtotal != null ? Number(o.orderSubtotal) : null,
+      deliveryPriceDinar: o.deliveryPrice != null ? Number(o.deliveryPrice) : null,
       totalAmountDinar: o.totalAmount != null ? Number(o.totalAmount) : null,
       noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,
       noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
