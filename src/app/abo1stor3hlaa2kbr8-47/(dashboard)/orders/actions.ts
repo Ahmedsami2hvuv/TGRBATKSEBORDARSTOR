@@ -618,3 +618,66 @@ export async function saveOrderLocationOnly(
     return { error: "حدث خطأ أثناء حفظ التعديلات: " + (e.message || "خطأ غير معروف") };
   }
 }
+
+/** حذف جماعي للطلبات المعلقة نهائياً */
+export async function bulkDeleteOrdersPermanently(
+  orderIds: string[]
+): Promise<{ ok?: boolean; error?: string }> {
+  if (!orderIds || orderIds.length === 0) return { error: "لم يتم تحديد أي طلبات" };
+
+  try {
+    // حذف المسودات المرتبطة أولاً
+    await prisma.companyPreparerShoppingDraft.deleteMany({
+      where: { sentOrderId: { in: orderIds } }
+    });
+    // ثم حذف الطلبات نفسها
+    await prisma.order.deleteMany({
+      where: { id: { in: orderIds }, status: "pending" }
+    });
+
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+    return { ok: true };
+  } catch (e: any) {
+    console.error("Error in bulkDeleteOrdersPermanently:", e);
+    return { error: "فشل الحذف الجماعي: " + (e.message || "") };
+  }
+}
+
+/** إسناد جماعي للطلبات المعلقة لمندوب واحد */
+export async function bulkAssignOrdersToCourier(
+  orderIds: string[],
+  courierId: string
+): Promise<{ ok?: boolean; error?: string }> {
+  if (!orderIds || orderIds.length === 0) return { error: "لم يتم تحديد أي طلبات" };
+  if (!courierId) return { error: "المندوب مفقود" };
+
+  try {
+    // تحديث الطلبات المسندة
+    await prisma.order.updateMany({
+      where: { id: { in: orderIds }, status: "pending" },
+      data: {
+        assignedCourierId: courierId,
+        status: "assigned"
+      }
+    });
+
+    // إرسال إشعارات جماعية للمندوب
+    try {
+      const ordersToNotify = await prisma.order.findMany({
+        where: { id: { in: orderIds } },
+        select: { orderNumber: true }
+      });
+      for (const ord of ordersToNotify) {
+        await pushNotifyCourierNewAssignment(courierId, ord.orderNumber).catch(() => {});
+      }
+    } catch (err) {
+      console.error("Failed to bulk notify courier:", err);
+    }
+
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+    return { ok: true };
+  } catch (e: any) {
+    console.error("Error in bulkAssignOrdersToCourier:", e);
+    return { error: "فشل الإسناد الجماعي: " + (e.message || "") };
+  }
+}

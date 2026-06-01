@@ -369,7 +369,9 @@ export async function purgeDemoCoreData(
 
   try {
     if (deleteOrders) {
-      await prisma.$executeRawUnsafe('TRUNCATE TABLE "OrderCourierMoneyEvent", "Order" RESTART IDENTITY CASCADE;');
+      await prisma.$executeRawUnsafe('TRUNCATE TABLE "OrderCourierMoneyEvent", "Order", "CompanyPreparerShoppingDraft", "PreparerHiddenDebt", "CompanyPreparerPrepNotice" RESTART IDENTITY CASCADE;');
+      await prisma.$executeRawUnsafe('ALTER SEQUENCE IF EXISTS "Order_orderNumber_seq" RESTART WITH 1;');
+      await prisma.$executeRawUnsafe('ALTER SEQUENCE IF EXISTS "CompanyPreparerShoppingDraft_draftNumber_seq" RESTART WITH 1;');
     }
     if (deleteCustomers) {
       await prisma.$executeRawUnsafe('TRUNCATE TABLE "Customer", "CustomerPhoneProfile" RESTART IDENTITY CASCADE;');
@@ -379,17 +381,26 @@ export async function purgeDemoCoreData(
     }
     if (deleteRegions) {
       // حذف المناطق يقتضي تصفير كل ما هو مرتبط بها في الأغلب
-      await prisma.$executeRawUnsafe('TRUNCATE TABLE "Region", "Shop", "Customer", "CustomerPhoneProfile", "Order" RESTART IDENTITY CASCADE;');
+      await prisma.$executeRawUnsafe('TRUNCATE TABLE "Region", "RegionWaypoint", "Shop", "Customer", "CustomerPhoneProfile", "Order", "CompanyPreparerShoppingDraft" RESTART IDENTITY CASCADE;');
+      await prisma.$executeRawUnsafe('ALTER SEQUENCE IF EXISTS "Order_orderNumber_seq" RESTART WITH 1;');
+      await prisma.$executeRawUnsafe('ALTER SEQUENCE IF EXISTS "CompanyPreparerShoppingDraft_draftNumber_seq" RESTART WITH 1;');
     }
 
-    // إذا لم يتم اختيار أي شيء، نفترض المسح الشامل لكل الجداول الأساسية
-    if (!deleteOrders && !deleteCustomers && !deleteShops && !deleteRegions) {
+    // إذا لم يتم اختيار أي شيء، أو تم اختيار كل شيء، نفترض المسح الشامل لكل الجداول الأساسية والفرعية
+    const deleteAll = (!deleteOrders && !deleteCustomers && !deleteShops && !deleteRegions) || (deleteOrders && deleteCustomers && deleteShops && deleteRegions);
+    if (deleteAll) {
        await prisma.$executeRawUnsafe(`
         TRUNCATE TABLE
           "Order", "Shop", "Customer", "CompanyPreparer", "Courier",
-          "CustomerPhoneProfile", "Employee", "Region", "OrderCourierMoneyEvent"
+          "CustomerPhoneProfile", "Employee", "Region", "OrderCourierMoneyEvent",
+          "CompanyPreparerShoppingDraft", "PreparerHiddenDebt", "CompanyPreparerPrepNotice",
+          "RegionWaypoint", "PreparerShop", "CourierLocationPoint", "CourierTip",
+          "CourierWalletMiscEntry", "WalletPeerTransfer", "EmployeeWalletMiscEntry",
+          "PortalChatMessage", "PortalChatParticipant", "PortalChatThread"
         RESTART IDENTITY CASCADE;
       `);
+      await prisma.$executeRawUnsafe('ALTER SEQUENCE IF EXISTS "Order_orderNumber_seq" RESTART WITH 1;');
+      await prisma.$executeRawUnsafe('ALTER SEQUENCE IF EXISTS "CompanyPreparerShoppingDraft_draftNumber_seq" RESTART WITH 1;');
     }
 
     revalidatePath(`${SECRET_ADMIN_PATH}/settings`);

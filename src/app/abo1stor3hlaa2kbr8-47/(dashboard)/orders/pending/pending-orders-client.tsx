@@ -15,6 +15,8 @@ import {
   rejectPendingOrder,
   rejectPreparerDraft,
   saveOrderLocationOnly,
+  bulkDeleteOrdersPermanently,
+  bulkAssignOrdersToCourier,
   type AssignOrderState,
   type RejectOrderState,
 } from "../actions";
@@ -266,7 +268,7 @@ export function OrderPricingPanel({
       if (products.length > 0) {
         setIsSaving(true);
         try {
-          await savePricingProgress(orderId, { products, placesCount });
+          await savePricingProgress(orderId, !!isDraft, products, placesCount);
         } catch {}
         setIsSaving(false);
       }
@@ -990,7 +992,7 @@ function QuickLocationSaveForm({
   icons?: GlobalIconsConfig | null;
 }) {
   const bound = saveOrderLocationOnly.bind(null);
-  const [state, formAction, pending] = useActionState(bound, {});
+  const [state, formAction, pending] = useActionState(bound, {} as { ok?: boolean; error?: string });
 
   const [customerLocationUrl, setCustomerLocationUrl] = useState(defaultCustomerLocationUrl || "");
   const [secondCustomerLocationUrl, setSecondCustomerLocationUrl] = useState(defaultSecondCustomerLocationUrl || "");
@@ -1164,6 +1166,67 @@ export default function PendingOrdersClient({
   const [activeAssignOrderId, setActiveAssignOrderId] = useState<string | null>(initialAssignOrderId);
   const [activePricingOrderId, setActivePricingOrderId] = useState<string | null>(initialPricingId);
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
+  const [bulkCourierId, setBulkCourierId] = useState("");
+  const [isBulkLoading, setIsBulkLoading] = useState(false);
+  const [bulkActionError, setBulkActionError] = useState("");
+
+  const toggleSelect = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setSelectedIds(next);
+  };
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [orders]);
+
+  const handleBulkDelete = async () => {
+    setIsBulkLoading(true);
+    setBulkActionError("");
+    try {
+      const res = await bulkDeleteOrdersPermanently(Array.from(selectedIds));
+      if (res.error) {
+        setBulkActionError(res.error);
+      } else {
+        setSelectedIds(new Set());
+        setShowBulkDeleteConfirm(false);
+        window.location.reload();
+      }
+    } catch (err: any) {
+      setBulkActionError(err.message || "حدث خطأ غير متوقع");
+    } finally {
+      setIsBulkLoading(false);
+    }
+  };
+
+  const handleBulkAssign = async () => {
+    if (!bulkCourierId) return;
+    setIsBulkLoading(true);
+    setBulkActionError("");
+    try {
+      const res = await bulkAssignOrdersToCourier(Array.from(selectedIds), bulkCourierId);
+      if (res.error) {
+        setBulkActionError(res.error);
+      } else {
+        setSelectedIds(new Set());
+        setBulkCourierId("");
+        setShowBulkAssignModal(false);
+        window.location.reload();
+      }
+    } catch (err: any) {
+      setBulkActionError(err.message || "حدث خطأ غير متوقع");
+    } finally {
+      setIsBulkLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!icons) {
       getGlobalIcons().then(setIcons);
@@ -1184,6 +1247,32 @@ export default function PendingOrdersClient({
 
   return (
     <div className="max-w-4xl mx-auto space-y-10 pb-40 px-3 sm:px-0">
+      {/* Selection Control Bar */}
+      <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-slate-900/50 rounded-[1.5rem] border border-slate-100 dark:border-white/5 shadow-sm" dir="rtl">
+         <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+               <input
+                 type="checkbox"
+                 checked={orders.length > 0 && selectedIds.size === orders.length}
+                 onChange={(e) => {
+                   if (e.target.checked) {
+                     setSelectedIds(new Set(orders.map(o => o.id)));
+                   } else {
+                     setSelectedIds(new Set());
+                   }
+                 }}
+                 className="h-5 w-5 shrink-0 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-all dark:bg-slate-900 dark:border-white/10"
+               />
+               <span className="text-xs font-black text-slate-700 dark:text-slate-300">تحديد الكل في هذه الصفحة</span>
+            </label>
+         </div>
+         {selectedIds.size > 0 && (
+            <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30">
+               تم تحديد {selectedIds.size} طلبات من أصل {orders.length}
+            </span>
+         )}
+      </div>
+
       {orders.map((order) => {
         const hasLocation = order.hasCustomerLocation;
 
@@ -1207,6 +1296,13 @@ export default function PendingOrdersClient({
               {/* Header */}
               <div className="p-5 pb-3 flex flex-wrap items-center justify-between gap-4 border-b border-slate-105 dark:border-slate-900 bg-slate-50/30 dark:bg-slate-900/10">
                 <div className="flex items-center gap-4">
+                  {/* Bulk selection Checkbox */}
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(order.id)}
+                    onChange={() => toggleSelect(order.id)}
+                    className="h-5 w-5 shrink-0 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-all dark:bg-slate-900 dark:border-white/10"
+                  />
                   <Link
                     href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
                     className={`h-14 w-14 rounded-2xl flex flex-col items-center justify-center border shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer ${
@@ -1366,6 +1462,13 @@ export default function PendingOrdersClient({
             {/* Header */}
             <div className="p-6 pb-0 flex flex-wrap items-start justify-between gap-4">
                <div className="flex gap-4">
+                  {/* Bulk selection Checkbox */}
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(order.id)}
+                    onChange={() => toggleSelect(order.id)}
+                    className="h-5 w-5 shrink-0 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-all dark:bg-slate-900 dark:border-white/10 self-center"
+                  />
                   <div className="h-16 w-16 rounded-[1.5rem] bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center border-2 border-white dark:border-white/5 shadow-inner">
                      <span className="text-[10px] font-black text-slate-400 leading-none">رقم</span>
                      <span className="text-xl font-black text-slate-900 dark:text-white leading-none mt-1">#{order.orderNumber}</span>
@@ -1534,6 +1637,148 @@ export default function PendingOrdersClient({
                 );
              })()}
            </div>
+        </div>
+      )}
+
+      {/* Floating Bottom Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-[95%] max-w-xl bg-slate-900/90 dark:bg-slate-950/90 backdrop-blur-xl border-2 border-emerald-500/50 shadow-[0_20px_50px_rgba(0,0,0,0.3)] px-6 py-4 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between gap-4 animate-in slide-in-from-bottom duration-300" dir="rtl">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-mono text-sm font-black">
+              {selectedIds.size}
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-black text-white">طلبات محددة</p>
+              <p className="text-[10px] font-bold text-slate-400">اختر إجراء لتطبيقه دفعة واحدة</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            {!isDraftMode && (
+              <button
+                onClick={() => setShowBulkAssignModal(true)}
+                className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-[11px] font-black text-white active:scale-95 transition-all flex items-center gap-1.5 shadow-md shadow-emerald-900/20"
+              >
+                <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} />
+                إسناد جماعي
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowBulkDeleteConfirm(true)}
+              className="h-10 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-[11px] font-black text-white active:scale-95 transition-all flex items-center gap-1.5 shadow-md shadow-rose-900/20"
+            >
+              <DynamicIcon icon={icons?.ui_trash} fallback="🗑️" width={12} height={12} />
+              حذف جماعي
+            </button>
+
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="h-10 px-3 rounded-xl bg-slate-800 text-[11px] font-bold text-slate-400 hover:text-white transition-all"
+            >
+              إلغاء
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirm Modal */}
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="absolute inset-0" onClick={() => setShowBulkDeleteConfirm(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 text-right border border-rose-100 dark:border-rose-900/50 shadow-2xl animate-in zoom-in-95 duration-200" dir="rtl">
+            <div className="flex items-center gap-3 mb-4 text-rose-600">
+              <div className="h-10 w-10 rounded-full bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center text-lg">⚠️</div>
+              <h3 className="text-base font-black">تأكيد الحذف الجماعي</h3>
+            </div>
+            
+            <p className="text-xs font-bold text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+              هل أنت متأكد من رغبتك في حذف <span className="text-rose-600 font-black">{selectedIds.size}</span> طلبات معلقة نهائياً؟
+              <br />
+              هذا الإجراء سيقوم أيضاً بحذف كافة مسودات التجهيز المرتبطة بها ولا يمكن التراجع عنه.
+            </p>
+
+            {bulkActionError && (
+              <p className="p-3 mb-4 bg-rose-50 text-rose-600 rounded-xl text-[10px] font-bold border border-rose-200">{bulkActionError}</p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleBulkDelete}
+                disabled={isBulkLoading}
+                className="flex-1 h-12 bg-rose-600 text-white rounded-2xl text-xs font-black shadow-lg hover:bg-rose-700 active:scale-95 transition-all disabled:opacity-40"
+              >
+                {isBulkLoading ? "جاري الحذف..." : "نعم، حذف نهائي"}
+              </button>
+              <button
+                onClick={() => setShowBulkDeleteConfirm(false)}
+                className="px-5 h-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl text-xs font-black hover:bg-slate-200"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Assign Modal */}
+      {showBulkAssignModal && (
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="absolute inset-0" onClick={() => setShowBulkAssignModal(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 text-right border border-emerald-100 dark:border-emerald-900/50 shadow-2xl animate-in zoom-in-95 duration-200" dir="rtl">
+            <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900/30 pb-3 mb-4">
+              <p className="text-sm font-black text-emerald-950 dark:text-emerald-100 flex items-center gap-2">
+                <DynamicIcon icon={icons?.ui_package} fallback="📦" width={18} height={18} /> إسناد جماعي لـ {selectedIds.size} طلبات
+              </p>
+              <button onClick={() => setShowBulkAssignModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <p className="text-[10px] font-black text-slate-400">اختر المندوب لإسناد كافة الطلبات المحددة له *</p>
+              <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-1 custom-scrollbar">
+                {couriers.map((c) => {
+                  const active = bulkCourierId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setBulkCourierId(c.id)}
+                      className={`group relative flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all duration-200 ${
+                        active
+                          ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 shadow-md scale-[1.02]"
+                          : "border-slate-100 dark:border-white/5 bg-white dark:bg-slate-800/40 hover:border-slate-200"
+                      }`}
+                    >
+                      <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${active ? "border-emerald-500 bg-emerald-500 text-white" : "border-slate-200 bg-slate-50"}`}>
+                        {active && "✓"}
+                      </div>
+                      <span className={`truncate text-xs font-black ${active ? "text-emerald-900 dark:text-emerald-100" : "text-slate-600 dark:text-slate-400"}`}>{c.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {bulkActionError && (
+              <p className="p-3 mb-4 bg-rose-50 text-rose-600 rounded-xl text-[10px] font-bold border border-rose-200">{bulkActionError}</p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleBulkAssign}
+                disabled={isBulkLoading || !bulkCourierId}
+                className="flex-1 h-12 bg-emerald-600 text-white rounded-2xl text-xs font-black shadow-lg hover:bg-emerald-700 active:scale-95 transition-all disabled:opacity-40"
+              >
+                {isBulkLoading ? "جاري الإسناد والتوصيل..." : "تأكيد الإسناد الجماعي"}
+              </button>
+              <button
+                onClick={() => setShowBulkAssignModal(false)}
+                className="px-5 h-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl text-xs font-black hover:bg-slate-200"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
