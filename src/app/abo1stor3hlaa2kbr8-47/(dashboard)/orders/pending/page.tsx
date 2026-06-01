@@ -132,6 +132,21 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
           ...relatedDrafts.map(d => d.preparerId)
       ].filter(Boolean))) as string[];
 
+      const normPhone = o.customerPhone ? normalizeIraqMobileLocal11(o.customerPhone) : null;
+      let phoneProfile = null;
+      if (normPhone) {
+        if (o.customerRegionId) {
+          phoneProfile = phoneProfilesRegionMap.get(`${normPhone}::${o.customerRegionId}`) || null;
+        }
+        if (!phoneProfile) {
+          phoneProfile = phoneProfilesOnlyMap.get(normPhone) || null;
+        }
+      }
+
+      const customerLocationUrl = o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl || "";
+      const customerLandmark = o.customerLandmark || o.customer?.customerLandmark || phoneProfile?.landmark || "";
+      const customerAlternatePhone = o.secondCustomerPhone?.trim() || o.alternatePhone?.trim() || o.customer?.alternatePhone?.trim() || phoneProfile?.alternatePhone || "";
+
       return {
         id: o.id,
         orderNumber: o.orderNumber,
@@ -143,18 +158,19 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         createdAtLabel: formatBaghdadDateTime(o.createdAt, { dateStyle: "short", timeStyle: "short" }),
         summary: o.summary,
         customerPhone: o.customerPhone,
-        customerAlternatePhone: o.secondCustomerPhone?.trim() || o.alternatePhone?.trim() || o.customer?.alternatePhone?.trim() || "",
-        customerDoorPhotoUrl: resolvePublicAssetSrc(o.customer?.customerDoorPhotoUrl || o.customerDoorPhotoUrl) ?? "",
+        customerAlternatePhone,
+        customerDoorPhotoUrl: resolvePublicAssetSrc(o.customer?.customerDoorPhotoUrl || o.customerDoorPhotoUrl || phoneProfile?.photoUrl) ?? "",
         totalAmount: o.totalAmount != null ? formatDinarAsAlfWithUnit(o.totalAmount) : null,
         deliveryPrice: o.deliveryPrice != null ? formatDinarAsAlfWithUnit(o.deliveryPrice) : null,
+        orderSubtotal: o.orderSubtotal != null ? formatDinarAsAlfWithUnit(o.orderSubtotal) : null,
         rawDeliveryPriceDinar: o.deliveryPrice != null ? Number(o.deliveryPrice) : null,
         submittedByName: o.submittedByCompanyPreparer?.name || o.submittedBy?.name || null,
         submissionLabel: o.submissionSource === "company_preparer" ? "مكتمل التجهيز" : o.submissionSource === "web_store" ? "طلب متجر" : o.submissionSource === "admin_on_behalf_of_employee" ? "طلب موظف (بوت)" : "طلب جديد",
-        customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || "",
+        customerLocationUrl: customerLocationUrl,
         customerLandmark: o.customerLandmark || o.customer?.customerLandmark || "",
         voiceNoteUrl: o.voiceNoteUrl || null,
         adminVoiceNoteUrl: o.adminVoiceNoteUrl || null,
-        hasCustomerLocation: hasCustomerLocationUrl(o.customerLocationUrl, o.customer?.customerLocationUrl),
+        hasCustomerLocation: hasCustomerLocationUrl(customerLocationUrl),
         hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
         reversePickup: isReversePickupOrderType(o.orderType),
         wardMismatchType: isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type,

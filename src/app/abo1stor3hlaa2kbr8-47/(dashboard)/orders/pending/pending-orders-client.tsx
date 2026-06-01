@@ -958,16 +958,29 @@ export default function PendingOrdersClient({
               {/* Header */}
               <div className="p-5 pb-3 flex flex-wrap items-center justify-between gap-4 border-b border-slate-105 dark:border-slate-900 bg-slate-50/30 dark:bg-slate-900/10">
                 <div className="flex items-center gap-4">
-                  <div className={`h-14 w-14 rounded-2xl flex flex-col items-center justify-center border shadow-sm ${
-                    !hasLocation 
-                      ? "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/50 text-amber-700 dark:text-amber-400"
-                      : "bg-slate-50 border-slate-100 dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300"
-                  }`}>
+                  <Link
+                    href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
+                    className={`h-14 w-14 rounded-2xl flex flex-col items-center justify-center border shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer ${
+                      !hasLocation 
+                        ? "bg-amber-50 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/30 dark:border-amber-900/50 text-amber-700 dark:text-amber-400"
+                        : "bg-slate-50 border-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300"
+                    }`}
+                    title="فتح تفاصيل الطلب بالكامل"
+                  >
                     <span className="text-[9px] font-black opacity-60 leading-none">رقم</span>
                     <span className="text-base font-black leading-none mt-1">#{order.orderNumber}</span>
-                  </div>
+                  </Link>
                   <div>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">{order.shopName}</h3>
+                    <Link
+                      href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
+                      className="hover:text-emerald-600 transition-colors"
+                      title="فتح تفاصيل الطلب بالكامل"
+                    >
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight hover:underline flex items-center gap-1.5">
+                        {order.shopName}
+                        <span className="text-xs font-bold text-slate-400">↗</span>
+                      </h3>
+                    </Link>
                     <div className="flex flex-wrap items-center gap-2 mt-1">
                       <span className="flex items-center gap-1 text-[10px] font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-2.5 py-1 rounded-full border border-sky-100 dark:border-sky-900/30">
                         <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> {order.regionName}
@@ -994,10 +1007,17 @@ export default function PendingOrdersClient({
               <div className="p-5 grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
                 {/* Details Section */}
                 <div className="md:col-span-8 space-y-3">
-                  <div className="bg-slate-50/50 dark:bg-slate-900/20 rounded-2xl p-4 border border-slate-100/60 dark:border-white/5">
-                    <p className="text-[9px] font-black text-slate-400 pr-1 mb-1">تفاصيل الطلب</p>
+                  <Link
+                    href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
+                    className="block bg-slate-50/50 hover:bg-slate-100/80 dark:bg-slate-900/20 dark:hover:bg-slate-900/40 rounded-2xl p-4 border border-slate-100/60 dark:border-white/5 transition-all hover:translate-x-[-2px] group"
+                    title="فتح تفاصيل الطلب بالكامل"
+                  >
+                    <div className="flex justify-between items-center mb-1">
+                      <p className="text-[9px] font-black text-slate-400 pr-1">تفاصيل الطلب</p>
+                      <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">دخول للطلب ↗</span>
+                    </div>
                     <p className="text-sm font-black text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{order.summary}</p>
-                  </div>
+                  </Link>
 
                   {order.voiceNoteUrl && (
                     <div className="p-3 bg-violet-50 dark:bg-violet-950/10 rounded-xl border border-violet-100 dark:border-violet-900/30">

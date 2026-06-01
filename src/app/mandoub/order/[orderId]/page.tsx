@@ -139,44 +139,76 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
   const safeOrder = JSON.parse(JSON.stringify(order)) as typeof order;
 
   const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
-  const customerPhoneProfile =
-    customerPhoneNorm && order.customerRegionId
-      ? await prisma.customerPhoneProfile.findUnique({
-          where: {
-            phone_regionId: {
-              phone: customerPhoneNorm,
-              regionId: order.customerRegionId,
-            },
+  let customerPhoneProfile = null;
+  if (customerPhoneNorm) {
+    if (order.customerRegionId) {
+      customerPhoneProfile = await prisma.customerPhoneProfile.findUnique({
+        where: {
+          phone_regionId: {
+            phone: customerPhoneNorm,
+            regionId: order.customerRegionId,
           },
-          select: {
-            photoUrl: true,
-            locationUrl: true,
-            landmark: true,
-            alternatePhone: true,
-          },
-        })
-      : null;
+        },
+        select: {
+          id: true,
+          photoUrl: true,
+          locationUrl: true,
+          landmark: true,
+          alternatePhone: true,
+        },
+      });
+    }
+    if (!customerPhoneProfile) {
+      customerPhoneProfile = await prisma.customerPhoneProfile.findFirst({
+        where: { phone: customerPhoneNorm },
+        orderBy: { locationUrl: "desc" }, // Prioritize profiles with locations
+        select: {
+          id: true,
+          photoUrl: true,
+          locationUrl: true,
+          landmark: true,
+          alternatePhone: true,
+        },
+      });
+    }
+  }
 
   const secondPhoneNorm = order.secondCustomerPhone
     ? normalizeIraqMobileLocal11(order.secondCustomerPhone)
     : null;
-  const secondPhoneProfile =
-    secondPhoneNorm && order.secondCustomerRegionId
-      ? await prisma.customerPhoneProfile.findUnique({
-          where: {
-            phone_regionId: {
-              phone: secondPhoneNorm,
-              regionId: order.secondCustomerRegionId,
-            },
+  let secondPhoneProfile = null;
+  if (secondPhoneNorm) {
+    if (order.secondCustomerRegionId) {
+      secondPhoneProfile = await prisma.customerPhoneProfile.findUnique({
+        where: {
+          phone_regionId: {
+            phone: secondPhoneNorm,
+            regionId: order.secondCustomerRegionId,
           },
-          select: {
-            photoUrl: true,
-            locationUrl: true,
-            landmark: true,
-            alternatePhone: true,
-          },
-        })
-      : null;
+        },
+        select: {
+          id: true,
+          photoUrl: true,
+          locationUrl: true,
+          landmark: true,
+          alternatePhone: true,
+        },
+      });
+    }
+    if (!secondPhoneProfile) {
+      secondPhoneProfile = await prisma.customerPhoneProfile.findFirst({
+        where: { phone: secondPhoneNorm },
+        orderBy: { locationUrl: "desc" },
+        select: {
+          id: true,
+          photoUrl: true,
+          locationUrl: true,
+          landmark: true,
+          alternatePhone: true,
+        },
+      });
+    }
+  }
 
   async function computeSmartHint(
     locationUrl: string,
@@ -327,13 +359,13 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
             icons={icons}
             routeHistory={routeHistory}
             courierSettings={{
-              showDoorBtn: courier.showDoorBtn,
-              showLocationBtn: courier.showLocationBtn,
-              showCallBtn: courier.showCallBtn,
-              showWhatsAppBtn: courier.showWhatsAppBtn,
-              showNotesBtn: courier.showNotesBtn,
-              showVoiceNotesBtn: courier.showVoiceNotesBtn,
-              showMoneyBoxes: courier.showMoneyBoxes,
+              showDoorBtn: true,
+              showLocationBtn: true,
+              showCallBtn: true,
+              showWhatsAppBtn: true,
+              showNotesBtn: true,
+              showVoiceNotesBtn: true,
+              showMoneyBoxes: true,
             }}
           />
         </div>

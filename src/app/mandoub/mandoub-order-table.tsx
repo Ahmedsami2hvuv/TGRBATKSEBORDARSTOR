@@ -771,12 +771,12 @@ export function MandoubOrderTable({
                 smartHintLine={activeOrderData.smartHintLine}
                 icons={icons}
                 courierSettings={{
-                  showDoorBtn: activeOrderData.showDoorBtn ?? true,
-                  showLocationBtn: activeOrderData.showLocationBtn ?? true,
-                  showCallBtn: activeOrderData.showCallBtn ?? true,
-                  showWhatsAppBtn: activeOrderData.showWhatsAppBtn ?? true,
-                  showNotesBtn: activeOrderData.showNotesBtn ?? true,
-                  showVoiceNotesBtn: activeOrderData.showVoiceNotesBtn ?? true,
+                  showDoorBtn: true,
+                  showLocationBtn: true,
+                  showCallBtn: true,
+                  showWhatsAppBtn: true,
+                  showNotesBtn: true,
+                  showVoiceNotesBtn: true,
                 }}
               />
             </div>
