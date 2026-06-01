@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { BranchListClient } from "./branch-list-client";
 import Link from "next/link";
 import { getGlobalIcons } from "@/lib/icon-settings";
+import { QuickProfitEdit } from "../_components/quick-profit-edit";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,21 @@ export default async function BranchesPage(props: {
 }) {
   const resolvedSearchParams = await props.searchParams;
   const categoryId = resolvedSearchParams?.categoryId;
+
+  let parentCategory: any = null;
+  if (categoryId) {
+    const rawCat = await prisma.storeCategory.findUnique({
+      where: { id: categoryId },
+      select: { id: true, name: true, profitMargin: true }
+    });
+    if (rawCat) {
+      parentCategory = {
+        id: rawCat.id,
+        name: rawCat.name,
+        profitMargin: rawCat.profitMargin ? Number(rawCat.profitMargin) : 0
+      };
+    }
+  }
 
   // جلب الوعود (Promises) بدون await لتسريع ظهور واجهة الصفحة
   const categoriesPromise = prisma.storeCategory.findMany({
@@ -86,6 +102,24 @@ export default async function BranchesPage(props: {
           </Link>
         )}
       </div>
+
+      {parentCategory && (
+        <div className="bg-violet-50 p-6 rounded-[2rem] border border-violet-100 flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in zoom-in duration-300">
+          <div>
+            <h3 className="text-[10px] font-black text-violet-600 uppercase tracking-widest mb-1">القسم الحالي المفتوح</h3>
+            <h2 className="text-xl font-black text-slate-900">{parentCategory.name}</h2>
+          </div>
+          <div className="bg-white px-5 py-3 rounded-2xl border border-violet-100 flex items-center gap-3 shadow-sm shrink-0">
+            <span className="text-xs font-black text-slate-500">💰 هامش ربح القسم:</span>
+            <QuickProfitEdit
+              id={parentCategory.id}
+              initialMargin={parentCategory.profitMargin}
+              type="category"
+              name={parentCategory.name}
+            />
+          </div>
+        </div>
+      )}
 
       <BranchListClient
         initialBranches={branches}

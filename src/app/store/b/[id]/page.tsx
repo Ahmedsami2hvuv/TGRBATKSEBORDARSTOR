@@ -5,7 +5,7 @@ import { CustomProductRequest } from "@/components/custom-product-request";
 import { ProductListClient } from "./product-list-client";
 import { StoreSlider } from "../../_components/store-slider";
 
-export const revalidate = 3600; // تحديث الصفحة كل ساعة بدلاً من جلبها في كل ثانية
+export const dynamic = "force-dynamic";
 
 export default async function BranchPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
