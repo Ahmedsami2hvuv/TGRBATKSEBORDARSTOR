@@ -287,7 +287,6 @@ export async function submitStaffDoubleOrder(
         imageUrl: imageUrl || null,
         voiceNoteUrl: voiceNoteUrl || null,
         adminOrderCode: orderNoteText,
-        submittedBy: { disconnect: true },
         submissionSource: "staff_portal",
         summary: `طلب وجهتين (${orderType}): من ${sPhone} إلى ${bPhone}${orderNoteText ? `\n\nملاحظة الموظف: ${orderNoteText}` : ""}`,
         // تخزين بيانات الربح والموظف في حقل JSON
