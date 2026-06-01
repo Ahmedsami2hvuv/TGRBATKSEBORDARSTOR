@@ -51,7 +51,13 @@ export default function InvoiceReportSearch({ rows, initialQuery, selectedDayIso
     () => activeFilteredRows.reduce((sum, row) => sum + row.amountDinar, 0),
     [activeFilteredRows],
   );
-  const returnUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/abo1stor3hlaa2kbr8-47/reports/invoices";
+
+  const returnUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("day", selectedDayIso);
+    if (query.trim()) params.set("q", query.trim());
+    return `/abo1stor3hlaa2kbr8-47/reports/invoices?${params.toString()}`;
+  }, [selectedDayIso, query]);
 
   const handleHardDeleteClick = useCallback((event: MouseEvent<HTMLButtonElement>) => {
     const phrase = window.prompt(`اكتب "${ADMIN_MONEY_HARD_DELETE_CONFIRM_PHRASE}" للتأكيد:`)?.trim() ?? "";
