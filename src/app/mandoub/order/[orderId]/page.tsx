@@ -120,6 +120,15 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
 
   const order = await findMandoubOrderForCourier(orderId, v.courierId);
 
+  if (order) {
+    const doubleStaff = order.routeMode === "double" && order.submissionSource === "staff_portal";
+    const prepJson = order.preparerShoppingJson as any;
+    const staffProfit = (doubleStaff && prepJson && typeof prepJson === "object" && typeof prepJson.staffProfit === "number") ? prepJson.staffProfit : 0;
+    if (staffProfit > 0 && order.orderSubtotal != null) {
+      order.orderSubtotal = new Decimal(Number(order.orderSubtotal) - staffProfit);
+    }
+  }
+
   if (!order) {
     return (
       <div dir="rtl" lang="ar" className="kse-app-bg px-4 py-16 text-slate-800">

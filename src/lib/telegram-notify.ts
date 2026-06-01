@@ -315,9 +315,23 @@ export async function notifyTelegramNewOrder(orderId: string): Promise<void> {
   });
   if (!order) return;
 
+  let displayShopName = order.shop.name;
+  if (order.submissionSource === "staff_portal") {
+    const prepJson = order.preparerShoppingJson as any;
+    if (prepJson && typeof prepJson === "object" && prepJson.staffId) {
+      const staff = await prisma.staffEmployee.findUnique({
+        where: { id: prepJson.staffId },
+        select: { name: true }
+      });
+      if (staff?.name) {
+        displayShopName = `الموظف ${staff.name}`;
+      }
+    }
+  }
+
   const baseUrl = getPublicAppUrl();
   const adminText = await formatNewOrderTelegramHtml({
-    ...order, shopName: order.shop.name, customerName: order.customer?.name ?? "—",
+    ...order, shopName: displayShopName, customerName: order.customer?.name ?? "—",
     regionName: order.customerRegion?.name ?? "—", orderId: order.id
   });
 
@@ -336,7 +350,7 @@ export async function notifyTelegramNewOrder(orderId: string): Promise<void> {
     const prepOrderUrl = `${prepUrl.replace("/preparer", `/preparer/order/${order.id}`)}`;
 
     const bodyLines = await formatOrderBodyLines({
-      ...order, shopName: order.shop.name, customerName: order.customer?.name ?? "—",
+      ...order, shopName: displayShopName, customerName: order.customer?.name ?? "—",
       regionName: order.customerRegion?.name ?? "—"
     }, { omitPhone: true });
 

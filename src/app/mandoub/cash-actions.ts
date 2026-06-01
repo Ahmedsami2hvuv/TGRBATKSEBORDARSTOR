@@ -108,7 +108,10 @@ export async function submitMandoubPickupMoney(
     return { error: "لا يمكن تسجيل الصادر لهذا الطلب." };
   }
 
-  const expected = order.orderSubtotal;
+  const doubleStaff = order.routeMode === "double" && order.submissionSource === "staff_portal";
+  const prepJson = order.preparerShoppingJson as any;
+  const staffProfit = (doubleStaff && prepJson && typeof prepJson === "object" && typeof prepJson.staffProfit === "number") ? prepJson.staffProfit : 0;
+  const expected = order.orderSubtotal != null ? new Decimal(Number(order.orderSubtotal) - staffProfit) : null;
   if (expected == null) {
     return { error: "سعر الطلب غير محدد في النظام." };
   }

@@ -284,13 +284,20 @@ export default async function MandoubPage({ searchParams }: Props) {
     getUISettings("mandoub", "wallet_block"),
   ]);
 
-  const ordersForWallet = activeOrdersRaw.map((o) => ({
-    ...o,
-    moneyEvents: o.moneyEvents.map((e) => ({
-      ...e,
-      courierId: e.courierId ?? undefined,
-    })),
-  }));
+  const ordersForWallet = activeOrdersRaw.map((o) => {
+    const doubleStaff = o.routeMode === "double" && o.submissionSource === "staff_portal";
+    const prepJson = o.preparerShoppingJson as any;
+    const staffProfit = (doubleStaff && prepJson && typeof prepJson === "object" && typeof prepJson.staffProfit === "number") ? prepJson.staffProfit : 0;
+    const adjustedSubtotal = o.orderSubtotal != null ? new Decimal(Number(o.orderSubtotal) - staffProfit) : null;
+    return {
+      ...o,
+      orderSubtotal: adjustedSubtotal,
+      moneyEvents: o.moneyEvents.map((e) => ({
+        ...e,
+        courierId: e.courierId ?? undefined,
+      })),
+    };
+  });
 
   // حساب الإكراميات والأرباح (اليومية والشهرية)
   const now = new Date();
@@ -515,13 +522,20 @@ export default async function MandoubPage({ searchParams }: Props) {
       return b.orderNumber - a.orderNumber;
     });
 
-  const activeOrdersNorm = activeOrders.map((o) => ({
-    ...o,
-    moneyEvents: o.moneyEvents.map((e) => ({
-      ...e,
-      courierId: e.courierId ?? undefined,
-    })),
-  }));
+  const activeOrdersNorm = activeOrders.map((o) => {
+    const doubleStaff = o.routeMode === "double" && o.submissionSource === "staff_portal";
+    const prepJson = o.preparerShoppingJson as any;
+    const staffProfit = (doubleStaff && prepJson && typeof prepJson === "object" && typeof prepJson.staffProfit === "number") ? prepJson.staffProfit : 0;
+    const adjustedSubtotal = o.orderSubtotal != null ? new Decimal(Number(o.orderSubtotal) - staffProfit) : null;
+    return {
+      ...o,
+      orderSubtotal: adjustedSubtotal,
+      moneyEvents: o.moneyEvents.map((e) => ({
+        ...e,
+        courierId: e.courierId ?? undefined,
+      })),
+    };
+  });
 
   // جلب ملفات تعريف الزبائن للأرقام الموجودة في القائمة لضمان توفر اللوكيشنات المرجعية والسابقة
   const customerPhones = Array.from(new Set(activeOrders.map(o => o.customerPhone).filter(Boolean)));
