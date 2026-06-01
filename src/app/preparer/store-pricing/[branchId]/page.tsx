@@ -34,22 +34,23 @@ export default async function BranchPricingPage({ params, searchParams }: Props)
 
     const preparer = await prisma.companyPreparer.findFirst({
       where: { id: v.preparerId, active: true },
-      select: { portalToken: true }
+      select: {
+        portalToken: true,
+        authorizedBranches: {
+          where: { id: branchId, active: true },
+          take: 1
+        }
+      }
     });
 
     if (!preparer || preparer.portalToken !== v.token) {
       return <div className="p-10 text-center font-bold">رابط غير صالح أو انتهت الصلاحية</div>;
     }
 
-    const branchRaw = await prisma.storeBranch.findFirst({
-      where: {
-        id: branchId,
-        active: true,
-        authorizedPreparerId: v.preparerId,
-      },
-    });
+    const branchRaw = preparer.authorizedBranches[0];
 
     if (!branchRaw) {
+      console.warn(`[PreparerPricing] Access denied or branch not found. Preparer: ${v.preparerId}, Branch: ${branchId}`);
       return (
         <div className="p-10 text-center font-bold text-rose-600" dir="rtl">
           الفرع غير موجود أو ليس لديك صلاحية تسعير عليه. إن رأيته في القائمة سابقاً، تأكد أن الإدارة ربطت الفرع بحسابك.
@@ -85,19 +86,36 @@ export default async function BranchPricingPage({ params, searchParams }: Props)
     // دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
     function deepSanitize(obj: any): any {
       if (obj === null || obj === undefined) return obj;
+
+      // التعامل مع BigInt
       if (typeof obj === "bigint") return obj.toString();
+
+      // القيم البسيطة
       if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+
+      // التواريخ
       if (obj instanceof Date) return obj.toISOString();
-      if (Array.isArray(obj)) return obj.map(deepSanitize);
+
+      // المصفوفات
+      if (Array.isArray(obj)) return obj.map(o => deepSanitize(o));
+
+      // الكائنات
       if (typeof obj === "object") {
-        if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) return Number(obj.toString());
-        if (Object.hasOwn(obj, 'd') && Object.hasOwn(obj, 's') && Object.hasOwn(obj, 'e')) return Number(obj.toString());
+        // التعامل مع Decimal.js أو ما شابه (Prisma Decimal)
+        if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
+          return Number(obj.toString());
+        }
+
+        // التحقق من كونه POJO (Plain Old JavaScript Object) لتجنب مشاكل الـ Proxy في Next.js 15
         const newObj: any = {};
         for (const key in obj) {
-          if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = deepSanitize(obj[key]);
+          if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            newObj[key] = deepSanitize(obj[key]);
+          }
         }
         return newObj;
       }
+
       return obj;
     }
 

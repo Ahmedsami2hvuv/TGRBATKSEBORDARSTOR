@@ -20,6 +20,7 @@ export function PricingListClient({
   auth: { p: string; exp: string; s: string };
 }) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [successId, setSuccessId] = useState<string | null>(null);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const router = useRouter();
 
@@ -32,6 +33,7 @@ export function PricingListClient({
     if (dinar == null) return;
 
     setLoadingId(productId);
+    setSuccessId(null);
     const formData = new FormData();
     formData.append("p", auth.p);
     formData.append("exp", auth.exp);
@@ -44,6 +46,8 @@ export function PricingListClient({
     if (!res.ok) {
       alert(res.error || "فشل تحديث السعر");
     } else {
+      setSuccessId(productId);
+      setTimeout(() => setSuccessId(null), 3000);
       router.refresh();
     }
     setLoadingId(null);
@@ -56,6 +60,7 @@ export function PricingListClient({
           key={p.id}
           product={p}
           loading={loadingId === p.id}
+          success={successId === p.id}
           onSave={(price) => handlePriceChange(p.id, price)}
           icons={icons}
         />
@@ -69,9 +74,10 @@ export function PricingListClient({
   );
 }
 
-function ProductPricingCard({ product, loading, onSave, icons }: {
+function ProductPricingCard({ product, loading, success, onSave, icons }: {
   product: any;
   loading: boolean;
+  success: boolean;
   onSave: (price: string) => void;
   icons: GlobalIconsConfig | null;
 }) {
@@ -85,10 +91,12 @@ function ProductPricingCard({ product, loading, onSave, icons }: {
 
   const parsed = parseAlfInputToDinarNumber(alfInput);
   const hasChanged =
-    parsed != null && Math.round(parsed) !== Math.round(dinarStored);
+    parsed != null && Math.round(parsed * 100) !== Math.round(dinarStored * 100);
 
   return (
-    <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
+    <div className={`bg-white p-4 rounded-3xl border shadow-sm flex items-center gap-4 transition-all focus-within:ring-4 focus-within:ring-emerald-50/50 ${
+      success ? "border-emerald-500 bg-emerald-50/10" : "border-slate-100 focus-within:border-emerald-500"
+    }`}>
       <div className="w-14 h-14 rounded-2xl bg-slate-50 overflow-hidden shrink-0 border border-slate-100">
         {product.image ? (
           <img src={product.image} className="w-full h-full object-cover" />
@@ -105,39 +113,45 @@ function ProductPricingCard({ product, loading, onSave, icons }: {
       </div>
 
       <div className="flex-1 min-w-0">
-        <h3 className="font-black text-slate-800 truncate">{product.name}</h3>
-        <p className="text-[10px] text-slate-400 font-bold italic">
-          : 2 = 2000 د.ع — ثم حفظ
+        <h3 className="font-black text-slate-800 truncate text-sm sm:text-base">{product.name}</h3>
+        <p className={`text-[10px] font-bold italic transition-colors ${success ? "text-emerald-600" : "text-slate-400"}`}>
+          {success ? "تم الحفظ بنجاح ✓" : "أدخل السعر ثم اضغط حفظ"}
         </p>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="relative w-28">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="relative w-24 sm:w-28">
           <input
             type="number"
             step="0.01"
             inputMode="decimal"
             value={alfInput}
             onChange={(e) => setAlfInput(e.target.value)}
-            className="w-full pl-2 pr-12 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl text-center font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && hasChanged && !loading) {
+                onSave(alfInput);
+              }
+            }}
+            placeholder="0.00"
+            className={`w-full pl-2 pr-10 sm:pr-12 py-2.5 border-2 rounded-xl text-center font-black transition-all text-sm sm:text-base outline-none ${
+              hasChanged ? "bg-white border-emerald-500 text-emerald-600" : "bg-slate-50 border-slate-100 text-slate-600"
+            }`}
           />
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400 leading-tight text-center max-w-[2.25rem]">
-            
-            <br />
-            د.ع
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] sm:text-[9px] font-black text-slate-400 leading-tight text-center pointer-events-none">
+            ألف<br />د.ع
           </span>
         </div>
 
         <button
           onClick={() => onSave(alfInput)}
           disabled={loading || !hasChanged || parsed == null}
-          className={`px-5 py-2.5 rounded-xl font-black text-xs transition-all ${
+          className={`px-4 sm:px-5 py-2.5 rounded-xl font-black text-xs transition-all whitespace-nowrap ${
             hasChanged
               ? "bg-emerald-600 text-white shadow-lg shadow-emerald-100 active:scale-95"
-              : "bg-slate-100 text-slate-400 cursor-default"
+              : success ? "bg-emerald-100 text-emerald-600 cursor-default" : "bg-slate-100 text-slate-400 cursor-default"
           }`}
         >
-          {loading ? "..." : "حفظ السعر"}
+          {loading ? "..." : success ? "تم" : "حفظ"}
         </button>
       </div>
     </div>

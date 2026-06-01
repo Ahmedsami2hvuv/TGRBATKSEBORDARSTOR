@@ -895,10 +895,20 @@ export async function updateStoreProductPrice(
     const purchasePriceValue = Number(purchasePriceRaw);
 
     const branch = await prisma.storeBranch.findFirst({
-      where: { id: branchId, active: true, authorizedPreparerId: v.preparerId },
+      where: {
+        id: branchId,
+        active: true,
+        OR: [
+          { authorizedPreparerId: v.preparerId },
+          { authorizedPreparer: { id: v.vId || v.preparerId } }
+        ]
+      },
     });
 
-    if (!branch) return { error: "الفرع غير موجود أو ليس لديك صلاحية تسعير عليه." };
+    if (!branch) {
+      console.error(`[UpdatePrice] Unauthorized. Prep: ${v.preparerId}, Branch: ${branchId}`);
+      return { error: "الفرع غير موجود أو ليس لديك صلاحية تسعير عليه." };
+    }
 
     const profitMargin = (branch as any).profitMargin ? Number((branch as any).profitMargin) : 0.5;
     const salePriceValue = purchasePriceValue + profitMargin;
