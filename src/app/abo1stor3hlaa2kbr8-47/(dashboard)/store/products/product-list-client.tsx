@@ -8,6 +8,8 @@ import { compressImageFileForUpload } from "@/lib/client-image-compress";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 
+import { QuickProfitEdit } from "../_components/quick-profit-edit";
+
 export function ProductListClient({
   initialProducts,
   branches,
@@ -21,6 +23,10 @@ export function ProductListClient({
   productCardBgUrl?: string,
   icons: GlobalIconsConfig | null
 }) {
+  const selectedBranchData = useMemo(() => {
+    if (!defaultBranchId) return null;
+    return branches.find(b => b.id === defaultBranchId);
+  }, [defaultBranchId, branches]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
@@ -356,6 +362,19 @@ export function ProductListClient({
               className="w-full pr-12 pl-4 py-3 rounded-2xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-sm transition-all"
             />
           </div>
+
+          {selectedBranchData && (
+            <div className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 flex items-center gap-2">
+              <span className="text-[10px] font-black text-emerald-700 whitespace-nowrap">ربح الفرع:</span>
+              <QuickProfitEdit
+                id={selectedBranchData.id}
+                initialMargin={Number(selectedBranchData.profitMargin || 0)}
+                type="branch"
+                name={selectedBranchData.name}
+                categoryId={selectedBranchData.categoryId}
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2 w-full xl:w-auto">

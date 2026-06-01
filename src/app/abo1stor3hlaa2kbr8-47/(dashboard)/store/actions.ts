@@ -91,7 +91,7 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
   const parentBranchId = (formData.get("parentBranchId") as string) || null;
   const sequence = parseInt(formData.get("sequence") as string || "0");
   const authorizedPreparerId = (formData.get("authorizedPreparerId") as string) || null;
-  const profitMargin = parseFloat(formData.get("profitMargin") as string || "0.25");
+  const profitMargin = parseFloat(formData.get("profitMargin") as string || "0");
   const notes = formData.get("notes") as string || "";
   const photoFile = formData.get("photo") as File;
   const remoteImageUrl = formData.get("remoteImageUrl") as string;

@@ -76,6 +76,7 @@ export default async function ProductsPage(props: { searchParams: Promise<{ bran
         id: true,
         name: true,
         categoryId: true,
+        profitMargin: true,
         category: {
           select: { id: true, name: true }
         }
