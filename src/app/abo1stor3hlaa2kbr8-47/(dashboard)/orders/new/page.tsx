@@ -31,7 +31,7 @@ export default async function AdminCreateOrderPage() {
       }),
       prisma.region.findMany({
         orderBy: { name: "asc" },
-        select: { id: true, name: true },
+        select: { id: true, name: true, deliveryPrice: true },
       }),
       prisma.companyPreparer.findMany({
         where: { active: true },

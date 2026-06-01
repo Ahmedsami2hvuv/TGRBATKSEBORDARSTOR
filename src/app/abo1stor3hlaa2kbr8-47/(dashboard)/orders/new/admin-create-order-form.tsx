@@ -26,7 +26,7 @@ import { GlobalIconsConfig } from "@/lib/icon-settings";
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
 type ShopOpt = { id: string; name: string; regionId: string; locationUrl: string };
-type RegionOpt = { id: string; name: string };
+type RegionOpt = { id: string; name: string; deliveryPrice: any };
 type EmployeeOpt = ShopEmployeeRow;
 type CustomerPrefill = {
  id: string;
@@ -851,17 +851,22 @@ export function AdminCreateOrderForm({
                      <div className="flex items-center gap-2">
                        <button
                          type="button"
-                         onClick={() => setDeliveryAdjustment(prev => prev - 500)}
+                         onClick={() => setDeliveryAdjustment(prev => prev - 1000)}
                          className="flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition shadow-sm font-black"
                        >
                          -
                        </button>
-                       <div className="flex-1 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white font-mono font-bold text-slate-700">
-                         {deliveryAdjustment > 0 ? "+" : ""}{deliveryAdjustment}
+                       <div className="flex-1 h-10 flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white font-mono font-bold">
+                         <span className="text-slate-700">{deliveryAdjustment > 0 ? "+" : ""}{deliveryAdjustment}</span>
+                         {firstRegionId && (
+                           <span className="text-[9px] text-slate-400 -mt-1">
+                             أساسي: {formatDinarAsAlfWithUnit(regions.find(r => r.id === firstRegionId)?.deliveryPrice || 0)}
+                           </span>
+                         )}
                        </div>
                        <button
                          type="button"
-                         onClick={() => setDeliveryAdjustment(prev => prev + 500)}
+                         onClick={() => setDeliveryAdjustment(prev => prev + 1000)}
                          className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition shadow-sm font-black"
                        >
                          +
@@ -1090,17 +1095,22 @@ export function AdminCreateOrderForm({
                      <div className="flex items-center gap-2">
                        <button
                          type="button"
-                         onClick={() => setDeliveryAdjustment(prev => prev - 500)}
+                         onClick={() => setDeliveryAdjustment(prev => prev - 1000)}
                          className="flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition shadow-sm font-black"
                        >
                          -
                        </button>
-                       <div className="flex-1 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white font-mono font-bold text-slate-700">
-                         {deliveryAdjustment > 0 ? "+" : ""}{deliveryAdjustment}
+                       <div className="flex-1 h-10 flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white font-mono font-bold">
+                         <span className="text-slate-700">{deliveryAdjustment > 0 ? "+" : ""}{deliveryAdjustment}</span>
+                         {firstRegionId && (
+                           <span className="text-[9px] text-slate-400 -mt-1">
+                             أساسي: {formatDinarAsAlfWithUnit(regions.find(r => r.id === firstRegionId)?.deliveryPrice || 0)}
+                           </span>
+                         )}
                        </div>
                        <button
                          type="button"
-                         onClick={() => setDeliveryAdjustment(prev => prev + 500)}
+                         onClick={() => setDeliveryAdjustment(prev => prev + 1000)}
                          className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition shadow-sm font-black"
                        >
                          +
