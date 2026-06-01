@@ -89,6 +89,39 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     const newOrders = allPendingOrders;
     const preparedOrders = allPendingOrders.filter(o => o.submissionSource === "company_preparer");
 
+    // جلب البروفايلات لزبائن الطلبات المعلقة لضمان استرجاع الإحداثيات والباب والlandmark
+    const pendingPhones = Array.from(new Set(
+      allPendingOrders
+        .map(o => o.customerPhone ? normalizeIraqMobileLocal11(o.customerPhone) : null)
+        .filter(Boolean)
+    )) as string[];
+
+    const profiles = pendingPhones.length > 0 ? await prisma.customerPhoneProfile.findMany({
+      where: { phone: { in: pendingPhones } },
+      select: {
+        id: true,
+        phone: true,
+        regionId: true,
+        photoUrl: true,
+        locationUrl: true,
+        landmark: true,
+        alternatePhone: true,
+      }
+    }) : [];
+
+    const phoneProfilesRegionMap = new Map<string, typeof profiles[number]>();
+    const phoneProfilesOnlyMap = new Map<string, typeof profiles[number]>();
+
+    for (const p of profiles) {
+      if (p.regionId) {
+        phoneProfilesRegionMap.set(`${p.phone}::${p.regionId}`, p);
+      }
+      const existing = phoneProfilesOnlyMap.get(p.phone);
+      if (!existing || (p.locationUrl && !existing.locationUrl)) {
+        phoneProfilesOnlyMap.set(p.phone, p);
+      }
+    }
+
     // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
     const safeAllActiveDrafts = serializePrisma(allActiveDrafts);
     const safeNewOrders = serializePrisma(newOrders);
