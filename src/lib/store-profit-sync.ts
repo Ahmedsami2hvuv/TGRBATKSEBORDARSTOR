@@ -20,9 +20,14 @@ export async function getEffectiveProfitMargin(branchId: string) {
     select: { profitMargin: true }
   });
 
-  const branchMargin = Number(branch?.profitMargin || 0);
-  const categoryMargin = Number(branch?.category?.profitMargin || 0);
-  const globalMargin = Number(globalSettings?.profitMargin || 0);
+  let branchMargin = Number(branch?.profitMargin || 0);
+  let categoryMargin = Number(branch?.category?.profitMargin || 0);
+  let globalMargin = Number(globalSettings?.profitMargin || 0);
+
+  // إذا كانت القيمة بالآلاف (مثلاً 0.25 أو 0.5 أو 1) نقوم بضربها في 1000 لتتحول للدينار العراقي الفعلي (250، 500، 1000)
+  if (branchMargin > 0 && branchMargin <= 10) branchMargin *= 1000;
+  if (categoryMargin > 0 && categoryMargin <= 10) categoryMargin *= 1000;
+  if (globalMargin > 0 && globalMargin <= 10) globalMargin *= 1000;
 
   return branchMargin > 0 ? branchMargin : (categoryMargin > 0 ? categoryMargin : globalMargin);
 }
@@ -47,6 +52,7 @@ export async function syncBranchProductsPrice(branchId: string) {
     WHERE "productId" IN (SELECT id FROM "StoreProduct" WHERE "branchId" = ${branchId})
   `;
 
+  // @ts-ignore
   revalidateTag("products");
 }
 

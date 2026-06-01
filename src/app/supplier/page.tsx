@@ -36,7 +36,8 @@ export default async function SupplierPortalPage({ searchParams }: Props) {
       );
     }
 
-    const profitMargin = Number(supplier.profitMargin) || 0.25;
+    let profitMargin = Number(supplier.profitMargin) || 250;
+    if (profitMargin > 0 && profitMargin <= 10) profitMargin *= 1000;
     const branchIds = supplier.branches.map(b => b.id);
 
     const productsRaw = await prisma.storeProduct.findMany({

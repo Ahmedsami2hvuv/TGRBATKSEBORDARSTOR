@@ -15,7 +15,7 @@ export async function createStoreSupplier(_prev: SupplierFormState, formData: Fo
   try {
     const name = String(formData.get("name") ?? "").trim();
     const phone = String(formData.get("phone") ?? "").trim();
-    const profitMargin = String(formData.get("profitMargin") ?? "0.25");
+    const profitMargin = String(formData.get("profitMargin") ?? "250");
 
     if (!name) return { error: "الاسم مطلوب" };
 
@@ -41,7 +41,7 @@ export async function updateStoreSupplier(_prev: SupplierFormState, formData: Fo
     const id = String(formData.get("id") ?? "");
     const name = String(formData.get("name") ?? "").trim();
     const phone = String(formData.get("phone") ?? "").trim();
-    const profitMargin = String(formData.get("profitMargin") ?? "0.25");
+    const profitMargin = String(formData.get("profitMargin") ?? "250");
     const active = formData.get("active") === "1";
 
     if (!id || !name) return { error: "البيانات ناقصة" };

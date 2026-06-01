@@ -39,14 +39,14 @@ function AddSupplierForm({ icons }: { icons: GlobalIconsConfig | null }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [margin, setMargin] = useState("0.25");
+  const [margin, setMargin] = useState("250");
 
   useEffect(() => {
     if (state?.ok) {
       setOpen(false);
       setName("");
       setPhone("");
-      setMargin("0.25");
+      setMargin("250");
     }
   }, [state?.ok]);
 
@@ -76,7 +76,7 @@ function AddSupplierForm({ icons }: { icons: GlobalIconsConfig | null }) {
           </label>
           <label className="flex flex-col gap-1">
             <span className={ad.label}>هامش الربح </span>
-            <input name="profitMargin" type="number" step="0.05" className={ad.input} value={margin} onChange={e => setMargin(e.target.value)} />
+            <input name="profitMargin" type="number" step="50" className={ad.input} value={margin} onChange={e => setMargin(e.target.value)} />
           </label>
         </div>
         {state?.error && <p className={ad.error}>{state.error}</p>}
@@ -111,7 +111,7 @@ function SupplierCard({ row, allProducts, allBranches, icons }: { row: SupplierM
             </div>
             <div>
               <h3 className="text-xl font-black text-slate-900">{row.name}</h3>
-              <p className="text-sm font-bold text-slate-500">الربح: {row.profitMargin}  | {row.phone || "بدون هاتف"}</p>
+              <p className="text-sm font-bold text-slate-500">الربح: {Number(row.profitMargin <= 10 ? row.profitMargin * 1000 : row.profitMargin).toLocaleString()} د.ع | {row.phone || "بدون هاتف"}</p>
             </div>
           </div>
 
@@ -244,7 +244,7 @@ function SupplierCard({ row, allProducts, allBranches, icons }: { row: SupplierM
             </label>
             <label className="flex flex-col gap-1">
               <span className={ad.label}>هامش الربح</span>
-              <input name="profitMargin" type="number" step="0.05" defaultValue={row.profitMargin} className={ad.input} />
+              <input name="profitMargin" type="number" step="50" defaultValue={row.profitMargin <= 10 ? row.profitMargin * 1000 : row.profitMargin} className={ad.input} />
             </label>
             <div className="md:col-span-3 flex items-center justify-between">
               <label className="flex items-center gap-2 font-black text-slate-700">

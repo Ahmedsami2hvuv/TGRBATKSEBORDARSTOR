@@ -26,7 +26,8 @@ export async function updateSupplierProductPrice(formData: FormData) {
     if (!supplier) throw new Error("غير مصرح لك");
 
     const branchIds = supplier.branches.map(b => b.id);
-    const profitMargin = Number(supplier.profitMargin) || 0.25;
+    let profitMargin = Number(supplier.profitMargin) || 250;
+    if (profitMargin > 0 && profitMargin <= 10) profitMargin *= 1000;
     const salePrice = purchasePrice + profitMargin;
 
     // التأكد من أن المنتج ينتمي لهذا المورد أو لأحد أفرعه المخولة
