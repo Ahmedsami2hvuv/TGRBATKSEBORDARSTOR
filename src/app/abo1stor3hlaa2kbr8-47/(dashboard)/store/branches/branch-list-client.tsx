@@ -808,16 +808,16 @@ export function BranchListClient({
                 </div>
 
                 <div className="space-y-2 lg:col-span-1">
-                    <label className="text-xs font-black text-emerald-600 uppercase tracking-widest mr-2">هامش الربح</label>
+                    <label className="text-xs font-black text-emerald-600 uppercase tracking-widest mr-2">مبلغ الربح المضاف</label>
                     <div className="relative">
                         <input
                             name="profitMargin"
                             type="number"
                             step="0.01"
-                            defaultValue={editing?.profitMargin || 0.25}
+                            defaultValue={editing?.profitMargin || 0}
                             className="w-full px-5 py-3 rounded-2xl bg-emerald-50/50 border-2 border-emerald-100 focus:border-emerald-500 focus:bg-white outline-none font-black transition-all text-sm text-emerald-900"
                         />
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-emerald-600">%</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-600">د.ع</span>
                     </div>
                 </div>
 
@@ -899,7 +899,7 @@ export function BranchListClient({
                     </span>
                     <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
                     <span className="text-[10px] text-emerald-600 font-black">
-                        📦 {br._count?.products || 0}
+                        💰 +{Number(br.profitMargin).toLocaleString()}
                     </span>
                 </div>
               </div>

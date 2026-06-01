@@ -27,6 +27,14 @@ export async function POST(req: Request) {
     : 40;
   const export_store_orders_excel_enabled = formData.get("export_store_orders_excel_enabled") === "on";
   const ai_enabled = formData.get("ai_enabled") === "on";
+  const global_profit_margin = Number(formData.get("global_profit_margin") || 0);
+
+  // تحديث الربح العام في جدول GlobalSettings
+  await prisma.globalSettings.upsert({
+    where: { id: "system" },
+    update: { profitMargin: global_profit_margin },
+    create: { id: "system", profitMargin: global_profit_margin }
+  });
 
   // إذا تم رفع ملف جديد، نقوم بمعالجته وحفظه
   if (product_card_bg_file && product_card_bg_file.size > 0) {

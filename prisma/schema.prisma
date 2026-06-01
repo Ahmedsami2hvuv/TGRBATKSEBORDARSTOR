@@ -89,6 +89,7 @@ model GlobalSettings {
   id              String   @id @default("system")
   allOrdersPaused Boolean  @default(false)
   pauseMessage    String   @default("")
+  profitMargin    Decimal  @default(0) @db.Decimal(10, 2)
   updatedAt       DateTime @updatedAt
 }
 
@@ -597,15 +598,16 @@ model AIConfig {
 }
 
 model StoreCategory {
-  id        String        @id @default(cuid())
-  name      String
-  sequence  Int           @default(0)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  active    Boolean       @default(true)
-  photoUrl  String        @default("")
-  notes     String        @default("")
-  branches  StoreBranch[]
+  id           String        @id @default(cuid())
+  name         String
+  sequence     Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  active       Boolean       @default(true)
+  photoUrl     String        @default("")
+  notes        String        @default("")
+  profitMargin Decimal       @default(0) @db.Decimal(10, 2)
+  branches     StoreBranch[]
 
   @@index([active, sequence])
 }
@@ -621,7 +623,7 @@ model StoreBranch {
   photoUrl             String           @default("")
   parentBranchId       String?
   authorizedPreparerId String?
-  profitMargin         Decimal          @default(0.25) @db.Decimal(10, 2)
+  profitMargin         Decimal          @default(0) @db.Decimal(10, 2)
   notes                String           @default("")
   authorizedPreparer   CompanyPreparer? @relation("AuthorizedBranches", fields: [authorizedPreparerId], references: [id])
   category             StoreCategory    @relation(fields: [categoryId], references: [id], onDelete: Cascade)

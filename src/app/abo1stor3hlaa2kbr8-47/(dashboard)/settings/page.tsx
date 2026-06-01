@@ -33,6 +33,7 @@ export default async function SettingsPage() {
       prisma.telegramBot.findMany({ orderBy: { createdAt: "desc" } }).catch(() => []),
       getAvailableFonts(),
       getChosenFont(),
+      prisma.globalSettings.findUnique({ where: { id: "system" } }).catch(() => null),
     ]);
   } catch (e) {
     console.error("Critical Settings Page Error:", e);
@@ -52,7 +53,8 @@ export default async function SettingsPage() {
     telegramAdmins,
     telegramBots,
     availableFonts,
-    currentFont
+    currentFont,
+    globalSettings
   ] = data;
 
   // تأمين كائن الإشعارات في حال كان null
@@ -81,6 +83,7 @@ export default async function SettingsPage() {
         telegramBotsInitial={telegramBots as any}
         availableFonts={availableFonts}
         currentFont={currentFont}
+        globalSettingsInitial={globalSettings}
         notificationInitial={{
           adminEnabled: ns.adminEnabled ?? true,
           adminTitleSingle: ns.adminTitleSingle ?? "طلب جديد #{orderNumber}",

@@ -177,6 +177,7 @@ export function SettingsBlocks({
   telegramBotsInitial,
   availableFonts,
   currentFont,
+  globalSettingsInitial,
 }: {
   notificationInitial: NotificationInitial;
   globalIcons: GlobalIconsConfig;
@@ -191,6 +192,7 @@ export function SettingsBlocks({
   telegramBotsInitial: any[];
   availableFonts: string[];
   currentFont: string;
+  globalSettingsInitial: any;
 }) {
   const router = useRouter();
   const [openId, setOpenId] = useState<string>("ui-designer");
@@ -208,6 +210,7 @@ export function SettingsBlocks({
   const [productCardBgOpacity, setProductCardBgOpacity] = useState(40);
   const [storeOrdersExcelEnabled, setStoreOrdersExcelEnabled] = useState(true);
   const [aiEnabledStore, setAiEnabledStore] = useState(false);
+  const [globalProfitMargin, setGlobalProfitMargin] = useState(Number(globalSettingsInitial?.profitMargin || 0));
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -224,6 +227,9 @@ export function SettingsBlocks({
               ? Math.min(100, Math.max(0, Math.round(Number(data.product_card_bg_opacity))))
               : 40
           );
+          if (data.global_profit_margin !== undefined) {
+             setGlobalProfitMargin(Number(data.global_profit_margin));
+          }
         })
         .catch(err => console.error("Failed to load store settings:", err));
     }
@@ -599,6 +605,24 @@ export function SettingsBlocks({
             }
         }}>
           <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">الربح العام (د.ع)</label>
+              <div className="flex gap-2">
+                <input
+                    type="number"
+                    name="global_profit_margin"
+                    value={globalProfitMargin}
+                    onChange={(e) => setGlobalProfitMargin(Number(e.target.value))}
+                    placeholder="مبلغ الربح المضاف"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold bg-amber-50"
+                />
+                <div className="flex items-center px-3 bg-slate-100 rounded-xl text-[10px] font-black text-slate-500 whitespace-nowrap">
+                   💰 الربح الافتراضي
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-500 font-bold px-1">يُطبق هذا الربح على جميع المنتجات مالم يتم تحديد ربح خاص للقسم أو الفرع.</p>
+            </div>
+
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700">رابط "طريقة التسوق"</label>
               <input name="how_to_shop_url" value={howToShopUrl} onChange={(e) => setHowToShopUrl(e.target.value)} placeholder="https://..." className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold" />

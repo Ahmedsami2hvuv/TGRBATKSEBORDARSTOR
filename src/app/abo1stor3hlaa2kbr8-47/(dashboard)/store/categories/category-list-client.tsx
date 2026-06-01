@@ -349,6 +349,17 @@ export function CategoryListClient({ initialCategories, icons }: { initialCatego
                     />
                 </div>
 
+                <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">مبلغ الربح (دينار)</label>
+                    <input
+                        name="profitMargin"
+                        type="number"
+                        defaultValue={editing?.profitMargin || 0}
+                        className="w-full px-5 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-violet-500 focus:bg-white outline-none font-bold transition-all"
+                        placeholder="مثلاً: 1000"
+                    />
+                </div>
+
                 <div className="space-y-2 md:col-span-2 lg:col-span-3">
                     <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">ملاحظة تظهر للزبون (اختياري)</label>
                     <textarea

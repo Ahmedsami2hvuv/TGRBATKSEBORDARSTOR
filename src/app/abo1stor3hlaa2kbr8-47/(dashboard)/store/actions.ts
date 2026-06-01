@@ -20,6 +20,7 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
   const id = formData.get("id") as string;
   const name = formData.get("name") as string;
   const sequence = parseInt(formData.get("sequence") as string || "0");
+  const profitMargin = parseFloat(formData.get("profitMargin") as string || "0");
   const notes = formData.get("notes") as string || "";
   const photoFile = formData.get("photo") as File;
   let photoUrl = formData.get("currentPhotoUrl") as string || "";
@@ -41,11 +42,11 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
   if (id) {
     await prisma.storeCategory.update({
       where: { id },
-      data: { name, sequence, photoUrl, notes }
+      data: { name, sequence, photoUrl, notes, profitMargin }
     });
   } else {
     await prisma.storeCategory.create({
-      data: { name, sequence, photoUrl, notes }
+      data: { name, sequence, photoUrl, notes, profitMargin }
     });
   }
 

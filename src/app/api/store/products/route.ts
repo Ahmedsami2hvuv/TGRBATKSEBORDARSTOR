@@ -2,15 +2,26 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 
-// دالة مخزنة لجلب المنتجات بسرعة فائقة
+// دالة مخزنة لجلب المنتجات بسرعة مع حساب الربح
 const getCachedProductsByBranch = unstable_cache(
   async (branchId: string) => {
-    return prisma.storeProduct.findMany({
+    const [branch, globalSettings] = await Promise.all([
+      prisma.storeBranch.findUnique({
+        where: { id: branchId },
+        select: {
+          profitMargin: true,
+          category: { select: { profitMargin: true } }
+        }
+      }),
+      prisma.globalSettings.findUnique({ where: { id: "system" }, select: { profitMargin: true } })
+    ]);
+
+    const products = await prisma.storeProduct.findMany({
       where: { branchId, active: true },
       select: {
         id: true,
         name: true,
-        salePrice: true,
+        purchasePrice: true,
         description: true,
         photoUrls: true,
         hasVariants: true,
@@ -18,15 +29,35 @@ const getCachedProductsByBranch = unstable_cache(
           select: {
             id: true,
             name: true,
-            salePrice: true
+            purchasePrice: true,
           }
         }
       },
       orderBy: { sequence: "desc" },
     });
+
+    // تحديد مقدار الربح المعتمد (فرع -> قسم -> عام)
+    const branchMargin = Number(branch?.profitMargin || 0);
+    const categoryMargin = Number(branch?.category?.profitMargin || 0);
+    const globalMargin = Number(globalSettings?.profitMargin || 0);
+
+    const activeMargin = branchMargin > 0 ? branchMargin : (categoryMargin > 0 ? categoryMargin : globalMargin);
+
+    return products.map(p => {
+      const pPrice = Number(p.purchasePrice || 0);
+      return {
+        ...p,
+        salePrice: pPrice + activeMargin,
+        photoUrls: Array.isArray(p.photoUrls) ? p.photoUrls : [],
+        variants: p.variants?.map(v => ({
+          ...v,
+          salePrice: Number(v.purchasePrice || 0) + activeMargin
+        }))
+      };
+    });
   },
   ["store-products-list"],
-  { revalidate: 600, tags: ["products"] } // تحديث كل 10 دقائق أو عند الطلب
+  { revalidate: 600, tags: ["products"] }
 );
 
 export async function GET(request: Request) {
