@@ -66,6 +66,8 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
         showCallBtn: true,
         showWhatsAppBtn: true,
         showMoneyBoxes: true,
+        showNotesBtn: true,
+        showVoiceNotesBtn: true,
       },
     });
 
@@ -88,6 +90,8 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
       showCallBtn: courier.showCallBtn,
       showWhatsAppBtn: courier.showWhatsAppBtn,
       showMoneyBoxes: courier.showMoneyBoxes,
+      showNotesBtn: courier.showNotesBtn,
+      showVoiceNotesBtn: courier.showVoiceNotesBtn,
     };
 
     const auth = {

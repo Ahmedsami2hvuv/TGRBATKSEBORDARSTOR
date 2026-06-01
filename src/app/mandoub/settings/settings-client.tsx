@@ -11,6 +11,8 @@ type CourierSettings = {
   showCallBtn: boolean;
   showWhatsAppBtn: boolean;
   showMoneyBoxes: boolean;
+  showNotesBtn: boolean;
+  showVoiceNotesBtn: boolean;
 };
 
 type Props = {
@@ -90,6 +92,18 @@ export default function CourierSettingsClient({
       icon: "💬",
       title: "زر مراسلة واتساب",
       desc: "إظهار أو إخفاء زر مراسلة الزبون على واتساب خارج الطلب",
+    },
+    {
+      key: "showVoiceNotesBtn" as const,
+      icon: "🎤",
+      title: "البصمة الصوتية للطلبية",
+      desc: "إظهار أو إخفاء زر الاستماع للبصمة الصوتية خارج تفاصيل الطلب",
+    },
+    {
+      key: "showNotesBtn" as const,
+      icon: "📝",
+      title: "الملاحظات وقائمة المواد",
+      desc: "إظهار أو إخفاء قائمة المواد والملاحظات الكتابية خارج الطلب",
     },
     {
       key: "showMoneyBoxes" as const,

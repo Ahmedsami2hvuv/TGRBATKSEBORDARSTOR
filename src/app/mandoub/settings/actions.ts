@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function updateCourierSetting(
   auth: { c: string; exp: string; s: string },
-  settingName: "showLocationBtn" | "showDoorBtn" | "showCallBtn" | "showWhatsAppBtn" | "showMoneyBoxes",
+  settingName: "showLocationBtn" | "showDoorBtn" | "showCallBtn" | "showWhatsAppBtn" | "showMoneyBoxes" | "showNotesBtn" | "showVoiceNotesBtn",
   value: boolean
 ) {
   const v = verifyDelegatePortalQuery(auth.c, auth.exp || undefined, auth.s);
@@ -25,6 +25,8 @@ export async function updateCourierSetting(
     "showCallBtn",
     "showWhatsAppBtn",
     "showMoneyBoxes",
+    "showNotesBtn",
+    "showVoiceNotesBtn",
   ];
 
   if (!allowedSettings.includes(settingName)) {
