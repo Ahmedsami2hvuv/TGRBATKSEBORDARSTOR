@@ -412,7 +412,7 @@ export function UnifiedOrderListTable({
                             />
                           ) : null}
                           {!hideShortIdInBadgeCol && (
-                            <span className="tabular-nums font-bold text-[11px] text-slate-400">#{o.shortId}</span>
+                            <span className="tabular-nums font-bold text-[11px] text-sky-600">#{o.shortId}</span>
                           )}
                         </div>
                           {o.vehiclePreference === "bike" && (

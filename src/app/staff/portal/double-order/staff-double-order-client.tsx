@@ -125,7 +125,7 @@ export function StaffDoubleOrderClient({ auth, icons }: any) {
         <DynamicIcon icon={icons?.ui_success} className="w-6 h-6" fallback={<span>✅</span>} />
         تم رفع الطلب بنجاح
       </h2>
-      <p className="mt-2 text-sm font-bold text-slate-600">رقم الطلب: <span className="text-emerald-700">#{state.orderNumber}</span></p>
+      <p className="mt-2 text-sm font-bold text-slate-600">رقم الطلب: <span className="text-sky-700 font-black">#{state.orderNumber}</span></p>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
         <Link href={`/staff/portal?se=${auth.se}&exp=${auth.exp}&s=${auth.s}`} className="inline-flex justify-center rounded-xl bg-slate-900 px-6 py-2.5 text-white font-bold hover:bg-slate-800">
           العودة للرئيسية
