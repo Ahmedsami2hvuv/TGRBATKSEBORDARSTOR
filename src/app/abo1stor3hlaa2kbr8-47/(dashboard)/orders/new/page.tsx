@@ -27,7 +27,7 @@ export default async function AdminCreateOrderPage() {
     const [shopsRaw, regionsRaw, preparersRaw, couriersRaw, iconsRaw] = await Promise.all([
       prisma.shop.findMany({
         orderBy: { name: "asc" },
-        select: { id: true, name: true, regionId: true, locationUrl: true },
+        include: { region: true },
       }),
       prisma.region.findMany({
         orderBy: { name: "asc" },
@@ -47,7 +47,13 @@ export default async function AdminCreateOrderPage() {
     ]);
 
     // تأمين البيانات للنقل إلى Client Components
-    const shops = serializePrisma(shopsRaw);
+    const shops = serializePrisma(shopsRaw.map(s => ({
+      id: s.id,
+      name: s.name,
+      regionId: s.regionId,
+      locationUrl: s.locationUrl,
+      regionDeliveryPrice: s.region.deliveryPrice,
+    })));
     const regions = serializePrisma(regionsRaw);
     const preparers = serializePrisma(preparersRaw);
     const couriers = serializePrisma(couriersRaw);
