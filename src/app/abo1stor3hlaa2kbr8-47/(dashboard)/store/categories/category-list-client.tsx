@@ -412,7 +412,11 @@ export function CategoryListClient({ initialCategories, icons }: { initialCatego
                 )}
               </div>
               <h3 className="font-black text-slate-900 text-center text-lg group-hover:text-violet-600 transition-colors line-clamp-1">{cat.name}</h3>
-              <p className="text-[10px] text-slate-400 text-center font-black uppercase mt-1">تسلسل {cat.sequence}</p>
+              <div className="flex items-center justify-center gap-2 mt-1">
+                <p className="text-[10px] text-slate-400 font-black uppercase">تسلسل {cat.sequence}</p>
+                <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                <span className="text-[10px] text-emerald-600 font-black">💰 +{Number(cat.profitMargin || 0).toLocaleString()}</span>
+              </div>
             </Link>
 
             {/* Actions Bar */}

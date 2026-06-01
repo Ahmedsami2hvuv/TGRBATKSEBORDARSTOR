@@ -7,6 +7,7 @@ type PricingConfig = {
   meat_keywords: string[];
   fish_keywords: string[];
   meat_prices: Record<string, { buy: number; sell: number }>;
+  store_general_profit?: number;
 };
 
 export function PricingSettingsForm() {
@@ -71,6 +72,38 @@ export function PricingSettingsForm() {
 
   return (
     <div className="space-y-6" dir="rtl">
+      {/* Store Profit Settings */}
+      <div className="space-y-4 rounded-3xl border-2 border-emerald-100 bg-emerald-50/20 p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+            <h3 className="flex items-center gap-2 font-black text-emerald-800 text-lg">💰 أرباح المتجر الإلكتروني</h3>
+            <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-tighter">Global Profit</span>
+        </div>
+        <p className="text-xs text-slate-500 font-bold leading-relaxed">هذا المبلغ سيتم إضافته تلقائياً على سعر شراء أي منتج في حال لم يتم تحديد ربح خاص للقسم أو الفرع التابع له.</p>
+
+        <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-emerald-100">
+            <div className="flex-1 space-y-1">
+                <label className="text-[10px] font-black text-slate-400 mr-2 uppercase">مبلغ الربح العام الافتراضي</label>
+                <div className="relative">
+                    <input
+                        type="number"
+                        step="0.01"
+                        placeholder="مثلاً: 0.25"
+                        className="w-full px-5 py-3 rounded-xl bg-slate-50 border-2 border-transparent focus:border-emerald-500 font-black outline-none transition-all"
+                        value={config.store_general_profit || 0}
+                        onChange={(e) => setConfig({ ...config, store_general_profit: parseFloat(e.target.value) || 0 })}
+                    />
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-emerald-600">دينار</span>
+                </div>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center text-white text-xl">
+                💸
+            </div>
+        </div>
+        <p className="text-[10px] text-amber-600 font-bold bg-amber-50 p-2 rounded-lg border border-amber-100 italic">
+            ⚠️ ملاحظة: عند تغيير هذا المبلغ، قد تحتاج للضغط على زر "مزامنة شاملة" في صفحة المنتجات لتحديث كافة الأسعار القديمة.
+        </p>
+      </div>
+
       <div className="space-y-4 rounded-2xl border border-red-100 bg-red-50/30 p-4">
         <h3 className="flex items-center gap-2 font-black text-red-800">🥩 قسم اللحوم</h3>
         <div className="space-y-2">
