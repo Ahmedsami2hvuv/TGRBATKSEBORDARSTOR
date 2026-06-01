@@ -639,16 +639,16 @@ export function OrderEditForm({
 
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>سعر الطلب  (بدون التوصيل)</span>
+          <span className={ad.label}>سعر الطلب (بدون التوصيل)</span>
           <input
             name="orderSubtotal"
             value={orderSubtotal}
             onChange={(e) => onOrderSubtotalChange(e.target.value)}
-            className={ad.input}
+            className={`${ad.input} font-mono tabular-nums`}
           />
         </label>
         <div className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>التوصيل </span>
+          <span className={ad.label}>التوصيل</span>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -657,7 +657,7 @@ export function OrderEditForm({
                 const next = Math.max(0, current - 1);
                 onDeliveryChange(dinarDecimalToAlfInputString(next));
               }}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition shadow-sm font-black"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-xl font-black text-rose-700 transition shadow-sm hover:bg-rose-100 active:scale-95"
             >
               -
             </button>
@@ -665,7 +665,7 @@ export function OrderEditForm({
               name="deliveryPrice"
               value={deliveryPrice}
               onChange={(e) => onDeliveryChange(e.target.value)}
-              className={`${ad.input} flex-1 text-center font-mono font-bold`}
+              className={`${ad.input} flex-1 text-center font-mono font-bold tabular-nums`}
             />
             <button
               type="button"
@@ -674,19 +674,19 @@ export function OrderEditForm({
                 const next = current + 1;
                 onDeliveryChange(dinarDecimalToAlfInputString(next));
               }}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition shadow-sm font-black"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-xl font-black text-emerald-700 transition shadow-sm hover:bg-emerald-100 active:scale-95"
             >
               +
             </button>
           </div>
         </div>
         <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>المجموع </span>
+          <span className={ad.label}>المجموع</span>
           <input
             name="totalAmount"
             value={totalAmount}
-            onChange={(e) => setTotalAmount(e.target.value)}
-            className={ad.input}
+            readOnly
+            className={`${ad.input} bg-slate-100 font-mono font-black tabular-nums text-sky-900`}
           />
         </label>
       </div>

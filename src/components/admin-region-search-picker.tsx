@@ -41,9 +41,10 @@ export function AdminRegionSearchPicker({
   }, [q, regions]);
 
   useEffect(() => {
-    // عند التحميل لأول مرة (مثلاً: defaultRegionId) نخلي النص يعكس الاختيار الحالي
-    if (selected && !q.trim()) setQ(selected.name);
-  }, [selected, q]);
+    // Sync query with the selected name only when the actual value changes
+    // This avoids the "auto-restore" bug when the user clears the search input
+    setQ(selected?.name ?? "");
+  }, [value, selected?.name]);
 
   useEffect(() => {
     function onDocMouseDown(e: MouseEvent) {
@@ -107,14 +108,14 @@ export function AdminRegionSearchPicker({
 
       {canShowList ? (
         <ul
-          className="mt-2 max-h-44 overflow-auto rounded-xl border border-sky-200 bg-white text-sm shadow-md"
+          className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl border-2 border-sky-400 bg-white text-xs shadow-xl"
           role="listbox"
         >
           {hits.map((r) => (
-            <li key={r.id}>
+            <li key={r.id} className="border-b border-slate-50 last:border-0">
               <button
                 type="button"
-                className="w-full px-3 py-2.5 text-end text-slate-800 hover:bg-sky-50"
+                className="w-full px-3 py-2.5 text-right font-bold text-slate-800 hover:bg-sky-50"
                 onClick={() => choose(r.id, r.name)}
               >
                 {r.name}
