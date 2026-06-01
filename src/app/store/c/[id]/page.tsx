@@ -125,7 +125,12 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
     <div className="space-y-4 md:space-y-8" dir="rtl">
       {slides.length > 0 && (
         <section className="mb-6 md:mb-10">
-          <StoreSlider slides={slides.map(s => ({ id: s.id, imageUrl: s.imageUrl, linkUrl: s.linkUrl, title: s.title }))} />
+          <StoreSlider slides={slides.map(s => ({
+            id: s.id,
+            imageUrl: s.imageUrl,
+            linkUrl: s.linkUrl || "",
+            title: s.title || ""
+          }))} />
         </section>
       )}
 
