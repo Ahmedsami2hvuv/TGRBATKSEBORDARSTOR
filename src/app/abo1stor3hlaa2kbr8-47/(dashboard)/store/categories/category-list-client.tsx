@@ -10,6 +10,7 @@ import { upsertCategory, deleteCategory } from "../actions";
 import { compressImageFileForUpload } from "@/lib/client-image-compress";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { QuickProfitEdit } from "../_components/quick-profit-edit";
 
 export function CategoryListClient({ initialCategories, icons }: { initialCategories: any[]; icons: GlobalIconsConfig | null }) {
   const router = useRouter();
@@ -415,7 +416,12 @@ export function CategoryListClient({ initialCategories, icons }: { initialCatego
               <div className="flex items-center justify-center gap-2 mt-1">
                 <p className="text-[10px] text-slate-400 font-black uppercase">تسلسل {cat.sequence}</p>
                 <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-                <span className="text-[10px] text-emerald-600 font-black">💰 +{Number(cat.profitMargin || 0).toLocaleString()}</span>
+                <QuickProfitEdit
+                    id={cat.id}
+                    initialMargin={cat.profitMargin || 0}
+                    type="category"
+                    name={cat.name}
+                />
               </div>
             </Link>
 

@@ -1,9 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { StoreAiSettings } from "./_components/store-ai-settings";
+import { GlobalProfitWidget } from "./_components/global-profit-widget";
 
 export default async function StoreAdminHub({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q } = await searchParams;
+
+  const globalSettings = await prisma.globalSettings.findUnique({
+    where: { id: "system" },
+    select: { profitMargin: true }
+  });
 
   let results: any = null;
   if (q) {
@@ -85,6 +91,8 @@ export default async function StoreAdminHub({ searchParams }: { searchParams: Pr
       </div>
 
       <StoreAiSettings />
+
+      <GlobalProfitWidget initialMargin={Number(globalSettings?.profitMargin || 0)} />
 
       {q && results && (
         <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-violet-200 shadow-xl shadow-violet-100/50 space-y-6">

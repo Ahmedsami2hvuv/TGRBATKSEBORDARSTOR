@@ -818,9 +818,14 @@ export function ProductListClient({
               <h3 className="font-black text-slate-900 line-clamp-2 mb-1 group-hover:text-emerald-600 transition-colors h-10 leading-tight">{p.name}</h3>
 
               <div className="flex flex-col gap-0.5 mb-4">
-                <p className="text-[10px] font-black text-emerald-600">
-                    {p.hasVariants ? "تبدأ من:" : "السعر:"} {Number(p.salePrice).toLocaleString()} د.ع
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-black text-emerald-600">
+                      {p.hasVariants ? "تبدأ من:" : "السعر:"} {Number(p.salePrice).toLocaleString()} د.ع
+                  </p>
+                  <span className="text-[9px] font-black text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
+                    ربح: {Number(p.salePrice - p.purchasePrice).toLocaleString()}
+                  </span>
+                </div>
                 <p className="text-[8px] font-bold text-slate-400">التكلفة: {Number(p.purchasePrice).toLocaleString()} د.ع</p>
               </div>
 

@@ -15,6 +15,22 @@ export type FormState = { error?: string; ok?: boolean; id?: string };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
+// --- Global Settings ---
+export async function updateGlobalProfit(margin: number) {
+  await prisma.globalSettings.upsert({
+    where: { id: "system" },
+    update: { profitMargin: margin },
+    create: { id: "system", profitMargin: margin }
+  });
+
+  // مزامنة كافة أسعار المتجر التي تعتمد على الربح العام
+  const { syncAllStoreProductsPrice } = await import("@/lib/store-profit-sync");
+  await syncAllStoreProductsPrice();
+
+  revalidatePath(`${SECRET_ADMIN_PATH}/store`);
+  return { ok: true };
+}
+
 // --- Categories ---
 export async function upsertCategory(_prev: any, formData: FormData): Promise<FormState> {
   const id = formData.get("id") as string;

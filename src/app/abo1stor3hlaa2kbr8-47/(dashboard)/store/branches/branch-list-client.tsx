@@ -10,6 +10,7 @@ import { upsertBranch, deleteBranch, scrapeCategoryFromUrl, scrapeProductFromUrl
 import { compressImageFileForUpload } from "@/lib/client-image-compress";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
+import { QuickProfitEdit } from "../_components/quick-profit-edit";
 
 export function BranchListClient({
   initialBranches,
@@ -898,9 +899,13 @@ export function BranchListClient({
                         {br.parentBranch ? `تابع لـ: ${br.parentBranch.name}` : "فرع رئيسي"}
                     </span>
                     <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-                    <span className="text-[10px] text-emerald-600 font-black">
-                        💰 +{Number(br.profitMargin).toLocaleString()}
-                    </span>
+                    <QuickProfitEdit
+                        id={br.id}
+                        initialMargin={br.profitMargin || 0}
+                        type="branch"
+                        name={br.name}
+                        categoryId={br.categoryId}
+                    />
                 </div>
               </div>
             </Link>
