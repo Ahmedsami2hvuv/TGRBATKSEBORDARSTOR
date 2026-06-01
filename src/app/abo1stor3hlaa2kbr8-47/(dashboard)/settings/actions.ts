@@ -356,65 +356,35 @@ export async function purgeDemoCoreData(
   }
 
   const confirm = String(formData.get("confirm") ?? "").trim();
-  const required = "مسح شامل";
+  const required = "مسح الطلبات";
 
   if (confirm !== required) {
     return { error: `اكتب «${required}» للتأكيد تماماً.` };
   }
 
-  const deleteOrders = formData.get("target_orders") === "on";
-  const deleteCustomers = formData.get("target_customers") === "on";
-  const deleteShops = formData.get("target_shops") === "on";
-  const deleteRegions = formData.get("target_regions") === "on";
-
   try {
-    if (deleteOrders) {
-      await prisma.$executeRawUnsafe('TRUNCATE TABLE "OrderCourierMoneyEvent", "Order", "CompanyPreparerShoppingDraft", "PreparerHiddenDebt", "CompanyPreparerPrepNotice" RESTART IDENTITY CASCADE;');
-      await prisma.$executeRawUnsafe('ALTER SEQUENCE IF EXISTS "Order_orderNumber_seq" RESTART WITH 1;');
-      await prisma.$executeRawUnsafe('ALTER SEQUENCE IF EXISTS "CompanyPreparerShoppingDraft_draftNumber_seq" RESTART WITH 1;');
-    }
-    if (deleteCustomers) {
-      await prisma.$executeRawUnsafe('TRUNCATE TABLE "Customer", "CustomerPhoneProfile" RESTART IDENTITY CASCADE;');
-    }
-    if (deleteShops) {
-      await prisma.$executeRawUnsafe('TRUNCATE TABLE "Shop", "Employee", "PreparerShop" RESTART IDENTITY CASCADE;');
-    }
-    if (deleteRegions) {
-      // حذف المناطق يقتضي تصفير كل ما هو مرتبط بها في الأغلب
-      await prisma.$executeRawUnsafe('TRUNCATE TABLE "Region", "RegionWaypoint", "Shop", "Customer", "CustomerPhoneProfile", "Order", "CompanyPreparerShoppingDraft" RESTART IDENTITY CASCADE;');
-      await prisma.$executeRawUnsafe('ALTER SEQUENCE IF EXISTS "Order_orderNumber_seq" RESTART WITH 1;');
-      await prisma.$executeRawUnsafe('ALTER SEQUENCE IF EXISTS "CompanyPreparerShoppingDraft_draftNumber_seq" RESTART WITH 1;');
-    }
+    // تصفير كافة الطلبات والمسودات والحسابات المرتبطة بها نهائياً وإعادة متسلسلة الترقيم للرقم 1
+    await prisma.$executeRawUnsafe(`
+      TRUNCATE TABLE 
+        "OrderCourierMoneyEvent",
+        "Order",
+        "CompanyPreparerShoppingDraft",
+        "PreparerHiddenDebt",
+        "CompanyPreparerPrepNotice"
+      RESTART IDENTITY CASCADE;
+    `);
 
-    // إذا لم يتم اختيار أي شيء، أو تم اختيار كل شيء، نفترض المسح الشامل لكل الجداول الأساسية والفرعية
-    const deleteAll = (!deleteOrders && !deleteCustomers && !deleteShops && !deleteRegions) || (deleteOrders && deleteCustomers && deleteShops && deleteRegions);
-    if (deleteAll) {
-       await prisma.$executeRawUnsafe(`
-        TRUNCATE TABLE
-          "Order", "Shop", "Customer", "CompanyPreparer", "Courier",
-          "CustomerPhoneProfile", "Employee", "Region", "OrderCourierMoneyEvent",
-          "CompanyPreparerShoppingDraft", "PreparerHiddenDebt", "CompanyPreparerPrepNotice",
-          "RegionWaypoint", "PreparerShop", "CourierLocationPoint", "CourierTip",
-          "CourierWalletMiscEntry", "WalletPeerTransfer", "EmployeeWalletMiscEntry",
-          "PortalChatMessage", "PortalChatParticipant", "PortalChatThread"
-        RESTART IDENTITY CASCADE;
-      `);
-      await prisma.$executeRawUnsafe('ALTER SEQUENCE IF EXISTS "Order_orderNumber_seq" RESTART WITH 1;');
-      await prisma.$executeRawUnsafe('ALTER SEQUENCE IF EXISTS "CompanyPreparerShoppingDraft_draftNumber_seq" RESTART WITH 1;');
-    }
+    await prisma.$executeRawUnsafe('ALTER SEQUENCE IF EXISTS "Order_orderNumber_seq" RESTART WITH 1;');
+    await prisma.$executeRawUnsafe('ALTER SEQUENCE IF EXISTS "CompanyPreparerShoppingDraft_draftNumber_seq" RESTART WITH 1;');
 
     revalidatePath(`${SECRET_ADMIN_PATH}/settings`);
     revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
     revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
-    revalidatePath(`${SECRET_ADMIN_PATH}/preparers`);
-    revalidatePath(`${SECRET_ADMIN_PATH}/couriers`);
-    revalidatePath(`${SECRET_ADMIN_PATH}/customers`);
-    revalidatePath(`${SECRET_ADMIN_PATH}/regions`);
     revalidatePath("/mandoub");
     revalidatePath("/preparer", "layout");
 
     return { ok: true };
   } catch (e: any) {
-    return { error: "فشل المسح: " + e.message };
+    return { error: "فشل مسح الطلبات: " + e.message };
   }
 }

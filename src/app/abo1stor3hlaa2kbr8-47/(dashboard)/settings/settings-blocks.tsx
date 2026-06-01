@@ -664,8 +664,8 @@ export function SettingsBlocks({
 
       <Block
         id="purge-demo"
-        title="المسح النهائي ⚠️"
-        subtitle="تصفير شامل للبيانات."
+        title="مسح وتصفير الطلبات ⚠️"
+        subtitle="مسح جميع الطلبات من الأساس وبدء الترقيم من 1."
         open={openId === "purge-demo"}
         onToggle={() => setOpenId((x) => (x === "purge-demo" ? "" : "purge-demo"))}
         tone="rose"
