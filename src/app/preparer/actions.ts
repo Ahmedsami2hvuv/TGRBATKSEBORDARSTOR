@@ -623,7 +623,14 @@ export async function submitPreparerOrder(
     });
 
     const defaultDelivery = Decimal.max(shop.region.deliveryPrice, region.deliveryPrice);
-    const delivery = defaultDelivery;
+    const deliveryPriceRaw = formData.get("deliveryPrice");
+    let delivery = defaultDelivery;
+    if (deliveryPriceRaw) {
+      const manualAlf = parseFloat(String(deliveryPriceRaw).replace(/,/g, "."));
+      if (!isNaN(manualAlf) && manualAlf >= 0) {
+        delivery = new Decimal(manualAlf).mul(ALF_PER_DINAR);
+      }
+    }
 
     const total = new Decimal(subtotalParsed.value).plus(delivery);
 

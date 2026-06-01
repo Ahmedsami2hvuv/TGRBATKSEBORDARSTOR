@@ -59,6 +59,7 @@ function ClientOrderFormInner({
   const [customerPhone, setCustomerPhone] = useState("");
   const [alternatePhone, setAlternatePhone] = useState("");
   const [orderTime, setOrderTime] = useState("");
+  const [deliveryPrice, setDeliveryPrice] = useState("");
   const [notes, setNotes] = useState("");
   const [customerLocationUrl, setCustomerLocationUrl] = useState("");
   const [customerLandmark, setCustomerLandmark] = useState("");
@@ -66,6 +67,24 @@ function ClientOrderFormInner({
   const [extraInfoOpen, setExtraInfoOpen] = useState(false);
   const [showNoPriceConfirm, setShowNoPriceConfirm] = useState(false);
   const [allowNoPriceSubmit, setAllowNoPriceSubmit] = useState(false);
+
+  useEffect(() => {
+    if (!selected) {
+      setDeliveryPrice("");
+      return;
+    }
+    const custDelAlf = Number(selected.deliveryPrice) / ALF_PER_DINAR;
+    const baseDel = Math.max(shop.shopDeliveryAlf, custDelAlf);
+    setDeliveryPrice(baseDel.toString());
+  }, [selected, shop.shopDeliveryAlf]);
+
+  const adjustDelivery = (delta: number) => {
+    setDeliveryPrice((prev) => {
+      const val = parseFloat(prev) || 0;
+      const res = val + delta;
+      return res < 0 ? "0" : res.toString();
+    });
+  };
 
   const orderImageMainRef = useRef<HTMLInputElement>(null);
   const orderImageCamRef = useRef<HTMLInputElement>(null);
@@ -196,16 +215,16 @@ function ClientOrderFormInner({
     }
   }, [state.error]);
 
-  const custDelAlf = selected ? Number(selected.deliveryPrice) / ALF_PER_DINAR : NaN;
   const normalizedPrice = orderPrice.replace(/,/g, ".").trim();
   const hasOrderPrice = normalizedPrice.length > 0;
   const parsedPrice = hasOrderPrice ? parseFloat(normalizedPrice) : NaN;
 
-  const delivery =
-    selected && !Number.isNaN(custDelAlf) ? Math.max(shop.shopDeliveryAlf, custDelAlf) : null;
+  const parsedDelivery = parseFloat(deliveryPrice);
+  const currentDeliveryAlf = !Number.isNaN(parsedDelivery) ? parsedDelivery : null;
+
   const total =
-    delivery != null && hasOrderPrice && !Number.isNaN(parsedPrice)
-      ? parsedPrice + delivery
+    currentDeliveryAlf != null && hasOrderPrice && !Number.isNaN(parsedPrice)
+      ? parsedPrice + currentDeliveryAlf
       : null;
 
   const expLabel =
@@ -448,11 +467,33 @@ function ClientOrderFormInner({
 
             {selected ? <p className="mt-2 text-xs font-medium text-emerald-800">تم الاختيار: {selected.name}</p> : null}
 
-            {delivery != null ? (
+            {currentDeliveryAlf != null ? (
               <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-3 text-sm text-slate-800">
                 <div className="flex items-center justify-between">
                   <span>سعر التوصيل:</span>
-                  <strong className="tabular-nums text-sky-800">{delivery.toFixed(2)}</strong>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => adjustDelivery(-1)}
+                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition shadow-sm font-black"
+                    >
+                      -
+                    </button>
+                    <input
+                      name="deliveryPrice"
+                      value={deliveryPrice}
+                      onChange={(e) => setDeliveryPrice(e.target.value)}
+                      inputMode="decimal"
+                      className="w-20 h-9 rounded-xl border border-slate-200 bg-white text-center font-mono font-bold text-sky-800 outline-none focus:border-sky-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => adjustDelivery(1)}
+                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition shadow-sm font-black"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-2 pt-2 border-t border-sky-200 flex items-center justify-between">
                   <span className="font-bold">المجموع الكلي:</span>
