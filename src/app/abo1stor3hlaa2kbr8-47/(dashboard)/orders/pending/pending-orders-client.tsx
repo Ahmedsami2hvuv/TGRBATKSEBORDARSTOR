@@ -1305,15 +1305,11 @@ export default function PendingOrdersClient({
                   />
                   <Link
                     href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
-                    className={`h-14 w-14 rounded-2xl flex flex-col items-center justify-center border shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer ${
-                      !hasLocation 
-                        ? "bg-amber-50 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/30 dark:border-amber-900/50 text-amber-700 dark:text-amber-400"
-                        : "bg-slate-50 border-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300"
-                    }`}
+                    className="flex flex-col items-center justify-center rounded-2xl bg-sky-600 hover:bg-sky-700 active:scale-95 transition-all cursor-pointer shadow-md shadow-sky-200/60 dark:shadow-sky-900/30 px-3 py-2 min-w-[72px] border-2 border-sky-500"
                     title="فتح تفاصيل الطلب بالكامل"
                   >
-                    <span className="text-[9px] font-black opacity-60 leading-none">رقم</span>
-                    <span className="text-base font-black leading-none mt-1">#{order.orderNumber}</span>
+                    <span className="text-[9px] font-black text-sky-100 leading-none tracking-widest uppercase">طلب</span>
+                    <span className="text-2xl font-black text-white leading-none mt-0.5 tabular-nums">#{order.orderNumber}</span>
                   </Link>
                   <div>
                     <Link
