@@ -380,8 +380,12 @@ export async function assignPendingOrderToCourier(
   const orderId = String(formData.get("orderId") ?? "").trim();
   const courierId = String(formData.get("courierId") ?? "").trim();
   const customerLocationUrl = String(formData.get("customerLocationUrl") ?? "").trim();
+  const secondCustomerLocationUrl = String(formData.get("secondCustomerLocationUrl") ?? "").trim();
   const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
+  const secondCustomerLandmark = String(formData.get("secondCustomerLandmark") ?? "").trim();
   const customerAlternatePhone = String(formData.get("customerAlternatePhone") ?? "").trim();
+  const customerDoorPhotoUrl = String(formData.get("customerDoorPhotoUrl") ?? "").trim();
+  const secondCustomerDoorPhotoUrl = String(formData.get("secondCustomerDoorPhotoUrl") ?? "").trim();
   const directReceipt = formData.get("directReceipt") === "on";
   const doorPhotoFile = formData.get("doorPhoto") as File | null;
 
@@ -405,7 +409,10 @@ export async function assignPendingOrderToCourier(
         customerLocationUrl: customerLocationUrl || undefined,
         customerLandmark: customerLandmark || undefined,
         alternatePhone: customerAlternatePhone || undefined,
-        customerDoorPhotoUrl: doorPhotoUrl || undefined,
+        customerDoorPhotoUrl: doorPhotoUrl || customerDoorPhotoUrl || undefined,
+        secondCustomerLocationUrl: secondCustomerLocationUrl || undefined,
+        secondCustomerLandmark: secondCustomerLandmark || undefined,
+        secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrl || undefined,
       },
     });
 
@@ -571,23 +578,32 @@ export async function setDraftAutoCourier(
   }
 }
 
-/** تحديث رابط لوكيشن الطلب فقط */
 export async function saveOrderLocationOnly(
   _prev: any,
   formData: FormData,
 ): Promise<{ ok?: boolean; error?: string }> {
   const orderId = String(formData.get("orderId") ?? "").trim();
   const customerLocationUrl = String(formData.get("customerLocationUrl") ?? "").trim();
+  const secondCustomerLocationUrl = String(formData.get("secondCustomerLocationUrl") ?? "").trim();
+  const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
+  const secondCustomerLandmark = String(formData.get("secondCustomerLandmark") ?? "").trim();
+  const customerDoorPhotoUrl = String(formData.get("customerDoorPhotoUrl") ?? "").trim();
+  const secondCustomerDoorPhotoUrl = String(formData.get("secondCustomerDoorPhotoUrl") ?? "").trim();
 
   if (!orderId) return { error: "معرف الطلب مفقود" };
-  if (!customerLocationUrl) return { error: "رابط الموقع مطلوب" };
 
   try {
+    const dataToUpdate: any = {};
+    if (formData.has("customerLocationUrl")) dataToUpdate.customerLocationUrl = customerLocationUrl || null;
+    if (formData.has("secondCustomerLocationUrl")) dataToUpdate.secondCustomerLocationUrl = secondCustomerLocationUrl || null;
+    if (formData.has("customerLandmark")) dataToUpdate.customerLandmark = customerLandmark || null;
+    if (formData.has("secondCustomerLandmark")) dataToUpdate.secondCustomerLandmark = secondCustomerLandmark || null;
+    if (formData.has("customerDoorPhotoUrl")) dataToUpdate.customerDoorPhotoUrl = customerDoorPhotoUrl || null;
+    if (formData.has("secondCustomerDoorPhotoUrl")) dataToUpdate.secondCustomerDoorPhotoUrl = secondCustomerDoorPhotoUrl || null;
+
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
-      data: {
-        customerLocationUrl: customerLocationUrl,
-      },
+      data: dataToUpdate,
     });
 
     if (updatedOrder.customerPhone) {
@@ -599,6 +615,6 @@ export async function saveOrderLocationOnly(
     return { ok: true };
   } catch (e: any) {
     console.error("Error in saveOrderLocationOnly:", e);
-    return { error: "حدث خطأ أثناء حفظ الموقع: " + (e.message || "خطأ غير معروف") };
+    return { error: "حدث خطأ أثناء حفظ التعديلات: " + (e.message || "خطأ غير معروف") };
   }
 }

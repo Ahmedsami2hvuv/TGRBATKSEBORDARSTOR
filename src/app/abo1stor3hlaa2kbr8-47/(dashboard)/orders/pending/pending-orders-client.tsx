@@ -55,6 +55,9 @@ export type PendingOrderRow = {
   submissionLabel: string | null;
   customerLocationUrl: string;
   customerLandmark: string;
+  secondCustomerLocationUrl?: string;
+  secondCustomerLandmark?: string;
+  secondCustomerDoorPhotoUrl?: string;
   voiceNoteUrl?: string | null;
   adminVoiceNoteUrl?: string | null;
   hasCustomerLocation: boolean;
@@ -735,18 +738,28 @@ function DeleteFullOrderButton({ id, isDraft, onSuccess, icons }: { id: string, 
 export function PendingAssignPanel({
   orderId,
   couriers,
+  routeMode = "single",
   customerPhone,
   customerAlternatePhone,
-  customerLandmark,
+  customerLandmark = "",
   defaultCustomerLocationUrl,
+  secondCustomerLandmark = "",
+  defaultSecondCustomerLocationUrl = "",
+  customerDoorPhotoUrl = "",
+  secondCustomerDoorPhotoUrl = "",
   icons,
 }: {
   orderId: string;
   couriers: { id: string; name: string }[];
+  routeMode?: "single" | "double";
   customerPhone: string;
   customerAlternatePhone: string;
   customerLandmark?: string;
   defaultCustomerLocationUrl: string;
+  secondCustomerLandmark?: string;
+  defaultSecondCustomerLocationUrl?: string;
+  customerDoorPhotoUrl?: string;
+  secondCustomerDoorPhotoUrl?: string;
   icons?: GlobalIconsConfig | null;
 }) {
   const bound = assignPendingOrderToCourier.bind(null);
@@ -755,23 +768,26 @@ export function PendingAssignPanel({
 
   if (couriers.length === 0) return <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 text-xs font-bold text-center flex items-center justify-center gap-2"><DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={14} height={14} /> لا يوجد مناديب متاحين حالياً.</div>;
 
+  const isDouble = routeMode === "double";
+
   return (
-    <form action={formAction} className="p-5 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-[2.5rem] border-2 border-emerald-100 dark:border-emerald-900/30 space-y-4" dir="rtl">
+    <form action={formAction} className="p-5 bg-white dark:bg-slate-900 rounded-[2.5rem] border-2 border-emerald-400 dark:border-emerald-500 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto" dir="rtl">
       <input type="hidden" name="orderId" value={orderId} />
 
       <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900/30 pb-3">
-        <p className="text-xs font-black text-emerald-900 dark:text-emerald-100 flex items-center gap-2">
-          <DynamicIcon icon={icons?.ui_package} fallback="📦" width={16} height={16} /> إسناد للمندوب
+        <p className="text-sm font-black text-emerald-900 dark:text-emerald-100 flex items-center gap-2">
+          <DynamicIcon icon={icons?.ui_package} fallback="📦" width={18} height={18} /> إسناد للمندوب
         </p>
         <div className="flex flex-col items-end">
-           <span className="text-[10px] font-black text-slate-400">هاتف الزبون</span>
+           <span className="text-[10px] font-black text-slate-400">هاتف المرسل</span>
            <span className="text-xs font-black font-mono text-emerald-700 dark:text-emerald-400">{customerPhone}</span>
         </div>
       </div>
 
       <div className="space-y-4">
-        <div className="space-y-1.5">
-           <label className="text-[10px] font-black text-slate-500 pr-2">اختر المندوب</label>
+        {/* اختر المندوب */}
+        <div className="space-y-1.5 bg-emerald-50/20 dark:bg-emerald-950/10 p-3 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
+           <label className="text-[10px] font-black text-emerald-900 dark:text-emerald-300 pr-1 block mb-1">اختر المندوب لتوصيل هذا الطلب *</label>
            <OrderStatusRadioGroup
              name="courierId"
              defaultValue=""
@@ -780,46 +796,149 @@ export function PendingAssignPanel({
            />
         </div>
 
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-black text-slate-500 pr-2">رابط الموقع (Google Maps)</label>
-          <textarea
-            name="customerLocationUrl"
-            defaultValue={defaultCustomerLocationUrl}
-            className="w-full h-16 rounded-2xl border-2 border-white dark:border-white/5 bg-white/50 dark:bg-slate-900/50 p-3 text-[11px] font-bold font-mono outline-none focus:ring-2 ring-emerald-400 transition-all resize-none"
-            dir="ltr"
-            placeholder="https://maps.google.com/..."
-          />
-        </div>
+        {isDouble ? (
+          <div className="space-y-3">
+            {/* الوجهة الأولى */}
+            <div className="p-3.5 bg-emerald-50/10 dark:bg-emerald-950/5 rounded-2xl border border-emerald-100 dark:border-emerald-900/20 space-y-3">
+              <h4 className="text-[10px] font-black text-emerald-700 border-b pb-1">الوجهة الأولى (البائع / المرسل)</h4>
+              
+              <div className="space-y-1">
+                <label className="text-[8px] font-black text-slate-400 block pr-1">رابط لوكيشن قوقل ماب</label>
+                <textarea
+                  name="customerLocationUrl"
+                  defaultValue={defaultCustomerLocationUrl}
+                  placeholder="الصق رابط لوكيشن البائع هنا..."
+                  className="w-full h-12 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 p-2 text-[10px] font-mono outline-none focus:ring-1 focus:ring-emerald-400 transition-all resize-none text-right [direction:ltr]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-slate-400 block pr-1">أقرب نقطة دالة</label>
+                  <input
+                    type="text"
+                    name="customerLandmark"
+                    defaultValue={customerLandmark}
+                    placeholder="قرب المسجد، المحل الرئيسي..."
+                    className="w-full h-8 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 px-2.5 text-[9px] font-black outline-none focus:border-emerald-400 transition-all text-right"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-slate-400 block pr-1">رابط صورة الباب</label>
+                  <input
+                    type="text"
+                    name="customerDoorPhotoUrl"
+                    defaultValue={customerDoorPhotoUrl}
+                    placeholder="رابط صورة باب البائع..."
+                    className="w-full h-8 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 px-2.5 text-[9px] font-medium outline-none focus:border-emerald-400 font-mono transition-all text-right [direction:ltr]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* الوجهة الثانية */}
+            <div className="p-3.5 bg-rose-50/10 dark:bg-rose-950/5 rounded-2xl border border-rose-100 dark:border-rose-900/20 space-y-3">
+              <h4 className="text-[10px] font-black text-rose-700 border-b pb-1">الوجهة الثانية (المشتري / المستلم)</h4>
+              
+              <div className="space-y-1">
+                <label className="text-[8px] font-black text-slate-400 block pr-1">رابط لوكيشن قوقل ماب</label>
+                <textarea
+                  name="secondCustomerLocationUrl"
+                  defaultValue={defaultSecondCustomerLocationUrl}
+                  placeholder="الصق رابط لوكيشن المشتري هنا..."
+                  className="w-full h-12 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 p-2 text-[10px] font-mono outline-none focus:ring-1 focus:ring-emerald-400 transition-all resize-none text-right [direction:ltr]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-slate-400 block pr-1">أقرب نقطة دالة</label>
+                  <input
+                    type="text"
+                    name="secondCustomerLandmark"
+                    defaultValue={secondCustomerLandmark}
+                    placeholder="مثال: قرب المدرسة"
+                    className="w-full h-8 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 px-2.5 text-[9px] font-black outline-none focus:border-emerald-400 transition-all text-right"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-slate-400 block pr-1">رابط صورة الباب</label>
+                  <input
+                    type="text"
+                    name="secondCustomerDoorPhotoUrl"
+                    defaultValue={secondCustomerDoorPhotoUrl}
+                    placeholder="رابط صورة باب المشتري..."
+                    className="w-full h-8 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 px-2.5 text-[9px] font-medium outline-none focus:border-emerald-400 font-mono transition-all text-right [direction:ltr]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-500 pr-1">رابط الموقع (Google Maps)</label>
+              <textarea
+                name="customerLocationUrl"
+                defaultValue={defaultCustomerLocationUrl}
+                className="w-full h-16 rounded-2xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 p-3 text-[11px] font-bold font-mono outline-none focus:ring-1 focus:ring-emerald-400 transition-all resize-none text-right [direction:ltr]"
+                placeholder="https://maps.google.com/..."
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-500 pr-1">أقرب معلم</label>
+                <input
+                  type="text"
+                  name="customerLandmark"
+                  defaultValue={customerLandmark}
+                  placeholder="مثال: قرب المسجد"
+                  className="w-full h-10 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 p-2 text-[10px] font-bold outline-none focus:border-emerald-400 text-right"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-500 pr-1">رابط صورة الباب</label>
+                <input
+                  type="text"
+                  name="customerDoorPhotoUrl"
+                  defaultValue={customerDoorPhotoUrl}
+                  placeholder="الصق رابط صورة الباب..."
+                  className="w-full h-10 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 p-2 text-[10px] font-mono outline-none focus:border-emerald-400 text-right [direction:ltr]"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1 hover:underline"
+          className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1 hover:underline mt-1"
         >
-           {showAdvanced ? "إخفاء الخيارات المتقدمة" : "إظهار خيارات إضافية (هاتف، معلم دال...)"}
+           {showAdvanced ? "إخفاء الخيارات المتقدمة" : "إظهار خيارات إضافية (هاتف بديل، رفع ملف، تجاوز...)"}
         </button>
 
         {showAdvanced && (
-          <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-200 border-t border-slate-100 dark:border-slate-800">
              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                   <label className="text-[9px] font-black text-slate-500 pr-1">هاتف بديل</label>
+                   <label className="text-[9px] font-black text-slate-500 pr-1">هاتف بديل للزبون</label>
                    <input
                      type="text"
                      name="customerAlternatePhone"
                      defaultValue={customerAlternatePhone}
-                     placeholder="رقم آخر"
-                     className="w-full h-10 rounded-xl border border-emerald-100 dark:border-white/5 bg-white dark:bg-slate-900 p-2 text-[10px] font-bold outline-none focus:border-emerald-400"
+                     placeholder="رقم هاتف بديل"
+                     className="w-full h-10 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 p-2 text-[10px] font-bold outline-none focus:border-emerald-400 text-right"
                    />
                 </div>
                 <div className="space-y-1">
-                   <label className="text-[9px] font-black text-slate-500 pr-1">أقرب معلم</label>
+                   <label className="text-[9px] font-black text-slate-500 pr-1">تحميل صورة الباب كملف</label>
                    <input
-                     type="text"
-                     name="customerLandmark"
-                     defaultValue={customerLandmark}
-                     placeholder="مثال: قرب المسجد"
-                     className="w-full h-10 rounded-xl border border-emerald-100 dark:border-white/5 bg-white dark:bg-slate-900 p-2 text-[10px] font-bold outline-none focus:border-emerald-400"
+                     type="file"
+                     name="doorPhoto"
+                     accept="image/*"
+                     className="w-full h-10 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 p-1 text-[9px] font-black outline-none focus:border-emerald-400"
                    />
                 </div>
              </div>
@@ -842,7 +961,7 @@ export function PendingAssignPanel({
         disabled={pending}
         className="w-full h-14 bg-emerald-600 text-white rounded-[1.5rem] text-sm font-black shadow-lg shadow-emerald-200 dark:shadow-none hover:bg-emerald-700 active:scale-[0.98] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
       >
-        {pending ? "جاري الإسناد..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={16} height={16} /> تأكيد الإسناد والإرسال</>}
+        {pending ? "جاري الإسناد والتوصيل..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={16} height={16} /> تأكيد الإسناد والإرسال للمندوب</>}
       </button>
     </form>
   );
@@ -851,43 +970,171 @@ export function PendingAssignPanel({
 /** نموذج حفظ اللوكيشن السريع مباشرة من بطاقة الطلب */
 function QuickLocationSaveForm({
   orderId,
-  defaultLocation,
+  routeMode,
+  defaultCustomerLocationUrl,
+  defaultSecondCustomerLocationUrl = "",
+  defaultCustomerLandmark = "",
+  defaultSecondCustomerLandmark = "",
+  defaultCustomerDoorPhotoUrl = "",
+  defaultSecondCustomerDoorPhotoUrl = "",
   icons,
 }: {
   orderId: string;
-  defaultLocation: string;
+  routeMode: "single" | "double";
+  defaultCustomerLocationUrl: string;
+  defaultSecondCustomerLocationUrl?: string;
+  defaultCustomerLandmark?: string;
+  defaultSecondCustomerLandmark?: string;
+  defaultCustomerDoorPhotoUrl?: string;
+  defaultSecondCustomerDoorPhotoUrl?: string;
   icons?: GlobalIconsConfig | null;
 }) {
   const bound = saveOrderLocationOnly.bind(null);
   const [state, formAction, pending] = useActionState(bound, {});
-  const [url, setUrl] = useState(defaultLocation || "");
+
+  const [customerLocationUrl, setCustomerLocationUrl] = useState(defaultCustomerLocationUrl || "");
+  const [secondCustomerLocationUrl, setSecondCustomerLocationUrl] = useState(defaultSecondCustomerLocationUrl || "");
+  const [customerLandmark, setCustomerLandmark] = useState(defaultCustomerLandmark || "");
+  const [secondCustomerLandmark, setSecondCustomerLandmark] = useState(defaultSecondCustomerLandmark || "");
+  const [customerDoorPhotoUrl, setCustomerDoorPhotoUrl] = useState(defaultCustomerDoorPhotoUrl || "");
+  const [secondCustomerDoorPhotoUrl, setSecondCustomerDoorPhotoUrl] = useState(defaultSecondCustomerDoorPhotoUrl || "");
 
   useEffect(() => {
-    setUrl(defaultLocation || "");
-  }, [defaultLocation]);
+    setCustomerLocationUrl(defaultCustomerLocationUrl || "");
+    setSecondCustomerLocationUrl(defaultSecondCustomerLocationUrl || "");
+    setCustomerLandmark(defaultCustomerLandmark || "");
+    setSecondCustomerLandmark(defaultSecondCustomerLandmark || "");
+    setCustomerDoorPhotoUrl(defaultCustomerDoorPhotoUrl || "");
+    setSecondCustomerDoorPhotoUrl(defaultSecondCustomerDoorPhotoUrl || "");
+  }, [
+    defaultCustomerLocationUrl,
+    defaultSecondCustomerLocationUrl,
+    defaultCustomerLandmark,
+    defaultSecondCustomerLandmark,
+    defaultCustomerDoorPhotoUrl,
+    defaultSecondCustomerDoorPhotoUrl,
+  ]);
+
+  const isDouble = routeMode === "double";
+
+  const renderSection = (
+    title: string,
+    prefix: string,
+    locVal: string,
+    setLoc: (v: string) => void,
+    landVal: string,
+    setLand: (v: string) => void,
+    doorVal: string,
+    setDoor: (v: string) => void,
+    bgClass: string,
+    borderClass: string,
+    textClass: string
+  ) => (
+    <div className={`p-3 rounded-2xl border ${bgClass} ${borderClass} space-y-2.5 text-right`}>
+      <h4 className={`text-[10px] font-black ${textClass} border-b pb-1 mb-1.5`}>{title}</h4>
+      <div className="space-y-1">
+        <label className="text-[8px] font-black text-slate-400 block pr-1">رابط لوكيشن قوقل ماب</label>
+        <input
+          type="text"
+          name={`${prefix}LocationUrl`}
+          value={locVal}
+          onChange={(e) => setLoc(e.target.value)}
+          placeholder="https://maps.google.com/..."
+          className="w-full h-8 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 px-2.5 text-[9px] font-medium outline-none focus:border-emerald-400 font-mono transition-all text-right [direction:ltr]"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <label className="text-[8px] font-black text-slate-400 block pr-1">أقرب نقطة دالة</label>
+          <input
+            type="text"
+            name={`${prefix}Landmark`}
+            value={landVal}
+            onChange={(e) => setLand(e.target.value)}
+            placeholder="مثال: قرب المدرسة"
+            className="w-full h-8 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 px-2.5 text-[9px] font-black outline-none focus:border-emerald-400 transition-all text-right"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[8px] font-black text-slate-400 block pr-1">رابط صورة الباب</label>
+          <input
+            type="text"
+            name={`${prefix}DoorPhotoUrl`}
+            value={doorVal}
+            onChange={(e) => setDoor(e.target.value)}
+            placeholder="https://image-link..."
+            className="w-full h-8 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 px-2.5 text-[9px] font-medium outline-none focus:border-emerald-400 font-mono transition-all text-right [direction:ltr]"
+          />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <form action={formAction} className="flex gap-1.5 w-full items-center">
+    <form action={formAction} className="w-full space-y-3 pt-2">
       <input type="hidden" name="orderId" value={orderId} />
-      <input
-        type="text"
-        name="customerLocationUrl"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="الصق رابط اللوكيشن هنا..."
-        className="flex-1 h-9 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 px-2.5 text-[10px] font-medium outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 font-mono transition-all text-right"
-        dir="ltr"
-      />
-      <button
-        type="submit"
-        disabled={pending || !url.trim()}
-        className="h-9 px-3 shrink-0 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black transition-all disabled:opacity-40 disabled:hover:bg-emerald-600 flex items-center justify-center gap-1 shadow-sm"
-      >
-        {pending ? "حفظ..." : "حفظ"}
-      </button>
-      {state.error && (
-        <span className="absolute bottom-[-15px] right-2 text-[8px] font-bold text-rose-600">{state.error}</span>
+      
+      {isDouble ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {renderSection(
+            "الوجهة الأولى (البائع / المرسل)",
+            "customer",
+            customerLocationUrl,
+            setCustomerLocationUrl,
+            customerLandmark,
+            setCustomerLandmark,
+            customerDoorPhotoUrl,
+            setCustomerDoorPhotoUrl,
+            "bg-emerald-50/10",
+            "border-emerald-200/40",
+            "text-emerald-700"
+          )}
+          {renderSection(
+            "الوجهة الثانية (المشتري / المستلم)",
+            "secondCustomer",
+            secondCustomerLocationUrl,
+            setSecondCustomerLocationUrl,
+            secondCustomerLandmark,
+            setSecondCustomerLandmark,
+            secondCustomerDoorPhotoUrl,
+            setSecondCustomerDoorPhotoUrl,
+            "bg-rose-50/10",
+            "border-rose-200/40",
+            "text-rose-700"
+          )}
+        </div>
+      ) : (
+        renderSection(
+          "الموقع الجغرافي ومعلومات الزبون",
+          "customer",
+          customerLocationUrl,
+          setCustomerLocationUrl,
+          customerLandmark,
+          setCustomerLandmark,
+          customerDoorPhotoUrl,
+          setCustomerDoorPhotoUrl,
+          "bg-slate-50/20",
+          "border-slate-100",
+          "text-sky-800"
+        )
       )}
+
+      <div className="flex items-center justify-between gap-4 mt-2 relative">
+        {state.error ? (
+          <span className="text-[9px] font-bold text-rose-600 text-right flex-1">{state.error}</span>
+        ) : (
+          <span className="text-[8px] font-bold text-slate-400 text-right flex-1">
+            * يمكنك نسخ ولصق الروابط وصورة الباب مباشرة هنا.
+          </span>
+        )}
+        <button
+          type="submit"
+          disabled={pending}
+          className="h-10 px-5 shrink-0 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-xs font-black shadow-md shadow-emerald-200/40 dark:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-1.5"
+        >
+          {pending ? "جاري الحفظ..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={12} height={12} /> حفظ التعديلات السريعة</>}
+        </button>
+      </div>
     </form>
   );
 }
@@ -1085,7 +1332,17 @@ export default function PendingOrdersClient({
 
                   <div className="space-y-1 mt-1 border-t border-slate-100 dark:border-slate-800/60 pt-2 relative">
                      <p className="text-[9px] font-black text-slate-400 pr-1 mb-1 text-right">تحديث / رفع اللوكيشن</p>
-                     <QuickLocationSaveForm orderId={order.id} defaultLocation={order.customerLocationUrl} icons={icons} />
+                     <QuickLocationSaveForm
+                       orderId={order.id}
+                       routeMode={order.routeMode}
+                       defaultCustomerLocationUrl={order.customerLocationUrl}
+                       defaultSecondCustomerLocationUrl={order.secondCustomerLocationUrl}
+                       defaultCustomerLandmark={order.customerLandmark}
+                       defaultSecondCustomerLandmark={order.secondCustomerLandmark}
+                       defaultCustomerDoorPhotoUrl={order.customerDoorPhotoUrl}
+                       defaultSecondCustomerDoorPhotoUrl={order.secondCustomerDoorPhotoUrl}
+                       icons={icons}
+                     />
                   </div>
 
                   {/* زر إسناد للمندوب */}
@@ -1169,10 +1426,15 @@ export default function PendingOrdersClient({
                     <PendingAssignPanel
                       orderId={order.id}
                       couriers={couriers}
+                      routeMode={order.routeMode}
                       customerPhone={order.customerPhone}
                       customerAlternatePhone={order.customerAlternatePhone}
                       customerLandmark={order.customerLandmark}
                       defaultCustomerLocationUrl={order.customerLocationUrl}
+                      secondCustomerLandmark={order.secondCustomerLandmark}
+                      defaultSecondCustomerLocationUrl={order.secondCustomerLocationUrl}
+                      customerDoorPhotoUrl={order.customerDoorPhotoUrl}
+                      secondCustomerDoorPhotoUrl={order.secondCustomerDoorPhotoUrl}
                       icons={icons}
                     />
                   </div>
@@ -1231,10 +1493,15 @@ export default function PendingOrdersClient({
                   <PendingAssignPanel
                     orderId={o.id}
                     couriers={couriers}
+                    routeMode={o.routeMode}
                     customerPhone={o.customerPhone}
                     customerAlternatePhone={o.customerAlternatePhone}
                     customerLandmark={o.customerLandmark}
                     defaultCustomerLocationUrl={o.customerLocationUrl}
+                    secondCustomerLandmark={o.secondCustomerLandmark}
+                    defaultSecondCustomerLocationUrl={o.secondCustomerLocationUrl}
+                    customerDoorPhotoUrl={o.customerDoorPhotoUrl}
+                    secondCustomerDoorPhotoUrl={o.secondCustomerDoorPhotoUrl}
                     icons={icons}
                   />
                 );
