@@ -3,27 +3,22 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CustomProductRequest } from "@/components/custom-product-request";
 import { Suspense } from "react";
-import { unstable_cache } from "next/cache";
 import { StoreSlider } from "../../_components/store-slider";
 
 export const dynamic = "force-dynamic";
 
-// تحسين جلب الفروع باستخدام التخزين المؤقت لمدة 10 ثوانٍ لتقليل الضغط
-const getCachedBranches = unstable_cache(
-    async (categoryId: string) => {
-        return prisma.storeBranch.findMany({
-            where: { categoryId, active: true, parentBranchId: null },
-            include: {
-                _count: {
-                    select: { products: true }
-                }
-            },
-            orderBy: { sequence: "desc" },
-        });
-    },
-    ["store-branches-list"],
-    { revalidate: 10, tags: ["store-branches"] }
-);
+// تحسين جلب الفروع بطلب مباشر لتجنب تعليق الكاش
+async function getCachedBranches(categoryId: string) {
+    return prisma.storeBranch.findMany({
+        where: { categoryId, active: true, parentBranchId: null },
+        include: {
+            _count: {
+                select: { products: true }
+            }
+        },
+        orderBy: { sequence: "desc" },
+    });
+}
 
 async function BranchesList({ categoryId }: { categoryId: string }) {
     const branches = await getCachedBranches(categoryId);
@@ -69,16 +64,12 @@ async function BranchesList({ categoryId }: { categoryId: string }) {
     );
 }
 
-const getCachedCategory = unstable_cache(
-    async (id: string) => {
-        return prisma.storeCategory.findUnique({
-            where: { id },
-            select: { id: true, name: true, photoUrl: true }
-        });
-    },
-    ["store-category-header"],
-    { revalidate: 60 }
-);
+async function getCachedCategory(id: string) {
+    return prisma.storeCategory.findUnique({
+        where: { id },
+        select: { id: true, name: true, photoUrl: true }
+    });
+}
 
 async function CategoryHeader({ id }: { id: string }) {
   const category = await getCachedCategory(id);
