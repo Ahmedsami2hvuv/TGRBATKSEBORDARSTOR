@@ -89,7 +89,7 @@ export async function submitStaffPreparationDraft(
   if (preparerIds.length === 0) {
     const draft = await prisma.companyPreparerShoppingDraft.create({
       data: {
-        preparer: { disconnect: true }, // طلب غير مسند
+        preparer: undefined, // طلب غير مسند
         status: PreparerShoppingDraftStatus.draft,
         titleLine,
         rawListText,
@@ -528,7 +528,7 @@ export async function updateStaffPreparationDraft(
       };
       await prisma.companyPreparerShoppingDraft.create({
         data: {
-          preparer: prepId ? { connect: { id: prepId } } : { disconnect: true },
+          preparer: prepId ? { connect: { id: prepId } } : undefined,
           status: PreparerShoppingDraftStatus.draft,
           titleLine,
           rawListText,
