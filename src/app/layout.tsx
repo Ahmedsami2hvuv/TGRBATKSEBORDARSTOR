@@ -6,6 +6,7 @@ import { getRoleFeatures } from "@/lib/role-features-settings";
 import { getAvailableFonts, getChosenFont, getFontFileUrl } from "@/lib/font-settings";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -82,6 +83,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {children}
           </ClientRuntime>
         </ThemeProvider>
+        {/* التحميل الخامل لمشغل الأنيميشن الثقيل Lottie لتفادي حظر المعالج الرئيسي في التحميل الأولي */}
+        <Script
+          src="https://unpkg.com/@lottiefiles/lottie-player@1.5.7/dist/lottie-player.js"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );

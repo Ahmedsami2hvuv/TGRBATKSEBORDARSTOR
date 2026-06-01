@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Script from "next/script";
 import { IconConfig } from "@/lib/icon-settings";
 import { isLottieDirectAssetUrl, getLottieDisplayUrl, cleanIconUrl } from "@/lib/icon-utils";
 
@@ -25,13 +24,9 @@ export function DynamicIcon({
   respectConfiguredSize?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
-  const [playerLoaded, setPlayerLoaded] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    if (typeof window !== 'undefined' && (window as any).customElements && (window as any).customElements.get('lottie-player')) {
-      setPlayerLoaded(true);
-    }
   }, []);
 
   const resolvedIcon = icon || (iconKey && config ? config[iconKey] : (config && !iconKey ? config : null));
@@ -77,21 +72,13 @@ export function DynamicIcon({
 
     return (
       <div className={className} style={{ width: fillOrConfiguredWidth, height: fillOrConfiguredHeight, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-        {!isEmbed && (
-          <Script
-            src="https://unpkg.com/@lottiefiles/lottie-player@1.5.7/dist/lottie-player.js"
-            strategy="afterInteractive"
-            onLoad={() => setPlayerLoaded(true)}
-          />
-        )}
-
         {isEmbed ? (
           <iframe
             src={displayUrl}
             style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }}
             allowFullScreen
           />
-        ) : playerLoaded ? (
+        ) : (
           <lottie-player
             src={iconUrl}
             background="transparent"
@@ -100,8 +87,6 @@ export function DynamicIcon({
             autoplay
             style={{ width: '100%', height: '100%' }}
           />
-        ) : (
-          <div className="animate-pulse bg-slate-100 rounded-full w-full h-full" />
         )}
       </div>
     );
