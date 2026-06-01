@@ -682,6 +682,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       customerDoorPhotoUrl: o.customer?.customerDoorPhotoUrl || profile?.photoUrl || o.customerDoorPhotoUrl,
       secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
       routeMode: o.routeMode as any,
+      secondCustomerRegionName: o.secondCustomerRegion?.name?.trim() || null,
       preparerAudioUrl: (o.preparerShoppingJson as any)?.preparerAudioUrl || null,
       adminAudioUrl: o.adminVoiceNoteUrl,
       showDoorBtn: courier.showDoorBtn,

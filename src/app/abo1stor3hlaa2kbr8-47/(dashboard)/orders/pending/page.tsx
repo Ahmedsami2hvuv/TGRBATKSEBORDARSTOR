@@ -63,6 +63,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
           submittedBy: { select: { id: true, name: true } },
           submittedByCompanyPreparer: { select: { id: true, name: true } },
           customerRegion: { select: { id: true, name: true } },
+          secondCustomerRegion: { select: { id: true, name: true } },
           customer: { select: { id: true, customerLocationUrl: true, customerLandmark: true, customerDoorPhotoUrl: true, alternatePhone: true } },
           moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true } },
         },
@@ -185,7 +186,10 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         id: o.id,
         orderNumber: o.orderNumber,
         routeMode: o.routeMode === "double" ? "double" : "single",
-        shopName: o.routeMode === "double" ? "وجهتين" : normalizeAdminShopName(o.shop?.name ?? "غير معروف"),
+        shopName: o.routeMode === "double"
+          ? `من ${o.customerRegion?.name ?? "غير معروف"} إلى ${o.secondCustomerRegion?.name ?? "غير معروف"}`
+          : normalizeAdminShopName(o.shop?.name ?? "غير معروف"),
+        secondCustomerRegionName: o.secondCustomerRegion?.name || null,
         regionName: o.customerRegion?.name ?? o.shop?.region?.name ?? "—",
         orderType: o.orderType?.trim() ? o.orderType : "—",
         customerOrderTime: customerOrderTimeLabel(o.orderNoteTime),

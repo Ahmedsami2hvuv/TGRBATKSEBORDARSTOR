@@ -439,11 +439,18 @@ export function UnifiedOrderListTable({
                         <div className="flex items-center gap-2">
                           <div className="relative inline-block group">
                             <span className="relative inline-block">
-                              <span
-                                className={`inline-block rounded-md px-1.5 py-0.5 font-bold ${o.shopNameHighlightClass}`}
-                              >
-                                {isDoubleRoute ? "وجهتين" : o.shopName}
-                              </span>
+                              {isDoubleRoute ? (
+                                <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 px-2 py-0.5 rounded-md font-bold text-xs border border-emerald-200/50">
+                                  <span className="bg-emerald-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded leading-none">من</span>
+                                  {o.regionLine || "غير معروف"}
+                                </span>
+                              ) : (
+                                <span
+                                  className={`inline-block rounded-md px-1.5 py-0.5 font-bold ${o.shopNameHighlightClass}`}
+                                >
+                                  {o.shopName}
+                                </span>
+                              )}
                               <MoneyMiniBadges row={o} />
                             </span>
 
@@ -597,7 +604,14 @@ export function UnifiedOrderListTable({
                       }`}
                     >
                       <div className="flex flex-col gap-1.5">
-                        <span>{o.regionLine}</span>
+                        {isDoubleRoute ? (
+                          <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 px-2 py-0.5 rounded-md font-bold text-xs border border-rose-200/50">
+                            <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded leading-none">إلى</span>
+                            {o.secondCustomerRegionName || "غير معروف"}
+                          </span>
+                        ) : (
+                          <span>{o.regionLine}</span>
+                        )}
                         <div className="flex flex-wrap items-center gap-2 mt-1" onClick={e => e.stopPropagation()}>
                           {!hideShopColumnLocationAndDoorPhotoButtons && o.showLocationBtn !== false &&
                           (((!isDoubleRoute && o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||

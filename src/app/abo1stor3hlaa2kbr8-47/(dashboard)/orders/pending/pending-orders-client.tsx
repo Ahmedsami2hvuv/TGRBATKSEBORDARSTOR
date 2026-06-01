@@ -38,6 +38,7 @@ export type PendingOrderRow = {
   orderNumber: number;
   routeMode: "single" | "double";
   shopName: string;
+  secondCustomerRegionName?: string | null;
   shopCustomerLabel?: string;
   regionName: string;
   orderType: string;
@@ -983,11 +984,21 @@ export default function PendingOrdersClient({
                       </h3>
                     </Link>
                     <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <span className="flex items-center gap-1 text-[10px] font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-2.5 py-1 rounded-full border border-sky-100 dark:border-sky-900/30">
-                        <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> {order.regionName}
-                      </span>
-                      {order.routeMode === 'double' && (
-                        <span className="text-[10px] font-black bg-amber-50 text-amber-700 dark:bg-amber-950/10 dark:text-amber-400 px-2.5 py-1 rounded-full border border-amber-100 dark:border-amber-900/30">توصيل مضاعف</span>
+                      {order.routeMode === 'double' ? (
+                        <>
+                          <span className="flex items-center gap-1 text-[10px] font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">
+                            <span className="bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded leading-none">من</span>
+                            {order.regionName}
+                          </span>
+                          <span className="flex items-center gap-1 text-[10px] font-black bg-rose-50 text-rose-700 dark:bg-rose-950/10 dark:text-rose-400 px-2.5 py-1 rounded-full border border-rose-100 dark:border-rose-900/30">
+                            <span className="bg-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded leading-none">إلى</span>
+                            {order.secondCustomerRegionName || "غير معروف"}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="flex items-center gap-1 text-[10px] font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-2.5 py-1 rounded-full border border-sky-100 dark:border-sky-900/30">
+                          <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> {order.regionName}
+                        </span>
                       )}
                       {order.totalAmount && (
                         <span className="text-[10px] font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">
@@ -1105,12 +1116,22 @@ export default function PendingOrdersClient({
                   </div>
                   <div>
                      <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{order.shopName}</h3>
-                     <div className="flex items-center gap-2 mt-1">
-                        <span className="flex items-center gap-1 text-[10px] font-black bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 px-2.5 py-1 rounded-full">
-                           <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> {order.regionName}
-                        </span>
-                        {order.routeMode === 'double' && (
-                          <span className="text-[10px] font-black bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2.5 py-1 rounded-full">توصيل مضاعف</span>
+                     <div className="flex flex-wrap items-center gap-2 mt-1">
+                        {order.routeMode === 'double' ? (
+                          <>
+                            <span className="flex items-center gap-1 text-[10px] font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">
+                              <span className="bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded leading-none">من</span>
+                              {order.regionName}
+                            </span>
+                            <span className="flex items-center gap-1 text-[10px] font-black bg-rose-50 text-rose-700 dark:bg-rose-950/10 dark:text-rose-400 px-2.5 py-1 rounded-full border border-rose-100 dark:border-rose-900/30">
+                              <span className="bg-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded leading-none">إلى</span>
+                              {order.secondCustomerRegionName || "غير معروف"}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="flex items-center gap-1 text-[10px] font-black bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 px-2.5 py-1 rounded-full">
+                             <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> {order.regionName}
+                          </span>
                         )}
                      </div>
                   </div>
