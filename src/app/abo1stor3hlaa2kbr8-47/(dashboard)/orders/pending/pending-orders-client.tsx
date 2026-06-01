@@ -1257,7 +1257,6 @@ export default function PendingOrdersClient({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <RejectButton orderId={order.id} icons={icons} />
                   <DeleteFullOrderButton id={order.id} isDraft={false} icons={icons} />
                 </div>
               </div>
@@ -1395,7 +1394,6 @@ export default function PendingOrdersClient({
                </div>
 
                <div className="flex gap-2">
-                  <RejectButton orderId={order.id} icons={icons} />
                   <DeleteFullOrderButton id={order.id} isDraft={!!isDraftMode} icons={icons} />
                </div>
             </div>
