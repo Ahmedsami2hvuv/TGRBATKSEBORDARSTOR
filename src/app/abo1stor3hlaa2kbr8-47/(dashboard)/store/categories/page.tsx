@@ -13,12 +13,16 @@ export default async function CategoriesPage() {
       sequence: true,
       photoUrl: true,
       active: true,
+      profitMargin: true,
     },
     orderBy: { sequence: "desc" },
   });
 
   // تحويل البيانات لنصوص بسيطة (JSON) لمنع أخطاء الـ Serialization
-  const categories = JSON.parse(JSON.stringify(rawCategories));
+  const categories = JSON.parse(JSON.stringify(rawCategories.map(cat => ({
+    ...cat,
+    profitMargin: cat.profitMargin ? Number(cat.profitMargin) : 0,
+  }))));
 
   const icons = await getGlobalIcons();
 
