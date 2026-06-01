@@ -1,47 +1,42 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { unstable_cache } from "next/cache";
 
-// دالة مخزنة لجلب المنتجات بسرعة مع حساب الربح
-const getCachedProductsByBranch = unstable_cache(
-  async (branchId: string) => {
-    const products = await prisma.storeProduct.findMany({
-      where: { branchId, active: true },
-      select: {
-        id: true,
-        name: true,
-        purchasePrice: true,
-        salePrice: true,
-        description: true,
-        photoUrls: true,
-        hasVariants: true,
-        variants: {
-          select: {
-            id: true,
-            name: true,
-            purchasePrice: true,
-            salePrice: true,
-          }
+// دالة لجلب المنتجات بسرعة مع حساب الربح مباشرة
+async function getCachedProductsByBranch(branchId: string) {
+  const products = await prisma.storeProduct.findMany({
+    where: { branchId, active: true },
+    select: {
+      id: true,
+      name: true,
+      purchasePrice: true,
+      salePrice: true,
+      description: true,
+      photoUrls: true,
+      hasVariants: true,
+      variants: {
+        select: {
+          id: true,
+          name: true,
+          purchasePrice: true,
+          salePrice: true,
         }
-      },
-      orderBy: { sequence: "desc" },
-    });
+      }
+    },
+    orderBy: { sequence: "desc" },
+  });
 
-    return products.map(p => {
-      return {
-        ...p,
-        salePrice: Number(p.salePrice),
-        photoUrls: Array.isArray(p.photoUrls) ? p.photoUrls : [],
-        variants: p.variants?.map(v => ({
-          ...v,
-          salePrice: Number(v.salePrice)
-        }))
-      };
-    });
-  },
-  ["store-products-list"],
-  { revalidate: 600, tags: ["products"] }
-);
+  return products.map(p => {
+    return {
+      ...p,
+      salePrice: Number(p.salePrice),
+      photoUrls: Array.isArray(p.photoUrls) ? p.photoUrls : [],
+      variants: p.variants?.map(v => ({
+        ...v,
+        salePrice: Number(v.salePrice)
+      }))
+    };
+  });
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
