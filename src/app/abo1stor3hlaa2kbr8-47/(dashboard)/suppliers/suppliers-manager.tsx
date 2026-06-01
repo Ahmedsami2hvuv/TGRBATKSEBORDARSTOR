@@ -90,6 +90,8 @@ function AddSupplierForm({ icons }: { icons: GlobalIconsConfig | null }) {
 
 function SupplierCard({ row, allProducts, allBranches, icons }: { row: SupplierManagerRow; allProducts: ProductOption[]; allBranches: BranchOption[]; icons: GlobalIconsConfig | null }) {
   const [activeTab, setActiveTab] = useState<"products" | "branches" | "edit" | null>(null);
+  const [productSearch, setProductSearch] = useState("");
+  const [branchSearch, setBranchSearch] = useState("");
   const [uState, updateAction, uPending] = useActionState(updateStoreSupplier, initial);
   const [pState, productsAction, pPending] = useActionState(assignProductsToSupplier, initial);
   const [bState, branchesAction, bPending] = useActionState(assignBranchesToSupplier, initial);
@@ -162,16 +164,30 @@ function SupplierCard({ row, allProducts, allBranches, icons }: { row: SupplierM
 
       {activeTab === "products" && (
         <div className="bg-slate-50 p-6 border-t border-slate-100">
-           <h4 className="font-black text-slate-800 mb-4">اختيار منتجات المورد</h4>
+           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+              <h4 className="font-black text-slate-800">اختيار منتجات المورد</h4>
+              <div className="relative w-full md:w-64">
+                <input
+                  type="text"
+                  placeholder="بحث عن منتج..."
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-sky-500 outline-none transition-all"
+                />
+              </div>
+           </div>
            <form action={productsAction} className="space-y-4">
               <input type="hidden" name="supplierId" value={row.id} />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-60 overflow-y-auto p-2">
-                 {allProducts.map(p => (
-                   <label key={p.id} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer hover:border-sky-500 transition">
-                      <input type="checkbox" name="productIds" value={p.id} defaultChecked={linked.has(p.id)} className="w-4 h-4 rounded" />
-                      <span className="text-xs font-bold truncate">{p.name}</span>
-                   </label>
-                 ))}
+                 {allProducts.map(p => {
+                   const isVisible = p.name.toLowerCase().includes(productSearch.toLowerCase());
+                   return (
+                     <label key={p.id} className={`flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer hover:border-sky-500 transition ${isVisible ? "" : "hidden"}`}>
+                        <input type="checkbox" name="productIds" value={p.id} defaultChecked={linked.has(p.id)} className="w-4 h-4 rounded" />
+                        <span className="text-xs font-bold truncate">{p.name}</span>
+                     </label>
+                   );
+                 })}
               </div>
               <button type="submit" disabled={pPending} className={ad.btnPrimary + " w-full mt-4"}>
                 {pPending ? "جارٍ الحفظ..." : "حفظ قائمة المنتجات"}
@@ -182,16 +198,30 @@ function SupplierCard({ row, allProducts, allBranches, icons }: { row: SupplierM
 
       {activeTab === "branches" && (
         <div className="bg-slate-50 p-6 border-t border-slate-100">
-           <h4 className="font-black text-slate-800 mb-4">اختيار أفرع المورد</h4>
+           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+              <h4 className="font-black text-slate-800">اختيار أفرع المورد</h4>
+              <div className="relative w-full md:w-64">
+                <input
+                  type="text"
+                  placeholder="بحث عن فرع..."
+                  value={branchSearch}
+                  onChange={(e) => setBranchSearch(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-amber-500 outline-none transition-all"
+                />
+              </div>
+           </div>
            <form action={branchesAction} className="space-y-4">
               <input type="hidden" name="supplierId" value={row.id} />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-60 overflow-y-auto p-2">
-                 {allBranches.map(b => (
-                   <label key={b.id} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer hover:border-amber-500 transition">
-                      <input type="checkbox" name="branchIds" value={b.id} defaultChecked={linkedBranches.has(b.id)} className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500" />
-                      <span className="text-xs font-bold truncate">{b.name}</span>
-                   </label>
-                 ))}
+                 {allBranches.map(b => {
+                   const isVisible = b.name.toLowerCase().includes(branchSearch.toLowerCase());
+                   return (
+                     <label key={b.id} className={`flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 cursor-pointer hover:border-amber-500 transition ${isVisible ? "" : "hidden"}`}>
+                        <input type="checkbox" name="branchIds" value={b.id} defaultChecked={linkedBranches.has(b.id)} className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500" />
+                        <span className="text-xs font-bold truncate">{b.name}</span>
+                     </label>
+                   );
+                 })}
               </div>
               <button type="submit" disabled={bPending} className={`${ad.btnPrimary} !bg-amber-600 hover:!bg-amber-700 w-full mt-4`}>
                 {bPending ? "جارٍ الحفظ..." : "حفظ قائمة الأفرع"}

@@ -3,6 +3,7 @@ import { verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-
 import { preparerPath } from "@/lib/preparer-portal-nav";
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { BranchSelectorClient } from "./branch-selector-client";
 
 export const dynamic = "force-dynamic";
 
@@ -124,33 +125,7 @@ export default async function PreparerStorePricingPage({ searchParams }: Props) 
           </Link>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {branches.map((br) => (
-            <Link
-              key={br.id}
-              href={preparerPath(`/preparer/store-pricing/${br.id}`, baseAuth)}
-              className="group relative overflow-hidden bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:border-emerald-500 hover:shadow-xl hover:shadow-emerald-50 transition-all flex items-center gap-4"
-            >
-              <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
-                {br.photoUrl ? <img src={br.photoUrl} className="w-full h-full object-cover rounded-2xl" /> : "🌿"}
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">{br.categoryName}</p>
-                <h2 className="text-xl font-black text-slate-800">{br.name}</h2>
-                <p className="text-xs text-slate-400 font-bold">تعديل أسعار {br.name}</p>
-              </div>
-              <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-hover:text-emerald-500 transition-colors">
-                 <span className="text-2xl">←</span>
-              </div>
-            </Link>
-          ))}
-
-          {branches.length === 0 && (
-            <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
-              <p className="text-slate-400 font-bold">لا توجد أفرع مفوضة لك لتسعيرها حالياً.</p>
-            </div>
-          )}
-        </div>
+        <BranchSelectorClient branches={branches} auth={baseAuth as any} />
       </div>
     );
   } catch (err: any) {

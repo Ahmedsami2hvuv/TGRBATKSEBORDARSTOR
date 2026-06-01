@@ -22,11 +22,16 @@ export function PricingListClient({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [successId, setSuccessId] = useState<string | null>(null);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
   }, []);
+
+  const filteredProducts = products.filter((p) =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   async function handlePriceChange(productId: string, purchasePriceAlf: string) {
     const dinar = parseAlfInputToDinarNumber(purchasePriceAlf);
@@ -55,7 +60,22 @@ export function PricingListClient({
 
   return (
     <div className="space-y-4">
-      {products.map((p) => (
+      <div className="relative mb-6">
+        <input
+          type="text"
+          placeholder="بحث عن منتج في هذا القسم..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-bold"
+        />
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+          </svg>
+        </div>
+      </div>
+
+      {filteredProducts.map((p) => (
         <ProductPricingCard
           key={p.id}
           product={p}
@@ -65,9 +85,10 @@ export function PricingListClient({
           icons={icons}
         />
       ))}
-      {products.length === 0 && (
+
+      {filteredProducts.length === 0 && (
         <div className="text-center py-10 text-slate-400 font-bold bg-white rounded-3xl border-2 border-dashed border-slate-100">
-          لا توجد منتجات في هذا الفرع حالياً.
+          {searchTerm ? "لا توجد نتائج تطابق بحثك" : "لا توجد منتجات في هذا الفرع حالياً."}
         </div>
       )}
     </div>
