@@ -261,7 +261,7 @@ export function AdminShell({
         className={`
           fixed z-[160] flex flex-col border-e border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)]
           bg-white/95 dark:bg-[#09090b]/95 shadow-[4px_0_20px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_20px_rgba(0,0,0,0.8)]
-          backdrop-blur-md ${isResizing ? "transition-none" : "transition-[width,transform] duration-200 ease-out"}
+          backdrop-blur-md ${isResizing ? "transition-none" : "transition-transform duration-200 ease-out"}
           inset-y-0 start-0 w-72
           ${effectiveNavOpen ? "translate-x-0 pointer-events-auto" : "translate-x-full pointer-events-none"}
           lg:inset-y-0 lg:start-0

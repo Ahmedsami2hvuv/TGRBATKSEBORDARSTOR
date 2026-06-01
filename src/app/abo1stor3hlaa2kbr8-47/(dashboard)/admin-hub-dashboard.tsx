@@ -32,8 +32,9 @@ function NeonBox({ t, colorClass, sizeClass, icons }: { t: AdminTile | undefined
       href={tileHref(t)}
       className={`neon-box ${colorClass} ${sizeClass ?? ''} p-5 md:p-6 flex flex-col justify-center items-center text-center group`}
     >
-      <div className="text-4xl md:text-5xl drop-shadow-md transition-transform group-hover:scale-110 mb-3" aria-hidden>
-        <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-12 h-12 md:w-16 md:h-16" />
+      {/* حجز حجم ثابت للأيقونة لمنع انزياح العناصر CLS أثناء التحميل */}
+      <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center text-4xl md:text-5xl drop-shadow-md transition-transform group-hover:scale-110 mb-3" aria-hidden>
+        <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-full h-full" />
       </div>
       <span className="text-base md:text-lg font-bold text-slate-800 dark:text-[#eef2f6] tracking-wide">{t.label}</span>
     </Link>
@@ -49,8 +50,9 @@ function NeonPill({ t, colorClass, icons }: { t: AdminTile | undefined; colorCla
       
       <Link href={tileHref(t)} className={`neon-pill ${colorClass} w-full p-3 pl-6 pr-4 flex justify-between items-center z-10 hover:scale-105`}>
         <span className="font-bold text-slate-800 dark:text-slate-200 text-[15px]">{t.label}</span>
-        <div className="text-3xl drop-shadow-sm group-hover:scale-110 transition-transform" aria-hidden>
-          <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-8 h-8" />
+        {/* حجز حجم ثابت للأيقونة لمنع انزياح العناصر CLS */}
+        <div className="w-8 h-8 flex items-center justify-center text-3xl drop-shadow-sm group-hover:scale-110 transition-transform" aria-hidden>
+          <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-full h-full" />
         </div>
       </Link>
     </div>
@@ -111,8 +113,9 @@ export function AdminHubDashboard() {
                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                    {leftover.map(t => (
                       <Link key={t.slug} href={tileHref(t)} className="neon-box neon-box-cyan p-3 lg:p-4 flex flex-col items-center justify-center gap-2">
-                         <div className="text-2xl">
-                           <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-6 h-6" />
+                         {/* حجز مساحة الأيقونة الإضافية لمنع انزياح العناصر CLS */}
+                         <div className="w-6 h-6 flex items-center justify-center text-2xl">
+                           <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-full h-full" />
                          </div>
                          <span className="text-xs text-slate-700 dark:text-slate-300 font-semibold">{t.label}</span>
                       </Link>

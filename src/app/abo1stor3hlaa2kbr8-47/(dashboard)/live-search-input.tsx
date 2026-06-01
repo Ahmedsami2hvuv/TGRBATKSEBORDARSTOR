@@ -51,7 +51,7 @@ export function AdminLiveSearchInput({
         placeholder={placeholder}
         className={className}
       />
-      <button type="submit" className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-sky-700">
+      <button type="submit" className="rounded-xl bg-sky-800 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-sky-900">
         بحث
       </button>
     </form>
