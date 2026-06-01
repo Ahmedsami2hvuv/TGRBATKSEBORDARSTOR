@@ -8,7 +8,6 @@ import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { formatBaghdadDateTime } from "@/lib/baghdad-time";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
 import { normalizeAdminShopName } from "@/lib/admin-order-from-admin-constants";
-import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import {
   isSaderMismatch,
   isWardMismatch,
@@ -89,38 +88,6 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     const newOrders = allPendingOrders;
     const preparedOrders = allPendingOrders.filter(o => o.submissionSource === "company_preparer");
 
-    // جلب ملفات تعريف الهواتف بشكل دفعي لتجنب N+1 query ولتحديد توفر اللوكيشنات والتفاصيل التاريخية
-    const pendingPhoneNumbers = allPendingOrders
-      .map(o => o.customerPhone ? normalizeIraqMobileLocal11(o.customerPhone) : null)
-      .filter(Boolean) as string[];
-
-    const phoneProfiles = pendingPhoneNumbers.length > 0
-      ? await prisma.customerPhoneProfile.findMany({
-          where: {
-            phone: { in: pendingPhoneNumbers }
-          },
-          select: {
-            phone: true,
-            regionId: true,
-            locationUrl: true,
-            landmark: true,
-            photoUrl: true,
-            alternatePhone: true,
-          }
-        })
-      : [];
-
-    const phoneProfilesRegionMap = new Map<string, typeof phoneProfiles[0]>();
-    const phoneProfilesOnlyMap = new Map<string, typeof phoneProfiles[0]>();
-
-    for (const p of phoneProfiles) {
-      phoneProfilesRegionMap.set(`${p.phone}::${p.regionId}`, p);
-      const existing = phoneProfilesOnlyMap.get(p.phone);
-      if (!existing || (p.locationUrl && !existing.locationUrl)) {
-        phoneProfilesOnlyMap.set(p.phone, p);
-      }
-    }
-
     // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
     const safeAllActiveDrafts = serializePrisma(allActiveDrafts);
     const safeNewOrders = serializePrisma(newOrders);
@@ -165,15 +132,6 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
           ...relatedDrafts.map(d => d.preparerId)
       ].filter(Boolean))) as string[];
 
-      const normPhone = o.customerPhone ? normalizeIraqMobileLocal11(o.customerPhone) : null;
-      const phoneProfile = normPhone && o.customerRegionId
-        ? phoneProfilesRegionMap.get(`${normPhone}::${o.customerRegionId}`)
-        : (normPhone ? phoneProfilesOnlyMap.get(normPhone) : null);
-
-      const customerLocationUrl = o.customerLocationUrl || o.customer?.customerLocationUrl || phoneProfile?.locationUrl || "";
-      const customerLandmark = o.customerLandmark || o.customer?.customerLandmark || phoneProfile?.landmark || "";
-      const customerAlternatePhone = o.secondCustomerPhone?.trim() || o.alternatePhone?.trim() || o.customer?.alternatePhone?.trim() || phoneProfile?.alternatePhone || "";
-
       return {
         id: o.id,
         orderNumber: o.orderNumber,
@@ -185,19 +143,18 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         createdAtLabel: formatBaghdadDateTime(o.createdAt, { dateStyle: "short", timeStyle: "short" }),
         summary: o.summary,
         customerPhone: o.customerPhone,
-        customerAlternatePhone,
-        customerDoorPhotoUrl: resolvePublicAssetSrc(o.customer?.customerDoorPhotoUrl || o.customerDoorPhotoUrl || phoneProfile?.photoUrl) ?? "",
+        customerAlternatePhone: o.secondCustomerPhone?.trim() || o.alternatePhone?.trim() || o.customer?.alternatePhone?.trim() || "",
+        customerDoorPhotoUrl: resolvePublicAssetSrc(o.customer?.customerDoorPhotoUrl || o.customerDoorPhotoUrl) ?? "",
         totalAmount: o.totalAmount != null ? formatDinarAsAlfWithUnit(o.totalAmount) : null,
         deliveryPrice: o.deliveryPrice != null ? formatDinarAsAlfWithUnit(o.deliveryPrice) : null,
-        orderSubtotal: o.orderSubtotal != null ? formatDinarAsAlfWithUnit(o.orderSubtotal) : null,
         rawDeliveryPriceDinar: o.deliveryPrice != null ? Number(o.deliveryPrice) : null,
         submittedByName: o.submittedByCompanyPreparer?.name || o.submittedBy?.name || null,
         submissionLabel: o.submissionSource === "company_preparer" ? "مكتمل التجهيز" : o.submissionSource === "web_store" ? "طلب متجر" : o.submissionSource === "admin_on_behalf_of_employee" ? "طلب موظف (بوت)" : "طلب جديد",
-        customerLocationUrl,
-        customerLandmark,
+        customerLocationUrl: o.customerLocationUrl || o.customer?.customerLocationUrl || "",
+        customerLandmark: o.customerLandmark || o.customer?.customerLandmark || "",
         voiceNoteUrl: o.voiceNoteUrl || null,
         adminVoiceNoteUrl: o.adminVoiceNoteUrl || null,
-        hasCustomerLocation: hasCustomerLocationUrl(customerLocationUrl, ""),
+        hasCustomerLocation: hasCustomerLocationUrl(o.customerLocationUrl, o.customer?.customerLocationUrl),
         hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
         reversePickup: isReversePickupOrderType(o.orderType),
         wardMismatchType: isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type,
@@ -251,7 +208,6 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         customerDoorPhotoUrl: "",
         totalAmount: null,
         deliveryPrice: d.customerRegion?.deliveryPrice ? formatDinarAsAlfWithUnit(d.customerRegion.deliveryPrice) : null,
-        orderSubtotal: null,
         rawDeliveryPriceDinar: d.customerRegion?.deliveryPrice != null ? Number(d.customerRegion.deliveryPrice) : null,
         submittedByName: preparerNames,
         submissionLabel: "مسودة مشتركة",

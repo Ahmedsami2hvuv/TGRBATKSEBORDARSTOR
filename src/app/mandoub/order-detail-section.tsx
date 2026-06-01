@@ -220,6 +220,12 @@ export function OrderDetailSection({
                     <p className="font-mono text-sm font-bold text-slate-600">رقم ثانٍ: {mergedAlternate}</p>
                   </div>
                 )}
+                {mergedLandmark && <p className="mt-1 text-sm font-medium text-slate-800">أقرب نقطة: {mergedLandmark}</p>}
+                {!mergedLandmark ? (
+                  <p className="mt-1 text-sm font-bold text-emerald-800">
+                    الاستدلال الذكي: {smartHintLine?.trim() || "—"}
+                  </p>
+                ) : null}
                 {courierSettings?.showLocationBtn !== false && (
                   <div className="mt-2">
                     {mergedCustomerLocationUrl ? (
@@ -231,12 +237,6 @@ export function OrderDetailSection({
                     )}
                   </div>
                 )}
-                {mergedLandmark && <p className="mt-1 text-sm font-medium text-slate-800">أقرب نقطة: {mergedLandmark}</p>}
-                {!mergedLandmark ? (
-                  <p className="mt-1 text-sm font-bold text-emerald-800">
-                    الاستدلال الذكي: {smartHintLine?.trim() || "—"}
-                  </p>
-                ) : null}
               </div>
               <div className="max-w-[12rem] self-start">
                 {customerDoorDisplay ? <div className={squarePhotoFrame}><img src={imgSrc(customerDoorDisplay)!} alt="" className={squarePhotoCover} /></div> : <p className="text-xs text-slate-400">لا توجد صورة باب</p>}
@@ -257,6 +257,9 @@ export function OrderDetailSection({
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-mono font-bold text-slate-900">{contactLine(order.secondCustomerPhone || "")}</p>
                   </div>
+                  {secondLandmarkMerged ? (
+                    <p className="mt-1 text-sm font-medium text-slate-800">أقرب نقطة: {secondLandmarkMerged}</p>
+                  ) : null}
                   {courierSettings?.showLocationBtn !== false && (
                     <div className="mt-2">
                       {secondLocMerged ? (
@@ -270,9 +273,6 @@ export function OrderDetailSection({
                       )}
                     </div>
                   )}
-                  {secondLandmarkMerged ? (
-                    <p className="mt-1 text-sm font-medium text-slate-800">أقرب نقطة: {secondLandmarkMerged}</p>
-                  ) : null}
                 </div>
                 <div className="max-w-[12rem] self-start">
                   <p className="text-xs font-bold text-slate-600 mb-2">صورة باب المستلم</p>
@@ -421,7 +421,7 @@ export function OrderDetailSection({
 
   const layout = uiSettings?.layoutOrder && uiSettings.layoutOrder.length > 0
     ? uiSettings.layoutOrder
-    : ["shop_info", "customer_info", "price_details", "notes_summary", "money_flow"];
+    : ["notes_summary", "shop_info", "customer_info", "price_details", "money_flow"];
 
   return (
     <section
