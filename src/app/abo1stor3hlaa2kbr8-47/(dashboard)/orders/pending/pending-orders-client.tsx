@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useActionState, useEffect, useState, useMemo, useRef } from "react";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
