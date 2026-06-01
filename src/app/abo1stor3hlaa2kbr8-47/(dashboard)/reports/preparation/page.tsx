@@ -17,6 +17,18 @@ const STRICT_EXCLUDE = ["همبركر", "بركر", "كبة", "كبه", "نعن�
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
+// دالة الفحص المرنة: تنظف السطر من الأرقام والوحدات ثم تفحص البداية
+const checkIsTypeFlexible = (line: string, whitelist: string[]) => {
+  const clean = line.toLowerCase()
+    .replace(/[0-9٠-٩]/g, '') // حذف الأرقام
+    .replace(/\b(كيلو|كغم|ك|غم|غرام|نص|نصف|ربع|عدد)\b/g, '') // حذف الوحدات
+    .trim();
+
+  // نأخذ أول 15 حرف من النص النظيف للتأكد أن النوع هو الأساسي
+  const startOfLine = clean.slice(0, 15);
+  return whitelist.some(item => startOfLine.includes(item.toLowerCase()));
+};
+
 export default async function PreparationReportPage({ searchParams }: { searchParams: Promise<any> }) {
   const sp = await searchParams;
   const dayParam = sp.day;
@@ -55,14 +67,58 @@ export default async function PreparationReportPage({ searchParams }: { searchPa
     return formatYMDLocal(d);
   });
 
-  const orders = await prisma.order.findMany({
-    where: { 
-      createdAt: { gte: from, lte: to }, 
-      preparerShoppingJson: { not: null },
-      status: { notIn: ["cancelled", "rejected"] }
-    },
-    orderBy: { createdAt: "desc" },
-    include: { shop: { select: { name: true } }, customerRegion: { select: { name: true } } },
+  // جلب الطلبات لآخر 21 يوم لتحديد علامات اللحم والسمك في القائمة الجانبية
+  const earliestDayDate = new Date(shiftStart);
+  earliestDayDate.setDate(earliestDayDate.getDate() - 20);
+  const rangeFrom = new Date(earliestDayDate.getFullYear(), earliestDayDate.getMonth(), earliestDayDate.getDate(), 6, 0, 0, 0);
+
+  const [orders, sidebarOrders] = await Promise.all([
+    prisma.order.findMany({
+      where: {
+        createdAt: { gte: from, lte: to },
+        preparerShoppingJson: { not: null },
+        status: { notIn: ["cancelled", "rejected"] }
+      },
+      orderBy: { createdAt: "desc" },
+      include: { shop: { select: { name: true } }, customerRegion: { select: { name: true } } },
+    }),
+    prisma.order.findMany({
+      where: {
+        createdAt: { gte: rangeFrom, lte: to },
+        preparerShoppingJson: { not: null },
+        status: { notIn: ["cancelled", "rejected"] }
+      },
+      select: { createdAt: true, preparerShoppingJson: true }
+    })
+  ]);
+
+  const dayIndicators: Record<string, { hasMeat: boolean; hasFish: boolean }> = {};
+  sidebarOrders.forEach(order => {
+    const d = new Date(order.createdAt);
+    if (d.getHours() < 6) d.setDate(d.getDate() - 1);
+    const dayKey = formatYMDLocal(d);
+
+    if (!dayIndicators[dayKey]) dayIndicators[dayKey] = { hasMeat: false, hasFish: false };
+    if (dayIndicators[dayKey].hasMeat && dayIndicators[dayKey].hasFish) return;
+
+    const json = order.preparerShoppingJson as any;
+    const products = Array.isArray(json?.products) ? json.products : [];
+
+    if (!dayIndicators[dayKey].hasMeat) {
+      const hasMeat = products.some((p: any) => {
+        const line = p.line || "";
+        return checkIsTypeFlexible(line, meatWhitelist) && !STRICT_EXCLUDE.some(ex => line.toLowerCase().includes(ex));
+      });
+      if (hasMeat) dayIndicators[dayKey].hasMeat = true;
+    }
+
+    if (!dayIndicators[dayKey].hasFish) {
+      const hasFish = products.some((p: any) => {
+        const line = p.line || "";
+        return checkIsTypeFlexible(line, fishWhitelist) && !STRICT_EXCLUDE.some(ex => line.toLowerCase().includes(ex));
+      });
+      if (hasFish) dayIndicators[dayKey].hasFish = true;
+    }
   });
 
   const orderSummaries = orders.map((order) => {
@@ -70,18 +126,6 @@ export default async function PreparationReportPage({ searchParams }: { searchPa
     const products = Array.isArray(json?.products) ? json.products : [];
     
     const totalProfit = products.reduce((sum: number, p: any) => sum + (Number(p.sellAlf) - Number(p.buyAlf) || 0), 0);
-
-    // دالة الفحص المرنة: تنظف السطر من الأرقام والوحدات ثم تفحص البداية
-    const checkIsTypeFlexible = (line: string, whitelist: string[]) => {
-      const clean = line.toLowerCase()
-        .replace(/[0-9٠-٩]/g, '') // حذف الأرقام
-        .replace(/\b(كيلو|كغم|ك|غم|غرام|نص|نصف|ربع|عدد)\b/g, '') // حذف الوحدات
-        .trim();
-      
-      // نأخذ أول 15 حرف من النص النظيف للتأكد أن النوع هو الأساسي
-      const startOfLine = clean.slice(0, 15);
-      return whitelist.some(item => startOfLine.includes(item.toLowerCase()));
-    };
 
     const meatProducts = products.filter((p: any) => {
       const line = p.line || "";
@@ -136,11 +180,20 @@ export default async function PreparationReportPage({ searchParams }: { searchPa
       <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
         <div className="space-y-2 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm h-fit">
           <h2 className="text-sm font-black text-slate-400 mb-3 px-2 uppercase italic tracking-widest">تاريخ التقرير</h2>
-          {dayList.map((day) => (
-            <Link key={day} href={`${SECRET_ADMIN_PATH}/reports/preparation?day=${day}`} className={`block rounded-2xl px-4 py-3 text-sm font-bold transition-all ${day === selectedDayIso ? "bg-slate-900 text-white shadow-lg scale-[1.02]" : "text-slate-600 hover:bg-slate-50"}`}>
-              {day} {day === defaultDay && "⭐"}
-            </Link>
-          ))}
+          {dayList.map((day) => {
+            const indicators = dayIndicators[day];
+            return (
+              <Link key={day} href={`${SECRET_ADMIN_PATH}/reports/preparation?day=${day}`} className={`block rounded-2xl px-4 py-3 text-sm font-bold transition-all ${day === selectedDayIso ? "bg-slate-900 text-white shadow-lg scale-[1.02]" : "text-slate-600 hover:bg-slate-50"}`}>
+                <div className="flex items-center justify-between">
+                  <span>{day} {day === defaultDay && "⭐"}</span>
+                  <div className="flex gap-1 text-xs">
+                    {indicators?.hasMeat && <span>🥩</span>}
+                    {indicators?.hasFish && <span>🐟</span>}
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
 
 
