@@ -158,7 +158,7 @@ export function OrderDetailSection({
 
   const renderBlock = (blockId: string) => {
     const bConf = uiSettings?.blockConfigs?.[blockId] || {};
-    if (bConf.hidden) return null;
+    if (bConf.hidden && blockId !== "money_flow") return null;
 
     const blockStyle = {
       backgroundColor: bConf.backgroundColor,
@@ -521,6 +521,7 @@ export function OrderDetailSection({
         );
       }
       case "money_flow":
+        // Always show money_flow regardless of bConf.hidden to ensure it appears at the end of the order
         return (
           <MandoubOrderMoneyFlow
             key="money"
