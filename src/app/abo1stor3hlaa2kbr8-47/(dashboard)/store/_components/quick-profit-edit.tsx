@@ -56,7 +56,7 @@ export function QuickProfitEdit({ id, initialMargin, type, name, categoryId }: Q
         >
           💰 +{Number(margin).toLocaleString()}
         </button>
-        {Number(margin) > 0 && (
+        {(Number(margin) > 0 || type === "category") && (
           <button
             disabled={isLoading}
             onClick={async (e) => {
