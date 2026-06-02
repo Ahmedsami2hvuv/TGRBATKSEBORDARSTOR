@@ -74,6 +74,7 @@ export type MandoubRow = {
   /** لم يتم تسجيل أي صادر (مهم للاستلام) */
   noSaderRecorded?: boolean;
   createdAt?: Date | string;
+  moneyEvents?: any[];
   /** ميزات الوصول السريع من خارج الطلب */
   audioUrl?: string | null;
   summary?: string | null;
@@ -758,7 +759,7 @@ export function MandoubOrderTable({
                   totalAmount: activeOrderData.totalAmountDinar,
                   status: activeOrderData.orderStatus,
                   orderNumber: Number(activeOrderData.shortId), // استخدام shortId كرقم عرض
-                  moneyEvents: [], // السموّم معروضة أصلاً في Row، الأحداث الكاملة تحتاج سيرفر
+                  moneyEvents: activeOrderData.moneyEvents || [],
                   shop: {
                     name: activeOrderData.shopName,
                     phone: activeOrderData.shopPhone,

@@ -88,6 +88,8 @@ export const mandoubOrderListInclude = {
       createdAt: true,
       courierId: true,
       recordedByCompanyPreparerId: true,
+      courier: { select: { name: true } },
+      recordedByCompanyPreparer: { select: { name: true } },
     },
   },
 } satisfies Prisma.OrderInclude;

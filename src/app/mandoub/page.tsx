@@ -669,6 +669,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,
       noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
       createdAt: o.createdAt.toISOString(),
+      moneyEvents: o.moneyEvents,
       // بيانات الوصول السريع
       audioUrl: o.voiceNoteUrl,
       summary: o.summary,
