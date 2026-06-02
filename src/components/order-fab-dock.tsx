@@ -8,6 +8,23 @@ import { getGlobalIcons, type GlobalIconsConfig } from "@/lib/icon-settings";
 export const FAB_SIZE = 56;
 const DRAG_THRESHOLD = 10;
 
+/** قيم مضافة لإصلاح خطأ البيلد في فيرسل */
+export const FAB_SCALE_MIN = 0.55;
+export const FAB_SCALE_MAX = 1.85;
+
+export function loadFabScale(storageKey: string): number {
+  try {
+    const raw = localStorage.getItem(`${storageKey}_fabScale`);
+    return raw ? Number(raw) : 1;
+  } catch { return 1; }
+}
+
+export function saveFabScale(storageKey: string, scale: number) {
+  try {
+    localStorage.setItem(`${storageKey}_fabScale`, String(scale));
+  } catch { /* ignore */ }
+}
+
 type Pos = { left: number; top: number };
 
 export type OrderFabDockProps = {
