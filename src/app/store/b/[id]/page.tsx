@@ -8,101 +8,121 @@ import { StoreSlider } from "../../_components/store-slider";
 export const dynamic = "force-dynamic";
 
 export default async function BranchPage(props: { params: Promise<{ id: string }> }) {
-  const { id } = await props.params;
+  try {
+    const params = await props?.params;
+    const id = params?.id;
 
-  const [branch, storeSettings, slides] = await Promise.all([
-    prisma.storeBranch.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        name: true,
-        photoUrl: true,
-        categoryId: true,
-        parentBranchId: true,
-        category: { select: { name: true } },
-        parentBranch: { select: { name: true } },
-        _count: { select: { products: true } },
-      }
-    }),
-    prisma.uISystemSetting.findUnique({
-      where: { target_section: { target: "customer", section: "store_general" } },
-      select: { config: true }
-    }),
-    prisma.storeSlide.findMany({
-      where: { active: true },
-      orderBy: { sequence: "asc" }
-    })
-  ]);
+    if (!id) {
+      return (
+        <div className="text-center py-20 text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800" dir="rtl">
+          معرف الفرع غير صالح أو مفقود.
+        </div>
+      );
+    }
 
-  if (!branch) return (
-    <div className="text-center py-20 text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800" dir="rtl">
-      الفرع المطلوب غير موجود أو غير نشط حالياً.
-    </div>
-  );
+    const [branch, storeSettings, slides] = await Promise.all([
+      prisma.storeBranch.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          name: true,
+          photoUrl: true,
+          categoryId: true,
+          parentBranchId: true,
+          category: { select: { name: true } },
+          parentBranch: { select: { name: true } },
+          _count: { select: { products: true } },
+        }
+      }),
+      prisma.uISystemSetting.findUnique({
+        where: { target_section: { target: "customer", section: "store_general" } },
+        select: { config: true }
+      }),
+      prisma.storeSlide.findMany({
+        where: { active: true },
+        orderBy: { sequence: "asc" }
+      })
+    ]);
 
-  const productBg = (storeSettings?.config as any)?.product_card_bg_url;
-  const productBgOpacity = (storeSettings?.config as any)?.product_card_bg_opacity;
-  const categoryName = branch.category?.name || "قسم غير محدد";
+    if (!branch) return (
+      <div className="text-center py-20 text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800" dir="rtl">
+        الفرع المطلوب غير موجود أو غير نشط حالياً.
+      </div>
+    );
 
-  return (
-    <div className="space-y-6 md:space-y-10 pb-10 px-2" dir="rtl">
-      {slides.length > 0 && (
-        <section className="mb-6 md:mb-10">
-          <StoreSlider slides={slides.map(s => ({
-            id: s.id,
-            imageUrl: s.imageUrl,
-            linkUrl: s.linkUrl || "",
-            title: s.title || ""
-          }))} />
-        </section>
-      )}
+    const productBg = (storeSettings?.config as any)?.product_card_bg_url;
+    const productBgOpacity = (storeSettings?.config as any)?.product_card_bg_opacity;
+    const categoryName = branch.category?.name || "قسم غير محدد";
 
-      <nav className="flex flex-wrap items-center gap-2 text-xs md:text-sm font-bold text-slate-400 mb-4">
-        <Link href="/store" className="hover:text-violet-600 transition">🏠 المتجر</Link>
-        <span>/</span>
-        <Link href={`/store/c/${branch.categoryId}`} className="hover:text-violet-600 transition">{categoryName}</Link>
-        {branch.parentBranch && (
-          <>
-            <span>/</span>
-            <Link href={`/store/b/${branch.parentBranchId}`} className="hover:text-violet-600 transition">{branch.parentBranch.name}</Link>
-          </>
+    return (
+      <div className="space-y-6 md:space-y-10 pb-10 px-2" dir="rtl">
+        {slides.length > 0 && (
+          <section className="mb-6 md:mb-10">
+            <StoreSlider slides={slides.map(s => ({
+              id: s.id,
+              imageUrl: s.imageUrl,
+              linkUrl: s.linkUrl || "",
+              title: s.title || ""
+            }))} />
+          </section>
         )}
-        <span>/</span>
-        <span className="text-slate-900 dark:text-white">{branch.name}</span>
-      </nav>
 
-      <section className="relative overflow-hidden p-6 md:p-10 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl">
-        <div className="relative z-10 flex flex-col md:flex-row items-center gap-4 md:gap-10">
-          <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl overflow-hidden bg-slate-50 dark:bg-slate-800 shrink-0 border-2 border-slate-100 dark:border-slate-700">
-            {branch.photoUrl ? (
-              <img src={branch.photoUrl} alt={branch.name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-4xl">🌿</div>
-            )}
-          </div>
-          <div className="text-center md:text-right">
-            <h1 className="text-2xl md:text-4xl font-black text-slate-900 dark:text-white">{branch.name}</h1>
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mt-2">
-                <span className="text-sm text-slate-500 font-bold">{categoryName}</span>
-                <span className="w-1.5 h-1.5 bg-slate-300 rounded-full hidden md:block"></span>
-                <span className="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 text-[10px] md:text-xs font-black px-3 py-1 rounded-full">
-                    {branch._count.products} منتج متوفر
-                </span>
+        <nav className="flex flex-wrap items-center gap-2 text-xs md:text-sm font-bold text-slate-400 mb-4">
+          <Link href="/store" className="hover:text-violet-600 transition">🏠 المتجر</Link>
+          <span>/</span>
+          <Link href={`/store/c/${branch.categoryId}`} className="hover:text-violet-600 transition">{categoryName}</Link>
+          {branch.parentBranch && (
+            <>
+              <span>/</span>
+              <Link href={`/store/b/${branch.parentBranchId}`} className="hover:text-violet-600 transition">{branch.parentBranch.name}</Link>
+            </>
+          )}
+          <span>/</span>
+          <span className="text-slate-900 dark:text-white">{branch.name}</span>
+        </nav>
+
+        <section className="relative overflow-hidden p-6 md:p-10 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl">
+          <div className="relative z-10 flex flex-col md:flex-row items-center gap-4 md:gap-10">
+            <div className="w-20 h-20 md:w-32 md:h-32 rounded-3xl overflow-hidden bg-slate-50 dark:bg-slate-800 shrink-0 border-2 border-slate-100 dark:border-slate-700">
+              {branch.photoUrl ? (
+                <img src={branch.photoUrl} alt={branch.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl">🌿</div>
+              )}
+            </div>
+            <div className="text-center md:text-right">
+              <h1 className="text-2xl md:text-4xl font-black text-slate-900 dark:text-white">{branch.name}</h1>
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mt-2">
+                  <span className="text-sm text-slate-500 font-bold">{categoryName}</span>
+                  <span className="w-1.5 h-1.5 bg-slate-300 rounded-full hidden md:block"></span>
+                  <span className="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 text-[10px] md:text-xs font-black px-3 py-1 rounded-full">
+                      {branch._count.products} منتج متوفر
+                  </span>
+              </div>
             </div>
           </div>
+        </section>
+
+
+        <CustomProductRequest />
+
+        <div className="space-y-6">
+          <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+            <span className="w-2 h-8 bg-emerald-500 rounded-full"></span>
+            المنتجات
+          </h2>
+          <ProductListClient branchId={id} />
         </div>
-      </section>
-
-
-      <CustomProductRequest />
-
-      <div className="space-y-6">
-        <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-          <span className="w-2 h-8 bg-emerald-500 rounded-full"></span>
-          المنتجات
-        </h2>
-        <ProductListClient branchId={id} />
       </div>
-    </div>
-  );
+    );
+  } catch (error) {
+    console.error("Branch page render error:", error);
+    return (
+      <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-rose-100 dark:border-rose-950 p-8 shadow-xl" dir="rtl">
+        <span className="text-5xl block mb-4">⚠️</span>
+        <h2 className="text-xl font-black text-slate-900 dark:text-white mb-2">عذراً، حدث خطأ غير متوقع أثناء تحميل الفرع</h2>
+        <p className="text-sm text-slate-500 font-bold">يرجى المحاولة مرة أخرى لاحقاً أو إبلاغ الإدارة بالمشكلة.</p>
+      </div>
+    );
+  }
 }

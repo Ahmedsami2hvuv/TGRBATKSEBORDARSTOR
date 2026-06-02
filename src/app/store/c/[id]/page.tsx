@@ -117,44 +117,63 @@ async function CategoryHeader({ id }: { id: string }) {
 }
 
 export default async function CategoryPage(props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
-  const id = params.id;
+  try {
+    const params = await props?.params;
+    const id = params?.id;
 
-  const slides = await prisma.storeSlide.findMany({
-    where: { active: true },
-    orderBy: { sequence: "asc" }
-  });
+    if (!id) {
+      return (
+        <div className="text-center py-20 text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800" dir="rtl">
+          معرف القسم غير صالح أو مفقود.
+        </div>
+      );
+    }
 
-  return (
-    <div className="space-y-4 md:space-y-8" dir="rtl">
-      {slides.length > 0 && (
-        <section className="mb-6 md:mb-10">
-          <StoreSlider slides={slides.map(s => ({
-            id: s.id,
-            imageUrl: s.imageUrl,
-            linkUrl: s.linkUrl || "",
-            title: s.title || ""
-          }))} />
-        </section>
-      )}
+    const slides = await prisma.storeSlide.findMany({
+      where: { active: true },
+      orderBy: { sequence: "asc" }
+    });
 
-      <Suspense fallback={
-        <div className="h-32 md:h-48 bg-white dark:bg-slate-900 rounded-[2rem] md:rounded-[3rem] animate-pulse" />
-      }>
-        <CategoryHeader id={id} />
-      </Suspense>
+    return (
+      <div className="space-y-4 md:space-y-8" dir="rtl">
+        {slides.length > 0 && (
+          <section className="mb-6 md:mb-10">
+            <StoreSlider slides={slides.map(s => ({
+              id: s.id,
+              imageUrl: s.imageUrl,
+              linkUrl: s.linkUrl || "",
+              title: s.title || ""
+            }))} />
+          </section>
+        )}
 
-      <CustomProductRequest />
+        <Suspense fallback={
+          <div className="h-32 md:h-48 bg-white dark:bg-slate-900 rounded-[2rem] md:rounded-[3rem] animate-pulse" />
+        }>
+          <CategoryHeader id={id} />
+        </Suspense>
 
-      <Suspense fallback={
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {[...Array(4)].map((_, i) => (
-                  <div key={i} className="aspect-video bg-slate-50 dark:bg-slate-900 rounded-[2rem] animate-pulse border border-slate-100 dark:border-slate-800" />
-              ))}
-          </div>
-      }>
-          <BranchesList categoryId={id} />
-      </Suspense>
-    </div>
-  );
+        <CustomProductRequest />
+
+        <Suspense fallback={
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {[...Array(4)].map((_, i) => (
+                    <div key={i} className="aspect-video bg-slate-50 dark:bg-slate-900 rounded-[2rem] animate-pulse border border-slate-100 dark:border-slate-800" />
+                ))}
+            </div>
+        }>
+            <BranchesList categoryId={id} />
+        </Suspense>
+      </div>
+    );
+  } catch (error) {
+    console.error("Category page render error:", error);
+    return (
+      <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-rose-100 dark:border-rose-950 p-8 shadow-xl" dir="rtl">
+        <span className="text-5xl block mb-4">⚠️</span>
+        <h2 className="text-xl font-black text-slate-900 dark:text-white mb-2">عذراً، حدث خطأ غير متوقع أثناء تحميل القسم</h2>
+        <p className="text-sm text-slate-500 font-bold">يرجى المحاولة مرة أخرى لاحقاً أو إبلاغ الإدارة بالمشكلة.</p>
+      </div>
+    );
+  }
 }
