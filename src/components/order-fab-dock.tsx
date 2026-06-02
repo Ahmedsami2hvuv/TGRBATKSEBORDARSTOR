@@ -354,7 +354,7 @@ export type OrderFabDockProps = {
   customWaButtons?: Array<{
     id: string;
     label: string;
-    iconKey: string;
+    iconKey: string | null;
     messages: string[];
   }>;
   /** عند واجهة المجهز: إخفاء أزرار التواصل أثناء فتح نموذج تعديل الطلب */
@@ -468,6 +468,14 @@ export function OrderFabDock(props: OrderFabDockProps) {
   }, [contactMenu, customWaPick, scalePanelOpen]);
 
   const [positions, setPositions] = useState<Record<string, Pos>>({});
+  const mainFabId = useMemo(() => {
+    return fabIds.find((id) => positions[id]) || fabIds[0] || "wa";
+  }, [fabIds, positions]);
+
+  const mainFabPos = useMemo(() => {
+    return mainFabId ? positions[mainFabId] : null;
+  }, [mainFabId, positions]);
+
   const [dragZ, setDragZ] = useState(90);
   const mountedRef = useRef(false);
   const [fabScale, setFabScale] = useState(1);
@@ -638,7 +646,13 @@ export function OrderFabDock(props: OrderFabDockProps) {
     setCustomWaPick(null);
   };
 
-  const contactMenuPos = isExpanded ? positions.wa : (contactMenu === "wa" ? positions.wa : (contactMenu === "tel" ? positions.tel : null));
+  const contactMenuPos = isExpanded 
+    ? mainFabPos 
+    : (contactMenu === "wa" 
+        ? (positions.wa ?? mainFabPos) 
+        : (contactMenu === "tel" 
+            ? (positions.tel ?? mainFabPos) 
+            : null));
   /** ارتفاع تقريبي لقائمة واتساب/اتصال */
   const MENU_H = usePreparerTriple ? 148 : hasCust2 ? 148 : 96;
   const showMenuAbove =
@@ -658,7 +672,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
 
   /** قائمة عميل / زبون / زبون2 لقوالب الواتساب المخصصة */
   const CUSTOM_PICK_H = hasCust2 ? 200 : 160;
-  const customPickFabId = customWaPick ? (isExpanded ? "wa" : `cwa:${customWaPick.btn.id}`) : null;
+  const customPickFabId = customWaPick ? (isExpanded ? mainFabId : `cwa:${customWaPick.btn.id}`) : null;
   const customPickPos = customPickFabId ? positions[customPickFabId] : null;
   const showCustomPickAbove =
     customPickPos != null && customPickPos.top > CUSTOM_PICK_H + fabSize + 20;
@@ -979,12 +993,12 @@ export function OrderFabDock(props: OrderFabDockProps) {
         </div>
       ) : null}
 
-      {isExpanded && (positions.wa || positions.tel) && (
+      {isExpanded && mainFabPos && (
         <div
           className="pointer-events-auto fixed z-[1000] flex flex-col items-end gap-3 transition-all animate-in slide-in-from-bottom-4 duration-300"
           style={{
-            left: (positions.wa?.left ?? positions.tel?.left ?? 0) - 4,
-            bottom: window.innerHeight - (positions.wa?.top ?? positions.tel?.top ?? 0) + 12,
+            left: mainFabPos.left - 4,
+            bottom: window.innerHeight - mainFabPos.top + 12,
           }}
         >
           {editUrl && (
@@ -1049,7 +1063,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
                 className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-violet-600 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
               >
                 <DynamicIcon
-                  iconKey={btn.iconKey}
+                  iconKey={btn.iconKey || undefined}
                   config={icons}
                   className="h-6 w-6"
                   fallback={<span className="text-lg">{btn.iconKey || "💬"}</span>}
@@ -1061,10 +1075,10 @@ export function OrderFabDock(props: OrderFabDockProps) {
         </div>
       )}
 
-      {positions.wa || positions.tel ? (
+      {mainFabId && mainFabPos ? (
         <DraggableFab
-          fabId={showWhatsAppBtn ? "wa" : "tel"}
-          position={positions.wa ?? positions.tel}
+          fabId={mainFabId}
+          position={mainFabPos}
           fabSize={fabSize}
           onPositionMove={movePosition}
           onDragEndPersist={persistPosition}
