@@ -60,6 +60,15 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
       where: { id },
       data: { name, sequence, photoUrl, notes, profitMargin }
     });
+
+    // إذا تم تصفير ربح القسم، نقوم بتصفير أرباح كافة الفروع التابعة له أيضاً
+    if (profitMargin === 0) {
+      await prisma.storeBranch.updateMany({
+        where: { categoryId: id },
+        data: { profitMargin: 0 }
+      });
+    }
+
     // مزامنة الأسعار للمنتجات التابعة لهذا القسم
     const { syncCategoryProductsPrice } = await import("@/lib/store-profit-sync");
     await syncCategoryProductsPrice(id);
