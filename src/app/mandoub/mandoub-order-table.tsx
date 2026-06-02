@@ -796,26 +796,39 @@ export function MandoubOrderTable({
         createPortal(
           <form
             action={bulkAction}
-            className="fixed bottom-4 left-4 right-4 z-[105] rounded-3xl border-2 border-red-200 bg-white/95 backdrop-blur-md px-4 py-3.5 shadow-2xl animate-in slide-in-from-bottom duration-300 md:left-auto md:right-4 md:max-w-xl"
+            className="fixed bottom-4 left-4 right-4 z-[105] rounded-3xl border-2 border-red-200 bg-white/95 backdrop-blur-md px-4 py-3 shadow-2xl animate-in slide-in-from-bottom duration-300 md:left-auto md:right-4 md:w-full md:max-w-md"
             dir="rtl"
           >
             <input type="hidden" name="c" value={auth.c} />
             <input type="hidden" name="exp" value={auth.exp} />
             <input type="hidden" name="s" value={auth.s} />
             <input type="hidden" name="orderIds" value={Array.from(selectedIds).join(",")} />
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <p className="text-center text-sm font-black text-red-950 sm:text-right">
-                تم تحديد{" "}
-                <span className="tabular-nums text-red-800 text-base">{selectedIds.size}</span> طلباً — اضغط اللون
-                المناسب:
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+            
+            <div className="flex flex-col gap-2.5">
+              {/* Row 1: Text and Close button */}
+              <div className="flex items-center justify-between gap-4 border-b border-red-50 pb-2">
+                <p className="text-sm font-black text-red-950">
+                  تم تحديد{" "}
+                  <span className="tabular-nums text-red-800 text-base">{selectedIds.size}</span> طلباً — اضغط اللون المناسب:
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds(new Set())}
+                  className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-rose-100 hover:text-rose-600 transition-all font-black text-xs border-0 cursor-pointer shadow-sm shrink-0"
+                  title="إلغاء التحديد"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Row 2: Status action buttons */}
+              <div className="flex items-center justify-between gap-2">
                 <button
                   type="submit"
                   name="targetStatus"
                   value="assigned"
                   disabled={bulkPending}
-                  className="shrink-0 rounded-2xl border-2 border-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 text-xs font-black text-red-900 shadow-sm transition active:scale-95 disabled:opacity-50 sm:text-sm"
+                  className="flex-1 min-h-[38px] rounded-xl border-2 border-red-600 bg-red-50 hover:bg-red-100 py-1 px-1.5 text-xs font-black text-red-900 shadow-sm transition active:scale-95 disabled:opacity-50"
                 >
                   بانتظار المندوب
                 </button>
@@ -824,7 +837,7 @@ export function MandoubOrderTable({
                   name="targetStatus"
                   value="delivering"
                   disabled={bulkPending}
-                  className="shrink-0 rounded-2xl border-2 border-amber-500 bg-amber-50 hover:bg-amber-100 px-4 py-2 text-xs font-black text-amber-950 shadow-sm transition active:scale-95 disabled:opacity-50 sm:text-sm"
+                  className="flex-1 min-h-[38px] rounded-xl border-2 border-amber-500 bg-amber-50 hover:bg-amber-100 py-1 px-1.5 text-xs font-black text-amber-950 shadow-sm transition active:scale-95 disabled:opacity-50"
                 >
                   تم الاستلام
                 </button>
@@ -833,19 +846,13 @@ export function MandoubOrderTable({
                   name="targetStatus"
                   value="delivered"
                   disabled={bulkPending}
-                  className="shrink-0 rounded-2xl border-2 border-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 text-xs font-black text-emerald-950 shadow-sm transition active:scale-95 disabled:opacity-50 sm:text-sm"
+                  className="flex-1 min-h-[38px] rounded-xl border-2 border-emerald-600 bg-emerald-50 hover:bg-emerald-100 py-1 px-1.5 text-xs font-black text-emerald-950 shadow-sm transition active:scale-95 disabled:opacity-50"
                 >
                   تم التسليم
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedIds(new Set())}
-                  className="min-h-[44px] w-11 flex items-center justify-center rounded-2xl border border-slate-300 bg-white text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm"
-                >
-                  <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-4 h-4" />
-                </button>
               </div>
             </div>
+            
             {bulkPending ? (
               <p className="mt-2 text-center text-xs font-bold text-red-800 animate-pulse">جارٍ التحديث…</p>
             ) : null}
