@@ -1340,66 +1340,67 @@ export default function PendingOrdersClient({
               {/* Header */}
               <div className="p-5 pb-3 flex flex-wrap items-center justify-between gap-4 border-b border-slate-105 dark:border-slate-900 bg-slate-50/30 dark:bg-slate-900/10">
                 <div className="flex items-center gap-4">
-                  {/* Bulk selection Checkbox */}
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(order.id)}
-                    onChange={() => toggleSelect(order.id)}
-                    className="h-5 w-5 shrink-0 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-all dark:bg-slate-900 dark:border-white/10"
-                  />
-                  <Link
-                    href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
-                    className="flex flex-col items-center justify-center rounded-2xl bg-sky-600 hover:bg-sky-700 active:scale-95 transition-all cursor-pointer shadow-md shadow-sky-200/60 dark:shadow-sky-900/30 px-3 py-2 min-w-[72px] border-2 border-sky-500"
-                    title="فتح تفاصيل الطلب بالكامل"
-                  >
-                    <span className="text-[9px] font-black text-sky-100 leading-none tracking-widest uppercase">طلب</span>
-                    <span className="text-2xl font-black text-white leading-none mt-0.5 tabular-nums">#{order.orderNumber}</span>
-                  </Link>
+                  {/* Bulk selection Checkbox & shrunken order number stacked */}
+                  <div className="flex flex-col items-center gap-1.5 shrink-0 bg-slate-100/50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/50 dark:border-white/5 min-w-[52px] justify-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(order.id)}
+                      onChange={() => toggleSelect(order.id)}
+                      className="h-5 w-5 shrink-0 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-all dark:bg-slate-900 dark:border-white/10"
+                    />
+                    <Link
+                      href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
+                      className="text-xs font-black text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 hover:underline tabular-nums"
+                      title="فتح تفاصيل الطلب بالكامل"
+                    >
+                      #{order.orderNumber}
+                    </Link>
+                  </div>
                   <div>
                     <Link
                       href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
                       className="hover:text-emerald-600 transition-colors"
                       title="فتح تفاصيل الطلب بالكامل"
                     >
-                      <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight hover:underline flex items-center gap-1.5">
+                      <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight hover:underline flex items-center gap-1.5">
                         {order.shopName}
                         <span className="text-xs font-bold text-slate-400">↗</span>
                       </h3>
                     </Link>
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
                       {order.routeMode === 'double' ? (
                         <>
-                          <span className="flex items-center gap-1 text-xs font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
-                            <span className="bg-emerald-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded leading-none">من</span>
+                          <span className="flex items-center gap-1.5 text-sm font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-3.5 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
+                            <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded leading-none">من</span>
                             {order.regionName}
                           </span>
-                          <span className="flex items-center gap-1 text-xs font-black bg-rose-50 text-rose-700 dark:bg-rose-950/10 dark:text-rose-400 px-3 py-1.5 rounded-full border border-rose-100 dark:border-rose-900/30 shadow-sm">
-                            <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded leading-none">إلى</span>
+                          <span className="flex items-center gap-1.5 text-sm font-black bg-rose-50 text-rose-700 dark:bg-rose-950/10 dark:text-rose-400 px-3.5 py-2 rounded-xl border border-rose-100 dark:border-rose-900/30 shadow-sm">
+                            <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded leading-none">إلى</span>
                             {order.secondCustomerRegionName || "غير معروف"}
                           </span>
                         </>
                       ) : (
-                        <span className="flex items-center gap-1.5 text-xs font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-3 py-1.5 rounded-full border border-sky-100 dark:border-sky-900/30 shadow-sm">
-                          <DynamicIcon icon={icons?.ui_location} fallback="📍" width={12} height={12} /> {order.regionName}
+                        <span className="flex items-center gap-1.5 text-sm md:text-base font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-4 py-2 rounded-xl border border-sky-100 dark:border-sky-900/30 shadow-sm">
+                          <DynamicIcon icon={icons?.ui_location} fallback="📍" width={14} height={14} /> {order.regionName}
                         </span>
                       )}
                       {order.orderSubtotal ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
+                        <span className="inline-flex items-center gap-1.5 text-sm md:text-base font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-4 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
                           {hasLocation && (
-                            <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" title="الموقع الجغرافي متوفر" />
+                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" title="الموقع الجغرافي متوفر" />
                           )}
                           {order.orderSubtotal}
                         </span>
                       ) : order.totalAmount ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
+                        <span className="inline-flex items-center gap-1.5 text-sm md:text-base font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-4 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
                           {hasLocation && (
-                            <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" title="الموقع الجغرافي متوفر" />
+                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" title="الموقع الجغرافي متوفر" />
                           )}
                           {order.totalAmount}
                         </span>
                       ) : (
                         hasLocation && (
-                          <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0 self-center" title="الموقع الجغرافي متوفر" />
+                          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0 self-center" title="الموقع الجغرافي متوفر" />
                         )
                       )}
                     </div>
@@ -1476,34 +1477,35 @@ export default function PendingOrdersClient({
             {/* Header */}
             <div className="p-6 pb-0 flex flex-wrap items-start justify-between gap-4">
                <div className="flex gap-4">
-                  {/* Bulk selection Checkbox */}
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(order.id)}
-                    onChange={() => toggleSelect(order.id)}
-                    className="h-5 w-5 shrink-0 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-all dark:bg-slate-900 dark:border-white/10 self-center"
-                  />
-                  <div className="h-16 w-16 rounded-[1.5rem] bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center border-2 border-white dark:border-white/5 shadow-inner">
-                     <span className="text-[10px] font-black text-slate-400 leading-none">رقم</span>
-                     <span className="text-xl font-black text-slate-900 dark:text-white leading-none mt-1">#{order.orderNumber}</span>
+                  {/* Selection Checkbox & shrunken order number stacked */}
+                  <div className="flex flex-col items-center gap-1.5 shrink-0 bg-slate-100/50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/50 dark:border-white/5 min-w-[52px] justify-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(order.id)}
+                      onChange={() => toggleSelect(order.id)}
+                      className="h-5 w-5 shrink-0 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-all dark:bg-slate-900 dark:border-white/10"
+                    />
+                    <span className="text-xs font-black text-slate-500 dark:text-slate-400 tabular-nums">
+                      #{order.orderNumber}
+                    </span>
                   </div>
                   <div>
                      <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{order.shopName}</h3>
-                     <div className="flex flex-wrap items-center gap-2 mt-1">
+                     <div className="flex flex-wrap items-center gap-2 mt-1.5">
                         {order.routeMode === 'double' ? (
                           <>
-                            <span className="flex items-center gap-1 text-[10px] font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">
-                              <span className="bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded leading-none">من</span>
+                            <span className="flex items-center gap-1.5 text-sm font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-3.5 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+                              <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded leading-none">من</span>
                               {order.regionName}
                             </span>
-                            <span className="flex items-center gap-1 text-[10px] font-black bg-rose-50 text-rose-700 dark:bg-rose-950/10 dark:text-rose-400 px-2.5 py-1 rounded-full border border-rose-100 dark:border-rose-900/30">
-                              <span className="bg-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded leading-none">إلى</span>
+                            <span className="flex items-center gap-1.5 text-sm font-black bg-rose-50 text-rose-700 dark:bg-rose-950/10 dark:text-rose-400 px-3.5 py-2 rounded-xl border border-rose-100 dark:border-rose-900/30">
+                              <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded leading-none">إلى</span>
                               {order.secondCustomerRegionName || "غير معروف"}
                             </span>
                           </>
                         ) : (
-                          <span className="flex items-center gap-1 text-[10px] font-black bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 px-2.5 py-1 rounded-full">
-                             <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> {order.regionName}
+                          <span className="flex items-center gap-1.5 text-sm md:text-base font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-4 py-2 rounded-xl border border-sky-100 dark:border-sky-900/30">
+                             <DynamicIcon icon={icons?.ui_location} fallback="📍" width={14} height={14} /> {order.regionName}
                           </span>
                         )}
                      </div>
