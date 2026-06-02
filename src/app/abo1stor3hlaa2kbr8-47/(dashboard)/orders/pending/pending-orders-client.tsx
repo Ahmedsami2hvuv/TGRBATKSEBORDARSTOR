@@ -1408,9 +1408,6 @@ export default function PendingOrdersClient({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {order.voiceNoteUrl && (
-                    <MiniVoicePlayer src={order.voiceNoteUrl} />
-                  )}
                   <button
                     onClick={() => setActiveAssignOrderId(order.id)}
                     className="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-[10px] font-black shadow-sm active:scale-95 transition-all"
@@ -1419,6 +1416,9 @@ export default function PendingOrdersClient({
                     إسناد للمندوب
                   </button>
                   <DeleteFullOrderButton id={order.id} isDraft={false} icons={icons} />
+                  {order.voiceNoteUrl && (
+                    <MiniVoicePlayer src={order.voiceNoteUrl} />
+                  )}
                 </div>
               </div>
 
