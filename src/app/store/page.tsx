@@ -119,7 +119,7 @@ export default async function StoreHomePage() {
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-4">
         <h1 className="text-2xl font-black mb-2">عذراً، حدث خطأ تقني</h1>
         <p className="text-slate-500">نعمل على إصلاح المشكلة الآن، يرجى تحديث الصفحة بعد قليل.</p>
-        <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 bg-violet-600 text-white rounded-full">تحديث</button>
+        <a href="" className="mt-4 px-6 py-2 bg-violet-600 text-white rounded-full inline-block">تحديث</a>
       </div>
     );
   }

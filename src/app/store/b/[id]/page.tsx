@@ -58,7 +58,7 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
             }
           }
         },
-        children: {
+        subBranches: {
           where: { active: true },
           orderBy: { sequence: "asc" }
         }
@@ -121,7 +121,7 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
       };
     });
 
-    const children = branch.children || [];
+    const children = branch.subBranches || [];
 
     return (
       <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700" dir="rtl">
@@ -213,9 +213,9 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
       <div className="p-20 text-center bg-white dark:bg-slate-900 rounded-[2.5rem] border border-rose-100" dir="rtl">
         <h2 className="text-xl font-black text-rose-600">حدث خطأ في عرض المنتجات</h2>
         <p className="text-xs text-slate-400 mt-2 font-mono">الخطأ: {error.message}</p>
-        <button onClick={() => window.location.reload()} className="mt-6 px-8 py-3 bg-slate-900 text-white rounded-2xl font-black shadow-lg">
+        <a href="" className="mt-6 px-8 py-3 bg-slate-900 text-white rounded-2xl font-black shadow-lg inline-block">
           تحديث الصفحة
-        </button>
+        </a>
       </div>
     );
   }

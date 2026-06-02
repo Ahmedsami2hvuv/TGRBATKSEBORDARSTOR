@@ -141,7 +141,7 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
         <div className="text-5xl mb-4">⚠️</div>
         <h2 className="text-xl font-black text-slate-900 dark:text-white">عذراً، حدث خطأ أثناء تحميل القسم</h2>
         <p className="text-sm text-slate-500 mt-2">نعمل على معالجة المشكلة الآن، يرجى تحديث الصفحة بعد قليل.</p>
-        <button onClick={() => window.location.reload()} className="mt-6 px-8 py-3 bg-violet-600 text-white rounded-2xl font-black shadow-lg hover:bg-violet-700 transition-all">إعادة المحاولة</button>
+        <a href="" className="mt-6 px-8 py-3 bg-violet-600 text-white rounded-2xl font-black shadow-lg hover:bg-violet-700 transition-all inline-block">إعادة المحاولة</a>
       </div>
     );
   }
