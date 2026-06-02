@@ -188,8 +188,19 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       const customerAlternatePhone = o.secondCustomerPhone?.trim() || o.alternatePhone?.trim() || o.customer?.alternatePhone?.trim() || phoneProfile?.alternatePhone || "";
 
       // حساب رابط طلب الموقع الجغرافي ورابط تبليغ الزبون
-      const requestLocationBtn = waButtons.find(b => b.label.includes("طلب لوكيشن") || b.label.includes("طلب الموقع"));
-      const notifyCustomerBtn = waButtons.find(b => b.label.includes("تبليغ زبون") || b.label.includes("تبليغ"));
+      const requestLocationBtn = waButtons.find(b => 
+        b.label.includes("طلب لوكيشن") || 
+        b.label.includes("طلب لكيشن") || 
+        b.label.includes("طلب الموقع") ||
+        b.label.includes("لوكيشن") ||
+        b.label.includes("لكيشن")
+      );
+      const notifyCustomerBtn = waButtons.find(b => 
+        b.label.includes("تبليغ زبون") || 
+        b.label.includes("تبليغ") || 
+        b.label.includes("إشعار") ||
+        b.label.includes("اشعار")
+      );
       let requestLocationWaUrl = null;
       let notifyCustomerWaUrl = null;
 
