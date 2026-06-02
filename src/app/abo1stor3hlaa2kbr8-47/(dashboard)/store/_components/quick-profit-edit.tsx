@@ -54,7 +54,7 @@ export function QuickProfitEdit({ id, initialMargin, type, name, categoryId }: Q
           }}
           className="text-[10px] text-emerald-600 font-black hover:bg-emerald-50 px-2 py-0.5 rounded-lg transition-colors"
         >
-          💰 +{Number(margin).toLocaleString()}
+          💰 {Number(margin) === 0 ? "يتبع العام" : `+${Number(margin).toLocaleString()}`}
         </button>
         {(Number(margin) > 0 || type === "category") && (
           <button
