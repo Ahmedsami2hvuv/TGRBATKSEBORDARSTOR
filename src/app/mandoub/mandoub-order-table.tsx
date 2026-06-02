@@ -425,18 +425,7 @@ export function MandoubOrderTable({
     }
   }
 
-  function selectByVisibleStatus(status: "all" | "assigned" | "delivering" | "delivered") {
-    if (status === "all") {
-      setSelectedIds(new Set(rowIds));
-      return;
-    }
-    setSelectedIds(
-      new Set(displayRows.filter((r) => r.orderStatus === status).map((r) => r.id)),
-    );
-  }
 
-  const quickBtnClass =
-    "min-h-[40px] shrink-0 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-bold text-red-950 shadow-sm hover:bg-red-50 sm:px-3 sm:text-sm";
 
   return (
     <div>
@@ -518,50 +507,7 @@ export function MandoubOrderTable({
           </div>
         </div>
 
-        {showQuickSelect && rowIds.length > 0 && (
-          <div className="mt-2 rounded-xl border border-red-100 bg-red-50/40 px-2 py-2 sm:px-3">
-            <p className="mb-1.5 text-[11px] font-bold text-red-900/90 sm:text-xs">
-              اختر طلبات بحالة معيّنة ثم غيّر الحالة من الشريط السفلي
-            </p>
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <button
-                type="button"
-                onClick={() => selectByVisibleStatus("all")}
-                className={quickBtnClass}
-              >
-                تحديد الكل
-              </button>
-              <button
-                type="button"
-                onClick={() => selectByVisibleStatus("assigned")}
-                className={quickBtnClass}
-              >
-                بانتظار المندوب
-              </button>
-              <button
-                type="button"
-                onClick={() => selectByVisibleStatus("delivering")}
-                className={quickBtnClass}
-              >
-                تم الاستلام
-              </button>
-              <button
-                type="button"
-                onClick={() => selectByVisibleStatus("delivered")}
-                className={quickBtnClass}
-              >
-                تم التسليم
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedIds(new Set())}
-                className="min-h-[44px] rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 sm:text-sm"
-              >
-                إفراغ
-              </button>
-            </div>
-          </div>
-        )}
+
       </div>
 
       <UnifiedOrderListTable
@@ -846,62 +792,66 @@ export function MandoubOrderTable({
       }
 
 
-      {selectedIds.size > 0 ? (
-        <form
-          action={bulkAction}
-          className="fixed bottom-0 left-0 right-0 z-40 border-t border-red-200 bg-gradient-to-t from-red-50/98 to-white px-3 py-3 shadow-[0_-4px_20px_rgba(127,29,29,0.12)] sm:px-4"
-        >
-          <input type="hidden" name="c" value={auth.c} />
-          <input type="hidden" name="exp" value={auth.exp} />
-          <input type="hidden" name="s" value={auth.s} />
-          <input type="hidden" name="orderIds" value={Array.from(selectedIds).join(",")} />
-          <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <p className="text-center text-sm font-bold text-red-950 sm:text-right">
-              تم تحديد{" "}
-              <span className="tabular-nums text-red-800">{selectedIds.size}</span> طلباً — اضغط اللون
-              المناسب:
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
-              <button
-                type="submit"
-                name="targetStatus"
-                value="assigned"
-                disabled={bulkPending}
-                className="shrink-0 rounded-xl border-2 border-red-600 bg-red-50 px-4 py-2 text-xs font-bold text-red-900 shadow-sm transition hover:bg-red-100 disabled:opacity-50 sm:text-sm"
-              >
-                بانتظار المندوب
-              </button>
-              <button
-                type="submit"
-                name="targetStatus"
-                value="delivering"
-                disabled={bulkPending}
-                className="shrink-0 rounded-xl border-2 border-amber-500 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-950 shadow-sm transition hover:bg-amber-100 disabled:opacity-50 sm:text-sm"
-              >
-                تم الاستلام
-              </button>
-              <button
-                type="submit"
-                name="targetStatus"
-                value="delivered"
-                disabled={bulkPending}
-                className="shrink-0 rounded-xl border-2 border-emerald-600 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-950 shadow-sm transition hover:bg-emerald-100 disabled:opacity-50 sm:text-sm"
-              >
-                تم التسليم
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedIds(new Set())}
-                className="min-h-[44px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
-              >
-                <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-4 h-4" />
-              </button>
+      {selectedIds.size > 0 && typeof document !== "undefined" ? (
+        createPortal(
+          <form
+            action={bulkAction}
+            className="fixed bottom-4 left-4 right-4 z-[105] rounded-3xl border-2 border-red-200 bg-white/95 backdrop-blur-md px-4 py-3.5 shadow-2xl animate-in slide-in-from-bottom duration-300 md:left-auto md:right-4 md:max-w-xl"
+            dir="rtl"
+          >
+            <input type="hidden" name="c" value={auth.c} />
+            <input type="hidden" name="exp" value={auth.exp} />
+            <input type="hidden" name="s" value={auth.s} />
+            <input type="hidden" name="orderIds" value={Array.from(selectedIds).join(",")} />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <p className="text-center text-sm font-black text-red-950 sm:text-right">
+                تم تحديد{" "}
+                <span className="tabular-nums text-red-800 text-base">{selectedIds.size}</span> طلباً — اضغط اللون
+                المناسب:
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+                <button
+                  type="submit"
+                  name="targetStatus"
+                  value="assigned"
+                  disabled={bulkPending}
+                  className="shrink-0 rounded-2xl border-2 border-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 text-xs font-black text-red-900 shadow-sm transition active:scale-95 disabled:opacity-50 sm:text-sm"
+                >
+                  بانتظار المندوب
+                </button>
+                <button
+                  type="submit"
+                  name="targetStatus"
+                  value="delivering"
+                  disabled={bulkPending}
+                  className="shrink-0 rounded-2xl border-2 border-amber-500 bg-amber-50 hover:bg-amber-100 px-4 py-2 text-xs font-black text-amber-950 shadow-sm transition active:scale-95 disabled:opacity-50 sm:text-sm"
+                >
+                  تم الاستلام
+                </button>
+                <button
+                  type="submit"
+                  name="targetStatus"
+                  value="delivered"
+                  disabled={bulkPending}
+                  className="shrink-0 rounded-2xl border-2 border-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 text-xs font-black text-emerald-950 shadow-sm transition active:scale-95 disabled:opacity-50 sm:text-sm"
+                >
+                  تم التسليم
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds(new Set())}
+                  className="min-h-[44px] w-11 flex items-center justify-center rounded-2xl border border-slate-300 bg-white text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm"
+                >
+                  <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-          </div>
-          {bulkPending ? (
-            <p className="mt-2 text-center text-xs font-semibold text-red-800">جارٍ التحديث…</p>
-          ) : null}
-        </form>
+            {bulkPending ? (
+              <p className="mt-2 text-center text-xs font-bold text-red-800 animate-pulse">جارٍ التحديث…</p>
+            ) : null}
+          </form>,
+          document.body
+        )
       ) : null}
     </div>
   );
