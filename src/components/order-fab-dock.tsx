@@ -100,8 +100,11 @@ export function OrderFabDock(props: OrderFabDockProps) {
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
     if (Math.hypot(dx, dy) > DRAG_THRESHOLD) dragRef.current.moved = true;
+
+    // حساب الموقع الجديد بالنسبة للشاشة (Viewport)
     const newLeft = Math.max(0, Math.min(window.innerWidth - FAB_SIZE, dragRef.current.origLeft + dx));
     const newTop = Math.max(0, Math.min(window.innerHeight - FAB_SIZE, dragRef.current.origTop + dy));
+
     setPos({ left: newLeft, top: newTop });
   };
 
@@ -124,14 +127,26 @@ export function OrderFabDock(props: OrderFabDockProps) {
   if (hideAllButtons || pos.left === -1) return null;
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[9999]">
+    // استخدام fixed inset-0 لضمان أن كل شيء ثابت بالنسبة للشاشة
+    <div className="fixed inset-0 pointer-events-none z-[99999]">
       {isExpanded && (
         <div className="pointer-events-auto fixed inset-0 bg-black/30 backdrop-blur-[2px]" onClick={closeAll} />
       )}
 
-      <div className="pointer-events-auto absolute touch-none" style={{ left: pos.left, top: pos.top, width: FAB_SIZE, height: FAB_SIZE }}>
+      {/* الزر والحاوية الخاصة به يستخدمان تموضع fixed لضمان الثبات عند السكرول */}
+      <div
+        className="pointer-events-auto fixed touch-none"
+        style={{
+          left: pos.left,
+          top: pos.top,
+          width: FAB_SIZE,
+          height: FAB_SIZE,
+          // منع تغيير الحجم عند زووم الصفحة
+          transform: 'translate3d(0,0,0)'
+        }}
+      >
 
-        {/* قوائم الاختيار الفرعية (عميل أم زبون) */}
+        {/* قوائم الاختيار الفرعية */}
         {isExpanded && activeMenu && (
           <div className="absolute bottom-full right-0 mb-4 flex flex-col gap-2 animate-in fade-in zoom-in duration-200" style={{ width: 'max-content' }}>
             <button
