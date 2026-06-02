@@ -591,8 +591,8 @@ export function OrderDetailSection({
 
         <MandoubFloatingBar
           orderId={order.id} shopPhone={shopContactPhone} customerPhone={order.customerPhone} customerAlternatePhone={order.secondCustomerPhone?.trim() || mergedAlternate || ""} preparerPhone={order.submittedByCompanyPreparer?.phone ?? ""} orderStatus={order.status} orderNumber={order.orderNumber} shopName={order.shop.name} city={order.customerRegion?.name ?? ""} totalPrice={order.totalAmount != null ? formatDinarAsAlf(order.totalAmount) : ""} deliveryName={order.courier?.name ?? ""} customerLocationUrl={mergedCustomerLocationUrl} customerLandmark={mergedLandmark} hasCustomerLocation={!missingCustomerLocation} hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
-          showCallBtn={courierSettings?.showCallBtn}
-          showWhatsAppBtn={courierSettings?.showWhatsAppBtn}
+          showCallBtn={courierSettings?.showCallBtn !== false}
+          showWhatsAppBtn={courierSettings?.showWhatsAppBtn !== false}
         />
 
         <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto] sm:items-center">

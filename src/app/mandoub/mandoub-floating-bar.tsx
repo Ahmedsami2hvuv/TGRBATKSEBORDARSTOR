@@ -131,8 +131,8 @@ export function MandoubFloatingBar(props: Props) {
       customWaButtons={customWaButtons}
       hideWhenPreparerEditOpen={props.hideWhenPreparerEditOpen}
       hideAllButtons={props.hideAllButtons}
-      showCallBtn={props.showCallBtn}
-      showWhatsAppBtn={props.showWhatsAppBtn}
+      showCallBtn={props.showCallBtn !== false}
+      showWhatsAppBtn={props.showWhatsAppBtn !== false}
     />
   );
 }

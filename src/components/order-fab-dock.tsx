@@ -646,6 +646,21 @@ export function OrderFabDock(props: OrderFabDockProps) {
     setCustomWaPick(null);
   };
 
+  const calculatedLeft = useMemo(() => {
+    if (typeof window === "undefined" || !mainFabPos) return 16;
+    const w = window.innerWidth;
+    const menuW = 180;
+    const margin = 12;
+    return Math.max(margin, Math.min(w - menuW - margin, mainFabPos.left - 4));
+  }, [mainFabPos]);
+
+  const calculatedBottom = useMemo(() => {
+    if (typeof window === "undefined" || !mainFabPos) return 80;
+    const h = window.innerHeight;
+    const margin = 12;
+    return Math.max(margin, Math.min(h - margin - 50, h - mainFabPos.top + 12));
+  }, [mainFabPos]);
+
   const contactMenuPos = isExpanded 
     ? mainFabPos 
     : (contactMenu === "wa" 
@@ -665,7 +680,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
         : (showMenuAbove ? contactMenuPos.top - MENU_H - 8 : contactMenuPos.top + fabSize + 8)
     : 0;
 
-  const menuLeft = contactMenuPos ? Math.max(8, contactMenuPos.left - 130) : 0;
+  const menuLeft = contactMenuPos ? Math.max(8, Math.min(typeof window !== "undefined" ? window.innerWidth - 210 : 160, contactMenuPos.left - 130)) : 0;
 
   /** أعلى من زرّ الفاب حتى لا تُغطّي الأزرار القائمة بعد سحبات متكرّرة (كان dragZ يتجاوز z القائمة) */
   const fabZ = Math.min(dragZ, 99);
