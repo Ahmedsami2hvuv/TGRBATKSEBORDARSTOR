@@ -172,70 +172,69 @@ export function OrderDetailSection({
       case "shop_info":
         if (isDoubleRoute) return null;
         return (
-          <div key="shop" className="bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2.5rem] border border-slate-200 dark:border-white/10 shadow-xl p-6 relative overflow-hidden transition-all duration-300 hover:shadow-2xl" style={blockStyle}>
-            <div className="flex flex-col md:flex-row gap-6 items-stretch">
-              <div className="flex-1 space-y-4 text-right">
-                <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">
-                  <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600">
-                    <DynamicIcon icon={icons?.ui_shops} fallback="🏢" width={22} height={22} />
+          <div key="shop" className="bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-lg p-4 relative overflow-hidden transition-all duration-305 hover:shadow-xl" style={blockStyle}>
+            <div className="flex flex-row gap-4 items-start justify-between">
+              <div className="flex-1 space-y-2 text-right">
+                <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-2">
+                  <div className="h-8 w-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600">
+                    <DynamicIcon icon={icons?.ui_shops} fallback="🏢" width={18} height={18} />
                   </div>
                   <div>
-                    <h3 className="text-base font-black text-emerald-800 dark:text-emerald-400">معلومات المحل (المرسل)</h3>
-                    <p className="text-[10px] font-bold text-slate-400">بيانات وتفاصيل نقطة الانطلاق</p>
+                    <h3 className="text-sm font-black text-emerald-800 dark:text-emerald-400">معلومات المحل (المرسل)</h3>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3.5">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-black text-slate-400">اسم المحل</span>
-                    <span className="text-base font-black text-slate-900 dark:text-white">{order.shop.name}</span>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold text-slate-400">اسم المحل:</span>
+                    <span className="font-black text-slate-900 dark:text-white">{order.shop.name}</span>
                   </div>
 
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-black text-slate-400">اسم المسؤول / العميل</span>
-                    <span className="text-sm font-black text-sky-900 dark:text-sky-400">{submitterName}</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold text-slate-400">العميل / المسؤول:</span>
+                    <span className="font-black text-sky-900 dark:text-sky-400">{submitterName}</span>
                   </div>
 
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-black text-slate-400">منطقة المحل</span>
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{order.shop.region.name}</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold text-slate-400">منطقة المحل:</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{order.shop.region.name}</span>
                   </div>
 
                   {shopContactPhone && (
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-black text-slate-400">هاتف المسؤول</span>
-                      <span className="font-mono text-sm font-black text-slate-700 dark:text-slate-300">{contactLine(shopContactPhone)}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-slate-400">هاتف المسؤول:</span>
+                      <span className="font-mono font-black text-slate-700 dark:text-slate-300">{contactLine(shopContactPhone)}</span>
                     </div>
                   )}
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-1.5">
                   {order.shop.locationUrl?.trim() ? (
-                    <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className="w-full h-11 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-lg shadow-emerald-200 dark:shadow-none transition-all flex items-center justify-center gap-2">
-                      📍 فتح موقع المحل الجغرافي <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                    <a href={order.shop.locationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm max-w-full">
+                      📍 موقع المحل <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
                     </a>
                   ) : (
-                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl text-center text-xs font-bold text-amber-800">
-                      ⚠️ لم يقم المحل برفع موقعه الجغرافي
+                    <div className="inline-block p-1.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl text-center text-[10px] font-bold text-amber-800">
+                      ⚠️ لا يوجد موقع جغرافي
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Shop Door / Logo Photo */}
-              <div className="w-full md:w-[15rem] flex flex-col items-center justify-center bg-slate-50/50 dark:bg-black/20 p-4 rounded-[2rem] border border-slate-100 dark:border-white/5 shrink-0 self-center">
-                <span className="text-[10px] font-black text-slate-400 mb-2.5">صورة المحل / الباب</span>
+              <div className="w-[100px] sm:w-[130px] flex flex-col items-center justify-start bg-slate-50/50 dark:bg-black/20 p-2 rounded-[1.5rem] border border-slate-100 dark:border-white/5 shrink-0 self-start">
+                <span className="text-[9px] font-black text-slate-450 mb-1.5">صورة المحل</span>
                 {shopImageUrl ? (
-                  <div className="aspect-square w-full max-w-[12rem] overflow-hidden rounded-[1.5rem] border border-sky-100 dark:border-white/10 shadow-md">
-                    <img src={imgSrc(shopImageUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-305" onClick={() => window.open(imgSrc(shopImageUrl)!)} />
+                  <div className="aspect-square w-full overflow-hidden rounded-[1rem] border border-sky-100 dark:border-white/10 shadow-sm">
+                    <img src={imgSrc(shopImageUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => window.open(imgSrc(shopImageUrl)!)} />
                   </div>
                 ) : (
-                  <div className="aspect-square w-full max-w-[12rem] flex items-center justify-center bg-white dark:bg-slate-800 rounded-[1.5rem] border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold">
-                    لا توجد صورة باب
+                  <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-[1rem] border border-dashed border-slate-300 dark:border-slate-700 text-[9px] text-slate-400 font-bold text-center p-1">
+                    لا توجد صورة
                   </div>
                 )}
                 {courierSettings?.showDoorBtn !== false && (
-                  <div className="mt-4 w-full"><MandoubDoorPhotoForm orderId={order.id} nextUrl={nextUrl} {...auth} /></div>
+                  <div className="mt-2 w-full transform scale-90 origin-top"><MandoubDoorPhotoForm orderId={order.id} nextUrl={nextUrl} {...auth} /></div>
                 )}
               </div>
             </div>
@@ -243,60 +242,61 @@ export function OrderDetailSection({
         );
       case "customer_info":
         return (
-          <div key="customer_parent" className="space-y-6">
-            <div key="customer" className="bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2.5rem] border border-slate-200 dark:border-white/10 shadow-xl p-6 relative overflow-hidden transition-all duration-300 hover:shadow-2xl" style={blockStyle}>
-              <div className="flex flex-col md:flex-row gap-6 items-stretch">
-                <div className="flex-1 space-y-4 text-right">
-                  <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">
-                    <div className="h-10 w-10 rounded-xl bg-sky-50 dark:bg-sky-950/30 flex items-center justify-center text-sky-600">
-                      <DynamicIcon icon={icons?.ui_user} fallback="👤" width={22} height={22} />
+          <div key="customer_parent" className="space-y-4">
+            <div key="customer" className="bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-lg p-4 relative overflow-hidden transition-all duration-300 hover:shadow-xl" style={blockStyle}>
+              <div className="flex flex-row gap-4 items-start justify-between">
+                <div className="flex-1 space-y-2 text-right">
+                  <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-2">
+                    <div className="h-8 w-8 rounded-lg bg-sky-50 dark:bg-sky-950/30 flex items-center justify-center text-sky-600">
+                      <DynamicIcon icon={icons?.ui_user} fallback="👤" width={18} height={18} />
                     </div>
                     <div>
-                      <h3 className="text-base font-black text-sky-950 dark:text-sky-400">{isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}</h3>
-                      <p className="text-[10px] font-bold text-slate-400">بيانات وتفاصيل نقطة الوصول والتسليم</p>
+                      <h3 className="text-sm font-black text-sky-950 dark:text-sky-400">
+                        {isDoubleRoute ? "المرسل (الوجهة الأولى)" : "الزبون (المستلم)"}
+                      </h3>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3.5">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-black text-slate-400">منطقة الزبون</span>
-                      <span className="text-base font-black text-slate-900 dark:text-white">{order.customerRegion?.name ?? "—"}</span>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-slate-400">منطقة الزبون:</span>
+                      <span className="font-black text-slate-900 dark:text-white">{order.customerRegion?.name ?? "—"}</span>
                     </div>
 
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-black text-slate-400">رقم هاتف الزبون</span>
-                      <span className="font-mono text-base font-black text-slate-900 dark:text-white">{contactLine(order.customerPhone)}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-slate-400">رقم الزبون:</span>
+                      <span className="font-mono font-black text-slate-900 dark:text-white">{contactLine(order.customerPhone)}</span>
                     </div>
 
                     {mergedAlternate && (
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] font-black text-slate-400">رقم الهاتف البديل</span>
-                        <span className="font-mono text-sm font-bold text-slate-600 dark:text-slate-400">{mergedAlternate}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-slate-400">الهاتف البديل:</span>
+                        <span className="font-mono font-bold text-slate-600 dark:text-slate-400">{mergedAlternate}</span>
                       </div>
                     )}
 
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-black text-slate-400">أقرب نقطة دالة</span>
-                      <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{mergedLandmark || "—"}</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-slate-400">أقرب نقطة دالة:</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200">{mergedLandmark || "—"}</span>
                     </div>
 
-                    {!mergedLandmark && (
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">الاستدلال الذكي للعنوان</span>
-                        <span className="text-xs font-black text-emerald-700 dark:text-emerald-400">{smartHintLine?.trim() || "—"}</span>
+                    {smartHintLine?.trim() && (
+                      <div className="flex flex-col gap-0.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 p-1.5 border border-emerald-100/50 dark:border-emerald-900/20">
+                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">الاستدلال الذكي للعنوان:</span>
+                        <span className="text-[11px] font-black text-emerald-850 dark:text-emerald-350">{smartHintLine.trim()}</span>
                       </div>
                     )}
                   </div>
 
-                  <div className="pt-2">
+                  <div className="pt-1.5">
                     {courierSettings?.showLocationBtn !== false && (
-                      <div className="w-full">
+                      <div className="max-w-full">
                         {mergedCustomerLocationUrl ? (
-                          <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="w-full h-11 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-lg shadow-emerald-200 dark:shadow-none transition-all flex items-center justify-center gap-2">
-                            📍 فتح موقع الزبون الجغرافي <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                          <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm">
+                            📍 موقع الزبون <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
                           </a>
                         ) : (
-                          <div className="p-1 rounded-2xl bg-slate-50 dark:bg-black/10 border border-slate-100 dark:border-white/5">
+                          <div className="p-1 rounded-xl bg-slate-50 dark:bg-black/10 border border-slate-100 dark:border-white/5 transform scale-90 origin-right">
                             <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} />
                           </div>
                         )}
@@ -306,64 +306,63 @@ export function OrderDetailSection({
                 </div>
 
                 {/* Customer Door Photo */}
-                <div className="w-full md:w-[15rem] flex flex-col items-center justify-center bg-slate-50/50 dark:bg-black/20 p-4 rounded-[2rem] border border-slate-100 dark:border-white/5 shrink-0 self-center">
-                  <span className="text-[10px] font-black text-slate-400 mb-2.5">صورة الباب / العنوان</span>
+                <div className="w-[100px] sm:w-[130px] flex flex-col items-center justify-start bg-slate-50/50 dark:bg-black/20 p-2 rounded-[1.5rem] border border-slate-100 dark:border-white/5 shrink-0 self-start">
+                  <span className="text-[9px] font-black text-slate-450 mb-1.5">صورة الباب</span>
                   {customerDoorDisplay ? (
-                    <div className="aspect-square w-full max-w-[12rem] overflow-hidden rounded-[1.5rem] border border-sky-100 dark:border-white/10 shadow-md">
+                    <div className="aspect-square w-full overflow-hidden rounded-[1rem] border border-sky-100 dark:border-white/10 shadow-sm">
                       <img src={imgSrc(customerDoorDisplay)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => window.open(imgSrc(customerDoorDisplay)!)} />
                     </div>
                   ) : (
-                    <div className="aspect-square w-full max-w-[12rem] flex items-center justify-center bg-white dark:bg-slate-800 rounded-[1.5rem] border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold">
-                      لا توجد صورة باب
+                    <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-[1rem] border border-dashed border-slate-300 dark:border-slate-700 text-[9px] text-slate-400 font-bold text-center p-1">
+                      لا توجد صورة
                     </div>
                   )}
                   {courierSettings?.showDoorBtn !== false && (
-                    <div className="mt-4 w-full"><MandoubQuickDoorCapture orderId={order.id} nextUrl={nextUrl} auth={auth} /></div>
+                    <div className="mt-2 w-full transform scale-90 origin-top"><MandoubQuickDoorCapture orderId={order.id} nextUrl={nextUrl} auth={auth} /></div>
                   )}
                 </div>
               </div>
             </div>
 
             {order.routeMode === "double" && (
-              <div key="receiver" className="bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2.5rem] border border-slate-200 dark:border-white/10 shadow-xl p-6 relative overflow-hidden transition-all duration-300 hover:shadow-2xl mt-6" style={blockStyle}>
-                <div className="flex flex-col md:flex-row gap-6 items-stretch">
-                  <div className="flex-1 space-y-4 text-right">
-                    <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">
-                      <div className="h-10 w-10 rounded-xl bg-violet-50 dark:bg-violet-950/30 flex items-center justify-center text-violet-600">
-                        <DynamicIcon icon={icons?.ui_users} fallback="👥" width={22} height={22} />
+              <div key="receiver" className="bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-lg p-4 relative overflow-hidden transition-all duration-300 hover:shadow-xl mt-3" style={blockStyle}>
+                <div className="flex flex-row gap-4 items-start justify-between">
+                  <div className="flex-1 space-y-2 text-right">
+                    <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-2">
+                      <div className="h-8 w-8 rounded-lg bg-violet-50 dark:bg-violet-950/30 flex items-center justify-center text-violet-600">
+                        <DynamicIcon icon={icons?.ui_users} fallback="👥" width={18} height={18} />
                       </div>
                       <div>
-                        <h3 className="text-base font-black text-violet-800 dark:text-violet-400">المستلم (الوجهة الثانية)</h3>
-                        <p className="text-[10px] font-bold text-slate-400">بيانات وتفاصيل نقطة الوصول الثانية</p>
+                        <h3 className="text-sm font-black text-violet-850 dark:text-violet-400">المستلم (الوجهة الثانية)</h3>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3.5">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] font-black text-slate-400">منطقة المستلم</span>
-                        <span className="text-base font-black text-slate-900 dark:text-white">{order.secondCustomerRegion?.name ?? "—"}</span>
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-slate-400">منطقة المستلم:</span>
+                        <span className="font-black text-slate-900 dark:text-white">{order.secondCustomerRegion?.name ?? "—"}</span>
                       </div>
 
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] font-black text-slate-400">رقم هاتف المستلم</span>
-                        <span className="font-mono text-base font-black text-slate-900 dark:text-white">{contactLine(order.secondCustomerPhone || "")}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-slate-400">هاتف المستلم:</span>
+                        <span className="font-mono font-black text-slate-900 dark:text-white">{contactLine(order.secondCustomerPhone || "")}</span>
                       </div>
 
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] font-black text-slate-400">أقرب نقطة دالة</span>
-                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{secondLandmarkMerged || "—"}</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-slate-400">أقرب نقطة دالة:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">{secondLandmarkMerged || "—"}</span>
                       </div>
                     </div>
 
-                    <div className="pt-2">
+                    <div className="pt-1.5">
                       {courierSettings?.showLocationBtn !== false && (
-                        <div className="w-full">
+                        <div className="max-w-full">
                           {secondLocMerged ? (
-                            <a href={secondLocMerged} target="_blank" rel="noopener noreferrer" className="w-full h-11 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-lg shadow-emerald-200 dark:shadow-none transition-all flex items-center justify-center gap-2">
-                              📍 فتح موقع المستلم الجغرافي <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={12} height={12} />
+                            <a href={secondLocMerged} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm">
+                              📍 موقع المستلم <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
                             </a>
                           ) : (
-                            <div className="p-1 rounded-2xl bg-slate-50 dark:bg-black/10 border border-slate-100 dark:border-white/5">
+                            <div className="p-1 rounded-xl bg-slate-50 dark:bg-black/10 border border-slate-100 dark:border-white/5 transform scale-90 origin-right">
                               <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" />
                             </div>
                           )}
@@ -373,22 +372,22 @@ export function OrderDetailSection({
                   </div>
 
                   {/* Second Customer Door Photo */}
-                  <div className="w-full md:w-[15rem] flex flex-col items-center justify-center bg-slate-50/50 dark:bg-black/20 p-4 rounded-[2rem] border border-slate-100 dark:border-white/5 shrink-0 self-center">
-                    <span className="text-[10px] font-black text-slate-400 mb-2.5">صورة باب المستلم</span>
+                  <div className="w-[100px] sm:w-[130px] flex flex-col items-center justify-start bg-slate-50/50 dark:bg-black/20 p-2 rounded-[1.5rem] border border-slate-100 dark:border-white/5 shrink-0 self-start">
+                    <span className="text-[9px] font-black text-slate-450 mb-1.5">صورة باب المستلم</span>
                     {secondDoorMerged && imgSrc(secondDoorMerged) ? (
                       <div className="w-full flex flex-col items-center">
-                        <div className="aspect-square w-full max-w-[12rem] overflow-hidden rounded-[1.5rem] border border-sky-100 dark:border-white/10 shadow-md">
+                        <div className="aspect-square w-full overflow-hidden rounded-[1rem] border border-sky-100 dark:border-white/10 shadow-sm relative">
                           <img src={imgSrc(secondDoorMerged)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => window.open(imgSrc(secondDoorMerged)!)} />
                         </div>
-                        {secondDoorCaptionName ? <div className="mt-1.5"><ImageUploaderCaption name={secondDoorCaptionName} /></div> : null}
+                        {secondDoorCaptionName ? <div className="mt-1"><ImageUploaderCaption name={secondDoorCaptionName} /></div> : null}
                       </div>
                     ) : (
-                      <div className="aspect-square w-full max-w-[12rem] flex items-center justify-center bg-white dark:bg-slate-800 rounded-[1.5rem] border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold">
-                        لا توجد صورة باب
+                      <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-[1rem] border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold">
+                        لا توجد صورة
                       </div>
                     )}
                     {courierSettings?.showDoorBtn !== false && (
-                      <div className="mt-4 w-full">
+                      <div className="mt-2 w-full transform scale-90 origin-top">
                         <MandoubQuickDoorSecondCapture orderId={order.id} nextUrl={nextUrl} auth={auth} />
                       </div>
                     )}
@@ -402,69 +401,64 @@ export function OrderDetailSection({
         return null;
       case "price_details":
         return (
-          <div key="pricing" className="bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2.5rem] border border-slate-200 dark:border-white/10 shadow-xl p-6 relative overflow-hidden transition-all duration-300 hover:shadow-2xl" style={blockStyle}>
-            <div className="flex flex-col md:flex-row gap-6 items-stretch">
-              <div className="flex-1 space-y-4 text-right flex flex-col justify-between">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">
-                    <div className="h-10 w-10 rounded-xl bg-violet-50 dark:bg-violet-950/30 flex items-center justify-center text-violet-600">
-                      <DynamicIcon icon={icons?.ui_package} fallback="📦" width={22} height={22} />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-black text-violet-850 dark:text-violet-400">تفاصيل الطلب والأسعار</h3>
-                      <p className="text-[10px] font-bold text-slate-400">سعر المواد والتوصيل والحساب الكلي</p>
-                    </div>
+          <div key="pricing" className="bg-white/80 dark:bg-slate-900/85 backdrop-blur-md rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-lg p-4 relative overflow-hidden transition-all duration-300 hover:shadow-xl" style={blockStyle}>
+            <div className="flex flex-row gap-4 items-start justify-between">
+              <div className="flex-1 space-y-2 text-right">
+                <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-2">
+                  <div className="h-8 w-8 rounded-lg bg-violet-50 dark:bg-violet-950/30 flex items-center justify-center text-violet-600">
+                    <DynamicIcon icon={icons?.ui_package} fallback="📦" width={18} height={18} />
                   </div>
-
-                  <div className="grid grid-cols-1 gap-3.5">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-black text-slate-400">نوع الطلب</span>
-                      <div>
-                        <OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-violet-950 bg-violet-100 px-2 py-0.5 rounded text-sm ring-1 ring-violet-300" restClassName="text-sm font-black text-slate-900 dark:text-white" />
-                      </div>
-                    </div>
-
-                    {order.orderNoteTime && (
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] font-black text-slate-400">وقت الطلب المطلوب</span>
-                        <span className="text-sm font-black text-indigo-700 dark:text-indigo-400">{order.orderNoteTime}</span>
-                      </div>
-                    )}
-
-                    {!hideSubtotalInfo && (
-                      <div className="grid grid-cols-2 gap-4 border-t border-slate-105/50 dark:border-white/5 pt-3">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] font-black text-slate-400">سعر المواد</span>
-                          <span className="font-mono text-base font-black text-slate-900 dark:text-white">{order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)} الف` : "—"}</span>
-                        </div>
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] font-black text-slate-400">سعر التوصيل</span>
-                          <span className="font-mono text-base font-black text-slate-900 dark:text-white">{order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)} الف` : "—"}</span>
-                        </div>
-                      </div>
-                    )}
+                  <div>
+                    <h3 className="text-sm font-black text-violet-850 dark:text-violet-400">تفاصيل الطلب والأسعار</h3>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-center justify-center rounded-2xl border border-violet-500/30 bg-violet-50/10 dark:bg-violet-950/20 p-4 text-center shadow-inner mt-4">
-                  <p className="text-[10px] font-black text-violet-900 dark:text-violet-400 uppercase tracking-widest mb-1">المبلغ الكلي المطلوب من الزبون</p>
-                  <p className="font-mono text-3xl font-black text-violet-950 dark:text-violet-100 tabular-nums">{order.totalAmount != null ? formatDinarAsAlfWithUnit(order.totalAmount) : "—"}</p>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-slate-400">نوع الطلب:</span>
+                    <OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-violet-950 bg-violet-100 px-1.5 py-0.5 rounded text-[11px] ring-1 ring-violet-300" restClassName="text-[11px] font-black text-slate-950 dark:text-white" />
+                  </div>
+
+                  {order.orderNoteTime && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-slate-400">وقت الطلب:</span>
+                      <span className="font-black text-indigo-700 dark:text-indigo-400">{order.orderNoteTime}</span>
+                    </div>
+                  )}
+
+                  {!hideSubtotalInfo && (
+                    <div className="grid grid-cols-2 gap-2 border-t border-slate-100/50 dark:border-white/5 pt-1.5">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold">سعر الطلب:</span>
+                        <span className="font-mono font-black text-slate-900 dark:text-white">{order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)} الف` : "—"}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold">التوصيل:</span>
+                        <span className="font-mono font-black text-slate-900 dark:text-white">{order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)} الف` : "—"}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col items-center justify-center rounded-xl border border-violet-500/20 bg-violet-50/5 dark:bg-violet-950/10 p-2 text-center shadow-inner mt-2">
+                  <p className="text-[9px] font-black text-violet-900 dark:text-violet-400 uppercase tracking-widest mb-0.5">المبلغ الكلي المطلوب</p>
+                  <p className="font-mono text-xl font-black text-violet-950 dark:text-violet-100 tabular-nums">{order.totalAmount != null ? formatDinarAsAlfWithUnit(order.totalAmount) : "—"}</p>
                 </div>
               </div>
 
               {/* Order Package Photo */}
-              <div className="w-full md:w-[15rem] flex flex-col items-center justify-center bg-slate-50/50 dark:bg-black/20 p-4 rounded-[2rem] border border-slate-100 dark:border-white/5 shrink-0 self-center">
-                <span className="text-[10px] font-black text-slate-400 mb-2.5">صورة الطلبية / المحتويات</span>
+              <div className="w-[100px] sm:w-[130px] flex flex-col items-center justify-start bg-slate-50/50 dark:bg-black/20 p-2 rounded-[1.5rem] border border-slate-100 dark:border-white/5 shrink-0 self-start">
+                <span className="text-[9px] font-black text-slate-450 mb-1.5">صورة الطلبية</span>
                 {order.imageUrl ? (
-                  <div className="aspect-square w-full max-w-[12rem] overflow-hidden rounded-[1.5rem] border border-sky-100 dark:border-white/10 shadow-md">
-                    <img src={imgSrc(order.imageUrl)!} alt="" className="h-full w-full object-contain bg-white cursor-zoom-in" onClick={() => window.open(imgSrc(order.imageUrl)!)} />
+                  <div className="aspect-square w-full overflow-hidden rounded-[1rem] border border-sky-100 dark:border-white/10 shadow-sm bg-white">
+                    <img src={imgSrc(order.imageUrl)!} alt="" className="h-full w-full object-contain cursor-zoom-in" onClick={() => window.open(imgSrc(order.imageUrl)!)} />
                   </div>
                 ) : (
-                  <div className="aspect-square w-full max-w-[12rem] flex items-center justify-center bg-white dark:bg-slate-800 rounded-[1.5rem] border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold text-center p-3">
-                    لم يتم إرفاق صورة للطلبية
+                  <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-[1rem] border border-dashed border-slate-300 dark:border-slate-700 text-[9px] text-slate-400 font-bold text-center p-1">
+                    لا توجد صورة
                   </div>
                 )}
-                <div className="mt-4 w-full"><MandoubOrderImageQuick orderId={order.id} nextUrl={nextUrl} auth={auth} /></div>
+                <div className="mt-2 w-full"><MandoubOrderImageQuick orderId={order.id} nextUrl={nextUrl} auth={auth} /></div>
               </div>
             </div>
           </div>
@@ -558,7 +552,7 @@ export function OrderDetailSection({
   };
 
   // Enforce a strict vertical stacked sequence for the courier as requested
-  const layout = ["shop_info", "customer_info", "price_details", "notes_summary", "money_flow"];
+  const layout = ["shop_info", "customer_info", "price_details", "money_flow", "notes_summary"];
 
   return (
     <section

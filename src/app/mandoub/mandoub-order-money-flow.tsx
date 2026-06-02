@@ -182,7 +182,7 @@ export function MandoubOrderMoneyFlow({
     <div className="mt-6 space-y-4 border-t border-sky-200 pt-5">
       <h3 className="flex items-center gap-1.5 text-lg font-bold text-slate-900">
         <DynamicIcon icon={icons?.ui_chart} fallback="📊" width={20} height={20} />
-        الصادر والوارد
+        المعاملات المالية (الصادر والوارد)
       </h3>
 
       <div className="grid grid-cols-1 gap-4 mb-6">
@@ -197,7 +197,7 @@ export function MandoubOrderMoneyFlow({
                 className="flex h-14 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 font-black text-white shadow-md hover:bg-emerald-700 active:scale-95"
               >
                 <DynamicIcon iconKey="wallet_cash" config={icons} className="size-5" fallback="💸" />
-                دفع للعميل (صادر)
+                أعطيت للعميل (صادر)
               </button>
 
               <button
