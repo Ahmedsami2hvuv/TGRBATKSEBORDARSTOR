@@ -387,6 +387,11 @@ export function OrderFabDock(props: OrderFabDockProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
 
+  const [fabScale, setFabScale] = useState(1);
+  const fabScaleRef = useRef(1);
+  const [dragZ, setDragZ] = useState(90);
+  const mountedRef = useRef(false);
+
   useEffect(() => {
     getGlobalIcons().then(setIcons);
   }, []);
@@ -488,10 +493,6 @@ export function OrderFabDock(props: OrderFabDockProps) {
     return { left: 300, top: 500 };
   }, [mainFabId, positions, fabScale]);
 
-  const [dragZ, setDragZ] = useState(90);
-  const mountedRef = useRef(false);
-  const [fabScale, setFabScale] = useState(1);
-  const fabScaleRef = useRef(1);
 
   useEffect(() => {
     fabScaleRef.current = fabScale;
