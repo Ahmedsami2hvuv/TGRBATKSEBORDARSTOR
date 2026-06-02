@@ -654,12 +654,13 @@ export function OrderFabDock(props: OrderFabDockProps) {
     return Math.max(margin, Math.min(w - menuW - margin, mainFabPos.left - 4));
   }, [mainFabPos]);
 
-  const calculatedBottom = useMemo(() => {
-    if (typeof window === "undefined" || !mainFabPos) return 80;
+  const calculatedTop = useMemo(() => {
+    if (typeof window === "undefined" || !mainFabPos) return 120;
     const h = window.innerHeight;
+    const menuH = usePreparerTriple ? 148 : hasCust2 ? 148 : 96;
     const margin = 12;
-    return Math.max(margin, Math.min(h - margin - 50, h - mainFabPos.top + 12));
-  }, [mainFabPos]);
+    return Math.max(margin, Math.min(h - margin, mainFabPos.top - menuH - 8));
+  }, [mainFabPos, usePreparerTriple, hasCust2]);
 
   const contactMenuPos = isExpanded 
     ? mainFabPos 
@@ -1012,8 +1013,8 @@ export function OrderFabDock(props: OrderFabDockProps) {
         <div
           className="pointer-events-auto fixed z-[1000] flex flex-col items-end gap-3 transition-all animate-in slide-in-from-bottom-4 duration-300"
           style={{
-            left: mainFabPos.left - 4,
-            bottom: window.innerHeight - mainFabPos.top + 12,
+            left: calculatedLeft,
+            top: calculatedTop,
           }}
         >
           {editUrl && (
