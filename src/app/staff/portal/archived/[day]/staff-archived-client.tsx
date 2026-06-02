@@ -147,6 +147,27 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
                 </div>
               </div>
 
+              {/* الأزرار الديناميكية المستوردة من لوحة الإدارة (مثل زر التقييم) */}
+              {(() => {
+                const waLinks = generateWaLinksForOrder(selectedOrder);
+                if (waLinks.length === 0) return null;
+                return (
+                  <div className="space-y-2">
+                    {waLinks.map(btn => (
+                      <a
+                        key={btn.id}
+                        href={btn.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-3.5 text-sm font-black text-white shadow-[0_4px_14px_rgba(249,115,22,0.4)] transition hover:bg-orange-600 active:scale-[0.98]"
+                      >
+                        <span>{btn.icon}</span> {btn.label}
+                      </a>
+                    ))}
+                  </div>
+                );
+              })()}
+
               <div className="grid grid-cols-1 gap-3 text-center">
                 <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
                   <p className="text-[11px] font-bold text-slate-500 mb-1">رقم الزبون</p>
@@ -181,24 +202,6 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
                   {selectedOrder.summary}
                 </p>
               </div>
-
-              {/* الأزرار الديناميكية المستوردة من لوحة الإدارة */}
-              {generateWaLinksForOrder(selectedOrder).length > 0 ? (
-                <div className="pt-3 border-t border-slate-100 space-y-2">
-                  <p className="text-[11px] font-bold text-slate-500 text-center mb-3">خيارات التواصل</p>
-                  {generateWaLinksForOrder(selectedOrder).map(btn => (
-                    <a
-                      key={btn.id}
-                      href={btn.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-3.5 text-sm font-black text-white shadow-[0_4px_14px_rgba(249,115,22,0.4)] transition hover:bg-orange-600 active:scale-[0.98]"
-                    >
-                      <span>{btn.icon}</span> {btn.label}
-                    </a>
-                  ))}
-                </div>
-              ) : null}
 
             </div>
           </div>
