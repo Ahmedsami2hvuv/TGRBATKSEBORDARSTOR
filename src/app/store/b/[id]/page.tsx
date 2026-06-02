@@ -7,6 +7,28 @@ import { StoreSlider } from "../../_components/store-slider";
 
 export const dynamic = "force-dynamic";
 
+// دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
+function deepSanitize(obj: any): any {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === "bigint") return obj.toString();
+  if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+  if (obj instanceof Date) return obj.toISOString();
+  if (Array.isArray(obj)) return obj.map(o => deepSanitize(o));
+  if (typeof obj === "object") {
+    if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
+      return Number(obj.toString());
+    }
+    const newObj: any = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        newObj[key] = deepSanitize(obj[key]);
+      }
+    }
+    return newObj;
+  }
+  return obj;
+}
+
 export default async function BranchPage(props: { params: Promise<{ id: string }> }) {
   try {
     const params = await props?.params;
@@ -20,7 +42,7 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
       );
     }
 
-    const [branch, storeSettings, slides] = await Promise.all([
+    const [branchRaw, storeSettingsRaw, slidesRaw] = await Promise.all([
       prisma.storeBranch.findUnique({
         where: { id },
         select: {
@@ -44,11 +66,16 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
       })
     ]);
 
-    if (!branch) return (
+    if (!branchRaw) return (
       <div className="text-center py-20 text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800" dir="rtl">
         الفرع المطلوب غير موجود أو غير نشط حالياً.
       </div>
     );
+
+    // تنظيف البيانات باستخدام الدالة العميقة
+    const branch = deepSanitize(branchRaw);
+    const storeSettings = deepSanitize(storeSettingsRaw);
+    const slides = deepSanitize(slidesRaw);
 
     const productBg = (storeSettings?.config as any)?.product_card_bg_url;
     const productBgOpacity = (storeSettings?.config as any)?.product_card_bg_opacity;
@@ -58,7 +85,7 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
       <div className="space-y-6 md:space-y-10 pb-10 px-2" dir="rtl">
         {slides.length > 0 && (
           <section className="mb-6 md:mb-10">
-            <StoreSlider slides={slides.map(s => ({
+            <StoreSlider slides={slides.map((s: any) => ({
               id: s.id,
               imageUrl: s.imageUrl,
               linkUrl: s.linkUrl || "",

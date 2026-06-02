@@ -51,19 +51,43 @@ async function CategoriesGrid() {
   }
 }
 
+// دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
+function deepSanitize(obj: any): any {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === "bigint") return obj.toString();
+  if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+  if (obj instanceof Date) return obj.toISOString();
+  if (Array.isArray(obj)) return obj.map(o => deepSanitize(o));
+  if (typeof obj === "object") {
+    if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
+      return Number(obj.toString());
+    }
+    const newObj: any = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        newObj[key] = deepSanitize(obj[key]);
+      }
+    }
+    return newObj;
+  }
+  return obj;
+}
+
 export default async function StoreHomePage() {
   try {
-    const slides = await prisma.storeSlide.findMany({
+    const slidesRaw = await prisma.storeSlide.findMany({
       where: { active: true },
       orderBy: { sequence: "asc" }
     });
+
+    const slides = deepSanitize(slidesRaw);
 
     return (
       <div className="space-y-4">
         {/* Slider Section */}
         <section>
-          {slides.length > 0 ? (
-            <StoreSlider slides={slides.map(s => ({
+          {slides && slides.length > 0 ? (
+            <StoreSlider slides={slides.map((s: any) => ({
               id: s.id,
               imageUrl: s.imageUrl,
               linkUrl: s.linkUrl || "",

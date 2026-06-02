@@ -7,9 +7,30 @@ import { StoreSlider } from "../../_components/store-slider";
 
 export const dynamic = "force-dynamic";
 
-// تحسين جلب الفروع بطلب مباشر لتجنب تعليق الكاش
+// دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
+function deepSanitize(obj: any): any {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === "bigint") return obj.toString();
+  if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+  if (obj instanceof Date) return obj.toISOString();
+  if (Array.isArray(obj)) return obj.map(o => deepSanitize(o));
+  if (typeof obj === "object") {
+    if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
+      return Number(obj.toString());
+    }
+    const newObj: any = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        newObj[key] = deepSanitize(obj[key]);
+      }
+    }
+    return newObj;
+  }
+  return obj;
+}
+
 async function getCachedBranches(categoryId: string) {
-    return prisma.storeBranch.findMany({
+    const branches = await prisma.storeBranch.findMany({
         where: { categoryId, active: true, parentBranchId: null },
         include: {
             _count: {
@@ -18,58 +39,65 @@ async function getCachedBranches(categoryId: string) {
         },
         orderBy: { sequence: "desc" },
     });
+    return deepSanitize(branches);
 }
 
 async function BranchesList({ categoryId }: { categoryId: string }) {
-    const branches = await getCachedBranches(categoryId);
+    try {
+        const branches = await getCachedBranches(categoryId);
 
-    if (branches.length === 0) return (
-        <div className="text-center py-10 text-slate-400 font-bold">
-            لا توجد أفرع متاحة حالياً
-        </div>
-    );
+        if (!branches || branches.length === 0) return (
+            <div className="text-center py-10 text-slate-400 font-bold">
+                لا توجد أفرع متاحة حالياً لـ {categoryId}
+            </div>
+        );
 
-    return (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 animate-in fade-in duration-700">
-          {branches.map((branch) => (
-            <Link
-              key={branch.id}
-              href={`/store/b/${branch.id}`}
-              className="group block bg-white dark:bg-slate-900 rounded-[1.5rem] md:rounded-[2rem] p-3 md:p-4 border border-slate-100 dark:border-slate-800 shadow-md hover:shadow-violet-200/40 hover:border-violet-100 dark:hover:border-violet-800 transition-all duration-300"
-            >
-              <div className="relative aspect-video mb-3 md:mb-4 overflow-hidden rounded-xl md:rounded-2xl bg-slate-50 dark:bg-slate-800">
-                {branch.photoUrl ? (
-                  <img
-                    src={branch.photoUrl}
-                    alt={branch.name}
-                    className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.onerror = null;
-                      if (target.src.includes('?')) {
-                        target.src = target.src.split('?')[0];
-                      }
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-2xl">🌿</div>
-                )}
-                <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] md:text-xs font-black px-2 py-1 rounded-lg">
-                    {branch._count.products} منتج
-                </div>
-              </div>
-              <h2 className="text-sm md:text-lg font-black text-slate-900 dark:text-white text-center group-hover:text-violet-600 transition-colors line-clamp-1">{branch.name}</h2>
-            </Link>
-          ))}
-        </div>
-    );
+        return (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 animate-in fade-in duration-700">
+              {branches.map((branch: any) => (
+                <Link
+                  key={branch.id}
+                  href={`/store/b/${branch.id}`}
+                  className="group block bg-white dark:bg-slate-900 rounded-[1.5rem] md:rounded-[2rem] p-3 md:p-4 border border-slate-100 dark:border-slate-800 shadow-md hover:shadow-violet-200/40 hover:border-violet-100 dark:hover:border-violet-800 transition-all duration-300"
+                >
+                  <div className="relative aspect-video mb-3 md:mb-4 overflow-hidden rounded-xl md:rounded-2xl bg-slate-50 dark:bg-slate-800">
+                    {branch.photoUrl ? (
+                      <img
+                        src={branch.photoUrl}
+                        alt={branch.name}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          if (target.src.includes('?')) {
+                            target.src = target.src.split('?')[0];
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-2xl">🌿</div>
+                    )}
+                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] md:text-xs font-black px-2 py-1 rounded-lg">
+                        {branch._count?.products || 0} منتج
+                    </div>
+                  </div>
+                  <h2 className="text-sm md:text-lg font-black text-slate-900 dark:text-white text-center group-hover:text-violet-600 transition-colors line-clamp-1">{branch.name}</h2>
+                </Link>
+              ))}
+            </div>
+        );
+    } catch (error) {
+        console.error("BranchesList error:", error);
+        return <div className="text-center py-10 text-rose-500 font-bold">فشل تحميل الأفرع</div>;
+    }
 }
 
 async function getCachedCategory(id: string) {
-    return prisma.storeCategory.findUnique({
+    const category = await prisma.storeCategory.findUnique({
         where: { id },
         select: { id: true, name: true, photoUrl: true }
     });
+    return deepSanitize(category);
 }
 
 async function CategoryHeader({ id }: { id: string }) {
@@ -131,16 +159,18 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
       );
     }
 
-    const slides = await prisma.storeSlide.findMany({
+    const slidesRaw = await prisma.storeSlide.findMany({
       where: { active: true },
       orderBy: { sequence: "asc" }
     });
 
+    const slides = deepSanitize(slidesRaw);
+
     return (
       <div className="space-y-4 md:space-y-8" dir="rtl">
-        {slides.length > 0 && (
+        {slides && slides.length > 0 && (
           <section className="mb-6 md:mb-10">
-            <StoreSlider slides={slides.map(s => ({
+            <StoreSlider slides={slides.map((s: any) => ({
               id: s.id,
               imageUrl: s.imageUrl,
               linkUrl: s.linkUrl || "",
