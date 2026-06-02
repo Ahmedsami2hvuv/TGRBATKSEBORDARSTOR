@@ -45,16 +45,51 @@ export function QuickProfitEdit({ id, initialMargin, type, name, categoryId }: Q
 
   if (!isEditing) {
     return (
-      <button
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setIsEditing(true);
-        }}
-        className="text-[10px] text-emerald-600 font-black hover:bg-emerald-50 px-2 py-0.5 rounded-lg transition-colors"
-      >
-        💰 +{Number(margin).toLocaleString()}
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsEditing(true);
+          }}
+          className="text-[10px] text-emerald-600 font-black hover:bg-emerald-50 px-2 py-0.5 rounded-lg transition-colors"
+        >
+          💰 +{Number(margin).toLocaleString()}
+        </button>
+        {Number(margin) > 0 && (
+          <button
+            disabled={isLoading}
+            onClick={async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsLoading(true);
+              try {
+                const formData = new FormData();
+                formData.append("id", id);
+                formData.append("name", name);
+                formData.append("profitMargin", "0");
+
+                if (type === "category") {
+                    await upsertCategory(null, formData);
+                } else {
+                    if (!categoryId) return;
+                    formData.append("categoryId", categoryId);
+                    await upsertBranch(null, formData);
+                }
+                setMargin(0);
+              } catch (err) {
+                alert("فشل إيقاف الربح");
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+            className="text-[9px] bg-rose-50 hover:bg-rose-100 text-rose-500 font-black px-1.5 py-0.5 rounded transition-colors"
+            title="تصفير هامش الربح"
+          >
+            📴 إيقاف الربح
+          </button>
+        )}
+      </div>
     );
   }
 
