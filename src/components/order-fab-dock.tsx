@@ -129,6 +129,10 @@ export function OrderFabDock(props: OrderFabDockProps) {
   };
 
   const isOnLeftSide = pos.left < (typeof window !== 'undefined' ? window.innerWidth / 2 : 500);
+  const isOnTopHalf = pos.top < (typeof window !== 'undefined' ? window.innerHeight / 2 : 400);
+
+  const menuClass = isOnTopHalf ? "top-full mt-4" : "bottom-full mb-4";
+  const animationClass = isOnTopHalf ? "slide-in-from-top-4" : "slide-in-from-bottom-4";
 
   const fabContent = (
     <div
@@ -154,7 +158,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
 
       {/* قوائم الاختيار الفرعية الذكية */}
       {isExpanded && activeMenu && (
-        <div className={`absolute bottom-full mb-4 flex flex-col gap-2 animate-in fade-in zoom-in duration-200 ${isOnLeftSide ? 'left-0' : 'right-0'}`} style={{ width: 'max-content' }}>
+        <div className={`absolute ${menuClass} flex flex-col gap-2 animate-in fade-in zoom-in duration-200 ${isOnLeftSide ? 'left-0' : 'right-0'}`} style={{ width: 'max-content' }}>
           <button
             onClick={() => {
               const phone = shopPhone;
@@ -183,9 +187,9 @@ export function OrderFabDock(props: OrderFabDockProps) {
         </div>
       )}
 
-      {/* القائمة الرئيسية الذكية */}
+      {/* القائمة الرئيسية الذكية (تفتح للأعلى أو الأسفل حسب الموقع) */}
       {isExpanded && !activeMenu && (
-        <div className={`absolute bottom-full mb-4 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200 ${isOnLeftSide ? 'left-0 items-start' : 'right-0 items-end'}`}>
+        <div className={`absolute ${menuClass} flex flex-col gap-3 animate-in fade-in ${animationClass} duration-200 ${isOnLeftSide ? 'left-0 items-start' : 'right-0 items-end'}`}>
           {showWhatsAppBtn && (
             <button onClick={() => setActiveMenu("wa")} className="flex h-12 w-48 items-center justify-center gap-3 rounded-2xl bg-emerald-600 text-white shadow-2xl font-bold ring-2 ring-white active:scale-95">
               <DynamicIcon iconKey="ui_whatsapp" config={icons} className="h-5 w-5" />
