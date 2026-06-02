@@ -24,6 +24,12 @@ export default async function CategoriesPage() {
     profitMargin: cat.profitMargin ? Number(cat.profitMargin) : 0,
   }))));
 
+  const globalSettings = await prisma.globalSettings.findUnique({
+    where: { id: "system" },
+    select: { profitMargin: true }
+  });
+  const globalProfitMargin = globalSettings?.profitMargin ? Number(globalSettings.profitMargin) : 250;
+
   const icons = await getGlobalIcons();
 
   return (
@@ -31,7 +37,11 @@ export default async function CategoriesPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-black text-slate-900">أقسام المتجر</h1>
       </div>
-      <CategoryListClient initialCategories={categories} icons={icons} />
+      <CategoryListClient
+        initialCategories={categories}
+        icons={icons}
+        globalProfitMargin={globalProfitMargin}
+      />
     </div>
   );
 }

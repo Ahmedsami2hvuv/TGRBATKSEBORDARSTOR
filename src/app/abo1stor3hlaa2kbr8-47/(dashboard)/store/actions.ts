@@ -900,3 +900,32 @@ export async function bulkCreateProductsFromScrapedData(branchId: string, produc
         return { error: e.message };
     }
 }
+
+export async function applyUnifiedProfit(margin: number) {
+  // 1. تحديث الربح العام للمتجر في الإعدادات العامة
+  await prisma.globalSettings.upsert({
+    where: { id: "system" },
+    update: { profitMargin: margin },
+    create: { id: "system", profitMargin: margin }
+  });
+
+  // 2. تصفير أرباح كافة الأقسام التابعة للمتجر لكي تتبع هامش الربح العام
+  await prisma.storeCategory.updateMany({
+    data: { profitMargin: 0 }
+  });
+
+  // 3. تصفير أرباح كافة الأفرع التابعة للمتجر لكي تتبع هامش الربح العام
+  await prisma.storeBranch.updateMany({
+    data: { profitMargin: 0 }
+  });
+
+  // 4. مزامنة شاملة وتحديث فوري لأسعار كافة منتجات المتجر
+  const { syncAllStoreProductsPrice } = await import("@/lib/store-profit-sync");
+  await syncAllStoreProductsPrice();
+
+  revalidatePath(`${SECRET_ADMIN_PATH}/store`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/store/categories`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/store/branches`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/store/products`);
+  return { ok: true };
+}

@@ -6,19 +6,51 @@ import Link from "next/link";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
-import { upsertCategory, deleteCategory } from "../actions";
+import { upsertCategory, deleteCategory, applyUnifiedProfit } from "../actions";
 import { compressImageFileForUpload } from "@/lib/client-image-compress";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { QuickProfitEdit } from "../_components/quick-profit-edit";
 
-export function CategoryListClient({ initialCategories, icons }: { initialCategories: any[]; icons: GlobalIconsConfig | null }) {
+export function CategoryListClient({
+  initialCategories,
+  icons,
+  globalProfitMargin
+}: {
+  initialCategories: any[];
+  icons: GlobalIconsConfig | null;
+  globalProfitMargin: number;
+}) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  // --- Unified profit margin ---
+  const [unifiedMargin, setUnifiedMargin] = useState(globalProfitMargin);
+  const [isApplyingUnified, setIsApplyingUnified] = useState(false);
+
+  async function handleApplyUnifiedProfit() {
+    const confirmApp = confirm(`هل أنت متأكد من تطبيق هامش ربح موحد بقيمة ${unifiedMargin} د.ع على جميع الأقسام والفروع والمنتجات؟\nسيقوم هذا بتصفير كافة الأرباح الخاصة بالقسم والفرع لكي يتبعوا هذا الربح الموحد.`);
+    if (!confirmApp) return;
+
+    setIsApplyingUnified(true);
+    try {
+      const res = await applyUnifiedProfit(unifiedMargin);
+      if (res.ok) {
+        alert("✅ تم تطبيق هامش الربح الموحد بنجاح على كامل المتجر!");
+        window.location.reload();
+      } else {
+        alert("❌ فشل تطبيق هامش الربح الموحد");
+      }
+    } catch {
+      alert("❌ حدث خطأ أثناء تطبيق هامش الربح");
+    } finally {
+      setIsApplyingUnified(false);
+    }
+  }
 
   // --- Smart Import Logic ---
   const [isImporting, setIsImporting] = useState(false);
@@ -200,6 +232,36 @@ export function CategoryListClient({ initialCategories, icons }: { initialCatego
                 إضافة قسم
               </>
             )}
+          </button>
+        </div>
+      </div>
+
+      {/* Unified Profit Margin Manager */}
+      <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100/75 flex flex-col lg:flex-row items-center justify-between gap-6 shadow-sm shadow-emerald-50">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-2xl shrink-0">💰</div>
+          <div>
+            <h2 className="text-lg font-black text-emerald-950">تطبيق هامش ربح موحد شامل</h2>
+            <p className="text-xs text-emerald-600 font-bold mt-0.5">يُطبق هذا الربح على جميع أقسام المتجر وفروعه ومنتجاته دفعة واحدة، ويقوم بتصفير الأرباح الفرعية السابقة.</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 w-full lg:w-auto shrink-0 bg-white p-2 rounded-2xl border border-emerald-100 shadow-inner">
+          <label className="text-[10px] font-black text-slate-400 mr-2">مبلغ الربح الموحد:</label>
+          <div className="relative">
+            <input
+              type="number"
+              value={unifiedMargin}
+              onChange={(e) => setUnifiedMargin(Number(e.target.value))}
+              className="w-24 pr-3 pl-8 py-2 rounded-xl bg-slate-50 border-none outline-none font-black text-sm text-emerald-600 focus:ring-2 focus:ring-emerald-500"
+            />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400">د.ع</span>
+          </div>
+          <button
+            onClick={handleApplyUnifiedProfit}
+            disabled={isApplyingUnified}
+            className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-md transition disabled:opacity-50 flex items-center gap-1.5"
+          >
+            {isApplyingUnified ? "⏳ جاري التطبيق..." : "🚀 تطبيق شامل"}
           </button>
         </div>
       </div>
