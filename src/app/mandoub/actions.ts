@@ -675,6 +675,68 @@ export async function uploadMandoubOrderImageSubmit(formData: FormData): Promise
   redirect(safeMandoubReturn(nextRaw));
 }
 
+/** رفع صورة الطلبية من المندوب متوافق مع useActionState */
+export async function uploadMandoubOrderImage(
+  _prev: UploadDoorPhotoState,
+  formData: FormData,
+): Promise<UploadDoorPhotoState> {
+  const c = String(formData.get("c") ?? "");
+  const exp = String(formData.get("exp") ?? "");
+  const s = String(formData.get("s") ?? "");
+  const orderId = String(formData.get("orderId") ?? "").trim();
+  const nextRaw = String(formData.get("next") ?? "/mandoub");
+
+  const v = await verifyDelegateAllowed(c, exp, s);
+  if (!v.ok) {
+    return { error: "الرابط غير صالح. حدّث الصفحة." };
+  }
+  if (!orderId) {
+    return { error: "معرّف الطلب مفقود" };
+  }
+
+  const file = formData.get("orderImage");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "التقط صورة أو اختر ملفاً من المعرض" };
+  }
+
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, assignedCourierId: v.courierId },
+  });
+  if (!order) {
+    return { error: "الطلب غير موجود أو غير مسند إليك" };
+  }
+
+  let url: string;
+  try {
+    url = await saveOrderImageUploaded(file, MAX_ORDER_IMAGE_BYTES);
+  } catch (e) {
+    const code = e instanceof Error ? e.message : "";
+    if (code === "IMAGE_TOO_LARGE") {
+      return { error: "حجم الصورة كبير (الحد 10 ميجابايت)" };
+    }
+    if (code === "IMAGE_BAD_TYPE") {
+      return { error: "استخدم JPG أو PNG أو Webp" };
+    }
+    if (code === "IMAGE_STORAGE_FAILED") {
+      return {
+        error:
+          "تعذّر حفظ الصورة على الخادم. جرّب صورة أصغر أو أعد المحاولة لاحقاً.",
+      };
+    }
+    return { error: "تعذّر حفظ الصورة" };
+  }
+
+  const uploadedBy = await courierUploaderLabel(v.courierId);
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { imageUrl: url, orderImageUploadedByName: uploadedBy },
+  });
+
+  revalidateMandoubPaths(nextRaw);
+  redirect(safeMandoubReturn(nextRaw));
+}
+
+
 async function verifyDelegateOrder(
   formData: FormData,
 ): Promise<
