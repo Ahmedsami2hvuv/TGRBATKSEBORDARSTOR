@@ -21,6 +21,7 @@ import { applyMandoubWaTemplate, splitMandoubWaTemplateVariants } from "@/lib/ma
 import PendingOrdersClient, { type PendingOrderRow } from "./pending-orders-client";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
+const SYSTEM_ADMIN_PHONE = "07733921568";
 
 // Keep data fresh while allowing fast back/forward navigation cache.
 export const revalidate = 15;
