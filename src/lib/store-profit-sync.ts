@@ -3,10 +3,19 @@ import { Prisma } from "@prisma/client";
 import { revalidateTag } from "next/cache";
 
 /**
- * جلب هامش الربح المعتمد لفرع معين بناءً على التسلسل الهرمي:
- * الفرع -> القسم -> الإعدادات العامة
+ * جلب هامش الربح المعتمد بناءً على التسلسل الهرمي:
+ * المورد -> الفرع -> القسم -> الإعدادات العامة
  */
-export async function getEffectiveProfitMargin(branchId: string) {
+export async function getEffectiveProfitMargin(branchId: string, supplierId?: string | null) {
+  let supplierMargin = 0;
+  if (supplierId) {
+    const supplier = await prisma.storeSupplier.findUnique({
+      where: { id: supplierId },
+      select: { profitMargin: true }
+    });
+    supplierMargin = Number(supplier?.profitMargin || 0);
+  }
+
   const branch = await prisma.storeBranch.findUnique({
     where: { id: branchId },
     select: {
@@ -20,37 +29,58 @@ export async function getEffectiveProfitMargin(branchId: string) {
     select: { profitMargin: true }
   });
 
-  let branchMargin = Number(branch?.profitMargin || 0);
-  let categoryMargin = Number(branch?.category?.profitMargin || 0);
-  let globalMargin = Number(globalSettings?.profitMargin || 0);
+  const branchMargin = Number(branch?.profitMargin || 0);
+  const categoryMargin = Number(branch?.category?.profitMargin || 0);
+  const globalMargin = Number(globalSettings?.profitMargin || 0);
 
-  // إذا كانت القيمة بالآلاف (مثلاً 0.25 أو 0.5 أو 1) نقوم بضربها في 1000 لتتحول للدينار العراقي الفعلي (250، 500، 1000)
-  if (branchMargin > 0 && branchMargin <= 10) branchMargin *= 1000;
-  if (categoryMargin > 0 && categoryMargin <= 10) categoryMargin *= 1000;
-  if (globalMargin > 0 && globalMargin <= 10) globalMargin *= 1000;
-
-  return branchMargin > 0 ? branchMargin : (categoryMargin > 0 ? categoryMargin : globalMargin);
+  // الأولوية حسب الترتيب
+  return supplierMargin || branchMargin || categoryMargin || globalMargin;
 }
 
 /**
  * تحديث أسعار البيع لجميع منتجات فرع معين بناءً على هامش الربح الحالي
  */
 export async function syncBranchProductsPrice(branchId: string) {
-  const margin = await getEffectiveProfitMargin(branchId);
+  const branch = await prisma.storeBranch.findUnique({
+    where: { id: branchId },
+    include: {
+      category: true,
+      products: {
+        include: { supplier: true, variants: true }
+      }
+    }
+  });
 
-  // تحديث المنتجات الأساسية
-  await prisma.$executeRaw`
-    UPDATE "StoreProduct"
-    SET "salePrice" = "purchasePrice" + ${margin}
-    WHERE "branchId" = ${branchId}
-  `;
+  if (!branch) return;
 
-  // تحديث المتغيرات (Variants)
-  await prisma.$executeRaw`
-    UPDATE "StoreProductVariant"
-    SET "salePrice" = "purchasePrice" + ${margin}
-    WHERE "productId" IN (SELECT id FROM "StoreProduct" WHERE "branchId" = ${branchId})
-  `;
+  const globalSettings = await prisma.globalSettings.findUnique({
+    where: { id: "system" },
+    select: { profitMargin: true }
+  });
+
+  const globalMargin = Number(globalSettings?.profitMargin || 0);
+  const branchMargin = Number(branch.profitMargin || 0);
+  const categoryMargin = Number(branch.category?.profitMargin || 0);
+
+  for (const product of branch.products) {
+    const supplierMargin = Number(product.supplier?.profitMargin || 0);
+    const effectiveMargin = supplierMargin || branchMargin || categoryMargin || globalMargin;
+
+    const newProductSalePrice = Number(product.purchasePrice) * (1 + effectiveMargin);
+
+    await prisma.storeProduct.update({
+      where: { id: product.id },
+      data: { salePrice: newProductSalePrice }
+    });
+
+    for (const variant of product.variants) {
+      const newVariantSalePrice = Number(variant.purchasePrice) * (1 + effectiveMargin);
+      await prisma.storeProductVariant.update({
+        where: { id: variant.id },
+        data: { salePrice: newVariantSalePrice }
+      });
+    }
+  }
 
   // @ts-ignore
   revalidateTag("products");

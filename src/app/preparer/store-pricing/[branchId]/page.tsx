@@ -7,7 +7,6 @@ import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
-// دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
 function deepSanitize(obj: any): any {
   if (obj === null || obj === undefined) return obj;
   if (typeof obj === "bigint") return obj.toString();
@@ -40,15 +39,9 @@ export default async function BranchPricingPage({ params, searchParams }: Props)
     const sp = await searchParams;
     const cookieStore = await cookies();
 
-    let p = sp.p;
-    let s = sp.s;
-    let exp = sp.exp;
-
-    if (!p || !s || !exp) {
-      p = p || cookieStore.get("preparer_p")?.value;
-      s = s || cookieStore.get("preparer_s")?.value;
-      exp = exp || cookieStore.get("preparer_exp")?.value;
-    }
+    let p = sp.p || cookieStore.get("preparer_p")?.value;
+    let s = sp.s || cookieStore.get("preparer_s")?.value;
+    let exp = sp.exp || cookieStore.get("preparer_exp")?.value;
 
     const v = verifyCompanyPreparerPortalQuery(p, exp, s);
     if (!v.ok) return <div className="p-10 text-center font-bold">رابط غير صالح</div>;
@@ -71,66 +64,52 @@ export default async function BranchPricingPage({ params, searchParams }: Props)
 
     const branchRaw = preparer.authorizedBranches[0];
     if (!branchRaw) {
-      return (
-        <div className="p-10 text-center font-bold text-rose-600" dir="rtl">
-          الفرع غير موجود أو ليس لديك صلاحية تسعير عليه.
-        </div>
-      );
+      return <div className="p-10 text-center font-bold text-rose-600">الفرع غير موجود أو ليس لديك صلاحية</div>;
     }
 
     const productsRaw = await prisma.storeProduct.findMany({
       where: { branchId: branchRaw.id, active: true },
-      select: {
-        id: true,
-        name: true,
-        purchasePrice: true,
-        photoUrls: true,
+      include: {
+        variants: {
+          where: { active: true },
+          orderBy: { sequence: "asc" }
+        }
       },
       orderBy: { sequence: "asc" }
     });
 
     const products = productsRaw.map(p => ({
-      id: String(p.id),
-      name: String(p.name),
-      purchasePrice: p.purchasePrice ? Number(p.purchasePrice) : 0,
-      image: (Array.isArray(p.photoUrls) && p.photoUrls[0]) || (typeof p.photoUrls === "string" ? p.photoUrls : ""),
+      id: p.id,
+      name: p.name,
+      purchasePrice: Number(p.purchasePrice || 0),
+      image: (Array.isArray(p.photoUrls) && p.photoUrls[0]) || "",
+      hasVariants: p.hasVariants,
+      variants: p.variants.map(v => ({
+        id: v.id,
+        name: v.name,
+        purchasePrice: Number(v.purchasePrice || 0)
+      }))
     }));
-
-    const branch = {
-      id: String(branchRaw.id),
-      name: String(branchRaw.name),
-    };
 
     const baseAuth = { p, exp, s };
 
     return (
-      <div className="kse-app-inner mx-auto max-w-4xl px-4 py-6" dir="rtl">
+      <div className="mx-auto max-w-4xl px-4 py-6" dir="rtl">
         <header className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-             <Link href={preparerPath("/preparer/store-pricing", baseAuth)} className="text-emerald-600 font-black text-sm">
-               ← العودة للأقسام
-             </Link>
-          </div>
-          <h1 className="text-2xl font-black text-slate-900">تسعير {branch.name}</h1>
-          <p className="text-[10px] text-slate-400 font-bold mt-1">
-            أدخل السعر (مثلاً 2 يعني 2000 د.ع، و2.25 يعني 2250 د.ع).
-          </p>
+          <Link href={preparerPath("/preparer/store-pricing", baseAuth)} className="text-emerald-600 font-bold text-sm">
+            ← العودة للأقسام
+          </Link>
+          <h1 className="text-2xl font-black text-slate-900 mt-2">تسعير {branchRaw.name}</h1>
         </header>
 
         <PricingListClient
-          branch={deepSanitize(branch) as any}
-          products={deepSanitize(products) as any}
+          branch={deepSanitize(branchRaw)}
+          products={deepSanitize(products)}
           auth={baseAuth}
         />
       </div>
     );
   } catch (err: any) {
-    console.error("Pricing page error:", err);
-    return (
-      <div className="p-20 text-center" dir="rtl">
-        <h1 className="text-xl font-bold text-rose-600">خطأ في جلب بيانات الفرع</h1>
-        <p className="text-xs mt-2 text-slate-400">{err.message}</p>
-      </div>
-    );
+    return <div className="p-20 text-center text-rose-600 font-bold">حدث خطأ: {err.message}</div>;
   }
 }

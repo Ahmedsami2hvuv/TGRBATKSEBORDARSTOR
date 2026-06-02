@@ -887,6 +887,7 @@ export async function updateStoreProductPrice(
     if (!v.ok) return { error: "الرابط غير صالح." };
 
     const productId = String(formData.get("productId") ?? "").trim();
+    const variantId = String(formData.get("variantId") ?? "").trim();
     const purchasePriceRaw = String(formData.get("purchasePrice") ?? "").trim();
     const branchId = String(formData.get("branchId") ?? "").trim();
 
@@ -911,17 +912,36 @@ export async function updateStoreProductPrice(
     }
 
     const { getEffectiveProfitMargin } = await import("@/lib/store-profit-sync");
-    const profitMargin = await getEffectiveProfitMargin(branchId);
-    const salePriceValue = purchasePriceValue + profitMargin;
 
-    // استخدام SQL مباشر لتجنب أي تداخل مع حقول مفقودة في بريزما
-    await prisma.$executeRaw`
-      UPDATE "StoreProduct"
-      SET "purchasePrice" = ${purchasePriceValue}, "salePrice" = ${salePriceValue}
-      WHERE "id" = ${productId} AND "branchId" = ${branchId}
-    `;
+    // جلب المنتج لمعرفة المورد (Supplier)
+    const product = await prisma.storeProduct.findUnique({
+      where: { id: productId },
+      select: { supplierId: true }
+    });
 
-    // تحديث أسعار المتغيرات إذا وجدت لنفس المنتج (اختياري حسب منطق العمل، هنا سنحدث المنتج الأساسي فقط كما في الطلب)
+    const profitMargin = await getEffectiveProfitMargin(branchId, product?.supplierId);
+
+    // حساب سعر البيع بناءً على نسبة الربح (النسبة المئوية)
+    // السعر الجديد = سعر الشراء * (1 + نسبة الربح)
+    const salePriceValue = purchasePriceValue * (1 + profitMargin);
+
+    if (variantId) {
+      await prisma.storeProductVariant.update({
+        where: { id: variantId },
+        data: {
+          purchasePrice: purchasePriceValue,
+          salePrice: salePriceValue
+        }
+      });
+    } else {
+      await prisma.storeProduct.update({
+        where: { id: productId },
+        data: {
+          purchasePrice: purchasePriceValue,
+          salePrice: salePriceValue
+        }
+      });
+    }
 
     const { revalidateTag } = await import("next/cache");
     revalidateTag("products");
