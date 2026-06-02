@@ -84,6 +84,7 @@ export function ProductCard({
                 className="w-full h-auto max-h-[250px] object-contain transition-transform duration-700 group-hover:scale-105 relative z-10 p-2"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
+                  target.onerror = null;
                   if (target.src.includes('?')) {
                     target.src = target.src.split('?')[0];
                   }
@@ -161,6 +162,7 @@ export function ProductCard({
                     alt={product.name}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
+                      target.onerror = null;
                       if (target.src.includes('?')) {
                         target.src = target.src.split('?')[0];
                       }

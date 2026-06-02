@@ -45,6 +45,7 @@ async function BranchesList({ categoryId }: { categoryId: string }) {
                     className="w-full h-full object-cover transition-transform group-hover:scale-110"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
+                      target.onerror = null;
                       if (target.src.includes('?')) {
                         target.src = target.src.split('?')[0];
                       }
@@ -97,6 +98,7 @@ async function CategoryHeader({ id }: { id: string }) {
               className="w-full h-full object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
+                target.onerror = null;
                 if (target.src.includes('?')) {
                   target.src = target.src.split('?')[0];
                 }
