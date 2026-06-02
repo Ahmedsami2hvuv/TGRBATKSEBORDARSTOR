@@ -102,6 +102,8 @@ export function OrderDetailSection({
     showVoiceNotesBtn: boolean;
   };
 }) {
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
   const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
   const isAdminPortal = order.submissionSource === "admin_portal";
   const submitterName = order.submittedByCompanyPreparer?.name?.trim() || order.submittedBy?.name?.trim() || (isAdminPortal && !order.submittedBy ? "الإدارة" : "—");
@@ -226,7 +228,7 @@ export function OrderDetailSection({
                 <span className="text-[10px] font-black text-slate-400">صورة المحل</span>
                 {shopImageUrl ? (
                   <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md">
-                    <img src={imgSrc(shopImageUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => window.open(imgSrc(shopImageUrl)!)} />
+                    <img src={imgSrc(shopImageUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(shopImageUrl))} />
                   </div>
                 ) : (
                   <div className="aspect-square w-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-[10px] text-slate-400 font-bold text-center p-2">
@@ -310,7 +312,7 @@ export function OrderDetailSection({
                   <span className="text-[10px] font-black text-slate-400">صورة الباب</span>
                   {customerDoorDisplay ? (
                     <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md">
-                      <img src={imgSrc(customerDoorDisplay)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => window.open(imgSrc(customerDoorDisplay)!)} />
+                      <img src={imgSrc(customerDoorDisplay)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(customerDoorDisplay))} />
                     </div>
                   ) : (
                     <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-[10px] text-slate-400 font-bold text-center p-2">
@@ -377,7 +379,7 @@ export function OrderDetailSection({
                     {secondDoorMerged && imgSrc(secondDoorMerged) ? (
                       <div className="w-full flex flex-col items-center gap-1">
                         <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md relative">
-                          <img src={imgSrc(secondDoorMerged)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => window.open(imgSrc(secondDoorMerged)!)} />
+                          <img src={imgSrc(secondDoorMerged)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(secondDoorMerged))} />
                         </div>
                         {secondDoorCaptionName ? <div className="mt-1"><ImageUploaderCaption name={secondDoorCaptionName} /></div> : null}
                       </div>
@@ -451,7 +453,7 @@ export function OrderDetailSection({
                 <span className="text-[10px] font-black text-slate-400">صورة الطلبية</span>
                 {order.imageUrl ? (
                   <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md bg-white">
-                    <img src={imgSrc(order.imageUrl)!} alt="" className="h-full w-full object-contain cursor-zoom-in" onClick={() => window.open(imgSrc(order.imageUrl)!)} />
+                    <img src={imgSrc(order.imageUrl)!} alt="" className="h-full w-full object-contain cursor-zoom-in" onClick={() => setPreviewImageUrl(imgSrc(order.imageUrl))} />
                   </div>
                 ) : (
                   <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-[10px] text-slate-400 font-bold text-center p-2">
@@ -606,6 +608,40 @@ export function OrderDetailSection({
           {layout.map((blockId) => renderBlock(blockId))}
         </div>
       </div>
+
+      {/* مودال معاينة الصور التفاعلي الأنيق في نفس الصفحة */}
+      {previewImageUrl && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 transition-all duration-300 animate-fade-in"
+          onClick={() => setPreviewImageUrl(null)}
+        >
+          <div className="relative max-w-full max-h-[85vh] flex flex-col items-center">
+            {/* زر الإغلاق الأنيق */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setPreviewImageUrl(null);
+              }}
+              className="absolute -top-12 right-2 flex size-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 border border-white/20 transition-all text-xl font-bold shadow-xl active:scale-90"
+              title="إغلاق"
+            >
+              ✕
+            </button>
+            
+            {/* الصورة الكبيرة */}
+            <div 
+              className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/40 shadow-2xl p-1 max-w-[95vw] max-h-[75vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img 
+                src={previewImageUrl} 
+                alt="معاينة الصورة" 
+                className="max-w-full max-h-[72vh] object-contain rounded-xl"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
