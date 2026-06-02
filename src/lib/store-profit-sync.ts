@@ -66,7 +66,9 @@ export async function syncBranchProductsPrice(branchId: string) {
     const supplierMargin = Number(product.supplier?.profitMargin || 0);
     const effectiveMargin = supplierMargin || branchMargin || categoryMargin || globalMargin;
 
-    const newProductSalePrice = Number(product.purchasePrice) * (1 + effectiveMargin);
+    const purchasePrice = Number(product.purchasePrice);
+    const addedMargin = effectiveMargin <= 1 ? (purchasePrice * effectiveMargin) : effectiveMargin;
+    const newProductSalePrice = purchasePrice + addedMargin;
 
     await prisma.storeProduct.update({
       where: { id: product.id },
@@ -74,7 +76,9 @@ export async function syncBranchProductsPrice(branchId: string) {
     });
 
     for (const variant of product.variants) {
-      const newVariantSalePrice = Number(variant.purchasePrice) * (1 + effectiveMargin);
+      const vPurchasePrice = Number(variant.purchasePrice);
+      const vAddedMargin = effectiveMargin <= 1 ? (vPurchasePrice * effectiveMargin) : effectiveMargin;
+      const newVariantSalePrice = vPurchasePrice + vAddedMargin;
       await prisma.storeProductVariant.update({
         where: { id: variant.id },
         data: { salePrice: newVariantSalePrice }

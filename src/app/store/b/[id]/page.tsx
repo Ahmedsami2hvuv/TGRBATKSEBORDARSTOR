@@ -90,14 +90,16 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
       const purchasePrice = p.purchasePrice || 0;
 
       if (salePrice <= 0 && purchasePrice > 0) {
-        salePrice = purchasePrice + (purchasePrice * effectiveMargin);
+        const addedMargin = effectiveMargin <= 1 ? (purchasePrice * effectiveMargin) : effectiveMargin;
+        salePrice = purchasePrice + addedMargin;
       }
 
       const variants = (p.variants || []).map((v: any) => {
         let vSalePrice = v.salePrice || 0;
         const vPurchasePrice = v.purchasePrice || 0;
         if (vSalePrice <= 0 && vPurchasePrice > 0) {
-          vSalePrice = vPurchasePrice + (vPurchasePrice * effectiveMargin);
+          const vAddedMargin = effectiveMargin <= 1 ? (vPurchasePrice * effectiveMargin) : effectiveMargin;
+          vSalePrice = vPurchasePrice + vAddedMargin;
         }
         return {
           id: String(v.id),
