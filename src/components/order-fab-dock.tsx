@@ -701,16 +701,23 @@ export function OrderFabDock(props: OrderFabDockProps) {
     if (typeof window === "undefined" || !mainFabPos) return 16;
     const w = window.innerWidth || 360;
     const leftVal = mainFabPos.left;
-    const menuW = 180;
+    const menuW = 176; // العرض الفعلي للأزرار (w-44 = 176px)
     const margin = 12;
-    return Math.max(margin, Math.min(w - menuW - margin, leftVal - 4));
-  }, [mainFabPos]);
+    const fabSizeActual = FAB_SIZE * fabScale;
+
+    // حساب المركز: يسار الزر + نصف عرض الزر - نصف عرض القائمة
+    const idealLeft = leftVal + (fabSizeActual / 2) - (menuW / 2);
+
+    return Math.max(margin, Math.min(w - menuW - margin, idealLeft));
+  }, [mainFabPos, fabScale]);
 
   const calculatedBottom = useMemo(() => {
     if (typeof window === "undefined" || !mainFabPos) return 80;
     const h = window.innerHeight || 640;
     const topVal = mainFabPos.top;
-    return Math.max(20, h - topVal + 72);
+    // h - topVal هي المسافة من أسفل الشاشة إلى أعلى الزر
+    // نريد القائمة أن تبدأ من فوق الزر مباشرة مع فجوة بسيطة
+    return Math.max(20, h - topVal + 12);
   }, [mainFabPos]);
 
   const contactMenuPos = isExpanded 
@@ -728,14 +735,14 @@ export function OrderFabDock(props: OrderFabDockProps) {
   // إذا كانت القائمة مفتوحة من زر "المهام"، نرفعها قليلاً فوق الأزرار المتراصة
   const menuTop = contactMenuPos
     ? isExpanded
-        ? contactMenuPos.top - (MENU_H / 2) - 100 // وضعها في منتصف المسافة تقريباً فوق الأزرار
+        ? contactMenuPos.top - (MENU_H / 2) - 120 // رفعناها قليلاً للأعلى لتبتعد عن الزر الرئيسي
         : (showMenuAbove ? contactMenuPos.top - MENU_H - 8 : contactMenuPos.top + fabSize + 8)
     : 0;
 
   const menuLeft = contactMenuPos ? Math.max(8, Math.min(typeof window !== "undefined" ? window.innerWidth - 210 : 160, contactMenuPos.left - 130)) : 0;
 
   /** أعلى من زرّ الفاب حتى لا تُغطّي الأزرار القائمة بعد سحبات متكرّرة (كان dragZ يتجاوز z القائمة) */
-  const fabZ = Math.min(dragZ, 99);
+  const fabZ = isExpanded ? 1100 : Math.min(dragZ, 100);
 
   /** قائمة عميل / زبون / زبون2 لقوالب الواتساب المخصصة */
   const CUSTOM_PICK_H = hasCust2 ? 200 : 160;
@@ -768,7 +775,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
         contactShadeReady ? (
           <button
             type="button"
-            className="pointer-events-auto fixed inset-0 z-[999] cursor-default touch-manipulation bg-black/40 backdrop-blur-[2px]"
+            className="pointer-events-auto fixed inset-0 z-[1050] cursor-default touch-manipulation bg-black/40 backdrop-blur-[2px]"
             aria-label="إغلاق القائمة"
             onClick={dismissContactOverlay}
           />
@@ -845,7 +852,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
 
       {contactMenu && contactMenuPos ? (
         <div
-          className="pointer-events-auto fixed z-[1000] flex w-[124px] touch-manipulation flex-col gap-1 rounded-2xl border border-sky-200/90 bg-white p-2 shadow-xl"
+          className="pointer-events-auto fixed z-[1070] flex w-[124px] touch-manipulation flex-col gap-1 rounded-2xl border border-sky-200/90 bg-white p-2 shadow-xl"
           style={{ left: menuLeft, top: menuTop }}
           dir="rtl"
           role="menu"
@@ -987,7 +994,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
 
       {customWaPick && customPickPos ? (
         <div
-          className="pointer-events-auto fixed z-[1001] flex w-[min(200px,calc(100vw-16px))] touch-manipulation flex-col gap-1 rounded-2xl border border-violet-200/90 bg-white p-2 shadow-xl"
+          className="pointer-events-auto fixed z-[1080] flex w-[min(200px,calc(100vw-16px))] touch-manipulation flex-col gap-1 rounded-2xl border border-violet-200/90 bg-white p-2 shadow-xl"
           style={{ left: customPickMenuLeft, top: customPickMenuTop }}
           dir="rtl"
           role="menu"
@@ -1068,7 +1075,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
 
       {isExpanded && mainFabPos && (
         <div
-          className="pointer-events-auto fixed z-[1000] flex flex-col items-end gap-3 transition-all animate-in slide-in-from-bottom-4 duration-300"
+          className="pointer-events-auto fixed z-[1060] flex flex-col items-end gap-3 transition-all animate-in slide-in-from-bottom-4 duration-300"
           style={{
             left: calculatedLeft,
             bottom: calculatedBottom,
