@@ -415,7 +415,9 @@ export function CategoryListClient({ initialCategories, icons }: { initialCatego
               <h3 className="font-black text-slate-900 text-center text-lg group-hover:text-violet-600 transition-colors line-clamp-1">{cat.name}</h3>
               <div className="flex items-center justify-center gap-2 mt-1">
                 <p className="text-[10px] text-slate-400 font-black uppercase">تسلسل {cat.sequence}</p>
-                <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+              </div>
+              <div className="mt-3 bg-violet-50/50 p-2.5 rounded-2xl border border-violet-100/50 flex flex-col items-center justify-center gap-1 shadow-sm">
+                <span className="text-[9px] font-black text-slate-400">💰 هامش ربح القسم:</span>
                 <QuickProfitEdit
                     id={cat.id}
                     initialMargin={cat.profitMargin || 0}
