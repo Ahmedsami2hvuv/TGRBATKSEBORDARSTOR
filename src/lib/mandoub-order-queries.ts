@@ -73,7 +73,6 @@ export const mandoubOrderListInclude = {
   },
   courier: { select: { name: true, phone: true, vehicleType: true } },
   moneyEvents: {
-    where: { deletedAt: null },
     orderBy: { createdAt: "asc" as const },
     select: {
       id: true,

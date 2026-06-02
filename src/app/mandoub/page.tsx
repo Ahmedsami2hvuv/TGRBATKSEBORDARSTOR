@@ -351,7 +351,7 @@ export default async function MandoubPage({ searchParams }: Props) {
   const walletLedger: MandoubWalletLedgerLine[] = [
     ...ordersForWallet.flatMap((o) =>
       o.moneyEvents
-        .filter((e) => e.courierId === courier.id && e.deletedAt == null && !e.recordedByCompanyPreparerId)
+        .filter((e) => e.courierId === courier.id && !e.recordedByCompanyPreparerId)
         .map((e) => ({
           source: "order" as const,
           id: e.id,
