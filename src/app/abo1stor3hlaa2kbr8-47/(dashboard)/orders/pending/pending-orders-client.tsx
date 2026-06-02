@@ -52,6 +52,7 @@ export type PendingOrderRow = {
   customerDoorPhotoUrl: string;
   totalAmount: string | null;
   orderSubtotal?: string | null;
+  requestLocationWaUrl?: string | null;
   deliveryPrice: string | null;
   rawDeliveryPriceDinar: number | null;
   submittedByName: string | null;
@@ -1405,6 +1406,9 @@ export default function PendingOrdersClient({
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {order.voiceNoteUrl && (
+                    <MiniVoicePlayer src={order.voiceNoteUrl} />
+                  )}
                   <button
                     onClick={() => setActiveAssignOrderId(order.id)}
                     className="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-[10px] font-black shadow-sm active:scale-95 transition-all"
@@ -1435,11 +1439,18 @@ export default function PendingOrdersClient({
                     <DynamicIcon icon={icons?.ui_whatsapp} fallback="💬" width={12} height={12} />
                     مراسلة واتساب
                   </a>
+                  {!hasLocation && order.requestLocationWaUrl && (
+                    <a
+                      href={order.requestLocationWaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-black shadow-sm flex items-center gap-1.5 transition-colors"
+                    >
+                      <DynamicIcon icon={icons?.ui_location} fallback="📍" width={12} height={12} />
+                      طلب لوكيشن
+                    </a>
+                  )}
                 </div>
-
-                {order.voiceNoteUrl && (
-                  <MiniVoicePlayer src={order.voiceNoteUrl} />
-                )}
               </div>
             </div>
           );

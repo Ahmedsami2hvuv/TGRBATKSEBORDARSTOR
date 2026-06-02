@@ -16,7 +16,8 @@ import {
 } from "@/lib/mandoub-money";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { serializePrisma } from "@/lib/serialize-prisma";
-import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
+import { normalizeIraqMobileLocal11, whatsappMeUrl } from "@/lib/whatsapp";
+import { applyMandoubWaTemplate, splitMandoubWaTemplateVariants } from "@/lib/mandoub-wa-button-template";
 import PendingOrdersClient, { type PendingOrderRow } from "./pending-orders-client";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
@@ -71,7 +72,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
     ]);
 
     // 2. جلب البيانات المساعدة (Metadata) بعد الانتهاء من الثقيلة لتقليل الضغط على الـ Connection Pool
-    const [couriers, shops, preparers, icons] = await Promise.all([
+    const [couriers, shops, preparers, icons, waButtons] = await Promise.all([
       prisma.courier.findMany({
         where: courierAssignableWhere,
         orderBy: { name: "asc" },
@@ -84,6 +85,9 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         select: { id: true, name: true }
       }),
       getGlobalIcons(),
+      prisma.mandoubWaButtonSetting.findMany({
+        where: { isActive: true },
+      }),
     ]);
 
     // تقسيم الطلبات برمجياً
@@ -182,6 +186,25 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       const customerLandmark = o.customerLandmark || o.customer?.customerLandmark || phoneProfile?.landmark || "";
       const customerAlternatePhone = o.secondCustomerPhone?.trim() || o.alternatePhone?.trim() || o.customer?.alternatePhone?.trim() || phoneProfile?.alternatePhone || "";
 
+      // حساب رابط طلب الموقع الجغرافي
+      const requestLocationBtn = waButtons.find(b => b.label.includes("طلب لوكيشن") || b.label.includes("طلب الموقع"));
+      let requestLocationWaUrl = null;
+      if (requestLocationBtn && o.customerPhone) {
+        const submitterPhone = o.submittedByCompanyPreparer?.phone || o.submittedBy?.phone || o.shop?.phone || SYSTEM_ADMIN_PHONE;
+        const vars = {
+          clientshop: o.shop?.name || "",
+          city: o.customerRegion?.name || "",
+          total_price: o.totalAmount != null ? formatDinarAsAlfWithUnit(o.totalAmount) : "",
+          location_url: customerLocationUrl,
+          order_number: String(o.orderNumber),
+          customer_phone: o.customerPhone,
+          shop_phone: submitterPhone,
+        };
+        const message = splitMandoubWaTemplateVariants(requestLocationBtn.templateText || "")
+          .map(t => applyMandoubWaTemplate(t, vars))[0] || "";
+        requestLocationWaUrl = whatsappMeUrl(o.customerPhone, message);
+      }
+
       return {
         id: o.id,
         orderNumber: o.orderNumber,
@@ -219,6 +242,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         preparerShoppingJson: o.preparerShoppingJson,
         vehiclePreference: o.vehiclePreference,
         assignedPreparerIds,
+        requestLocationWaUrl,
       };
     };
 
