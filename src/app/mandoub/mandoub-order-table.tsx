@@ -103,7 +103,9 @@ export type MandoubRow = {
   showNotesBtn?: boolean;
   showVoiceNotesBtn?: boolean;
   showMoneyBoxes?: boolean;
+  imageUrl?: string | null;
 };
+
 
 function buildOrderDetailHref(
   auth: { c: string; exp: string; s: string },

@@ -707,9 +707,11 @@ export default async function MandoubPage({ searchParams }: Props) {
       customerLocationUrl: mergedCustomerLocation,
       secondCustomerLocationUrl: o.secondCustomerLocationUrl,
       shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
-      customerDoorPhotoUrl: o.customer?.customerDoorPhotoUrl || profile?.photoUrl || o.customerDoorPhotoUrl,
+      customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || profile?.photoUrl || "",
       secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
+      imageUrl: o.imageUrl,
       routeMode: o.routeMode as any,
+
       secondCustomerRegionName: o.secondCustomerRegion?.name?.trim() || null,
       preparerAudioUrl: (o.preparerShoppingJson as any)?.preparerAudioUrl || null,
       adminAudioUrl: o.adminVoiceNoteUrl,
