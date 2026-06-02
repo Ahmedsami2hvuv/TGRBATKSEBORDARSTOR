@@ -7,6 +7,28 @@ import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
+// دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
+function deepSanitize(obj: any): any {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === "bigint") return obj.toString();
+  if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
+  if (obj instanceof Date) return obj.toISOString();
+  if (Array.isArray(obj)) return obj.map(o => deepSanitize(o));
+  if (typeof obj === "object") {
+    if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n" || typeof obj.toNumber === 'function')) {
+      return Number(obj.toString());
+    }
+    const newObj: any = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        newObj[key] = deepSanitize(obj[key]);
+      }
+    }
+    return newObj;
+  }
+  return obj;
+}
+
 type Props = {
   params: Promise<{ branchId: string }>;
   searchParams: Promise<{ p?: string; exp?: string; s?: string }>;
@@ -29,7 +51,6 @@ export default async function BranchPricingPage({ params, searchParams }: Props)
     }
 
     const v = verifyCompanyPreparerPortalQuery(p, exp, s);
-
     if (!v.ok) return <div className="p-10 text-center font-bold">رابط غير صالح</div>;
 
     const preparer = await prisma.companyPreparer.findFirst({
@@ -38,7 +59,8 @@ export default async function BranchPricingPage({ params, searchParams }: Props)
         portalToken: true,
         authorizedBranches: {
           where: { id: branchId, active: true },
-          take: 1
+          take: 1,
+          select: { id: true, name: true }
         }
       }
     });
@@ -48,12 +70,10 @@ export default async function BranchPricingPage({ params, searchParams }: Props)
     }
 
     const branchRaw = preparer.authorizedBranches[0];
-
     if (!branchRaw) {
-      console.warn(`[PreparerPricing] Access denied or branch not found. Preparer: ${v.preparerId}, Branch: ${branchId}`);
       return (
         <div className="p-10 text-center font-bold text-rose-600" dir="rtl">
-          الفرع غير موجود أو ليس لديك صلاحية تسعير عليه. إن رأيته في القائمة سابقاً، تأكد أن الإدارة ربطت الفرع بحسابك.
+          الفرع غير موجود أو ليس لديك صلاحية تسعير عليه.
         </div>
       );
     }
@@ -83,42 +103,6 @@ export default async function BranchPricingPage({ params, searchParams }: Props)
 
     const baseAuth = { p, exp, s };
 
-    // دالة التطهير العميقة لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
-    function deepSanitize(obj: any): any {
-      if (obj === null || obj === undefined) return obj;
-
-      // التعامل مع BigInt
-      if (typeof obj === "bigint") return obj.toString();
-
-      // القيم البسيطة
-      if (typeof obj === "string" || typeof obj === "number" || typeof obj === "boolean") return obj;
-
-      // التواريخ
-      if (obj instanceof Date) return obj.toISOString();
-
-      // المصفوفات
-      if (Array.isArray(obj)) return obj.map(o => deepSanitize(o));
-
-      // الكائنات
-      if (typeof obj === "object") {
-        // التعامل مع Decimal.js أو ما شابه (Prisma Decimal)
-        if (obj.constructor && (obj.constructor.name === "Decimal" || obj.constructor.name === "n")) {
-          return Number(obj.toString());
-        }
-
-        // التحقق من كونه POJO (Plain Old JavaScript Object) لتجنب مشاكل الـ Proxy في Next.js 15
-        const newObj: any = {};
-        for (const key in obj) {
-          if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            newObj[key] = deepSanitize(obj[key]);
-          }
-        }
-        return newObj;
-      }
-
-      return obj;
-    }
-
     return (
       <div className="kse-app-inner mx-auto max-w-4xl px-4 py-6" dir="rtl">
         <header className="mb-6">
@@ -129,7 +113,7 @@ export default async function BranchPricingPage({ params, searchParams }: Props)
           </div>
           <h1 className="text-2xl font-black text-slate-900">تسعير {branch.name}</h1>
           <p className="text-[10px] text-slate-400 font-bold mt-1">
-            أدخل السعر  (مثلاً 2 يعني 2000 د.ع، و2.25 يعني 2250 د.ع).
+            أدخل السعر (مثلاً 2 يعني 2000 د.ع، و2.25 يعني 2250 د.ع).
           </p>
         </header>
 
@@ -141,6 +125,7 @@ export default async function BranchPricingPage({ params, searchParams }: Props)
       </div>
     );
   } catch (err: any) {
+    console.error("Pricing page error:", err);
     return (
       <div className="p-20 text-center" dir="rtl">
         <h1 className="text-xl font-bold text-rose-600">خطأ في جلب بيانات الفرع</h1>
