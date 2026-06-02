@@ -1356,6 +1356,8 @@ export default function PendingOrdersClient({
                       #{order.orderNumber}
                     </Link>
                   </div>
+                  {/* Reject Order button ONLY emoji (compact) next to checkbox */}
+                  <DeleteFullOrderButton id={order.id} isDraft={false} icons={icons} compact={true} />
                   <div>
                     <Link
                       href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
@@ -1408,14 +1410,6 @@ export default function PendingOrdersClient({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setActiveAssignOrderId(order.id)}
-                    className="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-[10px] font-black shadow-sm active:scale-95 transition-all"
-                  >
-                    <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} />
-                    إسناد للمندوب
-                  </button>
-                  <DeleteFullOrderButton id={order.id} isDraft={false} icons={icons} />
                   {order.voiceNoteUrl && (
                     <MiniVoicePlayer src={order.voiceNoteUrl} />
                   )}
@@ -1424,7 +1418,7 @@ export default function PendingOrdersClient({
 
               {/* Body */}
               <div className="p-5 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <a
                     href={`tel:${order.customerPhone}`}
                     className="h-10 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-black bg-white dark:bg-slate-900 shadow-sm flex items-center gap-1.5 hover:bg-slate-50 transition-colors"
@@ -1464,6 +1458,14 @@ export default function PendingOrdersClient({
                     </a>
                   )}
                 </div>
+
+                <button
+                  onClick={() => setActiveAssignOrderId(order.id)}
+                  className="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-xs font-black shadow-md shadow-emerald-100 dark:shadow-none active:scale-95 transition-all"
+                >
+                  <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} />
+                  إسناد للمندوب
+                </button>
               </div>
             </div>
           );
@@ -1476,7 +1478,7 @@ export default function PendingOrdersClient({
           >
             {/* Header */}
             <div className="p-6 pb-0 flex flex-wrap items-start justify-between gap-4">
-               <div className="flex gap-4">
+               <div className="flex items-center gap-4">
                   {/* Selection Checkbox & shrunken order number stacked */}
                   <div className="flex flex-col items-center gap-1.5 shrink-0 bg-slate-100/50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/50 dark:border-white/5 min-w-[52px] justify-center">
                     <input
@@ -1489,6 +1491,10 @@ export default function PendingOrdersClient({
                       #{order.orderNumber}
                     </span>
                   </div>
+
+                  {/* Compact Reject Button next to checkbox */}
+                  <DeleteFullOrderButton id={order.id} isDraft={!!isDraftMode} icons={icons} compact={true} />
+
                   <div>
                      <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{order.shopName}</h3>
                      <div className="flex flex-wrap items-center gap-2 mt-1.5">
@@ -1513,7 +1519,6 @@ export default function PendingOrdersClient({
                </div>
 
                <div className="flex gap-2">
-                  <DeleteFullOrderButton id={order.id} isDraft={!!isDraftMode} icons={icons} />
                </div>
             </div>
 
