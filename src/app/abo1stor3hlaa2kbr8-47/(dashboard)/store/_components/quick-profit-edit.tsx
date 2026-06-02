@@ -63,9 +63,9 @@ export function QuickProfitEdit({ id, initialMargin, type, name, categoryId }: Q
           }}
           className="text-[10px] text-emerald-600 font-black hover:bg-emerald-50 px-2 py-0.5 rounded-lg transition-colors"
         >
-          💰 {Number(margin) === 0 ? `+${globalMargin !== null ? globalMargin.toLocaleString() : "..."} (عام)` : `+${Number(margin).toLocaleString()}`}
+          💰 {Number(margin) === 0 ? `+${globalMargin !== null ? globalMargin.toLocaleString() : "..."} (عام)` : Number(margin) === -1 ? `بدون ربح` : `+${Number(margin).toLocaleString()}`}
         </button>
-        {(Number(margin) > 0 || type === "category") && (
+        {(Number(margin) !== -1 || type === "category") && (
           <button
             disabled={isLoading}
             onClick={async (e) => {
@@ -76,7 +76,7 @@ export function QuickProfitEdit({ id, initialMargin, type, name, categoryId }: Q
                 const formData = new FormData();
                 formData.append("id", id);
                 formData.append("name", name);
-                formData.append("profitMargin", "0");
+                formData.append("profitMargin", "-1");
 
                 if (type === "category") {
                     await upsertCategory(null, formData);
@@ -85,7 +85,7 @@ export function QuickProfitEdit({ id, initialMargin, type, name, categoryId }: Q
                     formData.append("categoryId", categoryId);
                     await upsertBranch(null, formData);
                 }
-                setMargin(0);
+                setMargin(-1);
               } catch (err) {
                 alert("فشل إيقاف الربح");
               } finally {

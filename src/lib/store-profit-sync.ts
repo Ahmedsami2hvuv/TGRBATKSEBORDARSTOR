@@ -34,7 +34,8 @@ export async function getEffectiveProfitMargin(branchId: string, supplierId?: st
   const globalMargin = Number(globalSettings?.profitMargin || 0);
 
   // الأولوية حسب الترتيب
-  return supplierMargin || branchMargin || categoryMargin || globalMargin;
+  const effective = supplierMargin || branchMargin || categoryMargin || globalMargin;
+  return effective === -1 ? 0 : effective;
 }
 
 /**
@@ -64,7 +65,8 @@ export async function syncBranchProductsPrice(branchId: string) {
 
   for (const product of branch.products) {
     const supplierMargin = Number(product.supplier?.profitMargin || 0);
-    const effectiveMargin = supplierMargin || branchMargin || categoryMargin || globalMargin;
+    const rawEffectiveMargin = supplierMargin || branchMargin || categoryMargin || globalMargin;
+    const effectiveMargin = rawEffectiveMargin === -1 ? 0 : rawEffectiveMargin;
 
     const purchasePrice = Number(product.purchasePrice);
     const addedMargin = effectiveMargin <= 1 ? (purchasePrice * effectiveMargin) : effectiveMargin;

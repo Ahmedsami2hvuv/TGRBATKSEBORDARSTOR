@@ -61,11 +61,11 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
       data: { name, sequence, photoUrl, notes, profitMargin }
     });
 
-    // إذا تم تصفير ربح القسم، نقوم بتصفير أرباح كافة الفروع التابعة له أيضاً
-    if (profitMargin === 0) {
+    // إذا تم تصفير أو إيقاف ربح القسم، نقوم بتحديث أرباح كافة الفروع التابعة له أيضاً
+    if (profitMargin === 0 || profitMargin === -1) {
       await prisma.storeBranch.updateMany({
         where: { categoryId: id },
-        data: { profitMargin: 0 }
+        data: { profitMargin: profitMargin }
       });
     }
 
