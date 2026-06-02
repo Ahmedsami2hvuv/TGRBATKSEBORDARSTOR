@@ -112,6 +112,7 @@ type Props = {
     tab?: string;
     wardFilter?: string;
     saderFilter?: string;
+    activeOrderId?: string;
   }>;
 };
 
@@ -221,7 +222,7 @@ export default async function MandoubPage({ searchParams }: Props) {
   const totalsBaseline = courier.mandoubTotalsResetAt;
 
   const [
-    activeOrdersRaw,
+    fetchedActiveOrdersRaw,
     orderOnlySums,
     handToAdmin,
     walletInOutDisplay,
@@ -283,6 +284,24 @@ export default async function MandoubPage({ searchParams }: Props) {
     }),
     getUISettings("mandoub", "wallet_block"),
   ]);
+
+  let activeOrdersRaw = fetchedActiveOrdersRaw;
+  const activeOrderIdParam = sp.activeOrderId?.trim() || "";
+  if (activeOrderIdParam && !activeOrdersRaw.some((o) => o.id === activeOrderIdParam)) {
+    const singleOrder = await prisma.order.findFirst({
+      where: {
+        id: activeOrderIdParam,
+        OR: [
+          { assignedCourierId: courier.id },
+          { courierEarningForCourierId: courier.id },
+        ],
+      },
+      include: mandoubOrderListInclude,
+    });
+    if (singleOrder) {
+      activeOrdersRaw = [singleOrder, ...activeOrdersRaw];
+    }
+  }
 
   const ordersForWallet = activeOrdersRaw.map((o) => {
     const doubleStaff = o.routeMode === "double" && o.submissionSource === "staff_portal";
@@ -551,7 +570,7 @@ export default async function MandoubPage({ searchParams }: Props) {
   // هنا نستخدم مبالغ الطلبات فقط في الواجهة الرئيسية
   const { sumDeliveryIn, sumPickupOut, remainingNet } = orderOnlySums;
 
-  const filteredByTab = activeOrdersNorm.filter((o) => {
+  let filteredByTab = activeOrdersNorm.filter((o) => {
     if (!isMandoubActiveListStatus(o.status)) return false;
     if (tab === "all") return true;
 
@@ -570,6 +589,14 @@ export default async function MandoubPage({ searchParams }: Props) {
 
     return o.status === tab;
   });
+
+  // Ensure active order is always present in the returned list to keep its modal open
+  if (activeOrderIdParam) {
+    const activeOrderObj = activeOrdersNorm.find((o) => o.id === activeOrderIdParam);
+    if (activeOrderObj && !filteredByTab.some((o) => o.id === activeOrderIdParam)) {
+      filteredByTab = [activeOrderObj, ...filteredByTab];
+    }
+  }
 
   function computeSmartHint(params: {
     locationUrl: string;

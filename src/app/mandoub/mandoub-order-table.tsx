@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   bulkSetMandoubOrdersStatus,
 } from "./actions";
@@ -143,7 +143,13 @@ export function MandoubOrderTable({
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showQuickSelect, setShowQuickSelect] = useState(false);
-  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const activeOrderParam = searchParams.get("activeOrderId");
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(activeOrderParam || null);
+
+  useEffect(() => {
+    setActiveOrderId(activeOrderParam);
+  }, [activeOrderParam]);
   const [showWallet, setShowWallet] = useState(false);
   const [bulkState, bulkAction, bulkPending] = useActionState(
     bulkSetMandoubOrdersStatus,
@@ -311,6 +317,17 @@ export function MandoubOrderTable({
     if (!activeOrderId) return null;
     return displayRows.find(r => r.id === activeOrderId);
   }, [activeOrderId, displayRows]);
+
+  const detailsNextUrl = useMemo(() => {
+    const p = new URLSearchParams();
+    if (auth.c) p.set("c", auth.c);
+    if (auth.exp) p.set("exp", auth.exp);
+    if (auth.s) p.set("s", auth.s);
+    p.set("tab", tab);
+    if (qSearch.trim()) p.set("q", qSearch.trim());
+    if (activeOrderId) p.set("activeOrderId", activeOrderId);
+    return `/mandoub?${p.toString()}`;
+  }, [auth, tab, qSearch, activeOrderId]);
 
   const rowDetailHrefs = useMemo(
     () => displayRows.map((r) => buildOrderDetailHref(auth, tab, qSearch, r.id)),
@@ -557,7 +574,9 @@ export function MandoubOrderTable({
         onOpenRow={(id) => {
           if (isSortingMode) return;
           setActiveOrderId(id);
-          window.history.pushState({ orderId: id }, "");
+          const p = new URLSearchParams(window.location.search);
+          p.set("activeOrderId", id);
+          window.history.pushState({ orderId: id }, "", `?${p.toString()}`);
         }}
         onRowReorder={isSortingMode ? handleRowReorder : undefined}
         canDragRow={(o) => o.orderStatus !== "delivered"}
@@ -738,7 +757,9 @@ export function MandoubOrderTable({
               <button
                 onClick={() => {
                   setActiveOrderId(null);
-                  window.history.back();
+                  const p = new URLSearchParams(window.location.search);
+                  p.delete("activeOrderId");
+                  window.history.pushState({}, "", `?${p.toString()}`);
                 }}
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
               >
@@ -761,17 +782,17 @@ export function MandoubOrderTable({
                   orderNumber: Number(activeOrderData.shortId), // استخدام shortId كرقم عرض
                   moneyEvents: activeOrderData.moneyEvents || [],
                   shop: {
-                    name: activeOrderData.shopName,
-                    phone: activeOrderData.shopPhone,
-                    photoUrl: activeOrderData.shopDoorPhotoUrl,
-                    locationUrl: activeOrderData.shopLocationUrl,
-                    region: { name: activeOrderData.regionLine }
+                     name: activeOrderData.shopName,
+                     phone: activeOrderData.shopPhone,
+                     photoUrl: activeOrderData.shopDoorPhotoUrl,
+                     locationUrl: activeOrderData.shopLocationUrl,
+                     region: { name: activeOrderData.regionLine }
                   } as any,
                   customerRegion: { name: activeOrderData.regionLine } as any,
                 }}
                 auth={auth}
                 closeHref="#"
-                nextUrl=""
+                nextUrl={detailsNextUrl}
                 viewerCourierId={auth.c}
                 smartHintLine={activeOrderData.smartHintLine}
                 icons={icons}

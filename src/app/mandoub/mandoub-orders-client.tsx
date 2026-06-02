@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ad } from "@/lib/admin-ui";
 import {
   mandoubOrderMatchesSmartQuery,
@@ -32,16 +33,32 @@ export function MandoubOrdersSection({
   walletData: any;
 }) {
   const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const activeOrderId = searchParams.get("activeOrderId");
 
   const filteredRows = useMemo(() => {
     const paired = allRows
       .map((r, i) => ({ r, f: searchFields[i] }))
       .filter(({ r }) => isMandoubActiveListStatus(r.orderStatus, tab));
-    if (!query.trim()) return paired.map((p) => p.r);
-    return paired
-      .filter(({ f }) => !!f && mandoubOrderMatchesSmartQuery(query, f!))
-      .map((p) => p.r);
-  }, [allRows, searchFields, query, tab]);
+    
+    let result: MandoubRow[];
+    if (!query.trim()) {
+      result = paired.map((p) => p.r);
+    } else {
+      result = paired
+        .filter(({ f }) => !!f && mandoubOrderMatchesSmartQuery(query, f!))
+        .map((p) => p.r);
+    }
+
+    // Force active order to be in filteredRows to prevent details modal from closing
+    if (activeOrderId) {
+      const activeRow = allRows.find((r) => r.id === activeOrderId);
+      if (activeRow && !result.some((r) => r.id === activeOrderId)) {
+        result = [activeRow, ...result];
+      }
+    }
+    return result;
+  }, [allRows, searchFields, query, tab, activeOrderId]);
 
   return (
     <>
