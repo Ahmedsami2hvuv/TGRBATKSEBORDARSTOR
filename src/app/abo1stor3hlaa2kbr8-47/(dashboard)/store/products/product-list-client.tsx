@@ -54,7 +54,7 @@ export function ProductListClient({
   // Pricing State for non-variant products
   const [purchasePrice, setPurchasePrice] = useState<number>(0);
   const [salePrice, setSalePrice] = useState<number>(0);
-  const [profitMargin, setProfitMargin] = useState(0.25);
+  const [profitMargin, setProfitMargin] = useState(250);
 
   useEffect(() => {
     if (editing) {
@@ -77,7 +77,7 @@ export function ProductListClient({
 
   const handlePurchasePriceChange = (val: number) => {
     setPurchasePrice(val);
-    const suggestedSale = val * (1 + profitMargin);
+    const suggestedSale = val + profitMargin;
     setSalePrice(suggestedSale);
   };
 
@@ -695,17 +695,17 @@ export function ProductListClient({
                   <div className="bg-white p-4 rounded-[2rem] border border-slate-100">
                     <label className="text-xs font-black text-slate-400 mb-3 block mr-2">تطبيق هامش ربح سريع:</label>
                     <div className="flex flex-wrap gap-2">
-                      {[0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50].map(m => (
+                      {[250, 500, 750, 1000, 1500, 2000, 2500].map(m => (
                         <button
                           key={m}
                           type="button"
                           onClick={() => {
                             setProfitMargin(m);
-                            setSalePrice(purchasePrice * (1 + m));
+                            setSalePrice(purchasePrice + m);
                           }}
                           className={`flex-1 min-w-[70px] py-2 text-xs font-black rounded-xl border transition-all ${profitMargin === m ? 'bg-violet-600 text-white border-violet-600 shadow-lg shadow-violet-100' : 'bg-slate-50 text-slate-500 border-transparent hover:bg-slate-100'}`}
                         >
-                          %{m * 100}
+                          +{m} د.ع
                         </button>
                       ))}
                     </div>
