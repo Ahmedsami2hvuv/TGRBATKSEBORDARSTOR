@@ -261,38 +261,48 @@ export function OrderTrackingBulkTable({
       ) : null}
 
       {selectedCount ? (
-        <div className="rounded-2xl border border-sky-200 bg-white/70 p-3">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="text-sm font-bold text-slate-800">
-                تم اختيار {selectedCount} طلب
-              </p>
-              {bulkState.error ? (
-                <p className="mt-1 text-sm font-bold text-rose-600">
-                  {bulkState.error}
+        <div className="fixed bottom-5 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-50 w-auto max-w-[calc(100vw-2rem)] md:max-w-5xl rounded-3xl border-2 border-sky-300 bg-white/95 backdrop-blur-md px-4 py-3.5 shadow-[0_15px_40px_rgba(14,165,233,0.22)] animate-in fade-in slide-in-from-bottom-8 duration-300" dir="rtl">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex items-center justify-between lg:justify-start gap-3 border-b lg:border-b-0 pb-2 lg:pb-0 border-slate-100">
+              <div>
+                <p className="text-sm font-black text-slate-800">
+                  تم اختيار <span className="text-lg font-extrabold text-sky-700">{selectedCount}</span> طلبية
                 </p>
-              ) : null}
-              {bulkPending ? (
-                <p className="mt-1 text-xs font-bold text-sky-800">جارٍ التطبيق…</p>
-              ) : null}
+                {bulkState.error ? (
+                  <p className="mt-0.5 text-xs font-bold text-rose-600">
+                    {bulkState.error}
+                  </p>
+                ) : null}
+                {bulkPending ? (
+                  <p className="mt-0.5 text-[11px] font-bold text-sky-850 animate-pulse">جارٍ حفظ التعديلات… ⏳</p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="lg:hidden flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 text-sm font-bold"
+                title="إلغاء التحديد"
+              >
+                ✕
+              </button>
             </div>
 
-            <form action={bulkAction} className="flex flex-wrap items-end gap-2">
+            <form action={bulkAction} className="flex flex-wrap items-end justify-center lg:justify-end gap-2.5">
               {selectedIdsArr.map((id) => (
                 <input key={id} type="hidden" name="orderIds" value={id} />
               ))}
 
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-xs font-bold text-slate-600">الحالة الجديدة</span>
+              <label className="flex flex-col gap-0.5 text-xs font-bold text-slate-500">
+                الحالة الجديدة
                 <select
                   name="targetStatus"
                   value={targetStatus}
                   onChange={(e) => setTargetStatus(e.target.value)}
-                  className="rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 outline-none"
+                  className="h-10 rounded-xl border border-sky-200 bg-white px-2.5 py-1 text-xs font-black text-slate-850 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                 >
-                  <option value="pending">قيد الانتظار</option>
+                  <option value="pending">قيد الانتظار (جديد)</option>
                   <option value="assigned">مسند للمندوب</option>
-                  <option value="delivering">بالتوصيل</option>
+                  <option value="delivering">عند المندوب (بالتوصيل)</option>
                   <option value="delivered">تم التسليم</option>
                   <option value="cancelled">مرفوض</option>
                   <option value="archived">مؤرشف</option>
@@ -300,15 +310,15 @@ export function OrderTrackingBulkTable({
               </label>
 
               {needsCourier ? (
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-xs font-bold text-slate-600">المندوب</span>
+                <label className="flex flex-col gap-0.5 text-xs font-bold text-slate-500">
+                  المندوب المسند
                   <select
                     name="courierId"
                     value={courierId}
                     onChange={(e) => setCourierId(e.target.value)}
-                    className="rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 outline-none"
+                    className="h-10 min-w-[9.5rem] rounded-xl border border-sky-200 bg-white px-2.5 py-1 text-xs font-black text-slate-850 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                   >
-                    <option value="">اختر مندوب…</option>
+                    <option value="">اختر مندوب للطلب…</option>
                     {couriers.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -321,8 +331,8 @@ export function OrderTrackingBulkTable({
               )}
 
               {needsCourier && (
-                <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-sky-200">
-                  <input type="checkbox" id="bulk-direct-tracking" name="directReceipt" className="h-4 w-4 rounded border-sky-400" />
+                <div className="flex h-10 items-center gap-2 bg-sky-50 px-3 rounded-xl border border-sky-200">
+                  <input type="checkbox" id="bulk-direct-tracking" name="directReceipt" className="h-4.5 w-4.5 rounded border-sky-400 text-sky-600 focus:ring-sky-400" />
                   <label htmlFor="bulk-direct-tracking" className="text-[10px] font-black text-sky-950 cursor-pointer select-none">استلام مباشر ⚡</label>
                 </div>
               )}
@@ -330,9 +340,18 @@ export function OrderTrackingBulkTable({
               <button
                 type="submit"
                 disabled={bulkPending || (needsCourier && !courierId)}
-                className="rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-sky-200/80 ring-1 ring-sky-400/30 transition hover:from-sky-700 hover:to-cyan-700 disabled:opacity-60"
+                className="h-10 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 px-5 text-xs font-black text-white shadow-md shadow-sky-200/80 ring-1 ring-sky-400/30 transition hover:from-sky-700 hover:to-cyan-700 active:scale-95 disabled:opacity-50"
               >
-                تطبيق
+                تطبيق الإجراء
+              </button>
+
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="hidden lg:flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition"
+                title="إلغاء التحديد وإفراغ القائمة"
+              >
+                ✕
               </button>
             </form>
           </div>
