@@ -647,17 +647,19 @@ export function OrderFabDock(props: OrderFabDockProps) {
   };
 
   const calculatedLeft = useMemo(() => {
-    if (typeof window === "undefined" || !mainFabPos) return 16;
-    const w = window.innerWidth;
+    if (typeof window === "undefined") return 16;
+    const w = window.innerWidth || 360;
+    const leftVal = mainFabPos?.left ?? (w - 70);
     const menuW = 180;
     const margin = 12;
-    return Math.max(margin, Math.min(w - menuW - margin, mainFabPos.left - 4));
+    return Math.max(margin, Math.min(w - menuW - margin, leftVal - 4));
   }, [mainFabPos]);
 
   const calculatedBottom = useMemo(() => {
-    if (typeof window === "undefined" || !mainFabPos) return 80;
-    const h = window.innerHeight;
-    return Math.max(20, h - mainFabPos.top + 16);
+    if (typeof window === "undefined") return 80;
+    const h = window.innerHeight || 640;
+    const topVal = mainFabPos?.top ?? 400;
+    return Math.max(20, h - topVal + 16);
   }, [mainFabPos]);
 
   const contactMenuPos = isExpanded 
@@ -697,7 +699,13 @@ export function OrderFabDock(props: OrderFabDockProps) {
         : (showCustomPickAbove ? customPickPos.top - CUSTOM_PICK_H - 8 : customPickPos.top + fabSize + 8)
     : 0;
 
-  const customPickMenuLeft = customPickPos ? Math.max(8, customPickPos.left - 130) : 0;
+  const customPickMenuLeft = useMemo(() => {
+    if (typeof window === "undefined" || !customPickPos) return 8;
+    const w = window.innerWidth || 360;
+    const menuW = 200;
+    const margin = 8;
+    return Math.max(margin, Math.min(w - menuW - margin, customPickPos.left - 130));
+  }, [customPickPos]);
 
   /** فوق أزرار الأموال العائمة (z≈1200–1210 في `mandoub-order-money-float-dock`) وتحت نافذة التأكيد (z≈1300). */
   return (
