@@ -163,9 +163,7 @@ export async function submitMandoubPickupMoney(
   if (amountDinar.lt(0)) {
     return { error: "أدخل مبلغاً أكبر أو يساوي صفر." };
   }
-  if (amountDinar.eq(0) && !mismatchNote.trim()) {
-    return mismatchNoteRequiredError();
-  }
+
 
   const nextPaid = paidSoFar.plus(amountDinar);
   const matches = dinarAmountsMatchExpected(nextPaid, expected);
@@ -336,9 +334,7 @@ export async function submitMandoubDeliveryMoney(
   if (amountDinar.lt(0)) {
     return { error: "أدخل مبلغاً أكبر أو يساوي صفر." };
   }
-  if (amountDinar.eq(0) && !mismatchNote.trim()) {
-    return mismatchNoteRequiredError();
-  }
+
 
   const nextReceived = receivedSoFar.plus(amountDinar);
   const matches = dinarAmountsMatchExpected(nextReceived, expected);

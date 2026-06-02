@@ -65,8 +65,6 @@ function ImageModal({ url, title, onClose }: { url: string, title: string, onClo
 
 function MoneyMiniBadges({ row }: { row: MandoubRow }) {
   if (row.showMoneyBoxes === false) return null;
-  // المطلوب: تظهر "من الخارج" فقط عند تم التسليم
-  if (row.orderStatus !== "delivered") return null;
 
   const pickup = row.pickupSumDinar ?? null; // صادر المندوب
   const delivery = row.deliverySumDinar ?? null; // وارد المندوب
