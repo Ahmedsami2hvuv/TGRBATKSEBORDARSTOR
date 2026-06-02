@@ -51,6 +51,7 @@ export type PendingOrderRow = {
   customerAlternatePhone: string;
   customerDoorPhotoUrl: string;
   totalAmount: string | null;
+  orderSubtotal?: string | null;
   deliveryPrice: string | null;
   rawDeliveryPriceDinar: number | null;
   submittedByName: string | null;
@@ -734,6 +735,49 @@ function DeleteFullOrderButton({ id, isDraft, onSuccess, icons }: { id: string, 
   );
 }
 
+/** مشغل ملاحظة صوتية مصغر دائري */
+function MiniVoicePlayer({ src }: { src: string }) {
+  const [playing, setPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
+
+  const toggle = () => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio(src);
+      audioRef.current.onended = () => setPlaying(false);
+    }
+    if (playing) {
+      audioRef.current.pause();
+      setPlaying(false);
+    } else {
+      audioRef.current.play().catch((e) => console.error("Error playing audio:", e));
+      setPlaying(true);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      className={`h-9 w-9 rounded-full flex items-center justify-center transition-all shadow-sm shrink-0 ${
+        playing
+          ? "bg-rose-500 text-white animate-pulse"
+          : "bg-violet-600 text-white hover:bg-violet-700 shadow-md shadow-violet-200/50"
+      }`}
+      title={playing ? "إيقاف الملاحظة الصوتية" : "تشغيل الملاحظة الصوتية"}
+    >
+      <span className="text-xs">{playing ? "⏸" : "🎤"}</span>
+    </button>
+  );
+}
+
 /** لوحة إسناد الطلب للمندوب */
 export function PendingAssignPanel({
   orderId,
@@ -1323,22 +1367,29 @@ export default function PendingOrdersClient({
                     <div className="flex flex-wrap items-center gap-2 mt-1">
                       {order.routeMode === 'double' ? (
                         <>
-                          <span className="flex items-center gap-1 text-[10px] font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">
-                            <span className="bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded leading-none">من</span>
+                          <span className="flex items-center gap-1 text-xs font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
+                            <span className="bg-emerald-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded leading-none">من</span>
                             {order.regionName}
                           </span>
-                          <span className="flex items-center gap-1 text-[10px] font-black bg-rose-50 text-rose-700 dark:bg-rose-950/10 dark:text-rose-400 px-2.5 py-1 rounded-full border border-rose-100 dark:border-rose-900/30">
-                            <span className="bg-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded leading-none">إلى</span>
+                          <span className="flex items-center gap-1 text-xs font-black bg-rose-50 text-rose-700 dark:bg-rose-950/10 dark:text-rose-400 px-3 py-1.5 rounded-full border border-rose-100 dark:border-rose-900/30 shadow-sm">
+                            <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded leading-none">إلى</span>
                             {order.secondCustomerRegionName || "غير معروف"}
                           </span>
                         </>
                       ) : (
-                        <span className="flex items-center gap-1 text-[10px] font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-2.5 py-1 rounded-full border border-sky-100 dark:border-sky-900/30">
-                          <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> {order.regionName}
+                        <span className="flex items-center gap-1.5 text-xs font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-3 py-1.5 rounded-full border border-sky-100 dark:border-sky-900/30 shadow-sm">
+                          <DynamicIcon icon={icons?.ui_location} fallback="📍" width={12} height={12} /> {order.regionName}
                         </span>
                       )}
-                      {order.totalAmount ? (
-                        <span className="inline-flex items-center gap-1.5 text-[10px] font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">
+                      {order.orderSubtotal ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
+                          {hasLocation && (
+                            <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" title="الموقع الجغرافي متوفر" />
+                          )}
+                          {order.orderSubtotal}
+                        </span>
+                      ) : order.totalAmount ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
                           {hasLocation && (
                             <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" title="الموقع الجغرافي متوفر" />
                           )}
@@ -1366,84 +1417,29 @@ export default function PendingOrdersClient({
               </div>
 
               {/* Body */}
-              <div className="p-5 space-y-3">
-                {/* Details Section */}
-                <Link
-                  href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
-                  className="block bg-slate-50/50 hover:bg-slate-100/80 dark:bg-slate-900/20 dark:hover:bg-slate-900/40 rounded-2xl p-4 border border-slate-100/60 dark:border-white/5 transition-all hover:translate-x-[-2px] group"
-                  title="فتح تفاصيل الطلب بالكامل"
-                >
-                  <div className="flex justify-between items-center mb-1">
-                    <p className="text-[9px] font-black text-slate-400 pr-1">تفاصيل الطلب</p>
-                    <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">دخول للطلب ↗</span>
-                  </div>
-                  <p className="text-sm font-black text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{order.summary}</p>
-                </Link>
+              <div className="p-5 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`tel:${order.customerPhone}`}
+                    className="h-10 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-black bg-white dark:bg-slate-900 shadow-sm flex items-center gap-1.5 hover:bg-slate-50 transition-colors"
+                  >
+                    <DynamicIcon icon={icons?.ui_call} fallback="📞" width={12} height={12} />
+                    اتصال هاتفي
+                  </a>
+                  <a
+                    href={`https://wa.me/${order.customerPhone.startsWith('0') ? '964' + order.customerPhone.slice(1) : order.customerPhone}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-sm flex items-center gap-1.5 transition-colors"
+                  >
+                    <DynamicIcon icon={icons?.ui_whatsapp} fallback="💬" width={12} height={12} />
+                    مراسلة واتساب
+                  </a>
+                </div>
 
                 {order.voiceNoteUrl && (
-                  <div className="p-3 bg-violet-50 dark:bg-violet-950/10 rounded-xl border border-violet-100 dark:border-violet-900/30">
-                    <VoiceNoteAudio src={order.voiceNoteUrl} />
-                  </div>
+                  <MiniVoicePlayer src={order.voiceNoteUrl} />
                 )}
-
-                {/* Contact Info & Door Photos */}
-                <div className="flex flex-wrap items-center justify-between gap-4 pr-2 bg-slate-50/20 dark:bg-slate-900/5 p-3 rounded-2xl border border-slate-100 dark:border-white/5">
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500 dark:text-slate-400">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold">هاتف الزبون:</span>
-                      <span className="font-black font-mono text-slate-700 dark:text-slate-300">{order.customerPhone}</span>
-                    </div>
-                    {order.customerAlternatePhone && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold">هاتف بديل:</span>
-                        <span className="font-black font-mono text-slate-700 dark:text-slate-300">{order.customerAlternatePhone}</span>
-                      </div>
-                    )}
-                    {order.customerLandmark && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold">معلم دال:</span>
-                        <span className="font-bold text-slate-700 dark:text-slate-300">{order.customerLandmark}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    {order.customerDoorPhotoUrl && (
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span className="text-[7px] font-black text-slate-400">صورة الباب</span>
-                        <a
-                          href={order.customerDoorPhotoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="relative group overflow-hidden rounded-xl border border-slate-200 dark:border-white/5 bg-slate-100 dark:bg-slate-900 shadow-sm"
-                        >
-                          <img
-                            src={order.customerDoorPhotoUrl}
-                            alt="صورة الباب"
-                            className="w-12 h-12 object-cover transition-transform duration-200 group-hover:scale-110"
-                          />
-                        </a>
-                      </div>
-                    )}
-                    {order.secondCustomerDoorPhotoUrl && (
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span className="text-[7px] font-black text-slate-400">صورة الباب 2</span>
-                        <a
-                          href={order.secondCustomerDoorPhotoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="relative group overflow-hidden rounded-xl border border-slate-200 dark:border-white/5 bg-slate-100 dark:bg-slate-900 shadow-sm"
-                        >
-                          <img
-                            src={order.secondCustomerDoorPhotoUrl}
-                            alt="صورة الباب 2"
-                            className="w-12 h-12 object-cover transition-transform duration-200 group-hover:scale-110"
-                          />
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
           );
