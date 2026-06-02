@@ -74,7 +74,11 @@ async function getCachedCategory(id: string) {
 async function CategoryHeader({ id }: { id: string }) {
   const category = await getCachedCategory(id);
 
-  if (!category) return notFound();
+  if (!category) return (
+    <div className="text-center py-10 text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800" dir="rtl">
+      القسم المطلوب غير موجود أو تم إيقافه مؤقتاً.
+    </div>
+  );
 
   return (
     <>

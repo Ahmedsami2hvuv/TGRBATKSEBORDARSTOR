@@ -34,7 +34,11 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
     })
   ]);
 
-  if (!branch) return notFound();
+  if (!branch) return (
+    <div className="text-center py-20 text-slate-500 font-bold bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800" dir="rtl">
+      الفرع المطلوب غير موجود أو غير نشط حالياً.
+    </div>
+  );
 
   const productBg = (storeSettings?.config as any)?.product_card_bg_url;
   const productBgOpacity = (storeSettings?.config as any)?.product_card_bg_opacity;
