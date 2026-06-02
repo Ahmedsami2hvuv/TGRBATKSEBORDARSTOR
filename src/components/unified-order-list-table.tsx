@@ -33,13 +33,21 @@ function MiniAudioPlayer({ url }: { url: string }) {
 function CenterModal({ title, onClose, children }: { title: string, onClose: () => void, children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
-      <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-        <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+      <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh] max-h-[80dvh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b flex justify-between items-center bg-slate-50 shrink-0">
           <span className="font-bold text-slate-800">{title}</span>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-rose-100 text-rose-700 hover:bg-rose-200 hover:text-rose-800 transition-all font-black text-sm border-0 cursor-pointer shadow-sm">✕</button>
         </div>
-        <div className="p-2">
+        <div className="p-4 overflow-y-auto flex-1 text-right">
           {children}
+        </div>
+        <div className="p-3 border-t bg-slate-50 flex justify-center shrink-0">
+          <button 
+            onClick={onClose} 
+            className="w-full py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black transition-all text-sm border-0 cursor-pointer shadow-md hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-1"
+          >
+            <span>إغلاق النافذة</span>
+          </button>
         </div>
       </div>
     </div>
@@ -50,18 +58,27 @@ function CenterModal({ title, onClose, children }: { title: string, onClose: () 
 function ImageModal({ url, title, onClose }: { url: string, title: string, onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose}>
-      <div className="relative max-w-2xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
-        <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+      <div className="relative max-w-2xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] max-h-[85dvh] animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b flex justify-between items-center bg-slate-50 shrink-0">
           <span className="font-bold text-slate-800 text-base">{title}</span>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-rose-100 text-rose-700 hover:bg-rose-200 hover:text-rose-800 transition-all font-black text-sm border-0 cursor-pointer shadow-sm">✕</button>
         </div>
-        <div className="p-1 bg-slate-200">
-           <img src={resolvePublicAssetSrc(url)!} alt={title} className="w-full h-auto max-h-[75vh] object-contain rounded-2xl shadow-inner" />
+        <div className="p-2 bg-slate-200 overflow-y-auto flex-1 flex items-center justify-center">
+           <img src={resolvePublicAssetSrc(url)!} alt={title} className="max-w-full h-auto max-h-[60vh] max-h-[60dvh] object-contain rounded-2xl shadow-inner" />
+        </div>
+        <div className="p-3 border-t bg-slate-50 flex justify-center shrink-0">
+          <button 
+            onClick={onClose} 
+            className="w-full py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black transition-all text-sm border-0 cursor-pointer shadow-md hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-1"
+          >
+            <span>إغلاق المعاينة</span>
+          </button>
         </div>
       </div>
     </div>
   );
 }
+
 
 
 function MoneyMiniBadges({ row }: { row: MandoubRow }) {
