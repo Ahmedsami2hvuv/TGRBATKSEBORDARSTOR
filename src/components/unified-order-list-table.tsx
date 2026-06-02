@@ -36,7 +36,7 @@ function CenterModal({ title, onClose, children }: { title: string, onClose: () 
       <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b flex justify-between items-center bg-slate-50">
           <span className="font-bold text-slate-800">{title}</span>
-          <button onClick={onClose} className="size-10 flex items-center justify-center rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 transition-colors">✕</button>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-rose-100 text-rose-700 hover:bg-rose-200 hover:text-rose-800 transition-all font-black text-sm border-0 cursor-pointer shadow-sm">✕</button>
         </div>
         <div className="p-2">
           {children}
@@ -53,7 +53,7 @@ function ImageModal({ url, title, onClose }: { url: string, title: string, onClo
       <div className="relative max-w-2xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b flex justify-between items-center bg-slate-50">
           <span className="font-bold text-slate-800 text-base">{title}</span>
-          <button onClick={onClose} className="size-10 flex items-center justify-center rounded-full bg-slate-200 text-slate-600 font-bold hover:bg-slate-300 transition-all">✕</button>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-rose-100 text-rose-700 hover:bg-rose-200 hover:text-rose-800 transition-all font-black text-sm border-0 cursor-pointer shadow-sm">✕</button>
         </div>
         <div className="p-1 bg-slate-200">
            <img src={resolvePublicAssetSrc(url)!} alt={title} className="w-full h-auto max-h-[75vh] object-contain rounded-2xl shadow-inner" />
@@ -62,6 +62,7 @@ function ImageModal({ url, title, onClose }: { url: string, title: string, onClo
     </div>
   );
 }
+
 
 function MoneyMiniBadges({ row }: { row: MandoubRow }) {
   if (row.showMoneyBoxes === false) return null;
