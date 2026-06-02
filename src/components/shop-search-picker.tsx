@@ -54,7 +54,7 @@ export function ShopSearchPicker({
       />
       {hits.length > 0 && !hasSelection ? (
         <ul
-          className="absolute z-50 top-full left-0 mt-1 max-h-60 w-fit min-w-[160px] overflow-auto rounded-2xl border border-sky-200 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-200"
+          className="absolute z-50 top-full right-0 mt-1 max-h-60 w-fit min-w-[160px] overflow-auto rounded-2xl border border-sky-200 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-200"
           role="listbox"
           dir="rtl"
         >
