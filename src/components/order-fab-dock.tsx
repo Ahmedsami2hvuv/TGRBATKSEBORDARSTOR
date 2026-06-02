@@ -417,8 +417,8 @@ export function OrderFabDock(props: OrderFabDockProps) {
   const fabIds = useMemo(
     (): string[] => {
       const ids: string[] = [];
-      if (showWhatsAppBtn) ids.push("wa");
-      if (showCallBtn) ids.push("tel");
+      if (showWhatsAppBtn !== false) ids.push("wa");
+      if (showCallBtn !== false) ids.push("tel");
       ids.push(...customFabIds);
       return ids;
     },
