@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { upsertCategory, upsertBranch } from "../actions";
 
 interface QuickProfitEditProps {
@@ -15,6 +15,15 @@ export function QuickProfitEdit({ id, initialMargin, type, name, categoryId }: Q
   const [margin, setMargin] = useState(initialMargin);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [globalMargin, setGlobalMargin] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (Number(margin) === 0) {
+      import("../actions").then(({ getGlobalProfitMargin }) => {
+        getGlobalProfitMargin().then(val => setGlobalMargin(val));
+      });
+    }
+  }, [margin]);
 
   async function handleSave() {
     setIsLoading(true);
@@ -54,7 +63,7 @@ export function QuickProfitEdit({ id, initialMargin, type, name, categoryId }: Q
           }}
           className="text-[10px] text-emerald-600 font-black hover:bg-emerald-50 px-2 py-0.5 rounded-lg transition-colors"
         >
-          💰 {Number(margin) === 0 ? "يتبع العام" : `+${Number(margin).toLocaleString()}`}
+          💰 {Number(margin) === 0 ? `+${globalMargin !== null ? globalMargin.toLocaleString() : "..."} (عام)` : `+${Number(margin).toLocaleString()}`}
         </button>
         {(Number(margin) > 0 || type === "category") && (
           <button

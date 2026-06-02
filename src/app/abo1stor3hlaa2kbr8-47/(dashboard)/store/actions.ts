@@ -935,3 +935,11 @@ export async function applyUnifiedProfit(margin: number) {
   revalidatePath(`${SECRET_ADMIN_PATH}/store/products`);
   return { ok: true };
 }
+
+export async function getGlobalProfitMargin() {
+  const settings = await prisma.globalSettings.findUnique({
+    where: { id: "system" },
+    select: { profitMargin: true }
+  });
+  return settings?.profitMargin ? Number(settings.profitMargin) : 250;
+}
