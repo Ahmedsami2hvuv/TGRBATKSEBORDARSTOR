@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { extractLatLngFromLocationInput, hasCustomerLocationUrl } from "@/lib/order-location";
@@ -609,30 +610,24 @@ export function OrderDetailSection({
         </div>
       </div>
 
-      {/* مودال معاينة الصور التفاعلي الأنيق في نفس الصفحة */}
-      {previewImageUrl && (
+      {/* مودال معاينة الصور التفاعلي الأنيق في نفس الصفحة باستخدام React Portal لتجنب مشاكل التموضع */}
+      {previewImageUrl && typeof document !== "undefined" && createPortal(
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 transition-all duration-300 animate-fade-in"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 transition-all duration-300 animate-fade-in"
           onClick={() => setPreviewImageUrl(null)}
         >
-          <div className="relative max-w-full max-h-[85vh] flex flex-col items-center">
-            {/* زر الإغلاق الأنيق */}
+          <div className="relative w-full max-w-lg flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            {/* زر الإغلاق الأنيق في الأعلى بمنتصف العرض تماماً للمس مريح */}
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setPreviewImageUrl(null);
-              }}
-              className="absolute -top-12 right-2 flex size-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 border border-white/20 transition-all text-xl font-bold shadow-xl active:scale-90"
-              title="إغلاق"
+              onClick={() => setPreviewImageUrl(null)}
+              className="absolute -top-12 left-1/2 -translate-x-1/2 flex h-9 w-24 items-center justify-center gap-1.5 rounded-full bg-white/20 text-white hover:bg-white/35 border border-white/20 transition-all text-xs font-black shadow-xl active:scale-95"
+              title="إغلاق المعاينة"
             >
-              ✕
+              ✕ إغلاق
             </button>
             
-            {/* الصورة الكبيرة */}
-            <div 
-              className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/40 shadow-2xl p-1 max-w-[95vw] max-h-[75vh]"
-              onClick={(e) => e.stopPropagation()}
-            >
+            {/* إطار الصورة الفعلي */}
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 shadow-2xl p-1 max-w-[95vw] max-h-[75vh] flex items-center justify-center">
               <img 
                 src={previewImageUrl} 
                 alt="معاينة الصورة" 
@@ -640,7 +635,8 @@ export function OrderDetailSection({
               />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
   );
