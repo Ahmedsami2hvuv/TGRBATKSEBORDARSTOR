@@ -704,35 +704,33 @@ function RejectButton({ orderId, icons }: { orderId: string, icons?: GlobalIcons
   );
 }
 
-/** زر حذف الطلب نهائياً */
+/** زر حذف الطلب نهائياً (رفض الطلب) */
 function DeleteFullOrderButton({ id, isDraft, onSuccess, icons }: { id: string, isDraft: boolean, onSuccess?: () => void, icons?: GlobalIconsConfig | null }) {
   const bound = deleteOrderPermanently.bind(null);
   const [state, formAction, pending] = useActionState(bound, {} as any);
-  const [confirm, setConfirm] = useState(false);
 
   useEffect(() => { if (state.ok && onSuccess) onSuccess(); }, [state.ok, onSuccess]);
 
-  if (confirm) {
-    return (
-      <form action={formAction} className="flex items-center gap-1.5 bg-rose-50 dark:bg-rose-900/20 p-1.5 pr-3 rounded-2xl border-2 border-rose-200 dark:border-rose-900/50 shadow-lg animate-in fade-in slide-in-from-left-2">
-        <input type="hidden" name="id" value={id} />
-        <input type="hidden" name="isDraft" value={String(isDraft)} />
-        <span className="text-[10px] font-black text-rose-700 dark:text-rose-400 ml-1">حذف نهائي؟</span>
-        <button type="submit" disabled={pending} className="h-8 px-4 bg-rose-600 text-white rounded-xl text-[10px] font-black shadow-md hover:bg-rose-700 active:scale-90 transition-all">نعم</button>
-        <button type="button" onClick={() => setConfirm(false)} className="h-8 px-4 bg-white dark:bg-slate-800 text-slate-500 rounded-xl text-[10px] font-black border border-slate-200 dark:border-white/10 hover:bg-slate-50">إلغاء</button>
-      </form>
-    );
-  }
-
   return (
-    <button
-      type="button"
-      onClick={() => setConfirm(true)}
-      className="flex items-center gap-2 h-10 px-4 rounded-xl border-2 border-rose-600 bg-white dark:bg-slate-900 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-95 group"
+    <form
+      action={formAction}
+      onSubmit={(e) => {
+        if (!window.confirm("هل أنت متأكد من رفض الطلب؟")) {
+          e.preventDefault();
+        }
+      }}
     >
-      <DynamicIcon icon={icons?.ui_trash} fallback="🗑️" width={14} height={14} />
-      <span className="text-[10px] font-black">حذف الطلب</span>
-    </button>
+      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="isDraft" value={String(isDraft)} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="flex items-center gap-2 h-10 px-4 rounded-xl border-2 border-rose-600 bg-white dark:bg-slate-900 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-95 group"
+      >
+        <DynamicIcon icon={icons?.ui_trash} fallback="🗑️" width={14} height={14} />
+        <span className="text-[10px] font-black">{pending ? "جاري الرفض..." : "رفض الطلب"}</span>
+      </button>
+    </form>
   );
 }
 
@@ -1339,44 +1337,58 @@ export default function PendingOrdersClient({
                           <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} /> {order.regionName}
                         </span>
                       )}
-                      {order.totalAmount && (
-                        <span className="text-[10px] font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">
+                      {order.totalAmount ? (
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">
+                          {hasLocation && (
+                            <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" title="الموقع الجغرافي متوفر" />
+                          )}
                           {order.totalAmount}
                         </span>
+                      ) : (
+                        hasLocation && (
+                          <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0 self-center" title="الموقع الجغرافي متوفر" />
+                        )
                       )}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setActiveAssignOrderId(order.id)}
+                    className="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-[10px] font-black shadow-sm active:scale-95 transition-all"
+                  >
+                    <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} />
+                    إسناد للمندوب
+                  </button>
                   <DeleteFullOrderButton id={order.id} isDraft={false} icons={icons} />
                 </div>
               </div>
 
               {/* Body */}
-              <div className="p-5 grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+              <div className="p-5 space-y-3">
                 {/* Details Section */}
-                <div className="md:col-span-8 space-y-3">
-                  <Link
-                    href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
-                    className="block bg-slate-50/50 hover:bg-slate-100/80 dark:bg-slate-900/20 dark:hover:bg-slate-900/40 rounded-2xl p-4 border border-slate-100/60 dark:border-white/5 transition-all hover:translate-x-[-2px] group"
-                    title="فتح تفاصيل الطلب بالكامل"
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                      <p className="text-[9px] font-black text-slate-400 pr-1">تفاصيل الطلب</p>
-                      <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">دخول للطلب ↗</span>
-                    </div>
-                    <p className="text-sm font-black text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{order.summary}</p>
-                  </Link>
+                <Link
+                  href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
+                  className="block bg-slate-50/50 hover:bg-slate-100/80 dark:bg-slate-900/20 dark:hover:bg-slate-900/40 rounded-2xl p-4 border border-slate-100/60 dark:border-white/5 transition-all hover:translate-x-[-2px] group"
+                  title="فتح تفاصيل الطلب بالكامل"
+                >
+                  <div className="flex justify-between items-center mb-1">
+                    <p className="text-[9px] font-black text-slate-400 pr-1">تفاصيل الطلب</p>
+                    <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">دخول للطلب ↗</span>
+                  </div>
+                  <p className="text-sm font-black text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{order.summary}</p>
+                </Link>
 
-                  {order.voiceNoteUrl && (
-                    <div className="p-3 bg-violet-50 dark:bg-violet-950/10 rounded-xl border border-violet-100 dark:border-violet-900/30">
-                      <VoiceNoteAudio src={order.voiceNoteUrl} />
-                    </div>
-                  )}
+                {order.voiceNoteUrl && (
+                  <div className="p-3 bg-violet-50 dark:bg-violet-950/10 rounded-xl border border-violet-100 dark:border-violet-900/30">
+                    <VoiceNoteAudio src={order.voiceNoteUrl} />
+                  </div>
+                )}
 
-                  {/* Contact Info */}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500 dark:text-slate-400 pr-2">
+                {/* Contact Info & Door Photos */}
+                <div className="flex flex-wrap items-center justify-between gap-4 pr-2 bg-slate-50/20 dark:bg-slate-900/5 p-3 rounded-2xl border border-slate-100 dark:border-white/5">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500 dark:text-slate-400">
                     <div className="flex items-center gap-1.5">
                       <span className="font-bold">هاتف الزبون:</span>
                       <span className="font-black font-mono text-slate-700 dark:text-slate-300">{order.customerPhone}</span>
@@ -1394,56 +1406,43 @@ export default function PendingOrdersClient({
                       </div>
                     )}
                   </div>
-                </div>
 
-                {/* Assignment Box */}
-                <div className="md:col-span-4 flex flex-col items-stretch gap-3">
-                  {/* موقع الزبون الجغرافي */}
-                  <div className={`p-3 rounded-2xl border text-center flex flex-col items-center justify-center gap-1.5 ${
-                    hasLocation
-                      ? "bg-emerald-50/20 border-emerald-100 dark:bg-emerald-950/10 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-400"
-                      : "bg-amber-50/20 border-amber-100 dark:bg-amber-950/10 dark:border-amber-900/30 text-amber-800 dark:text-amber-400"
-                  }`}>
-                    <span className="text-xl leading-none">{hasLocation ? "📍" : "⚠️"}</span>
-                    <span className="text-[10px] font-black">
-                      {hasLocation ? "الموقع الجغرافي للزبون متوفر" : "لا يوجد موقع جغرافي للزبون"}
-                    </span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {order.customerDoorPhotoUrl && (
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-[7px] font-black text-slate-400">صورة الباب</span>
+                        <a
+                          href={order.customerDoorPhotoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="relative group overflow-hidden rounded-xl border border-slate-200 dark:border-white/5 bg-slate-100 dark:bg-slate-900 shadow-sm"
+                        >
+                          <img
+                            src={order.customerDoorPhotoUrl}
+                            alt="صورة الباب"
+                            className="w-12 h-12 object-cover transition-transform duration-200 group-hover:scale-110"
+                          />
+                        </a>
+                      </div>
+                    )}
+                    {order.secondCustomerDoorPhotoUrl && (
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-[7px] font-black text-slate-400">صورة الباب 2</span>
+                        <a
+                          href={order.secondCustomerDoorPhotoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="relative group overflow-hidden rounded-xl border border-slate-200 dark:border-white/5 bg-slate-100 dark:bg-slate-900 shadow-sm"
+                        >
+                          <img
+                            src={order.secondCustomerDoorPhotoUrl}
+                            alt="صورة الباب 2"
+                            className="w-12 h-12 object-cover transition-transform duration-200 group-hover:scale-110"
+                          />
+                        </a>
+                      </div>
+                    )}
                   </div>
-
-                  {hasLocation && (
-                    <a
-                      href={order.customerLocationUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full h-11 rounded-2xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-black transition-all flex items-center justify-center gap-2 border border-emerald-100 dark:border-emerald-900/30 shadow-sm"
-                    >
-                      📍 فتح موقع الزبون
-                    </a>
-                  )}
-
-                  <div className="space-y-1 mt-1 border-t border-slate-100 dark:border-slate-800/60 pt-2 relative">
-                     <p className="text-[9px] font-black text-slate-400 pr-1 mb-1 text-right">تحديث / رفع اللوكيشن</p>
-                     <QuickLocationSaveForm
-                       orderId={order.id}
-                       routeMode={order.routeMode}
-                       defaultCustomerLocationUrl={order.customerLocationUrl}
-                       defaultSecondCustomerLocationUrl={order.secondCustomerLocationUrl}
-                       defaultCustomerLandmark={order.customerLandmark}
-                       defaultSecondCustomerLandmark={order.secondCustomerLandmark}
-                       defaultCustomerDoorPhotoUrl={order.customerDoorPhotoUrl}
-                       defaultSecondCustomerDoorPhotoUrl={order.secondCustomerDoorPhotoUrl}
-                       icons={icons}
-                     />
-                  </div>
-
-                  {/* زر إسناد للمندوب */}
-                  <button
-                    onClick={() => setActiveAssignOrderId(order.id)}
-                    className="w-full h-12 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-xs font-black shadow-lg shadow-emerald-200/50 dark:shadow-none transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-1"
-                  >
-                    <DynamicIcon icon={icons?.ui_package} fallback="📦" width={14} height={14} />
-                    إسناد للمندوب
-                  </button>
                 </div>
               </div>
             </div>
