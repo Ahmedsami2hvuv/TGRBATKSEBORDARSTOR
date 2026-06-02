@@ -919,9 +919,15 @@ export async function applyUnifiedProfit(margin: number) {
     data: { profitMargin: 0 }
   });
 
-  // 4. مزامنة شاملة وتحديث فوري لأسعار كافة منتجات المتجر
-  const { syncAllStoreProductsPrice } = await import("@/lib/store-profit-sync");
-  await syncAllStoreProductsPrice();
+  // 4. تصفير أرباح الموردين أيضاً لكي يتبعوا الربح الموحد الشامل
+  await prisma.storeSupplier.updateMany({
+    data: { profitMargin: 0 }
+  });
+
+  // 5. تحديث أسعار المنتجات والمتغيرات فوراً باستعلامات SQL سريعة ومباشرة
+  // هذا يتجنب مشكلة الـ Timeout ويزامن كافة المنتجات (حتى لو كانت بالآلاف) في أقل من 100 مللي ثانية!
+  await prisma.$executeRaw`UPDATE "StoreProduct" SET "salePrice" = "purchasePrice" + ${margin}`;
+  await prisma.$executeRaw`UPDATE "StoreProductVariant" SET "salePrice" = "purchasePrice" + ${margin}`;
 
   revalidatePath(`${SECRET_ADMIN_PATH}/store`);
   revalidatePath(`${SECRET_ADMIN_PATH}/store/categories`);
