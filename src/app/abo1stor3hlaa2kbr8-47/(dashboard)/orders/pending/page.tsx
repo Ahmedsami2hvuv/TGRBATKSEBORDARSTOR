@@ -186,23 +186,33 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
       const customerLandmark = o.customerLandmark || o.customer?.customerLandmark || phoneProfile?.landmark || "";
       const customerAlternatePhone = o.secondCustomerPhone?.trim() || o.alternatePhone?.trim() || o.customer?.alternatePhone?.trim() || phoneProfile?.alternatePhone || "";
 
-      // حساب رابط طلب الموقع الجغرافي
+      // حساب رابط طلب الموقع الجغرافي ورابط تبليغ الزبون
       const requestLocationBtn = waButtons.find(b => b.label.includes("طلب لوكيشن") || b.label.includes("طلب الموقع"));
+      const notifyCustomerBtn = waButtons.find(b => b.label.includes("تبليغ زبون") || b.label.includes("تبليغ"));
       let requestLocationWaUrl = null;
+      let notifyCustomerWaUrl = null;
+
+      const submitterPhone = o.submittedByCompanyPreparer?.phone || o.submittedBy?.phone || o.shop?.phone || SYSTEM_ADMIN_PHONE;
+      const vars = {
+        clientshop: o.shop?.name || "",
+        city: o.customerRegion?.name || "",
+        total_price: o.totalAmount != null ? formatDinarAsAlfWithUnit(o.totalAmount) : "",
+        location_url: customerLocationUrl,
+        order_number: String(o.orderNumber),
+        customer_phone: o.customerPhone,
+        shop_phone: submitterPhone,
+      };
+
       if (requestLocationBtn && o.customerPhone) {
-        const submitterPhone = o.submittedByCompanyPreparer?.phone || o.submittedBy?.phone || o.shop?.phone || SYSTEM_ADMIN_PHONE;
-        const vars = {
-          clientshop: o.shop?.name || "",
-          city: o.customerRegion?.name || "",
-          total_price: o.totalAmount != null ? formatDinarAsAlfWithUnit(o.totalAmount) : "",
-          location_url: customerLocationUrl,
-          order_number: String(o.orderNumber),
-          customer_phone: o.customerPhone,
-          shop_phone: submitterPhone,
-        };
         const message = splitMandoubWaTemplateVariants(requestLocationBtn.templateText || "")
           .map(t => applyMandoubWaTemplate(t, vars))[0] || "";
         requestLocationWaUrl = whatsappMeUrl(o.customerPhone, message);
+      }
+
+      if (notifyCustomerBtn && o.customerPhone) {
+        const message = splitMandoubWaTemplateVariants(notifyCustomerBtn.templateText || "")
+          .map(t => applyMandoubWaTemplate(t, vars))[0] || "";
+        notifyCustomerWaUrl = whatsappMeUrl(o.customerPhone, message);
       }
 
       return {
@@ -243,6 +253,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         vehiclePreference: o.vehiclePreference,
         assignedPreparerIds,
         requestLocationWaUrl,
+        notifyCustomerWaUrl,
       };
     };
 

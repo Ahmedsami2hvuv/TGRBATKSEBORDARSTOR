@@ -53,6 +53,7 @@ export type PendingOrderRow = {
   totalAmount: string | null;
   orderSubtotal?: string | null;
   requestLocationWaUrl?: string | null;
+  notifyCustomerWaUrl?: string | null;
   deliveryPrice: string | null;
   rawDeliveryPriceDinar: number | null;
   submittedByName: string | null;
@@ -1448,6 +1449,17 @@ export default function PendingOrdersClient({
                     >
                       <DynamicIcon icon={icons?.ui_location} fallback="📍" width={12} height={12} />
                       طلب لوكيشن
+                    </a>
+                  )}
+                  {hasLocation && order.notifyCustomerWaUrl && (
+                    <a
+                      href={order.notifyCustomerWaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-10 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-black shadow-sm flex items-center gap-1.5 transition-colors"
+                    >
+                      <DynamicIcon icon={icons?.ui_notification} fallback="🔔" width={12} height={12} />
+                      تبليغ زبون
                     </a>
                   )}
                 </div>
