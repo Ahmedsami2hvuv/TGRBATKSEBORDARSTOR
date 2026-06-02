@@ -647,6 +647,21 @@ export function OrderFabDock(props: OrderFabDockProps) {
   };
 
 
+  const calculatedLeft = useMemo(() => {
+    if (typeof window === "undefined" || !mainFabPos) return 16;
+    const w = window.innerWidth || 360;
+    const leftVal = mainFabPos.left;
+    const menuW = 180;
+    const margin = 12;
+    return Math.max(margin, Math.min(w - menuW - margin, leftVal - 4));
+  }, [mainFabPos]);
+
+  const calculatedBottom = useMemo(() => {
+    if (typeof window === "undefined" || !mainFabPos) return 80;
+    const h = window.innerHeight || 640;
+    const topVal = mainFabPos.top;
+    return Math.max(20, h - topVal + 72);
+  }, [mainFabPos]);
 
   const contactMenuPos = isExpanded 
     ? mainFabPos 
@@ -685,7 +700,13 @@ export function OrderFabDock(props: OrderFabDockProps) {
         : (showCustomPickAbove ? customPickPos.top - CUSTOM_PICK_H - 8 : customPickPos.top + fabSize + 8)
     : 0;
 
-  const customPickMenuLeft = customPickPos ? Math.max(8, customPickPos.left - 130) : 0;
+  const customPickMenuLeft = useMemo(() => {
+    if (typeof window === "undefined" || !customPickPos) return 8;
+    const w = window.innerWidth || 360;
+    const menuW = 200;
+    const margin = 8;
+    return Math.max(margin, Math.min(w - menuW - margin, customPickPos.left - 130));
+  }, [customPickPos]);
 
   /** فوق أزرار الأموال العائمة (z≈1200–1210 في `mandoub-order-money-float-dock`) وتحت نافذة التأكيد (z≈1300). */
   return (
@@ -999,8 +1020,8 @@ export function OrderFabDock(props: OrderFabDockProps) {
         <div
           className="pointer-events-auto fixed z-[1000] flex flex-col items-end gap-3 transition-all animate-in slide-in-from-bottom-4 duration-300"
           style={{
-            left: mainFabPos.left - 4,
-            bottom: window.innerHeight - mainFabPos.top + 72,
+            left: calculatedLeft,
+            bottom: calculatedBottom,
           }}
         >
           {editUrl && (
