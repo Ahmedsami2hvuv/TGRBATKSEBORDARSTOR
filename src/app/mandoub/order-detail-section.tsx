@@ -184,25 +184,25 @@ export function OrderDetailSection({
                   </div>
                 </div>
 
-                <div className="space-y-1.5 text-xs">
+                <div className="space-y-2 text-xs">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-bold text-slate-400">اسم المحل:</span>
+                    <span className="font-bold text-slate-400 text-sm" title="اسم المحل">🏢</span>
                     <span className="font-black text-slate-900 dark:text-white">{order.shop.name}</span>
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-bold text-slate-400">العميل / المسؤول:</span>
+                    <span className="font-bold text-slate-400 text-sm" title="العميل / المسؤول">👤</span>
                     <span className="font-black text-sky-900 dark:text-sky-400">{submitterName}</span>
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-bold text-slate-400">منطقة المحل:</span>
+                    <span className="font-bold text-slate-400 text-sm" title="منطقة المحل">📍</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">{order.shop.region.name}</span>
                   </div>
 
                   {shopContactPhone && (
                     <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-slate-400">هاتف المسؤول:</span>
+                      <span className="font-bold text-slate-400 text-sm" title="هاتف المسؤول">📞</span>
                       <span className="font-mono font-black text-slate-700 dark:text-slate-300">{contactLine(shopContactPhone)}</span>
                     </div>
                   )}
@@ -222,19 +222,19 @@ export function OrderDetailSection({
               </div>
 
               {/* Shop Door / Logo Photo */}
-              <div className="w-[100px] sm:w-[130px] flex flex-col items-center justify-start bg-slate-50/50 dark:bg-black/20 p-2 rounded-[1.5rem] border border-slate-100 dark:border-white/5 shrink-0 self-start">
-                <span className="text-[9px] font-black text-slate-450 mb-1.5">صورة المحل</span>
+              <div className="w-[130px] sm:w-[160px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
+                <span className="text-[10px] font-black text-slate-400">صورة المحل</span>
                 {shopImageUrl ? (
-                  <div className="aspect-square w-full overflow-hidden rounded-[1rem] border border-sky-100 dark:border-white/10 shadow-sm">
+                  <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md">
                     <img src={imgSrc(shopImageUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => window.open(imgSrc(shopImageUrl)!)} />
                   </div>
                 ) : (
-                  <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-[1rem] border border-dashed border-slate-300 dark:border-slate-700 text-[9px] text-slate-400 font-bold text-center p-1">
+                  <div className="aspect-square w-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-[10px] text-slate-400 font-bold text-center p-2">
                     لا توجد صورة
                   </div>
                 )}
                 {courierSettings?.showDoorBtn !== false && (
-                  <div className="mt-2 w-full transform scale-90 origin-top"><MandoubDoorPhotoForm orderId={order.id} nextUrl={nextUrl} {...auth} /></div>
+                  <div className="w-full"><MandoubDoorPhotoForm orderId={order.id} nextUrl={nextUrl} {...auth} /></div>
                 )}
               </div>
             </div>
@@ -257,33 +257,33 @@ export function OrderDetailSection({
                     </div>
                   </div>
 
-                  <div className="space-y-1.5 text-xs">
+                  <div className="space-y-2 text-xs">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-bold text-slate-400">منطقة الزبون:</span>
+                      <span className="font-bold text-slate-400 text-sm" title="منطقة الزبون">📍</span>
                       <span className="font-black text-slate-900 dark:text-white">{order.customerRegion?.name ?? "—"}</span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-slate-400">رقم الزبون:</span>
+                      <span className="font-bold text-slate-400 text-sm" title="رقم الزبون">📞</span>
                       <span className="font-mono font-black text-slate-900 dark:text-white">{contactLine(order.customerPhone)}</span>
                     </div>
 
                     {mergedAlternate && (
                       <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-slate-400">الهاتف البديل:</span>
+                        <span className="font-bold text-slate-400 text-sm" title="الهاتف البديل">📱</span>
                         <span className="font-mono font-bold text-slate-600 dark:text-slate-400">{mergedAlternate}</span>
                       </div>
                     )}
 
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-bold text-slate-400">أقرب نقطة دالة:</span>
+                      <span className="font-bold text-slate-400 text-sm" title="أقرب نقطة دالة">🗺️</span>
                       <span className="font-bold text-slate-800 dark:text-slate-200">{mergedLandmark || "—"}</span>
                     </div>
 
                     {smartHintLine?.trim() && (
                       <div className="flex flex-col gap-0.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 p-1.5 border border-emerald-100/50 dark:border-emerald-900/20">
-                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">الاستدلال الذكي للعنوان:</span>
-                        <span className="text-[11px] font-black text-emerald-850 dark:text-emerald-350">{smartHintLine.trim()}</span>
+                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">💡 الاستدلال الذكي للعنوان:</span>
+                        <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-350">{smartHintLine.trim()}</span>
                       </div>
                     )}
                   </div>
@@ -306,19 +306,19 @@ export function OrderDetailSection({
                 </div>
 
                 {/* Customer Door Photo */}
-                <div className="w-[100px] sm:w-[130px] flex flex-col items-center justify-start bg-slate-50/50 dark:bg-black/20 p-2 rounded-[1.5rem] border border-slate-100 dark:border-white/5 shrink-0 self-start">
-                  <span className="text-[9px] font-black text-slate-450 mb-1.5">صورة الباب</span>
+                <div className="w-[130px] sm:w-[160px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
+                  <span className="text-[10px] font-black text-slate-400">صورة الباب</span>
                   {customerDoorDisplay ? (
-                    <div className="aspect-square w-full overflow-hidden rounded-[1rem] border border-sky-100 dark:border-white/10 shadow-sm">
+                    <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md">
                       <img src={imgSrc(customerDoorDisplay)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => window.open(imgSrc(customerDoorDisplay)!)} />
                     </div>
                   ) : (
-                    <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-[1rem] border border-dashed border-slate-300 dark:border-slate-700 text-[9px] text-slate-400 font-bold text-center p-1">
+                    <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-[10px] text-slate-400 font-bold text-center p-2">
                       لا توجد صورة
                     </div>
                   )}
                   {courierSettings?.showDoorBtn !== false && (
-                    <div className="mt-2 w-full transform scale-90 origin-top"><MandoubQuickDoorCapture orderId={order.id} nextUrl={nextUrl} auth={auth} /></div>
+                    <div className="w-full"><MandoubQuickDoorCapture orderId={order.id} nextUrl={nextUrl} auth={auth} /></div>
                   )}
                 </div>
               </div>
@@ -337,19 +337,19 @@ export function OrderDetailSection({
                       </div>
                     </div>
 
-                    <div className="space-y-1.5 text-xs">
+                    <div className="space-y-2 text-xs">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-slate-400">منطقة المستلم:</span>
+                        <span className="font-bold text-slate-400 text-sm" title="منطقة المستلم">📍</span>
                         <span className="font-black text-slate-900 dark:text-white">{order.secondCustomerRegion?.name ?? "—"}</span>
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-slate-400">هاتف المستلم:</span>
+                        <span className="font-bold text-slate-400 text-sm" title="هاتف المستلم">📞</span>
                         <span className="font-mono font-black text-slate-900 dark:text-white">{contactLine(order.secondCustomerPhone || "")}</span>
                       </div>
 
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-slate-400">أقرب نقطة دالة:</span>
+                        <span className="font-bold text-slate-400 text-sm" title="أقرب نقطة دالة">🗺️</span>
                         <span className="font-bold text-slate-800 dark:text-slate-200">{secondLandmarkMerged || "—"}</span>
                       </div>
                     </div>
@@ -372,22 +372,22 @@ export function OrderDetailSection({
                   </div>
 
                   {/* Second Customer Door Photo */}
-                  <div className="w-[100px] sm:w-[130px] flex flex-col items-center justify-start bg-slate-50/50 dark:bg-black/20 p-2 rounded-[1.5rem] border border-slate-100 dark:border-white/5 shrink-0 self-start">
-                    <span className="text-[9px] font-black text-slate-450 mb-1.5">صورة باب المستلم</span>
+                  <div className="w-[130px] sm:w-[160px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
+                    <span className="text-[10px] font-black text-slate-400">صورة باب المستلم</span>
                     {secondDoorMerged && imgSrc(secondDoorMerged) ? (
-                      <div className="w-full flex flex-col items-center">
-                        <div className="aspect-square w-full overflow-hidden rounded-[1rem] border border-sky-100 dark:border-white/10 shadow-sm relative">
+                      <div className="w-full flex flex-col items-center gap-1">
+                        <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md relative">
                           <img src={imgSrc(secondDoorMerged)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => window.open(imgSrc(secondDoorMerged)!)} />
                         </div>
                         {secondDoorCaptionName ? <div className="mt-1"><ImageUploaderCaption name={secondDoorCaptionName} /></div> : null}
                       </div>
                     ) : (
-                      <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-[1rem] border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400 font-bold">
+                      <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-350 dark:border-slate-700 text-xs text-slate-400 font-bold">
                         لا توجد صورة
                       </div>
                     )}
                     {courierSettings?.showDoorBtn !== false && (
-                      <div className="mt-2 w-full transform scale-90 origin-top">
+                      <div className="w-full">
                         <MandoubQuickDoorSecondCapture orderId={order.id} nextUrl={nextUrl} auth={auth} />
                       </div>
                     )}
@@ -447,18 +447,18 @@ export function OrderDetailSection({
               </div>
 
               {/* Order Package Photo */}
-              <div className="w-[100px] sm:w-[130px] flex flex-col items-center justify-start bg-slate-50/50 dark:bg-black/20 p-2 rounded-[1.5rem] border border-slate-100 dark:border-white/5 shrink-0 self-start">
-                <span className="text-[9px] font-black text-slate-450 mb-1.5">صورة الطلبية</span>
+              <div className="w-[130px] sm:w-[160px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
+                <span className="text-[10px] font-black text-slate-400">صورة الطلبية</span>
                 {order.imageUrl ? (
-                  <div className="aspect-square w-full overflow-hidden rounded-[1rem] border border-sky-100 dark:border-white/10 shadow-sm bg-white">
+                  <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md bg-white">
                     <img src={imgSrc(order.imageUrl)!} alt="" className="h-full w-full object-contain cursor-zoom-in" onClick={() => window.open(imgSrc(order.imageUrl)!)} />
                   </div>
                 ) : (
-                  <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-[1rem] border border-dashed border-slate-300 dark:border-slate-700 text-[9px] text-slate-400 font-bold text-center p-1">
+                  <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-[10px] text-slate-400 font-bold text-center p-2">
                     لا توجد صورة
                   </div>
                 )}
-                <div className="mt-2 w-full"><MandoubOrderImageQuick orderId={order.id} nextUrl={nextUrl} auth={auth} /></div>
+                <div className="w-full"><MandoubOrderImageQuick orderId={order.id} nextUrl={nextUrl} auth={auth} /></div>
               </div>
             </div>
           </div>

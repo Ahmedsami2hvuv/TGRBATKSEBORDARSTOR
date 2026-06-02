@@ -12,9 +12,9 @@ import { useRouter } from "next/navigation";
 
 /** نفس أزرار كاميرا/معرض `MandoubQuickDoorCapture` — حرفياً لتطابق الشكل والقياس */
 const btnCam =
-  "inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-sky-400 bg-sky-50 px-3 py-2 text-sm font-bold text-sky-900 shadow-sm hover:bg-sky-100 disabled:opacity-60";
+  "inline-flex w-full items-center justify-center gap-1 rounded-lg border border-sky-400 bg-sky-50 py-1 text-[10px] font-black text-sky-900 shadow-sm hover:bg-sky-100 disabled:opacity-60";
 const btnGal =
-  "inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50 disabled:opacity-60";
+  "inline-flex w-full items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white py-1 text-[10px] font-black text-slate-800 shadow-sm hover:bg-slate-50 disabled:opacity-60";
 
 export function MandoubOrderImageQuick({
   orderId,
@@ -95,7 +95,7 @@ export function MandoubOrderImageQuick({
           disabled={compressing}
           className={btnCam}
         >
-          <DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="h-5 w-5 shrink-0" />
+          <DynamicIcon iconKey="ui_camera" config={icons} fallback="📷" className="h-3.5 w-3.5 shrink-0" />
           كاميرا
         </button>
       </form>
@@ -123,7 +123,7 @@ export function MandoubOrderImageQuick({
           disabled={compressing}
           className={btnGal}
         >
-          <DynamicIcon iconKey="ui_gallery" config={icons} fallback="🖼️" className="h-5 w-5 shrink-0" />
+          <DynamicIcon iconKey="ui_gallery" config={icons} fallback="🖼️" className="h-3.5 w-3.5 shrink-0" />
           معرض
         </button>
       </form>
