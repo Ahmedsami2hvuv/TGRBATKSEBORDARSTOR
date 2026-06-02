@@ -1073,124 +1073,125 @@ export function OrderFabDock(props: OrderFabDockProps) {
         </div>
       ) : null}
 
-      {isExpanded && mainFabPos && (
+      {mainFabId && mainFabPos ? (
         <div
-          className="pointer-events-auto fixed z-[1060] flex flex-col items-end gap-3 transition-all animate-in slide-in-from-bottom-4 duration-300"
+          className="pointer-events-auto fixed"
           style={{
-            left: calculatedLeft,
-            bottom: calculatedBottom,
+            left: mainFabPos.left,
+            top: mainFabPos.top,
+            width: fabSize,
+            height: fabSize,
+            zIndex: isExpanded ? 1250 : fabZ,
           }}
         >
-          {editUrl && (
-            <a
-              href={editUrl}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-sky-600 px-4 py-2 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
+          {/* القائمة الفرعية - تظهر فوق الزر مباشرة */}
+          {isExpanded && (
+            <div
+              className="absolute bottom-[calc(100%+12px)] right-0 flex flex-col items-end gap-3 transition-all animate-in fade-in slide-in-from-bottom-2 duration-300"
+              style={{ width: 'max-content' }}
             >
-              <DynamicIcon
-                iconKey="ui_note"
-                config={icons}
-                className="h-5 w-5"
-                fallback={<span>📝</span>}
-              />
-              <span>تعديل الطلب</span>
-            </a>
+              {editUrl && (
+                <a
+                  href={editUrl}
+                  className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-sky-600 px-4 py-2 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
+                >
+                  <DynamicIcon iconKey="ui_note" config={icons} className="h-5 w-5" fallback={<span>📝</span>} />
+                  <span>تعديل الطلب</span>
+                </a>
+              )}
+
+              <div className="flex flex-col gap-2">
+                {showWhatsAppBtn && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setContactMenu("wa");
+                      overlayDismissGuardUntilRef.current = Date.now() + 420;
+                    }}
+                    className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-emerald-600 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
+                  >
+                    <DynamicIcon iconKey="ui_whatsapp" config={icons} className="h-5 w-5" fallback={<IconWa className="h-5 w-5" />} />
+                    <span>مراسلة واتساب</span>
+                  </button>
+                )}
+
+                {showCallBtn && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setContactMenu("tel");
+                      overlayDismissGuardUntilRef.current = Date.now() + 420;
+                    }}
+                    className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-sky-500 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
+                  >
+                    <DynamicIcon iconKey="ui_call" config={icons} className="h-5 w-5" fallback={<IconPhone className="h-5 w-5" />} />
+                    <span>اتصال هاتفي</span>
+                  </button>
+                )}
+
+                {(customWaButtons ?? []).map((btn) => (
+                  <button
+                    key={btn.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCustomWaPick({ btn });
+                      overlayDismissGuardUntilRef.current = Date.now() + 420;
+                    }}
+                    className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-violet-600 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
+                  >
+                    <DynamicIcon iconKey={btn.iconKey || undefined} config={icons} className="h-6 w-6" fallback={<span className="text-lg">{btn.iconKey || "💬"}</span>} />
+                    <span>{btn.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
 
-          <div className="flex flex-col gap-2">
-            {showWhatsAppBtn && (
-              <button
-                onClick={() => {
-                  setContactMenu("wa");
-                  overlayDismissGuardUntilRef.current = Date.now() + 420;
-                }}
-                className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-emerald-600 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
-              >
+          {/* الزر الرئيسي */}
+          <DraggableFab
+            fabId={mainFabId}
+            position={{ left: 0, top: 0 }}
+            fabSize={fabSize}
+            onPositionMove={(id, pos) => {
+              movePosition(mainFabId, {
+                left: mainFabPos.left + pos.left,
+                top: mainFabPos.top + pos.top
+              });
+            }}
+            onDragEndPersist={(id, pos) => {
+               persistPosition(mainFabId, {
+                left: mainFabPos.left + pos.left,
+                top: mainFabPos.top + pos.top
+              });
+            }}
+            zIndex={5}
+            title="أزرار التواصل — اضغط مطولاً لضبط حجم الأزرار"
+            className={`${isExpanded ? "bg-rose-500" : "bg-indigo-600"} text-white shadow-2xl transition-colors duration-300`}
+            onTap={() => {
+              if (isExpanded) {
+                setIsExpanded(false);
+                setContactMenu(null);
+                setCustomWaPick(null);
+              } else {
+                setIsExpanded(true);
+                overlayDismissGuardUntilRef.current = Date.now() + 420;
+              }
+            }}
+            onLongPress={openScalePanel}
+          >
+            <div className="flex items-center justify-center">
+              {isExpanded ? (
                 <DynamicIcon
-                  iconKey="ui_whatsapp"
+                  iconKey="ui_close"
                   config={icons}
-                  className="h-5 w-5"
-                  fallback={<IconWa className="h-5 w-5" />}
+                  className="h-8 w-8 animate-in spin-in-90 duration-300"
+                  fallback={
+                    <svg className="h-8 w-8 animate-in spin-in-90 duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  }
                 />
-                <span>مراسلة واتساب</span>
-              </button>
-            )}
-
-            {showCallBtn && (
-              <button
-                onClick={() => {
-                  setContactMenu("tel");
-                  overlayDismissGuardUntilRef.current = Date.now() + 420;
-                }}
-                className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-sky-500 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
-              >
-                <DynamicIcon
-                  iconKey="ui_call"
-                  config={icons}
-                  className="h-5 w-5"
-                  fallback={<IconPhone className="h-5 w-5" />}
-                />
-                <span>اتصال هاتفي</span>
-              </button>
-            )}
-
-            {(customWaButtons ?? []).map((btn) => (
-              <button
-                key={btn.id}
-                onClick={() => {
-                  setCustomWaPick({ btn });
-                  overlayDismissGuardUntilRef.current = Date.now() + 420;
-                }}
-                className="flex h-12 w-44 items-center justify-center gap-3 rounded-2xl bg-violet-600 text-sm font-black text-white shadow-xl ring-2 ring-white/50 transition active:scale-95"
-              >
-                <DynamicIcon
-                  iconKey={btn.iconKey || undefined}
-                  config={icons}
-                  className="h-6 w-6"
-                  fallback={<span className="text-lg">{btn.iconKey || "💬"}</span>}
-                />
-                <span>{btn.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {mainFabId && mainFabPos ? (
-        <DraggableFab
-          fabId={mainFabId}
-          position={mainFabPos}
-          fabSize={fabSize}
-          onPositionMove={movePosition}
-          onDragEndPersist={persistPosition}
-          zIndex={fabZ}
-          title="أزرار التواصل — اضغط مطولاً لضبط حجم الأزرار"
-          className={`${isExpanded ? "bg-rose-500" : "bg-indigo-600"} text-white shadow-2xl transition-colors duration-300`}
-          onTap={() => {
-            if (isExpanded) {
-              setIsExpanded(false);
-              setContactMenu(null);
-              setCustomWaPick(null);
-            } else {
-              setIsExpanded(true);
-              overlayDismissGuardUntilRef.current = Date.now() + 420;
-            }
-          }}
-          onLongPress={openScalePanel}
-        >
-          <div className="flex items-center justify-center">
-            {isExpanded ? (
-              <DynamicIcon
-                iconKey="ui_close"
-                config={icons}
-                className="h-8 w-8 animate-in spin-in-90 duration-300"
-                fallback={
-                  <svg className="h-8 w-8 animate-in spin-in-90 duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                }
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-0.5">
+              ) : (
                 <DynamicIcon
                   iconKey="ui_tasks"
                   config={icons}
@@ -1205,10 +1206,10 @@ export function OrderFabDock(props: OrderFabDockProps) {
                     </svg>
                   }
                 />
-              </div>
-            )}
-          </div>
-        </DraggableFab>
+              )}
+            </div>
+          </DraggableFab>
+        </div>
       ) : null}
     </div>
   );
