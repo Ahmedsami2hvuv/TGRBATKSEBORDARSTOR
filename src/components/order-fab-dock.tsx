@@ -473,8 +473,20 @@ export function OrderFabDock(props: OrderFabDockProps) {
   }, [fabIds, positions]);
 
   const mainFabPos = useMemo(() => {
-    return mainFabId ? positions[mainFabId] : null;
-  }, [mainFabId, positions]);
+    if (mainFabId && positions[mainFabId]) {
+      return positions[mainFabId];
+    }
+    if (typeof window !== "undefined") {
+      const w = window.innerWidth || 360;
+      const h = window.innerHeight || 640;
+      const size = FAB_SIZE * fabScale;
+      return {
+        left: w - 12 - size - 4,
+        top: h - 12 - size - 80,
+      };
+    }
+    return { left: 300, top: 500 };
+  }, [mainFabId, positions, fabScale]);
 
   const [dragZ, setDragZ] = useState(90);
   const mountedRef = useRef(false);
@@ -515,14 +527,51 @@ export function OrderFabDock(props: OrderFabDockProps) {
       savedFlat = readGlobalFabLayout(legacyLayoutStorageKey);
     }
     const saved = savedFlat ? migrateLegacyPositions(savedFlat) : {};
+    
+    // تحديد أبعاد الشاشة الحالية بشكل ديناميكي وآمن
+    const w = typeof window !== "undefined" ? window.innerWidth || 360 : 360;
+    const h = typeof window !== "undefined" ? window.innerHeight || 640 : 640;
+    const margin = 12;
+    const size = FAB_SIZE * fabScale;
+    
     const defaults = defaultPositionsFor(fabIds);
     const merged: Record<string, Pos> = {};
-    fabIds.forEach((id) => {
-      merged[id] = saved[id] ?? defaults[id] ?? { left: 16, top: 120 };
+    let hasInvalidPos = false;
+
+    fabIds.forEach((id, i) => {
+      let pos = saved[id] ?? defaults[id];
+      
+      // التحقق التام: إذا كان الموضع تالفاً أو خارج الشاشة
+      if (
+        !pos || 
+        typeof pos.left !== "number" || 
+        typeof pos.top !== "number" || 
+        Number.isNaN(pos.left) || 
+        Number.isNaN(pos.top) ||
+        pos.left < 0 || 
+        pos.left > w - 10 || 
+        pos.top < 0 || 
+        pos.top > h - 10
+      ) {
+        hasInvalidPos = true;
+        // إعادة التعيين لموقع افتراضي آمن داخل حدود الشاشة
+        pos = {
+          left: w - margin - size - 4,
+          top: h - margin - size - i * (size + FAB_GAP) - 80,
+        };
+      }
+      
+      merged[id] = pos;
     });
+
     setPositions(merged);
     mountedRef.current = true;
-  }, [fabIds.join(","), storageKey, legacyLayoutStorageKey]);
+
+    // تطهير الـ localStorage تلقائياً إذا تم الكشف عن أخطاء مواضع
+    if (hasInvalidPos && typeof window !== "undefined") {
+      saveGlobalFabLayout(storageKey, merged);
+    }
+  }, [fabIds.join(","), storageKey, legacyLayoutStorageKey, fabScale]);
 
   const fabSize = FAB_SIZE * fabScale;
   const iconPx = Math.max(14, Math.round((22 / FAB_SIZE) * fabSize));
