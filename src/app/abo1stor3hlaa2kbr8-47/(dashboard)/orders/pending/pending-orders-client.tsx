@@ -180,6 +180,7 @@ export function AdminPricingPanel({
   orderId,
   initialData,
   preparers,
+  couriers,
   isDraft,
   onSuccess,
   hideContainer = false,
@@ -190,6 +191,7 @@ export function AdminPricingPanel({
   orderId: string;
   initialData: any;
   preparers: { id: string; name: string }[];
+  couriers?: { id: string; name: string }[];
   isDraft?: boolean;
   onSuccess?: () => void;
   hideContainer?: boolean;
@@ -202,6 +204,7 @@ export function AdminPricingPanel({
     orderId={orderId}
     initialData={initialData}
     preparers={preparers}
+    couriers={couriers}
     isDraft={isDraft}
     onSuccess={onSuccess}
     hideContainer={hideContainer}
@@ -215,6 +218,7 @@ export function OrderPricingPanel({
   orderId,
   initialData,
   preparers,
+  couriers,
   isDraft,
   onSuccess,
   hideContainer = false,
@@ -225,6 +229,7 @@ export function OrderPricingPanel({
   orderId: string;
   initialData: any;
   preparers: { id: string; name: string }[];
+  couriers?: { id: string; name: string }[];
   isDraft?: boolean;
   onSuccess?: () => void;
   hideContainer?: boolean;
@@ -248,6 +253,7 @@ export function OrderPricingPanel({
   const [productAssigneeId, setProductAssigneeId] = useState("");
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);
+  const [showAutoCourier, setShowAutoCourier] = useState(false);
 
   const sellInputRef = useRef<HTMLInputElement>(null);
 
@@ -398,12 +404,6 @@ export function OrderPricingPanel({
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <div className="flex flex-col">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">الإجمالي الكلي</span>
-                  <span className="text-xl font-black font-mono leading-none text-white">
-                    {totals.total.toLocaleString()} <span className="text-[10px] text-amber-400">الف</span>
-                  </span>
-                </div>
                 {isSaving && (
                   <div className="h-6 px-2 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center gap-1.5 animate-pulse">
                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -414,7 +414,19 @@ export function OrderPricingPanel({
 
               <div className="flex items-center gap-1.5">
                 {isDraft ? (
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5 flex-wrap">
+                    {couriers && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAutoCourier(!showAutoCourier)}
+                        className={`h-10 px-3 rounded-xl text-[11px] font-black text-white shadow-lg active:scale-95 transition-all flex items-center gap-1.5 ${
+                          showAutoCourier ? "bg-violet-800" : "bg-violet-600 hover:bg-violet-700"
+                        }`}
+                      >
+                        <DynamicIcon icon={icons?.ui_user} fallback="👤" width={12} height={12} />
+                        إسناد تلقائي
+                      </button>
+                    )}
                     <button type="submit" name="submitType" value="admin_approve" disabled={pending} className="h-10 px-4 rounded-xl bg-emerald-600 text-[11px] font-black text-white shadow-lg active:scale-95 transition-all flex items-center gap-2">
                       {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد</>}
                     </button>
@@ -436,6 +448,12 @@ export function OrderPricingPanel({
                   {extraActions}
                </div>
                <div className="flex items-center gap-2">
+                  <div className="h-8 flex items-center gap-2 px-2.5 rounded-xl bg-white/5 border border-white/10 select-none">
+                     <span className="text-[9px] font-black text-slate-400">الإجمالي الكلي:</span>
+                     <span className="text-[11px] font-black font-mono text-white leading-none">
+                        {totals.total.toLocaleString()} <span className="text-[9px] text-amber-400">الف</span>
+                     </span>
+                  </div>
                   <div className="h-8 flex items-center gap-2 px-2.5 rounded-xl bg-white/5 border border-white/10">
                      <span className="text-[9px] font-black text-slate-400">المحلات:</span>
                      <select value={placesCount} onChange={(e) => setPlacesCount(Number(e.target.value))} className="bg-transparent border-none p-0 text-[10px] font-black text-amber-400 outline-none cursor-pointer">
@@ -544,6 +562,22 @@ export function OrderPricingPanel({
           </div>
         </div>
       </form>
+
+      {/* SetDraftAutoCourierPanel - Outside main form to avoid nested forms */}
+      {isDraft && showAutoCourier && couriers && (
+        <div className="p-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/30">
+          <SetDraftAutoCourierPanel
+            draftId={orderId}
+            couriers={couriers}
+            currentCourierId={initialData?.autoCourierId}
+            currentCourierName={couriers.find(c => c.id === initialData?.autoCourierId)?.name}
+            icons={icons}
+            onSuccess={() => {
+              window.location.reload();
+            }}
+          />
+        </div>
+      )}
 
       {/* Modal - Outside Form */}
       {editingIndex !== null && (
@@ -1686,6 +1720,7 @@ export default function PendingOrdersClient({
                      orderId={order.id}
                      initialData={order.preparerShoppingJson || {}}
                      preparers={preparers}
+                     couriers={couriers}
                      isDraft={isDraftMode}
                      icons={icons}
                      hideContainer={false}
@@ -1695,42 +1730,6 @@ export default function PendingOrdersClient({
                   />
                </div>
             </div>
-
-            {/* Draft Courier Panel (Only if Draft) */}
-            {isDraftMode && (
-              <div className="p-6 pt-0 border-t border-slate-100 dark:border-white/5 mt-4">
-                 {showAutoCourierIds.has(order.id) ? (
-                   <div>
-                     <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-xs font-black text-slate-700 dark:text-slate-300">التحويل التلقائي للمندوب</h4>
-                        <button
-                          type="button"
-                          onClick={() => toggleAutoCourier(order.id)}
-                          className="text-xs font-black text-rose-600 hover:underline"
-                        >
-                           إخفاء قائمة المندوبين ✕
-                        </button>
-                     </div>
-                     <SetDraftAutoCourierPanel
-                       draftId={order.id}
-                       couriers={couriers}
-                       icons={icons}
-                     />
-                   </div>
-                 ) : (
-                   <div className="flex justify-center">
-                      <button
-                        type="button"
-                        onClick={() => toggleAutoCourier(order.id)}
-                        className="h-10 px-6 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-black shadow-md transition-all active:scale-95 flex items-center gap-2"
-                      >
-                         <DynamicIcon icon={icons?.ui_user} fallback="👤" width={14} height={14} />
-                         إسناد الطلب للمندوب (التحويل التلقائي)
-                      </button>
-                   </div>
-                 )}
-              </div>
-            )}
           </div>
         );
       })}
@@ -1783,6 +1782,7 @@ export default function PendingOrdersClient({
                     orderId={o.id}
                     initialData={o.preparerShoppingJson || {}}
                     preparers={preparers}
+                    couriers={couriers}
                     isDraft={isDraftMode}
                     icons={icons}
                     hideContainer={true}
