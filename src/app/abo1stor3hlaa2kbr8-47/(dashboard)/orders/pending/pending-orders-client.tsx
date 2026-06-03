@@ -1496,8 +1496,8 @@ export default function PendingOrdersClient({
               )}
 
               {/* Header */}
-              <div className="p-5 pb-3 relative flex flex-wrap items-center justify-between gap-4 border-b border-slate-105 dark:border-slate-900 bg-slate-50/30 dark:bg-slate-900/10">
-                <div className="flex items-center gap-4">
+              <div className="p-5 pb-3 sm:pb-5 relative flex flex-wrap sm:flex-nowrap items-center justify-between gap-4 border-b sm:border-b-0 border-slate-105 dark:border-slate-900 bg-slate-50/30 dark:bg-slate-900/10">
+                <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap">
                   {/* Bulk selection Checkbox & shrunken order number stacked */}
                   <div className="flex flex-col items-center gap-1.5 shrink-0 bg-slate-100/50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/50 dark:border-white/5 min-w-[52px] justify-center">
                     <input
@@ -1529,9 +1529,51 @@ export default function PendingOrdersClient({
                       <RevertPreparedOrderButton id={order.id} />
                     )}
                   </div>
+
+                  {/* أزرار التواصل كأيقونات فقط للشاشات الكبيرة (الابتوب) بجانب اسم المحل */}
+                  <div className="hidden sm:flex items-center gap-2 mr-2">
+                    <a
+                      href={`tel:${order.customerPhone}`}
+                      className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center hover:bg-slate-50 transition-colors"
+                      title="اتصال هاتفي"
+                    >
+                      <DynamicIcon icon={icons?.ui_call} fallback="📞" width={14} height={14} />
+                    </a>
+                    <a
+                      href={`https://wa.me/${order.customerPhone.startsWith('0') ? '964' + order.customerPhone.slice(1) : order.customerPhone}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-9 w-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center justify-center transition-colors"
+                      title="مراسلة واتساب"
+                    >
+                      <DynamicIcon icon={icons?.ui_whatsapp} fallback="💬" width={14} height={14} />
+                    </a>
+                    {!hasLocation && order.requestLocationWaUrl && (
+                      <a
+                        href={order.requestLocationWaUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-9 w-9 rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-sm flex items-center justify-center transition-colors"
+                        title="طلب لوكيشن"
+                      >
+                        <DynamicIcon icon={icons?.ui_location} fallback="📍" width={14} height={14} />
+                      </a>
+                    )}
+                    {hasLocation && order.notifyCustomerWaUrl && (
+                      <a
+                        href={order.notifyCustomerWaUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-9 w-9 rounded-xl bg-sky-600 hover:bg-sky-700 text-white shadow-sm flex items-center justify-center transition-colors"
+                        title="تبليغ زبون"
+                      >
+                        <DynamicIcon icon={icons?.ui_notification} fallback="🔔" width={14} height={14} />
+                      </a>
+                    )}
+                  </div>
                 </div>
 
-                <div className="w-full sm:w-auto flex justify-between sm:justify-start items-center gap-3">
+                <div className="w-full sm:w-auto flex flex-wrap sm:flex-nowrap justify-between sm:justify-start items-center gap-3">
                   <button
                     onClick={() => setActiveAssignOrderId(order.id)}
                     className="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-[10px] font-black shadow-sm active:scale-95 transition-all shrink-0"
@@ -1576,10 +1618,18 @@ export default function PendingOrdersClient({
                       )
                     )}
                   </div>
+
+                  {/* أزرار الحذف والتسجيل الصوتي للشاشات الكبيرة (الابتوب) كجزء من التدفق المرن لمنع التداخل */}
+                  <div className="hidden sm:flex items-center gap-2 mr-2 shrink-0">
+                    {order.voiceNoteUrl && (
+                      <MiniVoicePlayer src={order.voiceNoteUrl} />
+                    )}
+                    <DeleteFullOrderButton id={order.id} isDraft={false} icons={icons} />
+                  </div>
                 </div>
 
-                {/* Top-left Absolute Container for voice player and delete buttons */}
-                <div className="absolute left-5 top-5 flex items-center gap-2 z-10">
+                {/* أزرار الحذف والتسجيل الصوتي للموبايل فقط (تموضع مطلق) */}
+                <div className="absolute left-5 top-5 flex items-center gap-2 z-10 sm:hidden">
                   {order.voiceNoteUrl && (
                     <MiniVoicePlayer src={order.voiceNoteUrl} />
                   )}
@@ -1587,8 +1637,8 @@ export default function PendingOrdersClient({
                 </div>
               </div>
 
-              {/* Body */}
-              <div className="p-5 flex items-center justify-between gap-4">
+              {/* Body (يظهر في الموبايل فقط ويختفي في الابتوب) */}
+              <div className="p-5 flex items-center justify-between gap-4 sm:hidden">
                 <div className="flex items-center gap-2">
                   <a
                     href={`tel:${order.customerPhone}`}
