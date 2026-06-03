@@ -722,16 +722,17 @@ function DeleteFullOrderButton({ id, isDraft, onSuccess, icons }: { id: string, 
           e.preventDefault();
         }
       }}
+      className="inline-block"
     >
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="isDraft" value={String(isDraft)} />
       <button
         type="submit"
         disabled={pending}
-        className="flex items-center gap-2 h-10 px-4 rounded-xl border-2 border-rose-600 bg-white dark:bg-slate-900 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-95 group"
+        title="رفض الطلب"
+        className="flex items-center justify-center h-10 w-10 rounded-xl border-2 border-rose-600 bg-white dark:bg-slate-900 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-95 shrink-0"
       >
-        <DynamicIcon icon={icons?.ui_trash} fallback="🗑️" width={14} height={14} />
-        <span className="text-[10px] font-black">{pending ? "جاري الرفض..." : "رفض الطلب"}</span>
+        <DynamicIcon icon={icons?.ui_trash} fallback="🗑️" width={16} height={16} />
       </button>
     </form>
   );
@@ -1415,10 +1416,10 @@ export default function PendingOrdersClient({
                     <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} />
                     إسناد للمندوب
                   </button>
-                  <DeleteFullOrderButton id={order.id} isDraft={false} icons={icons} />
                   {order.voiceNoteUrl && (
                     <MiniVoicePlayer src={order.voiceNoteUrl} />
                   )}
+                  <DeleteFullOrderButton id={order.id} isDraft={false} icons={icons} />
                 </div>
               </div>
 
