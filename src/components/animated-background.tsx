@@ -13,46 +13,66 @@ export function AnimatedBackground() {
   const [mounted, setMounted] = useState(false);
   const [forceRerun, setForceRerun] = useState(0);
 
-  // تحديث الوضع الداكن بناءً على كلاس html
+  // 1. جلب قائمة الخلفيات المتاحة من السيرفر مرة واحدة عند التحميل
   useEffect(() => {
     setMounted(true);
-    
-    // جلب قائمة الخلفيات المتاحة من السيرفر
     getBackgroundsConfigAction()
       .then((data) => {
         setConfig(data);
       })
       .catch((err) => console.error("فشل جلب الخلفيات:", err));
+  }, []);
+
+  // 2. تحديث الوضع الداكن ومراقبة تغييراته
+  useEffect(() => {
+    if (!mounted) return;
 
     const checkDarkMode = () => {
       const root = document.documentElement;
       setIsDark(root.classList.contains("dark"));
     };
 
-    // التحقق فوراً
     checkDarkMode();
 
-    // مراقبة التغييرات على فئة html (الوضع الداكن)
     const observer = new MutationObserver(checkDarkMode);
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["class"],
     });
 
-    // استماع لتغيير الخلفية من localStorage أو الأحداث المباشرة
+    return () => {
+      observer.disconnect();
+    };
+  }, [mounted]);
+
+  // 3. تحديد الخلفية النشطة للمستخدم عند تحميل التكوين أو تغير التفضيل
+  useEffect(() => {
+    if (!config) return;
+
+    const updateActiveBg = () => {
+      const savedBgId = localStorage.getItem("kse_user_background");
+      let found = config.items.find((item) => item.id === savedBgId && item.isActive);
+      
+      if (!found) {
+        found = config.items.find((item) => item.id === config.defaultBackgroundId && item.isActive);
+      }
+      
+      if (!found) {
+        found = config.items.find((item) => item.isActive);
+      }
+
+      setActiveBg(found || null);
+    };
+
+    updateActiveBg();
+
     const handleStorageChange = (e?: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent?.detail) {
-        // إذا كان الحدث يحمل الخلفية المحدثة مباشرة (من صفحة الإعدادات/المعاينة)
         setActiveBg(customEvent.detail);
         return;
       }
-
-      const savedBgId = localStorage.getItem("kse_user_background");
-      if (config && savedBgId) {
-        const found = config.items.find((item) => item.id === savedBgId && item.isActive);
-        if (found) setActiveBg(found);
-      }
+      updateActiveBg();
     };
 
     const handleConfigUpdate = (e: Event) => {
@@ -63,36 +83,14 @@ export function AnimatedBackground() {
     };
 
     window.addEventListener("storage", handleStorageChange);
-    // إرسال حدث مخصص للمزامنة اللحظية في نفس التبويب
     window.addEventListener("kse_bg_changed", handleStorageChange);
     window.addEventListener("kse_bg_config_updated", handleConfigUpdate as EventListener);
 
     return () => {
-      observer.disconnect();
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("kse_bg_changed", handleStorageChange);
       window.removeEventListener("kse_bg_config_updated", handleConfigUpdate as EventListener);
     };
-  }, [config]);
-
-  // تحديد الخلفية النشطة للمستخدم
-  useEffect(() => {
-    if (!config) return;
-
-    const savedBgId = localStorage.getItem("kse_user_background");
-    let found = config.items.find((item) => item.id === savedBgId && item.isActive);
-    
-    if (!found) {
-      // استخدام الخلفية الافتراضية
-      found = config.items.find((item) => item.id === config.defaultBackgroundId && item.isActive);
-    }
-    
-    if (!found) {
-      // الاحتياط الأخير
-      found = config.items.find((item) => item.isActive);
-    }
-
-    setActiveBg(found || null);
   }, [config]);
 
   // تحديد الرابط والنوع المناسبين للوضع الحالي
