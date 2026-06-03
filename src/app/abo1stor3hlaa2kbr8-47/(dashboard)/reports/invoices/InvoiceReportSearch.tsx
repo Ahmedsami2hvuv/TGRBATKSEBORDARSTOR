@@ -8,6 +8,7 @@ import { ADMIN_MONEY_HARD_DELETE_CONFIRM_PHRASE } from "@/lib/mandoub-cash-const
 import {
   hardDeleteWalletLedgerRow,
   softDeleteWalletLedgerRow,
+  batchHardDeleteWalletLedgerRows,
   type WalletLedgerDeleteState,
 } from "./actions";
 import type { InvoiceReportRow } from "./page";
@@ -32,6 +33,8 @@ export default function InvoiceReportSearch({ rows, initialQuery, selectedDayIso
   const normalizedQuery = useMemo(() => normalizeSearchValue(query), [query]);
   const [softState, softAction, softPending] = useActionState(softDeleteWalletLedgerRow, {} as WalletLedgerDeleteState);
   const [hardState, hardAction, hardPending] = useActionState(hardDeleteWalletLedgerRow, {} as WalletLedgerDeleteState);
+  const [batchHardState, batchHardAction, batchHardPending] = useActionState(batchHardDeleteWalletLedgerRows, {} as WalletLedgerDeleteState);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const filteredRows = useMemo(() => {
     if (!normalizedQuery) return rows;
@@ -150,36 +153,52 @@ export default function InvoiceReportSearch({ rows, initialQuery, selectedDayIso
                     <td className="px-4 py-3 text-slate-600">{row.details}</td>
                     <td className="px-4 py-3 text-left space-y-2">
                       {row.deleted ? null : row.id.startsWith("wt:") ? null : (
-                        <form action={softAction} className="inline-block w-full">
-                          <input type="hidden" name="rowId" value={row.id} />
-                          <input type="hidden" name="returnUrl" value={returnUrl} />
-                          <button
-                            type="submit"
-                            disabled={softPending}
-                            className="inline-flex w-full items-center justify-center rounded-2xl bg-amber-600 px-3 py-1 text-[11px] font-black text-white transition hover:bg-amber-700 disabled:opacity-50"
-                            onClick={(event) => {
-                              if (!window.confirm("هل تريد التأكيد على إلغاء الفاتورة؟ سيتم إبقاؤها كمعاملة ملغاة.")) {
-                                event.preventDefault();
+                        <>
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(row.id)}
+                            onChange={(e) => {
+                              const newSet = new Set(selectedIds);
+                              if (e.target.checked) {
+                                newSet.add(row.id);
+                              } else {
+                                newSet.delete(row.id);
                               }
+                              setSelectedIds(newSet);
                             }}
-                          >
-                            إلغاء
-                          </button>
-                        </form>
+                            className="mr-2"
+                          />
+                          <form action={softAction} className="inline-block w-full">
+                            <input type="hidden" name="rowId" value={row.id} />
+                            <input type="hidden" name="returnUrl" value={returnUrl} />
+                            <button
+                              type="submit"
+                              disabled={softPending}
+                              className="inline-flex w-full items-center justify-center rounded-2xl bg-amber-600 px-3 py-1 text-[11px] font-black text-white transition hover:bg-amber-700 disabled:opacity-50"
+                              onClick={(event) => {
+                                if (!window.confirm("هل تريد التأكيد على إلغاء الفاتورة؟ سيتم إبقاؤها كمعاملة ملغاة.")) {
+                                  event.preventDefault();
+                                }
+                              }}
+                            >
+                              إلغاء
+                            </button>
+                          </form>
+                          <form action={hardAction} className="inline-block w-full">
+                            <input type="hidden" name="rowId" value={row.id} />
+                            <input type="hidden" name="returnUrl" value={returnUrl} />
+                            <input type="hidden" name="confirmPhrase" value="" />
+                            <button
+                              type="submit"
+                              disabled={hardPending}
+                              className="inline-flex w-full items-center justify-center rounded-2xl bg-rose-700 px-3 py-1 text-[11px] font-black text-white transition hover:bg-rose-800 disabled:opacity-50"
+                              onClick={handleHardDeleteClick}
+                            >
+                              حذف نهائي
+                            </button>
+                          </form>
+                        </>
                       )}
-                      <form action={hardAction} className="inline-block w-full">
-                        <input type="hidden" name="rowId" value={row.id} />
-                        <input type="hidden" name="returnUrl" value={returnUrl} />
-                        <input type="hidden" name="confirmPhrase" value="" />
-                        <button
-                          type="submit"
-                          disabled={hardPending}
-                          className="inline-flex w-full items-center justify-center rounded-2xl bg-rose-700 px-3 py-1 text-[11px] font-black text-white transition hover:bg-rose-800 disabled:opacity-50"
-                          onClick={handleHardDeleteClick}
-                        >
-                          حذف نهائي
-                        </button>
-                      </form>
                     </td>
                   </tr>
                 );
@@ -188,6 +207,21 @@ export default function InvoiceReportSearch({ rows, initialQuery, selectedDayIso
           </tbody>
         </table>
       </div>
+      {selectedIds.size > 0 && (
+        <form action={batchHardAction} className="mt-4">
+          <input type="hidden" name="rowIds" value={Array.from(selectedIds).join(',')} />
+          <input type="hidden" name="returnUrl" value={returnUrl} />
+          <input type="hidden" name="confirmPhrase" value="" />
+          <button
+            type="submit"
+            disabled={batchHardPending}
+            className="inline-flex items-center rounded-2xl bg-red-800 px-4 py-2 text-sm font-black text-white transition hover:bg-red-900 disabled:opacity-50"
+            onClick={handleHardDeleteClick}
+          >
+            حذف نهائي مختار
+          </button>
+        </form>
+      )}
     </>
   );
 }

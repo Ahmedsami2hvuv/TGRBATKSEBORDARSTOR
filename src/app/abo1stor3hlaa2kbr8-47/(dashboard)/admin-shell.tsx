@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { logout } from "./actions";
 import { AdminLiveSearchInput } from "./live-search-input";
 import { adminSidebarTiles, tileHref } from "@/lib/admin-nav";
@@ -31,6 +31,7 @@ export function AdminShell({
   const [navWidth, setNavWidth] = useState(320);
   const [itemScale, setItemScale] = useState(1); // 1 = 100%
   const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const [isLg, setIsLg] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(0);
   const [pendingCount, setPendingCount] = useState(pendingInitialCount);
@@ -119,6 +120,21 @@ export function AdminShell({
     // We optionally closenavOpen on resize if needed, but since CSS handles lg breakpoint via lg:translate-x-0, we don't strictly need this unless we want to reset it.
     // Keeping it simple!
   }, []);
+
+  // Close sidebar when clicking outside
+  useEffect(() => {
+    if (!navOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (sidebarRef.current && !sidebarRef.current.contains(target) && !(target instanceof HTMLElement && target.closest('#navToggleButton')) ) {
+        setNavOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+    };
+  }, [navOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -227,6 +243,7 @@ export function AdminShell({
       <OneSignalInitializer externalId="admin_global" />
       <FloatingAdminMenu />
       <button
+        id="navToggleButton"
         type="button"
         onClick={() => setNavOpen((o) => !o)}
         className="fixed start-4 top-4 z-[170] flex h-10 min-w-10 items-center justify-center gap-2 rounded-xl border border-slate-700 bg-[#09090b] px-2 text-[#00f3ff] shadow-[0_0_10px_rgba(0,243,255,0.2)]"
@@ -258,6 +275,7 @@ export function AdminShell({
 
       {/* Sidebar */}
       <aside
+        ref={sidebarRef}
         className={`
           fixed z-[160] flex flex-col border-e border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)]
           bg-white/95 dark:bg-[#09090b]/95 shadow-[4px_0_20px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_20px_rgba(0,0,0,0.8)]

@@ -168,3 +168,32 @@ export async function hardDeleteWalletLedgerRow(
   revalidateInvoiceReportsAfterMutation(r.orderId);
   redirect(returnUrl);
 }
+
+export async function batchHardDeleteWalletLedgerRows(
+  _prev: WalletLedgerDeleteState,
+  formData: FormData,
+): Promise<WalletLedgerDeleteState> {
+  if (!(await isAdminSession())) {
+    return { error: "غير مصرّح." };
+  }
+  const rowIdsStr = String(formData.get("rowIds") ?? "").trim();
+  const returnUrl = safeReturnUrl(String(formData.get("returnUrl") ?? ""));
+  const confirmPhrase = String(formData.get("confirmPhrase") ?? "").trim();
+  if (confirmPhrase !== ADMIN_MONEY_HARD_DELETE_CONFIRM_PHRASE) {
+    return { error: `اكتب بالضبط «${ADMIN_MONEY_HARD_DELETE_CONFIRM_PHRASE}» للتأكيد.` };
+  }
+  const ids = rowIdsStr.split(",").filter(Boolean);
+  for (const id of ids) {
+    const r = await hardDeleteWalletLedgerRowCore(id);
+    if (!r.ok) {
+      return { error: r.error };
+    }
+    if (r.orderId) {
+      revalidateInvoiceReportsAfterMutation(r.orderId);
+    }
+  }
+  // General revalidation after batch deletions
+  revalidateInvoiceReportsAfterMutation();
+  redirect(returnUrl);
+}
+
