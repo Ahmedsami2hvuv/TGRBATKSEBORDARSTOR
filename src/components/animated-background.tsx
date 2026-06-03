@@ -11,6 +11,7 @@ export function AnimatedBackground() {
   const { theme } = useTheme();
   const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [forceRerun, setForceRerun] = useState(0);
 
   // تحديث الوضع الداكن بناءً على كلاس html
   useEffect(() => {
@@ -78,11 +79,132 @@ export function AnimatedBackground() {
     setActiveBg(found || null);
   }, [config]);
 
-  if (!mounted || !activeBg) return null;
-
   // تحديد الرابط والنوع المناسبين للوضع الحالي
-  const url = isDark ? activeBg.darkUrl : activeBg.lightUrl;
-  const type = isDark ? activeBg.darkType : activeBg.lightType;
+  const url = activeBg ? (isDark ? activeBg.darkUrl : activeBg.lightUrl) : "";
+  const type = activeBg ? (isDark ? activeBg.darkType : activeBg.lightType) : "image";
+
+  // تشغيل وتنظيف الأكواد المخصصة (JavaScript/Canvas)
+  useEffect(() => {
+    if (!mounted || !activeBg) return;
+
+    const currentUrl = isDark ? activeBg.darkUrl : activeBg.lightUrl;
+    const currentType = isDark ? activeBg.darkType : activeBg.lightType;
+
+    if (currentType !== "code" || !currentUrl) {
+      return;
+    }
+
+    // الانتظار للتأكد من رندرة الـ Canvas بالـ DOM
+    const timer = setTimeout(() => {
+      try {
+        const addedListeners: { target: EventTarget; type: string; listener: EventListenerOrEventListenerObject; options?: boolean | AddEventListenerOptions }[] = [];
+        
+        const originalWindowAdd = window.addEventListener;
+        const originalDocAdd = document.addEventListener;
+
+        window.addEventListener = function(type, listener, options) {
+          addedListeners.push({ target: window, type, listener, options });
+          return originalWindowAdd.call(window, type, listener, options);
+        };
+
+        document.addEventListener = function(type, listener, options) {
+          addedListeners.push({ target: document, type, listener, options });
+          return originalDocAdd.call(document, type, listener, options);
+        };
+
+        // استبدال requestAnimationFrame لمنع تشغيل اللوب بعد مسح الكانفاس
+        const originalRAF = window.requestAnimationFrame;
+        window.requestAnimationFrame = function(cb) {
+          return originalRAF(function(time) {
+            if (!document.getElementById("custom-bg-canvas")) {
+              return;
+            }
+            cb(time);
+          });
+        };
+
+        (window as any).isDarkMode = isDark;
+        (window as any).isDark = isDark;
+
+        const scriptId = "custom-bg-script";
+        const oldScript = document.getElementById(scriptId);
+        if (oldScript) oldScript.remove();
+
+        const script = document.createElement("script");
+        script.id = scriptId;
+        
+        script.textContent = `
+          (function() {
+            try {
+              var isDarkMode = ${isDark ? "true" : "false"};
+              var isDark = ${isDark ? "true" : "false"};
+              ${currentUrl}
+            } catch (err) {
+              console.error("خطأ أثناء تشغيل الخلفية البرمجية المخصصة:", err);
+            }
+          })();
+        `;
+        
+        document.body.appendChild(script);
+
+        window.addEventListener = originalWindowAdd;
+        document.addEventListener = originalDocAdd;
+
+        (window as any).__cleanupCustomBg = () => {
+          window.addEventListener = originalWindowAdd;
+          document.addEventListener = originalDocAdd;
+          window.requestAnimationFrame = originalRAF;
+
+          addedListeners.forEach(({ target, type, listener, options }) => {
+            target.removeEventListener(type, listener, options);
+          });
+
+          const s = document.getElementById(scriptId);
+          if (s) s.remove();
+          
+          if (typeof (window as any).setBgTheme === "function") {
+            delete (window as any).setBgTheme;
+          }
+          delete (window as any).isDarkMode;
+          delete (window as any).isDark;
+        };
+
+      } catch (err) {
+        console.error("فشل إعداد وحقن الخلفية البرمجية:", err);
+      }
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      if (typeof (window as any).__cleanupCustomBg === "function") {
+        (window as any).__cleanupCustomBg();
+        delete (window as any).__cleanupCustomBg;
+      }
+    };
+  }, [activeBg?.id, url, forceRerun, mounted]);
+
+  // استدعاء تغير المظهر للسكريبت في حال تغير الثيم
+  useEffect(() => {
+    if (!mounted || !activeBg) return;
+
+    const currentType = isDark ? activeBg.darkType : activeBg.lightType;
+    if (currentType !== "code") return;
+
+    (window as any).isDarkMode = isDark;
+    (window as any).isDark = isDark;
+
+    if (typeof (window as any).setBgTheme === "function") {
+      try {
+        (window as any).setBgTheme(isDark);
+      } catch (e) {
+        console.error("خطأ أثناء استدعاء setBgTheme للثيم الحركي:", e);
+      }
+    } else {
+      setForceRerun((prev) => prev + 1);
+    }
+  }, [isDark, mounted, activeBg?.id]);
+
+  if (!mounted || !activeBg) return null;
 
   // الشفافية والضبابية
   const style = {
@@ -95,7 +217,11 @@ export function AnimatedBackground() {
       className="fixed inset-0 w-full h-full -z-50 pointer-events-none overflow-hidden select-none transition-all duration-700 bg-transparent"
       style={style}
     >
-      {type === "video" && url ? (
+      {type === "code" && url ? (
+        <div id="custom-canvas-container" className="w-full h-full block bg-transparent">
+          <canvas id="custom-bg-canvas" className="w-full h-full block bg-transparent" />
+        </div>
+      ) : type === "video" && url ? (
         <video
           src={url}
           autoPlay
