@@ -92,16 +92,7 @@ export function PreparerOrderEditForm({
         />
       </label>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-sm font-bold text-slate-800">هاتف الزبون (المستلم) *</span>
-        <input
-          name="customerPhone"
-          required
-          inputMode="numeric"
-          defaultValue={defaults.customerPhone}
-          className="rounded-xl border border-sky-200 px-3 py-2.5 text-sm"
-        />
-      </label>
+
 
       <label className="flex flex-col gap-1">
         <span className="text-sm font-bold text-slate-800">سعر الطلب </span>

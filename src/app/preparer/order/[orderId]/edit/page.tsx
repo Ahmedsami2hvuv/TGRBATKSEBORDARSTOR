@@ -114,7 +114,7 @@ export default async function PreparerOrderEditPage({ params, searchParams }: Pr
       <section className="kse-glass-dark rounded-2xl border border-emerald-200/80 p-4 shadow-sm sm:p-5">
         <h1 className="mb-1 text-lg font-black text-slate-900 sm:text-xl">تعديل الطلب</h1>
         <p className="mb-4 text-xs text-slate-500 sm:text-sm">
-          يمكنك تعديل نوع الطلب، هاتف الزبون، سعر الطلب، وصور الطلبية/باب المحل.
+          يمكنك تعديل نوع الطلب، سعر الطلب، وصور الطلبية/باب المحل.
         </p>
         <PreparerOrderEditForm
           auth={auth}
