@@ -748,8 +748,10 @@ function RevertPreparedOrderButton({ id, onSuccess }: { id: string; onSuccess?: 
     if (state.ok) {
       if (onSuccess) onSuccess();
       else window.location.reload();
+    } else if (state.error) {
+      alert(state.error);
     }
-  }, [state.ok, onSuccess]);
+  }, [state.ok, state.error, onSuccess]);
 
   return (
     <form

@@ -715,7 +715,7 @@ export async function revertPreparedOrderToPreparing(
         },
         data: {
           deletedAt: new Date(),
-          deletedReason: "reverted_by_admin",
+          deletedReason: "status_revert",
           deletedByDisplayName: "إرجاع الطلب للتجهيز من الإدارة"
         }
       });
