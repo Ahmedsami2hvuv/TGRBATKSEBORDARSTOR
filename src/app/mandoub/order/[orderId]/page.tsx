@@ -14,7 +14,6 @@ import { prisma } from "@/lib/prisma";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { MandoubMoneySummarySection } from "../../mandoub-money-summary-section";
 import { OrderDetailSection } from "../../order-detail-section";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { MandoubPresenceToggle } from "../../mandoub-presence-toggle";
 import { getUISettings } from "@/lib/ui-settings";
 import { getGlobalIcons } from "@/lib/icon-settings";

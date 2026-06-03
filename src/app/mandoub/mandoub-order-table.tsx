@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { useRef } from "react";
 import { OrderDetailSection } from "./order-detail-section";
 import { MandoubWalletClient } from "./mandoub-wallet-client";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 
 export type MandoubRow = {
   id: string;
@@ -145,6 +146,7 @@ export function MandoubOrderTable({
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showQuickSelect, setShowQuickSelect] = useState(false);
+  const [showSearch, setShowSearch] = useState(!!qSearch);
   const searchParams = useSearchParams();
   const activeOrderParam = searchParams.get("activeOrderId");
   const [activeOrderId, setActiveOrderId] = useState<string | null>(activeOrderParam || null);
@@ -490,21 +492,40 @@ export function MandoubOrderTable({
             </div>
           )}
 
-          <div className="min-w-0 flex-1 relative">
-            <input
-              type="search"
-              value={qSearch}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="بحث — محل، رقم، هاتف…"
-              className="h-[40px] w-full rounded-xl border border-sky-200 bg-white pl-10 pr-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-              dir="rtl"
-              autoComplete="off"
-              enterKeyHint="search"
-            />
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-400 pointer-events-none">
-              <DynamicIcon icon={icons?.ui_search} fallback="🔍" width={18} height={18} />
+          {rowIds.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowSearch((v) => !v)}
+              className={`flex items-center justify-center h-[40px] px-3 rounded-xl border transition-all ${
+                showSearch
+                  ? "bg-sky-600 border-sky-700 text-white shadow-inner"
+                  : "bg-sky-50 border-sky-200 text-sky-900 hover:bg-sky-100 dark:border-sky-800/40 dark:bg-sky-950/40 dark:text-sky-200"
+              }`}
+              title="البحث"
+            >
+              <DynamicIcon iconKey="ui_search" config={icons} className="w-5 h-5" fallback="🔍" />
+            </button>
+          )}
+
+          <ThemeSwitcher />
+
+          {showSearch && (
+            <div className="min-w-0 flex-1 relative animate-in fade-in slide-in-from-right-2">
+              <input
+                type="search"
+                value={qSearch}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="بحث — محل، رقم، هاتف…"
+                className="h-[40px] w-full rounded-xl border border-sky-200 bg-white pl-10 pr-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                dir="rtl"
+                autoComplete="off"
+                enterKeyHint="search"
+              />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-400 pointer-events-none">
+                <DynamicIcon icon={icons?.ui_search} fallback="🔍" width={18} height={18} />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
 
