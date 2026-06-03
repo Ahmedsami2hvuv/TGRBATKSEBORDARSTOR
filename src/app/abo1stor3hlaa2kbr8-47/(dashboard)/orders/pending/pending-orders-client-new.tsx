@@ -176,7 +176,25 @@ export function AdminPricingPanel({
   });
 
   const [placesCount, setPlacesCount] = useState(initialData?.placesCount || 1);
-  const noProfit = !!initialData?.noProfit;
+  const [noProfit, setNoProfit] = useState(!!initialData?.noProfit);
+
+  const handleToggleNoProfit = async (newVal: boolean) => {
+    setNoProfit(newVal);
+    const updatedProducts = products.map(p => {
+      const buyNum = parseFloat(normalizeNumerals((p.buyAlf || "0").toString())) || 0;
+      if (buyNum > 0) {
+        return {
+          ...p,
+          sellAlf: calculateAutoSellPrice(p.line, buyNum, newVal).toString()
+        };
+      }
+      return p;
+    });
+    setProducts(updatedProducts);
+    setIsSaving(true);
+    await savePricingProgress(orderId, !!isDraft, updatedProducts, placesCount, newVal);
+    setIsSaving(false);
+  };
   const [selectedShopId, setSelectedShopId] = useState("");
   const [deleteMode, setDeleteMode] = useState(false);
   const [showBulkAdd, setShowBulkAdd] = useState(false);
@@ -194,12 +212,12 @@ export function AdminPricingPanel({
     const timer = setTimeout(async () => {
       if (products.length > 0) {
         setIsSaving(true);
-        await savePricingProgress(orderId, !!isDraft, products, placesCount);
+        await savePricingProgress(orderId, !!isDraft, products, placesCount, noProfit);
         setIsSaving(false);
       }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [products, placesCount, orderId, isDraft]);
+  }, [products, placesCount, orderId, isDraft, noProfit]);
 
   const toggleProductSelection = (index: number) => {
     setSelectedProductIndexes((prev) => prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]);
@@ -289,10 +307,21 @@ export function AdminPricingPanel({
     <div className="space-y-4 rounded-2xl border-2 border-amber-300 bg-amber-50/90 p-5 shadow-xl text-right" dir="rtl">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200 pb-4">
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm font-black text-amber-900 flex items-center gap-2">
+          <p className="text-sm font-black text-amber-900 flex items-center gap-2 ml-2">
             <span className="text-xl">💰</span> {isDraft ? "تجهيز وتسعير المسودة" : "تعديل تسعير الطلب"}
-            {isSaving && <span className="text-[9px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded animate-pulse">جاري الحفظ...</span>}
+            {isSaving && <span className="text-[9px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded animate-pulse">جاري الحفظ التلقائي...</span>}
           </p>
+          <button
+            type="button"
+            onClick={() => handleToggleNoProfit(!noProfit)}
+            className={`rounded-xl px-3 py-1.5 text-[10px] font-black shadow-sm transition active:scale-95 ${
+              noProfit
+                ? "bg-rose-600 text-white animate-pulse"
+                : "bg-white border border-slate-300 text-slate-700"
+            }`}
+          >
+            {noProfit ? "🚫 إيقاف الربح مفعل" : "🚫 إيقاف الربح"}
+          </button>
           <DeleteFullOrderButton id={orderId} isDraft={Boolean(isDraft)} onSuccess={onSuccess} />
         </div>
         <div className="flex gap-2">
@@ -412,6 +441,7 @@ export function AdminPricingPanel({
       <form action={formAction} className="space-y-3">
         <input type="hidden" name="productsJson" value={JSON.stringify(products)} />
         <input type="hidden" name="placesCount" value={placesCount} />
+        <input type="hidden" name="noProfit" value={noProfit ? "true" : "false"} />
         {isDraft && <input type="hidden" name="shopId" value={selectedShopId} />}
         {isDraft && <input type="hidden" name="isDraft" value="true" />}
         <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-amber-200 shadow-sm"><input type="checkbox" id="skip-w" name="skipWallet" className="h-4 w-4 rounded border-emerald-400" /><label htmlFor="skip-w" className="text-[10px] font-black text-emerald-950 cursor-pointer">تجهيز إداري كامل (تخطي حساب المجهز)</label></div>

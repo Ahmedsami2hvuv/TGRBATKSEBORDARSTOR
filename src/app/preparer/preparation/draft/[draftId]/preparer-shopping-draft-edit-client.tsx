@@ -112,8 +112,34 @@ export function PreparerShoppingDraftEditClient({
     const d = initialDraft.data as any;
     return (d && d.customDeliveryAlf != null) ? String(d.customDeliveryAlf) : "";
   });
-  const noProfit = !!(initialDraft.data as any)?.noProfit;
+  const [noProfit, setNoProfit] = useState(!!(initialDraft.data as any)?.noProfit);
   const [products, setProducts] = useState<ProductRow[]>(() => parseProducts(initialDraft.data));
+
+  const handleToggleNoProfit = (newVal: boolean) => {
+    setNoProfit(newVal);
+    const updatedProducts = products.map(p => {
+      if (typeof p.buyAlf === "number" && p.buyAlf > 0) {
+        return {
+          ...p,
+          sellAlf: calculateAutoSellPrice(p.line, p.buyAlf, newVal)
+        };
+      }
+      return p;
+    });
+    setProducts(updatedProducts);
+
+    // Auto-save progress
+    const nextJson = JSON.stringify(updatedProducts.map(pp => ({
+        line: pp.line,
+        buyAlf: pp.buyAlf === "" ? null : pp.buyAlf,
+        sellAlf: pp.sellAlf === "" ? null : pp.sellAlf,
+        pricedBy: pp.pricedBy,
+        pricedById: pp.pricedById,
+        assignedPreparerId: pp.assignedPreparerId,
+        assignedPreparerName: pp.assignedPreparerName,
+    })));
+    performSave(nextJson, newVal);
+  };
   const [selectedPriceIndex, setSelectedPriceIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeBranch, setActiveBranch] = useState<string | null>(null);
@@ -344,7 +370,7 @@ export function PreparerShoppingDraftEditClient({
     [products],
   );
 
-  const performSave = useCallback(async (jsonToSave: string) => {
+  const performSave = useCallback(async (jsonToSave: string, overrideNoProfit?: boolean) => {
     isDirtyRef.current = true;
     startAutoSave(() => {
         const fd = new FormData();
@@ -360,6 +386,7 @@ export function PreparerShoppingDraftEditClient({
         fd.append("placesCount", placesCount === "" ? "" : String(placesCount));
         fd.append("deliveryPrice", customDeliveryAlf);
         fd.append("productsJson", jsonToSave);
+        fd.append("noProfit", (overrideNoProfit !== undefined ? overrideNoProfit : noProfit) ? "true" : "false");
 
         updatePreparerShoppingDraft(initial, fd).then(res => {
             if (res.ok) {
@@ -368,7 +395,7 @@ export function PreparerShoppingDraftEditClient({
             }
         }).catch(console.error);
     });
-  },[auth, initialDraft.id, titleLine, customerPhone, customerName, customerLandmark, orderTime, placesCount]);
+  },[auth, initialDraft.id, titleLine, customerPhone, customerName, customerLandmark, orderTime, placesCount, customDeliveryAlf, noProfit]);
 
 
   function addProductsFromText() {
@@ -616,6 +643,7 @@ export function PreparerShoppingDraftEditClient({
     fd.append("draftId", initialDraft.id);
     fd.append("placesCount", String(n));
     fd.append("productsJson", productsJson);
+    fd.append("noProfit", noProfit ? "true" : "false");
 
     submitAction(fd);
   }
@@ -739,7 +767,20 @@ export function PreparerShoppingDraftEditClient({
         </div>
 
         <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-black text-indigo-950">قائمة المنتجات</h2>
+            <div className="flex items-center gap-2">
+                <h2 className="text-sm font-black text-indigo-950 text-nowrap">قائمة المنتجات</h2>
+                <button
+                  type="button"
+                  onClick={() => handleToggleNoProfit(!noProfit)}
+                  className={`rounded-lg px-2 py-1 text-[10px] font-bold transition-all ${
+                    noProfit
+                      ? "bg-rose-600 text-white animate-pulse"
+                      : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                  }`}
+                >
+                  {noProfit ? "🚫 إيقاف الربح مفعل" : "🚫 إيقاف الربح"}
+                </button>
+            </div>
             <div className="flex gap-1">
                 {bubbleMode === "fixed" && (
                   <div

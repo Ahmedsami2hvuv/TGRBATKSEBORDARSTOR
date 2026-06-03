@@ -261,6 +261,9 @@ export async function updatePreparerShoppingDraft(
 
     const newStatus = mergedProducts.every((p: any) => p.buyAlf != null && p.buyAlf !== "") ? "priced" : "draft";
 
+    const noProfitRaw = formData.get("noProfit");
+    const noProfit = noProfitRaw !== null ? noProfitRaw === "true" : !!dbData.noProfit;
+
     const titleLine = String(formData.get("titleLine") ?? draft.titleLine);
     const customerPhone = String(formData.get("customerPhone") ?? draft.customerPhone);
     const customerName = String(formData.get("customerName") ?? draft.customerName);
@@ -280,6 +283,7 @@ export async function updatePreparerShoppingDraft(
                 placesCount,
                 data: {
                     ...(rd.data as any),
+                    noProfit,
                     products: mergedProducts,
                     customDeliveryAlf,
                     orderType,

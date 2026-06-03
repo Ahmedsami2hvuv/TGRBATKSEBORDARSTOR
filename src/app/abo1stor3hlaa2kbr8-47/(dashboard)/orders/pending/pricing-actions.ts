@@ -50,7 +50,7 @@ async function getOrCreateSystemAdminShop(): Promise<{ id: string; regionId: str
 
 export type PricingState = { error?: string; ok?: boolean };
 
-export async function savePricingProgress(id: string, isDraft: boolean, products: any[], placesCount: number) {
+export async function savePricingProgress(id: string, isDraft: boolean, products: any[], placesCount: number, noProfit?: boolean) {
   try {
     const safeProducts = Array.isArray(products) ? products.filter(Boolean) : [];
     if (isDraft) {
@@ -64,20 +64,31 @@ export async function savePricingProgress(id: string, isDraft: boolean, products
         assignedPreparerName: p.assignedPreparerName || (draft.preparer?.name || null)
       }));
 
+      const nextData = { ...(draft.data as any || {}), products: productsWithPreparer };
+      if (noProfit !== undefined) {
+        nextData.noProfit = noProfit;
+      }
+
       await prisma.companyPreparerShoppingDraft.update({
         where: { id },
         data: {
-          data: { ...(draft.data as any || {}), products: productsWithPreparer },
+          data: nextData,
           placesCount
         }
       });
     } else {
       const order = await prisma.order.findUnique({ where: { id }, select: { preparerShoppingJson: true } });
       if (!order) return { error: "الطلب غير موجود" };
+
+      const nextJson = { ...(order.preparerShoppingJson as any || {}), products: safeProducts, placesCount };
+      if (noProfit !== undefined) {
+        nextJson.noProfit = noProfit;
+      }
+
       await prisma.order.update({
         where: { id },
         data: {
-          preparerShoppingJson: { ...(order.preparerShoppingJson as any || {}), products: safeProducts, placesCount }
+          preparerShoppingJson: nextJson
         }
       });
     }
@@ -127,6 +138,13 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
     originalOrder = order;
     customerRegion = order.customerRegion;
   }
+
+  const noProfitRaw = formData.get("noProfit");
+  const noProfit = noProfitRaw !== null
+    ? noProfitRaw === "true"
+    : isDraft
+      ? !!(draftData?.data as any)?.noProfit
+      : !!(originalOrder?.preparerShoppingJson as any)?.noProfit;
 
   let autoCourierId: string | null = null;
   if (isDraft) {
@@ -339,6 +357,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
               extraAlf,
               deliveryAlf,
               preparerInvoices,
+              noProfit,
               customerInvoiceText: buildCustomerInvoiceText({
                 brandLabel: "أبو الأكبر للتوصيل",
                 orderNumberLabel: `#${originalOrder?.orderNumber || "(جديد)"}`,
@@ -386,6 +405,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
               extraAlf,
               deliveryAlf,
               preparerInvoices,
+              noProfit,
               customerInvoiceText: buildCustomerInvoiceText({
                 brandLabel: "أبو الأكبر للتوصيل",
                 orderNumberLabel: `#(جديد)`,
@@ -444,6 +464,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
             extraAlf,
             deliveryAlf,
             preparerInvoices,
+            noProfit,
             customerInvoiceText: buildCustomerInvoiceText({
               brandLabel: "أبو الأكبر للتوصيل",
               orderNumberLabel: `#${originalOrder!.orderNumber}`,

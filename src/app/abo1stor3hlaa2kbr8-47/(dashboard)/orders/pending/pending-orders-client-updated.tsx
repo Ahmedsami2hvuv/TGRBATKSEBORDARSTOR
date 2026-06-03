@@ -176,7 +176,25 @@ export function AdminPricingPanel({
   });
 
   const [placesCount, setPlacesCount] = useState(initialData?.placesCount || 1);
-  const noProfit = !!initialData?.noProfit;
+  const [noProfit, setNoProfit] = useState(!!initialData?.noProfit);
+
+  const handleToggleNoProfit = async (newVal: boolean) => {
+    setNoProfit(newVal);
+    const updatedProducts = products.map(p => {
+      const buyNum = parseFloat(normalizeNumerals((p.buyAlf || "0").toString())) || 0;
+      if (buyNum > 0) {
+        return {
+          ...p,
+          sellAlf: calculateAutoSellPrice(p.line, buyNum, newVal).toString()
+        };
+      }
+      return p;
+    });
+    setProducts(updatedProducts);
+    setIsSaving(true);
+    await savePricingProgress(orderId, !!isDraft, updatedProducts, placesCount, newVal);
+    setIsSaving(false);
+  };
   const [selectedShopId, setSelectedShopId] = useState("");
   const [deleteMode, setDeleteMode] = useState(false);
   const [showBulkAdd, setShowBulkAdd] = useState(false);
@@ -194,12 +212,12 @@ export function AdminPricingPanel({
     const timer = setTimeout(async () => {
       if (products.length > 0) {
         setIsSaving(true);
-        await savePricingProgress(orderId, !!isDraft, products, placesCount);
+        await savePricingProgress(orderId, !!isDraft, products, placesCount, noProfit);
         setIsSaving(false);
       }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [products, placesCount, orderId, isDraft]);
+  }, [products, placesCount, orderId, isDraft, noProfit]);
 
   const toggleProductSelection = (index: number) => {
     setSelectedProductIndexes((prev) => prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]);
@@ -291,6 +309,17 @@ export function AdminPricingPanel({
             <span className="text-xl">💰</span> {isDraft ? "تجهيز وتسعير المسودة" : "تعديل تسعير الطلب"}
             {isSaving && <span className="text-[9px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded animate-pulse">جاري الحفظ التلقائي...</span>}
           </p>
+          <button
+            type="button"
+            onClick={() => handleToggleNoProfit(!noProfit)}
+            className={`rounded-xl px-3 py-1.5 text-[10px] font-black shadow-sm transition active:scale-95 ${
+              noProfit
+                ? "bg-rose-600 text-white animate-pulse"
+                : "bg-white border border-slate-300 text-slate-700"
+            }`}
+          >
+            {noProfit ? "🚫 إيقاف الربح مفعل" : "🚫 إيقاف الربح"}
+          </button>
           <DeleteFullOrderButton id={orderId} isDraft={Boolean(isDraft)} onSuccess={onSuccess} />
         </div>
         <div className="flex gap-2">
@@ -416,6 +445,7 @@ export function AdminPricingPanel({
         <input type="hidden" name="placesCount" value={String(placesCount)} />
         <input type="hidden" name="isDraft" value={String(!!isDraft)} />
         <input type="hidden" name="shopId" value={selectedShopId} />
+        <input type="hidden" name="noProfit" value={noProfit ? "true" : "false"} />
 
         {state.error && <p className="text-xs text-rose-600 font-bold p-2 bg-rose-50 rounded-lg border border-rose-200">{state.error}</p>}
 

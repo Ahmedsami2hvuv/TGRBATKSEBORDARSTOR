@@ -239,7 +239,26 @@ export function OrderPricingPanel({
 }) {
   const [products, setProducts] = useState<any[]>(initialData?.products || []);
   const [placesCount, setPlacesCount] = useState<number>(initialData?.placesCount || 1);
-  const noProfit = !!initialData?.noProfit;
+  const [noProfit, setNoProfit] = useState(!!initialData?.noProfit);
+
+  const handleToggleNoProfit = async (newVal: boolean) => {
+    setNoProfit(newVal);
+    const updatedProducts = products.map(p => {
+      const buyNum = parseFloat(normalizeNumerals((p.buyAlf || "0").toString())) || 0;
+      if (buyNum > 0) {
+        return {
+          ...p,
+          sellAlf: calculateAutoSellPrice(p.line, buyNum, newVal).toString()
+        };
+      }
+      return p;
+    });
+    setProducts(updatedProducts);
+    setIsSaving(true);
+    await savePricingProgress(orderId, !!isDraft, updatedProducts, placesCount, newVal);
+    setIsSaving(false);
+  };
+
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [buyText, setBuyText] = useState("");
   const [sellText, setSellText] = useState("");
@@ -279,13 +298,13 @@ export function OrderPricingPanel({
       if (products.length > 0) {
         setIsSaving(true);
         try {
-          await savePricingProgress(orderId, !!isDraft, products, placesCount);
+          await savePricingProgress(orderId, !!isDraft, products, placesCount, noProfit);
         } catch {}
         setIsSaving(false);
       }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [products, placesCount, orderId]);
+  }, [products, placesCount, orderId, isDraft, noProfit]);
 
   const updateProduct = (idx: number, field: string, val: any) => {
     const next = [...products];
@@ -396,6 +415,7 @@ export function OrderPricingPanel({
       >
         <input type="hidden" name="productsJson" value={JSON.stringify(products)} />
         <input type="hidden" name="placesCount" value={placesCount} />
+        <input type="hidden" name="noProfit" value={noProfit ? "true" : "false"} />
         {isDraft && <input type="hidden" name="autoCourierId" value={String(initialData?.autoCourierId ?? "")} />}
         {isDraft && <input type="hidden" name="shopId" value={initialData?.shopId} />}
         {isDraft && <input type="hidden" name="isDraft" value="true" />}
@@ -411,6 +431,17 @@ export function OrderPricingPanel({
                     <span className="text-[8px] font-black text-emerald-400">حفظ تلقائي</span>
                   </div>
                 )}
+                <button
+                  type="button"
+                  onClick={() => handleToggleNoProfit(!noProfit)}
+                  className={`h-6 px-2.5 rounded-full text-[9px] font-black shadow-md transition-all active:scale-95 ${
+                    noProfit
+                      ? "bg-rose-600 text-white animate-pulse"
+                      : "bg-white/10 border border-white/20 text-white hover:bg-white/20"
+                  }`}
+                >
+                  {noProfit ? "🚫 إيقاف الربح مفعل" : "🚫 إيقاف الربح"}
+                </button>
               </div>
 
               <div className="flex items-center gap-1.5">

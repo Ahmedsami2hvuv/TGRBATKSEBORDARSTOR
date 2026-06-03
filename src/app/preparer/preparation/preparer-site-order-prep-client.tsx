@@ -100,6 +100,24 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
   const [blockedPhone, setBlockedPhone] = useState<string | null>(null);
   const [noProfit, setNoProfit] = useState(false);
 
+  const handleToggleNoProfit = (newVal: boolean) => {
+    setNoProfit(newVal);
+    const updated = { ...priceRows };
+    for (const key in updated) {
+      const row = updated[key];
+      if (row) {
+        const buyNum = parseFloat(row.buy) || 0;
+        if (buyNum > 0) {
+          updated[key] = {
+            buy: row.buy,
+            sell: calculateAutoSellPrice(key, buyNum, newVal).toString()
+          };
+        }
+      }
+    }
+    setPriceRows(updated);
+  };
+
   const [priceRows, setPriceRows] = useState<{ buy: string; sell: string }[]>([]);
   const [placesCount, setPlacesCount] = useState<number | null>(null);
 
@@ -420,7 +438,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
             placeholder={PASTE_HELP}
             className={`${inputClass} min-h-[8rem] resize-y font-mono text-sm leading-relaxed dark:bg-slate-950/50 dark:border-white/10 dark:text-white`}
           />
-          <div className="mt-3 flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 cursor-pointer select-none transition hover:bg-slate-100 dark:hover:bg-white/10" onClick={() => setNoProfit(p => !p)}>
+          <div className="mt-3 flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 cursor-pointer select-none transition hover:bg-slate-100 dark:hover:bg-white/10" onClick={() => handleToggleNoProfit(!noProfit)}>
             <div className="flex flex-col text-right">
               <span className="text-xs font-black text-slate-800 dark:text-slate-200">إيقاف الربح 🚫</span>
               <span className="text-[10px] font-bold text-slate-400">جعل سعر البيع مساوياً لسعر الشراء تماماً</span>
@@ -523,7 +541,20 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
 
           <section className="kse-glass-dark overflow-hidden border border-sky-200/50 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70">
             <div className="bg-sky-500/5 px-4 py-3 border-b border-sky-100 dark:border-white/5 flex items-center justify-between">
-              <h2 className="text-sm font-black text-sky-950 dark:text-sky-200">2) تسعير المنتجات</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-black text-sky-950 dark:text-sky-200 text-nowrap">2) تسعير المنتجات</h2>
+                <button
+                  type="button"
+                  onClick={() => handleToggleNoProfit(!noProfit)}
+                  className={`rounded-lg px-2 py-1 text-[10px] font-bold transition-all ${
+                    noProfit
+                      ? "bg-rose-600 text-white animate-pulse"
+                      : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10"
+                  }`}
+                >
+                  {noProfit ? "🚫 إيقاف الربح مفعل" : "🚫 إيقاف الربح"}
+                </button>
+              </div>
               <div className="flex gap-1.5">
                  <button
                     type="button"
