@@ -123,39 +123,19 @@ export default function PreparerSettingsClient({ preparerName, auth }: Props) {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {availableBgs.map((bg) => {
                     const active = currentBgId === bg.id;
-                    const previewUrl = theme === "dark" ? bg.darkUrl : bg.lightUrl;
-                    const previewType = theme === "dark" ? bg.darkType : bg.lightType;
 
                     return (
                       <button
                         key={bg.id}
                         onClick={() => handleSelectBackground(bg.id)}
-                        className={`group relative flex flex-col items-center justify-center p-2 rounded-xl border transition-all text-center ${
+                        className={`group relative flex items-center justify-center py-3.5 px-4 rounded-xl border transition-all text-center text-xs font-black shadow-sm ${
                           active
-                            ? "bg-sky-50/50 dark:bg-sky-950/20 border-sky-500 dark:border-[#00f3ff] scale-[1.02]"
-                            : "border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850"
+                            ? "bg-sky-500 text-white border-sky-600 dark:bg-[#00f3ff] dark:text-black dark:border-[#00f3ff] scale-[1.02]"
+                            : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
                         }`}
                       >
-                        {/* إطار المعاينة الصغير */}
-                        <div className="w-full h-16 rounded-lg bg-slate-100 dark:bg-slate-900 overflow-hidden relative mb-2 flex items-center justify-center border border-slate-200/40 dark:border-slate-800/80">
-                          {previewType === "video" && previewUrl ? (
-                            <video src={previewUrl} muted loop autoPlay playsInline className="w-full h-full object-cover opacity-60" />
-                          ) : previewUrl ? (
-                            <img src={previewUrl} alt="" className="w-full h-full object-cover opacity-60" />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-slate-100 to-sky-100/50 dark:from-slate-800 dark:to-slate-905 opacity-60" />
-                          )}
-
-                          {active && (
-                            <div className="absolute inset-0 bg-sky-500/10 dark:bg-[#00f3ff]/10 flex items-center justify-center">
-                              <span className="bg-sky-600 dark:bg-[#00f3ff] text-white dark:text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
-                                نشط ✓
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <span className="text-[11px] font-black text-slate-850 dark:text-slate-200 truncate w-full">
-                          {bg.name}
+                        <span className="truncate w-full">
+                          {bg.name} {active && "✓"}
                         </span>
                       </button>
                     );
