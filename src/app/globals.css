@@ -306,3 +306,8 @@ html {
   opacity: 1 !important;
   text-align: center;
 }
+
+/* منع الخلفيات الحية البرمجية (Canvas) من حجب النقرات على عناصر الصفحة */
+body > canvas {
+  pointer-events: none !important;
+}
