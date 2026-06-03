@@ -187,7 +187,7 @@ export function OrderViewContent({
           <p className="text-xs font-black text-sky-700 mt-1 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 w-fit">تاريخ الرفع للنظام: {formatBaghdadDateTime(new Date(order.createdAt))}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Link href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`} className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm">تعديل البيانات</Link>
-            {order.submissionSource === "company_preparer" && (
+            {parsedShoppingJson !== null && (
               <button onClick={() => setPricingOpen(true)} className="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition-colors"><span>💰</span> تعديل التسعير</button>
             )}
             {order.status === "pending" && <Link href={`${SECRET_ADMIN_PATH}/orders/pending?assignOrder=${order.id}`} className="inline-flex items-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm">إسناد للمندوب</Link>}
