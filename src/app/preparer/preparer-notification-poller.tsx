@@ -195,15 +195,15 @@ export function PreparerNotificationPoller({
 
   return (
     <>
-      <div className="mb-2 rounded-xl border border-violet-200 bg-white/80 px-3 py-2">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs font-bold text-slate-700">
-            إشعارات المجهز:{" "}
-            <span className="text-violet-800">
-              {perm === "granted" ? "مفعلة" : perm === "denied" ? "مرفوضة من المتصفح" : "غير مفعلة"}
-            </span>
-          </p>
-          {perm !== "granted" ? (
+      {perm !== "granted" ? (
+        <div className="mb-2 rounded-xl border border-violet-200 bg-white/80 px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-bold text-slate-700">
+              إشعارات المجهز:{" "}
+              <span className="text-violet-800">
+                {perm === "denied" ? "مرفوضة من المتصفح" : "غير مفعلة"}
+              </span>
+            </p>
             <button
               type="button"
               onClick={enableNotifications}
@@ -211,9 +211,9 @@ export function PreparerNotificationPoller({
             >
               تفعيل إشعارات المتصفح
             </button>
-          ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {toast ? (
         <div

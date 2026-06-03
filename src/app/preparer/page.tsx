@@ -206,9 +206,6 @@ export default async function PreparerHomePage({ searchParams }: Props) {
       </header>
       <PreparerNotificationPoller auth={baseAuth} openUrl={preparationHref} />
       <section className="kse-glass-dark overflow-hidden border border-sky-200 shadow-sm dark:border-slate-800">
-        <div className="p-3 border-b border-sky-100 dark:border-slate-800">
-          <h3 className="text-sm font-bold text-sky-900 dark:text-sky-400">قائمة الطلبات</h3>
-        </div>
         <PreparerOrdersSection
           allRows={safeTableRows}
           searchFields={safeSearchFields}
