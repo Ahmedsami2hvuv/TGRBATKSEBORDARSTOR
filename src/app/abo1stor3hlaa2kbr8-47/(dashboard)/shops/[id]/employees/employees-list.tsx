@@ -15,27 +15,50 @@ export type EmployeeRow = {
   whatsappLink: string;
 };
 
+function normalizeArabic(s: string): string {
+  return s
+    .trim()
+    .replace(/[\u064B-\u065F]/g, "")
+    .replace(/أ|إ|آ/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .toLowerCase();
+}
+
 export function EmployeesList({
   shopId,
   shopName,
   locationUrl,
   employees,
   icons,
+  allShops,
 }: {
   shopId: string;
   shopName: string;
   locationUrl: string;
   employees: EmployeeRow[];
   icons: GlobalIconsConfig | null;
+  allShops?: { id: string; name: string }[];
 }) {
   const [query, setQuery] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const filtered = (employees || []).filter(
-    (e) =>
-      (e.name || "").toLowerCase().includes(query.toLowerCase()) ||
-      (e.phone || "").toLowerCase().includes(query.toLowerCase()),
-  );
+  const normalizedQuery = normalizeArabic(query);
+
+  const filtered = (employees || []).filter((e) => {
+    if (!normalizedQuery) return true;
+    const nameNorm = normalizeArabic(e.name || "");
+    const phoneNorm = (e.phone || "").toLowerCase();
+    return nameNorm.includes(normalizedQuery) || phoneNorm.includes(normalizedQuery);
+  });
+
+  const matchingShops = query.trim()
+    ? (allShops || []).filter((s) => {
+        if (s.id === shopId) return false;
+        const shopNorm = normalizeArabic(s.name || "");
+        return shopNorm.includes(normalizedQuery);
+      })
+    : [];
 
   const copyToClipboard = async (text: string, id: string) => {
     try {
@@ -59,6 +82,27 @@ export function EmployeesList({
           className="w-full max-w-xs rounded-lg border border-slate-200 p-2 text-sm outline-none focus:ring-2 focus:ring-sky-500"
         />
       </div>
+
+      {matchingShops.length > 0 && (
+        <div className="rounded-2xl border border-sky-100 bg-sky-50/50 p-4 shadow-sm space-y-2">
+          <p className="flex items-center gap-2 text-xs font-bold text-sky-800">
+            <DynamicIcon iconKey="ui_shops" config={icons} fallback="🏪" className="w-4 h-4 text-sky-600 animate-pulse" />
+            هل تبحث عن محل آخر؟ الانتقال لعملاء:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {matchingShops.map((s) => (
+              <Link
+                key={s.id}
+                href={`/abo1stor3hlaa2kbr8-47/shops/${s.id}/employees`}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-black text-slate-700 shadow-sm border border-slate-200/80 hover:bg-sky-100 hover:text-sky-800 hover:border-sky-300 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <DynamicIcon iconKey="ui_user" config={icons} fallback="👤" className="w-3.5 h-3.5 text-slate-400" />
+                {s.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <p className="py-10 text-center text-slate-400">لا توجد نتائج مطابقة.</p>

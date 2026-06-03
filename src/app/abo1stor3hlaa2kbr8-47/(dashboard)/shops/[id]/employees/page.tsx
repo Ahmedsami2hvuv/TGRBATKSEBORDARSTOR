@@ -49,6 +49,13 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
     // جلب الإعدادات الأخرى بتتابع وليس توازي لضمان عدم استهلاك أكثر من اتصال
     const iconsRaw = await getGlobalIcons();
     const employeeShareTemplate = await getEmployeeWhatsappShareTemplate();
+    const allShopsRaw = await prisma.shop.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: { name: "asc" },
+    });
 
     const employeesRaw = shopRaw.employees;
 
@@ -56,6 +63,7 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
     const shop = serializePrisma(shopRaw);
     const employees = serializePrisma(employeesRaw);
     const icons = serializePrisma(iconsRaw);
+    const allShops = serializePrisma(allShopsRaw);
 
     const employeesWithLinks: EmployeeRow[] = (employees || []).map((emp: any) => {
       const orderPortalUrl = buildEmployeeOrderPortalUrl(emp.id, emp.orderPortalToken, baseUrl);
@@ -64,7 +72,6 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
       if (emp.phone && emp.phone.length > 5) {
         const message = renderEmployeeWhatsappShareTemplate({
           template: employeeShareTemplate,
-          employee: emp.name || "",
           customerName: emp.name || "", // Fallback for old templates
           shopName: shop.name || "",
           customerLink: orderPortalUrl,
@@ -154,6 +161,7 @@ export default async function ShopEmployeesPage(props: { params: Promise<{ id: s
                 locationUrl={shop.locationUrl || ""}
                 employees={employeesWithLinks}
                 icons={icons}
+                allShops={allShops}
               />
             </section>
           </div>
