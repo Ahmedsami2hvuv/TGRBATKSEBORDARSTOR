@@ -1339,7 +1339,7 @@ export default function PendingOrdersClient({
               )}
 
               {/* Header */}
-              <div className="p-5 pb-3 flex flex-wrap items-center justify-between gap-4 border-b border-slate-105 dark:border-slate-900 bg-slate-50/30 dark:bg-slate-900/10">
+              <div className="p-5 pb-3 relative flex flex-wrap items-center justify-between gap-4 border-b border-slate-105 dark:border-slate-900 bg-slate-50/30 dark:bg-slate-900/10">
                 <div className="flex items-center gap-4">
                   {/* Bulk selection Checkbox & shrunken order number stacked */}
                   <div className="flex flex-col items-center gap-1.5 shrink-0 bg-slate-100/50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/50 dark:border-white/5 min-w-[52px] justify-center">
@@ -1416,6 +1416,10 @@ export default function PendingOrdersClient({
                     <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} />
                     إسناد للمندوب
                   </button>
+                </div>
+
+                {/* Top-left Absolute Container for voice player and delete buttons */}
+                <div className="absolute left-5 top-5 flex items-center gap-2 z-10">
                   {order.voiceNoteUrl && (
                     <MiniVoicePlayer src={order.voiceNoteUrl} />
                   )}
@@ -1476,7 +1480,7 @@ export default function PendingOrdersClient({
             className={`relative overflow-hidden rounded-[3rem] border-2 transition-all ${orderStatusPendingCardBorderBg} shadow-2xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-950`}
           >
             {/* Header */}
-            <div className="p-6 pb-0 flex flex-wrap items-start justify-between gap-4">
+            <div className="p-6 pb-0 relative flex flex-wrap items-start justify-between gap-4">
                <div className="flex gap-4">
                   {/* Selection Checkbox & shrunken order number stacked */}
                   <div className="flex flex-col items-center gap-1.5 shrink-0 bg-slate-100/50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/50 dark:border-white/5 min-w-[52px] justify-center">
@@ -1513,7 +1517,8 @@ export default function PendingOrdersClient({
                   </div>
                </div>
 
-               <div className="flex gap-2">
+               {/* Top-left Absolute Container for delete button in draft card */}
+               <div className="absolute left-6 top-6 z-10">
                   <DeleteFullOrderButton id={order.id} isDraft={!!isDraftMode} icons={icons} />
                </div>
             </div>
