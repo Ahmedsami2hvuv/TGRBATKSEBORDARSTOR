@@ -8,6 +8,7 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
   const [config, setConfig] = useState<BackgroundsConfig>(initial);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingInfo, setUploadingInfo] = useState<{ id: string; field: "lightUrl" | "darkUrl" } | null>(null);
+  const [previewModes, setPreviewModes] = useState<Record<string, "light" | "dark">>({});
 
   const saveConfig = async (newConfig: BackgroundsConfig) => {
     setIsSaving(true);
@@ -327,6 +328,115 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                     onChange={(e) => handleUpdateItem(item.id, "blur", Number(e.target.value))}
                     className="w-full accent-sky-600"
                   />
+                </div>
+              </div>
+
+              {/* محاكي المعاينة والتشغيل الفوري */}
+              <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-300">🖥️ شاشة محاكاة المعاينة:</span>
+                    <div className="flex bg-slate-200/80 dark:bg-slate-800 rounded-lg p-0.5 border border-slate-300 dark:border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewModes((prev) => ({ ...prev, [item.id]: "light" }))}
+                        className={`px-3 py-1 rounded-md text-[10px] font-black transition-all ${
+                          (previewModes[item.id] || "light") === "light"
+                            ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-350 shadow-sm"
+                            : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                        }`}
+                      >
+                        ☀️ نهار
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewModes((prev) => ({ ...prev, [item.id]: "dark" }))}
+                        className={`px-3 py-1 rounded-md text-[10px] font-black transition-all ${
+                          previewModes[item.id] === "dark"
+                            ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-350 shadow-sm"
+                            : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                        }`}
+                      >
+                        🌙 ليل
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      localStorage.setItem("kse_user_background", item.id);
+                      window.dispatchEvent(new Event("kse_bg_changed"));
+                      alert(`تم تطبيق المعاينة الحية لـ "${item.name}" على حسابك بنجاح! ستراها الآن في كامل خلفية الموقع.`);
+                    }}
+                    className="px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 dark:bg-violet-950/20 dark:hover:bg-violet-900/20 dark:text-violet-400 border border-violet-100 dark:border-violet-900 text-[10px] font-black rounded-lg transition-all"
+                  >
+                    👁️ تطبيق وتجربة على خلفية حسابي الآن
+                  </button>
+                </div>
+
+                {/* نافذة المحاكي */}
+                <div className="h-32 w-full rounded-xl bg-slate-200 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 overflow-hidden relative flex items-center justify-center">
+                  {/* تدرج افتراضي في الخلف للمحاكي */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-sky-100 dark:from-slate-900 dark:to-slate-950 opacity-40 -z-20" />
+                  
+                  {/* الخلفية المعروضة داخل المحاكي مع تطبيق الشفافية والضبابية */}
+                  {(() => {
+                    const mode = previewModes[item.id] || "light";
+                    const currentUrl = mode === "light" ? item.lightUrl : item.darkUrl;
+                    const currentType = mode === "light" ? item.lightType : item.darkType;
+
+                    const previewStyle = {
+                      opacity: item.opacity / 100,
+                      filter: item.blur > 0 ? `blur(${item.blur}px)` : "none",
+                    };
+
+                    if (!currentUrl) {
+                      return <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">لا يوجد رابط للخلفية في هذا الوضع</span>;
+                    }
+
+                    return (
+                      <div className="absolute inset-0 w-full h-full transition-all duration-300 pointer-events-none" style={previewStyle}>
+                        {currentType === "video" ? (
+                          <video
+                            src={currentUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover"
+                            key={currentUrl} // لإعادة التحميل عند تغيير الرابط
+                          />
+                        ) : currentType === "lottie" ? (
+                          <div className="w-full h-full flex items-center justify-center scale-110">
+                            {/* @ts-ignore */}
+                            <lottie-player
+                              src={currentUrl}
+                              autoplay
+                              loop
+                              speed="1"
+                              style={{ width: "100%", height: "100%" }}
+                              background="transparent"
+                              key={currentUrl}
+                            />
+                          </div>
+                        ) : (
+                          <img
+                            src={currentUrl}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            key={currentUrl}
+                          />
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* نص توضيحي تراكبي يمثل محتوى الموقع لمعاينة مدى وضوح النصوص فوق الخلفية */}
+                  <div className="relative z-10 text-center p-3 pointer-events-none select-none">
+                    <p className="text-xs font-black text-slate-900 dark:text-white drop-shadow-sm">مثال لنص الموقع (الوضوح القارئ)</p>
+                    <p className="text-[10px] font-bold text-slate-600 dark:text-slate-350 mt-1 drop-shadow-sm">تأكد من اختيار شفافية وضبابية مناسبة لكي لا تختفي الكلمات.</p>
+                  </div>
                 </div>
               </div>
             </div>
