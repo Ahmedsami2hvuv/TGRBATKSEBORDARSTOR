@@ -17,6 +17,7 @@ import {
   saveOrderLocationOnly,
   bulkDeleteOrdersPermanently,
   bulkAssignOrdersToCourier,
+  revertPreparedOrderToPreparing,
   type AssignOrderState,
   type RejectOrderState,
 } from "../actions";
@@ -738,6 +739,41 @@ function DeleteFullOrderButton({ id, isDraft, onSuccess, icons }: { id: string, 
   );
 }
 
+/** زر إرجاع الطلب المكتمل التجهيز إلى قيد التجهيز */
+function RevertPreparedOrderButton({ id, onSuccess }: { id: string; onSuccess?: () => void }) {
+  const bound = revertPreparedOrderToPreparing.bind(null);
+  const [state, formAction, pending] = useActionState(bound, {} as any);
+
+  useEffect(() => {
+    if (state.ok) {
+      if (onSuccess) onSuccess();
+      else window.location.reload();
+    }
+  }, [state.ok, onSuccess]);
+
+  return (
+    <form
+      action={formAction}
+      onSubmit={(e) => {
+        if (!window.confirm("هل أنت متأكد من إرجاع هذا الطلب إلى قيد التجهيز؟")) {
+          e.preventDefault();
+        }
+      }}
+      className="inline-block"
+    >
+      <input type="hidden" name="orderId" value={id} />
+      <button
+        type="submit"
+        disabled={pending}
+        title="إرجاع الطلب إلى قيد التجهيز"
+        className="flex items-center justify-center gap-1.5 px-3 h-8 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 dark:border-amber-900/30 dark:bg-amber-950/10 text-amber-700 dark:text-amber-400 text-xs font-black shadow-sm active:scale-95 transition-all shrink-0 cursor-pointer"
+      >
+        <span>🔄 إرجاع للتجهيز</span>
+      </button>
+    </form>
+  );
+}
+
 /** مشغل ملاحظة صوتية مصغر دائري */
 function MiniVoicePlayer({ src }: { src: string }) {
   const [playing, setPlaying] = useState(false);
@@ -1392,7 +1428,7 @@ export default function PendingOrdersClient({
                       #{order.orderNumber}
                     </Link>
                   </div>
-                  <div>
+                  <div className="flex items-center gap-2.5">
                     <Link
                       href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
                       className="hover:text-emerald-600 transition-colors"
@@ -1403,6 +1439,9 @@ export default function PendingOrdersClient({
                         <span className="text-xs font-bold text-slate-400">↗</span>
                       </h3>
                     </Link>
+                    {order.submissionLabel === "مكتمل التجهيز" && (
+                      <RevertPreparedOrderButton id={order.id} />
+                    )}
                   </div>
                 </div>
 

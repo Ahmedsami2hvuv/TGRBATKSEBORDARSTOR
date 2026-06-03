@@ -681,3 +681,52 @@ export async function bulkAssignOrdersToCourier(
     return { error: "فشل الإسناد الجماعي: " + (e.message || "") };
   }
 }
+
+/** إرجاع طلب مكتمل التجهيز إلى قيد التجهيز */
+export async function revertPreparedOrderToPreparing(
+  _prev: any,
+  formData: FormData
+): Promise<{ ok?: boolean; error?: string }> {
+  const orderId = String(formData.get("orderId") ?? "").trim();
+  if (!orderId) return { error: "المعرف مفقود" };
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        select: { orderNumber: true }
+      });
+      if (!order) return { error: "الطلب غير موجود" };
+
+      await tx.order.update({
+        where: { id: orderId },
+        data: { submissionSource: "employee" }
+      });
+
+      await tx.companyPreparerShoppingDraft.updateMany({
+        where: { sentOrderId: orderId },
+        data: { status: "draft" }
+      });
+
+      await tx.employeeWalletMiscEntry.updateMany({
+        where: {
+          label: { contains: `طلب #${order.orderNumber}` },
+          deletedAt: null
+        },
+        data: {
+          deletedAt: new Date(),
+          deletedReason: "reverted_by_admin",
+          deletedByDisplayName: "إرجاع الطلب للتجهيز من الإدارة"
+        }
+      });
+
+      return { ok: true };
+    });
+  } catch (err: any) {
+    console.error("Revert order error:", err);
+    return { error: `فشل إرجاع الطلب: ${err.message || "خطأ غير معروف"}` };
+  } finally {
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);
+  }
+}
