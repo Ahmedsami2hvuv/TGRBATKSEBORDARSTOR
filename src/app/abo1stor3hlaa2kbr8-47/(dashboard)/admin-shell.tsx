@@ -116,10 +116,10 @@ export function AdminShell({
     getGlobalIcons().then(setIcons);
   }, []);
 
+  // Close sidebar automatically when routing (pathname/searchParams change)
   useEffect(() => {
-    // We optionally closenavOpen on resize if needed, but since CSS handles lg breakpoint via lg:translate-x-0, we don't strictly need this unless we want to reset it.
-    // Keeping it simple!
-  }, []);
+    setNavOpen(false);
+  }, [pathname, searchParams]);
 
   // Close sidebar when clicking outside
   useEffect(() => {
@@ -303,7 +303,6 @@ export function AdminShell({
                 href={SECRET_ADMIN_PATH}
                 prefetch={false}
                 title="الرئيسية"
-                onClick={() => setNavOpen(false)}
                 className={
                   navItemActive(pathname, SECRET_ADMIN_PATH)
                     ? `inline-flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"} rounded-xl bg-sky-100 dark:bg-[#002a3a] border border-sky-400 dark:border-[#00f3ff] text-sky-700 dark:text-[#00f3ff] shadow-sm dark:shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all`
@@ -332,7 +331,6 @@ export function AdminShell({
                   href={href}
                   prefetch={false}
                   title={tile.label}
-                  onClick={() => setNavOpen(false)}
                   className={
                     active
                       ? `inline-flex items-center ${
