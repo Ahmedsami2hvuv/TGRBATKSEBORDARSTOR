@@ -203,49 +203,7 @@ export function PreparerOrderDetailSection({
         );
       }
       case "preparer_site_products": {
-        const pJson = order.preparerShoppingJson as any;
-        const products = pJson?.products as any[];
-        if (!products || products.length === 0) return null;
-        return (
-          <div key="preparer_site_products" className="rounded-xl border-2 border-indigo-200 bg-indigo-50/30 p-4" style={blockStyle}>
-            <div className="mb-3 flex items-center gap-2">
-              <DynamicIcon iconKey="ui_package" config={icons} className="h-5 w-5 text-indigo-700" fallback={<span>📦</span>} />
-              <h3 className="text-lg font-bold text-indigo-950 sm:text-xl">المواد المطلوبة</h3>
-            </div>
-            <div className="flex flex-col gap-2">
-              {products.map((p, idx) => {
-                const nameKey = p.line.trim().toLowerCase();
-                const img = productImagesMap?.[nameKey];
-                const branch = productBranchMap?.[nameKey];
-                return (
-                  <div key={idx} className="flex items-center gap-3 rounded-lg border border-indigo-100 bg-white p-2 shadow-sm">
-                    {img && (
-                      <button
-                        type="button"
-                        onClick={() => setZoomImage({ url: img, title: p.line })}
-                        className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-slate-100 bg-slate-50 active:scale-95 transition-transform"
-                      >
-                        <img src={resolvePublicAssetSrc(img)!} alt="" className="h-full w-full object-cover" />
-                      </button>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-black text-slate-900">{p.line}</p>
-                      {branch && (
-                        <p className="mt-0.5 inline-block rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600">
-                          📍 {branch}
-                        </p>
-                      )}
-                      <div className="mt-1 flex items-center gap-2">
-                         <span className="text-[10px] font-bold text-slate-500">بواسطة: {p.pricedBy || "—"}</span>
-                         <span className="font-mono text-xs font-black text-emerald-600">{p.buyAlf} (شراء)</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
+        return null;
       }
       case "preparer_shop_block": {
         const contactName =
@@ -357,6 +315,7 @@ export function PreparerOrderDetailSection({
         );
       }
       case "preparer_notes": {
+        if (order.submissionSource === "company_preparer") return null;
         const text = order.summary?.trim() || "";
         if (!text) return null;
         return (
