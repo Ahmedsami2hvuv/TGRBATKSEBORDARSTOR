@@ -15,7 +15,15 @@ export default async function ShopsPage() {
   const [regionsRaw, shopsRaw, iconsRaw, globalSettingsRaw] = await Promise.all([
     prisma.region.findMany({ orderBy: { name: "asc" } }).catch(() => []),
     prisma.shop.findMany({
-      include: { region: true },
+      include: {
+        region: true,
+        _count: {
+          select: {
+            employees: true,
+            orders: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     }).catch(() => []),
     getGlobalIcons(),
@@ -36,6 +44,9 @@ export default async function ShopsPage() {
     regionName: s.region?.name || "غير محدد",
     ordersPaused: !!s.ordersPaused,
     pauseMessage: s.pauseMessage || "",
+    employeesCount: s._count?.employees ?? 0,
+    ordersCount: s._count?.orders ?? 0,
+    createdAt: s.createdAt,
   }));
 
   return (
