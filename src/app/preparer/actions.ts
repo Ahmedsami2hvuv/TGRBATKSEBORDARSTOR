@@ -9,6 +9,7 @@ import { ALF_PER_DINAR, formatDinarAsAlfWithUnit, parseAlfInputToDinarDecimalReq
 import {
   buildCustomerInvoiceText,
   buildPreparerPurchaseSummaryText,
+  resolveDynamicOrderType,
 } from "@/lib/preparation-invoice";
 import { calculateAutoSellPrice, isMeatProduct } from "@/lib/auto-pricing";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
@@ -383,11 +384,16 @@ export async function submitPreparerShoppingDraft(
         return `[ تجهيز: ${inv.preparerName} ]\n${inv.invoiceText}`;
     });
 
+    let resolvedOrderType = draftData?.orderType || "تجهيز تسوق";
+    if (resolvedOrderType === "تجهيز تسوق" || !resolvedOrderType.trim()) {
+      resolvedOrderType = resolveDynamicOrderType(products, resolvedOrderType);
+    }
+
     const order = await prisma.order.create({
       data: {
         shopId: shop.id,
         status: "pending",
-        orderType: draftData?.orderType || "تجهيز تسوق",
+        orderType: resolvedOrderType,
         customerPhone: draft.customerPhone,
         customerRegionId: draft.customerRegionId,
         customerLandmark: draft.customerLandmark,
@@ -820,12 +826,23 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
       return `[ تجهيز: ${inv.preparerName} ]\n${inv.invoiceText}`;
     });
     const summary = formatBorderedSummarySection("المنتجات حسب المجهز", summaryParts.join("\n\n═══════════════\n\n"));
+    const oldProducts = (orderPrepJson?.products as any[]) || [];
+    const oldDynamicOrderType = resolveDynamicOrderType(oldProducts, "تجهيز تسوق");
+    let resolvedOrderType = order.orderType;
+    if (
+      resolvedOrderType === "تجهيز تسوق" ||
+      !resolvedOrderType.trim() ||
+      resolvedOrderType === oldDynamicOrderType
+    ) {
+      resolvedOrderType = resolveDynamicOrderType(products, resolvedOrderType);
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.order.update({
         where: { id: orderId },
         data: {
           shopId: shop.id,
+          orderType: resolvedOrderType,
           customerPhone,
           customerRegionId: customerRegion.id,
           customerLandmark,

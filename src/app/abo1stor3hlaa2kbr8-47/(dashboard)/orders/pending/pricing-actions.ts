@@ -7,6 +7,7 @@ import { ALF_PER_DINAR } from "@/lib/money-alf";
 import {
   buildCustomerInvoiceText,
   buildPreparerPurchaseSummaryText,
+  resolveDynamicOrderType,
 } from "@/lib/preparation-invoice";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
 import { isMeatProduct } from "@/lib/auto-pricing";
@@ -280,6 +281,32 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
   const totalDinar = subtotalDinar.plus(deliveryDinar);
   const deliveryAlf = Number(deliveryDinar.toString()) / ALF_PER_DINAR;
 
+  let existingOrderType = "تجهيز تسوق";
+  let oldProducts: any[] = [];
+  if (originalOrder) {
+    existingOrderType = originalOrder.orderType;
+    oldProducts = (originalOrder.preparerShoppingJson as any)?.products || [];
+  } else if (draftData?.sentOrderId) {
+    const order = await prisma.order.findUnique({
+      where: { id: draftData.sentOrderId },
+      select: { orderType: true, preparerShoppingJson: true }
+    });
+    if (order) {
+      existingOrderType = order.orderType;
+      oldProducts = (order.preparerShoppingJson as any)?.products || [];
+    }
+  }
+
+  const oldDynamicOrderType = resolveDynamicOrderType(oldProducts, "تجهيز تسوق");
+  let resolvedOrderType = existingOrderType;
+  if (
+    resolvedOrderType === "تجهيز تسوق" ||
+    !resolvedOrderType.trim() ||
+    resolvedOrderType === oldDynamicOrderType
+  ) {
+    resolvedOrderType = resolveDynamicOrderType(enrichedProducts, resolvedOrderType);
+  }
+
   return await prisma.$transaction(async (tx) => {
     let finalOrderId: string;
     let finalOrderNumber: number;
@@ -293,6 +320,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
           where: { id: draftData!.sentOrderId },
           data: {
             shop: { connect: { id: shop!.id } },
+            orderType: resolvedOrderType,
             customerPhone: draftData!.customerPhone,
             customerRegion: draftData!.customerRegionId ? { connect: { id: draftData!.customerRegionId } } : undefined,
             customerLandmark: draftData!.customerLandmark,
@@ -341,7 +369,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
             customerLandmark: draftData!.customerLandmark,
             orderNoteTime: draftData!.orderNoteTime || draftData!.orderTime, // Ensuring fallback if needed
             status: autoCourierId ? "assigned" : "pending",
-            orderType: "تجهيز تسوق",
+            orderType: resolvedOrderType,
             submissionSource: "company_preparer",
             submittedByCompanyPreparer: undefined,
             courier: autoCourierId ? { connect: { id: autoCourierId } } : undefined,
@@ -402,6 +430,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
       const updated = await tx.order.update({
         where: { id: orderId },
         data: {
+          orderType: resolvedOrderType,
           orderSubtotal: subtotalDinar,
           deliveryPrice: deliveryDinar,
           totalAmount: totalDinar,

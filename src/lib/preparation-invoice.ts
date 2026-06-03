@@ -73,3 +73,18 @@ export function buildShoppingOrderProductNotesLines(lines: InvoiceProductLine[])
 export function buildPreparerPurchaseSummaryText(lines: InvoiceProductLine[]): string {
   return lines.map((r) => `• ${r.line.trim()}  ${r.sellAlf}`).join("\n");
 }
+
+export function resolveDynamicOrderType(products: { line: string }[], defaultType: string = "تجهيز تسوق"): string {
+  if (!products || products.length === 0) return defaultType;
+  if (products.length === 1) {
+    return products[0].line.trim();
+  }
+  if (products.length === 2) {
+    const firstWord1 = products[0].line.trim().split(/\s+/)[0] || "";
+    const firstWord2 = products[1].line.trim().split(/\s+/)[0] || "";
+    if (firstWord1 && firstWord2) {
+      return `${firstWord1} و ${firstWord2}`;
+    }
+  }
+  return defaultType;
+}
