@@ -152,7 +152,7 @@ export default function InvoiceReportSearch({ rows, initialQuery, selectedDayIso
                     <td className={`px-4 py-3 font-black ${row.amountColorClass}`}>{formatDinarAsAlfWithUnit(row.amountDinar)}</td>
                     <td className="px-4 py-3 text-slate-600">{row.details}</td>
                     <td className="px-4 py-3 text-left space-y-2">
-                      {row.deleted ? null : row.id.startsWith("wt:") ? null : (
+                      {row.id.startsWith("wt:") ? null : (
                         <>
                           <input
                             type="checkbox"
@@ -168,22 +168,24 @@ export default function InvoiceReportSearch({ rows, initialQuery, selectedDayIso
                             }}
                             className="mr-2"
                           />
-                          <form action={softAction} className="inline-block w-full">
-                            <input type="hidden" name="rowId" value={row.id} />
-                            <input type="hidden" name="returnUrl" value={returnUrl} />
-                            <button
-                              type="submit"
-                              disabled={softPending}
-                              className="inline-flex w-full items-center justify-center rounded-2xl bg-amber-600 px-3 py-1 text-[11px] font-black text-white transition hover:bg-amber-700 disabled:opacity-50"
-                              onClick={(event) => {
-                                if (!window.confirm("هل تريد التأكيد على إلغاء الفاتورة؟ سيتم إبقاؤها كمعاملة ملغاة.")) {
-                                  event.preventDefault();
-                                }
-                              }}
-                            >
-                              إلغاء
-                            </button>
-                          </form>
+                          {!row.deleted && (
+                            <form action={softAction} className="inline-block w-full">
+                              <input type="hidden" name="rowId" value={row.id} />
+                              <input type="hidden" name="returnUrl" value={returnUrl} />
+                              <button
+                                type="submit"
+                                disabled={softPending}
+                                className="inline-flex w-full items-center justify-center rounded-2xl bg-amber-600 px-3 py-1 text-[11px] font-black text-white transition hover:bg-amber-700 disabled:opacity-50"
+                                onClick={(event) => {
+                                  if (!window.confirm("هل تريد التأكيد على إلغاء الفاتورة؟ سيتم إبقاؤها كمعاملة ملغاة.")) {
+                                    event.preventDefault();
+                                  }
+                                }}
+                              >
+                                إلغاء
+                              </button>
+                            </form>
+                          )}
                           <form action={hardAction} className="inline-block w-full">
                             <input type="hidden" name="rowId" value={row.id} />
                             <input type="hidden" name="returnUrl" value={returnUrl} />
