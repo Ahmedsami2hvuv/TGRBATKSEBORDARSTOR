@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ClientRuntime } from "@/components/client-runtime";
+import { AnimatedBackground } from "@/components/animated-background";
 import { isChatEnabledGlobally, isTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 import { getRoleFeatures } from "@/lib/role-features-settings";
 import { getAvailableFonts, getChosenFont, getFontFileUrl } from "@/lib/font-settings";
@@ -72,6 +73,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
+          <AnimatedBackground />
           <ClientRuntime
             mandoubFeatures={mandoubFeatures}
             preparerFeatures={preparerFeatures}

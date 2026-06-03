@@ -10,6 +10,7 @@ import { getTelegramNewOrderTemplate } from "@/lib/telegram-notify";
 import { isChatEnabledGlobally, isTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 import { getRoleFeatures } from "@/lib/role-features-settings";
 import { getAvailableFonts, getChosenFont } from "@/lib/font-settings";
+import { getBackgroundsConfig } from "@/lib/background-settings";
 
 export const metadata = {
   title: "الإعدادات — KSEBORDARSTOR",
@@ -34,6 +35,7 @@ export default async function SettingsPage() {
       getAvailableFonts(),
       getChosenFont(),
       prisma.globalSettings.findUnique({ where: { id: "system" } }).catch(() => null),
+      getBackgroundsConfig().catch(e => { console.error("Backgrounds Error:", e); return null; }),
     ]);
   } catch (e) {
     console.error("Critical Settings Page Error:", e);
@@ -54,7 +56,8 @@ export default async function SettingsPage() {
     telegramBots,
     availableFonts,
     currentFont,
-    globalSettings
+    globalSettings,
+    backgroundsConfig
   ] = data;
 
   // تأمين كائن الإشعارات في حال كان null
@@ -72,6 +75,7 @@ export default async function SettingsPage() {
 
       <SettingsBlocks
         globalIcons={icons as any}
+        backgroundsConfig={backgroundsConfig as any}
         employeeShareTemplate={employeeShareTemplate as string}
         customerOrderTemplate={customerOrderTemplate as string}
         telegramNewOrderTemplate={telegramNewOrderTemplate as string}

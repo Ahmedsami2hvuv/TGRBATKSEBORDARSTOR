@@ -19,6 +19,8 @@ import { CourierButtonsSettings } from "./courier-buttons-settings";
 import { TelegramBotsForm } from "./telegram-bots-form";
 import { FontSettingsForm } from "./font-settings-form";
 import { FloatingMenuSettings } from "./floating-menu-settings";
+import { BackgroundSettingsForm } from "./background-settings-form";
+import { BackgroundsConfig } from "@/lib/background-settings";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -178,9 +180,11 @@ export function SettingsBlocks({
   availableFonts,
   currentFont,
   globalSettingsInitial,
+  backgroundsConfig,
 }: {
   notificationInitial: NotificationInitial;
   globalIcons: GlobalIconsConfig;
+  backgroundsConfig: BackgroundsConfig | null;
   employeeShareTemplate: string;
   customerOrderTemplate: string;
   telegramNewOrderTemplate: string;
@@ -634,6 +638,18 @@ export function SettingsBlocks({
             <button disabled={loading} className="w-full py-2 bg-violet-600 text-white font-bold rounded-xl text-sm">{loading ? "جاري..." : "حفظ"}</button>
           </div>
         </form>
+      </Block>
+
+      <Block
+        id="background-settings"
+        title="الخلفيات الحية المتحركة 🎆"
+        subtitle="إضافة وتعديل الخلفيات الجمالية للموقع."
+        open={openId === "background-settings"}
+        onToggle={() => setOpenId((x) => (x === "background-settings" ? "" : "background-settings"))}
+        tone="indigo"
+        icons={globalIcons}
+      >
+        <BackgroundSettingsForm initial={backgroundsConfig || { items: [] }} />
       </Block>
 
       <Block

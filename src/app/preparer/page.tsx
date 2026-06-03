@@ -175,6 +175,13 @@ export default async function PreparerHomePage({ searchParams }: Props) {
       <header className="kse-glass-dark mb-2 flex flex-wrap items-center gap-2 border border-emerald-200/90 px-3 py-2.5 shadow-sm sm:mb-3 sm:px-4">
         <div className="min-w-0 flex-1 flex items-center gap-3">
           <ThemeSwitcher />
+          <Link
+            href={preparerPath("/preparer/settings", baseAuth)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 text-lg shadow-sm transition hover:scale-105"
+            title="إعدادات الخلفية والمظهر"
+          >
+            ⚙️
+          </Link>
           <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-slate-100">{safePreparer.name}</p>
           <PreparerSearchTrigger icons={safeIcons} />
         </div>
