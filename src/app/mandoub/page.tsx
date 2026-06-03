@@ -771,45 +771,42 @@ export default async function MandoubPage({ searchParams }: Props) {
       <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-base leading-relaxed text-slate-800">
         <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 sm:px-4 sm:py-4 sm:text-lg">
           <PortalAuthCookieSetter auth={baseAuth} />
-          <header className="kse-glass-dark mb-3 flex items-center gap-2 border border-sky-200/90 px-3 py-2.5 shadow-sm">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <DynamicIcon config={icons.ui_user} fallback="" className="w-5 h-5 text-sky-600" />
-                <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-[#00f3ff]">{courier.name}</p>
-              </div>
-              <p className="text-[10px] font-bold text-slate-500 sm:text-xs ms-7">{courier.phone}</p>
-            </div>
-            <Link
-              href={`/mandoub/settings?${baseQuery.toString()}`}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 text-lg shadow-sm transition hover:scale-105"
-              title="الإعدادات"
-            >
-              ⚙️
-            </Link>
-            {telegramLink && (
-              <a
-                href={telegramLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#229ED9] text-white shadow-sm ring-1 ring-[#1b8bc2] transition hover:bg-[#1b8bc2] sm:h-9 sm:w-9"
-                title="فتح بوت التليجرام"
+          <header className="kse-glass-dark mb-3 flex items-center justify-between gap-2 border border-sky-200/90 px-3 py-2.5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/mandoub/settings?${baseQuery.toString()}`}
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 text-lg shadow-sm transition hover:scale-105"
+                title="الإعدادات"
               >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.11.02-1.93 1.23-5.46 3.62-.51.35-.98.52-1.4.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.45-.42-1.39-.88.03-.24.36-.48.99-.73 3.88-1.69 6.47-2.8 7.77-3.33 3.7-1.51 4.47-1.77 4.97-1.78.11 0 .36.03.52.16.14.12.18.28.19.45.01.06.01.12 0 .19z" />
-                </svg>
-              </a>
-            )}
-            <MandoubPresenceToggle auth={baseAuth} availableForAssignment={courier.availableForAssignment} />
-            <FullscreenWalletLauncher
-              href={`/mandoub/wallet?${baseQuery.toString()}`}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base"
-              title="محفظة المندوب"
-            >
-              <span>المحفظة</span>
-              <span className="rounded-lg bg-violet-500 px-2 py-0.5 text-xs font-black text-white">
-                {cashInHandStr}
-              </span>
-            </FullscreenWalletLauncher>
+                ⚙️
+              </Link>
+              {telegramLink && (
+                <a
+                  href={telegramLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#229ED9] text-white shadow-sm ring-1 ring-[#1b8bc2] transition hover:bg-[#1b8bc2]"
+                  title="فتح بوت التليجرام"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.11.02-1.93 1.23-5.46 3.62-.51.35-.98.52-1.4.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.45-.42-1.39-.88.03-.24.36-.48.99-.73 3.88-1.69 6.47-2.8 7.77-3.33 3.7-1.51 4.47-1.77 4.97-1.78.11 0 .36.03.52.16.14.12.18.28.19.45.01.06.01.12 0 .19z" />
+                  </svg>
+                </a>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <MandoubPresenceToggle auth={baseAuth} availableForAssignment={courier.availableForAssignment} />
+              <FullscreenWalletLauncher
+                href={`/mandoub/wallet?${baseQuery.toString()}`}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base h-10"
+                title="محفظة المندوب"
+              >
+                <span>المحفظة</span>
+                <span className="rounded-lg bg-violet-500 px-2 py-0.5 text-xs font-black text-white">
+                  {cashInHandStr}
+                </span>
+              </FullscreenWalletLauncher>
+            </div>
           </header>
 
           <MandoubWebPushBanner auth={baseAuth} />
@@ -870,6 +867,7 @@ export default async function MandoubPage({ searchParams }: Props) {
               tab={tab}
               listOrdersStampSig={listOrdersStampSig}
               walletData={walletData}
+              courierName={courier.name}
             />
           </section>
         </div>

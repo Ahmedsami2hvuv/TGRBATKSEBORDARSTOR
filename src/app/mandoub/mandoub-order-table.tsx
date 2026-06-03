@@ -134,6 +134,7 @@ export function MandoubOrderTable({
   onSearchChange,
   listOrdersStampSig,
   walletData,
+  courierName,
 }: {
   rows: MandoubRow[];
   auth: { c: string; exp: string; s: string };
@@ -142,6 +143,7 @@ export function MandoubOrderTable({
   onSearchChange: (q: string) => void;
   listOrdersStampSig: string;
   walletData: any;
+  courierName: string;
 }) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -508,6 +510,11 @@ export function MandoubOrderTable({
           )}
 
           <ThemeSwitcher />
+
+          <div className="flex items-center gap-1.5 px-3 bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 rounded-xl h-[40px] text-sm font-black text-slate-800 dark:text-[#00f3ff]">
+            <DynamicIcon iconKey="ui_user" config={icons} className="w-4 h-4 text-sky-600" fallback="" />
+            <span className="truncate max-w-[120px]">{courierName}</span>
+          </div>
 
           {showSearch && (
             <div className="min-w-0 flex-1 relative animate-in fade-in slide-in-from-right-2">
