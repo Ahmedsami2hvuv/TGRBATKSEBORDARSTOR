@@ -114,9 +114,13 @@ export function AnimatedBackground() {
     const timer = setTimeout(() => {
       try {
         const addedListeners: { target: EventTarget; type: string; listener: EventListenerOrEventListenerObject; options?: boolean | AddEventListenerOptions }[] = [];
+        const addedIntervals: number[] = [];
+        const addedTimeouts: number[] = [];
         
         const originalWindowAdd = window.addEventListener;
         const originalDocAdd = document.addEventListener;
+        const originalSetInterval = window.setInterval;
+        const originalSetTimeout = window.setTimeout;
 
         window.addEventListener = function(type, listener, options) {
           addedListeners.push({ target: window, type, listener, options });
@@ -128,12 +132,27 @@ export function AnimatedBackground() {
           return originalDocAdd.call(document, type, listener, options);
         };
 
-        // استبدال requestAnimationFrame لمنع تشغيل اللوب بعد مسح الكانفاس
+        window.setInterval = function(handler, delay, ...args) {
+          const id = originalSetInterval(handler, delay, ...args);
+          addedIntervals.push(id as any);
+          return id;
+        } as any;
+
+        window.setTimeout = function(handler, delay, ...args) {
+          const id = originalSetTimeout(handler, delay, ...args);
+          addedTimeouts.push(id as any);
+          return id;
+        } as any;
+
+        // استبدال requestAnimationFrame لمنع تشغيل اللوب بعد مسح الكانفاس أو عند بدء تشغيل سكريبت أحدث
         const originalRAF = window.requestAnimationFrame;
+        const activeRunId = Date.now();
+        (window as any).__currentBgRunId = activeRunId;
+
         window.requestAnimationFrame = function(cb) {
           return originalRAF(function(time) {
-            if (!document.getElementById("custom-bg-canvas")) {
-              return;
+            if (activeRunId !== (window as any).__currentBgRunId || !document.getElementById("custom-bg-canvas")) {
+              return; // إيقاف التنفيذ فوراً في حال تحديث الخلفية أو مسح الكانفاس لمنع تكدس اللوبات
             }
             cb(time);
           });
@@ -167,11 +186,24 @@ export function AnimatedBackground() {
 
         window.addEventListener = originalWindowAdd;
         document.addEventListener = originalDocAdd;
+        window.setInterval = originalSetInterval;
+        window.setTimeout = originalSetTimeout;
 
         (window as any).__cleanupCustomBg = () => {
           window.addEventListener = originalWindowAdd;
           document.addEventListener = originalDocAdd;
           window.requestAnimationFrame = originalRAF;
+          window.setInterval = originalSetInterval;
+          window.setTimeout = originalSetTimeout;
+
+          // إلغاء صلاحية هذا التشغيل فوراً لإيقاف اللوب عن العمل بالخلفية
+          if ((window as any).__currentBgRunId === activeRunId) {
+            (window as any).__currentBgRunId = null;
+          }
+
+          // مسح جميع التايمرات والإنترفالات النشطة للسكريبت الممسوح
+          addedIntervals.forEach(id => clearInterval(id));
+          addedTimeouts.forEach(id => clearTimeout(id));
 
           addedListeners.forEach(({ target, type, listener, options }) => {
             target.removeEventListener(type, listener, options);
