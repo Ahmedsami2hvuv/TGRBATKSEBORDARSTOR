@@ -1282,6 +1282,7 @@ export default function PendingOrdersClient({
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(initialIcons);
   const [activeAssignOrderId, setActiveAssignOrderId] = useState<string | null>(initialAssignOrderId);
   const [activePricingOrderId, setActivePricingOrderId] = useState<string | null>(initialPricingId);
+  const [activeAssignPreparerOrderId, setActiveAssignPreparerOrderId] = useState<string | null>(null);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -1587,154 +1588,149 @@ export default function PendingOrdersClient({
         return (
           <div
             key={order.id}
-            className={`relative overflow-hidden rounded-[3rem] border-2 transition-all ${orderStatusPendingCardBorderBg} shadow-2xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-950`}
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest("button, a, input, select")) {
+                return;
+              }
+              router.push(`${SECRET_ADMIN_PATH}/orders/${order.id}`);
+            }}
+            className={`relative overflow-hidden rounded-[2.5rem] border-2 transition-all cursor-pointer ${orderStatusPendingCardBorderBg} hover:border-sky-500 shadow-xl bg-white dark:bg-slate-950 p-6 space-y-4 text-right`}
+            dir="rtl"
           >
-            {/* Header */}
-            <div className="p-6 pb-0 relative flex flex-wrap items-start justify-between gap-4">
-               <div className="flex gap-4">
-                  {/* Selection Checkbox & shrunken order number stacked */}
-                  <div className="flex flex-col items-center gap-1.5 shrink-0 bg-slate-100/50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/50 dark:border-white/5 min-w-[52px] justify-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(order.id)}
-                      onChange={() => toggleSelect(order.id)}
-                      className="h-5 w-5 shrink-0 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-all dark:bg-slate-900 dark:border-white/10"
-                    />
-                    <span className="text-xs font-black text-slate-500 dark:text-slate-400 tabular-nums">
-                      #{order.orderNumber}
-                    </span>
-                  </div>
-                  <div>
-                     <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{order.shopName}</h3>
-                     <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                        {order.routeMode === 'double' ? (
-                          <>
-                            <span className="flex items-center gap-1.5 text-sm font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-3.5 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
-                              <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded leading-none">من</span>
-                              {order.regionName}
-                            </span>
-                            <span className="flex items-center gap-1.5 text-sm font-black bg-rose-50 text-rose-700 dark:bg-rose-950/10 dark:text-rose-400 px-3.5 py-2 rounded-xl border border-rose-100 dark:border-rose-900/30">
-                              <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded leading-none">إلى</span>
-                              {order.secondCustomerRegionName || "غير معروف"}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="flex items-center gap-1.5 text-sm md:text-base font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-4 py-2 rounded-xl border border-sky-100 dark:border-sky-900/30">
-                             <DynamicIcon icon={icons?.ui_location} fallback="📍" width={14} height={14} /> {order.regionName}
-                          </span>
-                        )}
-                     </div>
-                  </div>
-               </div>
+            {/* Top row: Checkbox, Order number, Shop Name, Reject Button */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                {/* Selection Checkbox */}
+                <div className="flex items-center justify-center h-9 w-9 bg-slate-100 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-white/5">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(order.id)}
+                    onChange={() => toggleSelect(order.id)}
+                    className="h-5 w-5 shrink-0 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-all dark:bg-slate-900 dark:border-white/10"
+                  />
+                </div>
+                <div className="flex flex-col text-right">
+                  <span className="text-xs font-bold text-slate-400">#{order.orderNumber}</span>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">
+                    {order.shopName}
+                  </h3>
+                </div>
+              </div>
 
-               {/* Top-left Absolute Container for delete button in draft card */}
-               <div className="absolute left-6 top-6 z-10">
-                  <DeleteFullOrderButton id={order.id} isDraft={!!isDraftMode} icons={icons} />
-               </div>
+              {/* Reject Order Button (Trash) */}
+              <div className="shrink-0">
+                <DeleteFullOrderButton id={order.id} isDraft={!!isDraftMode} icons={icons} />
+              </div>
             </div>
 
-            {/* Pricing Section */}
-            <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-               <div className="space-y-4">
-                  {(() => {
-                    const isExpanded = expandedOrderIds.has(order.id);
-                    const isCopied = copiedOrderId === order.id;
+            {/* Middle section: Details (Type, Region, Product Count) */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Order Type */}
+              <span className="flex items-center gap-1.5 text-xs font-black bg-indigo-50 text-indigo-700 dark:bg-indigo-950/10 dark:text-indigo-400 px-3 py-1.5 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
+                🏷️ {order.orderType || "طلب تجهيز"}
+              </span>
 
-                    return (
-                      <div className="bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] p-5 border border-slate-100 dark:border-white/5 transition-all">
-                         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">تفاصيل الطلب</p>
-                               <button
-                                 type="button"
-                                 onClick={() => toggleExpand(order.id)}
-                                 className="text-xs font-black text-sky-600 dark:text-sky-400 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/20 hover:bg-sky-100 transition-colors shadow-sm"
-                               >
-                                  {isExpanded ? "🔼 إخفاء التفاصيل" : "🔽 عرض التفاصيل"}
-                               </button>
-                               {isExpanded && (
-                                 <button
-                                   type="button"
-                                   onClick={() => handleCopy(order.id, order.summary)}
-                                   className={`text-xs font-black flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all shadow-sm ${
-                                     isCopied
-                                       ? "bg-emerald-500 text-white"
-                                       : "bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                   }`}
-                                 >
-                                    {isCopied ? "✔ تم النسخ!" : "📋 نسخ"}
-                                 </button>
-                               )}
-                            </div>
-                            <button
-                              onClick={() => setActiveAssignOrderId(order.id)}
-                              className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1 hover:underline"
-                            >
-                               <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} /> فتح لوحة الإسناد
-                            </button>
-                         </div>
-                         {isExpanded && (
-                           <p className="text-sm font-black text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap mt-2 p-3 bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200/50 dark:border-white/5 shadow-inner">
-                             {order.summary}
-                           </p>
-                         )}
-                      </div>
-                    );
-                  })()}
+              {/* Region */}
+              <span className="flex items-center gap-1.5 text-xs font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-3 py-1.5 rounded-xl border border-sky-100 dark:border-sky-900/30">
+                <DynamicIcon icon={icons?.ui_location} fallback="📍" width={12} height={12} />
+                {order.regionName}
+              </span>
 
-                  {order.voiceNoteUrl && (
-                    <div className="p-4 bg-violet-50 dark:bg-violet-900/10 rounded-2xl border border-violet-100 dark:border-violet-900/30">
-                       <VoiceNoteAudio src={order.voiceNoteUrl} />
-                    </div>
-                  )}
+              {/* Products count */}
+              <span className="flex items-center gap-1.5 text-xs font-black bg-amber-50 text-amber-700 dark:bg-amber-950/10 dark:text-amber-400 px-3 py-1.5 rounded-xl border border-amber-100 dark:border-amber-900/30">
+                📦 عدد المنتجات: {order.preparerShoppingJson?.products?.length || 0}
+              </span>
+            </div>
 
-                  <div className="hidden lg:block">
-                    <PendingAssignPanel
-                      orderId={order.id}
-                      couriers={couriers}
-                      routeMode={order.routeMode}
-                      customerPhone={order.customerPhone}
-                      customerAlternatePhone={order.customerAlternatePhone}
-                      customerLandmark={order.customerLandmark}
-                      defaultCustomerLocationUrl={order.customerLocationUrl}
-                      secondCustomerLandmark={order.secondCustomerLandmark}
-                      defaultSecondCustomerLocationUrl={order.secondCustomerLocationUrl}
-                      customerDoorPhotoUrl={order.customerDoorPhotoUrl}
-                      secondCustomerDoorPhotoUrl={order.secondCustomerDoorPhotoUrl}
-                      icons={icons}
-                    />
-                  </div>
-               </div>
+            {/* Current Assignee(s) Status if any */}
+            {order.submittedByName && (
+              <p className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                <span>👤 المجهز الحالي:</span>
+                <span className="text-slate-800 dark:text-slate-200">{order.submittedByName}</span>
+              </p>
+            )}
 
-               <div className="h-[600px] lg:h-auto flex flex-col">
-                  <div className="flex items-center justify-between mb-2 lg:hidden">
-                     <p className="text-[10px] font-black text-slate-400 uppercase">لوحة التسعير</p>
-                     <button
-                       onClick={() => setActivePricingOrderId(order.id)}
-                       className="text-[10px] font-black text-sky-600 hover:underline"
-                     >
-                        توسيع التسعير ↗
-                     </button>
-                  </div>
-                  <OrderPricingPanel
-                     orderId={order.id}
-                     initialData={order.preparerShoppingJson || {}}
-                     preparers={preparers}
-                     couriers={couriers}
-                     isDraft={isDraftMode}
-                     icons={icons}
-                     hideContainer={false}
-                     onSuccess={() => {
-                        window.location.reload();
-                     }}
-                  />
-               </div>
+            {/* Bottom Actions Row */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-slate-100 dark:border-white/5">
+              {/* Phone & Chat Buttons */}
+              <div className="flex items-center gap-2">
+                <a
+                  href={`tel:${order.customerPhone}`}
+                  className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-black bg-white dark:bg-slate-900 shadow-sm flex items-center gap-1.5 hover:bg-slate-50 transition-colors"
+                >
+                  <DynamicIcon icon={icons?.ui_call} fallback="📞" width={12} height={12} />
+                  اتصال
+                </a>
+                <a
+                  href={`https://wa.me/${order.customerPhone.startsWith('0') ? '964' + order.customerPhone.slice(1) : order.customerPhone}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-9 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-sm flex items-center gap-1.5 transition-colors"
+                >
+                  <DynamicIcon icon={icons?.ui_whatsapp} fallback="💬" width={12} height={12} />
+                  مراسلة
+                </a>
+              </div>
+
+              {/* Assign to Preparers & Couriers Buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveAssignPreparerOrderId(order.id)}
+                  className="h-9 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-black shadow-sm flex items-center gap-1.5 transition-colors"
+                >
+                  <DynamicIcon icon={icons?.ui_user} fallback="👤" width={12} height={12} />
+                  إسناد لمجهزين
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveAssignOrderId(order.id)}
+                  className="h-9 px-3 rounded-xl bg-violet-600 hover:bg-violet-750 text-white text-xs font-black shadow-sm flex items-center gap-1.5 transition-colors"
+                >
+                  <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} />
+                  إسناد لمندوبين
+                </button>
+              </div>
             </div>
           </div>
         );
       })}
 
       {/* Floating Modal for Assign */}
+      {/* Floating Modal for Assign Preparer */}
+      {activeAssignPreparerOrderId && (
+        <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+           <div className="absolute inset-0" onClick={() => setActiveAssignPreparerOrderId(null)} />
+           <div className="relative w-full max-w-lg animate-in zoom-in-95 duration-200">
+             <div className="absolute -top-12 left-0 right-0 flex justify-center">
+                <button onClick={() => setActiveAssignPreparerOrderId(null)} className="h-10 px-6 rounded-full bg-white text-slate-900 text-xs font-black shadow-xl">إغلاق النافذة ✕</button>
+             </div>
+             {(() => {
+                const o = orders.find(x => x.id === activeAssignPreparerOrderId);
+                if (!o) return null;
+                const draftData = o.preparerShoppingJson || {};
+                const currentPreparerIds = Array.isArray(draftData.assignedPreparerIds) ? draftData.assignedPreparerIds : [];
+                return (
+                  <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 shadow-2xl border-2 border-sky-500 text-right">
+                    <AssignToPreparerPanel
+                      orderId={o.id}
+                      preparers={preparers}
+                      isDraft={true}
+                      initialPreparerIds={currentPreparerIds}
+                      onSuccess={() => {
+                        setActiveAssignPreparerOrderId(null);
+                        window.location.reload();
+                      }}
+                      icons={icons || undefined}
+                      hideContainer={true}
+                    />
+                  </div>
+                );
+             })()}
+           </div>
+        </div>
+      )}
+
       {activeAssignOrderId && (
         <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
            <div className="absolute inset-0" onClick={() => setActiveAssignOrderId(null)} />
