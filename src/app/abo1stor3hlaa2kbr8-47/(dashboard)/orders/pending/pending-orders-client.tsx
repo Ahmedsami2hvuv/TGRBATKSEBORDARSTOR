@@ -1585,6 +1585,12 @@ export default function PendingOrdersClient({
           );
         }
 
+        const isStoreOrder =
+          order.orderType?.toLowerCase().includes("متجر") ||
+          order.orderType?.toLowerCase().includes("store") ||
+          order.submissionLabel === "طلب متجر";
+        const displayOrderType = isStoreOrder ? "متجر" : "تجهيز";
+
         return (
           <div
             key={order.id}
@@ -1597,7 +1603,7 @@ export default function PendingOrdersClient({
             className={`relative overflow-hidden rounded-[2.5rem] border-2 transition-all cursor-pointer ${orderStatusPendingCardBorderBg} hover:border-sky-500 shadow-xl bg-white dark:bg-slate-950 p-6 space-y-4 text-right`}
             dir="rtl"
           >
-            {/* Top row: Checkbox, Order number, Shop Name, Reject Button */}
+            {/* Top row: Checkbox, Order number, Reject Button */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 {/* Selection Checkbox */}
@@ -1609,12 +1615,7 @@ export default function PendingOrdersClient({
                     className="h-5 w-5 shrink-0 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-all dark:bg-slate-900 dark:border-white/10"
                   />
                 </div>
-                <div className="flex flex-col text-right">
-                  <span className="text-xs font-bold text-slate-400">#{order.orderNumber}</span>
-                  <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">
-                    {order.shopName}
-                  </h3>
-                </div>
+                <span className="text-sm font-black text-slate-500 dark:text-slate-400 tabular-nums">#{order.orderNumber}</span>
               </div>
 
               {/* Reject Order Button (Trash) */}
@@ -1627,7 +1628,7 @@ export default function PendingOrdersClient({
             <div className="flex flex-wrap items-center gap-2">
               {/* Order Type */}
               <span className="flex items-center gap-1.5 text-xs font-black bg-indigo-50 text-indigo-700 dark:bg-indigo-950/10 dark:text-indigo-400 px-3 py-1.5 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
-                🏷️ {order.orderType || "طلب تجهيز"}
+                🏷️ {displayOrderType}
               </span>
 
               {/* Region */}
