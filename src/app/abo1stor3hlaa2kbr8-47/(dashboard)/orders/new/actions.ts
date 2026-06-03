@@ -192,6 +192,7 @@ export async function createAdminOrder(
             fromAdminName: "الإدارة",
             autoCourierId: selectedCourier?.id || null,
             autoCourierName: selectedCourier?.name || null,
+            noProfit: formData.get("noProfit") === "true",
           },
         },
         select: { id: true },

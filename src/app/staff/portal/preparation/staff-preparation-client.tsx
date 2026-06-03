@@ -20,6 +20,7 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
   const [customerPhone, setCustomerPhone] = useState("");
   const [orderTime, setOrderTime] = useState("فوري");
   const [blockedPhone, setBlockedPhone] = useState<string | null>(null);
+  const [noProfit, setNoProfit] = useState(false);
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<any[]>([]);
   const [selected, setSelected] = useState<any | null>(null);
@@ -126,6 +127,15 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
       <section className="kse-glass-dark rounded-2xl border border-violet-200 p-5 shadow-sm">
         <h2 className="text-base font-black text-violet-950 mb-3">1) لصق الرسالة (واتساب أو موقع)</h2>
         <textarea value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={6} className={`${inputClass} font-mono text-xs`} placeholder="الصق هنا..." />
+        <div className="mt-3 flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 cursor-pointer select-none transition hover:bg-slate-100 dark:hover:bg-white/10" onClick={() => setNoProfit(p => !p)}>
+          <div className="flex flex-col text-right">
+            <span className="text-xs font-black text-slate-800 dark:text-slate-200">إيقاف الربح 🚫</span>
+            <span className="text-[10px] font-bold text-slate-400">جعل سعر البيع مساوياً لسعر الشراء تماماً</span>
+          </div>
+          <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${noProfit ? 'bg-rose-600' : 'bg-slate-200 dark:bg-slate-800'}`}>
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${noProfit ? 'translate-x-6' : 'translate-x-1'}`} />
+          </div>
+        </div>
         <button type="button" onClick={runSmartParse} className="mt-3 w-full rounded-xl bg-violet-600 py-3 text-sm font-black text-white shadow-md hover:bg-violet-700 flex items-center justify-center gap-2">
           <DynamicIcon icon={icons?.ui_flash} className="w-4 h-4" fallback={<span>⚡</span>} />
           تحليل البيانات استخراج
@@ -144,6 +154,7 @@ export function StaffPreparationClient({ staffName, auth, preparers, icons }: an
           <input type="hidden" name="productsCsv" value={products.join("\n")} />
           <input type="hidden" name="rawListText" value={pasteText} />
           <input type="hidden" name="customerRegionId" value={selected?.id || ""} />
+          <input type="hidden" name="noProfit" value={noProfit ? "true" : "false"} />
 
           {selectedPreparerIds.map(id => <input key={id} type="hidden" name="preparerIds" value={id} />)}
 

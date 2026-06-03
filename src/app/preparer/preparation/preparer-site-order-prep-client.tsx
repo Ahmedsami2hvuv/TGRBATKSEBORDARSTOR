@@ -18,8 +18,7 @@ import { calculateAutoSellPrice } from "@/lib/auto-pricing";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
-/** سطر واحد = شراء فقط (الموقع يحسب البيع)؛ سطران = شراء ثم بيع يدوي. */
-function parseTwoLinePricing(line: string, raw: string): { buy: string; sell: string } | null {
+function parseTwoLinePricing(line: string, raw: string, noProfit?: boolean): { buy: string; sell: string } | null {
   const lines = raw.split(/\r?\n/).map((l) => l.replace(/,/g, ".").trim());
   const nonEmpty = lines.filter((l) => l.length > 0);
   if (nonEmpty.length === 0) return null;
@@ -29,7 +28,7 @@ function parseTwoLinePricing(line: string, raw: string): { buy: string; sell: st
 
   if (nonEmpty.length === 1) {
     // تسعير تلقائي
-    const sellAuto = calculateAutoSellPrice(line, buyNum);
+    const sellAuto = calculateAutoSellPrice(line, buyNum, noProfit);
     return { buy: nonEmpty[0]!, sell: sellAuto.toString() };
   }
 
@@ -99,6 +98,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
   const [customerLandmark, setCustomerLandmark] = useState("");
 
   const [blockedPhone, setBlockedPhone] = useState<string | null>(null);
+  const [noProfit, setNoProfit] = useState(false);
 
   const [priceRows, setPriceRows] = useState<{ buy: string; sell: string }[]>([]);
   const [placesCount, setPlacesCount] = useState<number | null>(null);
@@ -308,7 +308,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
     setPricingErr(null);
     if (selectedPriceIndex === null) return;
     const line = products[selectedPriceIndex]!;
-    const parsed = parseTwoLinePricing(line, pricingLinesText);
+    const parsed = parseTwoLinePricing(line, pricingLinesText, noProfit);
     if (!parsed) {
       setPricingErr("اكتب سعر الشراء .");
       return;
@@ -363,6 +363,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
       version: 1,
       titleLine: titleLine.trim(),
       placesCount,
+      noProfit,
       rawListText: rawListText.trim() || undefined,
       products: products.map((line, i) => {
         const row = priceRows[i]!;
@@ -371,7 +372,7 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
         return { line, buyAlf, sellAlf };
       }),
     };
-  }, [titleLine, products, priceRows, allPriced, placesCount, rawListText]);
+  }, [titleLine, products, priceRows, allPriced, placesCount, rawListText, noProfit]);
 
   const previewInvoice =
     previewPayload && deliveryAlf != null
@@ -419,6 +420,15 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
             placeholder={PASTE_HELP}
             className={`${inputClass} min-h-[8rem] resize-y font-mono text-sm leading-relaxed dark:bg-slate-950/50 dark:border-white/10 dark:text-white`}
           />
+          <div className="mt-3 flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 cursor-pointer select-none transition hover:bg-slate-100 dark:hover:bg-white/10" onClick={() => setNoProfit(p => !p)}>
+            <div className="flex flex-col text-right">
+              <span className="text-xs font-black text-slate-800 dark:text-slate-200">إيقاف الربح 🚫</span>
+              <span className="text-[10px] font-bold text-slate-400">جعل سعر البيع مساوياً لسعر الشراء تماماً</span>
+            </div>
+            <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${noProfit ? 'bg-rose-600' : 'bg-slate-200 dark:bg-slate-800'}`}>
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${noProfit ? 'translate-x-6' : 'translate-x-1'}`} />
+            </div>
+          </div>
           <button
             type="button"
             onClick={runParse}

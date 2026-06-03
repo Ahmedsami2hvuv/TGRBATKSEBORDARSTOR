@@ -426,6 +426,7 @@ export async function submitPreparerShoppingDraft(
           extraAlf,
           deliveryAlf: Number(delivery) / ALF_PER_DINAR,
           preparerInvoices,
+          noProfit: !!draftData?.noProfit,
           customerInvoiceText: buildCustomerInvoiceText({
             brandLabel: "أبو الأكبر للتوصيل",
             orderNumberLabel: "...",
@@ -567,6 +568,7 @@ export async function createPreparerShoppingDraftFromAnalysis(
                     customDeliveryAlf: (customDeliveryAlf !== null && !isNaN(customDeliveryAlf)) ? customDeliveryAlf : null,
                     orderType,
                     orderSubtotalAlf: (orderSubtotalAlf !== null && !isNaN(orderSubtotalAlf)) ? orderSubtotalAlf : null,
+                    noProfit: formData.get("noProfit") === "true",
                 }
             }
         });
@@ -775,7 +777,8 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
         const line = String(p.line ?? "").trim();
         const buyAlf = Number(p.buyAlf);
         if (!line || !Number.isFinite(buyAlf) || buyAlf < 0) return null;
-        const sellAlf = calculateAutoSellPrice(line, buyAlf);
+        const isOrderNoProfit = !!(order.preparerShoppingJson as any)?.noProfit;
+        const sellAlf = calculateAutoSellPrice(line, buyAlf, isOrderNoProfit);
         return {
           line,
           buyAlf,

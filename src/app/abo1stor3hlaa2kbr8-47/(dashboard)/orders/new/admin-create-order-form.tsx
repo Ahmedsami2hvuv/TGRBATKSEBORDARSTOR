@@ -130,6 +130,7 @@ export function AdminCreateOrderForm({
  const [prepRegionQ, setPrepRegionQ] = useState("");
  const [prepHits, setPrepHits] = useState<RegionHit[]>([]);
  const [prepSelectedRegion, setPrepSelectedRegion] = useState<RegionHit | null>(null);
+ const [noProfit, setNoProfit] = useState(false);
  const regionSearchRef = useRef<HTMLInputElement>(null);
 
  const [blockedPhone, setBlockedPhone] = useState<string | null>(null);
@@ -605,6 +606,15 @@ export function AdminCreateOrderForm({
  placeholder="الصق رسالة الموقع أو قائمة واتساب..."
  className={`${ad.input} font-mono text-sm`}
  />
+  <div className="mt-3 flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 cursor-pointer select-none transition hover:bg-slate-100 dark:hover:bg-white/10 animate-in fade-in" onClick={() => setNoProfit(p => !p)}>
+    <div className="flex flex-col text-right">
+      <span className="text-xs font-black text-slate-800 dark:text-slate-200">إيقاف الربح 🚫</span>
+      <span className="text-[10px] font-bold text-slate-400">جعل سعر البيع مساوياً لسعر الشراء تماماً</span>
+    </div>
+    <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${noProfit ? 'bg-rose-600' : 'bg-slate-200 dark:bg-slate-800'}`}>
+      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${noProfit ? 'translate-x-6' : 'translate-x-1'}`} />
+    </div>
+  </div>
  <button
  type="button"
  onClick={runParse}
@@ -619,6 +629,7 @@ export function AdminCreateOrderForm({
  <div className="space-y-4 rounded-2xl border border-sky-200 bg-sky-50/40 p-4">
  <input type="hidden" name="rawListText" value={rawListText} />
  <input type="hidden" name="productsCsv" value={products.join("\n")} />
+ <input type="hidden" name="noProfit" value={noProfit ? "true" : "false"} />
  <input type="hidden" name="customerRegionId" value={prepSelectedRegion?.id ?? ""} />
  <input type="hidden" name="firstCustomerRegionId" value={prepSelectedRegion?.id ?? ""} />
  <input type="hidden" name="orderType" value={titleLine} />

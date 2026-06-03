@@ -176,6 +176,7 @@ export function AdminPricingPanel({
   });
 
   const [placesCount, setPlacesCount] = useState(initialData?.placesCount || 1);
+  const noProfit = !!initialData?.noProfit;
   const [selectedShopId, setSelectedShopId] = useState("");
   const [deleteMode, setDeleteMode] = useState(false);
   const [showBulkAdd, setShowBulkAdd] = useState(false);
@@ -239,7 +240,7 @@ export function AdminPricingPanel({
       item[field] = cleanVal;
       if (field === "buyAlf") {
         const engNum = parseFloat(normalizeNumerals(cleanVal)) || 0;
-        item.sellAlf = calculateAutoSellPrice(item.line, engNum).toString();
+        item.sellAlf = calculateAutoSellPrice(item.line, engNum, noProfit).toString();
       }
     } else if (field === "pricedBy") {
       item.pricedBy = value === true ? "الإدارة" : null;

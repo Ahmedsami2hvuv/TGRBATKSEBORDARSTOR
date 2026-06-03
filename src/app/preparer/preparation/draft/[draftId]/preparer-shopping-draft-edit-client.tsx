@@ -112,6 +112,7 @@ export function PreparerShoppingDraftEditClient({
     const d = initialDraft.data as any;
     return (d && d.customDeliveryAlf != null) ? String(d.customDeliveryAlf) : "";
   });
+  const noProfit = !!(initialDraft.data as any)?.noProfit;
   const [products, setProducts] = useState<ProductRow[]>(() => parseProducts(initialDraft.data));
   const [selectedPriceIndex, setSelectedPriceIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -524,7 +525,7 @@ export function PreparerShoppingDraftEditClient({
       setPricingErr("تأكد أن السعر رقم صحيح.");
       return;
     }
-    let sell = lines[1] ? parseFloat(lines[1]) : calculateAutoSellPrice(products[selectedPriceIndex]!.line, buy);
+    let sell = lines[1] ? parseFloat(lines[1]) : calculateAutoSellPrice(products[selectedPriceIndex]!.line, buy, noProfit);
 
     const nextProducts =[...products];
     const target = nextProducts[selectedPriceIndex];
@@ -887,7 +888,7 @@ export function PreparerShoppingDraftEditClient({
                               onClick={() => {
                                 setPricingLinesText(String(h.buyAlf));
                                 const buy = h.buyAlf;
-                                const sell = calculateAutoSellPrice(products[selectedPriceIndex!]!.line, buy);
+                                const sell = calculateAutoSellPrice(products[selectedPriceIndex!]!.line, buy, noProfit);
                                 const nextProducts =[...products];
                                 const target = nextProducts[selectedPriceIndex!];
                                 if (target) {
@@ -955,7 +956,7 @@ export function PreparerShoppingDraftEditClient({
                                     onPointerDown={(e) => e.preventDefault()} // يمنع فقدان الفوكس والكيبورد
                                     onClick={() => {
                                       const buy = total;
-                                      const sell = calculateAutoSellPrice(products[selectedPriceIndex!]!.line, buy);
+                                      const sell = calculateAutoSellPrice(products[selectedPriceIndex!]!.line, buy, noProfit);
                                       const nextProducts = [...products];
                                       const target = nextProducts[selectedPriceIndex!];
                                       if (target) {

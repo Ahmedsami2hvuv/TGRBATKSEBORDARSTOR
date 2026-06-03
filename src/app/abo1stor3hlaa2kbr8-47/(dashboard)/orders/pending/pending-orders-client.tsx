@@ -239,6 +239,7 @@ export function OrderPricingPanel({
 }) {
   const [products, setProducts] = useState<any[]>(initialData?.products || []);
   const [placesCount, setPlacesCount] = useState<number>(initialData?.placesCount || 1);
+  const noProfit = !!initialData?.noProfit;
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [buyText, setBuyText] = useState("");
   const [sellText, setSellText] = useState("");
@@ -640,7 +641,7 @@ export function OrderPricingPanel({
                       setBuyText(val);
                       const buyNum = parseFloat(normalizeNumerals(val)) || 0;
                       if (buyNum > 0) {
-                        setSellText(calculateAutoSellPrice(products[editingIndex].line, buyNum).toString());
+                        setSellText(calculateAutoSellPrice(products[editingIndex].line, buyNum, noProfit).toString());
                       }
                     }}
                     onKeyDown={(e) => {

@@ -65,7 +65,8 @@ export function parseQuantityFromLine(line: string): number {
   return 1;
 }
 
-export function calculateAutoSellPrice(line: string | null | undefined, buyAlf: number): number {
+export function calculateAutoSellPrice(line: string | null | undefined, buyAlf: number, noProfit?: boolean): number {
+  if (noProfit) return buyAlf;
   const text = (line || "").trim();
   if (!text || buyAlf <= 0) return buyAlf;
 
