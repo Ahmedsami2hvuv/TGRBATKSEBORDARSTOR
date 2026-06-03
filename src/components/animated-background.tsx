@@ -115,30 +115,17 @@ export function AnimatedBackground() {
       try {
         const addedListeners: { target: EventTarget; type: string; listener: EventListenerOrEventListenerObject; options?: boolean | AddEventListenerOptions }[] = [];
         
-        const originalEventTargetAdd = EventTarget.prototype.addEventListener;
+        const originalWindowAdd = window.addEventListener;
+        const originalDocAdd = document.addEventListener;
 
-        EventTarget.prototype.addEventListener = function(type, listener, options) {
-          let wrappedListener = listener;
-          if (['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'touchstart', 'touchend'].includes(type)) {
-            wrappedListener = function(event: Event) {
-              const safeEvent = new Proxy(event, {
-                get(target, prop) {
-                  if (prop === 'preventDefault' || prop === 'stopPropagation' || prop === 'stopImmediatePropagation') {
-                    return () => {}; // prevent background script from blocking events
-                  }
-                  const val = Reflect.get(target, prop);
-                  return typeof val === 'function' ? val.bind(target) : val;
-                }
-              });
-              if (typeof listener === 'function') {
-                listener.call(this, safeEvent as any);
-              } else if (listener && typeof (listener as any).handleEvent === 'function') {
-                (listener as any).handleEvent(safeEvent);
-              }
-            };
-          }
-          addedListeners.push({ target: this, type, listener: wrappedListener, options });
-          return originalEventTargetAdd.call(this, type, wrappedListener, options);
+        window.addEventListener = function(type, listener, options) {
+          addedListeners.push({ target: window, type, listener, options });
+          return originalWindowAdd.call(window, type, listener, options);
+        };
+
+        document.addEventListener = function(type, listener, options) {
+          addedListeners.push({ target: document, type, listener, options });
+          return originalDocAdd.call(document, type, listener, options);
         };
 
         // استبدال requestAnimationFrame لمنع تشغيل اللوب بعد مسح الكانفاس
@@ -178,10 +165,12 @@ export function AnimatedBackground() {
         
         document.body.appendChild(script);
 
-        EventTarget.prototype.addEventListener = originalEventTargetAdd;
+        window.addEventListener = originalWindowAdd;
+        document.addEventListener = originalDocAdd;
 
         (window as any).__cleanupCustomBg = () => {
-          EventTarget.prototype.addEventListener = originalEventTargetAdd;
+          window.addEventListener = originalWindowAdd;
+          document.addEventListener = originalDocAdd;
           window.requestAnimationFrame = originalRAF;
 
           addedListeners.forEach(({ target, type, listener, options }) => {
