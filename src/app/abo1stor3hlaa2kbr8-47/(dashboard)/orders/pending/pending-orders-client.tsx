@@ -1279,6 +1279,7 @@ export default function PendingOrdersClient({
   initialAssignOrderId?: string | null;
   initialPricingId?: string | null;
 }) {
+  const router = useRouter();
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(initialIcons);
   const [activeAssignOrderId, setActiveAssignOrderId] = useState<string | null>(initialAssignOrderId);
   const [activePricingOrderId, setActivePricingOrderId] = useState<string | null>(initialPricingId);
