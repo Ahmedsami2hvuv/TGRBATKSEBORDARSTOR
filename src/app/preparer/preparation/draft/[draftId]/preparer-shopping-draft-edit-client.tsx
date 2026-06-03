@@ -600,8 +600,23 @@ export function PreparerShoppingDraftEditClient({
             assignedPreparerId: pp.assignedPreparerId,
             assignedPreparerName: pp.assignedPreparerName,
         })));
-        performSave(nextJson);
     }
+  }
+
+  function handleSelectPlacesCountAndSubmit(n: number) {
+    if (submitPending) return;
+    setPlacesCount(n);
+    isDirtyRef.current = true;
+
+    const fd = new FormData();
+    fd.append("p", auth.p);
+    fd.append("exp", auth.exp);
+    fd.append("s", auth.s);
+    fd.append("draftId", initialDraft.id);
+    fd.append("placesCount", String(n));
+    fd.append("productsJson", productsJson);
+
+    submitAction(fd);
   }
 
   const canSubmit = products.length > 0 && allProductsPriced && typeof placesCount === "number";
@@ -1034,30 +1049,35 @@ export function PreparerShoppingDraftEditClient({
           <h2 className="text-sm font-black text-amber-950 mb-3">كم محل كلفك تجهيز الطلبية؟</h2>
           <div className="grid grid-cols-5 gap-2">
             {[1,2,3,4,5,6,7,8,9,10].map((n) => (
-              <button key={n} type="button" onClick={() => { setPlacesCount(n); isDirtyRef.current = true; }} className={`rounded-xl py-3 text-sm font-black border-2 transition ${placesCount === n ? 'border-amber-600 bg-amber-600 text-white shadow-md' : 'border-slate-200 bg-white text-slate-800'}`}>{n}</button>
+              <button
+                key={n}
+                type="button"
+                disabled={submitPending}
+                onClick={() => handleSelectPlacesCountAndSubmit(n)}
+                className={`rounded-xl py-3 text-sm font-black border-2 transition ${
+                  placesCount === n ? 'border-amber-600 bg-amber-600 text-white shadow-md' : 'border-slate-200 bg-white text-slate-800'
+                } ${submitPending ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {n}
+              </button>
             ))}
           </div>
-          {placesCount !== "" && <p className="mt-3 text-[10px] font-black text-emerald-700 bg-emerald-50 p-2 rounded-lg text-center">أحسنت! اكتملت القائمة. يمكنك الآن إرسال الطلب النهائي للنظام. (المجموع الكلي مع العمولات سيحسب تلقائياً)</p>}
         </section>
       )}
 
-      <div className="fixed bottom-4 inset-x-4 z-50">
-          <form action={submitAction}>
+      <div className="fixed bottom-4 inset-x-4 z-50 pointer-events-none">
+          <div className="pointer-events-auto">
             {submitState.error && (
               <div className="mb-2 rounded-xl border border-rose-300 bg-rose-50 p-3 text-center text-sm font-black text-rose-700 shadow-sm animate-in fade-in">
                   {submitState.error}
               </div>
             )}
-            <input type="hidden" name="p" value={auth.p} />
-            <input type="hidden" name="exp" value={auth.exp} />
-            <input type="hidden" name="s" value={auth.s} />
-            <input type="hidden" name="draftId" value={initialDraft.id} />
-            <input type="hidden" name="placesCount" value={placesCount} />
-            <input type="hidden" name="productsJson" value={productsJson} />
-            <button type="submit" disabled={submitPending || !canSubmit || isDirtyRef.current} className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-800 py-4 text-white font-black shadow-2xl active:scale-95 disabled:opacity-50 transition-all border-b-4 border-emerald-900">
-                {isDirtyRef.current ? "⏳ جاري حفظ الأسعار..." : submitPending ? "جارٍ إرسال الطلب..." : "✅ إرسال الطلب النهائي للنظام 🚀"}
-            </button>
-          </form>
+            {submitPending && (
+              <div className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-800 py-4 text-white font-black text-center shadow-2xl animate-pulse border-b-4 border-emerald-900">
+                ⏳ جارٍ إرسال الطلب النهائي للنظام...
+              </div>
+            )}
+          </div>
       </div>
 
       {/* الفقاعة العائمة لمجموع التسعير */}

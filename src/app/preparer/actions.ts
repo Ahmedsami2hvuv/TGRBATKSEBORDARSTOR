@@ -327,7 +327,18 @@ export async function submitPreparerShoppingDraft(
     });
 
     const data = draft.data as any;
-    const products = data.products as any[];
+    let products = data.products as any[];
+    const productsJsonRaw = formData.get("productsJson");
+    if (productsJsonRaw && String(productsJsonRaw).trim() !== "") {
+      try {
+        const parsed = JSON.parse(String(productsJsonRaw));
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          products = parsed;
+        }
+      } catch (e) {
+        console.error("Failed to parse productsJson from formData:", e);
+      }
+    }
     if (!products || products.some(p => p.buyAlf == null || p.buyAlf === "")) return { error: "أكمل تسعير جميع المواد." };
 
     const systemShopInfo = await getOrCreateSystemAdminShop();
@@ -335,7 +346,10 @@ export async function submitPreparerShoppingDraft(
     const custRegion = await prisma.region.findUnique({ where: { id: draft.customerRegionId! } });
     if (!shop || !custRegion) return { error: "خطأ في بيانات المحل أو المنطقة." };
 
-    const placesCount = draft.placesCount || 1;
+    const placesCountRaw = formData.get("placesCount");
+    const placesCount = (placesCountRaw && !isNaN(Number(placesCountRaw)))
+      ? Number(placesCountRaw)
+      : (draft.placesCount || 1);
     const draftData = draft.data as any;
     const customDeliveryAlf = draftData?.customDeliveryAlf;
 
@@ -465,6 +479,18 @@ export async function submitPreparerShoppingDraft(
             });
         }
     }
+
+    // تحديث مسودة التجهيز بالبيانات النهائية والمنتجات المسعرة قبل إغلاقها
+    await prisma.companyPreparerShoppingDraft.update({
+      where: { id: draftId },
+      data: {
+        placesCount,
+        data: {
+          ...(draft.data as any || {}),
+          products
+        }
+      }
+    });
 
     // غلق وتأشير جميع مسودات المجموعة كمرسلة لتجنب الدبلرة
     const groupId = (draft.data as any)?.groupId;
