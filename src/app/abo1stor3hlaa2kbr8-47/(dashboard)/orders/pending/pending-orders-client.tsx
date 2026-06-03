@@ -1599,7 +1599,11 @@ export default function PendingOrdersClient({
               if ((e.target as HTMLElement).closest("button, a, input, select")) {
                 return;
               }
-              router.push(`${SECRET_ADMIN_PATH}/orders/${order.id}`);
+              if (isDraftMode) {
+                setActivePricingOrderId(order.id);
+              } else {
+                router.push(`${SECRET_ADMIN_PATH}/orders/${order.id}`);
+              }
             }}
             className={`relative overflow-hidden rounded-[2.5rem] border-2 transition-all cursor-pointer ${orderStatusPendingCardBorderBg} hover:border-sky-500 shadow-xl bg-white dark:bg-slate-950 p-6 space-y-4 text-right`}
             dir="rtl"
