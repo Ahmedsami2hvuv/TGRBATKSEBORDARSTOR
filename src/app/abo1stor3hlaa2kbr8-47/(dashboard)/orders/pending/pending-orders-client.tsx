@@ -1218,6 +1218,30 @@ export default function PendingOrdersClient({
   const [isBulkLoading, setIsBulkLoading] = useState(false);
   const [bulkActionError, setBulkActionError] = useState("");
 
+  const [expandedOrderIds, setExpandedOrderIds] = useState<Set<string>>(new Set());
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
+
+  const toggleExpand = (id: string) => {
+    const next = new Set(expandedOrderIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setExpandedOrderIds(next);
+  };
+
+  const handleCopy = (id: string, text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedOrderId(id);
+      setTimeout(() => {
+        setCopiedOrderId(null);
+      }, 2000);
+    }).catch((err) => {
+      console.error("Failed to copy: ", err);
+    });
+  };
+
   const toggleSelect = (id: string) => {
     const next = new Set(selectedIds);
     if (next.has(id)) {
@@ -1526,18 +1550,51 @@ export default function PendingOrdersClient({
             {/* Pricing Section */}
             <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
                <div className="space-y-4">
-                  <div className="bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] p-5 border border-slate-100 dark:border-white/5">
-                     <div className="flex items-center justify-between mb-3">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">تفاصيل الطلب</p>
-                        <button
-                          onClick={() => setActiveAssignOrderId(order.id)}
-                          className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1 hover:underline"
-                        >
-                           <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} /> فتح لوحة الإسناد
-                        </button>
-                     </div>
-                     <p className="text-sm font-black text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{order.summary}</p>
-                  </div>
+                  {(() => {
+                    const isExpanded = expandedOrderIds.has(order.id);
+                    const isCopied = copiedOrderId === order.id;
+
+                    return (
+                      <div className="bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] p-5 border border-slate-100 dark:border-white/5 transition-all">
+                         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">تفاصيل الطلب</p>
+                               <button
+                                 type="button"
+                                 onClick={() => toggleExpand(order.id)}
+                                 className="text-xs font-black text-sky-600 dark:text-sky-400 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/20 hover:bg-sky-100 transition-colors shadow-sm"
+                               >
+                                  {isExpanded ? "🔼 إخفاء التفاصيل" : "🔽 عرض التفاصيل"}
+                               </button>
+                               {isExpanded && (
+                                 <button
+                                   type="button"
+                                   onClick={() => handleCopy(order.id, order.summary)}
+                                   className={`text-xs font-black flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all shadow-sm ${
+                                     isCopied
+                                       ? "bg-emerald-500 text-white"
+                                       : "bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                   }`}
+                                 >
+                                    {isCopied ? "✔ تم النسخ!" : "📋 نسخ"}
+                                 </button>
+                               )}
+                            </div>
+                            <button
+                              onClick={() => setActiveAssignOrderId(order.id)}
+                              className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1 hover:underline"
+                            >
+                               <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} /> فتح لوحة الإسناد
+                            </button>
+                         </div>
+                         {isExpanded && (
+                           <p className="text-sm font-black text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap mt-2 p-3 bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200/50 dark:border-white/5 shadow-inner">
+                             {order.summary}
+                           </p>
+                         )}
+                      </div>
+                    );
+                  })()}
 
                   {order.voiceNoteUrl && (
                     <div className="p-4 bg-violet-50 dark:bg-violet-900/10 rounded-2xl border border-violet-100 dark:border-violet-900/30">
