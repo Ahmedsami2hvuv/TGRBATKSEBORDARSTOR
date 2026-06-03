@@ -1368,54 +1368,54 @@ export default function PendingOrdersClient({
                         <span className="text-xs font-bold text-slate-400">↗</span>
                       </h3>
                     </Link>
-                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                      {order.routeMode === 'double' ? (
-                        <>
-                          <span className="flex items-center gap-1.5 text-sm font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-3.5 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
-                            <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded leading-none">من</span>
-                            {order.regionName}
-                          </span>
-                          <span className="flex items-center gap-1.5 text-sm font-black bg-rose-50 text-rose-700 dark:bg-rose-950/10 dark:text-rose-400 px-3.5 py-2 rounded-xl border border-rose-100 dark:border-rose-900/30 shadow-sm">
-                            <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded leading-none">إلى</span>
-                            {order.secondCustomerRegionName || "غير معروف"}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="flex items-center gap-1.5 text-sm md:text-base font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-4 py-2 rounded-xl border border-sky-100 dark:border-sky-900/30 shadow-sm">
-                          <DynamicIcon icon={icons?.ui_location} fallback="📍" width={14} height={14} /> {order.regionName}
-                        </span>
-                      )}
-                      {order.orderSubtotal ? (
-                        <span className="inline-flex items-center gap-1.5 text-sm md:text-base font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-4 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
-                          {hasLocation && (
-                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" title="الموقع الجغرافي متوفر" />
-                          )}
-                          {order.orderSubtotal}
-                        </span>
-                      ) : order.totalAmount ? (
-                        <span className="inline-flex items-center gap-1.5 text-sm md:text-base font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-4 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
-                          {hasLocation && (
-                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" title="الموقع الجغرافي متوفر" />
-                          )}
-                          {order.totalAmount}
-                        </span>
-                      ) : (
-                        hasLocation && (
-                          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0 self-center" title="الموقع الجغرافي متوفر" />
-                        )
-                      )}
-                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="w-full sm:w-auto flex justify-between sm:justify-start items-center gap-3">
                   <button
                     onClick={() => setActiveAssignOrderId(order.id)}
-                    className="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-[10px] font-black shadow-sm active:scale-95 transition-all"
+                    className="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-[10px] font-black shadow-sm active:scale-95 transition-all shrink-0"
                   >
                     <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} />
                     إسناد للمندوب
                   </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {order.routeMode === 'double' ? (
+                      <>
+                        <span className="flex items-center gap-1.5 text-sm font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-3.5 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
+                          <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded leading-none">من</span>
+                          {order.regionName}
+                        </span>
+                        <span className="flex items-center gap-1.5 text-sm font-black bg-rose-50 text-rose-700 dark:bg-rose-950/10 dark:text-rose-400 px-3.5 py-2 rounded-xl border border-rose-100 dark:border-rose-900/30 shadow-sm">
+                          <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded leading-none">إلى</span>
+                          {order.secondCustomerRegionName || "غير معروف"}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-sm md:text-base font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-4 py-2 rounded-xl border border-sky-100 dark:border-sky-900/30 shadow-sm">
+                        <DynamicIcon icon={icons?.ui_location} fallback="📍" width={14} height={14} /> {order.regionName}
+                      </span>
+                    )}
+                    {order.orderSubtotal ? (
+                      <span className="inline-flex items-center gap-1.5 text-sm md:text-base font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-4 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
+                        {hasLocation && (
+                          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" title="الموقع الجغرافي متوفر" />
+                        )}
+                        {order.orderSubtotal}
+                      </span>
+                    ) : order.totalAmount ? (
+                      <span className="inline-flex items-center gap-1.5 text-sm md:text-base font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-4 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
+                        {hasLocation && (
+                          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" title="الموقع الجغرافي متوفر" />
+                        )}
+                        {order.totalAmount}
+                      </span>
+                    ) : (
+                      hasLocation && (
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0 self-center" title="الموقع الجغرافي متوفر" />
+                      )
+                    )}
+                  </div>
                 </div>
 
                 {/* Top-left Absolute Container for voice player and delete buttons */}
