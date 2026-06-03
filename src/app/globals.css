@@ -60,7 +60,7 @@ body, button, input, select, textarea {
 }
 
 body {
-  background: var(--background);
+  background: transparent;
   color: var(--foreground);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -74,14 +74,15 @@ body {
   scrollbar-width: none;  /* Firefox */
 }
 
-/**
- * Standard Light Background
- */
+html {
+  background-color: var(--background);
+}
+
 .kse-app-bg {
   position: relative;
   min-height: 100vh;
   isolation: isolate;
-  background-color: var(--background);
+  background-color: transparent;
   background-image: 
     linear-gradient(rgba(2, 132, 199, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(2, 132, 199, 0.05) 1px, transparent 1px);
@@ -90,7 +91,7 @@ body {
 
 /* Dark Mode Carbon / Cyberpunk Texture Pattern */
 .dark .kse-app-bg {
-  background-color: var(--background);
+  background-color: transparent;
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
