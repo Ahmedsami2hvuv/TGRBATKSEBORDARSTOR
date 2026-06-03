@@ -16,6 +16,9 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
       const res = await saveBackgroundsConfigAction(newConfig);
       if (!res.success) {
         alert("فشل الحفظ: " + res.error);
+      } else {
+        // إخطار محرك الخلفية الحية لتحديث البيانات فوراً
+        window.dispatchEvent(new CustomEvent("kse_bg_config_updated", { detail: newConfig }));
       }
     } catch (e) {
       console.error(e);
@@ -406,7 +409,7 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                     type="button"
                     onClick={() => {
                       localStorage.setItem("kse_user_background", item.id);
-                      window.dispatchEvent(new Event("kse_bg_changed"));
+                      window.dispatchEvent(new CustomEvent("kse_bg_changed", { detail: item }));
                       alert(`تم تطبيق المعاينة الحية لـ "${item.name}" على حسابك بنجاح! ستراها الآن في كامل خلفية الموقع.`);
                     }}
                     className="px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 dark:bg-violet-950/20 dark:hover:bg-violet-900/20 dark:text-violet-400 border border-violet-100 dark:border-violet-900 text-[10px] font-black rounded-lg transition-all"

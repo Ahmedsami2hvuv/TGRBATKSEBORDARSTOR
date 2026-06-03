@@ -39,8 +39,15 @@ export function AnimatedBackground() {
       attributeFilter: ["class"],
     });
 
-    // استماع لتغيير الخلفية من localStorage
-    const handleStorageChange = () => {
+    // استماع لتغيير الخلفية من localStorage أو الأحداث المباشرة
+    const handleStorageChange = (e?: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent?.detail) {
+        // إذا كان الحدث يحمل الخلفية المحدثة مباشرة (من صفحة الإعدادات/المعاينة)
+        setActiveBg(customEvent.detail);
+        return;
+      }
+
       const savedBgId = localStorage.getItem("kse_user_background");
       if (config && savedBgId) {
         const found = config.items.find((item) => item.id === savedBgId && item.isActive);
@@ -48,14 +55,23 @@ export function AnimatedBackground() {
       }
     };
 
+    const handleConfigUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<BackgroundsConfig>;
+      if (customEvent.detail) {
+        setConfig(customEvent.detail);
+      }
+    };
+
     window.addEventListener("storage", handleStorageChange);
     // إرسال حدث مخصص للمزامنة اللحظية في نفس التبويب
     window.addEventListener("kse_bg_changed", handleStorageChange);
+    window.addEventListener("kse_bg_config_updated", handleConfigUpdate as EventListener);
 
     return () => {
       observer.disconnect();
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("kse_bg_changed", handleStorageChange);
+      window.removeEventListener("kse_bg_config_updated", handleConfigUpdate as EventListener);
     };
   }, [config]);
 
@@ -140,8 +156,6 @@ export function AnimatedBackground() {
         script.textContent = `
           (function() {
             try {
-              var isDarkMode = ${isDark ? "true" : "false"};
-              var isDark = ${isDark ? "true" : "false"};
               ${cleanedCode}
             } catch (err) {
               console.error("خطأ أثناء تشغيل الخلفية البرمجية المخصصة:", err);
