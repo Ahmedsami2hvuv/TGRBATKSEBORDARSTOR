@@ -641,18 +641,6 @@ export function SettingsBlocks({
       </Block>
 
       <Block
-        id="background-settings"
-        title="الخلفيات الحية المتحركة 🎆"
-        subtitle="إضافة وتعديل الخلفيات الجمالية للموقع."
-        open={openId === "background-settings"}
-        onToggle={() => setOpenId((x) => (x === "background-settings" ? "" : "background-settings"))}
-        tone="indigo"
-        icons={globalIcons}
-      >
-        <BackgroundSettingsForm initial={backgroundsConfig || { items: [] }} />
-      </Block>
-
-      <Block
         id="ui-designer"
         title="مصمم الواجهات 🎨"
         subtitle="الألوان والصور والترتيب."
