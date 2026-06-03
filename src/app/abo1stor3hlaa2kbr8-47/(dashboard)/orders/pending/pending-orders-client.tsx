@@ -376,10 +376,10 @@ export function OrderPricingPanel({
   const initialPreparerIds = initialData?.assignedPreparerIds || [];
 
   return (
-    <div className={hideContainer ? "relative text-right h-full flex flex-col" : "relative overflow-hidden rounded-[2.5rem] border border-white/40 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-white/20 dark:ring-white/10 text-right transition-colors"} dir="rtl">
+    <div className={hideContainer ? "relative text-right h-full flex flex-col" : "relative overflow-hidden rounded-[2.5rem] border border-white/40 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-white/20 dark:ring-white/10 text-right transition-colors h-full flex flex-col"} dir="rtl">
       <form
         action={formAction}
-        className={hideContainer ? "flex-1 flex flex-col overflow-hidden" : "relative p-3 sm:p-5"}
+        className={hideContainer ? "flex-1 flex flex-col overflow-hidden relative" : "flex-1 flex flex-col overflow-hidden relative p-3 sm:p-5"}
         onKeyDown={(e) => {
            if (e.key === "Enter" && editingIndex !== null) {
               e.preventDefault();
@@ -1220,6 +1220,17 @@ export default function PendingOrdersClient({
 
   const [expandedOrderIds, setExpandedOrderIds] = useState<Set<string>>(new Set());
   const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
+  const [showAutoCourierIds, setShowAutoCourierIds] = useState<Set<string>>(new Set());
+
+  const toggleAutoCourier = (id: string) => {
+    const next = new Set(showAutoCourierIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setShowAutoCourierIds(next);
+  };
 
   const toggleExpand = (id: string) => {
     const next = new Set(expandedOrderIds);
@@ -1647,11 +1658,36 @@ export default function PendingOrdersClient({
             {/* Draft Courier Panel (Only if Draft) */}
             {isDraftMode && (
               <div className="p-6 pt-0 border-t border-slate-100 dark:border-white/5 mt-4">
-                 <SetDraftAutoCourierPanel
-                   draftId={order.id}
-                   couriers={couriers}
-                   icons={icons}
-                 />
+                 {showAutoCourierIds.has(order.id) ? (
+                   <div>
+                     <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-xs font-black text-slate-700 dark:text-slate-300">التحويل التلقائي للمندوب</h4>
+                        <button
+                          type="button"
+                          onClick={() => toggleAutoCourier(order.id)}
+                          className="text-xs font-black text-rose-600 hover:underline"
+                        >
+                           إخفاء قائمة المندوبين ✕
+                        </button>
+                     </div>
+                     <SetDraftAutoCourierPanel
+                       draftId={order.id}
+                       couriers={couriers}
+                       icons={icons}
+                     />
+                   </div>
+                 ) : (
+                   <div className="flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleAutoCourier(order.id)}
+                        className="h-10 px-6 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-black shadow-md transition-all active:scale-95 flex items-center gap-2"
+                      >
+                         <DynamicIcon icon={icons?.ui_user} fallback="👤" width={14} height={14} />
+                         إسناد الطلب للمندوب (التحويل التلقائي)
+                      </button>
+                   </div>
+                 )}
               </div>
             )}
           </div>
