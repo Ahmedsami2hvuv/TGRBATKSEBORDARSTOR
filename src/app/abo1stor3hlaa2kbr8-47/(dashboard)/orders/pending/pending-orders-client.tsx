@@ -1603,11 +1603,11 @@ export default function PendingOrdersClient({
             className={`relative overflow-hidden rounded-[2.5rem] border-2 transition-all cursor-pointer ${orderStatusPendingCardBorderBg} hover:border-sky-500 shadow-xl bg-white dark:bg-slate-950 p-6 space-y-4 text-right`}
             dir="rtl"
           >
-            {/* Top row: Checkbox, Order number, Reject Button */}
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
+            {/* Top row: Checkbox, Order number, Badges & Reject Button */}
+            <div className="flex items-center justify-between gap-2 w-full">
+              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                 {/* Selection Checkbox */}
-                <div className="flex items-center justify-center h-9 w-9 bg-slate-100 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-white/5">
+                <div className="flex items-center justify-center h-8 w-8 bg-slate-100 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-white/5 shrink-0">
                   <input
                     type="checkbox"
                     checked={selectedIds.has(order.id)}
@@ -1615,32 +1615,30 @@ export default function PendingOrdersClient({
                     className="h-5 w-5 shrink-0 rounded-lg border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-all dark:bg-slate-900 dark:border-white/10"
                   />
                 </div>
-                <span className="text-sm font-black text-slate-500 dark:text-slate-400 tabular-nums">#{order.orderNumber}</span>
+
+                <span className="text-xs font-black text-slate-500 dark:text-slate-400 tabular-nums shrink-0">#{order.orderNumber}</span>
+
+                {/* Order Type */}
+                <span className="flex items-center gap-1 text-[10px] sm:text-xs font-black bg-indigo-50 text-indigo-700 dark:bg-indigo-950/10 dark:text-indigo-400 px-2 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900/30 shrink-0">
+                  🏷️ {displayOrderType}
+                </span>
+
+                {/* Region */}
+                <span className="flex items-center gap-1 text-[10px] sm:text-xs font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-2 py-1 rounded-lg border border-sky-100 dark:border-sky-900/30 shrink-0">
+                  <DynamicIcon icon={icons?.ui_location} fallback="📍" width={10} height={10} />
+                  {order.regionName}
+                </span>
+
+                {/* Products count */}
+                <span className="flex items-center gap-1 text-[10px] sm:text-xs font-black bg-amber-50 text-amber-700 dark:bg-amber-950/10 dark:text-amber-400 px-2 py-1 rounded-lg border border-amber-100 dark:border-amber-900/30 shrink-0">
+                  📦 {order.preparerShoppingJson?.products?.length || 0} منتجات
+                </span>
               </div>
 
               {/* Reject Order Button (Trash) */}
               <div className="shrink-0">
                 <DeleteFullOrderButton id={order.id} isDraft={!!isDraftMode} icons={icons} />
               </div>
-            </div>
-
-            {/* Middle section: Details (Type, Region, Product Count) */}
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Order Type */}
-              <span className="flex items-center gap-1.5 text-xs font-black bg-indigo-50 text-indigo-700 dark:bg-indigo-950/10 dark:text-indigo-400 px-3 py-1.5 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
-                🏷️ {displayOrderType}
-              </span>
-
-              {/* Region */}
-              <span className="flex items-center gap-1.5 text-xs font-black bg-sky-50 text-sky-700 dark:bg-sky-950/10 dark:text-sky-400 px-3 py-1.5 rounded-xl border border-sky-100 dark:border-sky-900/30">
-                <DynamicIcon icon={icons?.ui_location} fallback="📍" width={12} height={12} />
-                {order.regionName}
-              </span>
-
-              {/* Products count */}
-              <span className="flex items-center gap-1.5 text-xs font-black bg-amber-50 text-amber-700 dark:bg-amber-950/10 dark:text-amber-400 px-3 py-1.5 rounded-xl border border-amber-100 dark:border-amber-900/30">
-                📦 عدد المنتجات: {order.preparerShoppingJson?.products?.length || 0}
-              </span>
             </div>
 
             {/* Current Assignee(s) Status if any */}
@@ -1652,46 +1650,48 @@ export default function PendingOrdersClient({
             )}
 
             {/* Bottom Actions Row */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-slate-100 dark:border-white/5">
-              {/* Phone & Chat Buttons */}
-              <div className="flex items-center gap-2">
-                <a
-                  href={`tel:${order.customerPhone}`}
-                  className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-black bg-white dark:bg-slate-900 shadow-sm flex items-center gap-1.5 hover:bg-slate-50 transition-colors"
-                >
-                  <DynamicIcon icon={icons?.ui_call} fallback="📞" width={12} height={12} />
-                  اتصال
-                </a>
-                <a
-                  href={`https://wa.me/${order.customerPhone.startsWith('0') ? '964' + order.customerPhone.slice(1) : order.customerPhone}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="h-9 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-sm flex items-center gap-1.5 transition-colors"
-                >
-                  <DynamicIcon icon={icons?.ui_whatsapp} fallback="💬" width={12} height={12} />
-                  مراسلة
-                </a>
-              </div>
+            <div className="flex items-center justify-between gap-1 pt-3 border-t border-slate-100 dark:border-white/5 w-full flex-nowrap">
+              {/* Phone Button */}
+              <a
+                href={`tel:${order.customerPhone}`}
+                className="h-8 sm:h-9 px-1.5 sm:px-3 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-[10px] sm:text-xs font-black bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center gap-1 hover:bg-slate-50 transition-colors flex-1 sm:flex-initial"
+              >
+                <DynamicIcon icon={icons?.ui_call} fallback="📞" width={10} height={10} />
+                <span>اتصال</span>
+              </a>
 
-              {/* Assign to Preparers & Couriers Buttons */}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveAssignPreparerOrderId(order.id)}
-                  className="h-9 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-black shadow-sm flex items-center gap-1.5 transition-colors"
-                >
-                  <DynamicIcon icon={icons?.ui_user} fallback="👤" width={12} height={12} />
-                  إسناد لمجهزين
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveAssignOrderId(order.id)}
-                  className="h-9 px-3 rounded-xl bg-violet-600 hover:bg-violet-750 text-white text-xs font-black shadow-sm flex items-center gap-1.5 transition-colors"
-                >
-                  <DynamicIcon icon={icons?.ui_package} fallback="📦" width={12} height={12} />
-                  إسناد لمندوبين
-                </button>
-              </div>
+              {/* WhatsApp Button */}
+              <a
+                href={`https://wa.me/${order.customerPhone.startsWith('0') ? '964' + order.customerPhone.slice(1) : order.customerPhone}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-8 sm:h-9 px-1.5 sm:px-3 rounded-lg sm:rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] sm:text-xs font-black shadow-sm flex items-center justify-center gap-1 transition-colors flex-1 sm:flex-initial"
+              >
+                <DynamicIcon icon={icons?.ui_whatsapp} fallback="💬" width={10} height={10} />
+                <span>مراسلة</span>
+              </a>
+
+              {/* Assign to Preparers Button */}
+              <button
+                type="button"
+                onClick={() => setActiveAssignPreparerOrderId(order.id)}
+                className="h-8 sm:h-9 px-1.5 sm:px-3 rounded-lg sm:rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-[10px] sm:text-xs font-black shadow-sm flex items-center justify-center gap-1 transition-colors flex-1 sm:flex-initial"
+              >
+                <DynamicIcon icon={icons?.ui_user} fallback="👤" width={10} height={10} />
+                <span className="hidden sm:inline">إسناد لمجهزين</span>
+                <span className="inline sm:hidden">إسناد مجهزين</span>
+              </button>
+
+              {/* Assign to Couriers Button */}
+              <button
+                type="button"
+                onClick={() => setActiveAssignOrderId(order.id)}
+                className="h-8 sm:h-9 px-1.5 sm:px-3 rounded-lg sm:rounded-xl bg-violet-600 hover:bg-violet-750 text-white text-[10px] sm:text-xs font-black shadow-sm flex items-center justify-center gap-1 transition-colors flex-1 sm:flex-initial"
+              >
+                <DynamicIcon icon={icons?.ui_package} fallback="📦" width={10} height={10} />
+                <span className="hidden sm:inline">إسناد لمندوبين</span>
+                <span className="inline sm:hidden">إسناد مناديب</span>
+              </button>
             </div>
           </div>
         );
