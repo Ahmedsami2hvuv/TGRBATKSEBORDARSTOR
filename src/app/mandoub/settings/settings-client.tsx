@@ -35,6 +35,7 @@ export default function CourierSettingsClient({
   const [savingState, setSavingState] = useState<Record<string, "idle" | "saving" | "saved" | "error">>({});
   const [availableBgs, setAvailableBgs] = useState<BackgroundItem[]>([]);
   const [currentBgId, setCurrentBgId] = useState<string | null>(null);
+  const [showBgSelector, setShowBgSelector] = useState(false);
 
   useEffect(() => {
     // جلب الخلفيات المفعلة من السيرفر
@@ -196,57 +197,67 @@ export default function CourierSettingsClient({
 
         {/* الخلفيات الحية التفاعلية */}
         {availableBgs.length > 0 && (
-          <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <span className="text-xl">🎆</span>
-              <div>
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">خلفية الحساب الحية</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">اختر خلفية حية متحركة تزيّن واجهة حسابك</p>
-              </div>
-            </div>
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => setShowBgSelector(!showBgSelector)}
+              className="w-full py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-sm text-slate-800 dark:text-slate-200 shadow-sm transition-all active:scale-98 flex items-center justify-between px-5 outline-none"
+            >
+              <span>تغيير خلفية الحساب</span>
+              <span className="text-xs text-slate-400 font-bold">{showBgSelector ? "▲ إخفاء" : "▼ عرض"}</span>
+            </button>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {availableBgs.map((bg) => {
-                const active = currentBgId === bg.id;
-                const previewUrl = theme === "dark" ? bg.darkUrl : bg.lightUrl;
-                const previewType = theme === "dark" ? bg.darkType : bg.lightType;
+            {showBgSelector && (
+              <section className="kse-glass-dark mt-3 border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm transition-all duration-300">
+                <div className="mb-4">
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">اختر خلفية حسابك</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">اختر خلفية حية متحركة لتزيين واجهة حسابك</p>
+                </div>
 
-                return (
-                  <button
-                    key={bg.id}
-                    onClick={() => handleSelectBackground(bg.id)}
-                    className={`group relative flex flex-col items-center justify-center p-2 rounded-xl border transition-all text-center ${
-                      active
-                        ? "bg-sky-50/50 dark:bg-sky-950/20 border-sky-500 dark:border-[#00f3ff] scale-[1.02]"
-                        : "border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850"
-                    }`}
-                  >
-                    {/* إطار المعاينة الصغير */}
-                    <div className="w-full h-16 rounded-lg bg-slate-100 dark:bg-slate-900 overflow-hidden relative mb-2 flex items-center justify-center border border-slate-200/40 dark:border-slate-800/80">
-                      {previewType === "video" && previewUrl ? (
-                        <video src={previewUrl} muted loop autoPlay playsInline className="w-full h-full object-cover opacity-60" />
-                      ) : previewUrl ? (
-                        <img src={previewUrl} alt="" className="w-full h-full object-cover opacity-60" />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-slate-100 to-sky-100/50 dark:from-slate-800 dark:to-slate-905 opacity-60" />
-                      )}
-                      
-                      {active && (
-                        <div className="absolute inset-0 bg-sky-500/10 dark:bg-[#00f3ff]/10 flex items-center justify-center">
-                          <span className="bg-sky-600 dark:bg-[#00f3ff] text-white dark:text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
-                            نشط ✓
-                          </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {availableBgs.map((bg) => {
+                    const active = currentBgId === bg.id;
+                    const previewUrl = theme === "dark" ? bg.darkUrl : bg.lightUrl;
+                    const previewType = theme === "dark" ? bg.darkType : bg.lightType;
+
+                    return (
+                      <button
+                        key={bg.id}
+                        onClick={() => handleSelectBackground(bg.id)}
+                        className={`group relative flex flex-col items-center justify-center p-2 rounded-xl border transition-all text-center ${
+                          active
+                            ? "bg-sky-50/50 dark:bg-sky-950/20 border-sky-500 dark:border-[#00f3ff] scale-[1.02]"
+                            : "border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850"
+                        }`}
+                      >
+                        {/* إطار المعاينة الصغير */}
+                        <div className="w-full h-16 rounded-lg bg-slate-100 dark:bg-slate-900 overflow-hidden relative mb-2 flex items-center justify-center border border-slate-200/40 dark:border-slate-800/80">
+                          {previewType === "video" && previewUrl ? (
+                            <video src={previewUrl} muted loop autoPlay playsInline className="w-full h-full object-cover opacity-60" />
+                          ) : previewUrl ? (
+                            <img src={previewUrl} alt="" className="w-full h-full object-cover opacity-60" />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-slate-100 to-sky-100/50 dark:from-slate-800 dark:to-slate-905 opacity-60" />
+                          )}
+                          
+                          {active && (
+                            <div className="absolute inset-0 bg-sky-500/10 dark:bg-[#00f3ff]/10 flex items-center justify-center">
+                              <span className="bg-sky-600 dark:bg-[#00f3ff] text-white dark:text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                نشط ✓
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <span className="text-[11px] font-black text-slate-850 dark:text-slate-200 truncate w-full">
-                      {bg.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+                        <span className="text-[11px] font-black text-slate-850 dark:text-slate-200 truncate w-full">
+                          {bg.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </div>
         )}
 
         {/* Quick Actions Visibility Toggles */}
