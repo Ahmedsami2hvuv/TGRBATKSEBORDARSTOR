@@ -496,9 +496,9 @@ export function PreparerShoppingDraftEditClient({
       const aPriced = a.p.buyAlf !== "" && a.p.sellAlf !== "";
       const bPriced = b.p.buyAlf !== "" && b.p.sellAlf !== "";
 
-      // 1. المواد غير المسعرة تظهر أولاً
+      // 1. المواد المسعرة تظهر أولاً
       if (aPriced !== bPriced) {
-        return aPriced ? 1 : -1;
+        return aPriced ? -1 : 1;
       }
 
       // 2. الترتيب حسب اسم الفرع/المحل
@@ -802,8 +802,9 @@ export function PreparerShoppingDraftEditClient({
                 )}
 
                 <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 h-full">
-                    <p className={`text-[10px] font-black leading-tight line-clamp-2 pr-1 ${priced && !isOthers ? "text-white" : "text-slate-800"}`}>
-                      {p.line}
+                    <p className={`text-[10px] font-black leading-tight line-clamp-2 pr-1 flex items-center gap-1 ${priced && !isOthers ? "text-white" : "text-slate-800"}`}>
+                      {priced && <span className="shrink-0">✅</span>}
+                      <span>{p.line}</span>
                     </p>
 
                     <div className="flex items-center justify-between gap-1 mt-1">

@@ -102,6 +102,26 @@ export function PreparerSiteOrderPrepEditClient({
     });
   }, [products.length, priceRows]);
 
+  const orderedProducts = useMemo(() => {
+    const list = products.map((line, idx) => {
+      const row = priceRows[idx] ?? { buy: "" };
+      const priced = row.buy.trim().length > 0;
+      return {
+        line,
+        originalIndex: idx,
+        row,
+        priced,
+      };
+    });
+
+    return list.sort((a, b) => {
+      if (a.priced && !b.priced) return -1;
+      if (!a.priced && b.priced) return 1;
+      return a.originalIndex - b.originalIndex;
+    });
+  }, [products, priceRows]);
+
+
   const previewPayload: PreparerShoppingPayloadV1 | null = useMemo(() => {
     if (!titleLine.trim() || products.length === 0 || !allPriced || placesCount == null) return null;
     return {
@@ -205,9 +225,7 @@ export function PreparerSiteOrderPrepEditClient({
         </div>
         <div className="p-4">
           <div className="grid grid-cols-1 gap-2.5">
-            {products.map((line, i) => {
-              const row = priceRows[i] ?? { buy: "" };
-              const priced = row.buy.trim().length > 0;
+            {orderedProducts.map(({ line, originalIndex: i, row, priced }) => {
               return (
                 <button
                   key={`${i}-${line.slice(0, 18)}`}
@@ -227,7 +245,11 @@ export function PreparerSiteOrderPrepEditClient({
                   }`}
                 >
                   <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                     <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${priced ? "bg-white" : "bg-slate-300 group-hover:bg-sky-400 dark:bg-slate-700"}`} />
+                     {priced ? (
+                       <span className="shrink-0 text-white pr-1">✅</span>
+                     ) : (
+                       <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${priced ? "bg-white" : "bg-slate-300 group-hover:bg-sky-400 dark:bg-slate-700"}`} />
+                     )}
                      <span className={`truncate text-sm font-bold ${priced ? "text-white" : "text-slate-800 dark:text-slate-200"}`}>{line}</span>
                   </div>
                   <div className="flex flex-col items-end shrink-0">

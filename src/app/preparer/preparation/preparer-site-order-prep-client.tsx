@@ -593,9 +593,10 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
                          ) : (
                            <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300 group-hover:bg-sky-400 dark:bg-slate-700" />
                          )}
-                         <span className={`truncate text-sm font-bold ${priced ? "text-white" : "text-slate-800 dark:text-slate-200"}`}>
-                           {line}
-                         </span>
+                          <span className={`truncate text-sm font-bold flex items-center gap-1 ${priced ? "text-white" : "text-slate-800 dark:text-slate-200"}`}>
+                            {priced && <span className="shrink-0">✅</span>}
+                            <span>{line}</span>
+                          </span>
                       </div>
 
                       {priced && sellShow ? (

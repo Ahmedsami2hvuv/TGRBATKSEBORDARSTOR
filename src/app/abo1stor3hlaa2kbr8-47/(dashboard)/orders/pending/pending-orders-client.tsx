@@ -518,47 +518,63 @@ export function OrderPricingPanel({
           )}
 
           <div className="space-y-0.5">
-            {products.map((p, i) => {
-              const priced = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) > 0;
-              const isSelected = selectedProductIndexes.includes(i);
-              const isEditing = editingIndex === i;
-              const prepName = findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName;
+            {(() => {
+              const sorted = products
+                .map((p, idx) => ({ ...p, originalIndex: idx }))
+                .sort((a, b) => {
+                  const aPriced = parseFloat(normalizeNumerals((a?.buyAlf ?? "0").toString())) > 0;
+                  const bPriced = parseFloat(normalizeNumerals((b?.buyAlf ?? "0").toString())) > 0;
+                  if (aPriced && !bPriced) return -1;
+                  if (!aPriced && bPriced) return 1;
+                  return a.originalIndex - b.originalIndex;
+                });
 
-              return (
-                <div key={i} className="relative">
-                  <div className={`w-full flex items-center gap-1.5 p-1 rounded-lg border transition-all ${isEditing ? "border-sky-500 bg-sky-50 dark:bg-sky-500/10" : deleteMode ? "border-rose-300 bg-rose-50" : priced ? "border-emerald-100 bg-emerald-50/30" : "border-slate-100 bg-white dark:bg-slate-900/50"}`}>
-                    <input type="checkbox" checked={isSelected} onChange={() => toggleProductSelection(i)} className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
-                    <div className="flex-1 min-w-0 flex items-center justify-between cursor-pointer h-7" onClick={() => {
-                      if (deleteMode) {
-                        setProducts(products.filter((_, idx) => idx !== i));
-                      } else {
-                        setEditingIndex(i);
-                        setBuyText(priced ? p.buyAlf : "");
-                        setSellText(priced ? p.sellAlf : "");
-                        setIsAdminFulfilled(!!p.isFulfilledByAdmin);
-                      }
-                    }}>
-                      <div className="flex flex-col min-w-0">
-                        <p className={`truncate text-[10px] font-black ${priced ? "text-emerald-900 dark:text-emerald-100" : "text-slate-700 dark:text-slate-300"}`}>{p?.line}</p>
-                        {prepName && (
-                          <span className={`text-[7px] font-bold flex items-center gap-0.5 ${p.isFulfilledByAdmin ? "text-amber-600" : "text-slate-400"}`}>
-                            <DynamicIcon icon={p.isFulfilledByAdmin ? (icons?.ui_flash) : (icons?.ui_user)} fallback="👤" width={7} height={7} /> {prepName}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <div className="min-w-[38px] h-6 rounded bg-slate-100/50 dark:bg-black/20 border flex items-center justify-center">
-                          <span className="font-mono text-[9px] font-black text-slate-600">{priced ? p.buyAlf : "—"}</span>
+              return sorted.map((p) => {
+                const i = p.originalIndex;
+                const priced = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) > 0;
+                const isSelected = selectedProductIndexes.includes(i);
+                const isEditing = editingIndex === i;
+                const prepName = findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName;
+
+                return (
+                  <div key={i} className="relative">
+                    <div className={`w-full flex items-center gap-1.5 p-1 rounded-lg border transition-all ${isEditing ? "border-sky-500 bg-sky-50 dark:bg-sky-500/10" : deleteMode ? "border-rose-300 bg-rose-50" : priced ? "border-emerald-100 bg-emerald-50/30" : "border-slate-100 bg-white dark:bg-slate-900/50"}`}>
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleProductSelection(i)} className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
+                      <div className="flex-1 min-w-0 flex items-center justify-between cursor-pointer h-7" onClick={() => {
+                        if (deleteMode) {
+                          setProducts(products.filter((_, idx) => idx !== i));
+                        } else {
+                          setEditingIndex(i);
+                          setBuyText(priced ? p.buyAlf : "");
+                          setSellText(priced ? p.sellAlf : "");
+                          setIsAdminFulfilled(!!p.isFulfilledByAdmin);
+                        }
+                      }}>
+                        <div className="flex flex-col min-w-0">
+                          <p className={`truncate text-[10px] font-black flex items-center gap-1 ${priced ? "text-emerald-900 dark:text-emerald-100" : "text-slate-700 dark:text-slate-300"}`}>
+                            {priced && <span className="text-emerald-600 shrink-0">✅</span>}
+                            <span>{p?.line}</span>
+                          </p>
+                          {prepName && (
+                            <span className={`text-[7px] font-bold flex items-center gap-0.5 ${p.isFulfilledByAdmin ? "text-amber-600" : "text-slate-400"}`}>
+                              <DynamicIcon icon={p.isFulfilledByAdmin ? (icons?.ui_flash) : (icons?.ui_user)} fallback="👤" width={7} height={7} /> {prepName}
+                            </span>
+                          )}
                         </div>
-                        <div className="min-w-[38px] h-6 rounded bg-emerald-100/20 border flex items-center justify-center">
-                          <span className="font-mono text-[9px] font-black text-emerald-600">{priced ? p.sellAlf : "—"}</span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <div className="min-w-[38px] h-6 rounded bg-slate-100/50 dark:bg-black/20 border flex items-center justify-center">
+                            <span className="font-mono text-[9px] font-black text-slate-600">{priced ? p.buyAlf : "—"}</span>
+                          </div>
+                          <div className="min-w-[38px] h-6 rounded bg-emerald-100/20 border flex items-center justify-center">
+                            <span className="font-mono text-[9px] font-black text-emerald-600">{priced ? p.sellAlf : "—"}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
         </div>
       </form>
