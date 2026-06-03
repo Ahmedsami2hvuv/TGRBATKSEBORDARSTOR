@@ -6,6 +6,7 @@ import { ad } from "@/lib/admin-ui";
 import { deleteEmployee, renewEmployeeOrderPortalToken } from "./actions";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { EmployeeForm } from "./employee-form";
 
 export type EmployeeRow = {
   id: string;
@@ -42,6 +43,7 @@ export function EmployeesList({
 }) {
   const [query, setQuery] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const normalizedQuery = normalizeArabic(query);
 
@@ -72,6 +74,69 @@ export function EmployeesList({
 
   return (
     <div className="space-y-4">
+      {/* الهيدر الجديد البسيط مع أزرار الإجراءات السريعة */}
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="flex items-center gap-3">
+          <Link href="/abo1stor3hlaa2kbr8-47/shops" className={`${ad.link} flex items-center gap-1 text-sm font-bold`}>
+            <DynamicIcon iconKey="ui_shops" config={icons} fallback="←" className="w-4 h-4" />
+            المحلات
+          </Link>
+          <span className="text-slate-300">/</span>
+          <h1 className="text-xl font-black text-slate-800">{shopName}</h1>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {locationUrl && locationUrl.trim().length > 5 && (
+            <a
+              href={locationUrl.trim()}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="فتح موقع المحل على الخريطة"
+              className="inline-flex items-center justify-center p-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all border border-emerald-100 hover:scale-105 active:scale-95"
+            >
+              <DynamicIcon iconKey="ui_map" config={icons} fallback="📍" className="w-5 h-5" />
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowAddForm((v) => !v)}
+            title="إضافة عميل جديد"
+            className={`inline-flex items-center justify-center p-2.5 rounded-xl transition-all border hover:scale-105 active:scale-95 ${
+              showAddForm
+                ? "bg-rose-50 text-rose-700 border-rose-100 hover:bg-rose-100"
+                : "bg-sky-50 text-sky-700 border-sky-100 hover:bg-sky-100"
+            }`}
+          >
+            {showAddForm ? (
+              <DynamicIcon iconKey="ui_close" config={icons} fallback="✕" className="w-5 h-5" />
+            ) : (
+              <DynamicIcon iconKey="ui_plus" config={icons} fallback="＋" className="w-5 h-5" />
+            )}
+          </button>
+          <Link
+            href={`/abo1stor3hlaa2kbr8-47/shops/${shopId}/edit`}
+            title="تعديل بيانات المحل"
+            className="inline-flex items-center justify-center p-2.5 rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 transition-all border border-slate-200 hover:scale-105 active:scale-95"
+          >
+            <DynamicIcon iconKey="ui_edit" config={icons} fallback="✏️" className="w-5 h-5" />
+          </Link>
+        </div>
+      </div>
+
+      {showAddForm && (
+        <div className="bg-sky-50/50 p-6 rounded-2xl border border-sky-100/50 shadow-inner animate-in slide-in-from-top-2 duration-300">
+          <h3 className="font-black text-sky-950 mb-4 flex items-center gap-2">
+            <DynamicIcon iconKey="ui_plus" config={icons} className="w-5 h-5 text-sky-700" />
+            إضافة موظف (عميل) جديد للمحل
+          </h3>
+          <EmployeeForm
+            shopId={shopId}
+            submitLabel="حفظ بيانات العميل"
+            successLabel="تمت إضافة العميل بنجاح."
+          />
+        </div>
+      )}
+
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between bg-slate-50 p-3 rounded-xl">
         <span className="text-sm font-bold text-slate-600">بحث في العملاء:</span>
         <input
