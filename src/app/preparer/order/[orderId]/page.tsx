@@ -208,11 +208,10 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
         .filter((id: string) => id !== "")
     : [];
 
-  // السماح للمجهز بالوصول للوحة التسعير إذا:
+  // السماح للمجهز بالوصول للوحة التسعير إذا كان الطلب قادماً من تجهيز الطلبات (company_preparer) وكان:
   // 1. هو من أنشأ الطلب
   // 2. هو أحد المجهزين المسندين للفواتير
-  // 3. الطلب قادم من المتجر وهو المجهز الحالي الذي يشاهد الطلب (أو سيقوم الإدمن بإسناده له)
-  const canEditPricing = hasPreparerShoppingJson && orderRaw.status !== "delivered" && (
+  const canEditPricing = hasPreparerShoppingJson && orderRaw.status !== "delivered" && orderRaw.submissionSource === "company_preparer" && (
     orderRaw.submittedByCompanyPreparerId === preparer.id ||
     preparerInvoiceIds.includes(preparer.id)
   );
