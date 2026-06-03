@@ -4,9 +4,9 @@ export type BackgroundItem = {
   id: string;
   name: string;
   lightUrl: string;
-  lightType: "image" | "video" | "lottie";
+  lightType: "image" | "video" | "lottie" | "code";
   darkUrl: string;
-  darkType: "image" | "video" | "lottie";
+  darkType: "image" | "video" | "lottie" | "code";
   isActive: boolean;
   opacity: number; // 0 to 100
   blur: number; // 0 to 20 px
