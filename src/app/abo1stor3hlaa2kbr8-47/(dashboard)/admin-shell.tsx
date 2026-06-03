@@ -112,14 +112,29 @@ export function AdminShell({
 
   const isCompact = navWidth <= 260;
 
+  const handleLinkClick = () => {
+    if (!isLg) {
+      setTimeout(() => setNavOpen(false), 80);
+    }
+  };
+
   useEffect(() => {
     getGlobalIcons().then(setIcons);
   }, []);
 
-  // Close sidebar automatically when routing (pathname/searchParams change)
+  // Close sidebar automatically when routing (pathname/searchParams change) only on mobile
   useEffect(() => {
-    setNavOpen(false);
-  }, [pathname, searchParams]);
+    if (!isLg) {
+      setNavOpen(false);
+    }
+  }, [pathname, searchParams, isLg]);
+
+  // Open sidebar by default on desktop
+  useEffect(() => {
+    if (isLg) {
+      setNavOpen(true);
+    }
+  }, [isLg]);
 
   // Close sidebar when clicking outside
   useEffect(() => {
@@ -281,7 +296,7 @@ export function AdminShell({
           bg-white/95 dark:bg-[#09090b]/95 shadow-[4px_0_20px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_20px_rgba(0,0,0,0.8)]
           backdrop-blur-md ${isResizing ? "transition-none" : "transition-transform duration-200 ease-out"}
           inset-y-0 start-0 w-72
-          ${effectiveNavOpen ? "translate-x-0 pointer-events-auto" : "translate-x-full pointer-events-none"}
+          ${effectiveNavOpen ? "translate-x-0 pointer-events-auto" : "-translate-x-full rtl:translate-x-full pointer-events-none"}
           lg:inset-y-0 lg:start-0
         `}
         style={{ width: navWidth }}
@@ -303,6 +318,7 @@ export function AdminShell({
                 href={SECRET_ADMIN_PATH}
                 prefetch={false}
                 title="الرئيسية"
+                onClick={handleLinkClick}
                 className={
                   navItemActive(pathname, SECRET_ADMIN_PATH)
                     ? `inline-flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"} rounded-xl bg-sky-100 dark:bg-[#002a3a] border border-sky-400 dark:border-[#00f3ff] text-sky-700 dark:text-[#00f3ff] shadow-sm dark:shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all`
@@ -331,6 +347,7 @@ export function AdminShell({
                   href={href}
                   prefetch={false}
                   title={tile.label}
+                  onClick={handleLinkClick}
                   className={
                     active
                       ? `inline-flex items-center ${
@@ -411,7 +428,10 @@ export function AdminShell({
         </div>
       </aside>
 
-      <div className="kse-app-inner relative min-h-screen min-w-0 flex-1 flex flex-col">
+      <div 
+        className="kse-app-inner relative min-h-screen min-w-0 flex-1 flex flex-col transition-all duration-200 ease-out"
+        style={{ marginInlineStart: (isLg && effectiveNavOpen) ? navWidth : 0 }}
+      >
         {/* Sleek Top Bar matching Mockup */}
          <header className="h-16 w-full bg-white/80 dark:bg-[#131418]/80 backdrop-blur-md border-b border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.05)] px-4 sm:px-8 flex items-center justify-between z-40 relative">
             <div className="absolute top-0 bottom-0 left-0 w-32 bg-gradient-to-r from-[rgba(0,243,255,0.1)] to-transparent pointer-events-none" />
