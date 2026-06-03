@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ad } from "@/lib/admin-ui";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateNotificationSettings } from "@/lib/notification-settings";
@@ -61,7 +62,7 @@ export default async function SettingsPage() {
   ] = data;
 
   // تأمين كائن الإشعارات في حال كان null
-  const ns = notificationSettings || {};
+  const ns = (notificationSettings || {}) as any;
 
   return (
     <div className="space-y-8">
@@ -73,50 +74,52 @@ export default async function SettingsPage() {
         </p>
       </div>
 
-      <SettingsBlocks
-        globalIcons={icons as any}
-        backgroundsConfig={backgroundsConfig as any}
-        employeeShareTemplate={employeeShareTemplate as string}
-        customerOrderTemplate={customerOrderTemplate as string}
-        telegramNewOrderTemplate={telegramNewOrderTemplate as string}
-        chatEnabledInitial={!!chatEnabled}
-        trackingEnabledInitial={!!trackingEnabled}
-        mandoubFeaturesInitial={mandoubFeatures as any}
-        preparerFeaturesInitial={preparerFeatures as any}
-        telegramAdminsInitial={telegramAdmins as any}
-        telegramBotsInitial={telegramBots as any}
-        availableFonts={availableFonts}
-        currentFont={currentFont}
-        globalSettingsInitial={globalSettings}
-        notificationInitial={{
-          adminEnabled: ns.adminEnabled ?? true,
-          adminTitleSingle: ns.adminTitleSingle ?? "طلب جديد #{orderNumber}",
-          adminTemplateSingle: ns.adminTemplateSingle ?? "طلب جديد بانتظار الموافقة (#{orderNumber})",
-          adminTemplateMultiple: ns.adminTemplateMultiple ?? "وصلت {count} طلبات جديدة بانتظار الموافقة",
-          adminSoundEnabled: ns.adminSoundEnabled ?? true,
-          adminSoundPreset: normalizeNotificationSoundPreset(
-            ns.adminSoundPreset ?? "beep",
-          ),
-          mandoubEnabled: ns.mandoubEnabled ?? true,
-          mandoubTitleSingle: ns.mandoubTitleSingle ?? "طلب جديد #{orderNumber}",
-          mandoubTemplateSingle: ns.mandoubTemplateSingle ?? "تم إسناد طلب جديد إليك (#{orderNumber})",
-          mandoubTemplateMultiple: ns.mandoubTemplateMultiple ?? "تم إسناد {count} طلبات جديدة إليك",
-          mandoubSoundEnabled: ns.mandoubSoundEnabled ?? true,
-          mandoubSoundPreset: normalizeNotificationSoundPreset(
-            ns.mandoubSoundPreset ?? "beep",
-          ),
-          preparerEnabled: ns.preparerEnabled ?? true,
-          preparerTitleSingle: ns.preparerTitleSingle ?? "تجهيز طلب #{orderNumber}",
-          preparerTemplateSingle: ns.preparerTemplateSingle ?? "لديك طلب تجهيز جديد (#{orderNumber})",
-          preparerTemplateMultiple: ns.preparerTemplateMultiple ?? "لديك {count} طلبات تجهيز جديدة",
-          preparerTemplateWebsite: ns.preparerTemplateWebsite ?? "لديك طلب جديد مسند من الموقع (#{orderNumber})",
-          preparerSoundEnabled: ns.preparerSoundEnabled ?? true,
-          preparerSoundPreset: normalizeNotificationSoundPreset(
-            ns.preparerSoundPreset ?? "phone",
-          ),
-          telegramAdminIds: ns.telegramAdminIds ?? "",
-        }}
-      />
+      <Suspense fallback={<div className="text-center py-12 text-slate-500 font-bold animate-pulse">جاري تحميل صفحة الإعدادات...</div>}>
+        <SettingsBlocks
+          globalIcons={icons as any}
+          backgroundsConfig={backgroundsConfig as any}
+          employeeShareTemplate={employeeShareTemplate as string}
+          customerOrderTemplate={customerOrderTemplate as string}
+          telegramNewOrderTemplate={telegramNewOrderTemplate as string}
+          chatEnabledInitial={!!chatEnabled}
+          trackingEnabledInitial={!!trackingEnabled}
+          mandoubFeaturesInitial={mandoubFeatures as any}
+          preparerFeaturesInitial={preparerFeatures as any}
+          telegramAdminsInitial={telegramAdmins as any}
+          telegramBotsInitial={telegramBots as any}
+          availableFonts={availableFonts}
+          currentFont={currentFont}
+          globalSettingsInitial={globalSettings}
+          notificationInitial={{
+            adminEnabled: ns.adminEnabled ?? true,
+            adminTitleSingle: ns.adminTitleSingle ?? "طلب جديد #{orderNumber}",
+            adminTemplateSingle: ns.adminTemplateSingle ?? "طلب جديد بانتظار الموافقة (#{orderNumber})",
+            adminTemplateMultiple: ns.adminTemplateMultiple ?? "وصلت {count} طلبات جديدة بانتظار الموافقة",
+            adminSoundEnabled: ns.adminSoundEnabled ?? true,
+            adminSoundPreset: normalizeNotificationSoundPreset(
+              ns.adminSoundPreset ?? "beep",
+            ),
+            mandoubEnabled: ns.mandoubEnabled ?? true,
+            mandoubTitleSingle: ns.mandoubTitleSingle ?? "طلب جديد #{orderNumber}",
+            mandoubTemplateSingle: ns.mandoubTemplateSingle ?? "تم إسناد طلب جديد إليك (#{orderNumber})",
+            mandoubTemplateMultiple: ns.mandoubTemplateMultiple ?? "تم إسناد {count} طلبات جديدة إليك",
+            mandoubSoundEnabled: ns.mandoubSoundEnabled ?? true,
+            mandoubSoundPreset: normalizeNotificationSoundPreset(
+              ns.mandoubSoundPreset ?? "beep",
+            ),
+            preparerEnabled: ns.preparerEnabled ?? true,
+            preparerTitleSingle: ns.preparerTitleSingle ?? "تجهيز طلب #{orderNumber}",
+            preparerTemplateSingle: ns.preparerTemplateSingle ?? "لديك طلب تجهيز جديد (#{orderNumber})",
+            preparerTemplateMultiple: ns.preparerTemplateMultiple ?? "لديك {count} طلبات تجهيز جديدة",
+            preparerTemplateWebsite: ns.preparerTemplateWebsite ?? "لديك طلب جديد مسند من الموقع (#{orderNumber})",
+            preparerSoundEnabled: ns.preparerSoundEnabled ?? true,
+            preparerSoundPreset: normalizeNotificationSoundPreset(
+              ns.preparerSoundPreset ?? "phone",
+            ),
+            telegramAdminIds: ns.telegramAdminIds ?? "",
+          }}
+        />
+      </Suspense>
     </div>
   );
 }

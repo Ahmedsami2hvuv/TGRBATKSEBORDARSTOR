@@ -5,21 +5,18 @@ import { useMemo, useState, useEffect } from "react";
 import type { NotificationSoundPresetId } from "@/lib/notification-sound-presets";
 import { NotificationSettingsForm } from "./notification-settings-form";
 import { PurgeDemoDataForm } from "./purge-demo-data-form";
-import { TestPushNotificationsForm } from "./test-push-notifications-form";
 import { PricingSettingsForm } from "./pricing-settings-form";
-import { CleanupBase64Form } from "./cleanup-base64-form";
 import { IconSettingsForm } from "./icon-settings-form";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { WhatsappTemplateSettingsForm } from "./whatsapp-template-settings-form";
-import { saveChatSettingsAction, saveRoleFeaturesAction, updateCourierButtonsAction, saveTrackingSettingsAction } from "./actions";
-import { useRouter } from "next/navigation";
+import { saveChatSettingsAction, saveRoleFeaturesAction, saveTrackingSettingsAction } from "./actions";
+import { useRouter, useSearchParams } from "next/navigation";
 import { RoleFeaturesConfig } from "@/lib/role-features-settings";
 import { CourierButtonsSettings } from "./courier-buttons-settings";
 import { TelegramBotsForm } from "./telegram-bots-form";
 import { FontSettingsForm } from "./font-settings-form";
 import { FloatingMenuSettings } from "./floating-menu-settings";
-import { BackgroundSettingsForm } from "./background-settings-form";
 import { BackgroundsConfig } from "@/lib/background-settings";
 
 type NotificationInitial = {
@@ -44,124 +41,6 @@ type NotificationInitial = {
   preparerSoundPreset: NotificationSoundPresetId;
   telegramAdminIds: string;
 };
-
-function ChevronIcon({ open, icons }: { open: boolean, icons: GlobalIconsConfig }) {
-  return (
-    <DynamicIcon
-      iconKey="ui_arrow_right"
-      config={icons}
-      className={`h-5 w-5 transition duration-200 ${open ? "-rotate-90" : "rotate-90"}`}
-      fallback={
-        <svg
-          className={`h-5 w-5 transition duration-200 ${open ? "rotate-180" : "rotate-0"}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={2.4}
-          stroke="currentColor"
-          aria-hidden
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
-        </svg>
-      }
-    />
-  );
-}
-
-function Block({
-  id,
-  title,
-  subtitle,
-  open,
-  onToggle,
-  children,
-  icons,
-  tone = "sky",
-}: {
-  id: string;
-  title: string;
-  subtitle?: string;
-  open: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-  icons: GlobalIconsConfig;
-  tone?: "sky" | "emerald" | "amber" | "rose" | "indigo";
-}) {
-  const toneClasses = useMemo(() => {
-    switch (tone) {
-      case "emerald":
-        return {
-          border: "border-emerald-200/90",
-          focus: "focus-visible:ring-emerald-300/60",
-          badge: "bg-emerald-50 text-emerald-800 border-emerald-200",
-          hover: "hover:border-emerald-300 hover:shadow-emerald-200/40",
-        };
-      case "amber":
-        return {
-          border: "border-amber-200/90",
-          focus: "focus-visible:ring-amber-300/60",
-          badge: "bg-amber-50 text-amber-800 border-amber-200",
-          hover: "hover:border-amber-300 hover:shadow-amber-200/40",
-        };
-      case "rose":
-        return {
-          border: "border-rose-200/90",
-          focus: "focus-visible:ring-rose-300/60",
-          badge: "bg-rose-50 text-rose-800 border-rose-200",
-          hover: "hover:border-rose-300 hover:shadow-rose-200/40",
-        };
-      case "indigo":
-        return {
-          border: "border-indigo-200/90",
-          focus: "focus-visible:ring-indigo-300/60",
-          badge: "bg-indigo-50 text-indigo-800 border-indigo-200",
-          hover: "hover:border-indigo-300 hover:shadow-indigo-200/40",
-        };
-      default:
-        return {
-          border: "border-sky-200/90",
-          focus: "focus-visible:ring-sky-300/60",
-          badge: "bg-sky-50 text-sky-800 border-sky-200",
-          hover: "hover:border-sky-300 hover:shadow-sky-200/40",
-        };
-    }
-  }, [tone]);
-
-  return (
-    <section id={id} className={`rounded-2xl border bg-white shadow-sm ${toneClasses.border}`}>
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={`${id}-panel`}
-        onClick={onToggle}
-        className={`group flex w-full items-start justify-between gap-4 rounded-2xl px-4 py-4 text-start outline-none transition hover:-translate-y-[1px] hover:shadow-md ${toneClasses.hover} ${toneClasses.focus} focus-visible:ring-2 sm:px-5`}
-      >
-        <span className="min-w-0">
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="text-base font-extrabold tracking-tight text-slate-900">{title}</span>
-            <span
-              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold ${toneClasses.badge}`}
-            >
-              {open ? "مفتوح" : "مغلق"}
-            </span>
-          </span>
-          {subtitle ? (
-            <span className="mt-1 block text-sm leading-relaxed text-slate-600">{subtitle}</span>
-          ) : null}
-        </span>
-        <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition group-hover:bg-slate-50">
-          <ChevronIcon open={open} icons={icons} />
-        </span>
-      </button>
-
-      <div
-        id={`${id}-panel`}
-        className={`${open ? "block" : "hidden"} border-t border-slate-100 px-4 pb-5 pt-4 sm:px-5`}
-      >
-        {children}
-      </div>
-    </section>
-  );
-}
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -199,7 +78,9 @@ export function SettingsBlocks({
   globalSettingsInitial: any;
 }) {
   const router = useRouter();
-  const [openId, setOpenId] = useState<string>("ui-designer");
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get("tab") || "";
+
   const [chatEnabled, setChatEnabled] = useState(chatEnabledInitial);
   const [trackingEnabled, setTrackingEnabled] = useState(trackingEnabledInitial);
   const [chatSaving, setChatSaving] = useState(false);
@@ -217,8 +98,9 @@ export function SettingsBlocks({
   const [globalProfitMargin, setGlobalProfitMargin] = useState(Number(globalSettingsInitial?.profitMargin || 0));
   const [loading, setLoading] = useState(false);
 
+  // Fetch store settings on Tab active
   useEffect(() => {
-    if (openId === "store-settings") {
+    if (activeTab === "store-settings") {
       fetch(`/api${SECRET_ADMIN_PATH}/settings/store`)
         .then((res) => res.json())
         .then((data) => {
@@ -237,7 +119,7 @@ export function SettingsBlocks({
         })
         .catch(err => console.error("Failed to load store settings:", err));
     }
-  }, [openId]);
+  }, [activeTab]);
 
   const [telegramAdminIds, setTelegramAdminIds] = useState(notificationInitial.telegramAdminIds);
   const [telegramBots, setTelegramBots] = useState(telegramBotsInitial);
@@ -246,29 +128,69 @@ export function SettingsBlocks({
   const [newAdminId, setNewAdminId] = useState("");
   const [newAdminName, setNewAdminName] = useState("");
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <Block
-        id="floating-menu"
-        title="القائمة الدائرية 🔘"
-        subtitle="تخصيص الروابط والأقسام العائمة."
-        open={openId === "floating-menu"}
-        onToggle={() => setOpenId((x) => (x === "floating-menu" ? "" : "floating-menu"))}
-        tone="sky"
-        icons={globalIcons}
-      >
-        <FloatingMenuSettings icons={globalIcons} />
-      </Block>
+  // Style tones mapper
+  const toneClasses = useMemo(() => {
+    return (tone: string) => {
+      switch (tone) {
+        case "emerald":
+          return {
+            border: "border-emerald-100/90 hover:border-emerald-300",
+            bg: "bg-white hover:bg-emerald-50/5",
+            iconBg: "bg-emerald-50 text-emerald-600 border-emerald-100",
+            shadow: "hover:shadow-emerald-100/20",
+            accentBar: "bg-emerald-500",
+          };
+        case "amber":
+          return {
+            border: "border-amber-100/90 hover:border-amber-300",
+            bg: "bg-white hover:bg-amber-50/5",
+            iconBg: "bg-amber-50 text-amber-600 border-amber-100",
+            shadow: "hover:shadow-amber-100/20",
+            accentBar: "bg-amber-500",
+          };
+        case "rose":
+          return {
+            border: "border-rose-100/90 hover:border-rose-300",
+            bg: "bg-white hover:bg-rose-50/5",
+            iconBg: "bg-rose-50 text-rose-600 border-rose-100",
+            shadow: "hover:shadow-rose-100/20",
+            accentBar: "bg-rose-500",
+          };
+        case "indigo":
+          return {
+            border: "border-indigo-100/90 hover:border-indigo-300",
+            bg: "bg-white hover:bg-indigo-50/5",
+            iconBg: "bg-indigo-50 text-indigo-600 border-indigo-100",
+            shadow: "hover:shadow-indigo-100/20",
+            accentBar: "bg-indigo-500",
+          };
+        default:
+          return {
+            border: "border-sky-100/90 hover:border-sky-300",
+            bg: "bg-white hover:bg-sky-50/5",
+            iconBg: "bg-sky-50 text-sky-600 border-sky-100",
+            shadow: "hover:shadow-sky-100/20",
+            accentBar: "bg-sky-500",
+          };
+      }
+    };
+  }, []);
 
-      <Block
-        id="resource-management"
-        title="إدارة الموارد 🔋"
-        subtitle="توفير استهلاك السيرفر (Vercel Edge)."
-        open={openId === "resource-management"}
-        onToggle={() => setOpenId((x) => (x === "resource-management" ? "" : "resource-management"))}
-        tone="rose"
-        icons={globalIcons}
-      >
+  // Blocks Configuration
+  const blocks = useMemo(() => [
+    {
+      id: "floating-menu",
+      title: "القائمة الدائرية 🔘",
+      subtitle: "تخصيص الروابط والأقسام العائمة.",
+      tone: "sky",
+      content: <FloatingMenuSettings icons={globalIcons} />
+    },
+    {
+      id: "resource-management",
+      title: "إدارة الموارد 🔋",
+      subtitle: "توفير استهلاك السيرفر (Vercel Edge).",
+      tone: "rose",
+      content: (
         <div className="space-y-4">
           <div className="rounded-2xl border border-rose-100 bg-rose-50/50 p-4">
             <div className="space-y-4">
@@ -323,41 +245,28 @@ export function SettingsBlocks({
             <p className="text-[10px] font-bold text-rose-600 animate-pulse text-center">جاري تحديث الإعدادات العالمية...</p>
           )}
         </div>
-      </Block>
-
-      <Block
-        id="telegram-bots"
-        title="بوتات تليجرام 🤖"
-        subtitle="إضافة وإدارة بوتات النظام المتعددة."
-        open={openId === "telegram-bots"}
-        onToggle={() => setOpenId((x) => (x === "telegram-bots" ? "" : "telegram-bots"))}
-        tone="indigo"
-        icons={globalIcons}
-      >
-        <TelegramBotsForm initialBots={telegramBots} icons={globalIcons} />
-      </Block>
-
-      <Block
-        id="global-font"
-        title="خط الموقع 🖋️"
-        subtitle="تغيير الخط الأساسي لكل واجهات النظام."
-        open={openId === "global-font"}
-        onToggle={() => setOpenId((x) => (x === "global-font" ? "" : "global-font"))}
-        tone="indigo"
-        icons={globalIcons}
-      >
-        <FontSettingsForm availableFonts={availableFonts} currentFont={currentFont} />
-      </Block>
-
-      <Block
-        id="telegram-admins"
-        title="مدراء البوت 🤖"
-        subtitle="تحديد الـ IDs المسموح لها بالتحكم بالبوت."
-        open={openId === "telegram-admins"}
-        onToggle={() => setOpenId((x) => (x === "telegram-admins" ? "" : "telegram-admins"))}
-        tone="indigo"
-        icons={globalIcons}
-      >
+      )
+    },
+    {
+      id: "telegram-bots",
+      title: "بوتات تليجرام 🤖",
+      subtitle: "إضافة وإدارة بوتات النظام المتعددة.",
+      tone: "indigo",
+      content: <TelegramBotsForm initialBots={telegramBots} icons={globalIcons} />
+    },
+    {
+      id: "global-font",
+      title: "خط الموقع 🖋️",
+      subtitle: "تغيير الخط الأساسي لكل واجهات النظام.",
+      tone: "indigo",
+      content: <FontSettingsForm availableFonts={availableFonts} currentFont={currentFont} />
+    },
+    {
+      id: "telegram-admins",
+      title: "مدراء البوت 🤖",
+      subtitle: "تحديد الـ IDs المسموح لها بالتحكم بالبوت.",
+      tone: "indigo",
+      content: (
         <div className="space-y-6">
           <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
             <h3 className="text-xs font-black text-slate-800">إضافة مدير جديد</h3>
@@ -366,13 +275,13 @@ export function SettingsBlocks({
                 value={newAdminId}
                 onChange={(e) => setNewAdminId(e.target.value)}
                 placeholder="Telegram ID"
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition"
               />
               <input
                 value={newAdminName}
                 onChange={(e) => setNewAdminName(e.target.value)}
                 placeholder="الاسم المستعار"
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition"
               />
             </div>
             <button
@@ -462,29 +371,21 @@ export function SettingsBlocks({
             </button>
           </div>
         </div>
-      </Block>
-
-      <Block
-        id="courier-buttons"
-        title="أزرار المندوب ⚡"
-        subtitle="تحكم في الأزرار التي تظهر للمندوب."
-        open={openId === "courier-buttons"}
-        onToggle={() => setOpenId((x) => (x === "courier-buttons" ? "" : "courier-buttons"))}
-        tone="indigo"
-        icons={globalIcons}
-      >
-        <CourierButtonsSettings />
-      </Block>
-
-      <Block
-        id="role-features"
-        title="مميزات الأدوار 🛠️"
-        subtitle="أزرار الدردشة والذكاء الاصطناعي."
-        open={openId === "role-features"}
-        onToggle={() => setOpenId((x) => (x === "role-features" ? "" : "role-features"))}
-        tone="indigo"
-        icons={globalIcons}
-      >
+      )
+    },
+    {
+      id: "courier-buttons",
+      title: "أزرار المندوب ⚡",
+      subtitle: "تحكم في الأزرار التي تظهر للمندوب.",
+      tone: "indigo",
+      content: <CourierButtonsSettings />
+    },
+    {
+      id: "role-features",
+      title: "مميزات الأدوار 🛠️",
+      subtitle: "أزرار الدردشة والذكاء الاصطناعي.",
+      tone: "indigo",
+      content: (
         <div className="space-y-6">
           {/* المندوب */}
           <div className="space-y-3">
@@ -567,30 +468,21 @@ export function SettingsBlocks({
           </div>
           {roleFeaturesSaving && <p className="text-[10px] font-bold text-indigo-600 animate-pulse text-center">جاري الحفظ...</p>}
         </div>
-      </Block>
-
-
-      <Block
-        id="icon-settings"
-        title="الأيقونات 🎭"
-        subtitle="تحكم في شكل واجهة التحميل."
-        open={openId === "icon-settings"}
-        onToggle={() => setOpenId((x) => (x === "icon-settings" ? "" : "icon-settings"))}
-        tone="sky"
-        icons={globalIcons}
-      >
-        <IconSettingsForm initial={globalIcons} />
-      </Block>
-
-      <Block
-        id="store-settings"
-        title="إعدادات المتجر 🛒"
-        subtitle="روابط وتخصيصات واجهة الزبائن."
-        open={openId === "store-settings"}
-        onToggle={() => setOpenId((x) => (x === "store-settings" ? "" : "store-settings"))}
-        tone="indigo"
-        icons={globalIcons}
-      >
+      )
+    },
+    {
+      id: "icon-settings",
+      title: "الأيقونات 🎭",
+      subtitle: "تحكم في شكل واجهة التحميل.",
+      tone: "sky",
+      content: <IconSettingsForm initial={globalIcons} />
+    },
+    {
+      id: "store-settings",
+      title: "إعدادات المتجر 🛒",
+      subtitle: "روابط وتخصيصات واجهة الزبائن.",
+      tone: "indigo",
+      content: (
         <form className="space-y-4" onSubmit={async (e) => {
             e.preventDefault();
             setLoading(true);
@@ -635,72 +527,140 @@ export function SettingsBlocks({
               <label className="text-xs font-bold text-slate-700">خلفية المنتج</label>
               <input type="file" name="product_card_bg_file" accept="image/*" className="w-full text-xs" />
             </div>
-            <button disabled={loading} className="w-full py-2 bg-violet-600 text-white font-bold rounded-xl text-sm">{loading ? "جاري..." : "حفظ"}</button>
+            <button disabled={loading} className="w-full py-2 bg-violet-600 text-white font-bold rounded-xl text-sm shadow-md shadow-violet-200">{loading ? "جاري..." : "حفظ"}</button>
           </div>
         </form>
-      </Block>
+      )
+    },
+    {
+      id: "ui-designer",
+      title: "مصمم الواجهات 🎨",
+      subtitle: "الألوان والصور والترتيب.",
+      tone: "indigo",
+      isExternalLink: true,
+      href: `${SECRET_ADMIN_PATH}/settings/ui-designer`
+    },
+    {
+      id: "pricing-config",
+      title: "التسعير والأنواع 💰",
+      subtitle: "اللحوم والأسماك والأسعار.",
+      tone: "amber",
+      content: <PricingSettingsForm />
+    },
+    {
+      id: "whatsapp",
+      title: "إعدادات واتساب 📱",
+      subtitle: "النماذج والأزرار.",
+      tone: "emerald",
+      content: <WhatsappTemplateSettingsForm initialEmployeeTemplate={employeeShareTemplate} initialCustomerTemplate={customerOrderTemplate} initialTelegramTemplate={telegramNewOrderTemplate} />
+    },
+    {
+      id: "notifications",
+      title: "الإشعارات 🔔",
+      subtitle: "النصوص، النغمات، والتشغيل.",
+      tone: "sky",
+      content: <NotificationSettingsForm initial={notificationInitial} />
+    },
+    {
+      id: "purge-demo",
+      title: "مسح وتصفير الطلبات ⚠️",
+      subtitle: "مسح جميع الطلبات من الأساس وبدء الترقيم من 1.",
+      tone: "rose",
+      content: <PurgeDemoDataForm />
+    }
+  ], [
+    globalIcons, chatEnabled, chatSaving, trackingEnabled, trackingSaving,
+    telegramBots, telegramSaving, availableFonts, currentFont, newAdminId,
+    newAdminName, telegramAdminsInitial, telegramAdminIds, mandoubFeatures,
+    roleFeaturesSaving, preparerFeatures, globalProfitMargin, howToShopUrl,
+    employeeShareTemplate, customerOrderTemplate, telegramNewOrderTemplate,
+    notificationInitial, loading
+  ]);
 
-      <Block
-        id="ui-designer"
-        title="مصمم الواجهات 🎨"
-        subtitle="الألوان والصور والترتيب."
-        open={openId === "ui-designer"}
-        onToggle={() => setOpenId((x) => (x === "ui-designer" ? "" : "ui-designer"))}
-        tone="indigo"
-        icons={globalIcons}
-      >
-        <Link href={`${SECRET_ADMIN_PATH}/settings/ui-designer`} className="block p-4 text-center bg-indigo-50 border border-indigo-200 rounded-2xl font-black text-indigo-700 hover:bg-indigo-100 transition">
-           فتح المصمم الذكي ←
-        </Link>
-      </Block>
+  const activeBlock = useMemo(() => {
+    if (!activeTab) return null;
+    return blocks.find(b => b.id === activeTab) || null;
+  }, [activeTab, blocks]);
 
-      <Block
-        id="pricing-config"
-        title="التسعير والأنواع 💰"
-        subtitle="اللحوم والأسماك والأسعار."
-        open={openId === "pricing-config"}
-        onToggle={() => setOpenId((x) => (x === "pricing-config" ? "" : "pricing-config"))}
-        tone="amber"
-        icons={globalIcons}
-      >
-        <PricingSettingsForm />
-      </Block>
+  // If a tab is active, render it as a single full-page view
+  if (activeBlock && !activeBlock.isExternalLink) {
+    const tc = toneClasses(activeBlock.tone);
+    return (
+      <div className="space-y-6">
+        <div>
+          <Link
+            href={`${SECRET_ADMIN_PATH}/settings`}
+            className="inline-flex items-center gap-2 text-xs font-black text-slate-600 hover:text-slate-900 transition duration-200 bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl border border-slate-200"
+          >
+            <span className="text-base">←</span>
+            <span>العودة إلى الإعدادات</span>
+          </Link>
+        </div>
 
-      <Block
-        id="whatsapp"
-        title="إعدادات واتساب 📱"
-        subtitle="النماذج والأزرار."
-        open={openId === "whatsapp"}
-        onToggle={() => setOpenId((x) => (x === "whatsapp" ? "" : "whatsapp"))}
-        tone="emerald"
-        icons={globalIcons}
-      >
-        <WhatsappTemplateSettingsForm initialEmployeeTemplate={employeeShareTemplate} initialCustomerTemplate={customerOrderTemplate} initialTelegramTemplate={telegramNewOrderTemplate} />
-      </Block>
+        <div className={`rounded-3xl border bg-white shadow-sm overflow-hidden ${tc.border}`}>
+          {/* Header color accent bar */}
+          <div className={`h-2.5 w-full ${tc.accentBar}`} />
+          
+          <div className="p-6 sm:p-8 border-b border-slate-100 bg-slate-50/50">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900">{activeBlock.title}</h2>
+            {activeBlock.subtitle && (
+              <p className="mt-2 text-xs sm:text-sm font-bold text-slate-500 leading-relaxed">{activeBlock.subtitle}</p>
+            )}
+          </div>
 
-      <Block
-        id="notifications"
-        title="الإشعارات 🔔"
-        subtitle="النصوص، النغمات، والتشغيل."
-        open={openId === "notifications"}
-        onToggle={() => setOpenId((x) => (x === "notifications" ? "" : "notifications"))}
-        tone="sky"
-        icons={globalIcons}
-      >
-        <NotificationSettingsForm initial={notificationInitial} />
-      </Block>
+          <div className="p-6 sm:p-8 bg-white">
+            {activeBlock.content}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-      <Block
-        id="purge-demo"
-        title="مسح وتصفير الطلبات ⚠️"
-        subtitle="مسح جميع الطلبات من الأساس وبدء الترقيم من 1."
-        open={openId === "purge-demo"}
-        onToggle={() => setOpenId((x) => (x === "purge-demo" ? "" : "purge-demo"))}
-        tone="rose"
-        icons={globalIcons}
-      >
-        <PurgeDemoDataForm />
-      </Block>
+  // Otherwise, render the main Settings Grid
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {blocks.map((block) => {
+        const tc = toneClasses(block.tone);
+        const href = block.isExternalLink ? block.href! : `${SECRET_ADMIN_PATH}/settings?tab=${block.id}`;
+        
+        return (
+          <Link
+            key={block.id}
+            href={href}
+            className={`group relative overflow-hidden rounded-3xl border bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${tc.border} ${tc.shadow}`}
+          >
+            {/* Accent colored indicator line */}
+            <div className={`absolute top-0 right-0 left-0 h-1.5 transition-all duration-300 group-hover:h-2.5 ${tc.accentBar}`} />
+            
+            <div className="flex flex-col justify-between h-full min-h-[90px] gap-4 mt-1">
+              <div className="space-y-2">
+                <h3 className="text-base font-extrabold tracking-tight text-slate-900 group-hover:text-slate-800 transition-colors duration-200">
+                  {block.title}
+                </h3>
+                {block.subtitle && (
+                  <p className="text-xs leading-relaxed text-slate-400 font-bold group-hover:text-slate-500 transition-colors duration-200">
+                    {block.subtitle}
+                  </p>
+                )}
+              </div>
+              
+              <div className="flex justify-end pt-1">
+                <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-white shadow-sm transition-all duration-300 group-hover:scale-110 ${tc.iconBg}`}>
+                  <svg
+                    className="h-5 w-5 text-slate-400 group-hover:text-slate-700 transition-colors"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2.5}
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }
