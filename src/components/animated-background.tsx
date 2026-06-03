@@ -130,6 +130,10 @@ export function AnimatedBackground() {
         const oldScript = document.getElementById(scriptId);
         if (oldScript) oldScript.remove();
 
+        const cleanedCode = currentUrl
+          .replace(/<script[^>]*>/gi, "")
+          .replace(/<\/script>/gi, "");
+
         const script = document.createElement("script");
         script.id = scriptId;
         
@@ -138,7 +142,7 @@ export function AnimatedBackground() {
             try {
               var isDarkMode = ${isDark ? "true" : "false"};
               var isDark = ${isDark ? "true" : "false"};
-              ${currentUrl}
+              ${cleanedCode}
             } catch (err) {
               console.error("خطأ أثناء تشغيل الخلفية البرمجية المخصصة:", err);
             }
