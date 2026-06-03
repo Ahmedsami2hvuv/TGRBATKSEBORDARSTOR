@@ -9,7 +9,6 @@ import { serializePrisma } from "@/lib/serialize-prisma";
 import { PreparerOrdersSection } from "../preparer-orders-client";
 import { PreparerSiteOrderDraftClient } from "./preparer-site-order-draft-client";
 import { whatsappMeUrl } from "@/lib/whatsapp";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 import { ModalAwareNavButton } from "@/components/modal-aware-nav-button";
 
@@ -110,7 +109,6 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
             ➕ طلب يدوي
           </FullscreenWalletLauncher>
         </div>
-        <ThemeSwitcher />
       </div>
 
       <section className="kse-glass-dark mb-4 rounded-2xl border border-violet-200/80 p-4 shadow-sm">

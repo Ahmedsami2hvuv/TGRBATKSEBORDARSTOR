@@ -20,7 +20,6 @@ import { toast } from "sonner";
 import { useRef } from "react";
 import { OrderDetailSection } from "./order-detail-section";
 import { MandoubWalletClient } from "./mandoub-wallet-client";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 
 export type MandoubRow = {
   id: string;
@@ -508,8 +507,6 @@ export function MandoubOrderTable({
               <DynamicIcon iconKey="ui_search" config={icons} className="w-5 h-5" fallback="🔍" />
             </button>
           )}
-
-          <ThemeSwitcher />
 
           <div className="flex items-center gap-1.5 px-3 bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 rounded-xl h-[40px] text-sm font-black text-slate-800 dark:text-[#00f3ff]">
             <DynamicIcon iconKey="ui_user" config={icons} className="w-4 h-4 text-sky-600" fallback="" />

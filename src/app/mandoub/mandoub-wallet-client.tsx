@@ -22,7 +22,6 @@ import {
   MONEY_KIND_DELIVERY,
   MONEY_KIND_PICKUP,
 } from "@/lib/mandoub-money-events";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";

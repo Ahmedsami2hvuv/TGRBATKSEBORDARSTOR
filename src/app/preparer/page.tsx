@@ -9,7 +9,6 @@ import { PreparerOrdersSection } from "./preparer-orders-client";
 import { PreparerPresenceToggle } from "./preparer-presence-toggle";
 import { PreparerWalletLink } from "./preparer-wallet-link";
 import { PreparerSearchTrigger } from "./preparer-search-trigger";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 import { PreparerNotificationPoller } from "./preparer-notification-poller";
@@ -174,7 +173,6 @@ export default async function PreparerHomePage({ searchParams }: Props) {
       <PortalAuthCookieSetter auth={baseAuth} />
       <header className="kse-glass-dark mb-2 flex flex-wrap items-center gap-2 border border-emerald-200/90 px-3 py-2.5 shadow-sm sm:mb-3 sm:px-4">
         <div className="min-w-0 flex-1 flex items-center gap-3">
-          <ThemeSwitcher />
           <Link
             href={preparerPath("/preparer/settings", baseAuth)}
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 text-lg shadow-sm transition hover:scale-105"

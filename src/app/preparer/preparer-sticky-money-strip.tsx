@@ -3,7 +3,6 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { preparerPath } from "@/lib/preparer-portal-nav";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
@@ -68,9 +67,6 @@ export function PreparerStickyMoneyStrip() {
     <div className="sticky top-0 z-40 border-b border-slate-200/90 bg-white/90 px-2 py-2 shadow-sm backdrop-blur-sm sm:px-3 dark:bg-[#09090b]/90 dark:border-[rgba(0,243,255,0.2)]">
       <div className="flex items-center justify-between mb-1.5 px-0.5">
         <p className="text-[11px] font-bold text-slate-600 sm:text-xs dark:text-slate-300">ملخص الأموال (طلبات محلاتك)</p>
-        <div className="scale-75 origin-left sm:origin-center sm:scale-100">
-           <ThemeSwitcher />
-        </div>
       </div>
       <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2 sm:overflow-visible sm:pb-0">
         <FullscreenWalletLauncher
