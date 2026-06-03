@@ -214,7 +214,7 @@ export default function CourierSettingsClient({
                   <p className="text-xs text-slate-500 dark:text-slate-400">اختر خلفية حية متحركة لتزيين واجهة حسابك</p>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   {availableBgs.map((bg) => {
                     const active = currentBgId === bg.id;
 
@@ -222,15 +222,14 @@ export default function CourierSettingsClient({
                       <button
                         key={bg.id}
                         onClick={() => handleSelectBackground(bg.id)}
-                        className={`group relative flex items-center justify-center py-3.5 px-4 rounded-xl border transition-all text-center text-xs font-black shadow-sm ${
+                        className={`flex items-center justify-between px-4 py-3 rounded-xl border text-sm font-black transition-all ${
                           active
-                            ? "bg-sky-500 text-white border-sky-600 dark:bg-[#00f3ff] dark:text-black dark:border-[#00f3ff] scale-[1.02]"
-                            : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            ? "bg-sky-500 border-sky-600 text-white dark:bg-[#00f3ff] dark:border-[#00f3ff] dark:text-black shadow-md scale-[1.02]"
+                            : "border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850"
                         }`}
                       >
-                        <span className="truncate w-full">
-                          {bg.name} {active && "✓"}
-                        </span>
+                        <span className="truncate">{bg.name}</span>
+                        {active && <span className="text-[10px] font-black bg-white/20 dark:bg-black/10 px-1.5 py-0.5 rounded-full">✓ نشط</span>}
                       </button>
                     );
                   })}
