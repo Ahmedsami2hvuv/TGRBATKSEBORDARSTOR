@@ -43,7 +43,7 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
 
     const nextConfig = {
       ...config,
-      items: [...config.items, newItem],
+      items: [newItem, ...config.items],
     };
     setConfig(nextConfig);
     saveConfig(nextConfig);
@@ -405,17 +405,38 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      localStorage.setItem("kse_user_background", item.id);
-                      window.dispatchEvent(new CustomEvent("kse_bg_changed", { detail: item }));
-                      alert(`تم تطبيق المعاينة الحية لـ "${item.name}" على حسابك بنجاح! ستراها الآن في كامل خلفية الموقع.`);
-                    }}
-                    className="px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 dark:bg-violet-950/20 dark:hover:bg-violet-900/20 dark:text-violet-400 border border-violet-100 dark:border-violet-900 text-[10px] font-black rounded-lg transition-all"
-                  >
-                    👁️ تطبيق وتجربة على خلفية حسابي الآن
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        localStorage.setItem("kse_user_background", item.id);
+                        window.dispatchEvent(new CustomEvent("kse_bg_changed", { detail: item }));
+                        alert(`تم تطبيق المعاينة الحية لـ "${item.name}" على حسابك بنجاح! ستراها الآن في كامل خلفية الموقع.`);
+                      }}
+                      className="px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 dark:bg-violet-950/20 dark:hover:bg-violet-900/20 dark:text-violet-400 border border-violet-100 dark:border-violet-900 text-[10px] font-black rounded-lg transition-all"
+                    >
+                      👁️ تطبيق وتجربة على خلفية حسابي الآن
+                    </button>
+
+                    {config.defaultBackgroundId === item.id ? (
+                      <span className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900 text-[10px] font-black rounded-lg flex items-center gap-1">
+                        ⭐ الخلفية الافتراضية الحالية للموقع
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextConfig = { ...config, defaultBackgroundId: item.id };
+                          setConfig(nextConfig);
+                          saveConfig(nextConfig);
+                          alert(`تم تعيين "${item.name}" كخلفية افتراضية للموقع لجميع المستخدمين بنجاح!`);
+                        }}
+                        className="px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 dark:bg-sky-950/20 dark:hover:bg-sky-900/20 dark:text-sky-400 border border-sky-100 dark:border-sky-900 text-[10px] font-black rounded-lg transition-all"
+                      >
+                        ⭐ تعيين كخلفية افتراضية للموقع
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* نافذة المحاكي */}
