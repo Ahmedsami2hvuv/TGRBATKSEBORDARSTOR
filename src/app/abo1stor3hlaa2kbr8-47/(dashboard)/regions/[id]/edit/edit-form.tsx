@@ -54,6 +54,7 @@ export function RegionEditForm({
 
   const newNameInputRef = useRef<HTMLInputElement>(null);
   const newCoordsInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const waypointsJson = useMemo(
     () => {
@@ -119,11 +120,20 @@ export function RegionEditForm({
   function handleNewEntranceKeyDown(e: React.KeyboardEvent<HTMLInputElement>, field: "name" | "coordinates") {
     if (e.key === "Enter" || e.keyCode === 13 || e.which === 13) {
       e.preventDefault();
+      const trimmedName = newEntrance.name.trim();
       const trimmedCoords = newEntrance.coordinates.trim();
-      if (field === "name" && !trimmedCoords) {
-        newCoordsInputRef.current?.focus();
-      } else {
-        handleAddWaypoint();
+
+      if (field === "name") {
+        if (trimmedName) {
+          newCoordsInputRef.current?.focus();
+        }
+      } else if (field === "coordinates") {
+        if (trimmedCoords) {
+          handleAddWaypoint();
+          setTimeout(() => {
+            formRef.current?.requestSubmit();
+          }, 50);
+        }
       }
     }
   }
@@ -136,22 +146,27 @@ export function RegionEditForm({
 
   return (
     <form
+      ref={formRef}
       action={formAction}
       className="space-y-3"
       onKeyDown={(e) => {
         // Double-safeguard to catch any Enter presses bubbling up to the form
         if (e.key === "Enter" || e.keyCode === 13) {
           const activeEl = document.activeElement;
-          if (
-            activeEl === newNameInputRef.current ||
-            activeEl === newCoordsInputRef.current
-          ) {
+          if (activeEl === newNameInputRef.current) {
+            e.preventDefault();
+            const trimmedName = newEntrance.name.trim();
+            if (trimmedName) {
+              newCoordsInputRef.current?.focus();
+            }
+          } else if (activeEl === newCoordsInputRef.current) {
             e.preventDefault();
             const trimmedCoords = newEntrance.coordinates.trim();
-            if (activeEl === newNameInputRef.current && !trimmedCoords) {
-              newCoordsInputRef.current?.focus();
-            } else {
+            if (trimmedCoords) {
               handleAddWaypoint();
+              setTimeout(() => {
+                formRef.current?.requestSubmit();
+              }, 50);
             }
           } else if (
             activeEl instanceof HTMLInputElement &&
