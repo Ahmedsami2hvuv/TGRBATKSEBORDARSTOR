@@ -55,6 +55,7 @@ export function RegionEditForm({
   const newNameInputRef = useRef<HTMLInputElement>(null);
   const newCoordsInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const waypointsJsonRef = useRef<HTMLInputElement>(null);
 
   const waypointsJson = useMemo(
     () => {
@@ -113,6 +114,48 @@ export function RegionEditForm({
     newNameInputRef.current?.focus();
   }
 
+  function handleAddAndSubmit() {
+    const trimmedName = newEntrance.name.trim();
+    const trimmedCoords = newEntrance.coordinates.trim();
+
+    if (!trimmedName && !trimmedCoords) {
+      newNameInputRef.current?.focus();
+      return;
+    }
+
+    const updatedWaypoints = [
+      ...waypoints,
+      { name: trimmedName, coordinates: trimmedCoords },
+    ];
+
+    const parsedWaypoints = updatedWaypoints
+      .map((w) => {
+        const parsed = parseCoordinates(w.coordinates);
+        return {
+          name: w.name.trim(),
+          latitude: parsed?.latitude ?? Number.NaN,
+          longitude: parsed?.longitude ?? Number.NaN,
+        };
+      })
+      .filter(
+        (w) =>
+          Number.isFinite(w.latitude) &&
+          Number.isFinite(w.longitude),
+      );
+    const updatedJson = JSON.stringify(parsedWaypoints);
+
+    // Directly update the DOM hidden input value before submission so the server action receives it
+    if (waypointsJsonRef.current) {
+      waypointsJsonRef.current.value = updatedJson;
+    }
+
+    setWaypoints(updatedWaypoints);
+    setNewEntrance({ name: "", coordinates: "" });
+    newNameInputRef.current?.focus();
+
+    formRef.current?.requestSubmit();
+  }
+
   function removeWaypoint(index: number) {
     setWaypoints((prev) => prev.filter((_, idx) => idx !== index));
   }
@@ -129,10 +172,7 @@ export function RegionEditForm({
         }
       } else if (field === "coordinates") {
         if (trimmedCoords) {
-          handleAddWaypoint();
-          setTimeout(() => {
-            formRef.current?.requestSubmit();
-          }, 50);
+          handleAddAndSubmit();
         }
       }
     }
@@ -163,10 +203,7 @@ export function RegionEditForm({
             e.preventDefault();
             const trimmedCoords = newEntrance.coordinates.trim();
             if (trimmedCoords) {
-              handleAddWaypoint();
-              setTimeout(() => {
-                formRef.current?.requestSubmit();
-              }, 50);
+              handleAddAndSubmit();
             }
           } else if (
             activeEl instanceof HTMLInputElement &&
@@ -182,7 +219,12 @@ export function RegionEditForm({
       {waypointsPersistDisabled ? (
         <input type="hidden" name="skipWaypoints" value="1" />
       ) : (
-        <input type="hidden" name="waypointsJson" value={waypointsJson} />
+        <input
+          ref={waypointsJsonRef}
+          type="hidden"
+          name="waypointsJson"
+          value={waypointsJson}
+        />
       )}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
