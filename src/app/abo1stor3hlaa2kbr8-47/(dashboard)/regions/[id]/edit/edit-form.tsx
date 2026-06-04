@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useRef, useState } from "react";
 import { ad } from "@/lib/admin-ui";
-import { updateRegion, type RegionFormState } from "../../actions";
+import { updateRegion, getRegionsWithWaypoints, type RegionFormState } from "../../actions";
 
 const initial: RegionFormState = {};
 
@@ -57,6 +57,21 @@ export function RegionEditForm({
   const formRef = useRef<HTMLFormElement>(null);
   const waypointsJsonRef = useRef<HTMLInputElement>(null);
   const isProgrammaticSubmit = useRef(false);
+
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [allRegions, setAllRegions] = useState<Array<{
+    id: string;
+    name: string;
+    waypoints: Array<{ name: string; latitude: number; longitude: number }>;
+  }>>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loadingRegions, setLoadingRegions] = useState(false);
+
+  const filteredRegions = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return allRegions;
+    return allRegions.filter((reg) => reg.name.toLowerCase().includes(query));
+  }, [allRegions, searchQuery]);
 
   const waypointsJson = useMemo(
     () => {
@@ -163,6 +178,55 @@ export function RegionEditForm({
 
   function removeWaypoint(index: number) {
     setWaypoints((prev) => prev.filter((_, idx) => idx !== index));
+  }
+
+  async function handleOpenImportModal() {
+    setImportModalOpen(true);
+    setSearchQuery("");
+    setLoadingRegions(true);
+    const res = await getRegionsWithWaypoints();
+    if (res.ok && res.regions) {
+      const otherRegions = res.regions.filter((reg: any) => reg.id !== id);
+      setAllRegions(otherRegions);
+    }
+    setLoadingRegions(false);
+  }
+
+  function handleImportFromRegion(reg: typeof allRegions[0]) {
+    const importedDrafts: RegionWaypointDraft[] = reg.waypoints.map((w) => ({
+      name: w.name ?? "",
+      coordinates: `${w.latitude}, ${w.longitude}`,
+    }));
+
+    const parsedWaypoints = importedDrafts
+      .map((w) => {
+        const parsed = parseCoordinates(w.coordinates);
+        return {
+          name: w.name.trim(),
+          latitude: parsed?.latitude ?? Number.NaN,
+          longitude: parsed?.longitude ?? Number.NaN,
+        };
+      })
+      .filter(
+        (w) =>
+          Number.isFinite(w.latitude) &&
+          Number.isFinite(w.longitude),
+      );
+    const updatedJson = JSON.stringify(parsedWaypoints);
+
+    if (waypointsJsonRef.current) {
+      waypointsJsonRef.current.value = updatedJson;
+    }
+
+    setWaypoints(importedDrafts);
+    setNewEntrance({ name: "", coordinates: "" });
+    setImportModalOpen(false);
+
+    setTimeout(() => {
+      isProgrammaticSubmit.current = true;
+      formRef.current?.requestSubmit();
+      isProgrammaticSubmit.current = false;
+    }, 10);
   }
 
   function handleNewEntranceKeyDown(e: React.KeyboardEvent<HTMLInputElement>, field: "name" | "coordinates") {
@@ -305,6 +369,14 @@ export function RegionEditForm({
               + إضافة مدخل
             </button>
             <button
+              type="button"
+              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-bold text-sky-700 hover:bg-sky-100 disabled:opacity-40 transition-colors"
+              onClick={handleOpenImportModal}
+              disabled={waypointsPersistDisabled}
+            >
+              🔄 استدعاء مداخل
+            </button>
+            <button
               type="submit"
               disabled={pending}
               className={ad.btnPrimary}
@@ -389,6 +461,72 @@ export function RegionEditForm({
         </p>
       ) : null}
       {state.ok ? <p className={ad.success}>تم حفظ التعديلات.</p> : null}
+
+      {importModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <h3 className="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <span>🔄</span> استدعاء مداخل من منطقة أخرى
+              </h3>
+              <button
+                type="button"
+                onClick={() => setImportModalOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800">
+              <input
+                type="text"
+                placeholder="اكتب اسم المنطقة للبحث..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`${ad.input} w-full`}
+                autoFocus
+              />
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-[200px]">
+              {loadingRegions ? (
+                <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-sm font-medium">
+                  جاري تحميل المناطق...
+                </div>
+              ) : filteredRegions.length > 0 ? (
+                filteredRegions.map((reg) => (
+                  <button
+                    key={reg.id}
+                    type="button"
+                    onClick={() => handleImportFromRegion(reg)}
+                    className="w-full text-right p-3 rounded-2xl hover:bg-sky-50 dark:hover:bg-sky-950/20 border border-transparent hover:border-sky-100 dark:hover:border-sky-900/50 transition-all flex items-center justify-between group"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-sky-700 dark:group-hover:text-[#00f3ff]">
+                        {reg.name}
+                      </span>
+                      <span className="text-xs text-slate-400 mt-0.5">
+                        تحتوي على {reg.waypoints.length} مدخل
+                      </span>
+                    </div>
+                    <span className="text-xs font-bold text-sky-600 dark:text-[#00f3ff] bg-sky-50 dark:bg-sky-950/40 px-2.5 py-1 rounded-full group-hover:bg-sky-600 group-hover:text-white dark:group-hover:bg-[#00f3ff] dark:group-hover:text-black transition-colors">
+                      استدعاء وحفظ
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <div className="p-8 text-center text-slate-400 dark:text-slate-600 text-sm">
+                  لا توجد مناطق تطابق البحث.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

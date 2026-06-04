@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { parseAlfInputToDinarNumber } from "@/lib/money-alf";
 import { prisma } from "@/lib/prisma";
@@ -48,7 +48,30 @@ export type RegionFormState = {
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
-// Ø§Ù„Ø¯Ø§Ù„Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…Ø© ÙÙŠ Ø¥Ø¶Ø§ÙØ© Ù…Ù†Ø·Ù‚Ø© Ø¬Ø¯ÙŠØ¯Ø©
+export async function getRegionsWithWaypoints() {
+  try {
+    const list = await prisma.region.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        waypoints: {
+          orderBy: { sortOrder: "asc" },
+          select: {
+            name: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
+      },
+    });
+    return { ok: true, regions: list };
+  } catch (error: any) {
+    return { ok: false, error: error.message };
+  }
+}
+
+// الدالة المستخدمة في إضافة منطقة جديدة
 export async function createRegion(prevState: any, formData: FormData) {
   const name = formData.get("name") as string;
   const deliveryPriceStr = formData.get("deliveryPrice") as string;
