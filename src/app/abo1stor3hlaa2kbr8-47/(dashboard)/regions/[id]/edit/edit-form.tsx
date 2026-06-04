@@ -116,10 +116,15 @@ export function RegionEditForm({
     setWaypoints((prev) => prev.filter((_, idx) => idx !== index));
   }
 
-  function handleNewEntranceKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+  function handleNewEntranceKeyDown(e: React.KeyboardEvent<HTMLInputElement>, field: "name" | "coordinates") {
     if (e.key === "Enter" || e.keyCode === 13 || e.which === 13) {
       e.preventDefault();
-      handleAddWaypoint();
+      const trimmedCoords = newEntrance.coordinates.trim();
+      if (field === "name" && !trimmedCoords) {
+        newCoordsInputRef.current?.focus();
+      } else {
+        handleAddWaypoint();
+      }
     }
   }
 
@@ -142,7 +147,12 @@ export function RegionEditForm({
             activeEl === newCoordsInputRef.current
           ) {
             e.preventDefault();
-            handleAddWaypoint();
+            const trimmedCoords = newEntrance.coordinates.trim();
+            if (activeEl === newNameInputRef.current && !trimmedCoords) {
+              newCoordsInputRef.current?.focus();
+            } else {
+              handleAddWaypoint();
+            }
           } else if (
             activeEl instanceof HTMLInputElement &&
             activeEl.name !== "name" &&
@@ -207,14 +217,14 @@ export function RegionEditForm({
         ) : null}
         <div className="space-y-2">
           {/* حقل إدخال مدخل جديد بالاعلى */}
-          <div className="grid gap-2 rounded-lg border-2 border-dashed border-sky-200 bg-sky-50/30 p-2 sm:grid-cols-3 items-center">
+          <div className="grid gap-2 rounded-lg border-2 border-dashed border-sky-200 bg-sky-50/30 p-2 sm:grid-cols-2 items-center">
             <input
               ref={newNameInputRef}
               placeholder="اسم المدخل الجديد (مثال: جسر ابو فلوس)"
               className={`${ad.input} border-sky-200 focus:border-sky-500`}
               value={newEntrance.name}
               onChange={(e) => setNewEntrance((prev) => ({ ...prev, name: e.target.value }))}
-              onKeyDown={handleNewEntranceKeyDown}
+              onKeyDown={(e) => handleNewEntranceKeyDown(e, "name")}
               readOnly={waypointsPersistDisabled}
             />
             <input
@@ -224,17 +234,9 @@ export function RegionEditForm({
               className={`${ad.input} border-sky-200 focus:border-sky-500`}
               value={newEntrance.coordinates}
               onChange={(e) => setNewEntrance((prev) => ({ ...prev, coordinates: e.target.value }))}
-              onKeyDown={handleNewEntranceKeyDown}
+              onKeyDown={(e) => handleNewEntranceKeyDown(e, "coordinates")}
               readOnly={waypointsPersistDisabled}
             />
-            <button
-              type="button"
-              onClick={handleAddWaypoint}
-              disabled={waypointsPersistDisabled}
-              className="rounded-lg border border-sky-200 bg-sky-100 px-3 py-2 text-sm font-bold text-sky-700 hover:bg-sky-200 disabled:opacity-40 flex items-center justify-center gap-1 transition-colors"
-            >
-              <span>+ إضافة للمواقع (Enter)</span>
-            </button>
           </div>
 
           {/* قائمة المداخل المضافة */}
