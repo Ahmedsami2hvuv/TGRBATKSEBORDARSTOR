@@ -472,12 +472,12 @@ export function UnifiedOrderListTable({
 
                             {/* ملاحظات ووقت الطلب */}
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                              {o.timeLine && (
+                              {o.timeLine && o.orderStatus !== "delivering" && o.orderStatus !== "delivered" && (
                                 <span className="inline-flex items-center gap-1 text-[11px] font-black bg-rose-50 text-rose-700 border border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30 px-1.5 py-0.5 rounded shadow-sm" title="وقت الطلب المطلوب">
                                   ⏰ {o.timeLine}
                                 </span>
                               )}
-                              {o.summary && o.showNotesBtn !== false && (
+                              {o.summary && o.showNotesBtn !== false && o.orderStatus !== "delivered" && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setShowNotes(showNotes === o.id ? null : o.id); }}
                                   className="flex size-7 items-center justify-center rounded-full bg-sky-100 text-sky-600 hover:bg-sky-200 transition-colors border-2 border-white shadow-sm"
@@ -505,7 +505,7 @@ export function UnifiedOrderListTable({
                           (o.smartHintLine?.trim() && !o.smartHintLine.trim().startsWith("—"))) && (
                           <div className="flex items-center gap-1 border-r pr-2 mr-1 border-slate-200" onClick={e => e.stopPropagation()}>
                         
-                             {o.showVoiceNotesBtn !== false && ((o.audioUrl?.trim() && o.audioUrl.trim().length > 2) ||
+                             {o.showVoiceNotesBtn !== false && o.orderStatus !== "delivered" && ((o.audioUrl?.trim() && o.audioUrl.trim().length > 2) ||
                                (o.preparerAudioUrl?.trim() && o.preparerAudioUrl.trim().length > 2) ||
                                (o.adminAudioUrl?.trim() && o.adminAudioUrl.trim().length > 2)) && (
                                <div className="relative">
@@ -553,7 +553,7 @@ export function UnifiedOrderListTable({
                                </div>
                              )}
                              {/* زر الاستدلال الذكي: يظهر فقط عند وجود نص حقيقي */}
-                             {!o.landmarkLine?.trim() && o.smartHintLine?.trim() && !o.smartHintLine.trim().startsWith("—") && (
+                             {!o.landmarkLine?.trim() && o.smartHintLine?.trim() && !o.smartHintLine.trim().startsWith("—") && o.orderStatus !== "delivered" && (
                                <div className="relative">
                                  <button
                                    onClick={(e) => {
@@ -634,7 +634,7 @@ export function UnifiedOrderListTable({
                           <span>{o.regionLine}</span>
                         )}
                         <div className="flex flex-wrap items-center gap-2 mt-1" onClick={e => e.stopPropagation()}>
-                          {!hideShopColumnLocationAndDoorPhotoButtons && o.showLocationBtn !== false &&
+                          {!hideShopColumnLocationAndDoorPhotoButtons && o.showLocationBtn !== false && o.orderStatus !== "delivered" &&
                           (((!isDoubleRoute && o.shopLocationUrl?.trim() && o.shopLocationUrl.trim().length > 2) ||
                             (o.customerLocationUrl?.trim() && o.customerLocationUrl.trim().length > 2) ||
                             (o.secondCustomerLocationUrl?.trim() && o.secondCustomerLocationUrl.trim().length > 2))) && (
@@ -677,7 +677,7 @@ export function UnifiedOrderListTable({
                             </div>
                           )}
 
-                          {!hideShopColumnLocationAndDoorPhotoButtons && o.showDoorBtn !== false &&
+                          {!hideShopColumnLocationAndDoorPhotoButtons && o.showDoorBtn !== false && o.orderStatus !== "delivered" &&
                           (((!isDoubleRoute && o.shopDoorPhotoUrl?.trim() && o.shopDoorPhotoUrl.trim().length > 2) ||
                             (o.customerDoorPhotoUrl?.trim() && o.customerDoorPhotoUrl.trim().length > 2) ||
                             (o.secondCustomerDoorPhotoUrl?.trim() && o.secondCustomerDoorPhotoUrl.trim().length > 2))) && (
@@ -757,7 +757,7 @@ export function UnifiedOrderListTable({
                           {!hidePhoneData && (
                           <div className="flex flex-wrap items-center gap-2">
                             {/* زر الاتصال */}
-                            {o.showCallBtn !== false && (
+                            {o.showCallBtn !== false && o.orderStatus !== "delivered" && (
                             <div className="relative">
                               <button
                                 onClick={(e) => {
@@ -797,7 +797,7 @@ export function UnifiedOrderListTable({
                             )}
 
                             {/* زر المراسلة */}
-                            {o.showWhatsAppBtn !== false && (
+                            {o.showWhatsAppBtn !== false && o.orderStatus !== "delivered" && (
                             <div className="relative">
                               <button
                                 onClick={(e) => {
