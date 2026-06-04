@@ -154,9 +154,11 @@ export function RegionEditForm({
     setNewEntrance({ name: "", coordinates: "" });
     newNameInputRef.current?.focus();
 
-    isProgrammaticSubmit.current = true;
-    formRef.current?.requestSubmit();
-    isProgrammaticSubmit.current = false;
+    setTimeout(() => {
+      isProgrammaticSubmit.current = true;
+      formRef.current?.requestSubmit();
+      isProgrammaticSubmit.current = false;
+    }, 10);
   }
 
   function removeWaypoint(index: number) {
