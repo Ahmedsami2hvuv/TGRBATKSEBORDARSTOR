@@ -56,6 +56,7 @@ export function RegionEditForm({
   const newCoordsInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const waypointsJsonRef = useRef<HTMLInputElement>(null);
+  const isProgrammaticSubmit = useRef(false);
 
   const waypointsJson = useMemo(
     () => {
@@ -153,7 +154,9 @@ export function RegionEditForm({
     setNewEntrance({ name: "", coordinates: "" });
     newNameInputRef.current?.focus();
 
+    isProgrammaticSubmit.current = true;
     formRef.current?.requestSubmit();
+    isProgrammaticSubmit.current = false;
   }
 
   function removeWaypoint(index: number) {
@@ -184,11 +187,46 @@ export function RegionEditForm({
     }
   }
 
+  function handleFormSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (isProgrammaticSubmit.current) {
+      return;
+    }
+
+    const activeEl = document.activeElement;
+
+    // If focused on Coordinates input
+    if (activeEl === newCoordsInputRef.current) {
+      e.preventDefault();
+      const trimmedCoords = newEntrance.coordinates.trim();
+      if (trimmedCoords) {
+        handleAddAndSubmit();
+      }
+    } 
+    // If focused on Name input
+    else if (activeEl === newNameInputRef.current) {
+      e.preventDefault();
+      const trimmedName = newEntrance.name.trim();
+      if (trimmedName) {
+        newCoordsInputRef.current?.focus();
+      }
+    } 
+    // If focused on existing waypoint inputs, prevent submission on enter
+    else if (
+      activeEl instanceof HTMLInputElement &&
+      activeEl.name !== "name" &&
+      activeEl.name !== "deliveryPrice" &&
+      (activeEl.placeholder.includes("اسم المدخل") || activeEl.placeholder.includes("الصق الإحداثية"))
+    ) {
+      e.preventDefault();
+    }
+  }
+
   return (
     <form
       ref={formRef}
       action={formAction}
       className="space-y-3"
+      onSubmit={handleFormSubmit}
       onKeyDown={(e) => {
         // Double-safeguard to catch any Enter presses bubbling up to the form
         if (e.key === "Enter" || e.keyCode === 13) {

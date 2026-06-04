@@ -136,18 +136,7 @@ export function AdminShell({
   const isCompact = navWidth <= 260;
 
   const handleLinkClick = () => {
-    let shouldClose = !isLg;
-    if (isLg) {
-      try {
-        const saved = window.localStorage.getItem(NAV_OPEN_STORAGE_KEY);
-        if (saved === "false") {
-          shouldClose = true;
-        }
-      } catch {}
-    }
-    if (shouldClose) {
-      setTimeout(() => setNavOpen(false), 80);
-    }
+    setTimeout(() => setNavOpen(false), 80);
   };
 
   useEffect(() => {
@@ -156,19 +145,8 @@ export function AdminShell({
 
   // Close sidebar automatically when routing (pathname/searchParams change)
   useEffect(() => {
-    let shouldClose = !isLg;
-    if (isLg) {
-      try {
-        const saved = window.localStorage.getItem(NAV_OPEN_STORAGE_KEY);
-        if (saved === "false") {
-          shouldClose = true;
-        }
-      } catch {}
-    }
-    if (shouldClose) {
-      setNavOpen(false);
-    }
-  }, [pathname, searchParams, isLg]);
+    setNavOpen(false);
+  }, [pathname, searchParams]);
 
   // Close sidebar when clicking outside
   useEffect(() => {
