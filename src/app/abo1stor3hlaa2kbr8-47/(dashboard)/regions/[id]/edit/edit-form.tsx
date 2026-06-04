@@ -295,14 +295,23 @@ export function RegionEditForm({
       >
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-700">مواقع المنطقة (مداخل متعددة)</h3>
-          <button
-            type="button"
-            className={ad.btnDark}
-            onClick={handleAddWaypoint}
-            disabled={waypointsPersistDisabled}
-          >
-            + إضافة مدخل
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className={ad.btnDark}
+              onClick={handleAddWaypoint}
+              disabled={waypointsPersistDisabled}
+            >
+              + إضافة مدخل
+            </button>
+            <button
+              type="submit"
+              disabled={pending}
+              className={ad.btnPrimary}
+            >
+              {pending ? "جارٍ الحفظ…" : "حفظ"}
+            </button>
+          </div>
         </div>
         <p className="text-xs text-slate-500">
           ضيف أكثر من نقطة للمنطقة (خط العرض/خط الطول)، والفرز الذكي يختار الأقرب للمندوب.
@@ -380,13 +389,6 @@ export function RegionEditForm({
         </p>
       ) : null}
       {state.ok ? <p className={ad.success}>تم حفظ التعديلات.</p> : null}
-      <button
-        type="submit"
-        disabled={pending}
-        className={ad.btnPrimary}
-      >
-        {pending ? "جارٍ الحفظ…" : "حفظ"}
-      </button>
     </form>
   );
 }
