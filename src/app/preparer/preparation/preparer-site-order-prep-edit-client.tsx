@@ -356,11 +356,7 @@ export function PreparerSiteOrderPrepEditClient({
             </select>
           </label>
 
-          <div className="grid grid-cols-2 gap-3">
-             <label className="flex flex-col gap-1.5">
-               <span className="text-xs font-bold text-slate-600 dark:text-slate-400">هاتف الزبون</span>
-               <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className={`${inputClass} font-mono dark:bg-slate-950/50 dark:border-white/10`} />
-             </label>
+          <div className="grid grid-cols-1 gap-3">
              <label className="flex flex-col gap-1.5">
                <span className="text-xs font-bold text-slate-600 dark:text-slate-400">اسم الزبون</span>
                <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={`${inputClass} dark:bg-slate-950/50 dark:border-white/10`} />

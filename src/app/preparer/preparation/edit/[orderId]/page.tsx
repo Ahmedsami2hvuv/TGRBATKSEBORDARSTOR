@@ -217,6 +217,10 @@ export default async function PreparerPreparationEditPage({ params, searchParams
     shopDeliveryAlf: Number(l.shop.region.deliveryPrice.toString()) / ALF_PER_DINAR,
   })));
 
+  const isLikelyPhone = (text: string) => /^[0-9+ \-()]{7,15}$/.test(text.trim());
+  const rawTitle = String(payload?.titleLine ?? order.customerRegion?.name ?? "").trim();
+  const rawCustomerName = order.customer?.name?.trim() || "";
+
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-4 py-8 pb-24">
       <div className="mx-auto mb-4 max-w-lg text-sm">
@@ -234,7 +238,7 @@ export default async function PreparerPreparationEditPage({ params, searchParams
           homeHref={home}
           prepHref={prep}
           initialData={deepSanitize({
-            titleLine: String(payload?.titleLine ?? order.customerRegion?.name ?? "").trim(),
+            titleLine: rawTitle && isLikelyPhone(rawTitle) ? "" : rawTitle,
             products,
             placesCount: Number.isFinite(placesCountNum) && placesCountNum > 0 ? Math.floor(placesCountNum) : 1,
             rawListText: typeof payload?.rawListText === "string" ? payload.rawListText : undefined,
@@ -242,8 +246,8 @@ export default async function PreparerPreparationEditPage({ params, searchParams
             customerRegionId: order.customerRegionId,
             customerRegionName: order.customerRegion.name,
             customerRegionDeliveryDinar: Number(order.customerRegion.deliveryPrice),
-            customerPhone: order.customerPhone?.trim() || "",
-            customerName: order.customer?.name?.trim() || "",
+            customerPhone: "",
+            customerName: rawCustomerName && isLikelyPhone(rawCustomerName) ? "" : rawCustomerName,
             orderTime: order.orderNoteTime?.trim() || "فوري",
             customerLandmark: order.customerLandmark?.trim() || "",
             vehiclePreference: (order as any).vehiclePreference || null,

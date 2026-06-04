@@ -264,11 +264,21 @@ export async function updatePreparerShoppingDraft(
     const noProfitRaw = formData.get("noProfit");
     const noProfit = noProfitRaw !== null ? noProfitRaw === "true" : !!dbData.noProfit;
 
-    const titleLine = String(formData.get("titleLine") ?? draft.titleLine);
-    const customerPhone = String(formData.get("customerPhone") ?? draft.customerPhone);
-    const customerName = String(formData.get("customerName") ?? draft.customerName);
-    const customerLandmark = String(formData.get("customerLandmark") ?? draft.customerLandmark);
-    const orderTime = String(formData.get("orderTime") ?? draft.orderTime);
+    const titleLineRaw = String(formData.get("titleLine") ?? "").trim();
+    const titleLine = titleLineRaw ? titleLineRaw : draft.titleLine;
+
+    const customerPhoneRaw = String(formData.get("customerPhone") ?? "").trim();
+    const customerPhone = customerPhoneRaw ? customerPhoneRaw : draft.customerPhone;
+
+    const customerNameRaw = String(formData.get("customerName") ?? "").trim();
+    const customerName = customerNameRaw ? customerNameRaw : draft.customerName;
+
+    const customerLandmarkRaw = String(formData.get("customerLandmark") ?? "").trim();
+    const customerLandmark = customerLandmarkRaw ? customerLandmarkRaw : draft.customerLandmark;
+
+    const orderTimeRaw = String(formData.get("orderTime") ?? "").trim();
+    const orderTime = orderTimeRaw ? orderTimeRaw : draft.orderTime;
+
 
     // تحديث جميع المسودات المرتبطة دفعة واحدة
     const updatePromises = relatedDrafts.map(rd => {
@@ -754,10 +764,19 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
 
     const shopId = String(formData.get("shopId") ?? "").trim();
     const customerRegionId = String(formData.get("customerRegionId") ?? "").trim();
-    const customerPhone = String(formData.get("customerPhone") ?? "").trim();
-    const orderTime = String(formData.get("orderTime") ?? "").trim();
-    const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
-    const titleLine = String(formData.get("titleLine") ?? "").trim() || order.customerRegion?.name || "";
+
+    const customerPhoneRaw = String(formData.get("customerPhone") ?? "").trim();
+    const customerPhone = customerPhoneRaw ? customerPhoneRaw : order.customerPhone;
+
+    const orderTimeRaw = String(formData.get("orderTime") ?? "").trim();
+    const orderTime = orderTimeRaw ? orderTimeRaw : order.orderNoteTime;
+
+    const customerLandmarkRaw = String(formData.get("customerLandmark") ?? "").trim();
+    const customerLandmark = customerLandmarkRaw ? customerLandmarkRaw : order.customerLandmark;
+
+    const titleLineRaw = String(formData.get("titleLine") ?? "").trim();
+    const titleLine = titleLineRaw ? titleLineRaw : ((order.preparerShoppingJson as any)?.titleLine || order.customerRegion?.name || "");
+
 
     const vehiclePreference = String(formData.get("vehiclePreference") ?? "").trim() || null;
     const deliveryPriceOverrideRaw = String(formData.get("deliveryPriceOverride") ?? "").trim();
