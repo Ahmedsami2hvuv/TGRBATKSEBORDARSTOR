@@ -28,6 +28,7 @@ export function AdminShell({
   pendingInitialCount?: number;
 }) {
   const [navOpen, setNavOpen] = useState(false);
+  const [navOpenInitialized, setNavOpenInitialized] = useState(false);
   const [navWidth, setNavWidth] = useState(320);
   const [itemScale, setItemScale] = useState(1); // 1 = 100%
   const [isResizing, setIsResizing] = useState(false);
@@ -47,6 +48,7 @@ export function AdminShell({
   const mobileDefaultOpenWidth = Math.min(420, Math.max(320, viewportWidth || 420));
   const NAV_WIDTH_STORAGE_KEY = "kse:admin:navWidth";
   const NAV_SCALE_STORAGE_KEY = "kse:admin:navScale";
+  const NAV_OPEN_STORAGE_KEY = "kse:admin:navOpen";
   const maxSidebarWidth = Math.max(sidebarMinWidth, (viewportWidth || 1200) - 8);
 
   useEffect(() => {
@@ -62,6 +64,27 @@ export function AdminShell({
       window.localStorage.setItem(NAV_SCALE_STORAGE_KEY, String(itemScale));
     } catch {}
   }, [itemScale]);
+
+  useEffect(() => {
+    try {
+      const rawOpen = window.localStorage.getItem(NAV_OPEN_STORAGE_KEY);
+      if (rawOpen !== null) {
+        setNavOpen(rawOpen === "true");
+      } else {
+        setNavOpen(window.matchMedia("(min-width: 1024px)").matches);
+      }
+    } catch {
+      setNavOpen(window.matchMedia("(min-width: 1024px)").matches);
+    }
+    setNavOpenInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    if (!navOpenInitialized) return;
+    try {
+      window.localStorage.setItem(NAV_OPEN_STORAGE_KEY, String(navOpen));
+    } catch {}
+  }, [navOpen, navOpenInitialized]);
 
   useEffect(() => {
     const mql = window.matchMedia("(min-width: 1024px)");
@@ -113,7 +136,16 @@ export function AdminShell({
   const isCompact = navWidth <= 260;
 
   const handleLinkClick = () => {
-    if (!isLg) {
+    let shouldClose = !isLg;
+    if (isLg) {
+      try {
+        const saved = window.localStorage.getItem(NAV_OPEN_STORAGE_KEY);
+        if (saved === "false") {
+          shouldClose = true;
+        }
+      } catch {}
+    }
+    if (shouldClose) {
       setTimeout(() => setNavOpen(false), 80);
     }
   };
@@ -122,19 +154,21 @@ export function AdminShell({
     getGlobalIcons().then(setIcons);
   }, []);
 
-  // Close sidebar automatically when routing (pathname/searchParams change) only on mobile
+  // Close sidebar automatically when routing (pathname/searchParams change)
   useEffect(() => {
-    if (!isLg) {
+    let shouldClose = !isLg;
+    if (isLg) {
+      try {
+        const saved = window.localStorage.getItem(NAV_OPEN_STORAGE_KEY);
+        if (saved === "false") {
+          shouldClose = true;
+        }
+      } catch {}
+    }
+    if (shouldClose) {
       setNavOpen(false);
     }
   }, [pathname, searchParams, isLg]);
-
-  // Open sidebar by default on desktop
-  useEffect(() => {
-    if (isLg) {
-      setNavOpen(true);
-    }
-  }, [isLg]);
 
   // Close sidebar when clicking outside
   useEffect(() => {
