@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useRef, useState } from "react";
 import { ad } from "@/lib/admin-ui";
 import { updateRegion, type RegionFormState } from "../../actions";
 
@@ -41,18 +41,36 @@ export function RegionEditForm({
 }) {
   const [state, formAction, pending] = useActionState(updateRegion, initial);
   const [waypoints, setWaypoints] = useState<RegionWaypointDraft[]>(
-    defaultWaypoints.length > 0
-      ? defaultWaypoints.map((w) => ({
-          name: w.name ?? "",
-          coordinates: `${w.latitude}, ${w.longitude}`,
-        }))
-      : [{ name: "", coordinates: "" }],
+    defaultWaypoints.map((w) => ({
+      name: w.name ?? "",
+      coordinates: `${w.latitude}, ${w.longitude}`,
+    }))
   );
 
+  const [newEntrance, setNewEntrance] = useState<RegionWaypointDraft>({
+    name: "",
+    coordinates: "",
+  });
+
+  const newNameInputRef = useRef<HTMLInputElement>(null);
+  const newCoordsInputRef = useRef<HTMLInputElement>(null);
+
   const waypointsJson = useMemo(
-    () =>
-      JSON.stringify(
-        waypoints
+    () => {
+      const list = [...waypoints];
+      const trimmedName = newEntrance.name.trim();
+      const trimmedCoords = newEntrance.coordinates.trim();
+      if (trimmedName || trimmedCoords) {
+        const parsed = parseCoordinates(trimmedCoords);
+        if (parsed) {
+          list.push({
+            name: trimmedName,
+            coordinates: trimmedCoords,
+          });
+        }
+      }
+      return JSON.stringify(
+        list
           .map((w) => {
             const parsed = parseCoordinates(w.coordinates);
             return {
@@ -66,8 +84,9 @@ export function RegionEditForm({
               Number.isFinite(w.latitude) &&
               Number.isFinite(w.longitude),
           ),
-      ),
-    [waypoints],
+      );
+    },
+    [waypoints, newEntrance],
   );
 
   function patchWaypoint(index: number, key: keyof RegionWaypointDraft, value: string) {
@@ -76,12 +95,38 @@ export function RegionEditForm({
     );
   }
 
-  function addWaypoint() {
-    setWaypoints((prev) => [...prev, { name: "", coordinates: "" }]);
+  function handleAddWaypoint() {
+    const trimmedName = newEntrance.name.trim();
+    const trimmedCoords = newEntrance.coordinates.trim();
+
+    if (!trimmedName && !trimmedCoords) {
+      newNameInputRef.current?.focus();
+      return;
+    }
+
+    setWaypoints((prev) => [
+      ...prev,
+      { name: trimmedName, coordinates: trimmedCoords },
+    ]);
+    setNewEntrance({ name: "", coordinates: "" });
+    newNameInputRef.current?.focus();
   }
 
   function removeWaypoint(index: number) {
     setWaypoints((prev) => prev.filter((_, idx) => idx !== index));
+  }
+
+  function handleNewEntranceKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddWaypoint();
+    }
+  }
+
+  function handleExistingKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+    }
   }
 
   return (
@@ -124,7 +169,7 @@ export function RegionEditForm({
           <button
             type="button"
             className={ad.btnDark}
-            onClick={addWaypoint}
+            onClick={handleAddWaypoint}
             disabled={waypointsPersistDisabled}
           >
             + إضافة مدخل
@@ -139,33 +184,73 @@ export function RegionEditForm({
           </p>
         ) : null}
         <div className="space-y-2">
-          {waypoints.map((w, idx) => (
-            <div key={idx} className="grid gap-2 rounded-lg border border-slate-200 bg-white p-2 sm:grid-cols-3">
-              <input
-                placeholder={`اسم المدخل ${idx + 1}`}
-                className={ad.input}
-                value={w.name}
-                onChange={(e) => patchWaypoint(idx, "name", e.target.value)}
-                readOnly={waypointsPersistDisabled}
-              />
-              <input
-                placeholder="الصق الإحداثية: 30.4409, 48.0120"
-                inputMode="text"
-                className={ad.input}
-                value={w.coordinates}
-                onChange={(e) => patchWaypoint(idx, "coordinates", e.target.value)}
-                readOnly={waypointsPersistDisabled}
-              />
-              <button
-                type="button"
-                onClick={() => removeWaypoint(idx)}
-                disabled={waypoints.length === 1 || waypointsPersistDisabled}
-                className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 disabled:opacity-40"
-              >
-                حذف
-              </button>
-            </div>
-          ))}
+          {/* حقل إدخال مدخل جديد بالاعلى */}
+          <div className="grid gap-2 rounded-lg border-2 border-dashed border-sky-200 bg-sky-50/30 p-2 sm:grid-cols-3 items-center">
+            <input
+              ref={newNameInputRef}
+              placeholder="اسم المدخل الجديد (مثال: جسر ابو فلوس)"
+              className={`${ad.input} border-sky-200 focus:border-sky-500`}
+              value={newEntrance.name}
+              onChange={(e) => setNewEntrance((prev) => ({ ...prev, name: e.target.value }))}
+              onKeyDown={handleNewEntranceKeyDown}
+              readOnly={waypointsPersistDisabled}
+            />
+            <input
+              ref={newCoordsInputRef}
+              placeholder="الصق الإحداثية: 30.4410, 48.0137"
+              inputMode="text"
+              className={`${ad.input} border-sky-200 focus:border-sky-500`}
+              value={newEntrance.coordinates}
+              onChange={(e) => setNewEntrance((prev) => ({ ...prev, coordinates: e.target.value }))}
+              onKeyDown={handleNewEntranceKeyDown}
+              readOnly={waypointsPersistDisabled}
+            />
+            <button
+              type="button"
+              onClick={handleAddWaypoint}
+              disabled={waypointsPersistDisabled}
+              className="rounded-lg border border-sky-200 bg-sky-100 px-3 py-2 text-sm font-bold text-sky-700 hover:bg-sky-200 disabled:opacity-40 flex items-center justify-center gap-1 transition-colors"
+            >
+              <span>+ إضافة للمواقع (Enter)</span>
+            </button>
+          </div>
+
+          {/* قائمة المداخل المضافة */}
+          {waypoints.length > 0 ? (
+            waypoints.map((w, idx) => (
+              <div key={idx} className="grid gap-2 rounded-lg border border-slate-200 bg-white p-2 sm:grid-cols-3 items-center">
+                <input
+                  placeholder={`اسم المدخل ${idx + 1}`}
+                  className={ad.input}
+                  value={w.name}
+                  onChange={(e) => patchWaypoint(idx, "name", e.target.value)}
+                  onKeyDown={handleExistingKeyDown}
+                  readOnly={waypointsPersistDisabled}
+                />
+                <input
+                  placeholder="الصق الإحداثية: 30.4409, 48.0120"
+                  inputMode="text"
+                  className={ad.input}
+                  value={w.coordinates}
+                  onChange={(e) => patchWaypoint(idx, "coordinates", e.target.value)}
+                  onKeyDown={handleExistingKeyDown}
+                  readOnly={waypointsPersistDisabled}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeWaypoint(idx)}
+                  disabled={waypointsPersistDisabled}
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-40 transition-colors"
+                >
+                  حذف
+                </button>
+              </div>
+            ))
+          ) : (
+            <p className="text-center text-xs text-slate-400 py-3">
+              لا توجد مداخل مضافة حالياً. اكتب في الحقل أعلاه واضغط Enter للإضافة.
+            </p>
+          )}
         </div>
       </div>
       {state.error ? (
