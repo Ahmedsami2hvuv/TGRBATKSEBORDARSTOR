@@ -60,6 +60,8 @@ export function ClientRuntime({
         preparerFeatures={preparerFeatures}
         globalEnabled={chatEnabled}
       />
+      <PwaRoutePreserver />
+      <PwaServiceWorkerRegister />
       {children}
       <Toaster richColors position="top-center" dir="rtl" closeButton />
     </>
