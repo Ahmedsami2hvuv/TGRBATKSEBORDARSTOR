@@ -198,7 +198,15 @@ export function RegionEditForm({
       coordinates: `${w.latitude}, ${w.longitude}`,
     }));
 
-    const parsedWaypoints = importedDrafts
+    // Append to existing waypoints, filtering out exact duplicates by name and coordinates
+    const existingMap = new Set(waypoints.map((w) => `${w.name.trim()}|${w.coordinates.trim()}`));
+    const newUniqueImports = importedDrafts.filter(
+      (w) => !existingMap.has(`${w.name.trim()}|${w.coordinates.trim()}`)
+    );
+
+    const updatedWaypoints = [...waypoints, ...newUniqueImports];
+
+    const parsedWaypoints = updatedWaypoints
       .map((w) => {
         const parsed = parseCoordinates(w.coordinates);
         return {
@@ -218,7 +226,7 @@ export function RegionEditForm({
       waypointsJsonRef.current.value = updatedJson;
     }
 
-    setWaypoints(importedDrafts);
+    setWaypoints(updatedWaypoints);
     setNewEntrance({ name: "", coordinates: "" });
     setImportModalOpen(false);
 
