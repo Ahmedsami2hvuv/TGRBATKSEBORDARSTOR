@@ -1514,20 +1514,26 @@ export default function PendingOrdersClient({
                       #{order.orderNumber}
                     </Link>
                   </div>
-                  <div className="flex items-center gap-2.5">
-                    <Link
-                      href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
-                      className="hover:text-emerald-600 transition-colors"
-                      title="فتح تفاصيل الطلب بالكامل"
-                    >
-                      <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight hover:underline flex items-center gap-1.5">
-                        {order.shopName}
-                        <span className="text-xs font-bold text-slate-400">↗</span>
-                      </h3>
-                    </Link>
-                    {order.submissionLabel === "مكتمل التجهيز" && (
-                      <RevertPreparedOrderButton id={order.id} />
-                    )}
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2.5">
+                      <Link
+                        href={`${SECRET_ADMIN_PATH}/orders/${order.id}`}
+                        className="hover:text-emerald-600 transition-colors"
+                        title="فتح تفاصيل الطلب بالكامل"
+                      >
+                        <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight hover:underline flex items-center gap-1.5">
+                          {order.shopName}
+                          <span className="text-xs font-bold text-slate-400">↗</span>
+                        </h3>
+                      </Link>
+                      {order.submissionLabel === "مكتمل التجهيز" && (
+                        <RevertPreparedOrderButton id={order.id} />
+                      )}
+                    </div>
+                    {/* وقت الطلب للهاتف (الموبايل) */}
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1 sm:hidden">
+                      ⏰ {order.createdAtLabel}
+                    </span>
                   </div>
 
                   {/* أزرار التواصل كأيقونات فقط للشاشات الكبيرة (الابتوب) بجانب اسم المحل */}
@@ -1582,6 +1588,11 @@ export default function PendingOrdersClient({
                     إسناد للمندوب
                   </button>
                   <div className="flex flex-wrap items-center gap-2">
+                    {/* بادج وقت الطلب للابتوب (الحاسوب) */}
+                    <span className="hidden sm:flex items-center gap-1.5 text-xs md:text-sm font-black bg-slate-50 text-slate-600 dark:bg-slate-900/40 dark:text-slate-400 px-3.5 py-2 rounded-xl border border-slate-100 dark:border-white/5 shadow-sm">
+                      ⏰ {order.createdAtLabel}
+                    </span>
+
                     {order.routeMode === 'double' ? (
                       <>
                         <span className="flex items-center gap-1.5 text-sm font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-3.5 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
