@@ -117,20 +117,42 @@ export function RegionEditForm({
   }
 
   function handleNewEntranceKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" || e.keyCode === 13 || e.which === 13) {
       e.preventDefault();
       handleAddWaypoint();
     }
   }
 
   function handleExistingKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" || e.keyCode === 13 || e.which === 13) {
       e.preventDefault();
     }
   }
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form
+      action={formAction}
+      className="space-y-3"
+      onKeyDown={(e) => {
+        // Double-safeguard to catch any Enter presses bubbling up to the form
+        if (e.key === "Enter" || e.keyCode === 13) {
+          const activeEl = document.activeElement;
+          if (
+            activeEl === newNameInputRef.current ||
+            activeEl === newCoordsInputRef.current
+          ) {
+            e.preventDefault();
+            handleAddWaypoint();
+          } else if (
+            activeEl instanceof HTMLInputElement &&
+            activeEl.name !== "name" &&
+            activeEl.name !== "deliveryPrice"
+          ) {
+            e.preventDefault();
+          }
+        }
+      }}
+    >
       <input type="hidden" name="id" value={id} />
       {waypointsPersistDisabled ? (
         <input type="hidden" name="skipWaypoints" value="1" />
