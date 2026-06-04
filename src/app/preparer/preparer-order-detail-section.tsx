@@ -677,12 +677,17 @@ export function PreparerOrderDetailSection({
           <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 sm:text-2xl">
             رقم الطلب <span className="tabular-nums text-sky-800 dark:text-sky-200">#{order.orderNumber}</span>
           </h2>
-          <p className="mt-1 text-sm font-bold text-slate-600 dark:text-slate-300">
-            تاريخ رفع الطلب:{" "}
-            <span className="tabular-nums text-slate-800 dark:text-slate-100">
-              {formatOrderUploadDateBaghdad(order.createdAt)}
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
+              📅 تاريخ رفع الطلب:{" "}
+              <span className="tabular-nums text-slate-800 dark:text-slate-100">
+                {formatOrderUploadDateBaghdad(order.createdAt)}
+              </span>
             </span>
-          </p>
+            <span className="text-xs font-black text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 flex items-center gap-1 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30">
+              ⏰ وقت الطلب (المطلوب): {order.orderNoteTime || "فوري"}
+            </span>
+          </div>
         </div>
         <div className="flex flex-shrink-0 flex-wrap items-center justify-start gap-2 sm:justify-self-start">
           <MandoubOrderDetailActions closeHref={closeHref} orderId={order.id} />

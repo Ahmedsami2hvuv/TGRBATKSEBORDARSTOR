@@ -470,8 +470,13 @@ export function UnifiedOrderListTable({
                               <MoneyMiniBadges row={o} />
                             </span>
 
-                            {/* ملاحظات الطلب */}
+                            {/* ملاحظات ووقت الطلب */}
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                              {o.timeLine && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-black bg-rose-50 text-rose-700 border border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30 px-1.5 py-0.5 rounded shadow-sm" title="وقت الطلب المطلوب">
+                                  ⏰ {o.timeLine}
+                                </span>
+                              )}
                               {o.summary && o.showNotesBtn !== false && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setShowNotes(showNotes === o.id ? null : o.id); }}

@@ -239,12 +239,7 @@ export async function loadPreparerPortalOrderTableData(args: {
       priceStr: price != null ? formatDinarAsAlf(price) : "—",
       delStr: del != null ? formatDinarAsAlf(del) : "—",
       customerPhone: "—",
-      timeLine: o.orderNoteTime?.trim()
-        ? o.orderNoteTime
-        : o.createdAt?.toLocaleString("ar-IQ-u-nu-latn", {
-            dateStyle: "short",
-            timeStyle: "short",
-          }) || "—",
+      timeLine: o.orderNoteTime?.trim() || "فوري",
       statusAr: STATUS_AR[status] ?? status,
       statusClass,
       prepaidAll: Boolean(o.prepaidAll),
