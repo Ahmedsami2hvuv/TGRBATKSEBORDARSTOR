@@ -1387,34 +1387,39 @@ export async function hideOrderFromPreparerDebtsAction(
       return { error: "الرابط غير صالح." };
     }
 
-    const orderId = String(formData.get("orderId") ?? "").trim();
-    if (!orderId) return { error: "معرف الطلب ناقص." };
+    const orderIdStr = String(formData.get("orderId") ?? formData.get("orderIds") ?? "").trim();
+    if (!orderIdStr) return { error: "معرف الطلب ناقص." };
 
-    if (isAdmin) {
-      // إذا كان مديراً، يخفيها عن الكل (قاعدة البيانات الأصلية)
-      await prisma.order.update({
-        where: { id: orderId },
-        data: { preparerDebtHidden: true }
-      });
+    const orderIds = orderIdStr.split(",").filter(Boolean);
+    if (orderIds.length === 0) return { error: "لا توجد طلبات صالحة." };
 
-      // إرسال إشعار محمي
-      try {
-        const order = await prisma.order.findUnique({ where: { id: orderId }, select: { orderNumber: true } });
-        const notificationBotToken = await getBotTokenByPurpose("notification");
-        if (notificationBotToken) {
-          await sendTelegramMessage(`🚫 <b>المدير قام بإخفاء دين الطلب #${order?.orderNumber} عن جميع المجهزين.</b>`, { botToken: notificationBotToken });
+    for (const orderId of orderIds) {
+      if (isAdmin) {
+        // إذا كان مديراً، يخفيها عن الكل (قاعدة البيانات الأصلية)
+        await prisma.order.update({
+          where: { id: orderId },
+          data: { preparerDebtHidden: true }
+        });
+
+        // إرسال إشعار محمي
+        try {
+          const order = await prisma.order.findUnique({ where: { id: orderId }, select: { orderNumber: true } });
+          const notificationBotToken = await getBotTokenByPurpose("notification");
+          if (notificationBotToken) {
+            await sendTelegramMessage(`🚫 <b>المدير قام بإخفاء دين الطلب #${order?.orderNumber} عن جميع المجهزين.</b>`, { botToken: notificationBotToken });
+          }
+        } catch (e) {
+          console.error("Telegram hide notify error:", e);
         }
-      } catch (e) {
-        console.error("Telegram hide notify error:", e);
-      }
 
-    } else {
-      // إذا كان مجهزاً، يخفيها عن نفسه فقط
-      await prisma.preparerHiddenDebt.upsert({
-        where: { orderId_preparerId: { orderId, preparerId } },
-        create: { orderId, preparerId },
-        update: {}
-      });
+      } else {
+        // إذا كان مجهزاً، يخفيها عن نفسه فقط
+        await prisma.preparerHiddenDebt.upsert({
+          where: { orderId_preparerId: { orderId, preparerId } },
+          create: { orderId, preparerId },
+          update: {}
+        });
+      }
     }
 
     revalidatePath("/preparer/debts");

@@ -17,13 +17,14 @@ type DebtOrder = {
 export function DebtItemClient({
   order,
   auth,
+  onHide,
 }: {
   order: DebtOrder;
   auth: { p: string; exp: string; s: string };
+  onHide: (orderId: string) => void;
 }) {
   const [isPaying, setIsPaying] = useState(false);
   const [showConfirmHide, setShowConfirmHide] = useState(false);
-  const [isHidingLocally, setIsHidingLocally] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [amountAlf, setAmountAlf] = useState(String(order.debtAmount));
   const [mismatchNote, setMismatchNote] = useState("");
@@ -32,8 +33,6 @@ export function DebtItemClient({
   const isPaid = order.debtAmount <= 0;
   const isPartiallyPaid = order.totalPaid > 0 && order.debtAmount > 0;
   const isPartial = Number(amountAlf) < order.debtAmount;
-
-  if (isHidingLocally) return null;
 
   async function handlePay(e: React.FormEvent) {
     e.preventDefault();
@@ -76,14 +75,14 @@ export function DebtItemClient({
     fd.append("orderId", order.id);
 
     // إخفاء فوري من الواجهة لراحة المستخدم
-    setIsHidingLocally(true);
+    onHide(order.id);
 
     startTransition(async () => {
       const res = await hideOrderFromPreparerDebtsAction(null, fd);
       if (res && res.error) {
         // إذا فشل فعلياً في قاعدة البيانات، نعيده للظهور وننبه المستخدم
-        setIsHidingLocally(false);
         alert(res.error);
+        window.location.reload();
       }
     });
   }
@@ -128,16 +127,32 @@ export function DebtItemClient({
          </div>
       )}
 
+      {/* شريط علوي يحتوي على رقم الطلب وزر الإخفاء */}
+      <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-400">طلب رقم</span>
+          <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg shadow-sm ${
+            isPaid
+              ? "bg-emerald-100 text-emerald-700"
+              : isPartiallyPaid
+                ? "bg-amber-100 text-amber-700"
+                : "bg-indigo-600 text-white"
+          }`}>#{order.orderNumber}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowConfirmHide(true)}
+          className="text-xs font-bold text-slate-500 hover:text-rose-600 transition-colors flex items-center gap-1 border border-slate-200 rounded-xl px-3 py-1 bg-slate-50 hover:bg-rose-50"
+          title="إخفاء هذا الدين"
+        >
+          <span>👁️‍🗨️</span>
+          إخفاء
+        </button>
+      </div>
+
       <div className="flex justify-between items-start gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-             <span className={`text-sm font-black px-3 py-1 rounded-xl shadow-sm ${
-               isPaid
-                 ? "bg-emerald-100 text-emerald-700"
-                 : isPartiallyPaid
-                   ? "bg-amber-100 text-amber-700"
-                   : "bg-indigo-600 text-white"
-             }`}>#{order.orderNumber}</span>
              <h3 className="font-black text-slate-900 text-xl leading-tight">{order.shop.name}</h3>
           </div>
           <p className="text-sm font-bold text-slate-500 flex items-center gap-1">
