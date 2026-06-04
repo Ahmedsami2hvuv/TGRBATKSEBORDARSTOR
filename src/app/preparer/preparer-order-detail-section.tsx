@@ -550,22 +550,20 @@ export function PreparerOrderDetailSection({
                     />
                   </div>
                 </div>
-                {order.orderNoteTime && (
-                  <div>
-                    <div className="flex items-center gap-1.5 text-sm font-bold text-slate-700 sm:text-base">
-                      <DynamicIcon
-                        iconKey="ui_time"
-                        config={icons}
-                        className="h-4 w-4 text-slate-500"
-                        fallback={null}
-                      />
-                      <span>وقت الطلب</span>
-                    </div>
-                    <p className="mt-1 text-lg font-black text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200 inline-block">
-                      {order.orderNoteTime}
-                    </p>
+                <div>
+                  <div className="flex items-center gap-1.5 text-sm font-bold text-slate-700 sm:text-base">
+                    <DynamicIcon
+                      iconKey="ui_time"
+                      config={icons}
+                      className="h-4 w-4 text-slate-500"
+                      fallback={null}
+                    />
+                    <span>وقت الطلب</span>
                   </div>
-                )}
+                  <p className="mt-1 text-lg font-black text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200 inline-block">
+                    {order.orderNoteTime || "فوري"}
+                  </p>
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-1.5 font-mono text-lg font-black tabular-nums text-slate-900 sm:text-xl">
                 <DynamicIcon

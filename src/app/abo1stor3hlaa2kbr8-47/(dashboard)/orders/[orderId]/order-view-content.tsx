@@ -403,7 +403,7 @@ export function OrderViewContent({
           <div className="space-y-4 rounded-xl border border-sky-100 bg-sky-50/50 p-4">
             <div className="grid grid-cols-2 gap-4">
               <div><p className="text-sm font-bold text-slate-700 mb-1">نوع الطلب</p><OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-violet-950 bg-violet-100 px-2 py-1 rounded-lg text-lg ring-1 ring-violet-300" restClassName="text-lg font-black text-slate-900" /></div>
-              {order.orderNoteTime && <div><p className="text-sm font-bold text-slate-700 mb-1">وقت الطلب</p><p className="text-sm font-black text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md border border-indigo-200 inline-block">{order.orderNoteTime}</p></div>}
+              <div><p className="text-sm font-bold text-slate-700 mb-1">وقت الطلب</p><p className="text-sm font-black text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md border border-indigo-200 inline-block">{order.orderNoteTime || "فوري"}</p></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div><p className="text-xs font-bold text-slate-500">سعر البضاعة</p><p className="font-mono text-lg font-black text-slate-900">{order.orderSubtotal || "0"} </p></div>

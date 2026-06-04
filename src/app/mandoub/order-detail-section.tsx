@@ -422,12 +422,10 @@ export function OrderDetailSection({
                     <OrderTypeDetailBlock orderType={order.orderType} prefixClassName="font-black text-violet-950 bg-violet-100 px-1.5 py-0.5 rounded text-[11px] ring-1 ring-violet-300" restClassName="text-[11px] font-black text-slate-950 dark:text-white" />
                   </div>
 
-                  {order.orderNoteTime && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-slate-400">وقت الطلب:</span>
-                      <span className="font-black text-indigo-700 dark:text-indigo-400">{order.orderNoteTime}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-slate-400">وقت الطلب:</span>
+                    <span className="font-black text-indigo-700 dark:text-indigo-400">{order.orderNoteTime || "فوري"}</span>
+                  </div>
 
                   {!hideSubtotalInfo && (
                     <div className="grid grid-cols-2 gap-2 border-t border-slate-100/50 dark:border-white/5 pt-1.5">

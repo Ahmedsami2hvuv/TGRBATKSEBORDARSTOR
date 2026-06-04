@@ -240,6 +240,7 @@ export async function loadPreparerPortalOrderTableData(args: {
       delStr: del != null ? formatDinarAsAlf(del) : "—",
       customerPhone: "—",
       timeLine: o.orderNoteTime?.trim() || "فوري",
+      orderNoteTime: o.orderNoteTime?.trim() || "فوري",
       statusAr: STATUS_AR[status] ?? status,
       statusClass,
       prepaidAll: Boolean(o.prepaidAll),

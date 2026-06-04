@@ -41,6 +41,7 @@ export type MandoubRow = {
   delStr: string;
   customerPhone: string;
   timeLine: string;
+  orderNoteTime?: string | null;
   statusAr: string;
   statusClass: string;
   hasCustomerLocation: boolean;
@@ -748,6 +749,7 @@ export function MandoubOrderTable({
               <OrderDetailSection
                 order={{
                   ...activeOrderData as any,
+                  orderNoteTime: activeOrderData.orderNoteTime || activeOrderData.timeLine,
                   orderSubtotal: activeOrderData.orderSubtotalDinar,
                   deliveryPrice: activeOrderData.deliveryPriceDinar,
                   totalAmount: activeOrderData.totalAmountDinar,
