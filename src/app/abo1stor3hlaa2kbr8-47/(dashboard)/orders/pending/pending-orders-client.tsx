@@ -1531,9 +1531,10 @@ export default function PendingOrdersClient({
                       )}
                     </div>
                     {/* وقت الطلب للهاتف (الموبايل) */}
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1 sm:hidden">
-                      ⏰ {order.createdAtLabel}
-                    </span>
+                    <div className="flex flex-col gap-0.5 sm:hidden text-[10px] font-bold text-slate-400 dark:text-slate-500">
+                      <span className="flex items-center gap-1">📅 إنشاء: {order.createdAtLabel}</span>
+                      <span className="flex items-center gap-1 text-indigo-650 dark:text-indigo-400 font-black">⏰ طلب: {order.customerOrderTime || "فوري"}</span>
+                    </div>
                   </div>
 
                   {/* أزرار التواصل كأيقونات فقط للشاشات الكبيرة (الابتوب) بجانب اسم المحل */}
@@ -1589,8 +1590,11 @@ export default function PendingOrdersClient({
                   </button>
                   <div className="flex flex-wrap items-center gap-2">
                     {/* بادج وقت الطلب للابتوب (الحاسوب) */}
-                    <span className="hidden sm:flex items-center gap-1.5 text-xs md:text-sm font-black bg-slate-50 text-slate-600 dark:bg-slate-900/40 dark:text-slate-400 px-3.5 py-2 rounded-xl border border-slate-100 dark:border-white/5 shadow-sm">
-                      ⏰ {order.createdAtLabel}
+                    <span className="hidden sm:flex items-center gap-1.5 text-xs md:text-sm font-black bg-slate-50 text-slate-600 dark:bg-slate-900/40 dark:text-slate-400 px-3.5 py-2 rounded-xl border border-slate-100 dark:border-white/5 shadow-sm" title="وقت إنشاء الطلب">
+                      📅 إنشاء: {order.createdAtLabel}
+                    </span>
+                    <span className="hidden sm:flex items-center gap-1.5 text-xs md:text-sm font-black bg-indigo-50 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400 px-3.5 py-2 rounded-xl border border-indigo-100 dark:border-indigo-900/30 shadow-sm" title="وقت الطلب المطلوب من الزبون">
+                      ⏰ وقت الطلب: {order.customerOrderTime || "فوري"}
                     </span>
 
                     {order.routeMode === 'double' ? (
@@ -1746,6 +1750,16 @@ export default function PendingOrdersClient({
                 {/* Products count */}
                 <span className="flex items-center gap-1 text-[10px] sm:text-xs font-black bg-amber-50 text-amber-700 dark:bg-amber-950/10 dark:text-amber-400 px-2 py-1 rounded-lg border border-amber-100 dark:border-amber-900/30 shrink-0">
                   📦 {order.preparerShoppingJson?.products?.length || 0} منتجات
+                </span>
+
+                {/* Creation Time */}
+                <span className="flex items-center gap-1 text-[10px] sm:text-xs font-black bg-slate-50 text-slate-500 dark:bg-slate-900/30 dark:text-slate-400 px-2 py-1 rounded-lg border border-slate-200/50 dark:border-white/5 shrink-0" title="وقت إنشاء الطلب">
+                  📅 إنشاء: {order.createdAtLabel}
+                </span>
+
+                {/* Customer Order Time */}
+                <span className="flex items-center gap-1 text-[10px] sm:text-xs font-black bg-rose-50 text-rose-700 dark:bg-rose-950/10 dark:text-rose-400 px-2 py-1 rounded-lg border border-rose-100 dark:border-rose-900/30 shrink-0" title="وقت الطلب المطلوب من الزبون">
+                  ⏰ وقت الطلب: {order.customerOrderTime || "فوري"}
                 </span>
               </div>
 

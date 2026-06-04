@@ -673,7 +673,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       priceStr: o.totalAmount != null ? formatDinarAsAlf(o.totalAmount) : "—",
       delStr: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
       customerPhone: o.customerPhone || "—",
-      timeLine: o.orderNoteTime?.trim() || o.createdAt.toLocaleString("ar-IQ-u-nu-latn", { dateStyle: "short", timeStyle: "short" }),
+      timeLine: o.orderNoteTime?.trim() || "فوري",
       statusAr: STATUS_AR[o.status] ?? o.status,
       statusClass: orderStatusBadgeClassPrepaid(o.status, o.prepaidAll),
       prepaidAll: o.prepaidAll,

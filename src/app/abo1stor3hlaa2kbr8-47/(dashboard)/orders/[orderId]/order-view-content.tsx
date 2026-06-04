@@ -184,7 +184,14 @@ export function OrderViewContent({
       <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto]">
         <div>
           <h2 className={ad.h1}>رقم الطلب <span className="inline-block bg-sky-600 text-white rounded-full px-3 py-1 text-2xl font-black tabular-nums">#{order.orderNumber}</span></h2>
-          <p className="text-xs font-black text-sky-700 mt-1 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 w-fit">تاريخ الرفع للنظام: {formatBaghdadDateTime(new Date(order.createdAt))}</p>
+          <div className="mt-1 flex flex-wrap gap-2">
+            <span className="text-xs font-black text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 flex items-center gap-1">
+              📅 تاريخ الرفع للنظام: {formatBaghdadDateTime(new Date(order.createdAt))}
+            </span>
+            <span className="text-xs font-black text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 flex items-center gap-1">
+              ⏰ وقت الطلب (المطلوب): {order.orderNoteTime || "فوري"}
+            </span>
+          </div>
           <div className="mt-2 flex flex-wrap gap-2">
             <Link href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`} className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm">تعديل البيانات</Link>
             {parsedShoppingJson !== null && (
