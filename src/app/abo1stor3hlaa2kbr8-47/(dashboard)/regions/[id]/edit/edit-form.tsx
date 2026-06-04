@@ -366,7 +366,11 @@ export function RegionEditForm({
         }`}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-700">مواقع المنطقة (مداخل متعددة)</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm font-bold text-slate-700">مواقع المنطقة (مداخل متعددة)</h3>
+            {state.ok ? <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-xl animate-fade-in">تم حفظ التعديلات.</span> : null}
+            {state.error ? <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-xl">{state.error}</span> : null}
+          </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -463,12 +467,6 @@ export function RegionEditForm({
           )}
         </div>
       </div>
-      {state.error ? (
-        <p className={ad.error} role="alert">
-          {state.error}
-        </p>
-      ) : null}
-      {state.ok ? <p className={ad.success}>تم حفظ التعديلات.</p> : null}
 
       {importModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
