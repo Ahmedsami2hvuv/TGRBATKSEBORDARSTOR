@@ -32,6 +32,13 @@ self.addEventListener("push", (event) => {
           const data = event.data.json();
           if (data && typeof data === "object") {
             payload = { ...payload, ...data };
+            // إذا كان الإشعار قادماً من OneSignal، فإن نص الرسالة يكون في الحقل alert أو custom
+            if (data.alert && !data.body) {
+              payload.body = data.alert;
+            }
+            if (data.custom && data.custom.a && data.custom.a.url) {
+              payload.url = data.custom.a.url;
+            }
           }
         } catch (e) {
           payload.body = event.data.text() || defaults.body;
