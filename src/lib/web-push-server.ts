@@ -293,82 +293,83 @@ export async function pushNotifyCourierNewAssignment(
   const courierBotToken = await getBotTokenByPurpose("courier");
   console.log(`[pushNotifyCourierNewAssignment] courierId=${courierId} telegramUserId=${courier?.telegramUserId ?? "missing"} botToken=${courierBotToken ? "found" : "missing"}`);
 
-  // 1. إرسال Telegram (تم استعادته)
-  if (courier?.telegramUserId?.trim() && courierBotToken) {
-    const chatId = courier.telegramUserId.trim();
+  // 1. إرسال Telegram (تم استعادته) - نطلقه كـ Promise بالتوازي لكي لا يعيق إشعار ون سيجنال الفوري
+  const telegramPromise = (async () => {
+    if (courier?.telegramUserId?.trim() && courierBotToken) {
+      const chatId = courier.telegramUserId.trim();
 
-    const shopName = order?.shop?.name || "—";
-    const regionName = order?.customerRegion?.name || "—";
-    const secondRegionName = order?.secondCustomerRegion?.name || "";
-    const landmark = order?.customerLandmark || "";
-    const secondLandmark = order?.secondCustomerLandmark || "";
-    const summary = order?.summary || "";
-    const noteTime = order?.orderNoteTime || "الان";
+      const shopName = order?.shop?.name || "—";
+      const regionName = order?.customerRegion?.name || "—";
+      const secondRegionName = order?.secondCustomerRegion?.name || "";
+      const landmark = order?.customerLandmark || "";
+      const secondLandmark = order?.secondCustomerLandmark || "";
+      const summary = order?.summary || "";
+      const noteTime = order?.orderNoteTime || "الان";
 
-    const orderType = order?.orderType || "—";
-    const subtotal = order?.orderSubtotal ? formatDinarAsAlf(order.orderSubtotal) : "—";
-    const delivery = order?.deliveryPrice ? formatDinarAsAlf(order.deliveryPrice) : "—";
-    const total = order?.totalAmount ? formatDinarAsAlf(order.totalAmount) : "—";
-    const phone = order?.customerPhone || "—";
-    const altPhone = order?.secondCustomerPhone || order?.alternatePhone || "—";
+      const orderType = order?.orderType || "—";
+      const subtotal = order?.orderSubtotal ? formatDinarAsAlf(order.orderSubtotal) : "—";
+      const delivery = order?.deliveryPrice ? formatDinarAsAlf(order.deliveryPrice) : "—";
+      const total = order?.totalAmount ? formatDinarAsAlf(order.totalAmount) : "—";
+      const phone = order?.customerPhone || "—";
+      const altPhone = order?.secondCustomerPhone || order?.alternatePhone || "—";
 
-    const isValidUrl = (u: string | null | undefined) => {
-      const trimmed = (u || "").trim();
-      if (!trimmed) return false;
-      return trimmed.startsWith("http") || trimmed.includes("maps.") || trimmed.includes("goo.gl") || /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(trimmed);
-    };
+      const isValidUrl = (u: string | null | undefined) => {
+        const trimmed = (u || "").trim();
+        if (!trimmed) return false;
+        return trimmed.startsWith("http") || trimmed.includes("maps.") || trimmed.includes("goo.gl") || /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(trimmed);
+      };
 
-    const formatAsUrl = (u: string | null | undefined) => {
-      let trimmed = (u || "").trim();
-      if (!trimmed) return "";
-      if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
-      if (trimmed.includes("maps.") || trimmed.includes("goo.gl") || trimmed.includes("google.com")) return "https://" + trimmed;
-      // معالجة الإحداثيات الخام مثل 33.123,44.123
-      if (/^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(trimmed) || /^-?\d+\.\d+,-?\d+\.\d+$/.test(trimmed)) {
-        return `https://www.google.com/maps/search/?api=1&query=${trimmed.replace(/\s/g, "")}`;
+      const formatAsUrl = (u: string | null | undefined) => {
+        let trimmed = (u || "").trim();
+        if (!trimmed) return "";
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+        if (trimmed.includes("maps.") || trimmed.includes("goo.gl") || trimmed.includes("google.com")) return "https://" + trimmed;
+        // معالجة الإحداثيات الخام مثل 33.123,44.123
+        if (/^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(trimmed) || /^-?\d+\.\d+,-?\d+\.\d+$/.test(trimmed)) {
+          return `https://www.google.com/maps/search/?api=1&query=${trimmed.replace(/\s/g, "")}`;
+        }
+        return "https://" + trimmed;
+      };
+
+      let loc1Raw = order?.customerLocationUrl || order?.customer?.customerLocationUrl || "";
+      if (!isValidUrl(loc1Raw) && order?.customerPhone && order?.customerRegionId) {
+        const norm = normalizeIraqMobileLocal11(order.customerPhone);
+        if (norm) {
+          const profile = await prisma.customerPhoneProfile.findUnique({
+            where: { phone_regionId: { phone: norm, regionId: order.customerRegionId } }
+          });
+          if (isValidUrl(profile?.locationUrl)) loc1Raw = profile.locationUrl || "";
+        }
       }
-      return "https://" + trimmed;
-    };
 
-    let loc1Raw = order?.customerLocationUrl || order?.customer?.customerLocationUrl || "";
-    if (!isValidUrl(loc1Raw) && order?.customerPhone && order?.customerRegionId) {
-      const norm = normalizeIraqMobileLocal11(order.customerPhone);
-      if (norm) {
-        const profile = await prisma.customerPhoneProfile.findUnique({
-          where: { phone_regionId: { phone: norm, regionId: order.customerRegionId } }
-        });
-        if (isValidUrl(profile?.locationUrl)) loc1Raw = profile.locationUrl || "";
+      let loc2Raw = order?.secondCustomerLocationUrl || "";
+      if (!isValidUrl(loc2Raw) && order?.secondCustomerPhone && order?.secondCustomerRegionId) {
+        const norm = normalizeIraqMobileLocal11(order.secondCustomerPhone);
+        if (norm) {
+          const profile = await prisma.customerPhoneProfile.findUnique({
+            where: { phone_regionId: { phone: norm, regionId: order.secondCustomerRegionId } }
+          });
+          if (isValidUrl(profile?.locationUrl)) loc2Raw = profile.locationUrl || "";
+        }
       }
-    }
 
-    let loc2Raw = order?.secondCustomerLocationUrl || "";
-    if (!isValidUrl(loc2Raw) && order?.secondCustomerPhone && order?.secondCustomerRegionId) {
-      const norm = normalizeIraqMobileLocal11(order.secondCustomerPhone);
-      if (norm) {
-        const profile = await prisma.customerPhoneProfile.findUnique({
-          where: { phone_regionId: { phone: norm, regionId: order.secondCustomerRegionId } }
-        });
-        if (isValidUrl(profile?.locationUrl)) loc2Raw = profile.locationUrl || "";
-      }
-    }
+      const shopLoc = isValidUrl(order?.shop?.locationUrl) ? formatAsUrl(order!.shop!.locationUrl) : "";
+      const loc1 = isValidUrl(loc1Raw) ? formatAsUrl(loc1Raw) : "";
+      const loc2 = isValidUrl(loc2Raw) ? formatAsUrl(loc2Raw) : "";
 
-    const shopLoc = isValidUrl(order?.shop?.locationUrl) ? formatAsUrl(order!.shop!.locationUrl) : "";
-    const loc1 = isValidUrl(loc1Raw) ? formatAsUrl(loc1Raw) : "";
-    const loc2 = isValidUrl(loc2Raw) ? formatAsUrl(loc2Raw) : "";
+      // ذكاء اصطناعي للعنوان إذا لم يوجد لاندمارك
+      const smartHint1 = !landmark.trim() && order?.customerRegion?.name ? `${order.customerRegion.name}` : "";
+      const smartHint2 = !secondLandmark.trim() && order?.secondCustomerRegion?.name ? `${order.secondCustomerRegion.name}` : "";
 
-    // ذكاء اصطناعي للعنوان إذا لم يوجد لاندمارك
-    const smartHint1 = !landmark.trim() && order?.customerRegion?.name ? `${order.customerRegion.name}` : "";
-    const smartHint2 = !secondLandmark.trim() && order?.secondCustomerRegion?.name ? `${order.secondCustomerRegion.name}` : "";
-
-    let text = `🏪 <b>(${escapeTelegramHtml(shopName)} — ${escapeTelegramHtml(regionName)})</b>
+      let text = `🏪 <b>(${escapeTelegramHtml(shopName)} — ${escapeTelegramHtml(regionName)})</b>
 🔔 تم إسناد طلب جديد إليك
 📍 ${escapeTelegramHtml(regionName)}${landmark ? ` (${escapeTelegramHtml(landmark)})` : smartHint1 ? ` (استدلال: ${escapeTelegramHtml(smartHint1)})` : ""}`;
 
-    if (secondRegionName) {
-      text += `\n📍 ${escapeTelegramHtml(secondRegionName)}${secondLandmark ? ` (${escapeTelegramHtml(secondLandmark)})` : smartHint2 ? ` (استدلال: ${escapeTelegramHtml(smartHint2)})` : ""}`;
-    }
+      if (secondRegionName) {
+        text += `\n📍 ${escapeTelegramHtml(secondRegionName)}${secondLandmark ? ` (${escapeTelegramHtml(secondLandmark)})` : smartHint2 ? ` (استدلال: ${escapeTelegramHtml(smartHint2)})` : ""}`;
+      }
 
-    text += `\n📦 ${escapeTelegramHtml(orderType)}
+      text += `\n📦 ${escapeTelegramHtml(orderType)}
 💵 ${escapeTelegramHtml(subtotal)}
 🚚 ${escapeTelegramHtml(delivery)}
 💰 <b>${escapeTelegramHtml(total)}</b>
@@ -376,90 +377,94 @@ export async function pushNotifyCourierNewAssignment(
 🔢 #${escapeTelegramHtml(String(finalOrderNumber))}
 📞 ${escapeTelegramHtml(phone)}`;
 
-    if (altPhone && altPhone !== "—") {
-      text += `\n📞 ${escapeTelegramHtml(altPhone)}`;
-    }
-
-    // إضافة اللوكيشنات قبل الملاحظات
-    if (shopLoc || loc1 || loc2) {
-      text += `\n`;
-      if (shopLoc) text += `\n📍 <a href="${escapeTelegramHtml(shopLoc)}">لوكيشن المحل</a>`;
-
-      if (order?.routeMode === "double") {
-        if (loc1) text += `\n📍 <a href="${escapeTelegramHtml(loc1)}">لوكيشن المرسل</a>`;
-        if (loc2) text += `\n📍 <a href="${escapeTelegramHtml(loc2)}">لوكيشن المستلم</a>`;
-      } else {
-        if (loc1) text += `\n📍 <a href="${escapeTelegramHtml(loc1)}">لوكيشن الزبون</a>`;
+      if (altPhone && altPhone !== "—") {
+        text += `\n📞 ${escapeTelegramHtml(altPhone)}`;
       }
-    }
 
-    if (summary) {
-      text += `\n\n📝 <b>الملاحظات:</b>\n${escapeTelegramHtml(summary)}`;
-    }
+      // إضافة اللوكيشنات قبل الملاحظات
+      if (shopLoc || loc1 || loc2) {
+        text += `\n`;
+        if (shopLoc) text += `\n📍 <a href="${escapeTelegramHtml(shopLoc)}">لوكيشن المحل</a>`;
 
-    text += `\n\nيمكنك الضغط على الأزرار أدناه للتحكم بالطلب.`;
+        if (order?.routeMode === "double") {
+          if (loc1) text += `\n📍 <a href="${escapeTelegramHtml(loc1)}">لوكيشن المرسل</a>`;
+          if (loc2) text += `\n📍 <a href="${escapeTelegramHtml(loc2)}">لوكيشن المستلم</a>`;
+        } else {
+          if (loc1) text += `\n📍 <a href="${escapeTelegramHtml(loc1)}">لوكيشن الزبون</a>`;
+        }
+      }
 
-    const buttons = [];
+      if (summary) {
+        text += `\n\n📝 <b>الملاحظات:</b>\n${escapeTelegramHtml(summary)}`;
+      }
 
-    // صف أزرار اللوكيشنات
-    const locationButtons = [];
-    if (shopLoc) locationButtons.push({ text: "🏬 لوكيشن المحل", url: shopLoc });
-    if (order?.routeMode === "double") {
-      if (loc1) locationButtons.push({ text: "📍 لوكيشن المرسل", url: loc1 });
-      if (loc2) locationButtons.push({ text: "📍 لوكيشن المستلم", url: loc2 });
+      text += `\n\nيمكنك الضغط على الأزرار أدناه للتحكم بالطلب.`;
+
+      const buttons = [];
+
+      // صف أزرار اللوكيشنات
+      const locationButtons = [];
+      if (shopLoc) locationButtons.push({ text: "🏬 لوكيشن المحل", url: shopLoc });
+      if (order?.routeMode === "double") {
+        if (loc1) locationButtons.push({ text: "📍 لوكيشن المرسل", url: loc1 });
+        if (loc2) locationButtons.push({ text: "📍 لوكيشن المستلم", url: loc2 });
+      } else {
+        if (loc1) locationButtons.push({ text: "📍 لوكيشن الزبون", url: loc1 });
+      }
+      if (locationButtons.length > 0) {
+        buttons.push(locationButtons);
+      }
+
+      const baseUrl = getPublicAppUrl();
+      const getFullUrl = (src: string | null | undefined) => {
+        if (!src) return undefined;
+        const resolved = resolvePublicAssetSrc(src);
+        if (!resolved) return undefined;
+        if (resolved.startsWith("http")) return resolved;
+        return `${baseUrl}${resolved.startsWith("/") ? "" : "/"}${resolved}`;
+      };
+
+      // صف أزرار صور الأبواب
+      const photoButtons = [];
+      const door1 = getFullUrl(order?.customerDoorPhotoUrl);
+      if (door1) {
+        photoButtons.push({ text: "🖼️ باب العميل", url: door1 });
+      }
+      const door2 = getFullUrl(order?.secondCustomerDoorPhotoUrl);
+      if (door2) {
+        photoButtons.push({ text: "🖼️ باب الزبون", url: door2 });
+      }
+      if (photoButtons.length > 0) {
+        buttons.push(photoButtons);
+      }
+
+      // الأزرار الأساسية
+      buttons.push([
+        { text: "📦 فتح الطلب", callback_data: `co_order_${finalOrderNumber}` },
+        { text: "📦 طلبياتي", callback_data: "co_orders_0" },
+      ]);
+      buttons.push([{ text: "💼 محفظتي", callback_data: "co_wallet_0" }]);
+
+      const kb = { inline_keyboard: buttons };
+
+      const sent = await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, courierBotToken).catch((err) => {
+        console.error(`[pushNotifyCourierNewAssignment] sendTelegramMessageWithKeyboardToChat failed:`, err);
+        return { ok: false, error: err?.message ?? "send failed" };
+      });
+      console.log(`[pushNotifyCourierNewAssignment] first message sent: ${sent.ok}`);
+    } else if (courier?.telegramUserId?.trim()) {
+      console.warn(`[pushNotifyCourierNewAssignment] courier bot token missing; cannot send Telegram notify to ${courier.telegramUserId}`);
     } else {
-      if (loc1) locationButtons.push({ text: "📍 لوكيشن الزبون", url: loc1 });
+      console.warn(`[pushNotifyCourierNewAssignment] courier record missing telegramUserId for courierId=${courierId}`);
     }
-    if (locationButtons.length > 0) {
-      buttons.push(locationButtons);
-    }
-
-    const baseUrl = getPublicAppUrl();
-    const getFullUrl = (src: string | null | undefined) => {
-      if (!src) return undefined;
-      const resolved = resolvePublicAssetSrc(src);
-      if (!resolved) return undefined;
-      if (resolved.startsWith("http")) return resolved;
-      return `${baseUrl}${resolved.startsWith("/") ? "" : "/"}${resolved}`;
-    };
-
-    // صف أزرار صور الأبواب
-    const photoButtons = [];
-    const door1 = getFullUrl(order?.customerDoorPhotoUrl);
-    if (door1) {
-      photoButtons.push({ text: "🖼️ باب العميل", url: door1 });
-    }
-    const door2 = getFullUrl(order?.secondCustomerDoorPhotoUrl);
-    if (door2) {
-      photoButtons.push({ text: "🖼️ باب الزبون", url: door2 });
-    }
-    if (photoButtons.length > 0) {
-      buttons.push(photoButtons);
-    }
-
-    // الأزرار الأساسية
-    buttons.push([
-      { text: "📦 فتح الطلب", callback_data: `co_order_${finalOrderNumber}` },
-      { text: "📦 طلبياتي", callback_data: "co_orders_0" },
-    ]);
-    buttons.push([{ text: "💼 محفظتي", callback_data: "co_wallet_0" }]);
-
-    const kb = { inline_keyboard: buttons };
-
-    const sent = await sendTelegramMessageWithKeyboardToChat(chatId, text, kb, courierBotToken).catch((err) => {
-      console.error(`[pushNotifyCourierNewAssignment] sendTelegramMessageWithKeyboardToChat failed:`, err);
-      return { ok: false, error: err?.message ?? "send failed" };
-    });
-    console.log(`[pushNotifyCourierNewAssignment] first message sent: ${sent.ok}`);
-  } else if (courier?.telegramUserId?.trim()) {
-    console.warn(`[pushNotifyCourierNewAssignment] courier bot token missing; cannot send Telegram notify to ${courier.telegramUserId}`);
-  } else {
-    console.warn(`[pushNotifyCourierNewAssignment] courier record missing telegramUserId for courierId=${courierId}`);
-  }
+  })();
 
   const settingsRow = await getOrCreateNotificationSettings();
   const settings = audienceSettings(settingsRow, "mandoub");
-  if (!settings.enabled) return;
+  if (!settings.enabled) {
+    await telegramPromise.catch(() => {});
+    return;
+  }
 
   const orderPrice = order?.totalAmount ? formatDinarAsAlf(order.totalAmount) : "—";
   const orderTime = order?.orderNoteTime || "فوري";

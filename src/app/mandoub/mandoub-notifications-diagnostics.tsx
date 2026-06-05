@@ -140,7 +140,14 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
         }
       }
 
-      // ج. إعادة الفحص فوراً
+      // ج. إلغاء أي اشتراكات VAPID قديمة للمندوب لتفادي تداخل الإشعارات
+      const cleanParams = new URLSearchParams();
+      cleanParams.set("c", auth.c);
+      if (auth.exp) cleanParams.set("exp", auth.exp);
+      cleanParams.set("s", auth.s);
+      await fetch(`/api/push/subscribe?${cleanParams.toString()}`, { method: "DELETE" }).catch(() => {});
+
+      // د. إعادة الفحص فوراً
       await runCheck();
     } catch (e) {
       console.error("Error fixing notifications:", e);

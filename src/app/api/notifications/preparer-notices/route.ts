@@ -3,6 +3,7 @@ import { verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-
 import { audienceSettings, getOrCreateNotificationSettings } from "@/lib/notification-settings";
 import { prisma } from "@/lib/prisma";
 import { withEphemeralCache } from "@/lib/ephemeral-cache";
+import { formatDinarAsAlf } from "@/lib/money-alf";
 
 export const runtime = "nodejs";
 
@@ -46,6 +47,8 @@ export async function GET(request: Request) {
             createdAt: true,
             shop: { select: { name: true } },
             customerRegion: { select: { name: true } },
+            totalAmount: true,
+            orderNoteTime: true,
           },
         }),
       ]),
@@ -62,6 +65,8 @@ export async function GET(request: Request) {
     latestShopOrderCreatedAt: latestShopOrder?.createdAt ?? null,
     latestShopOrderShopName: latestShopOrder?.shop?.name ?? "",
     latestShopOrderRegionName: latestShopOrder?.customerRegion?.name ?? "",
+    latestShopOrderPrice: latestShopOrder?.totalAmount ? formatDinarAsAlf(latestShopOrder.totalAmount) : "—",
+    latestShopOrderTime: latestShopOrder?.orderNoteTime || "فوري",
     settings,
   });
 }

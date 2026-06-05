@@ -64,6 +64,8 @@ export function PreparerNotificationPoller({
           latestShopOrderCreatedAt?: string | null;
           latestShopOrderShopName?: string;
           latestShopOrderRegionName?: string;
+          latestShopOrderPrice?: string;
+          latestShopOrderTime?: string;
           settings?: NotificationSettingsPayload;
         };
         const count = Number(data.noticesCount ?? 0);
@@ -96,6 +98,8 @@ export function PreparerNotificationPoller({
               orderNumber: orderNumber,
               shopName: "الموقع الإلكتروني",
               regionName: "—",
+              orderPrice: data.latestShopOrderPrice ?? "—",
+              orderTime: data.latestShopOrderTime ?? "فوري",
             });
           } else {
             // القالب العادي
@@ -104,6 +108,8 @@ export function PreparerNotificationPoller({
               orderNumber: 0,
               shopName: rawTitle || "—",
               regionName: rawBody || "—",
+              orderPrice: data.latestShopOrderPrice ?? "—",
+              orderTime: data.latestShopOrderTime ?? "فوري",
             });
           }
 
@@ -149,6 +155,8 @@ export function PreparerNotificationPoller({
             orderNumber: Number.isFinite(latestShopOrderNumber) ? latestShopOrderNumber : 0,
             shopName: data.latestShopOrderShopName ?? "—",
             regionName: data.latestShopOrderRegionName ?? "—",
+            orderPrice: data.latestShopOrderPrice ?? "—",
+            orderTime: data.latestShopOrderTime ?? "فوري",
           });
 
           setToast({ message: orderBody, url: orderOpenUrl });

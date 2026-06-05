@@ -119,3 +119,24 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ ok: true });
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const c = searchParams.get("c") ?? "";
+    const exp = searchParams.get("exp") ?? undefined;
+    const s = searchParams.get("s") ?? "";
+    const v = verifyDelegatePortalQuery(c, exp, s);
+    if (!v.ok) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+    
+    await prisma.webPushSubscription.deleteMany({
+      where: { audience: "mandoub", courierId: v.courierId },
+    });
+    
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    return NextResponse.json({ error: "internal_error" }, { status: 500 });
+  }
+}
