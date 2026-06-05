@@ -209,10 +209,10 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                 return (
                   <Fragment key={o.orderNumber}>
                     {showSeparator && (
-                      <li className="pt-4 pb-1">
+                      <li className="pt-6 pb-2">
                         <div className="flex items-center gap-3">
-                          <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
-                          <span className="text-[10px] font-black text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm whitespace-nowrap">
+                          <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700"></div>
+                          <span className="text-xs md:text-sm font-black text-sky-800 bg-sky-50 dark:text-sky-200 dark:bg-sky-950/80 px-4 py-1.5 rounded-full border border-sky-200/80 dark:border-sky-800 shadow-sm whitespace-nowrap">
                             {o.createdAt.toLocaleDateString("ar-IQ", {
                               weekday: "long",
                               year: "numeric",
@@ -220,7 +220,7 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                               day: "numeric",
                             })}
                           </span>
-                          <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                          <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700"></div>
                         </div>
                       </li>
                     )}
