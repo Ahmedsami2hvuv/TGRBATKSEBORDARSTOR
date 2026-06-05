@@ -5,6 +5,15 @@ import { ensureNotificationAudioContext } from "@/lib/notification-sound-client"
 
 type Auth = { c: string; exp?: string; s: string };
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 4000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout")), timeoutMs)
+    ),
+  ]);
+}
+
 export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -45,11 +54,13 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
       setOneSignalPermission(isGranted ? "granted" : "default");
       try {
         if (OneSignal.initialized) {
-          const extId = await OneSignal.User.getExternalId();
+          const extId = await withTimeout(OneSignal.User.getExternalId(), 2500);
           setOneSignalExternalId(extId || null);
+        } else {
+          setOneSignalExternalId(null);
         }
       } catch (err) {
-        console.error("Error reading OneSignal External ID:", err);
+        console.error("Error reading OneSignal External ID in check:", err);
       }
     } else {
       setOneSignalLoaded(false);
@@ -76,13 +87,33 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
       const OneSignal = (window as any).OneSignal;
       if (OneSignal) {
         try {
-          // طلب إذن ون سيجنال
-          await OneSignal.Notifications.requestPermission();
+          if (!OneSignal.initialized) {
+            console.log("OneSignal diagnostics: OneSignal is loaded but not initialized. Initializing...");
+            await withTimeout(
+              OneSignal.init({
+                appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
+                allowLocalhostAsSecureOrigin: true,
+                serviceWorkerPath: "OneSignalSDKWorker.js",
+              }),
+              4000
+            ).catch(() => {});
+          }
+
+          // طلب إذن ون سيجنال فقط إذا لم يكن ممنوحاً بالفعل
+          if (OneSignal.Notifications.permission !== "granted") {
+            console.log("OneSignal diagnostics: Requesting permission...");
+            await withTimeout(OneSignal.Notifications.requestPermission(), 4000).catch((err) => {
+              console.warn("OneSignal requestPermission timed out or failed:", err);
+            });
+          }
           
           // تأكيد تسجيل الدخول للمندوب
           if (OneSignal.initialized) {
-            await OneSignal.login(auth.c);
+            console.log("OneSignal diagnostics: Attempting login for", auth.c);
+            await withTimeout(OneSignal.login(auth.c), 4000);
             console.log("OneSignal diagnostics fix: Logged in as", auth.c);
+          } else {
+            console.warn("OneSignal is still not initialized after check/init.");
           }
         } catch (err) {
           console.error("OneSignal setup error during fix:", err);
