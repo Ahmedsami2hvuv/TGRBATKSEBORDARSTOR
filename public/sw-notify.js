@@ -88,12 +88,37 @@ self.addEventListener("push", (event) => {
 });
 
 self.addEventListener("notificationclick", (event) => {
+  const data = event.notification.data || {};
+  
   event.notification.close();
 
   if (event.action === 'close') return;
 
-  const data = event.notification.data || {};
-  const rawUrl = data.url || "/";
+  // استخراج الرابط بشكل مرن لدعم كلاً من VAPID و OneSignal
+  let rawUrl = "/";
+  if (data.url) {
+    rawUrl = data.url;
+  } else if (data.custom) {
+    let customObj = data.custom;
+    if (typeof customObj === 'string') {
+      try {
+        customObj = JSON.parse(customObj);
+      } catch (e) {}
+    }
+    if (customObj && typeof customObj === 'object') {
+      if (customObj.u) {
+        rawUrl = customObj.u;
+      } else if (customObj.a && customObj.a.url) {
+        rawUrl = customObj.a.url;
+      }
+    }
+  }
+
+  // إذا كان الإشعار من ون سيجنال، نمنع انتشار الحدث لمنع تعارض مكاتب ون سيجنال أو فتح نافذة مكررة
+  if (data.custom || data.hasOwnProperty('custom')) {
+    console.log("OneSignal notification click intercepted and handled by custom SW.");
+    event.stopImmediatePropagation();
+  }
 
   // تحويل الرابط النسبي إلى مطلق للتأكد من صحة التوجيه
   let targetUrl;

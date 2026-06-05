@@ -15,284 +15,236 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 4000): Promise<
 }
 
 export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
-  const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [systemSupported, setSystemSupported] = useState(false);
-  const [browserPermission, setBrowserPermission] = useState<NotificationPermission>("default");
-  
-  // حالات ون سيجنال
-  const [oneSignalLoaded, setOneSignalLoaded] = useState(false);
-  const [oneSignalPermission, setOneSignalPermission] = useState<string>("unknown");
-  const [oneSignalExternalId, setOneSignalExternalId] = useState<string | null>(null);
-  
-  // حالة الصوت
-  const [audioContextStatus, setAudioContextStatus] = useState<string>("unknown");
+  const [isActive, setIsActive] = useState<boolean | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const runCheck = async () => {
+  const checkStatus = async () => {
     if (typeof window === "undefined") return;
 
-    // 1. دعم النظام
+    // 1. فحص الدعم
     const supported = "Notification" in window;
-    setSystemSupported(supported);
-
-    // 2. إذن المتصفح
-    setBrowserPermission(supported ? Notification.permission : "default");
-
-    // 3. حالة الصوت
-    try {
-      const ctx = ensureNotificationAudioContext();
-      setAudioContextStatus(ctx ? ctx.state : "unsupported");
-    } catch {
-      setAudioContextStatus("error");
+    if (!supported) {
+      setIsActive(false);
+      return;
     }
 
-    // 4. فحص ون سيجنال
+    // 2. فحص الإذن
+    if (Notification.permission !== "granted") {
+      setIsActive(false);
+      return;
+    }
+
+    // 3. فحص ون سيجنال
     const OneSignal = (window as any).OneSignal;
     if (OneSignal) {
-      setOneSignalLoaded(true);
-      const isGranted = OneSignal.Notifications.permission === "granted";
-      setOneSignalPermission(isGranted ? "granted" : "default");
+      if (OneSignal.Notifications.permission !== "granted") {
+        setIsActive(false);
+        return;
+      }
       try {
         if (OneSignal.User && typeof OneSignal.User.getExternalId === "function") {
           const extId = await withTimeout(OneSignal.User.getExternalId(), 2000);
-          setOneSignalExternalId(extId || null);
-        } else {
-          setOneSignalExternalId(null);
+          if (extId === auth.c) {
+            setIsActive(true);
+            setErrorMsg(null);
+            return;
+          }
         }
       } catch (err) {
-        console.error("Error reading OneSignal External ID in check:", err);
-        setOneSignalExternalId(null);
+        console.error("Error reading OneSignal External ID in status check:", err);
       }
-    } else {
-      setOneSignalLoaded(false);
     }
+    setIsActive(false);
   };
 
   useEffect(() => {
-    void runCheck();
-    // فحص دوري كل 5 ثوانٍ للتحديث التلقائي
-    const id = window.setInterval(runCheck, 5000);
+    void checkStatus();
+    // فحص دوري خفيف للتحديث التلقائي إذا تغيرت الأذونات
+    const id = window.setInterval(checkStatus, 5000);
     return () => window.clearInterval(id);
-  }, [auth.c, auth.exp, auth.s]);
+  }, [auth.c]);
 
-  const handleFix = async () => {
+  const handleActivate = async () => {
     setLoading(true);
+    setErrorMsg(null);
+
     try {
-      // أ. تنشيط الصوت
+      // 1. فحص دعم المتصفح
+      if (typeof window === "undefined") return;
+      if (!("Notification" in window)) {
+        throw new Error("unsupported_browser");
+      }
+
+      // 2. إذا كان الإذن محظوراً بالكامل
+      if (Notification.permission === "denied") {
+        throw new Error("permission_denied");
+      }
+
+      // 3. تنشيط الصوت والـ Audio Context لتخطي قيود التشغيل التلقائي للمتصفحات
       const audioCtx = ensureNotificationAudioContext();
       if (audioCtx) {
         await audioCtx.resume().catch(() => {});
       }
 
-      // ب. تفعيل ون سيجنال وتسجيل الدخول عبر الطابور المؤجل
+      // 4. تهيئة وطلب إذن OneSignal
       const windowObj = window as any;
       const OneSignal = windowObj.OneSignal;
-      if (OneSignal) {
-        try {
-          windowObj.OneSignalDeferred = windowObj.OneSignalDeferred || [];
-          
-          await new Promise<void>((resolve, reject) => {
-            windowObj.OneSignalDeferred.push(async (OS: any) => {
-              try {
-                // 1. تهيئة ون سيجنال إذا لم يكن مهيأً
-                if (!windowObj.__onesignal_initialized) {
-                  console.log("OneSignal diagnostics: Initializing via Deferred queue...");
-                  try {
-                    await withTimeout(
-                      OS.init({
-                        appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
-                        allowLocalhostAsSecureOrigin: true,
-                        serviceWorkerPath: "sw-notify.js",
-                      }),
-                      5000
-                    );
-                  } catch (initErr) {
-                    console.log("OneSignal init inside diagnostics caught error (already initialized?):", initErr);
-                  }
-                  windowObj.__onesignal_initialized = true;
-                }
 
-                // 2. طلب إذن الإشعارات إذا لزم الأمر
-                if (OS.Notifications.permission !== "granted") {
-                  console.log("OneSignal diagnostics: Requesting permission...");
-                  await withTimeout(OS.Notifications.requestPermission(), 4000).catch((err) => {
-                    console.warn("OneSignal requestPermission timed out or failed:", err);
-                  });
-                }
-
-                // 3. تسجيل الدخول للمندوب
-                console.log("OneSignal diagnostics: Attempting login for", auth.c);
-                await withTimeout(OS.login(auth.c), 4000);
-                console.log("OneSignal diagnostics fix: Logged in successfully as", auth.c);
-                resolve();
-              } catch (err) {
-                reject(err);
-              }
-            });
-          });
-        } catch (err) {
-          console.error("OneSignal setup error during fix:", err);
-        }
-      } else {
-        // طلب إذن المتصفح التقليدي كاحتياط
-        if (typeof window !== "undefined" && "Notification" in window) {
-          await Notification.requestPermission();
-        }
+      if (!OneSignal) {
+        throw new Error("onesignal_not_loaded");
       }
 
-      // ج. إلغاء أي اشتراكات VAPID قديمة للمندوب لتفادي تداخل الإشعارات
+      windowObj.OneSignalDeferred = windowObj.OneSignalDeferred || [];
+      
+      await new Promise<void>((resolve, reject) => {
+        windowObj.OneSignalDeferred.push(async (OS: any) => {
+          try {
+            // تهيئة ون سيجنال إذا لم يكن مهيأً
+            if (!windowObj.__onesignal_initialized) {
+              try {
+                await withTimeout(
+                  OS.init({
+                    appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
+                    allowLocalhostAsSecureOrigin: true,
+                    serviceWorkerPath: "sw-notify.js",
+                  }),
+                  5000
+                );
+              } catch (initErr) {
+                console.log("OneSignal init inside diagnostics caught error:", initErr);
+              }
+              windowObj.__onesignal_initialized = true;
+            }
+
+            // طلب إذن الإشعارات
+            if (OS.Notifications.permission !== "granted") {
+              const permissionResult = await withTimeout(OS.Notifications.requestPermission(), 10000);
+              if (permissionResult === "denied" || OS.Notifications.permission !== "granted") {
+                throw new Error("permission_denied");
+              }
+            }
+
+            // تسجيل الدخول لحساب المندوب
+            await withTimeout(OS.login(auth.c), 5000);
+            resolve();
+          } catch (err: any) {
+            reject(err);
+          }
+        });
+      });
+
+      // 5. إلغاء أي اشتراكات VAPID قديمة للمندوب لتفادي تداخل الإشعارات
       const cleanParams = new URLSearchParams();
       cleanParams.set("c", auth.c);
       if (auth.exp) cleanParams.set("exp", auth.exp);
       cleanParams.set("s", auth.s);
       await fetch(`/api/push/subscribe?${cleanParams.toString()}`, { method: "DELETE" }).catch(() => {});
 
-
-      // د. إعادة الفحص فوراً
-      await runCheck();
-    } catch (e) {
-      console.error("Error fixing notifications:", e);
+      // نجاح التفعيل
+      setIsActive(true);
+      setErrorMsg(null);
+    } catch (err: any) {
+      console.error("Error activating notifications:", err);
+      
+      // ترجمة وتوضيح المشاكل للمندوب
+      if (err?.message === "unsupported_browser") {
+        setErrorMsg("عذراً، متصفحك لا يدعم نظام الإشعارات الفورية. يرجى استخدام متصفح حديث مثل Google Chrome.");
+      } else if (err?.message === "permission_denied" || Notification.permission === "denied") {
+        setErrorMsg("تم رفض إذن الإشعارات! يرجى الضغط على القفل (🔒) بجانب رابط الموقع بالأعلى، وتغيير إذن الإشعارات إلى 'سماح' (Allow).");
+      } else if (err?.message === "onesignal_not_loaded") {
+        setErrorMsg("فشل الاتصال بخدمة الإشعارات. تأكد من جودة اتصالك بالإنترنت ثم أعد المحاولة.");
+      } else {
+        setErrorMsg("حدث خطأ أثناء تفعيل الإشعارات. تأكد من إعطاء الصلاحيات وأعد المحاولة، وإذا تكرر الخطأ يرجى إبلاغ الإدارة.");
+      }
+      setIsActive(false);
     } finally {
-      // إبطاء خفيف جداً لمنع الوميض السريع للزر
-      setTimeout(() => {
-        setLoading(false);
-      }, 500);
+      setLoading(false);
     }
   };
 
-  const isEverythingOk = 
-    systemSupported && 
-    browserPermission === "granted" && 
-    oneSignalLoaded && 
-    oneSignalPermission === "granted" &&
-    oneSignalExternalId === auth.c &&
-    audioContextStatus === "running";
+  if (isActive === null) {
+    return (
+      <div className="mb-4 rounded-2xl bg-white border border-slate-200 p-4 shadow-sm flex items-center justify-center py-6">
+        <div className="flex items-center gap-2 text-slate-500 font-bold text-sm">
+          <svg className="animate-spin h-5 w-5 text-violet-600" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          <span>جاري التحقق من حالة الإشعارات...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="mb-4 rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden text-slate-800">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100/80 transition font-bold text-sm"
-      >
-        <div className="flex items-center gap-2">
-          <span>🛡️</span>
-          <span>فحص حالة إشعارات المتصفح والويب</span>
-          {isEverythingOk ? (
-            <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs text-emerald-700 border border-emerald-200">
-              ✅ جاهز ومفعل
-            </span>
-          ) : (
-            <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs text-amber-800 border border-amber-200 animate-pulse">
-              ⚠️ يحتاج انتباه
-            </span>
-          )}
-        </div>
-        <span className="text-xs text-slate-500">{isOpen ? "إخفاء التفاصيل ▲" : "عرض التفاصيل ⚙️ ▼"}</span>
-      </button>
-
-      {isOpen && (
-        <div className="p-4 border-t border-slate-100 bg-white space-y-3.5 text-xs sm:text-sm animate-in fade-in duration-200">
-          <p className="text-xs text-slate-500 font-bold leading-normal">
-            هذا الفحص يتأكد من تفعيل أذونات المتصفح وتكامل اتصالك بنظام ون سيجنال (OneSignal) لاستلام إشعارات الطلبات الجديدة في الخلفية.
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* 1. دعم المتصفح */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50">
-              <span className="font-bold">دعم المتصفح للإشعارات:</span>
-              <span>{systemSupported ? "✅ مدعوم" : "❌ غير مدعوم في هذا المتصفح"}</span>
-            </div>
-
-            {/* 2. إذن المتصفح */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50">
-              <span className="font-bold">إذن إشعارات المتصفح:</span>
-              <span>
-                {browserPermission === "granted" && "✅ مسموح به"}
-                {browserPermission === "denied" && "❌ محظور (Denied)"}
-                {browserPermission === "default" && "⚠️ غير مفعل"}
-              </span>
-            </div>
-
-            {/* 3. حالة الصوت */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50">
-              <span className="font-bold">حالة تشغيل الصوت والتنبيه:</span>
-              <span>
-                {audioContextStatus === "running" && "✅ جاهز ومفعل"}
-                {audioContextStatus === "suspended" && "⚠️ صامت (يحتاج تفاعل)"}
-                {audioContextStatus !== "running" && audioContextStatus !== "suspended" && "⚠️ غير جاهز"}
-              </span>
-            </div>
-
-            {/* 4. حالة اتصال ون سيجنال */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50">
-              <span className="font-bold">مساعد ون سيجنال (OneSignal):</span>
-              <span>{oneSignalLoaded ? "✅ محمل وجاهز" : "❌ غير متصل"}</span>
-            </div>
-
-            {/* 5. معرف المندوب الخارجي */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50 sm:col-span-2">
-              <span className="font-bold">ربط حساب المندوب بالتنبيهات:</span>
-              <div className="flex flex-col items-end gap-0.5">
-                <span>
-                  {oneSignalExternalId === auth.c ? "✅ مرتبط بالكامل" : "⚠️ غير مرتبط (اضغط إصلاح)"}
+    <div className="mb-4">
+      {isActive ? (
+        <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-emerald-950 shadow-sm transition-all duration-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <span className="text-2xl animate-bounce block">🔔</span>
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                 </span>
-                {oneSignalExternalId !== auth.c && (
-                  <span className="text-[10px] text-amber-700 font-bold">المعرف الحالي: {oneSignalExternalId || "غير معروف"}</span>
-                )}
+              </div>
+              <div>
+                <p className="text-sm font-black text-emerald-900">تم تفعيل الإشعارات بنجاح! خير على خير 👍</p>
+                <p className="text-xs font-semibold text-emerald-800 opacity-90 mt-0.5">
+                  حسابك مرتبط الآن بشكل صحيح وستتلقى تنبيهات الطلبات بصوت الرنين فور إسنادها إليك.
+                </p>
               </div>
             </div>
-          </div>
-
-          {/* نصائح لحل المشكلة */}
-          <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-3 text-xs leading-normal">
-            <span className="font-bold text-amber-900 block mb-1">💡 نصائح لضمان عمل الإشعارات:</span>
-            <ul className="list-disc list-inside space-y-1 text-slate-700 font-medium">
-              {browserPermission === "denied" && (
-                <li className="text-rose-700 font-bold">
-                  لقد قمت بحظر الإشعارات مسبقاً. يرجى الضغط على علامة القفل (🔒) الموجودة بجانب رابط الموقع في شريط العنوان بالأعلى، ثم تغيير الإذن إلى "سماح" أو "Allow".
-                </li>
-              )}
-              {audioContextStatus === "suspended" && (
-                <li>
-                  يطلب المتصفح نقرة واحدة على الشاشة لتفعيل الصوت. اضغط على أي مكان في الصفحة أو انقر على زر الإصلاح أدناه.
-                </li>
-              )}
-              {(!oneSignalLoaded || oneSignalExternalId !== auth.c) && (
-                <li>
-                  يرجى الضغط على زر "إصلاح وتفعيل الإشعارات" لتثبيت حسابك في نظام ون سيجنال فوراً.
-                </li>
-              )}
-              <li>
-                لضمان استمرار الإشعارات عند إغلاق المتصفح، تأكد من تثبيت الموقع كتطبيق (PWA) من خيارات المتصفح (اضغط "إضافة إلى الشاشة الرئيسية").
-              </li>
-            </ul>
-          </div>
-
-          {/* زر الإصلاح */}
-          <div className="flex justify-end pt-2">
             <button
               type="button"
-              onClick={handleFix}
+              onClick={handleActivate}
               disabled={loading}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-black px-5 py-2.5 shadow-md hover:shadow-lg transition disabled:opacity-50"
+              className="shrink-0 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 transition disabled:opacity-50"
             >
-              {loading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span>جاري الإصلاح...</span>
-                </>
-              ) : (
-                <>
-                  <span>🔧</span>
-                  <span>إصلاح وتفعيل الإشعارات الآن</span>
-                </>
-              )}
+              {loading ? "جاري التحديث..." : "إعادة ربط وتحديث"}
             </button>
           </div>
+        </div>
+      ) : (
+        <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-sm space-y-3.5 text-slate-800 transition-all duration-300">
+          <div className="flex items-center gap-2.5 font-black text-slate-800">
+            <span className="text-lg">🔔</span>
+            <span>تفعيل الإشعارات الفورية للطلبات</span>
+          </div>
+
+          <p className="text-xs font-semibold text-slate-500 leading-relaxed">
+            لتجنب فوات أي طلبات ولتلقي صوت التنبيه الفوري بمجرد إسناد طلب جديد إليك، يرجى تفعيل الإشعارات الآن.
+          </p>
+
+          {errorMsg && (
+            <div className="rounded-xl bg-rose-50 border border-rose-100 p-3 text-rose-800 text-xs font-bold leading-relaxed">
+              ⚠️ {errorMsg}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleActivate}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-black px-5 py-3 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span>جاري التفعيل والربط الآن...</span>
+              </>
+            ) : (
+              <>
+                <span>🚀</span>
+                <span>تفعيل واستقبال الإشعارات</span>
+              </>
+            )}
+          </button>
         </div>
       )}
     </div>
