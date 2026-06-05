@@ -1,3 +1,5 @@
+importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
+
 /* Enhanced Service Worker for Notifications - KSE BORDAR */
 
 // إضافة مستمع الرسائل في البداية لتجنب تحذير المتصفح
@@ -14,6 +16,16 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  // فحص لتفادي إظهار إشعارات ون سيجنال كإشعارات فارغة أو مكررة
+  try {
+    const rawText = event.data.text();
+    if (rawText.includes("onesignal") || rawText.includes('"custom":') || rawText.includes('"os_data":')) {
+      return; // ون سيجنال SDK سيتعامل مع هذا الحدث بنفسه
+    }
+  } catch (e) {}
+
   const origin = self.location.origin;
   const icon = origin + "/pwa-icon-192.png";
 
@@ -27,15 +39,18 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     (async () => {
       let payload = { ...defaults };
-      if (event.data) {
-        try {
-          const data = event.data.json();
-          if (data && typeof data === "object") {
-            payload = { ...payload, ...data };
-          }
-        } catch (e) {
-          payload.body = event.data.text() || defaults.body;
+      try {
+        const data = event.data.json();
+        // تأكيد إضافي لمنع معالجة إشعارات ون سيجنال
+        if (data && (data.custom || data.os_data || data.onesignal)) {
+          return;
         }
+        if (data && typeof data === "object") {
+          payload = { ...payload, ...data };
+        }
+      } catch (e) {
+        // إذا فشل تحليل JSON، فغالباً الرسالة مشفرة من ون سيجنال، نتجاهلها لتجنب إظهار إشعار فارغ
+        return;
       }
 
       // خيارات الإشعار المتقدمة

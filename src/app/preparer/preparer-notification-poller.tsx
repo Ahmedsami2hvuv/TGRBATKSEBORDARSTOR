@@ -190,6 +190,16 @@ export function PreparerNotificationPoller({
         audience: "preparer",
         preparer: { p: auth.p, exp: auth.exp, s: auth.s },
       });
+
+      // تفعيل OneSignal أيضاً للمجهز
+      const OneSignal = (window as any).OneSignal;
+      if (OneSignal) {
+        try {
+          await OneSignal.Notifications.requestPermission();
+        } catch (err) {
+          console.error("Error requesting OneSignal permission", err);
+        }
+      }
     }
   }
 
