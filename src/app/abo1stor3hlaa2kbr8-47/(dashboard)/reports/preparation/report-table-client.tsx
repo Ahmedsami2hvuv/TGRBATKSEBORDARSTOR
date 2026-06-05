@@ -72,7 +72,15 @@ export function ReportTableClient({ orders }: { orders: any[] }) {
                   onClick={() => setSelectedOrder(order)}
                   className={`cursor-pointer transition-colors ${viewMode === "meat" ? "hover:bg-red-50" : viewMode === "fish" ? "hover:bg-sky-50" : "hover:bg-slate-50"} bg-white`}
                 >
-                  <td className="px-4 py-4 font-black text-sky-700 underline underline-offset-4 decoration-dotted">#{order.orderNumber}</td>
+                  <td className="px-4 py-4 font-black text-sky-700 underline underline-offset-4 decoration-dotted">
+                    #{order.orderNumber}
+                    {viewMode === "general" && (
+                      <span className="mr-1.5 inline-flex gap-0.5 text-sm" title={`${order.hasMeat ? "يحتوي على لحم " : ""}${order.hasFish ? "يحتوي على سمك" : ""}`}>
+                        {order.hasMeat && "🥩"}
+                        {order.hasFish && "🐟"}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-4 font-bold text-slate-800">{order.regionName}</td>
                   
                   {viewMode === "general" ? (
