@@ -189,9 +189,17 @@ export function PreparerNotificationPoller({
       try {
         const p = await OneSignal.Notifications.requestPermission();
         setPerm(p ? "granted" : "denied");
-        if (OneSignal.initialized) {
-          await OneSignal.login(auth.p);
-        }
+        
+        const windowObj = window as any;
+        windowObj.OneSignalDeferred = windowObj.OneSignalDeferred || [];
+        windowObj.OneSignalDeferred.push(async (OS: any) => {
+          try {
+            await OS.login(auth.p);
+            console.log("OneSignal preparer poller: Logged in successfully as", auth.p);
+          } catch (err) {
+            console.error("OneSignal preparer login error:", err);
+          }
+        });
       } catch (err) {
         console.error("Error requesting OneSignal permission", err);
       }

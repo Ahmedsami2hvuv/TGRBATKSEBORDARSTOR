@@ -48,9 +48,17 @@ export function MandoubWebPushBanner({ auth }: { auth: Auth }) {
     if (OneSignal) {
       try {
         await OneSignal.Notifications.requestPermission();
-        if (OneSignal.initialized) {
-          await OneSignal.login(auth.c);
-        }
+        
+        const windowObj = window as any;
+        windowObj.OneSignalDeferred = windowObj.OneSignalDeferred || [];
+        windowObj.OneSignalDeferred.push(async (OS: any) => {
+          try {
+            await OS.login(auth.c);
+            console.log("OneSignal push banner: Logged in successfully as", auth.c);
+          } catch (err) {
+            console.error("OneSignal push banner login error:", err);
+          }
+        });
       } catch (err) {
         console.error("Error requesting OneSignal permission", err);
       }

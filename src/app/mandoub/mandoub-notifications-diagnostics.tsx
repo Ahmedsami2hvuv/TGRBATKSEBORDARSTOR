@@ -48,12 +48,13 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
 
     // 4. فحص ون سيجنال
     const OneSignal = (window as any).OneSignal;
+    const isInitialized = (window as any).__onesignal_initialized;
     if (OneSignal) {
       setOneSignalLoaded(true);
       const isGranted = OneSignal.Notifications.permission === "granted";
       setOneSignalPermission(isGranted ? "granted" : "default");
       try {
-        if (OneSignal.initialized) {
+        if (isInitialized) {
           const extId = await withTimeout(OneSignal.User.getExternalId(), 2500);
           setOneSignalExternalId(extId || null);
         } else {
@@ -83,38 +84,48 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
         await audioCtx.resume().catch(() => {});
       }
 
-      // ب. تفعيل ون سيجنال وتسجيل الدخول
-      const OneSignal = (window as any).OneSignal;
+      // ب. تفعيل ون سيجنال وتسجيل الدخول عبر الطابور المؤجل
+      const windowObj = window as any;
+      const OneSignal = windowObj.OneSignal;
       if (OneSignal) {
         try {
-          if (!OneSignal.initialized) {
-            console.log("OneSignal diagnostics: OneSignal is loaded but not initialized. Initializing...");
-            await withTimeout(
-              OneSignal.init({
-                appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
-                allowLocalhostAsSecureOrigin: true,
-                serviceWorkerPath: "OneSignalSDKWorker.js",
-              }),
-              4000
-            ).catch(() => {});
-          }
-
-          // طلب إذن ون سيجنال فقط إذا لم يكن ممنوحاً بالفعل
-          if (OneSignal.Notifications.permission !== "granted") {
-            console.log("OneSignal diagnostics: Requesting permission...");
-            await withTimeout(OneSignal.Notifications.requestPermission(), 4000).catch((err) => {
-              console.warn("OneSignal requestPermission timed out or failed:", err);
-            });
-          }
+          windowObj.OneSignalDeferred = windowObj.OneSignalDeferred || [];
           
-          // تأكيد تسجيل الدخول للمندوب
-          if (OneSignal.initialized) {
-            console.log("OneSignal diagnostics: Attempting login for", auth.c);
-            await withTimeout(OneSignal.login(auth.c), 4000);
-            console.log("OneSignal diagnostics fix: Logged in as", auth.c);
-          } else {
-            console.warn("OneSignal is still not initialized after check/init.");
-          }
+          await new Promise<void>((resolve, reject) => {
+            windowObj.OneSignalDeferred.push(async (OS: any) => {
+              try {
+                // 1. تهيئة ون سيجنال إذا لم يكن مهيأً
+                if (!windowObj.__onesignal_initialized) {
+                  console.log("OneSignal diagnostics: Initializing via Deferred queue...");
+                  await withTimeout(
+                    OS.init({
+                      appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
+                      allowLocalhostAsSecureOrigin: true,
+                      serviceWorkerPath: "OneSignalSDKWorker.js",
+                    }),
+                    5000
+                  );
+                  windowObj.__onesignal_initialized = true;
+                }
+
+                // 2. طلب إذن الإشعارات إذا لزم الأمر
+                if (OS.Notifications.permission !== "granted") {
+                  console.log("OneSignal diagnostics: Requesting permission...");
+                  await withTimeout(OS.Notifications.requestPermission(), 4000).catch((err) => {
+                    console.warn("OneSignal requestPermission timed out or failed:", err);
+                  });
+                }
+
+                // 3. تسجيل الدخول للمندوب
+                console.log("OneSignal diagnostics: Attempting login for", auth.c);
+                await withTimeout(OS.login(auth.c), 4000);
+                console.log("OneSignal diagnostics fix: Logged in successfully as", auth.c);
+                resolve();
+              } catch (err) {
+                reject(err);
+              }
+            });
+          });
         } catch (err) {
           console.error("OneSignal setup error during fix:", err);
         }
