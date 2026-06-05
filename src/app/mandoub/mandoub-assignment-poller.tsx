@@ -6,10 +6,16 @@ import {
   playNotificationSound,
 } from "@/lib/notification-sound-client";
 
+import {
+  renderNotificationTemplate,
+  type NotificationSettingsPayload,
+} from "@/lib/notification-template";
+
 type Auth = { c: string; exp?: string; s: string };
 
 /**
  * يستطلع إسناد طلبات جديدة للمندوب ويشغّل صوتاً عند زيادة عدد الطلبات المسندة.
+ * يعمل فقط عندما تكون الصفحة مفتوحة ومرئية في المتصفح لتقليل الضغط على السيرفر.
  */
 export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
   const lastAssignedRef = useRef<number | null>(null);
@@ -31,20 +37,46 @@ export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
           assignedCount?: number;
           latestActiveOrderNumber?: number;
           latestActiveOrderId?: string;
-          settings?: { soundPreset?: string };
+          latestActiveOrderShopName?: string;
+          latestActiveOrderRegionName?: string;
+          settings?: NotificationSettingsPayload;
         };
         const count = Number(data.assignedCount ?? 0);
         const latest = Number(data.latestActiveOrderNumber ?? 0);
         const latestOrderId = String(data.latestActiveOrderId ?? "");
-        const sound = data.settings?.soundPreset ?? "beep";
+        const shopName = String(data.latestActiveOrderShopName ?? "—");
+        const regionName = String(data.latestActiveOrderRegionName ?? "—");
+        const settings = data.settings;
+        const sound = settings?.soundPreset ?? "beep";
 
         if (lastAssignedRef.current !== null && count > lastAssignedRef.current) {
           ensureNotificationAudioContext()?.resume().catch(() => {});
           playNotificationSound(sound);
-          if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+          
+          if (settings && settings.enabled && typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
             try {
-              const n = new Notification("طلب جديد مسند", {
-                body: `لديك ${count} طلب بانتظار الاستلام. آخر رقم نشط: ${latest || "—"}`,
+              const isMultiple = (count - lastAssignedRef.current) > 1 || count > 1;
+              const template = isMultiple ? settings.templateMultiple : settings.templateSingle;
+              const titleTemplate = settings.titleSingle;
+
+              const title = renderNotificationTemplate(titleTemplate, {
+                count,
+                orderNumber: latest,
+                shopName,
+                regionName,
+              });
+
+              const body = renderNotificationTemplate(template, {
+                count,
+                orderNumber: latest,
+                shopName,
+                regionName,
+              });
+
+              const n = new Notification(title, {
+                body,
+                icon: "/pwa-icon-192.png",
+                tag: `kse-poller-mandoub-${latestOrderId || Date.now()}`,
               });
               n.onclick = () => {
                 const q = new URLSearchParams();

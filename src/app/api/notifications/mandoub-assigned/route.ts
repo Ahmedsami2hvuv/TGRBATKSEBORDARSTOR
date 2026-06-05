@@ -35,7 +35,12 @@ export async function GET(request: Request) {
         prisma.order.findFirst({
           where: whereActive,
           orderBy: { orderNumber: "desc" },
-          select: { id: true, orderNumber: true },
+          select: {
+            id: true,
+            orderNumber: true,
+            shop: { select: { name: true } },
+            customerRegion: { select: { name: true } },
+          },
         }),
         getOrCreateNotificationSettings(),
       ]),
@@ -46,6 +51,8 @@ export async function GET(request: Request) {
     assignedCount,
     latestActiveOrderNumber: latest?.orderNumber ?? 0,
     latestActiveOrderId: latest?.id ?? "",
+    latestActiveOrderShopName: latest?.shop?.name ?? "",
+    latestActiveOrderRegionName: latest?.customerRegion?.name ?? "",
     settings,
   });
 }
