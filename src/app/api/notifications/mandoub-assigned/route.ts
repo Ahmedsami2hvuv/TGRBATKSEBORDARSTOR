@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     status: { in: ["assigned", "delivering"] as string[] },
   };
 
-  const [assignedCount, latest, settingsRow] = await withEphemeralCache(
+  const [assignedCount, latest, settingsRow, registeredDevicesCount] = await withEphemeralCache(
     `notif:mandoub:${v.courierId}:assigned`,
     4000,
     () =>
@@ -43,6 +43,9 @@ export async function GET(request: Request) {
           },
         }),
         getOrCreateNotificationSettings(),
+        prisma.webPushSubscription.count({
+          where: { audience: "mandoub", courierId: v.courierId },
+        }),
       ]),
   );
   const settings = audienceSettings(settingsRow, "mandoub");
@@ -53,6 +56,7 @@ export async function GET(request: Request) {
     latestActiveOrderId: latest?.id ?? "",
     latestActiveOrderShopName: latest?.shop?.name ?? "",
     latestActiveOrderRegionName: latest?.customerRegion?.name ?? "",
+    registeredDevicesCount,
     settings,
   });
 }
