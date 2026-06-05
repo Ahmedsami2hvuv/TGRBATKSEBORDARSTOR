@@ -27,7 +27,7 @@ export function OneSignalInitializer({ externalId }: { externalId?: string }) {
               await OneSignal.init({
                 appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
                 allowLocalhostAsSecureOrigin: true,
-                serviceWorkerPath: "sw-notify.js",
+                serviceWorkerPath: "OneSignalSDKWorker.js",
               }).catch(() => {
                 // كتم أي خطأ يصدر أثناء التهيئة إذا كانت المكتبة جاهزة بالفعل
               });

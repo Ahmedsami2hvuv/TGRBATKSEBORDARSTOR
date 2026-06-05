@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { subscribeDeviceToWebPush } from "@/lib/web-push-client";
 
 type Auth = { c: string; exp?: string; s: string };
 
@@ -26,18 +25,15 @@ export function MandoubWebPushBanner({ auth }: { auth: Auth }) {
 
     const checkPermission = async () => {
       const OneSignal = (window as any).OneSignal;
-      const traditionalGranted = typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted";
       
       if (OneSignal) {
-        // نظهر البانر إذا لم تكن الإشعارات مفعلة في ون سيجنال أو في نظام المتصفح التقليدي
-        if (OneSignal.Notifications.permission !== "granted" || !traditionalGranted) {
+        // نظهر البانر إذا لم تكن الإشعارات مفعلة في ون سيجنال
+        if (OneSignal.Notifications.permission !== "granted") {
           setShow(true);
           try {
             localStorage.setItem(key, String(Date.now()));
           } catch {}
         }
-      } else if (!traditionalGranted) {
-        setShow(true);
       }
     };
 
@@ -47,26 +43,14 @@ export function MandoubWebPushBanner({ auth }: { auth: Auth }) {
   }, []);
 
   const handleEnable = async () => {
-    // 1. الاشتراك في نظام الإشعارات التقليدي (VAPID)
-    try {
-      if (typeof window !== "undefined" && "Notification" in window) {
-        const p = await Notification.requestPermission();
-        if (p === "granted") {
-          await subscribeDeviceToWebPush({
-            audience: "mandoub",
-            mandoub: { c: auth.c, exp: auth.exp, s: auth.s },
-          });
-        }
-      }
-    } catch (err) {
-      console.error("VAPID Subscription Error:", err);
-    }
-
-    // 2. الاشتراك في OneSignal
+    // تفعيل إشعارات OneSignal فقط للمندوب لتفادي تعليق ملفات الخدمة والصراع
     const OneSignal = (window as any).OneSignal;
     if (OneSignal) {
       try {
         await OneSignal.Notifications.requestPermission();
+        if (OneSignal.initialized) {
+          await OneSignal.login(auth.c);
+        }
       } catch (err) {
         console.error("Error requesting OneSignal permission", err);
       }

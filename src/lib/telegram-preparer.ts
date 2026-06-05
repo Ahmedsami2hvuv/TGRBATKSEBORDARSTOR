@@ -887,6 +887,61 @@ export async function renderPreparerHub(preparer: any) {
   return { text, keyboard: kb };
 }
 
+async function tryParsePreparerLink(input: string) {
+  try {
+    let urlStr = input;
+    if (input.startsWith("/start ")) {
+      const payload = input.split(" ")[1];
+      if (payload && payload.startsWith("pl_")) {
+        const stored = await prisma.schemaPlaceholder.findUnique({
+          where: { id: payload }
+        });
+        if (stored && stored.note.startsWith("http")) {
+          urlStr = stored.note;
+        } else {
+          return null;
+        }
+      } else if (payload) {
+        try {
+          urlStr = Buffer.from(payload, "base64").toString("utf-8");
+        } catch {
+          return null;
+        }
+      }
+    }
+
+    // Extract URL if it's embedded or pasted as a full string
+    const match = urlStr.match(/(https?:\/\/[^\s]+)/);
+    const targetUrl = match ? match[1] : urlStr;
+
+    const urlObj = new URL(targetUrl);
+    const p = urlObj.searchParams.get("p") || "";
+    const s = urlObj.searchParams.get("s") || "";
+    const exp = urlObj.searchParams.get("exp") || urlObj.searchParams.get("token") || "";
+
+    const verify = verifyCompanyPreparerPortalQuery(p, exp, s);
+    if (verify.ok) {
+      return { ok: true, preparerId: verify.preparerId, token: verify.token, url: targetUrl };
+    }
+  } catch (err) {
+    // Fallback to regex extraction directly from input
+    try {
+      const p = input.match(/[?&]p=([^&]+)/)?.[1];
+      const exp = (input.match(/[?&]exp=([^&]+)/)?.[1]) || (input.match(/[?&]token=([^&]+)/)?.[1]);
+      const s = input.match(/[?&]s=([^&]+)/)?.[1];
+      if (p && exp) {
+        const verify = verifyCompanyPreparerPortalQuery(p, exp, s);
+        if (verify.ok) {
+          return { ok: true, preparerId: verify.preparerId, token: verify.token, url: input };
+        }
+      }
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 export async function handlePreparerTelegramMessage(
   message: {
     message_id: number;
@@ -902,34 +957,37 @@ export async function handlePreparerTelegramMessage(
   const chatId = String(message.chat.id);
   const txt = message.text?.trim() ?? "";
 
-  // 1. رابط التفعيل (Registration via Link)
-  if (txt.includes("/preparer") && (txt.includes("exp=") || txt.includes("token="))) {
+  // 1. محاولة التعرف على المجهز من الرابط إذا لم يكن مسجلاً أو أرسل رابطاً جديداً
+  const linkMatch = await tryParsePreparerLink(txt);
+  if (linkMatch && linkMatch.ok) {
     try {
-      const p = txt.match(/[?&]p=([^&]+)/)?.[1];
-      const exp = (txt.match(/[?&]exp=([^&]+)/)?.[1]) || (txt.match(/[?&]token=([^&]+)/)?.[1]);
-      const s = txt.match(/[?&]s=([^&]+)/)?.[1];
+      await prisma.$transaction([
+        prisma.companyPreparer.updateMany({
+          where: { telegramUserId },
+          data: { telegramUserId: "" }
+        }),
+        prisma.companyPreparer.update({
+          where: { id: linkMatch.preparerId },
+          data: { telegramUserId, portalToken: linkMatch.token, active: true }
+        })
+      ]);
 
-      if (p && exp) {
-        console.log(`[preparer-reg] Attempting link registration: p=${p}, exp=${exp.substring(0, 10)}...`);
-        const v = verifyCompanyPreparerPortalQuery(p, exp, s);
-        if (v.ok) {
-          const updated = await prisma.companyPreparer.update({
-            where: { id: v.preparerId },
-            data: { telegramUserId, portalToken: v.token, active: true }
-          });
-          console.log(`[preparer-reg] Success: Preparer ${updated.name} (ID: ${updated.id}) linked to TG:${telegramUserId}`);
-          const { text, keyboard } = await renderPreparerHub(updated);
-          await sendTelegramMessageWithKeyboardToChat(chatId,
-            `✅ تم ربط حسابك بنجاح مجهزنا <b>${escapeTelegramHtml(updated.name)}</b>!\n\nيمكنك الآن استلام الإشعارات وإدارة الطلبات.`,
-            keyboard, botToken
-          );
-          return true;
-        } else {
-          console.warn(`[preparer-reg] Verification failed: ${v.reason}`);
-        }
+      const updated = await prisma.companyPreparer.findUnique({
+        where: { id: linkMatch.preparerId },
+        include: { shopLinks: { include: { shop: true } } }
+      });
+
+      if (updated) {
+        console.log(`[preparer-reg] Success (linkMatch): Preparer ${updated.name} (ID: ${updated.id}) linked to TG:${telegramUserId}`);
+        const { text, keyboard } = await renderPreparerHub(updated);
+        await sendTelegramMessageWithKeyboardToChat(chatId,
+          `✅ تم ربط حسابك بنجاح مجهزنا <b>${escapeTelegramHtml(updated.name)}</b>!\n\nيمكنك الآن استلام الإشعارات وإدارة الطلبات.`,
+          keyboard, botToken
+        );
+        return true;
       }
     } catch (e) {
-      console.error("[preparer-reg] Error:", e);
+      console.error("[preparer-reg] Transaction Error:", e);
     }
   }
 

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { subscribeDeviceToWebPush } from "@/lib/web-push-client";
+import { useEffect, useState } from "react";
 import { ensureNotificationAudioContext } from "@/lib/notification-sound-client";
 
 type Auth = { c: string; exp?: string; s: string };
@@ -17,15 +16,14 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
   const [oneSignalPermission, setOneSignalPermission] = useState<string>("unknown");
   const [oneSignalExternalId, setOneSignalExternalId] = useState<string | null>(null);
   
-  // حالة السيرفر
-  const [serverRegisteredCount, setServerRegisteredCount] = useState<number | null>(null);
+  // حالة الصوت
   const [audioContextStatus, setAudioContextStatus] = useState<string>("unknown");
 
   const runCheck = async () => {
     if (typeof window === "undefined") return;
 
     // 1. دعم النظام
-    const supported = "Notification" in window && "serviceWorker" in navigator && "PushManager" in window;
+    const supported = "Notification" in window;
     setSystemSupported(supported);
 
     // 2. إذن المتصفح
@@ -43,7 +41,8 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
     const OneSignal = (window as any).OneSignal;
     if (OneSignal) {
       setOneSignalLoaded(true);
-      setOneSignalPermission(OneSignal.Notifications.permission ? "granted" : "default");
+      const isGranted = OneSignal.Notifications.permission === "granted";
+      setOneSignalPermission(isGranted ? "granted" : "default");
       try {
         if (OneSignal.initialized) {
           const extId = await OneSignal.User.getExternalId();
@@ -55,29 +54,12 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
     } else {
       setOneSignalLoaded(false);
     }
-
-    // 5. استعلام حالة السيرفر (عدد الأجهزة)
-    try {
-      const q = new URLSearchParams();
-      q.set("c", auth.c);
-      if (auth.exp) q.set("exp", auth.exp);
-      q.set("s", auth.s);
-      const res = await fetch(`/api/notifications/mandoub-assigned?${q.toString()}`, {
-        cache: "no-store",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setServerRegisteredCount(data.registeredDevicesCount ?? 0);
-      }
-    } catch {
-      // تجاهل أخطاء الشبكة
-    }
   };
 
   useEffect(() => {
     void runCheck();
-    // فحص دوري كل 10 ثوانٍ للتحديث التلقائي إذا غيّر المستخدم الأذونات
-    const id = window.setInterval(runCheck, 10000);
+    // فحص دوري كل 5 ثوانٍ للتحديث التلقائي
+    const id = window.setInterval(runCheck, 5000);
     return () => window.clearInterval(id);
   }, [auth.c, auth.exp, auth.s]);
 
@@ -90,44 +72,46 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
         await audioCtx.resume().catch(() => {});
       }
 
-      // ب. طلب إذن المتصفح وإعادة الاشتراك في VAPID
-      if (typeof window !== "undefined" && "Notification" in window) {
-        const permission = await Notification.requestPermission();
-        setBrowserPermission(permission);
-        if (permission === "granted") {
-          await subscribeDeviceToWebPush({
-            audience: "mandoub",
-            mandoub: { c: auth.c, exp: auth.exp, s: auth.s },
-          });
-        }
-      }
-
-      // ج. طلب إذن ون سيجنال وتسجيل الدخول مجدداً
+      // ب. تفعيل ون سيجنال وتسجيل الدخول
       const OneSignal = (window as any).OneSignal;
       if (OneSignal) {
         try {
+          // طلب إذن ون سيجنال
           await OneSignal.Notifications.requestPermission();
+          
+          // تأكيد تسجيل الدخول للمندوب
           if (OneSignal.initialized) {
             await OneSignal.login(auth.c);
+            console.log("OneSignal diagnostics fix: Logged in as", auth.c);
           }
         } catch (err) {
           console.error("OneSignal setup error during fix:", err);
         }
+      } else {
+        // طلب إذن المتصفح التقليدي كاحتياط
+        if (typeof window !== "undefined" && "Notification" in window) {
+          await Notification.requestPermission();
+        }
       }
 
-      // د. إعادة الفحص
+      // ج. إعادة الفحص فوراً
       await runCheck();
     } catch (e) {
       console.error("Error fixing notifications:", e);
     } finally {
-      setLoading(false);
+      // إبطاء خفيف جداً لمنع الوميض السريع للزر
+      setTimeout(() => {
+        setLoading(false);
+      }, 500);
     }
   };
 
   const isEverythingOk = 
     systemSupported && 
     browserPermission === "granted" && 
-    (serverRegisteredCount !== null && serverRegisteredCount > 0) &&
+    oneSignalLoaded && 
+    oneSignalPermission === "granted" &&
+    oneSignalExternalId === auth.c &&
     audioContextStatus === "running";
 
   return (
@@ -156,7 +140,7 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
       {isOpen && (
         <div className="p-4 border-t border-slate-100 bg-white space-y-3.5 text-xs sm:text-sm animate-in fade-in duration-200">
           <p className="text-xs text-slate-500 font-bold leading-normal">
-            هذا الفحص يتأكد من تفعيل الأذونات والاتصال بخوادم الإشعارات لضمان وصول أصوات وتنبيهات الطلبات الجديدة فوراً.
+            هذا الفحص يتأكد من تفعيل أذونات المتصفح وتكامل اتصالك بنظام ون سيجنال (OneSignal) لاستلام إشعارات الطلبات الجديدة في الخلفية.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -186,26 +170,21 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
               </span>
             </div>
 
-            {/* 4. التسجيل في السيرفر */}
+            {/* 4. حالة اتصال ون سيجنال */}
             <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50">
-              <span className="font-bold">الأجهزة المسجلة في السيرفر:</span>
-              <span>
-                {serverRegisteredCount === null && "⏳ جاري الفحص..."}
-                {serverRegisteredCount !== null && serverRegisteredCount > 0 && `✅ ${serverRegisteredCount} جهاز مفعل`}
-                {serverRegisteredCount !== null && serverRegisteredCount === 0 && "❌ لا يوجد اشتراك"}
-              </span>
+              <span className="font-bold">مساعد ون سيجنال (OneSignal):</span>
+              <span>{oneSignalLoaded ? "✅ محمل وجاهز" : "❌ غير متصل"}</span>
             </div>
 
-            {/* 5. ون سيجنال */}
+            {/* 5. معرف المندوب الخارجي */}
             <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50 sm:col-span-2">
-              <span className="font-bold">رابط مساعد ون سيجنال (OneSignal):</span>
+              <span className="font-bold">ربط حساب المندوب بالتنبيهات:</span>
               <div className="flex flex-col items-end gap-0.5">
                 <span>
-                  {!oneSignalLoaded && "❌ لم يتم التحميل"}
-                  {oneSignalLoaded && `✅ جاهز (معرف: ${oneSignalExternalId || "غير معروف"})`}
+                  {oneSignalExternalId === auth.c ? "✅ مرتبط بالكامل" : "⚠️ غير مرتبط (اضغط إصلاح)"}
                 </span>
-                {oneSignalLoaded && oneSignalExternalId !== auth.c && (
-                  <span className="text-[10px] text-amber-700 font-bold">⚠️ معرف المندوب غير متطابق</span>
+                {oneSignalExternalId !== auth.c && (
+                  <span className="text-[10px] text-amber-700 font-bold">المعرف الحالي: {oneSignalExternalId || "غير معروف"}</span>
                 )}
               </div>
             </div>
@@ -225,9 +204,9 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
                   يطلب المتصفح نقرة واحدة على الشاشة لتفعيل الصوت. اضغط على أي مكان في الصفحة أو انقر على زر الإصلاح أدناه.
                 </li>
               )}
-              {(!oneSignalLoaded || (serverRegisteredCount !== null && serverRegisteredCount === 0)) && (
+              {(!oneSignalLoaded || oneSignalExternalId !== auth.c) && (
                 <li>
-                  يرجى الضغط على زر "إصلاح وتفعيل الإشعارات" لتثبيت التنبيهات في خوادم الموقع.
+                  يرجى الضغط على زر "إصلاح وتفعيل الإشعارات" لتثبيت حسابك في نظام ون سيجنال فوراً.
                 </li>
               )}
               <li>

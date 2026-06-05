@@ -14,7 +14,6 @@ import {
   renderNotificationTemplate,
   type NotificationSettingsPayload,
 } from "@/lib/notification-template";
-import { subscribeDeviceToWebPush } from "@/lib/web-push-client";
 import { preparerPath } from "@/lib/preparer-portal-nav";
 
 type Auth = { p: string; exp?: string; s: string };
@@ -183,22 +182,18 @@ export function PreparerNotificationPoller({
 
   async function enableNotifications() {
     ensureNotificationAudioContext()?.resume().catch(() => {});
-    const p = await registerSwAndRequestNotificationPermission();
-    setPerm(p);
-    if (p === "granted") {
-      await subscribeDeviceToWebPush({
-        audience: "preparer",
-        preparer: { p: auth.p, exp: auth.exp, s: auth.s },
-      });
-
-      // تفعيل OneSignal أيضاً للمجهز
-      const OneSignal = (window as any).OneSignal;
-      if (OneSignal) {
-        try {
-          await OneSignal.Notifications.requestPermission();
-        } catch (err) {
-          console.error("Error requesting OneSignal permission", err);
+    
+    // تفعيل إشعارات OneSignal فقط للمجهز لتفادي تعليق ملفات الخدمة والصراع
+    const OneSignal = (window as any).OneSignal;
+    if (OneSignal) {
+      try {
+        const p = await OneSignal.Notifications.requestPermission();
+        setPerm(p ? "granted" : "denied");
+        if (OneSignal.initialized) {
+          await OneSignal.login(auth.p);
         }
+      } catch (err) {
+        console.error("Error requesting OneSignal permission", err);
       }
     }
   }
