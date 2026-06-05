@@ -48,20 +48,20 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
 
     // 4. فحص ون سيجنال
     const OneSignal = (window as any).OneSignal;
-    const isInitialized = (window as any).__onesignal_initialized;
     if (OneSignal) {
       setOneSignalLoaded(true);
       const isGranted = OneSignal.Notifications.permission === "granted";
       setOneSignalPermission(isGranted ? "granted" : "default");
       try {
-        if (isInitialized) {
-          const extId = await withTimeout(OneSignal.User.getExternalId(), 2500);
+        if (OneSignal.User && typeof OneSignal.User.getExternalId === "function") {
+          const extId = await withTimeout(OneSignal.User.getExternalId(), 2000);
           setOneSignalExternalId(extId || null);
         } else {
           setOneSignalExternalId(null);
         }
       } catch (err) {
         console.error("Error reading OneSignal External ID in check:", err);
+        setOneSignalExternalId(null);
       }
     } else {
       setOneSignalLoaded(false);
@@ -97,14 +97,18 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
                 // 1. تهيئة ون سيجنال إذا لم يكن مهيأً
                 if (!windowObj.__onesignal_initialized) {
                   console.log("OneSignal diagnostics: Initializing via Deferred queue...");
-                  await withTimeout(
-                    OS.init({
-                      appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
-                      allowLocalhostAsSecureOrigin: true,
-                      serviceWorkerPath: "OneSignalSDKWorker.js",
-                    }),
-                    5000
-                  );
+                  try {
+                    await withTimeout(
+                      OS.init({
+                        appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
+                        allowLocalhostAsSecureOrigin: true,
+                        serviceWorkerPath: "OneSignalSDKWorker.js",
+                      }),
+                      5000
+                    );
+                  } catch (initErr) {
+                    console.log("OneSignal init inside diagnostics caught error (already initialized?):", initErr);
+                  }
                   windowObj.__onesignal_initialized = true;
                 }
 

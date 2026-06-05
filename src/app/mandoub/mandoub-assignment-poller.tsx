@@ -19,6 +19,8 @@ type Auth = { c: string; exp?: string; s: string };
  */
 export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
   const lastAssignedRef = useRef<number | null>(null);
+  const seenOrderIdRef = useRef<string | null>(null);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,13 +51,23 @@ export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
         const settings = data.settings;
         const sound = settings?.soundPreset ?? "beep";
 
-        if (lastAssignedRef.current !== null && count > lastAssignedRef.current) {
+        if (!initializedRef.current) {
+          lastAssignedRef.current = count;
+          seenOrderIdRef.current = latestOrderId || null;
+          initializedRef.current = true;
+          return;
+        }
+
+        const countIncreased = lastAssignedRef.current !== null && count > lastAssignedRef.current;
+        const isNewOrder = latestOrderId && seenOrderIdRef.current !== null && seenOrderIdRef.current !== latestOrderId;
+
+        if (countIncreased || isNewOrder) {
           ensureNotificationAudioContext()?.resume().catch(() => {});
           playNotificationSound(sound);
           
           if (settings && settings.enabled && typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
             try {
-              const isMultiple = (count - lastAssignedRef.current) > 1 || count > 1;
+              const isMultiple = (count - (lastAssignedRef.current ?? 0)) > 1 || count > 1;
               const template = isMultiple ? settings.templateMultiple : settings.templateSingle;
               const titleTemplate = settings.titleSingle;
 
@@ -95,6 +107,9 @@ export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
           }
         }
         lastAssignedRef.current = count;
+        if (latestOrderId) {
+          seenOrderIdRef.current = latestOrderId;
+        }
       } catch {
         /* ignore network */
       }
