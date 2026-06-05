@@ -28,6 +28,11 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Drag and drop states
+  const [draggedCatIndex, setDraggedCatIndex] = useState<number | null>(null);
+  const [draggedLinkIndex, setDraggedLinkIndex] = useState<number | null>(null);
+  const [draggedLinkCatId, setDraggedLinkCatId] = useState<string | null>(null);
+
   useEffect(() => {
     fetch("/api/abo1stor3hlaa2kbr8-47/settings/floating-menu")
       .then(res => res.json())
@@ -103,6 +108,68 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
     setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
   };
 
+  // Reordering categories
+  const handleCatDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedCatIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleCatDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedCatIndex === null || draggedCatIndex === index) return;
+    const newCategories = [...categories];
+    const [movedCat] = newCategories.splice(draggedCatIndex, 1);
+    newCategories.splice(index, 0, movedCat);
+    setCategories(newCategories);
+    setDraggedCatIndex(null);
+  };
+
+  const moveCategory = (index: number, direction: "up" | "down") => {
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= categories.length) return;
+    const newCategories = [...categories];
+    const temp = newCategories[index];
+    newCategories[index] = newCategories[targetIndex];
+    newCategories[targetIndex] = temp;
+    setCategories(newCategories);
+  };
+
+  // Reordering links within a category
+  const handleLinkDragStart = (e: React.DragEvent, catId: string, index: number) => {
+    setDraggedLinkCatId(catId);
+    setDraggedLinkIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleLinkDrop = (e: React.DragEvent, catId: string, index: number) => {
+    e.preventDefault();
+    if (draggedLinkIndex === null || draggedLinkCatId !== catId || draggedLinkIndex === index) return;
+
+    setCategories(prev => prev.map(c => {
+      if (c.id !== catId) return c;
+      const newLinks = [...c.links];
+      const [movedLink] = newLinks.splice(draggedLinkIndex, 1);
+      newLinks.splice(index, 0, movedLink);
+      return { ...c, links: newLinks };
+    }));
+
+    setDraggedLinkIndex(null);
+    setDraggedLinkCatId(null);
+  };
+
+  const moveLink = (catId: string, index: number, direction: "up" | "down") => {
+    setCategories(prev => prev.map(c => {
+      if (c.id !== catId) return c;
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= c.links.length) return c;
+      const newLinks = [...c.links];
+      const temp = newLinks[index];
+      newLinks[index] = newLinks[targetIndex];
+      newLinks[targetIndex] = temp;
+      return { ...c, links: newLinks };
+    }));
+  };
+
   if (!mounted) return null;
 
   return (
@@ -156,11 +223,52 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
 
         <div className="grid grid-cols-1 gap-4">
           {categories.map((cat, idx) => (
-            <div key={cat.id} className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+            <div
+              key={cat.id}
+              draggable
+              onDragStart={(e) => handleCatDragStart(e, idx)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => handleCatDrop(e, idx)}
+              className={`border rounded-2xl overflow-hidden bg-white shadow-sm transition-all ${
+                draggedCatIndex === idx
+                  ? "opacity-50 border-indigo-400 border-dashed scale-[0.99]"
+                  : "border-slate-200"
+              }`}
+            >
               <div className="flex items-center justify-between p-3 bg-slate-50 border-b border-slate-100">
                 <div className="flex items-center gap-2">
+                  {/* Category Drag Handle */}
                   <div
-                    className="w-4 h-4 rounded-full border border-black/10"
+                    className="cursor-grab active:cursor-grabbing p-1 text-slate-400 hover:text-indigo-600 transition"
+                    title="اسحب لترتيب القسم"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </div>
+                  
+                  {/* Category Reorder Buttons */}
+                  <div className="flex flex-col -space-y-1">
+                    <button
+                      onClick={() => moveCategory(idx, "up")}
+                      disabled={idx === 0}
+                      className="text-[10px] text-slate-400 hover:text-indigo-600 disabled:opacity-20 disabled:hover:text-slate-400 transition"
+                      title="تحريك لأعلى"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      onClick={() => moveCategory(idx, "down")}
+                      disabled={idx === categories.length - 1}
+                      className="text-[10px] text-slate-400 hover:text-indigo-600 disabled:opacity-20 disabled:hover:text-slate-400 transition"
+                      title="تحريك لأسفل"
+                    >
+                      ▼
+                    </button>
+                  </div>
+
+                  <div
+                    className="w-4 h-4 rounded-full border border-black/10 cursor-pointer shrink-0"
                     style={{ backgroundColor: cat.color }}
                     onClick={() => {
                         const nextColor = COLORS[(COLORS.indexOf(cat.color) + 1) % COLORS.length];
@@ -191,8 +299,49 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
               </div>
 
               <div className="p-3 space-y-2">
-                {cat.links.map(link => (
-                  <div key={link.id} className="flex items-center gap-2 group">
+                {cat.links.map((link, lIdx) => (
+                  <div
+                    key={link.id}
+                    draggable
+                    onDragStart={(e) => handleLinkDragStart(e, cat.id, lIdx)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => handleLinkDrop(e, cat.id, lIdx)}
+                    className={`flex items-center gap-2 group p-1 rounded-xl transition-all border border-transparent ${
+                      draggedLinkIndex === lIdx && draggedLinkCatId === cat.id
+                        ? "bg-indigo-50/50 border-dashed border-indigo-200 opacity-40"
+                        : "hover:bg-slate-50/80"
+                    }`}
+                  >
+                    {/* Link Drag Handle */}
+                    <div
+                      className="cursor-grab active:cursor-grabbing p-1 text-slate-350 hover:text-indigo-600 transition shrink-0"
+                      title="اسحب لترتيب الرابط"
+                    >
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M7 2a2 2 0 1 1-2 2 2 2 0 0 1 2-2zm6 0a2 2 0 1 1-2 2 2 2 0 0 1 2-2zm-6 6a2 2 0 1 1-2 2 2 2 0 0 1 2-2zm6 0a2 2 0 1 1-2 2 2 2 0 0 1 2-2zm-6 6a2 2 0 1 1-2 2 2 2 0 0 1 2-2zm6 0a2 2 0 1 1-2 2 2 2 0 0 1 2-2z" />
+                      </svg>
+                    </div>
+
+                    {/* Link Reorder Buttons */}
+                    <div className="flex flex-col -space-y-1.5 shrink-0">
+                      <button
+                        onClick={() => moveLink(cat.id, lIdx, "up")}
+                        disabled={lIdx === 0}
+                        className="text-[9px] text-slate-350 hover:text-indigo-600 disabled:opacity-20 disabled:hover:text-slate-350 transition"
+                        title="تحريك لأعلى"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        onClick={() => moveLink(cat.id, lIdx, "down")}
+                        disabled={lIdx === cat.links.length - 1}
+                        className="text-[9px] text-slate-350 hover:text-indigo-600 disabled:opacity-20 disabled:hover:text-slate-350 transition"
+                        title="تحريك لأسفل"
+                      >
+                        ▼
+                      </button>
+                    </div>
+
                     <input
                       value={link.name}
                       onChange={e => {
@@ -211,7 +360,7 @@ export function FloatingMenuSettings({ icons }: { icons: GlobalIconsConfig }) {
                       }}
                       className="flex-[2] bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-500 focus:border-indigo-400 outline-none"
                     />
-                    <button onClick={() => deleteLink(cat.id, link.id)} className="text-slate-400 hover:text-rose-500 transition">
+                    <button onClick={() => deleteLink(cat.id, link.id)} className="text-slate-400 hover:text-rose-500 transition shrink-0">
                       <DynamicIcon iconKey="ui_close" config={icons} className="w-3 h-3" fallback={<span>×</span>} />
                     </button>
                   </div>
