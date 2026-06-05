@@ -186,7 +186,11 @@ export async function uploadShopDoorPhoto(
 
   let url: string;
   try {
-    url = await saveShopDoorPhotoUploaded(file, MAX_ORDER_IMAGE_BYTES);
+    const courier = await prisma.courier.findUnique({
+      where: { id: v.courierId },
+      select: { rotate180Photos: true },
+    });
+    url = await saveShopDoorPhotoUploaded(file, MAX_ORDER_IMAGE_BYTES, { rotate180: !!courier?.rotate180Photos });
   } catch (e) {
     const code = e instanceof Error ? e.message : "";
     if (code === "IMAGE_TOO_LARGE") {
@@ -528,7 +532,11 @@ export async function uploadMandoubCustomerDoorPhoto(
 
   let url: string;
   try {
-    url = await saveCustomerDoorPhotoUploaded(file, MAX_ORDER_IMAGE_BYTES);
+    const courier = await prisma.courier.findUnique({
+      where: { id: v.courierId },
+      select: { rotate180Photos: true },
+    });
+    url = await saveCustomerDoorPhotoUploaded(file, MAX_ORDER_IMAGE_BYTES, { rotate180: !!courier?.rotate180Photos });
   } catch (e) {
     const code = e instanceof Error ? e.message : "";
     if (code === "IMAGE_TOO_LARGE") {
@@ -611,7 +619,11 @@ export async function uploadMandoubSecondCustomerDoorPhotoSubmit(
 
   let url: string;
   try {
-    url = await saveCustomerDoorPhotoUploaded(file, MAX_ORDER_IMAGE_BYTES);
+    const courier = await prisma.courier.findUnique({
+      where: { id: v.courierId },
+      select: { rotate180Photos: true },
+    });
+    url = await saveCustomerDoorPhotoUploaded(file, MAX_ORDER_IMAGE_BYTES, { rotate180: !!courier?.rotate180Photos });
   } catch {
     redirect(safeMandoubReturn(nextRaw));
   }
@@ -660,7 +672,11 @@ export async function uploadMandoubOrderImageSubmit(formData: FormData): Promise
 
   let url: string;
   try {
-    url = await saveOrderImageUploaded(file, MAX_ORDER_IMAGE_BYTES);
+    const courier = await prisma.courier.findUnique({
+      where: { id: v.courierId },
+      select: { rotate180Photos: true },
+    });
+    url = await saveOrderImageUploaded(file, MAX_ORDER_IMAGE_BYTES, { rotate180: !!courier?.rotate180Photos });
   } catch {
     redirect(safeMandoubReturn(nextRaw));
   }
@@ -708,7 +724,11 @@ export async function uploadMandoubOrderImage(
 
   let url: string;
   try {
-    url = await saveOrderImageUploaded(file, MAX_ORDER_IMAGE_BYTES);
+    const courier = await prisma.courier.findUnique({
+      where: { id: v.courierId },
+      select: { rotate180Photos: true },
+    });
+    url = await saveOrderImageUploaded(file, MAX_ORDER_IMAGE_BYTES, { rotate180: !!courier?.rotate180Photos });
   } catch (e) {
     const code = e instanceof Error ? e.message : "";
     if (code === "IMAGE_TOO_LARGE") {

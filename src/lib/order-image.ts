@@ -180,7 +180,8 @@ async function processAndUploadImage(
     mime?: string,
     skipAiCheck?: boolean,
     isAiGlobalEnabled?: boolean,
-    prefetchedAiConfigs?: any[]
+    prefetchedAiConfigs?: any[],
+    rotate180?: boolean
   }
 ): Promise<string> {
   let buf: Buffer;
@@ -203,6 +204,15 @@ async function processAndUploadImage(
     if (resized) buf = resized;
   } catch (e) {
     console.error("Image resize failed", e);
+  }
+
+  // 1.5 تدوير الصورة 180 درجة إذا كان الخيار مفعلاً
+  if (options?.rotate180) {
+    try {
+      buf = await sharp(buf).rotate(180).toBuffer();
+    } catch (e) {
+      console.error("Image rotation 180 failed", e);
+    }
   }
 
   if (options?.removeBg) {
@@ -294,9 +304,9 @@ async function processAndUploadImage(
   throw new Error("IMAGE_STORAGE_FAILED");
 }
 
-export async function saveOrderImageUploaded(file: File, _mb: number) { return processAndUploadImage(file, "orders"); }
-export async function saveCustomerDoorPhotoUploaded(file: File, _mb: number) { return processAndUploadImage(file, "customers"); }
-export async function saveShopDoorPhotoUploaded(file: File, _mb: number) { return processAndUploadImage(file, "shops"); }
+export async function saveOrderImageUploaded(file: File, _mb: number, options?: { rotate180?: boolean }) { return processAndUploadImage(file, "orders", options); }
+export async function saveCustomerDoorPhotoUploaded(file: File, _mb: number, options?: { rotate180?: boolean }) { return processAndUploadImage(file, "customers", options); }
+export async function saveShopDoorPhotoUploaded(file: File, _mb: number, options?: { rotate180?: boolean }) { return processAndUploadImage(file, "shops", options); }
 export async function saveCustomerProfilePhotoUploaded(file: File, _mb: number) { return processAndUploadImage(file, "profiles"); }
 export async function saveStoreCategoryImageUploaded(file: File, _mb: number) { return processAndUploadImage(file, "categories", { removeBg: false }); }
 export async function saveStoreProductImageUploaded(file: File, _mb: number, options?: { removeBg?: boolean, isAiGlobalEnabled?: boolean, prefetchedAiConfigs?: any[] }) {

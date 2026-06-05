@@ -15,6 +15,7 @@ type CourierSettings = {
   showMoneyBoxes: boolean;
   showNotesBtn: boolean;
   showVoiceNotesBtn: boolean;
+  rotate180Photos: boolean;
 };
 
 type Props = {
@@ -137,6 +138,12 @@ export default function CourierSettingsClient({
       icon: "💵",
       title: "صادر ووارد الطلبية",
       desc: "إظهار أو إخفاء مربعات المبالغ المالية (صادر/وارد) من خارج الطلب",
+    },
+    {
+      key: "rotate180Photos" as const,
+      icon: "🔄",
+      title: "قلب الصور المرفوعة (180 درجة)",
+      desc: "قم بتفعيل هذا الخيار إذا كانت الكاميرا في هاتفك تلتقط الصور مقلوبة رأسًا على عقب لتدويرها تلقائياً عند الرفع",
     },
   ];
 
