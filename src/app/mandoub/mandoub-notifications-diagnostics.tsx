@@ -102,7 +102,7 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
                       OS.init({
                         appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
                         allowLocalhostAsSecureOrigin: true,
-                        serviceWorkerPath: "OneSignalSDKWorker.js",
+                        serviceWorkerPath: "sw-notify.js",
                       }),
                       5000
                     );
@@ -147,20 +147,6 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
       cleanParams.set("s", auth.s);
       await fetch(`/api/push/subscribe?${cleanParams.toString()}`, { method: "DELETE" }).catch(() => {});
 
-      // تنظيف sw-notify.js مباشرة من المتصفح لضمان حله الفوري على الهاتف
-      if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-        try {
-          const registrations = await navigator.serviceWorker.getRegistrations();
-          for (const reg of registrations) {
-            if (reg.active && reg.active.scriptURL.includes("sw-notify.js")) {
-              console.log("Unregistering conflicting sw-notify.js via diagnostics fix...");
-              await reg.unregister();
-            }
-          }
-        } catch (swErr) {
-          console.error("Error unregistering sw-notify.js inside diagnostics:", swErr);
-        }
-      }
 
       // د. إعادة الفحص فوراً
       await runCheck();

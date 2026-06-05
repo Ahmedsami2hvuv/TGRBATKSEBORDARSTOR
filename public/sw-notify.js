@@ -1,5 +1,7 @@
 /* Enhanced Service Worker for Notifications - KSE BORDAR */
 
+importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
+
 // إضافة مستمع الرسائل في البداية لتجنب تحذير المتصفح
 self.addEventListener("message", (event) => {
   // يمكن استخدامه لاحقاً للتحكم في الـ Worker من التطبيق
@@ -14,6 +16,19 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("push", (event) => {
+  // إذا كان الإشعار قادماً من OneSignal، نترك OneSignalSDK.sw.js يتعامل معه بالكامل لمنع التكرار
+  if (event.data) {
+    try {
+      const data = event.data.json();
+      if (data && (data.custom || data.alert || data.hasOwnProperty('custom'))) {
+        console.log("OneSignal push event detected. Handled by OneSignal SDK.");
+        return;
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
   const origin = self.location.origin;
   const icon = origin + "/pwa-icon-192.png";
 
