@@ -4,7 +4,7 @@ import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import Link from "next/link";
 import { AdminDebtsClientModal } from "./admin-debts-client-modal";
 
-export async function AdminDebtsWidget() {
+export async function AdminDebtsWidget({ inline = false }: { inline?: boolean }) {
   const sixtyDaysAgo = new Date();
   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
@@ -42,6 +42,7 @@ export async function AdminDebtsWidget() {
       shop: { name: o.shop.name },
       customerRegion: o.customerRegion,
       createdAt: o.createdAt,
+      shopId: o.shopId, // إضافة shopId لتجنب أية أخطاء في الفلترة
     };
   });
 
@@ -63,16 +64,22 @@ export async function AdminDebtsWidget() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-         <AdminDebtsClientModal initialOrders={debtOrders} />
+      {inline ? (
+        <div className="mt-4">
+          <AdminDebtsClientModal initialOrders={debtOrders} inline={true} />
+        </div>
+      ) : (
+        <div className="flex flex-col sm:flex-row gap-3">
+           <AdminDebtsClientModal initialOrders={debtOrders} />
 
-         <Link
-           href="/abo1stor3hlaa2kbr8-47/preparers"
-           className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-slate-100 py-3 text-xs font-black text-slate-600 transition hover:bg-slate-50 active:scale-95"
-         >
-           تفاصيل حسب المجهز
-         </Link>
-      </div>
+           <Link
+             href="/abo1stor3hlaa2kbr8-47/preparers"
+             className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-slate-100 py-3 text-xs font-black text-slate-600 transition hover:bg-slate-50 active:scale-95"
+           >
+             تفاصيل حسب المجهز
+           </Link>
+        </div>
+      )}
     </section>
   );
 }

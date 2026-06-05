@@ -17,15 +17,24 @@ export default function DebtsReportPage() {
         </Link>
       </p>
 
-      <div>
-        <h1 className={ad.h1}>إدارة ديون المحلات</h1>
-        <p className={`mt-3 ${ad.lead}`}>
-          متابعة المبالغ المعلقة التي بذمة المجهزين للمحلات وتسديدها.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className={ad.h1}>إدارة ديون المحلات</h1>
+          <p className={`mt-3 ${ad.lead}`}>
+            متابعة المبالغ المعلقة التي بذمة المجهزين للمحلات وتسديدها.
+          </p>
+        </div>
+        <Link
+          href={`${SECRET_ADMIN_PATH}/preparers`}
+          className="shrink-0 rounded-2xl bg-white border border-slate-200 px-5 py-3 text-xs font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2 max-w-fit active:scale-95"
+        >
+          <span>👤</span>
+          تفاصيل الديون حسب المجهز
+        </Link>
       </div>
 
       <div className="max-w-4xl">
-        <AdminDebtsWidget />
+        <AdminDebtsWidget inline={true} />
       </div>
     </div>
   );

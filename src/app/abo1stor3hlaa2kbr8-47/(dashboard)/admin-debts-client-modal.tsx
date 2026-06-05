@@ -15,7 +15,13 @@ type DebtOrder = {
   createdAt: Date;
 };
 
-export function AdminDebtsClientModal({ initialOrders }: { initialOrders: DebtOrder[] }) {
+export function AdminDebtsClientModal({
+  initialOrders,
+  inline = false
+}: {
+  initialOrders: DebtOrder[];
+  inline?: boolean;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [orders, setOrders] = useState(initialOrders);
   const [isPending, startTransition] = useTransition();
@@ -89,29 +95,36 @@ export function AdminDebtsClientModal({ initialOrders }: { initialOrders: DebtOr
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="flex-[2] rounded-2xl bg-slate-900 py-3 text-xs font-black text-white shadow-lg shadow-slate-200 transition hover:bg-slate-800 active:scale-95 flex items-center justify-center gap-2"
-      >
-        <span>📂</span>
-        فتح كشف الديون الكامل
-      </button>
+      {!inline && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="flex-[2] rounded-2xl bg-slate-900 py-3 text-xs font-black text-white shadow-lg shadow-slate-200 transition hover:bg-slate-800 active:scale-95 flex items-center justify-center gap-2"
+        >
+          <span>📂</span>
+          فتح كشف الديون الكامل
+        </button>
+      )}
 
-      {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+      {(inline || isOpen) && (
+        <div className={inline ? "w-full" : "fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200"}>
+          <div className={inline 
+            ? "bg-white w-full rounded-[2.5rem] border border-slate-100 flex flex-col overflow-hidden" 
+            : "bg-white w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300"
+          }>
             {/* Header */}
             <div className="bg-rose-600 p-6 text-white flex justify-between items-center shrink-0">
               <div>
                 <h3 className="text-xl font-black">ديون المجهزين للمحلات</h3>
                 <p className="text-xs font-bold text-rose-100 opacity-80">نفس الواجهة الظاهرة للمجهز مع صلاحيات المدير</p>
               </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center text-xl hover:bg-white/30 transition"
-              >
-                ✕
-              </button>
+              {!inline && (
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center text-xl hover:bg-white/30 transition"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
             {/* List */}
