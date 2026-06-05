@@ -46,6 +46,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     if (extension === 'woff') format = 'woff';
     if (extension === 'woff2') format = 'woff2';
     if (extension === 'otf') format = 'opentype';
+    if (extension === 'eot') format = 'embedded-opentype';
+    if (extension === 'svg') format = 'svg';
+    if (extension === 'ttc') format = 'collection';
 
     return `
       @font-face {

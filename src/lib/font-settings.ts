@@ -50,7 +50,7 @@ export function getAvailableFonts(): string[] {
 
     const files = fs.readdirSync(fontsDir);
     return files
-      .filter(file => /\.(ttf|otf|woff|woff2)$/i.test(file))
+      .filter(file => /\.(ttf|otf|woff|woff2|eot|svg|ttc|dfont)$/i.test(file))
       .map(file => path.parse(file).name);
   } catch (e) {
     console.error("Error listing available fonts:", e);

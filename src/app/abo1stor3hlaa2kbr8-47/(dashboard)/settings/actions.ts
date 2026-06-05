@@ -388,3 +388,64 @@ export async function purgeDemoCoreData(
     return { error: "فشل مسح الطلبات: " + e.message };
   }
 }
+
+export async function uploadFontAction(formData: FormData) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+
+    const fontName = formData.get("fontName") as string;
+    const fontFile = formData.get("fontFile") as File;
+
+    if (!fontName || !fontName.trim()) {
+      return { error: "يرجى كتابة اسم الخط." };
+    }
+
+    if (!fontFile || fontFile.size === 0) {
+      return { error: "يرجى اختيار ملف الخط المرفوع." };
+    }
+
+    // تنظيف اسم الخط ليكون اسماً آمناً للملف (السماح بالحروف العربية والأجنبية والأرقام والمسافات والشرطات)
+    // لتسهيل كتابة الأسماء باللغة العربية، سننظف فقط الرموز الخاصة بالملفات والمسارات
+    const cleanFontName = fontName.replace(/[\/\\:\*\?"<>\|]/g, "").trim();
+    if (!cleanFontName) {
+      return { error: "اسم الخط يحتوي على رموز غير صالحة لأسماء الملفات." };
+    }
+
+    const originalName = fontFile.name;
+    const ext = path.extname(originalName).toLowerCase();
+    
+    // الصيغ المدعومة للخطوط
+    const allowedExtensions = [".ttf", ".otf", ".woff", ".woff2", ".eot", ".svg", ".ttc", ".dfont"];
+    if (!allowedExtensions.includes(ext)) {
+      return { error: "صيغة الملف غير مدعومة كخط. الصيغ المدعومة هي: ttf, otf, woff, woff2, eot, svg, ttc, dfont" };
+    }
+
+    const root = process.cwd();
+    const fontsDir = path.join(root, "public", "fonts");
+
+    // التأكد من وجود المجلد
+    if (!fs.existsSync(fontsDir)) {
+      fs.mkdirSync(fontsDir, { recursive: true });
+    }
+
+    // كتابة الملف
+    const bytes = await fontFile.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    
+    const targetPath = path.join(fontsDir, `${cleanFontName}${ext}`);
+    
+    await fs.promises.writeFile(targetPath, buffer);
+
+    revalidatePath("/", "layout");
+    revalidatePath(`${SECRET_ADMIN_PATH}/settings`);
+
+    return { ok: true, fontName: cleanFontName };
+  } catch (error: any) {
+    console.error("Error uploading font:", error);
+    return { error: "حدث خطأ أثناء رفع الخط: " + (error.message || "خطأ غير معروف") };
+  }
+}
+
