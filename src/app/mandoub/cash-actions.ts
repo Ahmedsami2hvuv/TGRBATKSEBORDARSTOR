@@ -58,7 +58,7 @@ async function courierUploaderLabelForLocation(courierId: string): Promise<strin
     where: { id: courierId },
     select: { name: true },
   });
-  return row?.name?.trim() || "مندوب";
+  return row?.name?.trim() ? `المندوب ${row.name.trim()}` : "المندوب";
 }
 
 async function assertAdmin(): Promise<boolean> {

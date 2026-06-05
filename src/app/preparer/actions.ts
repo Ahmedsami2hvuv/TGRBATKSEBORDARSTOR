@@ -682,6 +682,8 @@ export async function submitPreparerOrder(
 
     const total = new Decimal(subtotalParsed.value).plus(delivery);
 
+    const preparerLabel = preparer?.name?.trim() ? `المجهز ${preparer.name.trim()}` : "المجهز";
+
     const order = await prisma.order.create({
       data: {
         shopId,
@@ -703,9 +705,9 @@ export async function submitPreparerOrder(
         prepaidAll,
         imageUrl,
         vehiclePreference: String(formData.get("vehiclePreference") ?? "").trim() || null,
-        orderImageUploadedByName: imageUrl ? PREPARER_PORTAL_LABEL : null,
+        orderImageUploadedByName: imageUrl ? preparerLabel : null,
         shopDoorPhotoUrl,
-        shopDoorPhotoUploadedByName: shopDoorPhotoUrl ? PREPARER_PORTAL_LABEL : null,
+        shopDoorPhotoUploadedByName: shopDoorPhotoUrl ? preparerLabel : null,
       },
     });
 
@@ -1182,11 +1184,17 @@ export async function uploadPreparerPortalOrderImage(
       return { error: preparerImageSaveErrorMessage(e) };
     }
 
+    const preparer = await prisma.companyPreparer.findUnique({
+      where: { id: v.preparerId },
+      select: { name: true },
+    });
+    const preparerLabel = preparer?.name?.trim() ? `المجهز ${preparer.name.trim()}` : "المجهز";
+
     await prisma.order.update({
       where: { id: orderId },
       data: {
         imageUrl: url,
-        orderImageUploadedByName: PREPARER_PORTAL_LABEL,
+        orderImageUploadedByName: preparerLabel,
       },
     });
 
@@ -1229,11 +1237,17 @@ export async function uploadPreparerPortalShopDoorPhoto(
       return { error: preparerImageSaveErrorMessage(e) };
     }
 
+    const preparer = await prisma.companyPreparer.findUnique({
+      where: { id: v.preparerId },
+      select: { name: true },
+    });
+    const preparerLabel = preparer?.name?.trim() ? `المجهز ${preparer.name.trim()}` : "المجهز";
+
     await prisma.order.update({
       where: { id: orderId },
       data: {
         shopDoorPhotoUrl: url,
-        shopDoorPhotoUploadedByName: PREPARER_PORTAL_LABEL,
+        shopDoorPhotoUploadedByName: preparerLabel,
       },
     });
 
@@ -1310,13 +1324,19 @@ export async function updatePreparerOrderFields(_prev: PreparerActionState, form
     const orderImg = formData.get("orderImage");
     const shopDoorImg = formData.get("shopDoorPhoto");
 
+    const preparer = await prisma.companyPreparer.findUnique({
+      where: { id: v.preparerId },
+      select: { name: true },
+    });
+    const preparerLabel = preparer?.name?.trim() ? `المجهز ${preparer.name.trim()}` : "المجهز";
+
     if (orderImg instanceof File && orderImg.size > 0) {
       data.imageUrl = await saveOrderImageUploaded(orderImg, MAX_ORDER_IMAGE_BYTES);
-      data.orderImageUploadedByName = PREPARER_PORTAL_LABEL;
+      data.orderImageUploadedByName = preparerLabel;
     }
     if (shopDoorImg instanceof File && shopDoorImg.size > 0) {
       data.shopDoorPhotoUrl = await saveShopDoorPhotoUploaded(shopDoorImg, MAX_ORDER_IMAGE_BYTES);
-      data.shopDoorPhotoUploadedByName = PREPARER_PORTAL_LABEL;
+      data.shopDoorPhotoUploadedByName = preparerLabel;
     }
 
     await prisma.order.update({

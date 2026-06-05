@@ -8,7 +8,7 @@ export function ImageUploaderCaption({ name }: { name: string | null | undefined
       dir="rtl"
       title={t}
     >
-      رافع: {t}
+      رفع بواسطة: {t}
     </p>
   );
 }

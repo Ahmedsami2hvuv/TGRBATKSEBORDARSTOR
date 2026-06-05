@@ -228,8 +228,13 @@ export function OrderDetailSection({
               <div className="w-[130px] sm:w-[160px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
                 <span className="text-[10px] font-black text-slate-400">صورة المحل</span>
                 {shopImageUrl ? (
-                  <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md">
-                    <img src={imgSrc(shopImageUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(shopImageUrl))} />
+                  <div className="w-full flex flex-col items-center gap-1">
+                    <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md">
+                      <img src={imgSrc(shopImageUrl)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(shopImageUrl))} />
+                    </div>
+                    {order.shopDoorPhotoUploadedByName?.trim() ? (
+                      <div className="mt-0.5"><ImageUploaderCaption name={order.shopDoorPhotoUploadedByName} /></div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="aspect-square w-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-[10px] text-slate-400 font-bold text-center p-2">
@@ -295,9 +300,14 @@ export function OrderDetailSection({
                     {courierSettings?.showLocationBtn !== false && (
                       <div className="max-w-full">
                         {mergedCustomerLocationUrl ? (
-                          <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm">
-                            📍 موقع الزبون <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
-                          </a>
+                          <div className="flex flex-col items-start gap-1">
+                            <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm">
+                              📍 موقع الزبون <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
+                            </a>
+                            {order.customerLocationUploadedByName?.trim() ? (
+                              <div className="mt-0.5"><ImageUploaderCaption name={order.customerLocationUploadedByName} /></div>
+                            ) : null}
+                          </div>
                         ) : (
                           <div className="p-1 rounded-xl bg-slate-50 dark:bg-black/10 border border-slate-100 dark:border-white/5 transform scale-90 origin-right">
                             <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} />
@@ -312,8 +322,13 @@ export function OrderDetailSection({
                 <div className="w-[130px] sm:w-[160px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
                   <span className="text-[10px] font-black text-slate-400">صورة الباب</span>
                   {customerDoorDisplay ? (
-                    <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md">
-                      <img src={imgSrc(customerDoorDisplay)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(customerDoorDisplay))} />
+                    <div className="w-full flex flex-col items-center gap-1">
+                      <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md">
+                        <img src={imgSrc(customerDoorDisplay)!} alt="" className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300" onClick={() => setPreviewImageUrl(imgSrc(customerDoorDisplay))} />
+                      </div>
+                      {order.customerDoorPhotoUploadedByName?.trim() ? (
+                        <div className="mt-0.5"><ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} /></div>
+                      ) : null}
                     </div>
                   ) : (
                     <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-[10px] text-slate-400 font-bold text-center p-2">
@@ -451,8 +466,13 @@ export function OrderDetailSection({
               <div className="w-[130px] sm:w-[160px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
                 <span className="text-[10px] font-black text-slate-400">صورة الطلبية</span>
                 {order.imageUrl ? (
-                  <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md bg-white">
-                    <img src={imgSrc(order.imageUrl)!} alt="" className="h-full w-full object-contain cursor-zoom-in" onClick={() => setPreviewImageUrl(imgSrc(order.imageUrl))} />
+                  <div className="w-full flex flex-col items-center gap-1">
+                    <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md bg-white">
+                      <img src={imgSrc(order.imageUrl)!} alt="" className="h-full w-full object-contain cursor-zoom-in" onClick={() => setPreviewImageUrl(imgSrc(order.imageUrl))} />
+                    </div>
+                    {order.orderImageUploadedByName?.trim() ? (
+                      <div className="mt-0.5"><ImageUploaderCaption name={order.orderImageUploadedByName} /></div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="aspect-square w-full flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-[10px] text-slate-400 font-bold text-center p-2">

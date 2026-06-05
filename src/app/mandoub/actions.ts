@@ -80,7 +80,7 @@ async function courierUploaderLabel(courierId: string): Promise<string> {
     where: { id: courierId },
     select: { name: true },
   });
-  return row?.name?.trim() || "مندوب";
+  return row?.name?.trim() ? `المندوب ${row.name.trim()}` : "المندوب";
 }
 
 /** يحدّث الطلب إلى «تم التسليم» بعد التحقق من الرابط الموقّع */
