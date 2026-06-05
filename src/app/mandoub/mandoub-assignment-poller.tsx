@@ -41,6 +41,8 @@ export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
           latestActiveOrderId?: string;
           latestActiveOrderShopName?: string;
           latestActiveOrderRegionName?: string;
+          latestActiveOrderPrice?: string;
+          latestActiveOrderTime?: string;
           settings?: NotificationSettingsPayload;
         };
         const count = Number(data.assignedCount ?? 0);
@@ -48,6 +50,8 @@ export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
         const latestOrderId = String(data.latestActiveOrderId ?? "");
         const shopName = String(data.latestActiveOrderShopName ?? "—");
         const regionName = String(data.latestActiveOrderRegionName ?? "—");
+        const orderPrice = String(data.latestActiveOrderPrice ?? "—");
+        const orderTime = String(data.latestActiveOrderTime ?? "فوري");
         const settings = data.settings;
         const sound = settings?.soundPreset ?? "beep";
 
@@ -76,6 +80,8 @@ export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
                 orderNumber: latest,
                 shopName,
                 regionName,
+                orderPrice,
+                orderTime,
               });
 
               const body = renderNotificationTemplate(template, {
@@ -83,6 +89,8 @@ export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
                 orderNumber: latest,
                 shopName,
                 regionName,
+                orderPrice,
+                orderTime,
               });
 
               const n = new Notification(title, {
@@ -116,7 +124,7 @@ export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
     };
 
     void tick();
-    const id = window.setInterval(tick, 20000); // استعلام كل 20 ثانية لتقليل الضغط على السيرفر
+    const id = window.setInterval(tick, 7000); // تقليل وقت الاستعلام إلى 7 ثوانٍ لوصول فوري للإشعار ودون تأخير
     const onVisibility = () => {
       if (document.visibilityState === "visible") void tick();
     };

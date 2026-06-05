@@ -163,14 +163,21 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
     select: {
       shop: { select: { name: true } },
       customerRegion: { select: { name: true } },
+      totalAmount: true,
+      orderNoteTime: true,
     },
   });
+
+  const orderPrice = order?.totalAmount ? formatDinarAsAlf(order.totalAmount) : "—";
+  const orderTime = order?.orderNoteTime || "فوري";
 
   const title = renderNotificationTemplate(settings.titleSingle, {
     count: 1,
     orderNumber,
     shopName: order?.shop?.name ?? "—",
     regionName: order?.customerRegion?.name ?? "—",
+    orderPrice,
+    orderTime,
   });
 
   const body = renderNotificationTemplate(settings.templateSingle, {
@@ -178,6 +185,8 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
     orderNumber,
     shopName: order?.shop?.name ?? "—",
     regionName: order?.customerRegion?.name ?? "—",
+    orderPrice,
+    orderTime,
   });
 
   // جلب معرفات الموظفين (الأدمن) + المعرف العام للأدمن
@@ -452,11 +461,16 @@ export async function pushNotifyCourierNewAssignment(
   const settings = audienceSettings(settingsRow, "mandoub");
   if (!settings.enabled) return;
 
+  const orderPrice = order?.totalAmount ? formatDinarAsAlf(order.totalAmount) : "—";
+  const orderTime = order?.orderNoteTime || "فوري";
+
   const title = renderNotificationTemplate(settings.titleSingle, {
     count: 1,
     orderNumber: finalOrderNumber,
     shopName: order?.shop?.name ?? "—",
     regionName: order?.customerRegion?.name ?? "—",
+    orderPrice,
+    orderTime,
   });
 
   const body = renderNotificationTemplate(settings.templateSingle, {
@@ -464,6 +478,8 @@ export async function pushNotifyCourierNewAssignment(
     orderNumber: finalOrderNumber,
     shopName: order?.shop?.name ?? "—",
     regionName: order?.customerRegion?.name ?? "—",
+    orderPrice,
+    orderTime,
   });
 
   const subs = await prisma.webPushSubscription.findMany({
@@ -548,7 +564,9 @@ export async function pushNotifyPreparerNewNotice(input: {
         orderNumber: true,
         shop: { select: { name: true } },
         customerRegion: { select: { name: true } },
-        submissionSource: true
+        submissionSource: true,
+        totalAmount: true,
+        orderNoteTime: true,
       }
     }),
     input.draftId ? prisma.companyPreparerShoppingDraft.findUnique({
@@ -557,11 +575,16 @@ export async function pushNotifyPreparerNewNotice(input: {
     }) : null
   ]);
 
+  const orderPrice = order?.totalAmount ? formatDinarAsAlf(order.totalAmount) : "—";
+  const orderTime = order?.orderNoteTime || "فوري";
+
   const vars = {
     count: 1,
     orderNumber: order?.orderNumber || detectedOrderNumber || 0,
     shopName: order?.shop?.name || "—",
     regionName: order?.customerRegion?.name || draft?.customerRegion?.name || "—",
+    orderPrice,
+    orderTime,
   };
 
   let finalTitle = renderNotificationTemplate(settings.titleSingle, vars);

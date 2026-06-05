@@ -7,22 +7,30 @@ export function renderNotificationTemplate(
     orderNumber: number;
     shopName?: string;
     regionName?: string;
+    orderPrice?: string;
+    orderTime?: string;
   },
 ): string {
   if (!template) return "";
   const shopName = (vars.shopName ?? "—").trim() || "—";
   const regionName = (vars.regionName ?? "—").trim() || "—";
+  const orderPrice = (vars.orderPrice ?? "—").trim() || "—";
+  const orderTime = (vars.orderTime ?? "فوري").trim() || "فوري";
   return template
     .replaceAll("{orderNumber}", String(vars.orderNumber))
     .replaceAll("#{orderNumber}", `#${vars.orderNumber}`)
     .replaceAll("{count}", String(vars.count))
     .replaceAll("{shopName}", shopName)
     .replaceAll("{regionName}", regionName)
+    .replaceAll("{orderPrice}", orderPrice)
+    .replaceAll("{orderTime}", orderTime)
     // دعم الأسماء العربية كـ Alias للتوافق مع الإعدادات القديمة
     .replaceAll("{رقم الطلب}", String(vars.orderNumber))
     .replaceAll("{عدد الطلبات}", String(vars.count))
     .replaceAll("{اسم المحل}", shopName)
-    .replaceAll("{اسم المنطقة}", regionName);
+    .replaceAll("{اسم المنطقة}", regionName)
+    .replaceAll("{سعر الطلب}", orderPrice)
+    .replaceAll("{وقت الطلب}", orderTime);
 }
 
 export type NotificationSettingsPayload = {

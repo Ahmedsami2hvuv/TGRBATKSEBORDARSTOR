@@ -44,6 +44,8 @@ const TEMPLATE_TOKENS: Token[] = [
   { label: "عدد الطلبات", token: "{count}" },
   { label: "اسم المحل", token: "{shopName}" },
   { label: "اسم المنطقة", token: "{regionName}" },
+  { label: "سعر الطلب", token: "{orderPrice}" },
+  { label: "وقت الطلب", token: "{orderTime}" },
 ];
 
 function TokenButtons({ target }: { target: string }) {

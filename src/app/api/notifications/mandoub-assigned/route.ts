@@ -3,6 +3,7 @@ import { verifyDelegatePortalQuery } from "@/lib/delegate-link";
 import { audienceSettings, getOrCreateNotificationSettings } from "@/lib/notification-settings";
 import { prisma } from "@/lib/prisma";
 import { withEphemeralCache } from "@/lib/ephemeral-cache";
+import { formatDinarAsAlf } from "@/lib/money-alf";
 
 export const runtime = "nodejs";
 
@@ -40,6 +41,8 @@ export async function GET(request: Request) {
             orderNumber: true,
             shop: { select: { name: true } },
             customerRegion: { select: { name: true } },
+            totalAmount: true,
+            orderNoteTime: true,
           },
         }),
         getOrCreateNotificationSettings(),
@@ -56,6 +59,8 @@ export async function GET(request: Request) {
     latestActiveOrderId: latest?.id ?? "",
     latestActiveOrderShopName: latest?.shop?.name ?? "",
     latestActiveOrderRegionName: latest?.customerRegion?.name ?? "",
+    latestActiveOrderPrice: latest?.totalAmount ? formatDinarAsAlf(latest.totalAmount) : "—",
+    latestActiveOrderTime: latest?.orderNoteTime || "فوري",
     registeredDevicesCount,
     settings,
   });
