@@ -19,6 +19,7 @@ import {
  parseCustomerLocationRules,
 } from "@/lib/order-location";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
+import { computeSmartHint } from "@/lib/smart-hint-logic";
 import { haversineMeters } from "@/lib/geo-distance";
 
 const SYSTEM_ADMIN_PHONE = "07733921568";
@@ -29,26 +30,6 @@ type Props = {
  params: Promise<{ orderId: string }>;
  searchParams: Promise<{ view?: string }>;
 };
-
-async function computeSmartHint(locationUrl: string, regionId: string | null): Promise<string> {
- if (!regionId || !locationUrl.trim()) return "—";
- try {
- const points = await prisma.regionWaypoint.findMany({
- where: { regionId },
- orderBy: { sortOrder: "asc" },
- select: { name: true, latitude: true, longitude: true },
- });
- if (points.length === 0) return "—";
- const loc = await extractLatLngFromLocationInputSmart(locationUrl);
- if (!loc) return "—";
- let nearest = null;
- for (const p of points) {
- const dist = haversineMeters(loc.latitude, loc.longitude, p.latitude, p.longitude);
- if (!nearest || dist < nearest.dist) nearest = { name: p.name, dist };
- }
- return nearest && nearest.dist < 2500 ? `قريب من (${nearest.name})` : "—";
- } catch { return "—"; }
-}
 
 export default async function AdminOrderViewPage({ params, searchParams }: Props) {
  const { orderId } = await params;
@@ -94,8 +75,8 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
  const secondCustomerLocationUrlEffective = order.secondCustomerLocationUrl || secondProfile?.locationUrl || "";
 
  const [smartHintLine, secondSmartHintLine] = await Promise.all([
- computeSmartHint(customerLocationUrlEffective, order.customerRegionId),
- computeSmartHint(secondCustomerLocationUrlEffective, order.secondCustomerRegionId),
+ computeSmartHint(order.id, "primary"),
+ computeSmartHint(order.id, "secondary"),
  ]);
 
  const submitterPhone = order.submittedByCompanyPreparer?.phone || order.submittedBy?.phone ||
