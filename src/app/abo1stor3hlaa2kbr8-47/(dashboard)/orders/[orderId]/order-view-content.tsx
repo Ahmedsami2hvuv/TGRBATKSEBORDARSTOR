@@ -233,10 +233,10 @@ export function OrderViewContent({
                     </div>
                   )}
                 </div>
-                <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark?.trim() || "—"}</p>
-                {isSmartHintValid(order.smartHintLine) ? (
-                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.smartHintLine!.trim()}</p>
-                ) : null}
+                <p className="text-sm font-medium text-slate-800">📍 النقطة الدالة: {order.customerLandmark?.trim() || "—"}</p>
+                <p className="text-sm font-bold text-emerald-800">
+                  💡 الاستدلال الذكي: {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
+                </p>
                 <div className="mt-2 space-y-2">
                   {order.customerLocationUrl?.trim() ? (
                     <div className="space-y-1">
@@ -297,10 +297,10 @@ export function OrderViewContent({
                     <span className={compactPhoneText}>{order.secondCustomerPhone || "—"}</span>
                   </div>
                 </div>
-                <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.secondCustomerLandmark?.trim() || "—"}</p>
-                {isSmartHintValid(order.secondSmartHintLine) ? (
-                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.secondSmartHintLine!.trim()}</p>
-                ) : null}
+                <p className="text-sm font-medium text-slate-800">📍 النقطة الدالة: {order.secondCustomerLandmark?.trim() || "—"}</p>
+                <p className="text-sm font-bold text-emerald-800">
+                  💡 الاستدلال الذكي: {isSmartHintValid(order.secondSmartHintLine) ? order.secondSmartHintLine!.trim() : "—"}
+                </p>
                 <div className="mt-2 space-y-2">
                   {order.secondCustomerLocationUrl?.trim() ? (
                     <div className="space-y-1">
@@ -335,10 +335,10 @@ export function OrderViewContent({
                     </div>
                   )}
                 </div>
-                <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark?.trim() || "—"}</p>
-                {isSmartHintValid(order.smartHintLine) ? (
-                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.smartHintLine!.trim()}</p>
-                ) : null}
+                <p className="text-sm font-medium text-slate-800">📍 النقطة الدالة: {order.customerLandmark?.trim() || "—"}</p>
+                <p className="text-sm font-bold text-emerald-800">
+                  💡 الاستدلال الذكي: {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
+                </p>
                 <div className="mt-2 space-y-2">
                   {order.customerLocationUrl?.trim() ? (
                     <div className="space-y-1">

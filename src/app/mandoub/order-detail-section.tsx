@@ -303,16 +303,18 @@ export function OrderDetailSection({
                     )}
 
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-bold text-slate-400 text-sm" title="أقرب نقطة دالة">🗺️</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">{mergedLandmark || "—"}</span>
+                      <span className="font-bold text-slate-400 text-sm">📍</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200">النقطة الدالة: {mergedLandmark || order.customerLandmark || "—"}</span>
                     </div>
 
-                    {isSmartHintValid(smartHintLine) && (
+                    <div className="mt-1">
                       <div className="flex flex-col gap-0.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 p-1.5 border border-emerald-100/50 dark:border-emerald-900/20">
-                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">💡 الاستدلال الذكي للعنوان:</span>
-                        <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-350">{smartHintLine!.trim()}</span>
+                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">💡 الاستدلال الذكي:</span>
+                        <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-350">
+                          {isSmartHintValid(smartHintLine) ? smartHintLine!.trim() : "—"}
+                        </span>
                       </div>
-                    )}
+                    </div>
                   </div>
 
                   <div className="pt-1.5">
@@ -386,16 +388,18 @@ export function OrderDetailSection({
                       </div>
 
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-slate-400 text-sm" title="أقرب نقطة دالة">🗺️</span>
-                        <span className="font-bold text-slate-800 dark:text-slate-200">{secondLandmarkMerged || "—"}</span>
+                        <span className="font-bold text-slate-400 text-sm">📍</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">النقطة الدالة: {secondLandmarkMerged || "—"}</span>
                       </div>
 
-                      {isSmartHintValid(secondSmartHintLine) && (
+                      <div className="mt-1">
                         <div className="flex flex-col gap-0.5 rounded-lg bg-violet-50/50 dark:bg-violet-950/10 p-1.5 border border-violet-100/50 dark:border-violet-900/20">
-                          <span className="text-[9px] font-black text-violet-600 dark:text-violet-400">💡 الاستدلال الذكي للعنوان:</span>
-                          <span className="text-[11px] font-black text-violet-800 dark:text-violet-350">{secondSmartHintLine!.trim()}</span>
+                          <span className="text-[9px] font-black text-violet-600 dark:text-violet-400">💡 الاستدلال الذكي:</span>
+                          <span className="text-[11px] font-black text-violet-800 dark:text-violet-350">
+                            {isSmartHintValid(secondSmartHintLine) ? secondSmartHintLine!.trim() : "—"}
+                          </span>
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     <div className="pt-1.5">

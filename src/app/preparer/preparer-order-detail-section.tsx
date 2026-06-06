@@ -282,12 +282,18 @@ export function PreparerOrderDetailSection({
 
             <div className="space-y-1">
               <p className="text-lg font-bold text-slate-900">{r1}</p>
-              {mergedLandmark && (
-                <p className="text-sm font-bold text-slate-700">📍 النقطة الدالة: {mergedLandmark}</p>
-              )}
-              {isSmartHintValid(smartHintLine) && (
-                <p className="text-[13px] font-black text-emerald-800">✨ الاستدلال الذكي: {smartHintLine}</p>
-              )}
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-bold text-slate-700">📍 النقطة الدالة:</span>
+                <span className="text-sm font-bold text-slate-900">{mergedLandmark || order.customerLandmark || "—"}</span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-[13px] font-black text-emerald-800">💡 الاستدلال الذكي:</span>
+                <span className="text-[13px] font-black text-emerald-900">
+                  {isSmartHintValid(smartHintLine) ? smartHintLine!.trim() : "—"}
+                </span>
+              </div>
             </div>
 
             {showSecond ? (
@@ -295,12 +301,18 @@ export function PreparerOrderDetailSection({
                 <p className="text-base font-bold text-violet-900">
                   الوجهة الثانية: <span className="text-slate-900">{r2}</span>
                 </p>
-                {secondLandmarkMerged && (
-                  <p className="text-sm font-bold text-slate-700">📍 النقطة الدالة (2): {secondLandmarkMerged}</p>
-                )}
-                {isSmartHintValid(secondSmartHintLine) && (
-                  <p className="text-[13px] font-black text-violet-800">✨ الاستدلال الذكي (2): {secondSmartHintLine}</p>
-                )}
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-bold text-slate-700">📍 النقطة الدالة:</span>
+                  <span className="text-sm font-bold text-slate-900">{secondLandmarkMerged || "—"}</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[13px] font-black text-violet-800">💡 الاستدلال الذكي:</span>
+                  <span className="text-[13px] font-black text-violet-900">
+                    {isSmartHintValid(secondSmartHintLine) ? secondSmartHintLine!.trim() : "—"}
+                  </span>
+                </div>
               </div>
             ) : null}
           </div>
