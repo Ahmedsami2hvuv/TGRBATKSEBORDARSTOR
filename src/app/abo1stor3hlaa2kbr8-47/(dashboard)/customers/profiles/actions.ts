@@ -1467,7 +1467,7 @@ export async function deleteCustomerPhoneProfile(formData: FormData) {
   redirect("/abo1stor3hlaa2kbr8-47/customers/profiles");
 }
 
-export async function cleanupLargeCustomerPhotos() {
+export async function cleanupLargeCustomerPhotos(skip: number = 0, take: number = 20) {
   if (!(await isAdminSession())) {
     return { ok: false, error: "غير مصرّح" };
   }
@@ -1475,10 +1475,18 @@ export async function cleanupLargeCustomerPhotos() {
   const { getR2ObjectMetadata, getR2ObjectBuffer, deleteFromR2 } = await import("@/lib/upload-storage");
   const { saveCustomerProfilePhotoFromResizedBuffer } = await import("@/lib/order-image");
 
-  // جلب كل البروفايلات التي تحتوي على صور
+  // جلب إجمالي عدد الصور الكلي (فقط في أول طلب)
+  const totalCount = await prisma.customerPhoneProfile.count({
+    where: { photoUrl: { startsWith: "/uploads/" } }
+  });
+
+  // جلب دفعة محددة
   const profiles = await prisma.customerPhoneProfile.findMany({
     where: { photoUrl: { startsWith: "/uploads/" } },
-    select: { id: true, photoUrl: true, phone: true }
+    select: { id: true, photoUrl: true, phone: true },
+    orderBy: { createdAt: "desc" },
+    skip,
+    take
   });
 
   let processed = 0;
@@ -1488,31 +1496,27 @@ export async function cleanupLargeCustomerPhotos() {
 
   for (const p of profiles) {
     processed++;
-    const meta = await getR2ObjectMetadata(p.photoUrl);
-    if (meta && meta.size > LIMIT_1MB) {
-      try {
+    try {
+      const meta = await getR2ObjectMetadata(p.photoUrl);
+      if (meta && meta.size > LIMIT_1MB) {
         const buffer = await getR2ObjectBuffer(p.photoUrl!);
         if (buffer) {
-          // رفع النسخة المضغوطة (الدالة saveCustomerProfilePhotoFromResizedBuffer تستخدم resizeImageBufferForShop داخلياً)
           const newUrl = await saveCustomerProfilePhotoFromResizedBuffer(buffer, 20);
           if (newUrl && newUrl !== p.photoUrl) {
-            // تحديث قاعدة البيانات
             await prisma.customerPhoneProfile.update({
               where: { id: p.id },
               data: { photoUrl: newUrl }
             });
-            // حذف القديمة من R2
             await deleteFromR2(p.photoUrl);
             compressed++;
           }
         }
-      } catch (e) {
-        console.error(`Failed to compress profile ${p.id}:`, e);
-        errors++;
       }
+    } catch (e) {
+      console.error(`Failed to compress profile ${p.id}:`, e);
+      errors++;
     }
   }
 
-  revalidatePath("/abo1stor3hlaa2kbr8-47/customers/profiles");
-  return { ok: true, processed, compressed, errors };
+  return { ok: true, processed, compressed, errors, totalCount, hasMore: skip + take < totalCount };
 }
