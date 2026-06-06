@@ -38,7 +38,7 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
     // 3. فحص ون سيجنال
     const OneSignal = (window as any).OneSignal;
     if (OneSignal) {
-      if (OneSignal.Notifications.permission !== "granted") {
+      if (!OneSignal.Notifications.permission) {
         setIsActive(false);
         return;
       }
@@ -118,9 +118,9 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
             }
 
             // طلب إذن الإشعارات
-            if (OS.Notifications.permission !== "granted") {
+            if (!OS.Notifications.permission) {
               const permissionResult = await withTimeout(OS.Notifications.requestPermission(), 10000);
-              if (permissionResult === "denied" || OS.Notifications.permission !== "granted") {
+              if (permissionResult === false && !OS.Notifications.permission) {
                 throw new Error("permission_denied");
               }
             }

@@ -28,7 +28,7 @@ export function MandoubWebPushBanner({ auth }: { auth: Auth }) {
       
       if (OneSignal) {
         // نظهر البانر إذا لم تكن الإشعارات مفعلة في ون سيجنال
-        if (OneSignal.Notifications.permission !== "granted") {
+        if (!OneSignal.Notifications.permission) {
           setShow(true);
           try {
             localStorage.setItem(key, String(Date.now()));
