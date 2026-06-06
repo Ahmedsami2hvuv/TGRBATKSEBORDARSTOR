@@ -371,7 +371,7 @@ export async function notifyTelegramNewOrder(orderId: string): Promise<void> {
       }
     }
 
-    const prepText = `🔔 <b>طلب جديد لمحل تابع لك:</b>\n\n` + bodyLines.join("\n") + `\n\nاختر مادة لتسعيرها:`;
+    const prepText = bodyLines.join("\n") + `\n\nاختر مادة لتسعيرها:`;
     const prepKb = buildPreparerOrderKeyboard(order.id, order.orderNumber, shoppingJson);
 
     const preparerBotToken = await getBotTokenByPurpose("preparer");
