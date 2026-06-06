@@ -1,9 +1,13 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useRef } from "react";
 import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import { AdminRegionSearchPicker, type AdminRegionOption } from "@/components/admin-region-search-picker";
+import {
+  compressImageForMandoubUpload,
+  assignFileToInput,
+} from "@/lib/client-image-compress";
 import {
   updateCustomerPhoneProfile,
   type CustomerProfileFormState,
@@ -39,6 +43,22 @@ export function CustomerProfileEditForm({
     initial,
   );
   const [regionId, setRegionId] = useState(defaultRegionId);
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      // ضغط الصورة وتصغيرها قبل الرفع لتجنب خطأ 413
+      const compressed = await compressImageForMandoubUpload(file);
+      assignFileToInput(photoInputRef.current!, compressed);
+      setSelectedPhoto(compressed);
+    } catch (err) {
+      console.error("خطأ في ضغط الصورة:", err);
+      setSelectedPhoto(file);
+    }
+  };
 
   if (regions.length === 0) {
     return (
@@ -148,14 +168,22 @@ export function CustomerProfileEditForm({
             {defaultPhotoUrl ? "استبدال صورة الباب (اختياري)" : "صورة باب الزبون (اختياري)"}
           </span>
           <input
+            ref={photoInputRef}
             name="photo"
             type="file"
             accept="image/jpeg,image/png,image/webp"
+            onChange={handlePhotoChange}
             className={ad.input}
           />
-          <span className="text-xs text-slate-500">
-            JPG أو PNG أو Webp — حتى 10 ميجابايت
-          </span>
+          {selectedPhoto ? (
+            <span className="text-xs font-bold text-green-600">
+              ✓ تم تجهيز الصورة المقلصة للرفع ({selectedPhoto.name})
+            </span>
+          ) : (
+            <span className="text-xs text-slate-500">
+              JPG أو PNG أو Webp — سيتم تصغير الصور الكبيرة تلقائياً
+            </span>
+          )}
         </label>
       </div>
       {state.error ? (
