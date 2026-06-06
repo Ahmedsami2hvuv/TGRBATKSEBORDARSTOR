@@ -20,42 +20,60 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
   const checkStatus = async () => {
     if (typeof window === "undefined") return;
 
-    // 1. فحص الدعم والإذن
+    // 1. فحص الدعم والإذن العام للمتصفح أولاً
     const supported = "Notification" in window;
     if (!supported || Notification.permission !== "granted") {
       setIsActive(false);
       return;
     }
 
-    // 2. فحص حالة OneSignal
-    const OneSignal = (window as any).OneSignal;
-    if (OneSignal) {
+    // 2. استخدام طابور ون سيجنال المؤجل لضمان تحميل وتهيئة المكتبة أولاً
+    const windowObj = window as any;
+    windowObj.OneSignalDeferred = windowObj.OneSignalDeferred || [];
+    windowObj.OneSignalDeferred.push(async (OneSignal: any) => {
       if (!OneSignal.Notifications.permission) {
         setIsActive(false);
         return;
       }
-      try {
-        if (OneSignal.User && typeof OneSignal.User.getExternalId === "function") {
-          const extId = await withTimeout(OneSignal.User.getExternalId(), 1500);
-          if (extId === auth.c) {
-            setIsActive(true);
-            return;
+
+      let attempts = 0;
+      const maxAttempts = 6;
+
+      const tryCheck = async () => {
+        try {
+          if (OneSignal.User && typeof OneSignal.User.getExternalId === "function") {
+            const extId = await OneSignal.User.getExternalId();
+            if (extId === auth.c) {
+              setIsActive(true);
+              return true;
+            }
+          }
+        } catch (err) {
+          console.error("Error reading OneSignal External ID in status check attempt:", err);
+        }
+        return false;
+      };
+
+      // محاولة أولى فورية
+      const success = await tryCheck();
+      if (success) return;
+
+      // محاولات متكررة في الخلفية للتعامل مع تأخر استرجاع الجلسة
+      const interval = setInterval(async () => {
+        attempts++;
+        const ok = await tryCheck();
+        if (ok || attempts >= maxAttempts) {
+          clearInterval(interval);
+          if (!ok) {
+            setIsActive(false);
           }
         }
-      } catch (err) {
-        console.error("Error reading OneSignal External ID in status check:", err);
-      }
-    }
-    
-    if (isActive === null) {
-      setIsActive(false);
-    }
+      }, 800);
+    });
   };
 
   useEffect(() => {
-    // تشغيل فحص سريع بعد التحميل
-    const timer = setTimeout(checkStatus, 2500);
-    return () => clearTimeout(timer);
+    void checkStatus();
   }, [auth.c]);
 
   const targetUrl = `/mandoub/settings/notifications?c=${auth.c}&s=${auth.s}${auth.exp ? `&exp=${auth.exp}` : ""}`;
