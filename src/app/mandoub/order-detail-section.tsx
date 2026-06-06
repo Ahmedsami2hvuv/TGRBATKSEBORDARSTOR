@@ -107,7 +107,12 @@ export function OrderDetailSection({
 
   const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
   const isAdminPortal = order.submissionSource === "admin_portal";
-  const submitterName = order.submittedByCompanyPreparer?.name?.trim() || order.submittedBy?.name?.trim() || (isAdminPortal && !order.submittedBy ? "الإدارة" : "—");
+  const submitterName =
+    order.customer?.name?.trim() ||
+    order.shop.ownerName?.trim() ||
+    order.submittedByCompanyPreparer?.name?.trim() ||
+    order.submittedBy?.name?.trim() ||
+    (isAdminPortal && !order.submittedBy ? "الإدارة" : "—");
   const shopContactPhone = order.submittedByCompanyPreparer?.phone?.trim() || order.submittedBy?.phone?.trim() || (isAdminPortal && !order.submittedBy ? ADMIN_PHONE_FROM_SHOP_LOCAL : order.shop.phone?.trim() || "");
   const customerDoorDisplay =
     order.customerDoorPhotoUrl?.trim() ||
@@ -200,7 +205,7 @@ export function OrderDetailSection({
 
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="font-bold text-slate-400 text-sm" title="منطقة المحل">📍</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">{order.shop.region.name}</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{order.shop.region?.name || "—"}</span>
                   </div>
 
                   {shopContactPhone && (
@@ -266,6 +271,12 @@ export function OrderDetailSection({
                   </div>
 
                   <div className="space-y-2 text-xs">
+                    {order.customer?.name && (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-slate-400 text-sm" title="اسم الزبون">👤</span>
+                        <span className="font-black text-slate-900 dark:text-white">{order.customer.name}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-bold text-slate-400 text-sm" title="منطقة الزبون">📍</span>
                       <span className="font-black text-slate-900 dark:text-white">{order.customerRegion?.name ?? "—"}</span>

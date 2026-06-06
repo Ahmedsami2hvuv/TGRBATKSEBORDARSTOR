@@ -10,7 +10,8 @@ export const mandoubOrderDetailInclude = {
       photoUrl: true,
       locationUrl: true,
       regionId: true,
-      region: true
+      region: true,
+      ownerName: true,
     }
   },
   customerRegion: true,
@@ -20,6 +21,7 @@ export const mandoubOrderDetailInclude = {
   customer: {
     select: {
       id: true,
+      name: true,
       customerDoorPhotoUrl: true,
       customerLocationUrl: true,
       customerLandmark: true,
@@ -56,6 +58,7 @@ export const mandoubOrderListInclude = {
       locationUrl: true,
       regionId: true,
       region: true,
+      ownerName: true,
     },
   },
   customerRegion: true,
@@ -65,6 +68,7 @@ export const mandoubOrderListInclude = {
   customer: {
     select: {
       id: true,
+      name: true,
       customerDoorPhotoUrl: true,
       customerLocationUrl: true,
       customerLandmark: true,
