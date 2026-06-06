@@ -797,6 +797,7 @@ export default async function MandoubPage({ searchParams }: Props) {
               )}
             </div>
             <div className="flex items-center gap-2">
+              <MandoubNotificationsDiagnostics auth={baseAuth} />
               <MandoubPresenceToggle auth={baseAuth} availableForAssignment={courier.availableForAssignment} />
               <FullscreenWalletLauncher
                 href={`/mandoub/wallet?${baseQuery.toString()}`}
@@ -812,7 +813,6 @@ export default async function MandoubPage({ searchParams }: Props) {
           </header>
 
           <MandoubWebPushBanner auth={baseAuth} />
-          <MandoubNotificationsDiagnostics auth={baseAuth} />
           <MandoubAssignmentPoller auth={baseAuth} />
           <MandoubMoneySummarySection
             totalsBaseline={totalsBaseline}
