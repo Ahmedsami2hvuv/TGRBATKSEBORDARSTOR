@@ -386,14 +386,14 @@ async function profilePhotoFromRemoteUrl(
     }
 
     const ext = inferExtFromImage(contentType, parsedUrl.toString());
-    const key = `profiles/url-import-${Date.now()}-${randomUUID()}.${ext}`;
-    const uploadedKey = await uploadToR2(buf, key, contentType || "image/jpeg");
-    if (!uploadedKey) {
-      return { ok: false, error: "تعذر رفع الصورة إلى التخزين." };
-    }
+    const photoUrl = await saveCustomerProfilePhotoUploaded(
+      new File([buf], `url-import-${Date.now()}.${ext}`, { type: contentType || "image/jpeg" }),
+      MAX_ORDER_IMAGE_BYTES
+    );
 
-    return { ok: true, photoUrl: `/uploads/${uploadedKey}` };
-  } catch {
+    return { ok: true, photoUrl };
+  } catch (e) {
+    console.error("Remote photo import failed:", e);
     return { ok: false, error: "حدث خطأ أثناء تنزيل/رفع الصورة." };
   }
 }
@@ -1465,4 +1465,54 @@ export async function deleteCustomerPhoneProfile(formData: FormData) {
   revalidatePath("/abo1stor3hlaa2kbr8-47/customers");
   revalidatePath("/abo1stor3hlaa2kbr8-47/customers/profiles");
   redirect("/abo1stor3hlaa2kbr8-47/customers/profiles");
+}
+
+export async function cleanupLargeCustomerPhotos() {
+  if (!(await isAdminSession())) {
+    return { ok: false, error: "غير مصرّح" };
+  }
+
+  const { getR2ObjectMetadata, getR2ObjectBuffer, deleteFromR2 } = await import("@/lib/upload-storage");
+  const { saveCustomerProfilePhotoFromResizedBuffer } = await import("@/lib/order-image");
+
+  // جلب كل البروفايلات التي تحتوي على صور
+  const profiles = await prisma.customerPhoneProfile.findMany({
+    where: { photoUrl: { startsWith: "/uploads/" } },
+    select: { id: true, photoUrl: true, phone: true }
+  });
+
+  let processed = 0;
+  let compressed = 0;
+  let errors = 0;
+  const LIMIT_1MB = 1024 * 1024;
+
+  for (const p of profiles) {
+    processed++;
+    const meta = await getR2ObjectMetadata(p.photoUrl);
+    if (meta && meta.size > LIMIT_1MB) {
+      try {
+        const buffer = await getR2ObjectBuffer(p.photoUrl!);
+        if (buffer) {
+          // رفع النسخة المضغوطة (الدالة saveCustomerProfilePhotoFromResizedBuffer تستخدم resizeImageBufferForShop داخلياً)
+          const newUrl = await saveCustomerProfilePhotoFromResizedBuffer(buffer, 20);
+          if (newUrl && newUrl !== p.photoUrl) {
+            // تحديث قاعدة البيانات
+            await prisma.customerPhoneProfile.update({
+              where: { id: p.id },
+              data: { photoUrl: newUrl }
+            });
+            // حذف القديمة من R2
+            await deleteFromR2(p.photoUrl);
+            compressed++;
+          }
+        }
+      } catch (e) {
+        console.error(`Failed to compress profile ${p.id}:`, e);
+        errors++;
+      }
+    }
+  }
+
+  revalidatePath("/abo1stor3hlaa2kbr8-47/customers/profiles");
+  return { ok: true, processed, compressed, errors };
 }

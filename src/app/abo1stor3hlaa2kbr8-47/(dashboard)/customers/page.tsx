@@ -9,6 +9,7 @@ import { resolvePublicAssetSrc } from "@/lib/image-url";
 
 import { CustomerSearchInput } from "./customer-search-input";
 import { CustomerBlockActions } from "./customer-block-actions";
+import { PhotoCleanupButton } from "./photo-cleanup-button";
 export const dynamic = "force-dynamic";
 export const revalidate = 0; // منع الكاش نهائياً
 
@@ -189,7 +190,10 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
                 <p className="text-gray-500 text-sm">المعروض حالياً: <span className="text-green-600 font-bold">{profiles.length} (صفحة {pageSafe} من {totalPages})</span></p>
               </div>
            </div>
-           <ImportCustomersButton icons={icons} />
+           <div className="flex flex-col items-end gap-2">
+             <ImportCustomersButton icons={icons} />
+             <PhotoCleanupButton />
+           </div>
         </div>
       </div>
 

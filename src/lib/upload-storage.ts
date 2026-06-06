@@ -87,6 +87,53 @@ export async function r2ObjectExistsByUrl(urlOrKey: string | null | undefined): 
   }
 }
 
+export async function getR2ObjectMetadata(urlOrKey: string | null | undefined): Promise<{ size: number; contentType: string } | null> {
+  if (!BUCKET_NAME || !urlOrKey) return null;
+  const r2Client = await getS3Client();
+  if (!r2Client) return null;
+
+  const raw = String(urlOrKey).trim();
+  let key = raw;
+  if (raw.startsWith("/uploads/")) key = raw.slice(9);
+
+  try {
+    const { HeadObjectCommand } = await import("@aws-sdk/client-s3");
+    const res = await r2Client.send(new HeadObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+    }));
+    return {
+      size: res.ContentLength ?? 0,
+      contentType: res.ContentType ?? "image/jpeg",
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function getR2ObjectBuffer(urlOrKey: string): Promise<Buffer | null> {
+  if (!BUCKET_NAME || !urlOrKey) return null;
+  const r2Client = await getS3Client();
+  if (!r2Client) return null;
+
+  let key = urlOrKey;
+  if (urlOrKey.startsWith("/uploads/")) key = urlOrKey.slice(9);
+
+  try {
+    const { GetObjectCommand } = await import("@aws-sdk/client-s3");
+    const res = await r2Client.send(new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+    }));
+    if (!res.Body) return null;
+    const bytes = await res.Body.transformToByteArray();
+    return Buffer.from(bytes);
+  } catch (error) {
+    console.error("Error getting object from R2:", error);
+    return null;
+  }
+}
+
 // دالة محسنة لضمان إرجاع مسار صالح دوماً
 export function getUploadsRoot(): string {
   const root = process.env.UPLOADS_ROOT_DIR || (typeof process.cwd === 'function' ? process.cwd() : '.') || ".";
