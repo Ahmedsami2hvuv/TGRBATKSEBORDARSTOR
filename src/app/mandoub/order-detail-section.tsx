@@ -108,7 +108,6 @@ export function OrderDetailSection({
   const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
   const isAdminPortal = order.submissionSource === "admin_portal";
   const submitterName =
-    order.customer?.name?.trim() ||
     order.shop.ownerName?.trim() ||
     order.submittedByCompanyPreparer?.name?.trim() ||
     order.submittedBy?.name?.trim() ||

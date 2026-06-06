@@ -714,6 +714,9 @@ export default async function MandoubPage({ searchParams }: Props) {
       routeMode: o.routeMode as any,
 
       secondCustomerRegionName: o.secondCustomerRegion?.name?.trim() || null,
+      shopRegionName: o.shop.region?.name || null,
+      customerName: o.customer?.name || null,
+      submitterName: o.shop.ownerName || o.submittedBy?.name || o.submittedByCompanyPreparer?.name || null,
       preparerAudioUrl: (o.preparerShoppingJson as any)?.preparerAudioUrl || null,
       adminAudioUrl: o.adminVoiceNoteUrl,
       showDoorBtn: courier.showDoorBtn,

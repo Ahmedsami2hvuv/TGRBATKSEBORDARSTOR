@@ -32,6 +32,9 @@ export type MandoubRow = {
   /** فئات Tailwind لاسم المحل حسب حالة الطلب (أحمر / برتقالي / أخضر) */
   shopNameHighlightClass: string;
   regionLine: string;
+  shopRegionName?: string | null;
+  submitterName?: string | null;
+  customerName?: string | null;
   /** أقرب نقطة دالة (يدوي/موجودة في الطلب) */
   landmarkLine?: string | null;
   /** سطر ذكي مشتق من أقرب مدخل داخل المنطقة */
@@ -761,9 +764,14 @@ export function MandoubOrderTable({
                      phone: activeOrderData.shopPhone,
                      photoUrl: activeOrderData.shopDoorPhotoUrl,
                      locationUrl: activeOrderData.shopLocationUrl,
-                     region: { name: activeOrderData.regionLine }
+                     region: { name: activeOrderData.shopRegionName || "—" },
+                     ownerName: activeOrderData.submitterName,
                   } as any,
                   customerRegion: { name: activeOrderData.regionLine } as any,
+                  customer: {
+                     name: activeOrderData.customerName,
+                  } as any,
+                  submittedBy: { name: activeOrderData.submitterName } as any,
                 }}
                 auth={auth}
                 closeHref="#"
