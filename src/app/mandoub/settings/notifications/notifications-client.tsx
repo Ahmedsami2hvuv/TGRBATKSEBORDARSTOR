@@ -60,32 +60,25 @@ export function MandoubNotificationsDiagnosticsFullPage({
           if (!browserPermission) return false;
 
           const osPermission = !!OneSignal.Notifications.permission;
-          const rawExtId = await OneSignal.User.getExternalId();
+          // تصحيح الإصدار 16: الوصول للمعرف كخاصية وليس كدالة
+          const rawExtId = OneSignal.User?.externalId;
           const currentExtId = rawExtId?.trim();
 
-          // حالة النجاح الكامل: إذن مفعل والمعرف متطابق (بعد التنظيف)
+          console.log("OneSignal Check:", { osPermission, currentExtId, expected: cleanId });
+
+          // حالة النجاح الكامل
           if (osPermission && currentExtId === cleanId) {
             setIsActive(true);
             setErrorMsg(null);
             return true;
           }
 
-          // إذا كان المتصفح يسمح ولكن ون سيجنال لا يرى الاشتراك أو الهوية بعد عدة محاولات
-          if (attempts > 5 && !isLoggingIn) {
-             // محاولة إعادة تسجيل الدخول إذا كانت الهوية مفقودة أو مختلفة
-             if (currentExtId !== cleanId) {
-                console.log(`OneSignal: Identity mismatch (found: ${currentExtId}, expected: ${cleanId}), fixing...`);
-                isLoggingIn = true;
-                await OneSignal.login(cleanId).catch(() => {});
-                // نعطي فرصة للـ SDK لتحديث الحالة داخلياً
-                await new Promise(r => setTimeout(r, 1000));
-                isLoggingIn = false;
-             }
-             // مزامنة الاشتراك إذا كان معطلاً في نظر SDK (رغم سماح المتصفح)
-             if (!osPermission && browserPermission) {
-                console.log("OneSignal: Syncing permissions...");
-                await OneSignal.Notifications.requestPermission().catch(() => {});
-             }
+          // إذا اكتشفنا أن المتصفح يحظر التخزين (بناءً على سجلاتك)
+          if (!currentExtId && attempts > 3 && !isLoggingIn) {
+             console.log("OneSignal: Attempting forced login due to missing ID...");
+             isLoggingIn = true;
+             await OneSignal.login(cleanId).catch(() => {});
+             isLoggingIn = false;
           }
         } catch (err) {
           console.error("Error in status check attempt:", err);

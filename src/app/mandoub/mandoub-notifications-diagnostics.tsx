@@ -48,27 +48,23 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
           if (!browserPermission) return false;
 
           const osPermission = !!OneSignal.Notifications.permission;
-          const rawExtId = await OneSignal.User.getExternalId();
+          // تصحيح الإصدار 16: الوصول للمعرف كخاصية وليس كدالة
+          const rawExtId = OneSignal.User?.externalId;
           const currentExtId = rawExtId?.trim();
 
-          // حالة النجاح الكامل: إذن مفعل والمعرف متطابق (بعد التنظيف)
           if (osPermission && currentExtId === cleanId) {
             setIsActive(true);
             return true;
           }
 
-          // إذا كان المتصفح يسمح ولكن ون سيجنال لا يرى الاشتراك أو الهوية بعد عدة محاولات
           if (attempts > 5 && !isLoggingIn) {
-             // محاولة إعادة تسجيل الدخول إذا كانت الهوية مفقودة أو مختلفة
              if (currentExtId !== cleanId) {
                 console.log("OneSignal Icon: Identity mismatch, fixing...");
                 isLoggingIn = true;
                 await OneSignal.login(cleanId).catch(() => {});
-                // نعطي فرصة للـ SDK لتحديث الحالة داخلياً
                 await new Promise(r => setTimeout(r, 1000));
                 isLoggingIn = false;
              }
-             // مزامنة الاشتراك إذا كان معطلاً في نظر SDK (رغم سماح المتصفح)
              if (!osPermission && browserPermission) {
                 await OneSignal.Notifications.requestPermission().catch(() => {});
              }
