@@ -38,35 +38,38 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
     windowObj.OneSignalDeferred = windowObj.OneSignalDeferred || [];
     windowObj.OneSignalDeferred.push(async (OneSignal: any) => {
       let attempts = 0;
-      const maxAttempts = 25; // زيادة المحاولات لتغطية وقت تحميل الـ Service Worker
+      const maxAttempts = 25;
+      const cleanId = auth.c?.trim();
+      let isLoggingIn = false;
 
       const tryCheck = async () => {
         try {
           const browserPermission = Notification.permission === "granted";
           if (!browserPermission) return false;
 
-          // فحص إذن ون سيجنال أيضاً داخل المحاولة لإعطائه فرصة للتحميل والتهيئة
           const osPermission = !!OneSignal.Notifications.permission;
+          const rawExtId = await OneSignal.User.getExternalId();
+          const currentExtId = rawExtId?.trim();
 
-          // محاولة الحصول على الـ External ID
-          const extId = await OneSignal.User.getExternalId();
-
-          // حالة النجاح الكامل: إذن مفعل والمعرف متطابق
-          if (osPermission && extId === auth.c) {
+          // حالة النجاح الكامل: إذن مفعل والمعرف متطابق (بعد التنظيف)
+          if (osPermission && currentExtId === cleanId) {
             setIsActive(true);
             return true;
           }
 
           // إذا كان المتصفح يسمح ولكن ون سيجنال لا يرى الاشتراك أو الهوية بعد عدة محاولات
-          if (attempts > 5) {
+          if (attempts > 5 && !isLoggingIn) {
              // محاولة إعادة تسجيل الدخول إذا كانت الهوية مفقودة أو مختلفة
-             if (extId !== auth.c) {
-                console.log("OneSignal Icon: Missing identity in check, retrying login...");
-                await OneSignal.login(auth.c).catch(() => {});
+             if (currentExtId !== cleanId) {
+                console.log("OneSignal Icon: Identity mismatch, fixing...");
+                isLoggingIn = true;
+                await OneSignal.login(cleanId).catch(() => {});
+                // نعطي فرصة للـ SDK لتحديث الحالة داخلياً
+                await new Promise(r => setTimeout(r, 1000));
+                isLoggingIn = false;
              }
              // مزامنة الاشتراك إذا كان معطلاً في نظر SDK (رغم سماح المتصفح)
              if (!osPermission && browserPermission) {
-                console.log("OneSignal Icon: Permission mismatch, syncing...");
                 await OneSignal.Notifications.requestPermission().catch(() => {});
              }
           }

@@ -31,6 +31,9 @@ export function MandoubNotificationsDiagnosticsFullPage({
   const checkStatus = async () => {
     if (typeof window === "undefined") return;
 
+    const cleanId = auth.c?.trim();
+    if (!cleanId) return;
+
     // 1. فحص الدعم والإذن العام للمتصفح أولاً
     const supported = "Notification" in window;
     if (!supported || Notification.permission !== "granted") {
@@ -48,36 +51,39 @@ export function MandoubNotificationsDiagnosticsFullPage({
     windowObj.OneSignalDeferred = windowObj.OneSignalDeferred || [];
     windowObj.OneSignalDeferred.push(async (OneSignal: any) => {
       let attempts = 0;
-      const maxAttempts = 25; // زيادة المحاولات لتغطية وقت تحميل الـ Service Worker
+      const maxAttempts = 25;
+      let isLoggingIn = false;
 
       const tryCheck = async () => {
         try {
           const browserPermission = Notification.permission === "granted";
           if (!browserPermission) return false;
 
-          // فحص إذن OneSignal (الاشتراك)
           const osPermission = !!OneSignal.Notifications.permission;
+          const rawExtId = await OneSignal.User.getExternalId();
+          const currentExtId = rawExtId?.trim();
 
-          // محاولة الحصول على الـ External ID
-          const extId = await OneSignal.User.getExternalId();
-
-          // حالة النجاح الكامل: إذن مفعل والمعرف متطابق
-          if (osPermission && extId === auth.c) {
+          // حالة النجاح الكامل: إذن مفعل والمعرف متطابق (بعد التنظيف)
+          if (osPermission && currentExtId === cleanId) {
             setIsActive(true);
             setErrorMsg(null);
             return true;
           }
 
           // إذا كان المتصفح يسمح ولكن ون سيجنال لا يرى الاشتراك أو الهوية بعد عدة محاولات
-          if (attempts > 5) {
+          if (attempts > 5 && !isLoggingIn) {
              // محاولة إعادة تسجيل الدخول إذا كانت الهوية مفقودة أو مختلفة
-             if (extId !== auth.c) {
-                console.log("OneSignal: Missing identity in check, retrying login...");
-                await OneSignal.login(auth.c).catch(() => {});
+             if (currentExtId !== cleanId) {
+                console.log(`OneSignal: Identity mismatch (found: ${currentExtId}, expected: ${cleanId}), fixing...`);
+                isLoggingIn = true;
+                await OneSignal.login(cleanId).catch(() => {});
+                // نعطي فرصة للـ SDK لتحديث الحالة داخلياً
+                await new Promise(r => setTimeout(r, 1000));
+                isLoggingIn = false;
              }
              // مزامنة الاشتراك إذا كان معطلاً في نظر SDK (رغم سماح المتصفح)
              if (!osPermission && browserPermission) {
-                console.log("OneSignal: Permission mismatch, syncing...");
+                console.log("OneSignal: Syncing permissions...");
                 await OneSignal.Notifications.requestPermission().catch(() => {});
              }
           }
@@ -138,6 +144,9 @@ export function MandoubNotificationsDiagnosticsFullPage({
         throw new Error("permission_denied");
       }
 
+      const cleanId = auth.c?.trim();
+      if (!cleanId) throw new Error("missing_auth");
+
       // تنشيط الصوت والـ Audio Context
       const audioCtx = ensureNotificationAudioContext();
       if (audioCtx) {
@@ -158,7 +167,6 @@ export function MandoubNotificationsDiagnosticsFullPage({
           try {
             if (!windowObj.__onesignal_initialized) {
               try {
-                // تقليل المهلة لسرعة الاستجابة
                 await withTimeout(
                   OS.init({
                     appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
@@ -169,7 +177,7 @@ export function MandoubNotificationsDiagnosticsFullPage({
                 );
                 windowObj.__onesignal_initialized = true;
               } catch (initErr) {
-                console.log("OneSignal init inside diagnostics caught error or timeout:", initErr);
+                console.log("OneSignal init error:", initErr);
               }
             }
 
@@ -181,19 +189,17 @@ export function MandoubNotificationsDiagnosticsFullPage({
               }
             }
 
-            // إجبار الهاتف على عرض الإشعار وتشغيل الصوت حتى لو كان التطبيق مفتوحاً في الواجهة
+            // إجبار الهاتف على عرض الإشعار
             try {
               OS.Notifications.addEventListener("foregroundWillDisplay", (event: any) => {
-                console.log("OneSignal client: Foreground notification received. Forcing display!");
                 event.preventDefault();
                 event.notification.display();
               });
-            } catch (err) {
-              console.error("Failed to add foreground event listener:", err);
-            }
+            } catch (err) {}
 
-            // تسجيل الدخول لحساب المندوب
-            await withTimeout(OS.login(auth.c), 5000);
+            // تسجيل الدخول بالمعرف "المنظف"
+            console.log("Activating with Clean ID:", cleanId);
+            await withTimeout(OS.login(cleanId), 8000);
             resolve();
           } catch (err: any) {
             reject(err);
@@ -201,9 +207,9 @@ export function MandoubNotificationsDiagnosticsFullPage({
         });
       });
 
-      // إلغاء أي اشتراكات VAPID قديمة للمندوب لتفادي تداخل الإشعارات
+      // إلغاء أي اشتراكات VAPID قديمة
       const cleanParams = new URLSearchParams();
-      cleanParams.set("c", auth.c);
+      cleanParams.set("c", cleanId);
       if (auth.exp) cleanParams.set("exp", auth.exp);
       cleanParams.set("s", auth.s);
       await fetch(`/api/push/subscribe?${cleanParams.toString()}`, { method: "DELETE" }).catch(() => {});
