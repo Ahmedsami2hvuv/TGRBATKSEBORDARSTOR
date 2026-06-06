@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { ensureNotificationAudioContext } from "@/lib/notification-sound-client";
 import { OneSignalInitializer } from "@/components/OneSignalInitializer";
@@ -26,6 +26,7 @@ export function MandoubNotificationsDiagnosticsFullPage({
   const [loading, setLoading] = useState(false);
   const [isActive, setIsActive] = useState<boolean | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const checkIntervalRef = useRef<any>(null);
 
   const checkStatus = async () => {
     if (typeof window === "undefined") return;
@@ -35,6 +36,11 @@ export function MandoubNotificationsDiagnosticsFullPage({
     if (!supported || Notification.permission !== "granted") {
       setIsActive(false);
       return;
+    }
+
+    if (checkIntervalRef.current) {
+      clearInterval(checkIntervalRef.current);
+      checkIntervalRef.current = null;
     }
 
     // 2. استخدام طابور ون سيجنال المؤجل لضمان تحميل وتهيئة المكتبة أولاً
@@ -47,7 +53,7 @@ export function MandoubNotificationsDiagnosticsFullPage({
       }
 
       let attempts = 0;
-      const maxAttempts = 6;
+      const maxAttempts = 8;
 
       const tryCheck = async () => {
         try {
@@ -70,26 +76,41 @@ export function MandoubNotificationsDiagnosticsFullPage({
       if (success) return;
 
       // محاولات متكررة في الخلفية للتعامل مع تأخر استرجاع الجلسة
-      const interval = setInterval(async () => {
+      checkIntervalRef.current = setInterval(async () => {
         attempts++;
         const ok = await tryCheck();
         if (ok || attempts >= maxAttempts) {
-          clearInterval(interval);
+          if (checkIntervalRef.current) {
+            clearInterval(checkIntervalRef.current);
+            checkIntervalRef.current = null;
+          }
           if (!ok) {
             setIsActive(false);
           }
         }
-      }, 800);
+      }, 1000);
     });
   };
 
   useEffect(() => {
     void checkStatus();
+    return () => {
+      if (checkIntervalRef.current) {
+        clearInterval(checkIntervalRef.current);
+        checkIntervalRef.current = null;
+      }
+    };
   }, [auth.c]);
 
   const handleActivate = async () => {
     setLoading(true);
     setErrorMsg(null);
+
+    // إلغاء ومسح أي فحص جاري فوراً لمنع التداخل وحفظ الحالة المفعلة
+    if (checkIntervalRef.current) {
+      clearInterval(checkIntervalRef.current);
+      checkIntervalRef.current = null;
+    }
 
     try {
       if (typeof window === "undefined") return;

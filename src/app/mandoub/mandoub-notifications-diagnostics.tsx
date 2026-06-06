@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 
 type Auth = { c: string; exp?: string; s: string };
@@ -16,6 +16,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 2000): Promise<
 
 export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
   const [isActive, setIsActive] = useState<boolean | null>(null);
+  const checkIntervalRef = useRef<any>(null);
 
   const checkStatus = async () => {
     if (typeof window === "undefined") return;
@@ -25,6 +26,11 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
     if (!supported || Notification.permission !== "granted") {
       setIsActive(false);
       return;
+    }
+
+    if (checkIntervalRef.current) {
+      clearInterval(checkIntervalRef.current);
+      checkIntervalRef.current = null;
     }
 
     // 2. استخدام طابور ون سيجنال المؤجل لضمان تحميل وتهيئة المكتبة أولاً
@@ -37,7 +43,7 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
       }
 
       let attempts = 0;
-      const maxAttempts = 6;
+      const maxAttempts = 8;
 
       const tryCheck = async () => {
         try {
@@ -59,21 +65,30 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
       if (success) return;
 
       // محاولات متكررة في الخلفية للتعامل مع تأخر استرجاع الجلسة
-      const interval = setInterval(async () => {
+      checkIntervalRef.current = setInterval(async () => {
         attempts++;
         const ok = await tryCheck();
         if (ok || attempts >= maxAttempts) {
-          clearInterval(interval);
+          if (checkIntervalRef.current) {
+            clearInterval(checkIntervalRef.current);
+            checkIntervalRef.current = null;
+          }
           if (!ok) {
             setIsActive(false);
           }
         }
-      }, 800);
+      }, 1000);
     });
   };
 
   useEffect(() => {
     void checkStatus();
+    return () => {
+      if (checkIntervalRef.current) {
+        clearInterval(checkIntervalRef.current);
+        checkIntervalRef.current = null;
+      }
+    };
   }, [auth.c]);
 
   const targetUrl = `/mandoub/settings/notifications?c=${auth.c}&s=${auth.s}${auth.exp ? `&exp=${auth.exp}` : ""}`;
