@@ -47,17 +47,14 @@ export function MandoubNotificationsDiagnosticsFullPage({
     const windowObj = window as any;
     windowObj.OneSignalDeferred = windowObj.OneSignalDeferred || [];
     windowObj.OneSignalDeferred.push(async (OneSignal: any) => {
-      if (!OneSignal.Notifications.permission) {
-        setIsActive(false);
-        return;
-      }
-
       let attempts = 0;
       const maxAttempts = 8;
 
       const tryCheck = async () => {
         try {
-          if (OneSignal.User && typeof OneSignal.User.getExternalId === "function") {
+          // فحص إذن ون سيجنال أيضاً داخل المحاولة لإعطائه فرصة للتحميل والتهيئة
+          const hasOsPermission = !!OneSignal.Notifications.permission;
+          if (hasOsPermission && OneSignal.User && typeof OneSignal.User.getExternalId === "function") {
             const extId = await OneSignal.User.getExternalId();
             if (extId === auth.c) {
               setIsActive(true);
@@ -75,7 +72,7 @@ export function MandoubNotificationsDiagnosticsFullPage({
       const success = await tryCheck();
       if (success) return;
 
-      // محاولات متكررة في الخلفية للتعامل مع تأخر استرجاع الجلسة
+      // محاولات متكررة في الخلفية للتعامل مع تأخر استرجاع الجلسة والإذن
       checkIntervalRef.current = setInterval(async () => {
         attempts++;
         const ok = await tryCheck();
