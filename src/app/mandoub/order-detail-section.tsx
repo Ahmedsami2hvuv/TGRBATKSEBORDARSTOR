@@ -79,6 +79,7 @@ export function OrderDetailSection({
   phoneProfile,
   secondPhoneProfile,
   smartHintLine,
+  secondSmartHintLine,
   uiSettings,
   icons,
   courierSettings,
@@ -91,6 +92,7 @@ export function OrderDetailSection({
   phoneProfile?: any;
   secondPhoneProfile?: PhoneProfileFallback;
   smartHintLine?: string | null;
+  secondSmartHintLine?: string | null;
   uiSettings?: UISectionConfig | null;
   icons?: GlobalIconsConfig | null;
   routeHistory?: { lat: number; lng: number; recordedAt: string }[];
@@ -149,6 +151,13 @@ export function OrderDetailSection({
   const prepJson = order.preparerShoppingJson as any;
   const hideSubtotalInfo = prepJson?.hidePricesFromCourier === true;
   const reversePickup = isReversePickupOrderType(order.orderType);
+
+  const isSmartHintValid = (s: string | null | undefined) => {
+    if (!s) return false;
+    const t = s.trim();
+    if (!t || t === "—" || t.startsWith("—")) return false;
+    return true;
+  };
 
   const customStyle = uiSettings ? {
     backgroundColor: uiSettings.statusStyles?.[order.status]?.backgroundColor || uiSettings.backgroundColor,
@@ -298,10 +307,10 @@ export function OrderDetailSection({
                       <span className="font-bold text-slate-800 dark:text-slate-200">{mergedLandmark || "—"}</span>
                     </div>
 
-                    {smartHintLine?.trim() && (
+                    {isSmartHintValid(smartHintLine) && (
                       <div className="flex flex-col gap-0.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 p-1.5 border border-emerald-100/50 dark:border-emerald-900/20">
                         <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">💡 الاستدلال الذكي للعنوان:</span>
-                        <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-350">{smartHintLine.trim()}</span>
+                        <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-350">{smartHintLine!.trim()}</span>
                       </div>
                     )}
                   </div>
@@ -380,6 +389,13 @@ export function OrderDetailSection({
                         <span className="font-bold text-slate-400 text-sm" title="أقرب نقطة دالة">🗺️</span>
                         <span className="font-bold text-slate-800 dark:text-slate-200">{secondLandmarkMerged || "—"}</span>
                       </div>
+
+                      {isSmartHintValid(secondSmartHintLine) && (
+                        <div className="flex flex-col gap-0.5 rounded-lg bg-violet-50/50 dark:bg-violet-950/10 p-1.5 border border-violet-100/50 dark:border-violet-900/20">
+                          <span className="text-[9px] font-black text-violet-600 dark:text-violet-400">💡 الاستدلال الذكي للعنوان:</span>
+                          <span className="text-[11px] font-black text-violet-800 dark:text-violet-350">{secondSmartHintLine!.trim()}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="pt-1.5">

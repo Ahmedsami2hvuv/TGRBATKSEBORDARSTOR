@@ -55,6 +55,12 @@ function formatOrderUploadDateBaghdad(createdAt: Date): string {
   });
 }
 
+function isSmartHintValid(text?: string | null): boolean {
+  if (!text) return false;
+  const t = text.trim();
+  return t.length > 0 && t !== "—" && !t.startsWith("—");
+}
+
 const locBtnEmerald =
   "inline-flex min-h-[34px] max-w-full items-center justify-center rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 sm:px-3 sm:text-[13px]";
 const locBtnSecond =
@@ -101,6 +107,8 @@ export function PreparerOrderDetailSection({
   preparerId,
   phoneProfile,
   secondPhoneProfile,
+  smartHintLine,
+  secondSmartHintLine,
   uiSettings,
   icons,
   canEditPricing,
@@ -116,6 +124,8 @@ export function PreparerOrderDetailSection({
   preparerId: string;
   phoneProfile?: PhoneProfileFallback;
   secondPhoneProfile?: PhoneProfileFallback;
+  smartHintLine?: string | null;
+  secondSmartHintLine?: string | null;
   uiSettings?: UISectionConfig | null;
   icons?: GlobalIconsConfig | null;
   canEditPricing?: boolean;
@@ -268,12 +278,30 @@ export function PreparerOrderDetailSection({
         const showSecond = routeMode === "double" && r2 && r2 !== r1;
         return (
           <div key="preparer_region" className="rounded-xl border-2 border-sky-200 bg-sky-50/40 p-4" style={blockStyle}>
-            <h3 className="mb-2 text-lg font-bold text-sky-950 sm:text-xl">منطقة المستلم (الزبون)</h3>
-            <p className="text-lg font-bold text-slate-900">{r1}</p>
+            <h3 className="mb-2 text-lg font-bold text-sky-950 sm:text-xl">بيانات المستلم (الزبون)</h3>
+
+            <div className="space-y-1">
+              <p className="text-lg font-bold text-slate-900">{r1}</p>
+              {mergedLandmark && (
+                <p className="text-sm font-bold text-slate-700">📍 النقطة الدالة: {mergedLandmark}</p>
+              )}
+              {isSmartHintValid(smartHintLine) && (
+                <p className="text-[13px] font-black text-emerald-800">✨ الاستدلال الذكي: {smartHintLine}</p>
+              )}
+            </div>
+
             {showSecond ? (
-              <p className="mt-2 text-base font-bold text-violet-900">
-                المنطقة الثانية (وجهة 2): <span className="text-slate-900">{r2}</span>
-              </p>
+              <div className="mt-4 border-t border-sky-200 pt-3 space-y-1">
+                <p className="text-base font-bold text-violet-900">
+                  الوجهة الثانية: <span className="text-slate-900">{r2}</span>
+                </p>
+                {secondLandmarkMerged && (
+                  <p className="text-sm font-bold text-slate-700">📍 النقطة الدالة (2): {secondLandmarkMerged}</p>
+                )}
+                {isSmartHintValid(secondSmartHintLine) && (
+                  <p className="text-[13px] font-black text-violet-800">✨ الاستدلال الذكي (2): {secondSmartHintLine}</p>
+                )}
+              </div>
             ) : null}
           </div>
         );

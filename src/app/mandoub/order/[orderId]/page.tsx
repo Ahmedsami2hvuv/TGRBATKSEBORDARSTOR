@@ -255,10 +255,16 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
     order.customer?.customerLocationUrl?.trim() ||
     customerPhoneProfile?.locationUrl?.trim() ||
     "";
-  const smartHintLine = await computeSmartHint(
-    mergedCustomerLocationUrlForHint,
-    order.customerRegionId,
-  );
+
+  const [smartHintLine, secondSmartHintLine] = await Promise.all([
+    computeSmartHint(mergedCustomerLocationUrlForHint, order.customerRegionId),
+    order.routeMode === "double"
+      ? computeSmartHint(
+          order.secondCustomerLocationUrl?.trim() || secondPhoneProfile?.locationUrl?.trim() || "",
+          order.secondCustomerRegionId
+        )
+      : Promise.resolve(null)
+  ]);
 
   const routeHistoryRows = await prisma.courierLocationPoint.findMany({
     where: { courierId: v.courierId },
@@ -363,6 +369,7 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
             phoneProfile={customerPhoneProfile ?? undefined}
             secondPhoneProfile={secondPhoneProfile ?? undefined}
             smartHintLine={smartHintLine || "—"}
+            secondSmartHintLine={secondSmartHintLine || "—"}
             uiSettings={uiSettings}
             icons={icons}
             routeHistory={routeHistory}

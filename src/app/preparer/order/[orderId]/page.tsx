@@ -3,6 +3,7 @@ import { verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-
 import { preparerCourierAssignWhere } from "@/lib/courier-assignable";
 import { preparerPath } from "@/lib/preparer-portal-nav";
 import { prisma } from "@/lib/prisma";
+import { computeSmartHint } from "@/lib/smart-hint-logic";
 import { PreparerAssignCourierFab } from "../../preparer-assign-courier-fab";
 import { PreparerOrderDetailSection } from "../../preparer-order-detail-section";
 import type { MandoubOrderDetailPayload } from "@/lib/mandoub-order-queries";
@@ -106,6 +107,11 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
 
   const auth = { p: p!, exp: exp!, s: s! };
   const homeHref = preparerPath("/preparer", auth);
+
+  const [smartHintLine, secondSmartHintLine] = await Promise.all([
+    computeSmartHint(order.id, "primary"),
+    order.routeMode === "double" ? computeSmartHint(order.id, "secondary") : Promise.resolve("—"),
+  ]);
 
   const icons = await getGlobalIcons();
 
@@ -236,6 +242,8 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
         preparerId={preparer.id}
         phoneProfile={safePhoneProfile}
         secondPhoneProfile={safeSecondPhoneProfile}
+        smartHintLine={smartHintLine || "—"}
+        secondSmartHintLine={secondSmartHintLine || "—"}
         canEditPricing={canEditPricing}
         pricingEditHref={pricingEditHref}
         icons={icons}

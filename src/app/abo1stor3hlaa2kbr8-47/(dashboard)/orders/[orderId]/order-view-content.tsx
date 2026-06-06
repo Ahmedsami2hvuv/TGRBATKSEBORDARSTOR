@@ -125,6 +125,13 @@ export function OrderViewContent({
 
   const parsedShoppingJson = parsePreparerShoppingJson(order.preparerShoppingJson);
 
+  const isSmartHintValid = (s: string | null | undefined) => {
+    if (!s) return false;
+    const t = s.trim();
+    if (!t || t === "—" || t.startsWith("—")) return false;
+    return true;
+  };
+
   return (
     <div className={`kse-glass-dark relative mt-4 border p-4 pb-24 text-base leading-relaxed sm:p-5 sm:pb-32 ${orderStatusStartStripeClass(order.status)} ${order.prepaidAll ? "border-emerald-300 bg-gradient-to-b from-emerald-50 to-teal-50" : isReversePickup ? "border-violet-400 bg-violet-100" : isDoubleRoute ? "border-fuchsia-300 bg-gradient-to-b from-fuchsia-50 to-violet-50" : `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}`}`} dir="rtl">
 
@@ -227,8 +234,8 @@ export function OrderViewContent({
                   )}
                 </div>
                 <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark?.trim() || "—"}</p>
-                {!order.customerLandmark?.trim() ? (
-                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.smartHintLine?.trim() || "—"}</p>
+                {isSmartHintValid(order.smartHintLine) ? (
+                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.smartHintLine!.trim()}</p>
                 ) : null}
                 <div className="mt-2 space-y-2">
                   {order.customerLocationUrl?.trim() ? (
@@ -291,8 +298,8 @@ export function OrderViewContent({
                   </div>
                 </div>
                 <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.secondCustomerLandmark?.trim() || "—"}</p>
-                {!order.secondCustomerLandmark?.trim() ? (
-                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.secondSmartHintLine?.trim() || "—"}</p>
+                {isSmartHintValid(order.secondSmartHintLine) ? (
+                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.secondSmartHintLine!.trim()}</p>
                 ) : null}
                 <div className="mt-2 space-y-2">
                   {order.secondCustomerLocationUrl?.trim() ? (
@@ -329,8 +336,8 @@ export function OrderViewContent({
                   )}
                 </div>
                 <p className="text-sm font-medium text-slate-800">أقرب نقطة: {order.customerLandmark?.trim() || "—"}</p>
-                {!order.customerLandmark?.trim() ? (
-                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.smartHintLine?.trim() || "—"}</p>
+                {isSmartHintValid(order.smartHintLine) ? (
+                  <p className="text-sm font-bold text-emerald-800">الاستدلال الذكي: {order.smartHintLine!.trim()}</p>
                 ) : null}
                 <div className="mt-2 space-y-2">
                   {order.customerLocationUrl?.trim() ? (
