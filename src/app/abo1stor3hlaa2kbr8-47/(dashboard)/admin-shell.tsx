@@ -20,6 +20,125 @@ function navItemActive(pathname: string, href: string): boolean {
   return pathname === base || pathname.startsWith(`${base}/`);
 }
 
+const TILE_COLORS: Record<string, {
+  active: string;
+  inactive: string;
+}> = {
+  home: {
+    active: "bg-sky-100/90 dark:bg-sky-950/60 border border-sky-400 dark:border-sky-400 text-sky-900 dark:text-sky-100 shadow-[0_0_12px_rgba(14,165,233,0.3)]",
+    inactive: "bg-sky-50/60 dark:bg-sky-950/20 border border-sky-200/60 dark:border-sky-900/40 text-sky-700 dark:text-sky-300 hover:bg-sky-100/90 dark:hover:bg-sky-950/40 hover:border-sky-300 dark:hover:border-sky-800 hover:text-sky-850 dark:hover:text-sky-200"
+  },
+  store: {
+    active: "bg-blue-100/90 dark:bg-blue-950/60 border border-blue-400 dark:border-blue-400 text-blue-900 dark:text-blue-100 shadow-[0_0_12px_rgba(59,130,246,0.3)]",
+    inactive: "bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100/90 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-800 hover:text-blue-850 dark:hover:text-blue-200"
+  },
+  "admin-create-order": {
+    active: "bg-indigo-100/90 dark:bg-indigo-950/60 border border-indigo-400 dark:border-indigo-400 text-indigo-900 dark:text-indigo-100 shadow-[0_0_12px_rgba(99,102,241,0.3)]",
+    inactive: "bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100/90 dark:hover:bg-indigo-950/40 hover:border-indigo-300 dark:hover:border-indigo-800 hover:text-indigo-850 dark:hover:text-indigo-200"
+  },
+  "new-orders": {
+    active: "bg-amber-100/90 dark:bg-amber-950/60 border border-amber-400 dark:border-amber-400 text-amber-900 dark:text-amber-100 shadow-[0_0_12px_rgba(245,158,11,0.3)]",
+    inactive: "bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100/90 dark:hover:bg-amber-950/40 hover:border-amber-300 dark:hover:border-amber-800 hover:text-amber-850 dark:hover:text-amber-200"
+  },
+  "order-tracking": {
+    active: "bg-purple-100/90 dark:bg-purple-950/60 border border-purple-400 dark:border-purple-400 text-purple-900 dark:text-purple-100 shadow-[0_0_12px_rgba(168,85,247,0.3)]",
+    inactive: "bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-900/40 text-purple-700 dark:text-purple-300 hover:bg-purple-100/90 dark:hover:bg-purple-950/40 hover:border-purple-300 dark:hover:border-purple-800 hover:text-purple-850 dark:hover:text-purple-200"
+  },
+  shops: {
+    active: "bg-emerald-100/90 dark:bg-emerald-950/60 border border-emerald-400 dark:border-emerald-400 text-emerald-900 dark:text-emerald-100 shadow-[0_0_12px_rgba(16,185,129,0.3)]",
+    inactive: "bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100/90 dark:hover:bg-emerald-950/40 hover:border-emerald-300 dark:hover:border-emerald-800 hover:text-emerald-850 dark:hover:text-emerald-200"
+  },
+  couriers: {
+    active: "bg-pink-100/90 dark:bg-pink-950/60 border border-pink-400 dark:border-pink-400 text-pink-900 dark:text-pink-100 shadow-[0_0_12px_rgba(236,72,153,0.3)]",
+    inactive: "bg-pink-50/60 dark:bg-pink-950/20 border border-pink-200/60 dark:border-pink-900/40 text-pink-700 dark:text-pink-300 hover:bg-pink-100/90 dark:hover:bg-pink-950/40 hover:border-pink-300 dark:hover:border-pink-800 hover:text-pink-850 dark:hover:text-pink-200"
+  },
+  preparers: {
+    active: "bg-teal-100/90 dark:bg-teal-950/60 border border-teal-400 dark:border-teal-400 text-teal-900 dark:text-teal-100 shadow-[0_0_12px_rgba(20,184,166,0.3)]",
+    inactive: "bg-teal-50/60 dark:bg-teal-950/20 border border-teal-200/60 dark:border-teal-900/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100/90 dark:hover:bg-teal-950/40 hover:border-teal-300 dark:hover:border-teal-800 hover:text-teal-850 dark:hover:text-teal-200"
+  },
+  employees: {
+    active: "bg-violet-100/90 dark:bg-violet-950/60 border border-violet-400 dark:border-violet-400 text-violet-900 dark:text-violet-100 shadow-[0_0_12px_rgba(139,92,246,0.3)]",
+    inactive: "bg-violet-50/60 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-900/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100/90 dark:hover:bg-violet-950/40 hover:border-violet-300 dark:hover:border-violet-800 hover:text-violet-850 dark:hover:text-violet-200"
+  },
+  suppliers: {
+    active: "bg-rose-100/90 dark:bg-rose-950/60 border border-rose-400 dark:border-rose-400 text-rose-900 dark:text-rose-100 shadow-[0_0_12px_rgba(244,63,94,0.3)]",
+    inactive: "bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200/60 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100/90 dark:hover:bg-rose-950/40 hover:border-rose-300 dark:hover:border-rose-800 hover:text-rose-850 dark:hover:text-rose-200"
+  },
+  reports: {
+    active: "bg-lime-100/90 dark:bg-lime-950/60 border border-lime-400 dark:border-lime-400 text-lime-900 dark:text-lime-100 shadow-[0_0_12px_rgba(132,204,22,0.3)]",
+    inactive: "bg-lime-50/60 dark:bg-lime-950/20 border border-lime-200/60 dark:border-lime-900/40 text-lime-700 dark:text-lime-300 hover:bg-lime-100/90 dark:hover:bg-lime-950/40 hover:border-lime-300 dark:hover:border-lime-800 hover:text-lime-850 dark:hover:text-lime-200"
+  },
+  customers: {
+    active: "bg-fuchsia-100/90 dark:bg-fuchsia-950/60 border border-fuchsia-400 dark:border-fuchsia-400 text-fuchsia-900 dark:text-fuchsia-100 shadow-[0_0_12px_rgba(217,70,239,0.3)]",
+    inactive: "bg-fuchsia-50/60 dark:bg-fuchsia-950/20 border border-fuchsia-200/60 dark:border-fuchsia-900/40 text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100/90 dark:hover:bg-fuchsia-950/40 hover:border-fuchsia-300 dark:hover:border-fuchsia-800 hover:text-fuchsia-850 dark:hover:text-fuchsia-200"
+  },
+  "archived-orders": {
+    active: "bg-amber-100/90 dark:bg-amber-950/60 border border-amber-400 dark:border-amber-400 text-amber-900 dark:text-amber-100 shadow-[0_0_12px_rgba(245,158,11,0.3)]",
+    inactive: "bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100/90 dark:hover:bg-amber-950/40 hover:border-amber-300 dark:hover:border-amber-800 hover:text-amber-850 dark:hover:text-amber-200"
+  },
+  "rejected-orders": {
+    active: "bg-red-100/90 dark:bg-red-950/60 border border-red-400 dark:border-red-400 text-red-900 dark:text-red-100 shadow-[0_0_12px_rgba(239,68,68,0.3)]",
+    inactive: "bg-red-50/60 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/40 text-red-700 dark:text-red-300 hover:bg-red-100/90 dark:hover:bg-red-950/40 hover:border-red-300 dark:hover:border-red-800 hover:text-red-850 dark:hover:text-red-200"
+  },
+  "legacy-kse-profiles-batch": {
+    active: "bg-yellow-100/90 dark:bg-yellow-950/60 border border-yellow-400 dark:border-yellow-400 text-yellow-900 dark:text-yellow-100 shadow-[0_0_12px_rgba(234,179,8,0.3)]",
+    inactive: "bg-yellow-50/60 dark:bg-yellow-950/20 border border-yellow-200/60 dark:border-yellow-900/40 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100/90 dark:hover:bg-yellow-950/40 hover:border-yellow-300 dark:hover:border-yellow-800 hover:text-yellow-850 dark:hover:text-yellow-200"
+  },
+  "new-customer-profile": {
+    active: "bg-cyan-100/90 dark:bg-cyan-950/60 border border-cyan-400 dark:border-cyan-400 text-cyan-900 dark:text-cyan-100 shadow-[0_0_12px_rgba(6,182,212,0.3)]",
+    inactive: "bg-cyan-50/60 dark:bg-cyan-950/20 border border-cyan-200/60 dark:border-cyan-900/40 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-100/90 dark:hover:bg-cyan-950/40 hover:border-cyan-300 dark:hover:border-cyan-800 hover:text-cyan-850 dark:hover:text-cyan-200"
+  },
+  "wa-buttons": {
+    active: "bg-green-100/90 dark:bg-green-950/60 border border-green-400 dark:border-green-400 text-green-900 dark:text-green-100 shadow-[0_0_12px_rgba(34,197,94,0.3)]",
+    inactive: "bg-green-50/60 dark:bg-green-950/20 border border-green-200/60 dark:border-green-900/40 text-green-700 dark:text-green-300 hover:bg-green-100/90 dark:hover:bg-green-950/40 hover:border-green-300 dark:hover:border-green-800 hover:text-green-850 dark:hover:text-green-200"
+  },
+  "courier-map": {
+    active: "bg-sky-100/90 dark:bg-sky-950/60 border border-sky-400 dark:border-sky-400 text-sky-900 dark:text-sky-100 shadow-[0_0_12px_rgba(14,165,233,0.3)]",
+    inactive: "bg-sky-50/60 dark:bg-sky-950/20 border border-sky-200/60 dark:border-sky-900/40 text-sky-700 dark:text-sky-300 hover:bg-sky-100/90 dark:hover:bg-sky-950/40 hover:border-sky-300 dark:hover:border-sky-800 hover:text-sky-850 dark:hover:text-sky-200"
+  },
+  regions: {
+    active: "bg-indigo-100/90 dark:bg-indigo-950/60 border border-indigo-400 dark:border-indigo-400 text-indigo-900 dark:text-indigo-100 shadow-[0_0_12px_rgba(99,102,241,0.3)]",
+    inactive: "bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100/90 dark:hover:bg-indigo-950/40 hover:border-indigo-300 dark:hover:border-indigo-800 hover:text-indigo-850 dark:hover:text-indigo-200"
+  },
+  "super-search": {
+    active: "bg-amber-100/90 dark:bg-amber-950/60 border border-amber-400 dark:border-amber-400 text-amber-900 dark:text-amber-100 shadow-[0_0_12px_rgba(245,158,11,0.3)]",
+    inactive: "bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100/90 dark:hover:bg-amber-950/40 hover:border-amber-300 dark:hover:border-amber-800 hover:text-amber-850 dark:hover:text-amber-200"
+  },
+  "prep-notices": {
+    active: "bg-orange-100/90 dark:bg-orange-950/60 border border-orange-400 dark:border-orange-400 text-orange-900 dark:text-orange-100 shadow-[0_0_12px_rgba(249,115,22,0.3)]",
+    inactive: "bg-orange-50/60 dark:bg-orange-950/20 border border-orange-200/60 dark:border-orange-900/40 text-orange-700 dark:text-orange-300 hover:bg-orange-100/90 dark:hover:bg-orange-950/40 hover:border-orange-300 dark:hover:border-orange-800 hover:text-orange-850 dark:hover:text-orange-200"
+  },
+  "ai-settings": {
+    active: "bg-fuchsia-100/90 dark:bg-fuchsia-950/60 border border-fuchsia-400 dark:border-fuchsia-400 text-fuchsia-900 dark:text-fuchsia-100 shadow-[0_0_12px_rgba(217,70,239,0.3)]",
+    inactive: "bg-fuchsia-50/60 dark:bg-fuchsia-950/20 border border-fuchsia-200/60 dark:border-fuchsia-900/40 text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100/90 dark:hover:bg-fuchsia-950/40 hover:border-fuchsia-300 dark:hover:border-fuchsia-800 hover:text-fuchsia-850 dark:hover:text-fuchsia-200"
+  },
+  "notification-settings": {
+    active: "bg-slate-100 dark:bg-slate-800 border border-slate-400 dark:border-slate-500 text-slate-900 dark:text-slate-100 shadow-[0_0_12px_rgba(100,116,139,0.3)]",
+    inactive: "bg-slate-50/60 dark:bg-slate-900/20 border border-slate-200/60 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100/90 dark:hover:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-800 dark:hover:text-slate-300"
+  },
+  "background-settings": {
+    active: "bg-violet-100/90 dark:bg-violet-950/60 border border-violet-400 dark:border-violet-400 text-violet-900 dark:text-violet-100 shadow-[0_0_12px_rgba(139,92,246,0.3)]",
+    inactive: "bg-violet-50/60 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-900/40 text-violet-700 dark:text-violet-300 hover:bg-violet-100/90 dark:hover:bg-violet-950/40 hover:border-violet-300 dark:hover:border-violet-800 hover:text-violet-850 dark:hover:text-violet-200"
+  },
+  settings: {
+    active: "bg-slate-100 dark:bg-slate-800 border border-slate-400 dark:border-slate-500 text-slate-900 dark:text-slate-100 shadow-[0_0_12px_rgba(100,116,139,0.3)]",
+    inactive: "bg-slate-50/60 dark:bg-slate-900/20 border border-slate-200/60 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100/90 dark:hover:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-800 dark:hover:text-slate-300"
+  }
+};
+
+function getTileClasses(slug: string, active: boolean, isCompact: boolean): string {
+  const base = `inline-flex items-center ${
+    isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"
+  } rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 relative`;
+
+  const colors = TILE_COLORS[slug] || {
+    active: "bg-purple-100/90 dark:bg-[#1e102a]/60 border border-purple-400 dark:border-[#e028ff] text-purple-900 dark:text-purple-150 shadow-[0_0_12px_rgba(224,40,255,0.3)]",
+    inactive: "bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-900/40 text-purple-700 dark:text-purple-300 hover:bg-purple-100/90 dark:hover:bg-purple-950/40 hover:border-purple-300 dark:hover:border-purple-800 hover:text-purple-800 dark:hover:text-purple-200"
+  };
+
+  return `${base} ${active ? colors.active : colors.inactive}`;
+}
+
 export function AdminShell({
   children,
   pendingInitialCount = 0,
@@ -331,11 +450,7 @@ export function AdminShell({
                 prefetch={false}
                 title="الرئيسية"
                 onClick={handleLinkClick}
-                className={
-                  navItemActive(pathname, SECRET_ADMIN_PATH)
-                    ? `inline-flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"} rounded-xl bg-sky-100 dark:bg-[#002a3a] border border-sky-400 dark:border-[#00f3ff] text-sky-700 dark:text-[#00f3ff] shadow-sm dark:shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-all`
-                    : `inline-flex items-center ${isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"} rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all`
-                }
+                className={getTileClasses("home", navItemActive(pathname, SECRET_ADMIN_PATH), isCompact)}
                 style={{ height: 36 * itemScale, fontSize: 12 * itemScale }}
               >
                 <span className="shrink-0" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }} aria-hidden>
@@ -360,15 +475,7 @@ export function AdminShell({
                   prefetch={false}
                   title={tile.label}
                   onClick={handleLinkClick}
-                  className={
-                    active
-                      ? `inline-flex items-center ${
-                          isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"
-                        } rounded-xl bg-purple-100 dark:bg-[#1e102a] border border-purple-400 dark:border-[#e028ff] text-purple-700 dark:text-[#e028ff] shadow-sm dark:shadow-[0_0_15px_rgba(224,40,255,0.4)] transition-all relative`
-                      : `inline-flex items-center ${
-                          isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"
-                        } rounded-xl bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all relative`
-                  }
+                  className={getTileClasses(tile.slug, active, isCompact)}
                   style={{ height: 36 * itemScale, fontSize: 12 * itemScale }}
                 >
                   <span className="shrink-0 relative flex justify-center items-center" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }}>
@@ -380,7 +487,7 @@ export function AdminShell({
                     ) : null}
                   </span>
                   {isCompact ? null : (
-                    <span className="leading-snug font-medium text-slate-700 dark:text-slate-200 block whitespace-nowrap">{tile.label}</span>
+                    <span className="leading-snug font-medium block whitespace-nowrap">{tile.label}</span>
                   )}
                 </Link>
               );
