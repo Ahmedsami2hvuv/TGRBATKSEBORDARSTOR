@@ -151,7 +151,16 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
       if (err?.message === "unsupported_browser") {
         setErrorMsg("عذراً، متصفحك لا يدعم نظام الإشعارات الفورية. يرجى استخدام متصفح حديث مثل Google Chrome.");
       } else if (err?.message === "permission_denied" || Notification.permission === "denied") {
-        setErrorMsg("تم رفض إذن الإشعارات! يرجى الضغط على القفل (🔒) بجانب رابط الموقع بالأعلى، وتغيير إذن الإشعارات إلى 'سماح' (Allow).");
+        setErrorMsg(
+          "تم رفض إذن الإشعارات! لتفعيل استقبال الطلبات:\n\n" +
+          "📱 إذا كنت تستخدم التطبيق المثبت (على شاشة الهاتف الرئيسية):\n" +
+          "1. اذهب إلى إعدادات الهاتف (Settings) ⚙️\n" +
+          "2. اختر التطبيقات (Apps)\n" +
+          "3. ابحث عن اسم تطبيقنا في القائمة واضغط عليه\n" +
+          "4. اختر الإشعارات (Notifications) وفعل خيار السماح بالإشعارات (Allow/Show).\n\n" +
+          "🌐 إذا كنت تفتح الموقع من متصفح الإنترنت:\n" +
+          "اضغط على علامة القفل (🔒) أو خيارات الموقع بجانب رابط الموقع بالأعلى، ثم اختر سماح (Allow)."
+        );
       } else if (err?.message === "onesignal_not_loaded") {
         setErrorMsg("فشل الاتصال بخدمة الإشعارات. تأكد من جودة اتصالك بالإنترنت ثم أعد المحاولة.");
       } else {
@@ -219,7 +228,7 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
           </p>
 
           {errorMsg && (
-            <div className="rounded-xl bg-rose-50 border border-rose-100 p-3 text-rose-800 text-xs font-bold leading-relaxed">
+            <div className="rounded-xl bg-rose-50 border border-rose-100 p-3 text-rose-800 text-xs font-bold leading-relaxed whitespace-pre-line">
               ⚠️ {errorMsg}
             </div>
           )}
