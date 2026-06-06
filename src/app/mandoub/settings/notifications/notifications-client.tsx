@@ -182,9 +182,10 @@ export function MandoubNotificationsDiagnosticsFullPage({
               }
             }
 
-            // إجبار الهاتف على عرض الإشعار
+            // إجبار الهاتف على عرض الإشعار دائماً
             try {
               OS.Notifications.addEventListener("foregroundWillDisplay", (event: any) => {
+                console.log("OneSignal: Foreground notification received");
                 event.preventDefault();
                 event.notification.display();
               });
