@@ -28,7 +28,8 @@ export function OneSignalInitializer({ externalId }: { externalId?: string }) {
       if (!globalOneSignalPromise) {
         globalOneSignalPromise = (async () => {
           try {
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            // تقليل وقت الانتظار إلى الحد الأدنى لضمان تحميل المتصفح للمكتبة
+            await new Promise((resolve) => setTimeout(resolve, 100));
 
             return new Promise<void>((resolve, reject) => {
               const windowObj = window as any;

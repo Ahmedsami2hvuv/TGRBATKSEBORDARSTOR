@@ -48,14 +48,17 @@ export function MandoubNotificationsDiagnosticsFullPage({
     windowObj.OneSignalDeferred = windowObj.OneSignalDeferred || [];
     windowObj.OneSignalDeferred.push(async (OneSignal: any) => {
       let attempts = 0;
-      const maxAttempts = 8;
+      const maxAttempts = 20; // زيادة عدد المحاولات لضمان استرجاع الجلسة بعد الرفرش
 
       const tryCheck = async () => {
         try {
-          // فحص إذن ون سيجنال أيضاً داخل المحاولة لإعطائه فرصة للتحميل والتهيئة
+          // في OneSignal v16، قد يكون الإذن متاحاً ولكن الحساب لم يُربط بعد
           const hasOsPermission = !!OneSignal.Notifications.permission;
-          if (hasOsPermission && OneSignal.User && typeof OneSignal.User.getExternalId === "function") {
-            const extId = await OneSignal.User.getExternalId();
+
+          if (hasOsPermission) {
+            // محاولة الحصول على الـ ID المسجل حالياً
+            const extId = await OneSignal.User.getSelf().then((u: any) => u?.onesignalId ? OneSignal.User.getExternalId() : null).catch(() => OneSignal.User.getExternalId());
+
             if (extId === auth.c) {
               setIsActive(true);
               setErrorMsg(null);
@@ -63,7 +66,7 @@ export function MandoubNotificationsDiagnosticsFullPage({
             }
           }
         } catch (err) {
-          console.error("Error reading OneSignal External ID in status check attempt:", err);
+          console.error("Error in status check attempt:", err);
         }
         return false;
       };
@@ -139,18 +142,19 @@ export function MandoubNotificationsDiagnosticsFullPage({
           try {
             if (!windowObj.__onesignal_initialized) {
               try {
+                // تقليل المهلة لسرعة الاستجابة
                 await withTimeout(
                   OS.init({
                     appId: "aa21547a-4853-4ced-8823-6fd8c778b7b1",
                     allowLocalhostAsSecureOrigin: true,
                     serviceWorkerPath: "sw-notify.js",
                   }),
-                  5000
+                  10000
                 );
+                windowObj.__onesignal_initialized = true;
               } catch (initErr) {
-                console.log("OneSignal init inside diagnostics caught error:", initErr);
+                console.log("OneSignal init inside diagnostics caught error or timeout:", initErr);
               }
-              windowObj.__onesignal_initialized = true;
             }
 
             // طلب إذن الإشعارات

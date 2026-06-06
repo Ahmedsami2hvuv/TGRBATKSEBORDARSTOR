@@ -121,22 +121,25 @@ async function sendToSubscriptions(
   payload: PushPayload,
   externalIds?: string[],
 ): Promise<void> {
-  // 1. الإرسال عبر وان سيجنال (النظام الجديد)
+  // 1. الإرسال عبر وان سيجنال (النظام الجديد) - نطلقه فوراً ولا ننتظره لكي لا نعطل العملية
   if (externalIds && externalIds.length > 0) {
-    console.log("OneSignal: Sending to", externalIds);
-    await sendOneSignalNotification({
+    console.log("OneSignal: Initiating send to", externalIds);
+    // لا ننتظر (await) لكي لا يتأخر الرد، وان سيجنال سيعالج الأمر في الخلفية
+    void sendOneSignalNotification({
       title: payload.title,
       body: payload.body,
       url: payload.url,
       externalIds: externalIds,
       sound: payload.sound,
-    });
+    }).catch(err => console.error("OneSignal Background Send Error:", err));
   }
 
   // 2. الطريقة القديمة (Web Push) - سنبقيها فقط كاحتياط للأدمن حالياً
   if (!configureVapid()) return;
   const json = JSON.stringify(payload);
-  for (const s of subs) {
+
+  // إرسال كافة إشعارات VAPID بالتوازي لتقليل وقت الانتظار من دقائق إلى ثوانٍ معدودة
+  const pushPromises = subs.map(async (s) => {
     try {
       await webpush.sendNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
@@ -150,7 +153,11 @@ async function sendToSubscriptions(
         await prisma.webPushSubscription.delete({ where: { id: s.id } }).catch(() => {});
       }
     }
-  }
+  });
+
+  // ننتظر انتهاء محاولات الإرسال بالتوازي مع وقت أقصى (اختياري)
+  // هنا سنكتفي بإطلاقها في الخلفية أيضاً للأمان وسرعة الاستجابة
+  void Promise.all(pushPromises).catch(err => console.error("VAPID Parallel Send Error:", err));
 }
 
 /** إشعار للإدارة: طلب جديد قيد الانتظار */
