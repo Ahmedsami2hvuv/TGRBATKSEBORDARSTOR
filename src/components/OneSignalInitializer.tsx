@@ -22,21 +22,21 @@ export function OneSignalInitializer({ externalId }: { externalId?: string }) {
     if (typeof window === "undefined") return;
 
     let active = true;
+    const cleanId = externalId?.trim();
 
     const initializeAndLogin = async () => {
       // 1. إدارة عملية التهيئة (Init) بشكل آمن ومنفرد عبر طابور ون سيجنال المؤجل
       if (!globalOneSignalPromise) {
         globalOneSignalPromise = (async () => {
           try {
-            // تقليل وقت الانتظار إلى الحد الأدنى لضمان تحميل المتصفح للمكتبة
-            await new Promise((resolve) => setTimeout(resolve, 100));
-
+            // إزالة التأخير غير الضروري لسرعة الربط
             return new Promise<void>((resolve, reject) => {
               const windowObj = window as any;
               windowObj.OneSignalDeferred = windowObj.OneSignalDeferred || [];
               windowObj.OneSignalDeferred.push(async (OneSignal: any) => {
                 try {
                   if (!windowObj.__onesignal_initialized) {
+                    console.log("OneSignal: Initializing SDK...");
                     try {
                       await withTimeout(
                         OneSignal.init({
@@ -44,13 +44,14 @@ export function OneSignalInitializer({ externalId }: { externalId?: string }) {
                           allowLocalhostAsSecureOrigin: true,
                           serviceWorkerPath: "sw-notify.js",
                         }),
-                        5000
+                        8000
                       );
+                      windowObj.__onesignal_initialized = true;
+                      console.log("✅ OneSignal: SDK Initialized.");
                     } catch (initErr) {
-                      console.log("OneSignal already initialized or failed in background init:", initErr);
+                      console.warn("OneSignal Init Warning (might be already init):", initErr);
+                      windowObj.__onesignal_initialized = true;
                     }
-                    windowObj.__onesignal_initialized = true;
-                    console.log("OneSignal successfully initialized via Deferred queue!");
                   }
 
                   // إجبار الهاتف على عرض الإشعار وتشغيل الصوت حتى لو كان التطبيق مفتوحاً في الواجهة
@@ -85,16 +86,16 @@ export function OneSignalInitializer({ externalId }: { externalId?: string }) {
       if (!active) return;
 
       // 2. تسجيل الدخول عبر طابور ون سيجنال المؤجل لضمان تنفيذه بأمان
-      if (externalId && lastLoggedIdRef.current !== externalId) {
+      if (cleanId && lastLoggedIdRef.current !== cleanId) {
         const windowObj = window as any;
         windowObj.OneSignalDeferred = windowObj.OneSignalDeferred || [];
         windowObj.OneSignalDeferred.push(async (OneSignal: any) => {
           if (!active) return;
           try {
-            console.log(`OneSignal: Attempting login for ${externalId} via Deferred queue...`);
-            await withTimeout(OneSignal.login(externalId), 4000);
-            console.log("✅ OneSignal: Identity set successfully via Deferred to:", externalId);
-            lastLoggedIdRef.current = externalId;
+            console.log(`OneSignal: Attempting login for ${cleanId} via Deferred queue...`);
+            await withTimeout(OneSignal.login(cleanId), 4000);
+            console.log("✅ OneSignal: Identity set successfully via Deferred to:", cleanId);
+            lastLoggedIdRef.current = cleanId;
           } catch (e) {
             console.error("OneSignal Login Error via Deferred:", e);
           }

@@ -38,18 +38,37 @@ export function MandoubNotificationsDiagnostics({ auth }: { auth: Auth }) {
     windowObj.OneSignalDeferred = windowObj.OneSignalDeferred || [];
     windowObj.OneSignalDeferred.push(async (OneSignal: any) => {
       let attempts = 0;
-      const maxAttempts = 8;
+      const maxAttempts = 25; // زيادة المحاولات لتغطية وقت تحميل الـ Service Worker
 
       const tryCheck = async () => {
         try {
+          const browserPermission = Notification.permission === "granted";
+          if (!browserPermission) return false;
+
           // فحص إذن ون سيجنال أيضاً داخل المحاولة لإعطائه فرصة للتحميل والتهيئة
-          const hasOsPermission = !!OneSignal.Notifications.permission;
-          if (hasOsPermission && OneSignal.User && typeof OneSignal.User.getExternalId === "function") {
-            const extId = await OneSignal.User.getExternalId();
-            if (extId === auth.c) {
-              setIsActive(true);
-              return true;
-            }
+          const osPermission = !!OneSignal.Notifications.permission;
+
+          // محاولة الحصول على الـ External ID
+          const extId = await OneSignal.User.getExternalId();
+
+          // حالة النجاح الكامل: إذن مفعل والمعرف متطابق
+          if (osPermission && extId === auth.c) {
+            setIsActive(true);
+            return true;
+          }
+
+          // إذا كان المتصفح يسمح ولكن ون سيجنال لا يرى الاشتراك أو الهوية بعد عدة محاولات
+          if (attempts > 5) {
+             // محاولة إعادة تسجيل الدخول إذا كانت الهوية مفقودة أو مختلفة
+             if (extId !== auth.c) {
+                console.log("OneSignal Icon: Missing identity in check, retrying login...");
+                await OneSignal.login(auth.c).catch(() => {});
+             }
+             // مزامنة الاشتراك إذا كان معطلاً في نظر SDK (رغم سماح المتصفح)
+             if (!osPermission && browserPermission) {
+                console.log("OneSignal Icon: Permission mismatch, syncing...");
+                await OneSignal.Notifications.requestPermission().catch(() => {});
+             }
           }
         } catch (err) {
           console.error("Error reading OneSignal External ID in status check attempt:", err);
