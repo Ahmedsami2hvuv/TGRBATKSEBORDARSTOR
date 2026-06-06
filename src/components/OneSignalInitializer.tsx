@@ -51,6 +51,18 @@ export function OneSignalInitializer({ externalId }: { externalId?: string }) {
                     windowObj.__onesignal_initialized = true;
                     console.log("OneSignal successfully initialized via Deferred queue!");
                   }
+
+                  // إجبار الهاتف على عرض الإشعار وتشغيل الصوت حتى لو كان التطبيق مفتوحاً في الواجهة
+                  try {
+                    OneSignal.Notifications.addEventListener("foregroundWillDisplay", (event: any) => {
+                      console.log("OneSignal: Foreground notification received. Forcing display!");
+                      event.preventDefault();
+                      event.notification.display();
+                    });
+                  } catch (listenerErr) {
+                    console.error("Failed to add foreground display listener:", listenerErr);
+                  }
+
                   resolve();
                 } catch (err) {
                   reject(err);
