@@ -16,7 +16,7 @@ import { ADMIN_OFFICE_LABEL, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-adm
 
 const SYSTEM_ADMIN_PHONE = "07733921568";
 
-async function getOrCreateSystemAdminShop(): Promise<{ id: string; regionId: string; photoUrl: string | null }> {
+export async function getOrCreateSystemAdminShop(): Promise<{ id: string; regionId: string; photoUrl: string | null }> {
   let shop = await prisma.shop.findFirst({
     where: { name: { in: ADMIN_SHOP_NAMES } },
   });
