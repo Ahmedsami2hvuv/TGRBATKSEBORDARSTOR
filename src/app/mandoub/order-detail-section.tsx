@@ -119,6 +119,12 @@ export function OrderDetailSection({
   const fontSizeContext = useContext(FontSizeContext);
   const fontSizeConfig = fontSizeContext?.config;
 
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  const activeConfig = isMounted ? fontSizeConfig : null;
+
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
@@ -328,18 +334,18 @@ export function OrderDetailSection({
                     <div className="flex flex-col gap-1 mt-1">
                       <div 
                         className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30"
-                        style={{ fontSize: fontSizeConfig ? `${fontSizeConfig.landmarkFontSize}px` : undefined }}
+                        style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
                       >
                         <span 
                           className="font-black text-rose-600 text-xs shrink-0"
-                          style={{ fontSize: fontSizeConfig ? `${fontSizeConfig.landmarkFontSize}px` : undefined }}
+                          style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
                         >📍 أقرب نقطة دالة:</span>
                         <span 
                           className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight kse-landmark-text"
-                          style={{ fontSize: fontSizeConfig ? `${fontSizeConfig.landmarkFontSize}px` : undefined }}
+                          style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
                         >
                           {mergedLandmark || "—"}
-                          {isFromProfileLandmark && <span className="mr-1 text-[9px] text-rose-400 font-bold" style={{ fontSize: fontSizeConfig ? `${Math.max(9, fontSizeConfig.landmarkFontSize - 4)}px` : undefined }}>(من السجل)</span>}
+                          {isFromProfileLandmark && <span className="mr-1 text-[9px] text-rose-400 font-bold" style={{ fontSize: activeConfig ? `${Math.max(9, activeConfig.landmarkFontSize - 4)}px` : undefined }}>(من السجل)</span>}
                         </span>
                       </div>
                     </div>
@@ -348,11 +354,11 @@ export function OrderDetailSection({
                       <div className="flex flex-col gap-0.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 p-1.5 border border-emerald-100/50 dark:border-emerald-900/20">
                         <span 
                           className="text-[9px] font-black text-emerald-600 dark:text-emerald-400"
-                          style={{ fontSize: fontSizeConfig ? `${Math.max(9, fontSizeConfig.smartHintFontSize - 3)}px` : undefined }}
+                          style={{ fontSize: activeConfig ? `${Math.max(9, activeConfig.smartHintFontSize - 3)}px` : undefined }}
                         >💡 الاستدلال الذكي:</span>
                         <span 
                           className="text-[11px] font-black text-emerald-800 dark:text-emerald-350 kse-smart-hint-text"
-                          style={{ fontSize: fontSizeConfig ? `${fontSizeConfig.smartHintFontSize}px` : undefined }}
+                          style={{ fontSize: activeConfig ? `${activeConfig.smartHintFontSize}px` : undefined }}
                         >
                           {isSmartHintValid(smartHintLine) ? smartHintLine!.trim() : "—"}
                         </span>
@@ -371,8 +377,8 @@ export function OrderDetailSection({
                               rel="noopener noreferrer" 
                               className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm kse-location-btn"
                               style={{
-                                fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined,
-                                height: fontSizeConfig ? `${Math.max(32, fontSizeConfig.locationBtnSize + 16)}px` : undefined
+                                fontSize: activeConfig ? `${activeConfig.locationBtnSize}px` : undefined,
+                                height: activeConfig ? `${Math.max(32, activeConfig.locationBtnSize + 16)}px` : undefined
                               }}
                             >
                               📍 موقع الزبون {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
@@ -449,18 +455,18 @@ export function OrderDetailSection({
                       <div className="flex flex-col gap-1 mt-1">
                         <div 
                           className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30"
-                          style={{ fontSize: fontSizeConfig ? `${fontSizeConfig.landmarkFontSize}px` : undefined }}
+                          style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
                         >
                           <span 
                             className="font-black text-rose-600 text-xs shrink-0"
-                            style={{ fontSize: fontSizeConfig ? `${fontSizeConfig.landmarkFontSize}px` : undefined }}
+                            style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
                           >📍 النقطة الدالة:</span>
                           <span 
                             className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight kse-landmark-text"
-                            style={{ fontSize: fontSizeConfig ? `${fontSizeConfig.landmarkFontSize}px` : undefined }}
+                            style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
                           >
                             {secondLandmarkMerged || "—"}
-                            {isFromSecondProfileLandmark && <span className="mr-1 text-[9px] text-rose-400 font-bold" style={{ fontSize: fontSizeConfig ? `${Math.max(9, fontSizeConfig.landmarkFontSize - 4)}px` : undefined }}>(من السجل)</span>}
+                            {isFromSecondProfileLandmark && <span className="mr-1 text-[9px] text-rose-400 font-bold" style={{ fontSize: activeConfig ? `${Math.max(9, activeConfig.landmarkFontSize - 4)}px` : undefined }}>(من السجل)</span>}
                           </span>
                         </div>
                       </div>
@@ -469,11 +475,11 @@ export function OrderDetailSection({
                         <div className="flex flex-col gap-0.5 rounded-lg bg-violet-50/50 dark:bg-violet-950/10 p-1.5 border border-violet-100/50 dark:border-violet-900/20">
                           <span 
                             className="text-[9px] font-black text-violet-600 dark:text-violet-400"
-                            style={{ fontSize: fontSizeConfig ? `${Math.max(9, fontSizeConfig.smartHintFontSize - 3)}px` : undefined }}
+                            style={{ fontSize: activeConfig ? `${Math.max(9, activeConfig.smartHintFontSize - 3)}px` : undefined }}
                           >💡 الاستدلال الذكي:</span>
                           <span 
                             className="text-[11px] font-black text-violet-800 dark:text-violet-350 kse-smart-hint-text"
-                            style={{ fontSize: fontSizeConfig ? `${fontSizeConfig.smartHintFontSize}px` : undefined }}
+                            style={{ fontSize: activeConfig ? `${activeConfig.smartHintFontSize}px` : undefined }}
                           >
                             {isSmartHintValid(secondSmartHintLine) ? secondSmartHintLine!.trim() : "—"}
                           </span>
@@ -491,8 +497,8 @@ export function OrderDetailSection({
                               rel="noopener noreferrer" 
                               className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm kse-location-btn"
                               style={{
-                                fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined,
-                                height: fontSizeConfig ? `${Math.max(32, fontSizeConfig.locationBtnSize + 16)}px` : undefined
+                                fontSize: activeConfig ? `${activeConfig.locationBtnSize}px` : undefined,
+                                height: activeConfig ? `${Math.max(32, activeConfig.locationBtnSize + 16)}px` : undefined
                               }}
                             >
                               📍 موقع المستلم {isFromSecondProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
