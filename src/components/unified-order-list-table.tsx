@@ -463,6 +463,7 @@ export function UnifiedOrderListTable({
                               ) : (
                                 <span
                                   className={`inline-block rounded-md px-1.5 py-0.5 font-bold ${o.shopNameHighlightClass}`}
+                                  style={{ fontSize: "calc(1em * var(--mandoub-font-scale, 1))" }}
                                 >
                                   {o.shopName}
                                 </span>
@@ -574,9 +575,14 @@ export function UnifiedOrderListTable({
                                  >
                                    <DynamicIcon iconKey="ui_note" config={icons} fallback="🧭" className="w-3.5 h-3.5" />
                                  </button>
-                                 {activeSmartHintId === o.id ? (
+                                {activeSmartHintId === o.id ? (
                                    <CenterModal title="الاستدلال الذكي" onClose={() => setActiveSmartHintId(null)}>
-                                     <div className="p-3 text-sm font-black text-slate-800">{o.smartHintLine}</div>
+                                     <div
+                                       className="p-3 font-black text-slate-800"
+                                       style={{ fontSize: "calc(1.1em * var(--mandoub-font-scale, 1))" }}
+                                     >
+                                       {o.smartHintLine}
+                                     </div>
                                    </CenterModal>
                                  ) : null}
                                </div>
@@ -624,14 +630,19 @@ export function UnifiedOrderListTable({
                         o.reversePickup ? "font-bold text-violet-900" : "text-slate-700"
                       }`}
                     >
-                      <div className="flex flex-col gap-1.5">
+                      <div className="flex flex-col gap-1.5" style={{ fontSize: "calc(1em * var(--mandoub-font-scale, 1))" }}>
                         {isDoubleRoute ? (
                           <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 px-2 py-0.5 rounded-md font-bold text-xs border border-rose-200/50">
                             <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded leading-none">إلى</span>
                             {o.secondCustomerRegionName || "غير معروف"}
                           </span>
                         ) : (
-                          <span>{o.regionLine}</span>
+                          <span className="font-bold">{o.regionLine}</span>
+                        )}
+                        {o.landmarkLine && (
+                          <div className="text-[11px] font-black text-rose-700 leading-tight">
+                            📍 {o.landmarkLine}
+                          </div>
                         )}
                         <div className="flex flex-wrap items-center gap-2 mt-1" onClick={e => e.stopPropagation()}>
                           {!hideShopColumnLocationAndDoorPhotoButtons && o.showLocationBtn !== false && o.orderStatus !== "delivered" &&
@@ -647,6 +658,7 @@ export function UnifiedOrderListTable({
                                 }}
                                 title="مواقع الـ GPS (المحل والزبون)"
                                 className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeLocId === o.id ? 'bg-rose-600 text-white' : 'bg-slate-100 text-rose-500 hover:bg-rose-500 hover:text-white'}`}
+                                style={{ transform: "scale(var(--mandoub-ui-scale, 1))", transformOrigin: "right center" }}
                               >
                                 <DynamicIcon iconKey="ui_location" config={icons} fallback="📍" className="w-3.5 h-3.5" />
                               </button>
@@ -690,6 +702,7 @@ export function UnifiedOrderListTable({
                                 }}
                                 title="صور الأبواب (المحل والزبون)"
                                 className={`size-6 flex items-center justify-center rounded-full transition-all shadow-sm ${activeDoorId === o.id ? 'bg-amber-600 text-white' : 'bg-slate-100 text-amber-500 hover:bg-amber-500 hover:text-white'}`}
+                                style={{ transform: "scale(var(--mandoub-ui-scale, 1))", transformOrigin: "right center" }}
                               >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
@@ -768,6 +781,7 @@ export function UnifiedOrderListTable({
                                   setActiveDoorId(null);
                                 }}
                                 className={`size-10 flex items-center justify-center rounded-full text-white shadow-md hover:scale-110 transition-transform ${activeCallId === o.id ? 'bg-sky-700 ring-2 ring-sky-300' : 'bg-sky-600'}`}
+                                style={{ transform: "scale(var(--mandoub-ui-scale, 1))", transformOrigin: "center center" }}
                                 title="خيارات الاتصال"
                               >
                                 <DynamicIcon iconKey="ui_call" config={icons} fallback="📞" className="w-5 h-5" />
@@ -808,6 +822,7 @@ export function UnifiedOrderListTable({
                                   setActiveDoorId(null);
                                 }}
                                 className={`size-10 flex items-center justify-center rounded-full text-white shadow-md hover:scale-110 transition-transform ${activeMsgId === o.id ? 'bg-emerald-700 ring-2 ring-emerald-300' : 'bg-emerald-600'}`}
+                                style={{ transform: "scale(var(--mandoub-ui-scale, 1))", transformOrigin: "center center" }}
                                 title="خيارات المراسلة"
                               >
                                 <DynamicIcon iconKey="ui_whatsapp" config={icons} fallback="💬" className="w-5 h-5" />

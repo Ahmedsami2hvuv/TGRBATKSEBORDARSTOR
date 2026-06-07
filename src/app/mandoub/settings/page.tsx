@@ -69,6 +69,8 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
         showNotesBtn: true,
         showVoiceNotesBtn: true,
         rotate180Photos: true,
+        fontSizeScale: true,
+        uiScale: true,
       },
     });
 
@@ -94,6 +96,8 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
       showNotesBtn: courier.showNotesBtn,
       showVoiceNotesBtn: courier.showVoiceNotesBtn,
       rotate180Photos: courier.rotate180Photos,
+      fontSizeScale: Number(courier.fontSizeScale || 1.0),
+      uiScale: Number(courier.uiScale || 1.0),
     };
 
     const auth = {

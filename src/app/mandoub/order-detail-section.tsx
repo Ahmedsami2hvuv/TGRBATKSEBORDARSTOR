@@ -322,9 +322,12 @@ export function OrderDetailSection({
                     )}
 
                     <div className="flex flex-col gap-1 mt-1">
-                      <div className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30">
+                      <div
+                        className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30"
+                        style={{ fontSize: `calc(1em * var(--mandoub-font-scale, 1))` }}
+                      >
                         <span className="font-black text-rose-600 text-xs shrink-0">📍 أقرب نقطة دالة:</span>
-                        <span className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight">
+                        <span className="font-black text-rose-950 dark:text-rose-200 leading-tight" style={{ fontSize: '1.1em' }}>
                           {mergedLandmark || "—"}
                           {isFromProfileLandmark && <span className="mr-1 text-[9px] text-rose-400 font-bold">(من السجل)</span>}
                         </span>
@@ -332,9 +335,12 @@ export function OrderDetailSection({
                     </div>
 
                     <div className="mt-1">
-                      <div className="flex flex-col gap-0.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 p-1.5 border border-emerald-100/50 dark:border-emerald-900/20">
+                      <div
+                        className="flex flex-col gap-0.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 p-1.5 border border-emerald-100/50 dark:border-emerald-900/20"
+                        style={{ fontSize: `calc(1em * var(--mandoub-font-scale, 1))` }}
+                      >
                         <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">💡 الاستدلال الذكي:</span>
-                        <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-350">
+                        <span className="font-black text-emerald-800 dark:text-emerald-350" style={{ fontSize: '1.05em' }}>
                           {isSmartHintValid(smartHintLine) ? smartHintLine!.trim() : "—"}
                         </span>
                       </div>
@@ -346,7 +352,13 @@ export function OrderDetailSection({
                       <div className="max-w-full">
                         {mergedCustomerLocationUrl ? (
                           <div className="flex flex-col items-start gap-1">
-                            <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm">
+                            <a
+                              href={mergedCustomerLocationUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm"
+                              style={{ transform: `scale(var(--mandoub-ui-scale, 1))`, transformOrigin: 'right center' }}
+                            >
                               📍 موقع الزبون {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
                             </a>
                             {order.customerLocationUploadedByName?.trim() ? (

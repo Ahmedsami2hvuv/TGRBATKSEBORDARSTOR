@@ -16,6 +16,8 @@ type CourierSettings = {
   showNotesBtn: boolean;
   showVoiceNotesBtn: boolean;
   rotate180Photos: boolean;
+  fontSizeScale: number;
+  uiScale: number;
 };
 
 type Props = {
@@ -65,20 +67,25 @@ export default function CourierSettingsClient({
   if (auth.exp) baseQuery.set("exp", auth.exp);
   baseQuery.set("s", auth.s);
 
-  async function handleToggle(
+  async function handleUpdate(
     key: keyof CourierSettings,
-    currentValue: boolean
+    newValue: any
   ) {
-    const newValue = !currentValue;
+    const currentValue = settings[key];
     setSavingState((prev) => ({ ...prev, [key]: "saving" }));
     
     // Update local state immediately for snappy UX
     setSettings((prev) => ({ ...prev, [key]: newValue }));
 
     try {
-      const result = await updateCourierSetting(auth, key, newValue);
+      const result = await updateCourierSetting(auth, key as any, newValue);
       if (result.ok) {
         setSavingState((prev) => ({ ...prev, [key]: "saved" }));
+
+        if (key === "fontSizeScale" || key === "uiScale") {
+           window.dispatchEvent(new CustomEvent("kse_scale_changed", { detail: { key, value: newValue } }));
+        }
+
         setTimeout(() => {
           setSavingState((prev) => ({ ...prev, [key]: "idle" }));
         }, 1500);
@@ -94,6 +101,13 @@ export default function CourierSettingsClient({
         setSavingState((prev) => ({ ...prev, [key]: "idle" }));
       }, 3000);
     }
+  }
+
+  async function handleToggle(
+    key: keyof CourierSettings,
+    currentValue: boolean
+  ) {
+    handleUpdate(key, !currentValue);
   }
 
   const items = [
@@ -245,6 +259,69 @@ export default function CourierSettingsClient({
             )}
           </div>
         )}
+
+        {/* Font & UI Scaling */}
+        <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <span className="text-xl">🔍</span>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">حجم الخط والتحجيم</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">تحكم في حجم النصوص والأزرار لتسهيل القراءة أثناء القيادة</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Font Size Scale */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">حجم نصوص العناوين والمعلومات</span>
+                <span className="text-xs font-black bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400 px-2 py-1 rounded-lg">
+                  {Math.round(settings.fontSizeScale * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.8"
+                max="1.5"
+                step="0.05"
+                value={settings.fontSizeScale}
+                onChange={(e) => handleUpdate("fontSizeScale", parseFloat(e.target.value))}
+                className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500 dark:accent-[#00f3ff]"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400 font-bold px-1">
+                <span>صغير جداً</span>
+                <span>افتراضي</span>
+                <span>ضخم جداً</span>
+              </div>
+            </div>
+
+            {/* UI Scale */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">حجم الأزرار التفاعلية</span>
+                <span className="text-xs font-black bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 px-2 py-1 rounded-lg">
+                  {Math.round(settings.uiScale * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.9"
+                max="1.3"
+                step="0.05"
+                value={settings.uiScale}
+                onChange={(e) => handleUpdate("uiScale", parseFloat(e.target.value))}
+                className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500 dark:accent-[#00f3ff]"
+              />
+            </div>
+          </div>
+
+          {(savingState.fontSizeScale === "saving" || savingState.uiScale === "saving") && (
+             <p className="mt-4 text-center text-xs font-bold text-sky-500 animate-pulse">جاري حفظ إعدادات التحجيم...</p>
+          )}
+          {(savingState.fontSizeScale === "saved" || savingState.uiScale === "saved") && (
+             <p className="mt-4 text-center text-xs font-bold text-emerald-500">✓ تم تحديث الحجم بنجاح</p>
+          )}
+        </section>
 
         {/* Quick Actions Visibility Toggles */}
         <section className="kse-glass-dark border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">

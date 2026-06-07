@@ -282,6 +282,8 @@ model Courier {
   showVoiceNotesBtn           Boolean                  @default(true)
   showMoneyBoxes              Boolean                  @default(true)
   rotate180Photos             Boolean                  @default(false)
+  fontSizeScale               Float                    @default(1.0)
+  uiScale                     Float                    @default(1.0)
   mandoubTotalsResetAt        DateTime?
   mandoubWalletCarryOverDinar Decimal                  @default(0) @db.Decimal(14, 4)
   telegramUserId              String?                  @unique
