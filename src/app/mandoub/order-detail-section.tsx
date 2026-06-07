@@ -333,7 +333,7 @@ export function OrderDetailSection({
 
                     <div className="flex flex-col gap-1 mt-1">
                       <div 
-                        className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30"
+                        className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30 kse-landmark-text"
                         style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
                       >
                         <span 
@@ -341,7 +341,7 @@ export function OrderDetailSection({
                           style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
                         >📍 أقرب نقطة دالة:</span>
                         <span 
-                          className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight kse-landmark-text"
+                          className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight"
                           style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
                         >
                           {mergedLandmark || "—"}
@@ -351,13 +351,13 @@ export function OrderDetailSection({
                     </div>
 
                     <div className="mt-1">
-                      <div className="flex flex-col gap-0.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 p-1.5 border border-emerald-100/50 dark:border-emerald-900/20">
+                      <div className="flex flex-col gap-0.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 p-1.5 border border-emerald-100/50 dark:border-emerald-900/20 kse-smart-hint-text">
                         <span 
                           className="text-[9px] font-black text-emerald-600 dark:text-emerald-400"
                           style={{ fontSize: activeConfig ? `${Math.max(9, activeConfig.smartHintFontSize - 3)}px` : undefined }}
                         >💡 الاستدلال الذكي:</span>
                         <span 
-                          className="text-[11px] font-black text-emerald-800 dark:text-emerald-350 kse-smart-hint-text"
+                          className="text-[11px] font-black text-emerald-800 dark:text-emerald-350"
                           style={{ fontSize: activeConfig ? `${activeConfig.smartHintFontSize}px` : undefined }}
                         >
                           {isSmartHintValid(smartHintLine) ? smartHintLine!.trim() : "—"}
@@ -454,7 +454,7 @@ export function OrderDetailSection({
 
                       <div className="flex flex-col gap-1 mt-1">
                         <div 
-                          className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30"
+                          className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30 kse-landmark-text"
                           style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
                         >
                           <span 
@@ -462,7 +462,7 @@ export function OrderDetailSection({
                             style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
                           >📍 النقطة الدالة:</span>
                           <span 
-                            className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight kse-landmark-text"
+                            className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight"
                             style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
                           >
                             {secondLandmarkMerged || "—"}
@@ -472,13 +472,13 @@ export function OrderDetailSection({
                       </div>
 
                       <div className="mt-1">
-                        <div className="flex flex-col gap-0.5 rounded-lg bg-violet-50/50 dark:bg-violet-950/10 p-1.5 border border-violet-100/50 dark:border-violet-900/20">
+                        <div className="flex flex-col gap-0.5 rounded-lg bg-violet-50/50 dark:bg-violet-950/10 p-1.5 border border-violet-100/50 dark:border-violet-900/20 kse-smart-hint-text">
                           <span 
                             className="text-[9px] font-black text-violet-600 dark:text-violet-400"
                             style={{ fontSize: activeConfig ? `${Math.max(9, activeConfig.smartHintFontSize - 3)}px` : undefined }}
                           >💡 الاستدلال الذكي:</span>
                           <span 
-                            className="text-[11px] font-black text-violet-800 dark:text-violet-350 kse-smart-hint-text"
+                            className="text-[11px] font-black text-violet-800 dark:text-violet-350"
                             style={{ fontSize: activeConfig ? `${activeConfig.smartHintFontSize}px` : undefined }}
                           >
                             {isSmartHintValid(secondSmartHintLine) ? secondSmartHintLine!.trim() : "—"}
