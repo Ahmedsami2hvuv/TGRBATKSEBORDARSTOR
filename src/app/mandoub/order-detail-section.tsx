@@ -34,6 +34,7 @@ import { ADMIN_PHONE_FROM_SHOP_LOCAL } from "@/lib/admin-order-from-admin-consta
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { FontSizeContext } from "@/components/font-size-provider";
+import { InlineLandmarkEditor } from "@/components/inline-landmark-editor";
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المندوب",
@@ -332,22 +333,14 @@ export function OrderDetailSection({
                     )}
 
                     <div className="flex flex-col gap-1 mt-1">
-                      <div 
-                        className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30 kse-landmark-text"
-                        style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
-                      >
-                        <span 
-                          className="font-black text-rose-600 text-xs shrink-0"
-                          style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
-                        >📍 أقرب نقطة دالة:</span>
-                        <span 
-                          className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight"
-                          style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
-                        >
-                          {mergedLandmark || "—"}
-                          {isFromProfileLandmark && <span className="mr-1 text-[9px] text-rose-400 font-bold" style={{ fontSize: activeConfig ? `${Math.max(9, activeConfig.landmarkFontSize - 4)}px` : undefined }}>(من السجل)</span>}
-                        </span>
-                      </div>
+                      <InlineLandmarkEditor
+                        orderId={order.id}
+                        initialLandmark={mergedLandmark}
+                        isSecondDestination={false}
+                        fontSizeConfig={activeConfig}
+                        isFromProfile={isFromProfileLandmark}
+                        label="📍 أقرب نقطة دالة:"
+                      />
                     </div>
 
                     <div className="mt-1">
@@ -453,22 +446,14 @@ export function OrderDetailSection({
                       )}
 
                       <div className="flex flex-col gap-1 mt-1">
-                        <div 
-                          className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30 kse-landmark-text"
-                          style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
-                        >
-                          <span 
-                            className="font-black text-rose-600 text-xs shrink-0"
-                            style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
-                          >📍 النقطة الدالة:</span>
-                          <span 
-                            className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight"
-                            style={{ fontSize: activeConfig ? `${activeConfig.landmarkFontSize}px` : undefined }}
-                          >
-                            {secondLandmarkMerged || "—"}
-                            {isFromSecondProfileLandmark && <span className="mr-1 text-[9px] text-rose-400 font-bold" style={{ fontSize: activeConfig ? `${Math.max(9, activeConfig.landmarkFontSize - 4)}px` : undefined }}>(من السجل)</span>}
-                          </span>
-                        </div>
+                        <InlineLandmarkEditor
+                          orderId={order.id}
+                          initialLandmark={secondLandmarkMerged}
+                          isSecondDestination={true}
+                          fontSizeConfig={activeConfig}
+                          isFromProfile={isFromSecondProfileLandmark}
+                          label="📍 النقطة الدالة:"
+                        />
                       </div>
 
                       <div className="mt-1">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
+import { InlineLandmarkEditor } from "@/components/inline-landmark-editor";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -233,7 +234,12 @@ export function OrderViewContent({
                     </div>
                   )}
                 </div>
-                <p className="text-sm font-medium text-slate-800">📍 النقطة الدالة: {order.customerLandmark?.trim() || "—"}</p>
+                <InlineLandmarkEditor
+                  orderId={order.id}
+                  initialLandmark={order.customerLandmark}
+                  isSecondDestination={false}
+                  label="📍 النقطة الدالة:"
+                />
                 <p className="text-sm font-bold text-emerald-800">
                   💡 الاستدلال الذكي: {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
                 </p>
@@ -297,7 +303,12 @@ export function OrderViewContent({
                     <span className={compactPhoneText}>{order.secondCustomerPhone || "—"}</span>
                   </div>
                 </div>
-                <p className="text-sm font-medium text-slate-800">📍 النقطة الدالة: {order.secondCustomerLandmark?.trim() || "—"}</p>
+                <InlineLandmarkEditor
+                  orderId={order.id}
+                  initialLandmark={order.secondCustomerLandmark}
+                  isSecondDestination={true}
+                  label="📍 النقطة الدالة:"
+                />
                 <p className="text-sm font-bold text-emerald-800">
                   💡 الاستدلال الذكي: {isSmartHintValid(order.secondSmartHintLine) ? order.secondSmartHintLine!.trim() : "—"}
                 </p>
@@ -335,7 +346,12 @@ export function OrderViewContent({
                     </div>
                   )}
                 </div>
-                <p className="text-sm font-medium text-slate-800">📍 النقطة الدالة: {order.customerLandmark?.trim() || "—"}</p>
+                <InlineLandmarkEditor
+                  orderId={order.id}
+                  initialLandmark={order.customerLandmark}
+                  isSecondDestination={false}
+                  label="📍 النقطة الدالة:"
+                />
                 <p className="text-sm font-bold text-emerald-800">
                   💡 الاستدلال الذكي: {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
                 </p>
