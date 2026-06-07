@@ -76,6 +76,8 @@ export function FontSizeProvider({ children }: { children: React.ReactNode }) {
         "--kse-smart-hint-font-size": `${config.smartHintFontSize}px`,
         "--kse-global-font-size": `${config.globalFontSize}px`,
         "--kse-global-btn-size": `${config.globalBtnSize}px`,
+        "--kse-global-font-scale": config.globalFontSize / 16,
+        "--kse-global-btn-scale": config.globalBtnSize / 14,
       } as React.CSSProperties
     : {};
 
@@ -99,19 +101,41 @@ export function FontSizeProvider({ children }: { children: React.ReactNode }) {
               .kse-smart-hint-text {
                 font-size: var(--kse-smart-hint-font-size) !important;
               }
-              /* تطبيق الحجم العام على جميع النصوص العادية بشكل متوازن */
+              
+              /* تكبير كافة نصوص كلاسات Tailwind النصية بشكل ملحوظ وقوي */
+              .font-size-root .text-xs { font-size: calc(0.75rem * var(--kse-global-font-scale, 1)) !important; }
+              .font-size-root .text-sm { font-size: calc(0.875rem * var(--kse-global-font-scale, 1)) !important; }
+              .font-size-root .text-base { font-size: calc(1rem * var(--kse-global-font-scale, 1)) !important; }
+              .font-size-root .text-lg { font-size: calc(1.125rem * var(--kse-global-font-scale, 1)) !important; }
+              .font-size-root .text-xl { font-size: calc(1.25rem * var(--kse-global-font-scale, 1)) !important; }
+              .font-size-root .text-2xl { font-size: calc(1.5rem * var(--kse-global-font-scale, 1)) !important; }
+              .font-size-root .text-3xl { font-size: calc(1.875rem * var(--kse-global-font-scale, 1)) !important; }
+              .font-size-root .text-4xl { font-size: calc(2.25rem * var(--kse-global-font-scale, 1)) !important; }
+
+              /* تكبير أحجام الخطوط العامة والنصوص المباشرة في العناصر */
+              .font-size-root,
               .font-size-root p,
               .font-size-root span:not(.kse-landmark-text):not(.kse-smart-hint-text),
               .font-size-root td,
+              .font-size-root th,
+              .font-size-root h1,
+              .font-size-root h2,
+              .font-size-root h3,
+              .font-size-root h4,
               .font-size-root div:not([style*="--"]) {
-                font-size: var(--kse-global-font-size);
+                font-size: calc(1em * var(--kse-global-font-scale, 1));
               }
-              /* تطبيق حجم الأزرار العام */
+
+              /* تكبير وتوسيع أحجام وحشوات الأزرار وعناصر الاتصال والمراسلة بشكل ملحوظ */
               .font-size-root button,
               .font-size-root a[href^="tel:"],
               .font-size-root a[href*="wa.me"],
-              .font-size-root a[href*="t.me"] {
-                font-size: var(--kse-global-btn-size) !important;
+              .font-size-root a[href*="t.me"],
+              .font-size-root .btn,
+              .font-size-root .kse-btn {
+                font-size: calc(1em * var(--kse-global-btn-scale, 1)) !important;
+                padding-top: calc(0.4rem * var(--kse-global-btn-scale, 1)) !important;
+                padding-bottom: calc(0.4rem * var(--kse-global-btn-scale, 1)) !important;
               }
             `
           }} />
