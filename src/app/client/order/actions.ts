@@ -198,6 +198,8 @@ export async function submitOrder(
     const reversePickup = formData.get("reversePickup") === "on";
     const vehiclePreference = formData.get("vehiclePreference") as string || null;
     const deliveryPriceOverride = formData.get("deliveryPrice") ? Number(formData.get("deliveryPrice")) : null;
+    const editOrderNumberRaw = formData.get("editOrderNumber");
+    const editOrderNumber = editOrderNumberRaw ? Number(editOrderNumberRaw) : null;
 
     if (!orderType) return { error: "نوع الطلب مطلوب" };
     if (!customerRegionId) return { error: "اختر المنطقة" };
@@ -212,6 +214,20 @@ export async function submitOrder(
     });
     if (isGlobalBlocked) {
       return { error: "عذراً، هذا الرقم محظور من التوصيل حالياً." };
+    }
+
+    let existingOrder = null;
+    if (editOrderNumber !== null && !isNaN(editOrderNumber)) {
+      existingOrder = await prisma.order.findFirst({
+        where: {
+          orderNumber: editOrderNumber,
+          shopId: submitter.shopId,
+          status: { in: ["pending", "assigned"] }
+        }
+      });
+      if (!existingOrder) {
+        return { error: "الطلب غير موجود أو تم استلامه من قبل المندوب ولا يمكن تعديله." };
+      }
     }
 
     // معالجة السعر
@@ -281,61 +297,92 @@ export async function submitOrder(
       });
     }
 
-    // إنشاء الطلب مع معالجة استباقية للأعمدة المفقودة
-    const orderData: any = {
-      shopId: submitter.shopId,
-      customerId: customerRow.id,
-      status: "pending",
-      summary: notes.trim(),
-      orderType: withReversePickupPrefix(orderType, reversePickup),
-      customerLocationUrl,
-      customerLandmark,
-      customerRegionId: custRegion.id,
-      deliveryPrice: delivery,
-      orderSubtotal: subtotal,
-      totalAmount: total,
-      customerPhone: phoneLocal,
-      orderNoteTime: orderTime.trim(),
-      imageUrl,
-      voiceNoteUrl,
-      shopDoorPhotoUrl: submitter.shop.photoUrl,
-      submissionSource: "customer_via_employee_link",
-      submittedByEmployeeId: submitter.id,
-      prepaidAll,
-      vehiclePreference,
-    };
-
-    const order = await prisma.order.create({
-      data: orderData,
-      select: { id: true, orderNumber: true },
-    }).catch(async (err) => {
-      console.error("Primary order create failed, trying fallback:", err.message);
-
-      // بناء بيانات احتياطية تحتوي فقط على الحقول القديمة والمضمونة 100%
-      const fallbackData = {
-        shopId: orderData.shopId,
-        customerId: orderData.customerId,
-        status: "pending",
-        summary: orderData.summary,
-        orderType: orderData.orderType,
-        customerLocationUrl: orderData.customerLocationUrl,
-        customerLandmark: orderData.customerLandmark,
-        customerRegionId: orderData.customerRegionId,
-        deliveryPrice: orderData.deliveryPrice,
-        orderSubtotal: orderData.orderSubtotal,
-        totalAmount: orderData.totalAmount,
-        customerPhone: orderData.customerPhone,
-        orderNoteTime: orderData.orderNoteTime,
-        imageUrl: orderData.imageUrl,
-        voiceNoteUrl: orderData.voiceNoteUrl,
-        shopDoorPhotoUrl: orderData.shopDoorPhotoUrl,
+    // إنشاء أو تحديث الطلب
+    let order;
+    if (existingOrder) {
+      const updateData: any = {
+        summary: notes.trim(),
+        orderType: withReversePickupPrefix(orderType, reversePickup),
+        customerLandmark,
+        customerRegionId: custRegion.id,
+        deliveryPrice: delivery,
+        orderSubtotal: subtotal,
+        totalAmount: total,
+        customerPhone: phoneLocal,
+        orderNoteTime: orderTime.trim(),
+        prepaidAll,
+        vehiclePreference,
       };
 
-      return prisma.order.create({
-        data: fallbackData,
+      if (imageUrl) {
+        updateData.imageUrl = imageUrl;
+      }
+      if (voiceNoteUrl) {
+        updateData.voiceNoteUrl = voiceNoteUrl;
+      }
+
+      order = await prisma.order.update({
+        where: { id: existingOrder.id },
+        data: updateData,
         select: { id: true, orderNumber: true },
       });
-    });
+    } else {
+      // إنشاء الطلب مع معالجة استباقية للأعمدة المفقودة
+      const orderData: any = {
+        shopId: submitter.shopId,
+        customerId: customerRow.id,
+        status: "pending",
+        summary: notes.trim(),
+        orderType: withReversePickupPrefix(orderType, reversePickup),
+        customerLocationUrl,
+        customerLandmark,
+        customerRegionId: custRegion.id,
+        deliveryPrice: delivery,
+        orderSubtotal: subtotal,
+        totalAmount: total,
+        customerPhone: phoneLocal,
+        orderNoteTime: orderTime.trim(),
+        imageUrl,
+        voiceNoteUrl,
+        shopDoorPhotoUrl: submitter.shop.photoUrl,
+        submissionSource: "customer_via_employee_link",
+        submittedByEmployeeId: submitter.id,
+        prepaidAll,
+        vehiclePreference,
+      };
+
+      order = await prisma.order.create({
+        data: orderData,
+        select: { id: true, orderNumber: true },
+      }).catch(async (err) => {
+        console.error("Primary order create failed, trying fallback:", err.message);
+
+        // بناء بيانات احتياطية تحتوي فقط على الحقول القديمة والمضمونة 100%
+        const fallbackData = {
+          shopId: orderData.shopId,
+          customerId: orderData.customerId,
+          status: "pending",
+          summary: orderData.summary,
+          orderType: orderData.orderType,
+          customerLocationUrl: orderData.customerLocationUrl,
+          customerLandmark: orderData.customerLandmark,
+          customerRegionId: orderData.customerRegionId,
+          deliveryPrice: orderData.deliveryPrice,
+          orderSubtotal: orderData.orderSubtotal,
+          totalAmount: orderData.totalAmount,
+          customerPhone: orderData.customerPhone,
+          orderNoteTime: orderData.orderNoteTime,
+          imageUrl: orderData.imageUrl,
+          voiceNoteUrl: orderData.voiceNoteUrl,
+          shopDoorPhotoUrl: orderData.shopDoorPhotoUrl,
+        };
+
+        return prisma.order.create({
+          data: fallbackData,
+          select: { id: true, orderNumber: true },
+        });
+      });
+    }
 
     // مزامنة المرجع (بشكل غير متزامن)
     void upsertCustomerPhoneProfileFromOrderSnapshot({
@@ -348,8 +395,10 @@ export async function submitOrder(
     }).catch(() => null);
 
     // تنبيهات (بشكل غير متزامن)
-    void notifyTelegramNewOrder(order.id).catch(() => null);
-    void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => null);
+    if (!existingOrder) {
+      void notifyTelegramNewOrder(order.id).catch(() => null);
+      void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => null);
+    }
 
     // جلب أسماء المناطق والمحلات للرسالة
     const fullShop = await prisma.shop.findUnique({
@@ -362,7 +411,17 @@ export async function submitOrder(
     const clientArea = fullShop?.region?.name || "منطقتكم";
     const customerArea = fullRegion?.name || "منطقة الزبون";
 
-    const finalWaMessage = [
+    const finalWaMessage = existingOrder ? [
+      "مرحباً، تم تعديل تفاصيل الطلب عبر النظام:",
+      `🏢 من محل: ${fullShop?.name || submitter.shopId}`,
+      `📍 من منطقة (العميل): ${clientArea}`,
+      `🎯 إلى منطقة (الزبون): ${customerArea}`,
+      `📞 رقم الزبون (المستلم): ${phoneLocal}`,
+      `💰 سعر الطلب (بدون توصيل): ${subtotalNum.toLocaleString()}`,
+      `🚚 أجرة التوصيل: ${delivery.toNumber().toLocaleString()}`,
+      `📝 ملاحظات: ${notes || "لا يوجد"}`,
+      `🔢 رقم الطلب: ${order.orderNumber}`,
+    ].join("\n") : [
       "مرحباً، لقد قام العميل برفع طلب جديد عبر النظام:",
       `🏢 من محل: ${fullShop?.name || submitter.shopId}`,
       `📍 من منطقة (العميل): ${clientArea}`,

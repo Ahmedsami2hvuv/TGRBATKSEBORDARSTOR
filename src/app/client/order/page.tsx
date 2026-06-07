@@ -218,6 +218,55 @@ export default async function ClientOrderPage(props: Props) {
       }).catch(() => {}); // لا نريد تعطيل الطلب الحالي إذا فشل المسح
     }
 
+    let initialOrder = null;
+    if (sp.edit) {
+      const editOrderNum = parseInt(sp.edit, 10);
+      if (!isNaN(editOrderNum)) {
+        const orderData = await prisma.order.findFirst({
+          where: {
+            orderNumber: editOrderNum,
+            shopId: shop.id,
+            status: { in: ["pending", "assigned"] }
+          },
+          include: {
+            customerRegion: {
+              select: {
+                id: true,
+                name: true,
+                deliveryPrice: true,
+              }
+            },
+            customer: {
+              select: {
+                name: true
+              }
+            }
+          }
+        });
+
+        if (orderData) {
+          initialOrder = {
+            orderNumber: orderData.orderNumber,
+            customerPhone: orderData.customerPhone,
+            customerName: orderData.customer?.name || "",
+            orderType: orderData.orderType,
+            orderSubtotal: orderData.orderSubtotal ? orderData.orderSubtotal.toString() : "",
+            alternatePhone: orderData.alternatePhone || "",
+            orderTime: orderData.orderNoteTime || "",
+            notes: orderData.summary || "",
+            customerLocationUrl: orderData.customerLocationUrl,
+            customerLandmark: orderData.customerLandmark,
+            prepaidAll: orderData.prepaidAll,
+            customerRegion: orderData.customerRegion ? {
+              id: orderData.customerRegion.id,
+              name: orderData.customerRegion.name,
+              deliveryPrice: orderData.customerRegion.deliveryPrice.toString(),
+            } : { id: "", name: "", deliveryPrice: "0" }
+          };
+        }
+      }
+    }
+
     return (
       <div className="kse-app-bg relative min-h-screen px-4 py-8 pb-16 text-slate-800">
         <div className="absolute top-4 left-4 z-50">
@@ -235,7 +284,7 @@ export default async function ClientOrderPage(props: Props) {
             exp={sp.exp!}
             sig={sp.s!}
             viewerName=""
-            initialOrder={null}
+            initialOrder={initialOrder}
             botUsername={botUsername}
             portalUrl={portalUrl}
             botStartParam={botStartParam}
