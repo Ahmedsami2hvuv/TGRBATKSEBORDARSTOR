@@ -3,7 +3,17 @@
 import React, { useState } from "react";
 import { useFontSize, FontSizeConfig } from "@/components/font-size-provider";
 
-export default function FontSizeCustomizer({ onClose }: { onClose: () => void }) {
+import Link from "next/link";
+
+export default function FontSizeCustomizer({ 
+  onClose,
+  isPageMode = false,
+  authQuery = ""
+}: { 
+  onClose?: () => void;
+  isPageMode?: boolean;
+  authQuery?: string;
+}) {
   const { config, updateConfig, resetConfig } = useFontSize();
   const [localConfig, setLocalConfig] = useState<FontSizeConfig>(config);
   const [savedMessage, setSavedMessage] = useState(false);
@@ -25,7 +35,6 @@ export default function FontSizeCustomizer({ onClose }: { onClose: () => void })
 
   const handleReset = () => {
     resetConfig();
-    // الحصول على التكوين الافتراضي بعد إعادة التعيين
     setTimeout(() => {
       const defaultConfig = {
         landmarkFontSize: 14,
@@ -195,12 +204,23 @@ export default function FontSizeCustomizer({ onClose }: { onClose: () => void })
           </div>
         )}
 
-        <button
-          onClick={onClose}
-          className="w-full py-2.5 text-center text-xs text-slate-500 dark:text-slate-400 font-bold hover:underline"
-        >
-          إغلاق نافذة التعديل
-        </button>
+        {isPageMode ? (
+          <Link
+            href={`/mandoub/settings${authQuery}`}
+            className="w-full py-2.5 text-center text-xs text-slate-500 dark:text-slate-400 font-bold hover:underline"
+          >
+            ← العودة لصفحة الإعدادات الرئيسية
+          </Link>
+        ) : (
+          onClose && (
+            <button
+              onClick={onClose}
+              className="w-full py-2.5 text-center text-xs text-slate-500 dark:text-slate-400 font-bold hover:underline"
+            >
+              إغلاق نافذة التعديل
+            </button>
+          )
+        )}
       </div>
     </div>
   );

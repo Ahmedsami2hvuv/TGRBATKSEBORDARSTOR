@@ -250,27 +250,16 @@ export default function CourierSettingsClient({
 
         {/* إعدادات حجم الخط والأزرار */}
         <div className="mb-6">
-          <button
-            type="button"
-            onClick={() => setShowFontSizeCustomizer(!showFontSizeCustomizer)}
-            className="w-full py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-sm text-slate-800 dark:text-slate-200 shadow-sm transition-all active:scale-98 flex items-center justify-between px-5 outline-none"
+          <Link
+            href={`/mandoub/settings/font-size?${baseQuery.toString()}`}
+            className="w-full py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-sm text-slate-800 dark:text-slate-200 shadow-sm transition-all active:scale-98 flex items-center justify-between px-5 hover:bg-slate-50 dark:hover:bg-slate-850"
           >
             <div className="flex items-center gap-2">
               <span>📏</span>
               <span>حجم الخط والأزرار</span>
             </div>
-            <span className="text-xs text-slate-400 font-bold">{showFontSizeCustomizer ? "▲ إخفاء" : "▼ عرض التعديل"}</span>
-          </button>
-
-          {showFontSizeCustomizer && (
-            <section className="kse-glass-dark mt-3 border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm transition-all duration-300">
-              <div className="mb-4">
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">تعديل خط وحجم حساب المندوب</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">تخصيص حجم الخط لجميع أزرار ونصوص وتفاصيل واجهة حسابك</p>
-              </div>
-              <FontSizeCustomizer onClose={() => setShowFontSizeCustomizer(false)} />
-            </section>
-          )}
+            <span className="text-xs text-sky-500 font-bold">تعديل ←</span>
+          </Link>
         </div>
 
         {/* Quick Actions Visibility Toggles */}
