@@ -507,7 +507,7 @@ export async function submitPreparerShoppingDraft(
       }
     });
 
-    // غلق وتأشير جميع مسودات المجموعة كمرسلة لتجنب الدبلرة
+    // غلق وتأشير المسودة كمرسلة
     const groupId = (draft.data as any)?.groupId;
     if (groupId) {
         await prisma.companyPreparerShoppingDraft.updateMany({
@@ -515,12 +515,8 @@ export async function submitPreparerShoppingDraft(
             data: { status: PreparerShoppingDraftStatus.sent, sentOrderId: order.id }
         });
     } else {
-        await prisma.companyPreparerShoppingDraft.updateMany({
-            where: {
-                customerPhone: draft.customerPhone,
-                titleLine: draft.titleLine,
-                status: { in: ["draft", "priced"] }
-            },
+        await prisma.companyPreparerShoppingDraft.update({
+            where: { id: draftId },
             data: { status: PreparerShoppingDraftStatus.sent, sentOrderId: order.id }
         });
     }

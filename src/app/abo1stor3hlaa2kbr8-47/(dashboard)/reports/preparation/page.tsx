@@ -5,6 +5,7 @@ import { ALF_PER_DINAR, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { formatYMDLocal } from "@/lib/report-dates";
 import { ReportTableClient } from "./report-table-client";
 import { AdminDebtsWidget } from "../../admin-debts-widget";
+import { ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,8 @@ export default async function PreparationReportPage({ searchParams }: { searchPa
       where: {
         createdAt: { gte: from, lte: to },
         preparerShoppingJson: { not: null },
-        status: { notIn: ["cancelled", "rejected"] }
+        status: { notIn: ["cancelled", "rejected"] },
+        shop: { name: { in: ADMIN_SHOP_NAMES } }
       },
       orderBy: { createdAt: "desc" },
       include: { shop: { select: { name: true } }, customerRegion: { select: { name: true } } },
@@ -86,7 +88,8 @@ export default async function PreparationReportPage({ searchParams }: { searchPa
       where: {
         createdAt: { gte: rangeFrom, lte: to },
         preparerShoppingJson: { not: null },
-        status: { notIn: ["cancelled", "rejected"] }
+        status: { notIn: ["cancelled", "rejected"] },
+        shop: { name: { in: ADMIN_SHOP_NAMES } }
       },
       select: { createdAt: true, preparerShoppingJson: true }
     })
