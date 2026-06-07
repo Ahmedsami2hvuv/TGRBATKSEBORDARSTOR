@@ -89,6 +89,7 @@ export function MandoubOrderMoneyFlow({
   nextUrl,
   missingCustomerLocation,
   canRecordMoney = true,
+  totalsBaseline,
 }: {
   orderId: string;
   orderNumber: number;
@@ -101,6 +102,7 @@ export function MandoubOrderMoneyFlow({
   nextUrl: string;
   missingCustomerLocation: boolean;
   canRecordMoney?: boolean;
+  totalsBaseline?: string | null;
 }) {
   const [pickupOpen, setPickupOpen] = useState(false);
   const [deliveryOpen, setDeliveryOpen] = useState(false);
@@ -385,37 +387,48 @@ export function MandoubOrderMoneyFlow({
                   ) : null}
                 </div>
                 <div className="flex shrink-0 flex-col items-center gap-2 self-start">
-                  {!deleted && canDeleteFromMandoubUi ? (
-                    <form
-                      action={deleteAction}
-                      onSubmit={(e) => {
-                        if (
-                          !window.confirm(
-                            `تأكيد حذف حركة «${dirLabel}» لهذا الطلب #${orderNumber}؟`,
-                          )
-                        ) {
-                          e.preventDefault();
-                        }
-                      }}
-                    >
-                      <input type="hidden" name="c" value={auth.c} />
-                      <input type="hidden" name="exp" value={auth.exp} />
-                      <input type="hidden" name="s" value={auth.s} />
-                      <input type="hidden" name="eventId" value={ev.id} />
-                      <input type="hidden" name="next" value={nextUrl} />
-                      <button
-                        type="submit"
-                        disabled={deletePending}
-                        className="flex min-h-[52px] min-w-[3.8rem] items-center justify-center rounded-xl border-2 border-rose-400 bg-white py-3 text-base font-black text-rose-900 shadow-sm transition hover:bg-rose-50 disabled:opacity-60"
-                      >
-                        <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={20} height={20} />
-                      </button>
-                    </form>
-                  ) : !deleted ? (
-                    <p className="max-w-[9rem] text-center text-[11px] font-bold leading-snug text-slate-500">
-                      حذف من لوحة المجهز فقط
-                    </p>
-                  ) : null}
+                  {(() => {
+                    const isBeforeReset = totalsBaseline
+                      ? new Date(ev.recordedAt) <= new Date(totalsBaseline)
+                      : false;
+                    if (!deleted && canDeleteFromMandoubUi && !isBeforeReset) {
+                      return (
+                        <form
+                          action={deleteAction}
+                          onSubmit={(e) => {
+                            if (
+                              !window.confirm(
+                                `تأكيد حذف حركة «${dirLabel}» لهذا الطلب #${orderNumber}؟`,
+                              )
+                            ) {
+                              e.preventDefault();
+                            }
+                          }}
+                        >
+                          <input type="hidden" name="c" value={auth.c} />
+                          <input type="hidden" name="exp" value={auth.exp} />
+                          <input type="hidden" name="s" value={auth.s} />
+                          <input type="hidden" name="eventId" value={ev.id} />
+                          <input type="hidden" name="next" value={nextUrl} />
+                          <button
+                            type="submit"
+                            disabled={deletePending}
+                            className="flex min-h-[52px] min-w-[3.8rem] items-center justify-center rounded-xl border-2 border-rose-400 bg-white py-3 text-base font-black text-rose-900 shadow-sm transition hover:bg-rose-50 disabled:opacity-60"
+                          >
+                            <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={20} height={20} />
+                          </button>
+                        </form>
+                      );
+                    }
+                    if (!deleted) {
+                      return (
+                        <p className="max-w-[9rem] text-center text-[11px] font-bold leading-snug text-slate-500">
+                          {isBeforeReset ? "معاملة مصفّرة (لا يمكن الحذف)" : "حذف من لوحة المجهز فقط"}
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
 
                   {!deleted && ev.expectedDinar != null && (
                     <div className={`flex w-full flex-col items-center justify-center rounded-lg border px-1.5 py-1 text-[10px] font-black shadow-inner ${

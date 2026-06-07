@@ -157,6 +157,7 @@ export function MandoubWalletClient({
   earningsDailyStr,
   earningsMonthlyStr,
   uiSettings,
+  totalsBaseline,
 }: {
   auth: { c: string; exp: string; s: string };
   walletPathWithQuery: string;
@@ -180,6 +181,7 @@ export function MandoubWalletClient({
   earningsDailyStr?: string;
   earningsMonthlyStr?: string;
   uiSettings?: UISectionConfig | null;
+  totalsBaseline?: string | null;
 }) {
   const router = useRouter();
   const [miscPanel, setMiscPanel] = useState<null | "take" | "give">(null);
@@ -570,16 +572,22 @@ export function MandoubWalletClient({
                 )}
               </div>
 
-              {!deleted && !isRejected && line.source !== "transfer_pending" && (
-                <form action={line.source === "order" ? deleteAction : miscDelAction} className="absolute left-2 top-1/2 -translate-y-1/2 z-10" onClick={(e) => e.stopPropagation()}>
-                  <input type="hidden" name="c" value={auth.c} /><input type="hidden" name="exp" value={auth.exp} /><input type="hidden" name="s" value={auth.s} />
-                  <input type="hidden" name={line.source === "order" ? "eventId" : "miscEntryId"} value={line.id} />
-                  <input type="hidden" name="next" value={walletPathWithQuery} />
-                  <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white dark:bg-slate-800 border-2 border-rose-500 text-sm shadow-md hover:scale-105 transition-transform" title="حذف">
-                    <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={18} height={18} />
-                  </button>
-                </form>
-              )}
+              {!deleted && !isRejected && line.source !== "transfer_pending" && (() => {
+                const isBeforeReset = totalsBaseline
+                  ? new Date(line.createdAt) <= new Date(totalsBaseline)
+                  : false;
+                if (isBeforeReset) return null;
+                return (
+                  <form action={line.source === "order" ? deleteAction : miscDelAction} className="absolute left-2 top-1/2 -translate-y-1/2 z-10" onClick={(e) => e.stopPropagation()}>
+                    <input type="hidden" name="c" value={auth.c} /><input type="hidden" name="exp" value={auth.exp} /><input type="hidden" name="s" value={auth.s} />
+                    <input type="hidden" name={line.source === "order" ? "eventId" : "miscEntryId"} value={line.id} />
+                    <input type="hidden" name="next" value={walletPathWithQuery} />
+                    <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white dark:bg-slate-800 border-2 border-rose-500 text-sm shadow-md hover:scale-105 transition-transform" title="حذف">
+                      <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={18} height={18} />
+                    </button>
+                  </form>
+                );
+              })()}
             </div>
           );
 

@@ -669,6 +669,7 @@ export function OrderDetailSection({
             }))}
             auth={auth}
             nextUrl={nextUrl}
+            totalsBaseline={order.courier?.mandoubTotalsResetAt ? (order.courier.mandoubTotalsResetAt instanceof Date ? order.courier.mandoubTotalsResetAt.toISOString() : String(order.courier.mandoubTotalsResetAt)) : null}
           />
         );
       default: return null;

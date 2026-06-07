@@ -399,6 +399,7 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
           availableForTransferStr={formatDinarAsAlf(availableForTransfer)}
           pendingOutgoingCount={pendingOutgoingCount}
           uiSettings={uiSettings}
+          totalsBaseline={totalsBaseline ? totalsBaseline.toISOString() : null}
         />
       </div>
     </div>

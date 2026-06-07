@@ -36,6 +36,7 @@ export const mandoubOrderDetailInclude = {
       lastCourierLat: true,
       lastCourierLng: true,
       lastCourierLocationAt: true,
+      mandoubTotalsResetAt: true,
     },
   },
   moneyEvents: {
