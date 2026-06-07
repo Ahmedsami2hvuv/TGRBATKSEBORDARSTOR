@@ -38,6 +38,7 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
   const sequence = parseInt(formData.get("sequence") as string || "0");
   const profitMargin = parseFloat(formData.get("profitMargin") as string || "0");
   const notes = formData.get("notes") as string || "";
+  const active = formData.get("active") !== "false";
   const photoFile = formData.get("photo") as File;
   let photoUrl = formData.get("currentPhotoUrl") as string || "";
 
@@ -58,7 +59,7 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
   if (id) {
     await prisma.storeCategory.update({
       where: { id },
-      data: { name, sequence, photoUrl, notes, profitMargin }
+      data: { name, sequence, photoUrl, notes, profitMargin, active }
     });
 
     // إذا تم تصفير أو إيقاف ربح القسم، نقوم بتحديث أرباح كافة الفروع التابعة له أيضاً
@@ -74,7 +75,7 @@ export async function upsertCategory(_prev: any, formData: FormData): Promise<Fo
     await syncCategoryProductsPrice(id);
   } else {
     await prisma.storeCategory.create({
-      data: { name, sequence, photoUrl, notes, profitMargin }
+      data: { name, sequence, photoUrl, notes, profitMargin, active }
     });
   }
 
@@ -106,6 +107,7 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
   const remoteImageUrl = formData.get("remoteImageUrl") as string;
   const removeBg = formData.get("removeBg") === "true";
   const skipRevalidate = formData.get("skipRevalidate") === "true";
+  const active = formData.get("active") !== "false";
   let photoUrl = formData.get("currentPhotoUrl") as string || "";
 
   if (!name || !categoryId) return { error: "الاسم والقسم مطلوبان" };
@@ -154,7 +156,8 @@ export async function upsertBranch(_prev: any, formData: FormData): Promise<Form
     profitMargin,
     sequence,
     photoUrl,
-    notes
+    notes,
+    active
   };
 
   if (id) {
@@ -226,6 +229,7 @@ export async function upsertProduct(_prev: any, formData: FormData): Promise<For
     const purchasePrice = parseFloat(formData.get("purchasePrice") as string || "0");
     const salePrice = parseFloat(formData.get("salePrice") as string || "0");
     const supplierId = (formData.get("supplierId") as string) || null;
+    const active = formData.get("active") !== "false";
 
     const hasVariants = formData.get("hasVariants") === "true";
     const variantType = formData.get("variantType") as string || null;
@@ -291,6 +295,7 @@ export async function upsertProduct(_prev: any, formData: FormData): Promise<For
       salePrice: finalSalePrice,
       photoUrls,
       hasVariants,
+      active,
       variantType: hasVariants ? variantType : null,
       supplierId: supplierId === "" ? null : supplierId
     };
