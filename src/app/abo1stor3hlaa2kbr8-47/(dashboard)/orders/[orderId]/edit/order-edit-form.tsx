@@ -562,6 +562,14 @@ export function OrderEditForm({
         legendClassName={ad.label}
       />
 
+      <OrderStatusRadioGroup
+        name="status"
+        defaultValue={defaultStatus}
+        options={STATUS_OPTIONS}
+        legend="حالة الطلبية"
+        legendClassName={ad.label}
+      />
+
       <div className="space-y-3">
         <ShopSearchPicker
           shops={shops}
@@ -570,13 +578,6 @@ export function OrderEditForm({
           required
           value={shopId}
           onValueChange={onShopChange}
-        />
-        <OrderStatusRadioGroup
-          name="status"
-          defaultValue={defaultStatus}
-          options={STATUS_OPTIONS}
-          legend="حالة الطلبية"
-          legendClassName={ad.label}
         />
       </div>
 
