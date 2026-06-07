@@ -915,6 +915,7 @@ export function PendingAssignPanel({
   customerDoorPhotoUrl = "",
   secondCustomerDoorPhotoUrl = "",
   icons,
+  isDraft = false,
 }: {
   orderId: string;
   couriers: { id: string; name: string }[];
@@ -928,10 +929,12 @@ export function PendingAssignPanel({
   customerDoorPhotoUrl?: string;
   secondCustomerDoorPhotoUrl?: string;
   icons?: GlobalIconsConfig | null;
+  isDraft?: boolean;
 }) {
   const bound = assignPendingOrderToCourier.bind(null);
   const [state, formAction, pending] = useActionState(bound, {} as AssignOrderState);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [prepareByAdmin, setPrepareByAdmin] = useState(true);
 
   if (couriers.length === 0) return <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 text-xs font-bold text-center flex items-center justify-center gap-2"><DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={14} height={14} /> لا يوجد مناديب متاحين حالياً.</div>;
 
@@ -940,6 +943,7 @@ export function PendingAssignPanel({
   return (
     <form action={formAction} className="p-5 bg-white dark:bg-slate-900 rounded-[2.5rem] border-2 border-emerald-400 dark:border-emerald-500 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto" dir="rtl">
       <input type="hidden" name="orderId" value={orderId} />
+      <input type="hidden" name="isDraft" value={isDraft ? "true" : "false"} />
 
       <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900/30 pb-3">
         <p className="text-sm font-black text-emerald-900 dark:text-emerald-100 flex items-center gap-2">
@@ -950,6 +954,30 @@ export function PendingAssignPanel({
            <span className="text-xs font-black font-mono text-emerald-700 dark:text-emerald-400">{customerPhone}</span>
         </div>
       </div>
+
+      {isDraft && (
+        <div className="p-4 rounded-3xl bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 flex items-center justify-between gap-3 shadow-sm">
+          <div className="flex flex-col text-right">
+            <span className="text-xs font-black text-indigo-950 dark:text-indigo-100 flex items-center gap-1.5 font-sans">
+              🏛️ تجهيز كل شيء من قبل الإدارة
+            </span>
+            <span className="text-[9px] font-bold text-indigo-700/70 dark:text-indigo-400/70 leading-relaxed font-sans">
+              سيتم تحويل هذا الطلب وتجهيز كافة منتجاته فوراً من قبل الإدارة
+            </span>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer select-none">
+            <input
+              type="checkbox"
+              name="prepareByAdmin"
+              checked={prepareByAdmin}
+              onChange={(e) => setPrepareByAdmin(e.target.checked)}
+              className="peer sr-only"
+            />
+            <div className="h-6 w-11 rounded-full bg-slate-200 dark:bg-slate-800 peer-checked:bg-indigo-600 transition-colors" />
+            <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-all peer-checked:left-6" />
+          </label>
+        </div>
+      )}
 
       <div className="space-y-4">
         {/* اختر المندوب */}
@@ -1884,6 +1912,7 @@ export default function PendingOrdersClient({
                     customerDoorPhotoUrl={o.customerDoorPhotoUrl}
                     secondCustomerDoorPhotoUrl={o.secondCustomerDoorPhotoUrl}
                     icons={icons}
+                    isDraft={o.submissionLabel === "مسودة مشتركة" || isDraftMode}
                   />
                 );
              })()}

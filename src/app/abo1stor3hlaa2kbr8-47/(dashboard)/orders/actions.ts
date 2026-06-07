@@ -11,6 +11,16 @@ import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
 import { pushNotifyCourierNewAssignment, pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
 import { notifyTelegramPreparerManualAssignment } from "@/lib/telegram-notify";
 import { revalidatePath } from "next/cache";
+import { Decimal } from "@prisma/client/runtime/library";
+import { ALF_PER_DINAR } from "@/lib/money-alf";
+import {
+  buildCustomerInvoiceText,
+  buildPreparerPurchaseSummaryText,
+  resolveDynamicOrderType,
+} from "@/lib/preparation-invoice";
+import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
+import { PreparerShoppingDraftStatus } from "@prisma/client";
+import { getOrCreateSystemAdminShop } from "./pending/pricing-actions";
 
 export type AssignOrderState = { error?: string; ok?: boolean };
 export type RejectOrderState = { error?: string; ok?: boolean };
@@ -388,6 +398,8 @@ export async function assignPendingOrderToCourier(
   const secondCustomerDoorPhotoUrl = String(formData.get("secondCustomerDoorPhotoUrl") ?? "").trim();
   const directReceipt = formData.get("directReceipt") === "on";
   const doorPhotoFile = formData.get("doorPhoto") as File | null;
+  const isDraft = formData.get("isDraft") === "true";
+  const prepareByAdmin = formData.get("prepareByAdmin") === "on";
 
   if (!orderId || !courierId) return { error: "بيانات ناقصة" };
 
@@ -400,38 +412,285 @@ export async function assignPendingOrderToCourier(
       doorPhotoUrl = await saveCustomerDoorPhotoUploaded(doorPhotoFile);
     }
 
-    const updatedOrder = await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        courier: { connect: { id: courierId } },
-        status: directReceipt ? "delivering" : "assigned",
-        customerPaymentReceivedAt: directReceipt ? new Date() : null,
-        customerLocationUrl: customerLocationUrl || undefined,
-        customerLandmark: customerLandmark || undefined,
-        alternatePhone: customerAlternatePhone || undefined,
-        customerDoorPhotoUrl: doorPhotoUrl || customerDoorPhotoUrl || undefined,
-        secondCustomerLocationUrl: secondCustomerLocationUrl || undefined,
-        secondCustomerLandmark: secondCustomerLandmark || undefined,
-        secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrl || undefined,
-      },
-    });
+    if (isDraft) {
+      if (!prepareByAdmin) {
+        return { error: "يجب تفعيل خيار تجهيز كل شيء من قبل الإدارة أولاً لتجهيز الطلب وتحويله" };
+      }
 
-    // مزامنة البيانات مع بروفايل الهاتف لضمان ظهورها في الطلبات القادمة لهذا الزبون
-    if (updatedOrder.customerPhone) {
+      const draft = await prisma.companyPreparerShoppingDraft.findUnique({
+        where: { id: orderId },
+        include: { customerRegion: true }
+      });
+      if (!draft) return { error: "المسودة غير موجودة" };
+
+      const draftDataObj = (draft.data as any) || {};
+      const groupId = typeof draftDataObj.groupId === "string" ? draftDataObj.groupId.trim() : "";
+
+      const relatedDrafts = groupId
+        ? await prisma.companyPreparerShoppingDraft.findMany({
+            where: { data: { path: ["groupId"], equals: groupId }, status: { in: ["draft", "priced"] } },
+            include: { preparer: true }
+          })
+        : await prisma.companyPreparerShoppingDraft.findMany({
+            where: {
+              customerPhone: draft.customerPhone,
+              titleLine: draft.titleLine,
+              status: { in: ["draft", "priced"] },
+            },
+            include: { preparer: true }
+          });
+
+      const mergedProducts: any[] = [];
+      relatedDrafts.forEach(rd => {
+        const rdData = (rd.data as any) || {};
+        const products = Array.isArray(rdData.products) ? rdData.products : [];
+        products.forEach((p: any) => {
+          const existing = mergedProducts.find(m => m.line === p.line);
+          const isPriced = p.buyAlf && p.buyAlf !== "0" && p.buyAlf !== 0;
+          if (existing) {
+            if ((!existing.buyAlf || existing.buyAlf === "0" || existing.buyAlf === 0) && isPriced) {
+              existing.buyAlf = p.buyAlf;
+              existing.sellAlf = p.sellAlf;
+              existing.pricedBy = rd.preparer?.name || "تجهيز الإدارة 🏛️";
+            }
+          } else {
+            mergedProducts.push({
+              ...p,
+              pricedBy: isPriced ? (rd.preparer?.name || "تجهيز الإدارة 🏛️") : null
+            });
+          }
+        });
+      });
+
+      if (mergedProducts.length === 0) {
+        const lines = draft.rawListText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 1);
+        lines.forEach(line => {
+          mergedProducts.push({ line, buyAlf: 0, sellAlf: 0 });
+        });
+      }
+
+      const enrichedProducts = mergedProducts.map(p => {
+        const buyNum = Number(p.buyAlf || 0);
+        const sellNum = Number(p.sellAlf || 0);
+        const priced = buyNum > 0 && sellNum > 0;
+        return {
+          line: String(p.line || "").trim(),
+          buyAlf: priced ? buyNum : 0,
+          sellAlf: priced ? sellNum : 0,
+          isFulfilledByAdmin: priced ? !!p.isFulfilledByAdmin : true,
+          assignedPreparerId: priced ? p.assignedPreparerId : null,
+          assignedPreparerName: priced ? p.assignedPreparerName : "تجهيز الإدارة 🏛️",
+          pricedBy: priced ? (p.pricedBy || "تجهيز الإدارة 🏛️") : "تجهيز الإدارة 🏛️"
+        };
+      });
+
+      let sumSellAlf = 0;
+      for (const p of enrichedProducts) {
+        sumSellAlf += p.sellAlf;
+      }
+      const extraAlf = calculateExtraAlfFromPlacesCount(draft.placesCount || 1);
+      const subtotalDinar = new Decimal(sumSellAlf + extraAlf).mul(ALF_PER_DINAR);
+
+      const firstSystemShop = await getOrCreateSystemAdminShop();
+      const shop = await prisma.shop.findUnique({ where: { id: firstSystemShop.id }, include: { region: true } });
+      if (!shop) {
+        return { error: "خطأ تقني في تحديد متجر الإدارة العامة." };
+      }
+      const deliveryDinar = Decimal.max(shop.region.deliveryPrice, draft.customerRegion?.deliveryPrice || 0);
+      const totalDinar = subtotalDinar.plus(deliveryDinar);
+      const deliveryAlf = Number(deliveryDinar.toString()) / ALF_PER_DINAR;
+
+      const summaryCombined = [
+        "═══════════════",
+        "المنتجات المجهزة (حسب المجهز)",
+        "═══════════════",
+        `[ تجهيز: تجهيز الإدارة 🏛️ ]\n${buildPreparerPurchaseSummaryText(enrichedProducts)}`,
+        "═══════════════"
+      ].join("\n");
+
+      let finalOrderId: string;
+      let finalOrderNumber: number;
+
+      await prisma.$transaction(async (tx) => {
+        if (draft.sentOrderId) {
+          const updated = await tx.order.update({
+            where: { id: draft.sentOrderId },
+            data: {
+              shop: { connect: { id: shop!.id } },
+              orderType: resolveDynamicOrderType(enrichedProducts, "تجهيز تسوق"),
+              customerPhone: draft.customerPhone,
+              customerRegion: draft.customerRegionId ? { connect: { id: draft.customerRegionId } } : undefined,
+              customerLandmark: customerLandmark || draft.customerLandmark || undefined,
+              orderNoteTime: draft.orderTime,
+              orderSubtotal: subtotalDinar,
+              deliveryPrice: deliveryDinar,
+              totalAmount: totalDinar,
+              courier: { connect: { id: courierId } },
+              status: directReceipt ? "delivering" : "assigned",
+              customerPaymentReceivedAt: directReceipt ? new Date() : null,
+              customerLocationUrl: customerLocationUrl || undefined,
+              alternatePhone: customerAlternatePhone || undefined,
+              customerDoorPhotoUrl: doorPhotoUrl || customerDoorPhotoUrl || undefined,
+              secondCustomerLocationUrl: secondCustomerLocationUrl || undefined,
+              secondCustomerLandmark: secondCustomerLandmark || undefined,
+              secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrl || undefined,
+              summary: summaryCombined,
+              preparerShoppingJson: {
+                version: 1,
+                products: enrichedProducts,
+                placesCount: draft.placesCount || 1,
+                sumSellAlf,
+                extraAlf,
+                deliveryAlf,
+                preparerInvoices: [
+                  {
+                    preparerId: null,
+                    preparerName: "تجهيز الإدارة 🏛️",
+                    products: enrichedProducts,
+                    totalBuyAlf: 0,
+                    invoiceText: buildPreparerPurchaseSummaryText(enrichedProducts)
+                  }
+                ],
+                noProfit: !!draftDataObj.noProfit,
+                customerInvoiceText: buildCustomerInvoiceText({
+                  brandLabel: "أبو الأكبر للتوصيل",
+                  orderNumberLabel: `#${draftDataObj.reservedOrderNumber || "(جديد)"}`,
+                  regionTitle: draft.titleLine,
+                  phone: draft.customerPhone,
+                  lines: enrichedProducts,
+                  placesCount: draft.placesCount || 1,
+                  deliveryAlf,
+                })
+              }
+            }
+          });
+          finalOrderId = updated.id;
+          finalOrderNumber = updated.orderNumber;
+        } else {
+          const reservedOrderNumberRaw = Number((draft?.data as any)?.reservedOrderNumber ?? 0);
+          const reservedOrderNumber =
+            Number.isInteger(reservedOrderNumberRaw) && reservedOrderNumberRaw > 0
+              ? reservedOrderNumberRaw
+              : undefined;
+
+          const newOrder = await tx.order.create({
+            data: {
+              shop: { connect: { id: shop!.id } },
+              customerPhone: draft.customerPhone,
+              customerRegion: draft.customerRegionId ? { connect: { id: draft.customerRegionId } } : undefined,
+              customerLandmark: customerLandmark || draft.customerLandmark || undefined,
+              orderNoteTime: draft.orderTime,
+              status: directReceipt ? "delivering" : "assigned",
+              customerPaymentReceivedAt: directReceipt ? new Date() : null,
+              customerLocationUrl: customerLocationUrl || undefined,
+              alternatePhone: customerAlternatePhone || undefined,
+              customerDoorPhotoUrl: doorPhotoUrl || customerDoorPhotoUrl || undefined,
+              secondCustomerLocationUrl: secondCustomerLocationUrl || undefined,
+              secondCustomerLandmark: secondCustomerLandmark || undefined,
+              secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrl || undefined,
+              orderType: resolveDynamicOrderType(enrichedProducts, "تجهيز تسوق"),
+              submissionSource: "company_preparer",
+              courier: { connect: { id: courierId } },
+              orderSubtotal: subtotalDinar,
+              deliveryPrice: deliveryDinar,
+              totalAmount: totalDinar,
+              summary: summaryCombined,
+              ...(reservedOrderNumber ? { orderNumber: reservedOrderNumber } : {}),
+              preparerShoppingJson: {
+                version: 1,
+                products: enrichedProducts,
+                placesCount: draft.placesCount || 1,
+                sumSellAlf,
+                extraAlf,
+                deliveryAlf,
+                preparerInvoices: [
+                  {
+                    preparerId: null,
+                    preparerName: "تجهيز الإدارة 🏛️",
+                    products: enrichedProducts,
+                    totalBuyAlf: 0,
+                    invoiceText: buildPreparerPurchaseSummaryText(enrichedProducts)
+                  }
+                ],
+                noProfit: !!draftDataObj.noProfit,
+                customerInvoiceText: buildCustomerInvoiceText({
+                  brandLabel: "أبو الأكبر للتوصيل",
+                  orderNumberLabel: `#(جديد)`,
+                  regionTitle: draft.titleLine,
+                  phone: draft.customerPhone,
+                  lines: enrichedProducts,
+                  placesCount: draft.placesCount || 1,
+                  deliveryAlf,
+                })
+              }
+            }
+          });
+          finalOrderId = newOrder.id;
+          finalOrderNumber = newOrder.orderNumber;
+        }
+
+        if (groupId) {
+          await tx.companyPreparerShoppingDraft.updateMany({
+            where: { data: { path: ["groupId"], equals: groupId } },
+            data: { status: PreparerShoppingDraftStatus.sent, sentOrderId: finalOrderId }
+          });
+        } else {
+          await tx.companyPreparerShoppingDraft.updateMany({
+            where: {
+              customerPhone: draft.customerPhone,
+              titleLine: draft.titleLine,
+              status: { in: ["draft", "priced"] }
+            },
+            data: { status: PreparerShoppingDraftStatus.sent, sentOrderId: finalOrderId }
+          });
+        }
+      });
+
+      if (draft.customerPhone) {
+        await syncPhoneProfileFromOrder(finalOrderId);
+      }
+
+      try {
+        await pushNotifyCourierNewAssignment(courierId, finalOrderNumber);
+      } catch (e) {
+        console.error("Failed to push notify courier:", e);
+      }
+
+      revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+      revalidatePath(`${SECRET_ADMIN_PATH}/orders/${finalOrderId}`);
+      return { ok: true };
+    } else {
+      const updatedOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          courier: { connect: { id: courierId } },
+          status: directReceipt ? "delivering" : "assigned",
+          customerPaymentReceivedAt: directReceipt ? new Date() : null,
+          customerLocationUrl: customerLocationUrl || undefined,
+          customerLandmark: customerLandmark || undefined,
+          alternatePhone: customerAlternatePhone || undefined,
+          customerDoorPhotoUrl: doorPhotoUrl || customerDoorPhotoUrl || undefined,
+          secondCustomerLocationUrl: secondCustomerLocationUrl || undefined,
+          secondCustomerLandmark: secondCustomerLandmark || undefined,
+          secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrl || undefined,
+        },
+      });
+
+      if (updatedOrder.customerPhone) {
         await syncPhoneProfileFromOrder(updatedOrder.id);
-    }
+      }
 
-    // إرسال إشعار للمندوب
-    try {
+      try {
         console.log(`[assignPendingOrderToCourier] notify courierId=${courierId} orderNumber=${updatedOrder.orderNumber}`);
         await pushNotifyCourierNewAssignment(courierId, updatedOrder.orderNumber);
-    } catch (e) {
+      } catch (e) {
         console.error("Failed to push notify courier:", e);
-    }
+      }
 
-    revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
-    revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);
-    return { ok: true };
+      revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+      revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);
+      return { ok: true };
+    }
   } catch (e: any) {
     console.error("Error in assignPendingOrderToCourier:", e);
     return { error: "حدث خطأ أثناء الإسناد: " + (e.message || "خطأ غير معروف") };
