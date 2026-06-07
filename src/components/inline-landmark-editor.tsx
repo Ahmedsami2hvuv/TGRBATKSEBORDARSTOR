@@ -18,7 +18,7 @@ export function InlineLandmarkEditor({
   isSecondDestination = false,
   fontSizeConfig,
   isFromProfile = false,
-  label = "📍 أقرب نقطة دالة:"
+  label = "📍 دالة:"
 }: InlineLandmarkEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [landmark, setLandmark] = useState(initialLandmark);
@@ -65,7 +65,8 @@ export function InlineLandmarkEditor({
     }
   };
 
-  const fontSizeStyle = fontSizeConfig ? { fontSize: `${fontSizeConfig.landmarkFontSize}px` } : undefined;
+  const labelFontSize = fontSizeConfig ? `${Math.max(10, fontSizeConfig.landmarkFontSize - 3)}px` : '11px';
+  const valueFontSize = fontSizeConfig ? `${fontSizeConfig.landmarkFontSize + 2}px` : '16px';
 
   if (isEditing) {
     return (
@@ -74,12 +75,13 @@ export function InlineLandmarkEditor({
           <input
             ref={inputRef}
             type="text"
-            className="flex-1 bg-transparent outline-none border-none text-sm px-2 text-slate-800 dark:text-slate-200 font-bold"
+            className="flex-1 bg-transparent outline-none border-none px-2 text-slate-800 dark:text-slate-200 font-bold"
+            style={{ fontSize: valueFontSize }}
             value={landmark}
             onChange={(e) => setLandmark(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
-            placeholder="اكتب أقرب نقطة دالة هنا..."
+            placeholder="اكتب النقطة الدالة هنا..."
           />
           <button
             onClick={handleSave}
@@ -95,7 +97,7 @@ export function InlineLandmarkEditor({
               setError(null);
             }}
             disabled={loading}
-            className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded text-xs font-black transition-colors"
+            className="px-2.5 py-1 bg-slate-200 hover:bg-slate-350 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded text-xs font-black transition-colors"
           >
             إلغاء
           </button>
@@ -110,17 +112,16 @@ export function InlineLandmarkEditor({
       onClick={() => setIsEditing(true)}
       title="انقر لتعديل النقطة الدالة"
       className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30 kse-landmark-text cursor-pointer hover:bg-rose-100 dark:hover:bg-rose-900/35 transition-all duration-200 w-full"
-      style={fontSizeStyle}
     >
       <span
-        className="font-black text-rose-600 text-xs shrink-0 select-none"
-        style={fontSizeStyle}
+        className="font-bold text-rose-600 shrink-0 select-none"
+        style={{ fontSize: labelFontSize }}
       >
         {label}
       </span>
       <span
-        className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight flex-1"
-        style={fontSizeStyle}
+        className="font-black text-rose-950 dark:text-rose-200 leading-tight flex-1"
+        style={{ fontSize: valueFontSize }}
       >
         {initialLandmark || "—"}
         {isFromProfile && (
@@ -131,9 +132,6 @@ export function InlineLandmarkEditor({
             (من السجل)
           </span>
         )}
-        <span className="mr-2 text-[10px] text-rose-500 font-bold opacity-60 hover:opacity-100 transition-opacity">
-          (تعديل 📝)
-        </span>
       </span>
     </div>
   );

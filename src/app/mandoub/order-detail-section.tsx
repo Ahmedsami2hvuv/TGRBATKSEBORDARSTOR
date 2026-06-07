@@ -309,12 +309,6 @@ export function OrderDetailSection({
                   </div>
 
                   <div className="space-y-2 text-xs">
-                    {order.customer?.name && (
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-slate-400 text-sm" title="اسم الزبون">👤</span>
-                        <span className="font-black text-slate-900 dark:text-white">{order.customer.name}</span>
-                      </div>
-                    )}
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-bold text-slate-400 text-sm" title="منطقة الزبون">📍</span>
                       <span className="font-black text-slate-900 dark:text-white">{order.customerRegion?.name ?? "—"}</span>
@@ -339,7 +333,7 @@ export function OrderDetailSection({
                         isSecondDestination={false}
                         fontSizeConfig={activeConfig}
                         isFromProfile={isFromProfileLandmark}
-                        label="📍 أقرب نقطة دالة:"
+                        label="📍 دالة:"
                       />
                     </div>
 
@@ -452,7 +446,7 @@ export function OrderDetailSection({
                           isSecondDestination={true}
                           fontSizeConfig={activeConfig}
                           isFromProfile={isFromSecondProfileLandmark}
-                          label="📍 النقطة الدالة:"
+                          label="📍 دالة:"
                         />
                       </div>
 

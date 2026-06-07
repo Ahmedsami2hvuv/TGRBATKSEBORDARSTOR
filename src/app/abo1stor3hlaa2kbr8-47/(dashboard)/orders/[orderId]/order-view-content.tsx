@@ -222,7 +222,6 @@ export function OrderViewContent({
             </h3>
             {order.routeMode === "double" ? (
               <>
-                <p className="text-lg font-black text-slate-900">{displayCustomerName || "—"}</p>
                 <p className="text-slate-800 font-bold">{order.customerRegion?.name ?? "—"}</p>
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
                   <div className="min-w-0">
@@ -238,7 +237,7 @@ export function OrderViewContent({
                   orderId={order.id}
                   initialLandmark={order.customerLandmark}
                   isSecondDestination={false}
-                  label="📍 النقطة الدالة:"
+                  label="📍 دالة:"
                 />
                 <p className="text-sm font-bold text-emerald-800">
                   💡 الاستدلال الذكي: {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
@@ -307,7 +306,7 @@ export function OrderViewContent({
                   orderId={order.id}
                   initialLandmark={order.secondCustomerLandmark}
                   isSecondDestination={true}
-                  label="📍 النقطة الدالة:"
+                  label="📍 دالة:"
                 />
                 <p className="text-sm font-bold text-emerald-800">
                   💡 الاستدلال الذكي: {isSmartHintValid(order.secondSmartHintLine) ? order.secondSmartHintLine!.trim() : "—"}
@@ -325,7 +324,6 @@ export function OrderViewContent({
               </>
             ) : (
               <>
-                <p className="text-lg font-black text-slate-900">{displayCustomerName || "—"}</p>
                 <p className="text-slate-800 font-bold">{order.customerRegion?.name ?? "—"}</p>
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 max-w-sm">
                   <div className="min-w-0">
@@ -350,7 +348,7 @@ export function OrderViewContent({
                   orderId={order.id}
                   initialLandmark={order.customerLandmark}
                   isSecondDestination={false}
-                  label="📍 النقطة الدالة:"
+                  label="📍 دالة:"
                 />
                 <p className="text-sm font-bold text-emerald-800">
                   💡 الاستدلال الذكي: {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
