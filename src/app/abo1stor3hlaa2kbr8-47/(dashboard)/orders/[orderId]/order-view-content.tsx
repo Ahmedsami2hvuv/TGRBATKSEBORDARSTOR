@@ -146,19 +146,19 @@ export function OrderViewContent({
       )}
 
       {/* بصمات الصوت في بداية الصفحة بتنسيق مرتب */}
-      {(voiceSrc || adminVoiceSrc) && (
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {voiceSrc && (
-            <div className="rounded-2xl border-2 border-amber-100 bg-white p-3 shadow-sm">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-black text-amber-600 flex items-center gap-1"><span>🗣️</span> بصمة الزبون (المحل)</span>
-              </div>
-              <VoiceNoteAudio src={voiceSrc} streamKey={`${order.id}-voice`} className="w-full" />
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {voiceSrc && (
+          <div className="rounded-2xl border-2 border-amber-100 bg-white p-3 shadow-sm">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-black text-amber-600 flex items-center gap-1"><span>🗣️</span> بصمة الزبون (المحل)</span>
             </div>
-          )}
+            <VoiceNoteAudio src={voiceSrc} streamKey={`${order.id}-voice`} className="w-full" />
+          </div>
+        )}
+        <div className={voiceSrc ? "" : "sm:col-span-2"}>
           <AdminVoiceNoteSection variant="standalone" orderId={order.id} defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl} />
         </div>
-      )}
+      </div>
 
       {pricingOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">

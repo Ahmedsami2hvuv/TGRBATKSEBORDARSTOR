@@ -169,11 +169,13 @@ export function PreparerWalletClient({
           const dirLabel = ledgerDirLabel(line);
           const dateStr = new Date(line.createdAt).toLocaleString("ar-IQ-u-nu-latn", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
           const orderHref = (orderLinkAuth && line.orderId) ? `/preparer/order/${line.orderId}?${new URLSearchParams({ p: orderLinkAuth.p, exp: orderLinkAuth.exp, s: orderLinkAuth.s }).toString()}` : null;
+          const hoursPassed = (Date.now() - new Date(line.createdAt).getTime()) / (1000 * 60 * 60);
           const showDelete =
             !deleted &&
             !isRejected &&
             line.source !== "transfer_pending" &&
-            !(line.source === "misc" && line.miscLabel?.startsWith("تحويل من ") && !line.miscLabel?.includes("مجهز") && !line.miscLabel?.includes("الإدارة"));
+            !(line.source === "misc" && line.miscLabel?.startsWith("تحويل من ") && !line.miscLabel?.includes("مجهز") && !line.miscLabel?.includes("الإدارة")) &&
+            hoursPassed <= 4;
 
           return (
             <li key={`${line.source}-${line.id}`}>

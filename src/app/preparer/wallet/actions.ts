@@ -73,7 +73,23 @@ export async function softDeleteEmployeeWalletMiscEntryFromCompanyPreparer(
   if (!entryId) return { error: "المعرف مطلوب." };
 
   const preparer = await prisma.companyPreparer.findUnique({ where: { id: v.preparerId } });
-  const deletedBy = preparer?.name?.trim() ? `مجهز: ${preparer.name.trim()}` : "مجهز";
+  if (!preparer) return { error: "الحساب غير متاح." };
+
+  const entry = await prisma.employeeWalletMiscEntry.findFirst({
+    where: { id: entryId, deletedAt: null }
+  });
+  if (!entry) return { error: "المعاملة غير موجودة." };
+
+  if (entry.employeeId !== preparer.walletEmployeeId) {
+    return { error: "لا صلاحية." };
+  }
+
+  const hoursPassed = (Date.now() - entry.createdAt.getTime()) / (1000 * 60 * 60);
+  if (hoursPassed > 4) {
+    return { error: "لا يمكن حذف المعاملة بعد مرور 4 ساعات." };
+  }
+
+  const deletedBy = preparer.name?.trim() ? `مجهز: ${preparer.name.trim()}` : "مجهز";
 
   await prisma.employeeWalletMiscEntry.update({
     where: { id: entryId },

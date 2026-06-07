@@ -24,6 +24,8 @@ import { DeleteVoiceNoteButton } from "./delete-voice-note-button";
 import { AdminRegionSearchPicker } from "@/components/admin-region-search-picker";
 import { AdminOrderFloatingBar } from "./admin-order-floating-bar";
 import { isReversePickupOrderType } from "@/lib/order-type-flags";
+import { ShopSearchPicker } from "@/components/shop-search-picker";
+
 
 const STATUS_OPTIONS = [
   { value: "pending", label: "قيد الانتظار (جديد)" },
@@ -561,22 +563,14 @@ export function OrderEditForm({
       />
 
       <div className="space-y-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>المحل</span>
-          <select
-            name="shopId"
-            required
-            value={shopId}
-            onChange={(e) => onShopChange(e.target.value)}
-            className={ad.select}
-          >
-            {shops.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ShopSearchPicker
+          shops={shops}
+          fieldName="shopId"
+          label="المحل"
+          required
+          value={shopId}
+          onValueChange={onShopChange}
+        />
         <OrderStatusRadioGroup
           name="status"
           defaultValue={defaultStatus}
@@ -607,26 +601,7 @@ export function OrderEditForm({
         </span>
       </label>
 
-      <label className="flex flex-col gap-1 text-sm">
-        <span className={ad.label}>ربط الطلب بزبون التوصيل من سجلات هذا المحل</span>
-        <select
-          name="customerId"
-          value={customerId}
-          onChange={(e) => onCustomerPick(e.target.value)}
-          className={ad.select}
-        >
-          <option value="">— اختر زبون توصيل مسجّلاً لهذا المحل (أو اتركه بدون ربط) —</option>
-          {customersForShop.map((c) => (
-            <option key={c.id} value={c.id}>
-              {(c.name || "").trim() ? c.name.trim() : "زبون بدون اسم"}
-            </option>
-          ))}
-        </select>
-        <span className={`text-xs ${ad.muted}`}>
-          زبون التوصيل هو مستلم الشحنة (هاتف ومنطقة وموقع). بعد اختيار المحل تظهر أسماء الزبائن المسجّلين
-          لذلك المحل فقط. عند اختيار سجل، يُعبَّى رقمه ومنطقته وموقعه تلقائياً — هذا ليس موظف المحل.
-        </span>
-      </label>
+      <input type="hidden" name="customerId" value={customerId} />
 
       <label className="flex flex-col gap-1 text-sm">
         <span className={ad.label}>نوع الطلب</span>

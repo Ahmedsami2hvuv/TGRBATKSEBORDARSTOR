@@ -361,6 +361,11 @@ export async function softDeletePreparerMoneyEvent(
     return { error: "سجّلها مجهز آخر — لا يمكنك حذفها من حسابك." };
   }
 
+  const hoursPassed = (Date.now() - ev.createdAt.getTime()) / (1000 * 60 * 60);
+  if (hoursPassed > 4) {
+    return { error: "لا يمكن حذف المعاملة بعد مرور 4 ساعات." };
+  }
+
   const deletedBy = `مجهز: ${preparer.name.trim() || "مجهز"}`;
 
   await prisma.$transaction(async (tx) => {
