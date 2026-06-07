@@ -602,8 +602,8 @@ export function OrderDetailSection({
     }
   };
 
-  // ترتيب البلوكات حسب الأهمية للمندوب: الزبون أولاً، ثم السعر والملاحظات، ثم المحل والحسابات
-  const layout = ["customer_info", "price_details", "notes_summary", "shop_info", "money_flow"];
+  // الترتيب المطلوب: المحل أولاً، ثم الزبون، ثم تفاصيل الطلب والأسعار
+  const layout = ["shop_info", "customer_info", "price_details", "notes_summary", "money_flow"];
 
   return (
     <section
