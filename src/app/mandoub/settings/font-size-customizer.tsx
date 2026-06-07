@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useFontSize, FontSizeConfig } from "@/components/font-size-provider";
 
 import Link from "next/link";
@@ -17,6 +17,11 @@ export default function FontSizeCustomizer({
   const { config, updateConfig, resetConfig } = useFontSize();
   const [localConfig, setLocalConfig] = useState<FontSizeConfig>(config);
   const [savedMessage, setSavedMessage] = useState(false);
+
+  // تحديث القيم المحلية عند تحميل الإعدادات من localStorage بعد التميه التلقائي (Hydration)
+  useEffect(() => {
+    setLocalConfig(config);
+  }, [config]);
 
   const handleChange = (key: keyof FontSizeConfig, value: number) => {
     setLocalConfig((prev) => ({

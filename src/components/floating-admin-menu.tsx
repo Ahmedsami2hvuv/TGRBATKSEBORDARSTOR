@@ -45,7 +45,22 @@ export function FloatingAdminMenu() {
       const savedData = localStorage.getItem("kse_admin_floating_data");
       if (savedData) try { setCategories(JSON.parse(savedData)); } catch(e){}
       const savedPos = localStorage.getItem("kse_admin_floating_pos");
-      if (savedPos) try { setPosition(JSON.parse(savedPos)); } catch(e){}
+      if (savedPos) {
+        try {
+          const parsed = JSON.parse(savedPos);
+          if (parsed && typeof parsed.x === "number" && typeof parsed.y === "number" && !isNaN(parsed.x) && !isNaN(parsed.y)) {
+            const x = Math.max(10, Math.min(window.innerWidth - 60, parsed.x));
+            const y = Math.max(10, Math.min(window.innerHeight - 60, parsed.y));
+            setPosition({ x, y });
+          } else {
+            setPosition({ x: 50, y: 300 });
+          }
+        } catch(e) {
+          setPosition({ x: 50, y: 300 });
+        }
+      } else {
+        setPosition({ x: 50, y: 300 });
+      }
       const savedLocked = localStorage.getItem("kse_admin_floating_locked");
       if (savedLocked) setIsLocked(savedLocked === "true");
       const savedScale = localStorage.getItem("kse_admin_floating_scale");
