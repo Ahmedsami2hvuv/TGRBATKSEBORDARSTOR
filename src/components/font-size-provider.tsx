@@ -87,55 +87,36 @@ export function FontSizeProvider({ children }: { children: React.ReactNode }) {
         {mounted && (
           <style dangerouslySetInnerHTML={{
             __html: `
-              .kse-landmark-text {
+              /* التكبير المباشر والقوي جداً للعناصر المحددة ليظهر بشكل ملحوظ وواضح */
+              .kse-landmark-text,
+              .font-size-root .kse-landmark-text,
+              .kse-landmark-text * {
                 font-size: var(--kse-landmark-font-size) !important;
               }
+              
               .kse-location-btn, 
-              a[href*="google.com/maps"],
-              a[href*="maps.google"],
-              a[href*="apple.com/maps"],
-              a[href*="maps.apple"],
-              .kse-location-btn-class {
+              .kse-location-btn-class,
+              .font-size-root .kse-location-btn,
+              .font-size-root .kse-location-btn-class,
+              .kse-location-btn *,
+              .kse-location-btn-class * {
                 font-size: var(--kse-location-btn-size) !important;
               }
-              .kse-smart-hint-text {
+              
+              .kse-smart-hint-text,
+              .font-size-root .kse-smart-hint-text,
+              .kse-smart-hint-text * {
                 font-size: var(--kse-smart-hint-font-size) !important;
               }
-              
-              /* تكبير كافة نصوص كلاسات Tailwind النصية بشكل ملحوظ وقوي */
-              .font-size-root .text-xs { font-size: calc(0.75rem * var(--kse-global-font-scale, 1)) !important; }
-              .font-size-root .text-sm { font-size: calc(0.875rem * var(--kse-global-font-scale, 1)) !important; }
-              .font-size-root .text-base { font-size: calc(1rem * var(--kse-global-font-scale, 1)) !important; }
-              .font-size-root .text-lg { font-size: calc(1.125rem * var(--kse-global-font-scale, 1)) !important; }
-              .font-size-root .text-xl { font-size: calc(1.25rem * var(--kse-global-font-scale, 1)) !important; }
-              .font-size-root .text-2xl { font-size: calc(1.5rem * var(--kse-global-font-scale, 1)) !important; }
-              .font-size-root .text-3xl { font-size: calc(1.875rem * var(--kse-global-font-scale, 1)) !important; }
-              .font-size-root .text-4xl { font-size: calc(2.25rem * var(--kse-global-font-scale, 1)) !important; }
 
-              /* تكبير أحجام الخطوط العامة والنصوص المباشرة في العناصر */
-              .font-size-root,
-              .font-size-root p,
-              .font-size-root span:not(.kse-landmark-text):not(.kse-smart-hint-text),
-              .font-size-root td,
-              .font-size-root th,
-              .font-size-root h1,
-              .font-size-root h2,
-              .font-size-root h3,
-              .font-size-root h4,
-              .font-size-root div:not([style*="--"]) {
-                font-size: calc(1em * var(--kse-global-font-scale, 1));
+              /* تكبير هادئ ومتوازن للخط العام في الحساب دون التأثير المقرف على الأزرار */
+              .font-size-root {
+                font-size: var(--kse-global-font-size) !important;
               }
-
-              /* تكبير وتوسيع أحجام وحشوات الأزرار وعناصر الاتصال والمراسلة بشكل ملحوظ */
-              .font-size-root button,
-              .font-size-root a[href^="tel:"],
-              .font-size-root a[href*="wa.me"],
-              .font-size-root a[href*="t.me"],
-              .font-size-root .btn,
-              .font-size-root .kse-btn {
-                font-size: calc(1em * var(--kse-global-btn-scale, 1)) !important;
-                padding-top: calc(0.4rem * var(--kse-global-btn-scale, 1)) !important;
-                padding-bottom: calc(0.4rem * var(--kse-global-btn-scale, 1)) !important;
+              .font-size-root button:not(.kse-location-btn),
+              .font-size-root a.btn:not(.kse-location-btn),
+              .font-size-root .kse-btn:not(.kse-location-btn) {
+                font-size: var(--kse-global-btn-size) !important;
               }
             `
           }} />

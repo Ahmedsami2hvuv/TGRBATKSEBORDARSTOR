@@ -70,7 +70,7 @@ export default function FontSizeCustomizer({
           <input
             type="range"
             min="12"
-            max="24"
+            max="32"
             value={localConfig.globalFontSize}
             onChange={(e) => handleChange("globalFontSize", parseInt(e.target.value))}
             className="w-full h-2 bg-slate-200 dark:bg-slate-850 rounded-lg appearance-none cursor-pointer accent-sky-500"
@@ -91,7 +91,7 @@ export default function FontSizeCustomizer({
           <input
             type="range"
             min="10"
-            max="22"
+            max="36"
             value={localConfig.landmarkFontSize}
             onChange={(e) => handleChange("landmarkFontSize", parseInt(e.target.value))}
             className="w-full h-2 bg-slate-200 dark:bg-slate-850 rounded-lg appearance-none cursor-pointer accent-sky-500"
@@ -112,7 +112,7 @@ export default function FontSizeCustomizer({
           <input
             type="range"
             min="10"
-            max="22"
+            max="36"
             value={localConfig.smartHintFontSize}
             onChange={(e) => handleChange("smartHintFontSize", parseInt(e.target.value))}
             className="w-full h-2 bg-slate-200 dark:bg-slate-850 rounded-lg appearance-none cursor-pointer accent-sky-500"
@@ -133,7 +133,7 @@ export default function FontSizeCustomizer({
           <input
             type="range"
             min="10"
-            max="22"
+            max="36"
             value={localConfig.locationBtnSize}
             onChange={(e) => handleChange("locationBtnSize", parseInt(e.target.value))}
             className="w-full h-2 bg-slate-200 dark:bg-slate-850 rounded-lg appearance-none cursor-pointer accent-sky-500"
@@ -158,7 +158,7 @@ export default function FontSizeCustomizer({
           <input
             type="range"
             min="10"
-            max="22"
+            max="32"
             value={localConfig.globalBtnSize}
             onChange={(e) => handleChange("globalBtnSize", parseInt(e.target.value))}
             className="w-full h-2 bg-slate-200 dark:bg-slate-850 rounded-lg appearance-none cursor-pointer accent-sky-500"
