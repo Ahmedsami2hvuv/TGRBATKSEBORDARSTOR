@@ -39,6 +39,8 @@ export type MandoubRow = {
   landmarkLine?: string | null;
   /** سطر ذكي مشتق من أقرب مدخل داخل المنطقة */
   smartHintLine?: string | null;
+  /** سطر ذكي مشتق من أقرب مدخل للوجهة الثانية */
+  secondSmartHintLine?: string | null;
   orderType: string;
   priceStr: string;
   delStr: string;
@@ -93,6 +95,7 @@ export type MandoubRow = {
   secondCustomerDoorPhotoUrl?: string | null;
   routeMode?: "single" | "double";
   secondCustomerRegionName?: string | null;
+  secondCustomerLandmark?: string | null;
   /** تسجيل صوتي من العميل (المجهز) */
   preparerAudioUrl?: string | null;
   /** تسجيل صوتي من الإدارة */
@@ -108,6 +111,8 @@ export type MandoubRow = {
   showVoiceNotesBtn?: boolean;
   showMoneyBoxes?: boolean;
   imageUrl?: string | null;
+  phoneProfile?: any;
+  secondPhoneProfile?: any;
 };
 
 
@@ -758,6 +763,8 @@ export function MandoubOrderTable({
                   totalAmount: activeOrderData.totalAmountDinar,
                   status: activeOrderData.orderStatus,
                   orderNumber: Number(activeOrderData.shortId), // استخدام shortId كرقم عرض
+                  customerLandmark: activeOrderData.landmarkLine,
+                  secondCustomerLandmark: activeOrderData.secondCustomerLandmark,
                   moneyEvents: activeOrderData.moneyEvents || [],
                   shop: {
                      name: activeOrderData.shopName,
@@ -768,6 +775,7 @@ export function MandoubOrderTable({
                      ownerName: activeOrderData.submitterName,
                   } as any,
                   customerRegion: { name: activeOrderData.regionLine } as any,
+                  secondCustomerRegion: { name: activeOrderData.secondCustomerRegionName || "—" } as any,
                   customer: {
                      name: activeOrderData.customerName,
                   } as any,
@@ -777,7 +785,10 @@ export function MandoubOrderTable({
                 closeHref="#"
                 nextUrl={detailsNextUrl}
                 viewerCourierId={auth.c}
+                phoneProfile={activeOrderData.phoneProfile}
+                secondPhoneProfile={activeOrderData.secondPhoneProfile}
                 smartHintLine={activeOrderData.smartHintLine}
+                secondSmartHintLine={activeOrderData.secondSmartHintLine}
                 icons={icons}
                 courierSettings={{
                   showDoorBtn: true,

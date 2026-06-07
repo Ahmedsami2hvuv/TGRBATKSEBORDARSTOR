@@ -557,10 +557,14 @@ export default async function MandoubPage({ searchParams }: Props) {
   });
 
   // جلب ملفات تعريف الزبائن للأرقام الموجودة في القائمة لضمان توفر اللوكيشنات المرجعية والسابقة
-  const customerPhones = Array.from(new Set(activeOrders.map(o => o.customerPhone).filter(Boolean)));
+  const customerPhones = Array.from(new Set([
+    ...activeOrders.map(o => o.customerPhone),
+    ...activeOrders.map(o => o.secondCustomerPhone)
+  ].filter(Boolean) as string[]));
+
   const phoneProfiles = await prisma.customerPhoneProfile.findMany({
-    where: { phone: { in: customerPhones as string[] } },
-    select: { phone: true, regionId: true, locationUrl: true, photoUrl: true }
+    where: { phone: { in: customerPhones } },
+    select: { phone: true, regionId: true, locationUrl: true, photoUrl: true, landmark: true, alternatePhone: true }
   });
 
   const activeOrderMetrics = computeMandoubTotalsForCourier(activeOrdersNorm, courier.id, totalsBaseline);
@@ -640,16 +644,42 @@ export default async function MandoubPage({ searchParams }: Props) {
   }
 
   const smartHintByOrderId = new Map<string, string | null>();
+  const secondSmartHintByOrderId = new Map<string, string | null>();
+  const mergedLandmarkByOrderId = new Map<string, string>();
+  const secondMergedLandmarkByOrderId = new Map<string, string>();
+
   for (const o of filteredByTab) {
     const profile = phoneProfilesByKey.get(`${o.customerPhone}::${o.customerRegionId ?? ""}`) ?? phoneProfilesByPhone.get(o.customerPhone);
     const mergedCustomerLocation =
       o.customerLocationUrl || o.customer?.customerLocationUrl || profile?.locationUrl || "";
+
+    const landmark = (o.customerLandmark?.trim() && o.customerLandmark !== "—") ? o.customerLandmark.trim() :
+                     (o.customer?.customerLandmark?.trim() && o.customer?.customerLandmark !== "—") ? o.customer?.customerLandmark.trim() :
+                     (profile?.landmark?.trim() && profile?.landmark !== "—") ? profile?.landmark.trim() : "";
+
+    mergedLandmarkByOrderId.set(o.id, landmark);
+
     const hint = computeSmartHint({
       locationUrl: mergedCustomerLocation,
-      fallbackLandmark: o.customerLandmark || o.customer?.customerLandmark,
+      fallbackLandmark: landmark,
       regionId: o.customerRegionId,
     });
     smartHintByOrderId.set(o.id, hint);
+
+    if (o.routeMode === "double" && o.secondCustomerPhone) {
+      const sProfile = phoneProfilesByKey.get(`${o.secondCustomerPhone}::${o.secondCustomerRegionId ?? ""}`) ?? phoneProfilesByPhone.get(o.secondCustomerPhone);
+      const sMergedLocation = o.secondCustomerLocationUrl || sProfile?.locationUrl || "";
+      const sLandmark = (o.secondCustomerLandmark?.trim() && o.secondCustomerLandmark !== "—") ? o.secondCustomerLandmark.trim() :
+                        (sProfile?.landmark?.trim() && sProfile?.landmark !== "—") ? sProfile?.landmark.trim() : "";
+
+      secondMergedLandmarkByOrderId.set(o.id, sLandmark);
+      const sHint = computeSmartHint({
+        locationUrl: sMergedLocation,
+        fallbackLandmark: sLandmark,
+        regionId: o.secondCustomerRegionId,
+      });
+      secondSmartHintByOrderId.set(o.id, sHint);
+    }
   }
 
   const tableRows: MandoubRow[] = filteredByTab.map((o) => {
@@ -657,9 +687,14 @@ export default async function MandoubPage({ searchParams }: Props) {
       phoneProfilesByKey.get(`${o.customerPhone}::${o.customerRegionId ?? ""}`) ??
       phoneProfilesByPhone.get(o.customerPhone); // fallback to first matching phone if region doesn't match
 
+    const sProfile = o.secondCustomerPhone ? (phoneProfilesByKey.get(`${o.secondCustomerPhone}::${o.secondCustomerRegionId ?? ""}`) ?? phoneProfilesByPhone.get(o.secondCustomerPhone)) : null;
+
     const mergedCustomerLocation =
       o.customerLocationUrl || o.customer?.customerLocationUrl || profile?.locationUrl || "";
     const smartHintLine = smartHintByOrderId.get(o.id) ?? "—";
+    const secondSmartHintLine = secondSmartHintByOrderId.get(o.id) ?? "—";
+    const landmarkLine = mergedLandmarkByOrderId.get(o.id) || null;
+    const secondLandmarkLine = secondMergedLandmarkByOrderId.get(o.id) || null;
 
     return {
       id: o.id,
@@ -668,8 +703,9 @@ export default async function MandoubPage({ searchParams }: Props) {
       shopName: o.shop.name,
       shopNameHighlightClass: mandoubShopNameVividClass(o.status, o.prepaidAll),
       regionLine: o.customerRegion?.name?.trim() || "—",
-      landmarkLine: (o.customerLandmark || o.customer?.customerLandmark || "").trim() || null,
+      landmarkLine,
       smartHintLine,
+      secondSmartHintLine,
       orderType: o.orderType || "—",
       priceStr: o.totalAmount != null ? formatDinarAsAlf(o.totalAmount) : "—",
       delStr: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
@@ -706,14 +742,15 @@ export default async function MandoubPage({ searchParams }: Props) {
       secondCustomerPhone: o.secondCustomerPhone,
       shopLocationUrl: o.shop.locationUrl,
       customerLocationUrl: mergedCustomerLocation,
-      secondCustomerLocationUrl: o.secondCustomerLocationUrl,
+      secondCustomerLocationUrl: o.secondCustomerLocationUrl || sProfile?.locationUrl || "",
       shopDoorPhotoUrl: o.shopDoorPhotoUrl || o.shop.photoUrl,
       customerDoorPhotoUrl: o.customerDoorPhotoUrl || o.customer?.customerDoorPhotoUrl || profile?.photoUrl || "",
-      secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
+      secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl || sProfile?.photoUrl || "",
       imageUrl: o.imageUrl,
       routeMode: o.routeMode as any,
 
       secondCustomerRegionName: o.secondCustomerRegion?.name?.trim() || null,
+      secondCustomerLandmark: secondLandmarkLine,
       shopRegionName: o.shop.region?.name || null,
       customerName: o.customer?.name || null,
       submitterName: o.shop.ownerName || o.submittedBy?.name || o.submittedByCompanyPreparer?.name || null,
@@ -726,6 +763,18 @@ export default async function MandoubPage({ searchParams }: Props) {
       showNotesBtn: courier.showNotesBtn,
       showVoiceNotesBtn: courier.showVoiceNotesBtn,
       showMoneyBoxes: courier.showMoneyBoxes,
+      phoneProfile: profile ? {
+        locationUrl: profile.locationUrl,
+        landmark: profile.landmark,
+        photoUrl: profile.photoUrl,
+        alternatePhone: profile.alternatePhone,
+      } : null,
+      secondPhoneProfile: sProfile ? {
+        locationUrl: sProfile.locationUrl,
+        landmark: sProfile.landmark,
+        photoUrl: sProfile.photoUrl,
+        alternatePhone: sProfile.alternatePhone,
+      } : null,
     };
   });
 
