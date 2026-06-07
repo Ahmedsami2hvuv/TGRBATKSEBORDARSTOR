@@ -24,7 +24,7 @@ type FontSizeContextType = {
   resetConfig: () => void;
 };
 
-const FontSizeContext = createContext<FontSizeContextType | undefined>(undefined);
+export const FontSizeContext = createContext<FontSizeContextType | undefined>(undefined);
 
 export function FontSizeProvider({ children }: { children: React.ReactNode }) {
   const [config, setConfig] = useState<FontSizeConfig>(defaultConfig);
