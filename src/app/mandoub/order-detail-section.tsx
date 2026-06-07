@@ -324,7 +324,7 @@ export function OrderDetailSection({
                     <div className="flex flex-col gap-1 mt-1">
                       <div className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30">
                         <span className="font-black text-rose-600 text-xs shrink-0">📍 أقرب نقطة دالة:</span>
-                        <span className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight">
+                        <span className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight kse-landmark-text">
                           {mergedLandmark || "—"}
                           {isFromProfileLandmark && <span className="mr-1 text-[9px] text-rose-400 font-bold">(من السجل)</span>}
                         </span>
@@ -334,7 +334,7 @@ export function OrderDetailSection({
                     <div className="mt-1">
                       <div className="flex flex-col gap-0.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 p-1.5 border border-emerald-100/50 dark:border-emerald-900/20">
                         <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">💡 الاستدلال الذكي:</span>
-                        <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-350">
+                        <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-350 kse-smart-hint-text">
                           {isSmartHintValid(smartHintLine) ? smartHintLine!.trim() : "—"}
                         </span>
                       </div>
@@ -346,7 +346,7 @@ export function OrderDetailSection({
                       <div className="max-w-full">
                         {mergedCustomerLocationUrl ? (
                           <div className="flex flex-col items-start gap-1">
-                            <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm">
+                            <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm kse-location-btn">
                               📍 موقع الزبون {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
                             </a>
                             {order.customerLocationUploadedByName?.trim() ? (
@@ -421,7 +421,7 @@ export function OrderDetailSection({
                       <div className="flex flex-col gap-1 mt-1">
                         <div className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30">
                           <span className="font-black text-rose-600 text-xs shrink-0">📍 النقطة الدالة:</span>
-                          <span className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight">
+                          <span className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight kse-landmark-text">
                             {secondLandmarkMerged || "—"}
                             {isFromSecondProfileLandmark && <span className="mr-1 text-[9px] text-rose-400 font-bold">(من السجل)</span>}
                           </span>
@@ -431,7 +431,7 @@ export function OrderDetailSection({
                       <div className="mt-1">
                         <div className="flex flex-col gap-0.5 rounded-lg bg-violet-50/50 dark:bg-violet-950/10 p-1.5 border border-violet-100/50 dark:border-violet-900/20">
                           <span className="text-[9px] font-black text-violet-600 dark:text-violet-400">💡 الاستدلال الذكي:</span>
-                          <span className="text-[11px] font-black text-violet-800 dark:text-violet-350">
+                          <span className="text-[11px] font-black text-violet-800 dark:text-violet-350 kse-smart-hint-text">
                             {isSmartHintValid(secondSmartHintLine) ? secondSmartHintLine!.trim() : "—"}
                           </span>
                         </div>
@@ -442,7 +442,7 @@ export function OrderDetailSection({
                       {courierSettings?.showLocationBtn !== false && (
                         <div className="max-w-full">
                           {secondLocMerged ? (
-                            <a href={secondLocMerged} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm">
+                            <a href={secondLocMerged} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm kse-location-btn">
                               📍 موقع المستلم {isFromSecondProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
                             </a>
                           ) : (

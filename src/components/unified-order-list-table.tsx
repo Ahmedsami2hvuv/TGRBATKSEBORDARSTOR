@@ -654,17 +654,17 @@ export function UnifiedOrderListTable({
                                 <CenterModal title="فتح الموقع الجغرافي لـ:" onClose={() => setActiveLocId(null)}>
                                   <div className="flex flex-col gap-1">
                                     {!isDoubleRoute && o.shopLocationUrl && o.shopLocationUrl.trim().length > 2 && (
-                                      <a href={o.shopLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
+                                      <a href={o.shopLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full kse-location-btn-class">
                                         <span className="size-10 flex items-center justify-center rounded-full bg-sky-100 text-sky-600 text-xl">🏢</span> موقع العميل (المحل)
                                       </a>
                                     )}
                                     {o.customerLocationUrl && o.customerLocationUrl.trim().length > 2 && (
-                                      <a href={o.customerLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
+                                      <a href={o.customerLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full kse-location-btn-class">
                                         <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> موقع الزبون
                                       </a>
                                     )}
                                     {o.secondCustomerLocationUrl && o.secondCustomerLocationUrl.trim().length > 2 && (
-                                      <a href={o.secondCustomerLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full">
+                                      <a href={o.secondCustomerLocationUrl.trim()} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-rose-50 transition-colors rounded-xl border border-slate-100 text-right w-full kse-location-btn-class">
                                         <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> موقع الزبون 2 / مستلم
                                       </a>
                                     )}
