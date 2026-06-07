@@ -72,7 +72,10 @@ export async function syncSecondDoorPhotoToOrdersByPhoneRegion(input: {
 }
 
 /** يقرأ الطلب بعد التحديث ويحدّث مرجع (رقم + منطقة الزبون). */
-export async function syncPhoneProfileFromOrder(orderId: string, options?: { forceClearLocation?: boolean }): Promise<void> {
+export async function syncPhoneProfileFromOrder(
+  orderId: string,
+  options?: { forceClearLocation?: boolean; forceClearLandmark?: boolean },
+): Promise<void> {
   const o = await prisma.order.findUnique({
     where: { id: orderId },
   });
@@ -94,6 +97,7 @@ export async function syncPhoneProfileFromOrder(orderId: string, options?: { for
     doorPhotoUrl: door,
     alternatePhone: alt,
     forceClearLocation: options?.forceClearLocation,
+    forceClearLandmark: options?.forceClearLandmark,
   });
 
   if (door) {
@@ -147,6 +151,7 @@ export async function upsertCustomerPhoneProfileFromOrderSnapshot(input: {
   doorPhotoUrl: string;
   alternatePhone: string | null;
   forceClearLocation?: boolean;
+  forceClearLandmark?: boolean;
 }): Promise<void> {
   const phone = normalizeIraqMobileLocal11(input.phone.trim()) ?? "";
   const regionId = input.regionId?.trim();
@@ -160,7 +165,9 @@ export async function upsertCustomerPhoneProfileFromOrderSnapshot(input: {
   const nextLoc = input.forceClearLocation
     ? ""
     : input.locationUrl.trim() || existing?.locationUrl?.trim() || "";
-  const nextLandmark = input.landmark.trim() || existing?.landmark?.trim() || "";
+  const nextLandmark = input.forceClearLandmark
+    ? ""
+    : input.landmark.trim() || existing?.landmark?.trim() || "";
   const nextAlt = input.alternatePhone ?? existing?.alternatePhone ?? null;
 
   await prisma.customerPhoneProfile.upsert({

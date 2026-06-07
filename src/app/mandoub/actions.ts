@@ -44,9 +44,12 @@ async function verifyDelegateAllowed(
   return { ok: true, courierId: v.courierId };
 }
 
-function revalidateMandoubPaths(nextUrl: string) {
+function revalidateMandoubPaths(nextUrl: string, orderId?: string) {
   revalidatePath("/mandoub");
   revalidatePath("/mandoub/wallet");
+  if (orderId) {
+    revalidatePath(`/mandoub/order/${orderId}`);
+  }
   const urlPath = nextUrl.split("?")[0];
   if (urlPath.startsWith("/mandoub/order/")) {
     revalidatePath(urlPath);
@@ -233,11 +236,11 @@ export async function updateMandoubCustomerDetails(
   const s = String(formData.get("s") ?? "");
   const orderId = String(formData.get("orderId") ?? "").trim();
   const nextRaw = String(formData.get("next") ?? "/mandoub");
-  const customerPhone = String(formData.get("customerPhone") ?? "").trim();
-  const customerLocationUrl = String(formData.get("customerLocationUrl") ?? "").trim();
-  const customerLandmark = String(formData.get("customerLandmark") ?? "").trim();
-  const alternateRaw = String(formData.get("alternatePhone") ?? "").trim();
-  const statusRaw = String(formData.get("status") ?? "").trim();
+  const customerPhone = formData.get("customerPhone")?.toString().trim() || "";
+  const customerLocationUrl = formData.get("customerLocationUrl")?.toString().trim() || "";
+  const customerLandmark = formData.get("customerLandmark")?.toString().trim() || "";
+  const alternateRaw = formData.get("alternatePhone")?.toString().trim() || "";
+  const statusRaw = formData.get("status")?.toString().trim() || "";
 
   const v = await verifyDelegateAllowed(c, exp, s);
   if (!v.ok) {
@@ -253,7 +256,7 @@ export async function updateMandoubCustomerDetails(
   }
 
   let alternateDigits: string | null = null;
-  if (alternateRaw.trim()) {
+  if (alternateRaw) {
     const alt = normalizeIraqMobileLocal11(alternateRaw);
     if (!alt) {
       return { error: "الرقم الثاني غير صالح أو اتركه فارغاً." };
@@ -271,16 +274,13 @@ export async function updateMandoubCustomerDetails(
     return { error: "الطلب غير موجود أو غير مسند لك" };
   }
 
-  const prevLocationUrl =
-    order.customerLocationUrl?.trim() || "";
-  const customerLocationUrlMerged =
-    customerLocationUrl.trim() || prevLocationUrl;
+  // السماح بتحديث القيم حتى لو كانت فارغة إذا تم تغييرها في الفورم
+  // لكن لمنع المسح العرضي، نستخدم القيمة القديمة فقط إذا كان الحقل مفقوداً تماماً من الـ FormData (وهذا لا يحدث هنا)
+  // سنعتمد القيم القادمة من المندوب مباشرة
+  const customerLocationUrlMerged = customerLocationUrl;
+  const customerLandmarkMerged = customerLandmark;
 
-  const prevLandmark =
-    order.customerLandmark?.trim() || "";
-  const customerLandmarkMerged =
-    customerLandmark.trim() || prevLandmark;
-
+  const prevLocationUrl = order.customerLocationUrl?.trim() || "";
   const locationUrlChanged = prevLocationUrl !== customerLocationUrlMerged;
   const clearCourierGpsFlag = locationUrlChanged
     ? ({
@@ -301,7 +301,12 @@ export async function updateMandoubCustomerDetails(
   if (order.customerId) {
     await prisma.customer.update({
       where: { id: order.customerId },
-      data: { phone },
+      data: {
+        phone,
+        customerLandmark: customerLandmarkMerged,
+        customerLocationUrl: customerLocationUrlMerged,
+        alternatePhone: alternateDigits,
+      },
     });
   } else {
     const existing = await prisma.customer.findFirst({
@@ -310,7 +315,12 @@ export async function updateMandoubCustomerDetails(
     if (existing) {
       await prisma.customer.update({
         where: { id: existing.id },
-        data: { phone },
+        data: {
+          phone,
+          customerLandmark: customerLandmarkMerged,
+          customerLocationUrl: customerLocationUrlMerged,
+          alternatePhone: alternateDigits,
+        },
       });
       await updateOrderWithMandoubStatusReconcile(orderId, order.status, {
         customer: { connect: { id: existing.id } },
@@ -322,7 +332,7 @@ export async function updateMandoubCustomerDetails(
         ...clearCourierGpsFlag,
       });
       await syncPhoneProfileFromOrder(orderId);
-      revalidateMandoubPaths(nextRaw);
+      revalidateMandoubPaths(nextRaw, orderId);
       redirect(safeMandoubReturn(nextRaw));
     }
     const created = await prisma.customer.create({
@@ -331,9 +341,9 @@ export async function updateMandoubCustomerDetails(
         phone,
         name: "",
         customerRegionId: order.customerRegionId,
-        customerLocationUrl: "",
-        customerLandmark: "",
-        alternatePhone: null,
+        customerLocationUrl: customerLocationUrlMerged,
+        customerLandmark: customerLandmarkMerged,
+        alternatePhone: alternateDigits,
         customerDoorPhotoUrl: null,
       },
     });
@@ -347,7 +357,7 @@ export async function updateMandoubCustomerDetails(
       ...clearCourierGpsFlag,
     });
     await syncPhoneProfileFromOrder(orderId);
-    revalidateMandoubPaths(nextRaw);
+    revalidateMandoubPaths(nextRaw, orderId);
     redirect(safeMandoubReturn(nextRaw));
   }
 
@@ -361,7 +371,7 @@ export async function updateMandoubCustomerDetails(
   });
 
   await syncPhoneProfileFromOrder(orderId);
-  revalidateMandoubPaths(nextRaw);
+  revalidateMandoubPaths(nextRaw, orderId);
   redirect(safeMandoubReturn(nextRaw));
 }
 

@@ -602,8 +602,8 @@ export function OrderDetailSection({
     }
   };
 
-  // Enforce a strict vertical stacked sequence for the courier as requested
-  const layout = ["shop_info", "customer_info", "price_details", "money_flow", "notes_summary"];
+  // ترتيب البلوكات حسب الأهمية للمندوب: الزبون أولاً، ثم السعر والملاحظات، ثم المحل والحسابات
+  const layout = ["customer_info", "price_details", "notes_summary", "shop_info", "money_flow"];
 
   return (
     <section
@@ -642,17 +642,22 @@ export function OrderDetailSection({
 
         <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto] sm:items-center">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-black text-slate-900 sm:text-2xl">رقم الطلب <span className="tabular-nums text-sky-800">#{order.orderNumber}</span></h2>
-             <p className="text-[11px] font-black text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 flex items-center gap-1">
-               📅 تاريخ الرفع: {formatBaghdadDateTime(order.createdAt)}
-             </p>
-             <p className="text-[11px] font-black text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 flex items-center gap-1">
-               ⏰ وقت الطلب (المطلوب): {order.orderNoteTime || "فوري"}
-             </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-xl font-black text-slate-900 sm:text-2xl">رقم الطلب <span className="tabular-nums text-sky-800">#{order.orderNumber}</span></h2>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold ${orderStatusBadgeClass(order.status)}`}>{STATUS_AR[order.status] ?? order.status}</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+               <p className="text-[11px] font-black text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 flex items-center gap-1">
+                 📅 {formatBaghdadDateTime(order.createdAt)}
+               </p>
+               <p className="text-[11px] font-black text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 flex items-center gap-1">
+                 ⏰ {order.orderNoteTime || "فوري"}
+               </p>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <MandoubOrderDetailActions closeHref={closeHref} orderId={order.id} />
-            <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${orderStatusBadgeClass(order.status)}`}>{STATUS_AR[order.status] ?? order.status}</span>
           </div>
         </div>
 
