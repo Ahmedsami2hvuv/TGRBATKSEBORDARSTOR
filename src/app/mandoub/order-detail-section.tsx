@@ -45,8 +45,18 @@ function imgSrc(url: string): string | null {
 }
 
 function contactLine(phone: string): string {
-  const t = phone.trim();
-  return t || "—";
+  const t = (phone || "").trim();
+  if (!t || t === "—" || t === "undefined") return "";
+  return t;
+}
+
+function getCleanValue(...values: (string | null | undefined)[]) {
+  for (const v of values) {
+    if (!v) continue;
+    const t = v.trim();
+    if (t && t !== "—" && t !== "undefined" && t !== "null") return t;
+  }
+  return "";
 }
 
 const locBtnEmerald =
@@ -115,33 +125,33 @@ export function OrderDetailSection({
     order.submittedBy?.name?.trim() ||
     (isAdminPortal && !order.submittedBy ? "الإدارة" : "—");
   const shopContactPhone = order.submittedByCompanyPreparer?.phone?.trim() || order.submittedBy?.phone?.trim() || (isAdminPortal && !order.submittedBy ? ADMIN_PHONE_FROM_SHOP_LOCAL : order.shop.phone?.trim() || "");
-  const customerDoorDisplay =
-    order.customerDoorPhotoUrl?.trim() ||
-    order.customer?.customerDoorPhotoUrl?.trim() ||
-    phoneProfile?.photoUrl?.trim() ||
-    "";
-  const mergedCustomerLocationUrl =
-    order.customerLocationUrl?.trim() ||
-    order.customer?.customerLocationUrl?.trim() ||
-    phoneProfile?.locationUrl?.trim() ||
-    "";
-  const mergedLandmark =
-    order.customerLandmark?.trim() ||
-    order.customer?.customerLandmark?.trim() ||
-    phoneProfile?.landmark?.trim() ||
-    "";
-  const mergedAlternate =
-    order.secondCustomerPhone?.trim() ||
-    order.alternatePhone?.trim() ||
-    order.customer?.alternatePhone?.trim() ||
-    phoneProfile?.alternatePhone?.trim() ||
-    "";
-  const secondLocMerged =
-    order.secondCustomerLocationUrl?.trim() || secondPhoneProfile?.locationUrl?.trim() || "";
-  const secondDoorMerged =
-    order.secondCustomerDoorPhotoUrl?.trim() || secondPhoneProfile?.photoUrl?.trim() || "";
-  const secondLandmarkMerged =
-    order.secondCustomerLandmark?.trim() || secondPhoneProfile?.landmark?.trim() || "";
+
+  const customerDoorDisplay = getCleanValue(
+    order.customerDoorPhotoUrl,
+    order.customer?.customerDoorPhotoUrl,
+    phoneProfile?.photoUrl
+  );
+  const mergedCustomerLocationUrl = getCleanValue(
+    order.customerLocationUrl,
+    order.customer?.customerLocationUrl,
+    phoneProfile?.locationUrl
+  );
+  const mergedLandmark = getCleanValue(
+    order.customerLandmark,
+    order.customer?.customerLandmark,
+    phoneProfile?.landmark
+  );
+  const mergedAlternate = getCleanValue(
+    order.secondCustomerPhone,
+    order.alternatePhone,
+    order.customer?.alternatePhone,
+    phoneProfile?.alternatePhone
+  );
+
+  const secondLocMerged = getCleanValue(order.secondCustomerLocationUrl, secondPhoneProfile?.locationUrl);
+  const secondDoorMerged = getCleanValue(order.secondCustomerDoorPhotoUrl, secondPhoneProfile?.photoUrl);
+  const secondLandmarkMerged = getCleanValue(order.secondCustomerLandmark, secondPhoneProfile?.landmark);
+  const mergedSecondAlternate = getCleanValue(secondPhoneProfile?.alternatePhone);
   const secondDoorCaptionName =
     secondDoorMerged && order.secondCustomerDoorPhotoUploadedByName?.trim()
       ? order.secondCustomerDoorPhotoUploadedByName
@@ -151,6 +161,15 @@ export function OrderDetailSection({
   const prepJson = order.preparerShoppingJson as any;
   const hideSubtotalInfo = prepJson?.hidePricesFromCourier === true;
   const reversePickup = isReversePickupOrderType(order.orderType);
+
+  const isFromProfileLandmark = !getCleanValue(order.customerLandmark, order.customer?.customerLandmark) && !!getCleanValue(phoneProfile?.landmark);
+  const isFromProfileLocation = !getCleanValue(order.customerLocationUrl, order.customer?.customerLocationUrl) && !!getCleanValue(phoneProfile?.locationUrl);
+  const isFromProfilePhoto = !getCleanValue(order.customerDoorPhotoUrl, order.customer?.customerDoorPhotoUrl) && !!getCleanValue(phoneProfile?.photoUrl);
+  const isFromProfileAlternate = !getCleanValue(order.secondCustomerPhone, order.alternatePhone, order.customer?.alternatePhone) && !!getCleanValue(phoneProfile?.alternatePhone);
+
+  const isFromSecondProfileLandmark = !getCleanValue(order.secondCustomerLandmark) && !!getCleanValue(secondPhoneProfile?.landmark);
+  const isFromSecondProfileLocation = !getCleanValue(order.secondCustomerLocationUrl) && !!getCleanValue(secondPhoneProfile?.locationUrl);
+  const isFromSecondProfilePhoto = !getCleanValue(order.secondCustomerDoorPhotoUrl) && !!getCleanValue(secondPhoneProfile?.photoUrl);
 
   const isSmartHintValid = (s: string | null | undefined) => {
     if (!s) return false;
@@ -296,15 +315,20 @@ export function OrderDetailSection({
                     </div>
 
                     {mergedAlternate && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-slate-400 text-sm" title="الهاتف البديل">📱</span>
-                        <span className="font-mono font-bold text-slate-600 dark:text-slate-400">{mergedAlternate}</span>
+                      <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded border border-amber-100 dark:border-amber-900/30 w-fit">
+                        <span className="font-bold text-amber-600 text-[10px]">{isFromProfileAlternate ? "رقم أرشيف:" : "رقم بديل:"}</span>
+                        <span className="font-mono font-black text-amber-900 dark:text-amber-100 ml-1">{mergedAlternate}</span>
                       </div>
                     )}
 
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-bold text-slate-400 text-sm">📍</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">النقطة الدالة: {mergedLandmark || order.customerLandmark || "—"}</span>
+                    <div className="flex flex-col gap-1 mt-1">
+                      <div className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30">
+                        <span className="font-black text-rose-600 text-xs shrink-0">📍 أقرب نقطة دالة:</span>
+                        <span className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight">
+                          {mergedLandmark || "—"}
+                          {isFromProfileLandmark && <span className="mr-1 text-[9px] text-rose-400 font-bold">(من السجل)</span>}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="mt-1">
@@ -323,7 +347,7 @@ export function OrderDetailSection({
                         {mergedCustomerLocationUrl ? (
                           <div className="flex flex-col items-start gap-1">
                             <a href={mergedCustomerLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm">
-                              📍 موقع الزبون <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
+                              📍 موقع الزبون {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
                             </a>
                             {order.customerLocationUploadedByName?.trim() ? (
                               <div className="mt-0.5"><ImageUploaderCaption name={order.customerLocationUploadedByName} /></div>
@@ -341,7 +365,7 @@ export function OrderDetailSection({
 
                 {/* Customer Door Photo */}
                 <div className="w-[130px] sm:w-[160px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
-                  <span className="text-[10px] font-black text-slate-400">صورة الباب</span>
+                  <span className="text-[10px] font-black text-slate-400">صورة الباب {isFromProfilePhoto && "(أرشيف)"}</span>
                   {customerDoorDisplay ? (
                     <div className="w-full flex flex-col items-center gap-1">
                       <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md">
@@ -387,9 +411,21 @@ export function OrderDetailSection({
                         <span className="font-mono font-black text-slate-900 dark:text-white">{contactLine(order.secondCustomerPhone || "")}</span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-slate-400 text-sm">📍</span>
-                        <span className="font-bold text-slate-800 dark:text-slate-200">النقطة الدالة: {secondLandmarkMerged || "—"}</span>
+                      {mergedSecondAlternate && (
+                        <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded border border-amber-100 dark:border-amber-900/30 w-fit">
+                          <span className="font-bold text-amber-600 text-[10px]">رقم أرشيف:</span>
+                          <span className="font-mono font-black text-amber-900 dark:text-amber-100 ml-1">{mergedSecondAlternate}</span>
+                        </div>
+                      )}
+
+                      <div className="flex flex-col gap-1 mt-1">
+                        <div className="flex items-center gap-1.5 flex-wrap rounded-lg bg-rose-50 dark:bg-rose-950/20 p-2 border border-rose-100 dark:border-rose-900/30">
+                          <span className="font-black text-rose-600 text-xs shrink-0">📍 النقطة الدالة:</span>
+                          <span className="font-black text-rose-950 dark:text-rose-200 text-sm leading-tight">
+                            {secondLandmarkMerged || "—"}
+                            {isFromSecondProfileLandmark && <span className="mr-1 text-[9px] text-rose-400 font-bold">(من السجل)</span>}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="mt-1">
@@ -407,7 +443,7 @@ export function OrderDetailSection({
                         <div className="max-w-full">
                           {secondLocMerged ? (
                             <a href={secondLocMerged} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm">
-                              📍 موقع المستلم <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
+                              📍 موقع المستلم {isFromSecondProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
                             </a>
                           ) : (
                             <div className="p-1 rounded-xl bg-slate-50 dark:bg-black/10 border border-slate-100 dark:border-white/5 transform scale-90 origin-right">
@@ -421,7 +457,7 @@ export function OrderDetailSection({
 
                   {/* Second Customer Door Photo */}
                   <div className="w-[130px] sm:w-[160px] flex flex-col items-center justify-start shrink-0 self-start gap-2">
-                    <span className="text-[10px] font-black text-slate-400">صورة باب المستلم</span>
+                    <span className="text-[10px] font-black text-slate-400">صورة باب المستلم {isFromSecondProfilePhoto && "(أرشيف)"}</span>
                     {secondDoorMerged && imgSrc(secondDoorMerged) ? (
                       <div className="w-full flex flex-col items-center gap-1">
                         <div className="aspect-square w-full overflow-hidden rounded-2xl border border-sky-200 dark:border-white/10 shadow-md relative">
@@ -635,7 +671,21 @@ export function OrderDetailSection({
         <Suspense fallback={null}><MandoubLocFlashBanner /></Suspense>
 
         <MandoubFloatingBar
-          orderId={order.id} shopPhone={shopContactPhone} customerPhone={order.customerPhone} customerAlternatePhone={order.secondCustomerPhone?.trim() || mergedAlternate || ""} preparerPhone={order.submittedByCompanyPreparer?.phone ?? ""} orderStatus={order.status} orderNumber={order.orderNumber} shopName={order.shop.name} city={order.customerRegion?.name ?? ""} totalPrice={order.totalAmount != null ? formatDinarAsAlf(order.totalAmount) : ""} deliveryName={order.courier?.name ?? ""} customerLocationUrl={mergedCustomerLocationUrl} customerLandmark={mergedLandmark} hasCustomerLocation={!missingCustomerLocation} hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
+          orderId={order.id}
+          shopPhone={shopContactPhone}
+          customerPhone={order.customerPhone}
+          customerAlternatePhone={mergedAlternate || ""}
+          preparerPhone={order.submittedByCompanyPreparer?.phone ?? ""}
+          orderStatus={order.status}
+          orderNumber={order.orderNumber}
+          shopName={order.shop.name}
+          city={order.customerRegion?.name ?? ""}
+          totalPrice={order.totalAmount != null ? formatDinarAsAlf(order.totalAmount) : ""}
+          deliveryName={order.courier?.name ?? ""}
+          customerLocationUrl={mergedCustomerLocationUrl}
+          customerLandmark={mergedLandmark}
+          hasCustomerLocation={!missingCustomerLocation}
+          hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
           showCallBtn={courierSettings?.showCallBtn !== false}
           showWhatsAppBtn={courierSettings?.showWhatsAppBtn !== false}
         />
