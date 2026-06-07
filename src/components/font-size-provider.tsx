@@ -83,39 +83,49 @@ export function FontSizeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <FontSizeContext.Provider value={{ config, updateConfig, resetConfig }}>
-      <div style={cssVariables} className="font-size-root w-full min-h-screen">
+      <div className="font-size-root w-full min-h-screen">
         {mounted && (
           <style dangerouslySetInnerHTML={{
             __html: `
-              /* التكبير المباشر والقوي جداً للعناصر المحددة ليظهر بشكل ملحوظ وواضح */
+              :root {
+                --kse-landmark-font-size: ${config.landmarkFontSize}px;
+                --kse-location-btn-size: ${config.locationBtnSize}px;
+                --kse-smart-hint-font-size: ${config.smartHintFontSize}px;
+                --kse-global-font-size: ${config.globalFontSize}px;
+                --kse-global-btn-size: ${config.globalBtnSize}px;
+              }
+
+              /* التكبير المباشر والقوي جداً للعناصر المحددة ليظهر بشكل ملحوظ وواضح (بما في ذلك البورتالات في body) */
               .kse-landmark-text,
-              .font-size-root .kse-landmark-text,
+              body .kse-landmark-text,
               .kse-landmark-text * {
                 font-size: var(--kse-landmark-font-size) !important;
               }
               
               .kse-location-btn, 
               .kse-location-btn-class,
-              .font-size-root .kse-location-btn,
-              .font-size-root .kse-location-btn-class,
+              body .kse-location-btn,
+              body .kse-location-btn-class,
               .kse-location-btn *,
               .kse-location-btn-class * {
                 font-size: var(--kse-location-btn-size) !important;
               }
               
               .kse-smart-hint-text,
-              .font-size-root .kse-smart-hint-text,
+              body .kse-smart-hint-text,
               .kse-smart-hint-text * {
                 font-size: var(--kse-smart-hint-font-size) !important;
               }
 
               /* تكبير هادئ ومتوازن للخط العام في الحساب دون التأثير المقرف على الأزرار */
+              body,
               .font-size-root {
                 font-size: var(--kse-global-font-size) !important;
               }
-              .font-size-root button:not(.kse-location-btn),
-              .font-size-root a.btn:not(.kse-location-btn),
-              .font-size-root .kse-btn:not(.kse-location-btn) {
+              body button:not(.kse-location-btn),
+              body a.btn:not(.kse-location-btn),
+              body .kse-btn:not(.kse-location-btn),
+              .font-size-root button:not(.kse-location-btn) {
                 font-size: var(--kse-global-btn-size) !important;
               }
             `
