@@ -6,8 +6,8 @@ import { prisma } from "@/lib/prisma";
 
 export async function updateCourierSetting(
   auth: { c: string; exp: string; s: string },
-  settingName: "showLocationBtn" | "showDoorBtn" | "showCallBtn" | "showWhatsAppBtn" | "showMoneyBoxes" | "showNotesBtn" | "showVoiceNotesBtn" | "rotate180Photos" | "fontSizeScale" | "uiScale",
-  value: boolean | number
+  settingName: "showLocationBtn" | "showDoorBtn" | "showCallBtn" | "showWhatsAppBtn" | "showMoneyBoxes" | "showNotesBtn" | "showVoiceNotesBtn" | "rotate180Photos",
+  value: boolean
 ) {
   const v = verifyDelegatePortalQuery(auth.c, auth.exp || undefined, auth.s);
   if (!v.ok) {
@@ -28,8 +28,6 @@ export async function updateCourierSetting(
     "showNotesBtn",
     "showVoiceNotesBtn",
     "rotate180Photos",
-    "fontSizeScale",
-    "uiScale",
   ];
 
   if (!allowedSettings.includes(settingName)) {

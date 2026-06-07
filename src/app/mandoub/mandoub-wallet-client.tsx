@@ -275,16 +275,16 @@ export function MandoubWalletClient({
         return (
           <div key="in_out" className="grid grid-cols-2 gap-2 sm:gap-3">
             <Link href={walletLedgerHrefs.sader} className={`kse-glass-dark flex items-center justify-between rounded-xl border px-3 py-2 shadow-sm transition ${ledgerFilter === "sader" ? "border-slate-500 bg-slate-100 dark:bg-slate-800" : "border-slate-300 bg-white dark:bg-slate-900/50 dark:border-slate-800"}`}>
-              <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm" style={{ fontSize: "calc(1em * var(--mandoub-font-scale, 1))" }}>
+              <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm">
                 <DynamicIcon icon={icons?.wallet_out} fallback="📤" width={16} height={16} /> صادر
               </p>
-              <p className="text-lg font-black tabular-nums text-slate-900 sm:text-xl dark:text-slate-100" style={{ fontSize: "calc(1.1em * var(--mandoub-font-scale, 1))" }}>{walletOutFromWalletStr}</p>
+              <p className="text-lg font-black tabular-nums text-slate-900 sm:text-xl dark:text-slate-100">{walletOutFromWalletStr}</p>
             </Link>
             <Link href={walletLedgerHrefs.ward} className={`kse-glass-dark flex items-center justify-between rounded-xl border px-3 py-2 shadow-sm transition ${ledgerFilter === "ward" ? "border-slate-500 bg-slate-100 dark:bg-slate-800" : "border-slate-300 bg-white dark:bg-slate-900/50 dark:border-slate-800"}`}>
-              <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm" style={{ fontSize: "calc(1em * var(--mandoub-font-scale, 1))" }}>
+              <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm">
                 <DynamicIcon icon={icons?.wallet_in} fallback="📥" width={16} height={16} /> وارد
               </p>
-              <p className="text-lg font-black tabular-nums text-slate-900 sm:text-xl dark:text-slate-100" style={{ fontSize: "calc(1.1em * var(--mandoub-font-scale, 1))" }}>{walletInFromWalletStr}</p>
+              <p className="text-lg font-black tabular-nums text-slate-900 sm:text-xl dark:text-slate-100">{walletInFromWalletStr}</p>
             </Link>
           </div>
         );
@@ -292,16 +292,16 @@ export function MandoubWalletClient({
         return (
           <div key="pending_transfers" className="grid grid-cols-2 gap-2 sm:gap-3">
             <div className="kse-glass-dark flex items-center justify-between rounded-xl border px-3 py-2 shadow-sm border-slate-300 bg-white dark:bg-slate-900/50 dark:border-slate-800">
-              <p className="flex items-center gap-1 text-[10px] font-bold text-slate-800 dark:text-slate-400 sm:text-xs" style={{ fontSize: "calc(1em * var(--mandoub-font-scale, 1))" }}>
+              <p className="flex items-center gap-1 text-[10px] font-bold text-slate-800 dark:text-slate-400 sm:text-xs">
                 <DynamicIcon icon={icons?.wallet_pending} fallback="🔄" width={14} height={14} /> وارد معلق
               </p>
-              <p className="text-base font-black tabular-nums text-slate-900 sm:text-lg dark:text-slate-100" style={{ fontSize: "calc(1.1em * var(--mandoub-font-scale, 1))" }}>{pendingIncomingTransferStr}</p>
+              <p className="text-base font-black tabular-nums text-slate-900 sm:text-lg dark:text-slate-100">{pendingIncomingTransferStr}</p>
             </div>
             <div className="kse-glass-dark flex items-center justify-between rounded-xl border px-3 py-2 shadow-sm border-slate-300 bg-white dark:bg-slate-900/50 dark:border-slate-800">
-              <p className="flex items-center gap-1 text-[10px] font-bold text-slate-800 dark:text-slate-400 sm:text-xs" style={{ fontSize: "calc(1em * var(--mandoub-font-scale, 1))" }}>
+              <p className="flex items-center gap-1 text-[10px] font-bold text-slate-800 dark:text-slate-400 sm:text-xs">
                 <DynamicIcon icon={icons?.wallet_pending} fallback="🔄" width={14} height={14} /> صادر معلق
               </p>
-              <p className="text-base font-black tabular-nums text-slate-900 sm:text-lg dark:text-slate-100" style={{ fontSize: "calc(1.1em * var(--mandoub-font-scale, 1))" }}>{pendingOutgoingTransferStr}</p>
+              <p className="text-base font-black tabular-nums text-slate-900 sm:text-lg dark:text-slate-100">{pendingOutgoingTransferStr}</p>
             </div>
           </div>
         );
@@ -309,26 +309,26 @@ export function MandoubWalletClient({
         return (
           <div key="site_remain" className="grid grid-cols-2 gap-2 sm:gap-3">
             <Link href={walletLedgerHrefs.site} className={`kse-glass-dark flex items-center justify-between rounded-xl border px-3 py-2 shadow-sm transition ${ledgerFilter === "site" ? "border-slate-500 bg-slate-100 dark:bg-slate-800" : "border-slate-300 bg-white dark:bg-slate-900/50 dark:border-slate-800"}`}>
-              <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm" style={{ fontSize: "calc(1em * var(--mandoub-font-scale, 1))" }}>
+              <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm">
                 <DynamicIcon icon={icons?.ui_package} fallback="📦" width={16} height={16} /> الطلبات
               </p>
-              <p className="text-lg font-black tabular-nums text-slate-900 sm:text-xl dark:text-slate-100" style={{ fontSize: "calc(1.1em * var(--mandoub-font-scale, 1))" }}>{siteRemainingNetStr}</p>
+              <p className="text-lg font-black tabular-nums text-slate-900 sm:text-xl dark:text-slate-100">{siteRemainingNetStr}</p>
             </Link>
             <div className="kse-glass-dark flex items-center justify-between rounded-xl border border-slate-300 bg-white px-3 py-2 shadow-sm dark:bg-slate-900/50 dark:border-slate-800">
-              <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm" style={{ fontSize: "calc(1em * var(--mandoub-font-scale, 1))" }}>
+              <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm">
                 <DynamicIcon icon={icons?.wallet_remain} fallback="💰" width={16} height={16} /> متبقي
               </p>
-              <p className="text-lg font-black tabular-nums text-slate-900 sm:text-xl dark:text-slate-100" style={{ fontSize: "calc(1.1em * var(--mandoub-font-scale, 1))" }}>{walletRemainStr}</p>
+              <p className="text-lg font-black tabular-nums text-slate-900 sm:text-xl dark:text-slate-100">{walletRemainStr}</p>
             </div>
           </div>
         );
       case "cash_in_hand":
         return (
           <div key="cash" className="kse-glass-dark flex items-center justify-between rounded-2xl border-2 border-emerald-500 bg-emerald-100 px-5 py-3 shadow-lg dark:bg-emerald-900/30 dark:border-emerald-800">
-            <p className="flex items-center gap-2 text-lg font-black text-emerald-900 dark:text-emerald-400" style={{ fontSize: "calc(1.1em * var(--mandoub-font-scale, 1))" }}>
+            <p className="flex items-center gap-2 text-lg font-black text-emerald-900 dark:text-emerald-400">
               <DynamicIcon icon={icons?.wallet_cash} fallback="💵" width={24} height={24} /> عندي
             </p>
-            <p className="text-3xl font-black tabular-nums text-emerald-950 sm:text-4xl dark:text-emerald-100" style={{ fontSize: "calc(1.5em * var(--mandoub-font-scale, 1))" }}>{cashInHandStr}</p>
+            <p className="text-3xl font-black tabular-nums text-emerald-950 sm:text-4xl dark:text-emerald-100">{cashInHandStr}</p>
           </div>
         );
       case "available_for_transfer":
@@ -337,16 +337,16 @@ export function MandoubWalletClient({
         return (
           <div key="earnings" className="grid grid-cols-2 gap-2 sm:gap-3">
             <div className="kse-glass-dark flex items-center justify-between rounded-xl border border-slate-300 bg-white px-3 py-2 shadow-sm dark:bg-slate-900/50 dark:border-slate-800">
-              <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm" style={{ fontSize: "calc(1em * var(--mandoub-font-scale, 1))" }}>
+              <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm">
                 <DynamicIcon icon={icons?.wallet_earnings} fallback="💰" width={16} height={16} /> أرباحي
               </p>
-              <p className="text-lg font-black tabular-nums text-slate-900 sm:text-2xl dark:text-slate-100" style={{ fontSize: "calc(1.2em * var(--mandoub-font-scale, 1))" }}>{sumEarningsStr}</p>
+              <p className="text-lg font-black tabular-nums text-slate-900 sm:text-2xl dark:text-slate-100">{sumEarningsStr}</p>
             </div>
             <div className="kse-glass-dark flex items-center justify-between rounded-xl border border-slate-300 bg-white px-3 py-2 shadow-sm dark:bg-slate-900/50 dark:border-slate-800">
-              <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm" style={{ fontSize: "calc(1em * var(--mandoub-font-scale, 1))" }}>
+              <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm">
                 <DynamicIcon icon={icons?.wallet_admin} fallback="🏛️" width={16} height={16} /> للإدارة
               </p>
-              <p className="text-lg font-black tabular-nums text-slate-900 sm:text-2xl dark:text-slate-100" style={{ fontSize: "calc(1.2em * var(--mandoub-font-scale, 1))" }}>{handToAdminStr}</p>
+              <p className="text-lg font-black tabular-nums text-slate-900 sm:text-2xl dark:text-slate-100">{handToAdminStr}</p>
             </div>
           </div>
         );
@@ -354,16 +354,16 @@ export function MandoubWalletClient({
         return (
           <div key="tips" className="grid grid-cols-2 gap-2 sm:gap-3">
             <div className="kse-glass-dark flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 shadow-sm dark:bg-amber-900/20 dark:border-amber-800">
-              <p className="flex items-center gap-1 text-[10px] font-bold text-amber-900 dark:text-amber-400 sm:text-xs" style={{ fontSize: "calc(0.9em * var(--mandoub-font-scale, 1))" }}>
+              <p className="flex items-center gap-1 text-[10px] font-bold text-amber-900 dark:text-amber-400 sm:text-xs">
                 <DynamicIcon icon={icons?.wallet_tips_daily} fallback="🎁" width={14} height={14} /> إكرامية اليوم
               </p>
-              <p className="text-lg font-black tabular-nums text-amber-950 sm:text-2xl dark:text-amber-100" style={{ fontSize: "calc(1.1em * var(--mandoub-font-scale, 1))" }}>{earningsDailyStr || "0"}</p>
+              <p className="text-lg font-black tabular-nums text-amber-950 sm:text-2xl dark:text-amber-100">{earningsDailyStr || "0"}</p>
             </div>
             <div className="kse-glass-dark flex items-center justify-between rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 shadow-sm dark:bg-sky-900/20 dark:border-sky-800">
-              <p className="flex items-center gap-1 text-[10px] font-bold text-sky-900 dark:text-sky-400 sm:text-xs" style={{ fontSize: "calc(0.9em * var(--mandoub-font-scale, 1))" }}>
+              <p className="flex items-center gap-1 text-[10px] font-bold text-sky-900 dark:text-sky-400 sm:text-xs">
                 <DynamicIcon icon={icons?.wallet_tips_monthly} fallback="🗓️" width={14} height={14} /> إكرامية الشهر
               </p>
-              <p className="text-lg font-black tabular-nums text-sky-950 sm:text-2xl dark:text-sky-100" style={{ fontSize: "calc(1.1em * var(--mandoub-font-scale, 1))" }}>{earningsMonthlyStr || "0"}</p>
+              <p className="text-lg font-black tabular-nums text-sky-950 sm:text-2xl dark:text-sky-100">{earningsMonthlyStr || "0"}</p>
             </div>
           </div>
         );
@@ -448,9 +448,9 @@ export function MandoubWalletClient({
           </div>
         </div>
         <div className="mt-4 flex w-full gap-2 sm:gap-3">
-          <button type="button" onClick={() => { setTransferOpen(false); setMiscPanel(p => p === "take" ? null : "take"); }} className={`min-h-[48px] flex-1 rounded-xl border-2 px-2 py-2.5 text-base font-black shadow-sm transition ${miscPanel === "take" ? "border-red-600 bg-red-600 text-white" : "border-red-500 bg-white text-red-900 dark:bg-slate-800 dark:text-red-400"}`} style={{ transform: "scale(var(--mandoub-ui-scale, 1))", transformOrigin: "center" }}>أخذت</button>
-          <button type="button" onClick={() => { setMiscPanel(null); setTransferOpen(o => !o); }} className={`min-h-[48px] flex-1 rounded-xl border-2 px-2 py-2.5 text-base font-black shadow-sm transition ${transferOpen ? "border-violet-600 bg-violet-600 text-white" : "border-violet-500 bg-violet-100 text-violet-950 dark:bg-slate-800 dark:text-violet-400"}`} style={{ transform: "scale(var(--mandoub-ui-scale, 1))", transformOrigin: "center" }}>تحويل</button>
-          <button type="button" onClick={() => { setTransferOpen(false); setMiscPanel(p => p === "give" ? null : "give"); }} className={`min-h-[48px] flex-1 rounded-xl border-2 px-2 py-2.5 text-base font-black shadow-sm transition ${miscPanel === "give" ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-600 bg-white text-emerald-900 dark:bg-slate-800 dark:text-emerald-400"}`} style={{ transform: "scale(var(--mandoub-ui-scale, 1))", transformOrigin: "center" }}>أعطيت</button>
+          <button type="button" onClick={() => { setTransferOpen(false); setMiscPanel(p => p === "take" ? null : "take"); }} className={`min-h-[48px] flex-1 rounded-xl border-2 px-2 py-2.5 text-base font-black shadow-sm transition ${miscPanel === "take" ? "border-red-600 bg-red-600 text-white" : "border-red-500 bg-white text-red-900 dark:bg-slate-800 dark:text-red-400"}`}>أخذت</button>
+          <button type="button" onClick={() => { setMiscPanel(null); setTransferOpen(o => !o); }} className={`min-h-[48px] flex-1 rounded-xl border-2 px-2 py-2.5 text-base font-black shadow-sm transition ${transferOpen ? "border-violet-600 bg-violet-600 text-white" : "border-violet-500 bg-violet-100 text-violet-950 dark:bg-slate-800 dark:text-violet-400"}`}>تحويل</button>
+          <button type="button" onClick={() => { setTransferOpen(false); setMiscPanel(p => p === "give" ? null : "give"); }} className={`min-h-[48px] flex-1 rounded-xl border-2 px-2 py-2.5 text-base font-black shadow-sm transition ${miscPanel === "give" ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-600 bg-white text-emerald-900 dark:bg-slate-800 dark:text-emerald-400"}`}>أعطيت</button>
         </div>
 
         {(miscPanel || transferOpen) && (
@@ -526,7 +526,7 @@ export function MandoubWalletClient({
             }`}>
               <div className="flex flex-col min-w-0 pl-10 sm:pl-12">
                 <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
-                  <p className={`flex items-center gap-1.5 text-base font-black sm:text-lg truncate ${!deleted ? "text-slate-950 dark:text-white" : "text-slate-500"}`} style={{ fontSize: "calc(1em * var(--mandoub-font-scale, 1))" }}>
+                  <p className={`flex items-center gap-1.5 text-base font-black sm:text-lg truncate ${!deleted ? "text-slate-950 dark:text-white" : "text-slate-500"}`}>
                     {dirLabel} · {formatDinarAsAlf(line.amountDinar)}{amountSuffix}
                   </p>
 
@@ -534,21 +534,21 @@ export function MandoubWalletClient({
                     <div className={`inline-flex items-center gap-1 rounded-lg border-2 px-2 py-0.5 text-[11px] font-black whitespace-nowrap ${
                       diff > 0 ? "border-amber-600 bg-amber-500 text-white dark:text-amber-700 shadow-sm" :
                       "border-rose-600 bg-rose-500 text-white dark:text-rose-50 shadow-sm"
-                    }`} style={{ fontSize: "calc(0.9em * var(--mandoub-font-scale, 1))" }}>
+                    }`}>
                       <DynamicIcon icon={diff > 0 ? icons?.ui_warning : icons?.ui_alert} fallback={diff > 0 ? "⚠️" : "🚨"} width={12} height={12} />
                       <span>{diff > 0 ? "زيادة" : "نقص"}</span>
                       <span className="tabular-nums">({formatDinarAsAlf(Math.abs(diff))})</span>
                     </div>
                   )}
 
-                  <span className={`flex items-center gap-1 text-[10px] font-bold ${!deleted ? "text-slate-600 dark:text-slate-400" : "text-slate-400"}`} style={{ fontSize: "calc(0.85em * var(--mandoub-font-scale, 1))" }}>
+                  <span className={`flex items-center gap-1 text-[10px] font-bold ${!deleted ? "text-slate-600 dark:text-slate-400" : "text-slate-400"}`}>
                     <DynamicIcon icon={icons?.ui_time} fallback="(" width={10} height={10} className="sm:hidden" />
                     {dateStr}
                     <span className="sm:hidden">)</span>
                   </span>
                 </div>
 
-                <p className={`flex items-center gap-1 mt-0.5 text-sm font-bold truncate ${!deleted ? "text-slate-800 dark:text-slate-300" : "text-slate-500"}`} style={{ fontSize: "calc(0.95em * var(--mandoub-font-scale, 1))" }}>
+                <p className={`flex items-center gap-1 mt-0.5 text-sm font-bold truncate ${!deleted ? "text-slate-800 dark:text-slate-300" : "text-slate-500"}`}>
                   {line.source === "order" ? (
                     <>
                       <DynamicIcon icon={icons?.ui_number} fallback="🔢" width={14} height={14} /> {line.orderNumber} — {orderAreaLabel}
@@ -556,7 +556,7 @@ export function MandoubWalletClient({
                   ) : (line.miscLabel ?? "—")}
                 </p>
                 {line.balanceAfter !== undefined && !deleted && (
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5" style={{ fontSize: "calc(1em * var(--mandoub-font-scale, 1))" }}>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     <span className="text-[10px] font-black bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-800 dark:text-emerald-300">
                       عندي كاش: {formatDinarAsAlf(cashBalance)}
                     </span>
@@ -575,7 +575,7 @@ export function MandoubWalletClient({
                   <input type="hidden" name="c" value={auth.c} /><input type="hidden" name="exp" value={auth.exp} /><input type="hidden" name="s" value={auth.s} />
                   <input type="hidden" name={line.source === "order" ? "eventId" : "miscEntryId"} value={line.id} />
                   <input type="hidden" name="next" value={walletPathWithQuery} />
-                  <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white dark:bg-slate-800 border-2 border-rose-500 text-sm shadow-md hover:scale-105 transition-transform" title="حذف" style={{ transform: "scale(var(--mandoub-ui-scale, 1))", transformOrigin: "center" }}>
+                  <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl bg-white dark:bg-slate-800 border-2 border-rose-500 text-sm shadow-md hover:scale-105 transition-transform" title="حذف">
                     <DynamicIcon icon={icons?.ui_delete} fallback="🗑️" width={18} height={18} />
                   </button>
                 </form>
