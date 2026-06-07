@@ -613,19 +613,19 @@ export function OrderEditForm({
         />
       </label>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>سعر الطلب (بدون التوصيل)</span>
+      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-slate-50/50 p-3 w-fit">
+        <label className="flex flex-col gap-1 text-sm w-28 sm:w-32">
+          <span className="text-xs font-bold text-slate-700">سعر الطلب</span>
           <input
             name="orderSubtotal"
             value={orderSubtotal}
             onChange={(e) => onOrderSubtotalChange(e.target.value)}
-            className={`${ad.input} font-mono tabular-nums`}
+            className={`${ad.input} font-mono tabular-nums text-center`}
           />
         </label>
         <div className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>التوصيل</span>
-          <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-700 text-center">التوصيل</span>
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={() => {
@@ -633,7 +633,7 @@ export function OrderEditForm({
                 const next = Math.max(0, current - 1);
                 onDeliveryChange(dinarDecimalToAlfInputString(next));
               }}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-xl font-black text-rose-700 transition shadow-sm hover:bg-rose-100 active:scale-95"
+              className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-rose-300 bg-rose-50 text-2xl font-black text-rose-700 transition shadow-sm hover:bg-rose-100 active:scale-90"
             >
               -
             </button>
@@ -641,7 +641,7 @@ export function OrderEditForm({
               name="deliveryPrice"
               value={deliveryPrice}
               onChange={(e) => onDeliveryChange(e.target.value)}
-              className={`${ad.input} flex-1 text-center font-mono font-bold tabular-nums`}
+              className={`${ad.input} w-16 sm:w-20 text-center font-mono font-bold tabular-nums`}
             />
             <button
               type="button"
@@ -650,19 +650,19 @@ export function OrderEditForm({
                 const next = current + 1;
                 onDeliveryChange(dinarDecimalToAlfInputString(next));
               }}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-xl font-black text-emerald-700 transition shadow-sm hover:bg-emerald-100 active:scale-95"
+              className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-emerald-300 bg-emerald-50 text-2xl font-black text-emerald-700 transition shadow-sm hover:bg-emerald-100 active:scale-90"
             >
               +
             </button>
           </div>
         </div>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className={ad.label}>المجموع</span>
+        <label className="flex flex-col gap-1 text-sm w-28 sm:w-32">
+          <span className="text-xs font-bold text-slate-700">المجموع</span>
           <input
             name="totalAmount"
             value={totalAmount}
             readOnly
-            className={`${ad.input} bg-slate-100 font-mono font-black tabular-nums text-sky-900`}
+            className={`${ad.input} bg-slate-100 font-mono font-black tabular-nums text-center text-sky-900`}
           />
         </label>
       </div>
