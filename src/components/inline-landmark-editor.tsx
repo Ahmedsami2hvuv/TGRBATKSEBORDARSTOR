@@ -33,7 +33,6 @@ export function InlineLandmarkEditor({
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
-      inputRef.current.select();
     }
   }, [isEditing]);
 
@@ -70,23 +69,13 @@ export function InlineLandmarkEditor({
 
   if (isEditing) {
     return (
-      <div className="flex flex-col gap-1 w-full" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-1.5 w-full bg-white dark:bg-slate-900 border border-rose-300 dark:border-rose-800 rounded-lg p-1">
-          <input
-            ref={inputRef}
-            type="text"
-            className="flex-1 bg-transparent outline-none border-none px-2 text-slate-800 dark:text-slate-200 font-bold"
-            style={{ fontSize: valueFontSize }}
-            value={landmark}
-            onChange={(e) => setLandmark(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={loading}
-            placeholder="اكتب النقطة الدالة هنا..."
-          />
+      <div className="flex flex-col gap-1.5 w-full bg-white dark:bg-slate-900 border border-rose-300 dark:border-rose-800 rounded-xl p-2 shadow-sm" onClick={(e) => e.stopPropagation()}>
+        {/* Buttons on top */}
+        <div className="flex items-center justify-start gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-1.5 mb-0.5">
           <button
             onClick={handleSave}
             disabled={loading}
-            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-black transition-colors"
+            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black transition-colors cursor-pointer"
           >
             {loading ? "..." : "حفظ"}
           </button>
@@ -97,11 +86,24 @@ export function InlineLandmarkEditor({
               setError(null);
             }}
             disabled={loading}
-            className="px-2.5 py-1 bg-slate-200 hover:bg-slate-350 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded text-xs font-black transition-colors"
+            className="px-3 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-black transition-colors cursor-pointer"
           >
             إلغاء
           </button>
         </div>
+
+        {/* Input field below */}
+        <input
+          ref={inputRef}
+          type="text"
+          className="w-full bg-transparent outline-none border-none px-1 py-1 text-slate-850 dark:text-slate-100 font-bold"
+          style={{ fontSize: valueFontSize }}
+          value={landmark}
+          onChange={(e) => setLandmark(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={loading}
+          placeholder="اكتب النقطة الدالة هنا..."
+        />
         {error && <span className="text-[10px] text-red-600 font-black pr-1">{error}</span>}
       </div>
     );
