@@ -2095,4 +2095,28 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
   }
 }
 
+// أكشن التحقق من صحة الرمز السري للمجهز قبل فتح صفحة الراتب
+export async function verifyPreparerSalaryPinCode(_prev: any, formData: FormData): Promise<{ ok?: boolean; error?: string }> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "الرابط غير صالح." };
+
+    const pinCode = String(formData.get("pinCode") ?? "").trim();
+    if (!pinCode) return { error: "الرمز السري مطلوب." };
+
+    const preparer = await prisma.companyPreparer.findUnique({
+      where: { id: v.preparerId }
+    });
+
+    if (!preparer) return { error: "المجهز غير موجود." };
+    if (!preparer.salaryPinCode) return { error: "لا يوجد رمز سري معين حالياً." };
+    if (preparer.salaryPinCode !== pinCode) return { error: "الرمز السري غير صحيح." };
+
+    return { ok: true };
+  } catch (e) {
+    console.error("verifyPreparerSalaryPinCode error:", e);
+    return { error: "خطأ في التحقق من الرمز." };
+  }
+}
+
 

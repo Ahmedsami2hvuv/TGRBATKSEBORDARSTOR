@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getPreparerSalaryStats, setPreparerSalaryPinCode, withdrawPreparerSalary } from "../actions";
+import { getPreparerSalaryStats, setPreparerSalaryPinCode, withdrawPreparerSalary, verifyPreparerSalaryPinCode } from "../actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -25,11 +25,14 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
     pinDisabled: boolean;
   } | null>(null);
 
+  // حالة إلغاء قفل الصفحة
+  const [isUnlocked, setIsUnlocked] = useState(false);
+
   // لتعيين الرمز السري لأول مرة
   const [newPin, setNewPin] = useState("");
   const [confirmNewPin, setConfirmNewPin] = useState("");
 
-  // لإدخال الرمز السري عند السحب
+  // لإدخال الرمز السري عند الدخول والسحب
   const [pin, setPin] = useState("");
 
   const baseQuery = new URLSearchParams();
@@ -48,15 +51,23 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
         if (res.error) {
           toast.error(res.error);
         } else {
+          const hasPin = !!res.hasPinCode;
+          const pinDis = !!res.pinDisabled;
+          
           setStats({
             dailySalary: res.dailySalary || 0,
             todaySalary: res.todaySalary || 0,
             accumulatedSalary: res.accumulatedSalary || 0,
             withdrawableSalary: res.withdrawableSalary || 0,
             isBeforeEightPM: !!res.isBeforeEightPM,
-            hasPinCode: !!res.hasPinCode,
-            pinDisabled: !!res.pinDisabled
+            hasPinCode: hasPin,
+            pinDisabled: pinDis
           });
+
+          // إذا لم يكن هناك رمز سري أصلاً، أو إذا كان الرمز موقفاً، نفتح الصفحة مباشرة
+          if (!hasPin || pinDis) {
+            setIsUnlocked(true);
+          }
         }
         setLoading(false);
       })
@@ -69,6 +80,32 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
   useEffect(() => {
     loadStats();
   }, [auth]);
+
+  // التحقق من الرمز لفتح قفل الصفحة
+  const handleVerifyUnlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pin.trim()) {
+      toast.error("يرجى إدخال الرمز السري.");
+      return;
+    }
+
+    setSubmitting(true);
+    const fd = new FormData();
+    fd.set("p", auth.p);
+    fd.set("exp", auth.exp);
+    fd.set("s", auth.s);
+    fd.set("pinCode", pin);
+
+    const res = await verifyPreparerSalaryPinCode(null, fd);
+    setSubmitting(false);
+
+    if (res.error) {
+      toast.error(res.error);
+    } else {
+      setIsUnlocked(true);
+      toast.success("تم فتح صفحة الراتب بنجاح!");
+    }
+  };
 
   // إعداد الرمز السري لأول مرة
   const handleSetupPin = async (e: React.FormEvent) => {
@@ -100,21 +137,20 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
     }
   };
 
-  // معالجة طلب سحب الراتب
-  const handleWithdraw = async (codeToSubmit: string) => {
+  // معالجة طلب سحب الراتب الفعلي
+  const handleWithdraw = async () => {
     setSubmitting(true);
     const fd = new FormData();
     fd.set("p", auth.p);
     fd.set("exp", auth.exp);
     fd.set("s", auth.s);
-    fd.set("pinCode", codeToSubmit);
+    fd.set("pinCode", pin); // نمرر الرمز الذي تم استخدامه لفتح القفل (أو فارغ إذا كان معطلاً)
 
     const res = await withdrawPreparerSalary(null, fd);
     setSubmitting(false);
 
     if (res.error) {
       toast.error(res.error);
-      setPin(""); // مسح الرمز الخاطئ للمحاولة مجدداً
     } else {
       toast.success("تم استلام الراتب وإضافته للمحفظة بنجاح!");
       router.push(`/preparer?${baseQuery.toString()}`);
@@ -129,14 +165,65 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
             <div className="absolute inset-0 rounded-full border-4 border-sky-500/30"></div>
             <div className="absolute inset-0 rounded-full border-4 border-sky-500 border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-sm font-black text-slate-650 dark:text-slate-300">جارٍ جلب تفاصيل الراتب والشفتات الفخمة…</p>
+          <p className="text-sm font-black text-slate-650 dark:text-slate-300">جارٍ جلب تفاصيل الراتب الفخمة…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // إذا كانت الصفحة مقفلة ويوجد رمز سري مفعل، نعرض شاشة التحقق الفخمة أولاً
+  if (!isUnlocked && stats?.hasPinCode && !stats?.pinDisabled) {
+    return (
+      <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-slate-850 dark:text-slate-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-[2.5rem] bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 p-6 sm:p-8 text-center shadow-2xl relative overflow-hidden">
+          <div className="absolute -top-24 -left-24 size-48 rounded-full bg-indigo-500/10 blur-3xl"></div>
+          <div className="absolute -bottom-24 -right-24 size-48 rounded-full bg-purple-500/10 blur-3xl"></div>
+
+          <div className="relative z-10 space-y-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-550/10 text-3xl mx-auto">
+              🔒
+            </div>
+            
+            <div>
+              <h2 className="text-xl font-black bg-gradient-to-l from-indigo-600 to-sky-550 dark:from-[#00f3ff] dark:to-cyan-400 bg-clip-text text-transparent">صفحة الراتب محمية</h2>
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">الرجاء كتابة رمز الأمان السري الخاص بك للمتابعة</p>
+            </div>
+
+            <form onSubmit={handleVerifyUnlock} className="space-y-4">
+              <input
+                type="password"
+                required
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                className="h-14 w-full rounded-2xl border-2 border-sky-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 text-center font-black text-xl tracking-[0.25em] outline-none focus:border-indigo-500 dark:focus:border-[#00f3ff] transition-all text-slate-850 dark:text-white"
+                placeholder="أدخل الرمز السري"
+                autoFocus
+              />
+
+              <div className="flex gap-3 pt-2">
+                <Link
+                  href={`/preparer?${baseQuery.toString()}`}
+                  className="flex-1 h-12 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 font-bold rounded-xl flex items-center justify-center transition"
+                >
+                  إلغاء
+                </Link>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-[2] h-12 bg-gradient-to-l from-indigo-550 to-sky-550 hover:from-indigo-650 hover:to-sky-650 text-white font-black rounded-xl shadow-lg transition active:scale-95 disabled:opacity-50"
+                >
+                  {submitting ? "جاري التحقق..." : "فتح الصفحة"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-slate-850 dark:text-slate-100">
+    <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-slate-855 dark:text-slate-100">
       <div className="kse-app-inner mx-auto max-w-2xl px-4 py-6 pb-24">
         
         {/* Header */}
@@ -255,51 +342,23 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
                     {submitting ? "جاري الحفظ..." : "حفظ وتثبيت الرمز السري"}
                   </button>
                 </form>
-              ) : stats?.pinDisabled ? (
-                
-                /* الاستلام المباشر بدون رمز سري */
+              ) : (
+                /* الاستلام المباشر حيث تم التحقق من الرمز بالفعل في Lock Screen */
                 <div className="text-center py-4 space-y-6">
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-black p-4 rounded-2xl text-right leading-relaxed">
-                    🔓 ميزة الرمز السري معطلة حالياً بناءً على إعداداتك. سيتم السحب فوراً ومباشرة دون طلب الرمز.
-                  </div>
+                  {stats?.pinDisabled && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-black p-4 rounded-2xl text-right leading-relaxed">
+                      🔓 ميزة الرمز السري معطلة حالياً بناءً على إعداداتك. سيتم السحب مباشرة دون طلب الرمز.
+                    </div>
+                  )}
 
                   <button
-                    onClick={() => handleWithdraw("")}
+                    onClick={handleWithdraw}
                     disabled={submitting}
-                    className="w-full h-16 bg-gradient-to-l from-emerald-500 to-teal-650 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-base rounded-3xl shadow-xl transition transform active:scale-95 disabled:opacity-50"
+                    className="w-full h-16 bg-gradient-to-l from-emerald-500 to-teal-650 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-base rounded-3xl shadow-xl transition transform active:scale-95 disabled:opacity-50 animate-pulse-slow"
                   >
                     {submitting ? "جاري تحويل الراتب للمحفظة..." : "تأكيد استلام الراتب فوراً"}
                   </button>
                 </div>
-              ) : (
-                
-                /* الاستلام عبر إدخال الرمز السري */
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  handleWithdraw(pin);
-                }} className="space-y-4">
-                  <p className="text-sm font-black text-slate-650 dark:text-slate-300 text-center mb-2">
-                    أدخل رمز الأمان السري الخاص بك لتأكيد عملية استلام الراتب
-                  </p>
-
-                  <input
-                    type="password"
-                    required
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value)}
-                    className="h-14 w-full rounded-2xl border-2 border-sky-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-6 text-center font-black text-2xl tracking-[0.25em] outline-none focus:border-sky-500 dark:focus:border-[#00f3ff] transition-all text-slate-850 dark:text-white"
-                    placeholder="••••"
-                    autoFocus
-                  />
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full h-14 bg-gradient-to-l from-sky-500 to-indigo-650 hover:from-sky-600 hover:to-indigo-700 text-white font-black rounded-2xl shadow-lg transition transform active:scale-98 disabled:opacity-50 mt-2"
-                  >
-                    {submitting ? "جاري تأكيد السحب..." : "تأكيد واستلام الراتب"}
-                  </button>
-                </form>
               )}
 
             </div>
