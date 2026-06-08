@@ -50,6 +50,7 @@ export function SettingsBlocks({
   employeeShareTemplate,
   customerOrderTemplate,
   telegramNewOrderTemplate,
+  newOrderAlertTemplate,
   chatEnabledInitial,
   trackingEnabledInitial,
   mandoubFeaturesInitial,
@@ -67,6 +68,7 @@ export function SettingsBlocks({
   employeeShareTemplate: string;
   customerOrderTemplate: string;
   telegramNewOrderTemplate: string;
+  newOrderAlertTemplate: string;
   chatEnabledInitial: boolean;
   trackingEnabledInitial: boolean;
   mandoubFeaturesInitial: RoleFeaturesConfig;
@@ -552,7 +554,7 @@ export function SettingsBlocks({
       title: "إعدادات واتساب 📱",
       subtitle: "النماذج والأزرار.",
       tone: "emerald",
-      content: <WhatsappTemplateSettingsForm initialEmployeeTemplate={employeeShareTemplate} initialCustomerTemplate={customerOrderTemplate} initialTelegramTemplate={telegramNewOrderTemplate} />
+      content: <WhatsappTemplateSettingsForm initialEmployeeTemplate={employeeShareTemplate} initialCustomerTemplate={customerOrderTemplate} initialTelegramTemplate={telegramNewOrderTemplate} initialNewOrderAlertTemplate={newOrderAlertTemplate} />
     },
     {
       id: "notifications",
@@ -573,7 +575,7 @@ export function SettingsBlocks({
     telegramBots, telegramSaving, availableFonts, currentFont, newAdminId,
     newAdminName, telegramAdminsInitial, telegramAdminIds, mandoubFeatures,
     roleFeaturesSaving, preparerFeatures, globalProfitMargin, howToShopUrl,
-    employeeShareTemplate, customerOrderTemplate, telegramNewOrderTemplate,
+    employeeShareTemplate, customerOrderTemplate, telegramNewOrderTemplate, newOrderAlertTemplate,
     notificationInitial, loading
   ]);
 

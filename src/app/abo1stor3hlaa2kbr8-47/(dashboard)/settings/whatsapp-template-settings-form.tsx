@@ -5,6 +5,7 @@ import {
   WHATSAPP_TEMPLATE_VARIABLES,
   getDefaultEmployeeWhatsappShareTemplate,
   getDefaultCustomerOrderTemplate,
+  getDefaultNewOrderAlertTemplate,
 } from "@/lib/whatsapp-template-settings";
 import { getDefaultTelegramNewOrderTemplate } from "@/lib/telegram-templates";
 import {
@@ -16,10 +17,12 @@ export function WhatsappTemplateSettingsForm({
   initialEmployeeTemplate,
   initialCustomerTemplate,
   initialTelegramTemplate,
+  initialNewOrderAlertTemplate,
 }: {
   initialEmployeeTemplate: string;
   initialCustomerTemplate: string;
   initialTelegramTemplate: string;
+  initialNewOrderAlertTemplate: string;
 }) {
   const [state, action, pending] = useActionState(
     saveWhatsappTemplateSettings,
@@ -28,12 +31,14 @@ export function WhatsappTemplateSettingsForm({
   const [employeeTemplate, setEmployeeTemplate] = useState(initialEmployeeTemplate);
   const [customerTemplate, setCustomerTemplate] = useState(initialCustomerTemplate);
   const [telegramTemplate, setTelegramTemplate] = useState(initialTelegramTemplate);
+  const [newOrderAlertTemplate, setNewOrderAlertTemplate] = useState(initialNewOrderAlertTemplate);
 
-  const [activeTextarea, setActiveTextarea] = useState<"employee" | "customer" | "telegram">("employee");
+  const [activeTextarea, setActiveTextarea] = useState<"employee" | "customer" | "telegram" | "newOrderAlert">("employee");
 
   const employeeRef = useRef<HTMLTextAreaElement | null>(null);
   const customerRef = useRef<HTMLTextAreaElement | null>(null);
   const telegramRef = useRef<HTMLTextAreaElement | null>(null);
+  const newOrderAlertRef = useRef<HTMLTextAreaElement | null>(null);
 
   const insertVariable = (variableName: string) => {
     let textarea;
@@ -48,10 +53,14 @@ export function WhatsappTemplateSettingsForm({
       textarea = customerRef.current;
       template = customerTemplate;
       setTemplate = setCustomerTemplate;
-    } else {
+    } else if (activeTextarea === "telegram") {
       textarea = telegramRef.current;
       template = telegramTemplate;
       setTemplate = setTelegramTemplate;
+    } else {
+      textarea = newOrderAlertRef.current;
+      template = newOrderAlertTemplate;
+      setTemplate = setNewOrderAlertTemplate;
     }
 
     if (!textarea) return;
@@ -82,8 +91,14 @@ export function WhatsappTemplateSettingsForm({
     telegramRef.current?.focus();
   };
 
+  const resetNewOrderAlert = () => {
+    setNewOrderAlertTemplate(getDefaultNewOrderAlertTemplate());
+    newOrderAlertRef.current?.focus();
+  };
+
   return (
     <form action={action} className="space-y-6">
+      {/* 1. Employee share template */}
       <div className="space-y-4">
         <div className="space-y-2">
           <p className="text-sm font-bold text-slate-800">نص رسالة زر إرسال الرابط للواتساب (للموظف)</p>
@@ -131,6 +146,7 @@ export function WhatsappTemplateSettingsForm({
 
       <hr className="border-emerald-100" />
 
+      {/* 2. Customer summary template */}
       <div className="space-y-4">
         <div className="space-y-2">
           <p className="text-sm font-bold text-slate-800">نص رسالة ملخص الطلب (للزبون)</p>
@@ -178,6 +194,55 @@ export function WhatsappTemplateSettingsForm({
 
       <hr className="border-blue-100" />
 
+      {/* 3. New order alert template */}
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <p className="text-sm font-bold text-slate-800">نص رسالة إشعارات واتساب عند رفع طلب جديد (للإدارة)</p>
+          <p className="text-xs text-slate-500">
+            تحكم في شكل الرسالة التي تفتح على الواتساب عند رفع العميل طلباً جديداً أو تعديله.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {["{statusLabel}", "{shopName}", "{clientArea}", "{customerArea}", "{customerPhone}", "{subtotal}", "{delivery}", "{notes}", "{orderNumber}", "{orderTime}"].map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => {
+                setActiveTextarea("newOrderAlert");
+                insertVariable(v);
+              }}
+              className="rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-[10px] font-bold text-teal-700 hover:bg-teal-100"
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          ref={newOrderAlertRef}
+          name="newOrderAlertTemplate"
+          value={newOrderAlertTemplate}
+          onFocus={() => setActiveTextarea("newOrderAlert")}
+          onChange={(e) => setNewOrderAlertTemplate(e.target.value)}
+          rows={7}
+          className="w-full rounded-xl border border-teal-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+        />
+
+        <div className="flex justify-end">
+           <button
+            type="button"
+            onClick={resetNewOrderAlert}
+            className="text-xs font-bold text-slate-500 hover:text-teal-600 underline"
+          >
+            استرجاع الرسالة الافتراضية للإشعار
+          </button>
+        </div>
+      </div>
+
+      <hr className="border-teal-100" />
+
+      {/* 4. Telegram template */}
       <div className="space-y-4">
         <div className="space-y-2">
           <p className="text-sm font-bold text-slate-800">نص رسالة إشعارات تليجرام (للإدارة والمجهز)</p>
@@ -227,6 +292,7 @@ export function WhatsappTemplateSettingsForm({
         <p><strong>شرح المتغيرات:</strong></p>
         <p>{`{customerName}`} اسم العميل، {`{shopName}`} اسم المحل، {`{customerLink}`} رابط العميل، {`{shopLocation}`} موقع المحل.</p>
         <p>{`{orderItems}`} قائمة الأصناف، {`{regionName}`} اسم المنطقة، {`{orderNumber}`} رقم الطلب.</p>
+        <p>{`{statusLabel}`} نوع الحركة (رفع طلب جديد أو تعديله)، {`{clientArea}`} منطقة العميل، {`{customerArea}`} منطقة المستلم، {`{customerPhone}`} هاتف المستلم، {`{subtotal}`} السعر، {`{delivery}`} التوصيل، {`{notes}`} الملاحظات، {`{orderTime}`} وقت الطلب.</p>
       </div>
 
       {state.error ? (

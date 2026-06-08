@@ -5,7 +5,7 @@ import { isAdminSession } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_NOTIFICATION_SETTINGS } from "@/lib/notification-settings";
 import { normalizeNotificationSoundPreset } from "@/lib/notification-sound-presets";
-import { saveEmployeeWhatsappShareTemplate, saveCustomerOrderWhatsappTemplate } from "@/lib/whatsapp-template-settings";
+import { saveEmployeeWhatsappShareTemplate, saveCustomerOrderWhatsappTemplate, saveNewOrderAlertWhatsappTemplate } from "@/lib/whatsapp-template-settings";
 import { saveTelegramNewOrderTemplate } from "@/lib/telegram-notify";
 
 import { GlobalIconsConfig, saveGlobalIcons } from "@/lib/icon-settings";
@@ -221,8 +221,9 @@ export async function saveWhatsappTemplateSettings(
     const employeeShareTemplate = formString(formData, "employeeShareTemplate");
     const customerOrderTemplate = formString(formData, "customerOrderTemplate");
     const telegramNewOrderTemplate = formString(formData, "telegramNewOrderTemplate");
+    const newOrderAlertTemplate = formString(formData, "newOrderAlertTemplate");
 
-    if (!employeeShareTemplate && !customerOrderTemplate && !telegramNewOrderTemplate) {
+    if (!employeeShareTemplate && !customerOrderTemplate && !telegramNewOrderTemplate && !newOrderAlertTemplate) {
       return { error: "يرجى كتابة نص الرسالة." };
     }
 
@@ -234,6 +235,9 @@ export async function saveWhatsappTemplateSettings(
     }
     if (telegramNewOrderTemplate) {
       await saveTelegramNewOrderTemplate(telegramNewOrderTemplate);
+    }
+    if (newOrderAlertTemplate) {
+      await saveNewOrderAlertWhatsappTemplate(newOrderAlertTemplate);
     }
     revalidatePath(`${SECRET_ADMIN_PATH}/settings`);
     revalidatePath(`${SECRET_ADMIN_PATH}/shops`);

@@ -18,7 +18,7 @@ import { withReversePickupPrefix } from "@/lib/order-type-flags";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
-import { getCustomerOrderWhatsappTemplate, renderWhatsappTemplate } from "@/lib/whatsapp-template-settings";
+import { getCustomerOrderWhatsappTemplate, renderWhatsappTemplate, getNewOrderAlertWhatsappTemplate, renderNewOrderAlertTemplate } from "@/lib/whatsapp-template-settings";
 import { whatsappMeUrl, normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
 const OWNER_WHATSAPP_PHONE = "+9647733921468";
@@ -411,27 +411,20 @@ export async function submitOrder(
     const clientArea = fullShop?.region?.name || "منطقتكم";
     const customerArea = fullRegion?.name || "منطقة الزبون";
 
-    const finalWaMessage = existingOrder ? [
-      "مرحباً، تم تعديل تفاصيل الطلب عبر النظام:",
-      `🏢 من محل: ${fullShop?.name || submitter.shopId}`,
-      `📍 من منطقة (العميل): ${clientArea}`,
-      `🎯 إلى منطقة (الزبون): ${customerArea}`,
-      `📞 رقم الزبون (المستلم): ${phoneLocal}`,
-      `💰 سعر الطلب (بدون توصيل): ${subtotalNum.toLocaleString()}`,
-      `🚚 أجرة التوصيل: ${delivery.toNumber().toLocaleString()}`,
-      `📝 ملاحظات: ${notes || "لا يوجد"}`,
-      `🔢 رقم الطلب: ${order.orderNumber}`,
-    ].join("\n") : [
-      "مرحباً، لقد قام العميل برفع طلب جديد عبر النظام:",
-      `🏢 من محل: ${fullShop?.name || submitter.shopId}`,
-      `📍 من منطقة (العميل): ${clientArea}`,
-      `🎯 إلى منطقة (الزبون): ${customerArea}`,
-      `📞 رقم الزبون (المستلم): ${phoneLocal}`,
-      `💰 سعر الطلب (بدون توصيل): ${subtotalNum.toLocaleString()}`,
-      `🚚 أجرة التوصيل: ${delivery.toNumber().toLocaleString()}`,
-      `📝 ملاحظات: ${notes || "لا يوجد"}`,
-      `🔢 رقم الطلب: ${order.orderNumber}`,
-    ].join("\n");
+    const alertTemplate = await getNewOrderAlertWhatsappTemplate();
+    const finalWaMessage = renderNewOrderAlertTemplate({
+      template: alertTemplate,
+      statusLabel: existingOrder ? "تم تعديل تفاصيل الطلب عبر النظام" : "لقد قام العميل برفع طلب جديد عبر النظام",
+      shopName: fullShop?.name || submitter.shopId,
+      clientArea,
+      customerArea,
+      customerPhone: phoneLocal,
+      subtotal: subtotalNum.toLocaleString(),
+      delivery: delivery.toNumber().toLocaleString(),
+      notes: notes || "لا يوجد",
+      orderNumber: order.orderNumber,
+      orderTime: orderTime || "غير محدد",
+    });
 
     const waUrl = whatsappMeUrl(OWNER_WHATSAPP_PHONE, finalWaMessage);
 

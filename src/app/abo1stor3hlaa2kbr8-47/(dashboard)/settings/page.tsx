@@ -6,7 +6,7 @@ import { normalizeNotificationSoundPreset } from "@/lib/notification-sound-prese
 import { SettingsBlocks } from "./settings-blocks";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { getEmployeeWhatsappShareTemplate, getCustomerOrderWhatsappTemplate } from "@/lib/whatsapp-template-settings";
+import { getEmployeeWhatsappShareTemplate, getCustomerOrderWhatsappTemplate, getNewOrderAlertWhatsappTemplate } from "@/lib/whatsapp-template-settings";
 import { getTelegramNewOrderTemplate } from "@/lib/telegram-notify";
 import { isChatEnabledGlobally, isTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 import { getRoleFeatures } from "@/lib/role-features-settings";
@@ -27,6 +27,7 @@ export default async function SettingsPage() {
       getEmployeeWhatsappShareTemplate().catch(() => ""),
       getCustomerOrderWhatsappTemplate().catch(() => ""),
       getTelegramNewOrderTemplate().catch(() => ""),
+      getNewOrderAlertWhatsappTemplate().catch(() => ""),
       isChatEnabledGlobally().catch(() => true),
       isTrackingEnabledGlobally().catch(() => true),
       getRoleFeatures("mandoub").catch(() => ({ chatEnabled: true, aiEnabled: false })),
@@ -49,6 +50,7 @@ export default async function SettingsPage() {
     employeeShareTemplate,
     customerOrderTemplate,
     telegramNewOrderTemplate,
+    newOrderAlertTemplate,
     chatEnabled,
     trackingEnabled,
     mandoubFeatures,
@@ -81,6 +83,7 @@ export default async function SettingsPage() {
           employeeShareTemplate={employeeShareTemplate as string}
           customerOrderTemplate={customerOrderTemplate as string}
           telegramNewOrderTemplate={telegramNewOrderTemplate as string}
+          newOrderAlertTemplate={newOrderAlertTemplate as string}
           chatEnabledInitial={!!chatEnabled}
           trackingEnabledInitial={!!trackingEnabled}
           mandoubFeaturesInitial={mandoubFeatures as any}

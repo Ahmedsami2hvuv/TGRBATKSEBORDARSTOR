@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 const TARGET = "admin";
 const SECTION_EMPLOYEE_SHARE = "whatsapp_employee_share_template";
 const SECTION_CUSTOMER_ORDER = "whatsapp_customer_order_template";
+const SECTION_NEW_ORDER_ALERT = "whatsapp_new_order_alert_template";
 
 export const WHATSAPP_TEMPLATE_VARIABLES = [
   "{customerName}",
@@ -17,6 +18,7 @@ export const WHATSAPP_TEMPLATE_VARIABLES = [
 type WhatsappTemplateConfig = {
   employeeShareTemplate?: string;
   customerOrderTemplate?: string;
+  newOrderAlertTemplate?: string;
 };
 
 export function getDefaultEmployeeWhatsappShareTemplate(): string {
@@ -40,6 +42,20 @@ export function getDefaultCustomerOrderTemplate(): string {
     "",
     "ارجو تجهيز الطلب",
     "شكرا لكم",
+  ].join("\n");
+}
+
+export function getDefaultNewOrderAlertTemplate(): string {
+  return [
+    "مرحباً، {statusLabel}:",
+    "🏢 من محل: {shopName}",
+    "📍 من منطقة (العميل): {clientArea}",
+    "🎯 إلى منطقة (الزبون): {customerArea}",
+    "📞 رقم الزبون (المستلم): {customerPhone}",
+    "💰 سعر الطلب (بدون توصيل): {subtotal}",
+    "🚚 أجرة التوصيل: {delivery}",
+    "📝 ملاحظات: {notes}",
+    "🔢 رقم الطلب: {orderNumber}",
   ].join("\n");
 }
 
@@ -69,6 +85,19 @@ export async function getCustomerOrderWhatsappTemplate(): Promise<string> {
   }
 }
 
+export async function getNewOrderAlertWhatsappTemplate(): Promise<string> {
+  try {
+    const row = await prisma.uISystemSetting.findUnique({
+      where: { target_section: { target: TARGET, section: SECTION_NEW_ORDER_ALERT } },
+      select: { config: true },
+    });
+    const config = (row?.config ?? null) as WhatsappTemplateConfig | null;
+    return config?.newOrderAlertTemplate?.trim() || getDefaultNewOrderAlertTemplate();
+  } catch {
+    return getDefaultNewOrderAlertTemplate();
+  }
+}
+
 export async function saveEmployeeWhatsappShareTemplate(template: string): Promise<void> {
   const normalized = template.trim() || getDefaultEmployeeWhatsappShareTemplate();
   await prisma.uISystemSetting.upsert({
@@ -84,6 +113,15 @@ export async function saveCustomerOrderWhatsappTemplate(template: string): Promi
     where: { target_section: { target: TARGET, section: SECTION_CUSTOMER_ORDER } },
     create: { target: TARGET, section: SECTION_CUSTOMER_ORDER, config: { customerOrderTemplate: normalized } },
     update: { config: { customerOrderTemplate: normalized } },
+  });
+}
+
+export async function saveNewOrderAlertWhatsappTemplate(template: string): Promise<void> {
+  const normalized = template.trim() || getDefaultNewOrderAlertTemplate();
+  await prisma.uISystemSetting.upsert({
+    where: { target_section: { target: TARGET, section: SECTION_NEW_ORDER_ALERT } },
+    create: { target: TARGET, section: SECTION_NEW_ORDER_ALERT, config: { newOrderAlertTemplate: normalized } },
+    update: { config: { newOrderAlertTemplate: normalized } },
   });
 }
 
@@ -113,6 +151,40 @@ export function renderWhatsappTemplate(input: {
     "{regionName}": input.regionName || "",
     "{orderNumber}": String(input.orderNumber || ""),
     "\\n": "\n",
+  };
+
+  Object.entries(replacements).forEach(([key, val]) => {
+    text = text.replaceAll(key, val);
+  });
+
+  return text;
+}
+
+export function renderNewOrderAlertTemplate(input: {
+  template: string;
+  statusLabel: string;
+  shopName: string;
+  clientArea: string;
+  customerArea: string;
+  customerPhone: string;
+  subtotal: string | number;
+  delivery: string | number;
+  notes: string;
+  orderNumber: string | number;
+  orderTime: string;
+}): string {
+  let text = input.template.trim();
+  const replacements: Record<string, string> = {
+    "{statusLabel}": input.statusLabel,
+    "{shopName}": input.shopName,
+    "{clientArea}": input.clientArea,
+    "{customerArea}": input.customerArea,
+    "{customerPhone}": input.customerPhone,
+    "{subtotal}": String(input.subtotal),
+    "{delivery}": String(input.delivery),
+    "{notes}": input.notes || "لا يوجد",
+    "{orderNumber}": String(input.orderNumber),
+    "{orderTime}": input.orderTime || "غير محدد",
   };
 
   Object.entries(replacements).forEach(([key, val]) => {
