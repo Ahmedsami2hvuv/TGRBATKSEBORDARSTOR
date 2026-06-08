@@ -312,6 +312,17 @@ export function OrderPricingPanel({
     setProducts(next);
   };
 
+  const markAllAsAdminFulfilled = () => {
+    const next = products.map(p => ({
+      ...p,
+      isFulfilledByAdmin: true,
+      assignedPreparerId: null,
+      assignedPreparerName: "تجهيز الإدارة 🏛️",
+      pricedBy: "تجهيز الإدارة 🏛️"
+    }));
+    setProducts(next);
+  };
+
   const applyPricingPanel = () => {
     if (editingIndex === null) return;
     const bNum = parseFloat(normalizeNumerals(buyText)) || 0;
@@ -442,6 +453,13 @@ export function OrderPricingPanel({
                 >
                   {noProfit ? "🚫 إيقاف الربح مفعل" : "🚫 إيقاف الربح"}
                 </button>
+                <button
+                  type="button"
+                  onClick={markAllAsAdminFulfilled}
+                  className="h-6 px-2.5 rounded-full text-[9px] font-black shadow-md bg-amber-600 text-white hover:bg-amber-700 transition-all active:scale-95 flex items-center gap-1"
+                >
+                  🏛️ تجهيز الكل من الإدارة
+                </button>
               </div>
 
               <div className="flex items-center gap-1.5">
@@ -462,7 +480,7 @@ export function OrderPricingPanel({
                     <button type="submit" name="submitType" value="admin_approve" disabled={pending} className="h-10 px-4 rounded-xl bg-emerald-600 text-[11px] font-black text-white shadow-lg active:scale-95 transition-all flex items-center gap-2">
                       {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد</>}
                     </button>
-                    <button type="submit" name="submitType" value="final_send" disabled={pending || !canSubmitFinal} className="h-10 px-4 rounded-xl bg-violet-600 text-[11px] font-black text-white shadow-lg active:scale-95 transition-all flex items-center gap-2">
+                    <button type="submit" name="submitType" value="final_send" disabled={pending} className="h-10 px-4 rounded-xl bg-violet-600 text-[11px] font-black text-white shadow-lg active:scale-95 transition-all flex items-center gap-2">
                       {pending ? "..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={14} height={14} /> إرسال</>}
                     </button>
                   </div>

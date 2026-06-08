@@ -170,8 +170,6 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
 
   // --- التحقق من الإرسال النهائي ---
   if (submitType === "final_send") {
-    const allPriced = finalProducts.length > 0 && finalProducts.every(p => p.buyAlf > 0 && p.sellAlf > 0);
-    if (!allPriced) return { error: "يجب إكمال تسعير جميع المنتجات (بسعر أكبر من صفر) قبل الإرسال النهائي." };
     if (placesCount <= 0) return { error: "يجب تحديد عدد المحلات." };
   }
 
@@ -205,8 +203,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
       ? p.assignedPreparerName.trim()
       : null;
     const pricedByName = typeof p.pricedBy === "string" && p.pricedBy.trim() ? p.pricedBy.trim() : null;
-    const preparerName = assignedPreparerName || pricedByName;
-    if (!preparerName) continue;
+    const preparerName = assignedPreparerName || pricedByName || "تجهيز الإدارة 🏛️";
 
     const key = assignedPreparerId ? `id:${assignedPreparerId}` : `name:${preparerName}`;
     if (!preparerMap.has(key)) {
@@ -231,10 +228,6 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
     totalBuyAlf: entry.totalBuyAlf,
     invoiceText: buildPreparerPurchaseSummaryText(entry.products)
   }));
-
-  if (!skipWallet && preparerInvoices.length === 0 && finalProducts.length > 0) {
-    return { error: "لا يمكن تحديد المجهزين لهذه المنتجات. تأكد من أن كل منتج قد تم تسعيره من قبل أحد المجهزين." };
-  }
 
   // --- 6. بناء نص الملاحظات الرئيسي للطلب ---
   const summaryParts = preparerInvoices.map(inv => {
