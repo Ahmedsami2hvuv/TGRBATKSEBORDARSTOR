@@ -1834,6 +1834,33 @@ export async function createPreparerDebtAction(
       }
     });
 
+    // إرسال إشعارات تيليجرام
+    try {
+      const escapedShopName = escapeTelegramHtml(shop.name);
+      const escapedPreparerName = escapeTelegramHtml(preparer.name);
+
+      const msg = [
+        `🚨 <b>تسجيل دين جديد (ذمم مجهز)</b>`,
+        `<b>المحل:</b> ${escapedShopName}`,
+        `<b>المجهز:</b> ${escapedPreparerName}`,
+        `<b>المبلغ:</b> ${formatDinarAsAlfWithUnit(amountDinar)}`,
+        `<b>رقم الطلب:</b> #${order.orderNumber}`,
+        `<b>التاريخ:</b> \u200E${new Date().toLocaleString("ar-IQ")}\u200E`,
+      ].join("\n");
+
+      const notificationBotToken = await getBotTokenByPurpose("notification");
+      const managementBotToken = await getBotTokenByPurpose("management");
+
+      if (notificationBotToken) {
+        await sendTelegramMessage(msg, { botToken: notificationBotToken });
+      }
+      if (managementBotToken && managementBotToken !== notificationBotToken) {
+        await sendTelegramMessage(msg, { botToken: managementBotToken });
+      }
+    } catch (notifError) {
+      console.error("Failed to send telegram notification for new debt:", notifError);
+    }
+
     revalidatePath("/preparer/debts");
     revalidatePath("/preparer/wallet");
     return { ok: true };
