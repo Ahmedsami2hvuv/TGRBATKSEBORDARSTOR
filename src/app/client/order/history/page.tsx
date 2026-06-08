@@ -275,9 +275,9 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                           </span>
                         )}
                         {isDebtOrder && (
-                          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black ${
                             isDebtPaid
-                              ? "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                              ? "bg-yellow-400 text-slate-900 ring-2 ring-yellow-300 shadow-sm"
                               : "bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-200"
                           }`}>
                             {isDebtPaid ? "دين مُسدد بالكامل" : "دين غير مسدد"}
