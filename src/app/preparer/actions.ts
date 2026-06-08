@@ -1908,7 +1908,7 @@ export async function setPreparerSalaryPinCode(_prev: any, formData: FormData): 
     if (!v.ok) return { error: "الرابط غير صالح." };
 
     const pinCode = String(formData.get("pinCode") ?? "").trim();
-    if (!pinCode || pinCode.length < 4) return { error: "الرمز السري يجب أن يتكون من 4 أرقام على الأقل." };
+    if (!pinCode) return { error: "الرمز السري لا يمكن أن يكون فارغاً." };
 
     const preparer = await prisma.companyPreparer.findUnique({
       where: { id: v.preparerId }
@@ -1965,7 +1965,7 @@ export async function enablePreparerSalaryPinCode(_prev: any, formData: FormData
     if (!v.ok) return { error: "الرابط غير صالح." };
 
     const pinCode = String(formData.get("pinCode") ?? "").trim();
-    if (!pinCode || pinCode.length < 4) return { error: "الرمز السري يجب أن يتكون من 4 أرقام على الأقل." };
+    if (!pinCode) return { error: "الرمز السري لا يمكن أن يكون فارغاً." };
 
     const preparer = await prisma.companyPreparer.findUnique({
       where: { id: v.preparerId }
