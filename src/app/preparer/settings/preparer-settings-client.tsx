@@ -116,7 +116,7 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
                   />
                   <button
                     type="submit"
-                    className="px-4 py-2 text-xs font-bold text-white bg-sky-650 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 rounded-xl transition shadow-sm"
+                    className="px-4 py-2 text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 rounded-xl transition shadow-sm"
                   >
                     تثبيت الرمز
                   </button>
@@ -156,7 +156,7 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
                   />
                   <button
                     type="submit"
-                    className="px-4 py-2 text-xs font-bold text-white bg-sky-650 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 rounded-xl transition shadow-sm"
+                    className="px-4 py-2 text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 rounded-xl transition shadow-sm"
                   >
                     تشغيل الرمز
                   </button>

@@ -228,30 +228,56 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-slate-100">{safePreparer.name}</p>
           <PreparerSearchTrigger icons={safeIcons} />
         </div>
-        <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
-          <SalaryWithdrawalButton auth={baseAuth} preparerName={safePreparer.name} />
-          {canSubmitAny && (
-            <>
+        <div className="grid w-full shrink-0 grid-cols-2 gap-2">
+          {/* العمود الأيمن (استلام الراتب + المحفظة والديون) */}
+          <div className="flex flex-col gap-2 w-full">
+            <SalaryWithdrawalButton auth={baseAuth} preparerName={safePreparer.name} />
+            <div className="flex gap-2 w-full">
+              <div className="flex-1 min-w-0">
+                <PreparerWalletLink auth={baseAuth} icons={safeIcons} walletRemainStr={walletRemainStr} />
+              </div>
+              <FullscreenWalletLauncher
+                href={preparerPath("/preparer/debts", baseAuth)}
+                className="w-1/3 shrink-0 inline-flex items-center justify-center rounded-xl border-2 border-rose-500 bg-rose-600 px-2 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-rose-700 transition"
+                title="الديون"
+              >
+                الديون
+              </FullscreenWalletLauncher>
+            </div>
+          </div>
+
+          {/* العمود الأيسر (تجهيز الطلبات + طلب جديد وتسعير المتجر) */}
+          <div className="flex flex-col gap-2 w-full">
+            {canSubmitAny && (
               <FullscreenWalletLauncher
                 href={preparerPath("/preparer/preparation", baseAuth)}
-                className="inline-flex items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base"
+                className="inline-flex items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 w-full"
                 title="تجهيز الطلبات"
               >
                 تجهيز الطلبات
               </FullscreenWalletLauncher>
-              {canPriceStore && (
-                <Link href={preparerPath("/preparer/store-pricing", baseAuth)} className="inline-flex items-center justify-center rounded-xl border-2 border-emerald-500 bg-emerald-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-emerald-700 sm:px-4 sm:text-base">تسعير المتجر</Link>
+            )}
+            
+            <div className="flex flex-col gap-2 w-full">
+              {canSubmitAny && (
+                <FullscreenWalletLauncher
+                  href={preparerPath("/preparer/order/new", baseAuth)}
+                  className="inline-flex items-center justify-center rounded-xl border-2 border-sky-500 bg-sky-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-sky-700 w-full"
+                  title="طلب جديد"
+                >
+                  طلب جديد
+                </FullscreenWalletLauncher>
               )}
-              <FullscreenWalletLauncher
-                href={preparerPath("/preparer/order/new", baseAuth)}
-                className="inline-flex items-center justify-center rounded-xl border-2 border-sky-500 bg-sky-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-sky-700 sm:px-4 sm:text-base"
-                title="طلب جديد"
-              >
-                طلب جديد
-              </FullscreenWalletLauncher>
-            </>
-          )}
-          <PreparerWalletLink auth={baseAuth} icons={safeIcons} walletRemainStr={walletRemainStr} />
+              {canSubmitAny && canPriceStore && (
+                <Link
+                  href={preparerPath("/preparer/store-pricing", baseAuth)}
+                  className="inline-flex items-center justify-center rounded-xl border-2 border-emerald-500 bg-emerald-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-emerald-700 w-full"
+                >
+                  تسعير المتجر
+                </Link>
+              )}
+            </div>
+          </div>
         </div>
       </header>
       <PreparerNotificationPoller auth={baseAuth} openUrl={preparationHref} />

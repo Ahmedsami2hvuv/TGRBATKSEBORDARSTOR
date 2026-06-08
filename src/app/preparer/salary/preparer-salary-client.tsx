@@ -210,7 +210,7 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-[2] h-12 bg-gradient-to-l from-indigo-550 to-sky-550 hover:from-indigo-650 hover:to-sky-650 text-white font-black rounded-xl shadow-lg transition active:scale-95 disabled:opacity-50"
+                  className="flex-[2] h-12 bg-gradient-to-l from-indigo-650/10 to-sky-500 bg-indigo-600 hover:from-indigo-700 hover:to-sky-600 text-white font-black rounded-xl shadow-lg transition active:scale-95 disabled:opacity-50"
                 >
                   {submitting ? "جاري التحقق..." : "فتح الصفحة"}
                 </button>
@@ -337,7 +337,7 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full h-14 bg-gradient-to-l from-sky-500 to-indigo-650 hover:from-sky-600 hover:to-indigo-700 text-white font-black rounded-2xl shadow-lg transition transform active:scale-98 disabled:opacity-50 mt-2"
+                    className="w-full h-14 bg-gradient-to-l from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-black rounded-2xl shadow-lg transition transform active:scale-98 disabled:opacity-50 mt-2"
                   >
                     {submitting ? "جاري الحفظ..." : "حفظ وتثبيت الرمز السري"}
                   </button>
@@ -354,7 +354,7 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
                   <button
                     onClick={handleWithdraw}
                     disabled={submitting}
-                    className="w-full h-16 bg-gradient-to-l from-emerald-500 to-teal-650 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-base rounded-3xl shadow-xl transition transform active:scale-95 disabled:opacity-50 animate-pulse-slow"
+                    className="w-full h-16 bg-gradient-to-l from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-base rounded-3xl shadow-xl transition transform active:scale-95 disabled:opacity-50 animate-pulse-slow"
                   >
                     {submitting ? "جاري تحويل الراتب للمحفظة..." : "تأكيد استلام الراتب فوراً"}
                   </button>
