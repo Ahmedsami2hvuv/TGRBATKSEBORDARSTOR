@@ -70,6 +70,8 @@ export type MandoubRow = {
   totalAmountDinar?: number | null;
   /** مجموع ما تم دفعه للعميل بالدينار */
   pickupSumDinar?: number;
+  /** مجموع ما تم دفعه من قبل المجهز بالدينار */
+  preparerPickupSumDinar?: number | null;
   /** مجموع ما تم استلامه من الزبون بالدينار */
   deliverySumDinar?: number;
   /** تنبيهات مالية */

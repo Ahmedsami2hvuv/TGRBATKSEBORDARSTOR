@@ -734,9 +734,26 @@ export default async function MandoubPage({ searchParams }: Props) {
       hasMoneyDeletedBadge: o.moneyEvents.some((e) => e.deletedAt && isManualDeletionReason(e.deletedReason)),
       wardMismatchType: isWardMismatch(o.status, o.totalAmount, sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)).type,
       saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
-      pickupSumDinar: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) != null
-        ? Number(sumPickupOutFromOrderMoneyEvents(o.moneyEvents))
-        : 0,
+      pickupSumDinar: (() => {
+        const courierPickupEvents = o.moneyEvents.filter(
+          (e) => e.kind === MONEY_KIND_PICKUP && e.deletedAt == null && e.recordedByCompanyPreparerId == null
+        );
+        if (courierPickupEvents.length === 0) return 0;
+        return courierPickupEvents.reduce((sum, e) => {
+          const val = typeof e.amountDinar === 'object' && e.amountDinar !== null && 'toNumber' in e.amountDinar ? e.amountDinar.toNumber() : Number(e.amountDinar);
+          return sum + (Number.isNaN(val) ? 0 : val);
+        }, 0);
+      })(),
+      preparerPickupSumDinar: (() => {
+        const preparerPickupEvents = o.moneyEvents.filter(
+          (e) => e.kind === MONEY_KIND_PICKUP && e.deletedAt == null && e.recordedByCompanyPreparerId != null
+        );
+        if (preparerPickupEvents.length === 0) return 0;
+        return preparerPickupEvents.reduce((sum, e) => {
+          const val = typeof e.amountDinar === 'object' && e.amountDinar !== null && 'toNumber' in e.amountDinar ? e.amountDinar.toNumber() : Number(e.amountDinar);
+          return sum + (Number.isNaN(val) ? 0 : val);
+        }, 0);
+      })(),
       deliverySumDinar: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) != null
         ? Number(sumDeliveryInFromOrderMoneyEvents(o.moneyEvents))
         : 0,
