@@ -23,6 +23,7 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
   const router = useRouter();
   const [availableBgs, setAvailableBgs] = useState<BackgroundItem[]>([]);
   const [currentBgId, setCurrentBgId] = useState<string | null>(null);
+  const [showBgSelector, setShowBgSelector] = useState(false);
   const [showDisableForm, setShowDisableForm] = useState(false);
   const [showChangeForm, setShowChangeForm] = useState(false);
 
