@@ -205,18 +205,6 @@ export default async function PreparerHomePage({ searchParams }: Props) {
             <span className="text-xl">💸</span>
           </Link>
 
-          {/* زر محفظتي */}
-          <FullscreenWalletLauncher
-            href={preparerPath("/preparer/wallet", baseAuth)}
-            className="flex-1 min-w-[4.5rem] h-11 flex items-center justify-center gap-1 rounded-xl border-2 border-violet-400 bg-violet-50 text-violet-955 shadow-sm hover:bg-violet-100 transition hover:scale-105"
-            title="محفظتي"
-          >
-            <span className="text-xl">💰</span>
-            <span className="text-[10px] font-black bg-violet-100 px-1.5 py-0.5 rounded-lg text-violet-900 leading-none">
-              {walletRemainStr}
-            </span>
-          </FullscreenWalletLauncher>
-
           {/* زر الديون */}
           <FullscreenWalletLauncher
             href={preparerPath("/preparer/debts", baseAuth)}
@@ -247,6 +235,18 @@ export default async function PreparerHomePage({ searchParams }: Props) {
               <span className="text-xl">➕</span>
             </FullscreenWalletLauncher>
           )}
+
+          {/* زر محفظتي */}
+          <FullscreenWalletLauncher
+            href={preparerPath("/preparer/wallet", baseAuth)}
+            className="flex-1 min-w-[4.5rem] h-11 flex items-center justify-center gap-1 rounded-xl border-2 border-violet-400 bg-violet-50 text-violet-955 shadow-sm hover:bg-violet-100 transition hover:scale-105"
+            title="محفظتي"
+          >
+            <span className="text-xl">💰</span>
+            <span className="text-[10px] font-black bg-violet-100 px-1.5 py-0.5 rounded-lg text-violet-900 leading-none">
+              {walletRemainStr}
+            </span>
+          </FullscreenWalletLauncher>
         </div>
       </header>
       <PreparerNotificationPoller auth={baseAuth} openUrl={preparationHref} />
