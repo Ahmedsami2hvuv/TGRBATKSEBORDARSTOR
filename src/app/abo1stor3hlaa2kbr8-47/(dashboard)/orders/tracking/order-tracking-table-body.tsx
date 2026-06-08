@@ -56,6 +56,7 @@ export type TrackingTableRow = {
   shopDoorPhotoUrl?: string | null;
   customerDoorPhotoUrl?: string | null;
   secondCustomerDoorPhotoUrl?: string | null;
+  secondCustomerRegionName?: string | null;
 };
 
 function AssignCheckLink({ orderId }: { orderId: string }) {

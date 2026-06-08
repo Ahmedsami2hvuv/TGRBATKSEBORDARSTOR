@@ -151,6 +151,7 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
             select: { id: true, name: true, photoUrl: true, region: true, phone: true, locationUrl: true }
           },
           customerRegion: true,
+          secondCustomerRegion: true,
           courier: true,
           customer: true,
           moneyEvents: {
@@ -300,6 +301,7 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
         secondCustomerDoorPhotoUrl: resolvePublicAssetSrc(
           o.secondCustomerDoorPhotoUrl?.startsWith("data:") ? `/api/image/order/${o.id}/secondCustomerDoor` : (o.secondCustomerDoorPhotoUrl || null)
         ),
+        secondCustomerRegionName: o.secondCustomerRegion?.name ?? null,
       };
     });
 
