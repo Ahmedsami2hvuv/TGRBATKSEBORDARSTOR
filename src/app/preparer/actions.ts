@@ -747,17 +747,9 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
     if (order.status === "delivered") return { error: "لا يمكن تعديل الطلب بعد التسليم." };
 
     const orderPrepJson = order.preparerShoppingJson as any;
-    const preparerInvoiceIds = Array.isArray(orderPrepJson?.preparerInvoices)
-      ? orderPrepJson.preparerInvoices
-          .map((inv: any) => String(inv?.preparerId ?? ""))
-          .filter((id: string) => id !== "")
-      : [];
-
-    if (
-      order.submittedByCompanyPreparerId !== v.preparerId &&
-      !preparerInvoiceIds.includes(v.preparerId)
-    ) {
-      return { error: "ليس لديك صلاحية تعديل هذا الطلب." };
+    const gate = await assertPreparerLinkedToOrderShop(v.preparerId, orderId);
+    if (!gate.ok) {
+      return { error: gate.error };
     }
 
     const shopId = String(formData.get("shopId") ?? "").trim();
@@ -814,6 +806,14 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
       return { error: "يجب أن يتضمن الطلب منتجاً واحداً على الأقل بسعر الشراء الصحيح." };
     }
 
+    const originalProducts = Array.isArray(orderPrepJson?.products) ? orderPrepJson.products : [];
+    const otherPreparersProducts = originalProducts.filter((p: any) => {
+      const pId = p.assignedPreparerId || p.pricedById;
+      return pId && pId !== v.preparerId;
+    });
+
+    const finalMergedProducts = [...otherPreparersProducts, ...products];
+
     const placesCount = Number(payload.placesCount);
     if (!Number.isFinite(placesCount) || placesCount <= 0) {
       return { error: "يجب تحديد عدد المحلات." };
@@ -832,7 +832,7 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
     const isWebStoreOrder = order.submissionSource === "web_store";
 
     const extraAlf = calculateExtraAlfFromPlacesCount(placesCount);
-    const sumSellAlf = products.reduce((acc, p) => acc + p.sellAlf, 0);
+    const sumSellAlf = finalMergedProducts.reduce((acc, p) => acc + p.sellAlf, 0);
     const subtotalDinar = new Decimal(sumSellAlf + extraAlf).mul(ALF_PER_DINAR);
 
     const baseRegionDeliveryDinar = (deliveryPriceOverrideAlf != null && Number.isFinite(deliveryPriceOverrideAlf))
@@ -844,7 +844,7 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
     const deliveryAlf = Number(deliveryDinar.toString()) / ALF_PER_DINAR;
 
     const preparerMap = new Map<string, { preparerId: string; preparerName: string; products: any[]; totalBuyAlf: number; totalSellAlf: number }>();
-    for (const p of products) {
+    for (const p of finalMergedProducts) {
       const key = p.pricedById || currentPreparer.id;
       const existing = preparerMap.get(key);
       const name = p.pricedBy || currentPreparer.name;
@@ -884,7 +884,7 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
       !resolvedOrderType.trim() ||
       resolvedOrderType === oldDynamicOrderType
     ) {
-      resolvedOrderType = resolveDynamicOrderType(products, resolvedOrderType);
+      resolvedOrderType = resolveDynamicOrderType(finalMergedProducts, resolvedOrderType);
     }
 
     await prisma.$transaction(async (tx) => {
@@ -908,7 +908,7 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
             ...(order.preparerShoppingJson as any || {}),
             version: 1,
             titleLine,
-            products,
+            products: finalMergedProducts,
             placesCount,
             sumSellAlf,
             extraAlf,
@@ -919,7 +919,7 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
               orderNumberLabel: `#${order.orderNumber}`,
               regionTitle: titleLine,
               phone: customerPhone || "—",
-              lines: products,
+              lines: finalMergedProducts,
               placesCount,
               deliveryAlf,
             }),

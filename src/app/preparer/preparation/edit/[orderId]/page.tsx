@@ -114,25 +114,15 @@ export default async function PreparerPreparationEditPage({ params, searchParams
     },
   });
 
-  const orderPrepJson = order?.preparerShoppingJson as any;
-  const preparerInvoiceIds = Array.isArray(orderPrepJson?.preparerInvoices)
-    ? orderPrepJson.preparerInvoices
-        .map((inv: any) => String(inv?.preparerId ?? ""))
-        .filter((id: string) => id !== "")
-    : [];
-
   const isWebStoreOrder = (order as any)?.submissionSource === "web_store";
+  const canUseShop = preparer.shopLinks.some((l) => l.shop.id === order?.shopId);
 
-  const hasAccessToEdit = order != null && order.preparerShoppingJson != null && (
-    order.submittedByCompanyPreparerId === v.preparerId ||
-    preparerInvoiceIds.includes(v.preparerId) ||
-    (isWebStoreOrder && order.status === "pending")
-  );
+  const hasAccessToEdit = order != null && order.preparerShoppingJson != null && canUseShop;
 
   if (!order || !hasAccessToEdit) {
     return (
       <div className="kse-app-inner mx-auto max-w-md px-4 py-10">
-        <p className="text-center text-slate-800">الطلب غير موجود أو ليس طلب تجهيز تسوق.</p>
+        <p className="text-center text-slate-800">الطلب غير موجود أو ليس لديك صلاحية تجهيز عليه.</p>
         <Link href={home} className="mt-4 block text-center font-bold text-sky-700 underline">
           العودة للطلبات
         </Link>
@@ -179,12 +169,27 @@ export default async function PreparerPreparationEditPage({ params, searchParams
       const line = String(row.line ?? "").trim();
       const buyAlf = Number(row.buyAlf);
       const sellAlf = Number(row.sellAlf);
+      const pricedById = String(row.pricedById || row.assignedPreparerId || "").trim();
       if (!line || !Number.isFinite(buyAlf) || !Number.isFinite(sellAlf) || buyAlf < 0 || sellAlf < 0) {
         return null;
       }
-      return { line, buyAlf, sellAlf };
+
+      // السماح فقط بالمنتجات التي تخص هذا المجهز أو غير المسندة لأحد
+      if (pricedById && pricedById !== v.preparerId) {
+        return null;
+      }
+
+      return {
+        line,
+        buyAlf,
+        sellAlf,
+        pricedBy: String(row.pricedBy || ""),
+        pricedById: String(row.pricedById || ""),
+        assignedPreparerId: String(row.assignedPreparerId || ""),
+        assignedPreparerName: String(row.assignedPreparerName || "")
+      };
     })
-    .filter((x): x is { line: string; buyAlf: number; sellAlf: number } => x !== null);
+    .filter((x): x is { line: string; buyAlf: number; sellAlf: number; pricedBy?: string; pricedById?: string; assignedPreparerId?: string; assignedPreparerName?: string } => x !== null);
 
   const placesCountNum = Number(payload?.placesCount);
   if (payload?.version !== 1 || products.length === 0) {
@@ -198,7 +203,6 @@ export default async function PreparerPreparationEditPage({ params, searchParams
     );
   }
 
-  const canUseShop = preparer.shopLinks.some((l) => l.shop.id === order.shopId);
   if (!canUseShop) {
     return (
       <div className="kse-app-inner mx-auto max-w-md px-4 py-10">
