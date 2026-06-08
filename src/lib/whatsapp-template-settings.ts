@@ -169,6 +169,7 @@ export function renderNewOrderAlertTemplate(input: {
   customerPhone: string;
   subtotal: string | number;
   delivery: string | number;
+  total: string | number;
   notes: string;
   orderNumber: string | number;
   orderTime: string;
@@ -182,6 +183,7 @@ export function renderNewOrderAlertTemplate(input: {
     "{customerPhone}": input.customerPhone,
     "{subtotal}": String(input.subtotal),
     "{delivery}": String(input.delivery),
+    "{total}": String(input.total),
     "{notes}": input.notes || "لا يوجد",
     "{orderNumber}": String(input.orderNumber),
     "{orderTime}": input.orderTime || "غير محدد",

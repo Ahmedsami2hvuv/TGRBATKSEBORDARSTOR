@@ -421,6 +421,7 @@ export async function submitOrder(
       customerPhone: phoneLocal,
       subtotal: subtotalNum.toLocaleString(),
       delivery: delivery.toNumber().toLocaleString(),
+      total: total.toNumber().toLocaleString(),
       notes: notes || "لا يوجد",
       orderNumber: order.orderNumber,
       orderTime: orderTime || "غير محدد",
