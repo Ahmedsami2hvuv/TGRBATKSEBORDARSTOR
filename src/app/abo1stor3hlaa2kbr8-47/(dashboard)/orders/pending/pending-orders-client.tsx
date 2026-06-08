@@ -934,6 +934,7 @@ export function PendingAssignPanel({
   secondCustomerDoorPhotoUrl = "",
   icons,
   isDraft = false,
+  onSuccess,
 }: {
   orderId: string;
   couriers: { id: string; name: string }[];
@@ -948,11 +949,16 @@ export function PendingAssignPanel({
   secondCustomerDoorPhotoUrl?: string;
   icons?: GlobalIconsConfig | null;
   isDraft?: boolean;
+  onSuccess?: () => void;
 }) {
   const bound = assignPendingOrderToCourier.bind(null);
   const [state, formAction, pending] = useActionState(bound, {} as AssignOrderState);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [prepareByAdmin, setPrepareByAdmin] = useState(true);
+
+  useEffect(() => {
+    if (state.ok && onSuccess) onSuccess();
+  }, [state.ok, onSuccess]);
 
   if (couriers.length === 0) return <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 text-xs font-bold text-center flex items-center justify-center gap-2"><DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={14} height={14} /> لا يوجد مناديب متاحين حالياً.</div>;
 
@@ -1931,6 +1937,10 @@ export default function PendingOrdersClient({
                     secondCustomerDoorPhotoUrl={o.secondCustomerDoorPhotoUrl}
                     icons={icons}
                     isDraft={o.submissionLabel === "مسودة مشتركة" || isDraftMode}
+                    onSuccess={() => {
+                      setActiveAssignOrderId(null);
+                      window.location.reload();
+                    }}
                   />
                 );
              })()}
