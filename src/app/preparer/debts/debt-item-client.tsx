@@ -90,7 +90,7 @@ export function DebtItemClient({
   return (
     <div className={`kse-glass-dark rounded-[2rem] border p-5 shadow-sm overflow-hidden relative transition-all duration-300 ${
       isPaid
-        ? "bg-emerald-50 border-emerald-200"
+        ? "bg-slate-100 border-slate-200 text-slate-500 opacity-70"
         : isPartiallyPaid
           ? "bg-amber-50 border-amber-200"
           : "bg-white border-slate-200"
@@ -133,7 +133,7 @@ export function DebtItemClient({
           <span className="text-xs font-bold text-slate-400">طلب رقم</span>
           <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg shadow-sm ${
             isPaid
-              ? "bg-emerald-100 text-emerald-700"
+              ? "bg-slate-200 text-slate-600"
               : isPartiallyPaid
                 ? "bg-amber-100 text-amber-700"
                 : "bg-indigo-600 text-white"
@@ -145,7 +145,7 @@ export function DebtItemClient({
           className="text-xs font-bold text-slate-500 hover:text-rose-600 transition-colors flex items-center gap-1 border border-slate-200 rounded-xl px-3 py-1 bg-slate-50 hover:bg-rose-50"
           title="إخفاء هذا الدين"
         >
-          <span>👁️‍🗨️</span>
+          <span>👁️</span>
           إخفاء
         </button>
       </div>
@@ -153,7 +153,7 @@ export function DebtItemClient({
       <div className="flex justify-between items-start gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-             <h3 className="font-black text-slate-900 text-xl leading-tight">{order.shop.name}</h3>
+             <h3 className={`font-black text-xl leading-tight ${isPaid ? "text-slate-500" : "text-slate-900"}`}>{order.shop.name}</h3>
           </div>
           <p className="text-sm font-bold text-slate-500 flex items-center gap-1">
             <span className="opacity-50">📍</span>
@@ -176,8 +176,8 @@ export function DebtItemClient({
         <div className="text-left shrink-0">
           <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">{isPaid ? "الحالة" : "المتبقي"}</p>
           {isPaid ? (
-            <div className="bg-emerald-100 px-4 py-2 rounded-2xl border border-emerald-200">
-               <p className="text-xl font-black text-emerald-600">✅ مسدد</p>
+            <div className="bg-slate-200 px-4 py-2 rounded-2xl border border-slate-300">
+               <p className="text-xl font-black text-slate-500">✅ مسدد</p>
             </div>
           ) : isPartiallyPaid ? (
             <div className="text-left">
@@ -203,10 +203,11 @@ export function DebtItemClient({
           )}
           {isPaid && (
             <div className="w-full py-4 text-center">
-               <p className="text-sm font-black text-emerald-500 bg-emerald-50 rounded-2xl py-3 border border-emerald-100">بانتظار تدقيق الإدارة للأرشفة</p>
+               <p className="text-sm font-black text-slate-500 bg-slate-200 rounded-2xl py-3 border border-slate-300">بانتظار تدقيق الإدارة للأرشفة</p>
             </div>
           )}
         </div>
+
       ) : (
         <form onSubmit={handlePay} className="mt-5 pt-4 border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
           <p className="text-xs font-black text-slate-500 mb-3">أدخل المبلغ المراد تسديده للمحل:</p>

@@ -16,6 +16,7 @@ export type ShopRow = {
   pauseMessage: string;
   employeesCount: number;
   ordersCount: number;
+  hideDebts: boolean;
   createdAt: string;
 };
 
@@ -161,6 +162,12 @@ export function ShopsList({ shops, icons }: { shops: ShopRow[]; icons: GlobalIco
                     {isDuplicate && (
                       <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-black text-white shadow-sm">
                         اسم مكرر
+                      </span>
+                    )}
+
+                    {s.hideDebts && (
+                      <span className="rounded-full bg-slate-500 px-2 py-0.5 text-[10px] font-black text-white shadow-sm">
+                        محل تابع / ديون مخفية 🚫
                       </span>
                     )}
                   </div>

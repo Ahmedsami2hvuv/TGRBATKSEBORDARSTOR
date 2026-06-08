@@ -19,6 +19,7 @@ export function ShopEditForm({
   defaultPhone,
   defaultUrl,
   defaultRegionId,
+  defaultHideDebts = false,
   regions,
 }: {
   id: string;
@@ -28,6 +29,7 @@ export function ShopEditForm({
   defaultPhone: string;
   defaultUrl: string;
   defaultRegionId: string;
+  defaultHideDebts?: boolean;
   regions: AdminRegionOption[];
 }) {
   const [state, formAction, pending] = useActionState(updateShop, initial);
@@ -148,6 +150,17 @@ export function ShopEditForm({
             defaultValue={defaultUrl}
             className={ad.input}
           />
+        </label>
+
+        {/* خيار إيقاف إظهار الديون */}
+        <label className="flex items-center gap-2 text-sm sm:col-span-2 mt-2 cursor-pointer">
+          <input
+            name="hideDebts"
+            type="checkbox"
+            defaultChecked={defaultHideDebts}
+            className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4"
+          />
+          <span className="font-bold text-slate-700">إيقاف إظهار ديون هذا المحل (محل تابع لنا)</span>
         </label>
       </div>
       {state.error ? (

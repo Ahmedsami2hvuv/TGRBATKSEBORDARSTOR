@@ -47,7 +47,7 @@ export default async function PreparerDebtsPage({ searchParams }: Props) {
 
   const preparer = await prisma.companyPreparer.findFirst({
     where: { id: v.preparerId, active: true },
-    include: { shopLinks: true },
+    include: { shopLinks: { include: { shop: { select: { id: true, name: true } } } } },
   });
 
   if (!preparer) {
@@ -61,6 +61,7 @@ export default async function PreparerDebtsPage({ searchParams }: Props) {
   }
 
   const shopIds = preparer.shopLinks.map(l => l.shopId);
+  const preparerShops = preparer.shopLinks.map(l => ({ id: l.shop.id, name: l.shop.name }));
 
   // تحسين الأداء: جلب الطلبات خلال آخر 60 يوم فقط لتقليل الحمولة
   // لأن الديون القديمة جداً غالباً ما تكون قد سُويت أو نُسيت
@@ -70,6 +71,9 @@ export default async function PreparerDebtsPage({ searchParams }: Props) {
   const orders = await prisma.order.findMany({
     where: {
       shopId: { in: shopIds },
+      shop: {
+        hideDebts: false,
+      },
       preparerDebtHidden: false,
       preparerHiddenDebts: {
         none: { preparerId: v.preparerId }
@@ -126,15 +130,8 @@ export default async function PreparerDebtsPage({ searchParams }: Props) {
           </div>
         </header>
 
-        {debtOrders.length === 0 ? (
-          <div className="bg-white/50 backdrop-blur-sm rounded-[2rem] p-16 text-center text-slate-400 border-2 border-dashed border-slate-200">
-            <div className="text-4xl mb-4">✨</div>
-            <p className="text-lg font-black">لا توجد ديون حالياً</p>
-            <p className="text-sm mt-1">جميع الحسابات مكتملة</p>
-          </div>
-        ) : (
-          <DebtListContainer initialOrders={debtOrders} auth={baseAuth} />
-        )}
+        <DebtListContainer initialOrders={debtOrders} auth={baseAuth} preparerShops={preparerShops} />
+
 
         <div className="fixed bottom-6 left-0 right-0 px-4 z-50">
           <div className="mx-auto max-w-lg">

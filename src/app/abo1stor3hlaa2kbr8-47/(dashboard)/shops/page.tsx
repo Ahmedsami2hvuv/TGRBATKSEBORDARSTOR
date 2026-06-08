@@ -46,6 +46,7 @@ export default async function ShopsPage() {
     pauseMessage: s.pauseMessage || "",
     employeesCount: s._count?.employees ?? 0,
     ordersCount: s._count?.orders ?? 0,
+    hideDebts: !!s.hideDebts,
     createdAt: s.createdAt,
   }));
 

@@ -48,6 +48,7 @@ export default async function EditShopPage({ params }: Props) {
             defaultPhone={shop.phone}
             defaultUrl={shop.locationUrl}
             defaultRegionId={shop.regionId}
+            defaultHideDebts={shop.hideDebts}
             regions={regions.map((r) => ({ id: r.id, name: r.name }))}
           />
         </div>

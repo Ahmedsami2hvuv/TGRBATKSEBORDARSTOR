@@ -112,8 +112,8 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
     include: {
       customerRegion: { select: { name: true } },
       moneyEvents: {
-        where: { deletedAt: null, kind: "delivery_in", matchesExpected: true },
-        select: { id: true }
+        where: { deletedAt: null },
+        select: { id: true, amountDinar: true, kind: true, matchesExpected: true }
       },
       courier: { select: { name: true } },
     }
@@ -196,15 +196,38 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                 const showSeparator = !prevOrder ||
                   o.createdAt.toLocaleDateString("en-US") !== prevOrder.createdAt.toLocaleDateString("en-US");
 
-                const rowPhone = o.customerPhone?.trim() ?? "";
-                const rowNorm = normalizeIraqMobileLocal11(rowPhone);
-                const isYours = Boolean(viewer && rowNorm && rowNorm === viewer);
-                const canEdit = (o.status === "pending" || o.status === "assigned");
-
                 const typeLine = o.orderType?.trim() || "—";
                 const timeNote = o.orderNoteTime?.trim();
                 const regionName = o.customerRegion?.name || "بدون منطقة";
                 const summary = o.summary?.trim();
+
+                const isDebtOrder = o.orderType === "دين";
+                const totalDebtPaid = o.moneyEvents
+                  .filter(me => me.kind === "pickup_out")
+                  .reduce((sum, me) => sum + Number(me.amountDinar), 0);
+                const isDebtPaid = Number(o.orderSubtotal || 0) <= totalDebtPaid;
+                const isStandardPaid = o.moneyEvents.some(me => me.kind === "delivery_in" && me.matchesExpected);
+                const isPaid = isDebtOrder ? isDebtPaid : isStandardPaid;
+
+                const rowPhone = o.customerPhone?.trim() ?? "";
+                const rowNorm = normalizeIraqMobileLocal11(rowPhone);
+                const isYours = Boolean(viewer && rowNorm && rowNorm === viewer);
+                const canEdit = !isDebtOrder && (o.status === "pending" || o.status === "assigned");
+
+                let cardClass = "";
+                if (isDebtOrder) {
+                  if (isDebtPaid) {
+                    cardClass = "border-slate-300 bg-slate-100 text-slate-500 opacity-65 dark:border-slate-800 dark:bg-slate-900";
+                  } else {
+                    cardClass = "border-rose-300 bg-rose-50/50 ring-1 ring-rose-200 dark:border-rose-500/80 dark:bg-rose-950/30";
+                  }
+                } else {
+                  if (isYours) {
+                    cardClass = "border-emerald-300 bg-emerald-50/90 ring-1 ring-emerald-200 dark:border-emerald-500/80 dark:bg-emerald-900/70 dark:ring-emerald-400/30";
+                  } else {
+                    cardClass = "border-slate-200 bg-white/90 dark:border-slate-700 dark:bg-slate-950/90";
+                  }
+                }
 
                 return (
                   <Fragment key={o.orderNumber}>
@@ -225,11 +248,7 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                       </li>
                     )}
                     <li
-                      className={`rounded-2xl border px-4 py-4 shadow-sm transition-all ${
-                        isYours
-                          ? "border-emerald-300 bg-emerald-50/90 ring-1 ring-emerald-200 dark:border-emerald-500/80 dark:bg-emerald-900/70 dark:ring-emerald-400/30"
-                          : "border-slate-200 bg-white/90 dark:border-slate-700 dark:bg-slate-950/90"
-                      } ${o.prepaidAll ? "ring-2 ring-emerald-300/50 dark:ring-emerald-400/40" : ""}`}
+                      className={`rounded-2xl border px-4 py-4 shadow-sm transition-all ${cardClass} ${o.prepaidAll ? "ring-2 ring-emerald-300/50 dark:ring-emerald-400/40" : ""}`}
                     >
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-3 dark:border-slate-700">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -250,21 +269,32 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                             كل شي واصل
                           </span>
                         )}
-                        {o.moneyEvents && o.moneyEvents.length > 0 && (
+                        {!isDebtOrder && isStandardPaid && (
                           <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-[10px] font-bold text-teal-800 dark:bg-teal-900/70 dark:text-teal-200 dark:ring-1 dark:ring-teal-300/30">
                             مُسددة بالكامل
+                          </span>
+                        )}
+                        {isDebtOrder && (
+                          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                            isDebtPaid
+                              ? "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                              : "bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-200"
+                          }`}>
+                            {isDebtPaid ? "دين مُسدد بالكامل" : "دين غير مسدد"}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                            isYours
+                            isDebtOrder
+                              ? "bg-rose-600 text-white shadow-sm"
+                              : isYours
                               ? "bg-emerald-600 text-white shadow-sm"
                               : "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
                           }`}
                         >
-                          {isYours ? "طلبي (كمستلم)" : `الزبون (المستلم) · ${rowPhone}`}
+                          {isDebtOrder ? "دين مجهز" : isYours ? "طلبي (كمستلم)" : `الزبون (المستلم) · ${rowPhone}`}
                         </span>
                         {canEdit ? (
                           <div className="flex items-center gap-2">
@@ -290,24 +320,32 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                     <div className="space-y-2">
                       <div className="flex justify-between items-start gap-4">
                         <div className="flex-1">
-                          <p className="text-sm font-bold text-slate-900">{typeLine}</p>
-                          <p className="text-xs text-slate-600 mt-0.5">📍 {regionName}</p>
+                          <p className="text-sm font-bold text-slate-900">{isDebtOrder ? "تفاصيل الدين: تسجيل ذمم من المجهز" : typeLine}</p>
+                          {!isDebtOrder && <p className="text-xs text-slate-600 mt-0.5">📍 {regionName}</p>}
                         </div>
                         <div className="text-left shrink-0">
-                          {o.orderSubtotal != null && (
-                            <p className="text-sm font-bold text-slate-900 tabular-nums" dir="ltr">
-                              {formatDinarAsAlfWithUnit(o.orderSubtotal)} بدون توصيل
+                          {isDebtOrder ? (
+                            <p className="text-sm font-black text-rose-600 dark:text-rose-400 tabular-nums">
+                              قيمة الدين: {formatDinarAsAlfWithUnit(o.orderSubtotal)}
                             </p>
-                          )}
-                          {o.deliveryPrice != null && (
-                            <p className="text-xs text-slate-500 tabular-nums" dir="ltr">
-                              {formatDinarAsAlfWithUnit(o.deliveryPrice)} كلفة توصيل
-                            </p>
-                          )}
-                          {o.totalAmount != null && (
-                            <p className="mt-1 text-sm font-black text-emerald-700 tabular-nums" dir="ltr">
-                              بضاعة: {formatDinarAsAlfWithUnit(o.totalAmount)} مع التوصيل
-                            </p>
+                          ) : (
+                            <>
+                              {o.orderSubtotal != null && (
+                                <p className="text-sm font-bold text-slate-900 tabular-nums" dir="ltr">
+                                  {formatDinarAsAlfWithUnit(o.orderSubtotal)} بدون توصيل
+                                </p>
+                              )}
+                              {o.deliveryPrice != null && (
+                                <p className="text-xs text-slate-500 tabular-nums" dir="ltr">
+                                  {formatDinarAsAlfWithUnit(o.deliveryPrice)} كلفة توصيل
+                                </p>
+                              )}
+                              {o.totalAmount != null && (
+                                <p className="mt-1 text-sm font-black text-emerald-700 tabular-nums" dir="ltr">
+                                  بضاعة: {formatDinarAsAlfWithUnit(o.totalAmount)} مع التوصيل
+                                </p>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>

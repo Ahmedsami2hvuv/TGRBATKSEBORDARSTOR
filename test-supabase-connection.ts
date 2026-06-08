@@ -25,10 +25,10 @@ async function run() {
   const host = "db.trfjlxxeldnegjgdqefm.supabase.co";
   // Test direct port 5432
   await test(5432, host);
+  // Test IPv6 address directly
+  await test(5432, "[2a05:d018:135e:1650:c5e8:a84b:a093:6e4a]");
   // Test pooler port 6543
-  await test(6543, host);
-  // Test Supabase IPv4 transaction pooler if available (aws-0-us-east-1.pooler.supabase.com or similar)
-  // Let's resolve the host to see what IP we get
+  await test(6543, "[2a05:d018:135e:1650:c5e8:a84b:a093:6e4a]");
   const dns = require('dns').promises;
   try {
     const ips = await dns.resolve4(host);

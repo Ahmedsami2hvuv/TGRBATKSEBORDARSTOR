@@ -1652,3 +1652,90 @@ export async function bulkAssignOrdersByPreparer(_prev: PreparerActionState, for
     return { error: `فشل الإسناد: ${e?.message || "خطأ تقني"}` };
   }
 }
+
+export async function createPreparerDebtAction(
+  _prev: any,
+  formData: FormData
+): Promise<PreparerActionState> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "الرابط غير صالح." };
+
+    const shopName = String(formData.get("shopName") ?? "").trim();
+    const amountAlf = String(formData.get("amountAlf") ?? "").trim();
+
+    if (!shopName || !amountAlf) return { error: "يرجى ملء كافة الحقول." };
+
+    const amountDinar = new Decimal(amountAlf).mul(ALF_PER_DINAR);
+    if (amountDinar.lte(0)) return { error: "المبلغ يجب أن يكون أكبر من صفر." };
+
+    const preparer = await prisma.companyPreparer.findUnique({
+      where: { id: v.preparerId },
+      select: { id: true, name: true, walletEmployeeId: true }
+    });
+
+    if (!preparer) return { error: "المجهز غير موجود." };
+    if (!preparer.walletEmployeeId) {
+      return { error: "المحفظة غير مفعلة لحسابك حالياً. يرجى مراجعة الإدارة." };
+    }
+
+    // البحث عن المحل بالاسم
+    let shop = await prisma.shop.findFirst({
+      where: { name: { equals: shopName, mode: "insensitive" } }
+    });
+
+    // إذا لم يكن موجوداً، نقوم بإنشائه
+    if (!shop) {
+      const firstRegion = await prisma.region.findFirst();
+      if (!firstRegion) return { error: "يجب إضافة منطقة واحدة على الأقل في النظام." };
+
+      shop = await prisma.shop.create({
+        data: {
+          name: shopName,
+          locationUrl: "",
+          regionId: firstRegion.id,
+        }
+      });
+    }
+
+    // ربط المجهز بالمحل إذا لم يكن مرتبطاً
+    await prisma.preparerShop.upsert({
+      where: { preparerId_shopId: { preparerId: preparer.id, shopId: shop.id } },
+      create: { preparerId: preparer.id, shopId: shop.id, canSubmitOrders: true },
+      update: {}
+    });
+
+    // إنشاء طلبية الدين
+    const order = await prisma.order.create({
+      data: {
+        shopId: shop.id,
+        status: "pending",
+        orderType: "دين",
+        orderSubtotal: amountDinar,
+        deliveryPrice: new Decimal(0),
+        totalAmount: amountDinar,
+        submissionSource: "company_preparer",
+        submittedByCompanyPreparerId: preparer.id,
+        summary: `دين تم تسجيله بواسطة المجهز ${preparer.name}`,
+      }
+    });
+
+    // إنشاء قيد "أخذت" (take) في محفظة المجهز
+    await prisma.employeeWalletMiscEntry.create({
+      data: {
+        employeeId: preparer.walletEmployeeId,
+        direction: "take",
+        amountDinar: amountDinar,
+        label: `دين مستقطع من محل ${shop.name} (طلب #${order.orderNumber})`,
+      }
+    });
+
+    revalidatePath("/preparer/debts");
+    revalidatePath("/preparer/wallet");
+    return { ok: true };
+  } catch (e: any) {
+    console.error("createPreparerDebtAction error:", e);
+    return { error: `فشل تسجيل الدين: ${e?.message || "خطأ تقني"}` };
+  }
+}
+

@@ -119,6 +119,15 @@ export function ShopForm({
             <p className="mt-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 p-1.5 rounded-lg border border-emerald-100">✅ تم اختيار: {shopPhotoName}</p>
           ) : null}
         </div>
+        {/* خيار إيقاف إظهار الديون */}
+        <label className="flex items-center gap-2 text-sm cursor-pointer mt-1">
+          <input
+            name="hideDebts"
+            type="checkbox"
+            className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4"
+          />
+          <span className="font-bold text-slate-700">إيقاف إظهار ديون هذا المحل (محل تابع لنا)</span>
+        </label>
 
         <div className="mt-2 pt-4 border-t border-sky-100 space-y-4">
           <p className="text-xs font-black text-sky-700">بيانات العميل الأول للمحل</p>

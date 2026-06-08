@@ -14,6 +14,9 @@ export async function AdminDebtsWidget({ inline = false }: { inline?: boolean })
       status: { notIn: ["cancelled"] },
       orderSubtotal: { gt: 0 },
       createdAt: { gte: sixtyDaysAgo },
+      shop: {
+        hideDebts: false,
+      },
     },
     include: {
       moneyEvents: {

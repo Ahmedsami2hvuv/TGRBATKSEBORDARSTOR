@@ -56,6 +56,7 @@ export async function createShop(
   const name = String(formData.get("name") ?? "").trim();
   const locationUrl = String(formData.get("locationUrl") ?? "").trim();
   const regionId = String(formData.get("regionId") ?? "").trim();
+  const hideDebts = formData.get("hideDebts") === "on";
 
   // بيانات العميل الأول
   const customerPhoneRaw = String(formData.get("customerPhone") ?? "").trim();
@@ -97,6 +98,7 @@ export async function createShop(
           photoUrl: uploaded.photoUrl,
           locationUrl: url,
           region: { connect: { id: regionId } },
+          hideDebts,
         },
       });
 
@@ -145,6 +147,7 @@ export async function updateShop(
   const name = String(formData.get("name") ?? "").trim();
   const locationUrl = String(formData.get("locationUrl") ?? "").trim();
   const regionId = String(formData.get("regionId") ?? "").trim();
+  const hideDebts = formData.get("hideDebts") === "on";
 
   if (!id) return { error: "معرّف المحل مفقود" };
   if (!name) return { error: "اسم المحل مطلوب" };
@@ -175,6 +178,7 @@ export async function updateShop(
       photoUrl,
       locationUrl: url,
       region: { connect: { id: regionId } },
+      hideDebts,
     },
   });
 

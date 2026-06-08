@@ -105,6 +105,7 @@ model Shop {
   phone         String         @default("")
   ordersPaused  Boolean        @default(false)
   pauseMessage  String         @default("")
+  hideDebts     Boolean        @default(false)
   customers     Customer[]
   employees     Employee[]
   orders        Order[]

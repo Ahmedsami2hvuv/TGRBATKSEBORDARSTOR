@@ -54,6 +54,9 @@ export default async function PreparersPage() {
         preparerDebtHidden: false,
         status: { notIn: ["cancelled"] },
         orderSubtotal: { gt: 0 },
+        shop: {
+          hideDebts: false,
+        },
       },
       select: {
         id: true,
