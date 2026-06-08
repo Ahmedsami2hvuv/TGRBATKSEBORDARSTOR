@@ -357,9 +357,8 @@ function ClientOrderFormInner({
 
             <div className="mt-5 space-y-3">
               <div className="flex flex-wrap items-center justify-center gap-2 text-2xl font-black text-slate-900">
-                <span className="opacity-80">أهلاً بك أيها</span>
-                <span className="text-emerald-700 underline decoration-emerald-200 underline-offset-4">العميل</span>
-                <span className="text-slate-600">({greetingName})</span>
+                <span className="opacity-80">أهلاً بك</span>
+                <span className="text-emerald-700 underline decoration-emerald-200 underline-offset-4">({greetingName})</span>
                 <input type="hidden" name="customerName" value={customerName} />
               </div>
               <p className="text-base font-bold text-slate-400">من محل <span className="text-slate-700">{shopName}</span></p>
