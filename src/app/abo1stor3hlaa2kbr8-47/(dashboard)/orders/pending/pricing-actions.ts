@@ -430,10 +430,14 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
 
         const draftGroupId = (draftData!.data as any)?.groupId;
         if (draftGroupId) {
-          await tx.companyPreparerShoppingDraft.updateMany({
-            where: { data: { path: ["groupId"], equals: draftGroupId } },
-            data: { status: PreparerShoppingDraftStatus.sent, sentOrderId: finalOrderId }
-          });
+          const draftsWithGroup = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM "CompanyPreparerShoppingDraft" WHERE data->>'groupId' = ${draftGroupId}`;
+          const ids = draftsWithGroup.map(d => d.id);
+          if (ids.length > 0) {
+            await tx.companyPreparerShoppingDraft.updateMany({
+              where: { id: { in: ids } },
+              data: { status: PreparerShoppingDraftStatus.sent, sentOrderId: finalOrderId }
+            });
+          }
         } else {
           await tx.companyPreparerShoppingDraft.updateMany({
             where: {

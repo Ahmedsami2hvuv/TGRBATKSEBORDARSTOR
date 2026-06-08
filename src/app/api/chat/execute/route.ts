@@ -296,10 +296,12 @@ async function executeAssignCourierToDraftGroup(payload: any) {
   });
   if (!courier) return { ok: false, text: "المندوب غير موجود." };
 
-  const related = await prisma.companyPreparerShoppingDraft.findMany({
-    where: { data: { path: ["groupId"], equals: groupId } },
+  const draftsWithGroup = await prisma.$queryRaw<{ id: string }[]>`SELECT id FROM "CompanyPreparerShoppingDraft" WHERE data->>'groupId' = ${groupId}`;
+  const ids = draftsWithGroup.map(d => d.id);
+  const related = ids.length > 0 ? await prisma.companyPreparerShoppingDraft.findMany({
+    where: { id: { in: ids } },
     select: { id: true, data: true },
-  });
+  }) : [];
 
   if (related.length === 0) return { ok: false, text: "ما لقيت مسودات مرتبطة بهذا الطلب." };
 

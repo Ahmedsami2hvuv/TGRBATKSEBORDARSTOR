@@ -61,13 +61,17 @@ export async function assignOrderToPreparer(
           const groupId = (draft.data as any)?.groupId;
           if (groupId) {
             // بدلاً من الأرشفة، نعيدها كمسودة عامة بدون مجهز لكي لا تختفي
-            await prisma.companyPreparerShoppingDraft.updateMany({
-              where: { data: { path: ["groupId"], equals: groupId } },
-              data: {
-                preparer: { disconnect: true },
-                status: "draft"
-              }
-            });
+            const draftsToReset = await prisma.$queryRaw<{ id: string }[]>`SELECT id FROM "CompanyPreparerShoppingDraft" WHERE data->>'groupId' = ${groupId}`;
+            const ids = draftsToReset.map(d => d.id);
+            if (ids.length > 0) {
+              await prisma.companyPreparerShoppingDraft.updateMany({
+                where: { id: { in: ids } },
+                data: {
+                  preparerId: null,
+                  status: "draft"
+                }
+              });
+            }
           } else {
             await prisma.companyPreparerShoppingDraft.update({
               where: { id: orderId },
@@ -87,7 +91,7 @@ export async function assignOrderToPreparer(
         await prisma.companyPreparerShoppingDraft.updateMany({
           where: { sentOrderId: orderId },
           data: {
-            preparer: { disconnect: true },
+            preparerId: null,
             status: "draft"
           }
         });
@@ -384,9 +388,13 @@ export async function deleteOrderPermanently(
           const groupId = draftData.groupId;
 
           if (groupId) {
-             await prisma.companyPreparerShoppingDraft.deleteMany({
-                 where: { data: { path: ["groupId"], equals: groupId } }
-             });
+             const draftsToDelete = await prisma.$queryRaw<{ id: string }[]>`SELECT id FROM "CompanyPreparerShoppingDraft" WHERE data->>'groupId' = ${groupId}`;
+             const ids = draftsToDelete.map(d => d.id);
+             if (ids.length > 0) {
+                 await prisma.companyPreparerShoppingDraft.deleteMany({
+                     where: { id: { in: ids } }
+                 });
+             }
           } else {
              await prisma.companyPreparerShoppingDraft.delete({ where: { id } });
           }
@@ -395,8 +403,9 @@ export async function deleteOrderPermanently(
       await prisma.companyPreparerShoppingDraft.deleteMany({ where: { sentOrderId: id } });
       await prisma.order.delete({ where: { id } });
     }
-  } catch (e) {
-    return { error: "فشل الحذف، قد يكون الطلب مرتبطاً بسجلات أخرى" };
+  } catch (e: any) {
+    console.error("Delete order permanently error:", e);
+    return { error: `فشل الحذف: ${e.message || "قد يكون الطلب مرتبطاً بسجلات أخرى"}` };
   }
 
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
@@ -446,19 +455,26 @@ export async function assignPendingOrderToCourier(
       const draftDataObj = (draft.data as any) || {};
       const groupId = typeof draftDataObj.groupId === "string" ? draftDataObj.groupId.trim() : "";
 
-      const relatedDrafts = groupId
-        ? await prisma.companyPreparerShoppingDraft.findMany({
-            where: { data: { path: ["groupId"], equals: groupId }, status: { in: ["draft", "priced"] } },
-            include: { preparer: true }
-          })
-        : await prisma.companyPreparerShoppingDraft.findMany({
-            where: {
-              customerPhone: draft.customerPhone,
-              titleLine: draft.titleLine,
-              status: { in: ["draft", "priced"] },
-            },
+      let relatedDrafts: any[] = [];
+      if (groupId) {
+        const draftsWithGroup = await prisma.$queryRaw<{ id: string }[]>`SELECT id FROM "CompanyPreparerShoppingDraft" WHERE data->>'groupId' = ${groupId}`;
+        const ids = draftsWithGroup.map(d => d.id);
+        if (ids.length > 0) {
+          relatedDrafts = await prisma.companyPreparerShoppingDraft.findMany({
+            where: { id: { in: ids }, status: { in: ["draft", "priced"] } },
             include: { preparer: true }
           });
+        }
+      } else {
+        relatedDrafts = await prisma.companyPreparerShoppingDraft.findMany({
+          where: {
+            customerPhone: draft.customerPhone,
+            titleLine: draft.titleLine,
+            status: { in: ["draft", "priced"] },
+          },
+          include: { preparer: true }
+        });
+      }
 
       const mergedProducts: any[] = [];
       relatedDrafts.forEach(rd => {
@@ -650,10 +666,14 @@ export async function assignPendingOrderToCourier(
         }
 
         if (groupId) {
-          await tx.companyPreparerShoppingDraft.updateMany({
-            where: { data: { path: ["groupId"], equals: groupId } },
-            data: { status: PreparerShoppingDraftStatus.sent, sentOrderId: finalOrderId }
-          });
+          const draftsWithGroup = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM "CompanyPreparerShoppingDraft" WHERE data->>'groupId' = ${groupId}`;
+          const ids = draftsWithGroup.map(d => d.id);
+          if (ids.length > 0) {
+            await tx.companyPreparerShoppingDraft.updateMany({
+              where: { id: { in: ids } },
+              data: { status: PreparerShoppingDraftStatus.sent, sentOrderId: finalOrderId }
+            });
+          }
         } else {
           await tx.companyPreparerShoppingDraft.updateMany({
             where: {
@@ -699,6 +719,12 @@ export async function assignPendingOrderToCourier(
       if (updatedOrder.customerPhone) {
         await syncPhoneProfileFromOrder(updatedOrder.id);
       }
+
+      // إغلاق وتحديث كافة المسودات المعلقة المرتبطة بهذا الطلب
+      await prisma.companyPreparerShoppingDraft.updateMany({
+        where: { sentOrderId: orderId, status: { in: ["draft", "priced"] } },
+        data: { status: "sent" }
+      });
 
       try {
         console.log(`[assignPendingOrderToCourier] notify courierId=${courierId} orderNumber=${updatedOrder.orderNumber}`);
@@ -757,13 +783,10 @@ export async function rejectPreparerDraft(
     const sentOrderId = draft.sentOrderId;
 
     if (groupId) {
+      const draftsToArchive = await prisma.$queryRaw<{ id: string }[]>`SELECT id FROM "CompanyPreparerShoppingDraft" WHERE data->>'groupId' = ${groupId}`;
+      const ids = Array.from(new Set([...draftsToArchive.map(d => d.id), draftId]));
       await prisma.companyPreparerShoppingDraft.updateMany({
-        where: {
-          OR: [
-            { data: { path: ["groupId"], equals: groupId } },
-            { id: draftId }
-          ]
-        },
+        where: { id: { in: ids } },
         data: { status: "archived" }
       });
     } else {
@@ -822,19 +845,26 @@ export async function setDraftAutoCourier(
     const currentData = ((draft.data as any) || {}) as Record<string, any>;
     const groupId = typeof currentData.groupId === "string" ? currentData.groupId.trim() : "";
 
-    const related = groupId
-      ? await prisma.companyPreparerShoppingDraft.findMany({
-          where: { data: { path: ["groupId"], equals: groupId } },
-          select: { id: true, data: true },
-        })
-      : await prisma.companyPreparerShoppingDraft.findMany({
-          where: {
-            customerPhone: draft.customerPhone,
-            titleLine: draft.titleLine,
-            status: { in: ["draft", "priced"] },
-          },
+    let related: { id: string; data: any }[] = [];
+    if (groupId) {
+      const draftsWithGroup = await prisma.$queryRaw<{ id: string }[]>`SELECT id FROM "CompanyPreparerShoppingDraft" WHERE data->>'groupId' = ${groupId}`;
+      const ids = draftsWithGroup.map(d => d.id);
+      if (ids.length > 0) {
+        related = await prisma.companyPreparerShoppingDraft.findMany({
+          where: { id: { in: ids } },
           select: { id: true, data: true },
         });
+      }
+    } else {
+      related = await prisma.companyPreparerShoppingDraft.findMany({
+        where: {
+          customerPhone: draft.customerPhone,
+          titleLine: draft.titleLine,
+          status: { in: ["draft", "priced"] },
+        },
+        select: { id: true, data: true },
+      });
+    }
 
     for (const row of related) {
       const rowData = ((row.data as any) || {}) as Record<string, any>;

@@ -189,9 +189,13 @@ export async function updatePreparerShoppingDraft(
     // جلب جميع المسودات المرتبطة لضمان المزامنة
     let relatedDrafts = [draft];
     if (groupId) {
-        relatedDrafts = await prisma.companyPreparerShoppingDraft.findMany({
-            where: { data: { path:["groupId"], equals: groupId } }
-        });
+        const draftsWithGroup = await prisma.$queryRaw<{ id: string }[]>`SELECT id FROM "CompanyPreparerShoppingDraft" WHERE data->>'groupId' = ${groupId}`;
+        const ids = draftsWithGroup.map(d => d.id);
+        if (ids.length > 0) {
+            relatedDrafts = await prisma.companyPreparerShoppingDraft.findMany({
+                where: { id: { in: ids } }
+            });
+        }
     } else {
         relatedDrafts = await prisma.companyPreparerShoppingDraft.findMany({
             where: {
@@ -510,10 +514,14 @@ export async function submitPreparerShoppingDraft(
     // غلق وتأشير المسودة كمرسلة
     const groupId = (draft.data as any)?.groupId;
     if (groupId) {
-        await prisma.companyPreparerShoppingDraft.updateMany({
-            where: { data: { path: ["groupId"], equals: groupId } },
-            data: { status: PreparerShoppingDraftStatus.sent, sentOrderId: order.id }
-        });
+        const draftsWithGroup = await prisma.$queryRaw<{ id: string }[]>`SELECT id FROM "CompanyPreparerShoppingDraft" WHERE data->>'groupId' = ${groupId}`;
+        const ids = draftsWithGroup.map(d => d.id);
+        if (ids.length > 0) {
+            await prisma.companyPreparerShoppingDraft.updateMany({
+                where: { id: { in: ids } },
+                data: { status: PreparerShoppingDraftStatus.sent, sentOrderId: order.id }
+            });
+        }
     } else {
         await prisma.companyPreparerShoppingDraft.update({
             where: { id: draftId },
@@ -1039,10 +1047,14 @@ export async function archivePreparerShoppingDraftAction(
     // إذا كانت المسودة جزء من مجموعة، نؤرشف الجميع
     const groupId = (draft.data as any)?.groupId;
     if (groupId) {
-      await prisma.companyPreparerShoppingDraft.updateMany({
-        where: { data: { path: ["groupId"], equals: groupId } },
-        data: { status: "archived" }
-      });
+      const draftsWithGroup = await prisma.$queryRaw<{ id: string }[]>`SELECT id FROM "CompanyPreparerShoppingDraft" WHERE data->>'groupId' = ${groupId}`;
+      const ids = draftsWithGroup.map(d => d.id);
+      if (ids.length > 0) {
+        await prisma.companyPreparerShoppingDraft.updateMany({
+          where: { id: { in: ids } },
+          data: { status: "archived" }
+        });
+      }
     } else {
       await prisma.companyPreparerShoppingDraft.update({
         where: { id: draftId },
