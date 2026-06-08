@@ -104,10 +104,11 @@ export default function SmartHintsClient({
     try {
       const res = await addSmartHintAction(newName, newCoords);
       if (res.success) {
-        // تفريغ المدخلات وإغلاق النافذة
+        // تفريغ المدخلات وإبقاء النافذة مفتوحة لإضافة المزيد
         setNewName("");
         setNewCoords("");
-        setIsAddOpen(false);
+        setErrorMsg("");
+        setTimeout(() => nameInputRef.current?.focus(), 50);
       }
     } catch (err: any) {
       setErrorMsg(err.message || "حدث خطأ غير متوقع أثناء الحفظ");
