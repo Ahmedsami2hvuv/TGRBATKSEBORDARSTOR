@@ -25,6 +25,8 @@ export async function createCompanyPreparer(_prev: PreparerFormState, formData: 
   const phone = String(formData.get("phone") ?? "").trim();
   const telegramUserId = String(formData.get("telegramUserId") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
+  const dailySalaryRaw = String(formData.get("dailySalary") ?? "0").trim();
+  const dailySalary = parseFloat(dailySalaryRaw) || 0;
 
   if (!name) return { error: "اسم المجهز مطلوب." };
 
@@ -34,7 +36,8 @@ export async function createCompanyPreparer(_prev: PreparerFormState, formData: 
       phone,
       telegramUserId,
       notes,
-      portalToken: randomUUID()
+      portalToken: randomUUID(),
+      dailySalary
     }
   });
 
@@ -126,6 +129,8 @@ export async function updateCompanyPreparer(_prev: PreparerFormState, formData: 
   const telegramUserId = String(formData.get("telegramUserId") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
   const active = formData.get("active") === "1" || formData.get("active") === "on";
+  const dailySalaryRaw = String(formData.get("dailySalary") ?? "0").trim();
+  const dailySalary = parseFloat(dailySalaryRaw) || 0;
 
   await prisma.companyPreparer.update({
     where: { id },
@@ -134,7 +139,8 @@ export async function updateCompanyPreparer(_prev: PreparerFormState, formData: 
       phone,
       telegramUserId,
       notes,
-      active
+      active,
+      dailySalary
     }
   });
 

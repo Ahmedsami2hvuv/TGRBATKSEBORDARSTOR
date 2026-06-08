@@ -111,6 +111,7 @@ export default async function PreparersPage() {
       preparerMonthlySalaryResetAt: p.preparerMonthlySalaryResetAt ? p.preparerMonthlySalaryResetAt.toISOString() : null,
       preparerMonthlySalaryResetEveryDays: p.preparerMonthlySalaryResetEveryDays ?? null,
       totalDebtsAmount: preparerTotalDebts,
+      dailySalary: Number(p.dailySalary || 0),
     };
   });
 

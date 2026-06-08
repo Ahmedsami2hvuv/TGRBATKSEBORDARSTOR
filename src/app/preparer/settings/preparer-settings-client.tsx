@@ -5,13 +5,15 @@ import Link from "next/link";
 import { useTheme } from "@/components/theme-provider";
 import { getBackgroundsConfigAction } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/background-actions";
 import { BackgroundItem } from "@/lib/background-settings";
+import { PreparerPresenceToggle } from "../preparer-presence-toggle";
 
 type Props = {
   preparerName: string;
   auth: { p: string; exp: string; s: string };
+  availableForAssignment: boolean;
 };
 
-export default function PreparerSettingsClient({ preparerName, auth }: Props) {
+export default function PreparerSettingsClient({ preparerName, auth, availableForAssignment }: Props) {
   const { theme, setTheme } = useTheme();
   const [availableBgs, setAvailableBgs] = useState<BackgroundItem[]>([]);
   const [currentBgId, setCurrentBgId] = useState<string | null>(null);
@@ -65,6 +67,20 @@ export default function PreparerSettingsClient({ preparerName, auth }: Props) {
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400">تخصيص واجهة المجهز: {preparerName}</p>
           </div>
         </header>
+
+        {/* حالة التوفر للإسناد */}
+        <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <span className="text-xl">🔔</span>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">حالة التوفر للإسناد</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">حدد ما إذا كنت متاحاً لاستقبال وإسناد الطلبات الجديدة للمناديب</p>
+            </div>
+          </div>
+          <div className="flex justify-center bg-slate-100/50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-850">
+            <PreparerPresenceToggle auth={auth} availableForAssignment={availableForAssignment} />
+          </div>
+        </section>
 
         {/* Theme Settings Box */}
         <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm">

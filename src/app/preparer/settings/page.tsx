@@ -58,6 +58,7 @@ export default async function PreparerSettingsPage({ searchParams }: Props) {
     <PreparerSettingsClient
       preparerName={preparer.name}
       auth={baseAuth}
+      availableForAssignment={preparer.availableForAssignment}
     />
   );
 }

@@ -135,6 +135,10 @@ model CompanyPreparer {
   orderListResetAt                    DateTime                       @default(now())
   portalToken                         String                         @default(cuid())
   walletEmployee                      Employee?                      @relation("CompanyPreparerWalletEmployee", fields: [walletEmployeeId], references: [id])
+  dailySalary                         Decimal                        @default(0) @db.Decimal(10, 2)
+  salaryPinCode                       String?
+  lastSalaryWithdrawalAt              DateTime                       @default(now())
+  workLogs                            CompanyPreparerWorkLog[]
   prepNotices                         CompanyPreparerPrepNotice[]
   shoppingDrafts                      CompanyPreparerShoppingDraft[]
   submittedOrders                     Order[]                        @relation("OrderSubmittedByPreparer")
@@ -822,4 +826,14 @@ model PreparerHiddenDebt {
 
   @@id([orderId, preparerId])
   @@index([preparerId])
+}
+
+model CompanyPreparerWorkLog {
+  id         String   @id @default(cuid())
+  preparerId String
+  actionType String   // "assign_order" or "price_product"
+  createdAt  DateTime @default(now())
+  preparer   CompanyPreparer @relation(fields: [preparerId], references: [id], onDelete: Cascade)
+
+  @@index([preparerId, createdAt])
 }

@@ -942,6 +942,13 @@ export async function updatePreparerShoppingOrder(_prev: PreparerActionState, fo
       });
     });
 
+    await prisma.companyPreparerWorkLog.create({
+      data: {
+        preparerId: v.preparerId,
+        actionType: "price_product",
+      },
+    });
+
     revalidatePath("/preparer");
     return { ok: true };
   } catch (e) {
@@ -1020,6 +1027,13 @@ export async function updateStoreProductPrice(
 
     const { revalidateTag } = await import("next/cache");
     revalidateTag("products");
+
+    await prisma.companyPreparerWorkLog.create({
+      data: {
+        preparerId: v.preparerId,
+        actionType: "price_product",
+      },
+    });
 
     revalidatePath(`/preparer/store-pricing/${branchId}`);
     return { ok: true };
@@ -1156,6 +1170,13 @@ export async function assignOrderByPreparer(_prev: PreparerActionState, formData
   });
 
   void notifyTelegramOrderPrepared({ orderId });
+
+  await prisma.companyPreparerWorkLog.create({
+    data: {
+      preparerId: v.preparerId,
+      actionType: "assign_order",
+    },
+  });
 
   revalidatePath("/preparer");
   revalidatePath(`/preparer/order/${orderId}`);
@@ -1645,6 +1666,13 @@ export async function bulkAssignOrdersByPreparer(_prev: PreparerActionState, for
       void notifyTelegramOrderPrepared({ orderId });
     }
 
+    await prisma.companyPreparerWorkLog.create({
+      data: {
+        preparerId: v.preparerId,
+        actionType: "assign_order",
+      },
+    });
+
     revalidatePath("/preparer");
     return { ok: true };
   } catch (e: any) {
@@ -1738,4 +1766,244 @@ export async function createPreparerDebtAction(
     return { error: `فشل تسجيل الدين: ${e?.message || "خطأ تقني"}` };
   }
 }
+
+// دالة تحويل التوقيت إلى توقيت العراق
+function getIraqTime(date: Date): { year: number; month: number; day: number; hours: number; minutes: number } {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Baghdad",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false
+  });
+  const parts = formatter.formatToParts(date);
+  const getPart = (type: string) => parseInt(parts.find(p => p.type === type)?.value || "0");
+  return {
+    year: getPart("year"),
+    month: getPart("month"),
+    day: getPart("day"),
+    hours: getPart("hour"),
+    minutes: getPart("minute")
+  };
+}
+
+// دالة احتساب الشفتات المستحقة
+async function calculateAccumulatedSalaryInternal(preparerId: string) {
+  const preparer = await prisma.companyPreparer.findUnique({
+    where: { id: preparerId },
+    select: { dailySalary: true, lastSalaryWithdrawalAt: true, createdAt: true }
+  });
+
+  if (!preparer) return { dailySalary: 0, todaySalary: 0, accumulatedSalary: 0 };
+
+  const dailySalary = Number(preparer.dailySalary || 0);
+  if (dailySalary <= 0) return { dailySalary, todaySalary: 0, accumulatedSalary: 0 };
+
+  const lastWithdrawal = preparer.lastSalaryWithdrawalAt || preparer.createdAt || new Date();
+
+  // جلب حركات العمل بعد تاريخ آخر سحب
+  const workLogs = await prisma.companyPreparerWorkLog.findMany({
+    where: {
+      preparerId,
+      createdAt: { gte: lastWithdrawal }
+    },
+    orderBy: { createdAt: "asc" }
+  });
+
+  const iraqNow = getIraqTime(new Date());
+  const todayKey = `${iraqNow.year}-${iraqNow.month}-${iraqNow.day}`;
+
+  const shiftHalfValue = dailySalary / 2;
+  const uniqueShifts = new Set<string>();
+  let todaySalary = 0;
+
+  workLogs.forEach(log => {
+    const logTime = getIraqTime(log.createdAt);
+    const dayKey = `${logTime.year}-${logTime.month}-${logTime.day}`;
+
+    // التحقق من الشفتات الصباحية والمسائية
+    let isMorning = (logTime.hours >= 8 && logTime.hours < 13) || (logTime.hours === 13 && logTime.minutes === 0);
+    let isEvening = (logTime.hours === 15 && logTime.minutes >= 30) || (logTime.hours > 15 && logTime.hours < 21) || (logTime.hours === 21 && logTime.minutes === 0);
+
+    if (isMorning) {
+      const shiftKey = `${dayKey}_morning`;
+      uniqueShifts.add(shiftKey);
+      if (dayKey === todayKey) {
+        todaySalary += shiftHalfValue;
+      }
+    }
+    if (isEvening) {
+      const shiftKey = `${dayKey}_evening`;
+      uniqueShifts.add(shiftKey);
+      if (dayKey === todayKey) {
+        todaySalary += shiftHalfValue;
+      }
+    }
+  });
+
+  // التأكد من عدم تجاوز راتب اليوم القيمة الكلية لليوم
+  if (todaySalary > dailySalary) {
+    todaySalary = dailySalary;
+  }
+
+  const accumulatedSalary = uniqueShifts.size * shiftHalfValue;
+
+  return {
+    dailySalary,
+    todaySalary,
+    accumulatedSalary
+  };
+}
+
+// أكشن جلب إحصائيات راتب المجهز
+export async function getPreparerSalaryStats(_prev: any, formData: FormData): Promise<{ ok?: boolean; error?: string; dailySalary?: number; todaySalary?: number; accumulatedSalary?: number; hasPinCode?: boolean }> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "الرابط غير صالح." };
+
+    const preparer = await prisma.companyPreparer.findUnique({
+      where: { id: v.preparerId },
+      select: { salaryPinCode: true }
+    });
+
+    if (!preparer) return { error: "المجهز غير موجود." };
+
+    const stats = await calculateAccumulatedSalaryInternal(v.preparerId);
+
+    return {
+      ok: true,
+      dailySalary: stats.dailySalary,
+      todaySalary: stats.todaySalary,
+      accumulatedSalary: stats.accumulatedSalary,
+      hasPinCode: !!preparer.salaryPinCode
+    };
+  } catch (e) {
+    console.error("getPreparerSalaryStats error:", e);
+    return { error: "فشل تحميل بيانات الراتب." };
+  }
+}
+
+// أكشن تعيين الرمز السري للمجهز لأول مرة
+export async function setPreparerSalaryPinCode(_prev: any, formData: FormData): Promise<{ ok?: boolean; error?: string }> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "الرابط غير صالح." };
+
+    const pinCode = String(formData.get("pinCode") ?? "").trim();
+    if (!pinCode || pinCode.length < 4) return { error: "الرمز السري يجب أن يتكون من 4 أرقام على الأقل." };
+
+    const preparer = await prisma.companyPreparer.findUnique({
+      where: { id: v.preparerId }
+    });
+
+    if (!preparer) return { error: "المجهز غير موجود." };
+    if (preparer.salaryPinCode) return { error: "لقد قمت بتعيين الرمز السري مسبقاً." };
+
+    await prisma.companyPreparer.update({
+      where: { id: v.preparerId },
+      data: { salaryPinCode: pinCode }
+    });
+
+    return { ok: true };
+  } catch (e) {
+    console.error("setPreparerSalaryPinCode error:", e);
+    return { error: "فشل تعيين الرمز السري." };
+  }
+}
+
+// أكشن سحب واستلام الراتب
+export async function withdrawPreparerSalary(_prev: any, formData: FormData): Promise<{ ok?: boolean; error?: string; withdrawnAmount?: number }> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "الرابط غير صالح." };
+
+    const pinCode = String(formData.get("pinCode") ?? "").trim();
+    if (!pinCode) return { error: "الرمز السري مطلوب." };
+
+    const preparer = await prisma.companyPreparer.findUnique({
+      where: { id: v.preparerId }
+    });
+
+    if (!preparer) return { error: "المجهز غير موجود." };
+    if (!preparer.salaryPinCode) return { error: "يرجى تعيين رمز سري أولاً." };
+    if (preparer.salaryPinCode !== pinCode) return { error: "الرمز السري غير صحيح." };
+
+    if (!preparer.walletEmployeeId) {
+      return { error: "المحفظة غير مفعلة لحسابك. يرجى مراجعة الإدارة." };
+    }
+
+    const stats = await calculateAccumulatedSalaryInternal(v.preparerId);
+    const amountDinar = new Decimal(stats.accumulatedSalary);
+
+    if (amountDinar.lte(0)) {
+      return { error: "لا يوجد راتب متراكم للاستلام حالياً." };
+    }
+
+    // إجراء العملية في قاعدة البيانات
+    await prisma.$transaction(async (tx) => {
+      // 1. تسجيل العملية المالية في محفظة الموظف كخصم (راتب مستلم) ببادئة مميزة [راتب]
+      await tx.employeeWalletMiscEntry.create({
+        data: {
+          employeeId: preparer.walletEmployeeId!,
+          direction: "take",
+          amountDinar: amountDinar,
+          label: `[راتب] استلام راتب المجهز للشفتات المتراكمة`,
+        }
+      });
+
+      // 2. تحديث تاريخ آخر عملية استلام للوقت الحالي
+      await tx.companyPreparer.update({
+        where: { id: v.preparerId },
+        data: { lastSalaryWithdrawalAt: new Date() }
+      });
+    });
+
+    // جلب المتبقي في المحفظة للمجهز بعد الخصم
+    const totals = await getPreparerMoneyTotals(v.preparerId);
+    const remainStr = totals ? formatDinarAsAlfWithUnit(totals.remain) : "0";
+    const amountStr = formatDinarAsAlfWithUnit(amountDinar);
+
+    // إرسال الإشعارات لبوتات تليجرام
+    try {
+      const msg = [
+        `💵 <b>سحب راتب مجهز</b>`,
+        `👤 <b>المجهز:</b> ${escapeTelegramHtml(preparer.name)}`,
+        `💰 <b>المبلغ المسحوب:</b> ${amountStr}`,
+        `💼 <b>المتبقي بالمحفظة:</b> ${remainStr}`,
+        `📅 <b>التاريخ:</b> \u200E${new Date().toLocaleString("ar-IQ")}\u200E`
+      ].join("\n");
+
+      const notificationBotToken = await getBotTokenByPurpose("notification");
+      const managementBotToken = await getBotTokenByPurpose("management");
+      const preparerBotToken = await getBotTokenByPurpose("preparer");
+
+      // 1. إشعار جروب تليجرام (بوت الإشعارات)
+      if (notificationBotToken) {
+        await sendTelegramMessage(msg, { botToken: notificationBotToken });
+      }
+
+      // 2. إشعار بوت الإدارة
+      if (managementBotToken && managementBotToken !== notificationBotToken) {
+        await sendTelegramMessage(msg, { botToken: managementBotToken });
+      }
+
+      // 3. إشعار المجهز نفسه (بوت المجهزين)
+      if (preparerBotToken && preparer.telegramUserId) {
+        await sendTelegramHtmlToChat(preparer.telegramUserId, `✅ <b>تم استلام راتبك بنجاح!</b>\n\n${msg}`, preparerBotToken);
+      }
+    } catch (notifErr) {
+      console.error("Telegram notification for salary withdrawal failed:", notifErr);
+    }
+
+    revalidatePath("/preparer");
+    revalidatePath("/preparer/wallet");
+    return { ok: true, withdrawnAmount: stats.accumulatedSalary };
+  } catch (e) {
+    console.error("withdrawPreparerSalary error:", e);
+    return { error: "فشل استلام الراتب بسبب خطأ تقني." };
+  }
+}
+
 

@@ -9,7 +9,7 @@ import { preparerPath } from "@/lib/preparer-portal-nav";
 import { loadPreparerPortalOrderTableData } from "@/lib/preparer-portal-order-table-data";
 import { prisma } from "@/lib/prisma";
 import { PreparerOrdersSection } from "./preparer-orders-client";
-import { PreparerPresenceToggle } from "./preparer-presence-toggle";
+import { SalaryWithdrawalButton } from "./salary-withdrawal-button";
 import { PreparerWalletLink } from "./preparer-wallet-link";
 import { PreparerSearchTrigger } from "./preparer-search-trigger";
 import { getGlobalIcons } from "@/lib/icon-settings";
@@ -229,7 +229,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           <PreparerSearchTrigger icons={safeIcons} />
         </div>
         <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
-          <PreparerPresenceToggle auth={baseAuth} availableForAssignment={safePreparer.availableForAssignment} icons={safeIcons} />
+          <SalaryWithdrawalButton auth={baseAuth} preparerName={safePreparer.name} />
           {canSubmitAny && (
             <>
               <FullscreenWalletLauncher

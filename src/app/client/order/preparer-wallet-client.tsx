@@ -177,10 +177,12 @@ export function PreparerWalletClient({
             !(line.source === "misc" && line.miscLabel?.startsWith("تحويل من ") && !line.miscLabel?.includes("مجهز") && !line.miscLabel?.includes("الإدارة")) &&
             hoursPassed <= 4;
 
+          const isSalary = line.miscLabel?.includes("[راتب]");
           return (
             <li key={`${line.source}-${line.id}`}>
               <div className={`relative flex flex-col gap-1.5 rounded-2xl border-2 px-4 py-3 transition-all shadow-sm ${
                 deleted || isRejected ? "border-slate-300 bg-slate-100/90 text-slate-600 dark:bg-slate-800" :
+                isSalary ? "border-violet-600 bg-violet-100/95 dark:bg-violet-900/40 dark:border-violet-800" :
                 isInPick ? "border-red-600 bg-red-100/95 dark:bg-red-900/40 dark:border-red-800" :
                 isOutPick ? "border-emerald-600 bg-emerald-100/95 dark:bg-emerald-900/40 dark:border-emerald-800" :
                 "border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800"

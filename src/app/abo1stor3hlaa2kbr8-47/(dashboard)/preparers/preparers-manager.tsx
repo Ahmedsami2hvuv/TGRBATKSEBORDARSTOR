@@ -41,6 +41,7 @@ export type PreparerManagerRow = {
   preparerMonthlySalaryResetAt: string | null;
   preparerMonthlySalaryResetEveryDays: number | null;
   totalDebtsAmount: number;
+  dailySalary: number;
 };
 
 export type ShopOption = { id: string; name: string };
@@ -268,6 +269,16 @@ function AddPreparerForm({ icons }: { icons: GlobalIconsConfig | null }) {
               onChange={(e) => setTelegramUserId(e.target.value)}
             />
           </label>
+          <label className="flex flex-col gap-1">
+            <span className={ad.label}>الراتب اليومي (اختياري)</span>
+            <input
+              name="dailySalary"
+              type="number"
+              step="0.01"
+              className={ad.input}
+              placeholder="مثال: 10"
+            />
+          </label>
           <label className="flex flex-col gap-1 sm:col-span-2">
             <span className={ad.label}>ملاحظات</span>
             <input
@@ -418,6 +429,9 @@ function PreparerCard({
                   }`}
                 >
                   {row.active ? "نشط" : "متوقف"}
+                </span>
+                <span className="rounded-full bg-sky-100 px-3 py-0.5 text-[10px] font-black text-sky-700">
+                  الراتب اليومي: {row.dailySalary}
                 </span>
                 {row.totalDebtsAmount > 0 && (
                   <span className="rounded-full bg-rose-100 px-3 py-0.5 text-[10px] font-black text-rose-700">
@@ -705,6 +719,10 @@ function PreparerCard({
                 <label className="block">
                   <span className="mb-2 block text-xs font-black text-slate-400 uppercase tracking-widest">معرّف تلغرام</span>
                   <input name="telegramUserId" defaultValue={row.telegramUserId} className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-6 font-bold outline-none focus:border-slate-900 transition" dir="ltr" />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-xs font-black text-slate-400 uppercase tracking-widest">الراتب اليومي</span>
+                  <input name="dailySalary" defaultValue={row.dailySalary} type="number" step="0.01" className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-6 font-bold outline-none focus:border-slate-900 transition" />
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-xs font-black text-slate-400 uppercase tracking-widest">ملاحظات إدارية</span>
