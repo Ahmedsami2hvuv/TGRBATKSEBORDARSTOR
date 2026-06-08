@@ -22,24 +22,29 @@ export async function computeSmartHint(
   if (!order) return "— الطلب غير موجود";
 
   const locationUrl = type === "primary" ? order.customerLocationUrl : order.secondCustomerLocationUrl;
-  const regionId = type === "primary" ? order.customerRegionId : order.secondCustomerRegionId;
 
-  if (!regionId) return "— لا توجد منطقة مرتبطة";
-  if (!locationUrl?.trim()) return "— لا يوجد لوكيشن";
+  if (!locationUrl?.trim()) return "—";
 
-  const regionWaypoints = await prisma.regionWaypoint.findMany({
-    where: { regionId },
-    orderBy: { sortOrder: "asc" },
-    select: { name: true, latitude: true, longitude: true },
+  const allWaypoints = await prisma.regionWaypoint.findMany({
+    select: {
+      name: true,
+      latitude: true,
+      longitude: true,
+      region: {
+        select: {
+          name: true,
+        },
+      },
+    },
   });
 
-  if (regionWaypoints.length === 0) return "— لا توجد مداخل محفوظة";
+  if (allWaypoints.length === 0) return "—";
 
   const customerLoc = await extractLatLngFromLocationInputSmart(locationUrl);
-  if (!customerLoc) return "— تعذر قراءة الإحداثيات";
+  if (!customerLoc) return "—";
 
-  let nearest: { name: string; distanceM: number } | null = null;
-  for (const point of regionWaypoints) {
+  let nearest: { name: string; regionName: string; distanceM: number } | null = null;
+  for (const point of allWaypoints) {
     const distanceM = haversineMeters(
       customerLoc.latitude,
       customerLoc.longitude,
@@ -47,12 +52,16 @@ export async function computeSmartHint(
       point.longitude
     );
     if (!nearest || distanceM < nearest.distanceM) {
-      nearest = { name: point.name?.trim() || "مدخل", distanceM };
+      nearest = {
+        name: point.name?.trim() || "مدخل",
+        regionName: point.region?.name?.trim() || "منطقة غير معروفة",
+        distanceM,
+      };
     }
   }
 
-  if (!nearest) return "— تعذر احتساب المسافة";
-  if (nearest.distanceM > 2500) return "— اللوكيشن بعيد عن مداخل المنطقة";
+  if (!nearest) return "—";
+  if (nearest.distanceM > 300) return "—";
 
-  return `قريب من (${nearest.name})`;
+  return `قريب من (${nearest.name}) - ${nearest.regionName}`;
 }

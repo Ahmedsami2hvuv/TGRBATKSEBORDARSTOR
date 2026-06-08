@@ -27,6 +27,7 @@ export const ADMIN_TILES: AdminTile[] = [
   { slug: "wa-buttons", label: "أزرار واتساب للمندوب", iconKey: "ui_whatsapp", href: "/abo1stor3hlaa2kbr8-47/wa-buttons" },
   { slug: "courier-map", label: "خريطة المندوبين", iconKey: "ui_map", href: "/abo1stor3hlaa2kbr8-47/couriers/map" },
   { slug: "regions", label: "المناطق", iconKey: "ui_map", href: "/abo1stor3hlaa2kbr8-47/regions" },
+  { slug: "smart-hints", label: "الاستدلال الذكي", iconKey: "ui_ai", href: "/abo1stor3hlaa2kbr8-47/smart-hints" },
   { slug: "super-search", label: "البحث الخارق", iconKey: "ui_search", href: "/abo1stor3hlaa2kbr8-47/search" },
   { slug: "prep-notices", label: "إشعارات تجهيز المجهزين", iconKey: "ui_announcement", href: "/abo1stor3hlaa2kbr8-47/prep-notices" },
   { slug: "ai-settings", label: "مساعد أبو الأكبر (AI)", iconKey: "ui_ai", href: "/abo1stor3hlaa2kbr8-47/settings/ai" },

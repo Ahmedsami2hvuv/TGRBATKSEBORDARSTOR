@@ -482,6 +482,18 @@ export default async function MandoubPage({ searchParams }: Props) {
         select: { regionId: true, name: true, latitude: true, longitude: true },
       })
     : [];
+  const allWaypoints = await prisma.regionWaypoint.findMany({
+    select: {
+      name: true,
+      latitude: true,
+      longitude: true,
+      region: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
   const waypointsByRegion = new Map<
     string,
     Array<{ name: string; latitude: number; longitude: number }>
@@ -608,31 +620,32 @@ export default async function MandoubPage({ searchParams }: Props) {
     regionId?: string | null;
   }): string {
     const fallback = String(params.fallbackLandmark ?? "").trim();
-    const regionId = params.regionId ?? null;
-    if (!regionId) return "— لا توجد منطقة مرتبطة بالطلب";
-    const points = waypointsByRegion.get(regionId) ?? [];
-    if (points.length === 0) return "— لا توجد مداخل محفوظة لهذه المنطقة";
     if (!String(params.locationUrl || "").trim()) {
-      return fallback ? `قريب من (${fallback})` : "— لا يوجد لوكيشن للزبون";
+      return fallback ? `قريب من (${fallback})` : "—";
     }
     const customerLoc = extractLatLngFromLocationInput(params.locationUrl);
-    if (!customerLoc) return fallback ? `قريب من (${fallback})` : "— تعذر قراءة إحداثيات الرابط";
+    if (!customerLoc) return fallback ? `قريب من (${fallback})` : "—";
 
-    let nearest: { name: string; distanceM: number } | null = null;
-    for (const p of points) {
+    let nearest: { name: string; regionName: string; distanceM: number } | null = null;
+    for (const wp of allWaypoints) {
       const distanceM = haversineMeters(
         customerLoc.latitude,
         customerLoc.longitude,
-        p.latitude,
-        p.longitude,
+        wp.latitude,
+        wp.longitude,
       );
       if (!nearest || distanceM < nearest.distanceM) {
-        nearest = { name: p.name?.trim() || "مدخل", distanceM };
+        nearest = {
+          name: wp.name?.trim() || "مدخل",
+          regionName: wp.region?.name?.trim() || "منطقة غير معروفة",
+          distanceM,
+        };
       }
     }
-    if (!nearest) return fallback ? `قريب من (${fallback})` : "— تعذر احتساب أقرب مدخل";
-    if (nearest.distanceM > 2500) return "— اللوكيشن بعيد عن مداخل المنطقة";
-    return `قريب من (${nearest.name})`;
+    if (!nearest || nearest.distanceM > 300) {
+      return fallback ? `قريب من (${fallback})` : "—";
+    }
+    return `قريب من (${nearest.name}) - ${nearest.regionName}`;
   }
 
   const phoneProfilesByKey = new Map<string, (typeof phoneProfiles)[number]>();
