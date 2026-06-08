@@ -77,7 +77,9 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
     const saderFilter: "lower" | "higher" =
       sp.saderFilter === "lower" ? "lower" : "higher";
 
-    const where: Prisma.OrderWhereInput = {};
+    const where: Prisma.OrderWhereInput = {
+      orderType: { not: "دين" },
+    };
 
     if (statusFilter === "checkSader" || statusFilter === "checkWard") {
       where.status = "delivered";
@@ -115,6 +117,7 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
 
     const pendingTabWhere: Prisma.OrderWhereInput = {
       status: "pending",
+      orderType: { not: "دين" },
     };
     if (q) {
       const asNum = parseInt(q, 10);
