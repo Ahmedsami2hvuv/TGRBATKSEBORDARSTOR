@@ -34,6 +34,7 @@ type InvoiceReportRow = {
   timeLabel: string;
   details: string;
   searchText: string;
+  createdAt: Date;
 };
 
 function formatTime(date: Date): string {
@@ -157,6 +158,7 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
       timeLabel,
       details: deleted ? `${details} (ملغاة)` : details,
       searchText,
+      createdAt,
     });
   }
 
@@ -190,6 +192,7 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
       timeLabel,
       details: deleted ? `${details} (ملغاة)` : details,
       searchText,
+      createdAt,
     });
   }
 
@@ -223,6 +226,7 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
       timeLabel,
       details: deleted ? `${details} (ملغاة)` : details,
       searchText,
+      createdAt,
     });
   }
 
@@ -254,8 +258,12 @@ export default async function InvoiceReportsPage({ searchParams }: Props) {
       timeLabel,
       details,
       searchText,
+      createdAt,
     });
   }
+
+  // Sort rows chronologically descending (newest first)
+  rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   const activeRows = rows.filter((row) => !row.deleted);
   const totalInvoices = activeRows.length;

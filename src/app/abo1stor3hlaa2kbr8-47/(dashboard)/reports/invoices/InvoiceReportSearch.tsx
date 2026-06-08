@@ -38,7 +38,10 @@ export default function InvoiceReportSearch({ rows, initialQuery, selectedDayIso
 
   const filteredRows = useMemo(() => {
     if (!normalizedQuery) return rows;
-    return rows.filter((row) => row.searchText.includes(normalizedQuery));
+    const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+    return rows.filter((row) =>
+      tokens.every((token) => row.searchText.includes(token))
+    );
   }, [normalizedQuery, rows]);
 
   const activeFilteredRows = useMemo(
