@@ -1,7 +1,10 @@
 import { cookies } from "next/headers";
-import { verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-link";
+import { verifyCompanyPreparerPortalQuery, buildCompanyPreparerPortalUrl } from "@/lib/company-preparer-portal-link";
 import { prisma } from "@/lib/prisma";
 import PreparerSettingsClient from "./preparer-settings-client";
+import { getBotTokenByPurpose } from "@/lib/telegram-bots";
+import { getPublicAppUrl } from "@/lib/app-url";
+import { randomBytes } from "crypto";
 
 type Props = {
   searchParams: Promise<{
@@ -52,6 +55,27 @@ export default async function PreparerSettingsPage({ searchParams }: Props) {
     );
   }
 
+  const botToken = await getBotTokenByPurpose("preparer");
+  const botInfo = botToken ? await fetch(`https://api.telegram.org/bot${botToken}/getMe`).then(r => r.json()).catch(() => null) : null;
+  const botUsername = botInfo?.result?.username;
+
+  let telegramLink = null;
+  if (botUsername && preparer) {
+    const preparerPortalUrl = buildCompanyPreparerPortalUrl(preparer.id, preparer.portalToken, getPublicAppUrl());
+    const botStartParam = `pl_${randomBytes(8).toString("hex")}`;
+    try {
+      await prisma.schemaPlaceholder.create({
+        data: {
+          id: botStartParam,
+          note: preparerPortalUrl,
+        },
+      });
+    } catch (err) {
+      console.error("[PreparerSettingsPage] Failed to create telegram placeholder", err);
+    }
+    telegramLink = `https://t.me/${botUsername}?start=${botStartParam}`;
+  }
+
   const baseAuth = { p: p!, exp: exp || "", s: s! };
 
   return (
@@ -61,6 +85,7 @@ export default async function PreparerSettingsPage({ searchParams }: Props) {
       availableForAssignment={preparer.availableForAssignment}
       hasPinCode={!!preparer.salaryPinCode}
       pinDisabled={preparer.salaryPinDisabled}
+      telegramLink={telegramLink}
     />
   );
 }

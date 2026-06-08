@@ -16,9 +16,10 @@ type Props = {
   availableForAssignment: boolean;
   hasPinCode: boolean;
   pinDisabled: boolean;
+  telegramLink?: string | null;
 };
 
-export default function PreparerSettingsClient({ preparerName, auth, availableForAssignment, hasPinCode, pinDisabled }: Props) {
+export default function PreparerSettingsClient({ preparerName, auth, availableForAssignment, hasPinCode, pinDisabled, telegramLink }: Props) {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [availableBgs, setAvailableBgs] = useState<BackgroundItem[]>([]);
@@ -292,6 +293,31 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
             <PreparerPresenceToggle auth={auth} availableForAssignment={availableForAssignment} />
           </div>
         </section>
+
+        {/* ربط التيليجرام */}
+        {telegramLink && (
+          <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="text-xl">🔹</span>
+              <div>
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">بوت التيليجرام</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">اربط حسابك مع بوت التليجرام للحصول على الإشعارات وإدارة الحساب</p>
+              </div>
+            </div>
+            <a
+              href={telegramLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full h-11 flex items-center justify-center rounded-xl bg-[#229ED9] text-white shadow-sm ring-1 ring-[#1b8bc2] font-black text-sm transition hover:bg-[#1b8bc2] active:scale-95 gap-2"
+              title="فتح بوت التليجرام"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.11.02-1.93 1.23-5.46 3.62-.51.35-.98.52-1.4.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.45-.42-1.39-.88.03-.24.36-.48.99-.73 3.88-1.69 6.47-2.8 7.77-3.33 3.7-1.51 4.47-1.77 4.97-1.78.11 0 .36.03.52.16.14.12.18.28.19.45.01.06.01.12 0 .19z" />
+              </svg>
+              فتح بوت التليجرام 🚀
+            </a>
+          </section>
+        )}
 
         {/* Theme Settings Box */}
         <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm">

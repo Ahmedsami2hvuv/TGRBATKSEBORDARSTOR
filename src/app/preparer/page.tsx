@@ -171,35 +171,6 @@ export default async function PreparerHomePage({ searchParams }: Props) {
   const safeIcons = safeDeepSanitize(icons);
   const safePreparer = safeDeepSanitize(preparer) ?? { shopLinks: [], authorizedBranches: [], availableForAssignment: false, name: "" };
 
-  const botToken = await getBotTokenByPurpose("preparer");
-  const botInfo = botToken ? await fetch(`https://api.telegram.org/bot${botToken}/getMe`).then(r => r.json()).catch(() => null) : null;
-  const botUsername = botInfo?.result?.username;
-
-  let telegramLink = null;
-  if (botUsername && preparer) {
-    const preparerPortalUrl = buildCompanyPreparerPortalUrl(preparer.id, preparer.portalToken, getPublicAppUrl());
-    const botStartParam = `pl_${randomBytes(8).toString("hex")}`;
-    try {
-      await prisma.schemaPlaceholder.create({
-        data: {
-          id: botStartParam,
-          note: preparerPortalUrl,
-        },
-      });
-    } catch (err) {
-      console.error("[PreparerPage] Failed to create telegram placeholder", err);
-    }
-    telegramLink = `https://t.me/${botUsername}?start=${botStartParam}`;
-  }
-
-  // Periodic cleanup of old placeholders (5% of requests)
-  if (Math.random() < 0.05) {
-    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
-    prisma.schemaPlaceholder.deleteMany({
-      where: { id: { startsWith: "pl_" }, createdAt: { lt: twoDaysAgo } }
-    }).catch(() => {});
-  }
-
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 text-base leading-relaxed sm:px-4 sm:py-4 sm:text-lg">
       <PortalAuthCookieSetter auth={baseAuth} />
@@ -212,21 +183,19 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           >
             ⚙️
           </Link>
-          {telegramLink && (
-            <a
-              href={telegramLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#229ED9] text-white shadow-sm ring-1 ring-[#1b8bc2] transition hover:bg-[#1b8bc2]"
-              title="فتح بوت التليجرام"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.11.02-1.93 1.23-5.46 3.62-.51.35-.98.52-1.4.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.45-.42-1.39-.88.03-.24.36-.48.99-.73 3.88-1.69 6.47-2.8 7.77-3.33 3.7-1.51 4.47-1.77 4.97-1.78.11 0 .36.03.52.16.14.12.18.28.19.45.01.06.01.12 0 .19z" />
-              </svg>
-            </a>
-          )}
           <p className="truncate text-base font-black text-slate-900 sm:text-lg dark:text-slate-100">{safePreparer.name}</p>
-          <PreparerSearchTrigger icons={safeIcons} />
+          <div className="mr-auto flex items-center gap-2">
+            <PreparerSearchTrigger icons={safeIcons} />
+            {canSubmitAny && canPriceStore && (
+              <Link
+                href={preparerPath("/preparer/store-pricing", baseAuth)}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100 hover:text-emerald-900 dark:border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-250 dark:hover:bg-emerald-900/50"
+                title="تسعير المتجر"
+              >
+                🏪
+              </Link>
+            )}
+          </div>
         </div>
         <div className="grid w-full shrink-0 grid-cols-2 gap-2">
           {/* العمود الأيمن (استلام الراتب + المحفظة والديون) */}
@@ -268,14 +237,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
                   طلب جديد
                 </FullscreenWalletLauncher>
               )}
-              {canSubmitAny && canPriceStore && (
-                <Link
-                  href={preparerPath("/preparer/store-pricing", baseAuth)}
-                  className="inline-flex items-center justify-center rounded-xl border-2 border-emerald-500 bg-emerald-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-emerald-700 w-full"
-                >
-                  تسعير المتجر
-                </Link>
-              )}
+
             </div>
           </div>
         </div>
