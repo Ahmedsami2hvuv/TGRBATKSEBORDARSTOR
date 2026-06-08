@@ -23,8 +23,8 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
   const router = useRouter();
   const [availableBgs, setAvailableBgs] = useState<BackgroundItem[]>([]);
   const [currentBgId, setCurrentBgId] = useState<string | null>(null);
-  const [showBgSelector, setShowBgSelector] = useState(false);
   const [showDisableForm, setShowDisableForm] = useState(false);
+  const [showChangeForm, setShowChangeForm] = useState(false);
 
   const baseQuery = new URLSearchParams();
   baseQuery.set("p", auth.p);
@@ -81,15 +81,46 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
             <span className="text-xl">🔒</span>
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white">الرمز السري للراتب</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">تحكم بطلب الرمز السري عند استلام الراتب</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">تحكم بطلب وتعيين الرمز السري عند استلام الراتب</p>
             </div>
           </div>
 
           {!hasPinCode ? (
-            <div className="text-center p-4 bg-slate-100/50 dark:bg-slate-900/40 rounded-xl border border-slate-200/60 dark:border-slate-850">
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                لم تقم بتعيين رمز سري بعد. سيُطلب منك تعيين رمز سري عند أول عملية استلام راتب.
-              </p>
+            <div className="flex flex-col gap-3 bg-slate-100/50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200/60 dark:border-slate-850">
+              <div>
+                <p className="text-xs font-bold text-amber-600 dark:text-amber-400">لم تقم بتعيين رمز سري بعد</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">يرجى تعيين رمز لحماية حسابك عند سحب الراتب (يمكن كتابة أحرف أو أرقام عربي/إنجليزي).</p>
+              </div>
+              
+              <form action={async (formData) => {
+                const res = await enablePreparerSalaryPinCode(null, formData);
+                if (res.ok) {
+                  toast.success("تم تعيين وتفعيل الرمز السري بنجاح");
+                  router.refresh();
+                } else {
+                  toast.error(res.error || "فشل تعيين الرمز السري");
+                }
+              }} className="mt-1 flex flex-col gap-2">
+                <input type="hidden" name="p" value={auth.p} />
+                <input type="hidden" name="exp" value={auth.exp} />
+                <input type="hidden" name="s" value={auth.s} />
+                
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    name="pinCode"
+                    placeholder="اكتب رمزك السري هنا"
+                    required
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-sm font-bold text-slate-850 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-xs font-bold text-white bg-sky-650 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 rounded-xl transition shadow-sm"
+                  >
+                    تثبيت الرمز
+                  </button>
+                </div>
+              </form>
             </div>
           ) : pinDisabled ? (
             <div className="flex flex-col gap-3 bg-slate-100/50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200/60 dark:border-slate-850">
@@ -104,7 +135,7 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
               <form action={async (formData) => {
                 const res = await enablePreparerSalaryPinCode(null, formData);
                 if (res.ok) {
-                  toast.success("تم إعادة تفعيل الرمز السري بنجاح");
+                  toast.success("تم إعادة تشغيل الرمز السري بنجاح");
                   router.refresh();
                 } else {
                   toast.error(res.error || "فشل تفعيل الرمز السري");
@@ -116,20 +147,17 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
                 
                 <div className="flex items-center gap-2">
                   <input
-                    type="password"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={4}
+                    type="text"
                     name="pinCode"
-                    placeholder="أدخل رمز سري جديد (4 أرقام)"
+                    placeholder="اكتب رمزاً جديداً لتشغيله"
                     required
-                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-sm font-bold tracking-widest text-slate-850 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-sm font-bold text-slate-850 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                   />
                   <button
                     type="submit"
                     className="px-4 py-2 text-xs font-bold text-white bg-sky-650 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 rounded-xl transition shadow-sm"
                   >
-                    تفعيل الرمز
+                    تشغيل الرمز
                   </button>
                 </div>
               </form>
@@ -144,15 +172,26 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
                 <span className="text-lg">🔒</span>
               </div>
 
-              {!showDisableForm ? (
-                <button
-                  type="button"
-                  onClick={() => setShowDisableForm(true)}
-                  className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition active:scale-98"
-                >
-                  إيقاف تفعيل الرمز السري
-                </button>
-              ) : (
+              {!showDisableForm && !showChangeForm && (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowDisableForm(true)}
+                    className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition active:scale-98"
+                  >
+                    إيقاف تفعيل الرمز
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowChangeForm(true)}
+                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition active:scale-98"
+                  >
+                    تغيير الرمز السري
+                  </button>
+                </div>
+              )}
+
+              {showDisableForm && (
                 <form action={async (formData) => {
                   const res = await disablePreparerSalaryPinCode(null, formData);
                   if (res.ok) {
@@ -160,7 +199,7 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
                     setShowDisableForm(false);
                     router.refresh();
                   } else {
-                    toast.error(res.error || "الرمز السري غير صحيح");
+                    toast.error(res.error || "الرمز السري الحالي غير صحيح");
                   }
                 }} className="flex flex-col gap-2">
                   <input type="hidden" name="p" value={auth.p} />
@@ -171,14 +210,11 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
                   <div className="flex items-center gap-2">
                     <input
                       type="password"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={4}
                       name="pinCode"
                       placeholder="الرمز الحالي"
                       required
                       autoFocus
-                      className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-sm font-bold tracking-widest text-slate-850 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                      className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-sm font-bold text-slate-850 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                     />
                     <button
                       type="submit"
@@ -189,6 +225,48 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
                     <button
                       type="button"
                       onClick={() => setShowDisableForm(false)}
+                      className="px-3 py-2 text-xs font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 rounded-xl transition"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {showChangeForm && (
+                <form action={async (formData) => {
+                  const res = await enablePreparerSalaryPinCode(null, formData);
+                  if (res.ok) {
+                    toast.success("تم تغيير الرمز السري بنجاح");
+                    setShowChangeForm(false);
+                    router.refresh();
+                  } else {
+                    toast.error(res.error || "فشل تغيير الرمز السري");
+                  }
+                }} className="flex flex-col gap-2">
+                  <input type="hidden" name="p" value={auth.p} />
+                  <input type="hidden" name="exp" value={auth.exp} />
+                  <input type="hidden" name="s" value={auth.s} />
+                  
+                  <p className="text-[11px] font-bold text-slate-600 dark:text-slate-355">اكتب الرمز السري الجديد:</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      name="pinCode"
+                      placeholder="الرمز الجديد"
+                      required
+                      autoFocus
+                      className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-sm font-bold text-slate-850 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                    />
+                    <button
+                      type="submit"
+                      className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition"
+                    >
+                      حفظ الرمز
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowChangeForm(false)}
                       className="px-3 py-2 text-xs font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 rounded-xl transition"
                     >
                       إلغاء
