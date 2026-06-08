@@ -9,8 +9,6 @@ import { preparerPath } from "@/lib/preparer-portal-nav";
 import { loadPreparerPortalOrderTableData } from "@/lib/preparer-portal-order-table-data";
 import { prisma } from "@/lib/prisma";
 import { PreparerOrdersSection } from "./preparer-orders-client";
-import { SalaryWithdrawalButton } from "./salary-withdrawal-button";
-import { PreparerWalletLink } from "./preparer-wallet-link";
 import { PreparerSearchTrigger } from "./preparer-search-trigger";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
@@ -197,49 +195,58 @@ export default async function PreparerHomePage({ searchParams }: Props) {
             )}
           </div>
         </div>
-        <div className="grid w-full shrink-0 grid-cols-2 gap-2">
-          {/* العمود الأيمن (استلام الراتب + المحفظة والديون) */}
-          <div className="flex flex-col gap-2 w-full">
-            <SalaryWithdrawalButton auth={baseAuth} preparerName={safePreparer.name} />
-            <div className="flex gap-2 w-full">
-              <div className="flex-1 min-w-0">
-                <PreparerWalletLink auth={baseAuth} icons={safeIcons} walletRemainStr={walletRemainStr} />
-              </div>
-              <FullscreenWalletLauncher
-                href={preparerPath("/preparer/debts", baseAuth)}
-                className="w-1/3 shrink-0 inline-flex items-center justify-center rounded-xl border-2 border-rose-500 bg-rose-600 px-2 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-rose-700 transition"
-                title="الديون"
-              >
-                الديون
-              </FullscreenWalletLauncher>
-            </div>
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 w-full mt-2">
+          {/* زر استلام الراتب */}
+          <Link
+            href={preparerPath("/preparer/salary", baseAuth)}
+            className="flex-1 min-w-[3.5rem] h-11 flex items-center justify-center rounded-xl border-2 border-sky-200 bg-sky-50 text-sky-600 shadow-sm transition hover:bg-sky-100 hover:scale-105 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-800"
+            title="استلام الراتب"
+          >
+            <span className="text-xl">💸</span>
+          </Link>
 
-          {/* العمود الأيسر (تجهيز الطلبات + طلب جديد وتسعير المتجر) */}
-          <div className="flex flex-col gap-2 w-full">
-            {canSubmitAny && (
-              <FullscreenWalletLauncher
-                href={preparerPath("/preparer/preparation", baseAuth)}
-                className="inline-flex items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 w-full"
-                title="تجهيز الطلبات"
-              >
-                تجهيز الطلبات
-              </FullscreenWalletLauncher>
-            )}
-            
-            <div className="flex flex-col gap-2 w-full">
-              {canSubmitAny && (
-                <FullscreenWalletLauncher
-                  href={preparerPath("/preparer/order/new", baseAuth)}
-                  className="inline-flex items-center justify-center rounded-xl border-2 border-sky-500 bg-sky-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-sky-700 w-full"
-                  title="طلب جديد"
-                >
-                  طلب جديد
-                </FullscreenWalletLauncher>
-              )}
+          {/* زر محفظتي */}
+          <FullscreenWalletLauncher
+            href={preparerPath("/preparer/wallet", baseAuth)}
+            className="flex-1 min-w-[4.5rem] h-11 flex items-center justify-center gap-1 rounded-xl border-2 border-violet-400 bg-violet-50 text-violet-955 shadow-sm hover:bg-violet-100 transition hover:scale-105"
+            title="محفظتي"
+          >
+            <span className="text-xl">💰</span>
+            <span className="text-[10px] font-black bg-violet-100 px-1.5 py-0.5 rounded-lg text-violet-900 leading-none">
+              {walletRemainStr}
+            </span>
+          </FullscreenWalletLauncher>
 
-            </div>
-          </div>
+          {/* زر الديون */}
+          <FullscreenWalletLauncher
+            href={preparerPath("/preparer/debts", baseAuth)}
+            className="flex-1 min-w-[3.5rem] h-11 flex items-center justify-center rounded-xl border-2 border-rose-500 bg-rose-600 text-white shadow-sm hover:bg-rose-700 transition hover:scale-105"
+            title="الديون"
+          >
+            <span className="text-xl">💳</span>
+          </FullscreenWalletLauncher>
+
+          {/* زر تجهيز الطلبات */}
+          {canSubmitAny && (
+            <FullscreenWalletLauncher
+              href={preparerPath("/preparer/preparation", baseAuth)}
+              className="flex-1 min-w-[3.5rem] h-11 flex items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 text-white shadow-sm hover:bg-violet-700 transition hover:scale-105"
+              title="تجهيز الطلبات"
+            >
+              <span className="text-xl">📦</span>
+            </FullscreenWalletLauncher>
+          )}
+
+          {/* زر طلب جديد */}
+          {canSubmitAny && (
+            <FullscreenWalletLauncher
+              href={preparerPath("/preparer/order/new", baseAuth)}
+              className="flex-1 min-w-[3.5rem] h-11 flex items-center justify-center rounded-xl border-2 border-sky-500 bg-sky-600 text-white shadow-sm hover:bg-sky-700 transition hover:scale-105"
+              title="طلب جديد"
+            >
+              <span className="text-xl">➕</span>
+            </FullscreenWalletLauncher>
+          )}
         </div>
       </header>
       <PreparerNotificationPoller auth={baseAuth} openUrl={preparationHref} />
