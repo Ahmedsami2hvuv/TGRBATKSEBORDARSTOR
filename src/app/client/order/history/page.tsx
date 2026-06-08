@@ -325,9 +325,15 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                         </div>
                         <div className="text-left shrink-0">
                           {isDebtOrder ? (
-                            <p className="text-sm font-black text-rose-600 dark:text-rose-400 tabular-nums">
-                              قيمة الدين: {formatDinarAsAlfWithUnit(o.orderSubtotal)}
-                            </p>
+                            isDebtPaid ? (
+                              <p className="text-sm font-black text-slate-500 tabular-nums">
+                                تم تسديد الدين للمحل ({formatDinarAsAlfWithUnit(o.orderSubtotal)})
+                              </p>
+                            ) : (
+                              <p className="text-sm font-black text-rose-600 dark:text-rose-400 tabular-nums">
+                                قيمة الدين: {formatDinarAsAlfWithUnit(o.orderSubtotal)}
+                              </p>
+                            )
                           ) : (
                             <>
                               {o.orderSubtotal != null && (
