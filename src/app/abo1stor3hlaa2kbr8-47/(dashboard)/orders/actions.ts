@@ -36,9 +36,19 @@ export async function assignOrderToPreparer(
   const orderId = String(formData.get("orderId") ?? "").trim();
   const isDraft = formData.get("isDraft") === "true";
 
-  const preparerIds = formData.getAll("preparerIds").length > 0
-    ? formData.getAll("preparerIds").map(id => String(id).trim())
-    : [String(formData.get("preparerId") ?? "").trim()].filter(Boolean);
+  const preparerIdsJsonStr = formData.get("preparerIdsJson");
+  let preparerIds: string[] = [];
+  if (preparerIdsJsonStr) {
+    try {
+      preparerIds = JSON.parse(String(preparerIdsJsonStr)).map((id: any) => String(id).trim()).filter(Boolean);
+    } catch (e) {
+      console.error("Failed to parse preparerIdsJson:", e);
+    }
+  } else {
+    preparerIds = formData.getAll("preparerIds").length > 0
+      ? formData.getAll("preparerIds").map(id => String(id).trim())
+      : [String(formData.get("preparerId") ?? "").trim()].filter(Boolean);
+  }
 
   if (!orderId) return { error: "المعرف مفقود" };
 
@@ -281,9 +291,19 @@ export async function reassignOrderToPreparer(
   formData: FormData,
 ): Promise<AssignOrderState> {
   const id = String(formData.get("id") ?? "").trim();
-  const preparerIds = formData.getAll("preparerIds").length > 0
-    ? formData.getAll("preparerIds").map(id => String(id).trim())
-    : [String(formData.get("preparerId") ?? "").trim()].filter(Boolean);
+  const preparerIdsJsonStr = formData.get("preparerIdsJson");
+  let preparerIds: string[] = [];
+  if (preparerIdsJsonStr) {
+    try {
+      preparerIds = JSON.parse(String(preparerIdsJsonStr)).map((id: any) => String(id).trim()).filter(Boolean);
+    } catch (e) {
+      console.error("Failed to parse preparerIdsJson:", e);
+    }
+  } else {
+    preparerIds = formData.getAll("preparerIds").length > 0
+      ? formData.getAll("preparerIds").map(id => String(id).trim())
+      : [String(formData.get("preparerId") ?? "").trim()].filter(Boolean);
+  }
   const isDraft = formData.get("isDraft") === "true";
 
   if (!id || preparerIds.length === 0) return { error: "يجب اختيار مجهز واحد على الأقل" };
