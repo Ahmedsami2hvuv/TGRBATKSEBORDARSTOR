@@ -137,6 +137,7 @@ model CompanyPreparer {
   walletEmployee                      Employee?                      @relation("CompanyPreparerWalletEmployee", fields: [walletEmployeeId], references: [id])
   dailySalary                         Decimal                        @default(0) @db.Decimal(10, 2)
   salaryPinCode                       String?
+  salaryPinDisabled                   Boolean                        @default(false)
   lastSalaryWithdrawalAt              DateTime                       @default(now())
   workLogs                            CompanyPreparerWorkLog[]
   prepNotices                         CompanyPreparerPrepNotice[]

@@ -1865,7 +1865,7 @@ export async function getPreparerSalaryStats(_prev: any, formData: FormData): Pr
 
     const preparer = await prisma.companyPreparer.findUnique({
       where: { id: v.preparerId },
-      select: { salaryPinCode: true }
+      select: { salaryPinCode: true, salaryPinDisabled: true }
     });
 
     if (!preparer) return { error: "المجهز غير موجود." };
@@ -1877,7 +1877,8 @@ export async function getPreparerSalaryStats(_prev: any, formData: FormData): Pr
       dailySalary: stats.dailySalary,
       todaySalary: stats.todaySalary,
       accumulatedSalary: stats.accumulatedSalary,
-      hasPinCode: !!preparer.salaryPinCode
+      hasPinCode: !!preparer.salaryPinCode && !preparer.salaryPinDisabled,
+      pinDisabled: preparer.salaryPinDisabled
     };
   } catch (e) {
     console.error("getPreparerSalaryStats error:", e);
@@ -1899,17 +1900,73 @@ export async function setPreparerSalaryPinCode(_prev: any, formData: FormData): 
     });
 
     if (!preparer) return { error: "المجهز غير موجود." };
-    if (preparer.salaryPinCode) return { error: "لقد قمت بتعيين الرمز السري مسبقاً." };
+    if (preparer.salaryPinCode && !preparer.salaryPinDisabled) return { error: "لقد قمت بتعيين الرمز السري مسبقاً." };
 
     await prisma.companyPreparer.update({
       where: { id: v.preparerId },
-      data: { salaryPinCode: pinCode }
+      data: { salaryPinCode: pinCode, salaryPinDisabled: false }
     });
 
     return { ok: true };
   } catch (e) {
     console.error("setPreparerSalaryPinCode error:", e);
     return { error: "فشل تعيين الرمز السري." };
+  }
+}
+
+// أكشن إيقاف تفعيل الرمز السري للمجهز
+export async function disablePreparerSalaryPinCode(_prev: any, formData: FormData): Promise<{ ok?: boolean; error?: string }> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "الرابط غير صالح." };
+
+    const pinCode = String(formData.get("pinCode") ?? "").trim();
+    if (!pinCode) return { error: "الرمز السري الحالي مطلوب." };
+
+    const preparer = await prisma.companyPreparer.findUnique({
+      where: { id: v.preparerId }
+    });
+
+    if (!preparer) return { error: "المجهز غير موجود." };
+    if (!preparer.salaryPinCode) return { error: "لا يوجد رمز سري معين حالياً." };
+    if (preparer.salaryPinCode !== pinCode) return { error: "الرمز السري غير صحيح." };
+
+    await prisma.companyPreparer.update({
+      where: { id: v.preparerId },
+      data: { salaryPinDisabled: true }
+    });
+
+    return { ok: true };
+  } catch (e) {
+    console.error("disablePreparerSalaryPinCode error:", e);
+    return { error: "فشل إيقاف الرمز السري." };
+  }
+}
+
+// أكشن إعادة تفعيل/تعديل الرمز السري للمجهز
+export async function enablePreparerSalaryPinCode(_prev: any, formData: FormData): Promise<{ ok?: boolean; error?: string }> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "الرابط غير صالح." };
+
+    const pinCode = String(formData.get("pinCode") ?? "").trim();
+    if (!pinCode || pinCode.length < 4) return { error: "الرمز السري يجب أن يتكون من 4 أرقام على الأقل." };
+
+    const preparer = await prisma.companyPreparer.findUnique({
+      where: { id: v.preparerId }
+    });
+
+    if (!preparer) return { error: "المجهز غير موجود." };
+
+    await prisma.companyPreparer.update({
+      where: { id: v.preparerId },
+      data: { salaryPinCode: pinCode, salaryPinDisabled: false }
+    });
+
+    return { ok: true };
+  } catch (e) {
+    console.error("enablePreparerSalaryPinCode error:", e);
+    return { error: "فشل تفعيل الرمز السري." };
   }
 }
 
@@ -1920,15 +1977,19 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
     if (!v.ok) return { error: "الرابط غير صالح." };
 
     const pinCode = String(formData.get("pinCode") ?? "").trim();
-    if (!pinCode) return { error: "الرمز السري مطلوب." };
 
     const preparer = await prisma.companyPreparer.findUnique({
       where: { id: v.preparerId }
     });
 
     if (!preparer) return { error: "المجهز غير موجود." };
-    if (!preparer.salaryPinCode) return { error: "يرجى تعيين رمز سري أولاً." };
-    if (preparer.salaryPinCode !== pinCode) return { error: "الرمز السري غير صحيح." };
+
+    // نتحقق من الرمز فقط إذا لم يكن قد أوقفه المجهز
+    if (!preparer.salaryPinDisabled) {
+      if (!pinCode) return { error: "الرمز السري مطلوب." };
+      if (!preparer.salaryPinCode) return { error: "يرجى تعيين رمز سري أولاً." };
+      if (preparer.salaryPinCode !== pinCode) return { error: "الرمز السري غير صحيح." };
+    }
 
     if (!preparer.walletEmployeeId) {
       return { error: "المحفظة غير مفعلة لحسابك. يرجى مراجعة الإدارة." };

@@ -14,7 +14,7 @@ type Props = {
 export function SalaryWithdrawalDialog({ auth, preparerName, onClose, onSuccess }: Props) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [stats, setStats] = useState<{ dailySalary: number; todaySalary: number; accumulatedSalary: number; hasPinCode: boolean } | null>(null);
+  const [stats, setStats] = useState<{ dailySalary: number; todaySalary: number; accumulatedSalary: number; hasPinCode: boolean; pinDisabled: boolean } | null>(null);
   
   // لتعيين الرمز السري لأول مرة
   const [newPin, setNewPin] = useState("");
@@ -46,7 +46,8 @@ export function SalaryWithdrawalDialog({ auth, preparerName, onClose, onSuccess 
             dailySalary: res.dailySalary || 0,
             todaySalary: res.todaySalary || 0,
             accumulatedSalary: res.accumulatedSalary || 0,
-            hasPinCode: !!res.hasPinCode
+            hasPinCode: !!res.hasPinCode,
+            pinDisabled: !!res.pinDisabled
           });
         }
         setLoading(false);
@@ -59,7 +60,7 @@ export function SalaryWithdrawalDialog({ auth, preparerName, onClose, onSuccess 
 
   // التحقق التلقائي بمجرد اكتمال كتابة الرمز السري
   useEffect(() => {
-    if (stats?.hasPinCode && pin.length === 4 && !submitting) {
+    if (stats?.hasPinCode && !stats?.pinDisabled && pin.length === 4 && !submitting) {
       handleWithdraw(pin);
     }
   }, [pin, stats]);
@@ -181,8 +182,21 @@ export function SalaryWithdrawalDialog({ auth, preparerName, onClose, onSuccess 
             </div>
           ) : (
             <>
-              {/* إعداد الرمز السري لأول مرة */}
-              {!stats?.hasPinCode ? (
+              {stats?.pinDisabled ? (
+                /* الاستلام المباشر بدون رمز سري */
+                <div className="space-y-4">
+                  <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                    الرمز السري موقوف حالياً. يمكنك استلام الراتب مباشرة.
+                  </p>
+                  <button
+                    onClick={() => handleWithdraw("")}
+                    disabled={submitting}
+                    className="w-full h-14 bg-sky-500 hover:bg-sky-600 text-white font-black rounded-3xl shadow-lg shadow-sky-100 dark:shadow-none transition active:scale-95 disabled:opacity-50"
+                  >
+                    {submitting ? "جاري تسليم الراتب..." : "تأكيد استلام الراتب المباشر"}
+                  </button>
+                </div>
+              ) : !stats?.hasPinCode ? (
                 <form onSubmit={handleSetupPin} className="space-y-4">
                   <div className="text-right bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40 rounded-2xl p-3 text-xs font-bold text-amber-800 dark:text-amber-300">
                     أهلاً ({preparerName})، عين رمزاً لاستلام راتبك لأول مرة.

@@ -59,6 +59,8 @@ export default async function PreparerSettingsPage({ searchParams }: Props) {
       preparerName={preparer.name}
       auth={baseAuth}
       availableForAssignment={preparer.availableForAssignment}
+      hasPinCode={!!preparer.salaryPinCode}
+      pinDisabled={preparer.salaryPinDisabled}
     />
   );
 }
