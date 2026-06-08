@@ -5,6 +5,7 @@ import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
 import { DebtItemClient } from "./debt-item-client";
 import { DebtListContainer } from "./debt-list-container";
+import { serializePrisma } from "@/lib/serialize-prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -130,7 +131,7 @@ export default async function PreparerDebtsPage({ searchParams }: Props) {
           </div>
         </header>
 
-        <DebtListContainer initialOrders={debtOrders} auth={baseAuth} preparerShops={preparerShops} />
+        <DebtListContainer initialOrders={serializePrisma(debtOrders)} auth={baseAuth} preparerShops={preparerShops} />
 
 
         <div className="fixed bottom-6 left-0 right-0 px-4 z-50">
