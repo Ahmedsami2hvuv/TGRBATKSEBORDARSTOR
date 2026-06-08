@@ -421,42 +421,118 @@ export async function submitPreparerShoppingDraft(
       resolvedOrderType = resolveDynamicOrderType(products, resolvedOrderType);
     }
 
-    const order = await prisma.order.create({
-      data: {
-        shopId: shop.id,
-        status: "pending",
-        orderType: resolvedOrderType,
-        customerPhone: draft.customerPhone,
-        customerRegionId: draft.customerRegionId,
-        customerLandmark: draft.customerLandmark,
-        orderNoteTime: draft.orderTime,
-        deliveryPrice: delivery,
-        orderSubtotal: subtotal,
-        totalAmount: total,
-        submissionSource: "company_preparer",
-        submittedByCompanyPreparerId: null, // طلب إداري (ليس لمجهز معين)
-        summary: formatBorderedSummarySection("المنتجات حسب المجهز", summaryParts.join("\n\n═══════════════\n\n")),
-        preparerShoppingJson: {
-          version: 1,
-          products,
-          placesCount,
-          sumSellAlf,
-          extraAlf,
-          deliveryAlf: Number(delivery) / ALF_PER_DINAR,
-          preparerInvoices,
-          noProfit: !!draftData?.noProfit,
-          customerInvoiceText: buildCustomerInvoiceText({
-            brandLabel: "أبو الأكبر للتوصيل",
-            orderNumberLabel: "...",
-            regionTitle: draft.titleLine,
-            phone: draft.customerPhone,
-            lines: products,
-            placesCount,
-            deliveryAlf: Number(delivery) / ALF_PER_DINAR
-          })
-        }
+    let order: any;
+    if (draft.sentOrderId) {
+      const existingOrder = await prisma.order.findUnique({
+        where: { id: draft.sentOrderId }
+      });
+      if (existingOrder) {
+        order = await prisma.order.update({
+          where: { id: draft.sentOrderId },
+          data: {
+            orderType: resolvedOrderType,
+            orderSubtotal: subtotal,
+            deliveryPrice: delivery,
+            totalAmount: total,
+            submissionSource: "company_preparer",
+            summary: formatBorderedSummarySection("المنتجات حسب المجهز", summaryParts.join("\n\n═══════════════\n\n")),
+            preparerShoppingJson: {
+              version: 1,
+              products,
+              placesCount,
+              sumSellAlf,
+              extraAlf,
+              deliveryAlf: Number(delivery) / ALF_PER_DINAR,
+              preparerInvoices,
+              noProfit: !!draftData?.noProfit,
+              customerInvoiceText: buildCustomerInvoiceText({
+                brandLabel: "أبو الأكبر للتوصيل",
+                orderNumberLabel: `#${existingOrder.orderNumber}`,
+                regionTitle: draft.titleLine,
+                phone: draft.customerPhone,
+                lines: products,
+                placesCount,
+                deliveryAlf: Number(delivery) / ALF_PER_DINAR
+              })
+            }
+          }
+        });
+      } else {
+        order = await prisma.order.create({
+          data: {
+            shopId: shop.id,
+            status: "pending",
+            orderType: resolvedOrderType,
+            customerPhone: draft.customerPhone,
+            customerRegionId: draft.customerRegionId,
+            customerLandmark: draft.customerLandmark,
+            orderNoteTime: draft.orderTime,
+            deliveryPrice: delivery,
+            orderSubtotal: subtotal,
+            totalAmount: total,
+            submissionSource: "company_preparer",
+            submittedByCompanyPreparerId: null,
+            summary: formatBorderedSummarySection("المنتجات حسب المجهز", summaryParts.join("\n\n═══════════════\n\n")),
+            preparerShoppingJson: {
+              version: 1,
+              products,
+              placesCount,
+              sumSellAlf,
+              extraAlf,
+              deliveryAlf: Number(delivery) / ALF_PER_DINAR,
+              preparerInvoices,
+              noProfit: !!draftData?.noProfit,
+              customerInvoiceText: buildCustomerInvoiceText({
+                brandLabel: "أبو الأكبر للتوصيل",
+                orderNumberLabel: "...",
+                regionTitle: draft.titleLine,
+                phone: draft.customerPhone,
+                lines: products,
+                placesCount,
+                deliveryAlf: Number(delivery) / ALF_PER_DINAR
+              })
+            }
+          }
+        });
       }
-    });
+    } else {
+      order = await prisma.order.create({
+        data: {
+          shopId: shop.id,
+          status: "pending",
+          orderType: resolvedOrderType,
+          customerPhone: draft.customerPhone,
+          customerRegionId: draft.customerRegionId,
+          customerLandmark: draft.customerLandmark,
+          orderNoteTime: draft.orderTime,
+          deliveryPrice: delivery,
+          orderSubtotal: subtotal,
+          totalAmount: total,
+          submissionSource: "company_preparer",
+          submittedByCompanyPreparerId: null,
+          summary: formatBorderedSummarySection("المنتجات حسب المجهز", summaryParts.join("\n\n═══════════════\n\n")),
+          preparerShoppingJson: {
+            version: 1,
+            products,
+            placesCount,
+            sumSellAlf,
+            extraAlf,
+            deliveryAlf: Number(delivery) / ALF_PER_DINAR,
+            preparerInvoices,
+            noProfit: !!draftData?.noProfit,
+            customerInvoiceText: buildCustomerInvoiceText({
+              brandLabel: "أبو الأكبر للتوصيل",
+              orderNumberLabel: "...",
+              regionTitle: draft.titleLine,
+              phone: draft.customerPhone,
+              lines: products,
+              placesCount,
+              deliveryAlf: Number(delivery) / ALF_PER_DINAR
+            })
+          }
+        }
+      });
+    }
 
     // --- توزيع المبالغ على المحافظ وإرسال إشعارات منفصلة لكل مجهز ---
     const allPreps = await prisma.companyPreparer.findMany({
