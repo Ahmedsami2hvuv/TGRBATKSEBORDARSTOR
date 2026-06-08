@@ -422,6 +422,12 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
 
       // عند الإرسال النهائي لمسودة، نؤكد أن كافة المسودات المتصلة تُعلَن مرسلة
       if (submitType === "final_send") {
+        // تحديث مؤكد للمسودة الحالية بالمعرف الفردي
+        await tx.companyPreparerShoppingDraft.update({
+          where: { id: orderId },
+          data: { status: PreparerShoppingDraftStatus.sent, sentOrderId: finalOrderId }
+        });
+
         const draftGroupId = (draftData!.data as any)?.groupId;
         if (draftGroupId) {
           await tx.companyPreparerShoppingDraft.updateMany({
@@ -431,8 +437,13 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
         } else {
           await tx.companyPreparerShoppingDraft.updateMany({
             where: {
-              customerPhone: draftData!.customerPhone,
-              titleLine: draftData!.titleLine,
+              OR: [
+                { sentOrderId: finalOrderId },
+                {
+                  customerPhone: draftData!.customerPhone,
+                  titleLine: draftData!.titleLine,
+                }
+              ],
               status: { in: ["draft", "priced"] }
             },
             data: { status: PreparerShoppingDraftStatus.sent, sentOrderId: finalOrderId }
