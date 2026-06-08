@@ -125,6 +125,7 @@ export async function loadPreparerPortalOrderTableData(args: {
           where: {
             shopId: { in: shopIds },
             status: { in: ["pending", "assigned", "delivering"] },
+            orderType: { not: "دين" },
             ...(onlySubmittedByThisPreparer
               ? { submittedByCompanyPreparerId: preparerId }
               : {}),
