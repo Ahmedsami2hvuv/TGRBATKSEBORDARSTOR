@@ -1858,7 +1858,17 @@ async function calculateAccumulatedSalaryInternal(preparerId: string) {
 }
 
 // أكشن جلب إحصائيات راتب المجهز
-export async function getPreparerSalaryStats(_prev: any, formData: FormData): Promise<{ ok?: boolean; error?: string; dailySalary?: number; todaySalary?: number; accumulatedSalary?: number; hasPinCode?: boolean }> {
+export async function getPreparerSalaryStats(_prev: any, formData: FormData): Promise<{
+  ok?: boolean;
+  error?: string;
+  dailySalary?: number;
+  todaySalary?: number;
+  accumulatedSalary?: number;
+  withdrawableSalary?: number;
+  isBeforeEightPM?: boolean;
+  hasPinCode?: boolean;
+  pinDisabled?: boolean;
+}> {
   try {
     const v = readPortal(formData);
     if (!v.ok) return { error: "الرابط غير صالح." };
@@ -1871,12 +1881,17 @@ export async function getPreparerSalaryStats(_prev: any, formData: FormData): Pr
     if (!preparer) return { error: "المجهز غير موجود." };
 
     const stats = await calculateAccumulatedSalaryInternal(v.preparerId);
+    const iraqNow = getIraqTime(new Date());
+    const isBeforeEightPM = iraqNow.hours < 20;
+    const withdrawableSalary = isBeforeEightPM ? Math.max(0, stats.accumulatedSalary - stats.todaySalary) : stats.accumulatedSalary;
 
     return {
       ok: true,
       dailySalary: stats.dailySalary,
       todaySalary: stats.todaySalary,
       accumulatedSalary: stats.accumulatedSalary,
+      withdrawableSalary,
+      isBeforeEightPM,
       hasPinCode: !!preparer.salaryPinCode && !preparer.salaryPinDisabled,
       pinDisabled: preparer.salaryPinDisabled
     };
@@ -1996,10 +2011,23 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
     }
 
     const stats = await calculateAccumulatedSalaryInternal(v.preparerId);
-    const amountDinar = new Decimal(stats.accumulatedSalary);
+    const iraqNow = getIraqTime(new Date());
+    const isBeforeEightPM = iraqNow.hours < 20;
+
+    let withdrawableSalary = stats.accumulatedSalary;
+    if (isBeforeEightPM) {
+      withdrawableSalary = Math.max(0, stats.accumulatedSalary - stats.todaySalary);
+    }
+
+    const amountDinar = new Decimal(withdrawableSalary);
 
     if (amountDinar.lte(0)) {
-      return { error: "لا يوجد راتب متراكم للاستلام حالياً." };
+      if (isBeforeEightPM && stats.todaySalary > 0) {
+        return {
+          error: `راتبك اليوم ${stats.todaySalary} الف وراتبك التراكمي ${stats.accumulatedSalary} الف. الراتب المتاح للسحب حالياً هو ${withdrawableSalary} الف. انتظر لتصبح الساعة 8 مساءً لكي تستلم التراكمي بأكمله.`
+        };
+      }
+      return { error: "لا يوجد راتب متراكم متاح للاستلام حالياً." };
     }
 
     // إجراء العملية في قاعدة البيانات
@@ -2060,7 +2088,7 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
 
     revalidatePath("/preparer");
     revalidatePath("/preparer/wallet");
-    return { ok: true, withdrawnAmount: stats.accumulatedSalary };
+    return { ok: true, withdrawnAmount: withdrawableSalary };
   } catch (e) {
     console.error("withdrawPreparerSalary error:", e);
     return { error: "فشل استلام الراتب بسبب خطأ تقني." };

@@ -14,7 +14,15 @@ type Props = {
 export function SalaryWithdrawalDialog({ auth, preparerName, onClose, onSuccess }: Props) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [stats, setStats] = useState<{ dailySalary: number; todaySalary: number; accumulatedSalary: number; hasPinCode: boolean; pinDisabled: boolean } | null>(null);
+  const [stats, setStats] = useState<{
+    dailySalary: number;
+    todaySalary: number;
+    accumulatedSalary: number;
+    withdrawableSalary: number;
+    isBeforeEightPM: boolean;
+    hasPinCode: boolean;
+    pinDisabled: boolean;
+  } | null>(null);
   
   // لتعيين الرمز السري لأول مرة
   const [newPin, setNewPin] = useState("");
@@ -46,6 +54,8 @@ export function SalaryWithdrawalDialog({ auth, preparerName, onClose, onSuccess 
             dailySalary: res.dailySalary || 0,
             todaySalary: res.todaySalary || 0,
             accumulatedSalary: res.accumulatedSalary || 0,
+            withdrawableSalary: res.withdrawableSalary || 0,
+            isBeforeEightPM: !!res.isBeforeEightPM,
             hasPinCode: !!res.hasPinCode,
             pinDisabled: !!res.pinDisabled
           });
@@ -159,26 +169,45 @@ export function SalaryWithdrawalDialog({ auth, preparerName, onClose, onSuccess 
           </p>
 
           {/* لوحة تفاصيل الراتب */}
-          <div className="my-6 grid grid-cols-2 gap-3 bg-slate-50/80 dark:bg-slate-900/60 p-4 rounded-3xl border border-slate-200/50 dark:border-slate-800">
-            <div className="text-right">
-              <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">راتب اليوم الحالي</span>
-              <span className="text-lg font-black text-slate-800 dark:text-white tabular-nums">
-                {stats?.todaySalary} <span className="text-xs font-bold text-slate-400">الف</span>
-              </span>
+          <div className="my-6 space-y-3 bg-slate-50/80 dark:bg-slate-900/60 p-4 rounded-3xl border border-slate-200/50 dark:border-slate-800">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-right">
+                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">راتب اليوم</span>
+                <span className="text-base font-black text-slate-800 dark:text-white tabular-nums">
+                  {stats?.todaySalary} <span className="text-xs font-bold text-slate-400">الف</span>
+                </span>
+              </div>
+              <div className="text-left border-r border-slate-200/60 dark:border-slate-800/60 pr-4">
+                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">الراتب التراكمي الكلي</span>
+                <span className="text-base font-black text-slate-700 dark:text-slate-300 tabular-nums">
+                  {stats?.accumulatedSalary} <span className="text-xs font-bold text-slate-400">الف</span>
+                </span>
+              </div>
             </div>
-            <div className="text-left border-r border-slate-200/60 dark:border-slate-800/60 pr-4">
-              <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">الراتب المتراكم</span>
-              <span className="text-xl font-black text-sky-600 dark:text-[#00f3ff] tabular-nums">
-                {stats?.accumulatedSalary} <span className="text-xs font-bold text-slate-400">الف</span>
+            
+            <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-2.5 flex items-center justify-between">
+              <span className="text-xs font-black text-slate-500 dark:text-slate-400">الراتب المتاح للسحب:</span>
+              <span className="text-lg font-black text-sky-600 dark:text-[#00f3ff] bg-sky-500/10 px-3 py-1 rounded-xl tabular-nums">
+                {stats?.withdrawableSalary} <span className="text-xs font-bold text-sky-500">الف</span>
               </span>
             </div>
           </div>
 
+          {stats?.isBeforeEightPM && stats.todaySalary > 0 && (
+            <div className="mb-4 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-black p-3 rounded-2xl text-right">
+              ⏳ انتظر لتصبح الساعة 8 مساءً لكي تتمكن من استلام التراكمي بأكمله (شاملاً راتب اليوم).
+            </div>
+          )}
+
           {/* حالة تصفير أو عدم توفر راتب */}
-          {stats?.accumulatedSalary === 0 ? (
+          {stats?.withdrawableSalary === 0 ? (
             <div className="py-4">
-              <p className="text-sm font-black text-amber-600 dark:text-amber-400">⚠️ لا يوجد راتب متراكم للاستلام حالياً.</p>
-              <p className="text-xs font-bold text-slate-400 mt-1">يجب حضور شفتات العمل (الصباحية أو المسائية) وحفظ العمليات لتجميع الراتب.</p>
+              <p className="text-sm font-black text-amber-600 dark:text-amber-400">⚠️ لا يوجد راتب متاح للسحب حالياً.</p>
+              <p className="text-xs font-bold text-slate-400 mt-1">
+                {stats?.isBeforeEightPM && stats?.todaySalary > 0 
+                  ? "راتب اليوم الحالي سيكون متاحاً للسحب بعد الساعة 8 مساءً."
+                  : "يجب حضور شفتات العمل وحفظ العمليات لتجميع الراتب."}
+              </p>
             </div>
           ) : (
             <>
