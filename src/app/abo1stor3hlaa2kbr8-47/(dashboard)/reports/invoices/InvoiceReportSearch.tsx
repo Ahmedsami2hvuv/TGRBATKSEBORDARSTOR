@@ -163,7 +163,22 @@ export default function InvoiceReportSearch({ rows, initialQuery, selectedDayIso
                 const orderLink = row.orderId ? `/abo1stor3hlaa2kbr8-47/orders/${row.orderId}` : undefined;
 
                 return (
-                  <tr key={row.id} className={`transition hover:bg-slate-50 ${row.rowColorClass}`}>
+                  <tr
+                    key={row.id}
+                    className={`transition hover:bg-slate-50 ${row.rowColorClass} ${orderLink ? "cursor-pointer" : ""}`}
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (
+                        orderLink &&
+                        !target.closest("input[type='checkbox']") &&
+                        !target.closest("button") &&
+                        !target.closest("form") &&
+                        !target.closest("a")
+                      ) {
+                        window.location.href = orderLink;
+                      }
+                    }}
+                  >
                     <td className="px-4 py-3 text-center">
                       {!row.id.startsWith("wt:") && (
                         <input
