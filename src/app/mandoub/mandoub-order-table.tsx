@@ -113,6 +113,7 @@ export type MandoubRow = {
   showVoiceNotesBtn?: boolean;
   showMoneyBoxes?: boolean;
   imageUrl?: string | null;
+  submissionSource?: string | null;
   phoneProfile?: any;
   secondPhoneProfile?: any;
 };
@@ -782,6 +783,9 @@ export function MandoubOrderTable({
                      name: activeOrderData.customerName,
                   } as any,
                   submittedBy: { name: activeOrderData.submitterName } as any,
+                  routeMode: activeOrderData.routeMode,
+                  submissionSource: activeOrderData.submissionSource,
+                  secondCustomerPhone: activeOrderData.secondCustomerPhone,
                 }}
                 auth={auth}
                 closeHref="#"

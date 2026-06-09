@@ -778,6 +778,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl || sProfile?.photoUrl || "",
       imageUrl: o.imageUrl,
       routeMode: o.routeMode as any,
+      submissionSource: o.submissionSource,
 
       secondCustomerRegionName: o.secondCustomerRegion?.name?.trim() || null,
       secondCustomerLandmark: secondLandmarkLine,
