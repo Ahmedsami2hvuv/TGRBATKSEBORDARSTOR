@@ -200,40 +200,28 @@ export function SalaryWalletClient({
             <input type="hidden" name="s" value={s} />
 
             <div>
-              <label className="block text-xs font-black text-slate-500 mb-1">تفاصيل المعاملة (الوصف) *</label>
+              <label className="block text-xs font-black text-slate-500 mb-1">نوع المعاملة *</label>
               <input
                 name="details"
                 required
                 className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none"
-                placeholder="مثال: نشر ثلاجة لبيعها"
+                placeholder="مثال: بيع ثلاجة"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-black text-slate-500 mb-1">سعر المعاملة (المنتج) *</label>
-                <input
-                  name="amount"
-                  type="number"
-                  required
-                  className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none tabular-nums"
-                  placeholder="مثال: 200000"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-black text-slate-500 mb-1">مبلغ الربح (العمولة) *</label>
-                <input
-                  name="profit"
-                  type="number"
-                  required
-                  className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none tabular-nums"
-                  placeholder="مثال: 10000"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-black text-slate-500 mb-1">مبلغ الربح (العمولة) *</label>
+              <input
+                name="profit"
+                type="number"
+                required
+                className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none tabular-nums"
+                placeholder="مثال: 10000"
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-black text-slate-500 mb-1">رقم هاتف البائع أو المشتري *</label>
+              <label className="block text-xs font-black text-slate-500 mb-1">رقم هاتف البائع *</label>
               <input
                 name="phone"
                 required

@@ -26,16 +26,14 @@ export async function createSalaryTransactionAction(
   const staff = await prisma.staffEmployee.findUnique({ where: { id: v.staffEmployeeId } });
   if (!staff || !staff.active) return { error: "الموظف غير موجود أو موقوف." };
 
-  const details = String(formData.get("details") ?? "").trim();
-  const amount = Number(formData.get("amount") ?? 0);
+  const details = String(formData.get("details") ?? "").trim(); // سنستخدم details لتخزين "نوع المعاملة"
   const phone = String(formData.get("phone") ?? "").trim();
   const profit = Number(formData.get("profit") ?? 0);
   const photoFile = formData.get("photo") as File | null;
 
-  if (!details) return { error: "يرجى كتابة تفاصيل المعاملة (الوصف)." };
-  if (amount <= 0) return { error: "يرجى كتابة سعر المعاملة/المنتج." };
-  if (!phone) return { error: "يرجى إدخال رقم هاتف البائع/المشتري." };
-  if (profit <= 0) return { error: "يرجى إدخال مبلغ الربح (العمولة)." };
+  if (!details) return { error: "يرجى كتابة نوع المعاملة." };
+  if (!phone) return { error: "يرجى إدخال رقم هاتف البائع." };
+  if (profit <= 0) return { error: "يرجى إدخال مبلغ الربح." };
 
   let imageUrl = "";
   if (photoFile && photoFile.size > 0) {
@@ -47,11 +45,11 @@ export async function createSalaryTransactionAction(
     }
   }
 
-  // 1. تسجيل المعاملة في قاعدة البيانات وخصم نصف الربح من الراتب
+  // 1. تسجيل المعاملة في قاعدة البيانات وخصم نصف الربح من الراتب (سعر المنتج amount يُضبط 0)
   const result = await recordReceiveProfitTransaction({
     staffEmployeeId: staff.id,
     details,
-    amount,
+    amount: 0,
     phone,
     profit,
     imageUrl,
@@ -59,11 +57,7 @@ export async function createSalaryTransactionAction(
 
   const deduction = profit / 2;
   const remainingSalary = Number(result.staff.salaryBalance);
-  const totalReceived = Number(staff.fixedSalary) - remainingSalary;
   const originalSalary = Number(staff.fixedSalary);
-  // راتبك الكلي = المتبقي من الراتب + إجمالي الأرباح المستلمة (التي أخذها بيده)
-  // حسب مثال العميل: "راتبك 150 استلمت مبلغ 10 بقي من الراتب 145 راتبك الكلي 155"
-  // الراتب الكلي = الرصيد المتبقي (145) + الربح المستلم (10) = 155
   const totalSalary = remainingSalary + profit; 
 
   // 2. إرسال إشعار فوراً إلى بوت التليجرام
@@ -73,11 +67,10 @@ export async function createSalaryTransactionAction(
       const telegramMessageText = [
         `📊 <b>معاملة موظف جديدة (عمولة مبيعات)</b>`,
         `👤 <b>الموظف:</b> ${staff.name}`,
-        `📝 <b>الوصف:</b> ${details}`,
-        `💰 <b>سعر المعاملة:</b> ${amount.toLocaleString()} د.ع`,
+        `📝 <b>نوع المعاملة:</b> ${details}`,
         `💵 <b>الربح المستلم:</b> ${profit.toLocaleString()} د.ع`,
         `🔴 <b>الاستقطاع من الراتب:</b> ${deduction.toLocaleString()} د.ع`,
-        `📞 <b>رقم الطرف الآخر:</b> ${phone}`,
+        `📞 <b>رقم هاتف البائع:</b> ${phone}`,
         `-------------------------`,
         `💵 <b>الراتب الثابت:</b> ${originalSalary.toLocaleString()} د.ع`,
         `⏳ <b>المتبقي من الراتب:</b> ${remainingSalary.toLocaleString()} د.ع`,
@@ -94,11 +87,10 @@ export async function createSalaryTransactionAction(
   const waMsg = [
     `*تفاصيل معاملة الموظف ${staff.name}*`,
     `العملية: تسجيل عمولة مبيعات`,
-    `الوصف: ${details}`,
-    `سعر المعاملة: ${amount} د.ع`,
+    `نوع المعاملة: ${details}`,
     `مبلغ الربح المستلم: ${profit} د.ع`,
     `الاستقطاع من الراتب: ${deduction} د.ع`,
-    `الهاتف: ${phone}`,
+    `هاتف البائع: ${phone}`,
     `-------------------------`,
     `الراتب الثابت: ${originalSalary} د.ع`,
     `المتبقي من الراتب: ${remainingSalary} د.ع`,
