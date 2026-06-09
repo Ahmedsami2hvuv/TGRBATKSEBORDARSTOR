@@ -4,6 +4,7 @@ import { useActionState, useRef, useState } from "react";
 import {
   type CustomerDoorPhotoState,
   uploadCustomerLocationFromView,
+  pasteCustomerLocationFromView,
 } from "./customer-door-photo-actions";
 
 const initial: CustomerDoorPhotoState = {};
@@ -16,16 +17,33 @@ function IconMapPin() {
   );
 }
 
+function IconLink() {
+  return (
+    <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}
+
 export function AdminCustomerLocationQuick({ orderId, target = "first" }: { orderId: string; target?: "first" | "second" }) {
-  const [state, formAction, pending] = useActionState(
+  const [gpsState, gpsAction, gpsPending] = useActionState(
     uploadCustomerLocationFromView.bind(null, orderId),
     initial,
   );
+  const [pasteState, pasteAction, pastePending] = useActionState(
+    pasteCustomerLocationFromView.bind(null, orderId),
+    initial,
+  );
+
   const [clientError, setClientError] = useState<string>("");
   const [locating, setLocating] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
+  const gpsFormRef = useRef<HTMLFormElement>(null);
   const latRef = useRef<HTMLInputElement>(null);
   const lngRef = useRef<HTMLInputElement>(null);
+
+  const [showPaste, setShowPaste] = useState(false);
+  const [pastedUrl, setPastedUrl] = useState("");
 
   const requestLocation = () => {
     setClientError("");
@@ -36,11 +54,11 @@ export function AdminCustomerLocationQuick({ orderId, target = "first" }: { orde
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        if (!latRef.current || !lngRef.current || !formRef.current) return;
+        if (!latRef.current || !lngRef.current || !gpsFormRef.current) return;
         setLocating(false);
         latRef.current.value = String(pos.coords.latitude);
         lngRef.current.value = String(pos.coords.longitude);
-        formRef.current.requestSubmit();
+        gpsFormRef.current.requestSubmit();
       },
       () => {
         setLocating(false);
@@ -50,25 +68,75 @@ export function AdminCustomerLocationQuick({ orderId, target = "first" }: { orde
     );
   };
 
+  const pending = gpsPending || pastePending;
+  const error = gpsState.error || pasteState.error || clientError;
+  const ok = gpsState.ok || pasteState.ok;
+
   return (
-    <form ref={formRef} action={formAction} className="mt-2 flex flex-wrap items-center gap-2">
-      <input ref={latRef} type="hidden" name="lat" />
-      <input ref={lngRef} type="hidden" name="lng" />
-      <input type="hidden" name="target" value={target} />
-      <button
-        type="button"
-        disabled={pending || locating}
-        onClick={requestLocation}
-        aria-busy={pending || locating}
-        className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-500 to-orange-600 px-4 py-2.5 text-sm font-black text-white shadow-md ring-2 ring-white/30 transition hover:from-amber-600 hover:to-orange-700 disabled:cursor-wait disabled:opacity-70"
-      >
-        <IconMapPin />
-        {locating ? "جارٍ جلب الموقع…" : pending ? "جارٍ الحفظ…" : "رفع لوكيشن (GPS)"}
-      </button>
-      {clientError ? <p className="text-xs font-medium text-rose-600">{clientError}</p> : null}
-      {state.error ? <p className="text-xs font-medium text-rose-600">{state.error}</p> : null}
-      {state.ok ? <p className="text-xs font-medium text-emerald-700">تم تحديث لوكيشن الزبون</p> : null}
-    </form>
+    <div className="mt-2 space-y-2 w-full">
+      {/* Hidden GPS form */}
+      <form ref={gpsFormRef} action={gpsAction} className="hidden">
+        <input ref={latRef} type="hidden" name="lat" />
+        <input ref={lngRef} type="hidden" name="lng" />
+        <input type="hidden" name="target" value={target} />
+      </form>
+
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          disabled={pending || locating}
+          onClick={requestLocation}
+          aria-busy={pending || locating}
+          className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-500 to-orange-600 px-3 py-2 text-xs font-black text-white shadow-md transition hover:from-amber-600 hover:to-orange-700 disabled:cursor-wait disabled:opacity-70"
+        >
+          <IconMapPin />
+          {locating ? "جارٍ جلب الموقع…" : gpsPending ? "جارٍ الحفظ…" : "رفع لوكيشن (GPS)"}
+        </button>
+
+        <button
+          type="button"
+          disabled={pending || locating}
+          onClick={() => {
+            setShowPaste(!showPaste);
+            setClientError("");
+          }}
+          className={`flex min-h-[44px] items-center justify-center gap-2 rounded-xl border-2 px-3 py-2 text-xs font-black shadow-md transition disabled:opacity-70 ${
+            showPaste 
+              ? "border-sky-300 bg-gradient-to-br from-sky-600 to-indigo-700 text-white" 
+              : "border-sky-200 bg-gradient-to-br from-sky-500 to-indigo-600 text-white hover:from-sky-600 hover:to-indigo-700"
+          }`}
+        >
+          <IconLink />
+          لصق لكيشن
+        </button>
+      </div>
+
+      {showPaste && (
+        <form action={pasteAction} className="mt-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-white/5 space-y-2 animate-in slide-in-from-top-1 duration-200">
+          <input type="hidden" name="target" value={target} />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              name="locationUrl"
+              value={pastedUrl}
+              onChange={(e) => setPastedUrl(e.target.value)}
+              placeholder="الصق رابط لوكيشن قوقل ماب هنا..."
+              className="flex-1 min-h-[38px] rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950 px-2.5 text-xs font-medium outline-none focus:border-indigo-500 font-mono transition-all text-right [direction:ltr]"
+              required
+            />
+            <button
+              type="submit"
+              disabled={pending}
+              className="px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow transition disabled:opacity-40"
+            >
+              {pastePending ? "حفظ..." : "حفظ"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {error ? <p className="text-xs font-bold text-rose-600 text-right">{error}</p> : null}
+      {ok ? <p className="text-xs font-bold text-emerald-700 text-right">تم تحديث لوكيشن الزبون بنجاح</p> : null}
+    </div>
   );
 }
-

@@ -1677,18 +1677,11 @@ export default function PendingOrdersClient({
                         <DynamicIcon icon={icons?.ui_location} fallback="📍" width={14} height={14} /> {order.regionName}
                       </span>
                     )}
-                    {(() => {
-                      const isStoreOrder =
-                        order.orderType?.toLowerCase().includes("متجر") ||
-                        order.orderType?.toLowerCase().includes("store") ||
-                        order.submissionLabel === "طلب متجر";
-                      const displayOrderType = isStoreOrder ? "متجر" : "تجهيز";
-                      return (
-                        <span className="flex items-center gap-1.5 text-sm md:text-base font-black bg-indigo-50 text-indigo-700 dark:bg-indigo-950/10 dark:text-indigo-400 px-4 py-2 rounded-xl border border-indigo-100 dark:border-indigo-900/30 shadow-sm">
-                          🏷️ {displayOrderType}
-                        </span>
-                      );
-                    })()}
+                    {order.orderType && order.orderType !== "—" && (
+                      <span className="flex items-center gap-1.5 text-sm md:text-base font-black bg-indigo-50 text-indigo-700 dark:bg-indigo-950/10 dark:text-indigo-400 px-4 py-2 rounded-xl border border-indigo-100 dark:border-indigo-900/30 shadow-sm">
+                        🏷️ {order.orderType}
+                      </span>
+                    )}
                     {order.orderSubtotal ? (
                       <span className="inline-flex items-center gap-1.5 text-sm md:text-base font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-950/10 dark:text-emerald-400 px-4 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
                         {hasLocation && (

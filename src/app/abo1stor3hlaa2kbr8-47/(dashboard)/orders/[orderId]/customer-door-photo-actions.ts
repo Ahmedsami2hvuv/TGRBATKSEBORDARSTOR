@@ -250,6 +250,54 @@ export async function uploadCustomerLocationFromView(
   }
 }
 
+export async function pasteCustomerLocationFromView(
+  orderId: string,
+  _prev: CustomerDoorPhotoState,
+  formData: FormData,
+): Promise<CustomerDoorPhotoState> {
+  const urlRaw = formData.get("locationUrl");
+  const targetRaw = String(formData.get("target") ?? "first");
+  const isSecond = targetRaw === "second";
+
+  if (typeof urlRaw !== "string" || !urlRaw.trim()) {
+    return { error: "يرجى إدخال رابط الموقع الجغرافي" };
+  }
+  const locationUrl = urlRaw.trim();
+
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) return { error: "الطلب غير موجود" };
+
+  try {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: isSecond ? {
+        secondCustomerLocationUrl: locationUrl,
+        customerLocationSetByCourierAt: null,
+        customerLocationUploadedByName: ORDER_UPLOADER_ADMIN_LABEL,
+      } : {
+        customerLocationUrl: locationUrl,
+        customerLocationSetByCourierAt: null,
+        customerLocationUploadedByName: ORDER_UPLOADER_ADMIN_LABEL,
+      },
+    });
+
+    if (isSecond) {
+      await syncSecondPhoneProfileFromOrder(orderId);
+    } else {
+      await syncPhoneProfileFromOrder(orderId);
+    }
+
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/orders/${orderId}/edit`);
+    revalidatePath("/mandoub");
+    return { ok: true };
+  } catch {
+    return { error: "فشل التحديث" };
+  }
+}
+
 export async function deleteOrderImageAction(orderId: string): Promise<CustomerDoorPhotoState> {
   const existing = await prisma.order.findUnique({ where: { id: orderId }, select: { imageUrl: true } });
   if (existing?.imageUrl) {
