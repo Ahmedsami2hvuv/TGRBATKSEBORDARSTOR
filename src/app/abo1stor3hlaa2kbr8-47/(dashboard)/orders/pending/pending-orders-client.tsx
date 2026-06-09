@@ -1441,6 +1441,18 @@ export default function PendingOrdersClient({
     setSelectedIds(new Set());
   }, [orders]);
 
+  useEffect(() => {
+    if (activeAssignOrderId && !orders.some(o => o.id === activeAssignOrderId)) {
+      setActiveAssignOrderId(null);
+    }
+    if (activeAssignPreparerOrderId && !orders.some(o => o.id === activeAssignPreparerOrderId)) {
+      setActiveAssignPreparerOrderId(null);
+    }
+    if (activePricingOrderId && !orders.some(o => o.id === activePricingOrderId)) {
+      setActivePricingOrderId(null);
+    }
+  }, [orders, activeAssignOrderId, activeAssignPreparerOrderId, activePricingOrderId]);
+
   const handleBulkDelete = async () => {
     setIsBulkLoading(true);
     setBulkActionError("");
