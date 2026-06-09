@@ -1997,6 +1997,8 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
   const s2Start = parseTimeToMinutes(preparer.shift2Start || "15:30");
   const s2End = parseTimeToMinutes(preparer.shift2End || "21:00");
 
+  const dayMap = new Map<string, { morning: boolean; evening: boolean }>();
+
   workLogs.forEach(log => {
     const logTime = getIraqTime(log.createdAt);
     const dayKey = `${logTime.year}-${logTime.month}-${logTime.day}`;
@@ -2004,45 +2006,81 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
     let isMorning = false;
     let isEvening = false;
 
-    // إذا كان يحتوي على شفت مسجل مسبقاً، نستخدمه لكي لا يتأثر بتغيير أوقات الشفتات لاحقاً
     if ((log as any).shiftName === "shift1") {
       isMorning = true;
     } else if ((log as any).shiftName === "shift2") {
       isEvening = true;
     } else {
-      // توافقية مع اللوغات القديمة: نحسب ديناميكياً بناءً على النطاق الحالي للشفتات
       const logMinutes = timeToMinutes(logTime.hours, logTime.minutes);
       isMorning = logMinutes >= s1Start && logMinutes <= s1End;
       isEvening = logMinutes >= s2Start && logMinutes <= s2End;
     }
 
-    if (isMorning) {
-      const shiftKey = `${dayKey}_morning`;
-      uniqueShifts.add(shiftKey);
-      if (dayKey === todayKey) {
-        todaySalary += shiftHalfValue;
+    if (isMorning || isEvening) {
+      if (!dayMap.has(dayKey)) {
+        dayMap.set(dayKey, { morning: false, evening: false });
       }
-    }
-    if (isEvening) {
-      const shiftKey = `${dayKey}_evening`;
-      uniqueShifts.add(shiftKey);
-      if (dayKey === todayKey) {
-        todaySalary += shiftHalfValue;
+      const dayData = dayMap.get(dayKey)!;
+      if (isMorning) {
+        dayData.morning = true;
+        uniqueShifts.add(`${dayKey}_morning`);
+      }
+      if (isEvening) {
+        dayData.evening = true;
+        uniqueShifts.add(`${dayKey}_evening`);
       }
     }
   });
+
+  if (dayMap.has(todayKey)) {
+    const todayData = dayMap.get(todayKey)!;
+    if (todayData.morning) todaySalary += shiftHalfValue;
+    if (todayData.evening) todaySalary += shiftHalfValue;
+  }
 
   // التأكد من عدم تجاوز راتب اليوم القيمة الكلية لليوم
   if (todaySalary > dailySalary) {
     todaySalary = dailySalary;
   }
 
-  const accumulatedSalary = uniqueShifts.size * shiftHalfValue;
+  // جلب السحوبات الجزئية التي تمت منذ آخر تصفير
+  let alreadyWithdrawnAlf = 0;
+  if (preparer.walletEmployeeId) {
+    const miscEntries = await prisma.employeeWalletMiscEntry.findMany({
+      where: {
+        employeeId: preparer.walletEmployeeId,
+        createdAt: { gte: lastWithdrawal },
+        label: { startsWith: "[راتب]" },
+        deletedAt: null
+      },
+      select: { amountDinar: true }
+    });
+    const sumWithdrawnDinar = miscEntries.reduce((sum, entry) => sum.add(entry.amountDinar), new Decimal(0));
+    alreadyWithdrawnAlf = Number(sumWithdrawnDinar);
+  }
+
+  const rawAccumulatedSalary = uniqueShifts.size * shiftHalfValue;
+  const accumulatedSalary = Math.max(0, rawAccumulatedSalary - alreadyWithdrawnAlf);
+
+  const unwithdrawnDays = Array.from(dayMap.entries()).map(([dayKey, data]) => {
+    let amount = 0;
+    if (data.morning) amount += shiftHalfValue;
+    if (data.evening) amount += shiftHalfValue;
+    return {
+      date: dayKey,
+      morning: data.morning,
+      evening: data.evening,
+      amount
+    };
+  });
 
   return {
     dailySalary,
     todaySalary,
-    accumulatedSalary
+    accumulatedSalary,
+    unwithdrawnDays,
+    rawAccumulatedSalary,
+    alreadyWithdrawnAlf
   };
 }
 
@@ -2095,7 +2133,8 @@ export async function getPreparerSalaryStats(_prev: any, formData: FormData): Pr
       withdrawableSalary,
       isBeforeEightPM,
       hasPinCode: !!preparer.salaryPinCode && !preparer.salaryPinDisabled,
-      pinDisabled: preparer.salaryPinDisabled
+      pinDisabled: preparer.salaryPinDisabled,
+      unwithdrawnDays: stats.unwithdrawnDays
     };
   } catch (e) {
     console.error("getPreparerSalaryStats error:", e);
@@ -2212,10 +2251,9 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
 
     if (!preparer) return { error: "المجهز غير موجود." };
 
-    // نتحقق من الرمز فقط إذا لم يكن قد أوقفه المجهز
-    if (!preparer.salaryPinDisabled) {
+    // نتحقق من الرمز فقط إذا لم يكن قد أوقفه المجهز ويوجد رمز معين بالفعل
+    if (!preparer.salaryPinDisabled && preparer.salaryPinCode) {
       if (!pinCode) return { error: "الرمز السري مطلوب." };
-      if (!preparer.salaryPinCode) return { error: "يرجى تعيين رمز سري أولاً." };
       if (preparer.salaryPinCode !== pinCode) return { error: "الرمز السري غير صحيح." };
     }
 
@@ -2238,7 +2276,21 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
       withdrawableSalary = Math.max(0, stats.accumulatedSalary - stats.todaySalary);
     }
 
-    const amountDinar = new Decimal(withdrawableSalary);
+    const customAmountStr = formData.get("amountAlf") ? String(formData.get("amountAlf")).trim() : "";
+    let amountToWithdraw = withdrawableSalary;
+
+    if (customAmountStr) {
+      const parsedVal = parseFloat(customAmountStr);
+      if (isNaN(parsedVal) || parsedVal <= 0) {
+        return { error: "المبلغ المراد سحبه غير صالح." };
+      }
+      if (parsedVal > withdrawableSalary) {
+        return { error: `المبلغ المطلوب (${parsedVal} الف) يتجاوز الراتب المتاح للسحب (${withdrawableSalary} الف).` };
+      }
+      amountToWithdraw = parsedVal;
+    }
+
+    const amountDinar = new Decimal(amountToWithdraw);
 
     if (amountDinar.lte(0)) {
       if (isBeforeWithdrawalTime && stats.todaySalary > 0) {
@@ -2261,11 +2313,13 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
         }
       });
 
-      // 2. تحديث تاريخ آخر عملية استلام للوقت الحالي
-      await tx.companyPreparer.update({
-        where: { id: v.preparerId },
-        data: { lastSalaryWithdrawalAt: new Date() }
-      });
+      // 2. تحديث تاريخ آخر عملية استلام للوقت الحالي فقط إذا تم السحب بالكامل
+      if (amountToWithdraw >= withdrawableSalary) {
+        await tx.companyPreparer.update({
+          where: { id: v.preparerId },
+          data: { lastSalaryWithdrawalAt: new Date() }
+        });
+      }
     });
 
     // جلب المتبقي في المحفظة للمجهز بعد الخصم
@@ -2307,7 +2361,7 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
 
     revalidatePath("/preparer");
     revalidatePath("/preparer/wallet");
-    return { ok: true, withdrawnAmount: withdrawableSalary };
+    return { ok: true, withdrawnAmount: amountToWithdraw };
   } catch (e) {
     console.error("withdrawPreparerSalary error:", e);
     return { error: "فشل استلام الراتب بسبب خطأ تقني." };

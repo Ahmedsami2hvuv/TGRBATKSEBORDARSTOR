@@ -23,6 +23,7 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
     isBeforeEightPM: boolean;
     hasPinCode: boolean;
     pinDisabled: boolean;
+    unwithdrawnDays?: Array<{ date: string; morning: boolean; evening: boolean; amount: number }>;
   } | null>(null);
 
   // حالة إلغاء قفل الصفحة
@@ -34,6 +35,9 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
 
   // لإدخال الرمز السري عند الدخول والسحب
   const [pin, setPin] = useState("");
+
+  // قيمة السحب المخصصة
+  const [withdrawAmount, setWithdrawAmount] = useState<number>(0);
 
   const baseQuery = new URLSearchParams();
   baseQuery.set("p", auth.p);
@@ -53,16 +57,19 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
         } else {
           const hasPin = !!res.hasPinCode;
           const pinDis = !!res.pinDisabled;
+          const withdrawable = res.withdrawableSalary || 0;
           
           setStats({
             dailySalary: res.dailySalary || 0,
             todaySalary: res.todaySalary || 0,
             accumulatedSalary: res.accumulatedSalary || 0,
-            withdrawableSalary: res.withdrawableSalary || 0,
+            withdrawableSalary: withdrawable,
             isBeforeEightPM: !!res.isBeforeEightPM,
             hasPinCode: hasPin,
-            pinDisabled: pinDis
+            pinDisabled: pinDis,
+            unwithdrawnDays: res.unwithdrawnDays || []
           });
+          setWithdrawAmount(withdrawable);
 
           // إذا لم يكن هناك رمز سري أصلاً، أو إذا كان الرمز موقفاً، نفتح الصفحة مباشرة
           if (!hasPin || pinDis) {
@@ -139,12 +146,22 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
 
   // معالجة طلب سحب الراتب الفعلي
   const handleWithdraw = async () => {
+    if (withdrawAmount <= 0) {
+      toast.error("المبلغ يجب أن يكون أكبر من صفر.");
+      return;
+    }
+    if (stats && withdrawAmount > stats.withdrawableSalary) {
+      toast.error("المبلغ المطلوب يتجاوز الراتب المتاح للسحب.");
+      return;
+    }
+
     setSubmitting(true);
     const fd = new FormData();
     fd.set("p", auth.p);
     fd.set("exp", auth.exp);
     fd.set("s", auth.s);
-    fd.set("pinCode", pin); // نمرر الرمز الذي تم استخدامه لفتح القفل (أو فارغ إذا كان معطلاً)
+    fd.set("pinCode", pin); // نمرر الرمز الذي تم استخدامه لفتح القفل
+    fd.set("amountAlf", String(withdrawAmount));
 
     const res = await withdrawPreparerSalary(null, fd);
     setSubmitting(false);
@@ -152,7 +169,7 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
     if (res.error) {
       toast.error(res.error);
     } else {
-      toast.success("تم استلام الراتب وإضافته للمحفظة بنجاح!");
+      toast.success(`تم استلام مبلغ ${res.withdrawnAmount} الف وإضافته للمحفظة بنجاح!`);
       router.push(`/preparer?${baseQuery.toString()}`);
     }
   };
@@ -174,7 +191,7 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
   // إذا كانت الصفحة مقفلة ويوجد رمز سري مفعل، نعرض شاشة التحقق الفخمة أولاً
   if (!isUnlocked && stats?.hasPinCode && !stats?.pinDisabled) {
     return (
-      <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-slate-850 dark:text-slate-100 flex items-center justify-center p-4">
+      <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-slate-855 dark:text-slate-100 flex items-center justify-center p-4">
         <div className="w-full max-w-md rounded-[2.5rem] bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 p-6 sm:p-8 text-center shadow-2xl relative overflow-hidden">
           <div className="absolute -top-24 -left-24 size-48 rounded-full bg-indigo-500/10 blur-3xl"></div>
           <div className="absolute -bottom-24 -right-24 size-48 rounded-full bg-purple-500/10 blur-3xl"></div>
@@ -300,71 +317,98 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
           ) : (
             <div className="space-y-6">
               
-              {/* أول استخدام: تعيين رمز سري لأول مرة */}
-              {!stats?.hasPinCode ? (
-                <form onSubmit={handleSetupPin} className="space-y-4">
-                  <div className="bg-sky-500/10 border border-sky-500/20 rounded-2xl p-4 text-xs font-bold text-sky-700 dark:text-sky-400 text-right leading-relaxed">
-                    ✨ أهلاً بك في بوابة استلام الراتب! يرجى تعيين رمز الأمان الخاص بك لأول مرة لتأكيد عمليات السحب المستقبلية. 
-                    <span className="block mt-1 font-semibold text-slate-500 dark:text-slate-400">يمكنك كتابة أي رمز تفضله (أحرف، أرقام، عربي، إنجليزي، حرف واحد أو أكثر).</span>
+              {/* شريط السحب ومربع الكتابة */}
+              <div className="space-y-4 rounded-2xl bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200/50 dark:border-slate-800">
+                <label className="block text-right text-xs font-black text-slate-500 dark:text-slate-400">
+                  حدد المبلغ المراد سحبه (بالألف دينار)
+                </label>
+                
+                <div className="flex items-center gap-4">
+                  {/* شريط سحب منزلق */}
+                  <input
+                    type="range"
+                    min="0"
+                    max={stats?.withdrawableSalary || 0}
+                    step="0.5"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(Number(e.target.value))}
+                    className="flex-1 accent-emerald-500 cursor-pointer h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none"
+                  />
+                  
+                  {/* مربع إدخال رقمي يدوي */}
+                  <div className="relative w-28">
+                    <input
+                      type="number"
+                      min="0"
+                      max={stats?.withdrawableSalary || 0}
+                      step="0.5"
+                      value={withdrawAmount}
+                      onChange={(e) => {
+                        const val = Math.min(stats?.withdrawableSalary || 0, Math.max(0, Number(e.target.value)));
+                        setWithdrawAmount(val);
+                      }}
+                      className="w-full h-11 text-center font-black text-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-slate-850 dark:text-white"
+                    />
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">
+                      ألف
+                    </span>
                   </div>
-
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-right mb-1.5 text-xs font-black text-slate-500 dark:text-slate-400 mr-1">أدخل الرمز السري الجديد</label>
-                      <input
-                        type="text"
-                        required
-                        value={newPin}
-                        onChange={(e) => setNewPin(e.target.value)}
-                        className="h-12 w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 text-center font-black text-lg outline-none focus:border-sky-500 dark:focus:border-[#00f3ff] transition-all text-slate-850 dark:text-white"
-                        placeholder="اكتب رمزك هنا (مثال: 1234 أو A)"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-right mb-1.5 text-xs font-black text-slate-500 dark:text-slate-400 mr-1">تأكيد الرمز السري</label>
-                      <input
-                        type="text"
-                        required
-                        value={confirmNewPin}
-                        onChange={(e) => setConfirmNewPin(e.target.value)}
-                        className="h-12 w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-4 text-center font-black text-lg outline-none focus:border-sky-500 dark:focus:border-[#00f3ff] transition-all text-slate-850 dark:text-white"
-                        placeholder="أعد كتابة الرمز للتأكيد"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full h-14 bg-gradient-to-l from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-black rounded-2xl shadow-lg transition transform active:scale-98 disabled:opacity-50 mt-2"
-                  >
-                    {submitting ? "جاري الحفظ..." : "حفظ وتثبيت الرمز السري"}
-                  </button>
-                </form>
-              ) : (
-                /* الاستلام المباشر حيث تم التحقق من الرمز بالفعل في Lock Screen */
-                <div className="text-center py-4 space-y-6">
-                  {stats?.pinDisabled && (
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-black p-4 rounded-2xl text-right leading-relaxed">
-                      🔓 ميزة الرمز السري معطلة حالياً بناءً على إعداداتك. سيتم السحب مباشرة دون طلب الرمز.
-                    </div>
-                  )}
-
-                  <button
-                    onClick={handleWithdraw}
-                    disabled={submitting}
-                    className="w-full h-16 bg-gradient-to-l from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-base rounded-3xl shadow-xl transition transform active:scale-95 disabled:opacity-50 animate-pulse-slow"
-                  >
-                    {submitting ? "جاري تحويل الراتب للمحفظة..." : "تأكيد استلام الراتب فوراً"}
-                  </button>
                 </div>
-              )}
+              </div>
+
+              {stats?.pinDisabled || !stats?.hasPinCode ? (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-black p-4 rounded-2xl text-right leading-relaxed">
+                  🔓 سيتم سحب المبلغ مباشرة دون طلب رمز أمان سري.
+                </div>
+              ) : null}
+
+              <button
+                onClick={handleWithdraw}
+                disabled={submitting || withdrawAmount <= 0}
+                className="w-full h-16 bg-gradient-to-l from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-base rounded-3xl shadow-xl transition transform active:scale-95 disabled:opacity-50"
+              >
+                {submitting ? "جاري سحب المبلغ..." : `تأكيد سحب ${withdrawAmount} الف دينار فوراً`}
+              </button>
 
             </div>
           )}
 
         </div>
+
+        {/* سجل الأيام غير المسحوبة */}
+        {stats?.unwithdrawnDays && stats.unwithdrawnDays.length > 0 && (
+          <section className="mt-8 kse-glass-dark border border-slate-200/50 dark:border-slate-800 rounded-[2.5rem] p-6 sm:p-8 shadow-lg">
+            <h3 className="text-sm font-black text-slate-850 dark:text-slate-200 mb-4 text-right">
+              📅 سجل حضور وشفتات العمل غير المسحوبة
+            </h3>
+            <div className="space-y-3">
+              {stats.unwithdrawnDays.map((day: any) => (
+                <div key={day.date} className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800">
+                  <div className="text-right">
+                    <span className="block text-xs font-bold text-slate-700 dark:text-slate-350">
+                      {new Date(day.date).toLocaleDateString("ar-IQ", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                    </span>
+                    <span className="inline-flex gap-2 mt-1">
+                      {day.morning && (
+                        <span className="text-[10px] font-black bg-sky-100 text-sky-850 px-2 py-0.5 rounded-lg leading-none">
+                          الشفت الصباحي
+                        </span>
+                      )}
+                      {day.evening && (
+                        <span className="text-[10px] font-black bg-indigo-100 text-indigo-850 px-2 py-0.5 rounded-lg leading-none">
+                          الشفت المسائي
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="text-left font-black text-emerald-600 dark:text-emerald-400">
+                    +{day.amount} الف
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
       </div>
     </div>
