@@ -1883,9 +1883,6 @@ export default function PendingOrdersClient({
         <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
            <div className="absolute inset-0" onClick={() => setActiveAssignPreparerOrderId(null)} />
            <div className="relative w-full max-w-lg animate-in zoom-in-95 duration-200">
-             <div className="absolute -top-12 left-0 right-0 flex justify-center">
-                <button onClick={() => setActiveAssignPreparerOrderId(null)} className="h-10 px-6 rounded-full bg-white text-slate-900 text-xs font-black shadow-xl">إغلاق النافذة ✕</button>
-             </div>
              {(() => {
                 const o = orders.find(x => x.id === activeAssignPreparerOrderId);
                 if (!o) return null;
@@ -1916,9 +1913,6 @@ export default function PendingOrdersClient({
         <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
            <div className="absolute inset-0" onClick={() => setActiveAssignOrderId(null)} />
            <div className="relative w-full max-w-lg animate-in zoom-in-95 duration-200">
-             <div className="absolute -top-12 left-0 right-0 flex justify-center">
-                <button onClick={() => setActiveAssignOrderId(null)} className="h-10 px-6 rounded-full bg-white text-slate-900 text-xs font-black shadow-xl">إغلاق النافذة ✕</button>
-             </div>
              {(() => {
                 const o = orders.find(x => x.id === activeAssignOrderId);
                 if (!o) return null;
