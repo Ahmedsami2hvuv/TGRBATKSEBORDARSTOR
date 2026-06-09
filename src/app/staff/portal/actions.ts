@@ -352,6 +352,17 @@ export async function settleStaffProfit(
   const profit = Number(json.staffProfit || 0);
   const deduction = profit / 2;
 
+  const photoFile = formData.get("photo") as File | null;
+  let imageUrl = "";
+  if (photoFile && photoFile.size > 0) {
+    try {
+      const { saveCustomerProfilePhotoUploaded } = await import("@/lib/order-image");
+      imageUrl = await saveCustomerProfilePhotoUploaded(photoFile, 20); // حد أقصى 20 ميجا
+    } catch (err: any) {
+      return { error: `فشل رفع صورة الوصل: ${err.message}` };
+    }
+  }
+
   // 1. تحديث الطلب وتحديث رصيد الموظف وتسجيل المعاملة المالية في عملية واحدة (transaction)
   const result = await prisma.$transaction(async (tx) => {
     // أ. تحديث حالة تسوية الطلب
@@ -384,6 +395,7 @@ export async function settleStaffProfit(
         phone: order.customerPhone || "",
         profit: profit,
         deduction: deduction,
+        imageUrl: imageUrl || null,
       },
     });
 
@@ -404,11 +416,12 @@ export async function settleStaffProfit(
         `🔢 <b>طلب رقم:</b> #${order.orderNumber}`,
         `💵 <b>مبلغ الربح المستلم:</b> ${profit.toLocaleString()} د.ع`,
         `🔴 <b>الاستقطاع من الراتب:</b> ${deduction.toLocaleString()} د.ع`,
+        imageUrl ? `📎 <b>صورة الوصل:</b> <a href="${imageUrl}">عرض الصورة</a>` : "",
         `-------------------------`,
         `💵 <b>الراتب الثابت:</b> ${originalSalary.toLocaleString()} د.ع`,
         `⏳ <b>المتبقي من الراتب:</b> ${remainingSalary.toLocaleString()} د.ع`,
-        `📈 <b>الراتب الكلي (الوضع الحالي):</b> ${totalSalary.toLocaleString()}.ع`
-      ].join("\n");
+        `📈 <b>الراتب الكلي (الوضع الحالي):</b> ${totalSalary.toLocaleString()} د.ع`
+      ].filter(Boolean).join("\n");
 
       await sendTelegramMessage(telegramMessageText, { botToken: notificationBotToken });
     }
@@ -422,11 +435,12 @@ export async function settleStaffProfit(
     `طلب رقم: #${order.orderNumber}`,
     `مبلغ الربح المستلم: ${profit} د.ع`,
     `الاستقطاع من الراتب: ${deduction} د.ع`,
+    imageUrl ? `صورة الوصل: ${imageUrl}` : "",
     `-------------------------`,
     `الراتب الثابت: ${originalSalary} د.ع`,
     `المتبقي من الراتب: ${remainingSalary} د.ع`,
     `الراتب الكلي (الوضع الحالي): ${totalSalary} د.ع`
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 
   const waPhone = "9647733921468"; // رقم المدير الافتراضي
   const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(waMsg)}`;

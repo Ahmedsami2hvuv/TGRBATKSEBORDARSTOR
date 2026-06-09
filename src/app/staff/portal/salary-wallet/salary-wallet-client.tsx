@@ -156,49 +156,6 @@ export function SalaryWalletClient({
       {/* محتوى التبويبات */}
       {activeTab === "status" && (
         <div className="space-y-4">
-          {pendingOrders.length > 0 && (
-            <div className="space-y-3 mb-6">
-              <h2 className="text-sm font-bold text-emerald-600 px-1 flex items-center gap-1.5">
-                <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                طلبات واصلة بانتظار استلام الأرباح ({pendingOrders.length})
-              </h2>
-              {pendingOrders.map((order: any) => {
-                const json = order.preparerShoppingJson as any;
-                return (
-                  <div key={order.id} className="rounded-2xl bg-white p-4 border border-emerald-100 shadow-sm flex flex-col gap-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
-                          طلب واصل #{order.orderNumber || order.id.slice(-6).toUpperCase()}
-                        </span>
-                        <p className="text-sm font-black text-slate-800 mt-2">{order.summary || "طلب ذو وجهتين"}</p>
-                      </div>
-                      <p className="text-sm font-black text-emerald-600 tabular-nums">
-                        +{Number(json?.staffProfit || 0).toLocaleString()} د.ع
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold pt-2 border-t border-slate-50">
-                      <span>{new Date(order.createdAt).toLocaleDateString("ar-IQ-u-nu-latn", { dateStyle: "short" })}</span>
-                      <form action={settleAction}>
-                        <input type="hidden" name="se" value={se} />
-                        <input type="hidden" name="exp" value={exp} />
-                        <input type="hidden" name="s" value={s} />
-                        <input type="hidden" name="orderId" value={order.id} />
-                        <button
-                          type="submit"
-                          disabled={settlePending}
-                          className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3.5 py-1.5 text-[11px] font-black text-white shadow-sm transition active:scale-95 disabled:opacity-50"
-                        >
-                          {settlePending ? "جاري الاستلام..." : "استلام الأرباح"}
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
 
           <h2 className="text-sm font-bold text-slate-500 px-1">المعاملات الأخيرة</h2>
           {staff.staffTransactions.length === 0 ? (
@@ -372,14 +329,103 @@ export function SalaryWalletClient({
 
       {activeTab === "submitted" && (
         <div className="space-y-4">
-          <h2 className="text-sm font-bold text-slate-500 px-1">الطلبات المرفوعة للتجهيز</h2>
+          <h2 className="text-sm font-bold text-slate-500 px-1">سجل الطلبات المرفوعة الأخيرة</h2>
           {submittedRows.length === 0 ? (
             <div className="rounded-3xl bg-white p-12 text-center border border-slate-100">
               <p className="text-slate-400 font-bold text-sm">لا توجد طلبات مرفوعة حالياً.</p>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-3xl border border-slate-100 shadow-sm bg-white p-2">
-              <StaffSubmittedClient rows={submittedRows} authQ={authQ} />
+            <div className="space-y-4">
+              {submittedRows.map((order: any) => (
+                <div key={order.id} className="rounded-3xl bg-white p-5 border border-slate-100 shadow-sm flex flex-col gap-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                        {order.type} {order.orderNumber}
+                      </span>
+                      {order.summary && (
+                        <p className="text-xs font-bold text-slate-600 mt-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100/50">
+                          {order.summary}
+                        </p>
+                      )}
+                    </div>
+                    {order.profit > 0 && (
+                      <div className="text-left shrink-0">
+                        <p className="text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-100">
+                          الربح: {order.profit.toLocaleString()} د.ع
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 bg-slate-50/50 p-3 rounded-2xl text-[11px] font-bold text-slate-600 border border-slate-100/30">
+                    <div>
+                      <p className="text-[9px] text-slate-400">البائع والموقع</p>
+                      <p className="mt-0.5 text-slate-800 truncate">{order.sellerPhone}</p>
+                      <p className="text-slate-500 text-[10px] truncate">{order.sellerRegion}</p>
+                    </div>
+                    {order.buyerPhone && (
+                      <div className="border-r border-slate-200/50 pr-4">
+                        <p className="text-[9px] text-slate-400">المشتري والموقع</p>
+                        <p className="mt-0.5 text-slate-800 truncate">{order.buyerPhone}</p>
+                        <p className="text-slate-500 text-[10px] truncate">{order.buyerRegion}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-50 text-[10px] text-slate-400">
+                    <span>{new Date(order.createdAt).toLocaleDateString("ar-IQ-u-nu-latn", { dateStyle: "medium" })}</span>
+                    <span className={`px-2 py-0.5 rounded-full font-black ${
+                      order.status === "delivered" ? "bg-emerald-100 text-emerald-800 border border-emerald-200" :
+                      order.status === "canceled" ? "bg-rose-100 text-rose-800 border border-rose-200" :
+                      "bg-amber-100 text-amber-800 border border-amber-200"
+                    }`}>
+                      {order.status === "delivered" ? "تم التسليم" :
+                       order.status === "canceled" ? "مسترجع/ملغي" :
+                       order.status === "pending" ? "قيد الانتظار" : order.status}
+                    </span>
+                  </div>
+
+                  {/* استلام أموالي إذا كان الطلب واصلاً ولم يتم تسويته والربح أكبر من 0 */}
+                  {order.status === "delivered" && order.profit > 0 && !order.profitSettled && (
+                    <div className="mt-2 bg-emerald-50/50 border border-emerald-100 rounded-2xl p-3">
+                      <p className="text-xs font-black text-emerald-850 mb-2">💰 استلام أرباح الطلب ({order.profit.toLocaleString()} د.ع)</p>
+                      
+                      <form action={settleAction} className="space-y-3">
+                        <input type="hidden" name="se" value={se} />
+                        <input type="hidden" name="exp" value={exp} />
+                        <input type="hidden" name="s" value={s} />
+                        <input type="hidden" name="orderId" value={order.id} />
+                        
+                        <div>
+                          <label className="block text-[10px] font-black text-slate-500 mb-1">يرجى إرفاق صورة الوصل لإتمام الاستلام *</label>
+                          <input
+                            name="photo"
+                            type="file"
+                            accept="image/*"
+                            required
+                            className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-white file:text-slate-700 hover:file:bg-slate-100 border border-slate-200/50 rounded-xl p-1 bg-white cursor-pointer"
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={settlePending}
+                          className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 py-2 text-xs font-black text-white transition active:scale-95 disabled:opacity-50"
+                        >
+                          {settlePending ? "جاري تسجيل الاستلام..." : "تأكيد استلام أموالي"}
+                        </button>
+                      </form>
+                    </div>
+                  )}
+
+                  {order.profitSettled && (
+                    <div className="mt-2 text-xs font-bold text-emerald-600 flex items-center justify-end gap-1">
+                      <span>✅ تم استلام الأرباح وتسويتها</span>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>

@@ -129,99 +129,53 @@ export default async function StaffSalaryWalletPage({
       take: 50,
       include: {
         customerRegion: { select: { name: true } },
+        secondCustomerRegion: { select: { name: true } },
       }
     })
   ]);
 
-  const draftRows: MandoubRow[] = drafts.map((d) => {
+  const draftRows = drafts.map((d) => {
     const draftData = (d.data as any) || {};
     return {
       id: d.id,
-      shortId: "---",
-      orderStatus: d.status,
-      shopName: d.titleLine || "تجهيز تسوق",
-      shopNameHighlightClass: "text-slate-900 font-black",
-      regionLine: d.customerRegion?.name || "—",
-      orderType: "تجهيز",
-      priceStr: "—",
-      delStr: "—",
-      customerPhone: d.customerPhone || "—",
-      timeLine: formatBaghdadDateTime(d.createdAt, { dateStyle: "short", timeStyle: "short" }),
-      statusAr: translateDraftStatus(d.status),
-      statusClass: `text-[10px] px-2 py-0.5 rounded-full border ${getStatusClass(d.status)}`,
-      prepaidAll: false,
-      reversePickup: false,
-      hasCustomerLocation: !!d.customerLocationUrl,
-      hasCourierUploadedLocation: false,
-      hasMoneyDeletedBadge: false,
-      wardMismatchType: "none",
-      saderMismatchType: "none",
-      noWardRecorded: true,
-      noSaderRecorded: true,
-      createdAt: d.createdAt,
-      audioUrl: draftData.audioUrl || null,
-      summary: d.rawListText,
-      shopPhone: "",
-      alternatePhone: "",
-      secondCustomerPhone: "",
-      shopLocationUrl: "",
-      customerLocationUrl: d.customerLocationUrl,
-      secondCustomerLocationUrl: "",
-      shopDoorPhotoUrl: "",
-      customerDoorPhotoUrl: d.customerDoorPhotoUrl,
-      routeMode: "single",
-      preparerAudioUrl: draftData.preparerAudioUrl || null,
-      adminAudioUrl: null,
+      orderNumber: "---",
+      status: d.status,
+      type: "تجهيز تسوق",
+      sellerPhone: d.customerPhone || "—",
+      sellerRegion: d.customerRegion?.name || "—",
+      profit: 0,
+      profitSettled: false,
+      createdAt: d.createdAt.toISOString(),
+      summary: d.titleLine || d.rawListText || "طلب تجهيز",
     };
   });
 
-  const orderRows: MandoubRow[] = doubleOrders.map((o) => ({
-    id: o.id,
-    shortId: `#${o.orderNumber}`,
-    orderStatus: o.status,
-    shopName: "طلب وجهتين",
-    shopNameHighlightClass: "text-fuchsia-700 font-black",
-    regionLine: o.customerRegion?.name || "—",
-    orderType: "وجهتين",
-    priceStr: o.totalAmount?.toString() || "—",
-    delStr: o.deliveryPrice?.toString() || "—",
-    customerPhone: o.customerPhone || "—",
-    timeLine: formatBaghdadDateTime(o.createdAt, { dateStyle: "short", timeStyle: "short" }),
-    statusAr: translateDraftStatus(o.status === "pending" ? "draft" : "sent"),
-    statusClass: "text-[10px] px-2 py-0.5 rounded-full border bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200",
-    prepaidAll: o.prepaidAll,
-    reversePickup: false,
-    hasCustomerLocation: !!o.customerLocationUrl,
-    hasCourierUploadedLocation: false,
-    hasMoneyDeletedBadge: false,
-    wardMismatchType: "none",
-    saderMismatchType: "none",
-    noWardRecorded: true,
-    noSaderRecorded: true,
-    createdAt: o.createdAt,
-    audioUrl: o.voiceNoteUrl,
-    summary: o.summary,
-    shopPhone: "",
-    alternatePhone: o.alternatePhone || "",
-    secondCustomerPhone: o.secondCustomerPhone || "",
-    shopLocationUrl: "",
-    customerLocationUrl: o.customerLocationUrl,
-    secondCustomerLocationUrl: o.secondCustomerLocationUrl,
-    shopDoorPhotoUrl: "",
-    customerDoorPhotoUrl: o.customerDoorPhotoUrl,
-    routeMode: "double",
-    preparerAudioUrl: null,
-    adminAudioUrl: null,
-  }));
+  const orderRows = doubleOrders.map((o) => {
+    const json = o.preparerShoppingJson as any;
+    return {
+      id: o.id,
+      orderNumber: `#${o.orderNumber}`,
+      status: o.status,
+      type: o.orderType || "طلب وجهتين",
+      sellerPhone: o.customerPhone || "—",
+      buyerPhone: o.secondCustomerPhone || "—",
+      sellerRegion: o.customerRegion?.name || "—",
+      buyerRegion: o.secondCustomerRegion?.name || "—",
+      profit: Number(json?.staffProfit || 0),
+      profitSettled: !!json?.profitSettled,
+      createdAt: o.createdAt.toISOString(),
+      summary: o.summary || "",
+    };
+  });
 
-  const tableRows = [...draftRows, ...orderRows].sort((a, b) =>
+  const cardRows = [...draftRows, ...orderRows].sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
   const serializedStaff = serializePrisma(staff);
   const serializedIcons = serializePrisma(icons);
   const serializedPendingOrders = serializePrisma(pendingOrders);
-  const serializedSubmittedRows = serializePrisma(tableRows);
+  const serializedSubmittedRows = serializePrisma(cardRows);
 
   return (
     <main className="min-h-screen bg-slate-50/50 px-4 py-8 pb-24 font-sans text-slate-800" dir="rtl">
