@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { haversineMeters } from "@/lib/geo-distance";
 import { extractLatLngFromLocationInputSmart } from "@/lib/order-location";
+import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
 /**
  * يحسب "الاستدلال الذكي" لطلب معين بناءً على إحداثيات اللوكيشن وأقرب نقطة دالة في المنطقة.
@@ -14,14 +15,36 @@ export async function computeSmartHint(
     select: {
       customerLocationUrl: true,
       customerRegionId: true,
+      customerPhone: true,
       secondCustomerLocationUrl: true,
       secondCustomerRegionId: true,
+      secondCustomerPhone: true,
     },
   });
 
   if (!order) return "— الطلب غير موجود";
 
-  const locationUrl = type === "primary" ? order.customerLocationUrl : order.secondCustomerLocationUrl;
+  let locationUrl = type === "primary" ? order.customerLocationUrl : order.secondCustomerLocationUrl;
+
+  // إذا كان اللوكيشن فارغاً في الطلب (حالة طلب جديد مثلاً)، نبحث عنه في بروفايل هاتف الزبون المرجعي
+  if (!locationUrl?.trim()) {
+    const phone = type === "primary" ? order.customerPhone : order.secondCustomerPhone;
+    const regionId = type === "primary" ? order.customerRegionId : order.secondCustomerRegionId;
+    const normPhone = phone ? normalizeIraqMobileLocal11(phone) : null;
+
+    if (normPhone && regionId) {
+      const profile = await prisma.customerPhoneProfile.findUnique({
+        where: {
+          phone_regionId: {
+            phone: normPhone,
+            regionId,
+          },
+        },
+        select: { locationUrl: true },
+      });
+      locationUrl = profile?.locationUrl || "";
+    }
+  }
 
   if (!locationUrl?.trim()) return "—";
 
