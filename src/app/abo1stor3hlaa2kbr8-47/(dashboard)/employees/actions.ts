@@ -13,6 +13,7 @@ export async function createStaffEmployee(
 ): Promise<StaffEmployeeActionState> {
   const name = String(formData.get("name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
+  const fixedSalaryRaw = Number(formData.get("fixedSalary") ?? 0);
 
   const canSubmitOrders = formData.get("canSubmitOrders") === "on";
   const canViewArchived = formData.get("canViewArchived") === "on";
@@ -28,6 +29,9 @@ export async function createStaffEmployee(
       canSubmitOrders,
       canViewArchived,
       canManageStore,
+      fixedSalary: fixedSalaryRaw,
+      salaryBalance: fixedSalaryRaw, // الرصيد المبدئي يساوي الراتب
+      lastSalaryAddedAt: new Date(),
     },
   });
 
@@ -42,6 +46,7 @@ export async function updateStaffEmployee(
   const id = String(formData.get("id") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
+  const fixedSalaryRaw = Number(formData.get("fixedSalary") ?? 0);
 
   const canSubmitOrders = formData.get("canSubmitOrders") === "on";
   const canViewArchived = formData.get("canViewArchived") === "on";
@@ -59,6 +64,7 @@ export async function updateStaffEmployee(
       canSubmitOrders,
       canViewArchived,
       canManageStore,
+      fixedSalary: fixedSalaryRaw,
       managedBranches: {
         set: managedBranchIds.map(id => ({ id }))
       }

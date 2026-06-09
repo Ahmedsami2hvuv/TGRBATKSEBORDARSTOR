@@ -24,6 +24,8 @@ type Row = {
   canManageStore: boolean;
   createdAt: Date;
   portalUrl: string;
+  fixedSalary: number;
+  salaryBalance: number;
 };
 
 const initial: StaffEmployeeActionState = {};
@@ -71,6 +73,10 @@ export function StaffEmployeesManager({ initialEmployees, icons }: { initialEmpl
               <label className="block">
                 <span className={ad.label}>الهاتف (اختياري)</span>
                 <input name="phone" className={ad.input} placeholder="07..." />
+              </label>
+              <label className="block">
+                <span className={ad.label}>الراتب الثابت (مثال: 150)</span>
+                <input name="fixedSalary" type="number" step="any" defaultValue="0" className={ad.input} placeholder="0" />
               </label>
 
               <div className="space-y-2 p-3 bg-white rounded-lg border border-sky-100">
@@ -128,6 +134,9 @@ export function StaffEmployeesManager({ initialEmployees, icons }: { initialEmpl
                     ) : null}
                   </p>
                   <p className={`${ad.listMuted} tabular-nums`}>{e.phone || "—"}</p>
+                  <p className="text-xs text-slate-500 mt-1 font-bold">
+                    الراتب الثابت: <span className="text-slate-800">{e.fixedSalary}</span> · الرصيد الحالي: <span className="text-sky-700">{e.salaryBalance}</span>
+                  </p>
 
                   <div className="mt-2 flex flex-wrap gap-1">
                     {e.canSubmitOrders && (

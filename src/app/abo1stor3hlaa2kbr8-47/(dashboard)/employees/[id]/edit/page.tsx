@@ -54,6 +54,10 @@ export default async function StaffEmployeeEditPage({ params }: Props) {
               <span className={ad.label}>الهاتف</span>
               <input name="phone" defaultValue={emp.phone} className={ad.input} />
             </label>
+            <label className="block">
+              <span className={ad.label}>الراتب الثابت (مثال: 150)</span>
+              <input name="fixedSalary" type="number" step="any" defaultValue={Number(emp.fixedSalary || 0)} className={ad.input} />
+            </label>
           </div>
 
           <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

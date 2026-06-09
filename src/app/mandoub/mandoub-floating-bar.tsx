@@ -50,6 +50,7 @@ type Props = {
   hideAllButtons?: boolean;
   showCallBtn?: boolean;
   showWhatsAppBtn?: boolean;
+  isDoubleRoute?: boolean;
 };
 
 /** واتساب + اتصال (قائمة عميل/زبون/زبون 2) */
@@ -133,6 +134,7 @@ export function MandoubFloatingBar(props: Props) {
       hideAllButtons={props.hideAllButtons}
       showCallBtn={props.showCallBtn !== false}
       showWhatsAppBtn={props.showWhatsAppBtn !== false}
+      isDoubleRoute={props.isDoubleRoute}
     />
   );
 }

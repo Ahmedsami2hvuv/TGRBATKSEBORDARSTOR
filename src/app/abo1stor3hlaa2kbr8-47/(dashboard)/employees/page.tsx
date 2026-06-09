@@ -35,6 +35,8 @@ export default async function AdminEmployeesHubPage() {
     canViewArchived: e.canViewArchived,
     canManageStore: e.canManageStore,
     createdAt: e.createdAt,
+    fixedSalary: Number(e.fixedSalary || 0),
+    salaryBalance: Number(e.salaryBalance || 0),
     portalUrl: buildStaffEmployeePortalUrl(e.id, e.portalToken, baseUrl),
   }));
 

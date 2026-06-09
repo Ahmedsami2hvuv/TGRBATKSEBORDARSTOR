@@ -246,24 +246,46 @@ model Employee {
 }
 
 model StaffEmployee {
-  id                  String        @id @default(cuid())
+  id                  String             @id @default(cuid())
   name                String
-  phone               String        @default("")
-  active              Boolean       @default(true)
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  portalToken         String        @default(cuid())
-  telegramUserId      String?       @unique
-  canManageStore      Boolean       @default(false)
-  canSubmitOrders     Boolean       @default(true)
-  canViewArchived     Boolean       @default(false)
+  phone               String             @default("")
+  active              Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  portalToken         String             @default(cuid())
+  telegramUserId      String?            @unique
+  canManageStore      Boolean            @default(false)
+  canSubmitOrders     Boolean            @default(true)
+  canViewArchived     Boolean            @default(false)
   lastStaffLat        Float?
   lastStaffLng        Float?
   lastStaffLocationAt DateTime?
-  managedBranches     StoreBranch[] @relation("StaffManagedBranches")
+  managedBranches     StoreBranch[]      @relation("StaffManagedBranches")
+  fixedSalary         Decimal            @default(0) @db.Decimal(14, 4)
+  salaryBalance       Decimal            @default(0) @db.Decimal(14, 4)
+  lastSalaryAddedAt   DateTime           @default(now())
+  staffTransactions   StaffTransaction[]
 
   @@index([active, createdAt])
 }
+
+model StaffTransaction {
+  id              String        @id @default(cuid())
+  staffEmployeeId String
+  type            String        // 'receive_profit' or 'withdraw_salary' or 'salary_addition'
+  details         String        @default("")
+  amount          Decimal       @default(0) @db.Decimal(14, 4)
+  phone           String        @default("")
+  profit          Decimal       @default(0) @db.Decimal(14, 4)
+  deduction       Decimal       @default(0) @db.Decimal(14, 4)
+  imageUrl        String        @default("")
+  createdAt       DateTime      @default(now())
+  staffEmployee   StaffEmployee @relation(fields: [staffEmployeeId], references: [id], onDelete: Cascade)
+
+  @@index([staffEmployeeId])
+  @@index([createdAt])
+}
+
 
 model Courier {
   id                          String                   @id @default(cuid())

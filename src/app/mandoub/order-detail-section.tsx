@@ -726,6 +726,7 @@ export function OrderDetailSection({
           hasCourierUploadedLocation={Boolean(order.customerLocationSetByCourierAt)}
           showCallBtn={courierSettings?.showCallBtn !== false}
           showWhatsAppBtn={courierSettings?.showWhatsAppBtn !== false}
+          isDoubleRoute={isDoubleRoute}
         />
 
         <div className="grid grid-cols-1 gap-3 border-b border-sky-100 pb-3 sm:grid-cols-[1fr_auto] sm:items-center">

@@ -14,8 +14,12 @@ export default async function StaffPortalPage({ searchParams }: { searchParams: 
     const v = verifyStaffEmployeePortalQuery(sp.se, sp.exp, sp.s);
     if (!v.ok) return <div className="p-8 text-center font-bold text-rose-600">الرابط غير صالح.</div>;
 
-    const emp = await prisma.staffEmployee.findUnique({ where: { id: v.staffEmployeeId } });
+    let emp = await prisma.staffEmployee.findUnique({ where: { id: v.staffEmployeeId } });
     if (!emp || !emp.active) return <div className="p-8 text-center font-bold">الحساب غير مفعّل.</div>;
+
+    // التحقق وتطبيق الراتب الشهري التلقائي التراكمي
+    const { checkAndApplyMonthlySalary } = await import("@/lib/staff-salary");
+    emp = await checkAndApplyMonthlySalary(emp.id) || emp;
 
     const authQ = new URLSearchParams({ se: sp.se ?? "", exp: sp.exp ?? "", s: sp.s ?? "" }).toString();
 

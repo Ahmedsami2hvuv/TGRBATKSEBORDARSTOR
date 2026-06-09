@@ -61,6 +61,7 @@ export type OrderFabDockProps = {
   hideAllButtons?: boolean;
   showCallBtn?: boolean;
   showWhatsAppBtn?: boolean;
+  isDoubleRoute?: boolean;
 };
 
 export function OrderFabDock(props: OrderFabDockProps) {
@@ -68,10 +69,12 @@ export function OrderFabDock(props: OrderFabDockProps) {
     storageKey,
     shopPhone,
     customerPhone,
+    customerAlternatePhone,
     customWaButtons,
     hideAllButtons = false,
     showCallBtn = true,
     showWhatsAppBtn = true,
+    isDoubleRoute = false,
   } = props;
 
   const [mounted, setMounted] = useState(false);
@@ -242,7 +245,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
         <div className={`absolute ${menuClass} flex flex-col gap-2 animate-in fade-in zoom-in duration-200 ${isOnLeftSide ? 'left-0' : 'right-0'}`} style={{ width: 'max-content' }}>
           <button
             onClick={() => {
-              const phone = shopPhone;
+              const phone = isDoubleRoute ? customerPhone : shopPhone;
               if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
               else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
               else if (typeof activeMenu === 'object') openUrlFromUserGesture(whatsappMeUrl(phone, activeMenu.btn.messages[0] || ""));
@@ -250,11 +253,11 @@ export function OrderFabDock(props: OrderFabDockProps) {
             }}
             className="flex h-12 w-40 items-center justify-center rounded-xl bg-white text-slate-800 shadow-2xl font-black border-2 border-indigo-600 active:scale-95 text-sm"
           >
-            المحل (العميل)
+            {isDoubleRoute ? "المرسل" : "المحل (العميل)"}
           </button>
           <button
             onClick={() => {
-              const phone = customerPhone;
+              const phone = isDoubleRoute ? (customerAlternatePhone || "") : customerPhone;
               if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
               else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
               else if (typeof activeMenu === 'object') openUrlFromUserGesture(whatsappMeUrl(phone, activeMenu.btn.messages[0] || ""));
@@ -262,7 +265,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
             }}
             className="flex h-12 w-40 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-2xl font-black active:scale-95 text-sm"
           >
-            الزبون
+            {isDoubleRoute ? "المستلم" : "الزبون"}
           </button>
           <button onClick={() => setActiveMenu(null)} className="mt-1 text-xs font-bold text-white bg-slate-800/90 py-2 rounded-lg text-center shadow-lg">رجوع للخلف</button>
         </div>
