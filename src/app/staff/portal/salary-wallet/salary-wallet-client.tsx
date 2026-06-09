@@ -76,18 +76,18 @@ export function SalaryWalletClient({
       <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-orange-600 to-red-700 p-6 text-white shadow-xl shadow-orange-100">
         <p className="text-xs font-black uppercase tracking-wider opacity-85">رصيد الراتب المتبقي بالإدارة</p>
         <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-4xl font-black tabular-nums">{salaryBalance.toLocaleString()}</span>
+          <span className="text-4xl font-black tabular-nums">{salaryBalance.toLocaleString("en-US")}</span>
           <span className="text-sm font-black opacity-80">د.ع</span>
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-4 border-t border-white/20 pt-4 text-xs font-bold">
           <div>
             <p className="opacity-80">الراتب الثابت</p>
-            <p className="mt-0.5 text-base font-black tabular-nums">{fixedSalary.toLocaleString()} د.ع</p>
+            <p className="mt-0.5 text-base font-black tabular-nums">{fixedSalary.toLocaleString("en-US")} د.ع</p>
           </div>
           <div>
             <p className="opacity-80">الراتب الكلي الحالي</p>
-            <p className="mt-0.5 text-base font-black tabular-nums">{totalSalary.toLocaleString()} د.ع</p>
+            <p className="mt-0.5 text-base font-black tabular-nums">{totalSalary.toLocaleString("en-US")} د.ع</p>
           </div>
         </div>
       </div>
@@ -172,15 +172,15 @@ export function SalaryWalletClient({
                 if (t.type === "receive_profit") {
                   badgeColor = "bg-emerald-50 text-emerald-700 border border-emerald-100";
                   typeText = "استلام عمولة مبيعات";
-                  amountText = `+${Number(t.profit).toLocaleString()} د.ع (استقطاع: -${Number(t.deduction).toLocaleString()})`;
+                  amountText = `+${Number(t.profit).toLocaleString("en-US")} د.ع (استقطاع: -${Number(t.deduction).toLocaleString("en-US")})`;
                 } else if (t.type === "withdraw_salary") {
                   badgeColor = "bg-rose-50 text-rose-700 border border-rose-100";
                   typeText = "سحب راتب";
-                  amountText = `-${Number(t.amount).toLocaleString()} د.ع`;
+                  amountText = `-${Number(t.amount).toLocaleString("en-US")} د.ع`;
                 } else if (t.type === "salary_addition") {
                   badgeColor = "bg-sky-50 text-sky-700 border border-sky-100";
                   typeText = "إيداع راتب شهري";
-                  amountText = `+${Number(t.amount).toLocaleString()} د.ع`;
+                  amountText = `+${Number(t.amount).toLocaleString("en-US")} د.ع`;
                 }
 
                 return (
@@ -196,7 +196,7 @@ export function SalaryWalletClient({
                     </div>
 
                     <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold pt-2 border-t border-slate-50">
-                      <span>{new Date(t.createdAt).toLocaleDateString("ar-IQ-u-nu-latn", { dateStyle: "short" })}</span>
+                      <span>{new Date(t.createdAt).toLocaleDateString("en-US", { dateStyle: "short" })}</span>
                       {t.phone && <span>هاتف: {t.phone}</span>}
                     </div>
 
@@ -290,7 +290,7 @@ export function SalaryWalletClient({
         <div className="rounded-3xl bg-white p-5 border border-slate-100 shadow-sm">
           <h2 className="text-base font-black text-slate-900 mb-4">طلب سحب راتب (استلام الرصيد)</h2>
           <p className="text-xs text-slate-500 mb-4">
-            الرصيد المتاح حالياً للسحب هو: <span className="font-black text-sky-700">{salaryBalance.toLocaleString()} د.ع</span>
+            الرصيد المتاح حالياً للسحب هو: <span className="font-black text-sky-700">{salaryBalance.toLocaleString("en-US")} د.ع</span>
           </p>
 
           <form id="withdraw-form" action={withdrawAction} className="space-y-4">
@@ -352,7 +352,7 @@ export function SalaryWalletClient({
                     {order.profit > 0 && (
                       <div className="text-left shrink-0">
                         <p className="text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-100">
-                          الربح: {order.profit.toLocaleString()} د.ع
+                          الربح: {order.profit.toLocaleString("en-US")} د.ع
                         </p>
                       </div>
                     )}
@@ -374,7 +374,7 @@ export function SalaryWalletClient({
                   </div>
 
                   <div className="flex items-center justify-between pt-2 border-t border-slate-50 text-[10px] text-slate-400">
-                    <span>{new Date(order.createdAt).toLocaleDateString("ar-IQ-u-nu-latn", { dateStyle: "medium" })}</span>
+                    <span>{new Date(order.createdAt).toLocaleDateString("en-US", { dateStyle: "medium" })}</span>
                     <span className={`px-2 py-0.5 rounded-full font-black ${
                       order.status === "delivered" ? "bg-emerald-100 text-emerald-800 border border-emerald-200" :
                       order.status === "canceled" ? "bg-rose-100 text-rose-800 border border-rose-200" :
@@ -389,7 +389,7 @@ export function SalaryWalletClient({
                   {/* استلام أموالي إذا كان الطلب واصلاً ولم يتم تسويته والربح أكبر من 0 */}
                   {order.status === "delivered" && order.profit > 0 && !order.profitSettled && (
                     <div className="mt-2 bg-emerald-50/50 border border-emerald-100 rounded-2xl p-3">
-                      <p className="text-xs font-black text-emerald-850 mb-2">💰 استلام أرباح الطلب ({order.profit.toLocaleString()} د.ع)</p>
+                      <p className="text-xs font-black text-emerald-850 mb-2">💰 استلام أرباح الطلب ({order.profit.toLocaleString("en-US")} د.ع)</p>
                       
                       <form action={settleAction} className="space-y-3">
                         <input type="hidden" name="se" value={se} />
