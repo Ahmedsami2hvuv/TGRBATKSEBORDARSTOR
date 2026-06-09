@@ -5,6 +5,7 @@ import { createSalaryTransactionAction, withdrawSalaryAction, type SalaryActionS
 import { settleStaffProfit } from "../actions";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
+import { StaffSubmittedClient } from "../submitted/staff-submitted-client";
 
 const initial: SalaryActionState = {};
 
@@ -17,6 +18,7 @@ export function SalaryWalletClient({
   s,
   totalReceivedProfits,
   pendingOrders = [],
+  submittedRows = [],
 }: {
   staff: any;
   icons: GlobalIconsConfig | null;
@@ -26,8 +28,9 @@ export function SalaryWalletClient({
   s: string;
   totalReceivedProfits: number;
   pendingOrders?: any[];
+  submittedRows?: any[];
 }) {
-  const [activeTab, setActiveTab] = useState<"status" | "receive" | "withdraw">("status");
+  const [activeTab, setActiveTab] = useState<"status" | "submitted" | "receive" | "withdraw">("status");
   const [waPopupUrl, setWaPopupUrl] = useState<string | null>(null);
 
   const [receiveState, receiveAction, receivePending] = useActionState(createSalaryTransactionAction, initial);
@@ -115,27 +118,35 @@ export function SalaryWalletClient({
       )}
 
       {/* أزرار التبويب */}
-      <div className="flex rounded-2xl bg-white p-1 shadow-sm border border-slate-100 font-bold text-xs">
+      <div className="grid grid-cols-2 gap-2 rounded-2xl bg-white p-1.5 shadow-sm border border-slate-100 font-bold text-xs">
         <button
           onClick={() => setActiveTab("status")}
-          className={`flex-1 py-3 text-center rounded-xl transition ${
-            activeTab === "status" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
+          className={`py-2 text-center rounded-xl transition ${
+            activeTab === "status" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50 border border-slate-50"
           }`}
         >
           سجل المعاملات
         </button>
         <button
+          onClick={() => setActiveTab("submitted")}
+          className={`py-2 text-center rounded-xl transition ${
+            activeTab === "submitted" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50 border border-slate-50"
+          }`}
+        >
+          الطلبات المرفوعة ({submittedRows.length})
+        </button>
+        <button
           onClick={() => setActiveTab("receive")}
-          className={`flex-1 py-3 text-center rounded-xl transition ${
-            activeTab === "receive" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
+          className={`py-2 text-center rounded-xl transition ${
+            activeTab === "receive" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50 border border-slate-50"
           }`}
         >
           تسجيل عمولة
         </button>
         <button
           onClick={() => setActiveTab("withdraw")}
-          className={`flex-1 py-3 text-center rounded-xl transition ${
-            activeTab === "withdraw" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
+          className={`py-2 text-center rounded-xl transition ${
+            activeTab === "withdraw" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50 border border-slate-50"
           }`}
         >
           استلام راتب
@@ -356,6 +367,21 @@ export function SalaryWalletClient({
               {withdrawPending ? "جارٍ تسجيل السحب..." : "تسجيل السحب ونقل للواتساب"}
             </button>
           </form>
+        </div>
+      )}
+
+      {activeTab === "submitted" && (
+        <div className="space-y-4">
+          <h2 className="text-sm font-bold text-slate-500 px-1">الطلبات المرفوعة للتجهيز</h2>
+          {submittedRows.length === 0 ? (
+            <div className="rounded-3xl bg-white p-12 text-center border border-slate-100">
+              <p className="text-slate-400 font-bold text-sm">لا توجد طلبات مرفوعة حالياً.</p>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-3xl border border-slate-100 shadow-sm bg-white p-2">
+              <StaffSubmittedClient rows={submittedRows} authQ={authQ} />
+            </div>
+          )}
         </div>
       )}
     </div>

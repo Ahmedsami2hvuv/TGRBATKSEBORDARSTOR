@@ -103,18 +103,7 @@ export function StaffPortalMenuClient({
             المحفظة ورواتب الموظف
           </Link>
 
-          <Link
-            href={`/staff/portal/submitted?${authQ}`}
-            className="group w-full rounded-2xl border-2 border-sky-400 bg-white py-4 text-sm font-black text-sky-900 shadow-sm transition hover:bg-sky-50 active:scale-95 flex items-center justify-center gap-2"
-          >
-            <DynamicIcon
-              iconKey="ui_tasks"
-              config={icons}
-              className="w-5 h-5"
-              fallback={<span>📑</span>}
-            />
-            الطلبات المرفوعة حالياً
-          </Link>
+
         </>
       )}
 
