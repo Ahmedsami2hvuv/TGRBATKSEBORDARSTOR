@@ -273,7 +273,7 @@ export function UnifiedOrderListTable({
             rows.map((o) => {
               const selectable = showSelectColumn && isRowSelectable(o);
               const checked = isSelected(o.id);
-              const isDoubleRoute = o.routeMode === "double";
+              const isDoubleRoute = o.routeMode === "double" || !!o.secondCustomerPhone;
 
               const orderDate = o.createdAt ? (typeof o.createdAt === 'string' ? new Date(o.createdAt) : o.createdAt) : null;
               const currentDateStr = orderDate ? getBaghdadDateString(orderDate) : "unknown";
@@ -792,12 +792,12 @@ export function UnifiedOrderListTable({
                                     )}
                                     {o.customerPhone && (
                                       <a href={telHref(o.customerPhone)} className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-sky-50 transition-colors rounded-xl border border-slate-100">
-                                        <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> زبون
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> {isDoubleRoute ? "المرسل" : "زبون"}
                                       </a>
                                     )}
                                     {(o.alternatePhone || o.secondCustomerPhone) && (
                                       <a href={telHref(o.alternatePhone || o.secondCustomerPhone)} className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-sky-50 transition-colors rounded-xl border border-slate-100">
-                                        <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> زبون 2
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> {isDoubleRoute ? "المستلم" : "زبون 2"}
                                       </a>
                                     )}
                                   </div>
@@ -832,12 +832,12 @@ export function UnifiedOrderListTable({
                                     )}
                                     {o.customerPhone && (
                                       <a href={whatsappMeUrl(o.customerPhone)} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-emerald-50 transition-colors rounded-xl border border-slate-100">
-                                        <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> زبون
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xl">👤</span> {isDoubleRoute ? "المرسل" : "زبون"}
                                       </a>
                                     )}
                                     {(o.alternatePhone || o.secondCustomerPhone) && (
                                       <a href={whatsappMeUrl(o.alternatePhone || o.secondCustomerPhone)} target="_blank" className="flex items-center gap-3 px-4 py-3.5 text-sm font-black text-slate-700 hover:bg-emerald-50 transition-colors rounded-xl border border-slate-100">
-                                        <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> زبون 2
+                                        <span className="size-10 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 text-xl">👥</span> {isDoubleRoute ? "المستلم" : "زبون 2"}
                                       </a>
                                     )}
                                   </div>

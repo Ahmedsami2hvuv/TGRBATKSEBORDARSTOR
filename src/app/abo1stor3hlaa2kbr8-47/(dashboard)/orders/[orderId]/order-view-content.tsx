@@ -115,7 +115,7 @@ export function OrderViewContent({
 
   const isReversePickup = order.reversePickup || isReversePickupOrderType(order.orderType);
   const isSystemAdminOrder = isAdminShopName(order.shop.name) || order.submissionSource === "admin_portal";
-  const isDoubleRoute = order.routeMode === "double";
+  const isDoubleRoute = order.routeMode === "double" || !!order.secondCustomerPhone;
 
   const statusBadgeClass = order.prepaidAll ? orderStatusBadgeClassPrepaid(order.status, true) : orderStatusBadgeClass(order.status);
 
@@ -486,11 +486,11 @@ export function OrderViewContent({
         storageKey="adminFab_v1"
         orderId={order.id}
         shopPhone={submitterPhone}
-        shopLabel={isDoubleRoute ? "المرسل" : "المحل"}
         customerPhone={order.customerPhone}
-        customerAlternatePhone={order.alternatePhone ?? undefined}
+        customerAlternatePhone={isDoubleRoute ? (order.secondCustomerPhone ?? undefined) : (order.alternatePhone ?? undefined)}
         customWaButtons={customWaButtons}
         editUrl={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
+        isDoubleRoute={isDoubleRoute}
       />
     </div>
   );
