@@ -46,3 +46,56 @@ export async function ensureEmployeeLocationColumnsIfMissing(): Promise<void> {
     console.error("[DbSelfHeal] Error checking/adding employee location columns:", error);
   }
 }
+
+let hasCheckedPreparer = false;
+
+export async function ensurePreparerSalaryConfigColumnsIfMissing(): Promise<void> {
+  if (hasCheckedPreparer) return;
+
+  try {
+    const existingColumns = await prisma.$queryRawUnsafe<{ column_name: string }[]>(
+      `SELECT column_name 
+       FROM information_schema.columns 
+       WHERE table_name = 'CompanyPreparer' 
+         AND column_name IN ('shift1Start', 'shift1End', 'shift2Start', 'shift2End', 'salaryWithdrawalTime', 'bypassWithdrawalTime')`
+    );
+
+    const colNames = (existingColumns || []).map((col) => col.column_name);
+
+    if (!colNames.includes("shift1Start")) {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "CompanyPreparer" ADD COLUMN IF NOT EXISTS "shift1Start" TEXT NOT NULL DEFAULT '08:00'`,
+      );
+    }
+    if (!colNames.includes("shift1End")) {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "CompanyPreparer" ADD COLUMN IF NOT EXISTS "shift1End" TEXT NOT NULL DEFAULT '13:00'`,
+      );
+    }
+    if (!colNames.includes("shift2Start")) {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "CompanyPreparer" ADD COLUMN IF NOT EXISTS "shift2Start" TEXT NOT NULL DEFAULT '15:30'`,
+      );
+    }
+    if (!colNames.includes("shift2End")) {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "CompanyPreparer" ADD COLUMN IF NOT EXISTS "shift2End" TEXT NOT NULL DEFAULT '21:00'`,
+      );
+    }
+    if (!colNames.includes("salaryWithdrawalTime")) {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "CompanyPreparer" ADD COLUMN IF NOT EXISTS "salaryWithdrawalTime" TEXT NOT NULL DEFAULT '20:00'`,
+      );
+    }
+    if (!colNames.includes("bypassWithdrawalTime")) {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "CompanyPreparer" ADD COLUMN IF NOT EXISTS "bypassWithdrawalTime" BOOLEAN NOT NULL DEFAULT false`,
+      );
+    }
+
+    hasCheckedPreparer = true;
+  } catch (error) {
+    console.error("[DbSelfHeal] Error checking/adding preparer config columns:", error);
+  }
+}
+

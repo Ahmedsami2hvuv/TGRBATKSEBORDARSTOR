@@ -139,6 +139,12 @@ model CompanyPreparer {
   salaryPinCode                       String?
   salaryPinDisabled                   Boolean                        @default(false)
   lastSalaryWithdrawalAt              DateTime                       @default(now())
+  shift1Start                         String                         @default("08:00")
+  shift1End                           String                         @default("13:00")
+  shift2Start                         String                         @default("15:30")
+  shift2End                           String                         @default("21:00")
+  salaryWithdrawalTime                String                         @default("20:00")
+  bypassWithdrawalTime                Boolean                        @default(false)
   workLogs                            CompanyPreparerWorkLog[]
   prepNotices                         CompanyPreparerPrepNotice[]
   shoppingDrafts                      CompanyPreparerShoppingDraft[]

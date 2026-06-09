@@ -112,6 +112,12 @@ export default async function PreparersPage() {
       preparerMonthlySalaryResetEveryDays: p.preparerMonthlySalaryResetEveryDays ?? null,
       totalDebtsAmount: preparerTotalDebts,
       dailySalary: Number(p.dailySalary || 0),
+      shift1Start: (p as any).shift1Start ?? "08:00",
+      shift1End: (p as any).shift1End ?? "13:00",
+      shift2Start: (p as any).shift2Start ?? "15:30",
+      shift2End: (p as any).shift2End ?? "21:00",
+      salaryWithdrawalTime: (p as any).salaryWithdrawalTime ?? "20:00",
+      bypassWithdrawalTime: (p as any).bypassWithdrawalTime ?? false,
     };
   });
 

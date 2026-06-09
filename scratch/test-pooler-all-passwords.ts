@@ -10,7 +10,7 @@ async function test(password: string, label: string) {
     user,
     password,
     host,
-    port: 6543,
+    port: 5432,
     database: 'postgres',
     connectionTimeoutMillis: 5000,
     ssl: { rejectUnauthorized: false }

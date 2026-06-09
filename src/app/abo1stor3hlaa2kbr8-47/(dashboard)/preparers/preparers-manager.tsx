@@ -42,6 +42,12 @@ export type PreparerManagerRow = {
   preparerMonthlySalaryResetEveryDays: number | null;
   totalDebtsAmount: number;
   dailySalary: number;
+  shift1Start: string;
+  shift1End: string;
+  shift2Start: string;
+  shift2End: string;
+  salaryWithdrawalTime: string;
+  bypassWithdrawalTime: boolean;
 };
 
 export type ShopOption = { id: string; name: string };
@@ -279,6 +285,24 @@ function AddPreparerForm({ icons }: { icons: GlobalIconsConfig | null }) {
               placeholder="مثال: 10"
             />
           </label>
+          <label className="flex flex-col gap-1">
+            <span className={ad.label}>الشفت الأول (بدء - انتهاء)</span>
+            <div className="flex gap-2">
+              <input name="shift1Start" type="time" defaultValue="08:00" className={ad.input} />
+              <input name="shift1End" type="time" defaultValue="13:00" className={ad.input} />
+            </div>
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className={ad.label}>الشفت الثاني (بدء - انتهاء)</span>
+            <div className="flex gap-2">
+              <input name="shift2Start" type="time" defaultValue="15:30" className={ad.input} />
+              <input name="shift2End" type="time" defaultValue="21:00" className={ad.input} />
+            </div>
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className={ad.label}>وقت سحب الراتب (مساءً)</span>
+            <input name="salaryWithdrawalTime" type="time" defaultValue="20:00" className={ad.input} />
+          </label>
           <label className="flex flex-col gap-1 sm:col-span-2">
             <span className={ad.label}>ملاحظات</span>
             <input
@@ -287,6 +311,10 @@ function AddPreparerForm({ icons }: { icons: GlobalIconsConfig | null }) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
+          </label>
+          <label className="flex items-center gap-2 sm:col-span-2 select-none cursor-pointer mt-1 bg-white/50 p-3 rounded-xl border border-slate-100">
+            <input name="bypassWithdrawalTime" type="checkbox" className="h-5 w-5 rounded border-2 border-slate-300" />
+            <span className="text-sm font-black text-slate-800">إلغاء قيود وقت استلام الراتب (يستطيع سحب راتبه في أي لحظة للتجربة)</span>
           </label>
         </div>
         {state?.error ? <p className={ad.error}>{state.error}</p> : null}
@@ -724,19 +752,49 @@ function PreparerCard({
                   <span className="mb-2 block text-xs font-black text-slate-400 uppercase tracking-widest">الراتب اليومي</span>
                   <input name="dailySalary" defaultValue={row.dailySalary} type="number" step="0.01" className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-6 font-bold outline-none focus:border-slate-900 transition" />
                 </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block">
+                    <span className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest">بدء الشفت 1</span>
+                    <input name="shift1Start" type="time" defaultValue={row.shift1Start} className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-4 font-bold outline-none focus:border-slate-900 transition" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest">انتهاء الشفت 1</span>
+                    <input name="shift1End" type="time" defaultValue={row.shift1End} className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-4 font-bold outline-none focus:border-slate-900 transition" />
+                  </label>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block">
+                    <span className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest">بدء الشفت 2</span>
+                    <input name="shift2Start" type="time" defaultValue={row.shift2Start} className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-4 font-bold outline-none focus:border-slate-900 transition" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-2 block text-[10px] font-black text-slate-400 uppercase tracking-widest">انتهاء الشفت 2</span>
+                    <input name="shift2End" type="time" defaultValue={row.shift2End} className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-4 font-bold outline-none focus:border-slate-900 transition" />
+                  </label>
+                </div>
+                <label className="block">
+                  <span className="mb-2 block text-xs font-black text-slate-400 uppercase tracking-widest">وقت سحب الراتب (مساءً)</span>
+                  <input name="salaryWithdrawalTime" type="time" defaultValue={row.salaryWithdrawalTime} className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-6 font-bold outline-none focus:border-slate-900 transition" />
+                </label>
                 <label className="block">
                   <span className="mb-2 block text-xs font-black text-slate-400 uppercase tracking-widest">ملاحظات إدارية</span>
                   <input name="notes" defaultValue={row.notes} className="h-14 w-full rounded-2xl border-2 border-slate-100 bg-white px-6 font-bold outline-none focus:border-slate-900 transition" />
                 </label>
               </div>
-              <div className="flex items-center gap-4 sm:col-span-2">
-                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-slate-100 bg-white p-4 font-black transition hover:bg-slate-50">
-                  <input type="checkbox" name="active" value="1" defaultChecked={row.active} className="h-5 w-5 rounded border-2 border-slate-300" />
-                  حساب نشط ومفعّل
+              <div className="flex flex-col gap-4 sm:col-span-2">
+                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-slate-100 bg-white p-4 font-black transition hover:bg-slate-50 select-none">
+                  <input type="checkbox" name="bypassWithdrawalTime" value="1" defaultChecked={row.bypassWithdrawalTime} className="h-5 w-5 rounded border-2 border-slate-300" />
+                  إلغاء قيود وقت استلام الراتب (يستطيع سحب راتبه في أي لحظة للتجربة)
                 </label>
-                <button type="submit" disabled={uPending} className="h-14 flex-1 rounded-2xl bg-slate-900 font-black text-white shadow-xl transition hover:bg-slate-800 disabled:opacity-50">
-                  {uPending ? "جارٍ الحفظ..." : "حفظ التعديلات"}
-                </button>
+                <div className="flex items-center gap-4">
+                  <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-slate-100 bg-white p-4 font-black transition hover:bg-slate-50 select-none">
+                    <input type="checkbox" name="active" value="1" defaultChecked={row.active} className="h-5 w-5 rounded border-2 border-slate-300" />
+                    حساب نشط ومفعّل
+                  </label>
+                  <button type="submit" disabled={uPending} className="h-14 flex-1 rounded-2xl bg-slate-900 font-black text-white shadow-xl transition hover:bg-slate-800 disabled:opacity-50">
+                    {uPending ? "جارٍ الحفظ..." : "حفظ التعديلات"}
+                  </button>
+                </div>
               </div>
             </form>
           )}

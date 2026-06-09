@@ -25,6 +25,7 @@ import { ADMIN_OFFICE_LABEL, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-adm
 import { getBotTokenByPurpose } from "@/lib/telegram-bots";
 import { escapeTelegramHtml, sendTelegramHtmlToChat, sendTelegramMessage } from "@/lib/telegram";
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
+import { ensurePreparerSalaryConfigColumnsIfMissing } from "@/lib/db-self-heal-employee-location";
 
 export type PreparerActionState = { error?: string; ok?: boolean; orderNumber?: number; draftId?: string };
 
@@ -1894,9 +1895,21 @@ function getIraqTime(date: Date): { year: number; month: number; day: number; ho
 
 // دالة احتساب الشفتات المستحقة
 async function calculateAccumulatedSalaryInternal(preparerId: string) {
+  await ensurePreparerSalaryConfigColumnsIfMissing();
+
   const preparer = await prisma.companyPreparer.findUnique({
     where: { id: preparerId },
-    select: { dailySalary: true, lastSalaryWithdrawalAt: true, createdAt: true }
+    select: { 
+      dailySalary: true, 
+      lastSalaryWithdrawalAt: true, 
+      createdAt: true,
+      shift1Start: true,
+      shift1End: true,
+      shift2Start: true,
+      shift2End: true,
+      salaryWithdrawalTime: true,
+      bypassWithdrawalTime: true
+    }
   });
 
   if (!preparer) return { dailySalary: 0, todaySalary: 0, accumulatedSalary: 0 };
@@ -1922,13 +1935,25 @@ async function calculateAccumulatedSalaryInternal(preparerId: string) {
   const uniqueShifts = new Set<string>();
   let todaySalary = 0;
 
+  const timeToMinutes = (h: number, m: number) => h * 60 + m;
+  const parseTimeToMinutes = (timeStr: string) => {
+    const [h, m] = (timeStr || "00:00").split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  const s1Start = parseTimeToMinutes(preparer.shift1Start || "08:00");
+  const s1End = parseTimeToMinutes(preparer.shift1End || "13:00");
+  const s2Start = parseTimeToMinutes(preparer.shift2Start || "15:30");
+  const s2End = parseTimeToMinutes(preparer.shift2End || "21:00");
+
   workLogs.forEach(log => {
     const logTime = getIraqTime(log.createdAt);
     const dayKey = `${logTime.year}-${logTime.month}-${logTime.day}`;
+    const logMinutes = timeToMinutes(logTime.hours, logTime.minutes);
 
-    // التحقق من الشفتات الصباحية والمسائية
-    let isMorning = (logTime.hours >= 8 && logTime.hours < 13) || (logTime.hours === 13 && logTime.minutes === 0);
-    let isEvening = (logTime.hours === 15 && logTime.minutes >= 30) || (logTime.hours > 15 && logTime.hours < 21) || (logTime.hours === 21 && logTime.minutes === 0);
+    // التحقق من الشفتات الصباحية والمسائية بناءً على الإعدادات المخزنة للمجهز
+    let isMorning = logMinutes >= s1Start && logMinutes <= s1End;
+    let isEvening = logMinutes >= s2Start && logMinutes <= s2End;
 
     if (isMorning) {
       const shiftKey = `${dayKey}_morning`;
@@ -1976,16 +2001,29 @@ export async function getPreparerSalaryStats(_prev: any, formData: FormData): Pr
     const v = readPortal(formData);
     if (!v.ok) return { error: "الرابط غير صالح." };
 
+    await ensurePreparerSalaryConfigColumnsIfMissing();
+
     const preparer = await prisma.companyPreparer.findUnique({
       where: { id: v.preparerId },
-      select: { salaryPinCode: true, salaryPinDisabled: true }
+      select: { 
+        salaryPinCode: true, 
+        salaryPinDisabled: true,
+        salaryWithdrawalTime: true,
+        bypassWithdrawalTime: true
+      }
     });
 
     if (!preparer) return { error: "المجهز غير موجود." };
 
     const stats = await calculateAccumulatedSalaryInternal(v.preparerId);
     const iraqNow = getIraqTime(new Date());
-    const isBeforeEightPM = iraqNow.hours < 20;
+    
+    const nowMinutes = iraqNow.hours * 60 + iraqNow.minutes;
+    const withdrawalStr = preparer.salaryWithdrawalTime || "20:00";
+    const [wH, wM] = withdrawalStr.split(":").map(Number);
+    const withdrawalMinutes = wH * 60 + wM;
+
+    const isBeforeEightPM = preparer.bypassWithdrawalTime ? false : nowMinutes < withdrawalMinutes;
     const withdrawableSalary = isBeforeEightPM ? Math.max(0, stats.accumulatedSalary - stats.todaySalary) : stats.accumulatedSalary;
 
     return {
@@ -2096,8 +2134,19 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
 
     const pinCode = String(formData.get("pinCode") ?? "").trim();
 
+    await ensurePreparerSalaryConfigColumnsIfMissing();
+
     const preparer = await prisma.companyPreparer.findUnique({
-      where: { id: v.preparerId }
+      where: { id: v.preparerId },
+      select: { 
+        name: true,
+        salaryPinCode: true,
+        salaryPinDisabled: true,
+        walletEmployeeId: true,
+        telegramUserId: true,
+        salaryWithdrawalTime: true,
+        bypassWithdrawalTime: true
+      }
     });
 
     if (!preparer) return { error: "المجهز غير موجود." };
@@ -2115,19 +2164,25 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
 
     const stats = await calculateAccumulatedSalaryInternal(v.preparerId);
     const iraqNow = getIraqTime(new Date());
-    const isBeforeEightPM = iraqNow.hours < 20;
+    
+    const nowMinutes = iraqNow.hours * 60 + iraqNow.minutes;
+    const withdrawalStr = preparer.salaryWithdrawalTime || "20:00";
+    const [wH, wM] = withdrawalStr.split(":").map(Number);
+    const withdrawalMinutes = wH * 60 + wM;
+
+    const isBeforeWithdrawalTime = preparer.bypassWithdrawalTime ? false : nowMinutes < withdrawalMinutes;
 
     let withdrawableSalary = stats.accumulatedSalary;
-    if (isBeforeEightPM) {
+    if (isBeforeWithdrawalTime) {
       withdrawableSalary = Math.max(0, stats.accumulatedSalary - stats.todaySalary);
     }
 
     const amountDinar = new Decimal(withdrawableSalary);
 
     if (amountDinar.lte(0)) {
-      if (isBeforeEightPM && stats.todaySalary > 0) {
+      if (isBeforeWithdrawalTime && stats.todaySalary > 0) {
         return {
-          error: `راتبك اليوم ${stats.todaySalary} الف وراتبك التراكمي ${stats.accumulatedSalary} الف. الراتب المتاح للسحب حالياً هو ${withdrawableSalary} الف. انتظر لتصبح الساعة 8 مساءً لكي تستلم التراكمي بأكمله.`
+          error: `راتبك اليوم ${stats.todaySalary} الف وراتبك التراكمي ${stats.accumulatedSalary} الف. الراتب المتاح للسحب حالياً هو ${withdrawableSalary} الف. انتظر لتصبح الساعة ${withdrawalStr} لكي تستلم التراكمي بأكمله.`
         };
       }
       return { error: "لا يوجد راتب متراكم متاح للاستلام حالياً." };
@@ -2135,11 +2190,11 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
 
     // إجراء العملية في قاعدة البيانات
     await prisma.$transaction(async (tx) => {
-      // 1. تسجيل العملية المالية في محفظة الموظف كخصم (راتب مستلم) ببادئة مميزة [راتب]
+      // 1. تسجيل العملية المالية في محفظة الموظف كخصم (راتب مستلم) ببادئة مميزة [راتب] - تم تغييرها إلى give لخصم الرصيد بشكل صحيح
       await tx.employeeWalletMiscEntry.create({
         data: {
           employeeId: preparer.walletEmployeeId!,
-          direction: "take",
+          direction: "give",
           amountDinar: amountDinar,
           label: `[راتب] استلام راتب المجهز للشفتات المتراكمة`,
         }
