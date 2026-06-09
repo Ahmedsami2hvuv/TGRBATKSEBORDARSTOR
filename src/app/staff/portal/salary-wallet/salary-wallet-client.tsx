@@ -97,24 +97,7 @@ export function SalaryWalletClient({
         </div>
       </div>
 
-      {/* تنبيه الواتساب في حال وجود معاملة ناجحة */}
-      {waPopupUrl && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800 animate-pulse">
-          <div className="flex items-center gap-2">
-            <DynamicIcon iconKey="ui_whatsapp" config={icons} className="w-5 h-5 text-emerald-600" />
-            <span className="font-bold text-sm">تم تسجيل المعاملة بنجاح!</span>
-          </div>
-          <p className="text-xs mt-1 text-emerald-700">إذا لم يتم تحويلك تلقائياً، اضغط على الزر أدناه لإرسال تفاصيل المعاملة إلى واتساب المدير:</p>
-          <a
-            href={waPopupUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700 transition active:scale-95"
-          >
-            إرسال التفاصيل للمدير الآن
-          </a>
-        </div>
-      )}
+
 
       {settleState.error && (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
