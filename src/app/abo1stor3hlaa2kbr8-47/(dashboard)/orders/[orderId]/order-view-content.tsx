@@ -112,7 +112,6 @@ export function OrderViewContent({
   const imgCustDoor = resolvePublicAssetSrc(order.customerDoorPhotoUrl);
   const imgCustDoor2 = resolvePublicAssetSrc(order.secondCustomerDoorPhotoUrl);
 
-  const displayCustomerName = order.customer?.name?.trim() || null;
 
   const isReversePickup = order.reversePickup || isReversePickupOrderType(order.orderType);
   const isSystemAdminOrder = isAdminShopName(order.shop.name) || order.submissionSource === "admin_portal";
@@ -367,7 +366,6 @@ export function OrderViewContent({
                       phone={order.customerPhone}
                       regionId={order.customerRegionId}
                       currentOrderId={order.id}
-                      customerName={order.customer?.name}
                       customerRegionName={order.customerRegion?.name ?? null}
                       alternatePhone={order.alternatePhone}
                       customerLocationUrl={order.customerLocationUrl}

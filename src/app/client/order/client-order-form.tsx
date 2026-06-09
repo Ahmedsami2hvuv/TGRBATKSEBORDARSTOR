@@ -8,7 +8,7 @@ import { ClientVoiceNoteField } from "./client-voice-note-field";
 import "leaflet/dist/leaflet.css";
 import { submitOrder, updateCustomerUiMode, type ClientOrderState } from "./actions";
 import { clientOrderAccountPath } from "@/lib/client-order-portal-nav";
-import { withoutReversePickupPrefix } from "@/lib/order-type-flags";
+import { withoutReversePickupPrefix, isReversePickupOrderType } from "@/lib/order-type-flags";
 import { whatsappMeUrl } from "@/lib/whatsapp";
 
 const inputClass =
@@ -142,6 +142,10 @@ function ClientOrderFormInner({
     initialOrder ? withoutReversePickupPrefix(initialOrder.orderType) : ""
   );
   const [customerPhone, setCustomerPhone] = useState(initialOrder?.customerPhone ?? "");
+  const [isPrepaidAll, setIsPrepaidAll] = useState(initialOrder?.prepaidAll ?? false);
+  const [isReverse, setIsReverse] = useState(
+    initialOrder ? isReversePickupOrderType(initialOrder.orderType) : false
+  );
   const [customerName] = useState(initialOrder?.customerName || "");
   const greetingName = viewerName || employeeName || "العميل";
   const [alternatePhone, setAlternatePhone] = useState(initialOrder?.alternatePhone ?? "");
@@ -334,6 +338,8 @@ function ClientOrderFormInner({
         <input type="hidden" name="s" value={sig} />
         <input type="hidden" name="customerRegionId" value={selected?.id ?? ""} />
         {initialOrder && <input type="hidden" name="editOrderNumber" value={initialOrder.orderNumber} />}
+        <input type="hidden" name="prepaidAll" value={isPrepaidAll ? "on" : "off"} />
+        <input type="hidden" name="reversePickup" value={isReverse ? "on" : "off"} />
 
         {uiMode === "learn" && (
           <>
@@ -424,6 +430,27 @@ function ClientOrderFormInner({
                 <span className="text-sm font-bold text-slate-600 px-1">سعر الطلب </span>
                 <input ref={orderPriceRef} name="orderSubtotal" inputMode="decimal" value={orderPrice} onChange={(e) => setOrderPrice(e.target.value)} className={`${inputClass} font-mono tabular-nums text-lg font-black animate-placeholder ${isPriceErr ? inputErrorClass : ""}`} placeholder="اكتب السعر هنا" />
               </label>
+
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPrepaidAll(!isPrepaidAll)}
+                  className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black transition shadow-sm border-2 ${
+                    isPrepaidAll ? "bg-emerald-600 border-emerald-400 text-white" : "bg-white border-slate-200 text-slate-600"
+                  }`}
+                >
+                  {isPrepaidAll ? "✓ " : ""}واصل كلشي
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsReverse(!isReverse)}
+                  className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black transition shadow-sm border-2 ${
+                    isReverse ? "bg-violet-600 border-violet-400 text-white" : "bg-white border-slate-200 text-slate-600"
+                  }`}
+                >
+                  {isReverse ? "🔄 " : ""}طلب عكسي
+                </button>
+              </div>
 
               <div className="relative">
                 <label className="flex flex-col gap-1.5">
@@ -686,6 +713,26 @@ function ClientOrderFormInner({
                 <p className="mt-4 text-[11px] font-bold text-slate-400">
                   يمكنك كتابة كسور: 50.5 (خمسين ونص)، 10.25 (عشرة وربع)، 10.75 (عشرة إلا ربع).
                 </p>
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsPrepaidAll(!isPrepaidAll)}
+                    className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black transition shadow-sm border-2 ${
+                      isPrepaidAll ? "bg-emerald-600 border-emerald-400 text-white" : "bg-white border-slate-200 text-slate-600"
+                    }`}
+                  >
+                    {isPrepaidAll ? "✓ " : ""}واصل كلشي
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsReverse(!isReverse)}
+                    className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black transition shadow-sm border-2 ${
+                      isReverse ? "bg-violet-600 border-violet-400 text-white" : "bg-white border-slate-200 text-slate-600"
+                    }`}
+                  >
+                    {isReverse ? "🔄 " : ""}طلب عكسي
+                  </button>
+                </div>
                 <button type="button" onClick={() => isPriceValid && orderPrice.trim() && setLearnStep(3)} className="mt-6 w-full rounded-2xl bg-amber-600 py-4 text-lg font-black text-white shadow-lg active:scale-95 transition disabled:opacity-50" disabled={!isPriceValid}>تم</button>
               </div>
             )}
@@ -876,6 +923,8 @@ function ClientOrderFormInner({
                   <div className="flex justify-between text-sm font-bold"><span>رقم الزبون:</span> <span className="font-mono">{customerPhone}</span></div>
                   <div className="flex justify-between text-sm font-bold"><span>المنطقة:</span> <span>{selected?.name}</span></div>
                   <div className="flex justify-between text-sm font-bold"><span>السعر الكلي:</span> <span className="text-emerald-700 font-black">{(subtotal || 0) + (deliveryPriceOverride ? parseFloat(deliveryPriceOverride) : dPrice)}</span></div>
+                  {isPrepaidAll && <div className="flex justify-between text-sm font-bold text-emerald-700"><span>الحالة:</span> <span>واصل كلشي ✓</span></div>}
+                  {isReverse && <div className="flex justify-between text-sm font-bold text-violet-700"><span>النوع:</span> <span>طلب عكسي 🔄</span></div>}
                 </div>
 
                 {state.error && !state.error.includes("محظور") ? (

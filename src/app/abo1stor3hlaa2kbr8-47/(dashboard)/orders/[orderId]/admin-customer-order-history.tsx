@@ -186,12 +186,6 @@ export function AdminCustomerOrderHistory({
                   <section className="rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
                     <h3 className="text-sm font-black text-slate-900">معلومات الزبون</h3>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      {customerName ? (
-                        <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                          <p className="text-xs uppercase text-slate-500">الاسم</p>
-                          <p className="text-sm font-bold text-slate-900">{customerName}</p>
-                        </div>
-                      ) : null}
                       <div className="rounded-2xl border border-slate-200 bg-white p-3">
                         <p className="text-xs uppercase text-slate-500">الهاتف الرئيسي</p>
                         <p className="text-sm font-bold text-slate-900 font-mono tabular-nums">{phone}</p>

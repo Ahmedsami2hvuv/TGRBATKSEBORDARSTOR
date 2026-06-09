@@ -26,10 +26,7 @@ function formatShopWithCustomer(
   routeMode?: string | null,
 ): string {
   if (routeMode === "double") return "وجهتين";
-  const shop = shopName?.trim() || "—";
-  const cust = customerName?.trim();
-  if (!cust) return shop;
-  return `${shop}(${cust})`;
+  return shopName?.trim() || "—";
 }
 
 type Props = {

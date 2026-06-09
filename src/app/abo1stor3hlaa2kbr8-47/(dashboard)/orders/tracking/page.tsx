@@ -39,10 +39,7 @@ function formatShopWithCustomer(
   routeMode?: string | null,
 ): string {
   if (routeMode === "double") return "وجهتين";
-  const shop = normalizeAdminShopName(shopName) || "—";
-  const cust = customerName?.trim();
-  if (!cust) return shop;
-  return `${shop}(${cust})`;
+  return normalizeAdminShopName(shopName) || "—";
 }
 
 const STATUS_STANDARD = [

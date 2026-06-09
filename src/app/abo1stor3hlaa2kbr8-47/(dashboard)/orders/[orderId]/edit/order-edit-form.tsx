@@ -806,7 +806,6 @@ export function OrderEditForm({
               <span className="text-xs font-bold text-emerald-900">بيانات محفوظة لهذا الرقم والمنطقة</span>
               <p className="text-[10px] text-emerald-700">
                 {firstPrefill.source === "customer" ? "من سجلات زبائن المحل" : "من قاعدة بيانات الأرقام العامة"}
-                {firstPrefill.name ? ` — اسم الزبون: ${firstPrefill.name}` : ""}
               </p>
             </div>
             <button
@@ -1168,12 +1167,6 @@ export function OrderEditForm({
             {state.pendingCustomerImport.hasDoorPhoto ? " وصورة باب الزبون إن وُجدت" : ""} من هذا السجل
             وربط الطلب بهذا الزبون؟
           </p>
-          {state.pendingCustomerImport.customerName ? (
-            <p className="mt-2 text-xs text-slate-600">
-              الاسم في السجل:{" "}
-              <span className="font-semibold">{state.pendingCustomerImport.customerName}</span>
-            </p>
-          ) : null}
           <ul className="mt-3 space-y-1.5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-800">
             {state.pendingCustomerImport.alternatePhone?.trim() ? (
               <li className="break-all">
