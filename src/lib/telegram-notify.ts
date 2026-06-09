@@ -429,7 +429,7 @@ export async function notifyTelegramMoneyEvent(input: any): Promise<void> {
   const header = input.kind === "pickup_out" ? "💸 للعميل (المحل) 💸" : "💸 من الزبون (المستلم) 💸";
   const body = await formatOrderBodyLines({
     ...order, 
-    shopName: order.shop.name, 
+    shopName: (order.routeMode === "double" && order.submissionSource === "staff_portal") ? "طلب وجهتين" : order.shop.name, 
     customerName: order.customer?.name ?? "",
     regionName: order.customerRegion?.name ?? "" 
   });
@@ -472,7 +472,7 @@ export async function notifyTelegramOrderPrepared(input: { orderId: string; botT
 
   const body = await formatOrderBodyLines({
     ...order,
-    shopName: order.shop.name,
+    shopName: (order.routeMode === "double" && order.submissionSource === "staff_portal") ? "طلب وجهتين" : order.shop.name,
     customerName: order.customer?.name ?? "",
     regionName: order.customerRegion?.name ?? ""
   });
@@ -513,7 +513,7 @@ export async function notifyTelegramCourierNewAssignment(orderId: string): Promi
 
   const bodyLines = await formatOrderBodyLines({
     ...order,
-    shopName: order.shop.name,
+    shopName: (order.routeMode === "double" && order.submissionSource === "staff_portal") ? "طلب وجهتين" : order.shop.name,
     customerName: order.customer?.name ?? "—",
     regionName: order.customerRegion?.name ?? order.shop.region?.name ?? "—",
   });

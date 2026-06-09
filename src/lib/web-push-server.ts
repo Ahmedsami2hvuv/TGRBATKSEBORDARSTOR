@@ -305,7 +305,10 @@ export async function pushNotifyCourierNewAssignment(
     if (courier?.telegramUserId?.trim() && courierBotToken) {
       const chatId = courier.telegramUserId.trim();
 
-      const shopName = order?.shop?.name || "—";
+      let shopName = order?.shop?.name || "—";
+      if (order?.routeMode === "double" && order?.submissionSource === "staff_portal") {
+        shopName = "طلب وجهتين";
+      }
       const regionName = order?.customerRegion?.name || "—";
       const secondRegionName = order?.secondCustomerRegion?.name || "";
       const landmark = order?.customerLandmark || "";
