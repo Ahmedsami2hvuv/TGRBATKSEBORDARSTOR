@@ -25,7 +25,10 @@ import { ADMIN_OFFICE_LABEL, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-adm
 import { getBotTokenByPurpose } from "@/lib/telegram-bots";
 import { escapeTelegramHtml, sendTelegramHtmlToChat, sendTelegramMessage } from "@/lib/telegram";
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
-import { ensurePreparerSalaryConfigColumnsIfMissing } from "@/lib/db-self-heal-employee-location";
+import { 
+  ensurePreparerSalaryConfigColumnsIfMissing,
+  ensurePreparerWorkLogShiftNameColumnIfMissing
+} from "@/lib/db-self-heal-employee-location";
 
 export type PreparerActionState = { error?: string; ok?: boolean; orderNumber?: number; draftId?: string };
 
@@ -311,6 +314,20 @@ export async function updatePreparerShoppingDraft(
     });
 
     await Promise.all(updatePromises);
+
+    // تسجيل الحضور البرمجي وتحديد الشفت
+    try {
+      const shiftName = await determineShiftName(v.preparerId, new Date());
+      await prisma.companyPreparerWorkLog.create({
+        data: {
+          preparerId: v.preparerId,
+          actionType: "price_product",
+          shiftName
+        }
+      });
+    } catch (err) {
+      console.error("Failed to record work log in savePreparerShoppingDraftAction:", err);
+    }
 
     revalidatePath(`/preparer/preparation/draft/${draftId}`);
     return { ok: true };
@@ -1105,10 +1122,12 @@ export async function updateStoreProductPrice(
     const { revalidateTag } = await import("next/cache");
     revalidateTag("products");
 
+    const shiftName = await determineShiftName(v.preparerId, new Date());
     await prisma.companyPreparerWorkLog.create({
       data: {
         preparerId: v.preparerId,
         actionType: "price_product",
+        shiftName
       },
     });
 
@@ -1248,10 +1267,12 @@ export async function assignOrderByPreparer(_prev: PreparerActionState, formData
 
   void notifyTelegramOrderPrepared({ orderId });
 
+  const shiftName = await determineShiftName(v.preparerId, new Date());
   await prisma.companyPreparerWorkLog.create({
     data: {
       preparerId: v.preparerId,
       actionType: "assign_order",
+      shiftName
     },
   });
 
@@ -1449,6 +1470,20 @@ export async function updatePreparerOrderFields(_prev: PreparerActionState, form
       where: { id: orderId },
       data,
     });
+
+    // تسجيل حضور المجهز وتحديد الشفت المنجز
+    try {
+      const shiftName = await determineShiftName(v.preparerId, new Date());
+      await prisma.companyPreparerWorkLog.create({
+        data: {
+          preparerId: v.preparerId,
+          actionType: "price_product",
+          shiftName
+        }
+      });
+    } catch (err) {
+      console.error("Failed to record work log in updatePreparerOrderFields:", err);
+    }
 
     revalidatePath("/preparer");
     revalidatePath(`/preparer/order/${orderId}`);
@@ -1743,10 +1778,12 @@ export async function bulkAssignOrdersByPreparer(_prev: PreparerActionState, for
       void notifyTelegramOrderPrepared({ orderId });
     }
 
+    const shiftName = await determineShiftName(v.preparerId, new Date());
     await prisma.companyPreparerWorkLog.create({
       data: {
         preparerId: v.preparerId,
         actionType: "assign_order",
+        shiftName
       },
     });
 
@@ -1872,7 +1909,7 @@ export async function createPreparerDebtAction(
 }
 
 // دالة تحويل التوقيت إلى توقيت العراق
-function getIraqTime(date: Date): { year: number; month: number; day: number; hours: number; minutes: number } {
+export function getIraqTime(date: Date): { year: number; month: number; day: number; hours: number; minutes: number } {
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Baghdad",
     year: "numeric",
@@ -1893,9 +1930,42 @@ function getIraqTime(date: Date): { year: number; month: number; day: number; ho
   };
 }
 
-// دالة احتساب الشفتات المستحقة
-async function calculateAccumulatedSalaryInternal(preparerId: string) {
+// دالة لتحديد اسم الشفت الحالي للعملية
+async function determineShiftName(preparerId: string, time: Date): Promise<string> {
   await ensurePreparerSalaryConfigColumnsIfMissing();
+
+  const preparer = await prisma.companyPreparer.findUnique({
+    where: { id: preparerId },
+    select: { shift1Start: true, shift1End: true, shift2Start: true, shift2End: true }
+  });
+  if (!preparer) return "";
+
+  const logTime = getIraqTime(time);
+  const logMinutes = logTime.hours * 60 + logTime.minutes;
+
+  const parseTimeToMinutes = (timeStr: string) => {
+    const [h, m] = (timeStr || "00:00").split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  const s1Start = parseTimeToMinutes(preparer.shift1Start || "08:00");
+  const s1End = parseTimeToMinutes(preparer.shift1End || "13:00");
+  const s2Start = parseTimeToMinutes(preparer.shift2Start || "15:30");
+  const s2End = parseTimeToMinutes(preparer.shift2End || "21:00");
+
+  if (logMinutes >= s1Start && logMinutes <= s1End) {
+    return "shift1";
+  }
+  if (logMinutes >= s2Start && logMinutes <= s2End) {
+    return "shift2";
+  }
+  return "";
+}
+
+// دالة احتساب الشفتات المستحقة
+export async function calculateAccumulatedSalaryInternal(preparerId: string) {
+  await ensurePreparerSalaryConfigColumnsIfMissing();
+  await ensurePreparerWorkLogShiftNameColumnIfMissing();
 
   const preparer = await prisma.companyPreparer.findUnique({
     where: { id: preparerId },
@@ -1949,11 +2019,21 @@ async function calculateAccumulatedSalaryInternal(preparerId: string) {
   workLogs.forEach(log => {
     const logTime = getIraqTime(log.createdAt);
     const dayKey = `${logTime.year}-${logTime.month}-${logTime.day}`;
-    const logMinutes = timeToMinutes(logTime.hours, logTime.minutes);
+    
+    let isMorning = false;
+    let isEvening = false;
 
-    // التحقق من الشفتات الصباحية والمسائية بناءً على الإعدادات المخزنة للمجهز
-    let isMorning = logMinutes >= s1Start && logMinutes <= s1End;
-    let isEvening = logMinutes >= s2Start && logMinutes <= s2End;
+    // إذا كان يحتوي على شفت مسجل مسبقاً، نستخدمه لكي لا يتأثر بتغيير أوقات الشفتات لاحقاً
+    if ((log as any).shiftName === "shift1") {
+      isMorning = true;
+    } else if ((log as any).shiftName === "shift2") {
+      isEvening = true;
+    } else {
+      // توافقية مع اللوغات القديمة: نحسب ديناميكياً بناءً على النطاق الحالي للشفتات
+      const logMinutes = timeToMinutes(logTime.hours, logTime.minutes);
+      isMorning = logMinutes >= s1Start && logMinutes <= s1End;
+      isEvening = logMinutes >= s2Start && logMinutes <= s2End;
+    }
 
     if (isMorning) {
       const shiftKey = `${dayKey}_morning`;

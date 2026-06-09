@@ -99,3 +99,32 @@ export async function ensurePreparerSalaryConfigColumnsIfMissing(): Promise<void
   }
 }
 
+let hasCheckedWorkLog = false;
+
+export async function ensurePreparerWorkLogShiftNameColumnIfMissing(): Promise<void> {
+  if (hasCheckedWorkLog) return;
+
+  try {
+    const existingColumns = await prisma.$queryRawUnsafe<{ column_name: string }[]>(
+      `SELECT column_name 
+       FROM information_schema.columns 
+       WHERE table_name = 'CompanyPreparerWorkLog' 
+         AND column_name = 'shiftName'`
+    );
+
+    if (existingColumns && existingColumns.length === 1) {
+      hasCheckedWorkLog = true;
+      return;
+    }
+
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "CompanyPreparerWorkLog" ADD COLUMN IF NOT EXISTS "shiftName" TEXT NOT NULL DEFAULT ''`,
+    );
+
+    hasCheckedWorkLog = true;
+  } catch (error) {
+    console.error("[DbSelfHeal] Error checking/adding preparer work log shiftName column:", error);
+  }
+}
+
+

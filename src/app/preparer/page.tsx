@@ -16,6 +16,7 @@ import { PreparerNotificationPoller } from "./preparer-notification-poller";
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { PortalAuthCookieSetter } from "@/components/portal-auth-cookie-setter";
+import { calculateAccumulatedSalaryInternal, getIraqTime } from "./actions";
 
 // Keep data fresh while allowing fast back/forward navigation cache.
 export const revalidate = 10;
@@ -103,13 +104,14 @@ export default async function PreparerHomePage({ searchParams }: Props) {
   const canPriceStore = preparer.authorizedBranches.length > 0;
   const orderListResetAt = preparer.orderListResetAt;
 
-  const [couriersForBulkAssign, walletTotals, icons] = await Promise.all([
+  const [couriersForBulkAssign, walletTotals, stats, icons] = await Promise.all([
     prisma.courier.findMany({
       where: preparerCourierAssignWhere,
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
     getPreparerMoneyTotals(preparer.id),
+    calculateAccumulatedSalaryInternal(preparer.id),
     iconsPromise,
   ]);
 
@@ -133,6 +135,19 @@ export default async function PreparerHomePage({ searchParams }: Props) {
   }
 
   const walletRemainStr = formatDinarAsAlfWithUnit(walletTotals?.remain ?? 0);
+
+  // حساب الراتب المتاح للسحب لكي يظهر من الخارج
+  const iraqNow = getIraqTime(new Date());
+  const nowMinutes = iraqNow.hours * 60 + iraqNow.minutes;
+  const withdrawalStr = (preparer as any).salaryWithdrawalTime || "20:00";
+  const [wH, wM] = withdrawalStr.split(":").map(Number);
+  const withdrawalMinutes = wH * 60 + wM;
+
+  const isBeforeWithdrawalTime = (preparer as any).bypassWithdrawalTime ? false : nowMinutes < withdrawalMinutes;
+  const withdrawableSalary = isBeforeWithdrawalTime ? Math.max(0, stats.accumulatedSalary - stats.todaySalary) : stats.accumulatedSalary;
+  
+  const { Decimal } = await import("@prisma/client/runtime/library");
+  const withdrawableSalaryStr = formatDinarAsAlfWithUnit(new Decimal(withdrawableSalary));
 
   // دالة التطهير العميق للتعامل مع BigInt و Decimal و Date في Next.js 15
   function deepSanitize(obj: any): any {
@@ -199,10 +214,13 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           {/* زر استلام الراتب */}
           <Link
             href={preparerPath("/preparer/salary", baseAuth)}
-            className="flex-1 min-w-[3.5rem] h-11 flex items-center justify-center rounded-xl border-2 border-sky-200 bg-sky-50 text-sky-600 shadow-sm transition hover:bg-sky-100 hover:scale-105 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-800"
+            className="flex-1 min-w-[4.5rem] h-11 flex items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-sky-50 text-sky-650 shadow-sm transition hover:bg-sky-100 hover:scale-105 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-800"
             title="استلام الراتب"
           >
             <span className="text-xl">💸</span>
+            <span className="text-[10px] font-black bg-sky-100 px-1.5 py-0.5 rounded-lg text-sky-900 leading-none">
+              {withdrawableSalaryStr}
+            </span>
           </Link>
 
           {/* زر الديون */}

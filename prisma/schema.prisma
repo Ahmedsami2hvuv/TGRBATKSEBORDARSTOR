@@ -861,6 +861,7 @@ model CompanyPreparerWorkLog {
   id         String   @id @default(cuid())
   preparerId String
   actionType String   // "assign_order" or "price_product"
+  shiftName  String   @default("")
   createdAt  DateTime @default(now())
   preparer   CompanyPreparer @relation(fields: [preparerId], references: [id], onDelete: Cascade)
 
