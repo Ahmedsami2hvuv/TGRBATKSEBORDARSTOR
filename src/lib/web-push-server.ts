@@ -371,9 +371,16 @@ export async function pushNotifyCourierNewAssignment(
       const smartHint1 = !landmark.trim() && order?.customerRegion?.name ? `${order.customerRegion.name}` : "";
       const smartHint2 = !secondLandmark.trim() && order?.secondCustomerRegion?.name ? `${order.secondCustomerRegion.name}` : "";
 
-      let text = `🏪 <b>(${escapeTelegramHtml(shopName)} — ${escapeTelegramHtml(regionName)})</b>
+      let text = "";
+      if (order?.routeMode === "double") {
+        text = `🔄 <b>(طلب ذو وجهتين)</b>
 🔔 تم إسناد طلب جديد إليك
 📍 ${escapeTelegramHtml(regionName)}${landmark ? ` (${escapeTelegramHtml(landmark)})` : smartHint1 ? ` (استدلال: ${escapeTelegramHtml(smartHint1)})` : ""}`;
+      } else {
+        text = `🏪 <b>(${escapeTelegramHtml(shopName)} — ${escapeTelegramHtml(regionName)})</b>
+🔔 تم إسناد طلب جديد إليك
+📍 ${escapeTelegramHtml(regionName)}${landmark ? ` (${escapeTelegramHtml(landmark)})` : smartHint1 ? ` (استدلال: ${escapeTelegramHtml(smartHint1)})` : ""}`;
+      }
 
       if (secondRegionName) {
         text += `\n📍 ${escapeTelegramHtml(secondRegionName)}${secondLandmark ? ` (${escapeTelegramHtml(secondLandmark)})` : smartHint2 ? ` (استدلال: ${escapeTelegramHtml(smartHint2)})` : ""}`;
