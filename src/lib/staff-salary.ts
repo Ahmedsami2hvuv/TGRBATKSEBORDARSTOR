@@ -12,6 +12,36 @@ export async function checkAndApplyMonthlySalary(staffEmployeeId: string) {
 
   if (!staff || Number(staff.fixedSalary) <= 0) return staff;
 
+  // تهيئة رصيد الموظف لأول مرة إذا كان الرصيد صفراً ولم تكن لديه أي معاملات سابقة
+  const trxCount = await prisma.staffTransaction.count({
+    where: { staffEmployeeId },
+  });
+
+  if (Number(staff.salaryBalance) === 0 && trxCount === 0) {
+    const salary = staff.fixedSalary;
+    const initialized = await prisma.$transaction(async (tx) => {
+      await tx.staffTransaction.create({
+        data: {
+          staffEmployeeId,
+          type: "salary_addition",
+          details: "تهيئة رصيد الراتب المبدئي عند التفعيل",
+          amount: salary,
+          profit: 0,
+          deduction: 0,
+        },
+      });
+
+      return await tx.staffEmployee.update({
+        where: { id: staffEmployeeId },
+        data: {
+          salaryBalance: salary,
+          lastSalaryAddedAt: new Date(),
+        },
+      });
+    });
+    return initialized;
+  }
+
   const now = new Date();
   const lastAdded = new Date(staff.lastSalaryAddedAt || staff.createdAt);
 
