@@ -128,9 +128,7 @@ export default async function SmartHintsPage() {
         statusText: "مستدل بنجاح",
         nearestWaypoint: nearest,
         distanceM: nearest.distanceM,
-        hintText: nearest.regionName === "استدلالات عامة"
-          ? `قريب من (${nearest.name})`
-          : `قريب من (${nearest.name}) - ${nearest.regionName}`,
+        hintText: `قريب من (${nearest.name})`,
       };
     })
   );

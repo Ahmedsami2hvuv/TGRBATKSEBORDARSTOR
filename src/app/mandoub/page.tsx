@@ -645,10 +645,7 @@ export default async function MandoubPage({ searchParams }: Props) {
     if (!nearest || nearest.distanceM > 300) {
       return fallback ? `قريب من (${fallback})` : "—";
     }
-    if (nearest.regionName === "استدلالات عامة") {
-      return `قريب من (${nearest.name})`;
-    }
-    return `قريب من (${nearest.name}) - ${nearest.regionName}`;
+    return `قريب من (${nearest.name})`;
   }
 
   const phoneProfilesByKey = new Map<string, (typeof phoneProfiles)[number]>();

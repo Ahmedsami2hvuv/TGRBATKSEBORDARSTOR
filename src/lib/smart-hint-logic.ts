@@ -86,9 +86,5 @@ export async function computeSmartHint(
   if (!nearest) return "—";
   if (nearest.distanceM > 300) return "—";
 
-  if (nearest.regionName === "استدلالات عامة") {
-    return `قريب من (${nearest.name})`;
-  }
-
-  return `قريب من (${nearest.name}) - ${nearest.regionName}`;
+  return `قريب من (${nearest.name})`;
 }
