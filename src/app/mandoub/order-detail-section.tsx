@@ -167,7 +167,7 @@ export function OrderDetailSection({
     secondDoorMerged && order.secondCustomerDoorPhotoUploadedByName?.trim()
       ? order.secondCustomerDoorPhotoUploadedByName
       : null;
-  const isDoubleRoute = order.routeMode === "double";
+  const isDoubleRoute = order.routeMode === "double" || !!order.secondCustomerPhone;
   const missingCustomerLocation = !hasCustomerLocationUrl(mergedCustomerLocationUrl, undefined);
   const prepJson = order.preparerShoppingJson as any;
   const hideSubtotalInfo = prepJson?.hidePricesFromCourier === true;
@@ -212,7 +212,7 @@ export function OrderDetailSection({
       gridColumn: bConf.fullWidth ? "span 2 / span 2" : "auto"
     };
 
-    const isDoubleRoute = order.routeMode === "double";
+    const isDoubleRoute = order.routeMode === "double" || !!order.secondCustomerPhone;
 
     switch (blockId) {
       case "shop_info":

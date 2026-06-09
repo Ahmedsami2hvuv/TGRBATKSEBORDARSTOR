@@ -304,7 +304,7 @@ export default async function MandoubPage({ searchParams }: Props) {
   }
 
   const ordersForWallet = activeOrdersRaw.map((o) => {
-    const doubleStaff = o.routeMode === "double" && o.submissionSource === "staff_portal";
+    const doubleStaff = (o.routeMode === "double" || !!o.secondCustomerPhone) && o.submissionSource === "staff_portal";
     const prepJson = o.preparerShoppingJson as any;
     const staffProfit = (doubleStaff && prepJson && typeof prepJson === "object" && typeof prepJson.staffProfit === "number") ? prepJson.staffProfit : 0;
     const adjustedSubtotal = o.orderSubtotal != null ? new Decimal(Number(o.orderSubtotal) - staffProfit) : null;
@@ -554,7 +554,7 @@ export default async function MandoubPage({ searchParams }: Props) {
     });
 
   const activeOrdersNorm = activeOrders.map((o) => {
-    const doubleStaff = o.routeMode === "double" && o.submissionSource === "staff_portal";
+    const doubleStaff = (o.routeMode === "double" || !!o.secondCustomerPhone) && o.submissionSource === "staff_portal";
     const prepJson = o.preparerShoppingJson as any;
     const staffProfit = (doubleStaff && prepJson && typeof prepJson === "object" && typeof prepJson.staffProfit === "number") ? prepJson.staffProfit : 0;
     const adjustedSubtotal = o.orderSubtotal != null ? new Decimal(Number(o.orderSubtotal) - staffProfit) : null;
@@ -713,7 +713,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       id: o.id,
       shortId: String(o.orderNumber),
       orderStatus: o.status,
-      shopName: (o.routeMode === "double" && o.submissionSource === "staff_portal") ? "طلب وجهتين" : o.shop.name,
+      shopName: ((o.routeMode === "double" || !!o.secondCustomerPhone) && o.submissionSource === "staff_portal") ? "طلب وجهتين" : o.shop.name,
       shopNameHighlightClass: mandoubShopNameVividClass(o.status, o.prepaidAll),
       regionLine: o.customerRegion?.name?.trim() || "—",
       landmarkLine,
@@ -820,7 +820,7 @@ export default async function MandoubPage({ searchParams }: Props) {
     customerLandmark: o.customerLandmark,
     secondCustomerLandmark: o.secondCustomerLandmark,
     orderNoteTime: o.orderNoteTime?.trim() ?? "",
-    shopName: (o.routeMode === "double" && o.submissionSource === "staff_portal") ? "طلب وجهتين" : o.shop.name,
+    shopName: ((o.routeMode === "double" || !!o.secondCustomerPhone) && o.submissionSource === "staff_portal") ? "طلب وجهتين" : o.shop.name,
     regionName: o.customerRegion?.name ?? "",
     secondRegionName: o.secondCustomerRegion?.name ?? "",
     routeMode: o.routeMode,
