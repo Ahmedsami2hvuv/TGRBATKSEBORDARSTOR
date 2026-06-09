@@ -91,19 +91,6 @@ export function StaffPortalMenuClient({
           </Link>
 
           <Link
-            href={`/staff/portal/profits?${authQ}`}
-            className="group w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 py-4 text-sm font-black text-white shadow-lg transition active:scale-95 flex items-center justify-center gap-2"
-          >
-            <DynamicIcon
-              iconKey="ui_wallet"
-              config={icons}
-              className="w-5 h-5"
-              fallback={<span>💰</span>}
-            />
-            أرباحي (المحفظة)
-          </Link>
-
-          <Link
             href={`/staff/portal/salary-wallet?${authQ}`}
             className="group w-full rounded-2xl bg-gradient-to-r from-amber-600 to-orange-700 py-4 text-sm font-black text-white shadow-lg transition active:scale-95 flex items-center justify-center gap-2"
           >

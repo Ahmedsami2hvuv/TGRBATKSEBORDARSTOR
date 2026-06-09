@@ -61,8 +61,26 @@ export default async function StaffSalaryWalletPage({
     .filter(t => t.type === "receive_profit")
     .reduce((acc, t) => acc + Number(t.profit), 0);
 
+  // جلب الطلبات التي رفعها هذا الموظف ولم يتم تسوية أرباحها بعد، وحالتها "تم التسليم"
+  const orders = await prisma.order.findMany({
+    where: {
+      preparerShoppingJson: {
+        path: ["staffId"],
+        equals: staff.id,
+      },
+      status: "delivered",
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const pendingOrders = orders.filter((o) => {
+    const json = o.preparerShoppingJson as any;
+    return json && json.staffProfit && !json.profitSettled;
+  });
+
   const serializedStaff = serializePrisma(staff);
   const serializedIcons = serializePrisma(icons);
+  const serializedPendingOrders = serializePrisma(pendingOrders);
 
   return (
     <main className="min-h-screen bg-slate-50/50 px-4 py-8 pb-24 font-sans text-slate-800" dir="rtl">
@@ -88,6 +106,7 @@ export default async function StaffSalaryWalletPage({
           exp={exp || ""}
           s={s || ""}
           totalReceivedProfits={totalReceivedProfits}
+          pendingOrders={serializedPendingOrders}
         />
       </div>
     </main>

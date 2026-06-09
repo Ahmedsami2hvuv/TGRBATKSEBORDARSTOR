@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useEffect } from "react";
 import { createSalaryTransactionAction, withdrawSalaryAction, type SalaryActionState } from "./actions";
+import { settleStaffProfit } from "../actions";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 
@@ -15,6 +16,7 @@ export function SalaryWalletClient({
   exp,
   s,
   totalReceivedProfits,
+  pendingOrders = [],
 }: {
   staff: any;
   icons: GlobalIconsConfig | null;
@@ -23,12 +25,14 @@ export function SalaryWalletClient({
   exp: string;
   s: string;
   totalReceivedProfits: number;
+  pendingOrders?: any[];
 }) {
   const [activeTab, setActiveTab] = useState<"status" | "receive" | "withdraw">("status");
   const [waPopupUrl, setWaPopupUrl] = useState<string | null>(null);
 
   const [receiveState, receiveAction, receivePending] = useActionState(createSalaryTransactionAction, initial);
   const [withdrawState, withdrawAction, withdrawPending] = useActionState(withdrawSalaryAction, initial);
+  const [settleState, settleAction, settlePending] = useActionState(settleStaffProfit, initial);
 
   // مراقبة نجاح المعاملات لفتح نافذة الواتساب
   useEffect(() => {
@@ -50,6 +54,13 @@ export function SalaryWalletClient({
       if (form) form.reset();
     }
   }, [withdrawState]);
+
+  useEffect(() => {
+    if (settleState.ok && settleState.waUrl) {
+      setWaPopupUrl(settleState.waUrl);
+      window.open(settleState.waUrl, "_blank");
+    }
+  }, [settleState]);
 
   const fixedSalary = Number(staff.fixedSalary || 0);
   const salaryBalance = Number(staff.salaryBalance || 0);
@@ -97,6 +108,12 @@ export function SalaryWalletClient({
         </div>
       )}
 
+      {settleState.error && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
+          <p className="text-xs font-bold">{settleState.error}</p>
+        </div>
+      )}
+
       {/* أزرار التبويب */}
       <div className="flex rounded-2xl bg-white p-1 shadow-sm border border-slate-100 font-bold text-xs">
         <button
@@ -128,6 +145,50 @@ export function SalaryWalletClient({
       {/* محتوى التبويبات */}
       {activeTab === "status" && (
         <div className="space-y-4">
+          {pendingOrders.length > 0 && (
+            <div className="space-y-3 mb-6">
+              <h2 className="text-sm font-bold text-emerald-600 px-1 flex items-center gap-1.5">
+                <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                طلبات واصلة بانتظار استلام الأرباح ({pendingOrders.length})
+              </h2>
+              {pendingOrders.map((order: any) => {
+                const json = order.preparerShoppingJson as any;
+                return (
+                  <div key={order.id} className="rounded-2xl bg-white p-4 border border-emerald-100 shadow-sm flex flex-col gap-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                          طلب واصل #{order.orderNumber || order.id.slice(-6).toUpperCase()}
+                        </span>
+                        <p className="text-sm font-black text-slate-800 mt-2">{order.summary || "طلب ذو وجهتين"}</p>
+                      </div>
+                      <p className="text-sm font-black text-emerald-600 tabular-nums">
+                        +{Number(json?.staffProfit || 0).toLocaleString()} د.ع
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold pt-2 border-t border-slate-50">
+                      <span>{new Date(order.createdAt).toLocaleDateString("ar-IQ-u-nu-latn", { dateStyle: "short" })}</span>
+                      <form action={settleAction}>
+                        <input type="hidden" name="se" value={se} />
+                        <input type="hidden" name="exp" value={exp} />
+                        <input type="hidden" name="s" value={s} />
+                        <input type="hidden" name="orderId" value={order.id} />
+                        <button
+                          type="submit"
+                          disabled={settlePending}
+                          className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3.5 py-1.5 text-[11px] font-black text-white shadow-sm transition active:scale-95 disabled:opacity-50"
+                        >
+                          {settlePending ? "جاري الاستلام..." : "استلام الأرباح"}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <h2 className="text-sm font-bold text-slate-500 px-1">المعاملات الأخيرة</h2>
           {staff.staffTransactions.length === 0 ? (
             <div className="rounded-3xl bg-white p-12 text-center border border-slate-100">

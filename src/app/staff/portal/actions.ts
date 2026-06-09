@@ -9,6 +9,8 @@ import { pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
 import { notifyTelegramDraftCanceled, notifyTelegramNewOrder, notifyTelegramStaffOrderUpdate } from "@/lib/telegram-notify";
 import { saveOrderImageUploaded } from "@/lib/order-image";
 import { MAX_VOICE_NOTE_BYTES, saveVoiceNoteUploaded } from "@/lib/voice-note";
+import { getBotTokenByPurpose } from "@/lib/telegram-bots";
+import { sendTelegramMessage } from "@/lib/telegram";
 
 export type StaffPrepState = { error?: string; ok?: boolean; draftId?: string; preparerName?: string };
 
@@ -314,7 +316,7 @@ export async function submitStaffDoubleOrder(
 export async function settleStaffProfit(
   arg1: any,
   arg2?: any,
-): Promise<{ error?: string; ok?: boolean }> {
+): Promise<{ error?: string; ok?: boolean; waUrl?: string }> {
   // دعم الاستدعاء المباشر من النموذج (formData) أو من useActionState (prevState, formData)
   const formData = arg2 instanceof FormData ? arg2 : (arg1 as FormData);
 
@@ -343,29 +345,95 @@ export async function settleStaffProfit(
     return { error: "لا تملك صلاحية لتسوية هذا الطلب." };
   }
 
-  await prisma.order.update({
-    where: { id: orderId },
-    data: {
-      preparerShoppingJson: {
-        ...json,
-        profitSettled: true,
-        settledAt: new Date().toISOString(),
+  if (json.profitSettled) {
+    return { error: "تم تسوية هذا الطلب مسبقاً." };
+  }
+
+  const profit = Number(json.staffProfit || 0);
+  const deduction = profit / 2;
+
+  // 1. تحديث الطلب وتحديث رصيد الموظف وتسجيل المعاملة المالية في عملية واحدة (transaction)
+  const result = await prisma.$transaction(async (tx) => {
+    // أ. تحديث حالة تسوية الطلب
+    await tx.order.update({
+      where: { id: orderId },
+      data: {
+        preparerShoppingJson: {
+          ...json,
+          profitSettled: true,
+          settledAt: new Date().toISOString(),
+        },
       },
-    },
+    });
+
+    // ب. خصم نصف ربح الطلب (الاستقطاع) من رصيد الراتب المتبقي
+    const updatedStaff = await tx.staffEmployee.update({
+      where: { id: staff.id },
+      data: {
+        salaryBalance: { decrement: deduction },
+      },
+    });
+
+    // ج. تسجيل معاملة مالية موثقة
+    await tx.staffTransaction.create({
+      data: {
+        staffEmployeeId: staff.id,
+        type: "receive_profit",
+        details: `تسوية أرباح طلب رقم #${order.orderNumber} واصل`,
+        amount: 0,
+        phone: order.customerPhone || "",
+        profit: profit,
+        deduction: deduction,
+      },
+    });
+
+    return updatedStaff;
   });
 
-  // إرسال إشعار تيليجرام للموظف بتسوية الأرباح
-  void notifyTelegramStaffOrderUpdate({
-    staffId: staff.id,
-    orderNumber: order.orderNumber,
-    orderId: order.id,
-    status: order.status,
-    profitSettled: true,
-    profitAmount: json.staffProfit
-  }).catch(console.error);
+  const remainingSalary = Number(result.salaryBalance);
+  const originalSalary = Number(staff.fixedSalary);
+  const totalSalary = remainingSalary + profit;
 
+  // 2. إرسال إشعار تيليجرام للموظف وللإدارة
+  try {
+    const notificationBotToken = await getBotTokenByPurpose("notification");
+    if (notificationBotToken) {
+      const telegramMessageText = [
+        `📊 <b>تسوية أرباح طلب (واصل)</b>`,
+        `👤 <b>الموظف:</b> ${staff.name}`,
+        `🔢 <b>طلب رقم:</b> #${order.orderNumber}`,
+        `💵 <b>مبلغ الربح المستلم:</b> ${profit.toLocaleString()} د.ع`,
+        `🔴 <b>الاستقطاع من الراتب:</b> ${deduction.toLocaleString()} د.ع`,
+        `-------------------------`,
+        `💵 <b>الراتب الثابت:</b> ${originalSalary.toLocaleString()} د.ع`,
+        `⏳ <b>المتبقي من الراتب:</b> ${remainingSalary.toLocaleString()} د.ع`,
+        `📈 <b>الراتب الكلي (الوضع الحالي):</b> ${totalSalary.toLocaleString()}.ع`
+      ].join("\n");
+
+      await sendTelegramMessage(telegramMessageText, { botToken: notificationBotToken });
+    }
+  } catch (err) {
+    console.error("Failed to send telegram notification:", err);
+  }
+
+  // 3. إعداد رابط واتساب للمدير
+  const waMsg = [
+    `*تسوية أرباح طلب (واصل) للموظف ${staff.name}*`,
+    `طلب رقم: #${order.orderNumber}`,
+    `مبلغ الربح المستلم: ${profit} د.ع`,
+    `الاستقطاع من الراتب: ${deduction} د.ع`,
+    `-------------------------`,
+    `الراتب الثابت: ${originalSalary} د.ع`,
+    `المتبقي من الراتب: ${remainingSalary} د.ع`,
+    `الراتب الكلي (الوضع الحالي): ${totalSalary} د.ع`
+  ].join("\n");
+
+  const waPhone = "9647733921468"; // رقم المدير الافتراضي
+  const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(waMsg)}`;
+
+  revalidatePath("/staff/portal/salary-wallet");
   revalidatePath("/staff/portal/profits");
-  return { ok: true };
+  return { ok: true, waUrl };
 }
 
 export type StaffDraftEditState = { error?: string; ok?: boolean };
