@@ -29,6 +29,7 @@ import {
   ensurePreparerSalaryConfigColumnsIfMissing,
   ensurePreparerWorkLogShiftNameColumnIfMissing
 } from "@/lib/db-self-heal-employee-location";
+import { getIraqTime } from "@/lib/baghdad-time";
 
 export type PreparerActionState = { error?: string; ok?: boolean; orderNumber?: number; draftId?: string };
 
@@ -1908,27 +1909,7 @@ export async function createPreparerDebtAction(
   }
 }
 
-// دالة تحويل التوقيت إلى توقيت العراق
-export function getIraqTime(date: Date): { year: number; month: number; day: number; hours: number; minutes: number } {
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Baghdad",
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: false
-  });
-  const parts = formatter.formatToParts(date);
-  const getPart = (type: string) => parseInt(parts.find(p => p.type === type)?.value || "0");
-  return {
-    year: getPart("year"),
-    month: getPart("month"),
-    day: getPart("day"),
-    hours: getPart("hour"),
-    minutes: getPart("minute")
-  };
-}
+
 
 // دالة لتحديد اسم الشفت الحالي للعملية
 async function determineShiftName(preparerId: string, time: Date): Promise<string> {

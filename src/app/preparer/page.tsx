@@ -16,7 +16,8 @@ import { PreparerNotificationPoller } from "./preparer-notification-poller";
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { PortalAuthCookieSetter } from "@/components/portal-auth-cookie-setter";
-import { calculateAccumulatedSalaryInternal, getIraqTime } from "./actions";
+import { calculateAccumulatedSalaryInternal } from "./actions";
+import { getIraqTime } from "@/lib/baghdad-time";
 
 // Keep data fresh while allowing fast back/forward navigation cache.
 export const revalidate = 10;
