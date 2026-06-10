@@ -290,6 +290,39 @@ export function UnifiedOrderListTable({
                 );
               }
 
+              if ((o as any).isGroupHeader) {
+                return (
+                  <Fragment key={o.id}>
+                    <tr
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        (o as any).onToggleExpand?.();
+                      }}
+                      className="bg-amber-100/50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-950/30 cursor-pointer border-b-2 border-amber-300 dark:border-amber-900 transition-all font-black text-slate-800 dark:text-slate-200"
+                    >
+                      <td colSpan={adjustedColCount} className="px-4 py-3.5 text-right">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl animate-pulse">📦</span>
+                            <div>
+                              <span className="text-base font-black">{o.regionLine}</span>
+                              <span className="text-xs font-bold text-amber-700 dark:text-amber-400 block mt-0.5">
+                                حزمة مدمجة تحتوي على {(o as any).groupCount} طلبات
+                              </span>
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-xs font-black bg-amber-600 text-white dark:bg-amber-500 dark:text-slate-900 px-3 py-1.5 rounded-xl shadow-sm">
+                              {(o as any).isExpanded ? "إغلاق الحزمة ▲" : "فتح الحزمة ▼"}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </Fragment>
+                );
+              }
+
               return (
                 <Fragment key={o.id}>
                   {separator}
