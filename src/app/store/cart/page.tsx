@@ -16,6 +16,12 @@ export default function CartPage() {
   useEffect(() => {
     setMounted(true);
     setCart(JSON.parse(localStorage.getItem("kse_cart") || "[]"));
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("share") === "true") {
+        setShowShareModal(true);
+      }
+    }
   }, []);
 
   function updateQty(id: string, delta: number) {

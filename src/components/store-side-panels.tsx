@@ -162,13 +162,22 @@ export function StoreSidePanels() {
               <span className="text-slate-500 font-bold">المجموع</span>
               <span className="text-2xl font-black text-slate-900 dark:text-white">{subtotal.toLocaleString()} د.ع</span>
             </div>
-            <Link
-              href="/store/checkout"
-              onClick={() => setActivePanel(null)}
-              className="w-full py-4 bg-violet-600 text-white rounded-2xl font-black text-center block hover:bg-violet-700 shadow-xl shadow-violet-200 dark:shadow-none transition-all"
-            >
-              إتمام الطلب
-            </Link>
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                href="/store/checkout"
+                onClick={() => setActivePanel(null)}
+                className="py-4 bg-violet-600 text-white rounded-2xl font-black text-center block hover:bg-violet-700 shadow-xl shadow-violet-200 dark:shadow-none transition-all text-xs"
+              >
+                إتمام الطلب
+              </Link>
+              <Link
+                href="/store/cart?share=true"
+                onClick={() => setActivePanel(null)}
+                className="py-4 bg-slate-800 text-white rounded-2xl font-black text-center block hover:bg-slate-700 border border-slate-700 dark:border-slate-800 transition-all text-xs flex items-center justify-center gap-1"
+              >
+                👥 مشاركة السلة
+              </Link>
+            </div>
           </div>
         )}
       </div>
