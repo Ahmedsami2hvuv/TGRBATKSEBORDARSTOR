@@ -337,10 +337,10 @@ export function MandoubOrderTable({
     return [...sortedActive, ...delivered];
   }, [rows, rowStatusOverrides, customSortIds]);
 
-  // تجميع الطلبات حسب المنطقة
-  const mergedGroups = useMemo(() => {
+  // إعادة هيكلة الصفوف لتشمل الحزم والطلبات بداخلها في جدول واحد
+  const tableRowsToRender = useMemo(() => {
     console.log("[Merge System] localMergeEnabled:", localMergeEnabled);
-    if (!localMergeEnabled) return { grouped: {}, singleOrders: displayRows };
+    if (!localMergeEnabled) return displayRows;
 
     // نفصل الطلبات النشطة عن المسلمة
     const activeRows = displayRows.filter(r => r.orderStatus !== "delivered");
@@ -353,30 +353,40 @@ export function MandoubOrderTable({
       regionCounts[region] = (regionCounts[region] || 0) + 1;
     });
 
-    // نقوم بالتجميع
-    const grouped: Record<string, MandoubRow[]> = {};
-    const singleActiveOrders: MandoubRow[] = [];
+    const finalRows: any[] = [];
+    const processedRegions = new Set<string>();
 
     activeRows.forEach(r => {
       const region = (r.regionLine || "منطقة غير محددة").trim().replace(/\s+/g, ' ');
       if (regionCounts[region] >= 2) {
-        if (!grouped[region]) {
-          grouped[region] = [];
+        if (!processedRegions.has(region)) {
+          processedRegions.add(region);
+          const isExpanded = !!expandedRegions[region];
+          // نضيف صف رأس الحزمة
+          finalRows.push({
+            id: `group-header-${region}`,
+            isGroupHeader: true,
+            regionLine: region,
+            groupCount: regionCounts[region],
+            isExpanded,
+            onToggleExpand: () => toggleRegionExpand(region)
+          });
+          
+          // إذا كانت الحزمة موسعة، نضيف الطلبات التابعة لها مباشرة
+          if (isExpanded) {
+            const children = activeRows.filter(c => (c.regionLine || "منطقة غير محددة").trim().replace(/\s+/g, ' ') === region);
+            finalRows.push(...children);
+          }
         }
-        grouped[region].push(r);
       } else {
-        singleActiveOrders.push(r);
+        finalRows.push(r);
       }
     });
 
-    console.log("[Merge System] Grouped regions count:", Object.keys(grouped).length);
-    console.log("[Merge System] Grouped details:", grouped);
+    console.log("[Merge System] Render rows count:", finalRows.length + deliveredRows.length);
 
-    return {
-      grouped,
-      singleOrders: [...singleActiveOrders, ...deliveredRows]
-    };
-  }, [displayRows, localMergeEnabled]);
+    return [...finalRows, ...deliveredRows];
+  }, [displayRows, localMergeEnabled, expandedRegions]);
 
   const toggleRegionExpand = (region: string) => {
     setExpandedRegions(prev => ({
@@ -629,374 +639,113 @@ export function MandoubOrderTable({
 
       </div>
 
-      {localMergeEnabled && Object.keys(mergedGroups.grouped).length > 0 ? (
-        <div className="space-y-4 px-2 sm:px-3 mb-6">
-          {/* قسم الحزم المدمجة */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-black text-amber-800 dark:text-amber-400 flex items-center gap-1.5 px-1">
-              <span>📦</span> حزم الطلبات المدمجة حسب المنطقة
-            </h3>
-            
-            {Object.entries(mergedGroups.grouped).map(([region, regionRows]) => {
-              const isExpanded = !!expandedRegions[region];
-              return (
-                <div key={region} className="kse-glass-dark border border-amber-200/60 dark:border-amber-500/20 rounded-2xl overflow-hidden shadow-sm transition-all duration-300">
-                  <button
-                    type="button"
-                    onClick={() => toggleRegionExpand(region)}
-                    className="w-full flex items-center justify-between p-4 bg-amber-50/50 dark:bg-amber-950/10 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-all outline-none"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl animate-pulse">📦</span>
-                      <div className="text-right">
-                        <span className="block text-base font-black text-slate-800 dark:text-slate-200">{region}</span>
-                        <span className="block text-xs font-bold text-amber-700 dark:text-amber-400 mt-0.5">يحتوي على {regionRows.length} طلبات</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold bg-amber-600 text-white dark:bg-amber-500 dark:text-slate-900 px-2.5 py-1 rounded-xl shadow-sm">
-                        {isExpanded ? "إغلاق الحزمة ▲" : "فتح الحزمة ▼"}
-                      </span>
-                    </div>
-                  </button>
-                  
-                  {isExpanded && (
-                    <div className="border-t border-amber-100 dark:border-amber-900/30 bg-white/60 dark:bg-slate-900/40 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <UnifiedOrderListTable
-                        rows={regionRows}
-                        colCount={9}
-                        showSelectColumn={showQuickSelect}
-                        isRowSelectable={() => true}
-                        isSelected={(id) => selectedIds.has(id)}
-                        allSelected={regionRows.every(r => selectedIds.has(r.id))}
-                        onToggleAll={() => {
-                          const regionIds = regionRows.map(r => r.id);
-                          const allSelectedInRegion = regionIds.every(id => selectedIds.has(id));
-                          setSelectedIds(prev => {
-                            const next = new Set(prev);
-                            regionIds.forEach(id => {
-                              if (allSelectedInRegion) next.delete(id);
-                              else next.add(id);
-                            });
-                            return next;
-                          });
-                        }}
-                        onToggleOne={toggleOne}
-                        onOpenRow={(id) => {
-                          if (isSortingMode) return;
-                          setActiveOrderId(id);
-                          const p = new URLSearchParams(window.location.search);
-                          p.set("activeOrderId", id);
-                          window.history.pushState({ orderId: id }, "", `?${p.toString()}`);
-                        }}
-                        onRowReorder={isSortingMode ? handleRowReorder : undefined}
-                        canDragRow={(o) => o.orderStatus !== "delivered"}
-                        canDropOnRow={(o) => o.orderStatus !== "delivered"}
-                        selectAllTitle="تحديد الكل"
-                        selectAllAriaLabel="تحديد كل الطلبات لهذه المنطقة"
-                        selectedTitle="تحديد"
-                        selectedAriaPrefix="تحديد الطلب"
-                        showStatusDotInSelectCol={false}
-                        renderOrderIdBadge={(o) => {
-                          if (!isSortingMode || o.orderStatus === "delivered") return null;
-                          return (
-                            <div className="flex flex-col items-center gap-1.5 py-1.5" onClick={e => e.stopPropagation()}>
-                              <button
-                                type="button"
-                                onClick={() => moveRow(o.id, 'up')}
-                                className="flex size-8 items-center justify-center rounded-lg bg-white text-indigo-500 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
-                                title="تحريك للأعلى"
-                              >
-                                <DynamicIcon iconKey="ui_chevron_up" config={icons} fallback="▲" className="w-4 h-4" />
-                              </button>
-                              <div
-                                className="cursor-grab active:cursor-grabbing flex size-10 items-center justify-center bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-md"
-                                title="اضغط واسحب للترتيب"
-                              >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
-                                  <circle cx="9" cy="5" r="1.5" fill="currentColor"></circle>
-                                  <circle cx="9" cy="12" r="1.5" fill="currentColor"></circle>
-                                  <circle cx="9" cy="19" r="1.5" fill="currentColor"></circle>
-                                  <circle cx="15" cy="5" r="1.5" fill="currentColor"></circle>
-                                  <circle cx="15" cy="12" r="1.5" fill="currentColor"></circle>
-                                  <circle cx="15" cy="19" r="1.5" fill="currentColor"></circle>
-                                </svg>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => moveRow(o.id, 'down')}
-                                className="flex size-8 items-center justify-center rounded-lg bg-white text-indigo-500 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
-                                title="تحريك للأسفل"
-                              >
-                                <DynamicIcon iconKey="ui_chevron_down" config={icons} fallback="▼" className="w-4 h-4" />
-                              </button>
-                            </div>
-                          );
-                        }}
-                        renderBelowOrderId={(o) => {
-                          if (isSortingMode) return null;
-                          if (o.orderStatus === "assigned") {
-                            return (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPickupOrder(o);
-                                }}
-                                className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-emerald-100 shadow-sm transition hover:bg-emerald-50 active:scale-90 p-1.5"
-                                title="تم الاستلام (تسجيل دفع للعميل)"
-                              >
-                                <DynamicIcon icon={icons?.order_received} className="w-full h-full" fallback={<span className="text-xl">💵</span>} />
-                              </button>
-                            );
-                          }
-                          if (o.orderStatus === "delivering") {
-                            return (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeliveryOrder(o);
-                                }}
-                                className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-rose-100 shadow-sm transition hover:bg-rose-50 active:scale-90 p-1.5"
-                                title="تم التسليم (تسجيل استلام من الزبون)"
-                              >
-                                <DynamicIcon icon={icons?.order_delivered} className="w-full h-full" fallback={<span className="text-xl">🚚</span>} />
-                              </button>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+      <UnifiedOrderListTable
+        rows={tableRowsToRender}
+        colCount={9}
+        showSelectColumn={showQuickSelect}
+        isRowSelectable={(r) => !r.isGroupHeader}
+        isSelected={(id) => selectedIds.has(id)}
+        allSelected={allSelected}
+        onToggleAll={toggleAll}
+        onToggleOne={toggleOne}
+        onOpenRow={(id) => {
+          if (isSortingMode) return;
+          setActiveOrderId(id);
+          const p = new URLSearchParams(window.location.search);
+          p.set("activeOrderId", id);
+          window.history.pushState({ orderId: id }, "", `?${p.toString()}`);
+        }}
+        onRowReorder={isSortingMode ? handleRowReorder : undefined}
+        canDragRow={(o) => o.orderStatus !== "delivered" && !o.isGroupHeader}
+        canDropOnRow={(o) => o.orderStatus !== "delivered" && !o.isGroupHeader}
+        selectAllTitle="تحديد الكل"
+        selectAllAriaLabel="تحديد كل الطلبات الظاهرة"
+        selectedTitle="تحديد"
+        selectedAriaPrefix="تحديد الطلب"
+        showStatusDotInSelectCol={false}
+        renderOrderIdBadge={(o) => {
+          if (o.isGroupHeader) return null;
+          if (!isSortingMode || o.orderStatus === "delivered") return null;
+          return (
+            <div className="flex flex-col items-center gap-1.5 py-1.5" onClick={e => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => moveRow(o.id, 'up')}
+                className="flex size-8 items-center justify-center rounded-lg bg-white text-indigo-500 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
+                title="تحريك للأعلى"
+              >
+                <DynamicIcon iconKey="ui_chevron_up" config={icons} fallback="▲" className="w-4 h-4" />
+              </button>
 
-          {/* قسم الطلبات الأخرى */}
-          {mergedGroups.singleOrders.length > 0 && (
-            <div className="space-y-3 mt-6">
-              <h3 className="text-sm font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5 px-1">
-                <span>📋</span> طلبات أخرى (فردية ومسلمة)
-              </h3>
-              <UnifiedOrderListTable
-                rows={mergedGroups.singleOrders}
-                colCount={9}
-                showSelectColumn={showQuickSelect}
-                isRowSelectable={() => true}
-                isSelected={(id) => selectedIds.has(id)}
-                allSelected={mergedGroups.singleOrders.length > 0 && mergedGroups.singleOrders.every(r => selectedIds.has(r.id))}
-                onToggleAll={() => {
-                  const singleIds = mergedGroups.singleOrders.map(r => r.id);
-                  const allSelectedInSingle = singleIds.every(id => selectedIds.has(id));
-                  setSelectedIds(prev => {
-                    const next = new Set(prev);
-                    singleIds.forEach(id => {
-                      if (allSelectedInSingle) next.delete(id);
-                      else next.add(id);
-                    });
-                    return next;
-                  });
-                }}
-                onToggleOne={toggleOne}
-                onOpenRow={(id) => {
-                  if (isSortingMode) return;
-                  setActiveOrderId(id);
-                  const p = new URLSearchParams(window.location.search);
-                  p.set("activeOrderId", id);
-                  window.history.pushState({ orderId: id }, "", `?${p.toString()}`);
-                }}
-                onRowReorder={isSortingMode ? handleRowReorder : undefined}
-                canDragRow={(o) => o.orderStatus !== "delivered"}
-                canDropOnRow={(o) => o.orderStatus !== "delivered"}
-                selectAllTitle="تحديد الكل"
-                selectAllAriaLabel="تحديد كل الطلبات الظاهرة"
-                selectedTitle="تحديد"
-                selectedAriaPrefix="تحديد الطلب"
-                showStatusDotInSelectCol={false}
-                renderOrderIdBadge={(o) => {
-                  if (!isSortingMode || o.orderStatus === "delivered") return null;
-                  return (
-                    <div className="flex flex-col items-center gap-1.5 py-1.5" onClick={e => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={() => moveRow(o.id, 'up')}
-                        className="flex size-8 items-center justify-center rounded-lg bg-white text-indigo-500 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
-                        title="تحريك للأعلى"
-                      >
-                        <DynamicIcon iconKey="ui_chevron_up" config={icons} fallback="▲" className="w-4 h-4" />
-                      </button>
-                      <div
-                        className="cursor-grab active:cursor-grabbing flex size-10 items-center justify-center bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-md"
-                        title="اضغط واسحب للترتيب"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
-                          <circle cx="9" cy="5" r="1.5" fill="currentColor"></circle>
-                          <circle cx="9" cy="12" r="1.5" fill="currentColor"></circle>
-                          <circle cx="9" cy="19" r="1.5" fill="currentColor"></circle>
-                          <circle cx="15" cy="5" r="1.5" fill="currentColor"></circle>
-                          <circle cx="15" cy="12" r="1.5" fill="currentColor"></circle>
-                          <circle cx="15" cy="19" r="1.5" fill="currentColor"></circle>
-                        </svg>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => moveRow(o.id, 'down')}
-                        className="flex size-8 items-center justify-center rounded-lg bg-white text-indigo-500 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
-                        title="تحريك للأسفل"
-                      >
-                        <DynamicIcon iconKey="ui_chevron_down" config={icons} fallback="▼" className="w-4 h-4" />
-                      </button>
-                    </div>
-                  );
-                }}
-                renderBelowOrderId={(o) => {
-                  if (isSortingMode) return null;
-                  if (o.orderStatus === "assigned") {
-                    return (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPickupOrder(o);
-                        }}
-                        className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-emerald-100 shadow-sm transition hover:bg-emerald-50 active:scale-90 p-1.5"
-                        title="تم الاستلام (تسجيل دفع للعميل)"
-                      >
-                        <DynamicIcon icon={icons?.order_received} className="w-full h-full" fallback={<span className="text-xl">💵</span>} />
-                      </button>
-                    );
-                  }
-                  if (o.orderStatus === "delivering") {
-                    return (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeliveryOrder(o);
-                        }}
-                        className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-rose-100 shadow-sm transition hover:bg-rose-50 active:scale-90 p-1.5"
-                        title="تم التسليم (تسجيل استلام من الزبون)"
-                      >
-                        <DynamicIcon icon={icons?.order_delivered} className="w-full h-full" fallback={<span className="text-xl">🚚</span>} />
-                      </button>
-                    );
-                  }
-                  return null;
-                }}
-              />
-            </div>
-          )}
-        </div>
-      ) : (
-        <UnifiedOrderListTable
-          rows={displayRows}
-          colCount={9}
-          showSelectColumn={showQuickSelect}
-          isRowSelectable={() => true}
-          isSelected={(id) => selectedIds.has(id)}
-          allSelected={allSelected}
-          onToggleAll={toggleAll}
-          onToggleOne={toggleOne}
-          onOpenRow={(id) => {
-            if (isSortingMode) return;
-            setActiveOrderId(id);
-            const p = new URLSearchParams(window.location.search);
-            p.set("activeOrderId", id);
-            window.history.pushState({ orderId: id }, "", `?${p.toString()}`);
-          }}
-          onRowReorder={isSortingMode ? handleRowReorder : undefined}
-          canDragRow={(o) => o.orderStatus !== "delivered"}
-          canDropOnRow={(o) => o.orderStatus !== "delivered"}
-          selectAllTitle="تحديد الكل"
-          selectAllAriaLabel="تحديد كل الطلبات الظاهرة"
-          selectedTitle="تحديد"
-          selectedAriaPrefix="تحديد الطلب"
-          showStatusDotInSelectCol={false}
-          renderOrderIdBadge={(o) => {
-            if (!isSortingMode || o.orderStatus === "delivered") return null;
-            return (
-              <div className="flex flex-col items-center gap-1.5 py-1.5" onClick={e => e.stopPropagation()}>
-                <button
-                  type="button"
-                  onClick={() => moveRow(o.id, 'up')}
-                  className="flex size-8 items-center justify-center rounded-lg bg-white text-indigo-500 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
-                  title="تحريك للأعلى"
-                >
-                  <DynamicIcon iconKey="ui_chevron_up" config={icons} fallback="▲" className="w-4 h-4" />
-                </button>
-
-                <div
-                  className="cursor-grab active:cursor-grabbing flex size-10 items-center justify-center bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-md group/handle"
-                  title="اضغط واسحب للترتيب"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                    <circle cx="9" cy="5" r="1.5" fill="currentColor"></circle>
-                    <circle cx="9" cy="12" r="1.5" fill="currentColor"></circle>
-                    <circle cx="9" cy="19" r="1.5" fill="currentColor"></circle>
-                    <circle cx="15" cy="5" r="1.5" fill="currentColor"></circle>
-                    <circle cx="15" cy="12" r="1.5" fill="currentColor"></circle>
-                    <circle cx="15" cy="19" r="1.5" fill="currentColor"></circle>
-                  </svg>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => moveRow(o.id, 'down')}
-                  className="flex size-8 items-center justify-center rounded-lg bg-white text-indigo-500 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
-                  title="تحريك للأسفل"
-                >
-                  <DynamicIcon iconKey="ui_chevron_down" config={icons} fallback="▼" className="w-4 h-4" />
-                </button>
+              <div
+                className="cursor-grab active:cursor-grabbing flex size-10 items-center justify-center bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-md group/handle"
+                title="اضغط واسحب للترتيب"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                  <circle cx="9" cy="5" r="1.5" fill="currentColor"></circle>
+                  <circle cx="9" cy="12" r="1.5" fill="currentColor"></circle>
+                  <circle cx="9" cy="19" r="1.5" fill="currentColor"></circle>
+                  <circle cx="15" cy="5" r="1.5" fill="currentColor"></circle>
+                  <circle cx="15" cy="12" r="1.5" fill="currentColor"></circle>
+                  <circle cx="15" cy="19" r="1.5" fill="currentColor"></circle>
+                </svg>
               </div>
+
+              <button
+                type="button"
+                onClick={() => moveRow(o.id, 'down')}
+                className="flex size-8 items-center justify-center rounded-lg bg-white text-indigo-500 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all active:scale-90 shadow-sm"
+                title="تحريك للأسفل"
+              >
+                <DynamicIcon iconKey="ui_chevron_down" config={icons} fallback="▼" className="w-4 h-4" />
+              </button>
+            </div>
+          );
+        }}
+        renderBelowOrderId={(o) => {
+          if (o.isGroupHeader) return null;
+          if (isSortingMode) return null;
+          if (o.orderStatus === "assigned") {
+            return (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPickupOrder(o);
+                }}
+                className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-emerald-100 shadow-sm transition hover:bg-emerald-50 active:scale-90 p-1.5"
+                title="تم الاستلام (تسجيل دفع للعميل)"
+              >
+                <DynamicIcon
+                  icon={icons?.order_received}
+                  className="w-full h-full"
+                  fallback={<span className="text-xl">💵</span>}
+                />
+              </button>
             );
-          }}
-          renderBelowOrderId={(o) => {
-            if (isSortingMode) return null;
-            if (o.orderStatus === "assigned") {
-              return (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPickupOrder(o);
-                  }}
-                  className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-emerald-100 shadow-sm transition hover:bg-emerald-50 active:scale-90 p-1.5"
-                  title="تم الاستلام (تسجيل دفع للعميل)"
-                >
-                  <DynamicIcon
-                    icon={icons?.order_received}
-                    className="w-full h-full"
-                    fallback={<span className="text-xl">💵</span>}
-                  />
-                </button>
-              );
-            }
-            if (o.orderStatus === "delivering") {
-              return (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDeliveryOrder(o);
-                  }}
-                  className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-rose-100 shadow-sm transition hover:bg-rose-50 active:scale-90 p-1.5"
-                  title="تم التسليم (تسجيل استلام من الزبون)"
-                >
-                  <DynamicIcon
-                    icon={icons?.order_delivered}
-                    className="w-full h-full"
-                    fallback={<span className="text-xl">🚚</span>}
-                  />
-                </button>
-              );
-            }
-            return null;
-          }}
-        />
-      )}
+          }
+          if (o.orderStatus === "delivering") {
+            return (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeliveryOrder(o);
+                }}
+                className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white border-2 border-rose-100 shadow-sm transition hover:bg-rose-50 active:scale-90 p-1.5"
+                title="تم التسليم (تسجيل استلام من الزبون)"
+              >
+                <DynamicIcon
+                  icon={icons?.order_delivered}
+                  className="w-full h-full"
+                  fallback={<span className="text-xl">🚚</span>}
+                />
+              </button>
+            );
+          }
+          return null;
+        }}
+      />
 
       {pickupOrder &&
         createPortal(

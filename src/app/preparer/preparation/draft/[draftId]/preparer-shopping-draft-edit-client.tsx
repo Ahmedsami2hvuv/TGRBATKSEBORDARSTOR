@@ -143,6 +143,79 @@ export function PreparerShoppingDraftEditClient({
   const [selectedPriceIndex, setSelectedPriceIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeBranch, setActiveBranch] = useState<string | null>(null);
+  const [isSorting, setIsSorting] = useState(false);
+  const [sortError, setSortError] = useState<string | null>(null);
+
+  async function handleAiSort() {
+    if (products.length === 0) return;
+    setIsSorting(true);
+    setSortError(null);
+    try {
+      const textToSend = products.map(p => p.line).join("\n");
+      const res = await fetch("/api/ai/sort-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: textToSend })
+      });
+      const data = await res.json();
+      if (data.error) {
+        setSortError(data.error);
+      } else if (data.sortedText) {
+        const sortedLines = data.sortedText
+          .split("\n")
+          .map((l: string) => l.trim())
+          .filter(Boolean);
+
+        const newProducts: ProductRow[] = [];
+        sortedLines.forEach((line: string) => {
+          const matchedOriginal = products.find(
+            (orig) => orig.line.trim().toLowerCase() === line.toLowerCase()
+          );
+          if (matchedOriginal) {
+            newProducts.push({
+              ...matchedOriginal
+            });
+          } else {
+            newProducts.push({
+              line,
+              buyAlf: "",
+              sellAlf: "",
+              pricedBy: null,
+              pricedById: null,
+              assignedPreparerId: null,
+              assignedPreparerName: null,
+              productId: null,
+              isFromStore: false
+            });
+          }
+        });
+
+        // لضمان الأمان وعدم ضياع أي منتج
+        products.forEach((orig) => {
+          if (!newProducts.some((p) => p.line.toLowerCase() === orig.line.toLowerCase())) {
+            newProducts.push(orig);
+          }
+        });
+
+        setProducts(newProducts);
+
+        const nextJson = JSON.stringify(newProducts.map(p => ({
+          line: p.line,
+          buyAlf: p.buyAlf === "" ? null : p.buyAlf,
+          sellAlf: p.sellAlf === "" ? null : p.sellAlf,
+          pricedBy: p.pricedBy,
+          pricedById: p.pricedById,
+          assignedPreparerId: p.assignedPreparerId,
+          assignedPreparerName: p.assignedPreparerName,
+        })));
+        performSave(nextJson);
+      }
+    } catch (err) {
+      setSortError("فشل الاتصال بخدمة الترتيب.");
+    } finally {
+      setIsSorting(false);
+    }
+  }
 
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
@@ -794,13 +867,21 @@ export function PreparerShoppingDraftEditClient({
                     {myTotalBuyAlf.toLocaleString()}
                   </div>
                 )}
+                <button
+                  type="button"
+                  disabled={isSorting}
+                  onClick={handleAiSort}
+                  className="rounded-lg bg-indigo-600 text-white px-2 py-1 text-[10px] font-bold disabled:opacity-50"
+                >
+                  {isSorting ? "جاري..." : "ترتيب 🪄"}
+                </button>
                 <button type="button" onClick={() => { setShowAddProductsPanel(!showAddProductsPanel); setDeleteMode(false); }} className="rounded-lg bg-emerald-600 text-white px-2 py-1 text-[10px] font-bold">+ مادة</button>
                 <button type="button" onClick={() => setShowUnavailableModal(true)} className="rounded-lg bg-amber-500 text-white px-2 py-1 text-[10px] font-bold">غير متوفر</button>
                 <button type="button" onClick={() => { setDeleteMode(!deleteMode); setShowAddProductsPanel(false); }} className={`rounded-lg px-2 py-1 text-[10px] font-bold ${deleteMode ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>حذف</button>
             </div>
         </div>
 
-
+        {sortError && <p className="mb-3 text-center text-xs font-bold text-rose-600 bg-rose-50 p-2 rounded-lg dark:bg-rose-950/20 dark:text-rose-400">{sortError}</p>}
         {showAddProductsPanel && (
             <div className="mb-3 p-3 bg-white rounded-xl border-2 border-emerald-200 shadow-inner">
                 <textarea value={addProductsText} onChange={(e) => setAddProductsText(e.target.value)} rows={3} className={inputClass} placeholder="اكتب المواد الجديدة هنا..." />
