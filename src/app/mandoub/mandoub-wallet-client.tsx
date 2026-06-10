@@ -374,8 +374,8 @@ export function MandoubWalletClient({
   };
 
   const layout = uiSettings?.layoutOrder && uiSettings.layoutOrder.length > 0
-    ? uiSettings.layoutOrder.filter(x => x !== "available_for_transfer")
-    : ["wallet_in_out", "site_and_remain", "cash_in_hand", "earnings_and_admin", "tips_blocks"];
+    ? uiSettings.layoutOrder.filter(x => x !== "available_for_transfer" && x !== "tips_blocks")
+    : ["wallet_in_out", "site_and_remain", "cash_in_hand", "earnings_and_admin"];
 
   return (
     <div className="space-y-5" dir="rtl">
@@ -423,11 +423,7 @@ export function MandoubWalletClient({
         </div>
       )}
 
-      {/* المربعات الحسابية مرتبة ديناميكياً */}
-      <div className="space-y-3" style={containerStyle}>
-        {layout.map(id => renderAccountingBlock(id))}
-      </div>
-
+      {/* كتلة أزرار المعاملات والبحث والإغلاق - تم نقلها للأعلى */}
       <div className="rounded-2xl border border-slate-200/90 bg-gradient-to-b from-slate-50 to-indigo-50/30 px-4 py-4 dark:from-slate-900 dark:to-slate-800 shadow-inner">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-base font-black text-slate-900 dark:text-slate-100">أخذت · تحويل · أعطيت</h2>
@@ -516,6 +512,11 @@ export function MandoubWalletClient({
             </button>
           </form>
         )}
+      </div>
+
+      {/* المربعات الحسابية مرتبة ديناميكياً */}
+      <div className="space-y-3" style={containerStyle}>
+        {layout.map(id => renderAccountingBlock(id))}
       </div>
 
       <ul className="space-y-3 pb-8">
