@@ -1,48 +1,71 @@
 "use client";
 
 import { useState } from "react";
+import { addToSharedCart } from "@/app/store/shared-actions";
 
 export function AddToCartButton({ product }: { product: any }) {
   const [added, setAdded] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  function addToCart(e: React.MouseEvent) {
+  async function addToCart(e: React.MouseEvent) {
     e.stopPropagation();
     e.preventDefault();
 
+    if (loading) return;
+
     try {
-      const cart = JSON.parse(localStorage.getItem("kse_cart") || "[]");
+      const sharedCartId = localStorage.getItem("kse_active_shared_cart_id");
+      const sharedUserName = localStorage.getItem("kse_shared_user_name") || "مستخدم مشترك";
 
-      // نستخدم المعرف الفريد للمنتج (مع المتغير إن وجد)
-      const productId = product.id;
-      const existingIndex = cart.findIndex((item: any) => item.id === productId);
+      if (sharedCartId) {
+        setLoading(true);
+        const res = await addToSharedCart(sharedCartId, product, sharedUserName);
+        setLoading(false);
 
-      if (existingIndex > -1) {
-        cart[existingIndex].quantity += 1;
+        if (res.error) {
+          alert(res.error);
+          return;
+        }
+
+        window.dispatchEvent(new Event("cart-updated"));
+        window.dispatchEvent(new CustomEvent("kse:shared-cart-updated"));
       } else {
-        cart.push({
-          id: productId,
-          productId: product.productId || product.id,
-          supplierId: product.supplierId || null,
-          name: product.name,
-          price: Number(product.salePrice || product.price || 0),
-          photo: (product.photoUrls?.[0] || product.photo || ""),
-          quantity: 1
-        });
+        const cart = JSON.parse(localStorage.getItem("kse_cart") || "[]");
+
+        // نستخدم المعرف الفريد للمنتج (مع المتغير إن وجد)
+        const productId = product.id;
+        const existingIndex = cart.findIndex((item: any) => item.id === productId);
+
+        if (existingIndex > -1) {
+          cart[existingIndex].quantity += 1;
+        } else {
+          cart.push({
+            id: productId,
+            productId: product.productId || product.id,
+            supplierId: product.supplierId || null,
+            name: product.name,
+            price: Number(product.salePrice || product.price || 0),
+            photo: (product.photoUrls?.[0] || product.photo || ""),
+            quantity: 1
+          });
+        }
+
+        localStorage.setItem("kse_cart", JSON.stringify(cart));
+
+        // إطلاق كافة الأحداث لضمان المزامنة مع المساعد الذكي وواجهة المتجر
+        window.dispatchEvent(new Event("cart-updated"));
+        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new CustomEvent("kse:store-cart-changed", { detail: { cart } }));
       }
-
-      localStorage.setItem("kse_cart", JSON.stringify(cart));
-
-      // إطلاق كافة الأحداث لضمان المزامنة مع المساعد الذكي وواجهة المتجر
-      window.dispatchEvent(new Event("cart-updated"));
-      window.dispatchEvent(new Event("storage"));
-      window.dispatchEvent(new CustomEvent("kse:store-cart-changed", { detail: { cart } }));
 
       setAdded(true);
       setTimeout(() => setAdded(false), 1500);
     } catch (err) {
       console.error("Cart error:", err);
+      setLoading(false);
     }
   }
+
 
   return (
     <button

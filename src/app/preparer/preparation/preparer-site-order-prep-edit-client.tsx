@@ -78,7 +78,70 @@ export function PreparerSiteOrderPrepEditClient({
   const [selectedPriceIndex, setSelectedPriceIndex] = useState<number | null>(null);
   const [pricingLinesText, setPricingLinesText] = useState("");
   const [pricingErr, setPricingErr] = useState<string | null>(null);
-  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  const [isSorting, setIsSorting] = useState(false);
+  const [sortError, setSortError] = useState<string | null>(null);
+
+  async function handleAiSort() {
+    if (products.length === 0) return;
+    setIsSorting(true);
+    setSortError(null);
+    try {
+      const textToSend = products.join("\n");
+      const res = await fetch("/api/ai/sort-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: textToSend })
+      });
+      const data = await res.json();
+      if (data.error) {
+        setSortError(data.error);
+      } else if (data.sortedText) {
+        const sortedLines = data.sortedText
+          .split("\n")
+          .map((l: string) => l.trim())
+          .filter(Boolean);
+
+        // خريطة لحفظ الأسعار الحالية لكل منتج
+        const priceMap = new Map<string, string>();
+        products.forEach((p, idx) => {
+          priceMap.set(p.trim().toLowerCase(), priceRows[idx]?.buy || "");
+        });
+
+        // إعادة ترتيب الأسعار بناءً على ترتيب جمناي الجديد
+        const newProducts: string[] = [];
+        const newPriceRows: { buy: string }[] = [];
+
+        sortedLines.forEach((line: string) => {
+          const matchedOriginal = products.find(
+            (orig) => orig.trim().toLowerCase() === line.toLowerCase()
+          );
+          if (matchedOriginal) {
+            newProducts.push(matchedOriginal);
+            newPriceRows.push({ buy: priceMap.get(matchedOriginal.trim().toLowerCase()) || "" });
+          } else {
+            // كاحتياط لو أضاف جمناي سطر مختلف طفيف
+            newProducts.push(line);
+            newPriceRows.push({ buy: "" });
+          }
+        });
+
+        // إضافة المنتجات الأصلية التي قد يكون جمناي قد أغفلها بالخطأ (لضمان عدم فقدان أي منتج)
+        products.forEach((orig, idx) => {
+          if (!newProducts.some((p) => p.toLowerCase() === orig.toLowerCase())) {
+            newProducts.push(orig);
+            newPriceRows.push({ buy: priceRows[idx]?.buy || "" });
+          }
+        });
+
+        setProducts(newProducts);
+        setPriceRows(newPriceRows);
+      }
+    } catch (err) {
+      setSortError("فشل الاتصال بخدمة الترتيب.");
+    } finally {
+      setIsSorting(false);
+    }
+  }
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
@@ -220,10 +283,19 @@ export function PreparerSiteOrderPrepEditClient({
       </section>
 
       <section className="kse-glass-dark overflow-hidden border border-sky-200/50 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70">
-        <div className="bg-sky-500/5 px-4 py-3 border-b border-sky-100 dark:border-white/5">
+        <div className="bg-sky-500/5 px-4 py-3 border-b border-sky-100 dark:border-white/5 flex items-center justify-between">
            <h2 className="text-sm font-black text-sky-950 dark:text-sky-200">المنتجات والتسعير</h2>
+           <button
+             type="button"
+             disabled={isSorting}
+             onClick={handleAiSort}
+             className="rounded-lg bg-indigo-600 px-3 py-1 text-xs font-black text-white hover:bg-indigo-700 transition disabled:opacity-50 shadow-sm"
+           >
+             {isSorting ? "جاري الترتيب..." : "ترتيب بالذكاء الاصطناعي 🪄"}
+           </button>
         </div>
         <div className="p-4">
+          {sortError && <p className="mb-3 text-center text-xs font-bold text-rose-600 bg-rose-50 p-2 rounded-lg dark:bg-rose-950/20 dark:text-rose-400">{sortError}</p>}
           <div className="grid grid-cols-1 gap-2.5">
             {orderedProducts.map(({ line, originalIndex: i, row, priced }) => {
               return (
