@@ -19,6 +19,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
   const vehiclePreference = formData.get("vehiclePreference") as string || null;
   const landmark = formData.get("landmark") as string || "";
   const cartJson = formData.get("cart") as string;
+  const sharedCartId = formData.get("sharedCartId") as string || null;
 
   if (!phone || !regionId || !cartJson) {
     return { error: "يرجى ملء جميع الحقول المطلوبة" };
@@ -45,7 +46,9 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
 
   cart.forEach((item: any) => {
     subtotal += Number(item.price || 0) * (item.quantity || 1);
-    summaryParts.push(`${item.name} (${item.quantity || 1})`);
+    // إذا كان هناك حقل addedBy نضيفه في تفاصيل الطلب ليرى الأدمن من طلب المنتج!
+    const addedInfo = item.addedBy ? ` [بواسطة: ${item.addedBy}]` : "";
+    summaryParts.push(`${item.name} (${item.quantity || 1})${addedInfo}`);
   });
 
   const region = await prisma.region.findUnique({ where: { id: regionId } });
@@ -93,6 +96,14 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     }
 
     const draft = await prisma.$transaction(async (tx) => {
+      // إذا كانت السلة مشتركة، نحدث حالتها إلى ordered
+      if (sharedCartId) {
+        await tx.sharedCart.update({
+          where: { id: sharedCartId },
+          data: { status: "ordered" }
+        });
+      }
+
       // إنشاء مسودة تجهيز فقط لكي تظهر في تبويب "قيد التجهيز" للإدارة للتسعير والإسناد
       return tx.companyPreparerShoppingDraft.create({
         data: {
@@ -100,7 +111,7 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
           customerPhone: phoneLocal,
           customerRegionId: regionId,
           customerLandmark: landmark,
-          titleLine: "طلب من المتجر الالكتروني",
+          titleLine: sharedCartId ? "طلب من السلة المشتركة للعائلة" : "طلب من المتجر الالكتروني",
           rawListText: summaryParts.join("\n"),
           status: "draft",
           vehiclePreference: vehiclePreference,
@@ -113,9 +124,11 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
               sellAlf: "", // نتركها فارغة لضمان ظهورها كغير مجهزة
               isFromStore: true,
               supplierId: i.supplierId || null,
-              productId: i.productId || i.id
+              productId: i.productId || i.id,
+              addedBy: i.addedBy || null // لحفظ اسم من أضاف المنتج
             })),
-            webStoreCart: cart
+            webStoreCart: cart,
+            sharedCartId: sharedCartId
           }
         }
       });
@@ -125,9 +138,9 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     void notifyTelegramStoreOrder(draft.id);
 
     const numericOrderNumber = String(draft.draftNumber);
-    const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}`);
+    const productLines = cart.map((item: any) => `- ${item.name} × ${item.quantity || 1}${item.addedBy ? ` (بواسطة ${item.addedBy})` : ""}`);
     const whatsappMessage = [
-      "لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي",
+      sharedCartId ? "لقد قمنا بالطلب من السلة المشتركة للعائلة في خصيب ستور ارجو تجهيز طلبي" : "لقد قمت بالطلب من خصيب ستور ارجو تجهيز طلبي",
       `رقم طلبي هو: ${numericOrderNumber}`,
       "المنتجات:",
       ...productLines,
@@ -143,3 +156,4 @@ export async function submitStoreOrder(_prev: any, formData: FormData): Promise<
     return { error: "فشل في إرسال الطلب، يرجى المحاولة لاحقاً" };
   }
 }
+

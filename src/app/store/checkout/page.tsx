@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import { useFormState } from "react-dom";
+import { useSearchParams } from "next/navigation";
 import { submitStoreOrder } from "../actions";
 import { normalizeRegionNameForMatch } from "@/lib/region-name-normalize";
 
@@ -14,11 +16,15 @@ const fmtAlf = (val: number) =>
   });
 
 export default function CheckoutPage() {
+  const searchParams = useSearchParams();
+  const sharedCartId = searchParams.get("sharedCartId");
+
   const [cart, setCart] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
   const [state, action] = useFormState(submitStoreOrder, {});
   const hasRedirectedToWhatsappRef = useRef(false);
   const regionInputRef = useRef<HTMLInputElement>(null);
+
 
   const [regionQuery, setRegionQuery] = useState("");
   const [landmark, setLandmark] = useState("");
@@ -87,6 +93,8 @@ export default function CheckoutPage() {
   if (state.ok) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("kse_cart");
+      localStorage.removeItem("kse_active_shared_cart_id");
+      localStorage.removeItem("kse_shared_user_name");
       window.dispatchEvent(new Event("cart-updated"));
     }
     return (
@@ -118,6 +126,7 @@ export default function CheckoutPage() {
       >
         <input type="hidden" name="cart" value={JSON.stringify(cart)} />
         <input type="hidden" name="regionId" value={selectedRegion?.id ?? ""} />
+        <input type="hidden" name="sharedCartId" value={sharedCartId ?? ""} />
 
         <div className="space-y-8">
           <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/50 space-y-6">

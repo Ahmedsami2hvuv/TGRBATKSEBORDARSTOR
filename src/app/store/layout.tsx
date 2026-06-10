@@ -5,6 +5,7 @@ import { DraggableBackButton } from "@/components/draggable-back-button";
 import { StoreSidePanels } from "@/components/store-side-panels";
 import { StoreHeaderActions } from "./store-header-actions";
 import { StoreSearchBar } from "./_components/store-search-bar";
+import { SharedCartBanner } from "./_components/shared-cart-banner";
 
 export const metadata: Metadata = {
   title: "خصيب ستور(ابو الاكبر للتوصيل)",
@@ -14,8 +15,10 @@ export const metadata: Metadata = {
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 font-sans pb-20 transition-colors duration-300" dir="rtl">
+      <SharedCartBanner />
       <StoreSidePanels />
       <header className="sticky top-0 z-50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 shadow-sm">
+
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/store" className="flex items-center gap-2 group">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-200 dark:shadow-none group-hover:scale-110 transition-transform">
