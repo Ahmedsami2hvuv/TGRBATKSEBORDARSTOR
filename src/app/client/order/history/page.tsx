@@ -190,66 +190,91 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
               لا توجد طلبات مسجّلة لهذا المحل بعد.
             </p>
           ) : (
-            <ul className="space-y-3">
-              {orders.map((o, idx) => {
-                const prevOrder = orders[idx - 1];
-                const showSeparator = !prevOrder ||
-                  o.createdAt.toLocaleDateString("en-US") !== prevOrder.createdAt.toLocaleDateString("en-US");
-
-                const typeLine = o.orderType?.trim() || "—";
-                const timeNote = o.orderNoteTime?.trim();
-                const regionName = o.customerRegion?.name || "بدون منطقة";
-                const summary = o.summary?.trim();
-
-                const isDebtOrder = o.orderType === "دين";
-                const totalDebtPaid = o.moneyEvents
-                  .filter(me => me.kind === "pickup_out")
-                  .reduce((sum, me) => sum + Number(me.amountDinar), 0);
-                const isDebtPaid = Number(o.orderSubtotal || 0) <= totalDebtPaid;
-                const isStandardPaid = o.moneyEvents.some(me => me.kind === "delivery_in" && me.matchesExpected);
-                const isPaid = isDebtOrder ? isDebtPaid : isStandardPaid;
-
-                const rowPhone = o.customerPhone?.trim() ?? "";
-                const rowNorm = normalizeIraqMobileLocal11(rowPhone);
-                const isYours = Boolean(viewer && rowNorm && rowNorm === viewer);
-                const canEdit = !isDebtOrder && (o.status === "pending" || o.status === "assigned");
-
-                let cardClass = "";
-                if (isDebtOrder) {
-                  if (isDebtPaid) {
-                    cardClass = "border-slate-300 bg-slate-100 text-slate-500 opacity-65 dark:border-slate-800 dark:bg-slate-900";
-                  } else {
-                    cardClass = "border-rose-300 bg-rose-50/50 ring-1 ring-rose-200 dark:border-rose-500/80 dark:bg-rose-950/30";
+            (() => {
+              const dailyTotals: Record<string, number> = {};
+              orders.forEach(o => {
+                if (o.status === "delivered") {
+                  const dateKey = `${o.createdAt.getDate()}/${o.createdAt.getMonth() + 1}/${o.createdAt.getFullYear()}`;
+                  const subtotal = Number(o.orderSubtotal || 0);
+                  const delivery = Number(o.deliveryPrice || 0);
+                  
+                  let amountToAdd = subtotal;
+                  if (o.prepaidAll) {
+                    const hasIncoming = o.moneyEvents.some(me => me.kind === "delivery_in");
+                    if (!hasIncoming) {
+                      amountToAdd = subtotal - delivery;
+                    }
                   }
-                } else {
-                  if (isYours) {
-                    cardClass = "border-emerald-300 bg-emerald-50/90 ring-1 ring-emerald-200 dark:border-emerald-500/80 dark:bg-emerald-900/70 dark:ring-emerald-400/30";
-                  } else {
-                    cardClass = "border-slate-200 bg-white/90 dark:border-slate-700 dark:bg-slate-950/90";
-                  }
+                  dailyTotals[dateKey] = (dailyTotals[dateKey] || 0) + amountToAdd;
                 }
+              });
 
-                return (
-                  <Fragment key={o.orderNumber}>
-                    {showSeparator && (
-                      <li className="pt-6 pb-2">
-                        <div className="flex items-center gap-3">
-                          <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700"></div>
-                          <span className="text-xs md:text-sm font-black text-sky-800 bg-sky-50 dark:text-sky-200 dark:bg-sky-950/80 px-4 py-1.5 rounded-full border border-sky-200/80 dark:border-sky-800 shadow-sm whitespace-nowrap">
-                            {o.createdAt.toLocaleDateString("ar-IQ", {
-                              weekday: "long",
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })}
-                          </span>
-                          <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700"></div>
-                        </div>
-                      </li>
-                    )}
-                    <li
-                      className={`rounded-2xl border px-4 py-4 shadow-sm transition-all ${cardClass} ${o.prepaidAll ? "ring-2 ring-emerald-300/50 dark:ring-emerald-400/40" : ""}`}
-                    >
+              return (
+                <ul className="space-y-3">
+                  {orders.map((o, idx) => {
+                    const prevOrder = orders[idx - 1];
+                    const showSeparator = !prevOrder ||
+                      o.createdAt.toLocaleDateString("en-US") !== prevOrder.createdAt.toLocaleDateString("en-US");
+
+                    const dateKey = `${o.createdAt.getDate()}/${o.createdAt.getMonth() + 1}/${o.createdAt.getFullYear()}`;
+                    const totalForDay = dailyTotals[dateKey] || 0;
+
+                    const typeLine = o.orderType?.trim() || "—";
+                    const timeNote = o.orderNoteTime?.trim();
+                    const regionName = o.customerRegion?.name || "بدون منطقة";
+                    const summary = o.summary?.trim();
+
+                    const isDebtOrder = o.orderType === "دين";
+                    const totalDebtPaid = o.moneyEvents
+                      .filter(me => me.kind === "pickup_out")
+                      .reduce((sum, me) => sum + Number(me.amountDinar), 0);
+                    const isDebtPaid = Number(o.orderSubtotal || 0) <= totalDebtPaid;
+                    const isStandardPaid = o.moneyEvents.some(me => me.kind === "delivery_in" && me.matchesExpected);
+                    const isPaid = isDebtOrder ? isDebtPaid : isStandardPaid;
+
+                    const rowPhone = o.customerPhone?.trim() ?? "";
+                    const rowNorm = normalizeIraqMobileLocal11(rowPhone);
+                    const isYours = Boolean(viewer && rowNorm && rowNorm === viewer);
+                    const canEdit = !isDebtOrder && (o.status === "pending" || o.status === "assigned");
+
+                    let cardClass = "";
+                    if (isDebtOrder) {
+                      if (isDebtPaid) {
+                        cardClass = "border-slate-300 bg-slate-100 text-slate-500 opacity-65 dark:border-slate-800 dark:bg-slate-900";
+                      } else {
+                        cardClass = "border-rose-300 bg-rose-50/50 ring-1 ring-rose-200 dark:border-rose-500/80 dark:bg-rose-950/30";
+                      }
+                    } else {
+                      if (isYours) {
+                        cardClass = "border-emerald-300 bg-emerald-50/90 ring-1 ring-emerald-200 dark:border-emerald-500/80 dark:bg-emerald-900/70 dark:ring-emerald-400/30";
+                      } else {
+                        cardClass = "border-slate-200 bg-white/90 dark:border-slate-700 dark:bg-slate-950/90";
+                      }
+                    }
+
+                    return (
+                      <Fragment key={o.orderNumber}>
+                        {showSeparator && (
+                          <li className="pt-6 pb-2">
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700"></div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs md:text-sm font-black text-sky-800 bg-sky-50 dark:text-sky-200 dark:bg-sky-950/80 px-4 py-1.5 rounded-full border border-sky-200/80 dark:border-sky-800 shadow-sm whitespace-nowrap">
+                                  {o.createdAt.toLocaleDateString("ar-IQ", { weekday: "long" })}، {dateKey}
+                                </span>
+                                {totalForDay > 0 && (
+                                  <span className="text-xs md:text-sm font-black text-emerald-800 bg-emerald-50 dark:text-emerald-200 dark:bg-emerald-950/80 px-4 py-1.5 rounded-full border border-emerald-200/80 dark:border-emerald-800 shadow-sm whitespace-nowrap">
+                                    المجموع: {formatDinarAsAlfWithUnit(totalForDay)}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700"></div>
+                            </div>
+                          </li>
+                        )}
+                        <li
+                          className={`rounded-2xl border px-4 py-4 shadow-sm transition-all ${cardClass} ${o.prepaidAll ? "ring-2 ring-emerald-300/50 dark:ring-emerald-400/40" : ""}`}
+                        >
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-3 dark:border-slate-700">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-lg font-black tabular-nums text-slate-900 dark:text-slate-100">
@@ -383,10 +408,12 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                       </div>
                     </div>
                   </li>
-                </Fragment>
+                      </Fragment>
+                    );
+                  })}
+                </ul>
               );
-            })}
-            </ul>
+            })()
           )}
         </section>
       </div>
