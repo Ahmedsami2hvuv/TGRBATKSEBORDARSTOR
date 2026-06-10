@@ -61,12 +61,12 @@ export function ProductCard({
         onClick={() => setIsModalOpen(true)}
         className="group bg-white dark:bg-slate-900 rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-lg shadow-slate-200/40 dark:shadow-none overflow-hidden flex flex-col hover:border-violet-400 dark:hover:border-violet-600 hover:-translate-y-4 hover:scale-110 hover:z-30 hover:shadow-[0_20px_50px_rgba(139,92,246,0.3)] transition-all duration-500 cursor-pointer relative"
       >
-        {/* زر المفضلة - يظهر فوراً */}
+        {/* زر المفضلة - واضح وبارز بتصميم فخم */}
         <button
           onClick={toggleFavorite}
-          className="absolute top-1 left-1 z-20 w-6 h-6 md:w-8 md:h-8 bg-white/5 dark:bg-slate-800/5 backdrop-blur-[1px] rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+          className="absolute top-3 left-3 z-20 w-9 h-9 bg-white/90 dark:bg-slate-850/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all border border-slate-100 dark:border-slate-700/50"
         >
-          <span className={`text-[10px] md:text-base ${isFavorite ? "text-rose-500" : "text-slate-400/20"}`}>
+          <span className={`text-sm md:text-lg ${isFavorite ? "text-rose-500" : "text-slate-400 hover:text-rose-400"}`}>
             <DynamicIcon
               icon={isFavorite ? icons?.store_favorites : icons?.store_favorites_empty}
               fallback={isFavorite ? "❤️" : "🤍"}
