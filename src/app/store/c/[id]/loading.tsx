@@ -3,7 +3,7 @@ import { DeliveryLoading } from "@/components/delivery-loading";
 export default function Loading() {
   return (
     <div className="space-y-4 py-10" dir="rtl">
-      <DeliveryLoading message="نبحث لك عن أفضل المنتجات في هذا التصنيف" />
+      <DeliveryLoading message="جاري تحميل المنتجات" />
 
       <div className="space-y-6 md:space-y-8 animate-pulse px-2 opacity-20 grayscale pointer-events-none mt-12">
         {/* Breadcrumbs Skeleton */}
