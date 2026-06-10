@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 4. حافظ على سياق الرسالة الأصلي مثل اسم الزبون، الهاتف، أو العنوان في بداية النص دون تغيير ترتيبها.
 5. لا تكتب أي نصوص توضيحية أو مقدمات أو شرح، فقط أرجع القائمة المرتبة.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${config.apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${config.apiKey}`;
 
     const body = {
       systemInstruction: { parts: [{ text: systemInstruction }] },
