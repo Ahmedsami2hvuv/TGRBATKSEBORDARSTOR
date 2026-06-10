@@ -3,20 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-// أسماء الأشهر بالأرقام
+// أرقام الأشهر مباشرة
 const MONTH_NAMES = [
-  "شهر 1",
-  "شهر 2",
-  "شهر 3",
-  "شهر 4",
-  "شهر 5",
-  "شهر 6",
-  "شهر 7",
-  "شهر 8",
-  "شهر 9",
-  "شهر 10",
-  "شهر 11",
-  "شهر 12"
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "11",
+  "12"
 ];
 
 // أسماء أيام الأسبوع باللغة العربية
@@ -205,7 +205,7 @@ export function GeneralReportsClient({
           {maxMonthVal > 0 ? (
             <>
               <div className="mt-4">
-                <span className="text-2xl font-black text-emerald-800">{MONTH_NAMES[maxMonthIndex].split(" ")[0]}</span>
+                <span className="text-2xl font-black text-emerald-800">شهر {MONTH_NAMES[maxMonthIndex]}</span>
                 <p className="mt-1 text-sm text-slate-500">بمعدل {maxMonthVal.toLocaleString()} طلب</p>
               </div>
               <div className="mt-4 text-xs font-bold text-emerald-600/90 flex items-center gap-1">
@@ -228,7 +228,7 @@ export function GeneralReportsClient({
           {minMonthIndex !== -1 && minMonthVal !== Infinity ? (
             <>
               <div className="mt-4">
-                <span className="text-2xl font-black text-rose-850">{MONTH_NAMES[minMonthIndex].split(" ")[0]}</span>
+                <span className="text-2xl font-black text-rose-850">شهر {MONTH_NAMES[minMonthIndex]}</span>
                 <p className="mt-1 text-sm text-slate-500">بمعدل {minMonthVal.toLocaleString()} طلب</p>
               </div>
               <div className="mt-4 text-xs font-bold text-rose-600/95 flex items-center gap-1">
@@ -361,7 +361,7 @@ export function GeneralReportsClient({
                     <span className={`mt-3 text-[10px] font-bold sm:text-xs whitespace-nowrap transition-colors ${
                       isActive ? "text-indigo-600 font-black" : "text-slate-500 group-hover:text-slate-850"
                     }`}>
-                      {MONTH_NAMES[index].split(" ")[0]}
+                      {MONTH_NAMES[index]}
                     </span>
                   </div>
                 );
@@ -385,7 +385,7 @@ export function GeneralReportsClient({
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-black text-slate-800">
-                حجم الطلبات اليومي لشهر: <span className="text-indigo-600">{MONTH_NAMES[activeMonth].split(" ")[0]}</span>
+                حجم الطلبات اليومي لشهر: <span className="text-indigo-600">شهر {MONTH_NAMES[activeMonth]}</span>
               </h2>
               <p className="text-xs text-slate-400 mt-1">يوضح كثافة الطلبات لكل يوم من أيام الشهر (1-31).</p>
             </div>
@@ -412,7 +412,7 @@ export function GeneralReportsClient({
                         setHoveredBar({
                           type: "day",
                           index: day,
-                          text: `اليوم: ${day} ${MONTH_NAMES[activeMonth].split(" ")[0]} | الطلبات: ${count} طلب`
+                          text: `اليوم: ${day} / ${MONTH_NAMES[activeMonth]} | الطلبات: ${count} طلب`
                         })
                       }
                       onMouseLeave={() => setHoveredBar(null)}
