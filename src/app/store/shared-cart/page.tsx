@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, Suspense } from "react";
+
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getSharedCart, updateSharedCartQty, removeFromSharedCart } from "@/app/store/shared-actions";
 
-export default function SharedCartPage() {
+function SharedCartContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const code = searchParams.get("code");
@@ -365,5 +366,18 @@ export default function SharedCartPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SharedCartPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-3xl mx-auto py-40 text-center">
+        <div className="w-12 h-12 border-4 border-violet-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+        <p className="text-slate-500 font-bold">جاري تحميل السلة المشتركة...</p>
+      </div>
+    }>
+      <SharedCartContent />
+    </Suspense>
   );
 }

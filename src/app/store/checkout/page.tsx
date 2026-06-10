@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 
 import { useFormState } from "react-dom";
 import { useSearchParams } from "next/navigation";
@@ -15,7 +15,7 @@ const fmtAlf = (val: number) =>
     maximumFractionDigits: 0,
   });
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const searchParams = useSearchParams();
   const sharedCartId = searchParams.get("sharedCartId");
 
@@ -329,5 +329,18 @@ export default function CheckoutPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-2xl mx-auto text-center py-20">
+        <div className="w-12 h-12 border-4 border-violet-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+        <p className="text-slate-500 font-bold">جاري تحميل صفحة الدفع...</p>
+      </div>
+    }>
+      <CheckoutContent />
+    </Suspense>
   );
 }
