@@ -112,6 +112,24 @@ export default async function ReportsHubPage() {
           </div>
         </Link>
 
+        <Link
+          href={`${SECRET_ADMIN_PATH}/reports/general`}
+          className="group block cursor-pointer rounded-3xl border border-indigo-200 bg-indigo-50/20 p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:border-indigo-300"
+          role="button"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-indigo-600">التقارير العامة والإحصائيات</p>
+              <p className="mt-3 text-sm leading-6 text-slate-700">
+                رسوم بيانية تفاعلية لحركة الطلبات السنوية، الشهرية، وأوقات الذروة خلال اليوم.
+              </p>
+            </div>
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 text-2xl text-white shadow-lg">
+              <DynamicIcon iconKey="ui_chart" config={icons} fallback="📊" className="w-6 h-6" />
+            </div>
+          </div>
+        </Link>
+
       </div>
     </div>
   );
