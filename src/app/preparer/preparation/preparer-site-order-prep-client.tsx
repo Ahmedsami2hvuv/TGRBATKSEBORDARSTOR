@@ -132,6 +132,34 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
 
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [isSorting, setIsSorting] = useState(false);
+
+  async function runAiSort() {
+    const t = pasteText.trim();
+    if (!t) {
+      alert("الرجاء إدخال قائمة المنتجات أولاً.");
+      return;
+    }
+    setIsSorting(true);
+    setParseError(null);
+    try {
+      const res = await fetch("/api/ai/sort-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: t })
+      });
+      const data = await res.json();
+      if (data.error) {
+        setParseError(data.error);
+      } else if (data.sortedText) {
+        setPasteText(data.sortedText);
+      }
+    } catch (err) {
+      setParseError("فشل الاتصال بخادم الترتيب بالذكاء الاصطناعي.");
+    } finally {
+      setIsSorting(false);
+    }
+  }
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
@@ -447,14 +475,25 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${noProfit ? 'translate-x-6' : 'translate-x-1'}`} />
             </div>
           </div>
-          <button
-            type="button"
-            onClick={runParse}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-3.5 text-sm font-black text-white shadow-lg shadow-violet-200/50 transition hover:bg-violet-700 active:scale-95 dark:shadow-none"
-          >
-            <DynamicIcon iconKey="ui_search" config={icons} className="h-4 w-4" fallback={null} />
-            تحليل القائمة
-          </button>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              disabled={isSorting}
+              onClick={runAiSort}
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-indigo-600 px-4 py-3.5 text-sm font-black text-white shadow-lg shadow-indigo-200/50 transition hover:scale-[1.01] active:scale-95 disabled:opacity-70 dark:shadow-none"
+            >
+              <span>{isSorting ? "جاري الترتيب..." : "ترتيب بالذكاء الاصطناعي 🪄"}</span>
+            </button>
+            <button
+              type="button"
+              disabled={isSorting}
+              onClick={runParse}
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-3.5 text-sm font-black text-white shadow-lg shadow-violet-200/50 transition hover:bg-violet-700 active:scale-95 disabled:opacity-50 dark:shadow-none"
+            >
+              <DynamicIcon iconKey="ui_search" config={icons} className="h-4 w-4" fallback={null} />
+              تحليل القائمة
+            </button>
+          </div>
           {parseError ? (
             <div className="mt-3 rounded-xl bg-rose-50 p-3 text-xs font-bold text-rose-700 dark:bg-rose-900/20 dark:text-rose-400" role="alert">
               {parseError}

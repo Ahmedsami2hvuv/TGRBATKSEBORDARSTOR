@@ -43,6 +43,34 @@ export function AdminPreparationClient({
   const [blockedPhone, setBlockedPhone] = useState<string | null>(null);
 
   const [selectedPreparerIds, setSelectedPreparerIds] = useState<string[]>([]);
+  const [isSorting, setIsSorting] = useState(false);
+
+  async function runAiSort() {
+    const t = pasteText.trim();
+    if (!t) {
+      alert("الرجاء إدخال قائمة المنتجات أولاً.");
+      return;
+    }
+    setIsSorting(true);
+    setParseError(null);
+    try {
+      const res = await fetch("/api/ai/sort-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: t })
+      });
+      const data = await res.json();
+      if (data.error) {
+        setParseError(data.error);
+      } else if (data.sortedText) {
+        setPasteText(data.sortedText);
+      }
+    } catch (err) {
+      setParseError("فشل الاتصال بخادم الترتيب بالذكاء الاصطناعي.");
+    } finally {
+      setIsSorting(false);
+    }
+  }
 
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<RegionHit[]>([]);
@@ -225,13 +253,24 @@ export function AdminPreparationClient({
           dir="rtl"
           className={`${inputClass} font-mono leading-relaxed`}
         />
-        <button
-          type="button"
-          onClick={runParse}
-          className="mt-4 w-full rounded-xl bg-violet-600 px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-violet-700 transition"
-        >
-          تحليل النص (استخراج البيانات)
-        </button>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            disabled={isSorting}
+            onClick={runAiSort}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:scale-[1.01] active:scale-95 disabled:opacity-70"
+          >
+            <span>{isSorting ? "جاري الترتيب..." : "ترتيب بالذكاء الاصطناعي 🪄"}</span>
+          </button>
+          <button
+            type="button"
+            disabled={isSorting}
+            onClick={runParse}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-violet-700 transition"
+          >
+            تحليل النص (استخراج البيانات)
+          </button>
+        </div>
         {parseError ? <p className="mt-2 text-sm font-semibold text-rose-600">{parseError}</p> : null}
       </section>
 
