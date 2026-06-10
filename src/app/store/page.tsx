@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { StoreSlider } from "./_components/store-slider";
 
-export const revalidate = 0; // إيقاف الكاش مؤقتاً لحل المشكلة فوراً
+export const revalidate = 30; // تفعيل الكاش لـ 30 ثانية لتسريع التصفح
 
 async function CategoriesGrid() {
   try {
@@ -21,7 +21,6 @@ async function CategoriesGrid() {
           <Link
             key={cat.id}
             href={`/store/c/${cat.id}`}
-            prefetch={false}
             className="group block bg-white dark:bg-slate-900 rounded-[2.5rem] p-4 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none hover:shadow-violet-200/50 dark:hover:border-violet-800 transition-all duration-500 hover:-translate-y-2"
           >
             <div className="relative aspect-square mb-6 overflow-hidden rounded-[2rem] bg-slate-100 dark:bg-slate-800/50">

@@ -3,8 +3,7 @@ import Link from "next/link";
 import { CustomProductRequest } from "@/components/custom-product-request";
 import { StoreSlider } from "../../_components/store-slider";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 30; // تفعيل الكاش لـ 30 ثانية لتسريع التصفح
 
 // دالة تطهير بيانات فائقة الأمان لـ Next.js 15 لضمان تحويل كافة الكائنات المعقدة إلى بسيطة
 function safeJson(data: any) {
@@ -113,7 +112,6 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
                 <Link
                   key={branch.id}
                   href={`/store/b/${branch.id}`}
-                  prefetch={false}
                   className="group block bg-white dark:bg-slate-900 rounded-[2rem] p-4 border border-slate-100 dark:border-slate-800 shadow-md hover:shadow-violet-200/40 hover:-translate-y-2 transition-all duration-300"
                 >
                   <div className="relative aspect-video mb-4 overflow-hidden rounded-2xl bg-slate-50 dark:bg-slate-800">

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ProductCard } from "../../product-card";
 import { CustomProductRequest } from "@/components/custom-product-request";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30; // تفعيل الكاش لـ 30 ثانية لتسريع تصفح المنتجات في الفرع
 
 /**
  * دالة تطهير عميقة وقوية لضمان التوافق مع Next.js 15 ومنع أخطاء الـ Serialization
