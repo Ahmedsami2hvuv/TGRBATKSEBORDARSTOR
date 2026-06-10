@@ -443,10 +443,28 @@ export function MandoubWalletClient({
               className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:focus:border-violet-400 dark:focus:ring-violet-500/20"
             />
             {query ? (
-              <button type="button" onClick={() => setQuery("")} className="rounded-2xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300">
+              <button type="button" onClick={() => setQuery("")} className="rounded-2xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 shrink-0">
                 مسح
               </button>
             ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== "undefined" && window.parent && window.parent !== window) {
+                  window.parent.postMessage({ type: "WALLET_MODAL_CLOSE" }, window.location.origin);
+                  return;
+                }
+                const p = new URLSearchParams();
+                if (auth.c) p.set("c", auth.c);
+                if (auth.exp) p.set("exp", auth.exp);
+                if (auth.s) p.set("s", auth.s);
+                router.push(`/mandoub?${p.toString()}`);
+              }}
+              className="rounded-2xl bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-sm font-bold shadow-sm transition flex items-center gap-1.5 shrink-0"
+            >
+              <DynamicIcon icon={icons?.ui_close} fallback="✕" width={14} height={14} />
+              إغلاق
+            </button>
           </div>
         </div>
         <div className="mt-4 flex w-full gap-2 sm:gap-3">
