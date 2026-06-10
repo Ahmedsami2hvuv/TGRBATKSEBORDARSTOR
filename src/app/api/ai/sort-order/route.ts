@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${config.apiKey}`;
 
     const body = {
-      system_instruction: { parts: [{ text: systemInstruction }] },
+      systemInstruction: { parts: [{ text: systemInstruction }] },
       contents: [{ role: "user", parts: [{ text: text }] }]
     };
 
@@ -50,7 +50,9 @@ export async function POST(req: Request) {
     const sortedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!sortedText) {
-      return NextResponse.json({ error: "فشل استجابة الذكاء الاصطناعي" }, { status: 500 });
+      console.error("Gemini API Error details:", JSON.stringify(data));
+      const errMsg = data.error?.message || "فشل استجابة الذكاء الاصطناعي";
+      return NextResponse.json({ error: errMsg }, { status: 500 });
     }
 
     // تحديث عدد مرات الاستخدام اليومي
