@@ -339,16 +339,17 @@ export function MandoubOrderTable({
 
   // تجميع الطلبات حسب المنطقة
   const mergedGroups = useMemo(() => {
+    console.log("[Merge System] localMergeEnabled:", localMergeEnabled);
     if (!localMergeEnabled) return { grouped: {}, singleOrders: displayRows };
 
     // نفصل الطلبات النشطة عن المسلمة
     const activeRows = displayRows.filter(r => r.orderStatus !== "delivered");
     const deliveredRows = displayRows.filter(r => r.orderStatus === "delivered");
 
-    // نحسب عدد الطلبات في كل منطقة للطلبات النشطة
+    // نحسب عدد الطلبات في كل منطقة للطلبات النشطة (مع تطهير المسافات)
     const regionCounts: Record<string, number> = {};
     activeRows.forEach(r => {
-      const region = r.regionLine || "منطقة غير محددة";
+      const region = (r.regionLine || "منطقة غير محددة").trim().replace(/\s+/g, ' ');
       regionCounts[region] = (regionCounts[region] || 0) + 1;
     });
 
@@ -357,7 +358,7 @@ export function MandoubOrderTable({
     const singleActiveOrders: MandoubRow[] = [];
 
     activeRows.forEach(r => {
-      const region = r.regionLine || "منطقة غير محددة";
+      const region = (r.regionLine || "منطقة غير محددة").trim().replace(/\s+/g, ' ');
       if (regionCounts[region] >= 2) {
         if (!grouped[region]) {
           grouped[region] = [];
@@ -367,6 +368,9 @@ export function MandoubOrderTable({
         singleActiveOrders.push(r);
       }
     });
+
+    console.log("[Merge System] Grouped regions count:", Object.keys(grouped).length);
+    console.log("[Merge System] Grouped details:", grouped);
 
     return {
       grouped,
