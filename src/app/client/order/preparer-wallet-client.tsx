@@ -185,7 +185,7 @@ export function PreparerWalletClient({
               <div className={`relative flex flex-col gap-1.5 rounded-2xl border-2 px-4 py-3 transition-all shadow-sm ${
                 deleted || isRejected ? "border-slate-300 bg-slate-100/90 text-slate-600 dark:bg-slate-800" :
                 isDebt ? "border-yellow-500 bg-yellow-100/95 dark:bg-yellow-950/40 dark:border-yellow-850 text-slate-900 dark:text-yellow-250 ring-2 ring-yellow-400/60" :
-                isSalary ? "border-[#7a67ee] bg-[#f0edf7] text-[#3d2f75] dark:bg-[#1f1a3a] dark:border-[#5244ad] dark:text-[#d3ccff] ring-2 ring-[#7a67ee]/40" :
+                isSalary ? "border-[#4f46e5] bg-gradient-to-r from-[#818cf8]/35 via-[#c7d2fe]/10 to-white text-[#1e1b4b] dark:from-[#2e2a72]/40 dark:to-[#0b0b1a] dark:border-[#6366f1] dark:text-[#e0e7ff] ring-2 ring-[#4f46e5]/40" :
                 isInPick ? "border-red-600 bg-red-100/95 dark:bg-red-900/40 dark:border-red-800" :
                 isOutPick ? "border-emerald-600 bg-emerald-100/95 dark:bg-emerald-900/40 dark:border-emerald-800" :
                 "border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800"
