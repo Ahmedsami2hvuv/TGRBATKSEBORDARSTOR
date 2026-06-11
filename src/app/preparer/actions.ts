@@ -2307,14 +2307,14 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
       await tx.employeeWalletMiscEntry.create({
         data: {
           employeeId: preparer.walletEmployeeId!,
-          direction: "give",
+          direction: CourierWalletMiscDirection.give,
           amountDinar: amountDinar,
           label: `[راتب] استلام راتب المجهز للشفتات المتراكمة`,
         }
       });
 
       // 2. تحديث تاريخ آخر عملية استلام للوقت الحالي فقط إذا تم السحب بالكامل
-      if (amountToWithdraw >= withdrawableSalary) {
+      if (amountToWithdraw >= withdrawableSalary - 0.01) {
         await tx.companyPreparer.update({
           where: { id: v.preparerId },
           data: { lastSalaryWithdrawalAt: new Date() }

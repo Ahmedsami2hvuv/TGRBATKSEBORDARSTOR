@@ -170,7 +170,7 @@ export default function PreparerSalaryClient({ auth, preparerName }: Props) {
       toast.error(res.error);
     } else {
       toast.success(`تم استلام مبلغ ${res.withdrawnAmount} الف وإضافته للمحفظة بنجاح!`);
-      router.push(`/preparer?${baseQuery.toString()}`);
+      window.location.href = `/preparer?${baseQuery.toString()}`;
     }
   };
 
