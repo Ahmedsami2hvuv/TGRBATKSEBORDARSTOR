@@ -320,6 +320,7 @@ export async function updateOrderAdmin(
         const earning = computeCourierDeliveryEarningDinar(
           courier.vehicleType,
           new Decimal(delVal),
+          courier.zeroEarning,
         );
         updateData.courierEarningDinar = earning;
         if (earning != null) {
@@ -329,7 +330,6 @@ export async function updateOrderAdmin(
         }
       }
     } else {
-      // إذا لم يكن التسليم تم، أو لم يوجد مندوب، نفصل علاقة الربح
       updateData.courierEarningDinar = null;
       updateData.courierEarningForCourier = { disconnect: true };
     }

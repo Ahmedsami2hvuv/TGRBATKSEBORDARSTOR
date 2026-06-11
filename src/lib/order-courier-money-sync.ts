@@ -122,6 +122,7 @@ export async function resyncOrdersAfterRegionPriceChange(
           const earning = computeCourierDeliveryEarningDinar(
             courier.vehicleType,
             delivery,
+            courier.zeroEarning,
           );
           data.courierEarningDinar = earning as any;
           data.courierEarningForCourierId =

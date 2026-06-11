@@ -30,7 +30,7 @@ export async function AdminProfitsWidget() {
         createdAt: true,
         preparerShoppingJson: true,
         submittedByCompanyPreparerId: true,
-        courier: { select: { id: true, name: true } },
+        courier: { select: { id: true, name: true, zeroEarning: true, vehicleType: true } },
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -82,8 +82,29 @@ export async function AdminProfitsWidget() {
 
   for (const o of orders) {
     const isToday = o.createdAt >= startOfToday;
-    if (o.deliveryPrice && o.courierEarningDinar) {
-      const p = o.deliveryPrice.minus(o.courierEarningDinar);
+    if (o.deliveryPrice) {
+      let p = new Decimal(0);
+      if (o.courier) {
+        if (o.courier.zeroEarning) {
+          p = o.deliveryPrice;
+        } else {
+          if (o.courierEarningDinar != null) {
+            p = o.deliveryPrice.minus(o.courierEarningDinar);
+          } else {
+            const vehicle = o.courier.vehicleType || "car";
+            const earning = vehicle === "bike"
+              ? o.deliveryPrice.div(2)
+              : o.deliveryPrice.mul(2).div(3);
+            p = o.deliveryPrice.minus(earning);
+          }
+        }
+      } else {
+        if (o.courierEarningDinar != null) {
+          p = o.deliveryPrice.minus(o.courierEarningDinar);
+        } else {
+          p = o.deliveryPrice;
+        }
+      }
       totalDeliveryProfit = totalDeliveryProfit.plus(p);
       if (isToday) todayDeliveryProfit = todayDeliveryProfit.plus(p);
 

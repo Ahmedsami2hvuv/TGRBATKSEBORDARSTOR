@@ -266,7 +266,7 @@ export async function submitPreparerDeliveryMoney(
         if (earningCourierId && a.order.deliveryPrice != null) {
           const cr = await tx.courier.findUnique({ where: { id: earningCourierId } });
           if (cr) {
-            earning = computeCourierDeliveryEarningDinar(cr.vehicleType, a.order.deliveryPrice);
+            earning = computeCourierDeliveryEarningDinar(cr.vehicleType, a.order.deliveryPrice, cr.zeroEarning);
             earningFor = earningCourierId;
           }
         }

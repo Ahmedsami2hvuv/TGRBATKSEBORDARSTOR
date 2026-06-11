@@ -35,10 +35,11 @@ export async function syncOrderStatusFromActiveMoneyEvents(
       if (courier && order.deliveryPrice != null) {
         const computed = computeCourierDeliveryEarningDinar(
           courier.vehicleType,
-          order.deliveryPrice,
+          order.deliveryPrice as any,
+          courier.zeroEarning,
         );
         if (computed != null) {
-          earning = computed;
+          earning = computed as any;
           earningFor = deliveryCourierId;
         }
       }

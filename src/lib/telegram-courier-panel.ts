@@ -71,6 +71,7 @@ export async function getCourierByTelegramUserId(
   mandoubTotalsResetAt: Date | null;
   mandoubWalletCarryOverDinar: Decimal;
   vehicleType: "car" | "bike";
+  zeroEarning?: boolean;
 } | null> {
   const c = await prisma.courier.findUnique({
     where: { telegramUserId },
@@ -80,6 +81,7 @@ export async function getCourierByTelegramUserId(
       mandoubTotalsResetAt: true,
       mandoubWalletCarryOverDinar: true,
       vehicleType: true,
+      zeroEarning: true,
     },
   });
   return c;
@@ -989,7 +991,7 @@ async function completeCourierPickupTx(
 }
 
 async function completeCourierDeliveryTx(
-  courier: { id: string; name: string; vehicleType: "car" | "bike" },
+  courier: { id: string; name: string; vehicleType: "car" | "bike"; zeroEarning?: boolean },
   order: NonNullable<Awaited<ReturnType<typeof loadCourierOrderDetailForTelegram>>>,
   amountDinar: Decimal,
   matches: boolean,
@@ -1001,7 +1003,7 @@ async function completeCourierDeliveryTx(
   let earning: Decimal | null = null;
   let earningFor: string | null = null;
   if (order.deliveryPrice != null) {
-    earning = computeCourierDeliveryEarningDinar(courier.vehicleType, order.deliveryPrice);
+    earning = computeCourierDeliveryEarningDinar(courier.vehicleType, order.deliveryPrice as any, courier.zeroEarning) as any;
     earningFor = earning != null ? courier.id : null;
   }
   await prisma.$transaction(async (tx) => {

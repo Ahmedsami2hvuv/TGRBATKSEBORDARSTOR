@@ -35,6 +35,13 @@ export default async function EditCourierPage({ params }: Props) {
           defaultVehicleType={courier.vehicleType === "bike" ? "bike" : "car"}
           defaultHiddenFromReports={courier.hiddenFromReports}
           defaultBlocked={courier.blocked}
+          defaultZeroEarning={courier.zeroEarning}
+          showDoorBtn={courier.showDoorBtn}
+          showLocationBtn={courier.showLocationBtn}
+          showCallBtn={courier.showCallBtn}
+          showWhatsAppBtn={courier.showWhatsAppBtn}
+          showNotesBtn={courier.showNotesBtn}
+          showVoiceNotesBtn={courier.showVoiceNotesBtn}
           lastMandoubTotalsResetLabel={
             courier.mandoubTotalsResetAt
               ? courier.mandoubTotalsResetAt.toLocaleString("ar-IQ-u-nu-latn", {

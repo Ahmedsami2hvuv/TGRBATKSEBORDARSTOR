@@ -21,6 +21,7 @@ export function CourierEditForm({
   defaultVehicleType,
   defaultHiddenFromReports,
   defaultBlocked,
+  defaultZeroEarning,
   showDoorBtn,
   showLocationBtn,
   showCallBtn,
@@ -37,6 +38,7 @@ export function CourierEditForm({
   defaultVehicleType: "car" | "bike";
   defaultHiddenFromReports: boolean;
   defaultBlocked: boolean;
+  defaultZeroEarning: boolean;
   showDoorBtn: boolean;
   showLocationBtn: boolean;
   showCallBtn: boolean;
@@ -124,6 +126,15 @@ export function CourierEditForm({
             className="h-4 w-4 rounded border-sky-300"
           />
           <span className={ad.label}>محظور — لا يظهر في الإسناد والتقرير</span>
+        </label>
+        <label className="flex items-center gap-2 text-sm sm:col-span-2">
+          <input
+            type="checkbox"
+            name="zeroEarning"
+            defaultChecked={defaultZeroEarning}
+            className="h-4 w-4 rounded border-sky-300"
+          />
+          <span className={ad.label}>ربح المندوب صفر (كامل مبلغ التوصيل يذهب للإدارة)</span>
         </label>
 
         <div className="sm:col-span-2 pt-4 border-t border-slate-100">

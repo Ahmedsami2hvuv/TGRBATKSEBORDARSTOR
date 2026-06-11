@@ -78,6 +78,14 @@ export function CourierForm() {
               <option value="bike">دراجة — نصف كلفة التوصيل لكل طلب مُسلَّم</option>
             </select>
           </label>
+          <label className="flex items-center gap-2 text-sm sm:col-span-2">
+            <input
+              type="checkbox"
+              name="zeroEarning"
+              className="h-4 w-4 rounded border-sky-300"
+            />
+            <span className={ad.label}>ربح المندوب صفر (كامل مبلغ التوصيل يذهب للإدارة)</span>
+          </label>
         </div>
         {state.error ? (
           <p className={ad.error} role="alert">

@@ -25,6 +25,7 @@ export async function createCourier(state: CourierFormState, formData: FormData)
   const showWhatsAppBtn = formData.get("showWhatsAppBtn") === "on";
   const showNotesBtn = formData.get("showNotesBtn") === "on";
   const showVoiceNotesBtn = formData.get("showVoiceNotesBtn") === "on";
+  const zeroEarning = formData.get("zeroEarning") === "on";
 
   try {
     // التحقق من وجود رقم الهاتف مسبقاً
@@ -49,6 +50,7 @@ export async function createCourier(state: CourierFormState, formData: FormData)
         showWhatsAppBtn,
         showNotesBtn,
         showVoiceNotesBtn,
+        zeroEarning,
       },
     });
 
@@ -78,6 +80,7 @@ export async function updateCourier(id: string, state: CourierFormState, formDat
   const showWhatsAppBtn = formData.get("showWhatsAppBtn") === "on";
   const showNotesBtn = formData.get("showNotesBtn") === "on";
   const showVoiceNotesBtn = formData.get("showVoiceNotesBtn") === "on";
+  const zeroEarning = formData.get("zeroEarning") === "on";
 
   try {
     await prisma.courier.update({
@@ -93,6 +96,7 @@ export async function updateCourier(id: string, state: CourierFormState, formDat
         showWhatsAppBtn,
         showNotesBtn,
         showVoiceNotesBtn,
+        zeroEarning,
       },
     });
     revalidatePath(`${SECRET_ADMIN_PATH}/couriers`);

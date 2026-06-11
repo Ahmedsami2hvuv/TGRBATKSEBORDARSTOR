@@ -1,4 +1,4 @@
-import type { Decimal } from "@prisma/client/runtime/library";
+import { Decimal } from "@prisma/client/runtime/library";
 import type { CourierVehicleType } from "@prisma/client";
 
 /**
@@ -17,8 +17,10 @@ export interface DecimalMathLike {
 export function computeCourierDeliveryEarningDinar(
   vehicle: CourierVehicleType,
   deliveryPrice: DecimalMathLike | null,
+  zeroEarning = false,
 ): DecimalMathLike | null {
   if (deliveryPrice == null) return null;
+  if (zeroEarning) return new Decimal(0) as any;
   if (vehicle === "bike") {
     return deliveryPrice.div(2);
   }

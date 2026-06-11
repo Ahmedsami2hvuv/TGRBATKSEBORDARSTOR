@@ -303,7 +303,7 @@ export async function submitMandoubDeliveryMoney(
       if (earningCourierId && order.deliveryPrice != null) {
         const cr = await tx.courier.findUnique({ where: { id: earningCourierId } });
         if (cr) {
-          earning = computeCourierDeliveryEarningDinar(cr.vehicleType, order.deliveryPrice);
+          earning = computeCourierDeliveryEarningDinar(cr.vehicleType, order.deliveryPrice, cr.zeroEarning);
           earningFor = earning != null ? earningCourierId : null;
         }
       }
@@ -344,7 +344,7 @@ export async function submitMandoubDeliveryMoney(
 
   const courierRow = await prisma.courier.findUnique({
     where: { id: order.assignedCourierId },
-    select: { vehicleType: true },
+    select: { vehicleType: true, zeroEarning: true },
   });
   if (!courierRow) {
     return { error: "بيانات المندوب غير موجودة." };
@@ -412,6 +412,7 @@ export async function submitMandoubDeliveryMoney(
                     ? computeCourierDeliveryEarningDinar(
                         courierRow.vehicleType,
                         order.deliveryPrice,
+                        courierRow.zeroEarning,
                       )
                     : null;
                 return {
