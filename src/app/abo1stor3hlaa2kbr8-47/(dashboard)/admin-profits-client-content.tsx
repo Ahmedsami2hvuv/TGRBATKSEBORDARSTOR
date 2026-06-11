@@ -5,8 +5,10 @@ import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { payCourierTipAction } from "./couriers/tip-actions";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 type Props = {
+  selectedDay: string;
   todayNet: number;
   allTimeNet: number;
   todayPrepProfit: number;
@@ -24,6 +26,7 @@ type Props = {
 };
 
 export function AdminProfitsClientContent({
+  selectedDay,
   todayNet,
   allTimeNet,
   todayPrepProfit,
@@ -35,13 +38,26 @@ export function AdminProfitsClientContent({
   couriersList,
 }: Props) {
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     getGlobalIcons().then(setIcons);
   }, []);
 
+  const handleDateChange = (newDate: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newDate) {
+      params.set("day", newDate);
+    } else {
+      params.delete("day");
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
   return (
-    <section className="kse-glass-dark my-8 flex flex-col gap-6 rounded-[1.25rem] border border-amber-200/50 p-5 sm:p-6">
+    <section className="kse-glass-dark my-8 flex flex-col gap-6 rounded-[1.25rem] border border-amber-200/50 p-5 sm:p-6" dir="rtl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 shadow-inner shadow-white/20">
@@ -49,17 +65,33 @@ export function AdminProfitsClientContent({
           </div>
           <div>
             <h2 className="text-lg font-black text-amber-900">سجل أرباح الشركة التفصيلي</h2>
-            <p className="mt-1 text-xs font-semibold text-amber-700/80">ملخص الأرباح (بعد استقطاع الإكراميات)</p>
+            <p className="mt-1 text-xs font-semibold text-amber-700/80">ملخص أرباح يوم {selectedDay} (بعد استقطاع الإكراميات)</p>
           </div>
         </div>
-        <div className="flex flex-col gap-3 rounded-xl bg-white/60 p-3 shadow-sm sm:min-w-[240px]">
-          <div className="flex items-center justify-between gap-3 border-b border-amber-100/50 pb-2">
-            <span className="text-xs font-bold text-slate-600">صافي الأرباح (اليوم)</span>
-            <span className="text-sm font-black text-emerald-600">{formatDinarAsAlfWithUnit(todayNet)}</span>
+
+        <div className="flex flex-wrap items-center gap-4">
+          {/* منتقي التاريخ الأنيق */}
+          <div className="rounded-xl bg-white/70 border border-amber-200/50 p-2 shadow-sm">
+            <label className="flex items-center gap-2">
+              <span className="text-xs font-bold text-amber-900">اختر اليوم:</span>
+              <input
+                type="date"
+                value={selectedDay}
+                onChange={(e) => handleDateChange(e.target.value)}
+                className="rounded-lg border border-amber-200 bg-white px-2 py-1 text-xs font-extrabold text-amber-900 outline-none transition focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+              />
+            </label>
           </div>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-xs font-bold text-slate-600">صافي الأرباح (الشاملة)</span>
-            <span className="text-sm font-black text-sky-600">{formatDinarAsAlfWithUnit(allTimeNet)}</span>
+
+          <div className="flex flex-col gap-2 rounded-xl bg-white/60 p-3 shadow-sm sm:min-w-[240px]">
+            <div className="flex items-center justify-between gap-3 border-b border-amber-100/50 pb-1.5">
+              <span className="text-xs font-bold text-slate-600">صافي أرباح اليوم المختار</span>
+              <span className="text-sm font-black text-emerald-600">{formatDinarAsAlfWithUnit(todayNet)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-bold text-slate-600">صافي الأرباح (الشاملة)</span>
+              <span className="text-sm font-black text-sky-600">{formatDinarAsAlfWithUnit(allTimeNet)}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -68,22 +100,40 @@ export function AdminProfitsClientContent({
         <div className="rounded-xl border border-sky-100 bg-white p-4 shadow-sm">
           <h3 className="mb-4 text-sm font-bold text-sky-900">أرباح التجهيز</h3>
           <div className="rounded-lg border border-sky-100 bg-sky-50 p-3">
-            <div className="mb-1 flex items-center justify-between text-xs"><span className="text-slate-500">اليوم:</span><span className="font-bold text-emerald-600">{formatDinarAsAlfWithUnit(todayPrepProfit)}</span></div>
-            <div className="flex items-center justify-between text-xs"><span className="text-slate-500">الإجمالي:</span><span className="font-bold text-sky-700">{formatDinarAsAlfWithUnit(totalPrepProfit)}</span></div>
+            <div className="mb-1 flex items-center justify-between text-xs">
+              <span className="text-slate-500">اليوم المختار:</span>
+              <span className="font-bold text-emerald-600">{formatDinarAsAlfWithUnit(todayPrepProfit)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-500">الإجمالي التاريخي:</span>
+              <span className="font-bold text-sky-700">{formatDinarAsAlfWithUnit(totalPrepProfit)}</span>
+            </div>
           </div>
         </div>
         <div className="rounded-xl border border-emerald-100 bg-white p-4 shadow-sm">
           <h3 className="mb-4 text-sm font-bold text-emerald-900">أرباح التوصيل</h3>
           <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-3">
-            <div className="mb-1 flex items-center justify-between text-xs"><span className="text-slate-500">اليوم:</span><span className="font-bold text-emerald-600">{formatDinarAsAlfWithUnit(todayDeliveryProfit)}</span></div>
-            <div className="flex items-center justify-between text-xs"><span className="text-slate-500">الإجمالي:</span><span className="font-bold text-sky-700">{formatDinarAsAlfWithUnit(totalDeliveryProfit)}</span></div>
+            <div className="mb-1 flex items-center justify-between text-xs">
+              <span className="text-slate-500">اليوم المختار:</span>
+              <span className="font-bold text-emerald-600">{formatDinarAsAlfWithUnit(todayDeliveryProfit)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-500">الإجمالي التاريخي:</span>
+              <span className="font-bold text-sky-700">{formatDinarAsAlfWithUnit(totalDeliveryProfit)}</span>
+            </div>
           </div>
         </div>
         <div className="rounded-xl border border-rose-100 bg-white p-4 shadow-sm">
           <h3 className="mb-4 text-sm font-bold text-rose-900">الإكراميات</h3>
           <div className="rounded-lg border border-rose-100 bg-rose-50 p-3">
-            <div className="mb-1 flex items-center justify-between text-xs"><span className="text-slate-500">اليوم:</span><span className="font-bold text-rose-600">{formatDinarAsAlfWithUnit(todayTipsPaid)}</span></div>
-            <div className="flex items-center justify-between text-xs"><span className="text-slate-500">الإجمالي:</span><span className="font-bold text-rose-700">{formatDinarAsAlfWithUnit(totalTipsPaid)}</span></div>
+            <div className="mb-1 flex items-center justify-between text-xs">
+              <span className="text-slate-500">اليوم المختار:</span>
+              <span className="font-bold text-rose-600">{formatDinarAsAlfWithUnit(todayTipsPaid)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-500">الإجمالي التاريخي:</span>
+              <span className="font-bold text-rose-700">{formatDinarAsAlfWithUnit(totalTipsPaid)}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -95,9 +145,9 @@ export function AdminProfitsClientContent({
               <thead className="bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500">
                 <tr>
                   <th className="px-4 py-3">المندوب</th>
-                  <th className="px-4 py-3 text-center">أرباح اليوم</th>
+                  <th className="px-4 py-3 text-center">أرباح اليوم المختار</th>
                   <th className="px-4 py-3 text-center">دفع إكرامية</th>
-                  <th className="px-4 py-3 text-center">إكراميات اليوم</th>
+                  <th className="px-4 py-3 text-center">إكراميات اليوم المختار</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">

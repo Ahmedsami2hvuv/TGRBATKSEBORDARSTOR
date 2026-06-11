@@ -23,19 +23,19 @@ export default async function ReportsHubPage() {
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Link
-          href={`${SECRET_ADMIN_PATH}/reports/preparation`}
+          href={`${SECRET_ADMIN_PATH}/reports/couriers`}
           className="group block cursor-pointer rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300"
           role="button"
         >
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-slate-500">تقارير التجهيز اليومية</p>
+              <p className="text-sm font-semibold text-slate-500">أرباح المندوبين والتجهيز الشامل</p>
               <p className="mt-3 text-sm leading-6 text-slate-700">
-                عرض أيام التقرير العام مرتبة يومًا يومًا، مع تفاصيل تقرير التجهيز لكل يوم.
+                تقرير الأرباح الشامل المدمج (أرباح التوصيل للمندوبين، أرباح التجهيز للحوم والأسماك، والإكراميات).
               </p>
             </div>
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-500 text-2xl text-white shadow-lg">
-              <DynamicIcon iconKey="ui_tasks" config={icons} fallback="📋" className="w-6 h-6" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 text-2xl text-white shadow-lg">
+              <DynamicIcon iconKey="wallet_earnings" config={icons} fallback="💰" className="w-6 h-6" />
             </div>
           </div>
         </Link>
@@ -54,24 +54,6 @@ export default async function ReportsHubPage() {
             </div>
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-2xl text-white shadow-lg">
               <DynamicIcon iconKey="ui_print" config={icons} fallback="🧾" className="w-6 h-6" />
-            </div>
-          </div>
-        </Link>
-
-        <Link
-          href={`${SECRET_ADMIN_PATH}/reports/couriers`}
-          className="group block cursor-pointer rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300"
-          role="button"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-slate-500">أرباح المندوبين</p>
-              <p className="mt-3 text-sm leading-6 text-slate-700">
-                جدول أرباح المندوبين اليومي مع صافي الشركة بعد خصم الإكراميات.
-              </p>
-            </div>
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 text-2xl text-white shadow-lg">
-              <DynamicIcon iconKey="wallet_earnings" config={icons} fallback="💰" className="w-6 h-6" />
             </div>
           </div>
         </Link>

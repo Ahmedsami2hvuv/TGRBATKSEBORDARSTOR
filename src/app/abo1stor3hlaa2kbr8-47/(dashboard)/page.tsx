@@ -2,7 +2,6 @@ import { testTelegramAction } from "./actions";
 import { AdminHubDashboard } from "./admin-hub-dashboard";
 import { AdminProfitsWidget } from "./admin-profits-widget";
 import { AdminDebtsWidget } from "./admin-debts-widget";
-
 import { serializePrisma } from "@/lib/serialize-prisma";
 
 export const metadata = {
@@ -10,7 +9,7 @@ export const metadata = {
 };
 
 type Props = {
-  searchParams?: Promise<{ tg?: string; reason?: string }>;
+  searchParams?: Promise<{ tg?: string; reason?: string; day?: string }>;
 };
 
 export default async function AdminHomePage({ searchParams }: Props) {
@@ -51,7 +50,7 @@ export default async function AdminHomePage({ searchParams }: Props) {
         </form>
       </section>
 
-      <AdminProfitsWidget />
+      <AdminProfitsWidget selectedDay={sp.day} />
       <AdminDebtsWidget />
     </div>
   );
