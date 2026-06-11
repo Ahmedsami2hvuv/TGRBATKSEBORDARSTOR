@@ -290,7 +290,7 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                           {statusAr(o.status)}
                         </span>
                         {o.prepaidAll && (
-                          <span className="rounded-full bg-emerald-600 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm ring-1 ring-emerald-300/80">
+                          <span className="rounded-full bg-yellow-400 px-2.5 py-0.5 text-[10px] font-black text-slate-900 shadow-sm ring-1 ring-yellow-500">
                             كل شي واصل
                           </span>
                         )}
