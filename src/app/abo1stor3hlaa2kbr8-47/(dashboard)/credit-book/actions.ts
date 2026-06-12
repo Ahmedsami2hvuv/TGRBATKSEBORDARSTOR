@@ -17,6 +17,7 @@ export interface PartnerWithBalance {
   type: PartnerType;
   externalId: string | null;
   createdAt: Date;
+  updatedAt: Date;
   balance: number; // الرصيد الكلي = اليدوي + التلقائي
   manualBalance: number; // الرصيد اليدوي فقط
   autoBalance: number; // الرصيد التلقائي (المحفظة أو ديون الطلبات)
@@ -357,14 +358,30 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
       })
     );
 
-    // فرز النتائج: الحسابات غير الصفرية أولاً حسب آخر نشاط (updatedAt) تنازلياً، ثم الحسابات الصفرية في النهاية
+    // فرز النتائج: الحسابات المضافة حديثاً (خلال آخر ساعة) أولاً، ثم الحسابات غير الصفرية، ثم الحسابات الصفرية
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
     result.sort((a, b) => {
+      const aIsNew = new Date(a.createdAt).getTime() > oneHourAgo.getTime();
+      const bIsNew = new Date(b.createdAt).getTime() > oneHourAgo.getTime();
+
+      // الحسابات الجديدة أولاً
+      if (aIsNew && !bIsNew) return -1;
+      if (!aIsNew && bIsNew) return 1;
+
+      // إذا كان كلاهما جديداً، الفرز حسب تاريخ الإنشاء الأحدث أولاً
+      if (aIsNew && bIsNew) {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+
+      // بعد ذلك، الحسابات غير الصفرية تأتي قبل الصفرية
       const aZero = a.balance === 0;
       const bZero = b.balance === 0;
 
       if (aZero && !bZero) return 1;
       if (!aZero && bZero) return -1;
 
+      // وأخيراً الفرز حسب تاريخ التحديث (آخر نشاط) تنازلياً
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
 

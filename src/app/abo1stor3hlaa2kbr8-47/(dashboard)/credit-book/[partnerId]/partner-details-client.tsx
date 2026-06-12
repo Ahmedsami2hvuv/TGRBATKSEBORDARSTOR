@@ -371,7 +371,9 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
             )}
             <div className="flex justify-between items-center pt-1">
               <span className="text-xs font-black text-slate-700">الكلي:</span>
-              <span className="text-sm font-black tabular-nums text-rose-600">
+              <span className={`text-sm font-black tabular-nums ${
+                partner.balance > 0 ? "text-emerald-600" : partner.balance < 0 ? "text-rose-600" : "text-slate-500"
+              }`}>
                 {partner.balance > 0 ? "نطلبه: " : partner.balance < 0 ? "يطلبنا: " : ""}
                 {formatDinarAsAlfWithUnit(Math.abs(partner.balance))}
               </span>

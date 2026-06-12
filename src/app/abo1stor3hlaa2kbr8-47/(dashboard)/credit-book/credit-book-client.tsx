@@ -311,12 +311,19 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
                       />
                     </td>
                     <td className="p-4 font-bold text-slate-800">
-                      <Link 
-                        href={`/abo1stor3hlaa2kbr8-47/credit-book/${partner.id}`}
-                        className="hover:text-indigo-600"
-                      >
-                        {partner.name}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link 
+                          href={`/abo1stor3hlaa2kbr8-47/credit-book/${partner.id}`}
+                          className="hover:text-indigo-600"
+                        >
+                          {partner.name}
+                        </Link>
+                        {new Date(partner.createdAt).getTime() > Date.now() - 60 * 60 * 1000 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 text-indigo-800 border border-indigo-200 animate-pulse">
+                            🆕 جديد
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4 text-slate-500 text-sm font-semibold">{partner.phone || "—"}</td>
                     <td className="p-4 text-xs">
