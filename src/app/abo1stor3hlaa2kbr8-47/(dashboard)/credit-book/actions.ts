@@ -230,12 +230,11 @@ export async function getPartnerDetails(partnerId: string) {
         console.error(e);
       }
     } else if (partner.type === "shop" && partner.externalId) {
-      // للمحلات: جلب تفاصيل الطلبات التي لم تسدد للمحل وتوليد قيود تلقائية لها
+      // للمحلات: جلب تفاصيل الطلبات وتوليد قيود تلقائية للديون وعمليات التسديد
       try {
-        const unpaidOrders = await prisma.order.findMany({
+        const orders = await prisma.order.findMany({
           where: {
             shopId: partner.externalId,
-            shopCostPaidAt: null,
             status: { notIn: ["cancelled"] },
             orderSubtotal: { gt: 0 }
           },
@@ -248,33 +247,62 @@ export async function getPartnerDetails(partnerId: string) {
                 deletedAt: null
               },
               select: {
-                amountDinar: true
+                id: true,
+                amountDinar: true,
+                createdAt: true,
+                courierId: true,
+                recordedByCompanyPreparerId: true,
+                mismatchNote: true
               }
             }
           },
-          orderBy: { createdAt: "desc" }
+          orderBy: { createdAt: "desc" },
+          take: 150
         });
 
-        for (const o of unpaidOrders) {
+        let autoGave = 0;
+        let autoTook = 0;
+
+        for (const o of orders) {
           const subtotal = Number(o.orderSubtotal || 0);
           const pickupPaid = o.moneyEvents.reduce((acc, me) => acc + Number(me.amountDinar || 0), 0);
-          const amt = Math.max(0, subtotal - pickupPaid);
+          const isSettled = o.shopCostPaidAt !== null || pickupPaid >= subtotal;
 
-          if (amt > 0) {
-            autoBalance -= amt; // المبالغ يطلبنا بها المحل (took)
+          // 1. إضافة قيد الطلب كدين علينا (took)
+          autoTook += subtotal;
+          autoTransactions.push({
+            id: `auto-order-${o.id}`,
+            partnerId: partner.id,
+            amount: subtotal,
+            kind: "took", // أخذت = يطلبنا
+            note: `طلب رقم #${o.orderNumber} | نوع الطلب: ${o.orderType || "—"} | المنطقة: ${o.customerRegion?.name || "—"} | المندوب: ${o.courier?.name || "—"}${isSettled ? " (مسدد)" : ""}`,
+            createdAt: o.createdAt,
+            updatedAt: o.updatedAt,
+            isAuto: true,
+            isPaid: isSettled,
+            remainingAmount: Math.max(0, subtotal - pickupPaid)
+          });
 
+          // 2. إضافة حركات الدفع (صادر) كحركات تسديد (gave)
+          for (const me of o.moneyEvents) {
+            const amt = Number(me.amountDinar || 0);
+            autoGave += amt;
+            
+            const payer = me.courierId ? `المندوب` : "الإدارة";
             autoTransactions.push({
-              id: `auto-order-${o.id}`,
+              id: `auto-payment-${me.id}`,
               partnerId: partner.id,
               amount: amt,
-              kind: "took", // أخذت = يطلبنا
-              note: `طلب رقم #${o.orderNumber} | نوع الطلب: ${o.orderType || "—"} | المنطقة: ${o.customerRegion?.name || "—"} | المندوب: ${o.courier?.name || "—"}`,
-              createdAt: o.createdAt,
-              updatedAt: o.updatedAt,
+              kind: "gave", // أعطيت = تسديد
+              note: `تسديد للطلب #${o.orderNumber} | الجهة: ${payer}${me.mismatchNote ? ` (${me.mismatchNote})` : ""}`,
+              createdAt: me.createdAt,
+              updatedAt: me.createdAt,
               isAuto: true
             });
           }
         }
+        
+        autoBalance = autoGave - autoTook;
       } catch (e) {
         console.error(e);
       }
@@ -298,6 +326,17 @@ export async function getPartnerDetails(partnerId: string) {
 
     const manualBalance = totalGave - totalTook;
 
+    // حساب إجمالي الأعطيت والأخذت للمعاملات التلقائية بشكل دقيق
+    let autoGaveSum = 0;
+    let autoTookSum = 0;
+    autoTransactions.forEach((tx) => {
+      if (tx.kind === "gave") {
+        autoGaveSum += tx.amount;
+      } else if (tx.kind === "took") {
+        autoTookSum += tx.amount;
+      }
+    });
+
     // دمج المعاملات التلقائية واليدوية
     const allTransactions = [...autoTransactions, ...manualTransactions].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -313,8 +352,8 @@ export async function getPartnerDetails(partnerId: string) {
       balance: manualBalance + autoBalance,
       manualBalance,
       autoBalance,
-      totalGave: totalGave + (autoBalance > 0 ? autoBalance : 0),
-      totalTook: totalTook + (autoBalance < 0 ? Math.abs(autoBalance) : 0),
+      totalGave: totalGave + autoGaveSum,
+      totalTook: totalTook + autoTookSum,
       transactions: allTransactions,
       walletRemain
     };

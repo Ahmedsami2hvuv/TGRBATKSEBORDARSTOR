@@ -22,6 +22,8 @@ interface Transaction {
   createdAt: Date;
   updatedAt: Date;
   isAuto?: boolean;
+  isPaid?: boolean;
+  remainingAmount?: number;
 }
 
 interface Partner {
@@ -69,6 +71,7 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
     const updated = await getPartnerDetails(partner.id);
     if (updated) {
       setPartner(updated);
+      router.refresh();
     }
   };
 
@@ -360,13 +363,19 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
                         </div>
                       ) : (
                         partner.type === "shop" && tx.id.startsWith("auto-order-") && (
-                          <div className="flex gap-2 justify-end">
-                            <button
-                              onClick={() => handleAdminPayOrder(tx)}
-                              className="px-2.5 py-1.5 text-[10px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-md shadow-indigo-900/10 flex items-center gap-1"
-                            >
-                              💵 دفع من الإدارة
-                            </button>
+                          <div className="flex gap-2 justify-end items-center">
+                            {tx.isPaid ? (
+                              <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-100 flex items-center gap-1">
+                                ✅ مسدد
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleAdminPayOrder(tx)}
+                                className="px-2.5 py-1.5 text-[10px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-md shadow-indigo-900/10 flex items-center gap-1"
+                              >
+                                💵 دفع من الإدارة
+                              </button>
+                            )}
                           </div>
                         )
                       )}
