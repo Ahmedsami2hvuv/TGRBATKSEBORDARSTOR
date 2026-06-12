@@ -111,6 +111,7 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
       deliveryLabel: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
       customerPhone: o.customerPhone || "—",
       courierName: o.courier?.name ?? "—",
+      orderNoteTime: o.orderNoteTime,
       hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
       missingCustomerLocation: !hasCustomerLocationUrl(
         o.customerLocationUrl,
@@ -132,6 +133,7 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
         o.orderSubtotal,
         sumPickupOutFromOrderMoneyEvents(o.moneyEvents),
       ).type,
+      createdAt: o.createdAt,
     };
   });
 
