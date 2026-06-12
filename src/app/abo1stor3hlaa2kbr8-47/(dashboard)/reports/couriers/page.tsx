@@ -10,6 +10,8 @@ import { ReportTableClient } from "../preparation/report-table-client";
 import { ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
 import { DateFilterForm } from "./date-filter-form";
 
+import { ProfitsAnalyticsClient } from "../profits/profits-analytics-client";
+
 export const dynamic = "force-dynamic";
 
 export const metadata = {
@@ -17,7 +19,7 @@ export const metadata = {
 };
 
 type Props = {
-  searchParams: Promise<{ day?: string | string[] }>;
+  searchParams: Promise<{ day?: string | string[]; view?: string | string[] }>;
 };
 
 type CourierProfitRow = {
@@ -62,7 +64,9 @@ const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 export default async function CombinedReportPage({ searchParams }: Props) {
   try {
     const sp = await searchParams;
-    
+    const viewVal = Array.isArray(sp.view) ? sp.view[0] : sp.view;
+    const view = viewVal || "table";
+
     // جلب إعدادات التسعير والأنواع للتجهيز
     const pricingSetting = await prisma.uISystemSetting.findUnique({
       where: { target_section: { target: "system", section: "pricing_config" } }
@@ -76,6 +80,169 @@ export default async function CombinedReportPage({ searchParams }: Props) {
       "شانگ", "شانك", "شعري", "شلك", "صافي", "ضلعة", "ضلعه", "ظلعة", "ظلعه", "عندك", "عندگ", "عروسة",
       "عروسه", "غريبة", "غريبه", "كطان", "مزلك", "مزلگ", "ملزك", "نگرور", "نكرور", "وحر", "هامور"
     ];
+
+    if (view === "chart") {
+      const allOrders = await prisma.order.findMany({
+        where: {
+          OR: [
+            { status: "delivered" },
+            {
+              preparerShoppingJson: { not: null },
+              status: { notIn: ["cancelled", "rejected"] },
+              shop: { name: { in: ADMIN_SHOP_NAMES } }
+            }
+          ]
+        },
+        select: {
+          createdAt: true,
+          status: true,
+          deliveryPrice: true,
+          courierEarningDinar: true,
+          courier: { select: { zeroEarning: true, vehicleType: true } },
+          preparerShoppingJson: true,
+          shop: { select: { name: true } }
+        },
+        orderBy: { createdAt: "asc" }
+      });
+
+      const yearsMap = new Map<number, Map<number, Map<number, { delivery: number; prep: number }>>>();
+
+      for (const order of allOrders) {
+        const shiftDate = new Date(order.createdAt.getTime() - 3 * 60 * 60 * 1000);
+        const y = shiftDate.getUTCFullYear();
+        const m = shiftDate.getUTCMonth() + 1;
+        const d = shiftDate.getUTCDate();
+
+        let deliveryProfit = 0;
+        if (order.status === "delivered" && order.deliveryPrice != null) {
+          let courierEarning = order.courierEarningDinar;
+          const isZeroEarning = order.courier?.zeroEarning || false;
+
+          if (isZeroEarning) {
+            courierEarning = new Decimal(0);
+          } else if (courierEarning == null) {
+            const vehicleType = order.courier?.vehicleType || null;
+            courierEarning = computeCourierDeliveryEarningDinar(vehicleType, order.deliveryPrice ?? null) as any;
+          }
+          if (courierEarning != null) {
+            deliveryProfit = order.deliveryPrice.minus(courierEarning).toNumber();
+          }
+        }
+
+        let prepProfit = 0;
+        if (
+          order.preparerShoppingJson != null &&
+          order.status !== "cancelled" &&
+          order.status !== "rejected" &&
+          order.shop?.name &&
+          ADMIN_SHOP_NAMES.includes(order.shop.name)
+        ) {
+          const json = order.preparerShoppingJson as any;
+          const products = Array.isArray(json?.products) ? json.products : [];
+          const totalProfitAlf = products.reduce((sum: number, p: any) => sum + (Number(p.sellAlf) - Number(p.buyAlf) || 0), 0);
+          prepProfit = totalProfitAlf * ALF_PER_DINAR;
+        }
+
+        if (deliveryProfit === 0 && prepProfit === 0) continue;
+
+        if (!yearsMap.has(y)) yearsMap.set(y, new Map());
+        const monthsMap = yearsMap.get(y)!;
+
+        if (!monthsMap.has(m)) monthsMap.set(m, new Map());
+        const daysMap = monthsMap.get(m)!;
+
+        if (!daysMap.has(d)) daysMap.set(d, { delivery: 0, prep: 0 });
+        const dayStat = daysMap.get(d)!;
+        dayStat.delivery += deliveryProfit;
+        dayStat.prep += prepProfit;
+      }
+
+      const stats: any[] = [];
+      const sortedYears = Array.from(yearsMap.keys()).sort((a, b) => a - b);
+
+      for (const y of sortedYears) {
+        const monthsMap = yearsMap.get(y)!;
+        const monthsList: any[] = [];
+
+        for (let m = 1; m <= 12; m++) {
+          const daysMap = monthsMap.get(m) || new Map<number, { delivery: number; prep: number }>();
+          const daysList: any[] = [];
+
+          const numDays = new Date(y, m, 0).getDate();
+          for (let d = 1; d <= numDays; d++) {
+            const dayStat = daysMap.get(d) || { delivery: 0, prep: 0 };
+            daysList.push({
+              day: d,
+              totalProfit: dayStat.delivery + dayStat.prep,
+              deliveryProfit: dayStat.delivery,
+              prepProfit: dayStat.prep
+            });
+          }
+
+          const totalDelivery = daysList.reduce((sum, d) => sum + d.deliveryProfit, 0);
+          const totalPrep = daysList.reduce((sum, d) => sum + d.prepProfit, 0);
+
+          monthsList.push({
+            month: m,
+            totalProfit: totalDelivery + totalPrep,
+            deliveryProfit: totalDelivery,
+            prepProfit: totalPrep,
+            days: daysList
+          });
+        }
+
+        const totalDelivery = monthsList.reduce((sum, m) => sum + m.deliveryProfit, 0);
+        const totalPrep = monthsList.reduce((sum, m) => sum + m.prepProfit, 0);
+
+        stats.push({
+          year: y,
+          totalProfit: totalDelivery + totalPrep,
+          deliveryProfit: totalDelivery,
+          prepProfit: totalPrep,
+          months: monthsList
+        });
+      }
+
+      return (
+        <div className="space-y-6 animate-in fade-in duration-300" dir="rtl">
+          <p className={ad.muted}>
+            <Link href={`${SECRET_ADMIN_PATH}/reports`} className={ad.link}>
+              ← التقارير
+            </Link>
+          </p>
+
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className={`${ad.h1} flex items-center gap-2`}>
+                <span>📊</span> تقرير الأرباح الشامل والتجهيز
+              </h1>
+              <p className={`mt-2 ${ad.lead}`}>
+                الرسوم البيانية لتحليلات الأرباح السنوية والشهرية واليومية
+              </p>
+            </div>
+          </div>
+
+          {/* شريط تبويب تبديل طرق العرض */}
+          <div className="flex gap-2 border-b border-slate-200 pb-3">
+            <Link
+              href={{ pathname: `${SECRET_ADMIN_PATH}/reports/couriers`, query: { ...sp, view: "table" } }}
+              className="px-4 py-2.5 rounded-2xl text-xs font-black transition-all bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
+            >
+              📋 التفاصيل وجدول الأرباح اليومية
+            </Link>
+            <Link
+              href={{ pathname: `${SECRET_ADMIN_PATH}/reports/couriers`, query: { ...sp, view: "chart" } }}
+              className="px-4 py-2.5 rounded-2xl text-xs font-black transition-all bg-slate-900 text-white shadow-md scale-105"
+            >
+              📈 الرسم البياني (سنوي / شهري / يومي)
+            </Link>
+          </div>
+
+          <ProfitsAnalyticsClient stats={stats} secretAdminPath={SECRET_ADMIN_PATH} />
+        </div>
+      );
+    }
+
 
     const today = new Date();
     // نحدد اليوم الافتراضي بناءً على نوبة العمل (تبدأ 6:00 صباحاً)
@@ -312,7 +479,21 @@ export default async function CombinedReportPage({ searchParams }: Props) {
             <DateFilterForm selectedDayIso={selectedDayIso} />
           </div>
         </div>
-
+        {/* شريط تبويب تبديل طرق العرض */}
+        <div className="flex gap-2 border-b border-slate-200 pb-3">
+          <Link
+            href={{ pathname: `${SECRET_ADMIN_PATH}/reports/couriers`, query: { ...sp, view: "table" } }}
+            className="px-4 py-2.5 rounded-2xl text-xs font-black transition-all bg-slate-900 text-white shadow-md scale-105"
+          >
+            📋 التفاصيل وجدول الأرباح اليومية
+          </Link>
+          <Link
+            href={{ pathname: `${SECRET_ADMIN_PATH}/reports/couriers`, query: { ...sp, view: "chart" } }}
+            className="px-4 py-2.5 rounded-2xl text-xs font-black transition-all bg-white text-slate-605 hover:bg-slate-50 border border-slate-200"
+          >
+            📈 الرسم البياني (سنوي / شهري / يومي)
+          </Link>
+        </div>
         {/* الكروت الإحصائية الشاملة (بدون إكراميات) */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-3xl border border-sky-100 bg-sky-50/50 p-5 shadow-sm">
