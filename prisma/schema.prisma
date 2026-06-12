@@ -878,3 +878,30 @@ model SharedCart {
   status    String   @default("active") // "active" or "ordered"
 }
 
+model CreditBookPartner {
+  id         String                  @id @default(cuid())
+  name       String
+  phone      String?
+  type       String                  // "courier", "preparer", "shop", "customer", "external"
+  externalId String?                 // ID of Courier, CompanyPreparer, Shop, Customer if linked
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
+  transactions CreditBookTransaction[]
+
+  @@unique([type, externalId])
+}
+
+model CreditBookTransaction {
+  id        String            @id @default(cuid())
+  partnerId String
+  amount    Decimal           @db.Decimal(15, 2)
+  kind      String            // "gave" (أعطيت - نطلبه) or "took" (أخذت - يطلبنا / تسديد)
+  note      String?           @db.Text
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  partner   CreditBookPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId])
+}
+
+
