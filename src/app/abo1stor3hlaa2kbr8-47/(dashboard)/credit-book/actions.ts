@@ -62,6 +62,67 @@ async function getShopAutoDebt(shopId: string): Promise<number> {
 // 1. جلب قائمة الأطراف مع احتساب الأرصدة اليدوية والتلقائية
 export async function getPartners(searchQuery?: string, typeFilter?: string): Promise<PartnerWithBalance[]> {
   try {
+    // مزامنة تلقائية سريعة بالخلفية للمحلات والمناديب والمجهزين عند كل تحميل للصفحة
+    try {
+      const [allShops, allCouriers, allPreparers] = await Promise.all([
+        prisma.shop.findMany({ select: { id: true, name: true, phone: true } }),
+        prisma.courier.findMany({ where: { blocked: false }, select: { id: true, name: true, phone: true } }),
+        prisma.companyPreparer.findMany({ select: { id: true, name: true, phone: true } })
+      ]);
+
+      const existingPartners = await prisma.creditBookPartner.findMany({
+        select: { type: true, externalId: true }
+      });
+
+      const existingShops = new Set(existingPartners.filter(p => p.type === "shop").map(p => p.externalId));
+      const existingCouriers = new Set(existingPartners.filter(p => p.type === "courier").map(p => p.externalId));
+      const existingPreparers = new Set(existingPartners.filter(p => p.type === "preparer").map(p => p.externalId));
+
+      const partnersToCreate: any[] = [];
+
+      allShops.forEach(s => {
+        if (!existingShops.has(s.id)) {
+          partnersToCreate.push({
+            name: `${s.name} (محل/مجهز)`,
+            phone: s.phone || null,
+            type: "shop",
+            externalId: s.id
+          });
+        }
+      });
+
+      allCouriers.forEach(c => {
+        if (!existingCouriers.has(c.id)) {
+          partnersToCreate.push({
+            name: `${c.name} (مندوب)`,
+            phone: c.phone,
+            type: "courier",
+            externalId: c.id
+          });
+        }
+      });
+
+      allPreparers.forEach(pr => {
+        if (!existingPreparers.has(pr.id)) {
+          partnersToCreate.push({
+            name: `${pr.name} (مجهز)`,
+            phone: pr.phone,
+            type: "preparer",
+            externalId: pr.id
+          });
+        }
+      });
+
+      if (partnersToCreate.length > 0) {
+        await prisma.creditBookPartner.createMany({
+          data: partnersToCreate,
+          skipDuplicates: true
+        });
+      }
+    } catch (syncErr) {
+      console.error("Auto sync in getPartners failed:", syncErr);
+    }
+
     const whereClause: any = {};
 
     if (searchQuery) {
