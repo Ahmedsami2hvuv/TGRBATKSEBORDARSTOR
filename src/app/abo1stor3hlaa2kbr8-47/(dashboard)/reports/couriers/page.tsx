@@ -8,6 +8,7 @@ import { MONEY_KIND_DELIVERY } from "@/lib/mandoub-money-events";
 import { computeCourierDeliveryEarningDinar } from "@/lib/courier-earnings";
 import { ReportTableClient } from "../preparation/report-table-client";
 import { ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
+import { DateFilterForm } from "./date-filter-form";
 
 export const dynamic = "force-dynamic";
 
@@ -308,20 +309,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
           </div>
 
           <div className="flex items-center gap-3">
-            <form method="get" className="flex items-center gap-2 rounded-2xl bg-white border border-slate-200 p-2 shadow-sm">
-              <span className="text-xs font-black text-slate-500">تغيير اليوم:</span>
-              <input 
-                type="date" 
-                name="day" 
-                defaultValue={selectedDayIso} 
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-extrabold text-slate-800 outline-none focus:border-slate-400"
-                onChange={(e) => {
-                  if (e.target.value) {
-                    e.target.form?.submit();
-                  }
-                }}
-              />
-            </form>
+            <DateFilterForm selectedDayIso={selectedDayIso} />
           </div>
         </div>
 
