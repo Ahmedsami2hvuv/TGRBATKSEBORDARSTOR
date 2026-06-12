@@ -33,11 +33,25 @@ async function getShopAutoDebt(shopId: string): Promise<number> {
       orderSubtotal: { gt: 0 }
     },
     select: {
-      orderSubtotal: true
+      orderSubtotal: true,
+      moneyEvents: {
+        where: {
+          kind: "pickup_out",
+          deletedAt: null
+        },
+        select: {
+          amountDinar: true
+        }
+      }
     }
   });
   
-  return unpaidOrders.reduce((sum, o) => sum + Number(o.orderSubtotal || 0), 0);
+  return unpaidOrders.reduce((sum, o) => {
+    const subtotal = Number(o.orderSubtotal || 0);
+    const pickupPaid = o.moneyEvents.reduce((acc, me) => acc + Number(me.amountDinar || 0), 0);
+    const unpaid = Math.max(0, subtotal - pickupPaid);
+    return sum + unpaid;
+  }, 0);
 }
 
 // 1. جلب قائمة الأطراف مع احتساب الأرصدة اليدوية والتلقائية
@@ -227,25 +241,39 @@ export async function getPartnerDetails(partnerId: string) {
           },
           include: {
             customerRegion: { select: { name: true } },
-            courier: { select: { name: true } }
+            courier: { select: { name: true } },
+            moneyEvents: {
+              where: {
+                kind: "pickup_out",
+                deletedAt: null
+              },
+              select: {
+                amountDinar: true
+              }
+            }
           },
           orderBy: { createdAt: "desc" }
         });
 
         for (const o of unpaidOrders) {
-          const amt = Number(o.orderSubtotal || 0);
-          autoBalance -= amt; // المبالغ يطلبنا بها المحل (took)
+          const subtotal = Number(o.orderSubtotal || 0);
+          const pickupPaid = o.moneyEvents.reduce((acc, me) => acc + Number(me.amountDinar || 0), 0);
+          const amt = Math.max(0, subtotal - pickupPaid);
 
-          autoTransactions.push({
-            id: `auto-order-${o.id}`,
-            partnerId: partner.id,
-            amount: amt,
-            kind: "took", // أخذت = يطلبنا
-            note: `طلب رقم #${o.orderNumber} | نوع الطلب: ${o.orderType || "—"} | المنطقة: ${o.customerRegion?.name || "—"} | المندوب: ${o.courier?.name || "—"}`,
-            createdAt: o.createdAt,
-            updatedAt: o.updatedAt,
-            isAuto: true
-          });
+          if (amt > 0) {
+            autoBalance -= amt; // المبالغ يطلبنا بها المحل (took)
+
+            autoTransactions.push({
+              id: `auto-order-${o.id}`,
+              partnerId: partner.id,
+              amount: amt,
+              kind: "took", // أخذت = يطلبنا
+              note: `طلب رقم #${o.orderNumber} | نوع الطلب: ${o.orderType || "—"} | المنطقة: ${o.customerRegion?.name || "—"} | المندوب: ${o.courier?.name || "—"}`,
+              createdAt: o.createdAt,
+              updatedAt: o.updatedAt,
+              isAuto: true
+            });
+          }
         }
       } catch (e) {
         console.error(e);
