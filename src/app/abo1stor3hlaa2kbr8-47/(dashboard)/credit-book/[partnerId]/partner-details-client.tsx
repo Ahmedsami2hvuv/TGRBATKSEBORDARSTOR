@@ -126,10 +126,11 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
   // تسجيل دفع من الإدارة للطلبات التلقائية للمحلات
   const handleAdminPayOrder = async (tx: Transaction) => {
     const orderId = tx.id.replace("auto-order-", "");
-    const confirmPay = confirm(`هل أنت متأكد من رغبتك في تسجيل عملية دفع لهذا الطلب بقيمة ${formatDinarAsAlfWithUnit(tx.amount)} من طرف الإدارة مباشرة؟`);
+    const paymentAmount = tx.remainingAmount !== undefined ? tx.remainingAmount : tx.amount;
+    const confirmPay = confirm(`هل أنت متأكد من رغبتك في تسجيل عملية دفع لهذا الطلب بقيمة المتبقي ${formatDinarAsAlfWithUnit(paymentAmount)} من طرف الإدارة مباشرة؟`);
     if (!confirmPay) return;
 
-    const res = await payShopOrderFromAdmin(orderId, tx.amount);
+    const res = await payShopOrderFromAdmin(orderId, paymentAmount);
     if (res.success) {
       alert("تم تسجيل عملية الدفع للطلب بنجاح!");
       refreshPartnerData();
@@ -465,6 +466,11 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
                       <p className="text-base font-black tabular-nums text-slate-800">
                         {tx.kind === "took" && !tx.isAuto ? "-" : ""}{formatDinarAsAlfWithUnit(tx.amount)}
                       </p>
+                      {tx.isAuto && tx.id.startsWith("auto-order-") && tx.remainingAmount !== undefined && tx.remainingAmount > 0 && tx.remainingAmount !== tx.amount && (
+                        <p className="text-xs font-black text-rose-600">
+                          المتبقي: {formatDinarAsAlfWithUnit(tx.remainingAmount)}
+                        </p>
+                      )}
                       
                       {!tx.isAuto ? (
                         <div className="flex gap-2 justify-end">
