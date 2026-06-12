@@ -7,7 +7,8 @@ import {
   deleteTransaction, 
   deletePartner, 
   getPartnerDetails,
-  payShopOrderFromAdmin
+  payShopOrderFromAdmin,
+  uploadTransactionImage
 } from "../actions";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { useRouter } from "next/navigation";
@@ -55,6 +56,7 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
   const [kind, setKind] = useState<"gave" | "took">("gave");
   const [note, setNote] = useState("");
   const [date, setDate] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState("");
 
@@ -101,14 +103,32 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
 
     setIsAdding(true);
     setError("");
+
+    let uploadedUrl: string | null = null;
+    if (imageFile) {
+      const formData = new FormData();
+      formData.append("image", imageFile);
+      const uploadRes = await uploadTransactionImage(formData);
+      if (uploadRes.success) {
+        uploadedUrl = uploadRes.url;
+      } else {
+        setError(uploadRes.error || "فشل تحميل الصورة");
+        setIsAdding(false);
+        return;
+      }
+    }
+
     const selectedDate = date ? new Date(date) : undefined;
-    const res = await addTransaction(partner.id, numAmt, kind, note, selectedDate);
+    const res = await addTransaction(partner.id, numAmt, kind, note, selectedDate, uploadedUrl);
     setIsAdding(false);
 
     if (res.success) {
       setAmount("");
       setNote("");
       setDate("");
+      setImageFile(null);
+      const fileInput = document.getElementById("tx-image-input") as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
       refreshPartnerData();
     } else {
       setError(res.error || "حدث خطأ ما");
@@ -281,6 +301,20 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
               />
             </div>
 
+            <div>
+              <label className="block text-xs font-black text-slate-500 mb-1.5">إرفاق صورة المعاملة (اختياري)</label>
+              <input
+                id="tx-image-input"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setImageFile(file);
+                }}
+                className="w-full px-4 py-2 rounded-2xl border border-slate-200 text-sm focus:outline-none bg-white text-right"
+              />
+            </div>
+
             {error && <p className="text-xs font-bold text-rose-600">{error}</p>}
 
             <button
@@ -336,6 +370,16 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
                           : tx.kind === "gave" ? "🟢 أعطيت (نطلبه)" : "🔴 أخذت (يطلبنا)"}
                       </span>
                       <p className="text-sm font-bold text-slate-800 mt-2">{tx.note || "بدون بيان وملاحظات"}</p>
+                      {tx.imageUrl && (
+                        <div className="mt-2">
+                          <img 
+                            src={tx.imageUrl} 
+                            alt="مرفق المعاملة" 
+                            className="max-h-24 rounded-lg object-contain border border-slate-100 shadow-sm cursor-zoom-in"
+                            onClick={() => window.open(tx.imageUrl!, "_blank")}
+                          />
+                        </div>
+                      )}
                       <p className="text-[10px] text-slate-400 font-medium mt-1">
                         التاريخ: {new Date(tx.createdAt).toLocaleDateString("ar-EG")} | {new Date(tx.createdAt).toLocaleTimeString("ar-EG", {hour: "2-digit", minute: "2-digit"})}
                       </p>

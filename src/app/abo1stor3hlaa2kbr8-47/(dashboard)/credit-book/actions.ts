@@ -391,7 +391,7 @@ export async function createPartner(name: string, phone: string | null, type: Pa
 }
 
 // 4. إضافة معاملة مالية
-export async function addTransaction(partnerId: string, amount: number, kind: "gave" | "took", note: string | null, date?: Date) {
+export async function addTransaction(partnerId: string, amount: number, kind: "gave" | "took", note: string | null, date?: Date, imageUrl?: string | null) {
   try {
     if (amount <= 0) {
       return { success: false, error: "المبلغ يجب أن يكون أكبر من صفر" };
@@ -403,6 +403,7 @@ export async function addTransaction(partnerId: string, amount: number, kind: "g
         amount,
         kind,
         note: note?.trim() || null,
+        imageUrl: imageUrl || null,
         createdAt: date || new Date(),
       },
     });
@@ -416,8 +417,30 @@ export async function addTransaction(partnerId: string, amount: number, kind: "g
   }
 }
 
+// دالة لرفع صور المعاملات اليدوية
+export async function uploadTransactionImage(formData: FormData) {
+  try {
+    const { isAdminSession } = await import("@/lib/admin-session");
+    if (!(await isAdminSession())) {
+      return { success: false, error: "غير مصرح لك بالقيام بهذا الإجراء" };
+    }
+
+    const file = formData.get("image");
+    if (!(file instanceof File) || file.size === 0) {
+      return { success: true, url: null };
+    }
+
+    const { saveCustomerProfilePhotoUploaded } = await import("@/lib/order-image");
+    const photoUrl = await saveCustomerProfilePhotoUploaded(file, 20); // 20 MB max
+    return { success: true, url: photoUrl };
+  } catch (error) {
+    console.error("Error in uploadTransactionImage:", error);
+    return { success: false, error: "فشل تحميل الصورة" };
+  }
+}
+
 // 5. تعديل معاملة مالية
-export async function updateTransaction(transactionId: string, amount: number, note: string | null, kind: "gave" | "took", date?: Date) {
+export async function updateTransaction(transactionId: string, amount: number, note: string | null, kind: "gave" | "took", date?: Date, imageUrl?: string | null) {
   try {
     if (amount <= 0) {
       return { success: false, error: "المبلغ يجب أن يكون أكبر من صفر" };
@@ -429,6 +452,7 @@ export async function updateTransaction(transactionId: string, amount: number, n
         amount,
         note: note?.trim() || null,
         kind,
+        imageUrl: imageUrl !== undefined ? imageUrl : undefined,
         createdAt: date || undefined,
       },
     });
