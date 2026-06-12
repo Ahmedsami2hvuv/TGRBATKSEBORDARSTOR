@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import { InlineLandmarkEditor } from "@/components/inline-landmark-editor";
@@ -134,7 +134,7 @@ export function OrderViewContent({
 
   const [customerDebt, setCustomerDebt] = useState<number | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (order.customerPhone) {
       import("@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credit-book/actions").then(({ getCustomerDebtByPhone }) => {
         getCustomerDebtByPhone(order.customerPhone).then(setCustomerDebt);
