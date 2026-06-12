@@ -588,3 +588,45 @@ export async function syncSystemPartners() {
     return { success: false, error: "حدث خطأ أثناء المزامنة" };
   }
 }
+
+// تسجيل عملية دفع للطلب مباشرة من الإدارة (للمحلات) دون الحاجة لمندوب أو مجهز
+export async function payShopOrderFromAdmin(orderId: string, amount: number) {
+  try {
+    const { isAdminSession } = await import("@/lib/admin-session");
+    if (!(await isAdminSession())) {
+      return { success: false, error: "غير مصرح لك بالقيام بهذا الإجراء" };
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId }
+    });
+
+    if (!order) {
+      return { success: false, error: "الطلب غير موجود" };
+    }
+
+    // تسجيل حركة صادر (pickup_out) بقيمة المبلغ
+    await prisma.orderCourierMoneyEvent.create({
+      data: {
+        orderId,
+        courierId: null,
+        kind: "pickup_out",
+        amountDinar: new Decimal(amount),
+        expectedDinar: order.orderSubtotal,
+        matchesExpected: true,
+        mismatchReason: "",
+        mismatchNote: "تم الدفع وتصفية الحساب مباشرة من الإدارة (دفتر الديون)",
+      }
+    });
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/credit-book/${order.shopId}`);
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${orderId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error in payShopOrderFromAdmin:", error);
+    return { success: false, error: "حدث خطأ أثناء تسجيل عملية الدفع" };
+  }
+}
+

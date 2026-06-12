@@ -6,7 +6,8 @@ import {
   updateTransaction, 
   deleteTransaction, 
   deletePartner, 
-  getPartnerDetails 
+  getPartnerDetails,
+  payShopOrderFromAdmin
 } from "../actions";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { useRouter } from "next/navigation";
@@ -68,6 +69,21 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
     const updated = await getPartnerDetails(partner.id);
     if (updated) {
       setPartner(updated);
+    }
+  };
+
+  // تسجيل دفع من الإدارة للطلبات التلقائية للمحلات
+  const handleAdminPayOrder = async (tx: Transaction) => {
+    const orderId = tx.id.replace("auto-order-", "");
+    const confirmPay = confirm(`هل أنت متأكد من رغبتك في تسجيل عملية دفع لهذا الطلب بقيمة ${formatDinarAsAlfWithUnit(tx.amount)} من طرف الإدارة مباشرة؟`);
+    if (!confirmPay) return;
+
+    const res = await payShopOrderFromAdmin(orderId, tx.amount);
+    if (res.success) {
+      alert("تم تسجيل عملية الدفع للطلب بنجاح!");
+      refreshPartnerData();
+    } else {
+      alert(res.error || "حدث خطأ أثناء تسجيل عملية الدفع");
     }
   };
 
@@ -327,7 +343,7 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
                         {tx.kind === "took" && !tx.isAuto ? "-" : ""}{formatDinarAsAlfWithUnit(tx.amount)}
                       </p>
                       
-                      {!tx.isAuto && (
+                      {!tx.isAuto ? (
                         <div className="flex gap-2 justify-end">
                           <button
                             onClick={() => handleStartEdit(tx)}
@@ -342,6 +358,17 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
                             🗑️ حذف
                           </button>
                         </div>
+                      ) : (
+                        partner.type === "shop" && tx.id.startsWith("auto-order-") && (
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              onClick={() => handleAdminPayOrder(tx)}
+                              className="px-2.5 py-1.5 text-[10px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-md shadow-indigo-900/10 flex items-center gap-1"
+                            >
+                              💵 دفع من الإدارة
+                            </button>
+                          </div>
+                        )
                       )}
                     </div>
                   </div>

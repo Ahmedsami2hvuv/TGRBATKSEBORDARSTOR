@@ -174,7 +174,7 @@ export default async function EditOrderPage({ params }: Props) {
     deletedReason: e.deletedReason,
     deletedByDisplayName: e.deletedByDisplayName,
     performedByDisplayName:
-      e.recordedByCompanyPreparer?.name?.trim() || e.courier?.name?.trim() || "—",
+      e.recordedByCompanyPreparer?.name?.trim() || e.courier?.name?.trim() || (!e.courierId && !e.recordedByCompanyPreparerId ? "الإدارة" : "—"),
     recordedByCompanyPreparerId: e.recordedByCompanyPreparerId ?? null,
   }));
 

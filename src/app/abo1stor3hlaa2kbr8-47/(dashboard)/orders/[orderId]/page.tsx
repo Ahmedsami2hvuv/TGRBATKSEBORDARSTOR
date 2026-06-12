@@ -118,7 +118,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
  amountDinar: Number(e.amountDinar),
  expectedDinar: e.expectedDinar != null ? Number(e.expectedDinar) : null,
  recordedAt: e.createdAt.toISOString(),
- performedByDisplayName: e.recordedByCompanyPreparer?.name || e.courier?.name || "—",
+ performedByDisplayName: e.recordedByCompanyPreparer?.name || e.courier?.name || (!e.courierId && !e.recordedByCompanyPreparerId ? "الإدارة" : "—"),
  }));
 
  const adminCustomWaButtons = waButtonSettings.flatMap(r => {
