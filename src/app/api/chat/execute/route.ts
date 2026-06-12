@@ -351,6 +351,13 @@ async function executeBulkUpdateStatus(payload: any, actor: any) {
     const status = payload.status || "delivered";
 
     if (actor.role === "mandoub") {
+        const ordersToUpdate = await prisma.order.findMany({
+            where: {
+                assignedCourierId: actor.actorId,
+                status: { in: ["assigned", "delivering"] }
+            },
+            select: { id: true }
+        });
         const result = await prisma.order.updateMany({
             where: {
                 assignedCourierId: actor.actorId,
@@ -358,6 +365,16 @@ async function executeBulkUpdateStatus(payload: any, actor: any) {
             },
             data: { status: status === "delivered" ? "delivered" : status }
         });
+        if (status === "delivered" && ordersToUpdate.length > 0) {
+            try {
+                const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+                for (const o of ordersToUpdate) {
+                    await handleOrderDelivered(o.id);
+                }
+            } catch (err) {
+                console.error("Hook error in executeBulkUpdateStatus:", err);
+            }
+        }
         return { ok: true, text: `تم تحديث ${result.count} طلبات إلى حالة تم الاستلام بنجاح.` };
     }
 

@@ -8,7 +8,7 @@ import { getPublicAppUrl } from "@/lib/app-url";
 import { Decimal } from "@prisma/client/runtime/library";
 import { CourierWalletMiscDirection } from "@prisma/client";
 
-export type PartnerType = "courier" | "preparer" | "shop" | "customer" | "external";
+export type PartnerType = "courier" | "preparer" | "shop" | "customer" | "external" | "supplier";
 
 export interface PartnerWithBalance {
   id: string;
@@ -614,6 +614,18 @@ export async function getPartnerDetails(partnerId: string) {
         } catch (e) {
           console.error(e);
         }
+      } else if (partner.type === "supplier") {
+        try {
+          const supp = await prisma.storeSupplier.findUnique({
+            where: { id: partner.externalId },
+            select: { portalToken: true }
+          });
+          if (supp?.portalToken) {
+            portalUrl = `${baseUrl}/supplier?p=${partner.externalId}&t=${supp.portalToken}`;
+          }
+        } catch (e) {
+          console.error(e);
+        }
       }
     }
 
@@ -1122,6 +1134,15 @@ export async function getUnaddedSystemPartners(type: PartnerType) {
         select: { id: true, name: true, phone: true },
         orderBy: { name: "asc" },
         take: 100
+      });
+      return list;
+    }
+
+    if (type === "supplier") {
+      const list = await prisma.storeSupplier.findMany({
+        where: { id: { notIn: addedExternalIds } },
+        select: { id: true, name: true, phone: true },
+        orderBy: { name: "asc" }
       });
       return list;
     }

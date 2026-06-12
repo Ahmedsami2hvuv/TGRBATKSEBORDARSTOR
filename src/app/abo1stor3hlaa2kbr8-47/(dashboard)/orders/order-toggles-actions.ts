@@ -85,5 +85,11 @@ export async function adminMarkOrderDelivered(formData: FormData): Promise<void>
     where: { id: orderId },
     data: { status: "delivered" },
   });
+  try {
+    const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+    await handleOrderDelivered(orderId);
+  } catch (err) {
+    console.error("Hook error in adminMarkOrderDelivered:", err);
+  }
   revalidateOrderPaths(orderId);
 }

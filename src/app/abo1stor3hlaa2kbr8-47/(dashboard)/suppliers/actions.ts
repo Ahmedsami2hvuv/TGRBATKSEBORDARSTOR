@@ -19,7 +19,7 @@ export async function createStoreSupplier(_prev: SupplierFormState, formData: Fo
 
     if (!name) return { error: "الاسم مطلوب" };
 
-    await prisma.storeSupplier.create({
+    const supplier = await prisma.storeSupplier.create({
       data: {
         name: name,
         phone: phone,
@@ -27,6 +27,16 @@ export async function createStoreSupplier(_prev: SupplierFormState, formData: Fo
         active: true,
       }
     });
+
+    await prisma.companyPreparer.create({
+      data: {
+        id: supplier.id,
+        name: supplier.name,
+        phone: supplier.phone,
+        active: true,
+        notes: `[SUPPLIER]`,
+      }
+    }).catch(err => console.error("Failed to auto-create CompanyPreparer for supplier:", err));
 
     revalidatePath(`${SECRET_ADMIN_PATH}/suppliers`);
     return { ok: true };
@@ -56,6 +66,22 @@ export async function updateStoreSupplier(_prev: SupplierFormState, formData: Fo
       }
     });
 
+    await prisma.companyPreparer.upsert({
+      where: { id },
+      create: {
+        id,
+        name,
+        phone,
+        active,
+        notes: `[SUPPLIER]`,
+      },
+      update: {
+        name,
+        phone,
+        active
+      }
+    }).catch(err => console.error("Failed to auto-update/upsert CompanyPreparer for supplier:", err));
+
     revalidatePath(`${SECRET_ADMIN_PATH}/suppliers`);
     return { ok: true };
   } catch (e) {
@@ -70,6 +96,8 @@ export async function deleteStoreSupplier(_prev: SupplierFormState, formData: Fo
     if (!id) return { error: "المعرف مطلوب" };
 
     await prisma.storeSupplier.delete({ where: { id } });
+
+    await prisma.companyPreparer.delete({ where: { id } }).catch(() => {});
 
     revalidatePath(`${SECRET_ADMIN_PATH}/suppliers`);
     return { ok: true };

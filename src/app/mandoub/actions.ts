@@ -117,6 +117,13 @@ export async function markOrderDelivered(formData: FormData) {
     data: { status: "delivered" },
   });
 
+  try {
+    const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+    await handleOrderDelivered(orderId);
+  } catch (err) {
+    console.error("Hook error in mandoub/markOrderDelivered:", err);
+  }
+
   revalidateAdminTrackingForStatusChange();
   revalidateMandoubPaths(nextRaw);
   redirect(safeMandoubReturn(nextRaw));

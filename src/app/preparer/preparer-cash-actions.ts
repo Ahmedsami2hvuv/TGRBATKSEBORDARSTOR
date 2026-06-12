@@ -280,6 +280,12 @@ export async function submitPreparerDeliveryMoney(
           },
         });
       });
+      try {
+        const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+        await handleOrderDelivered(orderId);
+      } catch (err) {
+        console.error("Hook error in submitPreparerDeliveryMoney freePickup:", err);
+      }
       revalidatePreparerPaths(nextRaw);
     } else {
       const parsed = parseAlfInputToDinarDecimalRequired(amountRaw);
@@ -313,6 +319,14 @@ export async function submitPreparerDeliveryMoney(
           });
         }
       });
+      if (advanceStatus === "delivered" && a.order.status === "delivering") {
+        try {
+          const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+          await handleOrderDelivered(orderId);
+        } catch (err) {
+          console.error("Hook error in submitPreparerDeliveryMoney standard:", err);
+        }
+      }
 
       revalidatePreparerPaths(nextRaw);
     }

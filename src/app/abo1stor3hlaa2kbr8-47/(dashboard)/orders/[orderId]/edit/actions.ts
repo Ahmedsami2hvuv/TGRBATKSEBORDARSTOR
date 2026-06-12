@@ -341,6 +341,15 @@ export async function updateOrderAdmin(
     await syncOrderCourierMoneyExpectations(tx, orderId);
   });
 
+  if (status === "delivered") {
+    try {
+      const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+      await handleOrderDelivered(orderId);
+    } catch (err) {
+      console.error("Hook error in edit order status change:", err);
+    }
+  }
+
   // إشعار الموظف في حال تغير حالة الطلب
   if (existing.routeMode === "double" && existing.preparerShoppingJson && typeof existing.preparerShoppingJson === "object") {
     const json = existing.preparerShoppingJson as any;

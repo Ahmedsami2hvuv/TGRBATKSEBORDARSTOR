@@ -170,6 +170,7 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
     shop: "محل",
     customer: "زبون",
     external: "طرف خارجي",
+    supplier: "مورد",
   };
 
   const typeBadgeStyles: Record<PartnerType, string> = {
@@ -178,6 +179,7 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
     shop: "bg-amber-50 text-amber-700 border border-amber-200",
     customer: "bg-emerald-50 text-emerald-700 border border-emerald-200",
     external: "bg-slate-100 text-slate-700 border border-slate-200",
+    supplier: "bg-pink-50 text-pink-700 border border-pink-200",
   };
 
   return (
@@ -242,6 +244,7 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
             <option value="preparer">المجهزين فقط</option>
             <option value="shop">المحلات فقط</option>
             <option value="customer">الزبائن فقط</option>
+            <option value="supplier">الموردين فقط</option>
             <option value="external">أطراف خارجية</option>
           </select>
         </div>
@@ -445,6 +448,7 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
                   <option value="shop">محل</option>
                   <option value="preparer">مجهز</option>
                   <option value="courier">مندوب</option>
+                  <option value="supplier">مورد</option>
                 </select>
               </div>
 
