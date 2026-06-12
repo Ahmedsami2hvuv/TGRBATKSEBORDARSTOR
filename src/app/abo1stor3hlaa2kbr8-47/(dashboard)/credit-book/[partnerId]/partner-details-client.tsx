@@ -67,6 +67,9 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState("");
 
+  const [showCalc, setShowCalc] = useState(false);
+  const [calcExpr, setCalcExpr] = useState("");
+
   const handleOpenForm = (selectedKind: "gave" | "took") => {
     setKind(selectedKind);
     setIsFormOpen(true);
@@ -150,7 +153,30 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
   // تسجيل معاملة جديدة
   const handleAddTx = async (e: React.FormEvent) => {
     e.preventDefault();
-    const numAmt = parseFloat(amount.replace(/,/g, ""));
+    
+    let parsedAmountStr = amount.trim();
+    let parsedNote = note.trim();
+
+    // البحث عن أول تسلسل للأرقام (والذي قد يحتوي على فواصل أو نقاط)
+    const numRegex = /[\d,]+(?:\.\d+)?/;
+    const match = parsedAmountStr.match(numRegex);
+    if (match) {
+      const matchedNumStr = match[0];
+      const cleanNumStr = matchedNumStr.replace(/,/g, "");
+      const parsedVal = parseFloat(cleanNumStr);
+      if (!isNaN(parsedVal)) {
+        // استخلاص النص المتبقي كبيان أو ملاحظات
+        const textPart = parsedAmountStr.replace(matchedNumStr, "").trim();
+        if (textPart) {
+          parsedAmountStr = cleanNumStr;
+          parsedNote = parsedNote ? `${textPart} - ${parsedNote}` : textPart;
+        } else {
+          parsedAmountStr = cleanNumStr;
+        }
+      }
+    }
+
+    const numAmt = parseFloat(parsedAmountStr);
     if (isNaN(numAmt) || numAmt <= 0) {
       setError("الرجاء إدخال مبلغ صحيح أكبر من الصفر");
       return;
@@ -174,7 +200,7 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
     }
 
     const selectedDate = date ? new Date(date) : undefined;
-    const res = await addTransaction(partner.id, numAmt, kind, note, selectedDate, uploadedUrl);
+    const res = await addTransaction(partner.id, numAmt, kind, parsedNote, selectedDate, uploadedUrl);
     setIsAdding(false);
 
     if (res.success) {
@@ -400,13 +426,18 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
 
       {/* نموذج إضافة معاملة جديدة بالكامل بشكل أفقي - يتم فتحه فقط عند النقر على الأزرار في الأعلى */}
       {isFormOpen && (
-        <div id="manual-tx-form" className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-right animate-in fade-in slide-in-from-top-4 duration-200">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 pb-4 border-b border-slate-100">
+        <div id="manual-tx-form" className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-right animate-in fade-in slide-in-from-top-4 duration-200 space-y-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2 pb-4 border-b border-slate-100">
             <div className="flex items-center gap-3">
-              <h3 className="text-md font-black text-slate-800">✍️ تسجيل معاملة يدوية جديدة</h3>
+              <h3 className="text-md font-black text-slate-800">
+                ✍️ تسجيل {kind === "gave" ? "🟢 أعطيت (نطلبه)" : "🔴 أخذت (يطلبنا)"} جديد
+              </h3>
               <button
                 type="button"
-                onClick={() => setIsFormOpen(false)}
+                onClick={() => {
+                  setIsFormOpen(false);
+                  setShowCalc(false);
+                }}
                 className="text-xs font-bold text-slate-400 hover:text-rose-600 transition"
               >
                 ❌ إغلاق
@@ -433,92 +464,188 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
             </div>
           </div>
 
-          <form onSubmit={handleAddTx} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-4 items-end">
-            <div>
-              <label className="block text-xs font-black text-slate-500 mb-1.5">قيمة المبلغ</label>
-              <input
-                type="text"
-                required
-                placeholder="مثال: 50,000"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm font-semibold focus:outline-none focus:border-indigo-500 text-left"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-black text-slate-500 mb-1.5">نوع المعاملة</label>
-              <div className="grid grid-cols-2 gap-2">
+          {/* الحاسبة الذكية المدمجة */}
+          {showCalc && (
+            <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-2xl text-right animate-in zoom-in-95 duration-150 max-w-sm ml-auto">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-xs font-black text-slate-500">🧮 حاسبة سريعة للمعاملة</span>
+                <button 
+                  type="button" 
+                  onClick={() => setShowCalc(false)} 
+                  className="text-[10px] font-bold text-slate-400 hover:text-rose-600 transition"
+                >
+                  إغلاق ❌
+                </button>
+              </div>
+              <div className="bg-white border border-slate-200 p-3 rounded-xl mb-3 text-left font-mono text-lg font-bold text-slate-800 break-all select-all min-h-[44px] flex items-center justify-end">
+                {calcExpr || "0"}
+              </div>
+              <div className="grid grid-cols-4 gap-2 font-black">
+                {["7", "8", "9", "/"].map((char) => (
+                  <button
+                    key={char}
+                    type="button"
+                    onClick={() => setCalcExpr(prev => prev + char)}
+                    className="p-3 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-sm transition text-slate-800"
+                  >
+                    {char}
+                  </button>
+                ))}
+                {["4", "5", "6", "*"].map((char) => (
+                  <button
+                    key={char}
+                    type="button"
+                    onClick={() => setCalcExpr(prev => prev + char)}
+                    className="p-3 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-sm transition text-slate-800"
+                  >
+                    {char}
+                  </button>
+                ))}
+                {["1", "2", "3", "-"].map((char) => (
+                  <button
+                    key={char}
+                    type="button"
+                    onClick={() => setCalcExpr(prev => prev + char)}
+                    className="p-3 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-sm transition text-slate-800"
+                  >
+                    {char}
+                  </button>
+                ))}
+                {["0", ".", "C", "+"].map((char) => (
+                  <button
+                    key={char}
+                    type="button"
+                    onClick={() => {
+                      if (char === "C") {
+                        setCalcExpr("");
+                      } else {
+                        setCalcExpr(prev => prev + char);
+                      }
+                    }}
+                    className="p-3 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-sm transition text-slate-800"
+                  >
+                    {char}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-3 font-black">
                 <button
                   type="button"
-                  onClick={() => setKind("gave")}
-                  className={`py-2.5 text-xs font-black rounded-xl border text-center transition ${
-                    kind === "gave"
-                      ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
+                  onClick={() => {
+                    try {
+                      if (!calcExpr) return;
+                      if (!/^[0-9+\-*/().\s]+$/.test(calcExpr)) {
+                        alert("تعبير رياضي غير صالح");
+                        return;
+                      }
+                      const result = Function(`"use strict"; return (${calcExpr})`)();
+                      setCalcExpr(String(result));
+                    } catch (err) {
+                      alert("خطأ في العملية الحسابية");
+                    }
+                  }}
+                  className="py-2.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs rounded-xl transition"
                 >
-                  🟢 أعطيت (نطلبه)
+                  = احسب
                 </button>
                 <button
                   type="button"
-                  onClick={() => setKind("took")}
-                  className={`py-2.5 text-xs font-black rounded-xl border text-center transition ${
-                    kind === "took"
-                      ? "bg-rose-50 border-rose-300 text-rose-700"
-                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
+                  onClick={() => {
+                    try {
+                      if (!calcExpr) return;
+                      if (!/^[0-9+\-*/().\s]+$/.test(calcExpr)) {
+                        alert("تعبير رياضي غير صالح");
+                        return;
+                      }
+                      const result = Function(`"use strict"; return (${calcExpr})`)();
+                      setAmount(String(result));
+                      setShowCalc(false);
+                    } catch (err) {
+                      alert("خطأ في العملية الحسابية");
+                    }
+                  }}
+                  className="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded-xl transition"
                 >
-                  🔴 أخذت (يطلبنا)
+                  📥 إدخال المبلغ
                 </button>
               </div>
             </div>
+          )}
 
+          <form onSubmit={handleAddTx} className="space-y-4 max-w-xl">
+            {/* 1. سعر الفاتورة مع زر الحاسبة */}
             <div>
-              <label className="block text-xs font-black text-slate-500 mb-1.5">تاريخ المعاملة (اختياري)</label>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="block text-xs font-black text-slate-500">سعر الفاتورة</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCalcExpr("");
+                    setShowCalc(!showCalc);
+                  }}
+                  className="text-xs font-black text-indigo-600 hover:text-indigo-800 transition flex items-center gap-1"
+                >
+                  🧮 فتح الحاسبة
+                </button>
+              </div>
               <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 text-right bg-white"
+                type="text"
+                required
+                placeholder="أدخل السعر (مثال: 50,000 أو سلفة 25000)"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm font-semibold focus:outline-none focus:border-indigo-500 text-right bg-slate-50/50"
               />
             </div>
 
+            {/* 2. بيان أو ملاحظات */}
             <div>
-              <label className="block text-xs font-black text-slate-500 mb-1.5">بيان أو ملاحظات</label>
-              <input
-                type="text"
+              <label className="block text-xs font-black text-slate-500 mb-1.5">بيان أو ملاحظات (التفاصيل)</label>
+              <textarea
                 placeholder="تفاصيل المعاملة..."
+                rows={2}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 text-right"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-black text-slate-500 mb-1.5">إرفاق صورة المعاملة (اختياري)</label>
-              <input
-                id="tx-image-input"
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  setImageFile(file);
-                }}
-                className="w-full px-3 py-1.5 rounded-2xl border border-slate-200 text-xs focus:outline-none bg-white text-right"
-              />
+            {/* 3. تاريخ المعاملة وصورة المعاملة (جنباً إلى جنب) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-black text-slate-500 mb-1.5">تاريخ المعاملة (اختياري)</label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 text-right bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black text-slate-500 mb-1.5">إرفاق صورة المعاملة (اختياري)</label>
+                <input
+                  id="tx-image-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setImageFile(file);
+                  }}
+                  className="w-full px-4 py-2 rounded-2xl border border-slate-200 text-xs focus:outline-none bg-white text-right"
+                />
+              </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              {error && <p className="text-[10px] font-bold text-rose-600 leading-tight">{error}</p>}
-              <button
-                type="submit"
-                disabled={isAdding}
-                className="w-full px-4 py-3 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition disabled:opacity-50 shadow-md shadow-indigo-900/10"
-              >
-                {isAdding ? "جاري الحفظ..." : "حفظ المعاملة"}
-              </button>
-            </div>
+            {error && <p className="text-xs font-bold text-rose-600">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={isAdding}
+              className="w-full px-4 py-3 text-sm font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition disabled:opacity-50 shadow-md shadow-indigo-900/10"
+            >
+              {isAdding ? "جاري الحفظ..." : "حفظ المعاملة بالدفتر"}
+            </button>
           </form>
         </div>
       )}
