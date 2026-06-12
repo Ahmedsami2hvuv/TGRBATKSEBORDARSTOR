@@ -11,7 +11,8 @@ import {
   payShopOrderFromAdmin,
   uploadTransactionImage,
   updateAdminPaymentEvent,
-  deleteAdminPaymentEvent
+  deleteAdminPaymentEvent,
+  zeroPartnerAccount
 } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credit-book/actions";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { useRouter } from "next/navigation";
@@ -248,19 +249,15 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
       return;
     }
 
-    const confirmZero = confirm(`هل أنت متأكد من رغبتك في تصفير حساب الشريك "${partner.name}" بقيمة ${formatDinarAsAlfWithUnit(Math.abs(partner.balance))}؟ سيقوم النظام بإضافة معاملة موازنة لتصفية الرصيد إلى صفر.`);
+    const confirmZero = confirm(`هل أنت متأكد من رغبتك في تصفير حساب الشريك "${partner.name}" بقيمة ${formatDinarAsAlfWithUnit(Math.abs(partner.balance))}؟ سيقوم النظام بتسديد كافة المعاملات والطلبات غير المدفوعة وتصفية الرصيد بالكامل.`);
     if (!confirmZero) return;
 
-    const zeroAmt = Math.abs(partner.balance);
-    const zeroKind = partner.balance > 0 ? "took" : "gave";
-    const zeroNote = "تصفير وتصفية الحساب بالكامل (موازنة تلقائية)";
-
     setIsAdding(true);
-    const res = await addTransaction(partner.id, zeroAmt, zeroKind, zeroNote, new Date(), null);
+    const res = await zeroPartnerAccount(partner.id);
     setIsAdding(false);
 
     if (res.success) {
-      alert("تم تصفير الحساب بنجاح!");
+      alert("تم تصفير الحساب وتصفية جميع الديون والطلبات المرتبطة به بنجاح!");
       refreshPartnerData();
     } else {
       alert(res.error || "حدث خطأ أثناء تصفير الحساب");

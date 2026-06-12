@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { computeMandoubAdminTotalAllTimeDinar, computeMandoubWalletRemainAllTimeDinar } from "@/lib/mandoub-wallet-carry";
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
 import { Decimal } from "@prisma/client/runtime/library";
+import { CourierWalletMiscDirection } from "@prisma/client";
 
 export type PartnerType = "courier" | "preparer" | "shop" | "customer" | "external";
 
@@ -1144,6 +1145,132 @@ export async function deleteAdminPaymentEvent(eventId: string) {
   } catch (error) {
     console.error("Error in deleteAdminPaymentEvent:", error);
     return { success: false, error: "حدث خطأ أثناء حذف المعاملة" };
+  }
+}
+
+// 13. تصفير وتصفية حساب الشريك (مع تسديد الطلبات التلقائية للمحلات وحركات محفظة المناديب)
+export async function zeroPartnerAccount(partnerId: string) {
+  try {
+    const { isAdminSession } = await import("@/lib/admin-session");
+    if (!(await isAdminSession())) {
+      return { success: false, error: "غير مصرح لك بالقيام بهذا الإجراء" };
+    }
+
+    const partner = await prisma.creditBookPartner.findUnique({
+      where: { id: partnerId },
+      include: {
+        transactions: {
+          select: {
+            amount: true,
+            kind: true
+          }
+        }
+      }
+    });
+
+    if (!partner) {
+      return { success: false, error: "الشريك غير موجود" };
+    }
+
+    // 1. حساب الرصيد اليدوي الحالي
+    let totalGave = 0;
+    let totalTook = 0;
+    partner.transactions.forEach((t) => {
+      const amt = Number(t.amount);
+      if (t.kind === "gave") {
+        totalGave += amt;
+      } else if (t.kind === "took") {
+        totalTook += amt;
+      }
+    });
+    const manualBalance = totalGave - totalTook;
+
+    // 2. إذا كان شريكا من نوع محل (shop)، نقوم بتسديد كافة طلباته النشطة غير المسددة في النظام
+    if (partner.type === "shop" && partner.externalId) {
+      const unpaidOrders = await prisma.order.findMany({
+        where: {
+          shopId: partner.externalId,
+          shopCostPaidAt: null,
+          status: { notIn: ["cancelled"] },
+          orderSubtotal: { gt: 0 }
+        },
+        include: {
+          moneyEvents: {
+            where: { kind: "pickup_out", deletedAt: null }
+          }
+        }
+      });
+
+      for (const order of unpaidOrders) {
+        const subtotal = Number(order.orderSubtotal || 0);
+        const pickupPaid = order.moneyEvents.reduce((acc, me) => acc + Number(me.amountDinar || 0), 0);
+        const remaining = subtotal - pickupPaid;
+
+        if (remaining > 0) {
+          // تسجيل حركة صادر (pickup_out) بقيمة المبلغ المتبقي للطلب
+          await prisma.orderCourierMoneyEvent.create({
+            data: {
+              orderId: order.id,
+              courierId: null,
+              kind: "pickup_out",
+              amountDinar: new Decimal(remaining),
+              expectedDinar: order.orderSubtotal,
+              matchesExpected: true,
+              mismatchReason: "",
+              mismatchNote: "تم التسديد وتصفية الحساب تلقائياً عبر عملية تصفير الحساب في دفتر الديون",
+            }
+          });
+        }
+      }
+    }
+
+    // 3. إذا كان شريكا من نوع مندوب (courier)، نقوم بتصفية مبالغ الإدارة الخاصة به في النظام
+    if (partner.type === "courier" && partner.externalId) {
+      const adminTotal = await computeMandoubAdminTotalAllTimeDinar(partner.externalId);
+      const adminTotalNum = adminTotal.toNumber();
+      if (adminTotalNum !== 0) {
+        // إضافة قيد محفظة منوع لتصفية حساب الإدارة
+        const direction = adminTotalNum > 0 ? CourierWalletMiscDirection.give : CourierWalletMiscDirection.take;
+        await prisma.courierWalletMiscEntry.create({
+          data: {
+            courierId: partner.externalId,
+            direction,
+            amountDinar: new Decimal(Math.abs(adminTotalNum)),
+            label: "تسوية وتصفير الحساب عبر دفتر الديون (موازنة تلقائية)"
+          }
+        });
+      }
+    }
+
+    // 4. تصفية الرصيد اليدوي بإضافة معاملة موازنة يدوية إذا كان غير صفري
+    if (manualBalance !== 0) {
+      const zeroAmt = Math.abs(manualBalance);
+      const zeroKind = manualBalance > 0 ? "took" : "gave";
+      const zeroNote = "تصفير وتصفية الرصيد اليدوي بالكامل (موازنة تلقائية)";
+
+      await prisma.creditBookTransaction.create({
+        data: {
+          partnerId: partner.id,
+          amount: zeroAmt,
+          kind: zeroKind,
+          note: zeroNote,
+          createdAt: new Date(),
+        }
+      });
+    }
+
+    // تحديث تاريخ تعديل الشريك
+    await prisma.creditBookPartner.update({
+      where: { id: partnerId },
+      data: { updatedAt: new Date() }
+    });
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/credit-book/${partnerId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error in zeroPartnerAccount:", error);
+    return { success: false, error: "حدث خطأ أثناء تصفير الحساب" };
   }
 }
 
