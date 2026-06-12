@@ -241,6 +241,32 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
     }
   };
 
+  // تصفير وتصفية حساب الشريك
+  const handleZeroAccount = async () => {
+    if (partner.balance === 0) {
+      alert("الحساب مصفّر بالفعل!");
+      return;
+    }
+
+    const confirmZero = confirm(`هل أنت متأكد من رغبتك في تصفير حساب الشريك "${partner.name}" بقيمة ${formatDinarAsAlfWithUnit(Math.abs(partner.balance))}؟ سيقوم النظام بإضافة معاملة موازنة لتصفية الرصيد إلى صفر.`);
+    if (!confirmZero) return;
+
+    const zeroAmt = Math.abs(partner.balance);
+    const zeroKind = partner.balance > 0 ? "took" : "gave";
+    const zeroNote = "تصفير وتصفية الحساب بالكامل (موازنة تلقائية)";
+
+    setIsAdding(true);
+    const res = await addTransaction(partner.id, zeroAmt, zeroKind, zeroNote, new Date(), null);
+    setIsAdding(false);
+
+    if (res.success) {
+      alert("تم تصفير الحساب بنجاح!");
+      refreshPartnerData();
+    } else {
+      alert(res.error || "حدث خطأ أثناء تصفير الحساب");
+    }
+  };
+
   return (
     <div className="space-y-8" dir="rtl">
       {/* هيدر كرت تفاصيل الشريك والورصيد */}
@@ -371,8 +397,16 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
             </button>
           </form>
 
-          {/* زر حذف الحساب بالكامل في الأسفل */}
-          <div className="mt-8 pt-6 border-t border-slate-100">
+          {/* أزرار تصفير الحساب وحذف الحساب */}
+          <div className="mt-8 pt-6 border-t border-slate-100 space-y-3">
+            {partner.balance !== 0 && (
+              <button
+                onClick={handleZeroAccount}
+                className="w-full px-4 py-2.5 text-xs font-black text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-2xl transition text-center"
+              >
+                🧹 تصفير الحساب بالكامل
+              </button>
+            )}
             <button
               onClick={handleDeletePartner}
               className="w-full px-4 py-2.5 text-xs font-black text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-2xl transition text-center"
