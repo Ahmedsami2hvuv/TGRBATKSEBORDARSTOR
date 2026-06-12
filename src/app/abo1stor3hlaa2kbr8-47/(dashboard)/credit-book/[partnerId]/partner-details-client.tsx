@@ -57,6 +57,7 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
   const [partner, setPartner] = useState<Partner>(initialPartner);
   
   // نموذج إضافة معاملة
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [kind, setKind] = useState<"gave" | "took">("gave");
   const [note, setNote] = useState("");
@@ -64,6 +65,12 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState("");
+
+  const handleOpenForm = (selectedKind: "gave" | "took") => {
+    setKind(selectedKind);
+    setIsFormOpen(true);
+  };
+
 
   // نموذج تعديل معاملة
   const [editTxId, setEditTxId] = useState<string | null>(null);
@@ -176,6 +183,7 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
       setImageFile(null);
       const fileInput = document.getElementById("tx-image-input") as HTMLInputElement;
       if (fileInput) fileInput.value = "";
+      setIsFormOpen(false);
       refreshPartnerData();
     } else {
       setError(res.error || "حدث خطأ ما");
@@ -319,13 +327,8 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
         <div>
           <h2 className="text-xl font-black text-slate-800 flex flex-wrap items-center gap-3">
             <span>{partner.name}</span>
-            <button
-              onClick={handleShareWhatsApp}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition border border-emerald-200/60 shadow-sm"
-              title="مشاركة كشف الحساب عبر الواتساب"
-            >
-              💬 مشاركة عبر الواتساب
-            </button>
+          </h2>
+          <div className="flex flex-wrap gap-2 mt-2">
             {getProfileLink(partner.type, partner.externalId) && (
               <Link
                 href={getProfileLink(partner.type, partner.externalId)!}
@@ -335,153 +338,186 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
                 👤 ملف الحساب بالنظام
               </Link>
             )}
-          </h2>
+            <button
+              onClick={handleShareWhatsApp}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition border border-emerald-200/60 shadow-sm"
+              title="مشاركة كشف الحساب عبر الواتساب"
+            >
+              💬 مشاركة عبر الواتساب
+            </button>
+          </div>
           <p className="text-sm text-slate-500 font-bold mt-1.5">رقم الهاتف: {partner.phone || "غير متوفر"}</p>
           <p className="text-xs text-slate-400 font-medium mt-1">تاريخ الإنشاء: {new Date(partner.createdAt).toLocaleDateString("ar-EG")}</p>
         </div>
 
-        <div className="flex flex-wrap gap-4">
-          <div className="bg-slate-50 border border-slate-100 px-4 py-2.5 rounded-2xl text-left">
-            <span className="text-[10px] font-black text-slate-400">إجمالي أعطيت (نطلبه)</span>
-            <p className="text-sm font-black text-emerald-600 tabular-nums">{formatDinarAsAlfWithUnit(partner.totalGave)}</p>
-          </div>
-          <div className="bg-slate-50 border border-slate-100 px-4 py-2.5 rounded-2xl text-left">
-            <span className="text-[10px] font-black text-slate-400">إجمالي أخذت (يطلبنا)</span>
-            <p className="text-sm font-black text-rose-600 tabular-nums">{formatDinarAsAlfWithUnit(partner.totalTook)}</p>
-          </div>
-          {(partner.type === "courier" || partner.type === "preparer") && (
-            <div className="bg-slate-50 border border-slate-100 px-4 py-2.5 rounded-2xl text-left">
-              <span className="text-[10px] font-black text-indigo-500">متبقي المحفظة للإدارة</span>
-              <p className="text-sm font-black text-indigo-700 tabular-nums">{formatDinarAsAlfWithUnit(partner.walletRemain || 0)}</p>
+        <div className="flex flex-col gap-4 w-full md:w-auto">
+          {/* البلوك الحسابي الموحد (أخذت، أعطيت، الكلي) */}
+          <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl min-w-[280px] text-right space-y-2">
+            <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+              <span>أعطيت (نطلبه):</span>
+              <span className="text-emerald-600 font-black tabular-nums">{formatDinarAsAlfWithUnit(partner.totalGave)}</span>
             </div>
-          )}
-          <div className={`px-5 py-2.5 rounded-2xl text-left border ${
-            partner.balance >= 0 
-              ? "bg-emerald-50 border-emerald-100 text-emerald-950" 
-              : "bg-rose-50 border-rose-100 text-rose-950"
-          }`}>
-            <span className="text-[10px] font-black opacity-60">الرصيد الإجمالي الحالي</span>
-            <p className="text-base font-black tabular-nums">
-              {partner.balance > 0 ? "نطلبه: " : partner.balance < 0 ? "يطلبنا: " : ""}
-              {formatDinarAsAlfWithUnit(Math.abs(partner.balance))}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* نموذج إضافة معاملة جديدة بالكامل بشكل أفقي */}
-      <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-right">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 pb-4 border-b border-slate-100">
-          <h3 className="text-md font-black text-slate-800">✍️ تسجيل معاملة يدوية جديدة</h3>
-          {/* أزرار تصفير الحساب وحذف الحساب */}
-          <div className="flex flex-wrap gap-3">
-            {partner.balance !== 0 && (
-              <button
-                type="button"
-                onClick={handleZeroAccount}
-                className="px-4 py-2 text-xs font-black text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-2xl transition text-center"
-              >
-                🧹 تصفير الحساب بالكامل
-              </button>
+            <div className="flex justify-between items-center text-xs font-bold text-slate-500 pb-2 border-b border-slate-200">
+              <span>أخذت (يطلبنا):</span>
+              <span className="text-rose-600 font-black tabular-nums">{formatDinarAsAlfWithUnit(partner.totalTook)}</span>
+            </div>
+            {(partner.type === "courier" || partner.type === "preparer") && (
+              <div className="flex justify-between items-center text-xs font-bold text-slate-500 pb-2 border-b border-slate-200">
+                <span>متبقي المحفظة للإدارة:</span>
+                <span className="text-indigo-700 font-black tabular-nums">{formatDinarAsAlfWithUnit(partner.walletRemain || 0)}</span>
+              </div>
             )}
+            <div className="flex justify-between items-center pt-1">
+              <span className="text-xs font-black text-slate-700">الكلي:</span>
+              <span className="text-sm font-black tabular-nums text-rose-600">
+                {partner.balance > 0 ? "نطلبه: " : partner.balance < 0 ? "يطلبنا: " : ""}
+                {formatDinarAsAlfWithUnit(Math.abs(partner.balance))}
+              </span>
+            </div>
+          </div>
+
+          {/* زرا تسجيل أعطيت وأخذت لتفعيل البلوك بالأسفل */}
+          <div className="flex gap-2">
             <button
-              type="button"
-              onClick={handleDeletePartner}
-              className="px-4 py-2 text-xs font-black text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-2xl transition text-center"
+              onClick={() => handleOpenForm("gave")}
+              className="flex-1 py-2 px-3 text-xs font-black text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl transition text-center flex items-center justify-center gap-1.5 shadow-sm"
             >
-              🗑️ حذف هذا الحساب بالكامل
+              🟢 تسجيل أعطيت
+            </button>
+            <button
+              onClick={() => handleOpenForm("took")}
+              className="flex-1 py-2 px-3 text-xs font-black text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-xl transition text-center flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              🔴 تسجيل أخذت
             </button>
           </div>
         </div>
+      </div>
 
-        <form onSubmit={handleAddTx} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-4 items-end">
-          <div>
-            <label className="block text-xs font-black text-slate-500 mb-1.5">قيمة المبلغ</label>
-            <input
-              type="text"
-              required
-              placeholder="مثال: 50,000"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm font-semibold focus:outline-none focus:border-indigo-500 text-left"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-black text-slate-500 mb-1.5">نوع المعاملة</label>
-            <div className="grid grid-cols-2 gap-2">
+      {/* نموذج إضافة معاملة جديدة بالكامل بشكل أفقي - يتم فتحه فقط عند النقر على الأزرار في الأعلى */}
+      {isFormOpen && (
+        <div id="manual-tx-form" className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-right animate-in fade-in slide-in-from-top-4 duration-200">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <h3 className="text-md font-black text-slate-800">✍️ تسجيل معاملة يدوية جديدة</h3>
               <button
                 type="button"
-                onClick={() => setKind("gave")}
-                className={`py-2.5 text-xs font-black rounded-xl border text-center transition ${
-                  kind === "gave"
-                    ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-                }`}
+                onClick={() => setIsFormOpen(false)}
+                className="text-xs font-bold text-slate-400 hover:text-rose-600 transition"
               >
-                🟢 أعطيت (نطلبه)
+                ❌ إغلاق
               </button>
+            </div>
+            {/* أزرار تصفير الحساب وحذف الحساب */}
+            <div className="flex flex-wrap gap-3">
+              {partner.balance !== 0 && (
+                <button
+                  type="button"
+                  onClick={handleZeroAccount}
+                  className="px-4 py-2 text-xs font-black text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-2xl transition text-center"
+                >
+                  🧹 تصفير الحساب بالكامل
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => setKind("took")}
-                className={`py-2.5 text-xs font-black rounded-xl border text-center transition ${
-                  kind === "took"
-                    ? "bg-rose-50 border-rose-300 text-rose-700"
-                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-                }`}
+                onClick={handleDeletePartner}
+                className="px-4 py-2 text-xs font-black text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-2xl transition text-center"
               >
-                🔴 أخذت (يطلبنا)
+                🗑️ حذف هذا الحساب بالكامل
               </button>
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-black text-slate-500 mb-1.5">تاريخ المعاملة (اختياري)</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 text-right bg-white"
-            />
-          </div>
+          <form onSubmit={handleAddTx} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-4 items-end">
+            <div>
+              <label className="block text-xs font-black text-slate-500 mb-1.5">قيمة المبلغ</label>
+              <input
+                type="text"
+                required
+                placeholder="مثال: 50,000"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm font-semibold focus:outline-none focus:border-indigo-500 text-left"
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs font-black text-slate-500 mb-1.5">بيان أو ملاحظات</label>
-            <input
-              type="text"
-              placeholder="تفاصيل المعاملة..."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 text-right"
-            />
-          </div>
+            <div>
+              <label className="block text-xs font-black text-slate-500 mb-1.5">نوع المعاملة</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setKind("gave")}
+                  className={`py-2.5 text-xs font-black rounded-xl border text-center transition ${
+                    kind === "gave"
+                      ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  🟢 أعطيت (نطلبه)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKind("took")}
+                  className={`py-2.5 text-xs font-black rounded-xl border text-center transition ${
+                    kind === "took"
+                      ? "bg-rose-50 border-rose-300 text-rose-700"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  🔴 أخذت (يطلبنا)
+                </button>
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-xs font-black text-slate-500 mb-1.5">إرفاق صورة المعاملة (اختياري)</label>
-            <input
-              id="tx-image-input"
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0] || null;
-                setImageFile(file);
-              }}
-              className="w-full px-3 py-1.5 rounded-2xl border border-slate-200 text-xs focus:outline-none bg-white text-right"
-            />
-          </div>
+            <div>
+              <label className="block text-xs font-black text-slate-500 mb-1.5">تاريخ المعاملة (اختياري)</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 text-right bg-white"
+              />
+            </div>
 
-          <div className="flex flex-col gap-1.5">
-            {error && <p className="text-[10px] font-bold text-rose-600 leading-tight">{error}</p>}
-            <button
-              type="submit"
-              disabled={isAdding}
-              className="w-full px-4 py-3 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition disabled:opacity-50 shadow-md shadow-indigo-900/10"
-            >
-              {isAdding ? "جاري الحفظ..." : "حفظ المعاملة"}
-            </button>
-          </div>
-        </form>
-      </div>
+            <div>
+              <label className="block text-xs font-black text-slate-500 mb-1.5">بيان أو ملاحظات</label>
+              <input
+                type="text"
+                placeholder="تفاصيل المعاملة..."
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 text-right"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black text-slate-500 mb-1.5">إرفاق صورة المعاملة (اختياري)</label>
+              <input
+                id="tx-image-input"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setImageFile(file);
+                }}
+                className="w-full px-3 py-1.5 rounded-2xl border border-slate-200 text-xs focus:outline-none bg-white text-right"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              {error && <p className="text-[10px] font-bold text-rose-600 leading-tight">{error}</p>}
+              <button
+                type="submit"
+                disabled={isAdding}
+                className="w-full px-4 py-3 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition disabled:opacity-50 shadow-md shadow-indigo-900/10"
+              >
+                {isAdding ? "جاري الحفظ..." : "حفظ المعاملة"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* كشف الحساب وتفاصيل المعاملات التاريخية */}
       <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-right space-y-6">
