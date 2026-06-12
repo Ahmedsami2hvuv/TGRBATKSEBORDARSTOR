@@ -6,7 +6,8 @@ import {
   PartnerType, 
   createPartner, 
   syncSystemPartners, 
-  getPartners 
+  getPartners,
+  deletePartnersBatch
 } from "./actions";
 import Link from "next/link";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
@@ -29,6 +30,10 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
   const [addError, setAddError] = useState("");
   const [isAdding, setIsAdding] = useState(false);
 
+  // حالة التحديد الجماعي
+  const [selectedPartnerIds, setSelectedPartnerIds] = useState<string[]>([]);
+  const [isDeletingBatch, setIsDeletingBatch] = useState(false);
+
   // حساب الأرقام الكلية
   const totalWeOwed = partners
     .filter((p) => p.balance > 0)
@@ -44,6 +49,7 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
   const refreshList = async () => {
     const fresh = await getPartners(searchQuery, selectedType);
     setPartners(fresh);
+    setSelectedPartnerIds([]); // تصفير التحديد
   };
 
   // معالجة البحث والفرز
@@ -96,6 +102,43 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
         alert(res.error || "فشلت المزامنة");
       }
     });
+  };
+
+  // التحديد الجماعي
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedPartnerIds(partners.map(p => p.id));
+    } else {
+      setSelectedPartnerIds([]);
+    }
+  };
+
+  const handleSelectPartner = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedPartnerIds(prev => [...prev, id]);
+    } else {
+      setSelectedPartnerIds(prev => prev.filter(pId => pId !== id));
+    }
+  };
+
+  // حذف الأطراف المحددة دفعة واحدة
+  const handleDeleteSelected = async () => {
+    if (selectedPartnerIds.length === 0) return;
+    
+    if (!confirm(`هل أنت متأكد من رغبتك في حذف ${selectedPartnerIds.length} من الأطراف المحددة بالكامل مع كافة سجلاتهم؟`)) {
+      return;
+    }
+
+    setIsDeletingBatch(true);
+    const res = await deletePartnersBatch(selectedPartnerIds);
+    setIsDeletingBatch(false);
+
+    if (res.success) {
+      alert("تم حذف الأطراف المحددة بنجاح.");
+      refreshList();
+    } else {
+      alert(res.error || "فشل مسح الأطراف المحددة");
+    }
   };
 
   // أنواع التسميات باللغة العربية
@@ -183,6 +226,15 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
 
         {/* أزرار العمليات */}
         <div className="flex gap-3 w-full lg:w-auto justify-end">
+          {selectedPartnerIds.length > 0 && (
+            <button
+              onClick={handleDeleteSelected}
+              disabled={isDeletingBatch}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-black text-white bg-rose-600 hover:bg-rose-700 rounded-2xl transition disabled:opacity-50"
+            >
+              🗑️ مسح المحدد ({selectedPartnerIds.length})
+            </button>
+          )}
           <button
             onClick={handleSync}
             disabled={isPending}
@@ -210,16 +262,34 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
             <table className="w-full text-right border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-slate-500 text-xs font-black border-b border-slate-100">
+                  <th className="p-4 w-12 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedPartnerIds.length === partners.length && partners.length > 0}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                    />
+                  </th>
                   <th className="p-4">الاسم</th>
                   <th className="p-4">رقم الهاتف</th>
                   <th className="p-4">النوع</th>
-                  <th className="p-4">الرصيد الحالي</th>
+                  <th className="p-4">رصيد الدفتر اليدوي</th>
+                  <th className="p-4">المحفظة / التلقائي (من النظام)</th>
+                  <th className="p-4">الرصيد الإجمالي</th>
                   <th className="p-4 text-left">الإجراءات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {partners.map((partner) => (
                   <tr key={partner.id} className="hover:bg-slate-50/50 transition">
+                    <td className="p-4 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedPartnerIds.includes(partner.id)}
+                        onChange={(e) => handleSelectPartner(partner.id, e.target.checked)}
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                      />
+                    </td>
                     <td className="p-4 font-bold text-slate-800">
                       <Link 
                         href={`/abo1stor3hlaa2kbr8-47/credit-book/${partner.id}`}
@@ -234,7 +304,44 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
                         {typeLabels[partner.type]}
                       </span>
                     </td>
-                    <td className="p-4 font-black">
+                    <td className="p-4 font-bold text-slate-700">
+                      {partner.manualBalance > 0 ? (
+                        <span className="text-emerald-600 tabular-nums">+{formatDinarAsAlfWithUnit(partner.manualBalance)}</span>
+                      ) : partner.manualBalance < 0 ? (
+                        <span className="text-rose-600 tabular-nums">-{formatDinarAsAlfWithUnit(Math.abs(partner.manualBalance))}</span>
+                      ) : (
+                        <span className="text-slate-400">0</span>
+                      )}
+                    </td>
+                    <td className="p-4 font-bold">
+                      {partner.type === "courier" || partner.type === "preparer" ? (
+                        partner.autoBalance > 0 ? (
+                          <div className="flex flex-col">
+                            <span className="text-emerald-600 tabular-nums">+{formatDinarAsAlfWithUnit(partner.autoBalance)}</span>
+                            <span className="text-[10px] text-slate-400 font-bold">متبقي المحفظة: {formatDinarAsAlfWithUnit(partner.walletRemain || 0)}</span>
+                          </div>
+                        ) : partner.autoBalance < 0 ? (
+                          <div className="flex flex-col">
+                            <span className="text-rose-600 tabular-nums">-{formatDinarAsAlfWithUnit(Math.abs(partner.autoBalance))}</span>
+                            <span className="text-[10px] text-slate-400 font-bold">متبقي المحفظة: {formatDinarAsAlfWithUnit(partner.walletRemain || 0)}</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col">
+                            <span className="text-slate-400">0</span>
+                            <span className="text-[10px] text-slate-400 font-bold">متبقي المحفظة: {formatDinarAsAlfWithUnit(partner.walletRemain || 0)}</span>
+                          </div>
+                        )
+                      ) : partner.type === "shop" ? (
+                        partner.autoBalance < 0 ? (
+                          <span className="text-rose-600 tabular-nums">يطلبنا طلبات: {formatDinarAsAlfWithUnit(Math.abs(partner.autoBalance))}</span>
+                        ) : (
+                          <span className="text-slate-400">مسدد بالكامل</span>
+                        )
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td className="p-4 font-black text-base">
                       {partner.balance > 0 ? (
                         <span className="text-emerald-600 tabular-nums">
                           نطلبه: {formatDinarAsAlfWithUnit(partner.balance)}
@@ -316,7 +423,7 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
                   disabled={isAdding}
                   className="flex-1 px-4 py-2.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition disabled:opacity-50"
                 >
-                  {isAdding ? "جاري الإضافة..." : "حفظ الشريك"}
+                  {isAdding ? "جاري الإضافة..." : "حفق الشريك"}
                 </button>
                 <button
                   type="button"

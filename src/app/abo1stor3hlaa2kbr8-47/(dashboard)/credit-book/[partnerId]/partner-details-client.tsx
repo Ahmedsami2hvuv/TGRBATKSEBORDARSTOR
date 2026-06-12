@@ -20,6 +20,7 @@ interface Transaction {
   note: string | null;
   createdAt: Date;
   updatedAt: Date;
+  isAuto?: boolean;
 }
 
 interface Partner {
@@ -30,9 +31,12 @@ interface Partner {
   externalId: string | null;
   createdAt: Date;
   balance: number;
+  manualBalance: number;
+  autoBalance: number;
   totalGave: number;
   totalTook: number;
   transactions: Transaction[];
+  walletRemain?: number;
 }
 
 interface PartnerDetailsClientProps {
@@ -94,6 +98,7 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
 
   // معالجة تعديل معاملة
   const handleStartEdit = (tx: Transaction) => {
+    if (tx.isAuto) return;
     setEditTxId(tx.id);
     setEditAmount(tx.amount.toString());
     setEditKind(tx.kind as "gave" | "took");
@@ -162,7 +167,7 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
           <p className="text-xs text-slate-400 font-medium mt-1">تاريخ الإنشاء: {new Date(partner.createdAt).toLocaleDateString("ar-EG")}</p>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
           <div className="bg-slate-50 border border-slate-100 px-4 py-2.5 rounded-2xl text-left">
             <span className="text-[10px] font-black text-slate-400">إجمالي أعطيت (نطلبه)</span>
             <p className="text-sm font-black text-emerald-600 tabular-nums">{formatDinarAsAlfWithUnit(partner.totalGave)}</p>
@@ -171,12 +176,18 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
             <span className="text-[10px] font-black text-slate-400">إجمالي أخذت (يطلبنا)</span>
             <p className="text-sm font-black text-rose-600 tabular-nums">{formatDinarAsAlfWithUnit(partner.totalTook)}</p>
           </div>
+          {(partner.type === "courier" || partner.type === "preparer") && (
+            <div className="bg-slate-50 border border-slate-100 px-4 py-2.5 rounded-2xl text-left">
+              <span className="text-[10px] font-black text-indigo-500">متبقي المحفظة للإدارة</span>
+              <p className="text-sm font-black text-indigo-700 tabular-nums">{formatDinarAsAlfWithUnit(partner.walletRemain || 0)}</p>
+            </div>
+          )}
           <div className={`px-5 py-2.5 rounded-2xl text-left border ${
             partner.balance >= 0 
               ? "bg-emerald-50 border-emerald-100 text-emerald-950" 
               : "bg-rose-50 border-rose-100 text-rose-950"
           }`}>
-            <span className="text-[10px] font-black opacity-60">الرصيد الحالي</span>
+            <span className="text-[10px] font-black opacity-60">الرصيد الإجمالي الحالي</span>
             <p className="text-base font-black tabular-nums">
               {partner.balance > 0 ? "نطلبه: " : partner.balance < 0 ? "يطلبنا: " : ""}
               {formatDinarAsAlfWithUnit(Math.abs(partner.balance))}
@@ -188,7 +199,7 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* نموذج إضافة معاملة جديدة */}
         <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-right h-fit">
-          <h3 className="text-md font-black text-slate-800 mb-4">✍️ تسجيل معاملة جديدة</h3>
+          <h3 className="text-md font-black text-slate-800 mb-4">✍️ تسجيل معاملة يدوية جديدة</h3>
           <form onSubmit={handleAddTx} className="space-y-4">
             <div>
               <label className="block text-xs font-black text-slate-500 mb-1.5">قيمة المبلغ</label>
@@ -285,19 +296,25 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
                 <div 
                   key={tx.id} 
                   className={`p-4 rounded-2xl border transition ${
-                    tx.kind === "gave" 
-                      ? "bg-emerald-50/20 border-emerald-100 hover:bg-emerald-50/30" 
-                      : "bg-rose-50/20 border-rose-100 hover:bg-rose-50/30"
+                    tx.isAuto 
+                      ? "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
+                      : tx.kind === "gave" 
+                        ? "bg-emerald-50/20 border-emerald-100 hover:bg-emerald-50/30" 
+                        : "bg-rose-50/20 border-rose-100 hover:bg-rose-50/30"
                   }`}
                 >
                   <div className="flex justify-between items-start gap-4">
                     <div>
                       <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                        tx.kind === "gave" 
-                          ? "bg-emerald-100 text-emerald-800" 
-                          : "bg-rose-100 text-rose-800"
+                        tx.isAuto 
+                          ? "bg-indigo-100 text-indigo-800"
+                          : tx.kind === "gave" 
+                            ? "bg-emerald-100 text-emerald-800" 
+                            : "bg-rose-100 text-rose-800"
                       }`}>
-                        {tx.kind === "gave" ? "🟢 أعطيت (نطلبه)" : "🔴 أخذت (يطلبنا)"}
+                        {tx.isAuto 
+                          ? "⚙️ تلقائي من النظام" 
+                          : tx.kind === "gave" ? "🟢 أعطيت (نطلبه)" : "🔴 أخذت (يطلبنا)"}
                       </span>
                       <p className="text-sm font-bold text-slate-800 mt-2">{tx.note || "بدون بيان وملاحظات"}</p>
                       <p className="text-[10px] text-slate-400 font-medium mt-1">
@@ -307,23 +324,25 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
 
                     <div className="text-left space-y-2">
                       <p className="text-base font-black tabular-nums text-slate-800">
-                        {formatDinarAsAlfWithUnit(tx.amount)}
+                        {tx.kind === "took" && !tx.isAuto ? "-" : ""}{formatDinarAsAlfWithUnit(tx.amount)}
                       </p>
                       
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          onClick={() => handleStartEdit(tx)}
-                          className="px-2 py-1 text-[10px] font-black text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                        >
-                          ✏️ تعديل
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTx(tx.id)}
-                          className="px-2 py-1 text-[10px] font-black text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                        >
-                          🗑️ حذف
-                        </button>
-                      </div>
+                      {!tx.isAuto && (
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            onClick={() => handleStartEdit(tx)}
+                            className="px-2 py-1 text-[10px] font-black text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                          >
+                            ✏️ تعديل
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTx(tx.id)}
+                            className="px-2 py-1 text-[10px] font-black text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          >
+                            🗑️ حذف
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -679,6 +679,16 @@ export function OrderDetailSection({
   // الترتيب المطلوب: المحل أولاً، ثم الزبون، ثم تفاصيل الطلب والأسعار
   const layout = ["shop_info", "customer_info", "price_details", "notes_summary", "money_flow"];
 
+  const [customerDebt, setCustomerDebt] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (order.customerPhone) {
+      import("../credit-book/actions").then(({ getCustomerDebtByPhone }) => {
+        getCustomerDebtByPhone(order.customerPhone).then(setCustomerDebt);
+      });
+    }
+  }, [order.customerPhone]);
+
   return (
     <section
       style={customStyle}
@@ -688,6 +698,15 @@ export function OrderDetailSection({
         !uiSettings && missingCustomerLocation ? "border-sky-200 bg-rose-50/30 ring-2 ring-rose-200" : (!uiSettings ? `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}` : "")
       }`}
     >
+
+      {customerDebt !== null && customerDebt > 0 && (
+        <div className="mb-4 rounded-2xl border-4 border-amber-500 bg-amber-50 p-4 text-right shadow-md animate-pulse z-20 relative">
+          <p className="text-sm font-black text-amber-900 flex items-center gap-2">
+            <span>⚠️ تنبيه للمندوب:</span>
+            هذا الزبون مطلوب للإدارة مبلغ وقدره: ({formatDinarAsAlfWithUnit(customerDebt)})
+          </p>
+        </div>
+      )}
       {bgImage && (
         <div
           style={{

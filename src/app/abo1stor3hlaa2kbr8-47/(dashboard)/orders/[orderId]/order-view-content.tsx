@@ -132,8 +132,27 @@ export function OrderViewContent({
     return true;
   };
 
+  const [customerDebt, setCustomerDebt] = useState<number | null>(null);
+
+  React.useEffect(() => {
+    if (order.customerPhone) {
+      import("../../../credit-book/actions").then(({ getCustomerDebtByPhone }) => {
+        getCustomerDebtByPhone(order.customerPhone).then(setCustomerDebt);
+      });
+    }
+  }, [order.customerPhone]);
+
   return (
     <div className={`kse-glass-dark relative mt-4 border p-4 pb-24 text-base leading-relaxed sm:p-5 sm:pb-32 ${orderStatusStartStripeClass(order.status)} ${order.prepaidAll ? "border-emerald-300 bg-gradient-to-b from-emerald-50 to-teal-50" : isReversePickup ? "border-violet-400 bg-violet-100" : isDoubleRoute ? "border-fuchsia-300 bg-gradient-to-b from-fuchsia-50 to-violet-50" : `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}`}`} dir="rtl">
+
+      {customerDebt !== null && customerDebt > 0 && (
+        <div className="mb-4 rounded-2xl border-4 border-amber-500 bg-amber-50 p-4 text-right shadow-md animate-pulse">
+          <p className="text-base font-black text-amber-900 flex items-center gap-2">
+            <span>⚠️ تنبيه مالي للزبون:</span>
+            نطلب هذا الزبون مبلغاً معلقاً بذمته وقدره: ({formatDinarAsAlfWithUnit(customerDebt)}) في دفتر الديون.
+          </p>
+        </div>
+      )}
 
       {order.isBlocked && (
         <div
