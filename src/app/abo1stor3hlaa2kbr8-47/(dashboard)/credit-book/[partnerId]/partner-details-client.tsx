@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { 
   addTransaction, 
   updateTransaction, 
@@ -8,7 +9,9 @@ import {
   deletePartner, 
   getPartnerDetails,
   payShopOrderFromAdmin,
-  uploadTransactionImage
+  uploadTransactionImage,
+  updateAdminPaymentEvent,
+  deleteAdminPaymentEvent
 } from "../actions";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { useRouter } from "next/navigation";
@@ -25,6 +28,7 @@ interface Transaction {
   isAuto?: boolean;
   isPaid?: boolean;
   remainingAmount?: number;
+  isAdminPayment?: boolean;
 }
 
 interface Partner {
@@ -67,6 +71,47 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
   const [editNote, setEditNote] = useState("");
   const [editDate, setEditDate] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+
+  // نموذج تعديل دفعة الإدارة
+  const [editAdminPaymentId, setEditAdminPaymentId] = useState<string | null>(null);
+  const [editAdminPaymentAmount, setEditAdminPaymentAmount] = useState("");
+  const [isEditingAdminPayment, setIsEditingAdminPayment] = useState(false);
+
+  const handleStartEditAdminPayment = (tx: Transaction) => {
+    setEditAdminPaymentId(tx.id.replace("auto-payment-", ""));
+    setEditAdminPaymentAmount(tx.amount.toString());
+  };
+
+  const handleUpdateAdminPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const numAmt = parseFloat(editAdminPaymentAmount.replace(/,/g, ""));
+    if (isNaN(numAmt) || numAmt <= 0) {
+      alert("الرجاء إدخال مبلغ صحيح");
+      return;
+    }
+    setIsEditingAdminPayment(true);
+    const res = await updateAdminPaymentEvent(editAdminPaymentId!, numAmt);
+    setIsEditingAdminPayment(false);
+    if (res.success) {
+      setEditAdminPaymentId(null);
+      refreshPartnerData();
+    } else {
+      alert(res.error || "حدث خطأ أثناء تعديل الدفعة");
+    }
+  };
+
+  const handleDeleteAdminPayment = async (txId: string) => {
+    if (!confirm("هل أنت متأكد من رغبتك في حذف دفعة الإدارة هذه؟")) {
+      return;
+    }
+    const eventId = txId.replace("auto-payment-", "");
+    const res = await deleteAdminPaymentEvent(eventId);
+    if (res.success) {
+      refreshPartnerData();
+    } else {
+      alert(res.error || "فشل حذف الدفعة");
+    }
+  };
 
   // تحديث البيانات من السيرفر
   const refreshPartnerData = async () => {
@@ -406,22 +451,46 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
                           </button>
                         </div>
                       ) : (
-                        partner.type === "shop" && tx.id.startsWith("auto-order-") && (
-                          <div className="flex gap-2 justify-end items-center">
-                            {tx.isPaid ? (
-                              <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-100 flex items-center gap-1">
-                                ✅ مسدد
-                              </span>
-                            ) : (
-                              <button
-                                onClick={() => handleAdminPayOrder(tx)}
-                                className="px-2.5 py-1.5 text-[10px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-md shadow-indigo-900/10 flex items-center gap-1"
+                        <div className="flex flex-col gap-2 items-end">
+                          {partner.type === "shop" && tx.id.startsWith("auto-order-") && (
+                            <div className="flex gap-2 justify-end items-center">
+                              <Link
+                                href={`/abo1stor3hlaa2kbr8-47/orders/${tx.id.replace("auto-order-", "")}/edit`}
+                                className="px-2.5 py-1.5 text-[10px] font-black text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition border border-blue-100 flex items-center gap-1"
                               >
-                                💵 دفع من الإدارة
+                                📝 تعديل الطلب
+                              </Link>
+                              {tx.isPaid ? (
+                                <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-100 flex items-center gap-1">
+                                  ✅ مسدد
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => handleAdminPayOrder(tx)}
+                                  className="px-2.5 py-1.5 text-[10px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-md shadow-indigo-900/10 flex items-center gap-1"
+                                >
+                                  💵 دفع من الإدارة
+                                </button>
+                              )}
+                            </div>
+                          )}
+                          {tx.isAdminPayment && (
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                onClick={() => handleStartEditAdminPayment(tx)}
+                                className="px-2 py-1 text-[10px] font-black text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                              >
+                                ✏️ تعديل الدفع
                               </button>
-                            )}
-                          </div>
-                        )
+                              <button
+                                onClick={() => handleDeleteAdminPayment(tx.id)}
+                                className="px-2 py-1 text-[10px] font-black text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                              >
+                                🗑️ حذف الدفع
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -509,6 +578,45 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
                 <button
                   type="button"
                   onClick={() => setEditTxId(null)}
+                  className="px-4 py-2.5 text-xs font-black text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-2xl transition"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* مودال تعديل دفعة الإدارة */}
+      {editAdminPaymentId && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-2xl max-w-md w-full p-6 text-right animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-black text-slate-800 mb-4">تعديل قيمة دفعة الإدارة</h3>
+            
+            <form onSubmit={handleUpdateAdminPayment} className="space-y-4">
+              <div>
+                <label className="block text-xs font-black text-slate-500 mb-1.5">المبلغ الجديد</label>
+                <input
+                  type="text"
+                  required
+                  value={editAdminPaymentAmount}
+                  onChange={(e) => setEditAdminPaymentAmount(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm font-semibold focus:outline-none focus:border-indigo-500 text-left"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={isEditingAdminPayment}
+                  className="flex-1 px-4 py-2.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition disabled:opacity-50"
+                >
+                  {isEditingAdminPayment ? "جاري الحفظ..." : "حفظ التعديل"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditAdminPaymentId(null)}
                   className="px-4 py-2.5 text-xs font-black text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-2xl transition"
                 >
                   إلغاء
