@@ -68,6 +68,10 @@ const TILE_COLORS: Record<string, {
     active: "bg-lime-100/90 dark:bg-lime-950/60 border border-lime-400 dark:border-lime-400 text-lime-900 dark:text-lime-100 shadow-[0_0_12px_rgba(132,204,22,0.3)]",
     inactive: "bg-lime-50/60 dark:bg-lime-950/20 border border-lime-200/60 dark:border-lime-900/40 text-lime-700 dark:text-lime-300 hover:bg-lime-100/90 dark:hover:bg-lime-950/40 hover:border-lime-300 dark:hover:border-lime-800 hover:text-lime-850 dark:hover:text-lime-200"
   },
+  "credit-book": {
+    active: "bg-indigo-100/90 dark:bg-indigo-950/60 border border-indigo-400 dark:border-indigo-400 text-indigo-900 dark:text-indigo-100 shadow-[0_0_12px_rgba(99,102,241,0.3)]",
+    inactive: "bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100/90 dark:hover:bg-indigo-950/40 hover:border-indigo-300 dark:hover:border-indigo-800 hover:text-indigo-850 dark:hover:text-indigo-200"
+  },
   customers: {
     active: "bg-fuchsia-100/90 dark:bg-fuchsia-950/60 border border-fuchsia-400 dark:border-fuchsia-400 text-fuchsia-900 dark:text-fuchsia-100 shadow-[0_0_12px_rgba(217,70,239,0.3)]",
     inactive: "bg-fuchsia-50/60 dark:bg-fuchsia-950/20 border border-fuchsia-200/60 dark:border-fuchsia-900/40 text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100/90 dark:hover:bg-fuchsia-950/40 hover:border-fuchsia-300 dark:hover:border-fuchsia-800 hover:text-fuchsia-850 dark:hover:text-fuchsia-200"
