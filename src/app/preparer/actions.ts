@@ -1974,7 +1974,7 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
   const workLogs = await prisma.companyPreparerWorkLog.findMany({
     where: {
       preparerId,
-      createdAt: { gte: lastWithdrawal }
+      createdAt: { gt: lastWithdrawal }
     },
     orderBy: { createdAt: "asc" }
   });
@@ -2049,7 +2049,7 @@ export async function calculateAccumulatedSalaryInternal(preparerId: string) {
     const miscEntries = await prisma.employeeWalletMiscEntry.findMany({
       where: {
         employeeId: preparer.walletEmployeeId,
-        createdAt: { gte: lastWithdrawal },
+        createdAt: { gt: lastWithdrawal },
         label: { startsWith: "[راتب]" },
         deletedAt: null
       },
