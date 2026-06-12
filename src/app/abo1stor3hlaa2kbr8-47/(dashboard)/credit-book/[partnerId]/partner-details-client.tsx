@@ -46,6 +46,7 @@ interface Partner {
   totalTook: number;
   transactions: Transaction[];
   walletRemain?: number;
+  portalUrl?: string | null;
 }
 
 interface PartnerDetailsClientProps {
@@ -274,6 +275,7 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
   };
 
   const getProfileLink = (type: string, externalId: string | null) => {
+    if (partner.portalUrl) return partner.portalUrl;
     if (!externalId) return null;
     if (type === "shop") {
       return `/abo1stor3hlaa2kbr8-47/shops/${externalId}/edit`;
@@ -333,9 +335,9 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
               <Link
                 href={getProfileLink(partner.type, partner.externalId)!}
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-black text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl transition border border-blue-200/60 shadow-sm"
-                title="فتح صفحة الحساب بالنظام"
+                title="فتح بوابة الشخص بالنظام"
               >
-                👤 ملف الحساب بالنظام
+                👤 فتح بوابة الحساب بالنظام
               </Link>
             )}
             <button

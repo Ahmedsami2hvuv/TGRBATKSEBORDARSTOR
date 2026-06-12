@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { computeMandoubAdminTotalAllTimeDinar, computeMandoubWalletRemainAllTimeDinar } from "@/lib/mandoub-wallet-carry";
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
+import { getPublicAppUrl } from "@/lib/app-url";
 import { Decimal } from "@prisma/client/runtime/library";
 import { CourierWalletMiscDirection } from "@prisma/client";
 
@@ -558,6 +559,47 @@ export async function getPartnerDetails(partnerId: string) {
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
+    // توليد رابط البوابة تلقائياً بناءً على نوع الحساب
+    let portalUrl: string | null = null;
+    const baseUrl = getPublicAppUrl();
+
+    if (partner.externalId) {
+      if (partner.type === "courier") {
+        try {
+          const { buildDelegatePortalUrl } = await import("@/lib/delegate-link");
+          portalUrl = buildDelegatePortalUrl(partner.externalId, baseUrl);
+        } catch (e) {
+          console.error(e);
+        }
+      } else if (partner.type === "preparer") {
+        try {
+          const prep = await prisma.preparer.findUnique({
+            where: { id: partner.externalId },
+            select: { portalToken: true }
+          });
+          if (prep?.portalToken) {
+            const { buildCompanyPreparerPortalUrl } = await import("@/lib/company-preparer-portal-link");
+            portalUrl = buildCompanyPreparerPortalUrl(partner.externalId, prep.portalToken, baseUrl);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      } else if (partner.type === "shop") {
+        try {
+          const employee = await prisma.employee.findFirst({
+            where: { shopId: partner.externalId },
+            select: { id: true, orderPortalToken: true }
+          });
+          if (employee) {
+            const { buildEmployeeOrderPortalUrl } = await import("@/lib/employee-order-portal-link");
+            portalUrl = buildEmployeeOrderPortalUrl(employee.id, employee.orderPortalToken, baseUrl);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+
     return {
       id: partner.id,
       name: partner.name,
@@ -571,7 +613,8 @@ export async function getPartnerDetails(partnerId: string) {
       totalGave: totalGave + autoGaveSum,
       totalTook: totalTook + autoTookSum,
       transactions: allTransactions,
-      walletRemain
+      walletRemain,
+      portalUrl
     };
   } catch (error) {
     console.error("Error in getPartnerDetails:", error);
