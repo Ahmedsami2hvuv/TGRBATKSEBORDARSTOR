@@ -107,8 +107,8 @@ export function OrderTrackingTableBody({ rows }: { rows: TrackingTableRow[] }) {
         if (currentDateStr !== lastDateStr) {
           lastDateStr = currentDateStr;
           separator = (
-            <tr key={`date-sep-${currentDateStr}`} className="bg-slate-100/80">
-              <td colSpan={11} className="px-4 py-2 text-right text-xs font-black text-slate-900 uppercase tracking-widest border-y border-slate-200">
+            <tr key={`date-sep-${currentDateStr}`} className="bg-red-50/90 dark:bg-red-950/20">
+              <td colSpan={11} className="px-4 py-2 text-right text-xs font-black text-red-600 dark:text-red-400 uppercase tracking-widest border-y border-red-200 dark:border-red-900/50">
                 {orderDate ? formatBaghdadDateFriendly(orderDate) : "تاريخ غير معروف"}
               </td>
             </tr>

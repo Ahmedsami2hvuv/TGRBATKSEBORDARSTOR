@@ -257,7 +257,7 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                         {showSeparator && (
                           <li className="pt-6 pb-2">
                             <div className="flex items-center gap-3 flex-wrap">
-                              <div className="h-px flex-1 bg-red-500 dark:bg-red-700"></div>
+                              <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700"></div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-xs md:text-sm font-black text-sky-800 bg-sky-50 dark:text-sky-200 dark:bg-sky-950/80 px-4 py-1.5 rounded-full border border-sky-200/80 dark:border-sky-800 shadow-sm whitespace-nowrap">
                                   {o.createdAt.toLocaleDateString("ar-IQ", { weekday: "long" })}، {dateKey}
@@ -268,7 +268,7 @@ export default async function ClientOrderHistoryPage({ searchParams }: Props) {
                                   </span>
                                 )}
                               </div>
-                              <div className="h-px flex-1 bg-red-500 dark:bg-red-700"></div>
+                              <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700"></div>
                             </div>
                           </li>
                         )}
