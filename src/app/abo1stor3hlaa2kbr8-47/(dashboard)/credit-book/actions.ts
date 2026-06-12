@@ -322,6 +322,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
         type: p.type as PartnerType,
         externalId: p.externalId,
         createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
         manualBalance,
         autoBalance,
         balance: manualBalance + autoBalance,
@@ -330,6 +331,18 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
         walletRemain
       });
     }
+
+    // فرز النتائج: الحسابات غير الصفرية أولاً حسب آخر نشاط (updatedAt) تنازلياً، ثم الحسابات الصفرية في النهاية حسب آخر نشاط تنازلياً
+    result.sort((a, b) => {
+      const aZero = a.balance === 0;
+      const bZero = b.balance === 0;
+
+      if (aZero && !bZero) return 1;
+      if (!aZero && bZero) return -1;
+
+      // ترتيب تنازلي حسب تاريخ آخر تعديل (الأحدث أولاً)
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
 
     return result;
   } catch (error) {
@@ -476,7 +489,8 @@ export async function getPartnerDetails(partnerId: string) {
               note: `تسديد للطلب #${o.orderNumber} | الجهة: ${payer}${me.mismatchNote ? ` (${me.mismatchNote})` : ""}`,
               createdAt: me.createdAt,
               updatedAt: me.createdAt,
-              isAuto: true
+              isAuto: true,
+              isAdminPayment: !me.courierId
             });
           }
         }
@@ -587,6 +601,12 @@ export async function addTransaction(partnerId: string, amount: number, kind: "g
       },
     });
 
+    // تحديث تاريخ تعديل الشريك لتعديل ترتيبه في القائمة
+    await prisma.creditBookPartner.update({
+      where: { id: partnerId },
+      data: { updatedAt: new Date() }
+    });
+
     revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
     revalidatePath(`/abo1stor3hlaa2kbr8-47/credit-book/${partnerId}`);
     return { success: true, transaction: tx };
@@ -636,6 +656,12 @@ export async function updateTransaction(transactionId: string, amount: number, n
       },
     });
 
+    // تحديث تاريخ تعديل الشريك لتعديل ترتيبه في القائمة
+    await prisma.creditBookPartner.update({
+      where: { id: tx.partnerId },
+      data: { updatedAt: new Date() }
+    });
+
     revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
     revalidatePath(`/abo1stor3hlaa2kbr8-47/credit-book/${tx.partnerId}`);
     return { success: true, transaction: tx };
@@ -650,6 +676,12 @@ export async function deleteTransaction(transactionId: string) {
   try {
     const tx = await prisma.creditBookTransaction.delete({
       where: { id: transactionId },
+    });
+
+    // تحديث تاريخ تعديل الشريك لتعديل ترتيبه في القائمة
+    await prisma.creditBookPartner.update({
+      where: { id: tx.partnerId },
+      data: { updatedAt: new Date() }
     });
 
     revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
@@ -1015,6 +1047,103 @@ export async function getUnaddedSystemPartners(type: PartnerType) {
   } catch (error) {
     console.error("Error in getUnaddedSystemPartners:", error);
     return [];
+  }
+}
+
+// 11. تعديل عملية دفع للطلب مباشرة من الإدارة
+export async function updateAdminPaymentEvent(eventId: string, amount: number) {
+  try {
+    const { isAdminSession } = await import("@/lib/admin-session");
+    if (!(await isAdminSession())) {
+      return { success: false, error: "غير مصرح لك بالقيام بهذا الإجراء" };
+    }
+
+    if (amount <= 0) {
+      return { success: false, error: "المبلغ يجب أن يكون أكبر من صفر" };
+    }
+
+    const event = await prisma.orderCourierMoneyEvent.findUnique({
+      where: { id: eventId },
+      include: { order: true }
+    });
+
+    if (!event) {
+      return { success: false, error: "المعاملة غير موجودة" };
+    }
+
+    await prisma.orderCourierMoneyEvent.update({
+      where: { id: eventId },
+      data: {
+        amountDinar: new Decimal(amount)
+      }
+    });
+
+    // تحديث تاريخ تعديل الشريك لتعديل ترتيبه في القائمة
+    const partner = await prisma.creditBookPartner.findFirst({
+      where: { type: "shop", externalId: event.order.shopId },
+      select: { id: true }
+    });
+    if (partner) {
+      await prisma.creditBookPartner.update({
+        where: { id: partner.id },
+        data: { updatedAt: new Date() }
+      });
+    }
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/credit-book/${partner?.id || ""}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error in updateAdminPaymentEvent:", error);
+    return { success: false, error: "حدث خطأ أثناء تعديل المعاملة" };
+  }
+}
+
+// 12. حذف عملية دفع للطلب مباشرة من الإدارة
+export async function deleteAdminPaymentEvent(eventId: string) {
+  try {
+    const { isAdminSession } = await import("@/lib/admin-session");
+    if (!(await isAdminSession())) {
+      return { success: false, error: "غير مصرح لك بالقيام بهذا الإجراء" };
+    }
+
+    const event = await prisma.orderCourierMoneyEvent.findUnique({
+      where: { id: eventId },
+      include: { order: true }
+    });
+
+    if (!event) {
+      return { success: false, error: "المعاملة غير موجودة" };
+    }
+
+    // حذف ناعم للحدث المالي
+    await prisma.orderCourierMoneyEvent.update({
+      where: { id: eventId },
+      data: {
+        deletedAt: new Date(),
+        deletedReason: "manual_admin",
+        deletedByDisplayName: "الإدارة"
+      }
+    });
+
+    // تحديث تاريخ تعديل الشريك لتعديل ترتيبه في القائمة
+    const partner = await prisma.creditBookPartner.findFirst({
+      where: { type: "shop", externalId: event.order.shopId },
+      select: { id: true }
+    });
+    if (partner) {
+      await prisma.creditBookPartner.update({
+        where: { id: partner.id },
+        data: { updatedAt: new Date() }
+      });
+    }
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/credit-book/${partner?.id || ""}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error in deleteAdminPaymentEvent:", error);
+    return { success: false, error: "حدث خطأ أثناء حذف المعاملة" };
   }
 }
 
