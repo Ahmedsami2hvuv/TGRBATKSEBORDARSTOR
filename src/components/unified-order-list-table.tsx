@@ -86,14 +86,16 @@ function MoneyMiniBadges({ row }: { row: MandoubRow }) {
 
   const pickup = row.pickupSumDinar ?? null; // صادر المندوب
   const preparerPickup = row.preparerPickupSumDinar ?? null; // صادر المجهز
+  const adminPickup = row.adminPickupSumDinar ?? null; // صادر الإدارة
   const delivery = row.deliverySumDinar ?? null; // وارد المندوب
 
   const showPickup = pickup != null && Number.isFinite(pickup) && pickup > 0;
   const showPreparerPickup = preparerPickup != null && Number.isFinite(preparerPickup) && preparerPickup > 0;
+  const showAdminPickup = adminPickup != null && Number.isFinite(adminPickup) && adminPickup > 0;
   const showDelivery = delivery != null && Number.isFinite(delivery) && delivery > 0;
 
   // لا نعرض أي رقم إذا لم توجد حركة فعلية
-  if (!showPickup && !showPreparerPickup && !showDelivery) return null;
+  if (!showPickup && !showPreparerPickup && !showAdminPickup && !showDelivery) return null;
 
   const pillBase =
     "inline-flex items-center justify-center rounded px-1 py-0.5 text-[10px] font-black leading-none tabular-nums ring-1 shadow-sm";
@@ -114,6 +116,14 @@ function MoneyMiniBadges({ row }: { row: MandoubRow }) {
           title="صادر المجهز"
         >
           {formatDinarAsAlf(preparerPickup)}
+        </span>
+      ) : null}
+      {showAdminPickup ? (
+        <span
+          className={`${pillBase} bg-blue-600 text-white ring-blue-700`}
+          title="صادر الإدارة"
+        >
+          {formatDinarAsAlf(adminPickup)}
         </span>
       ) : null}
       {showDelivery ? (

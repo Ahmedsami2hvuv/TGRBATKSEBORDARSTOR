@@ -63,173 +63,200 @@ async function getShopAutoDebt(shopId: string): Promise<number> {
 // 1. جلب قائمة الأطراف مع احتساب الأرصدة اليدوية والتلقائية
 export async function getPartners(searchQuery?: string, typeFilter?: string): Promise<PartnerWithBalance[]> {
   try {
-    // مزامنة تلقائية سريعة بالخلفية للمحلات والمناديب والمجهزين عند كل تحميل للصفحة
-    try {
-      const [allShops, allCouriers, allPreparers] = await Promise.all([
-        prisma.shop.findMany({ select: { id: true, name: true, phone: true } }),
-        prisma.courier.findMany({ where: { blocked: false }, select: { id: true, name: true, phone: true } }),
-        prisma.companyPreparer.findMany({ select: { id: true, name: true, phone: true } })
-      ]);
+    // 1. مزامنة تلقائية سريعة بالخلفية للمحلات والمناديب والمجهزين عند كل تحميل للصفحة فقط في حال عدم وجود كلمة بحث لتفادي البطء أثناء الكتابة
+    if (!searchQuery) {
+      try {
+        const [allShops, allCouriers, allPreparers] = await Promise.all([
+          prisma.shop.findMany({ select: { id: true, name: true, phone: true } }),
+          prisma.courier.findMany({ where: { blocked: false }, select: { id: true, name: true, phone: true } }),
+          prisma.companyPreparer.findMany({ select: { id: true, name: true, phone: true } })
+        ]);
 
-      const existingPartners = await prisma.creditBookPartner.findMany({
-        select: { type: true, externalId: true, updatedAt: true }
-      });
-
-      const existingShops = new Set(existingPartners.filter(p => p.type === "shop").map(p => p.externalId));
-      const existingCouriers = new Set(existingPartners.filter(p => p.type === "courier").map(p => p.externalId));
-      const existingPreparers = new Set(existingPartners.filter(p => p.type === "preparer").map(p => p.externalId));
-
-      const deletedShopsMap = new Map(existingPartners.filter(p => p.type === "deleted_shop" && p.externalId).map(p => [p.externalId as string, p.updatedAt]));
-      const deletedCouriersMap = new Map(existingPartners.filter(p => p.type === "deleted_courier" && p.externalId).map(p => [p.externalId as string, p.updatedAt]));
-      const deletedPreparersMap = new Map(existingPartners.filter(p => p.type === "deleted_preparer" && p.externalId).map(p => [p.externalId as string, p.updatedAt]));
-
-      // جلب معرفات المحلات التي لديها طلبات غير مسددة نشطة
-      const shopsWithUnpaidOrders = await prisma.order.findMany({
-        where: {
-          shopCostPaidAt: null,
-          status: { notIn: ["cancelled"] },
-          orderSubtotal: { gt: 0 }
-        },
-        select: { shopId: true },
-        distinct: ["shopId"]
-      }).then(list => new Set(list.map(o => o.shopId).filter(Boolean)));
-
-      const partnersToCreate: any[] = [];
-      const partnersToRestore: string[] = [];
-
-      for (const s of allShops) {
-        if (!existingShops.has(s.id)) {
-          const deletedAt = deletedShopsMap.get(s.id);
-          if (deletedAt) {
-            // المحل محذوف ناعماً، نتحقق إذا كان هناك طلب غير مسدد جديد بعد تاريخ الحذف
-            const hasNewUnpaidOrder = await prisma.order.findFirst({
-              where: {
-                shopId: s.id,
-                shopCostPaidAt: null,
-                status: { notIn: ["cancelled"] },
-                orderSubtotal: { gt: 0 },
-                createdAt: { gt: deletedAt }
-              },
-              select: { id: true }
-            });
-            if (hasNewUnpaidOrder) {
-              partnersToRestore.push(s.id);
-            }
-          } else if (shopsWithUnpaidOrders.has(s.id)) {
-            // ليس محذوفاً ناعماً وليس له شريك، ننشئه لأول مرة
-            partnersToCreate.push({
-              name: `${s.name} (محل/مجهز)`,
-              phone: s.phone || null,
-              type: "shop",
-              externalId: s.id
-            });
-          }
-        }
-      }
-
-      for (const c of allCouriers) {
-        if (!existingCouriers.has(c.id)) {
-          const deletedAt = deletedCouriersMap.get(c.id);
-          if (deletedAt) {
-            // المندوب محذوف ناعماً، نتحقق إذا كانت هناك حركة مالية أو طلب جديد بعد تاريخ الحذف
-            const [hasNewOrderEvent, hasNewMiscEntry] = await Promise.all([
-              prisma.orderCourierMoneyEvent.findFirst({
-                where: {
-                  courierId: c.id,
-                  deletedAt: null,
-                  createdAt: { gt: deletedAt }
-                },
-                select: { id: true }
-              }),
-              prisma.courierWalletMiscEntry.findFirst({
-                where: {
-                  courierId: c.id,
-                  deletedAt: null,
-                  createdAt: { gt: deletedAt }
-                },
-                select: { id: true }
-              })
-            ]);
-            if (hasNewOrderEvent || hasNewMiscEntry) {
-              partnersToRestore.push(c.id);
-            }
-          } else {
-            // ليس محذوفاً ناعماً، نتحقق من الأرصدة الحالية
-            const adminTotal = await computeMandoubAdminTotalAllTimeDinar(c.id);
-            const walletRem = await computeMandoubWalletRemainAllTimeDinar(c.id);
-            if (adminTotal.toNumber() !== 0 || walletRem.toNumber() !== 0) {
-              partnersToCreate.push({
-                name: `${c.name} (مندوب)`,
-                phone: c.phone,
-                type: "courier",
-                externalId: c.id
-              });
-            }
-          }
-        }
-      }
-
-      for (const pr of allPreparers) {
-        if (!existingPreparers.has(pr.id)) {
-          const deletedAt = deletedPreparersMap.get(pr.id);
-          if (deletedAt) {
-            // المجهز محذوف ناعماً، نتحقق إذا كانت هناك حركات محفظة جديدة له بعد تاريخ الحذف
-            const hasNewEntry = await prisma.companyPreparerWalletMiscEntry.findFirst({
-              where: {
-                preparerId: pr.id,
-                deletedAt: null,
-                createdAt: { gt: deletedAt }
-              },
-              select: { id: true }
-            });
-            if (hasNewEntry) {
-              partnersToRestore.push(pr.id);
-            }
-          } else {
-            const prepTotals = await getPreparerMoneyTotals(pr.id);
-            if (prepTotals && prepTotals.remain.toNumber() !== 0) {
-              partnersToCreate.push({
-                name: `${pr.name} (مجهز)`,
-                phone: pr.phone,
-                type: "preparer",
-                externalId: pr.id
-              });
-            }
-          }
-        }
-      }
-
-      if (partnersToRestore.length > 0) {
-        // نقوم بإعادة تفعيل الأطراف المحذوفة ناعماً
-        for (const extId of partnersToRestore) {
-          const partner = await prisma.creditBookPartner.findFirst({
-            where: {
-              externalId: extId,
-              type: { startsWith: "deleted_" }
-            },
-            select: { id: true, type: true }
-          });
-          if (partner) {
-            const originalType = partner.type.replace("deleted_", "");
-            await prisma.creditBookPartner.update({
-              where: { id: partner.id },
-              data: {
-                type: originalType,
-                updatedAt: new Date()
-              }
-            });
-          }
-        }
-      }
-
-      if (partnersToCreate.length > 0) {
-        await prisma.creditBookPartner.createMany({
-          data: partnersToCreate,
-          skipDuplicates: true
+        const existingPartners = await prisma.creditBookPartner.findMany({
+          select: { type: true, externalId: true, updatedAt: true }
         });
+
+        const existingShops = new Set(existingPartners.filter(p => p.type === "shop").map(p => p.externalId));
+        const existingCouriers = new Set(existingPartners.filter(p => p.type === "courier").map(p => p.externalId));
+        const existingPreparers = new Set(existingPartners.filter(p => p.type === "preparer").map(p => p.externalId));
+
+        const deletedShopsMap = new Map(existingPartners.filter(p => p.type === "deleted_shop" && p.externalId).map(p => [p.externalId as string, p.updatedAt]));
+        const deletedCouriersMap = new Map(existingPartners.filter(p => p.type === "deleted_courier" && p.externalId).map(p => [p.externalId as string, p.updatedAt]));
+        const deletedPreparersMap = new Map(existingPartners.filter(p => p.type === "deleted_preparer" && p.externalId).map(p => [p.externalId as string, p.updatedAt]));
+
+        // جلب معرفات المحلات التي لديها طلبات غير مسددة نشطة
+        const shopsWithUnpaidOrders = await prisma.order.findMany({
+          where: {
+            shopCostPaidAt: null,
+            status: { notIn: ["cancelled"] },
+            orderSubtotal: { gt: 0 }
+          },
+          select: { shopId: true },
+          distinct: ["shopId"]
+        }).then(list => new Set(list.map(o => o.shopId).filter(Boolean)));
+
+        const partnersToCreate: any[] = [];
+        const partnersToRestore: string[] = [];
+
+        // التحقق من تفعيل واستعادة المحلات بالتوازي
+        const shopRestoreChecks = await Promise.all(
+          allShops.map(async (s) => {
+            if (!existingShops.has(s.id)) {
+              const deletedAt = deletedShopsMap.get(s.id);
+              if (deletedAt) {
+                const hasNewUnpaidOrder = await prisma.order.findFirst({
+                  where: {
+                    shopId: s.id,
+                    shopCostPaidAt: null,
+                    status: { notIn: ["cancelled"] },
+                    orderSubtotal: { gt: 0 },
+                    createdAt: { gt: deletedAt }
+                  },
+                  select: { id: true }
+                });
+                if (hasNewUnpaidOrder) {
+                  return { action: 'restore', id: s.id };
+                }
+              } else if (shopsWithUnpaidOrders.has(s.id)) {
+                return {
+                  action: 'create',
+                  data: {
+                    name: `${s.name} (محل/مجهز)`,
+                    phone: s.phone || null,
+                    type: "shop",
+                    externalId: s.id
+                  }
+                };
+              }
+            }
+            return null;
+          })
+        );
+
+        // التحقق من تفعيل واستعادة المناديب بالتوازي
+        const courierRestoreChecks = await Promise.all(
+          allCouriers.map(async (c) => {
+            if (!existingCouriers.has(c.id)) {
+              const deletedAt = deletedCouriersMap.get(c.id);
+              if (deletedAt) {
+                const [hasNewOrderEvent, hasNewMiscEntry] = await Promise.all([
+                  prisma.orderCourierMoneyEvent.findFirst({
+                    where: {
+                      courierId: c.id,
+                      deletedAt: null,
+                      createdAt: { gt: deletedAt }
+                    },
+                    select: { id: true }
+                  }),
+                  prisma.courierWalletMiscEntry.findFirst({
+                    where: {
+                      courierId: c.id,
+                      deletedAt: null,
+                      createdAt: { gt: deletedAt }
+                    },
+                    select: { id: true }
+                  })
+                ]);
+                if (hasNewOrderEvent || hasNewMiscEntry) {
+                  return { action: 'restore', id: c.id };
+                }
+              } else {
+                const adminTotal = await computeMandoubAdminTotalAllTimeDinar(c.id);
+                const walletRem = await computeMandoubWalletRemainAllTimeDinar(c.id);
+                if (adminTotal.toNumber() !== 0 || walletRem.toNumber() !== 0) {
+                  return {
+                    action: 'create',
+                    data: {
+                      name: `${c.name} (مندوب)`,
+                      phone: c.phone,
+                      type: "courier",
+                      externalId: c.id
+                    }
+                  };
+                }
+              }
+            }
+            return null;
+          })
+        );
+
+        // التحقق من تفعيل واستعادة المجهزين بالتوازي
+        const preparerRestoreChecks = await Promise.all(
+          allPreparers.map(async (pr) => {
+            if (!existingPreparers.has(pr.id)) {
+              const deletedAt = deletedPreparersMap.get(pr.id);
+              if (deletedAt) {
+                const hasNewEntry = await prisma.companyPreparerWalletMiscEntry.findFirst({
+                  where: {
+                    preparerId: pr.id,
+                    deletedAt: null,
+                    createdAt: { gt: deletedAt }
+                  },
+                  select: { id: true }
+                });
+                if (hasNewEntry) {
+                  return { action: 'restore', id: pr.id };
+                }
+              } else {
+                const prepTotals = await getPreparerMoneyTotals(pr.id);
+                if (prepTotals && prepTotals.remain.toNumber() !== 0) {
+                  return {
+                    action: 'create',
+                    data: {
+                      name: `${pr.name} (مجهز)`,
+                      phone: pr.phone,
+                      type: "preparer",
+                      externalId: pr.id
+                    }
+                  };
+                }
+              }
+            }
+            return null;
+          })
+        );
+
+        const allChecks = [...shopRestoreChecks, ...courierRestoreChecks, ...preparerRestoreChecks].filter(Boolean);
+
+        for (const item of allChecks) {
+          if (item?.action === 'restore') {
+            partnersToRestore.push(item.id);
+          } else if (item?.action === 'create') {
+            partnersToCreate.push(item.data);
+          }
+        }
+
+        if (partnersToRestore.length > 0) {
+          for (const extId of partnersToRestore) {
+            const partner = await prisma.creditBookPartner.findFirst({
+              where: {
+                externalId: extId,
+                type: { startsWith: "deleted_" }
+              },
+              select: { id: true, type: true }
+            });
+            if (partner) {
+              const originalType = partner.type.replace("deleted_", "");
+              await prisma.creditBookPartner.update({
+                where: { id: partner.id },
+                data: {
+                  type: originalType,
+                  updatedAt: new Date()
+                }
+              });
+            }
+          }
+        }
+
+        if (partnersToCreate.length > 0) {
+          await prisma.creditBookPartner.createMany({
+            data: partnersToCreate,
+            skipDuplicates: true
+          });
+        }
+      } catch (syncErr) {
+        console.error("Auto sync in getPartners failed:", syncErr);
       }
-    } catch (syncErr) {
-      console.error("Auto sync in getPartners failed:", syncErr);
     }
 
     const whereClause: any = {
@@ -262,78 +289,74 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
       orderBy: { name: "asc" },
     });
 
-    const result: PartnerWithBalance[] = [];
+    // حساب الأرصدة بالتوازي باستخدام Promise.all لتفادي التأخير والعمليات المتتالية البطئية
+    const result: PartnerWithBalance[] = await Promise.all(
+      partners.map(async (p) => {
+        let totalGave = 0;
+        let totalTook = 0;
 
-    for (const p of partners) {
-      let totalGave = 0;
-      let totalTook = 0;
-
-      // حساب الرصيد اليدوي بالدفتر
-      p.transactions.forEach((t) => {
-        const amt = Number(t.amount);
-        if (t.kind === "gave") {
-          totalGave += amt;
-        } else if (t.kind === "took") {
-          totalTook += amt;
-        }
-      });
-
-      const manualBalance = totalGave - totalTook;
-      let autoBalance = 0;
-      let walletRemain = 0;
-
-      // حساب الحسابات التلقائية المدمجة بناءً على نوع الطرف
-      if (p.type === "courier" && p.externalId) {
-        // للمناديب: جلب ما بذمته للإدارة
-        try {
-          const adminTotal = await computeMandoubAdminTotalAllTimeDinar(p.externalId);
-          autoBalance = adminTotal.toNumber(); // موجب = نطلبه (gave)، سالب = يطلبنا (took)
-          
-          // متبقي المحفظة للمندوب
-          const walletRem = await computeMandoubWalletRemainAllTimeDinar(p.externalId);
-          walletRemain = walletRem.toNumber();
-        } catch (e) {
-          console.error(`Failed to get courier auto debt for ${p.name}:`, e);
-        }
-      } else if (p.type === "preparer" && p.externalId) {
-        // للمجهزين: جلب رصيد المحفظة
-        try {
-          const prepTotals = await getPreparerMoneyTotals(p.externalId);
-          if (prepTotals) {
-            autoBalance = prepTotals.remain.toNumber(); // موجب = نطلبه، سالب = يطلبنا
-            walletRemain = prepTotals.remain.toNumber();
+        p.transactions.forEach((t) => {
+          const amt = Number(t.amount);
+          if (t.kind === "gave") {
+            totalGave += amt;
+          } else if (t.kind === "took") {
+            totalTook += amt;
           }
-        } catch (e) {
-          console.error(`Failed to get preparer auto debt for ${p.name}:`, e);
-        }
-      } else if (p.type === "shop" && p.externalId) {
-        // للمحلات: الطلبات غير المسددة هي ديون علينا لهم (أي أخذت - took)
-        try {
-          const shopUnpaid = await getShopAutoDebt(p.externalId);
-          autoBalance = -shopUnpaid; // سالب لأننا مدينين للمحل بالطلبات غير المسددة
-        } catch (e) {
-          console.error(`Failed to get shop auto debt for ${p.name}:`, e);
-        }
-      }
+        });
 
-      result.push({
-        id: p.id,
-        name: p.name,
-        phone: p.phone,
-        type: p.type as PartnerType,
-        externalId: p.externalId,
-        createdAt: p.createdAt,
-        updatedAt: p.updatedAt,
-        manualBalance,
-        autoBalance,
-        balance: manualBalance + autoBalance,
-        totalGave,
-        totalTook,
-        walletRemain
-      });
-    }
+        const manualBalance = totalGave - totalTook;
+        let autoBalance = 0;
+        let walletRemain = 0;
 
-    // فرز النتائج: الحسابات غير الصفرية أولاً حسب آخر نشاط (updatedAt) تنازلياً، ثم الحسابات الصفرية في النهاية حسب آخر نشاط تنازلياً
+        if (p.type === "courier" && p.externalId) {
+          try {
+            const [adminTotal, walletRem] = await Promise.all([
+              computeMandoubAdminTotalAllTimeDinar(p.externalId),
+              computeMandoubWalletRemainAllTimeDinar(p.externalId)
+            ]);
+            autoBalance = adminTotal.toNumber();
+            walletRemain = walletRem.toNumber();
+          } catch (e) {
+            console.error(`Failed to get courier auto debt for ${p.name}:`, e);
+          }
+        } else if (p.type === "preparer" && p.externalId) {
+          try {
+            const prepTotals = await getPreparerMoneyTotals(p.externalId);
+            if (prepTotals) {
+              autoBalance = prepTotals.remain.toNumber();
+              walletRemain = prepTotals.remain.toNumber();
+            }
+          } catch (e) {
+            console.error(`Failed to get preparer auto debt for ${p.name}:`, e);
+          }
+        } else if (p.type === "shop" && p.externalId) {
+          try {
+            const shopUnpaid = await getShopAutoDebt(p.externalId);
+            autoBalance = -shopUnpaid;
+          } catch (e) {
+            console.error(`Failed to get shop auto debt for ${p.name}:`, e);
+          }
+        }
+
+        return {
+          id: p.id,
+          name: p.name,
+          phone: p.phone,
+          type: p.type as PartnerType,
+          externalId: p.externalId,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+          manualBalance,
+          autoBalance,
+          balance: manualBalance + autoBalance,
+          totalGave,
+          totalTook,
+          walletRemain
+        };
+      })
+    );
+
+    // فرز النتائج: الحسابات غير الصفرية أولاً حسب آخر نشاط (updatedAt) تنازلياً، ثم الحسابات الصفرية في النهاية
     result.sort((a, b) => {
       const aZero = a.balance === 0;
       const bZero = b.balance === 0;
@@ -341,7 +364,6 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
       if (aZero && !bZero) return 1;
       if (!aZero && bZero) return -1;
 
-      // ترتيب تنازلي حسب تاريخ آخر تعديل (الأحدث أولاً)
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
 

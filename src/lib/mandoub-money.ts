@@ -41,6 +41,37 @@ export function sumPickupOutFromOrderMoneyEvents(
   return sum;
 }
 
+export function sumCourierPickupOut(moneyEvents: any[]): number {
+  return moneyEvents.reduce((sum, e) => {
+    if (e.kind === MONEY_KIND_PICKUP && e.deletedAt == null && e.courierId != null && e.recordedByCompanyPreparerId == null) {
+      const val = typeof e.amountDinar === 'object' && e.amountDinar !== null && 'toNumber' in e.amountDinar ? e.amountDinar.toNumber() : Number(e.amountDinar);
+      return sum + (Number.isNaN(val) ? 0 : val);
+    }
+    return sum;
+  }, 0);
+}
+
+export function sumPreparerPickupOut(moneyEvents: any[]): number {
+  return moneyEvents.reduce((sum, e) => {
+    if (e.kind === MONEY_KIND_PICKUP && e.deletedAt == null && e.recordedByCompanyPreparerId != null) {
+      const val = typeof e.amountDinar === 'object' && e.amountDinar !== null && 'toNumber' in e.amountDinar ? e.amountDinar.toNumber() : Number(e.amountDinar);
+      return sum + (Number.isNaN(val) ? 0 : val);
+    }
+    return sum;
+  }, 0);
+}
+
+export function sumAdminPickupOut(moneyEvents: any[]): number {
+  return moneyEvents.reduce((sum, e) => {
+    if (e.kind === MONEY_KIND_PICKUP && e.deletedAt == null && e.courierId == null && e.recordedByCompanyPreparerId == null) {
+      const val = typeof e.amountDinar === 'object' && e.amountDinar !== null && 'toNumber' in e.amountDinar ? e.amountDinar.toNumber() : Number(e.amountDinar);
+      return sum + (Number.isNaN(val) ? 0 : val);
+    }
+    return sum;
+  }, 0);
+}
+
+
 /** المجموع المتوقع = سعر الطلب + التوصيل */
 export function orderExpectedTotal(
   orderSubtotal: Decimal | null,

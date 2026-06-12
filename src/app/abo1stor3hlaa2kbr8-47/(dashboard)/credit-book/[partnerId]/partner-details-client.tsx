@@ -369,360 +369,240 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* نموذج إضافة معاملة جديدة */}
-        <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-right h-fit">
-          <h3 className="text-md font-black text-slate-800 mb-4">✍️ تسجيل معاملة يدوية جديدة</h3>
-          <form onSubmit={handleAddTx} className="space-y-4">
-            <div>
-              <label className="block text-xs font-black text-slate-500 mb-1.5">قيمة المبلغ</label>
-              <input
-                type="text"
-                required
-                placeholder="مثال: 50,000"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm font-semibold focus:outline-none focus:indigo-500 text-left"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-black text-slate-500 mb-1.5">نوع المعاملة</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setKind("gave")}
-                  className={`py-2 text-xs font-black rounded-xl border text-center transition ${
-                    kind === "gave"
-                      ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  🟢 أعطيت (نطلبه / سلفة)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setKind("took")}
-                  className={`py-2 text-xs font-black rounded-xl border text-center transition ${
-                    kind === "took"
-                      ? "bg-rose-50 border-rose-300 text-rose-700"
-                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  🔴 أخذت (يطلبنا / تسديد)
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-black text-slate-500 mb-1.5">تاريخ المعاملة (اختياري)</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:indigo-500 text-right bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-black text-slate-500 mb-1.5">بيان أو ملاحظات</label>
-              <textarea
-                placeholder="تفاصيل المعاملة..."
-                rows={3}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:indigo-500 text-right"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-black text-slate-500 mb-1.5">إرفاق صورة المعاملة (اختياري)</label>
-              <input
-                id="tx-image-input"
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  setImageFile(file);
-                }}
-                className="w-full px-4 py-2 rounded-2xl border border-slate-200 text-sm focus:outline-none bg-white text-right"
-              />
-            </div>
-
-            {error && <p className="text-xs font-bold text-rose-600">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={isAdding}
-              className="w-full px-4 py-3 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition disabled:opacity-50 shadow-md shadow-indigo-900/10"
-            >
-              {isAdding ? "جاري الحفظ..." : "حفظ المعاملة بالدفتر"}
-            </button>
-          </form>
-
+      {/* نموذج إضافة معاملة جديدة بالكامل بشكل أفقي */}
+      <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-right">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 pb-4 border-b border-slate-100">
+          <h3 className="text-md font-black text-slate-800">✍️ تسجيل معاملة يدوية جديدة</h3>
           {/* أزرار تصفير الحساب وحذف الحساب */}
-          <div className="mt-8 pt-6 border-t border-slate-100 space-y-3">
+          <div className="flex flex-wrap gap-3">
             {partner.balance !== 0 && (
               <button
+                type="button"
                 onClick={handleZeroAccount}
-                className="w-full px-4 py-2.5 text-xs font-black text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-2xl transition text-center"
+                className="px-4 py-2 text-xs font-black text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-2xl transition text-center"
               >
                 🧹 تصفير الحساب بالكامل
               </button>
             )}
             <button
+              type="button"
               onClick={handleDeletePartner}
-              className="w-full px-4 py-2.5 text-xs font-black text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-2xl transition text-center"
+              className="px-4 py-2 text-xs font-black text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-2xl transition text-center"
             >
               🗑️ حذف هذا الحساب بالكامل
             </button>
           </div>
         </div>
 
-        {/* كشف الحساب وتفاصيل المعاملات التاريخية */}
-        <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-right lg:col-span-2 space-y-6">
-          <h3 className="text-md font-black text-slate-800">📄 كشف المعاملات التاريخية</h3>
+        <form onSubmit={handleAddTx} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-4 items-end">
+          <div>
+            <label className="block text-xs font-black text-slate-500 mb-1.5">قيمة المبلغ</label>
+            <input
+              type="text"
+              required
+              placeholder="مثال: 50,000"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm font-semibold focus:outline-none focus:border-indigo-500 text-left"
+            />
+          </div>
 
-          {partner.transactions.length === 0 ? (
-            <div className="py-20 text-center text-slate-400 font-bold">لا يوجد أي معاملات مالية مسجلة لهذا الحساب.</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* عمود أعطيت (نطلبه) */}
-              <div className="space-y-4">
-                <div className="bg-emerald-50/60 border border-emerald-100 p-3 rounded-2xl text-center">
-                  <span className="text-xs font-black text-emerald-800">🟢 أعطيت (نطلبه)</span>
-                </div>
-                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-                  {partner.transactions.filter((tx) => tx.kind === "gave").length === 0 ? (
-                    <div className="py-12 text-center text-slate-400 text-xs font-bold bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">لا يوجد قيود "أعطيت"</div>
-                  ) : (
-                    partner.transactions.filter((tx) => tx.kind === "gave").map((tx) => (
-                      <div 
-                        key={tx.id} 
-                        className={`p-4 rounded-2xl border transition ${
-                          tx.isAuto 
-                            ? "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
-                            : "bg-emerald-50/20 border-emerald-100 hover:bg-emerald-50/30"
-                        }`}
-                      >
-                        <div className="flex flex-col gap-3">
-                          <div className="flex justify-between items-start gap-2">
-                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
-                              tx.isAuto 
-                                ? "bg-indigo-100 text-indigo-800"
-                                : "bg-emerald-100 text-emerald-800"
-                            }`}>
-                              {tx.isAuto ? "⚙️ تلقائي" : "🟢 أعطيت"}
-                            </span>
-                            <span className="text-sm font-black tabular-nums text-slate-800">
-                              {formatDinarAsAlfWithUnit(tx.amount)}
-                            </span>
-                          </div>
-
-                          <p className="text-xs font-bold text-slate-700">{tx.note || "بدون بيان وملاحظات"}</p>
-                          
-                          {tx.imageUrl && (
-                            <div className="mt-1">
-                              <img 
-                                src={tx.imageUrl} 
-                                alt="مرفق المعاملة" 
-                                className="max-h-20 rounded-lg object-contain border border-slate-100 shadow-sm cursor-zoom-in"
-                                onClick={() => window.open(tx.imageUrl!, "_blank")}
-                              />
-                            </div>
-                          )}
-
-                          <div className="flex justify-between items-center mt-1 pt-1 border-t border-slate-100/60">
-                            <span className="text-[9px] text-slate-400 font-medium">
-                              {new Date(tx.createdAt).toLocaleDateString("ar-EG")} {new Date(tx.createdAt).toLocaleTimeString("ar-EG", {hour: "2-digit", minute: "2-digit"})}
-                            </span>
-
-                            <div className="flex gap-2">
-                              {!tx.isAuto ? (
-                                <>
-                                  <button
-                                    onClick={() => handleStartEdit(tx)}
-                                    className="px-2 py-1 text-[9px] font-black text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                                  >
-                                    ✏️ تعديل
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteTx(tx.id)}
-                                    className="px-2 py-1 text-[9px] font-black text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                                  >
-                                    🗑️ حذف
-                                  </button>
-                                </>
-                              ) : (
-                                <div className="flex flex-col gap-1 items-end">
-                                  {partner.type === "shop" && tx.id.startsWith("auto-order-") && (
-                                    <div className="flex gap-1.5 justify-end items-center flex-wrap">
-                                      <Link
-                                        href={`/abo1stor3hlaa2kbr8-47/orders/${tx.id.replace("auto-order-", "")}/edit`}
-                                        className="px-2 py-1 text-[9px] font-black text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition border border-blue-100"
-                                      >
-                                        📝 تعديل
-                                      </Link>
-                                      {tx.isPaid ? (
-                                        <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
-                                          ✅ مسدد
-                                        </span>
-                                      ) : (
-                                        <button
-                                          onClick={() => handleAdminPayOrder(tx)}
-                                          className="px-2 py-1 text-[9px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition shadow-md shadow-indigo-900/10"
-                                        >
-                                          💵 دفع
-                                        </button>
-                                      )}
-                                    </div>
-                                  )}
-                                  {tx.isAdminPayment && (
-                                    <div className="flex gap-1.5 justify-end">
-                                      <button
-                                        onClick={() => handleStartEditAdminPayment(tx)}
-                                        className="px-2 py-1 text-[9px] font-black text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                                      >
-                                        ✏️ تعديل الدفع
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteAdminPayment(tx.id)}
-                                        className="px-2 py-1 text-[9px] font-black text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                                      >
-                                        🗑️ حذف
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* عمود أخذت (يطلبنا) */}
-              <div className="space-y-4">
-                <div className="bg-rose-50/60 border border-rose-100 p-3 rounded-2xl text-center">
-                  <span className="text-xs font-black text-rose-800">🔴 أخذت (يطلبنا)</span>
-                </div>
-                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-                  {partner.transactions.filter((tx) => tx.kind === "took").length === 0 ? (
-                    <div className="py-12 text-center text-slate-400 text-xs font-bold bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">لا يوجد قيود "أخذت"</div>
-                  ) : (
-                    partner.transactions.filter((tx) => tx.kind === "took").map((tx) => (
-                      <div 
-                        key={tx.id} 
-                        className={`p-4 rounded-2xl border transition ${
-                          tx.isAuto 
-                            ? "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
-                            : "bg-rose-50/20 border-rose-100 hover:bg-rose-50/30"
-                        }`}
-                      >
-                        <div className="flex flex-col gap-3">
-                          <div className="flex justify-between items-start gap-2">
-                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
-                              tx.isAuto 
-                                ? "bg-indigo-100 text-indigo-800"
-                                : "bg-rose-100 text-rose-800"
-                            }`}>
-                              {tx.isAuto ? "⚙️ تلقائي" : "🔴 أخذت"}
-                            </span>
-                            <span className="text-sm font-black tabular-nums text-slate-800">
-                              {formatDinarAsAlfWithUnit(tx.amount)}
-                            </span>
-                          </div>
-
-                          <p className="text-xs font-bold text-slate-700">{tx.note || "بدون بيان وملاحظات"}</p>
-                          
-                          {tx.imageUrl && (
-                            <div className="mt-1">
-                              <img 
-                                src={tx.imageUrl} 
-                                alt="مرفق المعاملة" 
-                                className="max-h-20 rounded-lg object-contain border border-slate-100 shadow-sm cursor-zoom-in"
-                                onClick={() => window.open(tx.imageUrl!, "_blank")}
-                              />
-                            </div>
-                          )}
-
-                          <div className="flex justify-between items-center mt-1 pt-1 border-t border-slate-100/60">
-                            <span className="text-[9px] text-slate-400 font-medium">
-                              {new Date(tx.createdAt).toLocaleDateString("ar-EG")} {new Date(tx.createdAt).toLocaleTimeString("ar-EG", {hour: "2-digit", minute: "2-digit"})}
-                            </span>
-
-                            <div className="flex gap-2">
-                              {!tx.isAuto ? (
-                                <>
-                                  <button
-                                    onClick={() => handleStartEdit(tx)}
-                                    className="px-2 py-1 text-[9px] font-black text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                                  >
-                                    ✏️ تعديل
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteTx(tx.id)}
-                                    className="px-2 py-1 text-[9px] font-black text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                                  >
-                                    🗑️ حذف
-                                  </button>
-                                </>
-                              ) : (
-                                <div className="flex flex-col gap-1 items-end">
-                                  {partner.type === "shop" && tx.id.startsWith("auto-order-") && (
-                                    <div className="flex gap-1.5 justify-end items-center flex-wrap">
-                                      <Link
-                                        href={`/abo1stor3hlaa2kbr8-47/orders/${tx.id.replace("auto-order-", "")}/edit`}
-                                        className="px-2 py-1 text-[9px] font-black text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition border border-blue-100"
-                                      >
-                                        📝 تعديل
-                                      </Link>
-                                      {tx.isPaid ? (
-                                        <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
-                                          ✅ مسدد
-                                        </span>
-                                      ) : (
-                                        <button
-                                          onClick={() => handleAdminPayOrder(tx)}
-                                          className="px-2 py-1 text-[9px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition shadow-md shadow-indigo-900/10"
-                                        >
-                                          💵 دفع
-                                        </button>
-                                      )}
-                                    </div>
-                                  )}
-                                  {tx.isAdminPayment && (
-                                    <div className="flex gap-1.5 justify-end">
-                                      <button
-                                        onClick={() => handleStartEditAdminPayment(tx)}
-                                        className="px-2 py-1 text-[9px] font-black text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                                      >
-                                        ✏️ تعديل الدفع
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteAdminPayment(tx.id)}
-                                        className="px-2 py-1 text-[9px] font-black text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                                      >
-                                        🗑️ حذف
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+          <div>
+            <label className="block text-xs font-black text-slate-500 mb-1.5">نوع المعاملة</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setKind("gave")}
+                className={`py-2.5 text-xs font-black rounded-xl border text-center transition ${
+                  kind === "gave"
+                    ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                🟢 أعطيت (نطلبه)
+              </button>
+              <button
+                type="button"
+                onClick={() => setKind("took")}
+                className={`py-2.5 text-xs font-black rounded-xl border text-center transition ${
+                  kind === "took"
+                    ? "bg-rose-50 border-rose-300 text-rose-700"
+                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                🔴 أخذت (يطلبنا)
+              </button>
             </div>
-          )}
-        </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-black text-slate-500 mb-1.5">تاريخ المعاملة (اختياري)</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 text-right bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-black text-slate-500 mb-1.5">بيان أو ملاحظات</label>
+            <input
+              type="text"
+              placeholder="تفاصيل المعاملة..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 text-right"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-black text-slate-500 mb-1.5">إرفاق صورة المعاملة (اختياري)</label>
+            <input
+              id="tx-image-input"
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                setImageFile(file);
+              }}
+              className="w-full px-3 py-1.5 rounded-2xl border border-slate-200 text-xs focus:outline-none bg-white text-right"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            {error && <p className="text-[10px] font-bold text-rose-600 leading-tight">{error}</p>}
+            <button
+              type="submit"
+              disabled={isAdding}
+              className="w-full px-4 py-3 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition disabled:opacity-50 shadow-md shadow-indigo-900/10"
+            >
+              {isAdding ? "جاري الحفظ..." : "حفظ المعاملة"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* كشف الحساب وتفاصيل المعاملات التاريخية */}
+      <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-right space-y-6">
+        <h3 className="text-md font-black text-slate-800">📄 كشف المعاملات التاريخية</h3>
+
+        {partner.transactions.length === 0 ? (
+          <div className="py-20 text-center text-slate-400 font-bold">لا يوجد أي معاملات مالية مسجلة لهذا الحساب.</div>
+        ) : (
+          <div className="space-y-3 max-h-[800px] overflow-y-auto pr-1">
+            {partner.transactions.map((tx) => (
+              <div 
+                key={tx.id} 
+                className={`p-4 rounded-2xl border transition flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${
+                  tx.isAuto 
+                    ? "bg-slate-50 border-slate-200 hover:bg-slate-100/70"
+                    : tx.kind === "gave"
+                      ? "bg-emerald-50/20 border-emerald-100 hover:bg-emerald-50/30"
+                      : "bg-rose-50/20 border-rose-100 hover:bg-rose-50/30"
+                }`}
+              >
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${
+                      tx.isAuto 
+                        ? "bg-indigo-100 text-indigo-800"
+                        : tx.kind === "gave"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-rose-100 text-rose-800"
+                    }`}>
+                      {tx.isAuto ? "⚙️ تلقائي" : tx.kind === "gave" ? "🟢 أعطيت" : "🔴 أخذت"}
+                    </span>
+                    <span className={`text-sm font-black tabular-nums ${
+                      tx.kind === "gave" ? "text-emerald-700" : "text-rose-700"
+                    }`}>
+                      {formatDinarAsAlfWithUnit(tx.amount)}
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-bold text-slate-700">{tx.note || "بدون بيان وملاحظات"}</p>
+                  
+                  {tx.imageUrl && (
+                    <div className="mt-1 md:mt-0">
+                      <img 
+                        src={tx.imageUrl} 
+                        alt="مرفق المعاملة" 
+                        className="max-h-12 rounded-lg object-contain border border-slate-100 shadow-sm cursor-zoom-in"
+                        onClick={() => window.open(tx.imageUrl!, "_blank")}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    {new Date(tx.createdAt).toLocaleDateString("ar-EG")} {new Date(tx.createdAt).toLocaleTimeString("ar-EG", {hour: "2-digit", minute: "2-digit"})}
+                  </span>
+
+                  <div className="flex gap-2">
+                    {!tx.isAuto ? (
+                      <>
+                        <button
+                          onClick={() => handleStartEdit(tx)}
+                          className="px-2.5 py-1 text-[10px] font-black text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                        >
+                          ✏️ تعديل
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTx(tx.id)}
+                          className="px-2.5 py-1 text-[10px] font-black text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                        >
+                          🗑️ حذف
+                        </button>
+                      </>
+                    ) : (
+                      <div className="flex flex-col gap-1 items-end">
+                        {partner.type === "shop" && tx.id.startsWith("auto-order-") && (
+                          <div className="flex gap-1.5 justify-end items-center flex-wrap">
+                            <Link
+                              href={`/abo1stor3hlaa2kbr8-47/orders/${tx.id.replace("auto-order-", "")}/edit`}
+                              className="px-2 py-1 text-[9px] font-black text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition border border-blue-100"
+                            >
+                              📝 تعديل
+                            </Link>
+                            {tx.isPaid ? (
+                              <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
+                                ✅ مسدد
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleAdminPayOrder(tx)}
+                                className="px-2 py-1 text-[9px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition shadow-md shadow-indigo-900/10"
+                              >
+                                💵 دفع
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        {tx.isAdminPayment && (
+                          <div className="flex gap-1.5 justify-end">
+                            <button
+                              onClick={() => handleStartEditAdminPayment(tx)}
+                              className="px-2.5 py-1 text-[10px] font-black text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                            >
+                              ✏️ تعديل الدفع
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAdminPayment(tx.id)}
+                              className="px-2.5 py-1 text-[10px] font-black text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                            >
+                              🗑️ حذف
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
 

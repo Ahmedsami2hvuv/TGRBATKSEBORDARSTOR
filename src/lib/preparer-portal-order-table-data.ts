@@ -198,12 +198,28 @@ export async function loadPreparerPortalOrderTableData(args: {
     const status = safeString(o.status) || "pending";
     const statusClass = orderStatusBadgeClassPrepaid(status, Boolean(o.prepaidAll));
 
-    const pickupSumDinar = o.moneyEvents
-      .filter((e) => e.kind === MONEY_KIND_PICKUP && e.deletedAt == null)
-      .reduce((acc, e) => acc + Number(e.amountDinar), 0);
+    const courierPickupEvents = o.moneyEvents.filter(
+      (e) => e.kind === MONEY_KIND_PICKUP && e.deletedAt == null && e.courierId != null && e.recordedByCompanyPreparerId == null
+    );
+    const courierPickup = courierPickupEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
+
+    const preparerPickupEvents = o.moneyEvents.filter(
+      (e) => e.kind === MONEY_KIND_PICKUP && e.deletedAt == null && e.recordedByCompanyPreparerId != null
+    );
+    const preparerPickup = preparerPickupEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
+
+    const adminPickupEvents = o.moneyEvents.filter(
+      (e) => e.kind === MONEY_KIND_PICKUP && e.deletedAt == null && e.courierId == null && e.recordedByCompanyPreparerId == null
+    );
+    const adminPickup = adminPickupEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
+
+    const pickupSumDinar = courierPickup;
+    const preparerPickupSumDinar = preparerPickup;
+    const adminPickupSumDinar = adminPickup;
+
     const orderSubtotalDinar = o.orderSubtotal ? Number(o.orderSubtotal) : null;
     const totalAmountDinar = o.totalAmount ? Number(o.totalAmount) : null;
-    const pickupComplete = orderSubtotalDinar != null && Math.abs(pickupSumDinar - orderSubtotalDinar) < 1e-3;
+    const pickupComplete = orderSubtotalDinar != null && Math.abs(pickupSumDinar + preparerPickupSumDinar + adminPickupSumDinar - orderSubtotalDinar) < 1e-3;
 
     const shopLocationUrl = safeStringTrim((o as any).shopLocationUrl);
     const customerLocationUrl = safeStringTrim(o.customerLocationUrl || o.customer?.customerLocationUrl);
@@ -255,6 +271,8 @@ export async function loadPreparerPortalOrderTableData(args: {
       orderSubtotalDinar,
       totalAmountDinar,
       pickupSumDinar,
+      preparerPickupSumDinar,
+      adminPickupSumDinar,
 
       // Unified fast-access fields - Safe access
       audioUrl: safeStringTrim((o as any).voiceNoteUrl) || null,

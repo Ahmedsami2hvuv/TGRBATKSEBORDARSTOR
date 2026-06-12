@@ -14,6 +14,9 @@ import {
   isSaderMismatch,
   sumDeliveryInFromOrderMoneyEvents,
   sumPickupOutFromOrderMoneyEvents,
+  sumCourierPickupOut,
+  sumPreparerPickupOut,
+  sumAdminPickupOut,
 } from "@/lib/mandoub-money";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
@@ -78,7 +81,7 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
       customer: true,
       moneyEvents: {
         where: { deletedAt: null },
-        select: { kind: true, amountDinar: true, deletedAt: true },
+        select: { kind: true, amountDinar: true, deletedAt: true, courierId: true, recordedByCompanyPreparerId: true },
       },
     },
   });
@@ -89,39 +92,48 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
     select: { id: true, name: true },
   });
 
-  const tableRows: TrackingTableRow[] = orders.map((o) => ({
-    id: o.id,
-    orderNumber: o.orderNumber,
-    orderStatus: o.status,
-    assignedCourierId: o.assignedCourierId ?? null,
-    shopCustomerLabel: formatShopWithCustomer(o.shop.name, o.customer?.name, o.routeMode),
-    regionName: o.customerRegion?.name ?? o.shop.region.name,
-    orderType: o.orderType || "—",
-    routeModeLabel: o.routeMode === "double" ? "وجهتين" : "",
-    totalLabel: o.orderSubtotal != null ? formatDinarAsAlf(o.orderSubtotal) : "—",
-    deliveryLabel: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
-    customerPhone: o.customerPhone || "—",
-    courierName: o.courier?.name ?? "—",
-    hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
-    missingCustomerLocation: !hasCustomerLocationUrl(
-      o.customerLocationUrl,
-      o.customer?.customerLocationUrl,
-    ),
-    summary: o.summary,
-    preparerShoppingJson: o.preparerShoppingJson,
-    pickupSumDinar: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) != null ? Number(sumPickupOutFromOrderMoneyEvents(o.moneyEvents)) : null,
-    deliverySumDinar: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) != null ? Number(sumDeliveryInFromOrderMoneyEvents(o.moneyEvents)) : null,
-    wardMismatchType: isWardMismatch(
-      o.status,
-      o.totalAmount,
-      sumDeliveryInFromOrderMoneyEvents(o.moneyEvents),
-    ).type,
-    saderMismatchType: isSaderMismatch(
-      o.status,
-      o.orderSubtotal,
-      sumPickupOutFromOrderMoneyEvents(o.moneyEvents),
-    ).type,
-  }));
+  const tableRows: TrackingTableRow[] = orders.map((o) => {
+    const courierPickup = sumCourierPickupOut(o.moneyEvents);
+    const preparerPickup = sumPreparerPickupOut(o.moneyEvents);
+    const adminPickup = sumAdminPickupOut(o.moneyEvents);
+    const deliverySum = sumDeliveryInFromOrderMoneyEvents(o.moneyEvents);
+    
+    return {
+      id: o.id,
+      orderNumber: o.orderNumber,
+      orderStatus: o.status,
+      assignedCourierId: o.assignedCourierId ?? null,
+      shopCustomerLabel: formatShopWithCustomer(o.shop.name, o.customer?.name, o.routeMode),
+      regionName: o.customerRegion?.name ?? o.shop.region.name,
+      orderType: o.orderType || "—",
+      routeModeLabel: o.routeMode === "double" ? "وجهتين" : "",
+      totalLabel: o.orderSubtotal != null ? formatDinarAsAlf(o.orderSubtotal) : "—",
+      deliveryLabel: o.deliveryPrice != null ? formatDinarAsAlf(o.deliveryPrice) : "—",
+      customerPhone: o.customerPhone || "—",
+      courierName: o.courier?.name ?? "—",
+      hasCourierUploadedLocation: Boolean(o.customerLocationSetByCourierAt),
+      missingCustomerLocation: !hasCustomerLocationUrl(
+        o.customerLocationUrl,
+        o.customer?.customerLocationUrl,
+      ),
+      summary: o.summary,
+      preparerShoppingJson: o.preparerShoppingJson,
+      pickupSumDinar: courierPickup > 0 ? courierPickup : null,
+      preparerPickupSumDinar: preparerPickup > 0 ? preparerPickup : null,
+      adminPickupSumDinar: adminPickup > 0 ? adminPickup : null,
+      deliverySumDinar: deliverySum != null ? Number(deliverySum) : null,
+      wardMismatchType: isWardMismatch(
+        o.status,
+        o.totalAmount,
+        sumDeliveryInFromOrderMoneyEvents(o.moneyEvents),
+      ).type,
+      saderMismatchType: isSaderMismatch(
+        o.status,
+        o.orderSubtotal,
+        sumPickupOutFromOrderMoneyEvents(o.moneyEvents),
+      ).type,
+    };
+  });
 
   return (
     <div className="space-y-4" dir="rtl">

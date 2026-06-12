@@ -87,7 +87,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
           OR: [
             { status: "delivered" },
             {
-              preparerShoppingJson: { not: null },
+              preparerShoppingJson: { not: null as any },
               status: { notIn: ["cancelled", "rejected"] },
               shop: { name: { in: ADMIN_SHOP_NAMES } }
             }
@@ -105,7 +105,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
         orderBy: { createdAt: "asc" }
       });
 
-      const yearsMap = new Map<number, Map<number, Map<number, { delivery: number; prep: number }>>>();
+      const yearsMap = new Map<number, Map<number, Map<number, { delivery: number; prep: number; meat: number; fish: number; other: number }>>>();
 
       for (const order of allOrders) {
         const shiftDate = new Date(order.createdAt.getTime() - 3 * 60 * 60 * 1000);
@@ -122,7 +122,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
             courierEarning = new Decimal(0);
           } else if (courierEarning == null) {
             const vehicleType = order.courier?.vehicleType || null;
-            courierEarning = computeCourierDeliveryEarningDinar(vehicleType, order.deliveryPrice ?? null) as any;
+            courierEarning = computeCourierDeliveryEarningDinar(vehicleType as any, (order.deliveryPrice ?? null) as any) as any;
           }
           if (courierEarning != null) {
             deliveryProfit = order.deliveryPrice.minus(courierEarning).toNumber();
@@ -130,6 +130,9 @@ export default async function CombinedReportPage({ searchParams }: Props) {
         }
 
         let prepProfit = 0;
+        let meatProfit = 0;
+        let fishProfit = 0;
+        let otherProfit = 0;
         if (
           order.preparerShoppingJson != null &&
           order.status !== "cancelled" &&
@@ -141,6 +144,22 @@ export default async function CombinedReportPage({ searchParams }: Props) {
           const products = Array.isArray(json?.products) ? json.products : [];
           const totalProfitAlf = products.reduce((sum: number, p: any) => sum + (Number(p.sellAlf) - Number(p.buyAlf) || 0), 0);
           prepProfit = totalProfitAlf * ALF_PER_DINAR;
+
+          const meatProfitAlf = products.reduce((sum: number, p: any) => {
+            const line = p.line || "";
+            const isMeat = checkIsTypeFlexible(line, meatWhitelist) && !STRICT_EXCLUDE.some(ex => line.toLowerCase().includes(ex));
+            return isMeat ? sum + (Number(p.sellAlf) - Number(p.buyAlf) || 0) : sum;
+          }, 0);
+          meatProfit = meatProfitAlf * ALF_PER_DINAR;
+
+          const fishProfitAlf = products.reduce((sum: number, p: any) => {
+            const line = p.line || "";
+            const isFish = checkIsTypeFlexible(line, fishWhitelist) && !STRICT_EXCLUDE.some(ex => line.toLowerCase().includes(ex));
+            return isFish ? sum + (Number(p.sellAlf) - Number(p.buyAlf) || 0) : sum;
+          }, 0);
+          fishProfit = fishProfitAlf * ALF_PER_DINAR;
+
+          otherProfit = prepProfit - meatProfit - fishProfit;
         }
 
         if (deliveryProfit === 0 && prepProfit === 0) continue;
@@ -151,10 +170,13 @@ export default async function CombinedReportPage({ searchParams }: Props) {
         if (!monthsMap.has(m)) monthsMap.set(m, new Map());
         const daysMap = monthsMap.get(m)!;
 
-        if (!daysMap.has(d)) daysMap.set(d, { delivery: 0, prep: 0 });
+        if (!daysMap.has(d)) daysMap.set(d, { delivery: 0, prep: 0, meat: 0, fish: 0, other: 0 });
         const dayStat = daysMap.get(d)!;
         dayStat.delivery += deliveryProfit;
         dayStat.prep += prepProfit;
+        dayStat.meat += meatProfit;
+        dayStat.fish += fishProfit;
+        dayStat.other += otherProfit;
       }
 
       const stats: any[] = [];
@@ -165,40 +187,55 @@ export default async function CombinedReportPage({ searchParams }: Props) {
         const monthsList: any[] = [];
 
         for (let m = 1; m <= 12; m++) {
-          const daysMap = monthsMap.get(m) || new Map<number, { delivery: number; prep: number }>();
+          const daysMap = monthsMap.get(m) || new Map<number, { delivery: number; prep: number; meat: number; fish: number; other: number }>();
           const daysList: any[] = [];
 
           const numDays = new Date(y, m, 0).getDate();
           for (let d = 1; d <= numDays; d++) {
-            const dayStat = daysMap.get(d) || { delivery: 0, prep: 0 };
+            const dayStat = daysMap.get(d) || { delivery: 0, prep: 0, meat: 0, fish: 0, other: 0 };
             daysList.push({
               day: d,
               totalProfit: dayStat.delivery + dayStat.prep,
               deliveryProfit: dayStat.delivery,
-              prepProfit: dayStat.prep
+              prepProfit: dayStat.prep,
+              meatProfit: dayStat.meat,
+              fishProfit: dayStat.fish,
+              otherProfit: dayStat.other
             });
           }
 
           const totalDelivery = daysList.reduce((sum, d) => sum + d.deliveryProfit, 0);
           const totalPrep = daysList.reduce((sum, d) => sum + d.prepProfit, 0);
+          const totalMeat = daysList.reduce((sum, d) => sum + d.meatProfit, 0);
+          const totalFish = daysList.reduce((sum, d) => sum + d.fishProfit, 0);
+          const totalOther = daysList.reduce((sum, d) => sum + d.otherProfit, 0);
 
           monthsList.push({
             month: m,
             totalProfit: totalDelivery + totalPrep,
             deliveryProfit: totalDelivery,
             prepProfit: totalPrep,
+            meatProfit: totalMeat,
+            fishProfit: totalFish,
+            otherProfit: totalOther,
             days: daysList
           });
         }
 
         const totalDelivery = monthsList.reduce((sum, m) => sum + m.deliveryProfit, 0);
         const totalPrep = monthsList.reduce((sum, m) => sum + m.prepProfit, 0);
+        const totalMeat = monthsList.reduce((sum, m) => sum + m.meatProfit, 0);
+        const totalFish = monthsList.reduce((sum, m) => sum + m.fishProfit, 0);
+        const totalOther = monthsList.reduce((sum, m) => sum + m.otherProfit, 0);
 
         stats.push({
           year: y,
           totalProfit: totalDelivery + totalPrep,
           deliveryProfit: totalDelivery,
           prepProfit: totalPrep,
+          meatProfit: totalMeat,
+          fishProfit: totalFish,
+          otherProfit: totalOther,
           months: monthsList
         });
       }
@@ -316,7 +353,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
       prisma.order.findMany({
         where: {
           createdAt: { gte: from, lte: to },
-          preparerShoppingJson: { not: null },
+          preparerShoppingJson: { not: null as any },
           status: { notIn: ["cancelled", "rejected"] },
           shop: { name: { in: ADMIN_SHOP_NAMES } }
         },
@@ -327,7 +364,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
       prisma.order.findMany({
         where: {
           createdAt: { gte: rangeFrom, lte: to },
-          preparerShoppingJson: { not: null },
+          preparerShoppingJson: { not: null as any },
           status: { notIn: ["cancelled", "rejected"] },
           shop: { name: { in: ADMIN_SHOP_NAMES } }
         },
@@ -366,7 +403,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
         courierEarning = new Decimal(0);
       } else if (courierEarning == null) {
         const vehicleType = (order as any).courierVehicleType || order.courier?.vehicleType || null;
-        courierEarning = computeCourierDeliveryEarningDinar(vehicleType, order.deliveryPrice ?? null);
+        courierEarning = computeCourierDeliveryEarningDinar(vehicleType as any, (order.deliveryPrice ?? null) as any) as any;
       }
       if (courierEarning == null) continue;
 
@@ -437,14 +474,14 @@ export default async function CombinedReportPage({ searchParams }: Props) {
         productCount: products.length,
         totalProfitAlf: totalProfit,
         hasMeat: meatProducts.length > 0,
-        meatBuyAlf: meatProducts.reduce((sum, p) => sum + Number(p.buyAlf), 0),
-        meatSellAlf: meatProducts.reduce((sum, p) => sum + Number(p.sellAlf), 0),
-        meatProfitAlf: meatProducts.reduce((sum, p) => sum + (Number(p.sellAlf) - Number(p.buyAlf)), 0),
+        meatBuyAlf: meatProducts.reduce((sum: number, p: any) => sum + Number(p.buyAlf), 0),
+        meatSellAlf: meatProducts.reduce((sum: number, p: any) => sum + Number(p.sellAlf), 0),
+        meatProfitAlf: meatProducts.reduce((sum: number, p: any) => sum + (Number(p.sellAlf) - Number(p.buyAlf)), 0),
         meatProductsList: meatProducts,
         hasFish: fishProducts.length > 0,
-        fishBuyAlf: fishProducts.reduce((sum, p) => sum + Number(p.buyAlf), 0),
-        fishSellAlf: fishProducts.reduce((sum, p) => sum + Number(p.sellAlf), 0),
-        fishProfitAlf: fishProducts.reduce((sum, p) => sum + (Number(p.sellAlf) - Number(p.buyAlf)), 0),
+        fishBuyAlf: fishProducts.reduce((sum: number, p: any) => sum + Number(p.buyAlf), 0),
+        fishSellAlf: fishProducts.reduce((sum: number, p: any) => sum + Number(p.sellAlf), 0),
+        fishProfitAlf: fishProducts.reduce((sum: number, p: any) => sum + (Number(p.sellAlf) - Number(p.buyAlf)), 0),
         fishProductsList: fishProducts,
         preparerShoppingJson: json
       };
@@ -453,6 +490,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
     const totalPrepProfit = orderSummaries.reduce((sum, o) => sum + o.totalProfitAlf, 0);
     const totalMeatProfit = orderSummaries.reduce((sum, o) => sum + o.meatProfitAlf, 0);
     const totalFishProfit = orderSummaries.reduce((sum, o) => sum + o.fishProfitAlf, 0);
+    const totalOtherPrepProfit = totalPrepProfit - totalMeatProfit - totalFishProfit;
 
     // صافي الشركة الكلي المدمج
     const totalCompanyCombinedNet = totalCompanyNet.plus(new Decimal(totalPrepProfit * ALF_PER_DINAR));
@@ -494,37 +532,59 @@ export default async function CombinedReportPage({ searchParams }: Props) {
             📈 الرسم البياني (سنوي / شهري / يومي)
           </Link>
         </div>
-        {/* الكروت الإحصائية الشاملة (بدون إكراميات) */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* الكروت الإحصائية الشاملة */}
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+          {/* صافي التوصيل */}
           <div className="rounded-3xl border border-sky-100 bg-sky-50/50 p-5 shadow-sm">
             <p className="text-xs font-bold text-sky-700 uppercase tracking-widest">صافي التوصيل (للشركة)</p>
-            <p className="mt-3 text-3xl font-black text-sky-900">{formatDinarAsAlfWithUnit(totalCompanyNet)}</p>
+            <p className="mt-3 text-2xl font-black text-sky-900">{formatDinarAsAlfWithUnit(totalCompanyNet)}</p>
             <div className="mt-2 text-[10px] text-slate-500 font-bold border-t border-sky-100 pt-2">
               <span>ربح المندوبين الكلي: {formatDinarAsAlfWithUnit(totalCourierEarning)}</span>
             </div>
           </div>
 
+          {/* أرباح التجهيز الكلية */}
+          <div className="rounded-3xl border border-indigo-100 bg-indigo-50/50 p-5 shadow-sm">
+            <p className="text-xs font-bold text-indigo-700 uppercase tracking-widest">أرباح التجهيز الكلية 🔪</p>
+            <p className="mt-3 text-2xl font-black text-indigo-900">{formatDinarAsAlfWithUnit(totalPrepProfit * ALF_PER_DINAR)}</p>
+            <div className="mt-2 text-[10px] text-slate-500 font-bold border-t border-indigo-100 pt-2">
+              مجموع مبيعات المحلات
+            </div>
+          </div>
+
+          {/* أرباح القصاب */}
           <div className="rounded-3xl border border-red-100 bg-red-50/50 p-5 shadow-sm">
-            <p className="text-xs font-bold text-red-700 uppercase tracking-widest">أرباح القصاب 🥩</p>
-            <p className="mt-3 text-3xl font-black text-red-900">{formatDinarAsAlfWithUnit(totalMeatProfit * ALF_PER_DINAR)}</p>
+            <p className="text-xs font-bold text-red-700 uppercase tracking-widest">أرباح اللحوم (القصاب) 🥩</p>
+            <p className="mt-3 text-2xl font-black text-red-900">{formatDinarAsAlfWithUnit(totalMeatProfit * ALF_PER_DINAR)}</p>
             <div className="mt-2 text-[10px] text-slate-500 font-bold border-t border-red-100 pt-2">
-              مجموع مبيعات اللحوم الصافية
+              مبيعات اللحوم الصافية
             </div>
           </div>
 
+          {/* أرباح السماك */}
           <div className="rounded-3xl border border-emerald-100 bg-emerald-50/50 p-5 shadow-sm">
-            <p className="text-xs font-bold text-emerald-700 uppercase tracking-widest">أرباح السماك 🐟</p>
-            <p className="mt-3 text-3xl font-black text-emerald-950">{formatDinarAsAlfWithUnit(totalFishProfit * ALF_PER_DINAR)}</p>
+            <p className="text-xs font-bold text-emerald-700 uppercase tracking-widest">أرباح الأسماك (السماك) 🐟</p>
+            <p className="mt-3 text-2xl font-black text-emerald-950">{formatDinarAsAlfWithUnit(totalFishProfit * ALF_PER_DINAR)}</p>
             <div className="mt-2 text-[10px] text-slate-500 font-bold border-t border-emerald-100 pt-2">
-              مجموع مبيعات الأسماك الصافية
+              مبيعات الأسماك الصافية
             </div>
           </div>
 
+          {/* أرباح المنتجات الأخرى */}
+          <div className="rounded-3xl border border-amber-100 bg-amber-50/50 p-5 shadow-sm">
+            <p className="text-xs font-bold text-amber-700 uppercase tracking-widest">أرباح المواد الأخرى 📦</p>
+            <p className="mt-3 text-2xl font-black text-amber-950">{formatDinarAsAlfWithUnit(totalOtherPrepProfit * ALF_PER_DINAR)}</p>
+            <div className="mt-2 text-[10px] text-slate-500 font-bold border-t border-amber-100 pt-2">
+              باقي منتجات التجهيز
+            </div>
+          </div>
+
+          {/* صافي الأرباح الكلي للشركة */}
           <div className="rounded-3xl bg-slate-900 text-white p-5 shadow-lg relative overflow-hidden border-b-4 border-slate-700">
-            <div className="absolute right-0 bottom-0 opacity-10 text-[100px] pointer-events-none leading-none select-none">💰</div>
+            <div className="absolute right-0 bottom-0 opacity-10 text-[80px] pointer-events-none leading-none select-none">💰</div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">صافي الأرباح الكلي للشركة</p>
-            <p className="mt-3 text-3xl font-black text-amber-400">{formatDinarAsAlfWithUnit(totalCompanyCombinedNet)}</p>
-            <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 font-bold border-t border-slate-800 pt-2">
+            <p className="mt-3 text-2xl font-black text-amber-400">{formatDinarAsAlfWithUnit(totalCompanyCombinedNet)}</p>
+            <div className="mt-2 flex items-center justify-between text-[9px] text-slate-400 font-bold border-t border-slate-800 pt-2">
               <span>التوصيل: {formatDinarAsAlfWithUnit(totalCompanyNet)}</span>
               <span>التجهيز: {formatDinarAsAlfWithUnit(totalPrepProfit * ALF_PER_DINAR)}</span>
             </div>

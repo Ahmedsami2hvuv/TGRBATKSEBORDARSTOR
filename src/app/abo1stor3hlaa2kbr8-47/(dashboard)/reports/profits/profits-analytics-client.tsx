@@ -9,6 +9,9 @@ type DayStat = {
   totalProfit: number;
   deliveryProfit: number;
   prepProfit: number;
+  meatProfit: number;
+  fishProfit: number;
+  otherProfit: number;
 };
 
 type MonthStat = {
@@ -16,6 +19,9 @@ type MonthStat = {
   totalProfit: number;
   deliveryProfit: number;
   prepProfit: number;
+  meatProfit: number;
+  fishProfit: number;
+  otherProfit: number;
   days: DayStat[];
 };
 
@@ -24,6 +30,9 @@ type YearStat = {
   totalProfit: number;
   deliveryProfit: number;
   prepProfit: number;
+  meatProfit: number;
+  fishProfit: number;
+  otherProfit: number;
   months: MonthStat[];
 };
 
@@ -184,7 +193,7 @@ export function ProfitsAnalyticsClient({ stats, secretAdminPath }: Props) {
       <div className="flex flex-col gap-4 p-6 rounded-3xl border border-slate-200 bg-white shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-black text-slate-800">تحليلات الأرباح السنوية والشهرية</h2>
-          <p className="text-xs text-slate-400">توزيع أرباح الشركة التفصيلي (أرباح التوصيل وتجهيز اللحوم والأسماك).</p>
+          <p className="text-xs text-slate-400">توزيع أرباح الشركة التفصيلي (أرباح التوصيل، التجهيز الكلي، اللحوم، الأسماك، والمواد الأخرى).</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {availableYears.map((y) => (
@@ -250,9 +259,12 @@ export function ProfitsAnalyticsClient({ stats, secretAdminPath }: Props) {
                       style={{ width: `${percent}%` }}
                     />
                   </div>
-                  <div className={`flex items-center justify-between text-[10px] ${isSelected ? "text-slate-400" : "text-slate-500"} font-bold`}>
+                  <div className={`grid grid-cols-2 sm:grid-cols-5 gap-2 text-[10px] ${isSelected ? "text-slate-400" : "text-slate-500"} font-bold mt-1 pt-1.5 border-t border-slate-250/10`}>
                     <span>أرباح التوصيل: {formatDinarAsAlfWithUnit(s.deliveryProfit)}</span>
-                    <span>أرباح التجهيز: {formatDinarAsAlfWithUnit(s.prepProfit)}</span>
+                    <span>التجهيز الكلي: {formatDinarAsAlfWithUnit(s.prepProfit)}</span>
+                    <span>اللحوم: {formatDinarAsAlfWithUnit(s.meatProfit)}</span>
+                    <span>الأسماك: {formatDinarAsAlfWithUnit(s.fishProfit)}</span>
+                    <span>أخرى: {formatDinarAsAlfWithUnit(s.otherProfit)}</span>
                   </div>
                 </div>
               );
@@ -453,19 +465,40 @@ export function ProfitsAnalyticsClient({ stats, secretAdminPath }: Props) {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
+                    {/* أرباح التوصيل */}
                     <div className="rounded-xl bg-sky-50/50 p-3 border border-sky-100">
-                      <p className="text-[9px] font-bold text-sky-600">أرباح التوصيل</p>
+                      <p className="text-[9px] font-bold text-sky-600">أرباح التوصيل 🛵</p>
                       <p className="text-sm font-black text-sky-850 mt-1">{formatDinarAsAlfWithUnit(dayData.deliveryProfit)}</p>
                     </div>
-                    <div className="rounded-xl bg-purple-50/50 p-3 border border-purple-100">
-                      <p className="text-[9px] font-bold text-purple-600">أرباح التجهيز</p>
-                      <p className="text-sm font-black text-purple-850 mt-1">{formatDinarAsAlfWithUnit(dayData.prepProfit)}</p>
+
+                    {/* أرباح التجهيز الكلية */}
+                    <div className="rounded-xl bg-indigo-50/50 p-3 border border-indigo-100">
+                      <p className="text-[9px] font-bold text-indigo-600">أرباح التجهيز الكلية 🔪</p>
+                      <p className="text-sm font-black text-indigo-850 mt-1">{formatDinarAsAlfWithUnit(dayData.prepProfit)}</p>
+                    </div>
+
+                    {/* أرباح اللحوم */}
+                    <div className="rounded-xl bg-red-50/50 p-3 border border-red-100">
+                      <p className="text-[9px] font-bold text-red-600">أرباح اللحوم 🥩</p>
+                      <p className="text-sm font-black text-red-850 mt-1">{formatDinarAsAlfWithUnit(dayData.meatProfit)}</p>
+                    </div>
+
+                    {/* أرباح الأسماك */}
+                    <div className="rounded-xl bg-emerald-50/50 p-3 border border-emerald-100">
+                      <p className="text-[9px] font-bold text-emerald-600">أرباح الأسماك 🐟</p>
+                      <p className="text-sm font-black text-emerald-950 mt-1">{formatDinarAsAlfWithUnit(dayData.fishProfit)}</p>
+                    </div>
+
+                    {/* أرباح المواد الأخرى */}
+                    <div className="rounded-xl bg-amber-50/50 p-3 border border-amber-100 col-span-2">
+                      <p className="text-[9px] font-bold text-amber-600">أرباح المواد الأخرى 📦</p>
+                      <p className="text-sm font-black text-amber-950 mt-1">{formatDinarAsAlfWithUnit(dayData.otherProfit)}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 text-center">
-                    <p className="text-[10px] font-black text-emerald-600 uppercase">صافي أرباح اليوم الكلي</p>
-                    <p className="text-2xl font-black text-emerald-700 mt-1">{formatDinarAsAlfWithUnit(dayData.totalProfit)}</p>
+                  <div className="rounded-2xl bg-slate-900 text-white p-4 text-center border-b-4 border-slate-700">
+                    <p className="text-[10px] font-black text-slate-400 uppercase">صافي أرباح اليوم الكلي</p>
+                    <p className="text-2xl font-black text-amber-400 mt-1">{formatDinarAsAlfWithUnit(dayData.totalProfit)}</p>
                   </div>
                 </div>
               ) : (

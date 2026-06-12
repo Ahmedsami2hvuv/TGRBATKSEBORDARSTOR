@@ -736,7 +736,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
       pickupSumDinar: (() => {
         const courierPickupEvents = o.moneyEvents.filter(
-          (e) => e.kind === MONEY_KIND_PICKUP && e.deletedAt == null && e.recordedByCompanyPreparerId == null
+          (e) => e.kind === MONEY_KIND_PICKUP && e.deletedAt == null && e.recordedByCompanyPreparerId == null && e.courierId != null
         );
         if (courierPickupEvents.length === 0) return 0;
         return courierPickupEvents.reduce((sum, e) => {
@@ -750,6 +750,16 @@ export default async function MandoubPage({ searchParams }: Props) {
         );
         if (preparerPickupEvents.length === 0) return 0;
         return preparerPickupEvents.reduce((sum, e) => {
+          const val = typeof e.amountDinar === 'object' && e.amountDinar !== null && 'toNumber' in e.amountDinar ? e.amountDinar.toNumber() : Number(e.amountDinar);
+          return sum + (Number.isNaN(val) ? 0 : val);
+        }, 0);
+      })(),
+      adminPickupSumDinar: (() => {
+        const adminPickupEvents = o.moneyEvents.filter(
+          (e) => e.kind === MONEY_KIND_PICKUP && e.deletedAt == null && e.recordedByCompanyPreparerId == null && e.courierId == null
+        );
+        if (adminPickupEvents.length === 0) return 0;
+        return adminPickupEvents.reduce((sum, e) => {
           const val = typeof e.amountDinar === 'object' && e.amountDinar !== null && 'toNumber' in e.amountDinar ? e.amountDinar.toNumber() : Number(e.amountDinar);
           return sum + (Number.isNaN(val) ? 0 : val);
         }, 0);

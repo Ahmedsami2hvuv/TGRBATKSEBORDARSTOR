@@ -67,7 +67,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
           customerRegion: { select: { id: true, name: true } },
           secondCustomerRegion: { select: { id: true, name: true } },
           customer: { select: { id: true, customerLocationUrl: true, customerLandmark: true, customerDoorPhotoUrl: true, alternatePhone: true } },
-          moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true } },
+          moneyEvents: { where: { deletedAt: null }, select: { kind: true, amountDinar: true, courierId: true, recordedByCompanyPreparerId: true } },
         },
       }),
     ]);

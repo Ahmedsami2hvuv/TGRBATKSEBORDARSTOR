@@ -10,6 +10,9 @@ import {
   isSaderMismatch,
   sumDeliveryInFromOrderMoneyEvents,
   sumPickupOutFromOrderMoneyEvents,
+  sumCourierPickupOut,
+  sumPreparerPickupOut,
+  sumAdminPickupOut,
 } from "@/lib/mandoub-money";
 import { hasCustomerLocationUrl } from "@/lib/order-location";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
@@ -157,7 +160,7 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
           customer: true,
           moneyEvents: {
             where: { deletedAt: null },
-            select: { kind: true, amountDinar: true },
+            select: { kind: true, amountDinar: true, courierId: true, recordedByCompanyPreparerId: true },
           },
         },
       }),
@@ -253,7 +256,9 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
         `${normalizeIraqMobileLocal11(o.customerPhone) ?? ""}_${o.customerRegionId ?? ""}`,
       );
 
-      const pickupSum = sumPickupOutFromOrderMoneyEvents(o.moneyEvents);
+      const courierPickup = sumCourierPickupOut(o.moneyEvents);
+      const preparerPickup = sumPreparerPickupOut(o.moneyEvents);
+      const adminPickup = sumAdminPickupOut(o.moneyEvents);
       const deliverySum = sumDeliveryInFromOrderMoneyEvents(o.moneyEvents);
 
       return {
@@ -283,7 +288,9 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
         saderMismatchType: isSaderMismatch(o.status, o.orderSubtotal, sumPickupOutFromOrderMoneyEvents(o.moneyEvents)).type,
         noWardRecorded: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) == null,
         noSaderRecorded: sumPickupOutFromOrderMoneyEvents(o.moneyEvents) == null,
-        pickupSumDinar: pickupSum != null ? Number(pickupSum) : null,
+        pickupSumDinar: courierPickup > 0 ? courierPickup : null,
+        preparerPickupSumDinar: preparerPickup > 0 ? preparerPickup : null,
+        adminPickupSumDinar: adminPickup > 0 ? adminPickup : null,
         deliverySumDinar: deliverySum != null ? Number(deliverySum) : null,
         createdAt: o.createdAt,
         // بيانات الوصول السريع

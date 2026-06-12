@@ -109,6 +109,8 @@ export function OrderTrackingBulkTable({
           noSaderRecorded: r.noSaderRecorded,
           createdAt: r.createdAt,
           pickupSumDinar: r.pickupSumDinar ?? null,
+          preparerPickupSumDinar: r.preparerPickupSumDinar ?? null,
+          adminPickupSumDinar: r.adminPickupSumDinar ?? null,
           deliverySumDinar: r.deliverySumDinar ?? null,
           // بيانات الوصول السريع
           audioUrl: r.audioUrl,

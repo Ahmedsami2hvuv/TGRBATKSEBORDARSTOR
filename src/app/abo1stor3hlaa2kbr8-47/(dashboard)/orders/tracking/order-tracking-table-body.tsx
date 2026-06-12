@@ -36,7 +36,8 @@ export type TrackingTableRow = {
   summary: string;
   /** مجموع الصادر (دفع للعميل) بالدينار — لعرضه "من الخارج" */
   pickupSumDinar?: number | null;
-  /** مجموع الوارد (استلام من الزبون) بالدينار — لعرضه "من الخارج" */
+  preparerPickupSumDinar?: number | null;
+  adminPickupSumDinar?: number | null;
   deliverySumDinar?: number | null;
   // تنبيهات مالية
   wardMismatchType?: "excess" | "deficit" | null;
