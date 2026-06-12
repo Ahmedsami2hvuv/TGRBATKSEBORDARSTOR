@@ -136,7 +136,7 @@ export function OrderViewContent({
 
   React.useEffect(() => {
     if (order.customerPhone) {
-      import("../../../credit-book/actions").then(({ getCustomerDebtByPhone }) => {
+      import("@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credit-book/actions").then(({ getCustomerDebtByPhone }) => {
         getCustomerDebtByPhone(order.customerPhone).then(setCustomerDebt);
       });
     }
