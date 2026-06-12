@@ -71,47 +71,155 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
       ]);
 
       const existingPartners = await prisma.creditBookPartner.findMany({
-        select: { type: true, externalId: true }
+        select: { type: true, externalId: true, updatedAt: true }
       });
 
       const existingShops = new Set(existingPartners.filter(p => p.type === "shop").map(p => p.externalId));
       const existingCouriers = new Set(existingPartners.filter(p => p.type === "courier").map(p => p.externalId));
       const existingPreparers = new Set(existingPartners.filter(p => p.type === "preparer").map(p => p.externalId));
 
+      const deletedShopsMap = new Map(existingPartners.filter(p => p.type === "deleted_shop" && p.externalId).map(p => [p.externalId as string, p.updatedAt]));
+      const deletedCouriersMap = new Map(existingPartners.filter(p => p.type === "deleted_courier" && p.externalId).map(p => [p.externalId as string, p.updatedAt]));
+      const deletedPreparersMap = new Map(existingPartners.filter(p => p.type === "deleted_preparer" && p.externalId).map(p => [p.externalId as string, p.updatedAt]));
+
+      // جلب معرفات المحلات التي لديها طلبات غير مسددة نشطة
+      const shopsWithUnpaidOrders = await prisma.order.findMany({
+        where: {
+          shopCostPaidAt: null,
+          status: { notIn: ["cancelled"] },
+          orderSubtotal: { gt: 0 }
+        },
+        select: { shopId: true },
+        distinct: ["shopId"]
+      }).then(list => new Set(list.map(o => o.shopId).filter(Boolean)));
+
       const partnersToCreate: any[] = [];
+      const partnersToRestore: string[] = [];
 
-      allShops.forEach(s => {
+      for (const s of allShops) {
         if (!existingShops.has(s.id)) {
-          partnersToCreate.push({
-            name: `${s.name} (محل/مجهز)`,
-            phone: s.phone || null,
-            type: "shop",
-            externalId: s.id
-          });
+          const deletedAt = deletedShopsMap.get(s.id);
+          if (deletedAt) {
+            // المحل محذوف ناعماً، نتحقق إذا كان هناك طلب غير مسدد جديد بعد تاريخ الحذف
+            const hasNewUnpaidOrder = await prisma.order.findFirst({
+              where: {
+                shopId: s.id,
+                shopCostPaidAt: null,
+                status: { notIn: ["cancelled"] },
+                orderSubtotal: { gt: 0 },
+                createdAt: { gt: deletedAt }
+              },
+              select: { id: true }
+            });
+            if (hasNewUnpaidOrder) {
+              partnersToRestore.push(s.id);
+            }
+          } else if (shopsWithUnpaidOrders.has(s.id)) {
+            // ليس محذوفاً ناعماً وليس له شريك، ننشئه لأول مرة
+            partnersToCreate.push({
+              name: `${s.name} (محل/مجهز)`,
+              phone: s.phone || null,
+              type: "shop",
+              externalId: s.id
+            });
+          }
         }
-      });
+      }
 
-      allCouriers.forEach(c => {
+      for (const c of allCouriers) {
         if (!existingCouriers.has(c.id)) {
-          partnersToCreate.push({
-            name: `${c.name} (مندوب)`,
-            phone: c.phone,
-            type: "courier",
-            externalId: c.id
-          });
+          const deletedAt = deletedCouriersMap.get(c.id);
+          if (deletedAt) {
+            // المندوب محذوف ناعماً، نتحقق إذا كانت هناك حركة مالية أو طلب جديد بعد تاريخ الحذف
+            const [hasNewOrderEvent, hasNewMiscEntry] = await Promise.all([
+              prisma.orderCourierMoneyEvent.findFirst({
+                where: {
+                  courierId: c.id,
+                  deletedAt: null,
+                  createdAt: { gt: deletedAt }
+                },
+                select: { id: true }
+              }),
+              prisma.courierWalletMiscEntry.findFirst({
+                where: {
+                  courierId: c.id,
+                  deletedAt: null,
+                  createdAt: { gt: deletedAt }
+                },
+                select: { id: true }
+              })
+            ]);
+            if (hasNewOrderEvent || hasNewMiscEntry) {
+              partnersToRestore.push(c.id);
+            }
+          } else {
+            // ليس محذوفاً ناعماً، نتحقق من الأرصدة الحالية
+            const adminTotal = await computeMandoubAdminTotalAllTimeDinar(c.id);
+            const walletRem = await computeMandoubWalletRemainAllTimeDinar(c.id);
+            if (adminTotal.toNumber() !== 0 || walletRem.toNumber() !== 0) {
+              partnersToCreate.push({
+                name: `${c.name} (مندوب)`,
+                phone: c.phone,
+                type: "courier",
+                externalId: c.id
+              });
+            }
+          }
         }
-      });
+      }
 
-      allPreparers.forEach(pr => {
+      for (const pr of allPreparers) {
         if (!existingPreparers.has(pr.id)) {
-          partnersToCreate.push({
-            name: `${pr.name} (مجهز)`,
-            phone: pr.phone,
-            type: "preparer",
-            externalId: pr.id
-          });
+          const deletedAt = deletedPreparersMap.get(pr.id);
+          if (deletedAt) {
+            // المجهز محذوف ناعماً، نتحقق إذا كانت هناك حركات محفظة جديدة له بعد تاريخ الحذف
+            const hasNewEntry = await prisma.companyPreparerWalletMiscEntry.findFirst({
+              where: {
+                preparerId: pr.id,
+                deletedAt: null,
+                createdAt: { gt: deletedAt }
+              },
+              select: { id: true }
+            });
+            if (hasNewEntry) {
+              partnersToRestore.push(pr.id);
+            }
+          } else {
+            const prepTotals = await getPreparerMoneyTotals(pr.id);
+            if (prepTotals && prepTotals.remain.toNumber() !== 0) {
+              partnersToCreate.push({
+                name: `${pr.name} (مجهز)`,
+                phone: pr.phone,
+                type: "preparer",
+                externalId: pr.id
+              });
+            }
+          }
         }
-      });
+      }
+
+      if (partnersToRestore.length > 0) {
+        // نقوم بإعادة تفعيل الأطراف المحذوفة ناعماً
+        for (const extId of partnersToRestore) {
+          const partner = await prisma.creditBookPartner.findFirst({
+            where: {
+              externalId: extId,
+              type: { startsWith: "deleted_" }
+            },
+            select: { id: true, type: true }
+          });
+          if (partner) {
+            const originalType = partner.type.replace("deleted_", "");
+            await prisma.creditBookPartner.update({
+              where: { id: partner.id },
+              data: {
+                type: originalType,
+                updatedAt: new Date()
+              }
+            });
+          }
+        }
+      }
 
       if (partnersToCreate.length > 0) {
         await prisma.creditBookPartner.createMany({
@@ -123,7 +231,11 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
       console.error("Auto sync in getPartners failed:", syncErr);
     }
 
-    const whereClause: any = {};
+    const whereClause: any = {
+      type: {
+        notIn: ["deleted_courier", "deleted_preparer", "deleted_shop", "deleted_customer"]
+      }
+    };
 
     if (searchQuery) {
       whereClause.name = {
@@ -552,9 +664,26 @@ export async function deleteTransaction(transactionId: string) {
 // 7. حذف شريك بالكامل
 export async function deletePartner(partnerId: string) {
   try {
-    await prisma.creditBookPartner.delete({
+    const partner = await prisma.creditBookPartner.findUnique({
       where: { id: partnerId },
+      select: { type: true, externalId: true }
     });
+
+    if (partner && partner.externalId) {
+      // إذا كان مرتبطاً بالنظام، نقوم بحذفه ناعماً بتغيير نوعه وتحديث تاريخ التعديل
+      await prisma.creditBookPartner.update({
+        where: { id: partnerId },
+        data: {
+          type: `deleted_${partner.type}`,
+          updatedAt: new Date()
+        }
+      });
+    } else {
+      // إذا كان شريكاً خارجياً غير مرتبط بالنظام، نحذفه نهائياً
+      await prisma.creditBookPartner.delete({
+        where: { id: partnerId },
+      });
+    }
 
     revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
     return { success: true };
@@ -571,11 +700,34 @@ export async function deletePartnersBatch(partnerIds: string[]) {
       return { success: false, error: "الرجاء تحديد شريك واحد على الأقل للمسح" };
     }
 
-    await prisma.creditBookPartner.deleteMany({
-      where: {
-        id: { in: partnerIds }
-      }
+    // جلب الأطراف لتحديد ما يجب حذفه ناعماً وما يجب حذفه نهائياً
+    const partners = await prisma.creditBookPartner.findMany({
+      where: { id: { in: partnerIds } },
+      select: { id: true, type: true, externalId: true }
     });
+
+    const externalLinked = partners.filter(p => p.externalId);
+    const manualOnly = partners.filter(p => !p.externalId);
+
+    if (externalLinked.length > 0) {
+      // تحديث الأطراف المرتبطة بالنظام بشكل ناعم
+      for (const p of externalLinked) {
+        await prisma.creditBookPartner.update({
+          where: { id: p.id },
+          data: {
+            type: `deleted_${p.type}`,
+            updatedAt: new Date()
+          }
+        });
+      }
+    }
+
+    if (manualOnly.length > 0) {
+      // حذف الأطراف اليدوية نهائياً
+      await prisma.creditBookPartner.deleteMany({
+        where: { id: { in: manualOnly.map(p => p.id) } }
+      });
+    }
 
     revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
     return { success: true };
@@ -639,7 +791,10 @@ export async function syncSystemPartners() {
     const couriers = await prisma.courier.findMany({ where: { blocked: false } });
     for (const courier of couriers) {
       const exists = await prisma.creditBookPartner.findFirst({
-        where: { type: "courier", externalId: courier.id },
+        where: {
+          externalId: courier.id,
+          type: { in: ["courier", "deleted_courier"] }
+        },
       });
       if (!exists) {
         await prisma.creditBookPartner.create({
@@ -651,6 +806,15 @@ export async function syncSystemPartners() {
           },
         });
         importedCount++;
+      } else if (exists.type.startsWith("deleted_")) {
+        await prisma.creditBookPartner.update({
+          where: { id: exists.id },
+          data: {
+            type: "courier",
+            updatedAt: new Date()
+          }
+        });
+        importedCount++;
       }
     }
 
@@ -658,7 +822,10 @@ export async function syncSystemPartners() {
     const preparers = await prisma.companyPreparer.findMany();
     for (const prep of preparers) {
       const exists = await prisma.creditBookPartner.findFirst({
-        where: { type: "preparer", externalId: prep.id },
+        where: {
+          externalId: prep.id,
+          type: { in: ["preparer", "deleted_preparer"] }
+        },
       });
       if (!exists) {
         await prisma.creditBookPartner.create({
@@ -670,6 +837,15 @@ export async function syncSystemPartners() {
           },
         });
         importedCount++;
+      } else if (exists.type.startsWith("deleted_")) {
+        await prisma.creditBookPartner.update({
+          where: { id: exists.id },
+          data: {
+            type: "preparer",
+            updatedAt: new Date()
+          }
+        });
+        importedCount++;
       }
     }
 
@@ -677,7 +853,10 @@ export async function syncSystemPartners() {
     const shops = await prisma.shop.findMany();
     for (const shop of shops) {
       const exists = await prisma.creditBookPartner.findFirst({
-        where: { type: "shop", externalId: shop.id },
+        where: {
+          externalId: shop.id,
+          type: { in: ["shop", "deleted_shop"] }
+        },
       });
       if (!exists) {
         await prisma.creditBookPartner.create({
@@ -689,6 +868,15 @@ export async function syncSystemPartners() {
           },
         });
         importedCount++;
+      } else if (exists.type.startsWith("deleted_")) {
+        await prisma.creditBookPartner.update({
+          where: { id: exists.id },
+          data: {
+            type: "shop",
+            updatedAt: new Date()
+          }
+        });
+        importedCount++;
       }
     }
 
@@ -696,7 +884,10 @@ export async function syncSystemPartners() {
     const customers = await prisma.customer.findMany({ take: 300 });
     for (const cust of customers) {
       const exists = await prisma.creditBookPartner.findFirst({
-        where: { type: "customer", externalId: cust.id },
+        where: {
+          externalId: cust.id,
+          type: { in: ["customer", "deleted_customer"] }
+        },
       });
       if (!exists) {
         await prisma.creditBookPartner.create({
@@ -706,6 +897,15 @@ export async function syncSystemPartners() {
             type: "customer",
             externalId: cust.id,
           },
+        });
+        importedCount++;
+      } else if (exists.type.startsWith("deleted_")) {
+        await prisma.creditBookPartner.update({
+          where: { id: exists.id },
+          data: {
+            type: "customer",
+            updatedAt: new Date()
+          }
         });
         importedCount++;
       }
