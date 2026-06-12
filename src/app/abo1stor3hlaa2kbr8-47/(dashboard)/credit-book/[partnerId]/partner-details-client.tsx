@@ -12,7 +12,7 @@ import {
   uploadTransactionImage,
   updateAdminPaymentEvent,
   deleteAdminPaymentEvent
-} from "../actions";
+} from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credit-book/actions";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { useRouter } from "next/navigation";
 
