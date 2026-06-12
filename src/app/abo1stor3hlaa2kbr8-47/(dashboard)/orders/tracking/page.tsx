@@ -357,7 +357,7 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       prisma.order.findMany({
         where: {
           createdAt: { gte: todayFrom, lte: todayTo },
-          preparerShoppingJson: { not: null },
+          preparerShoppingJson: { not: null as any },
           status: { notIn: ["cancelled", "rejected"] },
           shop: { name: { in: ADMIN_SHOP_NAMES } }
         },
@@ -400,9 +400,9 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
     for (const o of todayPrepOrders) {
       if (o.preparerShoppingJson) {
         const j = o.preparerShoppingJson as any;
-        const productsProfitDinar = new Decimal(numOrZero(j?.sumSellAlf - j?.sumBuyAlf) * ALF_PER_DINAR);
-        const wagesProfitDinar = new Decimal(numOrZero(j?.extraAlf) * ALF_PER_DINAR);
-        todayPrepProfit = todayPrepProfit.plus(productsProfitDinar.plus(wagesProfitDinar));
+        const products = Array.isArray(j?.products) ? j.products : [];
+        const totalProfitAlf = products.reduce((sum: number, p: any) => sum + (Number(p.sellAlf) - Number(p.buyAlf) || 0), 0);
+        todayPrepProfit = todayPrepProfit.plus(new Decimal(totalProfitAlf * ALF_PER_DINAR));
       }
     }
 
