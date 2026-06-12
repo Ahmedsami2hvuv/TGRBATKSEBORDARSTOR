@@ -25,7 +25,7 @@ export interface PartnerWithBalance {
 
 // دالة مساعدة لحساب الديون التلقائية للمحلات (الطلبات غير المسددة)
 async function getShopAutoDebt(shopId: string): Promise<number> {
-  const unpaidOrders = await prisma.order.findMany({
+  const orders = await prisma.order.findMany({
     where: {
       shopId,
       shopCostPaidAt: null,
@@ -46,12 +46,17 @@ async function getShopAutoDebt(shopId: string): Promise<number> {
     }
   });
   
-  return unpaidOrders.reduce((sum, o) => {
-    const subtotal = Number(o.orderSubtotal || 0);
-    const pickupPaid = o.moneyEvents.reduce((acc, me) => acc + Number(me.amountDinar || 0), 0);
-    const unpaid = Math.max(0, subtotal - pickupPaid);
-    return sum + unpaid;
-  }, 0);
+  let totalSubtotals = 0;
+  let totalPayments = 0;
+
+  for (const o of orders) {
+    totalSubtotals += Number(o.orderSubtotal || 0);
+    for (const me of o.moneyEvents) {
+      totalPayments += Number(me.amountDinar || 0);
+    }
+  }
+
+  return totalSubtotals - totalPayments;
 }
 
 // 1. جلب قائمة الأطراف مع احتساب الأرصدة اليدوية والتلقائية
@@ -235,6 +240,7 @@ export async function getPartnerDetails(partnerId: string) {
         const orders = await prisma.order.findMany({
           where: {
             shopId: partner.externalId,
+            shopCostPaidAt: null,
             status: { notIn: ["cancelled"] },
             orderSubtotal: { gt: 0 }
           },
