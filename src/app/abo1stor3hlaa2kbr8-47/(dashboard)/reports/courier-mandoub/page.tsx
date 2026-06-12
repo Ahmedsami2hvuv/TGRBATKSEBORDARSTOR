@@ -207,7 +207,7 @@ export default async function CourierMandoubSinceResetReportPage() {
               <th className="px-3 py-3 text-center font-bold text-red-900">الوارد (أخذ)</th>
               <th className="px-3 py-3 text-center font-bold text-emerald-900">الصادر (أعطى)</th>
               <th className="px-3 py-3 text-center font-bold">المتبقي</th>
-              <th className="px-3 py-3 text-center font-bold">أرباحي (أجور+إكراميات)</th>
+              <th className="px-3 py-3 text-center font-bold">أرباحي (أجور التوصيل)</th>
               <th className="px-3 py-3 text-center font-bold">طلبات بحالة</th>
               <th className="px-3 py-3 text-center font-bold">إجراء</th>
             </tr>

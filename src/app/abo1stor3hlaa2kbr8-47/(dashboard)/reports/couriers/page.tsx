@@ -23,8 +23,6 @@ type CourierProfitRow = {
   courierId: string;
   name: string;
   courierEarning: Decimal;
-  tipAmount: Decimal;
-  totalPaid: Decimal;
   companyNet: Decimal;
   ordersCount: number;
 };
@@ -44,8 +42,6 @@ function ensureCourierRow(courierId: string, courierName: string): CourierProfit
     courierId,
     name: courierName || "مندوب",
     courierEarning: new Decimal(0),
-    tipAmount: new Decimal(0),
-    totalPaid: new Decimal(0),
     companyNet: new Decimal(0),
     ordersCount: 0,
   };
@@ -107,8 +103,8 @@ export default async function CombinedReportPage({ searchParams }: Props) {
     earliestDayDate.setDate(earliestDayDate.getDate() - 20);
     const rangeFrom = earliestDayDate;
 
-    // جلب البيانات المتوازي
-    const [ordersDelivery, tipEntries, ordersPrep, sidebarPrepOrders] = await Promise.all([
+    // جلب البيانات المتوازي (تم إزالة الإكراميات)
+    const [ordersDelivery, ordersPrep, sidebarPrepOrders] = await Promise.all([
       // طلبات التوصيل المسلمة
       prisma.order.findMany({
         where: {
@@ -147,15 +143,6 @@ export default async function CombinedReportPage({ searchParams }: Props) {
             },
           },
         },
-      }),
-      // إكراميات المندوبين
-      prisma.courierWalletMiscEntry.findMany({
-        where: {
-          label: { contains: "[إكرامية]" },
-          deletedAt: null,
-          createdAt: { gte: from, lte: to },
-        },
-        include: { courier: { select: { name: true } } },
       }),
       // طلبات التجهيز لليوم المحدد
       prisma.order.findMany({
@@ -217,17 +204,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
 
       const companyProfit = order.deliveryPrice?.minus(courierEarning) ?? new Decimal(0);
       row.courierEarning = row.courierEarning.plus(courierEarning);
-      row.totalPaid = row.totalPaid.plus(courierEarning);
       row.companyNet = row.companyNet.plus(companyProfit);
-    }
-
-    for (const tip of tipEntries) {
-      const courierId = tip.courierId;
-      const courierName = tip.courier?.name || rows.get(courierId)?.name || "مندوب";
-      const row = getRow(courierId, courierName);
-      row.tipAmount = row.tipAmount.plus(tip.amountDinar);
-      row.totalPaid = row.totalPaid.plus(tip.amountDinar);
-      row.companyNet = row.companyNet.minus(tip.amountDinar);
     }
 
     const sortedRows = Array.from(rows.values()).sort((a, b) => {
@@ -236,7 +213,6 @@ export default async function CombinedReportPage({ searchParams }: Props) {
     });
 
     const totalCourierEarning = Array.from(rows.values()).reduce((sum, row) => sum.plus(row.courierEarning), new Decimal(0));
-    const totalTips = Array.from(rows.values()).reduce((sum, row) => sum.plus(row.tipAmount), new Decimal(0));
     const totalCompanyNet = Array.from(rows.values()).reduce((sum, row) => sum.plus(row.companyNet), new Decimal(0));
     const totalOrders = Array.from(rows.values()).reduce((count, row) => count + row.ordersCount, 0);
 
@@ -349,14 +325,13 @@ export default async function CombinedReportPage({ searchParams }: Props) {
           </div>
         </div>
 
-        {/* الكروت الإحصائية الشاملة */}
+        {/* الكروت الإحصائية الشاملة (بدون إكراميات) */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-3xl border border-sky-100 bg-sky-50/50 p-5 shadow-sm">
             <p className="text-xs font-bold text-sky-700 uppercase tracking-widest">صافي التوصيل (للشركة)</p>
             <p className="mt-3 text-3xl font-black text-sky-900">{formatDinarAsAlfWithUnit(totalCompanyNet)}</p>
-            <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500 font-bold border-t border-sky-100 pt-2">
-              <span>ربح المندوبين: {formatDinarAsAlfWithUnit(totalCourierEarning)}</span>
-              <span>الإكراميات: {formatDinarAsAlfWithUnit(totalTips)}</span>
+            <div className="mt-2 text-[10px] text-slate-500 font-bold border-t border-sky-100 pt-2">
+              <span>ربح المندوبين الكلي: {formatDinarAsAlfWithUnit(totalCourierEarning)}</span>
             </div>
           </div>
 
@@ -370,7 +345,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
 
           <div className="rounded-3xl border border-emerald-100 bg-emerald-50/50 p-5 shadow-sm">
             <p className="text-xs font-bold text-emerald-700 uppercase tracking-widest">أرباح السماك 🐟</p>
-            <p className="mt-3 text-3xl font-black text-emerald-900">{formatDinarAsAlfWithUnit(totalFishProfit * ALF_PER_DINAR)}</p>
+            <p className="mt-3 text-3xl font-black text-emerald-950">{formatDinarAsAlfWithUnit(totalFishProfit * ALF_PER_DINAR)}</p>
             <div className="mt-2 text-[10px] text-slate-500 font-bold border-t border-emerald-100 pt-2">
               مجموع مبيعات الأسماك الصافية
             </div>
@@ -426,8 +401,6 @@ export default async function CombinedReportPage({ searchParams }: Props) {
                     <tr>
                       <th className="px-4 py-3 text-right">المندوب</th>
                       <th className="px-4 py-3 text-center">ربح المندوب</th>
-                      <th className="px-4 py-3 text-center">الإكرامية</th>
-                      <th className="px-4 py-3 text-center">مجموعهما</th>
                       <th className="px-4 py-3 text-center">صافي الشركة</th>
                       <th className="px-4 py-3 text-center">عدد الطلبات</th>
                     </tr>
@@ -435,7 +408,7 @@ export default async function CombinedReportPage({ searchParams }: Props) {
                   <tbody className="divide-y divide-slate-100">
                     {sortedRows.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-10 text-center text-slate-400 font-bold italic">
+                        <td colSpan={4} className="px-4 py-10 text-center text-slate-400 font-bold italic">
                           لا توجد أرباح توصيل مسجلة لهذا اليوم.
                         </td>
                       </tr>
@@ -444,8 +417,6 @@ export default async function CombinedReportPage({ searchParams }: Props) {
                         <tr key={row.courierId} className="transition hover:bg-slate-50">
                           <td className="px-4 py-3 font-bold text-slate-800">{row.name}</td>
                           <td className="px-4 py-3 text-center font-bold text-emerald-600">{formatDinarAsAlfWithUnit(row.courierEarning)}</td>
-                          <td className="px-4 py-3 text-center font-bold text-rose-600">{formatDinarAsAlfWithUnit(row.tipAmount)}</td>
-                          <td className="px-4 py-3 text-center font-bold text-sky-700">{formatDinarAsAlfWithUnit(row.totalPaid)}</td>
                           <td className="px-4 py-3 text-center font-bold text-slate-900">{formatDinarAsAlfWithUnit(row.companyNet)}</td>
                           <td className="px-4 py-3 text-center font-semibold text-slate-700">{row.ordersCount}</td>
                         </tr>
@@ -457,8 +428,6 @@ export default async function CombinedReportPage({ searchParams }: Props) {
                       <tr>
                         <td className="px-4 py-3 text-right">الإجمالي</td>
                         <td className="px-4 py-3 text-center">{formatDinarAsAlfWithUnit(totalCourierEarning)}</td>
-                        <td className="px-4 py-3 text-center">{formatDinarAsAlfWithUnit(totalTips)}</td>
-                        <td className="px-4 py-3 text-center">{formatDinarAsAlfWithUnit(totalCourierEarning.plus(totalTips))}</td>
                         <td className="px-4 py-3 text-center">{formatDinarAsAlfWithUnit(totalCompanyNet)}</td>
                         <td className="px-4 py-3 text-center">{totalOrders}</td>
                       </tr>

@@ -38,7 +38,7 @@ export async function AdminProfitsWidget({ selectedDay }: { selectedDay?: string
   to.setMilliseconds(to.getMilliseconds() - 1);
 
   // --- جلب البيانات ---
-  const [orders, allTips, allTimeOrders, allTimeTips] = await Promise.all([
+  const [orders, allTimeOrders] = await Promise.all([
     // طلبات اليوم المختار
     prisma.order.findMany({
       where: {
@@ -55,15 +55,6 @@ export async function AdminProfitsWidget({ selectedDay }: { selectedDay?: string
       },
       orderBy: { createdAt: "desc" },
     }),
-    // إكراميات اليوم المختار
-    prisma.courierWalletMiscEntry.findMany({
-      where: {
-        label: { contains: "[إكرامية]" },
-        deletedAt: null,
-        createdAt: { gte: from, lte: to }
-      },
-      select: { amountDinar: true, createdAt: true, courierId: true }
-    }),
     // إحصاءات تاريخية سريعة (شاملة)
     prisma.order.findMany({
       where: { status: "delivered" },
@@ -74,13 +65,6 @@ export async function AdminProfitsWidget({ selectedDay }: { selectedDay?: string
         submittedByCompanyPreparerId: true,
         courier: { select: { zeroEarning: true, vehicleType: true } }
       }
-    }),
-    prisma.courierWalletMiscEntry.findMany({
-      where: {
-        label: { contains: "[إكرامية]" },
-        deletedAt: null
-      },
-      select: { amountDinar: true }
     })
   ]);
 
@@ -89,26 +73,11 @@ export async function AdminProfitsWidget({ selectedDay }: { selectedDay?: string
   let todayPrepProfit = new Decimal(0);
   let todayPrepProductsProfit = new Decimal(0);
   let todayPrepWagesProfit = new Decimal(0);
-  let todayTipsPaid = new Decimal(0);
 
   const courierStats: Record<
     string,
-    { id: string; name: string; todayProfit: Decimal; todayTips: Decimal }
+    { id: string; name: string; todayProfit: Decimal }
   > = {};
-
-  for (const t of allTips) {
-    todayTipsPaid = todayTipsPaid.plus(t.amountDinar);
-
-    if (!courierStats[t.courierId]) {
-      courierStats[t.courierId] = {
-        id: t.courierId,
-        name: "مندوب",
-        todayProfit: new Decimal(0),
-        todayTips: new Decimal(0),
-      };
-    }
-    courierStats[t.courierId].todayTips = courierStats[t.courierId].todayTips.plus(t.amountDinar);
-  }
 
   for (const o of orders) {
     if (o.deliveryPrice) {
@@ -142,7 +111,6 @@ export async function AdminProfitsWidget({ selectedDay }: { selectedDay?: string
             id: o.courier.id,
             name: o.courier.name,
             todayProfit: new Decimal(0),
-            todayTips: new Decimal(0),
           };
         }
         courierStats[o.courier.id].name = o.courier.name;
@@ -165,11 +133,6 @@ export async function AdminProfitsWidget({ selectedDay }: { selectedDay?: string
   // --- حسابات الإجمالي الشامل ---
   let totalDeliveryProfit = new Decimal(0);
   let totalPrepProfit = new Decimal(0);
-  let totalTipsPaid = new Decimal(0);
-
-  for (const t of allTimeTips) {
-    totalTipsPaid = totalTipsPaid.plus(t.amountDinar);
-  }
 
   for (const o of allTimeOrders) {
     if (o.deliveryPrice) {
@@ -209,8 +172,8 @@ export async function AdminProfitsWidget({ selectedDay }: { selectedDay?: string
 
   const todayGross = todayDeliveryProfit.plus(todayPrepProfit);
   const allTimeGross = totalDeliveryProfit.plus(totalPrepProfit);
-  const todayNet = todayGross.minus(todayTipsPaid);
-  const allTimeNet = allTimeGross.minus(totalTipsPaid);
+  const todayNet = todayGross;
+  const allTimeNet = allTimeGross;
 
   const couriersList = Object.values(courierStats).sort((a, b) => b.todayProfit.cmp(a.todayProfit));
 
@@ -222,13 +185,13 @@ export async function AdminProfitsWidget({ selectedDay }: { selectedDay?: string
     totalPrepProfit: totalPrepProfit.toNumber(),
     todayDeliveryProfit: todayDeliveryProfit.toNumber(),
     totalDeliveryProfit: totalDeliveryProfit.toNumber(),
-    todayTipsPaid: todayTipsPaid.toNumber(),
-    totalTipsPaid: totalTipsPaid.toNumber(),
+    todayTipsPaid: 0,
+    totalTipsPaid: 0,
     couriersList: couriersList.map(c => ({
       id: c.id,
       name: c.name,
       todayProfit: c.todayProfit.toNumber(),
-      todayTips: c.todayTips.toNumber()
+      todayTips: 0
     }))
   };
 

@@ -15,13 +15,14 @@ import { hasCustomerLocationUrl } from "@/lib/order-location";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 import { routeModeOrFromQuery } from "@/lib/admin-super-search";
 import { parseBaghdadDateRange } from "@/lib/order-date-search";
-import { formatDinarAsAlf } from "@/lib/money-alf";
-import { normalizeAdminShopName } from "@/lib/admin-order-from-admin-constants";
+import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
+import { normalizeAdminShopName, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { serializePrisma } from "@/lib/serialize-prisma";
 import { OrderTrackingSearch } from "./order-tracking-search";
 import { type TrackingTableRow } from "./order-tracking-table-body";
 import { OrderTrackingBulkTable } from "./order-tracking-bulk-table";
+import { Decimal } from "@prisma/client/runtime/library";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -317,6 +318,89 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
     const safeTableRows = serializePrisma(tableRows);
     const safeCouriers = serializePrisma(couriers);
 
+    // --- حساب أرباح اليوم الصافية (توصيل + تجهيز) ---
+    const ALF_PER_DINAR = 1;
+    function numOrZero(v: unknown): number {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    const todayDate = new Date();
+    let shiftStartToday = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate(), 6, 0, 0, 0);
+    if (todayDate < shiftStartToday) {
+      shiftStartToday.setDate(shiftStartToday.getDate() - 1);
+    }
+    const todayFrom = shiftStartToday;
+    const todayTo = new Date(todayFrom);
+    todayTo.setDate(todayTo.getDate() + 1);
+    todayTo.setMilliseconds(todayTo.getMilliseconds() - 1);
+
+    const [todayDeliveredOrders, todayPrepOrders] = await Promise.all([
+      prisma.order.findMany({
+        where: {
+          status: "delivered",
+          createdAt: { gte: todayFrom, lte: todayTo }
+        },
+        select: {
+          deliveryPrice: true,
+          courierEarningDinar: true,
+          courier: { select: { zeroEarning: true, vehicleType: true } }
+        }
+      }),
+      prisma.order.findMany({
+        where: {
+          createdAt: { gte: todayFrom, lte: todayTo },
+          preparerShoppingJson: { not: null },
+          status: { notIn: ["cancelled", "rejected"] },
+          shop: { name: { in: ADMIN_SHOP_NAMES } }
+        },
+        select: {
+          preparerShoppingJson: true
+        }
+      })
+    ]);
+
+    let todayDeliveryProfit = new Decimal(0);
+    for (const o of todayDeliveredOrders) {
+      if (o.deliveryPrice) {
+        let p = new Decimal(0);
+        if (o.courier) {
+          if (o.courier.zeroEarning) {
+            p = o.deliveryPrice;
+          } else {
+            if (o.courierEarningDinar != null) {
+              p = o.deliveryPrice.minus(o.courierEarningDinar);
+            } else {
+              const vehicle = o.courier.vehicleType || "car";
+              const earning = vehicle === "bike"
+                ? o.deliveryPrice.div(2)
+                : o.deliveryPrice.mul(2).div(3);
+              p = o.deliveryPrice.minus(earning);
+            }
+          }
+        } else {
+          if (o.courierEarningDinar != null) {
+            p = o.deliveryPrice.minus(o.courierEarningDinar);
+          } else {
+            p = o.deliveryPrice;
+          }
+        }
+        todayDeliveryProfit = todayDeliveryProfit.plus(p);
+      }
+    }
+
+    let todayPrepProfit = new Decimal(0);
+    for (const o of todayPrepOrders) {
+      if (o.preparerShoppingJson) {
+        const j = o.preparerShoppingJson as any;
+        const productsProfitDinar = new Decimal(numOrZero(j?.sumSellAlf - j?.sumBuyAlf) * ALF_PER_DINAR);
+        const wagesProfitDinar = new Decimal(numOrZero(j?.extraAlf) * ALF_PER_DINAR);
+        todayPrepProfit = todayPrepProfit.plus(productsProfitDinar.plus(wagesProfitDinar));
+      }
+    }
+
+    const todayTotalProfit = todayDeliveryProfit.plus(todayPrepProfit).toNumber();
+
     return (
       <div className="space-y-4" dir="rtl">
         <p className={ad.muted}>
@@ -324,13 +408,30 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
             ← الرئيسية
           </Link>
         </p>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className={ad.h1}>
-            {statusFilter === "cancelled" ? "المرفوضة" : "تتبع الطلبات"}
-          </h1>
-          <Link href={`${SECRET_ADMIN_PATH}/orders/new`} className={ad.btnPrimary}>
-            + إضافة طلب من الإدارة
-          </Link>
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div>
+            <h1 className={ad.h1}>
+              {statusFilter === "cancelled" ? "المرفوضة" : "تتبع الطلبات"}
+            </h1>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Link 
+              href={`${SECRET_ADMIN_PATH}/reports/couriers`}
+              className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 px-5 py-2.5 text-white shadow-md shadow-amber-100 transition hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98]"
+            >
+              <span className="text-lg">💰</span>
+              <div>
+                <p className="text-[10px] font-bold text-amber-100 uppercase">أرباح اليوم الصافية</p>
+                <p className="text-sm font-black">{formatDinarAsAlfWithUnit(todayTotalProfit)}</p>
+              </div>
+              <span className="text-[10px] text-amber-100 font-bold mr-2">← تفاصيل</span>
+            </Link>
+
+            <Link href={`${SECRET_ADMIN_PATH}/orders/new`} className={ad.btnPrimary}>
+              + إضافة طلب من الإدارة
+            </Link>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

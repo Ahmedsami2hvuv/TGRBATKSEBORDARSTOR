@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
-import { payCourierTipAction } from "./couriers/tip-actions";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -33,8 +32,6 @@ export function AdminProfitsClientContent({
   totalPrepProfit,
   todayDeliveryProfit,
   totalDeliveryProfit,
-  todayTipsPaid,
-  totalTipsPaid,
   couriersList,
 }: Props) {
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
@@ -65,7 +62,7 @@ export function AdminProfitsClientContent({
           </div>
           <div>
             <h2 className="text-lg font-black text-amber-900">سجل أرباح الشركة التفصيلي</h2>
-            <p className="mt-1 text-xs font-semibold text-amber-700/80">ملخص أرباح يوم {selectedDay} (بعد استقطاع الإكراميات)</p>
+            <p className="mt-1 text-xs font-semibold text-amber-700/80">ملخص أرباح يوم {selectedDay}</p>
           </div>
         </div>
 
@@ -96,7 +93,7 @@ export function AdminProfitsClientContent({
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         <div className="rounded-xl border border-sky-100 bg-white p-4 shadow-sm">
           <h3 className="mb-4 text-sm font-bold text-sky-900">أرباح التجهيز</h3>
           <div className="rounded-lg border border-sky-100 bg-sky-50 p-3">
@@ -123,19 +120,6 @@ export function AdminProfitsClientContent({
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-rose-100 bg-white p-4 shadow-sm">
-          <h3 className="mb-4 text-sm font-bold text-rose-900">الإكراميات</h3>
-          <div className="rounded-lg border border-rose-100 bg-rose-50 p-3">
-            <div className="mb-1 flex items-center justify-between text-xs">
-              <span className="text-slate-500">اليوم المختار:</span>
-              <span className="font-bold text-rose-600">{formatDinarAsAlfWithUnit(todayTipsPaid)}</span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-500">الإجمالي التاريخي:</span>
-              <span className="font-bold text-rose-700">{formatDinarAsAlfWithUnit(totalTipsPaid)}</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {couriersList.length > 0 && (
@@ -146,8 +130,6 @@ export function AdminProfitsClientContent({
                 <tr>
                   <th className="px-4 py-3">المندوب</th>
                   <th className="px-4 py-3 text-center">أرباح اليوم المختار</th>
-                  <th className="px-4 py-3 text-center">دفع إكرامية</th>
-                  <th className="px-4 py-3 text-center">إكراميات اليوم المختار</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -155,14 +137,6 @@ export function AdminProfitsClientContent({
                   <tr key={c.id} className="transition hover:bg-slate-50">
                     <td className="px-4 py-3 font-bold text-slate-800">{c.name}</td>
                     <td className="px-4 py-3 text-center font-bold text-emerald-600">{formatDinarAsAlfWithUnit(c.todayProfit)}</td>
-                    <td className="px-4 py-3 text-center">
-                      <form action={payCourierTipAction} className="flex items-center justify-center gap-1">
-                        <input type="hidden" name="courierId" value={c.id} />
-                        <input type="number" step="any" inputMode="decimal" name="amountAlf" placeholder="0" required className="w-12 rounded border border-amber-200 px-1 py-1 text-xs outline-none" />
-                        <button type="submit" className="rounded bg-amber-500 px-2 py-1 text-[10px] font-bold text-white hover:bg-amber-600">دفع</button>
-                      </form>
-                    </td>
-                    <td className="px-4 py-3 text-center font-bold text-rose-600">{formatDinarAsAlfWithUnit(c.todayTips)}</td>
                   </tr>
                 ))}
               </tbody>
