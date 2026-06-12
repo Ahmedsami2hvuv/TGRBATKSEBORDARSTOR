@@ -7,7 +7,8 @@ import {
   createPartner, 
   syncSystemPartners, 
   getPartners,
-  deletePartnersBatch
+  deletePartnersBatch,
+  getUnaddedSystemPartners
 } from "./actions";
 import Link from "next/link";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
@@ -27,8 +28,24 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
   const [newPartnerName, setNewPartnerName] = useState("");
   const [newPartnerPhone, setNewPartnerPhone] = useState("");
   const [newPartnerType, setNewPartnerType] = useState<PartnerType>("external");
+  const [unaddedSystemPartners, setUnaddedSystemPartners] = useState<{ id: string; name: string; phone: string | null }[]>([]);
+  const [selectedSystemPartnerId, setSelectedSystemPartnerId] = useState("");
+  const [isLoadingUnadded, setIsLoadingUnadded] = useState(false);
   const [addError, setAddError] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+
+  const loadUnaddedPartners = async (type: PartnerType) => {
+    if (type === "external") {
+      setUnaddedSystemPartners([]);
+      setSelectedSystemPartnerId("");
+      return;
+    }
+    setIsLoadingUnadded(true);
+    const list = await getUnaddedSystemPartners(type);
+    setUnaddedSystemPartners(list);
+    setIsLoadingUnadded(false);
+    setSelectedSystemPartnerId("");
+  };
 
   // حالة التحديد الجماعي
   const [selectedPartnerIds, setSelectedPartnerIds] = useState<string[]>([]);
@@ -74,13 +91,16 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
     const res = await createPartner(
       newPartnerName,
       newPartnerPhone || null,
-      newPartnerType
+      newPartnerType,
+      selectedSystemPartnerId || undefined
     );
     setIsAdding(false);
     if (res.success) {
       setNewPartnerName("");
       setNewPartnerPhone("");
       setNewPartnerType("external");
+      setSelectedSystemPartnerId("");
+      setUnaddedSystemPartners([]);
       setShowAddModal(false);
       refreshList();
     } else {
@@ -404,7 +424,11 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
                 <label className="block text-xs font-black text-slate-500 mb-1.5">النوع/التصنيف</label>
                 <select
                   value={newPartnerType}
-                  onChange={(e) => setNewPartnerType(e.target.value as PartnerType)}
+                  onChange={(e) => {
+                    const type = e.target.value as PartnerType;
+                    setNewPartnerType(type);
+                    loadUnaddedPartners(type);
+                  }}
                   className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 bg-white"
                 >
                   <option value="external">طرف خارجي (شخص أو حساب آخر)</option>
@@ -414,6 +438,41 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
                   <option value="courier">مندوب</option>
                 </select>
               </div>
+
+              {newPartnerType !== "external" && (
+                <div>
+                  <label className="block text-xs font-black text-slate-500 mb-1.5">اختر من حسابات النظام غير المضافة</label>
+                  {isLoadingUnadded ? (
+                    <div className="text-xs text-slate-500 py-2">جاري تحميل القائمة...</div>
+                  ) : unaddedSystemPartners.length === 0 ? (
+                    <div className="text-xs text-rose-500 font-bold py-2">جميع الحسابات من هذا النوع مضافة مسبقاً!</div>
+                  ) : (
+                    <select
+                      value={selectedSystemPartnerId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedSystemPartnerId(val);
+                        const found = unaddedSystemPartners.find(p => p.id === val);
+                        if (found) {
+                          setNewPartnerName(found.name);
+                          setNewPartnerPhone(found.phone || "");
+                        } else {
+                          setNewPartnerName("");
+                          setNewPartnerPhone("");
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 bg-white"
+                    >
+                      <option value="">-- اختر حساباً للربط التلقائي --</option>
+                      {unaddedSystemPartners.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name} {item.phone ? `(${item.phone})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
 
               {addError && <p className="text-xs font-bold text-rose-600">{addError}</p>}
 

@@ -588,7 +588,7 @@ export async function syncSystemPartners() {
     }
 
     // ب) استيراد المجهزين
-    const preparers = await prisma.companyPreparer.findMany({ where: { active: true } });
+    const preparers = await prisma.companyPreparer.findMany();
     for (const prep of preparers) {
       const exists = await prisma.creditBookPartner.findFirst({
         where: { type: "preparer", externalId: prep.id },
@@ -690,6 +690,64 @@ export async function payShopOrderFromAdmin(orderId: string, amount: number) {
   } catch (error) {
     console.error("Error in payShopOrderFromAdmin:", error);
     return { success: false, error: "حدث خطأ أثناء تسجيل عملية الدفع" };
+  }
+}
+
+// جلب الكيانات من النظام التي لم تُضاف بعد كشركاء لدفتر الديون
+export async function getUnaddedSystemPartners(type: PartnerType) {
+  try {
+    const { isAdminSession } = await import("@/lib/admin-session");
+    if (!(await isAdminSession())) {
+      return [];
+    }
+
+    // جلب معرفات الأطراف المضافة بالفعل لنفس النوع
+    const addedExternalIds = await prisma.creditBookPartner.findMany({
+      where: { type },
+      select: { externalId: true }
+    }).then(list => list.map(p => p.externalId).filter(Boolean) as string[]);
+
+    if (type === "courier") {
+      const list = await prisma.courier.findMany({
+        where: { id: { notIn: addedExternalIds } },
+        select: { id: true, name: true, phone: true },
+        orderBy: { name: "asc" }
+      });
+      return list;
+    }
+
+    if (type === "preparer") {
+      const list = await prisma.companyPreparer.findMany({
+        where: { id: { notIn: addedExternalIds } },
+        select: { id: true, name: true, phone: true },
+        orderBy: { name: "asc" }
+      });
+      return list;
+    }
+
+    if (type === "shop") {
+      const list = await prisma.shop.findMany({
+        where: { id: { notIn: addedExternalIds } },
+        select: { id: true, name: true, phone: true },
+        orderBy: { name: "asc" }
+      });
+      return list;
+    }
+
+    if (type === "customer") {
+      const list = await prisma.customer.findMany({
+        where: { id: { notIn: addedExternalIds } },
+        select: { id: true, name: true, phone: true },
+        orderBy: { name: "asc" },
+        take: 100
+      });
+      return list;
+    }
+
+    return [];
+  } catch (error) {
+    console.error("Error in getUnaddedSystemPartners:", error);
+    return [];
   }
 }
 
