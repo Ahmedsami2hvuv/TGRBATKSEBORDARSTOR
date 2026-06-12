@@ -483,7 +483,7 @@ export function AdminShell({
                   style={{ height: 36 * itemScale, fontSize: 12 * itemScale }}
                 >
                   <span className="shrink-0 relative flex justify-center items-center" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }}>
-                    <DynamicIcon iconKey={tile.iconKey} config={icons} className="w-6 h-6" />
+                    <DynamicIcon iconKey={tile.iconKey} config={icons} fallback={tile.slug === "credit-book" ? "📘" : "📁"} className="w-6 h-6" />
                     {showPendingBadge ? (
                       <span className="absolute -top-2 -right-2 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-orange-600 px-1 py-0.5 text-[10px] font-black leading-none text-white shadow-[0_0_10px_orange]">
                         {pendingCount > 99 ? "99+" : pendingCount}
