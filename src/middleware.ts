@@ -29,7 +29,15 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/abo1stor3hlaa2kbr8-47/login", request.url));
     }
     try {
-      await jwtVerify(token, secret);
+      const { payload } = await jwtVerify(token, secret);
+      if (payload && payload.isAccountant) {
+        // حظر المحاسب من كافة مسارات الإدارة باستثناء دفتر الديون وسجل العمليات، مع حظر إدارة المحاسبين
+        const isAllowedCreditBookPath = pathname === "/abo1stor3hlaa2kbr8-47/credit-book" || pathname.startsWith("/abo1stor3hlaa2kbr8-47/credit-book/");
+        const isManageAccountants = pathname.startsWith("/abo1stor3hlaa2kbr8-47/credit-book/accountants");
+        if (!isAllowedCreditBookPath || isManageAccountants) {
+          return NextResponse.redirect(new URL("/abo1stor3hlaa2kbr8-47/credit-book", request.url));
+        }
+      }
     } catch {
       return NextResponse.redirect(new URL("/abo1stor3hlaa2kbr8-47/login", request.url));
     }

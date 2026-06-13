@@ -41,9 +41,10 @@ const typeBadgeStyles: Record<PartnerType, string> = {
 
 interface CreditBookClientProps {
   initialPartners: PartnerWithBalance[];
+  isAccountant?: boolean;
 }
 
-export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
+export function CreditBookClient({ initialPartners, isAccountant = false }: CreditBookClientProps) {
   const [allPartners, setAllPartners] = useState<PartnerWithBalance[]>(initialPartners);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
@@ -334,12 +335,14 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
           >
             📋 سجل التغييرات
           </Link>
-          <Link
-            href="/abo1stor3hlaa2kbr8-47/credit-book/accountants"
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-black text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-2xl transition border border-indigo-100"
-          >
-            🔑 روابط المحاسبين
-          </Link>
+          {!isAccountant && (
+            <Link
+              href="/abo1stor3hlaa2kbr8-47/credit-book/accountants"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-black text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-2xl transition border border-indigo-100"
+            >
+              🔑 روابط المحاسبين
+            </Link>
+          )}
           <button
             onClick={() => setShowAddModal(true)}
             className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition shadow-md shadow-indigo-900/10"

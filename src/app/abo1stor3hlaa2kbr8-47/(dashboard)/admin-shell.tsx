@@ -146,9 +146,11 @@ function getTileClasses(slug: string, active: boolean, isCompact: boolean): stri
 export function AdminShell({
   children,
   pendingInitialCount = 0,
+  isAccountant = false,
 }: {
   children: React.ReactNode;
   pendingInitialCount?: number;
+  isAccountant?: boolean;
 }) {
   const [navOpen, setNavOpen] = useState(false);
   const [navOpenInitialized, setNavOpenInitialized] = useState(false);
@@ -374,6 +376,42 @@ export function AdminShell({
     return (
       <div className="kse-app-bg min-h-screen flex text-slate-900 dark:text-slate-100 flex-col">
         <main className="w-full flex-1 px-2 py-4 sm:p-6 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[1400px]">
+            <div className="relative z-10 w-full h-full">
+              {children}
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (isAccountant) {
+    return (
+      <div className="kse-app-bg min-h-screen flex text-slate-900 dark:text-slate-100 flex-col">
+        <header className="h-16 w-full bg-white/80 dark:bg-[#131418]/80 backdrop-blur-md border-b border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.05)] px-4 sm:px-8 flex items-center justify-between z-40 relative" dir="rtl">
+          <div className="flex items-center gap-2">
+            <div className="flex w-8 h-8 rounded-full bg-gradient-to-br from-[#00f3ff] to-[#e028ff] items-center justify-center shadow-[0_0_10px_rgba(224,40,255,0.5)]">
+              <span className="text-black font-black text-xs">AC</span>
+            </div>
+            <span className="text-sm font-black tracking-wider text-slate-800 dark:text-slate-200">
+              بوابة المحاسب
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <ThemeSwitcher />
+            <form action={logout} className="m-0">
+              <button
+                type="submit"
+                className="flex items-center gap-2 rounded-xl border border-[#ff3b30]/30 bg-[#ff3b30]/5 px-3 py-1.5 text-[#ff3b30] transition hover:bg-[#ff3b30]/10 font-bold text-xs"
+              >
+                <span>تسجيل الخروج</span>
+              </button>
+            </form>
+          </div>
+        </header>
+
+        <main className="w-full flex-1 px-2 py-6 sm:p-6 lg:p-8 overflow-y-auto">
           <div className="mx-auto w-full max-w-[1400px]">
             <div className="relative z-10 w-full h-full">
               {children}

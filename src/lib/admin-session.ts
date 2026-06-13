@@ -29,3 +29,18 @@ export async function getCurrentSessionName(): Promise<string> {
     return "الإدارة";
   }
 }
+
+export async function getCurrentSessionIsAccountant(): Promise<boolean> {
+  try {
+    const c = await cookies();
+    const t = c.get(adminCookieName)?.value;
+    if (!t) return false;
+    const s = process.env.ADMIN_SESSION_SECRET;
+    if (!s) return false;
+    const secret = new TextEncoder().encode(s);
+    const { payload } = await jwtVerify(t, secret);
+    return !!payload.isAccountant;
+  } catch {
+    return false;
+  }
+}

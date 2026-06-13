@@ -29,8 +29,8 @@ export async function GET(req: NextRequest) {
       return new NextResponse("رابط الوصول غير صالح أو تم إلغاؤه من قبل الإدارة", { status: 403 });
     }
 
-    // توليد توكن الإدارة بالاسم المحدد للمحاسب
-    const jwtToken = await signAdminToken(acc.name);
+    // توليد توكن الإدارة بالاسم المحدد للمحاسب وموسوم كمحاسب
+    const jwtToken = await signAdminToken(acc.name, true);
 
     // توجيه المستخدم لصفحة دفتر الديون مع تعيين الكوكيز
     const res = NextResponse.redirect(new URL("/abo1stor3hlaa2kbr8-47/credit-book", req.url));

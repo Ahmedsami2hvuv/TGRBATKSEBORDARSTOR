@@ -1,10 +1,14 @@
 import { getPartners } from "./actions";
 import { CreditBookClient } from "./credit-book-client";
+import { getCurrentSessionIsAccountant } from "@/lib/admin-session";
 
 export const dynamic = "force-dynamic";
 
 export default async function CreditBookPage() {
-  const initialPartners = await getPartners();
+  const [initialPartners, isAccountant] = await Promise.all([
+    getPartners(),
+    getCurrentSessionIsAccountant()
+  ]);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-8">
@@ -17,7 +21,7 @@ export default async function CreditBookPage() {
         </p>
       </div>
 
-      <CreditBookClient initialPartners={initialPartners} />
+      <CreditBookClient initialPartners={initialPartners} isAccountant={isAccountant} />
     </div>
   );
 }
