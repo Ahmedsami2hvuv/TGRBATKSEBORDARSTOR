@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
 import { 
   addTransaction, 
@@ -69,6 +69,7 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
 
   const [showCalc, setShowCalc] = useState(false);
   const [calcExpr, setCalcExpr] = useState("");
+  const noteRef = useRef<HTMLTextAreaElement>(null);
 
   const handleOpenForm = (selectedKind: "gave" | "took") => {
     setKind(selectedKind);
@@ -594,6 +595,12 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
                 placeholder="أدخل السعر (مثال: 50,000 أو سلفة 25000)"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    noteRef.current?.focus();
+                  }
+                }}
                 className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm font-semibold focus:outline-none focus:border-indigo-500 text-right bg-slate-50/50"
               />
             </div>
@@ -602,10 +609,17 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
             <div>
               <label className="block text-xs font-black text-slate-500 mb-1.5">بيان أو ملاحظات (التفاصيل)</label>
               <textarea
+                ref={noteRef}
                 placeholder="تفاصيل المعاملة..."
                 rows={2}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAddTx(e);
+                  }
+                }}
                 className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 text-right"
               />
             </div>
