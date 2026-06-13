@@ -13,10 +13,48 @@ import {
   updateAdminPaymentEvent,
   deleteAdminPaymentEvent,
   zeroPartnerAccount,
-  getTransactionAuthorsAction
+  getTransactionAuthorsAction,
+  createPartner,
+  getUnaddedSystemPartners,
+  type PartnerType
 } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credit-book/actions";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { useRouter } from "next/navigation";
+
+// دالة البحث الذكي الفوري بالتقارب اللفظي للمفاتيح
+function fuzzyMatchTx(tx: Transaction, query: string): boolean {
+  if (!query) return true;
+  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return true;
+
+  const amountStr = String(tx.amount);
+  const amountAlfStr = String(tx.amount / 1000);
+  const noteStr = (tx.note || "").toLowerCase();
+  const kindStr = tx.kind === "gave" ? "أعطيت" : "أخذت";
+  
+  const txDate = new Date(tx.createdAt);
+  const dateStr = txDate.toLocaleDateString("ar-EG").toLowerCase();
+  const isoDateStr = txDate.toISOString().substring(0, 10);
+  
+  return tokens.every(token => {
+    if (amountStr.includes(token)) return true;
+    if (amountAlfStr.includes(token)) return true;
+    if (noteStr.includes(token)) return true;
+    if (kindStr.includes(token)) return true;
+    if (dateStr.includes(token)) return true;
+    if (isoDateStr.includes(token)) return true;
+    
+    // تطابق الأحرف المتقاربة بالترتيب
+    let charIdx = 0;
+    for (let i = 0; i < noteStr.length; i++) {
+      if (noteStr[i] === token[charIdx]) {
+        charIdx++;
+        if (charIdx === token.length) return true;
+      }
+    }
+    return false;
+  });
+}
 
 // تعريف الواجهات البرمجية
 interface Transaction {
@@ -50,13 +88,85 @@ interface Partner {
   portalUrl?: string | null;
 }
 
-interface PartnerDetailsClientProps {
-  partner: Partner;
+interface ActivePartnerSummary {
+  id: string;
+  name: string;
 }
 
-export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetailsClientProps) {
+interface PartnerDetailsClientProps {
+  partner: Partner;
+  allActivePartners: ActivePartnerSummary[];
+}
+
+export function PartnerDetailsClient({ partner: initialPartner, allActivePartners }: PartnerDetailsClientProps) {
   const router = useRouter();
   const [partner, setPartner] = useState<Partner>(initialPartner);
+  
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // نموذج إضافة شريك جديد (للاقتراحات)
+  const [showAddPartnerModal, setShowAddPartnerModal] = useState(false);
+  const [newPartnerName, setNewPartnerName] = useState("");
+  const [newPartnerPhone, setNewPartnerPhone] = useState("");
+  const [newPartnerType, setNewPartnerType] = useState<PartnerType>("external");
+  const [unaddedSystemPartners, setUnaddedSystemPartners] = useState<{ id: string; name: string; phone: string | null }[]>([]);
+  const [systemPartnerSearch, setSystemPartnerSearch] = useState("");
+  const [selectedSystemPartnerId, setSelectedSystemPartnerId] = useState("");
+  const [isLoadingUnadded, setIsLoadingUnadded] = useState(false);
+  const [addPartnerError, setAddPartnerError] = useState("");
+  const [isAddingPartner, setIsAddingPartner] = useState(false);
+
+  const loadUnaddedPartners = async (type: PartnerType) => {
+    setSystemPartnerSearch("");
+    if (type === "external") {
+      setUnaddedSystemPartners([]);
+      setSelectedSystemPartnerId("");
+      return;
+    }
+    setIsLoadingUnadded(true);
+    const list = await getUnaddedSystemPartners(type);
+    setUnaddedSystemPartners(list);
+    setIsLoadingUnadded(false);
+    setSelectedSystemPartnerId("");
+  };
+
+  const handleCreatePartner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPartnerName.trim()) {
+      setAddPartnerError("الرجاء إدخال الاسم");
+      return;
+    }
+    setIsAddingPartner(true);
+    setAddPartnerError("");
+    const res = await createPartner(
+      newPartnerName,
+      newPartnerPhone || null,
+      newPartnerType,
+      selectedSystemPartnerId || undefined
+    );
+    setIsAddingPartner(false);
+    if (res.success) {
+      setNewPartnerName("");
+      setNewPartnerPhone("");
+      setNewPartnerType("external");
+      setSelectedSystemPartnerId("");
+      setUnaddedSystemPartners([]);
+      setShowAddPartnerModal(false);
+      if (res.partner?.id) {
+        router.push(`/abo1stor3hlaa2kbr8-47/credit-book/${res.partner.id}`);
+      }
+    } else {
+      setAddPartnerError(res.error || "حدث خطأ ما");
+    }
+  };
+
+  // اقتراحات الحسابات الأخرى
+  const matchingPartners = searchQuery.trim() === ""
+    ? []
+    : allActivePartners.filter(p =>
+        p.id !== partner.id &&
+        p.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
+      ).slice(0, 3);
   
   const [authors, setAuthors] = useState<Record<string, { createdBy: string; modifiedBy?: string }>>({});
 
@@ -687,7 +797,61 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
 
       {/* كشف الحساب وتفاصيل المعاملات التاريخية */}
       <div className="bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 p-6 rounded-3xl shadow-sm text-right space-y-6">
-        <h3 className="text-md font-black text-slate-800 dark:text-slate-200">📄 كشف المعاملات التاريخية</h3>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <h3 className="text-md font-black text-slate-800 dark:text-slate-200">📄 كشف المعاملات التاريخية</h3>
+          
+          <div className="w-full md:w-80">
+            <input
+              type="text"
+              placeholder="ابحث في هذا الحساب (سعر، تاريخ، تفاصيل)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 rounded-2xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-500 text-right bg-white dark:bg-slate-900"
+            />
+          </div>
+        </div>
+
+        {searchQuery.trim() !== "" && (
+          <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-150/50 dark:border-slate-800 rounded-2xl flex flex-col gap-2.5">
+            {/* 1. حسابات مطابقة */}
+            {matchingPartners.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-black text-slate-400">📌 الانتقال لحساب آخر يتطابق مع بحثك:</span>
+                <div className="flex flex-wrap gap-2">
+                  {matchingPartners.map(p => (
+                    <Link
+                      key={p.id}
+                      href={`/abo1stor3hlaa2kbr8-47/credit-book/${p.id}`}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-black bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-150 dark:border-indigo-900/40 rounded-xl hover:bg-indigo-100 transition"
+                    >
+                      👤 {p.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* 2. اقتراح إنشاء حساب جديد */}
+            {(matchingPartners.length === 0 && !/\d/.test(searchQuery.trim()) && searchQuery.trim().length >= 2) && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-xs text-slate-500 font-bold">💡 لا يوجد حساب باسم "{searchQuery.trim()}" في الدفتر.</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewPartnerName(searchQuery.trim());
+                    setNewPartnerPhone("");
+                    setNewPartnerType("external");
+                    setSelectedSystemPartnerId("");
+                    setShowAddPartnerModal(true);
+                  }}
+                  className="inline-flex items-center justify-center px-3.5 py-1.5 text-[11px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm self-end sm:self-auto"
+                >
+                  ➕ إنشاء حساب جديد لـ "{searchQuery.trim()}"
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {partner.transactions.length === 0 ? (
           <div className="py-20 text-center text-slate-400 font-bold">لا يوجد أي معاملات مالية مسجلة لهذا الحساب.</div>
@@ -711,9 +875,15 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
               })
               .reverse();
 
+            const filteredTxs = txsWithRunningBalance.filter(tx => fuzzyMatchTx(tx, searchQuery));
+
+            if (filteredTxs.length === 0) {
+              return <div className="py-20 text-center text-slate-400 font-bold">لا يوجد أي معاملات مطابقة لمصطلح البحث.</div>;
+            }
+
             return (
               <div className="space-y-3 max-h-[800px] overflow-y-auto pr-1">
-                {txsWithRunningBalance.map((tx) => (
+                {filteredTxs.map((tx) => (
                   <div 
                     key={tx.id} 
                     className={`p-4 rounded-2xl transition flex flex-col gap-3 shadow-sm ${
@@ -970,6 +1140,157 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
                 <button
                   type="button"
                   onClick={() => setEditAdminPaymentId(null)}
+                  className="px-4 py-2.5 text-xs font-black text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-2xl transition"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* مودال إضافة زبون/طرف جديد من الاقتراحات */}
+      {showAddPartnerModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-2xl max-w-md w-full p-6 text-right animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-black text-slate-800 mb-4">إضافة شريك/زبون جديد لدفتر الديون</h3>
+            
+            <form onSubmit={handleCreatePartner} className="space-y-4">
+              <div>
+                <label className="block text-xs font-black text-slate-500 mb-1.5">الاسم بالكامل</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="مثال: علي محمد"
+                  value={newPartnerName}
+                  onChange={(e) => setNewPartnerName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black text-slate-500 mb-1.5">رقم الهاتف (اختياري)</label>
+                <input
+                  type="text"
+                  placeholder="مثال: 07701234567"
+                  value={newPartnerPhone}
+                  onChange={(e) => setNewPartnerPhone(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 text-left"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black text-slate-500 mb-1.5">النوع/التصنيف</label>
+                <select
+                  value={newPartnerType}
+                  onChange={(e) => {
+                    const type = e.target.value as PartnerType;
+                    setNewPartnerType(type);
+                    loadUnaddedPartners(type);
+                  }}
+                  className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 bg-white"
+                >
+                  <option value="external">طرف خارجي (شخص أو حساب آخر)</option>
+                  <option value="customer">زبون</option>
+                  <option value="shop">محل</option>
+                  <option value="preparer">مجهز</option>
+                  <option value="courier">مندوب</option>
+                  <option value="supplier">مورد</option>
+                </select>
+              </div>
+
+              {newPartnerType !== "external" && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-black text-slate-500 mb-1.5">ابحث باسم الحساب</label>
+                    <input
+                      type="text"
+                      placeholder="اكتب اسم الحساب هنا للبحث والتصفية..."
+                      value={systemPartnerSearch}
+                      onChange={(e) => setSystemPartnerSearch(e.target.value)}
+                      className="w-full px-4 py-2 rounded-2xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-black text-slate-500 mb-1.5">
+                      {selectedSystemPartnerId ? "الحساب المحدد للربط التلقائي:" : "اختر الحساب للربط التلقائي:"}
+                    </label>
+                    
+                    {selectedSystemPartnerId && (
+                      <div className="mb-2.5 p-3 bg-indigo-50 text-indigo-900 rounded-2xl text-xs font-black flex justify-between items-center border border-indigo-100">
+                        <span>
+                          📍 {newPartnerName} {newPartnerPhone ? `(${newPartnerPhone})` : ""}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedSystemPartnerId("");
+                            setNewPartnerName("");
+                            setNewPartnerPhone("");
+                          }}
+                          className="text-rose-600 hover:text-rose-800 text-[10px] font-black border border-rose-200 px-2 py-0.5 rounded-lg bg-white transition"
+                        >
+                          إلغاء التحديد
+                        </button>
+                      </div>
+                    )}
+
+                    {isLoadingUnadded ? (
+                      <div className="text-xs text-slate-500 py-2">جاري تحميل القائمة...</div>
+                    ) : unaddedSystemPartners.length === 0 ? (
+                      <div className="text-xs text-rose-500 font-bold py-2">جميع الحسابات من هذا النوع مضافة مسبقاً!</div>
+                    ) : (
+                      <div className="border border-slate-200 rounded-2xl max-h-48 overflow-y-auto divide-y divide-slate-100 bg-white">
+                        {unaddedSystemPartners
+                          .filter(item => {
+                            const query = systemPartnerSearch.toLowerCase();
+                            const matchesName = item.name.toLowerCase().includes(query);
+                            const matchesPhone = item.phone && item.phone.toLowerCase().includes(query);
+                            return matchesName || matchesPhone;
+                          })
+                          .map((item) => {
+                            const isSelected = selectedSystemPartnerId === item.id;
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSystemPartnerId(item.id);
+                                  setNewPartnerName(item.name);
+                                  setNewPartnerPhone(item.phone || "");
+                                }}
+                                className={`w-full text-right px-4 py-3 text-xs font-bold transition flex justify-between items-center ${
+                                  isSelected 
+                                    ? "bg-indigo-50 text-indigo-700 font-black border-r-4 border-indigo-600" 
+                                    : "hover:bg-slate-50 text-slate-700"
+                                }`}
+                              >
+                                <span>{item.name} {item.phone ? `(${item.phone})` : ""}</span>
+                                {isSelected && <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black">محدد ✅</span>}
+                              </button>
+                            );
+                          })
+                        }
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {addPartnerError && <p className="text-xs font-bold text-rose-600">{addPartnerError}</p>}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={isAddingPartner}
+                  className="flex-1 px-4 py-2.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition disabled:opacity-50"
+                >
+                  {isAddingPartner ? "جاري الإضافة..." : "حفظ الشريك"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddPartnerModal(false)}
                   className="px-4 py-2.5 text-xs font-black text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-2xl transition"
                 >
                   إلغاء

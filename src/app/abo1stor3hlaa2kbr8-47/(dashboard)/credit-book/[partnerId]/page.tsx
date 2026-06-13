@@ -2,6 +2,7 @@ import { getPartnerDetails } from "../actions";
 import { PartnerDetailsClient } from "./partner-details-client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 
 interface PageProps {
   params: Promise<{ partnerId: string }>;
@@ -11,7 +12,15 @@ export const dynamic = "force-dynamic";
 
 export default async function PartnerDetailsPage({ params }: PageProps) {
   const resolvedParams = await params;
-  const partner = await getPartnerDetails(resolvedParams.partnerId);
+  const [partner, allActivePartners] = await Promise.all([
+    getPartnerDetails(resolvedParams.partnerId),
+    prisma.creditBookPartner.findMany({
+      where: {
+        type: { notIn: ["deleted_courier", "deleted_preparer", "deleted_shop", "deleted_customer"] }
+      },
+      select: { id: true, name: true }
+    })
+  ]);
 
   if (!partner) {
     return notFound();
@@ -28,7 +37,7 @@ export default async function PartnerDetailsPage({ params }: PageProps) {
         </Link>
       </div>
 
-      <PartnerDetailsClient partner={partner} />
+      <PartnerDetailsClient partner={partner} allActivePartners={allActivePartners} />
     </div>
   );
 }

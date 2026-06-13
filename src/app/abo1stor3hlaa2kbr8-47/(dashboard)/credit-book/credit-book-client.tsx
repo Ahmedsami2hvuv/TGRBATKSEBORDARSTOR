@@ -20,12 +20,31 @@ import {
 import Link from "next/link";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 
+// أنواع التسميات باللغة العربية
+const typeLabels: Record<PartnerType, string> = {
+  courier: "مندوب",
+  preparer: "مجهز",
+  shop: "محل",
+  customer: "زبون",
+  external: "طرف خارجي",
+  supplier: "مورد",
+};
+
+const typeBadgeStyles: Record<PartnerType, string> = {
+  courier: "bg-blue-50 text-blue-700 border border-blue-200",
+  preparer: "bg-purple-50 text-purple-700 border border-purple-200",
+  shop: "bg-amber-50 text-amber-700 border border-amber-200",
+  customer: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  external: "bg-slate-100 text-slate-700 border border-slate-200",
+  supplier: "bg-pink-50 text-pink-700 border border-pink-200",
+};
+
 interface CreditBookClientProps {
   initialPartners: PartnerWithBalance[];
 }
 
 export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
-  const [partners, setPartners] = useState<PartnerWithBalance[]>(initialPartners);
+  const [allPartners, setAllPartners] = useState<PartnerWithBalance[]>(initialPartners);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [balanceFilter, setBalanceFilter] = useState<string>("all");
@@ -61,38 +80,74 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
   const [selectedPartnerIds, setSelectedPartnerIds] = useState<string[]>([]);
   const [isDeletingBatch, setIsDeletingBatch] = useState(false);
 
-  // حساب الأرقام الكلية
-  const totalWeOwed = partners
+  // حساب الأرقام الكلية للنوع المحدد مستقراً أثناء البحث بالاسم
+  const typeFilteredPartnersForTotals = React.useMemo(() => {
+    return allPartners.filter(p => selectedType === "all" || p.type === selectedType);
+  }, [allPartners, selectedType]);
+
+  const totalWeOwed = typeFilteredPartnersForTotals
     .filter((p) => p.balance > 0)
     .reduce((sum, p) => sum + p.balance, 0);
 
-  const totalWeOwe = partners
+  const totalWeOwe = typeFilteredPartnersForTotals
     .filter((p) => p.balance < 0)
     .reduce((sum, p) => sum + Math.abs(p.balance), 0);
 
   const netBalance = totalWeOwed - totalWeOwe;
 
-  const filteredPartners = partners.filter((p) => {
-    if (balanceFilter === "owe_us") return p.balance > 0;
-    if (balanceFilter === "we_owe") return p.balance < 0;
-    return true;
-  });
+  // التصفية والبحث الفوري والذكي محلياً
+  const filteredPartners = React.useMemo(() => {
+    return allPartners.filter((p) => {
+      // 1. فحص النوع
+      if (selectedType !== "all" && p.type !== selectedType) return false;
+
+      // 2. فحص رصيد الدفتر
+      if (balanceFilter === "owe_us" && p.balance <= 0) return false;
+      if (balanceFilter === "we_owe" && p.balance >= 0) return false;
+
+      // 3. فحص مصطلح البحث (fuzzy match on name or phone or balance)
+      if (!searchQuery.trim()) return true;
+
+      const tokens = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      if (tokens.length === 0) return true;
+
+      const nameStr = p.name.toLowerCase();
+      const phoneStr = (p.phone || "").toLowerCase();
+      const typeStr = typeLabels[p.type].toLowerCase();
+      const balanceStr = String(Math.abs(p.balance));
+      const balanceAlfStr = String(Math.abs(p.balance) / 1000);
+
+      return tokens.every((token) => {
+        if (nameStr.includes(token)) return true;
+        if (phoneStr.includes(token)) return true;
+        if (typeStr.includes(token)) return true;
+        if (balanceStr.includes(token)) return true;
+        if (balanceAlfStr.includes(token)) return true;
+
+        // التقارب اللفظي وترتيب الحروف بالاسم
+        let charIdx = 0;
+        for (let i = 0; i < nameStr.length; i++) {
+          if (nameStr[i] === token[charIdx]) {
+            charIdx++;
+            if (charIdx === token.length) return true;
+          }
+        }
+        return false;
+      });
+    });
+  }, [allPartners, searchQuery, selectedType, balanceFilter]);
 
   // تحديث القائمة بعد العمليات
   const refreshList = async () => {
-    const fresh = await getPartners(searchQuery, selectedType);
-    setPartners(fresh);
+    const fresh = await getPartners();
+    setAllPartners(fresh);
     setSelectedPartnerIds([]); // تصفير التحديد
   };
 
-  // معالجة البحث والفرز
-  const handleSearchAndFilter = async (query: string, type: string) => {
+  // معالجة البحث والفرز فورياً ومحلياً
+  const handleSearchAndFilter = (query: string, type: string) => {
     setSearchQuery(query);
     setSelectedType(type);
-    startTransition(async () => {
-      const filtered = await getPartners(query, type);
-      setPartners(filtered);
-    });
   };
 
   // إضافة شريك جديد
@@ -177,24 +232,7 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
     }
   };
 
-  // أنواع التسميات باللغة العربية
-  const typeLabels: Record<PartnerType, string> = {
-    courier: "مندوب",
-    preparer: "مجهز",
-    shop: "محل",
-    customer: "زبون",
-    external: "طرف خارجي",
-    supplier: "مورد",
-  };
-
-  const typeBadgeStyles: Record<PartnerType, string> = {
-    courier: "bg-blue-50 text-blue-700 border border-blue-200",
-    preparer: "bg-purple-50 text-purple-700 border border-purple-200",
-    shop: "bg-amber-50 text-amber-700 border border-amber-200",
-    customer: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    external: "bg-slate-100 text-slate-700 border border-slate-200",
-    supplier: "bg-pink-50 text-pink-700 border border-pink-200",
-  };
+  // تم نقل تسميات الأنواع وتنسيقات البطاقات كأعضاء عامة خارج المكون لتجنب تكرار التعريف
 
   return (
     <div className="space-y-8" dir="rtl">
@@ -310,6 +348,33 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
           </button>
         </div>
       </div>
+
+      {/* مقترح إنشاء حساب جديد */}
+      {searchQuery.trim() !== "" && !/\d/.test(searchQuery.trim()) && searchQuery.trim().length >= 2 && (
+        <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-3xl text-right flex flex-col sm:flex-row justify-between items-center gap-3">
+          <div>
+            <p className="text-xs font-bold text-slate-600 dark:text-slate-400">
+              💡 {filteredPartners.length === 0 
+                ? `لا يوجد أي حساب باسم "${searchQuery.trim()}" في الدفتر.` 
+                : `لم تجد الحساب المطلوب لـ "${searchQuery.trim()}"؟`
+              }
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setNewPartnerName(searchQuery.trim());
+              setNewPartnerPhone("");
+              setNewPartnerType("external");
+              setSelectedSystemPartnerId("");
+              setShowAddModal(true);
+            }}
+            className="px-4 py-2 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition shadow-sm whitespace-nowrap"
+          >
+            ➕ إنشاء حساب جديد لـ "{searchQuery.trim()}"
+          </button>
+        </div>
+      )}
 
       {/* قائمة الأطراف */}
       <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
