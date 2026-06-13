@@ -911,7 +911,9 @@ export async function getPartnerDetails(partnerId: string) {
                 createdAt: true,
                 courierId: true,
                 recordedByCompanyPreparerId: true,
-                mismatchNote: true
+                mismatchNote: true,
+                courier: { select: { name: true } },
+                recordedByCompanyPreparer: { select: { name: true } }
               }
             }
           },
@@ -947,7 +949,15 @@ export async function getPartnerDetails(partnerId: string) {
             const amt = Number(me.amountDinar || 0);
             autoGave += amt;
             
-            const payer = me.courierId ? `المندوب` : "الإدارة";
+            let payer = "الإدارة";
+            if (me.recordedByCompanyPreparer?.name) {
+              payer = `المجهز: ${me.recordedByCompanyPreparer.name}`;
+            } else if (me.courier?.name) {
+              payer = `المندوب: ${me.courier.name}`;
+            } else if (me.courierId) {
+              payer = "المندوب";
+            }
+
             autoTransactions.push({
               id: `auto-payment-${me.id}`,
               partnerId: partner.id,
@@ -957,7 +967,7 @@ export async function getPartnerDetails(partnerId: string) {
               createdAt: me.createdAt,
               updatedAt: me.createdAt,
               isAuto: true,
-              isAdminPayment: !me.courierId
+              isAdminPayment: !me.courierId && !me.recordedByCompanyPreparerId
             });
           }
         }
