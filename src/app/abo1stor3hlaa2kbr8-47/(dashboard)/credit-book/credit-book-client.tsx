@@ -496,7 +496,12 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
                     ) : (
                       <div className="border border-slate-200 rounded-2xl max-h-48 overflow-y-auto divide-y divide-slate-100 bg-white">
                         {unaddedSystemPartners
-                          .filter(item => item.name.toLowerCase().includes(systemPartnerSearch.toLowerCase()))
+                          .filter(item => {
+                            const query = systemPartnerSearch.toLowerCase();
+                            const matchesName = item.name.toLowerCase().includes(query);
+                            const matchesPhone = item.phone && item.phone.toLowerCase().includes(query);
+                            return matchesName || matchesPhone;
+                          })
                           .map((item) => {
                             const isSelected = selectedSystemPartnerId === item.id;
                             return (
@@ -520,7 +525,12 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
                             );
                           })
                         }
-                        {unaddedSystemPartners.filter(item => item.name.toLowerCase().includes(systemPartnerSearch.toLowerCase())).length === 0 && (
+                        {unaddedSystemPartners.filter(item => {
+                          const query = systemPartnerSearch.toLowerCase();
+                          const matchesName = item.name.toLowerCase().includes(query);
+                          const matchesPhone = item.phone && item.phone.toLowerCase().includes(query);
+                          return matchesName || matchesPhone;
+                        }).length === 0 && (
                           <div className="p-3 text-xs text-rose-500 font-bold text-center">لا توجد نتائج مطابقة لمصطلح البحث</div>
                         )}
                       </div>
