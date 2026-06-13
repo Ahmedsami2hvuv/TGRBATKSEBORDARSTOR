@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import { 
   PartnerWithBalance, 
   PartnerType, 
@@ -8,7 +8,11 @@ import {
   syncSystemPartners, 
   getPartners,
   deletePartnersBatch,
-  getUnaddedSystemPartners
+  getUnaddedSystemPartners,
+  getTransactionLogs,
+  restoreDeletedTransaction,
+  revertModifiedTransaction,
+  clearTransactionLogs
 } from "./actions";
 import Link from "next/link";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
@@ -22,6 +26,11 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [isPending, startTransition] = useTransition();
+
+  // سجل المتغيرات
+  const [logs, setLogs] = useState<any[]>([]);
+  const [showLogs, setShowLogs] = useState(false);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
   // نموذج إضافة شريك جديد
   const [showAddModal, setShowAddModal] = useState(false);
@@ -64,11 +73,73 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
 
   const netBalance = totalWeOwed - totalWeOwe;
 
+  const loadLogs = async () => {
+    setIsLoadingLogs(true);
+    try {
+      const history = await getTransactionLogs();
+      setLogs(history);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
+
   // تحديث القائمة بعد العمليات
   const refreshList = async () => {
     const fresh = await getPartners(searchQuery, selectedType);
     setPartners(fresh);
     setSelectedPartnerIds([]); // تصفير التحديد
+    if (showLogs) {
+      await loadLogs();
+    }
+  };
+
+  useEffect(() => {
+    if (showLogs) {
+      loadLogs();
+    }
+  }, [showLogs]);
+
+  const handleRestore = async (logId: string) => {
+    if (!confirm("هل أنت متأكد من رغبتك في استعادة هذه المعاملة المحذوفة وإعادتها لحساب الشريك؟")) {
+      return;
+    }
+    const res = await restoreDeletedTransaction(logId);
+    if (res.success) {
+      alert("تمت استعادة المعاملة بنجاح.");
+      refreshList();
+      loadLogs();
+    } else {
+      alert(res.error || "فشلت استعادة المعاملة");
+    }
+  };
+
+  const handleRevert = async (logId: string) => {
+    if (!confirm("هل أنت متأكد من رغبتك في التراجع عن التعديل وإعادة هذه المعاملة لحالتها الأصلية؟")) {
+      return;
+    }
+    const res = await revertModifiedTransaction(logId);
+    if (res.success) {
+      alert("تم إرجاع المعاملة لحالتها الأصلية بنجاح.");
+      refreshList();
+      loadLogs();
+    } else {
+      alert(res.error || "فشل التراجع عن تعديل المعاملة");
+    }
+  };
+
+  const handleClearLogs = async () => {
+    if (!confirm("هل أنت متأكد من رغبتك في مسح سجل التغييرات بالكامل؟ لا يمكن التراجع عن هذا الإجراء.")) {
+      return;
+    }
+    const res = await clearTransactionLogs();
+    if (res.success) {
+      alert("تم مسح السجل بنجاح.");
+      setLogs([]);
+    } else {
+      alert(res.error || "فشل مسح السجل");
+    }
   };
 
   // معالجة البحث والفرز
@@ -319,7 +390,13 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
                       <div className="flex items-center gap-2">
                         <Link 
                           href={`/abo1stor3hlaa2kbr8-47/credit-book/${partner.id}`}
-                          className="hover:text-indigo-600"
+                          className={
+                            partner.balance > 0 
+                              ? "text-emerald-600 hover:text-emerald-700" 
+                              : partner.balance < 0 
+                                ? "text-rose-600 hover:text-rose-700" 
+                                : "text-slate-800 hover:text-indigo-600"
+                          }
                         >
                           {partner.name}
                         </Link>
@@ -398,6 +475,195 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      {/* سجل المتغيرات والمعاملات المؤرشفة */}
+      <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
+        <button
+          type="button"
+          onClick={() => setShowLogs(!showLogs)}
+          className="w-full flex items-center justify-between p-6 bg-slate-50/50 hover:bg-slate-50 transition text-right"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-xl">📋</span>
+            <span className="text-base font-black text-slate-800">سجل المتغيرات والمعاملات المؤرشفة (المحذوفة والمعدلة)</span>
+            {logs.length > 0 && (
+              <span className="bg-indigo-100 text-indigo-800 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-indigo-200">
+                {logs.length} تغيير مسجل
+              </span>
+            )}
+          </div>
+          <span className="text-slate-400 font-bold transition-transform duration-200" style={{ transform: showLogs ? "rotate(180deg)" : "rotate(0deg)" }}>
+            ▼
+          </span>
+        </button>
+
+        {showLogs && (
+          <div className="p-6 border-t border-slate-100 space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <p className="text-xs text-slate-500 font-bold">
+                هنا يمكنك متابعة وتفقد كافة المعاملات المالية التي تم حذفها أو تعديلها يدوياً مع إمكانية التراجع والاسترجاع بنقرة زر.
+              </p>
+              {logs.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearLogs}
+                  className="px-4 py-2 text-xs font-black text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition flex items-center gap-1.5"
+                >
+                  🗑️ مسح السجل بالكامل
+                </button>
+              )}
+            </div>
+
+            {isLoadingLogs ? (
+              <div className="text-center py-10 text-slate-400 font-bold text-sm">جاري تحميل سجل التغييرات...</div>
+            ) : logs.length === 0 ? (
+              <div className="text-center py-10 text-slate-400 font-bold text-sm">لا توجد عمليات تعديل أو حذف مسجلة حالياً.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-right border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500 text-xs font-black border-b border-slate-100">
+                      <th className="p-4">نوع الإجراء</th>
+                      <th className="p-4">اسم الحساب</th>
+                      <th className="p-4">نوع المعاملة</th>
+                      <th className="p-4">سعر المعاملة</th>
+                      <th className="p-4">الملاحظات والبيان</th>
+                      <th className="p-4">صورة المعاملة</th>
+                      <th className="p-4">تاريخ المعاملة الأصلي</th>
+                      <th className="p-4">تاريخ التغيير/المسح</th>
+                      <th className="p-4 text-left">الإجراء</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {logs.map((log: any) => {
+                      const isDeleted = log.type === "deleted";
+                      const orig = log.originalTx;
+                      const mod = log.modifiedTx;
+
+                      const kindLabels: Record<string, string> = {
+                        gave: "أعطيت (نطلبه)",
+                        took: "أخذت (يطلبنا)"
+                      };
+
+                      return (
+                        <tr key={log.id} className="hover:bg-slate-50/30 transition text-sm">
+                          <td className="p-4">
+                            {isDeleted ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-rose-50 text-rose-700 border border-rose-200">
+                                🗑️ معاملة محذوفة
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-amber-50 text-amber-700 border border-amber-200">
+                                ✏️ معاملة معدلة
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-4 font-bold text-slate-800">{log.partnerName}</td>
+                          <td className="p-4 font-semibold text-slate-600">
+                            {isDeleted ? (
+                              <span>{kindLabels[orig.kind] || orig.kind}</span>
+                            ) : (
+                              <div className="flex flex-col gap-0.5">
+                                {orig.kind === mod.kind ? (
+                                  <span>{kindLabels[orig.kind] || orig.kind}</span>
+                                ) : (
+                                  <div className="flex items-center gap-1.5 text-xs">
+                                    <span className="text-slate-400 line-through">{kindLabels[orig.kind]}</span>
+                                    <span className="text-slate-400">➔</span>
+                                    <span className="text-indigo-600 font-bold">{kindLabels[mod.kind]}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-4 font-bold">
+                            {isDeleted ? (
+                              <span className="text-rose-600 tabular-nums">{formatDinarAsAlfWithUnit(orig.amount)}</span>
+                            ) : (
+                              <div className="flex flex-col gap-0.5">
+                                {orig.amount === mod.amount ? (
+                                  <span className="text-slate-700 tabular-nums">{formatDinarAsAlfWithUnit(orig.amount)}</span>
+                                ) : (
+                                  <div className="flex items-center gap-1.5 text-xs">
+                                    <span className="text-slate-400 line-through tabular-nums">{formatDinarAsAlfWithUnit(orig.amount)}</span>
+                                    <span className="text-slate-400">➔</span>
+                                    <span className="text-indigo-600 font-bold tabular-nums">{formatDinarAsAlfWithUnit(mod.amount)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-4 text-slate-600 text-xs max-w-xs truncate" title={orig.note || ""}>
+                            {isDeleted ? (
+                              <span>{orig.note || "—"}</span>
+                            ) : (
+                              <div className="flex flex-col gap-0.5">
+                                {orig.note === mod.note ? (
+                                  <span>{orig.note || "—"}</span>
+                                ) : (
+                                  <div className="space-y-0.5 text-[11px]">
+                                    <div className="text-slate-400 line-through truncate">{orig.note || "—"}</div>
+                                    <div className="text-indigo-600 font-bold truncate">{mod.note || "—"}</div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            {orig.imageUrl ? (
+                              <a
+                                href={orig.imageUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-block border border-slate-200 rounded-lg p-0.5 bg-slate-50 hover:bg-slate-100 transition"
+                              >
+                                <img
+                                  src={orig.imageUrl}
+                                  alt="معاملة"
+                                  className="w-10 h-10 object-cover rounded-md"
+                                />
+                              </a>
+                            ) : (
+                              <span className="text-slate-400">—</span>
+                            )}
+                          </td>
+                          <td className="p-4 text-slate-500 text-xs tabular-nums">
+                            {new Date(orig.createdAt).toLocaleString("ar-EG")}
+                          </td>
+                          <td className="p-4 text-slate-500 text-xs tabular-nums">
+                            {new Date(log.timestamp).toLocaleString("ar-EG")}
+                          </td>
+                          <td className="p-4 text-left">
+                            {isDeleted ? (
+                              <button
+                                type="button"
+                                onClick={() => handleRestore(log.id)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition shadow-sm"
+                                title="إعادة هذه المعاملة المحذوفة إلى حساب الشريك"
+                              >
+                                🔄 إرجاع للحساب
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleRevert(log.id)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm"
+                                title="التراجع عن التعديل وإرجاع قيم المعاملة لما قبل التعديل"
+                              >
+                                ↩️ إرجاع للأصلية
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>

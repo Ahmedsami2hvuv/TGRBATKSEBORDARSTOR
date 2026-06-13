@@ -90,6 +90,12 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
               note: noteText,
             }
           });
+
+          // تحديث تاريخ الشريك ليصعد في القائمة
+          await db.creditBookPartner.update({
+            where: { id: cbPartner.id },
+            data: { updatedAt: new Date() }
+          });
         }
       }
     }
@@ -172,6 +178,12 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
               note: noteText,
               createdAt: order.createdAt,
             }
+          });
+
+          // تحديث تاريخ الشريك ليصعد في القائمة
+          await db.creditBookPartner.update({
+            where: { id: cbPartner.id },
+            data: { updatedAt: new Date() }
           });
         }
       }

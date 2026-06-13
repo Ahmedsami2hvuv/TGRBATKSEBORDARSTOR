@@ -358,30 +358,8 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
       })
     );
 
-    // فرز النتائج: الحسابات المضافة حديثاً (خلال آخر ساعة) أولاً، ثم الحسابات غير الصفرية، ثم الحسابات الصفرية
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-
+    // فرز النتائج: حسب تاريخ التحديث (آخر نشاط) تنازلياً لكي يصعد من يُعدل أو يضاف له بالبداية
     result.sort((a, b) => {
-      const aIsNew = new Date(a.createdAt).getTime() > oneHourAgo.getTime();
-      const bIsNew = new Date(b.createdAt).getTime() > oneHourAgo.getTime();
-
-      // الحسابات الجديدة أولاً
-      if (aIsNew && !bIsNew) return -1;
-      if (!aIsNew && bIsNew) return 1;
-
-      // إذا كان كلاهما جديداً، الفرز حسب تاريخ الإنشاء الأحدث أولاً
-      if (aIsNew && bIsNew) {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
-
-      // بعد ذلك، الحسابات غير الصفرية تأتي قبل الصفرية
-      const aZero = a.balance === 0;
-      const bZero = b.balance === 0;
-
-      if (aZero && !bZero) return 1;
-      if (!aZero && bZero) return -1;
-
-      // وأخيراً الفرز حسب تاريخ التحديث (آخر نشاط) تنازلياً
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
 
@@ -763,6 +741,11 @@ export async function updateTransaction(transactionId: string, amount: number, n
       return { success: false, error: "المبلغ يجب أن يكون أكبر من صفر" };
     }
 
+    const originalTx = await prisma.creditBookTransaction.findUnique({
+      where: { id: transactionId }
+    });
+    if (!originalTx) return { success: false, error: "المعاملة غير موجودة" };
+
     const tx = await prisma.creditBookTransaction.update({
       where: { id: transactionId },
       data: {
@@ -773,6 +756,13 @@ export async function updateTransaction(transactionId: string, amount: number, n
         createdAt: date || undefined,
       },
     });
+
+    try {
+      const { logTransactionChange } = await import("@/lib/transaction-logger");
+      await logTransactionChange("modified", originalTx, tx);
+    } catch (logErr) {
+      console.error("Failed to log transaction change:", logErr);
+    }
 
     // تحديث تاريخ تعديل الشريك لتعديل ترتيبه في القائمة
     await prisma.creditBookPartner.update({
@@ -792,9 +782,21 @@ export async function updateTransaction(transactionId: string, amount: number, n
 // 6. حذف معاملة مالية
 export async function deleteTransaction(transactionId: string) {
   try {
-    const tx = await prisma.creditBookTransaction.delete({
+    const tx = await prisma.creditBookTransaction.findUnique({
+      where: { id: transactionId }
+    });
+    if (!tx) return { success: false, error: "المعاملة غير موجودة" };
+
+    await prisma.creditBookTransaction.delete({
       where: { id: transactionId },
     });
+
+    try {
+      const { logTransactionChange } = await import("@/lib/transaction-logger");
+      await logTransactionChange("deleted", tx);
+    } catch (logErr) {
+      console.error("Failed to log transaction deletion:", logErr);
+    }
 
     // تحديث تاريخ تعديل الشريك لتعديل ترتيبه في القائمة
     await prisma.creditBookPartner.update({
@@ -1397,6 +1399,165 @@ export async function zeroPartnerAccount(partnerId: string) {
   } catch (error) {
     console.error("Error in zeroPartnerAccount:", error);
     return { success: false, error: "حدث خطأ أثناء تصفير الحساب" };
+  }
+}
+
+// 12. جلب سجل التغييرات والمعاملات المحذوفة/المعدلة
+export async function getTransactionLogs() {
+  try {
+    const setting = await prisma.uISystemSetting.findUnique({
+      where: { target_section: { target: "credit_book", section: "transaction_history_logs" } }
+    });
+    if (setting && setting.config && typeof setting.config === "object") {
+      return (setting.config as any).logs || [];
+    }
+    return [];
+  } catch (error) {
+    console.error("Error in getTransactionLogs:", error);
+    return [];
+  }
+}
+
+// 13. إرجاع المعاملة المحذوفة
+export async function restoreDeletedTransaction(logId: string) {
+  try {
+    const setting = await prisma.uISystemSetting.findUnique({
+      where: { target_section: { target: "credit_book", section: "transaction_history_logs" } }
+    });
+    if (!setting || !setting.config || typeof setting.config !== "object") {
+      return { success: false, error: "السجل غير موجود" };
+    }
+
+    let logs = (setting.config as any).logs || [];
+    const logIndex = logs.findIndex((l: any) => l.id === logId);
+    if (logIndex === -1) {
+      return { success: false, error: "سجل المعاملة غير موجود" };
+    }
+
+    const log = logs[logIndex];
+    const { originalTx } = log;
+
+    // التأكد من أن الشريك لا يزال موجوداً
+    const partnerExists = await prisma.creditBookPartner.findUnique({
+      where: { id: originalTx.partnerId }
+    });
+    if (!partnerExists) {
+      return { success: false, error: "الشريك المرتبط بهذه المعاملة تم حذفه تماماً من النظام" };
+    }
+
+    // إعادة إنشاء المعاملة
+    await prisma.creditBookTransaction.create({
+      data: {
+        partnerId: originalTx.partnerId,
+        amount: originalTx.amount,
+        kind: originalTx.kind,
+        note: originalTx.note,
+        imageUrl: originalTx.imageUrl,
+        createdAt: new Date(originalTx.createdAt),
+      }
+    });
+
+    // تحديث تاريخ الشريك
+    await prisma.creditBookPartner.update({
+      where: { id: originalTx.partnerId },
+      data: { updatedAt: new Date() }
+    });
+
+    // إزالة السجل من القائمة
+    logs.splice(logIndex, 1);
+    await prisma.uISystemSetting.update({
+      where: { id: setting.id },
+      data: { config: { logs } }
+    });
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/credit-book/${originalTx.partnerId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error in restoreDeletedTransaction:", error);
+    return { success: false, error: "حدث خطأ أثناء استعادة المعاملة" };
+  }
+}
+
+// 14. إرجاع المعاملة المعدلة لحالتها الأصلية
+export async function revertModifiedTransaction(logId: string) {
+  try {
+    const setting = await prisma.uISystemSetting.findUnique({
+      where: { target_section: { target: "credit_book", section: "transaction_history_logs" } }
+    });
+    if (!setting || !setting.config || typeof setting.config !== "object") {
+      return { success: false, error: "السجل غير موجود" };
+    }
+
+    let logs = (setting.config as any).logs || [];
+    const logIndex = logs.findIndex((l: any) => l.id === logId);
+    if (logIndex === -1) {
+      return { success: false, error: "سجل المعاملة غير موجود" };
+    }
+
+    const log = logs[logIndex];
+    const { originalTx } = log;
+
+    // التأكد من أن المعاملة لا تزال موجودة
+    const txExists = await prisma.creditBookTransaction.findUnique({
+      where: { id: originalTx.id }
+    });
+    if (!txExists) {
+      return { success: false, error: "هذه المعاملة تم حذفها لاحقاً، ولا يمكن استرجاع تعديلها" };
+    }
+
+    // إرجاع الحقول لقيمها الأصلية
+    await prisma.creditBookTransaction.update({
+      where: { id: originalTx.id },
+      data: {
+        amount: originalTx.amount,
+        kind: originalTx.kind,
+        note: originalTx.note,
+        imageUrl: originalTx.imageUrl,
+        createdAt: new Date(originalTx.createdAt),
+      }
+    });
+
+    // تحديث تاريخ الشريك
+    await prisma.creditBookPartner.update({
+      where: { id: originalTx.partnerId },
+      data: { updatedAt: new Date() }
+    });
+
+    // إزالة السجل من القائمة
+    logs.splice(logIndex, 1);
+    await prisma.uISystemSetting.update({
+      where: { id: setting.id },
+      data: { config: { logs } }
+    });
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/credit-book/${originalTx.partnerId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error in revertModifiedTransaction:", error);
+    return { success: false, error: "حدث خطأ أثناء التراجع عن التعديل" };
+  }
+}
+
+// 15. مسح السجلات بالكامل
+export async function clearTransactionLogs() {
+  try {
+    await prisma.uISystemSetting.upsert({
+      where: { target_section: { target: "credit_book", section: "transaction_history_logs" } },
+      create: {
+        target: "credit_book",
+        section: "transaction_history_logs",
+        config: { logs: [] }
+      },
+      update: {
+        config: { logs: [] }
+      }
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Error in clearTransactionLogs:", error);
+    return { success: false, error: "حدث خطأ أثناء مسح السجلات" };
   }
 }
 

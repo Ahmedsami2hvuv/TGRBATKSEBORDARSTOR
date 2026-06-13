@@ -17,6 +17,17 @@ export default async function ShopsPage() {
     prisma.shop.findMany({
       include: {
         region: true,
+        employees: {
+          select: {
+            phone: true,
+          },
+        },
+        customers: {
+          select: {
+            phone: true,
+            alternatePhone: true,
+          },
+        },
         _count: {
           select: {
             employees: true,
@@ -48,6 +59,17 @@ export default async function ShopsPage() {
     ordersCount: s._count?.orders ?? 0,
     hideDebts: !!s.hideDebts,
     createdAt: s.createdAt,
+    phones: Array.from(
+      new Set(
+        [
+          ...(s.employees || []).map((e: any) => e.phone),
+          ...(s.customers || []).map((c: any) => c.phone),
+          ...(s.customers || []).map((c: any) => c.alternatePhone),
+        ]
+          .map((p) => p?.trim())
+          .filter(Boolean)
+      )
+    ),
   }));
 
   return (

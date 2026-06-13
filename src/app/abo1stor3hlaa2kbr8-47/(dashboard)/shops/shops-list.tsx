@@ -18,6 +18,7 @@ export type ShopRow = {
   ordersCount: number;
   hideDebts: boolean;
   createdAt: string;
+  phones?: string[];
 };
 
 export function ShopsList({ shops, icons }: { shops: ShopRow[]; icons: GlobalIconsConfig | null }) {
@@ -71,11 +72,19 @@ export function ShopsList({ shops, icons }: { shops: ShopRow[]; icons: GlobalIco
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return sorted;
+    const normalizedQ = q.replace(/\D/g, "");
     return sorted.filter(
       (s) =>
         s.name.toLowerCase().includes(q) ||
         s.regionName.toLowerCase().includes(q) ||
-        s.locationUrl.toLowerCase().includes(q),
+        s.locationUrl.toLowerCase().includes(q) ||
+        (s.phones &&
+          s.phones.some((p) => {
+            const pLower = p.toLowerCase();
+            if (pLower.includes(q)) return true;
+            if (normalizedQ && p.replace(/\D/g, "").includes(normalizedQ)) return true;
+            return false;
+          })),
     );
   }, [sorted, query]);
 
@@ -108,7 +117,7 @@ export function ShopsList({ shops, icons }: { shops: ShopRow[]; icons: GlobalIco
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="اسم المحل، المنطقة، أو جزء من الرابط…"
+          placeholder="اسم المحل، المنطقة، رقم الهاتف، أو جزء من الرابط…"
           className={`w-full max-w-md sm:ms-auto ${ad.input}`}
         />
       </label>
@@ -172,6 +181,19 @@ export function ShopsList({ shops, icons }: { shops: ShopRow[]; icons: GlobalIco
                     )}
                   </div>
                   <p className={ad.listMuted}>{s.regionName}</p>
+
+                  {/* أرقام الهواتف المطابقة عند البحث */}
+                  {query.trim() && s.phones && s.phones.some((p: string) => p.toLowerCase().includes(query.trim().toLowerCase()) || (query.trim().replace(/\D/g, "") && p.replace(/\D/g, "").includes(query.trim().replace(/\D/g, "")))) && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {s.phones
+                        .filter((p: string) => p.toLowerCase().includes(query.trim().toLowerCase()) || (query.trim().replace(/\D/g, "") && p.replace(/\D/g, "").includes(query.trim().replace(/\D/g, ""))))
+                        .map((p: string) => (
+                          <span key={p} className="inline-flex items-center gap-1 rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 ring-1 ring-inset ring-indigo-500/10">
+                            📞 {p}
+                          </span>
+                        ))}
+                    </div>
+                  )}
                   
                   {/* بلوكين يظهران أرقام العملاء والطلبيات فقط */}
                   <div className="mt-2 flex items-center gap-2">

@@ -354,8 +354,14 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
       {/* هيدر كرت تفاصيل الشريك والورصيد */}
       <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-right flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h2 className="text-xl font-black text-slate-800 flex flex-wrap items-center gap-3">
-            <span>{partner.name}</span>
+          <h2 className="text-xl font-black flex flex-wrap items-center gap-3">
+            <span className={
+              partner.balance > 0 
+                ? "text-emerald-600" 
+                : partner.balance < 0 
+                  ? "text-rose-600" 
+                  : "text-slate-800"
+            }>{partner.name}</span>
           </h2>
           <div className="flex flex-wrap gap-2 mt-2">
             {getProfileLink(partner.type, partner.externalId) && (
