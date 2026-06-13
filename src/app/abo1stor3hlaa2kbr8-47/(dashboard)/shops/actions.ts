@@ -182,6 +182,20 @@ export async function updateShop(
     },
   });
 
+  try {
+    await prisma.creditBookPartner.updateMany({
+      where: {
+        type: "shop",
+        externalId: id,
+      },
+      data: {
+        name: `${name} (محل/مجهز)`,
+      }
+    });
+  } catch (cbErr) {
+    console.error("Failed to sync shop name to credit book partner:", cbErr);
+  }
+
   revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
   revalidatePath(`${SECRET_ADMIN_PATH}/shops/${id}/edit`);
   return { ok: true };
