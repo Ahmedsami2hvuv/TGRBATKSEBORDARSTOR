@@ -893,9 +893,9 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                   let tagClasses = "";
 
                   if (isSalary) {
-                    // أزرق متدرج للأبيض مثل محفظة المجهز
-                    containerClasses = "border-sky-400 bg-gradient-to-r from-sky-100/70 via-sky-50/20 to-white hover:from-sky-150 hover:to-white/95 dark:from-sky-950/40 dark:via-sky-950/10 dark:to-neutral-900 dark:border-sky-800 text-sky-950 dark:text-sky-100 ring-2 ring-sky-300/40";
-                    tagClasses = "bg-sky-500/10 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900";
+                    // أزرق متدرج للأبيض مثل محفظة المجهز تماماً
+                    containerClasses = "border-[#4f46e5] bg-gradient-to-r from-[#818cf8]/35 via-[#c7d2fe]/10 to-white hover:from-[#818cf8]/45 hover:via-[#c7d2fe]/20 hover:to-white/95 dark:from-[#2e2a72]/40 dark:to-[#0b0b1a] dark:border-[#6366f1] text-[#1e1b4b] dark:text-[#e0e7ff] ring-2 ring-[#4f46e5]/40";
+                    tagClasses = "bg-[#4f46e5]/10 text-[#4f46e5] border-[#4f46e5]/20 dark:bg-[#6366f1]/20 dark:text-[#a5b4fc] dark:border-[#6366f1]/30";
                   } else if (isDebt) {
                     containerClasses = "border-yellow-500 bg-yellow-50/60 hover:bg-yellow-100/70 dark:bg-yellow-950/20 dark:border-yellow-900 text-yellow-950 dark:text-yellow-250 ring-2 ring-yellow-400/60";
                     tagClasses = "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950/40 dark:text-yellow-350 dark:border-yellow-900";
@@ -1059,8 +1059,8 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
 
                       {/* السطر الثاني: نص الملاحظة والصورة المرفقة */}
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 text-right" dir="rtl">
-                        <p className={`text-sm font-black ${isTransfer ? "text-violet-200" : isSalary ? "text-sky-700 dark:text-sky-400" : "text-purple-700 dark:text-purple-400"}`}>
-                          ملاحظة: <span className={`font-bold ${isTransfer ? "text-white" : isSalary ? "text-sky-950 dark:text-slate-200" : "text-slate-700 dark:text-slate-200"}`}>{tx.note || "بدون بيان وملاحظات"}</span>
+                        <p className={`text-sm font-black ${isTransfer ? "text-violet-200" : isSalary ? "text-[#4f46e5] dark:text-[#a5b4fc]" : "text-purple-700 dark:text-purple-400"}`}>
+                          ملاحظة: <span className={`font-bold ${isTransfer ? "text-white" : isSalary ? "text-[#1e1b4b] dark:text-[#e0e7ff]" : "text-slate-700 dark:text-slate-200"}`}>{tx.note || "بدون بيان وملاحظات"}</span>
                         </p>
 
                         {tx.imageUrl && (
