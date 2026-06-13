@@ -16,6 +16,15 @@ export async function getPreparerMoneyTotals(preparerId: string): Promise<{
   sader: Decimal;
   remain: Decimal;
 } | null> {
+  // هجرة صامتة لضمان وجود العمود في قاعدة البيانات الفعلية
+  try {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "hideFromCreditBook" BOOLEAN DEFAULT false;`
+    );
+  } catch (migErr) {
+    console.error("[Prisma] Silent migration in getPreparerMoneyTotals failed:", migErr);
+  }
+
   const preparer = await prisma.companyPreparer.findFirst({
     where: { id: preparerId, active: true },
     select: {

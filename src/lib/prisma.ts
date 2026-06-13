@@ -32,12 +32,3 @@ export const prisma =
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
-
-// هجرة تلقائية صامتة لضمان وجود العمود في قاعدة البيانات الفعلية دون عرقلة النشر
-prisma.$executeRawUnsafe(
-  `ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "hideFromCreditBook" BOOLEAN DEFAULT false;`
-).then(() => {
-  console.log("[Prisma] Silently ensured hideFromCreditBook column exists in Shop table.");
-}).catch((err) => {
-  console.error("[Prisma] Failed to silently ensure hideFromCreditBook column:", err);
-});

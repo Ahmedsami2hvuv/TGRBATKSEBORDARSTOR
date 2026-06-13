@@ -72,6 +72,15 @@ async function getShopAutoDebt(shopId: string): Promise<number> {
 // 1. جلب قائمة الأطراف مع احتساب الأرصدة اليدوية والتلقائية
 export async function getPartners(searchQuery?: string, typeFilter?: string): Promise<PartnerWithBalance[]> {
   try {
+    // هجرة صامتة لضمان وجود العمود في قاعدة البيانات الفعلية
+    try {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "Shop" ADD COLUMN IF NOT EXISTS "hideFromCreditBook" BOOLEAN DEFAULT false;`
+      );
+    } catch (migErr) {
+      console.error("[Prisma] Silent migration in getPartners failed:", migErr);
+    }
+
     // 1. مزامنة تلقائية سريعة بالخلفية للمحلات والمناديب والمجهزين عند كل تحميل للصفحة فقط في حال عدم وجود كلمة بحث لتفادي البطء أثناء الكتابة
     if (!searchQuery) {
       try {
