@@ -899,8 +899,8 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                     containerClasses = "border-yellow-500 bg-yellow-50/60 hover:bg-yellow-100/70 dark:bg-yellow-950/20 dark:border-yellow-900 text-yellow-950 dark:text-yellow-250 ring-2 ring-yellow-400/60";
                     tagClasses = "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950/40 dark:text-yellow-350 dark:border-yellow-900";
                   } else if (isTransfer) {
-                    containerClasses = "border-sky-500 bg-sky-50/60 hover:bg-sky-100/70 dark:bg-sky-950/20 dark:border-sky-900 text-sky-950 dark:text-sky-300 ring-2 ring-sky-400/40";
-                    tagClasses = "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900";
+                    containerClasses = "border-violet-500 bg-violet-50/60 hover:bg-violet-100/70 dark:bg-violet-950/20 dark:border-violet-900 text-violet-950 dark:text-violet-300 ring-2 ring-violet-400/40";
+                    tagClasses = "bg-violet-100 text-violet-800 border-violet-300 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-900";
                   } else if (tx.kind === "gave") {
                     containerClasses = "bg-emerald-50/15 dark:bg-emerald-950/20 border border-emerald-100/75 dark:border-emerald-900/40 hover:bg-emerald-50/25 dark:hover:bg-emerald-950/30";
                     tagClasses = "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50";

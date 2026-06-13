@@ -523,8 +523,9 @@ export function MandoubWalletClient({
         {filteredLedger.map((line) => {
           const deleted = line.deletedAt != null;
           const isRejected = line.source === "transfer_rejected";
-          const isOutPick = line.kind === MONEY_KIND_PICKUP || line.kind === MISC_LEDGER_KIND_GIVE || line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT || line.kind === "transfer_rejected_out";
-          const isInPick = line.kind === MONEY_KIND_DELIVERY || line.kind === MISC_LEDGER_KIND_TAKE || line.kind === LEDGER_KIND_TRANSFER_PENDING_IN || line.kind === "transfer_rejected_in";
+          const isTransfer = line.source === "transfer_pending" || line.source === "transfer_rejected" || line.miscLabel?.includes("تحويل") || line.kind === LEDGER_KIND_TRANSFER_PENDING_IN || line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT || line.kind === "transfer_rejected_in" || line.kind === "transfer_rejected_out";
+          const isOutPick = !isTransfer && (line.kind === MONEY_KIND_PICKUP || line.kind === MISC_LEDGER_KIND_GIVE || line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT || line.kind === "transfer_rejected_out");
+          const isInPick = !isTransfer && (line.kind === MONEY_KIND_DELIVERY || line.kind === MISC_LEDGER_KIND_TAKE || line.kind === LEDGER_KIND_TRANSFER_PENDING_IN || line.kind === "transfer_rejected_in");
           const dirLabel = ledgerDirLabel(line);
           const dateStr = new Date(line.createdAt).toLocaleString("ar-IQ-u-nu-latn", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
           const diff = (line.expectedDinar != null) ? line.amountDinar - line.expectedDinar : 0;
@@ -541,6 +542,7 @@ export function MandoubWalletClient({
           const content = (
             <div className={`relative flex flex-col gap-1 rounded-2xl border-2 px-4 py-3 transition-all shadow-sm backdrop-blur-[2px] ${
               deleted || isRejected ? "border-slate-300 bg-slate-100/90 text-slate-600 dark:bg-slate-800" :
+              isTransfer ? "border-violet-500 bg-violet-50/60 hover:bg-violet-100/70 dark:bg-violet-950/20 dark:border-violet-900 text-violet-950 dark:text-violet-300 ring-2 ring-violet-400/40" :
               isInPick ? "border-rose-500/60 bg-rose-500/20 dark:bg-rose-500/25 dark:border-rose-500/50" :
               isOutPick ? "border-emerald-500/60 bg-emerald-500/20 dark:bg-emerald-500/25 dark:border-emerald-500/50" :
               "border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800"

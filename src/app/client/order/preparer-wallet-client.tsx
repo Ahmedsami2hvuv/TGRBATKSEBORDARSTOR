@@ -163,8 +163,9 @@ export function PreparerWalletClient({
         {filteredLedger.map((line) => {
           const deleted = line.deletedAt != null;
           const isRejected = line.source === "transfer_rejected";
-          const isInPick = line.kind === MONEY_KIND_DELIVERY || line.kind === MISC_LEDGER_KIND_TAKE || line.kind === LEDGER_KIND_TRANSFER_PENDING_IN || line.kind === "transfer_rejected_in";
-          const isOutPick = line.kind === MONEY_KIND_PICKUP || line.kind === MISC_LEDGER_KIND_GIVE || line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT || line.kind === "transfer_rejected_out";
+          const isTransfer = line.source === "transfer_pending" || line.source === "transfer_rejected" || line.miscLabel?.includes("تحويل") || line.kind === LEDGER_KIND_TRANSFER_PENDING_IN || line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT || line.kind === "transfer_rejected_in" || line.kind === "transfer_rejected_out";
+          const isInPick = !isTransfer && (line.kind === MONEY_KIND_DELIVERY || line.kind === MISC_LEDGER_KIND_TAKE || line.kind === LEDGER_KIND_TRANSFER_PENDING_IN || line.kind === "transfer_rejected_in");
+          const isOutPick = !isTransfer && (line.kind === MONEY_KIND_PICKUP || line.kind === MISC_LEDGER_KIND_GIVE || line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT || line.kind === "transfer_rejected_out");
 
           const dirLabel = ledgerDirLabel(line);
           const dateStr = new Date(line.createdAt).toLocaleString("ar-IQ-u-nu-latn", { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
@@ -186,6 +187,7 @@ export function PreparerWalletClient({
                 deleted || isRejected ? "border-slate-300 bg-slate-100/90 text-slate-600 dark:bg-slate-800" :
                 isDebt ? "border-yellow-500 bg-yellow-100/95 dark:bg-yellow-950/40 dark:border-yellow-850 text-slate-900 dark:text-yellow-250 ring-2 ring-yellow-400/60" :
                 isSalary ? "border-[#4f46e5] bg-gradient-to-r from-[#818cf8]/35 via-[#c7d2fe]/10 to-white text-[#1e1b4b] dark:from-[#2e2a72]/40 dark:to-[#0b0b1a] dark:border-[#6366f1] dark:text-[#e0e7ff] ring-2 ring-[#4f46e5]/40" :
+                isTransfer ? "border-violet-500 bg-violet-50/60 hover:bg-violet-100/70 dark:bg-violet-950/20 dark:border-violet-900 text-violet-950 dark:text-violet-300 ring-2 ring-violet-400/40" :
                 isInPick ? "border-red-600 bg-red-100/95 dark:bg-red-900/40 dark:border-red-800" :
                 isOutPick ? "border-emerald-600 bg-emerald-100/95 dark:bg-emerald-900/40 dark:border-emerald-800" :
                 "border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800"
