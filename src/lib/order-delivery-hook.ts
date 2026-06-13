@@ -134,7 +134,7 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
           const newTx = await db.creditBookTransaction.create({
             data: {
               partnerId: cbPartner.id,
-              amount: totalBuyDinar,
+              amount: totalBuyAlf,
               kind: "took",
               note: noteText,
             }
@@ -230,7 +230,7 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
           const newTx = await db.creditBookTransaction.create({
             data: {
               partnerId: cbPartner.id,
-              amount: totalBuyDinar,
+              amount: totalBuyAlf,
               kind: "took",
               note: noteText,
               createdAt: order.createdAt,
