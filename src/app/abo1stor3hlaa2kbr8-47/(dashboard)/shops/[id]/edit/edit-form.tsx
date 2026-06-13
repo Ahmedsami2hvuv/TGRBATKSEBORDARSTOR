@@ -20,6 +20,7 @@ export function ShopEditForm({
   defaultUrl,
   defaultRegionId,
   defaultHideDebts = false,
+  defaultHideFromCreditBook = false,
   regions,
 }: {
   id: string;
@@ -30,6 +31,7 @@ export function ShopEditForm({
   defaultUrl: string;
   defaultRegionId: string;
   defaultHideDebts?: boolean;
+  defaultHideFromCreditBook?: boolean;
   regions: AdminRegionOption[];
 }) {
   const [state, formAction, pending] = useActionState(updateShop, initial);
@@ -160,7 +162,18 @@ export function ShopEditForm({
             defaultChecked={defaultHideDebts}
             className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4"
           />
-          <span className="font-bold text-slate-700">عدم احتساب دين هذا المحل</span>
+          <span className="font-bold text-slate-700">عدم احتساب دين هذا المحل (إخفاء المحل في صفحة دين المندوب والمجهز)</span>
+        </label>
+
+        {/* خيار عدم احتساب طلبات هذا الحساب في دفتر الديون */}
+        <label className="flex items-center gap-2 text-sm sm:col-span-2 mt-1 cursor-pointer">
+          <input
+            name="hideFromCreditBook"
+            type="checkbox"
+            defaultChecked={defaultHideFromCreditBook}
+            className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4"
+          />
+          <span className="font-bold text-slate-700">عدم احتساب طلبات هذا الحساب في دفتر الديون</span>
         </label>
       </div>
       {state.error ? (

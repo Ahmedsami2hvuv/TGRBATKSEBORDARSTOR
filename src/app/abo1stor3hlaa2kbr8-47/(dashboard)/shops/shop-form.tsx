@@ -126,7 +126,17 @@ export function ShopForm({
             type="checkbox"
             className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4"
           />
-          <span className="font-bold text-slate-700">عدم احتساب دين هذا المحل</span>
+          <span className="font-bold text-slate-700">عدم احتساب دين هذا المحل (إخفاء المحل في صفحة دين المندوب والمجهز)</span>
+        </label>
+
+        {/* خيار عدم احتساب طلبات هذا الحساب في دفتر الديون */}
+        <label className="flex items-center gap-2 text-sm cursor-pointer mt-1">
+          <input
+            name="hideFromCreditBook"
+            type="checkbox"
+            className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4"
+          />
+          <span className="font-bold text-slate-700">عدم احتساب طلبات هذا الحساب في دفتر الديون</span>
         </label>
 
         <div className="mt-2 pt-4 border-t border-sky-100 space-y-4">

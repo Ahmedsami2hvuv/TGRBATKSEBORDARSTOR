@@ -31,9 +31,9 @@ export interface PartnerWithBalance {
 async function getShopAutoDebt(shopId: string): Promise<number> {
   const shop = await prisma.shop.findUnique({
     where: { id: shopId },
-    select: { hideDebts: true }
+    select: { hideFromCreditBook: true }
   });
-  if (!shop || shop.hideDebts) return 0;
+  if (!shop || shop.hideFromCreditBook) return 0;
 
   const orders = await prisma.order.findMany({
     where: {
@@ -76,7 +76,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
     if (!searchQuery) {
       try {
         const [allShops, allCouriers, allPreparers] = await Promise.all([
-          prisma.shop.findMany({ select: { id: true, name: true, phone: true, hideDebts: true } }),
+          prisma.shop.findMany({ select: { id: true, name: true, phone: true, hideFromCreditBook: true } }),
           prisma.courier.findMany({ where: { blocked: false }, select: { id: true, name: true, phone: true } }),
           prisma.companyPreparer.findMany({ select: { id: true, name: true, phone: true, walletEmployeeId: true } })
         ]);
@@ -111,7 +111,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
         // التحقق من تفعيل واستعادة المحلات بالتوازي
         const shopRestoreChecks = await Promise.all(
           allShops.map(async (s) => {
-            if (s.hideDebts) {
+            if (s.hideFromCreditBook) {
               const activeShopInPartner = existingPartners.find(p => p.type === "shop" && p.externalId === s.id);
               if (activeShopInPartner) {
                 return { action: 'delete_due_to_hide', id: s.id };
@@ -1420,7 +1420,7 @@ export async function syncSystemPartners() {
           type: { in: ["shop", "deleted_shop"] }
         },
       });
-      if (shop.hideDebts) {
+      if (shop.hideFromCreditBook) {
         if (exists && exists.type === "shop") {
           await prisma.creditBookPartner.update({
             where: { id: exists.id },
@@ -1571,7 +1571,7 @@ export async function getUnaddedSystemPartners(type: PartnerType) {
       const list = await prisma.shop.findMany({
         where: {
           id: { notIn: addedExternalIds },
-          hideDebts: false
+          hideFromCreditBook: false
         },
         select: { id: true, name: true, phone: true },
         orderBy: { name: "asc" }

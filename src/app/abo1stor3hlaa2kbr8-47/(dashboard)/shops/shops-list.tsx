@@ -17,6 +17,7 @@ export type ShopRow = {
   employeesCount: number;
   ordersCount: number;
   hideDebts: boolean;
+  hideFromCreditBook: boolean;
   createdAt: string;
   phones?: string[];
 };
@@ -177,6 +178,12 @@ export function ShopsList({ shops, icons }: { shops: ShopRow[]; icons: GlobalIco
                     {s.hideDebts && (
                       <span className="rounded-full bg-slate-500 px-2 py-0.5 text-[10px] font-black text-white shadow-sm">
                         محل تابع / ديون مخفية 🚫
+                      </span>
+                    )}
+
+                    {s.hideFromCreditBook && (
+                      <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-black text-white shadow-sm">
+                        مستبعد من دفتر الديون 🏦
                       </span>
                     )}
                   </div>

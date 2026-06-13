@@ -57,6 +57,7 @@ export async function createShop(
   const locationUrl = String(formData.get("locationUrl") ?? "").trim();
   const regionId = String(formData.get("regionId") ?? "").trim();
   const hideDebts = formData.get("hideDebts") === "on";
+  const hideFromCreditBook = formData.get("hideFromCreditBook") === "on";
 
   // بيانات العميل الأول
   const customerPhoneRaw = String(formData.get("customerPhone") ?? "").trim();
@@ -99,6 +100,7 @@ export async function createShop(
           locationUrl: url,
           region: { connect: { id: regionId } },
           hideDebts,
+          hideFromCreditBook,
         },
       });
 
@@ -148,6 +150,7 @@ export async function updateShop(
   const locationUrl = String(formData.get("locationUrl") ?? "").trim();
   const regionId = String(formData.get("regionId") ?? "").trim();
   const hideDebts = formData.get("hideDebts") === "on";
+  const hideFromCreditBook = formData.get("hideFromCreditBook") === "on";
 
   if (!id) return { error: "معرّف المحل مفقود" };
   if (!name) return { error: "اسم المحل مطلوب" };
@@ -179,11 +182,12 @@ export async function updateShop(
       locationUrl: url,
       region: { connect: { id: regionId } },
       hideDebts,
+      hideFromCreditBook,
     },
   });
 
   try {
-    const targetType = hideDebts ? "deleted_shop" : "shop";
+    const targetType = hideFromCreditBook ? "deleted_shop" : "shop";
     await prisma.creditBookPartner.updateMany({
       where: {
         externalId: id,
@@ -196,7 +200,7 @@ export async function updateShop(
       }
     });
   } catch (cbErr) {
-    console.error("Failed to sync shop hideDebts to credit book partner:", cbErr);
+    console.error("Failed to sync shop hideFromCreditBook to credit book partner:", cbErr);
   }
 
   revalidatePath(`${SECRET_ADMIN_PATH}/shops`);

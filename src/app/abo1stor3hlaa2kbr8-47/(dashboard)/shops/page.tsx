@@ -58,6 +58,7 @@ export default async function ShopsPage() {
     employeesCount: s._count?.employees ?? 0,
     ordersCount: s._count?.orders ?? 0,
     hideDebts: !!s.hideDebts,
+    hideFromCreditBook: !!s.hideFromCreditBook,
     createdAt: s.createdAt,
     phones: Array.from(
       new Set(
