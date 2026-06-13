@@ -6,7 +6,8 @@ import { computeMandoubAdminTotalAllTimeDinar, computeMandoubWalletRemainAllTime
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { Decimal } from "@prisma/client/runtime/library";
-import { CourierWalletMiscDirection } from "@prisma/client";
+import { CourierWalletMiscDirection, WalletPeerPartyKind } from "@prisma/client";
+import { MONEY_KIND_DELIVERY, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
 
 export type PartnerType = "courier" | "preparer" | "shop" | "customer" | "external" | "supplier";
 
@@ -536,21 +537,137 @@ export async function getPartnerDetails(partnerId: string) {
         const walletRem = await computeMandoubWalletRemainAllTimeDinar(partner.externalId);
         walletRemain = walletRem.toNumber();
 
-        // إضافة بند تلقائي لكشف الحساب يمثل رصيد محفظة المندوب
-        if (autoBalance !== 0) {
+        // 1. جلب حركات أموال الطلبات للمندوب
+        const orderMoneyEvents = await prisma.orderCourierMoneyEvent.findMany({
+          where: {
+            courierId: partner.externalId,
+            deletedAt: null,
+            recordedByCompanyPreparerId: null
+          },
+          include: {
+            order: {
+              select: {
+                orderNumber: true,
+                orderType: true,
+                customerRegion: { select: { name: true } }
+              }
+            }
+          },
+          orderBy: { createdAt: "desc" }
+        });
+
+        for (const me of orderMoneyEvents) {
+          const amt = Number(me.amountDinar || 0);
+          if (amt <= 0) continue;
+          
+          if (me.kind === MONEY_KIND_DELIVERY) { // وارد للمندوب
+            autoTransactions.push({
+              id: `auto-courier-money-event-in-${me.id}`,
+              partnerId: partner.id,
+              amount: amt,
+              kind: "took", // أخذت = دين عليه للإدارة
+              note: `طلب توصيل #${me.order?.orderNumber || "—"} | استلام مبلغ من الزبون (المنطقة: ${me.order?.customerRegion?.name || "—"})`,
+              createdAt: me.createdAt,
+              updatedAt: me.createdAt,
+              isAuto: true
+            });
+          } else if (me.kind === MONEY_KIND_PICKUP) { // صادر من المندوب للمحل
+            autoTransactions.push({
+              id: `auto-courier-money-event-out-${me.id}`,
+              partnerId: partner.id,
+              amount: amt,
+              kind: "gave", // أعطيت = تسديد للذمة
+              note: `طلب #${me.order?.orderNumber || "—"} | تسليم مبلغ للمجهز/المحل`,
+              createdAt: me.createdAt,
+              updatedAt: me.createdAt,
+              isAuto: true
+            });
+          }
+        }
+
+        // 2. جلب قيود المحفظة اليدوية للمندوب
+        const courierMiscEntries = await prisma.courierWalletMiscEntry.findMany({
+          where: {
+            courierId: partner.externalId,
+            deletedAt: null
+          },
+          orderBy: { createdAt: "desc" }
+        });
+
+        for (const me of courierMiscEntries) {
+          const amt = Number(me.amountDinar || 0);
+          if (amt <= 0) continue;
+
           autoTransactions.push({
-            id: `auto-wallet-${partner.id}`,
+            id: `auto-courier-misc-${me.id}`,
             partnerId: partner.id,
-            amount: Math.abs(autoBalance),
-            kind: autoBalance > 0 ? "gave" : "took",
-            note: "متبقي المحفظة للإدارة (تلقائي من الطلبات وحركات الصادر والوارد)",
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            amount: amt,
+            kind: me.direction === "take" ? "took" : "gave",
+            note: me.label || "قيد يدوي في المحفظة للمندوب",
+            createdAt: me.createdAt,
+            updatedAt: me.createdAt,
+            isAuto: true
+          });
+        }
+
+        // 3. جلب التحويلات المقبولة للإدارة
+        const adminTransfers = await prisma.walletPeerTransfer.findMany({
+          where: {
+            fromCourierId: partner.externalId,
+            toKind: WalletPeerPartyKind.admin,
+            status: "accepted"
+          },
+          orderBy: { createdAt: "desc" }
+        });
+
+        for (const t of adminTransfers) {
+          const amt = Number(t.amountDinar || 0);
+          if (amt <= 0) continue;
+
+          autoTransactions.push({
+            id: `auto-courier-transfer-admin-${t.id}`,
+            partnerId: partner.id,
+            amount: amt,
+            kind: "gave", // أعطيت
+            note: `تحويل للإدارة (مقبول) | ${t.handoverLocation || "—"}${t.notes ? ` (${t.notes})` : ""}`,
+            createdAt: t.createdAt,
+            updatedAt: t.createdAt,
+            isAuto: true
+          });
+        }
+
+        // 4. أرباح التوصيل للطلبات المكتملة والمؤرشفة
+        const ordersWithEarnings = await prisma.order.findMany({
+          where: {
+            courierEarningForCourierId: partner.externalId,
+            status: { in: ["delivered", "archived"] },
+            courierEarningDinar: { gt: 0 }
+          },
+          select: {
+            id: true,
+            orderNumber: true,
+            courierEarningDinar: true,
+            deliveredAt: true,
+            createdAt: true
+          },
+          orderBy: { deliveredAt: "desc" }
+        });
+
+        for (const o of ordersWithEarnings) {
+          const amt = Number(o.courierEarningDinar || 0);
+          autoTransactions.push({
+            id: `auto-courier-earning-${o.id}`,
+            partnerId: partner.id,
+            amount: amt,
+            kind: "gave", // أعطيت = يخصم من ذمة المندوب لصالحه
+            note: `أرباح التوصيل للطلب #${o.orderNumber}`,
+            createdAt: o.deliveredAt || o.createdAt,
+            updatedAt: o.deliveredAt || o.createdAt,
             isAuto: true
           });
         }
       } catch (e) {
-        console.error(e);
+        console.error("Error fetching courier auto transactions:", e);
       }
     } else if (partner.type === "preparer" && partner.externalId) {
       try {
@@ -558,22 +675,147 @@ export async function getPartnerDetails(partnerId: string) {
         if (prepTotals) {
           autoBalance = prepTotals.remain.toNumber();
           walletRemain = prepTotals.remain.toNumber();
+        }
 
-          if (autoBalance !== 0) {
-            autoTransactions.push({
-              id: `auto-wallet-${partner.id}`,
-              partnerId: partner.id,
-              amount: Math.abs(autoBalance),
-              kind: autoBalance > 0 ? "gave" : "took",
-              note: "متبقي المحفظة للإدارة (تلقائي من الطلبات وحركات الصادر والوارد للمجهز)",
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              isAuto: true
+        const preparer = await prisma.companyPreparer.findFirst({
+          where: { id: partner.externalId, active: true },
+          select: {
+            shopLinks: { select: { shopId: true } },
+            walletEmployeeId: true
+          }
+        });
+
+        if (preparer) {
+          // 1. جلب حركات أموال الطلبات المسجلة بواسطة المجهز لمحلاته
+          const shopIds = preparer.shopLinks.map((l) => l.shopId);
+          if (shopIds.length > 0) {
+            const orderMoneyEvents = await prisma.orderCourierMoneyEvent.findMany({
+              where: {
+                deletedAt: null,
+                recordedByCompanyPreparerId: partner.externalId,
+                order: { shopId: { in: shopIds } }
+              },
+              include: {
+                order: {
+                  select: {
+                    orderNumber: true
+                  }
+                }
+              },
+              orderBy: { createdAt: "desc" }
             });
+
+            for (const me of orderMoneyEvents) {
+              const amt = Number(me.amountDinar || 0);
+              if (amt <= 0) continue;
+
+              if (me.kind === MONEY_KIND_DELIVERY) { // وارد للمجهز
+                autoTransactions.push({
+                  id: `auto-preparer-money-event-in-${me.id}`,
+                  partnerId: partner.id,
+                  amount: amt,
+                  kind: "took", // أخذت
+                  note: `طلب #${me.order?.orderNumber || "—"} | استلام دفعة من المندوب/الزبون`,
+                  createdAt: me.createdAt,
+                  updatedAt: me.createdAt,
+                  isAuto: true
+                });
+              } else if (me.kind === MONEY_KIND_PICKUP) { // صادر من المجهز للمحل
+                autoTransactions.push({
+                  id: `auto-preparer-money-event-out-${me.id}`,
+                  partnerId: partner.id,
+                  amount: amt,
+                  kind: "gave", // أعطيت
+                  note: `طلب #${me.order?.orderNumber || "—"} | تسليم مبلغ للمحل`,
+                  createdAt: me.createdAt,
+                  updatedAt: me.createdAt,
+                  isAuto: true
+                });
+              }
+            }
+          }
+
+          const wid = preparer.walletEmployeeId;
+          if (wid) {
+            // 2. قيود المحفظة اليدوية للموظف المربوط بالمجهز
+            const employeeMiscEntries = await prisma.employeeWalletMiscEntry.findMany({
+              where: {
+                employeeId: wid,
+                deletedAt: null
+              },
+              orderBy: { createdAt: "desc" }
+            });
+
+            for (const me of employeeMiscEntries) {
+              const amt = Number(me.amountDinar || 0);
+              if (amt <= 0) continue;
+
+              autoTransactions.push({
+                id: `auto-preparer-misc-${me.id}`,
+                partnerId: partner.id,
+                amount: amt,
+                kind: me.direction === "take" ? "took" : "gave",
+                note: me.label || "قيد يدوي في المحفظة للمجهز",
+                createdAt: me.createdAt,
+                updatedAt: me.createdAt,
+                isAuto: true
+              });
+            }
+
+            // 3. التحويلات المقبولة للإدارة
+            const employeeAdminTransfers = await prisma.walletPeerTransfer.findMany({
+              where: {
+                fromEmployeeId: wid,
+                toKind: WalletPeerPartyKind.admin,
+                status: "accepted"
+              },
+              orderBy: { createdAt: "desc" }
+            });
+
+            for (const t of employeeAdminTransfers) {
+              const amt = Number(t.amountDinar || 0);
+              if (amt <= 0) continue;
+
+              autoTransactions.push({
+                id: `auto-preparer-transfer-admin-${t.id}`,
+                partnerId: partner.id,
+                amount: amt,
+                kind: "gave", // أعطيت
+                note: `تحويل للإدارة (مقبول) | ${t.handoverLocation || "—"}${t.notes ? ` (${t.notes})` : ""}`,
+                createdAt: t.createdAt,
+                updatedAt: t.createdAt,
+                isAuto: true
+              });
+            }
+
+            // 4. التحويلات الصادرة المعلقة
+            const employeePendingOutgoingTransfers = await prisma.walletPeerTransfer.findMany({
+              where: {
+                fromEmployeeId: wid,
+                status: "pending"
+              },
+              orderBy: { createdAt: "desc" }
+            });
+
+            for (const t of employeePendingOutgoingTransfers) {
+              const amt = Number(t.amountDinar || 0);
+              if (amt <= 0) continue;
+
+              autoTransactions.push({
+                id: `auto-preparer-transfer-pending-${t.id}`,
+                partnerId: partner.id,
+                amount: amt,
+                kind: "gave", // أعطيت
+                note: `تحويل صادر معلق | ${t.handoverLocation || "—"}${t.notes ? ` (${t.notes})` : ""}`,
+                createdAt: t.createdAt,
+                updatedAt: t.createdAt,
+                isAuto: true
+              });
+            }
           }
         }
       } catch (e) {
-        console.error(e);
+        console.error("Error fetching preparer auto transactions:", e);
       }
     } else if (partner.type === "shop" && partner.externalId) {
       // للمحلات: جلب تفاصيل الطلبات وتوليد قيود تلقائية للديون وعمليات التسديد
