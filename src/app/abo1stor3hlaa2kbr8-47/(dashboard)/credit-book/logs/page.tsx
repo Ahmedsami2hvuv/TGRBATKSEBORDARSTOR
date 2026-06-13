@@ -152,7 +152,7 @@ export default function CreditBookLogsPage() {
                             {orig.kind === mod.kind ? (
                               <span>{kindLabels[orig.kind] || orig.kind}</span>
                             ) : (
-                              <div className="flex items-center gap-1.5 text-xs">
+                              <div className="flex items-center justify-end gap-1.5 text-xs" dir="ltr">
                                 <span className="text-slate-400 line-through">{kindLabels[orig.kind]}</span>
                                 <span className="text-slate-400">➔</span>
                                 <span className="text-indigo-600 font-bold">{kindLabels[mod.kind]}</span>
@@ -169,7 +169,7 @@ export default function CreditBookLogsPage() {
                             {orig.amount === mod.amount ? (
                               <span className="text-slate-700 tabular-nums">{formatDinarAsAlfWithUnit(orig.amount)}</span>
                             ) : (
-                              <div className="flex items-center gap-1.5 text-xs">
+                              <div className="flex items-center justify-end gap-1.5 text-xs" dir="ltr">
                                 <span className="text-slate-400 line-through tabular-nums">{formatDinarAsAlfWithUnit(orig.amount)}</span>
                                 <span className="text-slate-400">➔</span>
                                 <span className="text-indigo-600 font-bold tabular-nums">{formatDinarAsAlfWithUnit(mod.amount)}</span>
