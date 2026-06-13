@@ -395,6 +395,20 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
 // 2. جلب تفاصيل شريك وكشف حسابه (مدمج مع المعاملات التلقائية للطلبات والمحفظة)
 export async function getPartnerDetails(partnerId: string) {
   try {
+    const briefPartner = await prisma.creditBookPartner.findUnique({
+      where: { id: partnerId },
+      select: { type: true, externalId: true }
+    });
+
+    if (briefPartner && briefPartner.type === "supplier" && briefPartner.externalId) {
+      try {
+        const { syncSupplierTransactions } = await import("@/lib/order-delivery-hook");
+        await syncSupplierTransactions(briefPartner.externalId);
+      } catch (err) {
+        console.error("Failed to sync supplier transactions in getPartnerDetails:", err);
+      }
+    }
+
     const partner = await prisma.creditBookPartner.findUnique({
       where: { id: partnerId },
       include: {
@@ -666,6 +680,15 @@ export async function createPartner(name: string, phone: string | null, type: Pa
         externalId: externalId || null,
       },
     });
+
+    if (type === "supplier" && externalId) {
+      try {
+        const { syncSupplierTransactions } = await import("@/lib/order-delivery-hook");
+        await syncSupplierTransactions(externalId);
+      } catch (err) {
+        console.error("Failed to sync supplier transactions in createPartner:", err);
+      }
+    }
 
     revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
     return { success: true, partner };
