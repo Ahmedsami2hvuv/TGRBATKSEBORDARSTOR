@@ -420,8 +420,8 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
             </div>
           </div>
 
-          {/* زرا تسجيل أعطيت وأخذت لتفعيل البلوك بالأسفل */}
-          <div className="flex gap-2">
+          {/* زرا تسجيل أعطيت وأخذت وتصفير الحساب */}
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleOpenForm("gave")}
               className="flex-1 py-2 px-3 text-xs font-black text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl transition text-center flex items-center justify-center gap-1.5 shadow-sm"
@@ -434,6 +434,14 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
             >
               🔴 تسجيل أخذت
             </button>
+            {partner.balance !== 0 && (
+              <button
+                onClick={handleZeroAccount}
+                className="flex-1 py-2 px-3 text-xs font-black text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl transition text-center flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                🧹 تصفير الحساب
+              </button>
+            )}
           </div>
         </div>
       </div>
