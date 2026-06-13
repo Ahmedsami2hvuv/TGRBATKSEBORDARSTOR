@@ -111,11 +111,11 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
       const tokens = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
       if (tokens.length === 0) return true;
 
-      const nameStr = p.name.toLowerCase();
+      const nameStr = (p.name || "").toLowerCase();
       const phoneStr = (p.phone || "").toLowerCase();
-      const typeStr = typeLabels[p.type].toLowerCase();
-      const balanceStr = String(Math.abs(p.balance));
-      const balanceAlfStr = String(Math.abs(p.balance) / 1000);
+      const typeStr = (typeLabels[p.type] || p.type || "").toLowerCase();
+      const balanceStr = String(Math.abs(p.balance || 0));
+      const balanceAlfStr = String(Math.abs(p.balance || 0) / 1000);
 
       return tokens.every((token) => {
         if (nameStr.includes(token)) return true;
@@ -438,8 +438,8 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
                     </td>
                     <td className="p-4 text-slate-500 text-sm font-semibold">{partner.phone || "—"}</td>
                     <td className="p-4 text-xs">
-                      <span className={`px-2.5 py-1 rounded-full font-black ${typeBadgeStyles[partner.type]}`}>
-                        {typeLabels[partner.type]}
+                      <span className={`px-2.5 py-1 rounded-full font-black ${typeBadgeStyles[partner.type] || "bg-slate-100 text-slate-700 border border-slate-200"}`}>
+                        {typeLabels[partner.type] || partner.type}
                       </span>
                     </td>
                     <td className="p-4 font-bold text-slate-700">

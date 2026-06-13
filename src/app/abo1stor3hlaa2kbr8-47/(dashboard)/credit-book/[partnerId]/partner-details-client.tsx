@@ -165,7 +165,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
     ? []
     : allActivePartners.filter(p =>
         p.id !== partner.id &&
-        p.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
+        p.name && p.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
       ).slice(0, 3);
   
   const [authors, setAuthors] = useState<Record<string, { createdBy: string; modifiedBy?: string }>>({});
