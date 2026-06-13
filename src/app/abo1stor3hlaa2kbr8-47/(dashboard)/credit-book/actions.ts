@@ -355,7 +355,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
     });
 
     // حساب الأرصدة بالتوازي باستخدام Promise.all لتفادي التأخير والعمليات المتتالية البطئية
-    const result: PartnerWithBalance[] = await Promise.all(
+    const mapped = await Promise.all(
       partners.map(async (p) => {
         let totalGave = 0;
         let totalTook = 0;
@@ -501,6 +501,27 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
           }
         }
 
+        const balance = manualBalance + autoBalance;
+
+        // إذا كان المحل مصفراً بالكامل ومضى على آخر نشاط له أكثر من 5 ساعات، يتم إخفاؤه تلقائياً
+        if (p.type === "shop" && balance === 0) {
+          const fiveHours = 5 * 60 * 60 * 1000;
+          if (Date.now() - latestActivity > fiveHours) {
+            try {
+              await prisma.creditBookPartner.update({
+                where: { id: p.id },
+                data: {
+                  type: "deleted_shop",
+                  updatedAt: new Date()
+                }
+              });
+            } catch (err) {
+              console.error(`Failed to auto-hide zero balance shop ${p.name}:`, err);
+            }
+            return null;
+          }
+        }
+
         return {
           id: p.id,
           name: p.name,
@@ -511,13 +532,15 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
           updatedAt: new Date(latestActivity),
           manualBalance,
           autoBalance,
-          balance: manualBalance + autoBalance,
+          balance,
           totalGave,
           totalTook,
           walletRemain
         };
       })
     );
+
+    const result = mapped.filter((item): item is PartnerWithBalance => item !== null);
 
     // فرز النتائج: حسب تاريخ التحديث (آخر نشاط) تنازلياً لكي يصعد من يُعدل أو يضاف له بالبداية
     result.sort((a, b) => {
