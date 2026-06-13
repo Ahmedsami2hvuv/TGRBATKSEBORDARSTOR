@@ -126,7 +126,7 @@ export function ShopForm({
             type="checkbox"
             className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4"
           />
-          <span className="font-bold text-slate-700">إيقاف إظهار ديون هذا المحل (محل تابع لنا)</span>
+          <span className="font-bold text-slate-700">عدم احتساب دين هذا المحل</span>
         </label>
 
         <div className="mt-2 pt-4 border-t border-sky-100 space-y-4">

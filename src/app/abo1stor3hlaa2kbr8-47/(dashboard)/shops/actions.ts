@@ -183,21 +183,25 @@ export async function updateShop(
   });
 
   try {
+    const targetType = hideDebts ? "deleted_shop" : "shop";
     await prisma.creditBookPartner.updateMany({
       where: {
-        type: "shop",
         externalId: id,
+        type: { in: ["shop", "deleted_shop"] }
       },
       data: {
         name: `${name} (محل/مجهز)`,
+        type: targetType,
+        updatedAt: new Date()
       }
     });
   } catch (cbErr) {
-    console.error("Failed to sync shop name to credit book partner:", cbErr);
+    console.error("Failed to sync shop hideDebts to credit book partner:", cbErr);
   }
 
   revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
   revalidatePath(`${SECRET_ADMIN_PATH}/shops/${id}/edit`);
+  revalidatePath(`${SECRET_ADMIN_PATH}/credit-book`);
   return { ok: true };
 }
 

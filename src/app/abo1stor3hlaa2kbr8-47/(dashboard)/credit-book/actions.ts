@@ -29,6 +29,12 @@ export interface PartnerWithBalance {
 
 // دالة مساعدة لحساب الديون التلقائية للمحلات (الطلبات غير المسددة)
 async function getShopAutoDebt(shopId: string): Promise<number> {
+  const shop = await prisma.shop.findUnique({
+    where: { id: shopId },
+    select: { hideDebts: true }
+  });
+  if (!shop || shop.hideDebts) return 0;
+
   const orders = await prisma.order.findMany({
     where: {
       shopId,
@@ -70,7 +76,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
     if (!searchQuery) {
       try {
         const [allShops, allCouriers, allPreparers] = await Promise.all([
-          prisma.shop.findMany({ select: { id: true, name: true, phone: true } }),
+          prisma.shop.findMany({ select: { id: true, name: true, phone: true, hideDebts: true } }),
           prisma.courier.findMany({ where: { blocked: false }, select: { id: true, name: true, phone: true } }),
           prisma.companyPreparer.findMany({ select: { id: true, name: true, phone: true, walletEmployeeId: true } })
         ]);
@@ -100,10 +106,19 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
 
         const partnersToCreate: any[] = [];
         const partnersToRestore: string[] = [];
+        const partnersToDeleteDueToHide: string[] = [];
 
         // التحقق من تفعيل واستعادة المحلات بالتوازي
         const shopRestoreChecks = await Promise.all(
           allShops.map(async (s) => {
+            if (s.hideDebts) {
+              const activeShopInPartner = existingPartners.find(p => p.type === "shop" && p.externalId === s.id);
+              if (activeShopInPartner) {
+                return { action: 'delete_due_to_hide', id: s.id };
+              }
+              return null;
+            }
+
             if (!existingShops.has(s.id)) {
               const deletedAt = deletedShopsMap.get(s.id);
               if (deletedAt) {
@@ -250,6 +265,29 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
             partnersToRestore.push(item.id);
           } else if (item?.action === 'create') {
             partnersToCreate.push(item.data);
+          } else if (item?.action === 'delete_due_to_hide') {
+            partnersToDeleteDueToHide.push(item.id);
+          }
+        }
+
+        if (partnersToDeleteDueToHide.length > 0) {
+          for (const extId of partnersToDeleteDueToHide) {
+            const partner = await prisma.creditBookPartner.findFirst({
+              where: {
+                externalId: extId,
+                type: "shop"
+              },
+              select: { id: true }
+            });
+            if (partner) {
+              await prisma.creditBookPartner.update({
+                where: { id: partner.id },
+                data: {
+                  type: "deleted_shop",
+                  updatedAt: new Date()
+                }
+              });
+            }
           }
         }
 
@@ -1382,6 +1420,19 @@ export async function syncSystemPartners() {
           type: { in: ["shop", "deleted_shop"] }
         },
       });
+      if (shop.hideDebts) {
+        if (exists && exists.type === "shop") {
+          await prisma.creditBookPartner.update({
+            where: { id: exists.id },
+            data: {
+              type: "deleted_shop",
+              updatedAt: new Date()
+            }
+          });
+          importedCount++;
+        }
+        continue;
+      }
       if (!exists) {
         await prisma.creditBookPartner.create({
           data: {
@@ -1518,7 +1569,10 @@ export async function getUnaddedSystemPartners(type: PartnerType) {
 
     if (type === "shop") {
       const list = await prisma.shop.findMany({
-        where: { id: { notIn: addedExternalIds } },
+        where: {
+          id: { notIn: addedExternalIds },
+          hideDebts: false
+        },
         select: { id: true, name: true, phone: true },
         orderBy: { name: "asc" }
       });
