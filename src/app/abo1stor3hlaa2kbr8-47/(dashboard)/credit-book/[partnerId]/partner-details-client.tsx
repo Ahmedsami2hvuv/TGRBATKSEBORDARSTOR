@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { 
   addTransaction, 
@@ -12,7 +12,8 @@ import {
   uploadTransactionImage,
   updateAdminPaymentEvent,
   deleteAdminPaymentEvent,
-  zeroPartnerAccount
+  zeroPartnerAccount,
+  getTransactionAuthorsAction
 } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credit-book/actions";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { useRouter } from "next/navigation";
@@ -56,6 +57,12 @@ interface PartnerDetailsClientProps {
 export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetailsClientProps) {
   const router = useRouter();
   const [partner, setPartner] = useState<Partner>(initialPartner);
+  
+  const [authors, setAuthors] = useState<Record<string, { createdBy: string; modifiedBy?: string }>>({});
+
+  useEffect(() => {
+    getTransactionAuthorsAction().then(setAuthors);
+  }, [partner.transactions]);
   
   // نموذج إضافة معاملة
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -721,12 +728,24 @@ export function PartnerDetailsClient({ partner: initialPartner }: PartnerDetails
                   )}
                 </div>
 
-                <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-                  <span className="text-[10px] text-slate-400 font-medium">
-                    {new Date(tx.createdAt).toLocaleDateString("ar-EG")} {new Date(tx.createdAt).toLocaleTimeString("ar-EG", {hour: "2-digit", minute: "2-digit"})}
-                  </span>
+                <div className="flex flex-col items-stretch md:items-end justify-between gap-2 w-full md:w-auto mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+                  <div className="flex flex-wrap items-center justify-between md:justify-end gap-3">
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {new Date(tx.createdAt).toLocaleDateString("ar-EG")} {new Date(tx.createdAt).toLocaleTimeString("ar-EG", {hour: "2-digit", minute: "2-digit"})}
+                    </span>
 
-                  <div className="flex gap-2">
+                    {(authors[tx.id] || tx.isAuto) && (
+                      <span className="text-[9px] text-slate-500/90 font-black bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200/50">
+                        {tx.isAuto 
+                          ? "بواسطة: النظام"
+                          : authors[tx.id]?.modifiedBy 
+                            ? `بواسطة: ${authors[tx.id].createdBy} (عُدّل: ${authors[tx.id].modifiedBy})`
+                            : `بواسطة: ${authors[tx.id].createdBy}`}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 justify-end">
                     {!tx.isAuto ? (
                       <>
                         <button

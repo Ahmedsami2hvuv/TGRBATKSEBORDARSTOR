@@ -13,6 +13,55 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
 
     if (!order) return;
 
+    // أتمتة فتح/استعادة حساب المحل تلقائياً في دفتر الديون إذا كان لديه طلب مسلّم غير مسدّد
+    try {
+      const subtotal = Number(order.orderSubtotal || 0);
+      if (subtotal > 0 && !order.shopCostPaidAt && order.shopId) {
+        const shop = await db.shop.findUnique({
+          where: { id: order.shopId },
+          select: { name: true, phone: true }
+        });
+        if (shop) {
+          const cbPartner = await db.creditBookPartner.findFirst({
+            where: {
+              externalId: order.shopId,
+              type: { in: ["shop", "deleted_shop"] }
+            }
+          });
+
+          if (!cbPartner) {
+            await db.creditBookPartner.create({
+              data: {
+                name: `${shop.name} (محل/مجهز)`,
+                phone: shop.phone || null,
+                type: "shop",
+                externalId: order.shopId,
+                updatedAt: new Date()
+              }
+            });
+          } else if (cbPartner.type === "deleted_shop") {
+            await db.creditBookPartner.update({
+              where: { id: cbPartner.id },
+              data: {
+                type: "shop",
+                updatedAt: new Date()
+              }
+            });
+          } else {
+            // تحديث تاريخ التعديل ليصعد الحساب للأعلى
+            await db.creditBookPartner.update({
+              where: { id: cbPartner.id },
+              data: {
+                updatedAt: new Date()
+              }
+            });
+          }
+        }
+      }
+    } catch (partnerErr) {
+      console.error("Failed to auto restore/create shop credit partner on delivery:", partnerErr);
+    }
+
     let products: any[] = [];
     if (order.preparerShoppingJson) {
       const parsed = typeof order.preparerShoppingJson === "string"
@@ -82,7 +131,7 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
           // Record automatic transaction: kind is "took" (أخذت - يطلبنا) because supplier prepared the goods, so we owe them.
           const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyDinar.toLocaleString()} د.ع | المندوب: ${courierName}`;
           
-          await db.creditBookTransaction.create({
+          const newTx = await db.creditBookTransaction.create({
             data: {
               partnerId: cbPartner.id,
               amount: totalBuyDinar,
@@ -90,6 +139,14 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
               note: noteText,
             }
           });
+
+          // تسجيل منشئ المعاملة بالنظام
+          try {
+            const { logTransactionAuthor } = await import("./transaction-logger");
+            await logTransactionAuthor(newTx.id, "create", "النظام");
+          } catch (logErr) {
+            console.error("Failed to log transaction creator as System:", logErr);
+          }
 
           // تحديث تاريخ الشريك ليصعد في القائمة
           await db.creditBookPartner.update({
@@ -170,7 +227,7 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
 
         if (!exists) {
           const noteText = `منطقة: ${regionName} | طلب رقم: #` + orderNumber + ` | منتجات: ${productsText} | سعر شراءها: ${totalBuyDinar.toLocaleString()} د.ع | المندوب: ${courierName}`;
-          await db.creditBookTransaction.create({
+          const newTx = await db.creditBookTransaction.create({
             data: {
               partnerId: cbPartner.id,
               amount: totalBuyDinar,
@@ -179,6 +236,14 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
               createdAt: order.createdAt,
             }
           });
+
+          // تسجيل منشئ المعاملة بالنظام
+          try {
+            const { logTransactionAuthor } = await import("./transaction-logger");
+            await logTransactionAuthor(newTx.id, "create", "النظام");
+          } catch (logErr) {
+            console.error("Failed to log transaction creator as System:", logErr);
+          }
 
           // تحديث تاريخ الشريك ليصعد في القائمة
           await db.creditBookPartner.update({

@@ -10,9 +10,9 @@ function getSecret() {
   return new TextEncoder().encode(s);
 }
 
-export async function signAdminToken(): Promise<string> {
+export async function signAdminToken(name: string = "الإدارة"): Promise<string> {
   const secret = getSecret();
-  return new SignJWT({ role: "admin" })
+  return new SignJWT({ role: "admin", name })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")

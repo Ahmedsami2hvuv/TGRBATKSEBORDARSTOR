@@ -697,6 +697,13 @@ export async function addTransaction(partnerId: string, amount: number, kind: "g
       },
     });
 
+    try {
+      const { logTransactionAuthor } = await import("@/lib/transaction-logger");
+      await logTransactionAuthor(tx.id, "create");
+    } catch (logErr) {
+      console.error("Failed to log transaction creator:", logErr);
+    }
+
     // تحديث تاريخ تعديل الشريك لتعديل ترتيبه في القائمة
     await prisma.creditBookPartner.update({
       where: { id: partnerId },
@@ -758,10 +765,11 @@ export async function updateTransaction(transactionId: string, amount: number, n
     });
 
     try {
-      const { logTransactionChange } = await import("@/lib/transaction-logger");
+      const { logTransactionChange, logTransactionAuthor } = await import("@/lib/transaction-logger");
       await logTransactionChange("modified", originalTx, tx);
+      await logTransactionAuthor(tx.id, "update");
     } catch (logErr) {
-      console.error("Failed to log transaction change:", logErr);
+      console.error("Failed to log transaction change/author:", logErr);
     }
 
     // تحديث تاريخ تعديل الشريك لتعديل ترتيبه في القائمة
@@ -1446,7 +1454,7 @@ export async function restoreDeletedTransaction(logId: string) {
     }
 
     // إعادة إنشاء المعاملة
-    await prisma.creditBookTransaction.create({
+    const restoredTx = await prisma.creditBookTransaction.create({
       data: {
         partnerId: originalTx.partnerId,
         amount: originalTx.amount,
@@ -1456,6 +1464,13 @@ export async function restoreDeletedTransaction(logId: string) {
         createdAt: new Date(originalTx.createdAt),
       }
     });
+
+    try {
+      const { logTransactionAuthor } = await import("@/lib/transaction-logger");
+      await logTransactionAuthor(restoredTx.id, "create");
+    } catch (logErr) {
+      console.error("Failed to log restored transaction creator:", logErr);
+    }
 
     // تحديث تاريخ الشريك
     await prisma.creditBookPartner.update({
@@ -1507,7 +1522,7 @@ export async function revertModifiedTransaction(logId: string) {
     }
 
     // إرجاع الحقول لقيمها الأصلية
-    await prisma.creditBookTransaction.update({
+    const revertedTx = await prisma.creditBookTransaction.update({
       where: { id: originalTx.id },
       data: {
         amount: originalTx.amount,
@@ -1517,6 +1532,13 @@ export async function revertModifiedTransaction(logId: string) {
         createdAt: new Date(originalTx.createdAt),
       }
     });
+
+    try {
+      const { logTransactionAuthor } = await import("@/lib/transaction-logger");
+      await logTransactionAuthor(revertedTx.id, "update");
+    } catch (logErr) {
+      console.error("Failed to log reverted transaction editor:", logErr);
+    }
 
     // تحديث تاريخ الشريك
     await prisma.creditBookPartner.update({
@@ -1558,6 +1580,125 @@ export async function clearTransactionLogs() {
   } catch (error) {
     console.error("Error in clearTransactionLogs:", error);
     return { success: false, error: "حدث خطأ أثناء مسح السجلات" };
+  }
+}
+
+// 16. جلب بيانات كتاب المعاملات/المعدلين والمضيفين
+export async function getTransactionAuthorsAction() {
+  try {
+    const { getTransactionAuthors } = await import("@/lib/transaction-logger");
+    return await getTransactionAuthors();
+  } catch (error) {
+    console.error("Error in getTransactionAuthorsAction:", error);
+    return {};
+  }
+}
+
+// 17. جلب قائمة المحاسبين والروابط المولدة لهم
+export async function getAccountants() {
+  try {
+    const setting = await prisma.uISystemSetting.findUnique({
+      where: { target_section: { target: "credit_book", section: "accountant_access_tokens" } }
+    });
+    if (setting && setting.config && typeof setting.config === "object") {
+      return (setting.config as any).accountants || [];
+    }
+    return [];
+  } catch (error) {
+    console.error("Error in getAccountants:", error);
+    return [];
+  }
+}
+
+// 18. توليد رابط دخول لمحاسب جديد
+export async function createAccountantLink(name: string, phone: string) {
+  try {
+    const { isAdminSession } = await import("@/lib/admin-session");
+    if (!(await isAdminSession())) {
+      return { success: false, error: "غير مصرح لك بالقيام بهذا الإجراء" };
+    }
+
+    const trimmedName = name.trim();
+    const trimmedPhone = phone.trim();
+    if (!trimmedName || !trimmedPhone) {
+      return { success: false, error: "الرجاء إدخال الاسم ورقم الهاتف بالكامل" };
+    }
+
+    // توليد توكن عشوائي آمن
+    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+    const setting = await prisma.uISystemSetting.findUnique({
+      where: { target_section: { target: "credit_book", section: "accountant_access_tokens" } }
+    });
+
+    let accountants: any[] = [];
+    if (setting && setting.config && typeof setting.config === "object") {
+      accountants = (setting.config as any).accountants || [];
+    }
+
+    const newAcc = {
+      id: Math.random().toString(36).substring(2, 11),
+      name: trimmedName,
+      phone: trimmedPhone,
+      token,
+      createdAt: new Date().toISOString(),
+      active: true
+    };
+
+    accountants = [newAcc, ...accountants];
+
+    await prisma.uISystemSetting.upsert({
+      where: { target_section: { target: "credit_book", section: "accountant_access_tokens" } },
+      create: {
+        target: "credit_book",
+        section: "accountant_access_tokens",
+        config: { accountants }
+      },
+      update: {
+        config: { accountants }
+      }
+    });
+
+    return { success: true, accountant: newAcc };
+  } catch (error) {
+    console.error("Error in createAccountantLink:", error);
+    return { success: false, error: "حدث خطأ أثناء توليد الرابط" };
+  }
+}
+
+// 19. إلغاء صلاحية محاسب/رابط وصول
+export async function revokeAccountantAccess(id: string) {
+  try {
+    const { isAdminSession } = await import("@/lib/admin-session");
+    if (!(await isAdminSession())) {
+      return { success: false, error: "غير مصرح لك بالقيام بهذا الإجراء" };
+    }
+
+    const setting = await prisma.uISystemSetting.findUnique({
+      where: { target_section: { target: "credit_book", section: "accountant_access_tokens" } }
+    });
+
+    if (!setting || !setting.config || typeof setting.config !== "object") {
+      return { success: false, error: "السجل غير موجود" };
+    }
+
+    let accountants = (setting.config as any).accountants || [];
+    const accIndex = accountants.findIndex((a: any) => a.id === id);
+    if (accIndex === -1) {
+      return { success: false, error: "المحاسب غير موجود" };
+    }
+
+    accountants.splice(accIndex, 1);
+
+    await prisma.uISystemSetting.update({
+      where: { id: setting.id },
+      data: { config: { accountants } }
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error in revokeAccountantAccess:", error);
+    return { success: false, error: "حدث خطأ أثناء إلغاء صلاحية الوصول" };
   }
 }
 
