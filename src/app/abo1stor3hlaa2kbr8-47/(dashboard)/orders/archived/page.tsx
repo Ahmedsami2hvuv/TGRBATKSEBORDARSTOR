@@ -49,13 +49,13 @@ export default async function ArchivedOrdersIndexPage({ searchParams }: Props) {
     Prisma.sql`
       SELECT
         to_char(
-          (o."archivedAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baghdad')::date,
+          (o."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baghdad')::date,
           'YYYY-MM-DD'
         ) AS day,
         COUNT(*)::bigint AS cnt
       FROM "Order" o
       WHERE o.status = 'archived'
-        AND o."archivedAt" IS NOT NULL
+        AND o."createdAt" IS NOT NULL
       GROUP BY 1
       ORDER BY 1 DESC
     `,

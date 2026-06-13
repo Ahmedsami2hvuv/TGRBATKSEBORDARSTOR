@@ -55,7 +55,7 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
 
   const where: Prisma.OrderWhereInput = {
     status: "archived",
-    archivedAt: { gte: range.gte, lt: range.lt },
+    createdAt: { gte: range.gte, lt: range.lt },
   };
 
   if (q) {
@@ -152,7 +152,7 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
         <div>
           <h1 className={ad.h1}>{formatBaghdadDateLabel(day)}</h1>
           <p className={`mt-1 ${ad.muted}`}>
-            طلبات أُرشِفت في هذا اليوم مرتبة تسلسلياً (يظهر المندوب الذي قام بالتوصيل).
+            طلبات رُفِعت في هذا اليوم وأُرشِفت مرتبة تسلسلياً (يظهر المندوب الذي قام بالتوصيل).
           </p>
         </div>
         <form className="flex-1 max-w-sm">
