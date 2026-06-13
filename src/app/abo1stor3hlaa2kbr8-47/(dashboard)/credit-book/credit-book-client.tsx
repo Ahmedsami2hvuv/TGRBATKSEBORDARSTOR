@@ -466,38 +466,64 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
                   </div>
                   
                   <div>
-                    <label className="block text-xs font-black text-slate-500 mb-1.5">اختر من الحسابات المصفاة</label>
+                    <label className="block text-xs font-black text-slate-500 mb-1.5">
+                      {selectedSystemPartnerId ? "الحساب المحدد للربط التلقائي:" : "اختر الحساب للربط التلقائي:"}
+                    </label>
+                    
+                    {selectedSystemPartnerId && (
+                      <div className="mb-2.5 p-3 bg-indigo-50 text-indigo-900 rounded-2xl text-xs font-black flex justify-between items-center border border-indigo-100">
+                        <span>
+                          📍 {newPartnerName} {newPartnerPhone ? `(${newPartnerPhone})` : ""}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedSystemPartnerId("");
+                            setNewPartnerName("");
+                            setNewPartnerPhone("");
+                          }}
+                          className="text-rose-600 hover:text-rose-800 text-[10px] font-black border border-rose-200 px-2 py-0.5 rounded-lg bg-white transition"
+                        >
+                          إلغاء التحديد
+                        </button>
+                      </div>
+                    )}
+
                     {isLoadingUnadded ? (
                       <div className="text-xs text-slate-500 py-2">جاري تحميل القائمة...</div>
                     ) : unaddedSystemPartners.length === 0 ? (
                       <div className="text-xs text-rose-500 font-bold py-2">جميع الحسابات من هذا النوع مضافة مسبقاً!</div>
                     ) : (
-                      <select
-                        value={selectedSystemPartnerId}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setSelectedSystemPartnerId(val);
-                          const found = unaddedSystemPartners.find(p => p.id === val);
-                          if (found) {
-                            setNewPartnerName(found.name);
-                            setNewPartnerPhone(found.phone || "");
-                          } else {
-                            setNewPartnerName("");
-                            setNewPartnerPhone("");
-                          }
-                        }}
-                        className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 bg-white"
-                      >
-                        <option value="">-- اختر حساباً للربط التلقائي --</option>
+                      <div className="border border-slate-200 rounded-2xl max-h-48 overflow-y-auto divide-y divide-slate-100 bg-white">
                         {unaddedSystemPartners
                           .filter(item => item.name.toLowerCase().includes(systemPartnerSearch.toLowerCase()))
-                          .map((item) => (
-                            <option key={item.id} value={item.id}>
-                              {item.name} {item.phone ? `(${item.phone})` : ""}
-                            </option>
-                          ))
+                          .map((item) => {
+                            const isSelected = selectedSystemPartnerId === item.id;
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSystemPartnerId(item.id);
+                                  setNewPartnerName(item.name);
+                                  setNewPartnerPhone(item.phone || "");
+                                }}
+                                className={`w-full text-right px-4 py-3 text-xs font-bold transition flex justify-between items-center ${
+                                  isSelected 
+                                    ? "bg-indigo-50 text-indigo-700 font-black border-r-4 border-indigo-600" 
+                                    : "hover:bg-slate-50 text-slate-700"
+                                }`}
+                              >
+                                <span>{item.name} {item.phone ? `(${item.phone})` : ""}</span>
+                                {isSelected && <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black">محدد ✅</span>}
+                              </button>
+                            );
+                          })
                         }
-                      </select>
+                        {unaddedSystemPartners.filter(item => item.name.toLowerCase().includes(systemPartnerSearch.toLowerCase())).length === 0 && (
+                          <div className="p-3 text-xs text-rose-500 font-bold text-center">لا توجد نتائج مطابقة لمصطلح البحث</div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
