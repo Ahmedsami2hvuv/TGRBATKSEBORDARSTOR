@@ -16,7 +16,9 @@ export default async function PartnerDetailsPage({ params }: PageProps) {
     getPartnerDetails(resolvedParams.partnerId),
     prisma.creditBookPartner.findMany({
       where: {
-        type: { notIn: ["deleted_courier", "deleted_preparer", "deleted_shop", "deleted_customer"] }
+        NOT: {
+          type: { startsWith: "deleted_" }
+        }
       },
       select: { id: true, name: true }
     })
