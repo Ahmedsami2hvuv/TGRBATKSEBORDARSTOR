@@ -28,20 +28,8 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
   const [partners, setPartners] = useState<PartnerWithBalance[]>(initialPartners);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [balanceFilter, setBalanceFilter] = useState<string>("all");
   const [isPending, startTransition] = useTransition();
-
-  // سجل المتغيرات
-  const [logs, setLogs] = useState<any[]>([]);
-  const [showLogs, setShowLogs] = useState(false);
-  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
-
-  // إدارة حسابات وروابط وصول المحاسبين
-  const [accountants, setAccountants] = useState<any[]>([]);
-  const [showAccountants, setShowAccountants] = useState(false);
-  const [newAccName, setNewAccName] = useState("");
-  const [newAccPhone, setNewAccPhone] = useState("");
-  const [isCreatingAcc, setIsCreatingAcc] = useState(false);
-  const [accError, setAccError] = useState("");
 
   // نموذج إضافة شريك جديد
   const [showAddModal, setShowAddModal] = useState(false);
@@ -84,143 +72,17 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
 
   const netBalance = totalWeOwed - totalWeOwe;
 
-  const loadLogs = async () => {
-    setIsLoadingLogs(true);
-    try {
-      const history = await getTransactionLogs();
-      setLogs(history);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoadingLogs(false);
-    }
-  };
+  const filteredPartners = partners.filter((p) => {
+    if (balanceFilter === "owe_us") return p.balance > 0;
+    if (balanceFilter === "we_owe") return p.balance < 0;
+    return true;
+  });
 
   // تحديث القائمة بعد العمليات
   const refreshList = async () => {
     const fresh = await getPartners(searchQuery, selectedType);
     setPartners(fresh);
     setSelectedPartnerIds([]); // تصفير التحديد
-    if (showLogs) {
-      await loadLogs();
-    }
-  };
-
-  useEffect(() => {
-    if (showLogs) {
-      loadLogs();
-    }
-  }, [showLogs]);
-
-  const handleRestore = async (logId: string) => {
-    if (!confirm("هل أنت متأكد من رغبتك في استعادة هذه المعاملة المحذوفة وإعادتها لحساب الشريك؟")) {
-      return;
-    }
-    const res = await restoreDeletedTransaction(logId);
-    if (res.success) {
-      alert("تمت استعادة المعاملة بنجاح.");
-      refreshList();
-      loadLogs();
-    } else {
-      alert(res.error || "فشلت استعادة المعاملة");
-    }
-  };
-
-  const handleRevert = async (logId: string) => {
-    if (!confirm("هل أنت متأكد من رغبتك في التراجع عن التعديل وإعادة هذه المعاملة لحالتها الأصلية؟")) {
-      return;
-    }
-    const res = await revertModifiedTransaction(logId);
-    if (res.success) {
-      alert("تم إرجاع المعاملة لحالتها الأصلية بنجاح.");
-      refreshList();
-      loadLogs();
-    } else {
-      alert(res.error || "فشل التراجع عن تعديل المعاملة");
-    }
-  };
-
-  const handleClearLogs = async () => {
-    if (!confirm("هل أنت متأكد من رغبتك في مسح سجل التغييرات بالكامل؟ لا يمكن التراجع عن هذا الإجراء.")) {
-      return;
-    }
-    const res = await clearTransactionLogs();
-    if (res.success) {
-      alert("تم مسح السجل بنجاح.");
-      setLogs([]);
-    } else {
-      alert(res.error || "فشل مسح السجل");
-    }
-  };
-
-  const getLoginUrl = (token: string) => {
-    if (typeof window !== "undefined") {
-      return `${window.location.origin}/abo1stor3hlaa2kbr8-47/credit-book/login?token=${token}`;
-    }
-    return `/abo1stor3hlaa2kbr8-47/credit-book/login?token=${token}`;
-  };
-
-  const handleSendWhatsAppAcc = (acc: any) => {
-    const loginUrl = getLoginUrl(acc.token);
-    const msg = `مرحباً ${acc.name}،\nلقد تم منحك صلاحية الوصول لدفتر الديون العام كمحاسب.\n\nرابط تسجيل الدخول الآمن الخاص بك (صالح لمدة 7 أيام):\n${loginUrl}\n\nيرجى عدم مشاركة هذا الرابط مع أي شخص آخر.`;
-    
-    let num = acc.phone.replace(/\D/g, "");
-    if (num.startsWith("07")) {
-      num = "964" + num.substring(1);
-    } else if (num.startsWith("7") && num.length === 10) {
-      num = "964" + num;
-    }
-    
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=${num}&text=${encodeURIComponent(msg)}`;
-    window.open(whatsappUrl, "_blank");
-  };
-
-  const loadAccountantsList = async () => {
-    try {
-      const list = await getAccountants();
-      setAccountants(list);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    if (showAccountants) {
-      loadAccountantsList();
-    }
-  }, [showAccountants]);
-
-  const handleCreateAccountant = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newAccName.trim() || !newAccPhone.trim()) {
-      setAccError("الرجاء إدخال الاسم ورقم الهاتف بالكامل");
-      return;
-    }
-    setIsCreatingAcc(true);
-    setAccError("");
-    const res = await createAccountantLink(newAccName, newAccPhone);
-    setIsCreatingAcc(false);
-    if (res.success) {
-      setNewAccName("");
-      setNewAccPhone("");
-      loadAccountantsList();
-      alert("تمت إضافة المحاسب وتوليد رابط الوصول بنجاح!");
-    } else {
-      setAccError(res.error || "حدث خطأ ما");
-    }
-  };
-
-  const handleRevokeAccountant = async (id: string) => {
-    if (!confirm("هل أنت متأكد من إلغاء صلاحية هذا المحاسب؟ لن يتمكن من الدخول للنظام باستخدام هذا الرابط بعد الآن.")) {
-      return;
-    }
-    const res = await revokeAccountantAccess(id);
-    if (res.success) {
-      loadAccountantsList();
-      alert("تم إلغاء صلاحية الوصول بنجاح.");
-    } else {
-      alert(res.error || "فشل إلغاء صلاحية الوصول");
-    }
   };
 
   // معالجة البحث والفرز
@@ -281,7 +143,7 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
   // التحديد الجماعي
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedPartnerIds(partners.map(p => p.id));
+      setSelectedPartnerIds(filteredPartners.map(p => p.id));
     } else {
       setSelectedPartnerIds([]);
     }
@@ -399,10 +261,19 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
             <option value="supplier">الموردين فقط</option>
             <option value="external">أطراف خارجية</option>
           </select>
+          <select
+            value={balanceFilter}
+            onChange={(e) => setBalanceFilter(e.target.value)}
+            className="px-4 py-2.5 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 bg-white"
+          >
+            <option value="all">كل الحالات المالية</option>
+            <option value="owe_us">نطلبهم (ديون لنا)</option>
+            <option value="we_owe">يطلبوننا (ديون علينا)</option>
+          </select>
         </div>
 
         {/* أزرار العمليات */}
-        <div className="flex gap-3 w-full lg:w-auto justify-end">
+        <div className="flex flex-wrap gap-3 w-full lg:w-auto justify-end">
           {selectedPartnerIds.length > 0 && (
             <button
               onClick={handleDeleteSelected}
@@ -419,6 +290,18 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
           >
             🔄 مزامنة أطراف النظام
           </button>
+          <Link
+            href="/abo1stor3hlaa2kbr8-47/credit-book/logs"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-black text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-2xl transition"
+          >
+            📋 سجل التغييرات
+          </Link>
+          <Link
+            href="/abo1stor3hlaa2kbr8-47/credit-book/accountants"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-black text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-2xl transition border border-indigo-100"
+          >
+            🔑 روابط المحاسبين
+          </Link>
           <button
             onClick={() => setShowAddModal(true)}
             className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition shadow-md shadow-indigo-900/10"
@@ -432,8 +315,8 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
       <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
         {isPending ? (
           <div className="py-20 text-center text-slate-500 font-bold">جاري تحميل البيانات...</div>
-        ) : partners.length === 0 ? (
-          <div className="py-20 text-center text-slate-400 font-bold">لا يوجد أطراف متوفرة في دفتر الديون حالياً.</div>
+        ) : filteredPartners.length === 0 ? (
+          <div className="py-20 text-center text-slate-400 font-bold">لا يوجد أطراف متوفرة تطابق خيارات التصفية حالياً.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-right border-collapse">
@@ -442,7 +325,7 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
                   <th className="p-4 w-12 text-center">
                     <input
                       type="checkbox"
-                      checked={selectedPartnerIds.length === partners.length && partners.length > 0}
+                      checked={selectedPartnerIds.length === filteredPartners.length && filteredPartners.length > 0}
                       onChange={(e) => handleSelectAll(e.target.checked)}
                       className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
                     />
@@ -457,7 +340,7 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {partners.map((partner) => (
+                {filteredPartners.map((partner) => (
                   <tr key={partner.id} className="hover:bg-slate-50/50 transition">
                     <td className="p-4 text-center">
                       <input
@@ -559,327 +442,6 @@ export function CreditBookClient({ initialPartners }: CreditBookClientProps) {
           </div>
         )}
       </div>
-
-      {/* سجل المتغيرات والمعاملات المؤرشفة */}
-      <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
-        <button
-          type="button"
-          onClick={() => setShowLogs(!showLogs)}
-          className="w-full flex items-center justify-between p-6 bg-slate-50/50 hover:bg-slate-50 transition text-right"
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-xl">📋</span>
-            <span className="text-base font-black text-slate-800">سجل المتغيرات والمعاملات المؤرشفة (المحذوفة والمعدلة)</span>
-            {logs.length > 0 && (
-              <span className="bg-indigo-100 text-indigo-800 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-indigo-200">
-                {logs.length} تغيير مسجل
-              </span>
-            )}
-          </div>
-          <span className="text-slate-400 font-bold transition-transform duration-200" style={{ transform: showLogs ? "rotate(180deg)" : "rotate(0deg)" }}>
-            ▼
-          </span>
-        </button>
-
-        {showLogs && (
-          <div className="p-6 border-t border-slate-100 space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              <p className="text-xs text-slate-500 font-bold">
-                هنا يمكنك متابعة وتفقد كافة المعاملات المالية التي تم حذفها أو تعديلها يدوياً مع إمكانية التراجع والاسترجاع بنقرة زر.
-              </p>
-              {logs.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleClearLogs}
-                  className="px-4 py-2 text-xs font-black text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition flex items-center gap-1.5"
-                >
-                  🗑️ مسح السجل بالكامل
-                </button>
-              )}
-            </div>
-
-            {isLoadingLogs ? (
-              <div className="text-center py-10 text-slate-400 font-bold text-sm">جاري تحميل سجل التغييرات...</div>
-            ) : logs.length === 0 ? (
-              <div className="text-center py-10 text-slate-400 font-bold text-sm">لا توجد عمليات تعديل أو حذف مسجلة حالياً.</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-right border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-500 text-xs font-black border-b border-slate-100">
-                      <th className="p-4">نوع الإجراء</th>
-                      <th className="p-4">اسم الحساب</th>
-                      <th className="p-4">نوع المعاملة</th>
-                      <th className="p-4">سعر المعاملة</th>
-                      <th className="p-4">الملاحظات والبيان</th>
-                      <th className="p-4">صورة المعاملة</th>
-                      <th className="p-4">تاريخ المعاملة الأصلي</th>
-                      <th className="p-4">تاريخ التغيير/المسح</th>
-                      <th className="p-4 text-left">الإجراء</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {logs.map((log: any) => {
-                      const isDeleted = log.type === "deleted";
-                      const orig = log.originalTx;
-                      const mod = log.modifiedTx;
-
-                      const kindLabels: Record<string, string> = {
-                        gave: "أعطيت (نطلبه)",
-                        took: "أخذت (يطلبنا)"
-                      };
-
-                      return (
-                        <tr key={log.id} className="hover:bg-slate-50/30 transition text-sm">
-                          <td className="p-4">
-                            {isDeleted ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-rose-50 text-rose-700 border border-rose-200">
-                                🗑️ معاملة محذوفة
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-amber-50 text-amber-700 border border-amber-200">
-                                ✏️ معاملة معدلة
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-4 font-bold text-slate-800">{log.partnerName}</td>
-                          <td className="p-4 font-semibold text-slate-600">
-                            {isDeleted ? (
-                              <span>{kindLabels[orig.kind] || orig.kind}</span>
-                            ) : (
-                              <div className="flex flex-col gap-0.5">
-                                {orig.kind === mod.kind ? (
-                                  <span>{kindLabels[orig.kind] || orig.kind}</span>
-                                ) : (
-                                  <div className="flex items-center gap-1.5 text-xs">
-                                    <span className="text-slate-400 line-through">{kindLabels[orig.kind]}</span>
-                                    <span className="text-slate-400">➔</span>
-                                    <span className="text-indigo-600 font-bold">{kindLabels[mod.kind]}</span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                          <td className="p-4 font-bold">
-                            {isDeleted ? (
-                              <span className="text-rose-600 tabular-nums">{formatDinarAsAlfWithUnit(orig.amount)}</span>
-                            ) : (
-                              <div className="flex flex-col gap-0.5">
-                                {orig.amount === mod.amount ? (
-                                  <span className="text-slate-700 tabular-nums">{formatDinarAsAlfWithUnit(orig.amount)}</span>
-                                ) : (
-                                  <div className="flex items-center gap-1.5 text-xs">
-                                    <span className="text-slate-400 line-through tabular-nums">{formatDinarAsAlfWithUnit(orig.amount)}</span>
-                                    <span className="text-slate-400">➔</span>
-                                    <span className="text-indigo-600 font-bold tabular-nums">{formatDinarAsAlfWithUnit(mod.amount)}</span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                          <td className="p-4 text-slate-600 text-xs max-w-xs truncate" title={orig.note || ""}>
-                            {isDeleted ? (
-                              <span>{orig.note || "—"}</span>
-                            ) : (
-                              <div className="flex flex-col gap-0.5">
-                                {orig.note === mod.note ? (
-                                  <span>{orig.note || "—"}</span>
-                                ) : (
-                                  <div className="space-y-0.5 text-[11px]">
-                                    <div className="text-slate-400 line-through truncate">{orig.note || "—"}</div>
-                                    <div className="text-indigo-600 font-bold truncate">{mod.note || "—"}</div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                          <td className="p-4">
-                            {orig.imageUrl ? (
-                              <a
-                                href={orig.imageUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-block border border-slate-200 rounded-lg p-0.5 bg-slate-50 hover:bg-slate-100 transition"
-                              >
-                                <img
-                                  src={orig.imageUrl}
-                                  alt="معاملة"
-                                  className="w-10 h-10 object-cover rounded-md"
-                                />
-                              </a>
-                            ) : (
-                              <span className="text-slate-400">—</span>
-                            )}
-                          </td>
-                          <td className="p-4 text-slate-500 text-xs tabular-nums">
-                            {new Date(orig.createdAt).toLocaleString("ar-EG")}
-                          </td>
-                          <td className="p-4 text-slate-500 text-xs tabular-nums">
-                            <div>{new Date(log.timestamp).toLocaleString("ar-EG")}</div>
-                            <div className="text-[10px] text-indigo-600 font-bold mt-0.5">بواسطة: {log.performedBy || "الإدارة"}</div>
-                          </td>
-                          <td className="p-4 text-left">
-                            {isDeleted ? (
-                              <button
-                                type="button"
-                                onClick={() => handleRestore(log.id)}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition shadow-sm"
-                                title="إعادة هذه المعاملة المحذوفة إلى حساب الشريك"
-                              >
-                                🔄 إرجاع للحساب
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => handleRevert(log.id)}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm"
-                                title="التراجع عن التعديل وإرجاع قيم المعاملة لما قبل التعديل"
-                              >
-                                ↩️ إرجاع للأصلية
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* روابط وصول المحاسبين */}
-      <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
-        <button
-          type="button"
-          onClick={() => setShowAccountants(!showAccountants)}
-          className="w-full flex items-center justify-between p-6 bg-slate-50/50 hover:bg-slate-50 transition text-right"
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🔑</span>
-            <span className="text-base font-black text-slate-800">روابط وصول المحاسبين (إدارة حسابات الدخول)</span>
-            {accountants.length > 0 && (
-              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-emerald-200">
-                {accountants.length} محاسبين نشطين
-              </span>
-            )}
-          </div>
-          <span className="text-slate-400 font-bold transition-transform duration-200" style={{ transform: showAccountants ? "rotate(180deg)" : "rotate(0deg)" }}>
-            ▼
-          </span>
-        </button>
-
-        {showAccountants && (
-          <div className="p-6 border-t border-slate-100 space-y-6">
-            {/* نموذج إضافة محاسب جديد */}
-            <form onSubmit={handleCreateAccountant} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
-              <h4 className="text-xs font-black text-slate-600">➕ إضافة محاسب جديد وتوليد رابط وصول مخصص</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 mb-1">اسم المحاسب (يظهر عند إضافة/تعديل المعاملات)</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="مثال: علي محمد"
-                    value={newAccName}
-                    onChange={(e) => setNewAccName(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-500 bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 mb-1">رقم الهاتف (لإرساله مباشرة عبر الواتساب)</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="مثال: 07701234567"
-                    value={newAccPhone}
-                    onChange={(e) => setNewAccPhone(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-500 text-left bg-white"
-                  />
-                </div>
-              </div>
-
-              {accError && <p className="text-xs font-bold text-rose-600">{accError}</p>}
-
-              <button
-                type="submit"
-                disabled={isCreatingAcc}
-                className="px-5 py-2 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition disabled:opacity-50"
-              >
-                {isCreatingAcc ? "جاري التوليد..." : "توليد رابط الوصول وإرساله 🔑"}
-              </button>
-            </form>
-
-            {/* جدول المحاسبين */}
-            {accountants.length === 0 ? (
-              <div className="text-center py-10 text-slate-400 font-bold text-xs">لا يوجد روابط وصول نشطة للمحاسبين حالياً.</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-right border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-500 font-black border-b border-slate-100">
-                      <th className="p-3">اسم المحاسب</th>
-                      <th className="p-3">رقم الهاتف</th>
-                      <th className="p-3">رابط تسجيل الدخول المباشر</th>
-                      <th className="p-3">تاريخ الإنشاء</th>
-                      <th className="p-3 text-left">الإجراءات</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {accountants.map((acc: any) => {
-                      const loginUrl = getLoginUrl(acc.token);
-                      return (
-                        <tr key={acc.id} className="hover:bg-slate-50/50 transition">
-                          <td className="p-3 font-bold text-slate-800">{acc.name}</td>
-                          <td className="p-3 text-slate-500 font-semibold">{acc.phone}</td>
-                          <td className="p-3 font-mono text-slate-400 select-all truncate max-w-xs" title={loginUrl}>
-                            {loginUrl}
-                          </td>
-                          <td className="p-3 text-slate-500 font-medium">
-                            {new Date(acc.createdAt).toLocaleDateString("ar-EG")}
-                          </td>
-                          <td className="p-3 text-left flex justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                navigator.clipboard.writeText(loginUrl);
-                                alert("تم نسخ الرابط إلى الحافظة!");
-                              }}
-                              className="px-2.5 py-1.5 font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
-                              title="نسخ الرابط"
-                            >
-                              📋 نسخ
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleSendWhatsAppAcc(acc)}
-                              className="px-2.5 py-1.5 font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition flex items-center gap-1 border border-emerald-100"
-                              title="إرسال رابط الدخول عبر الواتساب"
-                            >
-                              💬 واتساب
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRevokeAccountant(acc.id)}
-                              className="px-2.5 py-1.5 font-black text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition"
-                              title="إلغاء تفعيل رابط الوصول وحذفه"
-                            >
-                              🗑️ إلغاء
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
       {/* مودال إضافة زبون/طرف جديد */}
       {showAddModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
