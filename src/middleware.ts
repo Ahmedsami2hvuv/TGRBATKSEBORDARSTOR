@@ -11,11 +11,15 @@ function getAdminSecret() {
   return new TextEncoder().encode(s);
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
   // --- 1. حماية لوحة الإدارة (Admin Security) ---
-  if (pathname.startsWith("/abo1stor3hlaa2kbr8-47") && !pathname.startsWith("/abo1stor3hlaa2kbr8-47/login")) {
+  if (
+    pathname.startsWith("/abo1stor3hlaa2kbr8-47") && 
+    !pathname.startsWith("/abo1stor3hlaa2kbr8-47/login") &&
+    !pathname.startsWith("/abo1stor3hlaa2kbr8-47/credit-book/login")
+  ) {
     const secret = getAdminSecret();
     if (!secret) {
       return NextResponse.redirect(new URL("/abo1stor3hlaa2kbr8-47/login", request.url));
