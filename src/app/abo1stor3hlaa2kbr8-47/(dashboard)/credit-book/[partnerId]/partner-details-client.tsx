@@ -883,28 +883,46 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
 
             return (
               <div className="space-y-3 max-h-[800px] overflow-y-auto pr-1">
-                {filteredTxs.map((tx) => (
-                  <div 
-                    key={tx.id} 
-                    className={`p-4 rounded-2xl transition flex flex-col gap-3 shadow-sm ${
-                      tx.kind === "gave"
-                        ? "bg-emerald-50/15 dark:bg-emerald-950/20 border border-emerald-100/75 dark:border-emerald-900/40 hover:bg-emerald-50/25 dark:hover:bg-emerald-950/30"
-                        : "bg-rose-50/15 dark:bg-red-950/15 border border-rose-100/75 dark:border-red-900/30 hover:bg-rose-50/25 dark:hover:bg-red-950/20"
-                    }`}
-                  >
-                    {/* السطر الأول: أزرار الحالة، التاريخ، الباقي، وإجراءات التحكم */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 w-full" dir="rtl">
-                      
-                      {/* الجهة اليمنى: زر أخذت/أعطيت + التاريخ والوقت + الرصيد المتبقي (الباقي) */}
-                      <div className="flex flex-wrap items-center gap-2.5">
-                        {/* زر أخذت / أعطيت */}
-                        <span className={`text-xs md:text-sm font-black px-4 py-2 rounded-xl border ${
-                          tx.kind === "gave"
-                            ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50"
-                            : "bg-rose-50 dark:bg-red-950/40 text-rose-700 dark:text-red-400 border-rose-200 dark:border-red-900/40"
-                        }`}>
-                          {tx.kind === "gave" ? "أعطيت" : "أخذت"} {formatDinarAsAlfWithUnit(tx.amount)}
-                        </span>
+                {filteredTxs.map((tx) => {
+                  const notesLower = tx.notes?.toLowerCase() || "";
+                  const isSalary = notesLower.includes("[راتب]") || notesLower.includes("راتب");
+                  const isTransfer = notesLower.includes("تحويل");
+                  const isDebt = notesLower.includes("دين");
+
+                  let containerClasses = "";
+                  let tagClasses = "";
+
+                  if (isSalary) {
+                    containerClasses = "border-[#4f46e5] bg-gradient-to-r from-[#818cf8]/20 via-[#c7d2fe]/5 to-white hover:from-[#818cf8]/30 dark:from-[#2e2a72]/30 dark:to-[#0b0b1a] dark:border-[#6366f1] text-[#1e1b4b] dark:text-[#e0e7ff] ring-2 ring-[#4f46e5]/30";
+                    tagClasses = "bg-[#4f46e5]/10 text-[#4f46e5] border-[#4f46e5]/20 dark:bg-[#6366f1]/20 dark:text-[#a5b4fc] dark:border-[#6366f1]/30";
+                  } else if (isDebt) {
+                    containerClasses = "border-yellow-500 bg-yellow-50/60 hover:bg-yellow-100/70 dark:bg-yellow-950/20 dark:border-yellow-900 text-yellow-950 dark:text-yellow-250 ring-2 ring-yellow-400/60";
+                    tagClasses = "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950/40 dark:text-yellow-350 dark:border-yellow-900";
+                  } else if (isTransfer) {
+                    containerClasses = "border-sky-500 bg-sky-50/60 hover:bg-sky-100/70 dark:bg-sky-950/20 dark:border-sky-900 text-sky-950 dark:text-sky-300 ring-2 ring-sky-400/40";
+                    tagClasses = "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900";
+                  } else if (tx.kind === "gave") {
+                    containerClasses = "bg-emerald-50/15 dark:bg-emerald-950/20 border border-emerald-100/75 dark:border-emerald-900/40 hover:bg-emerald-50/25 dark:hover:bg-emerald-950/30";
+                    tagClasses = "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50";
+                  } else {
+                    containerClasses = "bg-rose-50/15 dark:bg-red-950/15 border border-rose-100/75 dark:border-red-900/30 hover:bg-rose-50/25 dark:hover:bg-red-950/20";
+                    tagClasses = "bg-rose-50 dark:bg-red-950/40 text-rose-700 dark:text-red-400 border-rose-200 dark:border-red-900/40";
+                  }
+
+                  return (
+                    <div 
+                      key={tx.id} 
+                      className={`p-4 rounded-2xl transition flex flex-col gap-3 shadow-sm ${containerClasses}`}
+                    >
+                      {/* السطر الأول: أزرار الحالة، التاريخ، الباقي، وإجراءات التحكم */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 w-full" dir="rtl">
+                        
+                        {/* الجهة اليمنى: زر أخذت/أعطيت + التاريخ والوقت + الرصيد المتبقي (الباقي) */}
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          {/* زر أخذت / أعطيت */}
+                          <span className={`text-xs md:text-sm font-black px-4 py-2 rounded-xl border ${tagClasses}`}>
+                            {tx.kind === "gave" ? "أعطيت" : "أخذت"} {formatDinarAsAlfWithUnit(tx.amount)}
+                          </span>
 
                         {/* التاريخ والوقت */}
                         <span className="text-[11px] md:text-xs text-slate-400 dark:text-slate-500 font-bold">
@@ -1015,8 +1033,9 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                       )}
                     </div>
 
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             );
           })()
