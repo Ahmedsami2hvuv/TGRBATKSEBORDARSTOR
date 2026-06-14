@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.aboakbar.admin.app-mergeDebugResources-31:/values-v16/values-v16.xml",
+            "outputFile": "com.aboakbar.admin.app-mergeDebugResources-50:/values-v16/values-v16.xml",
             "map": [
                 {
                     "source": "C:\\Users\\lenovo\\.gradle\\caches\\9.3.1\\transforms\\44c1ecc0e713bc3587cd9bc2db010de0\\workspace\\transformed\\appcompat-1.6.1\\res\\values-v16\\values-v16.xml",
