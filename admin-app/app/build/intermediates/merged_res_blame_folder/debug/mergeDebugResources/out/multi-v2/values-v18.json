@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.aboakbar.admin.app-mergeDebugResources-31:/values-v18/values-v18.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\lenovo\\.gradle\\caches\\9.3.1\\transforms\\44c1ecc0e713bc3587cd9bc2db010de0\\workspace\\transformed\\appcompat-1.6.1\\res\\values-v18\\values-v18.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "48",
+                        "endOffsets": "99"
+                    }
+                }
+            ]
+        }
+    ]
+}

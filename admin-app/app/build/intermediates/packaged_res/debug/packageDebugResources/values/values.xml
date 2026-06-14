@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="cyan_100">#CFFAFE</color>
+    <color name="cyan_50">#ECFEFF</color>
+    <color name="red_error">#EF4444</color>
+    <color name="sky_100">#E0F2FE</color>
+    <color name="sky_200">#BAE6FD</color>
+    <color name="sky_50">#F0F9FF</color>
+    <color name="sky_800">#075985</color>
+    <color name="sky_950">#082F49</color>
+    <color name="slate_800">#1E293B</color>
+    <color name="slate_900">#0F172A</color>
+    <color name="white">#FFFFFFFF</color>
+    <string name="app_name">أبو الأكبر للإدارة</string>
+    <string name="biometric_cancel">إلغاء</string>
+    <string name="biometric_subtitle">استخدم البصمة لتسجيل الدخول كمسؤول</string>
+    <string name="biometric_title">تسجيل الدخول بالبصمة</string>
+    <string name="enter_passcode">ادخل رمز المرور السري للدخول</string>
+    <string name="incorrect_passcode">الرمز السري غير صحيح!</string>
+    <string name="loading">جارٍ التحميل...</string>
+    <string name="title_admin">لوحة الإدارة</string>
+    <style name="Theme.AboAkbarAdmin" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/sky_800</item>
+        <item name="colorPrimaryDark">@color/sky_950</item>
+        <item name="colorSecondary">@color/cyan_100</item>
+        <item name="android:statusBarColor">@color/sky_950</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

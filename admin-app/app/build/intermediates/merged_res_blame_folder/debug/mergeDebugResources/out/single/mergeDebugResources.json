@@ -1,0 +1,42 @@
+[
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-debug-33:\\layout_activity_main.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-main-35:\\layout\\activity_main.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-debug-33:\\drawable_input_bg.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-main-35:\\drawable\\input_bg.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-debug-33:\\drawable_button_round_bg.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-main-35:\\drawable\\button_round_bg.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-debug-33:\\drawable_ic_backspace.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-main-35:\\drawable\\ic_backspace.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-debug-33:\\drawable_btn_gradient.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-main-35:\\drawable\\btn_gradient.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-debug-33:\\drawable_pin_dot_filled.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-main-35:\\drawable\\pin_dot_filled.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-debug-33:\\drawable_pin_dot_empty.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-main-35:\\drawable\\pin_dot_empty.xml"
+    },
+    {
+        "merged": "com.aboakbar.admin.app-debug-33:/layout_activity_main.xml.flat",
+        "source": "com.aboakbar.admin.app-main-35:/layout/activity_main.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-debug-33:\\drawable_gradient_bg.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-main-35:\\drawable\\gradient_bg.xml"
+    },
+    {
+        "merged": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-debug-33:\\drawable_ic_fingerprint.xml.flat",
+        "source": "C:\\Users\\lenovo\\.gradle\\daemon\\9.3.1\\com.aboakbar.admin.app-main-35:\\drawable\\ic_fingerprint.xml"
+    }
+]
