@@ -37,8 +37,8 @@ class OrderForegroundService : Service() {
         override fun run() {
             if (isRunning) {
                 checkPendingOrders()
-                // إعادة جدولة الفحص بعد 5 دقائق كاحتياط لتوفير بطارية الهاتف وسيرفر فيرسل
-                serviceHandler?.postDelayed(this, 300000)
+                // إعادة جدولة الفحص بعد 30 ثانية لضمان سرعة التنبيه وتفادي قيود الأندرويد الصارمة
+                serviceHandler?.postDelayed(this, 30000)
             }
         }
     }
