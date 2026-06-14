@@ -89,6 +89,10 @@
             android:foregroundServiceType="dataSync"
             android:enabled="true"
             android:exported="false" />
+
+        <meta-data
+            android:name="com.onesignal.NotificationServiceExtension"
+            android:value="com.aboakbar.admin.MyNotificationServiceExtension" />
     </application>
 
 </manifest>

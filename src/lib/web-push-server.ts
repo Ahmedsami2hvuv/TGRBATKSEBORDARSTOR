@@ -120,6 +120,7 @@ async function sendToSubscriptions(
   subs: { id: string; endpoint: string; p256dh: string; auth: string }[],
   payload: PushPayload,
   externalIds?: string[],
+  customData?: any,
 ): Promise<void> {
   // 1. الإرسال عبر وان سيجنال (النظام الجديد) - نطلقه فوراً ولا ننتظره لكي لا نعطل العملية
   if (externalIds && externalIds.length > 0) {
@@ -131,6 +132,7 @@ async function sendToSubscriptions(
       url: payload.url,
       externalIds: externalIds,
       sound: payload.sound,
+      data: customData,
     }).catch(err => console.error("OneSignal Background Send Error:", err));
   }
 
@@ -207,13 +209,23 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
     where: { audience: "admin" },
     select: { id: true, endpoint: true, p256dh: true, auth: true },
   });
+
+  const customData = {
+    type: "new_order",
+    orderNumber,
+    shopName: order?.shop?.name ?? "—",
+    regionName: order?.customerRegion?.name ?? "—",
+    orderTime,
+    subtotal: order?.totalAmount ?? 0,
+  };
+
   await sendToSubscriptions(subs, {
     title,
     body,
     url: `${getPublicAppUrl()}${SECRET_ADMIN_PATH}/orders/pending`,
     tag: `kse-push-admin-${orderNumber}`,
     sound: settings.soundPreset,
-  }, adminExternalIds);
+  }, adminExternalIds, customData);
 }
 
 /** إشعار للإدارة: تغيّر توفر مندوب/مجهز */
