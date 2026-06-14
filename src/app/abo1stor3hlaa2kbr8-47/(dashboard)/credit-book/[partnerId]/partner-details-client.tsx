@@ -884,7 +884,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
             return (
               <div className="space-y-3 max-h-[800px] overflow-y-auto pr-1">
                 {filteredTxs.map((tx) => {
-                  const notesLower = tx.notes?.toLowerCase() || "";
+                  const notesLower = tx.note?.toLowerCase() || "";
                   const isSalary = notesLower.includes("[راتب]") || notesLower.includes("راتب");
                   const isTransfer = notesLower.includes("تحويل");
                   const isDebt = notesLower.includes("دين");
@@ -904,11 +904,13 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                     containerClasses = "border-violet-700 bg-violet-600 text-white hover:bg-violet-650/95 dark:bg-violet-900 dark:border-violet-800 dark:text-violet-100 ring-2 ring-violet-500/30";
                     tagClasses = "bg-white/20 text-white border-white/25 dark:bg-violet-950/40 dark:text-violet-350 dark:border-violet-900";
                   } else if (tx.kind === "gave") {
-                    containerClasses = "bg-emerald-50/15 dark:bg-emerald-950/20 border border-emerald-100/75 dark:border-emerald-900/40 hover:bg-emerald-50/25 dark:hover:bg-emerald-950/30";
-                    tagClasses = "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50";
+                    // أخضر واضح مميز
+                    containerClasses = "border-2 border-emerald-500 bg-gradient-to-r from-emerald-100/65 via-emerald-50/20 to-white hover:from-emerald-200/70 hover:via-emerald-50/30 hover:to-white/95 dark:from-emerald-950/40 dark:to-slate-950 text-emerald-950 dark:text-emerald-300 ring-2 ring-emerald-400/20";
+                    tagClasses = "bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-700 dark:border-emerald-700 font-black shadow-sm";
                   } else {
-                    containerClasses = "bg-rose-50/15 dark:bg-red-950/15 border border-rose-100/75 dark:border-red-900/30 hover:bg-rose-50/25 dark:hover:bg-red-950/20";
-                    tagClasses = "bg-rose-50 dark:bg-red-950/40 text-rose-700 dark:text-red-400 border-rose-200 dark:border-red-900/40";
+                    // أحمر واضح مميز
+                    containerClasses = "border-2 border-rose-500 bg-gradient-to-r from-rose-100/65 via-rose-50/20 to-white hover:from-rose-200/70 hover:via-rose-50/30 hover:to-white/95 dark:from-rose-950/40 dark:to-slate-950 text-rose-950 dark:text-red-350 ring-2 ring-rose-400/20";
+                    tagClasses = "bg-rose-600 text-white border-rose-600 dark:bg-rose-700 dark:border-rose-700 font-black shadow-sm";
                   }
 
                   return (
@@ -975,7 +977,9 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                                 className={`flex items-center gap-1 px-3 py-1.5 text-xs font-black rounded-xl transition shadow-sm cursor-pointer ${
                                   isTransfer
                                     ? "text-violet-100 bg-white/15 border border-white/10 hover:bg-white/25"
-                                    : "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-250 dark:border-emerald-900/40 hover:bg-emerald-100 dark:hover:bg-emerald-950/60"
+                                    : tx.kind === "gave"
+                                      ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-250 dark:border-emerald-900/40 hover:bg-emerald-100 dark:hover:bg-emerald-950/60"
+                                      : "text-rose-700 dark:text-rose-450 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-950/50"
                                 }`}
                               >
                                 ✏️ تعديل
@@ -1059,8 +1063,24 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
 
                       {/* السطر الثاني: نص الملاحظة والصورة المرفقة */}
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 text-right" dir="rtl">
-                        <p className={`text-sm font-black ${isTransfer ? "text-violet-200" : isSalary ? "text-[#4f46e5] dark:text-[#a5b4fc]" : "text-purple-700 dark:text-purple-400"}`}>
-                          ملاحظة: <span className={`font-bold ${isTransfer ? "text-white" : isSalary ? "text-[#1e1b4b] dark:text-[#e0e7ff]" : "text-slate-700 dark:text-slate-200"}`}>{tx.note || "بدون بيان وملاحظات"}</span>
+                        <p className={`text-sm font-black ${
+                          isTransfer 
+                            ? "text-violet-200" 
+                            : isSalary 
+                              ? "text-[#4f46e5] dark:text-[#a5b4fc]" 
+                              : tx.kind === "gave"
+                                ? "text-emerald-700 dark:text-emerald-400"
+                                : "text-rose-700 dark:text-rose-400"
+                        }`}>
+                          ملاحظة: <span className={`font-bold ${
+                            isTransfer 
+                              ? "text-white" 
+                              : isSalary 
+                                ? "text-[#1e1b4b] dark:text-[#e0e7ff]" 
+                                : tx.kind === "gave"
+                                  ? "text-emerald-950 dark:text-slate-200"
+                                  : "text-rose-950 dark:text-slate-200"
+                          }`}>{tx.note || "بدون بيان وملاحظات"}</span>
                         </p>
 
                         {tx.imageUrl && (

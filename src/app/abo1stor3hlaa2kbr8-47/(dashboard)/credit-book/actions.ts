@@ -579,24 +579,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
 
         const balance = manualBalance + autoBalance;
 
-        // إذا كان المحل مصفراً بالكامل ومضى على آخر نشاط له أكثر من 5 ساعات، يتم إخفاؤه تلقائياً
-        if (p.type === "shop" && balance === 0) {
-          const fiveHours = 5 * 60 * 60 * 1000;
-          if (Date.now() - latestActivity > fiveHours) {
-            try {
-              await prisma.creditBookPartner.update({
-                where: { id: p.id },
-                data: {
-                  type: "deleted_shop",
-                  updatedAt: new Date()
-                }
-              });
-            } catch (err) {
-              console.error(`Failed to auto-hide zero balance shop ${p.name}:`, err);
-            }
-            return null;
-          }
-        }
+        // تم إلغاء الإخفاء التلقائي للمحلات المصفرة لكي لا تختفي الحسابات وتاريخ معاملاتها فجأة دون علم المستخدم
 
         return {
           id: p.id,
@@ -1713,13 +1696,10 @@ export async function getUnaddedSystemPartners(type: PartnerType) {
       return [];
     }
 
-    // جلب معرفات الأطراف المضافة بالفعل لنفس النوع (نشطة ومحذوفة)
+    // جلب معرفات الأطراف المضافة بالفعل لنفس النوع (النشطة فقط - لإتاحة إمكانية استعادة المحذوفة ناعماً)
     const addedExternalIds = await prisma.creditBookPartner.findMany({
       where: {
-        OR: [
-          { type },
-          { type: { startsWith: `deleted_${type}` } }
-        ]
+        type
       },
       select: { externalId: true }
     }).then(list => list.map(p => p.externalId).filter(Boolean) as string[]);
