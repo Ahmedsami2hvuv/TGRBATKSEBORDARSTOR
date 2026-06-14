@@ -29,6 +29,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.Executor
+import com.onesignal.OneSignal
 
 class MainActivity : AppCompatActivity() {
 
@@ -66,6 +67,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // تهيئة OneSignal للإشعارات الفورية
+        OneSignal.initWithContext(this, "aa21547a-4853-4ced-8823-6fd8c778b7b1")
 
         // Initialize Views
         webView = findViewById(R.id.webView)
@@ -409,6 +413,9 @@ class MainActivity : AppCompatActivity() {
     private fun launchDashboard(token: String) {
         currentToken = token
         startPolling()
+
+        // ربط هوية الجهاز بـ admin_global لتلقي إشعارات الإدارة الفورية
+        OneSignal.login("admin_global")
 
         // Programmatically inject cookie
         val cookieManager = CookieManager.getInstance()

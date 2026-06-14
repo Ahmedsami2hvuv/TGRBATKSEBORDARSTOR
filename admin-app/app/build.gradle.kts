@@ -42,6 +42,7 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
+    implementation("com.onesignal:OneSignal:[5.0.0, 5.99.99]")
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
