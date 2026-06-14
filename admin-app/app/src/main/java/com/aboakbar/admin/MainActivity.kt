@@ -30,6 +30,8 @@ import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.Executor
 import com.onesignal.OneSignal
+import android.app.AlarmManager
+import android.os.SystemClock
 
 class MainActivity : AppCompatActivity() {
 
@@ -433,9 +435,19 @@ class MainActivity : AppCompatActivity() {
                         val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         sharedPreferences.edit().remove(KEY_TOKEN).apply()
 
-                        // إيقاف خدمة البولينغ عند تسجيل الخروج أو انتهاء الجلسة
-                        val serviceIntent = Intent(this@MainActivity, NotificationPollingService::class.java)
-                        stopService(serviceIntent)
+                        // إلغاء المنبه الدوري عند انتهاء الجلسة أو تسجيل الخروج
+                        try {
+                            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                            val alarmIntent = Intent(this@MainActivity, OrderPollingReceiver::class.java)
+                            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                PendingIntent.getBroadcast(this@MainActivity, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                            } else {
+                                PendingIntent.getBroadcast(this@MainActivity, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+                            }
+                            alarmManager.cancel(flags)
+                        } catch (e: Exception) {
+                            // تجاهل
+                        }
 
                         showLoginLayout()
                     }
@@ -447,12 +459,23 @@ class MainActivity : AppCompatActivity() {
     private fun launchDashboard(token: String) {
         currentToken = token
 
-        // تشغيل خدمة الفحص الدوري الدائمة في الخلفية
-        val serviceIntent = Intent(this, NotificationPollingService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(serviceIntent)
-        } else {
-            startService(serviceIntent)
+        // جدولة المنبه الأول للفحص الدوري في الخلفية
+        try {
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val alarmIntent = Intent(this, OrderPollingReceiver::class.java)
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.getBroadcast(this, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            } else {
+                PendingIntent.getBroadcast(this, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+            }
+            val triggerTime = android.os.SystemClock.elapsedRealtime() + 1000
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, flags)
+            } else {
+                alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, flags)
+            }
+        } catch (e: Exception) {
+            // تجاهل
         }
 
         // ربط هوية الجهاز بـ admin_global لتلقي إشعارات الإدارة الفورية
