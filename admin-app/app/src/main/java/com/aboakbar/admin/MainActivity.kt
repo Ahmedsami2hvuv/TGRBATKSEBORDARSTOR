@@ -142,6 +142,36 @@ class MainActivity : AppCompatActivity() {
 
         if (toRequest.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, toRequest.toTypedArray(), 101)
+        } else {
+            checkOverlayPermission()
+        }
+    }
+
+    private fun checkOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!android.provider.Settings.canDrawOverlays(this)) {
+                try {
+                    val intent = Intent(
+                        android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:$packageName")
+                    )
+                    startActivity(intent)
+                    Toast.makeText(this, "يرجى تفعيل خيار (الظهور فوق التطبيقات الأخرى) لكي تعمل الإشعارات المنبثقة الإجبارية بنجاح", Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    // تجاهل فشل التوجيه للأجهزة النادرة
+                }
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 101) {
+            checkOverlayPermission()
         }
     }
 
@@ -496,6 +526,13 @@ class MainActivity : AppCompatActivity() {
                     val json = JSONObject(responseBody)
                     val pendingCount = json.optInt("pendingCount", 0)
                     val latestOrderNumber = json.optInt("latestOrderNumber", 0)
+                    val details = json.optJSONObject("latestOrderDetails")
+
+                    val shopName = details?.optString("shopName", "—") ?: "—"
+                    val regionName = details?.optString("regionName", "—") ?: "—"
+                    val orderTime = details?.optString("orderTime", "فوري") ?: "فوري"
+                    val orderType = details?.optString("orderType", "—") ?: "—"
+                    val subtotal = details?.optInt("subtotal", 0) ?: 0
 
                     runOnUiThread {
                         if (latestOrderNumber > 0 && lastSeenOrderNumber > 0 && latestOrderNumber > lastSeenOrderNumber) {
@@ -503,7 +540,25 @@ class MainActivity : AppCompatActivity() {
                             val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                             sharedPreferences.edit().putInt("last_seen_order_number", lastSeenOrderNumber).apply()
 
-                            showNativeNotification(latestOrderNumber, pendingCount)
+                            // عرض الإشعار المنبثق
+                            showNativeNotification(latestOrderNumber, pendingCount, shopName, regionName, orderTime, orderType, subtotal)
+
+                            // تشغيل الشاشة المنبثقة الإجبارية
+                            try {
+                                val alertIntent = Intent(this@MainActivity, OrderAlertActivity::class.java).apply {
+                                    putExtra("shopName", shopName)
+                                    putExtra("regionName", regionName)
+                                    putExtra("orderTime", orderTime)
+                                    putExtra("orderType", orderType)
+                                    putExtra("subtotal", subtotal)
+                                    putExtra("pendingCount", pendingCount)
+                                    putExtra("orderNumber", latestOrderNumber)
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                                }
+                                startActivity(alertIntent)
+                            } catch (e: Exception) {
+                                // تجاهل أي فشل في فتح الواجهة
+                            }
                         } else if (latestOrderNumber > 0 && lastSeenOrderNumber == 0) {
                             lastSeenOrderNumber = latestOrderNumber
                             val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -532,7 +587,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showNativeNotification(orderNumber: Int, count: Int) {
+    private fun showNativeNotification(
+        orderNumber: Int,
+        count: Int,
+        shopName: String,
+        regionName: String,
+        orderTime: String,
+        orderType: String,
+        subtotal: Int
+    ) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         val intent = Intent(this, MainActivity::class.java).apply {
@@ -547,8 +610,11 @@ class MainActivity : AppCompatActivity() {
 
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, flags)
 
-        val title = "طلب جديد وارد! (#$orderNumber)"
-        val body = "هناك طلب جديد معلق في النظام. إجمالي الطلبات المعلقة: $count"
+        // تايتل الاشعار: اسم المحل و اسم المنطقة
+        val title = "$shopName — $regionName"
+
+        // نص الاشعار: وقت الطلب نوع الطلب سعر الطلب بدون توصيل
+        val body = "⏰ $orderTime | 📦 $orderType | 💵 ${formatNumber(subtotal)} د.ع"
 
         val notification = androidx.core.app.NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_chat)
@@ -561,6 +627,14 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         notificationManager.notify(orderNumber, notification)
+    }
+
+    private fun formatNumber(num: Int): String {
+        return try {
+            String.format("%,d", num)
+        } catch (e: Exception) {
+            num.toString()
+        }
     }
 
     override fun onDestroy() {
