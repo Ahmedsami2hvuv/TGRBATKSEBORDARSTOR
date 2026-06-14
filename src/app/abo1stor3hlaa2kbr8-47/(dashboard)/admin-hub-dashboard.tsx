@@ -41,10 +41,10 @@ function NeonBox({ t, colorClass, sizeClass, icons }: { t: AdminTile | undefined
   );
 }
 
-function NeonPill({ t, colorClass, icons }: { t: AdminTile | undefined; colorClass: string; icons: GlobalIconsConfig | null }) {
+function NeonPill({ t, colorClass, icons, isFullWidthOnMobile = false }: { t: AdminTile | undefined; colorClass: string; icons: GlobalIconsConfig | null; isFullWidthOnMobile?: boolean }) {
   if (!t) return null;
   return (
-    <div className="relative group w-[280px] flex justify-end items-center mb-5">
+    <div className={`relative group w-full lg:w-[280px] ${isFullWidthOnMobile ? 'col-span-2 md:col-span-1 mx-auto max-w-[280px] lg:max-w-none' : ''} flex justify-end items-center mb-2 lg:mb-5`}>
       {/* Connector line simulating graphic tree - pointing physically to the right (dashboard center) */}
       <div className={`hidden lg:block absolute top-1/2 w-[40px] h-[2px] -right-[40px] bg-gradient-to-r opacity-60 ${colorClass.includes('orange') ? 'from-[#ff9100]' : (colorClass.includes('purple') ? 'from-[#e028ff]' : 'from-[#00f3ff]')} to-transparent rounded-full`} />
       
@@ -125,24 +125,18 @@ export function AdminHubDashboard() {
           )}
         </div>
 
-        {/* Right Side Connected Pills Panel (RTL places it physically to the left side if flex-row, wait. 
-            flex-row in RTL means the first child is on the Right! So the flex-1 container above is right.
-            We want pills to be on the opposite end, or exactly mapped? 
-            Mockup: Big Cards on Left, Pills on Right. 
-            If website is Arabic RTL, "اليمين" means start. 
-            To force physical layout matching mockup, I'll use lg:flex-row-reverse.
-        */}
-        <div className="w-full lg:w-[320px] flex-shrink-0 relative hidden sm:flex flex-col items-center lg:items-end justify-start pt-8 lg:pt-10">
+        {/* Right Side Connected Pills Panel */}
+        <div className="w-full lg:w-[320px] flex-shrink-0 relative flex flex-col items-center lg:items-end justify-start pt-8 lg:pt-10">
             
             {/* The underlying connecting network line */}
             <div className="hidden lg:block absolute right-0 top-16 h-[380px] w-16 border-r-2 border-y-2 border-[rgba(0,243,255,0.15)] rounded-r-full -z-10" />
 
-            <div className="flex flex-col w-[280px] relative z-10">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:flex lg:flex-col gap-3 lg:gap-0 w-full max-w-[560px] lg:w-[280px] relative z-10 px-4 lg:px-0">
                <NeonPill t={bySlug["shops"]} colorClass="neon-pill-cyan" icons={icons} />
                <NeonPill t={bySlug["couriers"]} colorClass="neon-pill-cyan" icons={icons} />
                <NeonPill t={bySlug["preparers"]} colorClass="neon-pill-cyan" icons={icons} />
                <NeonPill t={bySlug["employees"]} colorClass="neon-pill-cyan" icons={icons} />
-               <NeonPill t={bySlug["regions"]} colorClass="neon-pill-cyan" icons={icons} />
+               <NeonPill t={bySlug["regions"]} colorClass="neon-pill-cyan" icons={icons} isFullWidthOnMobile={true} />
             </div>
             
         </div>
