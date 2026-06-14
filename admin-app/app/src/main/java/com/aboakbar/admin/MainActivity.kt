@@ -521,6 +521,42 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // التحقق التدريجي من الصلاحيات الإضافية عند العودة للتطبيق
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (android.provider.Settings.canDrawOverlays(this)) {
+                checkBatteryOptimizations()
+            }
+        }
+    }
+
+    private fun checkBatteryOptimizations() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val packageName = packageName
+            val pm = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                try {
+                    val intent = Intent().apply {
+                        action = android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                        data = Uri.parse("package:$packageName")
+                    }
+                    startActivity(intent)
+                    Toast.makeText(this, "يرجى اختيار (السماح / Allow) لتعطيل تحسين البطارية لضمان وصول الإشعارات بالخلفية دائماً", Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    try {
+                        val intent = Intent().apply {
+                            action = android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS
+                        }
+                        startActivity(intent)
+                    } catch (ex: Exception) {
+                        // تجاهل
+                    }
+                }
+            }
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
     }
