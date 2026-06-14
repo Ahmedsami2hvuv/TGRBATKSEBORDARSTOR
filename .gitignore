@@ -47,3 +47,21 @@ repomix-output.xml
 .idea/caches/deviceStreaming.xml
 
 .vercel
+
+# Android / Gradle temporary build files
+.gradle/
+**/build/
+**/app/build/
+**/local.properties
+.navigation/
+captures/
+*.apk
+*.aar
+*.klib
+/admin-app/local.properties
+/admin-app/.gradle/
+/admin-app/app/build/
+/admin-app/build/
+
+# Exception: keep root APK tracked
+!/AboAkbarAdmin.apk
