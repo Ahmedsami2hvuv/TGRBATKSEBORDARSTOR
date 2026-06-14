@@ -1370,6 +1370,10 @@ export async function deletePartner(partnerId: string) {
       });
     } else {
       // إذا كان شريكاً خارجياً غير مرتبط بالنظام، نحذفه نهائياً
+      // نحذف أولاً معاملاته لتجنب قيد المفتاح الأجنبي
+      await prisma.creditBookTransaction.deleteMany({
+        where: { partnerId }
+      });
       await prisma.creditBookPartner.delete({
         where: { id: partnerId },
       });
@@ -1415,8 +1419,14 @@ export async function deletePartnersBatch(partnerIds: string[]) {
 
     if (manualOnly.length > 0) {
       // حذف الأطراف اليدوية نهائياً
+      const manualIds = manualOnly.map(p => p.id);
+      // نحذف أولاً كافة المعاملات المرتبطة بهؤلاء الشركاء اليدويين لتجنب قيود المفتاح الأجنبي
+      await prisma.creditBookTransaction.deleteMany({
+        where: { partnerId: { in: manualIds } }
+      });
+      // ثم نحذف الشركاء اليدويين نهائياً
       await prisma.creditBookPartner.deleteMany({
-        where: { id: { in: manualOnly.map(p => p.id) } }
+        where: { id: { in: manualIds } }
       });
     }
 
