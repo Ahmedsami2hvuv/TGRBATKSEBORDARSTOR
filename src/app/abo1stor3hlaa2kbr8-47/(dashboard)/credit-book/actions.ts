@@ -39,7 +39,7 @@ async function getShopAutoDebt(shopId: string): Promise<number> {
     where: {
       shopId,
       shopCostPaidAt: null,
-      status: { notIn: ["cancelled"] },
+      status: { in: ["delivered", "archived"] },
       orderSubtotal: { gt: 0 }
     },
     select: {
@@ -171,7 +171,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
         const shopsWithUnpaidOrders = await prisma.order.findMany({
           where: {
             shopCostPaidAt: null,
-            status: { notIn: ["cancelled"] },
+            status: { in: ["delivered", "archived"] },
             orderSubtotal: { gt: 0 }
           },
           select: { shopId: true },
@@ -685,7 +685,7 @@ export async function getPartnerDetails(partnerId: string) {
               id: `auto-courier-money-event-in-${me.id}`,
               partnerId: partner.id,
               amount: amt,
-              kind: "took", // أخذت = دين عليه للإدارة
+              kind: "gave", // أعطيت = زيادة الذمة/نطلبه
               note: `طلب توصيل #${me.order?.orderNumber || "—"} | استلام مبلغ من الزبون (المنطقة: ${me.order?.customerRegion?.name || "—"})`,
               createdAt: me.createdAt,
               updatedAt: me.createdAt,
@@ -696,7 +696,7 @@ export async function getPartnerDetails(partnerId: string) {
               id: `auto-courier-money-event-out-${me.id}`,
               partnerId: partner.id,
               amount: amt,
-              kind: "gave", // أعطيت = تسديد للذمة
+              kind: "took", // أخذت = تسديد للذمة
               note: `طلب #${me.order?.orderNumber || "—"} | تسليم مبلغ للمجهز/المحل`,
               createdAt: me.createdAt,
               updatedAt: me.createdAt,
@@ -722,7 +722,7 @@ export async function getPartnerDetails(partnerId: string) {
             id: `auto-courier-misc-${me.id}`,
             partnerId: partner.id,
             amount: amt,
-            kind: me.direction === "take" ? "took" : "gave",
+            kind: me.direction === "take" ? "gave" : "took",
             note: me.label || "قيد يدوي في المحفظة للمندوب",
             createdAt: me.createdAt,
             updatedAt: me.createdAt,
@@ -748,7 +748,7 @@ export async function getPartnerDetails(partnerId: string) {
             id: `auto-courier-transfer-admin-${t.id}`,
             partnerId: partner.id,
             amount: amt,
-            kind: "gave", // أعطيت
+            kind: "took", // أخذت = تسديد للذمة
             note: `تحويل للإدارة (مقبول) | ${t.handoverLocation || "—"}${t.notes ? ` (${t.notes})` : ""}`,
             createdAt: t.createdAt,
             updatedAt: t.createdAt,
@@ -779,7 +779,7 @@ export async function getPartnerDetails(partnerId: string) {
             id: `auto-courier-earning-${o.id}`,
             partnerId: partner.id,
             amount: amt,
-            kind: "gave", // أعطيت = يخصم من ذمة المندوب لصالحه
+            kind: "took", // أخذت = تسوية تخصم من ذمة المندوب لصالحه
             note: `أرباح التوصيل للطلب #${o.orderNumber}`,
             createdAt: o.deliveredAt || o.createdAt,
             updatedAt: o.deliveredAt || o.createdAt,
@@ -834,7 +834,7 @@ export async function getPartnerDetails(partnerId: string) {
                   id: `auto-preparer-money-event-in-${me.id}`,
                   partnerId: partner.id,
                   amount: amt,
-                  kind: "took", // أخذت
+                  kind: "gave", // أعطيت = زيادة الذمة/نطلبه
                   note: `طلب #${me.order?.orderNumber || "—"} | استلام دفعة من المندوب/الزبون`,
                   createdAt: me.createdAt,
                   updatedAt: me.createdAt,
@@ -845,7 +845,7 @@ export async function getPartnerDetails(partnerId: string) {
                   id: `auto-preparer-money-event-out-${me.id}`,
                   partnerId: partner.id,
                   amount: amt,
-                  kind: "gave", // أعطيت
+                  kind: "took", // أخذت = تسديد للذمة
                   note: `طلب #${me.order?.orderNumber || "—"} | تسليم مبلغ للمحل`,
                   createdAt: me.createdAt,
                   updatedAt: me.createdAt,
@@ -870,16 +870,16 @@ export async function getPartnerDetails(partnerId: string) {
               const amt = Number(me.amountDinar || 0);
               if (amt <= 0) continue;
 
-              autoTransactions.push({
-                id: `auto-preparer-misc-${me.id}`,
-                partnerId: partner.id,
-                amount: amt,
-                kind: me.direction === "take" ? "took" : "gave",
-                note: me.label || "قيد يدوي في المحفظة للمجهز",
-                createdAt: me.createdAt,
-                updatedAt: me.createdAt,
-                isAuto: true
-              });
+            autoTransactions.push({
+              id: `auto-preparer-misc-${me.id}`,
+              partnerId: partner.id,
+              amount: amt,
+              kind: me.direction === "take" ? "gave" : "took",
+              note: me.label || "قيد يدوي في المحفظة للمجهز",
+              createdAt: me.createdAt,
+              updatedAt: me.createdAt,
+              isAuto: true
+            });
             }
 
             // 3. التحويلات المقبولة للإدارة
@@ -900,7 +900,7 @@ export async function getPartnerDetails(partnerId: string) {
                 id: `auto-preparer-transfer-admin-${t.id}`,
                 partnerId: partner.id,
                 amount: amt,
-                kind: "gave", // أعطيت
+                kind: "took", // أخذت = تسديد للذمة
                 note: `تحويل للإدارة (مقبول) | ${t.handoverLocation || "—"}${t.notes ? ` (${t.notes})` : ""}`,
                 createdAt: t.createdAt,
                 updatedAt: t.createdAt,
@@ -925,7 +925,7 @@ export async function getPartnerDetails(partnerId: string) {
                 id: `auto-preparer-transfer-pending-${t.id}`,
                 partnerId: partner.id,
                 amount: amt,
-                kind: "gave", // أعطيت
+                kind: "took", // أخذت = تسوية تخصم من ذمته
                 note: `تحويل صادر معلق | ${t.handoverLocation || "—"}${t.notes ? ` (${t.notes})` : ""}`,
                 createdAt: t.createdAt,
                 updatedAt: t.createdAt,
@@ -944,7 +944,7 @@ export async function getPartnerDetails(partnerId: string) {
           where: {
             shopId: partner.externalId,
             shopCostPaidAt: null,
-            status: { notIn: ["cancelled"] },
+            status: { in: ["delivered", "archived"] },
             orderSubtotal: { gt: 0 }
           },
           include: {
@@ -1910,7 +1910,7 @@ export async function zeroPartnerAccount(partnerId: string) {
         where: {
           shopId: partner.externalId,
           shopCostPaidAt: null,
-          status: { notIn: ["cancelled"] },
+          status: { in: ["delivered", "archived"] },
           orderSubtotal: { gt: 0 }
         },
         include: {
