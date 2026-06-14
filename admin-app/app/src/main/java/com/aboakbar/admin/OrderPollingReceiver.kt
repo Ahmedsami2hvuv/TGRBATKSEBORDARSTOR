@@ -197,18 +197,39 @@ class OrderPollingReceiver : BroadcastReceiver() {
     ) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+        // نية فتح التطبيق الرئيسي عند النقر العادي
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra("target_url", "https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/orders/pending")
         }
 
-        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         } else {
             PendingIntent.FLAG_UPDATE_CURRENT
         }
 
-        val pendingIntent = PendingIntent.getActivity(context, 0, intent, flags)
+        val pendingIntent = PendingIntent.getActivity(context, 0, intent, pendingIntentFlags)
+
+        // نية تشغيل الشاشة المنبثقة الإجبارية ملء الشاشة
+        val alertIntent = Intent(context, OrderAlertActivity::class.java).apply {
+            putExtra("shopName", shopName)
+            putExtra("regionName", regionName)
+            putExtra("orderTime", orderTime)
+            putExtra("orderType", orderType)
+            putExtra("subtotal", subtotal)
+            putExtra("pendingCount", count)
+            putExtra("orderNumber", orderNumber)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+        // نستخدم FLAG_MUTABLE للسماح بنقل البيانات المتغيرة عبر النية للأجهزة الحديثة
+        val alertFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        val alertPendingIntent = PendingIntent.getActivity(context, orderNumber, alertIntent, alertFlags)
 
         val title = "$shopName — $regionName"
         val body = "⏰ $orderTime | 📦 $orderType | 💵 ${formatNumber(subtotal)} د.ع"
@@ -217,10 +238,12 @@ class OrderPollingReceiver : BroadcastReceiver() {
             .setSmallIcon(android.R.drawable.stat_notify_chat)
             .setContentTitle(title)
             .setContentText(body)
-            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_MAX) // رفع الأولوية للقصوى لضمان الانبثاق
+            .setCategory(androidx.core.app.NotificationCompat.CATEGORY_CALL) // فئة تنبيه أو اتصال عالي الأهمية
             .setDefaults(androidx.core.app.NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
+            .setFullScreenIntent(alertPendingIntent, true) // تفعيل ملء الشاشة الإجباري كـ Fallback قوي جداً
             .build()
 
         notificationManager.notify(orderNumber, notification)
