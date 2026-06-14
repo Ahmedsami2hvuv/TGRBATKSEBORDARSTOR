@@ -29,15 +29,16 @@ class OrderForegroundService : Service() {
     private val FOREGROUND_NOTIFICATION_ID = 9999
 
     private var wakeLock: PowerManager.WakeLock? = null
-    private val handler = Handler(Looper.getMainLooper())
+    private var serviceThread: android.os.HandlerThread? = null
+    private var serviceHandler: Handler? = null
     private var isRunning = false
 
     private val checkRunnable = object : Runnable {
         override fun run() {
             if (isRunning) {
                 checkPendingOrders()
-                // إعادة جدولة الفحص بعد 15 ثانية
-                handler.postDelayed(this, 15000)
+                // إعادة جدولة الفحص بعد 15 ثانية على الخيط الخلفي
+                serviceHandler?.postDelayed(this, 15000)
             }
         }
     }
@@ -48,10 +49,16 @@ class OrderForegroundService : Service() {
         super.onCreate()
         createNotificationChannels()
         
+        // إعداد خيط خلفي مخصص لتشغيل فترات الفحص بانتظام ودون تأثر بالخلفية
+        serviceThread = android.os.HandlerThread("OrderServiceThread", android.os.Process.THREAD_PRIORITY_BACKGROUND).apply {
+            start()
+        }
+        serviceHandler = Handler(serviceThread!!.looper)
+
         // إبقاء المعالج مستيقظاً لضمان عدم تجميد الاتصال بالشبكة
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AboAkbar::OrderServiceWakeLock").apply {
-            acquire(10 * 60 * 1000L /* 10 minutes fallback */)
+            acquire() // إبقاء القفل مفعلاً بشكل دائم بدون مهلة 10 دقائق
         }
     }
 
@@ -71,8 +78,8 @@ class OrderForegroundService : Service() {
                 startForeground(FOREGROUND_NOTIFICATION_ID, notification)
             }
 
-            // البدء الفوري للفحص الدوري
-            handler.post(checkRunnable)
+            // البدء الفوري للفحص الدوري على الخيط الخلفي
+            serviceHandler?.post(checkRunnable)
         }
         return START_STICKY
     }
@@ -295,7 +302,8 @@ class OrderForegroundService : Service() {
 
     override fun onDestroy() {
         isRunning = false
-        handler.removeCallbacks(checkRunnable)
+        serviceHandler?.removeCallbacks(checkRunnable)
+        serviceThread?.quitSafely()
         try {
             if (wakeLock?.isHeld == true) {
                 wakeLock?.release()

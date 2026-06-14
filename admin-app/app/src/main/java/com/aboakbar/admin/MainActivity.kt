@@ -435,16 +435,10 @@ class MainActivity : AppCompatActivity() {
                         val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         sharedPreferences.edit().remove(KEY_TOKEN).apply()
 
-                        // إلغاء المنبه الدوري عند انتهاء الجلسة أو تسجيل الخروج
+                        // إيقاف الخدمة الأمامية عند انتهاء الجلسة أو تسجيل الخروج
                         try {
-                            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                            val alarmIntent = Intent(this@MainActivity, OrderPollingReceiver::class.java)
-                            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                PendingIntent.getBroadcast(this@MainActivity, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-                            } else {
-                                PendingIntent.getBroadcast(this@MainActivity, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT)
-                            }
-                            alarmManager.cancel(flags)
+                            val serviceIntent = Intent(this@MainActivity, OrderForegroundService::class.java)
+                            stopService(serviceIntent)
                         } catch (e: Exception) {
                             // تجاهل
                         }
@@ -459,9 +453,14 @@ class MainActivity : AppCompatActivity() {
     private fun launchDashboard(token: String) {
         currentToken = token
 
-        // جدولة المنبه الأول للفحص الدوري في الخلفية
+        // تشغيل الخدمة الأمامية لمراقبة الطلبات باستمرار بالخلفية
         try {
-            OrderPollingReceiver.startAlarm(this)
+            val serviceIntent = Intent(this, OrderForegroundService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
         } catch (e: Exception) {
             // تجاهل
         }
