@@ -59,9 +59,10 @@ class OrderAlertActivity : Activity() {
 
         // أزرار التحكم
         findViewById<Button>(R.id.btnOpenApp).setOnClickListener {
-            // فتح التطبيق الرئيسي
+            // فتح التطبيق الرئيسي وتمرير رابط الطلبات المعلقة مباشرة
             val mainIntent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("target_url", "https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/orders/pending")
             }
             startActivity(mainIntent)
             finish()
@@ -71,19 +72,13 @@ class OrderAlertActivity : Activity() {
             finish()
         }
 
-        // تشغيل صوت تنبيه مستمر وارتجاج
+        // تشغيل الاهتزاز فقط
         playNotificationEffects()
     }
 
     private fun playNotificationEffects() {
         try {
-            // تشغيل صوت الرنين الافتراضي للتنبيهات أو المكالمات
-            val alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            ringtone = RingtoneManager.getRingtone(applicationContext, alertUri)
-            ringtone?.play()
-
-            // تشغيل الارتجاج
+            // تشغيل الارتجاج فقط لتجنب تداخل النغمات المزدوجة
             vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
                 vibratorManager.defaultVibrator
@@ -101,7 +96,7 @@ class OrderAlertActivity : Activity() {
                 vibrator?.vibrate(pattern, -1)
             }
         } catch (e: Exception) {
-            // تجاهل أي خطأ في تشغيل المؤثرات الصوتية
+            // تجاهل
         }
     }
 
@@ -114,9 +109,8 @@ class OrderAlertActivity : Activity() {
     }
 
     override fun onDestroy() {
-        // إيقاف الرنين والارتجاج عند إغلاق النافذة
+        // إيقاف الارتجاج عند إغلاق النافذة
         try {
-            ringtone?.stop()
             vibrator?.cancel()
         } catch (e: Exception) {
             // تجاهل

@@ -118,9 +118,8 @@ class MainActivity : AppCompatActivity() {
             biometricPrompt.authenticate(promptInfo)
         }
 
-        // استرداد آخر رقم طلب مسجل وتفعيل قناة الإشعارات
+        // استرداد آخر رقم طلب مسجل
         lastSeenOrderNumber = sharedPreferences.getInt("last_seen_order_number", 0)
-        createNotificationChannel()
 
         requestAppPermissions()
     }
@@ -433,6 +432,11 @@ class MainActivity : AppCompatActivity() {
                         // Token expired, show login
                         val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         sharedPreferences.edit().remove(KEY_TOKEN).apply()
+
+                        // إيقاف خدمة البولينغ عند تسجيل الخروج أو انتهاء الجلسة
+                        val serviceIntent = Intent(this@MainActivity, NotificationPollingService::class.java)
+                        stopService(serviceIntent)
+
                         showLoginLayout()
                     }
                 }
@@ -442,7 +446,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun launchDashboard(token: String) {
         currentToken = token
-        startPolling()
+
+        // تشغيل خدمة الفحص الدوري الدائمة في الخلفية
+        val serviceIntent = Intent(this, NotificationPollingService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
 
         // ربط هوية الجهاز بـ admin_global لتلقي إشعارات الإدارة الفورية
         OneSignal.login("admin_global")
@@ -456,7 +467,9 @@ class MainActivity : AppCompatActivity() {
         // Hide Login and show WebView
         loginLayout.visibility = View.GONE
         webView.visibility = View.VISIBLE
-        webView.loadUrl(ADMIN_DASHBOARD_URL)
+
+        val targetUrl = intent.getStringExtra("target_url") ?: ADMIN_DASHBOARD_URL
+        webView.loadUrl(targetUrl)
     }
 
     private fun showLoginLayout() {
@@ -488,157 +501,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun startPolling() {
-        if (isPollingActive) return
-        isPollingActive = true
-        pollingRunnable = object : Runnable {
-            override fun run() {
-                pollPendingOrders()
-                pollingHandler.postDelayed(this, 10000) // فحص كل 10 ثوانٍ
-            }
-        }
-        pollingHandler.post(pollingRunnable!!)
-    }
-
-    private fun stopPolling() {
-        isPollingActive = false
-        pollingRunnable?.let { pollingHandler.removeCallbacks(it) }
-    }
-
-    private fun pollPendingOrders() {
-        val token = currentToken ?: return
-
-        val request = Request.Builder()
-            .url("$BACKEND_URL/api/notifications/admin-pending")
-            .addHeader("Cookie", "admin_token=$token")
-            .get()
-            .build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                // تجاهل أخطاء الشبكة المؤقتة
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                if (!response.isSuccessful) return
-                val responseBody = response.body?.string() ?: return
-                try {
-                    val json = JSONObject(responseBody)
-                    val pendingCount = json.optInt("pendingCount", 0)
-                    val latestOrderNumber = json.optInt("latestOrderNumber", 0)
-                    val details = json.optJSONObject("latestOrderDetails")
-
-                    val shopName = details?.optString("shopName", "—") ?: "—"
-                    val regionName = details?.optString("regionName", "—") ?: "—"
-                    val orderTime = details?.optString("orderTime", "فوري") ?: "فوري"
-                    val orderType = details?.optString("orderType", "—") ?: "—"
-                    val subtotal = details?.optInt("subtotal", 0) ?: 0
-
-                    runOnUiThread {
-                        if (latestOrderNumber > 0 && lastSeenOrderNumber > 0 && latestOrderNumber > lastSeenOrderNumber) {
-                            lastSeenOrderNumber = latestOrderNumber
-                            val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                            sharedPreferences.edit().putInt("last_seen_order_number", lastSeenOrderNumber).apply()
-
-                            // عرض الإشعار المنبثق
-                            showNativeNotification(latestOrderNumber, pendingCount, shopName, regionName, orderTime, orderType, subtotal)
-
-                            // تشغيل الشاشة المنبثقة الإجبارية
-                            try {
-                                val alertIntent = Intent(this@MainActivity, OrderAlertActivity::class.java).apply {
-                                    putExtra("shopName", shopName)
-                                    putExtra("regionName", regionName)
-                                    putExtra("orderTime", orderTime)
-                                    putExtra("orderType", orderType)
-                                    putExtra("subtotal", subtotal)
-                                    putExtra("pendingCount", pendingCount)
-                                    putExtra("orderNumber", latestOrderNumber)
-                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                                }
-                                startActivity(alertIntent)
-                            } catch (e: Exception) {
-                                // تجاهل أي فشل في فتح الواجهة
-                            }
-                        } else if (latestOrderNumber > 0 && lastSeenOrderNumber == 0) {
-                            lastSeenOrderNumber = latestOrderNumber
-                            val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                            sharedPreferences.edit().putInt("last_seen_order_number", lastSeenOrderNumber).apply()
-                        }
-                    }
-                } catch (e: Exception) {
-                    // تجاهل أخطاء التحليل
-                }
-            }
-        })
-    }
-
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "إشعارات الطلبات"
-            val descriptionText = "تنبيهات عند وصول طلبات جديدة للنظام"
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
-                description = descriptionText
-                enableLights(true)
-                enableVibration(true)
-            }
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
-    private fun showNativeNotification(
-        orderNumber: Int,
-        count: Int,
-        shopName: String,
-        regionName: String,
-        orderTime: String,
-        orderType: String,
-        subtotal: Int
-    ) {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
-
-        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        } else {
-            PendingIntent.FLAG_UPDATE_CURRENT
-        }
-
-        val pendingIntent = PendingIntent.getActivity(this, 0, intent, flags)
-
-        // تايتل الاشعار: اسم المحل و اسم المنطقة
-        val title = "$shopName — $regionName"
-
-        // نص الاشعار: وقت الطلب نوع الطلب سعر الطلب بدون توصيل
-        val body = "⏰ $orderTime | 📦 $orderType | 💵 ${formatNumber(subtotal)} د.ع"
-
-        val notification = androidx.core.app.NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_notify_chat)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
-            .setDefaults(androidx.core.app.NotificationCompat.DEFAULT_ALL)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-            .build()
-
-        notificationManager.notify(orderNumber, notification)
-    }
-
-    private fun formatNumber(num: Int): String {
-        return try {
-            String.format("%,d", num)
-        } catch (e: Exception) {
-            num.toString()
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val targetUrl = intent?.getStringExtra("target_url")
+        if (!targetUrl.isNullOrEmpty() && webView.visibility == View.VISIBLE) {
+            webView.loadUrl(targetUrl)
         }
     }
 
     override fun onDestroy() {
-        stopPolling()
         super.onDestroy()
     }
 }
