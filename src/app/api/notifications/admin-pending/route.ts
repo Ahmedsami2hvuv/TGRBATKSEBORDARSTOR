@@ -1,13 +1,24 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { isAdminSession } from "@/lib/admin-session";
+import { verifyAdminToken } from "@/lib/auth";
 import { audienceSettings, getOrCreateNotificationSettings } from "@/lib/notification-settings";
 import { prisma } from "@/lib/prisma";
 import { withEphemeralCache } from "@/lib/ephemeral-cache";
 
 export const runtime = "nodejs";
 
-export async function GET() {
-  if (!(await isAdminSession())) {
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const tokenParam = searchParams.get("token");
+
+  let authorized = false;
+  if (tokenParam) {
+    authorized = await verifyAdminToken(tokenParam);
+  } else {
+    authorized = await isAdminSession();
+  }
+
+  if (!authorized) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

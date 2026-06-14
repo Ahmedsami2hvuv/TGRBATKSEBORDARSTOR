@@ -461,19 +461,7 @@ class MainActivity : AppCompatActivity() {
 
         // جدولة المنبه الأول للفحص الدوري في الخلفية
         try {
-            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            val alarmIntent = Intent(this, OrderPollingReceiver::class.java)
-            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                PendingIntent.getBroadcast(this, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            } else {
-                PendingIntent.getBroadcast(this, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT)
-            }
-            val triggerTime = android.os.SystemClock.elapsedRealtime() + 1000
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, flags)
-            } else {
-                alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, flags)
-            }
+            OrderPollingReceiver.startAlarm(this)
         } catch (e: Exception) {
             // تجاهل
         }

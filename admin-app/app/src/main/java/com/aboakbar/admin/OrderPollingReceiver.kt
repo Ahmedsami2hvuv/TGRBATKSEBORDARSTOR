@@ -46,7 +46,7 @@ class OrderPollingReceiver : BroadcastReceiver() {
         }
 
         val request = Request.Builder()
-            .url("$BACKEND_URL/api/notifications/admin-pending")
+            .url("$BACKEND_URL/api/notifications/admin-pending?token=$token")
             .addHeader("Cookie", "admin_token=$token")
             .get()
             .build()
@@ -116,10 +116,45 @@ class OrderPollingReceiver : BroadcastReceiver() {
         // جدولة الفحص القادم بعد 15 ثانية بدقة متناهية
         val triggerTime = SystemClock.elapsedRealtime() + 15000
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, flags)
-        } else {
-            alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, flags)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, flags)
+            } else {
+                alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, flags)
+            }
+        } catch (e: SecurityException) {
+            // fallback to non-exact alarm if permission is missing on Android 12+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, flags)
+            } else {
+                alarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, flags)
+            }
+        }
+    }
+
+    companion object {
+        fun startAlarm(context: Context) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val intent = Intent(context, OrderPollingReceiver::class.java)
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            } else {
+                PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+            }
+            val triggerTime = SystemClock.elapsedRealtime() + 1000
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, flags)
+                } else {
+                    alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, flags)
+                }
+            } catch (e: SecurityException) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, flags)
+                } else {
+                    alarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, flags)
+                }
+            }
         }
     }
 
