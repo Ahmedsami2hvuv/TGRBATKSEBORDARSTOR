@@ -8,8 +8,7 @@ import { withEphemeralCache } from "@/lib/ephemeral-cache";
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const tokenParam = searchParams.get("token");
+  const tokenParam = request.nextUrl.searchParams.get("token");
 
   let authorized = false;
   if (tokenParam) {

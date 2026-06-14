@@ -88,6 +88,17 @@ class OrderPollingReceiver : BroadcastReceiver() {
 
                                 // تشغيل النافذة المنبثقة الإجبارية
                                 triggerPopupActivity(context, shopName, regionName, orderTime, orderType, subtotal, pendingCount, latestOrderNumber)
+
+                                // تشغيل الدائرة المنبثقة العائمة فوق جميع التطبيقات
+                                try {
+                                    val bubbleIntent = Intent(context, FloatingBubbleService::class.java).apply {
+                                        putExtra("pendingCount", pendingCount)
+                                        putExtra("orderNumber", latestOrderNumber)
+                                    }
+                                    context.startService(bubbleIntent)
+                                } catch (e: Exception) {
+                                    // تجاهل
+                                }
                             } else if (latestOrderNumber > 0 && lastSeenOrderNumber == 0) {
                                 sharedPreferences.edit().putInt("last_seen_order_number", latestOrderNumber).apply()
                             }
