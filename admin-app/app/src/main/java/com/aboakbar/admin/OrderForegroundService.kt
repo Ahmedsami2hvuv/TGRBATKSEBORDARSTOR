@@ -132,8 +132,6 @@ class OrderForegroundService : Service() {
                                 // تشغيل النافذة المنبثقة الإجبارية
                                 triggerPopupActivity(shopName, regionName, orderTime, orderType, subtotal, pendingCount, latestOrderNumber)
 
-                                // تشغيل الدائرة العائمة التنبيهية
-                                triggerFloatingBubble(pendingCount, latestOrderNumber)
                             } else if (latestOrderNumber > 0 && lastSeenOrderNumber == 0) {
                                 sharedPreferences.edit().putInt("last_seen_order_number", latestOrderNumber).apply()
                             }
@@ -233,17 +231,7 @@ class OrderForegroundService : Service() {
         }
     }
 
-    private fun triggerFloatingBubble(pendingCount: Int, orderNumber: Int) {
-        try {
-            val bubbleIntent = Intent(this, FloatingBubbleService::class.java).apply {
-                putExtra("pendingCount", pendingCount)
-                putExtra("orderNumber", orderNumber)
-            }
-            startService(bubbleIntent)
-        } catch (e: Exception) {
-            // تجاهل
-        }
-    }
+
 
     private fun createForegroundNotification(): Notification {
         val intent = Intent(this, MainActivity::class.java)

@@ -2,7 +2,9 @@ package com.aboakbar.admin
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.annotation.Keep
+import androidx.core.app.NotificationCompat
 import com.onesignal.notifications.INotificationReceivedEvent
 import com.onesignal.notifications.INotificationServiceExtension
 
@@ -23,14 +25,23 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 val orderType = additionalData.optString("orderType", "توصيل")
                 val subtotal = additionalData.optInt("subtotal", 0)
 
-                // 1. تشغيل الكرة العائمة لإعلام الأدمن واهتزاز الهاتف فوراً
-                val bubbleIntent = Intent(context, FloatingBubbleService::class.java).apply {
-                    putExtra("pendingCount", 1)
-                    putExtra("orderNumber", orderNumber)
-                }
-                context.startService(bubbleIntent)
+                // 1. بناء وعرض إشعار نظام يدوي فوراً في البردة ذو أولوية قصوى لضمان ظهوره في الخلفية
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                val channelId = "aboakbar_admin_notifications"
 
-                // 2. تشغيل الشاشة المنبثقة الإجبارية فوق كل التطبيقات
+                // إعداد نية فتح التطبيق على صفحة الطلبات المعلقة مباشرة
+                val openIntent = Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    putExtra("target_url", "https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/orders/pending")
+                }
+                val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                } else {
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                }
+                val pendingIntent = android.app.PendingIntent.getActivity(context, 0, openIntent, pendingIntentFlags)
+
+                // نية تشغيل الشاشة المنبثقة الإجبارية
                 val alertIntent = Intent(context, OrderAlertActivity::class.java).apply {
                     putExtra("shopName", shopName)
                     putExtra("regionName", regionName)
@@ -41,11 +52,47 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     putExtra("orderNumber", orderNumber)
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 }
+                val alertFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_MUTABLE
+                } else {
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                }
+                val alertPendingIntent = android.app.PendingIntent.getActivity(context, orderNumber, alertIntent, alertFlags)
+
+                val title = "🔔 طلب جديد: $shopName — $regionName"
+                val body = "⏰ $orderTime | 📦 $orderType | 💵 ${formatNumber(subtotal)} د.ع"
+
+                val builder = NotificationCompat.Builder(context, channelId)
+                    .setSmallIcon(android.R.drawable.stat_notify_chat)
+                    .setContentTitle(title)
+                    .setContentText(body)
+                    .setPriority(NotificationCompat.PRIORITY_MAX)
+                    .setCategory(NotificationCompat.CATEGORY_CALL)
+                    .setDefaults(NotificationCompat.DEFAULT_ALL)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent)
+                    .setFullScreenIntent(alertPendingIntent, true)
+
+                // تفعيل الاهتزاز القوي للتنبيه الفوري
+                val pattern = longArrayOf(0, 400, 200, 400, 200, 400)
+                builder.setVibrate(pattern)
+
+                notificationManager.notify(orderNumber, builder.build())
+
+                // 2. تشغيل الشاشة المنبثقة الإجبارية مباشرة فوق كل التطبيقات
                 context.startActivity(alertIntent)
 
             } catch (e: Exception) {
                 // تجاهل الأخطاء
             }
+        }
+    }
+
+    private fun formatNumber(num: Int): String {
+        return try {
+            String.format("%,d", num)
+        } catch (e: Exception) {
+            num.toString()
         }
     }
 }

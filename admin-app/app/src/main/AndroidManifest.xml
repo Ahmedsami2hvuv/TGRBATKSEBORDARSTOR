@@ -79,10 +79,7 @@
             </intent-filter>
         </receiver>
 
-        <service
-            android:name="com.aboakbar.admin.FloatingBubbleService"
-            android:enabled="true"
-            android:exported="false" />
+
 
         <service
             android:name="com.aboakbar.admin.OrderForegroundService"

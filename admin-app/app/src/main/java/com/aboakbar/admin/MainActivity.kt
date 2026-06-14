@@ -108,16 +108,15 @@ class MainActivity : AppCompatActivity() {
         val savedPassword = sharedPreferences.getString(KEY_PASSWORD, null)
 
         if (!savedToken.isNullOrEmpty()) {
+            // دخول تلقائي مباشر دون إظهار نافذة البصمة المزعجة
             checkExistingToken(savedToken)
         } else {
             showLoginLayout()
-        }
-
-        // If biometric features are available and credentials are saved, show fingerprint option
-        if (!savedPassword.isNullOrEmpty() && isBiometricAvailable()) {
-            btnBiometric.visibility = View.VISIBLE
-            // Automatically launch biometric prompt on startup if credentials exist
-            biometricPrompt.authenticate(promptInfo)
+            // إظهار البصمة التلقائية فقط إذا كان المستخدم في شاشة تسجيل الدخول ولديه بيانات مخزنة
+            if (!savedPassword.isNullOrEmpty() && isBiometricAvailable()) {
+                btnBiometric.visibility = View.VISIBLE
+                biometricPrompt.authenticate(promptInfo)
+            }
         }
 
         // استرداد آخر رقم طلب مسجل
@@ -480,6 +479,9 @@ class MainActivity : AppCompatActivity() {
 
         val targetUrl = intent.getStringExtra("target_url") ?: ADMIN_DASHBOARD_URL
         webView.loadUrl(targetUrl)
+
+        // التحقق من صلاحية التشغيل التلقائي (Auto-start) للهواتف التي تتطلب ذلك لضمان وصول الإشعارات فوراً
+        checkAutoStartPermission()
     }
 
     private fun showLoginLayout() {
@@ -551,6 +553,55 @@ class MainActivity : AppCompatActivity() {
                     } catch (ex: Exception) {
                         // تجاهل
                     }
+                }
+            }
+        }
+    }
+
+    private fun checkAutoStartPermission() {
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val isAutoStartPrompted = sharedPreferences.getBoolean("autostart_prompted", false)
+        
+        if (!isAutoStartPrompted) {
+            val manufacturer = Build.MANUFACTURER.lowercase()
+            if (manufacturer.contains("xiaomi") || manufacturer.contains("oppo") || 
+                manufacturer.contains("vivo") || manufacturer.contains("huawei")) {
+                
+                // حفظ حالة السؤال لمنع تكراره وإزعاج المستخدم في كل مرة
+                sharedPreferences.edit().putBoolean("autostart_prompted", true).apply()
+                
+                try {
+                    val intent = Intent()
+                    when {
+                        manufacturer.contains("xiaomi") -> {
+                            intent.component = android.content.ComponentName(
+                                "com.miui.securitycenter",
+                                "com.miui.permcenter.autostart.AutoStartManagementActivity"
+                            )
+                        }
+                        manufacturer.contains("oppo") -> {
+                            intent.component = android.content.ComponentName(
+                                "com.coloros.safecenter",
+                                "com.coloros.safecenter.permission.startup.StartupAppListActivity"
+                            )
+                        }
+                        manufacturer.contains("vivo") -> {
+                            intent.component = android.content.ComponentName(
+                                "com.vivo.permissionmanager",
+                                "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"
+                            )
+                        }
+                        manufacturer.contains("huawei") -> {
+                            intent.component = android.content.ComponentName(
+                                "com.huawei.systemmanager",
+                                "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"
+                            )
+                        }
+                    }
+                    startActivity(intent)
+                    Toast.makeText(this, "يرجى تفعيل (التشغيل التلقائي / Auto-start) لتطبيق أبو أكبر لضمان وصول الإشعارات فوراً في الخلفية", Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    // تجاهل
                 }
             }
         }
