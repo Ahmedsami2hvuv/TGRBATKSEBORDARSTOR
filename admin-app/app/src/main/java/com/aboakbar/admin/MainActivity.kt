@@ -2,12 +2,17 @@ package com.aboakbar.admin
 
 import android.Manifest
 import android.content.ActivityNotFoundException
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
 import android.view.View
@@ -47,6 +52,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var executor: Executor
     private lateinit var biometricPrompt: BiometricPrompt
     private lateinit var promptInfo: BiometricPrompt.PromptInfo
+
+    private var lastSeenOrderNumber = 0
+    private val pollingHandler = Handler(Looper.getMainLooper())
+    private var pollingRunnable: Runnable? = null
+    private val CHANNEL_ID = "aboakbar_admin_notifications"
+    private var isPollingActive = false
+    private var currentToken: String? = null
 
     private val BACKEND_URL = "https://aboakbar.vercel.app"
     private val ADMIN_DASHBOARD_URL = "$BACKEND_URL/abo1stor3hlaa2kbr8-47"
@@ -101,6 +113,10 @@ class MainActivity : AppCompatActivity() {
             // Automatically launch biometric prompt on startup if credentials exist
             biometricPrompt.authenticate(promptInfo)
         }
+
+        // استرداد آخر رقم طلب مسجل وتفعيل قناة الإشعارات
+        lastSeenOrderNumber = sharedPreferences.getInt("last_seen_order_number", 0)
+        createNotificationChannel()
 
         requestAppPermissions()
     }
@@ -391,6 +407,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun launchDashboard(token: String) {
+        currentToken = token
+        startPolling()
+
         // Programmatically inject cookie
         val cookieManager = CookieManager.getInstance()
         val cookieString = "admin_token=$token; Domain=aboakbar.vercel.app; Path=/; Secure; SameSite=Lax"
@@ -430,5 +449,115 @@ class MainActivity : AppCompatActivity() {
         } else {
             super.onBackPressed()
         }
+    }
+
+    private fun startPolling() {
+        if (isPollingActive) return
+        isPollingActive = true
+        pollingRunnable = object : Runnable {
+            override fun run() {
+                pollPendingOrders()
+                pollingHandler.postDelayed(this, 10000) // فحص كل 10 ثوانٍ
+            }
+        }
+        pollingHandler.post(pollingRunnable!!)
+    }
+
+    private fun stopPolling() {
+        isPollingActive = false
+        pollingRunnable?.let { pollingHandler.removeCallbacks(it) }
+    }
+
+    private fun pollPendingOrders() {
+        val token = currentToken ?: return
+
+        val request = Request.Builder()
+            .url("$BACKEND_URL/api/notifications/admin-pending")
+            .addHeader("Cookie", "admin_token=$token")
+            .get()
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                // تجاهل أخطاء الشبكة المؤقتة
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (!response.isSuccessful) return
+                val responseBody = response.body?.string() ?: return
+                try {
+                    val json = JSONObject(responseBody)
+                    val pendingCount = json.optInt("pendingCount", 0)
+                    val latestOrderNumber = json.optInt("latestOrderNumber", 0)
+
+                    runOnUiThread {
+                        if (latestOrderNumber > 0 && lastSeenOrderNumber > 0 && latestOrderNumber > lastSeenOrderNumber) {
+                            lastSeenOrderNumber = latestOrderNumber
+                            val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                            sharedPreferences.edit().putInt("last_seen_order_number", lastSeenOrderNumber).apply()
+
+                            showNativeNotification(latestOrderNumber, pendingCount)
+                        } else if (latestOrderNumber > 0 && lastSeenOrderNumber == 0) {
+                            lastSeenOrderNumber = latestOrderNumber
+                            val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                            sharedPreferences.edit().putInt("last_seen_order_number", lastSeenOrderNumber).apply()
+                        }
+                    }
+                } catch (e: Exception) {
+                    // تجاهل أخطاء التحليل
+                }
+            }
+        })
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "إشعارات الطلبات"
+            val descriptionText = "تنبيهات عند وصول طلبات جديدة للنظام"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+                description = descriptionText
+                enableLights(true)
+                enableVibration(true)
+            }
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun showNativeNotification(orderNumber: Int, count: Int) {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+
+        val pendingIntent = PendingIntent.getActivity(this, 0, intent, flags)
+
+        val title = "طلب جديد وارد! (#$orderNumber)"
+        val body = "هناك طلب جديد معلق في النظام. إجمالي الطلبات المعلقة: $count"
+
+        val notification = androidx.core.app.NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.stat_notify_chat)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(androidx.core.app.NotificationCompat.DEFAULT_ALL)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        notificationManager.notify(orderNumber, notification)
+    }
+
+    override fun onDestroy() {
+        stopPolling()
+        super.onDestroy()
     }
 }
