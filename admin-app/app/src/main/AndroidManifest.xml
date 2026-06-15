@@ -104,6 +104,15 @@
         <meta-data
             android:name="com.onesignal.NotificationServiceExtension"
             android:value="com.aboakbar.admin.MyNotificationServiceExtension" />
+
+        <!-- Default small icon for OneSignal and Firebase (used in notification grouping) -->
+        <meta-data
+            android:name="com.onesignal.NotificationIcon.DEFAULT"
+            android:resource="@drawable/ic_notification_small" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification_small" />
+
     </application>
 
 </manifest>
