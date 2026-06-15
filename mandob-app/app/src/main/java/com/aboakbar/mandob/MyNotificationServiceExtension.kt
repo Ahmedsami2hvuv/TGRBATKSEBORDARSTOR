@@ -61,8 +61,11 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 val title = "🔔 طلب جديد: $shopName — $regionName"
                 val body = "⏰ $orderTime | 📦 $orderType | 💵 ${formatNumber(subtotal)} د.ع"
 
+                val largeIconBitmap = android.graphics.BitmapFactory.decodeResource(context.resources, R.drawable.ic_notification_large)
+
                 val builder = NotificationCompat.Builder(context, channelId)
-                    .setSmallIcon(android.R.drawable.stat_notify_chat)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setLargeIcon(largeIconBitmap)
                     .setContentTitle(title)
                     .setContentText(body)
                     .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -77,6 +80,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 builder.setVibrate(pattern)
 
                 notificationManager.notify(orderNumber, builder.build())
+                event.preventDefault()
 
                 // 2. تشغيل الشاشة المنبثقة الإجبارية مباشرة فوق كل التطبيقات
                 context.startActivity(alertIntent)
