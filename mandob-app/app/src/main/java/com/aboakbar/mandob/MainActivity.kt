@@ -158,7 +158,7 @@ class MainActivity : AppCompatActivity() {
                 request: WebResourceRequest?
             ): Boolean {
                 val url = request?.url?.toString() ?: return false
-                if (url.contains("aboakbar.vercel.app") || url.startsWith("file:///android_asset")) {
+                if (url.contains("aboakbar.vercel.app") || url.contains("aboakbr.com") || url.startsWith("file:///android_asset")) {
                     return false
                 }
                 if (url.startsWith("tel:")) {
