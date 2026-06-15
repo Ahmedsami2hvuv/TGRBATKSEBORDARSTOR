@@ -5,6 +5,9 @@
 const ONESIGNAL_APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID || "5c2acf6f-f2c0-40f2-830d-138f8a9e8c0a";
 const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
 
+const ONESIGNAL_MANDOB_APP_ID = process.env.ONESIGNAL_MANDOB_APP_ID || "628d3268-9fda-405d-8d07-12d026810b84";
+const ONESIGNAL_MANDOB_REST_API_KEY = process.env.ONESIGNAL_MANDOB_REST_API_KEY;
+
 export async function sendOneSignalNotification(options: {
   title: string;
   body: string;
@@ -13,15 +16,18 @@ export async function sendOneSignalNotification(options: {
   sound?: string;
   data?: any;
 }): Promise<boolean> {
-  if (!ONESIGNAL_REST_API_KEY) {
-    console.warn("[OneSignal] ONESIGNAL_REST_API_KEY is not configured in environment variables.");
+  const isAdmin = options.externalIds.includes("admin_global");
+  
+  const targetAppId = isAdmin ? ONESIGNAL_APP_ID : ONESIGNAL_MANDOB_APP_ID;
+  const targetApiKey = isAdmin ? ONESIGNAL_REST_API_KEY : ONESIGNAL_MANDOB_REST_API_KEY;
+
+  if (!targetApiKey) {
+    console.warn(`[OneSignal] REST API Key is not configured for ${isAdmin ? 'Admin' : 'Mandob'}.`);
     return false;
   }
 
-  const isAdmin = options.externalIds.includes("admin_global");
-
   const notification: any = {
-    app_id: ONESIGNAL_APP_ID,
+    app_id: targetAppId,
     contents: {
       ar: options.body,
       en: options.body,
@@ -52,22 +58,26 @@ export async function sendOneSignalNotification(options: {
       external_id: options.externalIds,
     };
     notification.include_external_user_ids = options.externalIds;
+    // إضافة فلتر إضافي لضمان الوصول للمندوبين
+    notification.filters = [
+      { field: "tag", key: "role", relation: "=", value: "mandob" }
+    ];
   }
 
   try {
-    console.log("[OneSignal] Sending notification to OneSignal API...");
+    console.log(`[OneSignal] Sending notification to OneSignal API (${isAdmin ? 'Admin' : 'Mandob'})...`);
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Key ${ONESIGNAL_REST_API_KEY.trim()}`,
+        "Authorization": `Key ${targetApiKey.trim()}`,
       },
       body: JSON.stringify(notification),
     });
 
     const data = await response.ok ? await response.json() : await response.text();
     if (response.ok) {
-      console.log("[OneSignal] Notification successfully sent:", data);
+      console.log(`[OneSignal] Notification successfully sent to ${isAdmin ? 'Admin' : 'Mandob'}:`, data);
       return true;
     } else {
       console.error("[OneSignal] API responded with error:", response.status, data);
