@@ -37,7 +37,6 @@ export async function sendOneSignalNotification(options: {
     ios_sound: options.sound ? `${options.sound}.wav` : undefined,
     android_visibility: 1,
     priority: 10,
-    android_channel_id: "push-notifications", // تحديد القناة الافتراضية
     huawei_priority: 10,
     web_push_priority: "high",
     android_accent_color: "4f46e5",
