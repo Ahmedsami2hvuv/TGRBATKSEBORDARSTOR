@@ -11,10 +11,12 @@ class OrderPollingReceiver : BroadcastReceiver() {
     private val KEY_TOKEN = "admin_token"
 
     override fun onReceive(context: Context, intent: Intent) {
-        // تشغيل الخدمة الأمامية تلقائياً عند إقلاع الهاتف أو تحديث الحزمة
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED || 
-            intent.action == "android.intent.action.QUICKBOOT_POWERON" || 
-            intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
+        // تشغيل أو استدعاء الخدمة الأمامية عند إقلاع الهاتف، تحديث الحزمة، أو استقبال إشارة المنبه الدقيق
+        val action = intent.action
+        if (action == Intent.ACTION_BOOT_COMPLETED || 
+            action == "android.intent.action.QUICKBOOT_POWERON" || 
+            action == Intent.ACTION_MY_PACKAGE_REPLACED ||
+            action == "com.aboakbar.admin.ACTION_CHECK_ORDERS") {
             
             val sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val token = sharedPreferences.getString(KEY_TOKEN, null)

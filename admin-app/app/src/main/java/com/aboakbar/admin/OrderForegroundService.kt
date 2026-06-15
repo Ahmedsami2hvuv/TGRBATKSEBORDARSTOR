@@ -33,15 +33,7 @@ class OrderForegroundService : Service() {
     private var serviceHandler: Handler? = null
     private var isRunning = false
 
-    private val checkRunnable = object : Runnable {
-        override fun run() {
-            if (isRunning) {
-                checkPendingOrders()
-                // إعادة جدولة الفحص بعد 30 ثانية لضمان سرعة التنبيه وتفادي قيود الأندرويد الصارمة
-                serviceHandler?.postDelayed(this, 30000)
-            }
-        }
-    }
+
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -58,7 +50,7 @@ class OrderForegroundService : Service() {
         // إبقاء المعالج مستيقظاً لضمان عدم تجميد الاتصال بالشبكة
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AboAkbar::OrderServiceWakeLock").apply {
-            acquire() // إبقاء القفل مفعلاً بشكل دائم بدون مهلة 10 دقائق
+            acquire() // إبقاء القفل مفعلاً بشكل دائم بدون مهلة
         }
     }
 
@@ -77,10 +69,16 @@ class OrderForegroundService : Service() {
             } else {
                 startForeground(FOREGROUND_NOTIFICATION_ID, notification)
             }
-
-            // البدء الفوري للفحص الدوري على الخيط الخلفي
-            serviceHandler?.post(checkRunnable)
         }
+
+        // تشغيل الفحص الفوري على الخيط الخلفي
+        serviceHandler?.post {
+            checkPendingOrders()
+        }
+
+        // جدولة المنبه الدقيق التالي بعد 30 ثانية لتجاوز Doze Mode
+        scheduleNextAlarm()
+
         return START_STICKY
     }
 
@@ -288,10 +286,63 @@ class OrderForegroundService : Service() {
         }
     }
 
+    private fun scheduleNextAlarm() {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+        val intent = Intent(this, OrderPollingReceiver::class.java).apply {
+            action = "com.aboakbar.admin.ACTION_CHECK_ORDERS"
+        }
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, flags)
+
+        val triggerTime = System.currentTimeMillis() + 30000 // بعد 30 ثانية
+        
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                val alarmClockInfo = android.app.AlarmManager.AlarmClockInfo(triggerTime, pendingIntent)
+                alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                } else {
+                    alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                }
+            }
+        } catch (e: Exception) {
+            // تراجع تلقائي للأجهزة التي لا تسمح بالمنبه الدقيق
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+            } else {
+                alarmManager.set(android.app.AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+            }
+        }
+    }
+
+    private fun cancelAlarm() {
+        try {
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+            val intent = Intent(this, OrderPollingReceiver::class.java).apply {
+                action = "com.aboakbar.admin.ACTION_CHECK_ORDERS"
+            }
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+            val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, flags)
+            alarmManager.cancel(pendingIntent)
+        } catch (e: Exception) {
+            // تجاهل
+        }
+    }
+
     override fun onDestroy() {
         isRunning = false
-        serviceHandler?.removeCallbacks(checkRunnable)
         serviceThread?.quitSafely()
+        cancelAlarm() // إلغاء المنبه لتفادي استمرار الاستيقاظ
         try {
             if (wakeLock?.isHeld == true) {
                 wakeLock?.release()
