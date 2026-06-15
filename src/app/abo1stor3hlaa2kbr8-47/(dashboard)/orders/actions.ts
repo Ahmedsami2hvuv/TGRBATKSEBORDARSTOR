@@ -937,30 +937,45 @@ export async function bulkDeleteOrdersPermanently(
 
   try {
     if (isDraft) {
-      // Find all groups for these drafts
-      const drafts = await prisma.companyPreparerShoppingDraft.findMany({
-         where: { id: { in: orderIds } },
-         select: { id: true, data: true }
-      });
-      
-      const groupIds = drafts
-         .map(d => (d.data as any)?.groupId)
-         .filter(g => typeof g === "string" && g.length > 0);
+      for (const id of orderIds) {
+        const draft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id } });
+        if (!draft) continue;
+        
+        const draftData = (draft.data as any) || {};
+        const groupId = typeof draftData.groupId === "string" && draftData.groupId.length > 0 ? draftData.groupId : null;
 
-      const allDraftIdsToDelete = new Set(orderIds);
+        if (groupId) {
+           const draftsToDelete = await prisma.$queryRaw<{ id: string }[]>`SELECT id FROM "CompanyPreparerShoppingDraft" WHERE data->>'groupId' = ${groupId}`;
+           const ids = draftsToDelete.map(d => d.id);
+           if (ids.length > 0) {
+               await prisma.companyPreparerShoppingDraft.deleteMany({
+                   where: { id: { in: ids } }
+               });
+           }
+        } else {
+           // If no groupId, maybe it's grouped by phone+title in UI, but in DB we should just delete this one draft?
+           // Actually, deleteOrderPermanently only deletes this one draft.
+           // However, if the user sees a grouped row by phone+title, clicking delete SHOULD delete all in that group!
+           await prisma.companyPreparerShoppingDraft.deleteMany({ 
+               where: { 
+                   customerPhone: draft.customerPhone,
+                   titleLine: draft.titleLine,
+                   status: { in: ["draft", "priced"] }
+               } 
+           });
+        }
 
-      if (groupIds.length > 0) {
-          const relatedDrafts = await prisma.$queryRaw<{ id: string }[]>`
-              SELECT id FROM "CompanyPreparerShoppingDraft" 
-              WHERE data->>'groupId' IN (${Prisma.join(groupIds)})
-          `;
-          relatedDrafts.forEach(d => allDraftIdsToDelete.add(d.id));
+        if (draft.sentOrderId) {
+          await prisma.order.update({
+            where: { id: draft.sentOrderId },
+            data: { status: "cancelled" }
+          });
+          await prisma.companyPreparerShoppingDraft.updateMany({
+            where: { sentOrderId: draft.sentOrderId, status: { not: "archived" } },
+            data: { status: "archived" }
+          });
+        }
       }
-
-      await prisma.companyPreparerShoppingDraft.deleteMany({
-         where: { id: { in: Array.from(allDraftIdsToDelete) } }
-      });
-
     } else {
       // حذف المسودات المرتبطة أولاً
       await prisma.companyPreparerShoppingDraft.deleteMany({
