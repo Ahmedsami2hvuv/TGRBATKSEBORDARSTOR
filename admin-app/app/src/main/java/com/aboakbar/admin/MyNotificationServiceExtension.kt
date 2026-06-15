@@ -23,7 +23,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 val regionName = additionalData.optString("regionName", "—")
                 val orderTime = additionalData.optString("orderTime", "فوري")
                 val orderType = additionalData.optString("orderType", "توصيل")
-                val subtotal = additionalData.optInt("subtotal", 0)
+                val subtotal = additionalData.optDouble("subtotal", 0.0)
 
                 // 1. بناء وعرض إشعار نظام يدوي فوراً في البردة ذو أولوية قصوى لضمان ظهوره في الخلفية
                 val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
@@ -87,9 +87,13 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
         }
     }
 
-    private fun formatNumber(num: Int): String {
+    private fun formatNumber(num: Double): String {
         return try {
-            String.format("%,d", num)
+            if (num % 1.0 == 0.0) {
+                String.format("%,d", num.toLong())
+            } else {
+                String.format("%,.2f", num)
+            }
         } catch (e: Exception) {
             num.toString()
         }

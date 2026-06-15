@@ -44,7 +44,7 @@ class OrderAlertActivity : Activity() {
         val regionName = intent.getStringExtra("regionName") ?: "—"
         val orderTime = intent.getStringExtra("orderTime") ?: "فوري"
         val orderType = intent.getStringExtra("orderType") ?: "—"
-        val subtotal = intent.getIntExtra("subtotal", 0)
+        val subtotal = intent.getDoubleExtra("subtotal", 0.0)
         val pendingCount = intent.getIntExtra("pendingCount", 0)
         val orderNumber = intent.getIntExtra("orderNumber", 0)
 
@@ -100,9 +100,13 @@ class OrderAlertActivity : Activity() {
         }
     }
 
-    private fun formatNumber(num: Int): String {
+    private fun formatNumber(num: Double): String {
         return try {
-            String.format("%,d", num)
+            if (num % 1.0 == 0.0) {
+                String.format("%,d", num.toLong())
+            } else {
+                String.format("%,.2f", num)
+            }
         } catch (e: Exception) {
             num.toString()
         }
