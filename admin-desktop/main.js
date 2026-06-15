@@ -16,6 +16,18 @@ function createWindow () {
   // إخفاء شريط القوائم العلوي للحصول على مظهر تطبيق حقيقي
   Menu.setApplicationMenu(null);
 
+  // إعداد مُعرف التطبيق للإشعارات على ويندوز
+  app.setAppUserModelId('com.aboakbar.admin');
+
+  // الموافقة تلقائياً على صلاحية الإشعارات القادمة من موقع الإدارة
+  win.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'notifications') {
+      callback(true);
+    } else {
+      callback(true);
+    }
+  });
+
   // تحميل رابط لوحة التحكم
   win.loadURL('https://aboakbr.com/abo1stor3hlaa2kbr8-47');
   
