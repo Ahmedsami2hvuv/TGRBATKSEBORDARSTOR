@@ -1,23 +1,9 @@
-import * as OneSignal from "onesignal-node";
-
 /**
- * مدير إرسال إشعارات OneSignal من السيرفر.
+ * مدير إرسال إشعارات OneSignal من السيرفر باستخدام fetch المباشر.
  */
 
 const ONESIGNAL_APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID || "5c2acf6f-f2c0-40f2-830d-138f8a9e8c0a";
 const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
-
-let client: OneSignal.Client | null = null;
-
-function getClient() {
-  if (client) return client;
-  if (!ONESIGNAL_REST_API_KEY) {
-    console.warn("OneSignal: ONESIGNAL_REST_API_KEY is not configured.");
-    return null;
-  }
-  client = new OneSignal.Client(ONESIGNAL_APP_ID, ONESIGNAL_REST_API_KEY);
-  return client;
-}
 
 export async function sendOneSignalNotification(options: {
   title: string;
@@ -26,13 +12,16 @@ export async function sendOneSignalNotification(options: {
   externalIds: string[];
   sound?: string;
   data?: any;
-}) {
-  const osClient = getClient();
-  if (!osClient) return false;
+}): Promise<boolean> {
+  if (!ONESIGNAL_REST_API_KEY) {
+    console.warn("[OneSignal] ONESIGNAL_REST_API_KEY is not configured in environment variables.");
+    return false;
+  }
 
   const isAdmin = options.externalIds.includes("admin_global");
 
   const notification: any = {
+    app_id: ONESIGNAL_APP_ID,
     contents: {
       ar: options.body,
       en: options.body,
@@ -44,12 +33,11 @@ export async function sendOneSignalNotification(options: {
     target_channel: "push",
     url: options.url,
     data: options.data,
-    // إرسال اسم النغمة المختارة
     android_sound: options.sound,
     ios_sound: options.sound ? `${options.sound}.wav` : undefined,
     android_visibility: 1,
     priority: 10,
-    android_channel_id: "push-notifications", // تحديد قناة افتراضية
+    android_channel_id: "push-notifications", // تحديد القناة الافتراضية
     huawei_priority: 10,
     web_push_priority: "high",
     android_accent_color: "4f46e5",
@@ -68,11 +56,26 @@ export async function sendOneSignalNotification(options: {
   }
 
   try {
-    const response = await osClient.createNotification(notification as any);
-    console.log("OneSignal Notification Sent:", response.body);
-    return true;
+    console.log("[OneSignal] Sending notification to OneSignal API...");
+    const response = await fetch("https://onesignal.com/api/v1/notifications", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Key ${ONESIGNAL_REST_API_KEY.trim()}`,
+      },
+      body: JSON.stringify(notification),
+    });
+
+    const data = await response.ok ? await response.json() : await response.text();
+    if (response.ok) {
+      console.log("[OneSignal] Notification successfully sent:", data);
+      return true;
+    } else {
+      console.error("[OneSignal] API responded with error:", response.status, data);
+      return false;
+    }
   } catch (e) {
-    console.error("OneSignal Notification Error:", e);
+    console.error("[OneSignal] Fetch exception occurred:", e);
     return false;
   }
 }
