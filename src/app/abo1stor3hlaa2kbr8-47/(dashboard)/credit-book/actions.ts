@@ -1028,6 +1028,34 @@ export async function getPartnerDetails(partnerId: string) {
       }
     }
 
+    // جلب أرقام طلبات المورد المدفوعة بكفاءة لتجنب N+1 query
+    const paidOrderNumbers = new Set<number>();
+    if (partner.type === "supplier" && partner.externalId) {
+      try {
+        const supplierOrders = await prisma.order.findMany({
+          where: {
+            preparerShoppingJson: { not: null }
+          },
+          select: { orderNumber: true, preparerShoppingJson: true }
+        });
+        for (const order of supplierOrders) {
+          let json: any = {};
+          try {
+            json = typeof order.preparerShoppingJson === "string"
+              ? JSON.parse(order.preparerShoppingJson)
+              : order.preparerShoppingJson || {};
+          } catch {
+            json = {};
+          }
+          if (json.supplierPaid) {
+            paidOrderNumbers.add(order.orderNumber);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch supplier orders for payment status:", err);
+      }
+    }
+
     // حساب المعاملات اليدوية بالدفتر
     const manualTransactions = partner.transactions.map((t) => {
       const amt = Number(t.amount);
@@ -1037,10 +1065,22 @@ export async function getPartnerDetails(partnerId: string) {
         totalTook += amt;
       }
 
+      let isPaid = false;
+      if (partner.type === "supplier" && t.kind === "took" && t.note) {
+        const match = t.note.match(/طلب رقم:\s*#(\d+)/);
+        if (match) {
+          const orderNum = parseInt(match[1], 10);
+          if (paidOrderNumbers.has(orderNum)) {
+            isPaid = true;
+          }
+        }
+      }
+
       return {
         ...t,
         amount: amt,
-        isAuto: false
+        isAuto: false,
+        isPaid
       };
     });
 
@@ -1320,9 +1360,36 @@ export async function updateTransaction(transactionId: string, amount: number, n
 export async function deleteTransaction(transactionId: string) {
   try {
     const tx = await prisma.creditBookTransaction.findUnique({
-      where: { id: transactionId }
+      where: { id: transactionId },
+      include: { partner: true }
     });
     if (!tx) return { success: false, error: "المعاملة غير موجودة" };
+
+    // إذا كان الشريك مورداً وكانت المعاملة مرتبطة بطلب، نضع علامة لحذف دين الطلب للمورد
+    if (tx.partner?.type === "supplier" && tx.note) {
+      const match = tx.note.match(/طلب رقم:\s*#(\d+)/);
+      if (match) {
+        const orderNum = parseInt(match[1], 10);
+        const order = await prisma.order.findFirst({
+          where: { orderNumber: orderNum }
+        });
+        if (order) {
+          let json: any = {};
+          try {
+            json = typeof order.preparerShoppingJson === "string"
+              ? JSON.parse(order.preparerShoppingJson)
+              : order.preparerShoppingJson || {};
+          } catch (e) {
+            json = {};
+          }
+          json.supplierDebtDeleted = true;
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { preparerShoppingJson: json }
+          });
+        }
+      }
+    }
 
     await prisma.creditBookTransaction.delete({
       where: { id: transactionId },
@@ -2282,6 +2349,93 @@ export async function revokeAccountantAccess(id: string) {
   } catch (error) {
     console.error("Error in revokeAccountantAccess:", error);
     return { success: false, error: "حدث خطأ أثناء إلغاء صلاحية الوصول" };
+  }
+}
+
+// 20. تسجيل دفع للمورد بقيمة الطلب وتحديث الطلب في المجهز
+export async function paySupplierTransaction(transactionId: string) {
+  try {
+    const tx = await prisma.creditBookTransaction.findUnique({
+      where: { id: transactionId },
+      include: { partner: true }
+    });
+    if (!tx) return { success: false, error: "المعاملة غير موجودة" };
+
+    if (tx.partner?.type !== "supplier") {
+      return { success: false, error: "هذه المعاملة ليست لمورد" };
+    }
+
+    if (!tx.note) {
+      return { success: false, error: "ملاحظة المعاملة فارغة" };
+    }
+
+    const match = tx.note.match(/طلب رقم:\s*#(\d+)/);
+    if (!match) {
+      return { success: false, error: "لم يتم العثور على رقم الطلب في ملاحظة المعاملة" };
+    }
+
+    const orderNum = parseInt(match[1], 10);
+    const order = await prisma.order.findFirst({
+      where: { orderNumber: orderNum }
+    });
+
+    if (!order) {
+      return { success: false, error: `الطلب رقم #${orderNum} غير موجود في النظام` };
+    }
+
+    // 1. تحديث الطلب وإضافة علامة الدفع للمورد
+    let json: any = {};
+    try {
+      json = typeof order.preparerShoppingJson === "string"
+        ? JSON.parse(order.preparerShoppingJson)
+        : order.preparerShoppingJson || {};
+    } catch (e) {
+      json = {};
+    }
+
+    if (json.supplierPaid) {
+      return { success: false, error: "هذا الطلب مسدد بالفعل للمورد" };
+    }
+
+    json.supplierPaid = true;
+    json.supplierPaidAt = new Date().toISOString();
+    json.supplierPaidAmount = Number(tx.amount);
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { preparerShoppingJson: json }
+    });
+
+    // 2. إنشاء معاملة "gave" (أعطيت) للمورد بقيمة المعاملة الأصلية
+    const payTx = await prisma.creditBookTransaction.create({
+      data: {
+        partnerId: tx.partnerId,
+        amount: tx.amount,
+        kind: "gave",
+        note: `تسديد لطلب رقم: #${orderNum} | دفعت بواسطة الإدارة`,
+        createdAt: new Date(),
+      }
+    });
+
+    try {
+      const { logTransactionAuthor } = await import("@/lib/transaction-logger");
+      await logTransactionAuthor(payTx.id, "create");
+    } catch (logErr) {
+      console.error("Failed to log pay transaction creator:", logErr);
+    }
+
+    // تحديث تاريخ الشريك
+    await prisma.creditBookPartner.update({
+      where: { id: tx.partnerId },
+      data: { updatedAt: new Date() }
+    });
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/credit-book/${tx.partnerId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error in paySupplierTransaction:", error);
+    return { success: false, error: "حدث خطأ أثناء معالجة الدفع للمورد" };
   }
 }
 

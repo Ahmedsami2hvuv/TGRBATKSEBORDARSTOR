@@ -212,11 +212,12 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
             shouldDelete = true;
           } else {
             let products: any[] = [];
+            let parsed: any = {};
             try {
-              const parsed = typeof order.preparerShoppingJson === "string"
+              parsed = typeof order.preparerShoppingJson === "string"
                 ? JSON.parse(order.preparerShoppingJson)
-                : order.preparerShoppingJson;
-              products = (parsed as any)?.products || [];
+                : order.preparerShoppingJson || {};
+              products = parsed?.products || [];
             } catch {
               products = [];
             }
@@ -225,7 +226,7 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
               (p: any) => typeof p.assignedPreparerId === "string" && p.assignedPreparerId.trim() === supplierId
             );
 
-            if (!isStillSupplier) {
+            if (!isStillSupplier || parsed?.supplierDebtDeleted || parsed?.supplierDebtHidden) {
               shouldDelete = true;
             }
           }
@@ -243,12 +244,17 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
       // 2. مزامنة وإضافة المعاملات الجديدة
       for (const order of orders) {
         let products: any[] = [];
+        let preparerShopping: any = {};
         try {
-          const parsed = typeof order.preparerShoppingJson === "string"
+          preparerShopping = typeof order.preparerShoppingJson === "string"
             ? JSON.parse(order.preparerShoppingJson)
-            : order.preparerShoppingJson;
-          products = (parsed as any)?.products || [];
+            : order.preparerShoppingJson || {};
+          products = preparerShopping?.products || [];
         } catch {
+          continue;
+        }
+
+        if (preparerShopping?.supplierDebtDeleted || preparerShopping?.supplierDebtHidden) {
           continue;
         }
 

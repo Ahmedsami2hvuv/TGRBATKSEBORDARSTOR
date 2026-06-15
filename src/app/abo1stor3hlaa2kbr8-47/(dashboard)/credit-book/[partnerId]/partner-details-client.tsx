@@ -6,6 +6,7 @@ import {
   addTransaction, 
   updateTransaction, 
   deleteTransaction, 
+  paySupplierTransaction, 
   deletePartner, 
   getPartnerDetails,
   payShopOrderFromAdmin,
@@ -265,6 +266,20 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
       refreshPartnerData();
     } else {
       alert(res.error || "حدث خطأ أثناء تسجيل عملية الدفع");
+    }
+  };
+
+  // تسجيل دفع للمورد بقيمة الطلب
+  const handlePaySupplierTx = async (txId: string, amount: number) => {
+    const confirmPay = confirm(`هل أنت متأكد من رغبتك في تسجيل عملية دفع لهذا الطلب بقيمة ${formatDinarAsAlfWithUnit(amount)} للمورد مباشرة؟ سيقوم النظام بتسجيل معاملة تسديد (أعطيت) وتحديث حالة الطلب.`);
+    if (!confirmPay) return;
+
+    const res = await paySupplierTransaction(txId);
+    if (res.success) {
+      alert("تم تسجيل عملية الدفع للمورد بنجاح!");
+      refreshPartnerData();
+    } else {
+      alert(res.error || "حدث خطأ أثناء تسجيل الدفع للمورد");
     }
   };
 
@@ -972,28 +987,44 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                           {/* تعديل/حذف للعمليات اليدوية */}
                           {!tx.isAuto ? (
                             <>
-                              <button
-                                onClick={() => handleStartEdit(tx)}
-                                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-black rounded-xl transition shadow-sm cursor-pointer ${
-                                  isTransfer
-                                    ? "text-violet-100 bg-white/15 border border-white/10 hover:bg-white/25"
-                                    : tx.kind === "gave"
-                                      ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-250 dark:border-emerald-900/40 hover:bg-emerald-100 dark:hover:bg-emerald-950/60"
-                                      : "text-rose-700 dark:text-rose-450 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-950/50"
-                                }`}
-                              >
-                                ✏️ تعديل
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTx(tx.id)}
-                                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-black rounded-xl transition shadow-sm cursor-pointer ${
-                                  isTransfer
-                                    ? "text-rose-200 bg-rose-500/20 border border-rose-500/20 hover:bg-rose-500/35"
-                                    : "text-rose-700 dark:text-rose-450 bg-rose-50 dark:bg-red-950/30 border border-rose-200 dark:border-red-900/30 hover:bg-rose-100 dark:hover:bg-red-950/50"
-                                }`}
-                              >
-                                🗑️ حذف
-                              </button>
+                              {partner.type === "supplier" && tx.note?.includes("طلب رقم: #") && tx.isPaid ? (
+                                <span className="flex items-center gap-1 px-3 py-1.5 text-xs font-black rounded-xl border text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/40">
+                                  ✅ مسدد للمورد
+                                </span>
+                              ) : (
+                                <>
+                                  {partner.type === "supplier" && tx.note?.includes("طلب رقم: #") && (
+                                    <button
+                                      onClick={() => handlePaySupplierTx(tx.id, tx.amount)}
+                                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-black rounded-xl transition shadow-md cursor-pointer text-white bg-indigo-600 hover:bg-indigo-700 shadow-indigo-900/10 hover:scale-[1.02] active:scale-[0.98]"
+                                    >
+                                      💵 دفع للمورد
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => handleStartEdit(tx)}
+                                    className={`flex items-center gap-1 px-3 py-1.5 text-xs font-black rounded-xl transition shadow-sm cursor-pointer ${
+                                      isTransfer
+                                        ? "text-violet-100 bg-white/15 border border-white/10 hover:bg-white/25"
+                                        : tx.kind === "gave"
+                                          ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-250 dark:border-emerald-900/40 hover:bg-emerald-100 dark:hover:bg-emerald-950/60"
+                                          : "text-rose-700 dark:text-rose-450 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-950/50"
+                                    }`}
+                                  >
+                                    ✏️ تعديل
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteTx(tx.id)}
+                                    className={`flex items-center gap-1 px-3 py-1.5 text-xs font-black rounded-xl transition shadow-sm cursor-pointer ${
+                                      isTransfer
+                                        ? "text-rose-200 bg-rose-500/20 border border-rose-500/20 hover:bg-rose-500/35"
+                                        : "text-rose-700 dark:text-rose-450 bg-rose-50 dark:bg-red-950/30 border border-rose-200 dark:border-red-900/30 hover:bg-rose-100 dark:hover:bg-red-950/50"
+                                    }`}
+                                  >
+                                    🗑️ حذف
+                                  </button>
+                                </>
+                              )}
                             </>
                           ) : (
                             <div className="flex gap-1.5">
