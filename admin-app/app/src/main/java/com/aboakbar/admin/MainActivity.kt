@@ -478,6 +478,7 @@ class MainActivity : AppCompatActivity() {
 
         // ربط هوية الجهاز بـ admin_global لتلقي إشعارات الإدارة الفورية
         OneSignal.login("admin_global")
+        OneSignal.User.addTag("role", "admin")
 
         // Programmatically inject cookie
         val cookieManager = CookieManager.getInstance()

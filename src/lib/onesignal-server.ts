@@ -30,7 +30,9 @@ export async function sendOneSignalNotification(options: {
   const osClient = getClient();
   if (!osClient) return false;
 
-  const notification = {
+  const isAdmin = options.externalIds.includes("admin_global");
+
+  const notification: any = {
     contents: {
       ar: options.body,
       en: options.body,
@@ -39,10 +41,6 @@ export async function sendOneSignalNotification(options: {
       ar: options.title,
       en: options.title,
     },
-    include_aliases: {
-      external_id: options.externalIds,
-    },
-    include_external_user_ids: options.externalIds,
     target_channel: "push",
     url: options.url,
     data: options.data,
@@ -57,6 +55,17 @@ export async function sendOneSignalNotification(options: {
     android_accent_color: "4f46e5",
     small_icon: "ic_stat_onesignal_default",
   };
+
+  if (isAdmin) {
+    notification.filters = [
+      { field: "tag", key: "role", relation: "=", value: "admin" }
+    ];
+  } else {
+    notification.include_aliases = {
+      external_id: options.externalIds,
+    };
+    notification.include_external_user_ids = options.externalIds;
+  }
 
   try {
     const response = await osClient.createNotification(notification as any);

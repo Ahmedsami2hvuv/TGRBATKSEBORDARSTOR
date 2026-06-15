@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID || "aa21547a-4853-4ced-8823-6fd8c778b7b1";
   const apiKey = process.env.ONESIGNAL_REST_API_KEY;
 
@@ -12,7 +12,9 @@ export async function GET() {
     });
   }
 
-  const notification = {
+  const mode = request.nextUrl.searchParams.get("mode") || "tag";
+
+  const notification: any = {
     app_id: appId,
     contents: {
       ar: "هذا الإشعار لتجربة سرعة وصول OneSignal للتطبيق",
@@ -22,12 +24,19 @@ export async function GET() {
       ar: "🔔 فحص تجريبي فوري",
       en: "🔔 فحص تجريبي فوري",
     },
-    include_aliases: {
-      external_id: ["admin_global"],
-    },
     target_channel: "push",
     url: "https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/orders/pending",
   };
+
+  if (mode === "tag") {
+    notification.filters = [
+      { field: "tag", key: "role", relation: "=", value: "admin" }
+    ];
+  } else {
+    notification.include_aliases = {
+      external_id: ["admin_global"],
+    };
+  }
 
   try {
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
