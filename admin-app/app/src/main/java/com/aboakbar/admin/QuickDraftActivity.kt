@@ -148,11 +148,19 @@ class QuickDraftActivity : AppCompatActivity() {
 
     private fun populatePreparerChips() {
         chipGroupPreparers.removeAllViews()
+        val displayMetrics = resources.displayMetrics
+        val horizontalInset = (88 * displayMetrics.density).toInt()
+        val chipSpacing = (8 * displayMetrics.density).toInt()
+        val availableWidth = displayMetrics.widthPixels - horizontalInset
+        val chipWidth = (availableWidth - chipSpacing) / 2
+
         for (preparer in preparerList) {
             val chip = com.google.android.material.chip.Chip(this)
             chip.text = preparer.name
             chip.tag = preparer.id
             chip.isCheckable = true
+            chip.layoutParams = android.view.ViewGroup.LayoutParams(chipWidth, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+            chip.textAlignment = View.TEXT_ALIGNMENT_CENTER
             chipGroupPreparers.addView(chip)
         }
     }
@@ -250,12 +258,20 @@ class QuickDraftActivity : AppCompatActivity() {
                             val suggestedArray = jsonRes.optJSONArray("suggestedRegions")
                             chipGroupRegions.removeAllViews()
                             if (suggestedArray != null) {
+                                val displayMetrics = resources.displayMetrics
+                                val horizontalInset = (88 * displayMetrics.density).toInt()
+                                val chipSpacing = (8 * displayMetrics.density).toInt()
+                                val availableWidth = displayMetrics.widthPixels - horizontalInset
+                                val chipWidth = (availableWidth - chipSpacing) / 2
+
                                 for (i in 0 until suggestedArray.length()) {
                                     val item = suggestedArray.getJSONObject(i)
                                     val chip = com.google.android.material.chip.Chip(this@QuickDraftActivity)
                                     chip.text = item.getString("name")
                                     chip.tag = item.getString("id")
                                     chip.isCheckable = true
+                                    chip.layoutParams = android.view.ViewGroup.LayoutParams(chipWidth, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+                                    chip.textAlignment = View.TEXT_ALIGNMENT_CENTER
                                     chipGroupRegions.addView(chip)
                                 }
                             }

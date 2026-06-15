@@ -104,17 +104,7 @@ class OrderAlertActivity : Activity() {
             layoutAssign.visibility = View.GONE
         }
 
-        findViewById<Button>(R.id.btnConfirmAssign).setOnClickListener {
-            val cgCouriers = findViewById<ChipGroup>(R.id.cgCouriers)
-            val checkedId = cgCouriers.checkedChipId
-            if (checkedId == View.NO_ID) {
-                Toast.makeText(this, "يرجى تحديد المندوب أولاً", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            val chip = cgCouriers.findViewById<Chip>(checkedId)
-            val courierId = chip.tag as String
-            sendOrderAction("assign", courierId)
-        }
+        findViewById<Button>(R.id.btnConfirmAssign).visibility = View.GONE
     }
 
     private fun fetchCouriers() {
@@ -162,6 +152,9 @@ class OrderAlertActivity : Activity() {
             chip.text = name
             chip.tag = id
             chip.isCheckable = true
+            chip.setOnClickListener {
+                sendOrderAction("assign", id)
+            }
             cgCouriers.addView(chip)
         }
     }
