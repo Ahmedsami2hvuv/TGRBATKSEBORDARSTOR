@@ -543,6 +543,17 @@ export async function pushNotifyCourierNewAssignment(
   const path = orderId ? `/mandoub/order/${orderId}` : "/mandoub";
   const url = buildDelegatePortalUrl(courierId, getPublicAppUrl(), path);
 
+  const customData = {
+    type: "new_order",
+    orderNumber: finalOrderNumber,
+    shopName: order?.shop?.name ?? "—",
+    regionName: order?.customerRegion?.name ?? "—",
+    orderTime,
+    subtotal: order?.orderSubtotal ? Number(order.orderSubtotal) : 0,
+    orderType: order?.orderType ?? "توصيل",
+    pendingCount: 1, // المندوب يرى طلبه فقط
+  };
+
   // 2. إرسال OneSignal (باستخدام معرف المندوب)
   await sendToSubscriptions(subs, {
     title,
@@ -550,7 +561,7 @@ export async function pushNotifyCourierNewAssignment(
     url,
     tag: `kse-push-mandoub-${orderNumber}-${courierId}`,
     sound: settings.soundPreset,
-  }, [courierId]);
+  }, [courierId], customData);
 }
 
 export async function pushNotifyCourierAssignmentRemoved(
