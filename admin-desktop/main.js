@@ -17,7 +17,7 @@ function createWindow () {
   Menu.setApplicationMenu(null);
 
   // تحميل رابط لوحة التحكم
-  win.loadURL('https://aboakbar.vercel.app');
+  win.loadURL('https://aboakbr.com/abo1stor3hlaa2kbr8-47');
   
   // يمكنك فتح أدوات المطور إذا أردت بتفعيل السطر التالي:
   // win.webContents.openDevTools();
