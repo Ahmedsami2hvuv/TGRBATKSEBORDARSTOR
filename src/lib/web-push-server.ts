@@ -167,68 +167,82 @@ async function sendToSubscriptions(
 
 /** إشعار للإدارة: طلب جديد قيد الانتظار */
 export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Promise<void> {
-  const settingsRow = await getOrCreateNotificationSettings();
-  const settings = audienceSettings(settingsRow, "admin");
-  if (!settings.enabled) return;
-  const order = await prisma.order.findUnique({
-    where: { orderNumber },
-    select: {
-      shop: { select: { name: true } },
-      customerRegion: { select: { name: true } },
-      totalAmount: true,
-      orderNoteTime: true,
-    },
-  });
+  console.log("[PushNotify] pushNotifyAdminsNewPendingOrder started for orderNumber:", orderNumber);
+  try {
+    const settingsRow = await getOrCreateNotificationSettings();
+    const settings = audienceSettings(settingsRow, "admin");
+    if (!settings.enabled) {
+      console.log("[PushNotify] Admin notifications are disabled in database settings.");
+      return;
+    }
+    const order = await prisma.order.findUnique({
+      where: { orderNumber },
+      select: {
+        shop: { select: { name: true } },
+        customerRegion: { select: { name: true } },
+        totalAmount: true,
+        orderNoteTime: true,
+      },
+    });
 
-  const orderPrice = order?.totalAmount ? formatDinarAsAlf(order.totalAmount) : "—";
-  const orderTime = order?.orderNoteTime || "فوري";
+    if (!order) {
+      console.log("[PushNotify] Warning: Order not found in database for orderNumber:", orderNumber);
+    }
 
-  const title = renderNotificationTemplate(settings.titleSingle, {
-    count: 1,
-    orderNumber,
-    shopName: order?.shop?.name ?? "—",
-    regionName: order?.customerRegion?.name ?? "—",
-    orderPrice,
-    orderTime,
-  });
+    const orderPrice = order?.totalAmount ? formatDinarAsAlf(order.totalAmount) : "—";
+    const orderTime = order?.orderNoteTime || "فوري";
 
-  const body = renderNotificationTemplate(settings.templateSingle, {
-    count: 1,
-    orderNumber,
-    shopName: order?.shop?.name ?? "—",
-    regionName: order?.customerRegion?.name ?? "—",
-    orderPrice,
-    orderTime,
-  });
+    const title = renderNotificationTemplate(settings.titleSingle, {
+      count: 1,
+      orderNumber,
+      shopName: order?.shop?.name ?? "—",
+      regionName: order?.customerRegion?.name ?? "—",
+      orderPrice,
+      orderTime,
+    });
 
-  // جلب معرفات الموظفين (الأدمن) + المعرف العام للأدمن
-  const adminEmployees = await prisma.employee.findMany({
-    where: { role: "admin" },
-    select: { id: true }
-  });
-  const adminExternalIds = [...adminEmployees.map(e => e.id), "admin_global"];
+    const body = renderNotificationTemplate(settings.templateSingle, {
+      count: 1,
+      orderNumber,
+      shopName: order?.shop?.name ?? "—",
+      regionName: order?.customerRegion?.name ?? "—",
+      orderPrice,
+      orderTime,
+    });
 
-  const subs = await prisma.webPushSubscription.findMany({
-    where: { audience: "admin" },
-    select: { id: true, endpoint: true, p256dh: true, auth: true },
-  });
+    // جلب معرفات الموظفين (الأدمن) + المعرف العام للأدمن
+    const adminEmployees = await prisma.employee.findMany({
+      where: { role: "admin" },
+      select: { id: true }
+    });
+    const adminExternalIds = [...adminEmployees.map(e => e.id), "admin_global"];
 
-  const customData = {
-    type: "new_order",
-    orderNumber,
-    shopName: order?.shop?.name ?? "—",
-    regionName: order?.customerRegion?.name ?? "—",
-    orderTime,
-    subtotal: order?.totalAmount ?? 0,
-  };
+    const subs = await prisma.webPushSubscription.findMany({
+      where: { audience: "admin" },
+      select: { id: true, endpoint: true, p256dh: true, auth: true },
+    });
 
-  await sendToSubscriptions(subs, {
-    title,
-    body,
-    url: `${getPublicAppUrl()}${SECRET_ADMIN_PATH}/orders/pending`,
-    tag: `kse-push-admin-${orderNumber}`,
-    sound: settings.soundPreset,
-  }, adminExternalIds, customData);
+    const customData = {
+      type: "new_order",
+      orderNumber,
+      shopName: order?.shop?.name ?? "—",
+      regionName: order?.customerRegion?.name ?? "—",
+      orderTime,
+      subtotal: order?.totalAmount ? Number(order.totalAmount) : 0, // Convert Decimal object to plain number!
+    };
+
+    console.log("[PushNotify] Sending push to admin subscriptions and OneSignal with externalIds:", adminExternalIds);
+    await sendToSubscriptions(subs, {
+      title,
+      body,
+      url: `${getPublicAppUrl()}${SECRET_ADMIN_PATH}/orders/pending`,
+      tag: `kse-push-admin-${orderNumber}`,
+      sound: settings.soundPreset,
+    }, adminExternalIds, customData);
+    console.log("[PushNotify] pushNotifyAdminsNewPendingOrder completed successfully.");
+  } catch (error) {
+    console.error("[PushNotify] Error in pushNotifyAdminsNewPendingOrder:", error);
+  }
 }
 
 /** إشعار للإدارة: تغيّر توفر مندوب/مجهز */

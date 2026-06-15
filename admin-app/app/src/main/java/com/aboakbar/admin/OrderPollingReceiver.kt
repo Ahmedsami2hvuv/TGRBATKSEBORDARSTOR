@@ -22,6 +22,8 @@ class OrderPollingReceiver : BroadcastReceiver() {
             val token = sharedPreferences.getString(KEY_TOKEN, null)
             
             if (!token.isNullOrEmpty()) {
+                // تم إيقاف بدء تشغيل الخدمة الخلفية لتقليل استهلاك زيارات Vercel والاعتماد فقط على OneSignal
+                /*
                 try {
                     val serviceIntent = Intent(context, OrderForegroundService::class.java)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -32,6 +34,7 @@ class OrderPollingReceiver : BroadcastReceiver() {
                 } catch (e: Exception) {
                     // تجاهل
                 }
+                */
             }
         }
     }

@@ -464,7 +464,9 @@ class MainActivity : AppCompatActivity() {
     private fun launchDashboard(token: String) {
         currentToken = token
 
-        // تشغيل الخدمة الأمامية لمراقبة الطلبات باستمرار بالخلفية
+        // تم إلغاء تشغيل الخدمة الخلفية (الفحص الدوري كل 15 ثانية) لتقليل استهلاك زيارات Vercel
+        // وتجنب استنزاف الموارد، والاعتماد بالكامل على إشعارات OneSignal الفورية.
+        /*
         try {
             val serviceIntent = Intent(this, OrderForegroundService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -475,6 +477,7 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             // تجاهل
         }
+        */
 
         // ربط هوية الجهاز بـ admin_global لتلقي إشعارات الإدارة الفورية
         OneSignal.login("admin_global")
