@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -9,6 +10,7 @@
     android:elevation="8dp">
 
     <TextView
+        android:id="@+id/tvMainTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="إضافة طلب جديد"
@@ -17,14 +19,6 @@
         android:textColor="#333333"
         android:gravity="center"
         android:layout_marginBottom="16dp" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="النص المحدد:"
-        android:textSize="14sp"
-        android:textColor="#666666"
-        android:layout_marginBottom="8dp" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -40,42 +34,7 @@
             android:textColor="#000000"
             android:textSize="14sp"
             android:text="جاري تحميل النص..." />
-
     </ScrollView>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="إسناد الطلب إلى المجهز:"
-        android:textSize="14sp"
-        android:textColor="#666666"
-        android:layout_marginBottom="8dp" />
-
-    <Spinner
-        android:id="@+id/spinnerPreparers"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="#E0E0E0"
-        android:layout_marginBottom="16dp" />
-
-    <TextView
-        android:id="@+id/tvRegionLabel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="المنطقة مبهمة، يرجى اختيار المنطقة الدقيقة:"
-        android:textSize="14sp"
-        android:textColor="#F44336"
-        android:textStyle="bold"
-        android:visibility="gone"
-        android:layout_marginBottom="8dp" />
-
-    <Spinner
-        android:id="@+id/spinnerRegions"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="#FFCDD2"
-        android:visibility="gone"
-        android:layout_marginBottom="24dp" />
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -85,30 +44,137 @@
         android:visibility="gone"
         android:layout_marginBottom="16dp"/>
 
+    <!-- STEP 1: PREPARERS -->
     <LinearLayout
+        android:id="@+id/layoutStep1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="vertical">
 
-        <Button
-            android:id="@+id/btnCancel"
-            android:layout_width="0dp"
-            android:layout_weight="1"
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="إلغاء"
-            android:backgroundTint="#F44336"
-            android:textColor="#FFFFFF"
-            android:layout_marginEnd="8dp" />
+            android:text="إسناد الطلب إلى המجهزين (يمكن اختيار أكثر من مجهز):"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="8dp" />
 
-        <Button
-            android:id="@+id/btnSubmit"
-            android:layout_width="0dp"
-            android:layout_weight="1"
+        <HorizontalScrollView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="إضافة الطلب"
-            android:backgroundTint="#4CAF50"
-            android:textColor="#FFFFFF"
-            android:layout_marginStart="8dp" />
+            android:layout_marginBottom="24dp"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupPreparers"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="false"
+                app:chipSpacingHorizontal="8dp" />
+        </HorizontalScrollView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnCancel1"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="إلغاء"
+                android:backgroundTint="#F44336"
+                android:textColor="#FFFFFF"
+                android:layout_marginEnd="8dp" />
+
+            <Button
+                android:id="@+id/btnNext"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="التالي"
+                android:backgroundTint="#4CAF50"
+                android:textColor="#FFFFFF"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- STEP 2: REGIONS -->
+    <LinearLayout
+        android:id="@+id/layoutStep2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="المنطقة مبهمة، يرجى اختيار المنطقة الدقيقة:"
+            android:textSize="14sp"
+            android:textColor="#F44336"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupRegions"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="false"
+                app:chipSpacingHorizontal="8dp" />
+        </HorizontalScrollView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="أو ابحث عن منطقة أخرى:"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="4dp" />
+
+        <AutoCompleteTextView
+            android:id="@+id/autoCompleteRegions"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="#E0E0E0"
+            android:padding="8dp"
+            android:hint="اكتب اسم المنطقة..."
+            android:layout_marginBottom="24dp"
+            android:completionThreshold="1" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnBack"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="رجوع"
+                android:backgroundTint="#9E9E9E"
+                android:textColor="#FFFFFF"
+                android:layout_marginEnd="8dp" />
+
+            <Button
+                android:id="@+id/btnSubmitFinal"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="تأكيد وإرسال"
+                android:backgroundTint="#4CAF50"
+                android:textColor="#FFFFFF"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
     </LinearLayout>
 
 </LinearLayout>
