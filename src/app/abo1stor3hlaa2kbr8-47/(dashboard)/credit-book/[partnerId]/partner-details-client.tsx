@@ -987,13 +987,13 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                           {/* تعديل/حذف للعمليات اليدوية */}
                           {!tx.isAuto ? (
                             <>
-                              {partner.type === "supplier" && tx.note?.includes("طلب رقم: #") && tx.isPaid ? (
+                              {partner.type === "supplier" && tx.kind === "took" && tx.note?.includes("طلب رقم: #") && tx.isPaid ? (
                                 <span className="flex items-center gap-1 px-3 py-1.5 text-xs font-black rounded-xl border text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/40">
                                   ✅ مسدد للمورد
                                 </span>
                               ) : (
                                 <>
-                                  {partner.type === "supplier" && tx.note?.includes("طلب رقم: #") && (
+                                  {partner.type === "supplier" && tx.kind === "took" && tx.note?.includes("طلب رقم: #") && (
                                     <button
                                       onClick={() => handlePaySupplierTx(tx.id, tx.amount)}
                                       className="flex items-center gap-1 px-3 py-1.5 text-xs font-black rounded-xl transition shadow-md cursor-pointer text-white bg-indigo-600 hover:bg-indigo-700 shadow-indigo-900/10 hover:scale-[1.02] active:scale-[0.98]"
