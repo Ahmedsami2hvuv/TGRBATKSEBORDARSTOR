@@ -38,6 +38,27 @@ export async function GET(request: NextRequest) {
     };
   }
 
+  // 1. التحقق من وجود المستخدم admin_global في خوادم وان سيجنال
+  let userDetails: any = null;
+  try {
+    const userResponse = await fetch(
+      `https://onesignal.com/api/v1/apps/${appId}/users/by/external_id/admin_global`,
+      {
+        headers: {
+          "Authorization": `Key ${apiKey.trim()}`,
+        },
+      }
+    );
+    if (userResponse.ok) {
+      userDetails = await userResponse.json();
+    } else {
+      const errText = await userResponse.text();
+      userDetails = { error: `User request returned status ${userResponse.status}`, raw: errText };
+    }
+  } catch (err: any) {
+    userDetails = { error: err.message || err };
+  }
+
   try {
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
@@ -53,6 +74,7 @@ export async function GET(request: NextRequest) {
       success: response.ok,
       status: response.status,
       oneSignalResponse: data,
+      adminGlobalUser: userDetails,
       appId,
       apiKeyLength: apiKey.length,
       apiKeySnippet: apiKey.length > 8 ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}` : "too_short",
@@ -61,6 +83,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: err.message || err,
+      adminGlobalUser: userDetails,
       appId,
     });
   }
