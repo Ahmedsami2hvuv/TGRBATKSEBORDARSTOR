@@ -196,7 +196,7 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
 
     const pendingCount = await prisma.order.count({
       where: {
-        status: { in: ["pending_review", "pending_assignment", "pending_preparer"] }
+        status: "pending"
       }
     });
 
