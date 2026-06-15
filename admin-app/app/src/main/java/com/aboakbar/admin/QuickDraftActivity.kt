@@ -30,10 +30,20 @@ class QuickDraftActivity : AppCompatActivity() {
     private val KEY_TOKEN = "admin_token"
     private val BACKEND_URL = "https://aboakbar.vercel.app"
 
+    private lateinit var tvRegionLabel: TextView
+    private lateinit var spinnerRegions: Spinner
+
     private var selectedText: String = ""
     private var preparerList: List<Preparer> = emptyList()
+    private var regionList: List<Region> = emptyList()
 
     data class Preparer(val id: String, val name: String) {
+        override fun toString(): String {
+            return name
+        }
+    }
+
+    data class Region(val id: String, val name: String) {
         override fun toString(): String {
             return name
         }
@@ -49,6 +59,8 @@ class QuickDraftActivity : AppCompatActivity() {
         btnCancel = findViewById(R.id.btnCancel)
         btnSubmit = findViewById(R.id.btnSubmit)
         progressBar = findViewById(R.id.progressBar)
+        tvRegionLabel = findViewById(R.id.tvRegionLabel)
+        spinnerRegions = findViewById(R.id.spinnerRegions)
 
         if (intent?.action == Intent.ACTION_PROCESS_TEXT) {
             val text = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
@@ -158,6 +170,17 @@ class QuickDraftActivity : AppCompatActivity() {
         json.put("text", selectedText)
         json.put("preparerId", selectedPreparer.id)
 
+        if (spinnerRegions.visibility == View.VISIBLE) {
+            val selectedRegion = spinnerRegions.selectedItem as? Region
+            if (selectedRegion != null) {
+                json.put("regionId", selectedRegion.id)
+            } else {
+                showLoading(false)
+                Toast.makeText(this, "يرجى اختيار المنطقة", Toast.LENGTH_SHORT).show()
+                return
+            }
+        }
+
         val body = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
         val request = Request.Builder()
             .url("$BACKEND_URL/api/admin/quick-draft")
@@ -174,13 +197,38 @@ class QuickDraftActivity : AppCompatActivity() {
             }
 
             override fun onResponse(call: Call, response: Response) {
+                val responseBody = response.body?.string() ?: ""
                 runOnUiThread {
                     showLoading(false)
-                    if (response.isSuccessful) {
-                        Toast.makeText(this@QuickDraftActivity, "تم إضافة مسودة التجهيز بنجاح!", Toast.LENGTH_LONG).show()
-                        finish()
-                    } else {
-                        Toast.makeText(this@QuickDraftActivity, "فشل الإرسال. تأكد من تسجيل الدخول كآدمن.", Toast.LENGTH_SHORT).show()
+                    try {
+                        val jsonRes = JSONObject(responseBody)
+                        if (response.isSuccessful && jsonRes.optBoolean("success")) {
+                            Toast.makeText(this@QuickDraftActivity, "تم إضافة مسودة التجهيز بنجاح!", Toast.LENGTH_LONG).show()
+                            finish()
+                        } else if (response.isSuccessful && jsonRes.optBoolean("requireRegion")) {
+                            // Server asking for Region clarification
+                            tvRegionLabel.visibility = View.VISIBLE
+                            spinnerRegions.visibility = View.VISIBLE
+                            
+                            val regionsArray = jsonRes.getJSONArray("suggestedRegions")
+                            val list = mutableListOf<Region>()
+                            for (i in 0 until regionsArray.length()) {
+                                val item = regionsArray.getJSONObject(i)
+                                list.add(Region(item.getString("id"), item.getString("name")))
+                            }
+                            regionList = list
+                            
+                            val adapter = ArrayAdapter(this@QuickDraftActivity, android.R.layout.simple_spinner_item, regionList)
+                            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                            spinnerRegions.adapter = adapter
+                            
+                            Toast.makeText(this@QuickDraftActivity, "يرجى تحديد المنطقة بدقة", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val errorMsg = jsonRes.optString("error", "فشل الإرسال. تأكد من تسجيل الدخول كآدمن.")
+                            Toast.makeText(this@QuickDraftActivity, errorMsg, Toast.LENGTH_SHORT).show()
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(this@QuickDraftActivity, "خطأ في استلام الرد: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -192,5 +240,8 @@ class QuickDraftActivity : AppCompatActivity() {
         btnSubmit.isEnabled = !show
         btnCancel.isEnabled = !show
         spinnerPreparers.isEnabled = !show
+        if (spinnerRegions.visibility == View.VISIBLE) {
+            spinnerRegions.isEnabled = !show
+        }
     }
 }

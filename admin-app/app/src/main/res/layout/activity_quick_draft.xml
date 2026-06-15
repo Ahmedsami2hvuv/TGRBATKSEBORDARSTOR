@@ -56,6 +56,25 @@
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:background="#E0E0E0"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tvRegionLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="المنطقة مبهمة، يرجى اختيار المنطقة الدقيقة:"
+        android:textSize="14sp"
+        android:textColor="#F44336"
+        android:textStyle="bold"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp" />
+
+    <Spinner
+        android:id="@+id/spinnerRegions"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="#FFCDD2"
+        android:visibility="gone"
         android:layout_marginBottom="24dp" />
 
     <ProgressBar
