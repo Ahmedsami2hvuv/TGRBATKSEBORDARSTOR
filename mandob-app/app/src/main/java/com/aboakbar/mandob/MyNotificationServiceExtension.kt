@@ -29,6 +29,22 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
                 val channelId = "aboakbar_admin_notifications"
 
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val channelName = "تنبيهات الطلبات الجديدة"
+                    val channel = android.app.NotificationChannel(
+                        channelId,
+                        channelName,
+                        android.app.NotificationManager.IMPORTANCE_HIGH
+                    ).apply {
+                        description = "إشعارات الطلبات الجديدة"
+                        enableLights(true)
+                        enableVibration(true)
+                        vibrationPattern = longArrayOf(0, 400, 200, 400, 200, 400)
+                    }
+                    notificationManager.createNotificationChannel(channel)
+                }
+
+
                 // إعداد نية فتح التطبيق
                 val openIntent = Intent(context, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
