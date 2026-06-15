@@ -106,6 +106,31 @@ function ClientOrderFormInner({
 
   const [learnStep, setLearnStep] = useState(0);
 
+  const [waRedirectEnabled, setWaRedirectEnabled] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("kse_wa_redirect_enabled");
+      return stored !== "false";
+    }
+    return true;
+  });
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem("kse_wa_redirect_enabled", String(waRedirectEnabled));
+  }, [waRedirectEnabled]);
+
+  useEffect(() => {
+    const click = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", click);
+    return () => document.removeEventListener("mousedown", click);
+  }, []);
+
   const handleUiModeChange = async (mode: string) => {
     setUiMode(mode);
     if (mode === "learn") setLearnStep(0);
@@ -197,17 +222,17 @@ function ClientOrderFormInner({
 
   // بعد نجاح رفع الطلب الجديد: التحويل التلقائي إلى واتساب مع رسالة جاهزة
   useEffect(() => {
-    if (state.ok && !initialOrder && state.waUrl) {
+    if (state.ok && !initialOrder && state.waUrl && waRedirectEnabled) {
       if (state.waUrl !== "#") {
         window.location.href = state.waUrl;
         return;
       }
     }
-  }, [state.ok, initialOrder, state.waUrl]);
+  }, [state.ok, initialOrder, state.waUrl, waRedirectEnabled]);
 
   // غلق الصفحة تلقائياً بعد نجاح الإرسال بـ 3 ثواني (كتحويل احتياطي)
   useEffect(() => {
-    if (state.ok) {
+    if (state.ok && (initialOrder || waRedirectEnabled)) {
       const t = setTimeout(() => {
         try {
           window.close();
@@ -217,7 +242,7 @@ function ClientOrderFormInner({
       }, 3000);
       return () => clearTimeout(t);
     }
-  }, [state.ok]);
+  }, [state.ok, initialOrder, waRedirectEnabled]);
 
   // التركيز التلقائي والتمرير للحقل الناقص عند وجود خطأ
   useEffect(() => {
@@ -266,7 +291,9 @@ function ClientOrderFormInner({
           <p className="mt-2 text-sm text-slate-500 italic">
             {initialOrder
               ? "سيتم غلق هذه الصفحة تلقائياً خلال ثوانٍ..."
-              : "سيتم تحويلك تلقائياً إلى واتساب خلال لحظات..."}
+              : waRedirectEnabled
+                ? "سيتم تحويلك تلقائياً إلى واتساب خلال لحظات..."
+                : "تم إرسال وحفظ تفاصيل طلبك بنجاح."}
           </p>
           <div className="mt-5 flex flex-col gap-2">
             <button
@@ -311,6 +338,48 @@ function ClientOrderFormInner({
 
   return (
     <div className="mx-auto max-w-lg text-slate-800">
+      {/* settings button & dropdown */}
+      <div className="absolute top-4 right-4 z-50" ref={settingsRef}>
+        <button 
+          type="button"
+          onClick={() => setSettingsOpen(!settingsOpen)}
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 text-lg shadow-sm transition hover:scale-105 active:scale-95"
+          title="الإعدادات"
+        >
+          ⚙️
+        </button>
+        
+        {settingsOpen && (
+          <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] shadow-2xl p-4 z-[9999]" dir="rtl">
+            <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2 mb-3 flex items-center gap-2">
+              <span>⚙️</span> إعدادات الطلب
+            </h3>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                التوجيه للواتساب تلقائياً
+              </span>
+              <button
+                type="button"
+                onClick={() => setWaRedirectEnabled(!waRedirectEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                  waRedirectEnabled ? "bg-emerald-600" : "bg-slate-300 dark:bg-slate-700"
+                }`}
+                dir="ltr"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    waRedirectEnabled ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 leading-relaxed">
+              عند التفعيل، سيتم تحويل الزبون تلقائياً للواتساب بعد إرسال الطلب لإرسال تفاصيله للمحل.
+            </p>
+          </div>
+        )}
+      </div>
+
       <div className="mb-6 flex items-center justify-center gap-1 rounded-2xl bg-slate-100 p-1 shadow-inner">
         <button
           type="button"
