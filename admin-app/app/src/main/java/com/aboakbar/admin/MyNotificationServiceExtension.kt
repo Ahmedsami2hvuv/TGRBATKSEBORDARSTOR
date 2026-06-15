@@ -64,7 +64,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 val largeIcon = android.graphics.BitmapFactory.decodeResource(context.resources, R.drawable.ic_notification_logo)
 
                 val builder = NotificationCompat.Builder(context, channelId)
-                    .setSmallIcon(android.R.drawable.stat_notify_chat)
+                    .setSmallIcon(R.drawable.ic_notification_small)
                     .setLargeIcon(largeIcon)
                     .setContentTitle(title)
                     .setContentText(body)
