@@ -435,6 +435,9 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
               <span className="text-[10px] text-amber-100 font-bold mr-2">← تفاصيل</span>
             </Link>
 
+            <Link href={`${SECRET_ADMIN_PATH}/orders/pending`} className="rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 px-5 py-2.5 text-white font-bold shadow-md shadow-blue-200 transition hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98]">
+              الطلبات الجديدة
+            </Link>
             <Link href={`${SECRET_ADMIN_PATH}/orders/new`} className={ad.btnPrimary}>
               + إضافة طلب من الإدارة
             </Link>
