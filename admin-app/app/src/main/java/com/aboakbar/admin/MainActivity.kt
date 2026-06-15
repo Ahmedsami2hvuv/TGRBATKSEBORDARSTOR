@@ -32,6 +32,9 @@ import java.util.concurrent.Executor
 import com.onesignal.OneSignal
 import android.app.AlarmManager
 import android.os.SystemClock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -72,6 +75,15 @@ class MainActivity : AppCompatActivity() {
 
         // تهيئة OneSignal للإشعارات الفورية
         OneSignal.initWithContext(this, "aa21547a-4853-4ced-8823-6fd8c778b7b1")
+
+        // طلب إذن الإشعارات من وان سيجنال لتسجيل الجهاز بشكل صحيح في خوادمهم
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                OneSignal.Notifications.requestPermission(true)
+            } catch (e: Exception) {
+                // تجاهل
+            }
+        }
 
         // Initialize Views
         webView = findViewById(R.id.webView)

@@ -43,6 +43,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("com.onesignal:OneSignal:[5.0.0, 5.99.99]")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
