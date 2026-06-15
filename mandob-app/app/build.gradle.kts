@@ -17,15 +17,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    signingConfigs {
-        create("release") {
-            storeFile = file("mandob-release-key.jks")
-            storePassword = "mandob123"
-            keyAlias = "mandob"
-            keyPassword = "mandob123"
-        }
-    }
-
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -33,7 +24,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
