@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     }
 
     const couriers = await prisma.courier.findMany({
-      where: { active: true },
+      where: { hiddenFromReports: false },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     });

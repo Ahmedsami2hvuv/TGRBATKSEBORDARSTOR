@@ -49,7 +49,7 @@ class OrderAlertActivity : Activity() {
         setContentView(R.layout.activity_order_alert)
         setFinishOnTouchOutside(false)
 
-        val prefs = getSharedPreferences("AboAkbarAdminPrefs", Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
         adminToken = prefs.getString("admin_token", null)
 
         val shopName = intent.getStringExtra("shopName") ?: "—"

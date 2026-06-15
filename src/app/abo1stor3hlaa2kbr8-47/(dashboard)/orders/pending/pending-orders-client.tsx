@@ -1457,7 +1457,7 @@ export default function PendingOrdersClient({
     setIsBulkLoading(true);
     setBulkActionError("");
     try {
-      const res = await bulkDeleteOrdersPermanently(Array.from(selectedIds));
+      const res = await bulkDeleteOrdersPermanently(Array.from(selectedIds), !!isDraftMode);
       if (res.error) {
         setBulkActionError(res.error);
       } else {

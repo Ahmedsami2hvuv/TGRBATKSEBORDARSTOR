@@ -64,7 +64,7 @@
 
         <activity
             android:name="com.aboakbar.admin.OrderAlertActivity"
-            android:theme="@style/Theme.AppCompat.Dialog"
+            android:theme="@style/Theme.Material3.DayNight.Dialog"
             android:excludeFromRecents="true"
             android:launchMode="singleInstance"
             android:showOnLockScreen="true"
@@ -72,7 +72,7 @@
 
         <activity
             android:name="com.aboakbar.admin.QuickDraftActivity"
-            android:theme="@style/Theme.AppCompat.Dialog"
+            android:theme="@style/Theme.Material3.DayNight.Dialog"
             android:label="إضافة طلب"
             android:exported="true">
             <intent-filter>

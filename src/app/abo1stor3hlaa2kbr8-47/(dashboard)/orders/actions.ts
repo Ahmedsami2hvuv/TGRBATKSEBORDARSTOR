@@ -19,7 +19,7 @@ import {
   resolveDynamicOrderType,
 } from "@/lib/preparation-invoice";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
-import { PreparerShoppingDraftStatus } from "@prisma/client";
+import { PreparerShoppingDraftStatus, Prisma } from "@prisma/client";
 import { getOrCreateSystemAdminShop } from "./pending/pricing-actions";
 
 export type AssignOrderState = { error?: string; ok?: boolean };
@@ -930,19 +930,47 @@ export async function saveOrderLocationOnly(
 
 /** حذف جماعي للطلبات المعلقة نهائياً */
 export async function bulkDeleteOrdersPermanently(
-  orderIds: string[]
+  orderIds: string[],
+  isDraft: boolean = false
 ): Promise<{ ok?: boolean; error?: string }> {
   if (!orderIds || orderIds.length === 0) return { error: "لم يتم تحديد أي طلبات" };
 
   try {
-    // حذف المسودات المرتبطة أولاً
-    await prisma.companyPreparerShoppingDraft.deleteMany({
-      where: { sentOrderId: { in: orderIds } }
-    });
-    // ثم حذف الطلبات نفسها
-    await prisma.order.deleteMany({
-      where: { id: { in: orderIds }, status: "pending" }
-    });
+    if (isDraft) {
+      // Find all groups for these drafts
+      const drafts = await prisma.companyPreparerShoppingDraft.findMany({
+         where: { id: { in: orderIds } },
+         select: { id: true, data: true }
+      });
+      
+      const groupIds = drafts
+         .map(d => (d.data as any)?.groupId)
+         .filter(g => typeof g === "string" && g.length > 0);
+
+      const allDraftIdsToDelete = new Set(orderIds);
+
+      if (groupIds.length > 0) {
+          const relatedDrafts = await prisma.$queryRaw<{ id: string }[]>`
+              SELECT id FROM "CompanyPreparerShoppingDraft" 
+              WHERE data->>'groupId' IN (${prisma.join(groupIds)})
+          `;
+          relatedDrafts.forEach(d => allDraftIdsToDelete.add(d.id));
+      }
+
+      await prisma.companyPreparerShoppingDraft.deleteMany({
+         where: { id: { in: Array.from(allDraftIdsToDelete) } }
+      });
+
+    } else {
+      // حذف المسودات المرتبطة أولاً
+      await prisma.companyPreparerShoppingDraft.deleteMany({
+        where: { sentOrderId: { in: orderIds } }
+      });
+      // ثم حذف الطلبات نفسها
+      await prisma.order.deleteMany({
+        where: { id: { in: orderIds }, status: "pending" }
+      });
+    }
 
     revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
     return { ok: true };
