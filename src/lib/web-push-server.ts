@@ -210,12 +210,8 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
       orderTime,
     });
 
-    // جلب معرفات الموظفين (الأدمن) + المعرف العام للأدمن
-    const adminEmployees = await prisma.employee.findMany({
-      where: { role: "admin" },
-      select: { id: true }
-    });
-    const adminExternalIds = [...adminEmployees.map(e => e.id), "admin_global"];
+    // معرف الأدمن العام لتلقي الإشعارات الفورية
+    const adminExternalIds = ["admin_global"];
 
     const subs = await prisma.webPushSubscription.findMany({
       where: { audience: "admin" },
@@ -259,12 +255,8 @@ export async function pushNotifyAdminsPresenceChange(input: {
     input.kind === "courier" ? "مندوب — التوفر" : "مجهز — التوفر";
   const body = `${input.name.trim() || "—"} — ${input.available ? "متاح للإسناد" : "غير متاح"}`;
 
-  // جلب معرفات الأدمن
-  const adminEmployees = await prisma.employee.findMany({
-    where: { role: "admin" },
-    select: { id: true }
-  });
-  const adminExternalIds = [...adminEmployees.map(e => e.id), "admin_global"];
+  // معرف الأدمن العام لتلقي الإشعارات الفورية
+  const adminExternalIds = ["admin_global"];
 
   const subs = await prisma.webPushSubscription.findMany({
     where: { audience: "admin" },
