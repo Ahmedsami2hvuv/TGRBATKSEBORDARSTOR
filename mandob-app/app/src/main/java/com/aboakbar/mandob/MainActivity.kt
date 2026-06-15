@@ -1,4 +1,4 @@
-﻿package com.aboakbar.mandob
+package com.aboakbar.mandob
 
 import android.Manifest
 import android.content.ActivityNotFoundException
@@ -262,11 +262,21 @@ class MainActivity : AppCompatActivity() {
         try {
             // استخراج معرف المندوب من الرابط
             val uri = Uri.parse(url)
-            val segments = uri.pathSegments
-            val mandoubIndex = segments.indexOf("mandoub")
-            if (mandoubIndex != -1 && mandoubIndex + 1 < segments.size) {
-                val mandobId = segments[mandoubIndex + 1]
-                
+            var mandobId: String? = null
+
+            // المحاولة الأولى: استخراج المعرف من المتغير c في الرابط (مثل ?c=ID)
+            mandobId = uri.getQueryParameter("c")
+
+            // المحاولة الثانية: استخراج المعرف من مسار الرابط (مثل /mandoub/ID)
+            if (mandobId.isNullOrEmpty()) {
+                val segments = uri.pathSegments
+                val mandoubIndex = segments.indexOf("mandoub")
+                if (mandoubIndex != -1 && mandoubIndex + 1 < segments.size) {
+                    mandobId = segments[mandoubIndex + 1]
+                }
+            }
+
+            if (!mandobId.isNullOrEmpty()) {
                 // حفظ الرابط والـ ID
                 val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 sharedPreferences.edit()
