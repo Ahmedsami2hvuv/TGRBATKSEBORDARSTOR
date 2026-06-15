@@ -181,7 +181,9 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
         shop: { select: { name: true } },
         customerRegion: { select: { name: true } },
         totalAmount: true,
+        orderSubtotal: true,
         orderNoteTime: true,
+        orderType: true,
       },
     });
 
@@ -189,8 +191,14 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
       console.log("[PushNotify] Warning: Order not found in database for orderNumber:", orderNumber);
     }
 
-    const orderPrice = order?.totalAmount ? formatDinarAsAlf(order.totalAmount) : "—";
+    const orderPrice = order?.orderSubtotal ? formatDinarAsAlf(order.orderSubtotal) : "—";
     const orderTime = order?.orderNoteTime || "فوري";
+
+    const pendingCount = await prisma.order.count({
+      where: {
+        status: { in: ["pending_review", "pending_assignment", "pending_preparer"] }
+      }
+    });
 
     const title = renderNotificationTemplate(settings.titleSingle, {
       count: 1,
@@ -224,7 +232,9 @@ export async function pushNotifyAdminsNewPendingOrder(orderNumber: number): Prom
       shopName: order?.shop?.name ?? "—",
       regionName: order?.customerRegion?.name ?? "—",
       orderTime,
-      subtotal: order?.totalAmount ? Number(order.totalAmount) : 0, // Convert Decimal object to plain number!
+      subtotal: order?.orderSubtotal ? Number(order.orderSubtotal) : 0, // Convert Decimal object to plain number!
+      orderType: order?.orderType ?? "توصيل",
+      pendingCount: pendingCount,
     };
 
     console.log("[PushNotify] Sending push to admin subscriptions and OneSignal with externalIds:", adminExternalIds);

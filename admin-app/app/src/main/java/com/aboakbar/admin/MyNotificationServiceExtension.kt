@@ -41,14 +41,13 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 }
                 val pendingIntent = android.app.PendingIntent.getActivity(context, 0, openIntent, pendingIntentFlags)
 
-                // نية تشغيل الشاشة المنبثقة الإجبارية
                 val alertIntent = Intent(context, OrderAlertActivity::class.java).apply {
                     putExtra("shopName", shopName)
                     putExtra("regionName", regionName)
                     putExtra("orderTime", orderTime)
                     putExtra("orderType", orderType)
                     putExtra("subtotal", subtotal)
-                    putExtra("pendingCount", 1)
+                    putExtra("pendingCount", additionalData.optInt("pendingCount", 1))
                     putExtra("orderNumber", orderNumber)
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 }
