@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { sendOneSignalNotification } from "@/lib/onesignal-server";
 
 export async function GET() {
   const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID || "aa21547a-4853-4ced-8823-6fd8c778b7b1";
@@ -13,20 +12,41 @@ export async function GET() {
     });
   }
 
+  const notification = {
+    app_id: appId,
+    contents: {
+      ar: "هذا الإشعار لتجربة سرعة وصول OneSignal للتطبيق",
+      en: "هذا الإشعار لتجربة سرعة وصول OneSignal للتطبيق",
+    },
+    headings: {
+      ar: "🔔 فحص تجريبي فوري",
+      en: "🔔 فحص تجريبي فوري",
+    },
+    include_aliases: {
+      external_id: ["admin_global"],
+    },
+    target_channel: "push",
+    url: "https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/orders/pending",
+  };
+
   try {
-    const result = await sendOneSignalNotification({
-      title: "🔔 فحص تجريبي فوري",
-      body: "هذا الإشعار لتجربة سرعة وصول OneSignal للتطبيق",
-      url: "https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/orders/pending",
-      externalIds: ["admin_global"],
-      sound: "default",
+    const response = await fetch("https://onesignal.com/api/v1/notifications", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Key ${apiKey.trim()}`,
+      },
+      body: JSON.stringify(notification),
     });
 
+    const data = await response.json();
     return NextResponse.json({
-      success: result,
-      message: result ? "تم إرسال طلب الإشعار لـ OneSignal بنجاح." : "فشل إرسال الإشعار لـ OneSignal.",
+      success: response.ok,
+      status: response.status,
+      oneSignalResponse: data,
       appId,
-      hasApiKey: !!apiKey,
+      apiKeyLength: apiKey.length,
+      apiKeySnippet: apiKey.length > 8 ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}` : "too_short",
     });
   } catch (err: any) {
     return NextResponse.json({
