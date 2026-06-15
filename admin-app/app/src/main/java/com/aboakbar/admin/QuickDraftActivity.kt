@@ -43,6 +43,7 @@ class QuickDraftActivity : AppCompatActivity() {
     private var selectedText: String = ""
     private var preparerList: List<Preparer> = emptyList()
     private var allRegionsList: List<Region> = emptyList()
+    private var suggestedRegionsList: List<Region> = emptyList()
 
     data class Preparer(val id: String, val name: String)
     data class Region(val id: String, val name: String) {
@@ -65,7 +66,6 @@ class QuickDraftActivity : AppCompatActivity() {
         chipGroupRegions = findViewById(R.id.chipGroupRegions)
         autoCompleteRegions = findViewById(R.id.autoCompleteRegions)
         btnBack = findViewById(R.id.btnBack)
-        btnSubmitFinal = findViewById(R.id.btnSubmitFinal)
 
         if (intent?.action == Intent.ACTION_PROCESS_TEXT) {
             val text = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
@@ -89,7 +89,14 @@ class QuickDraftActivity : AppCompatActivity() {
         }
 
         btnNext.setOnClickListener { submitDraft(false) }
-        btnSubmitFinal.setOnClickListener { submitDraft(true) }
+
+        autoCompleteRegions.addTextChangedListener(object: android.text.TextWatcher {
+            override fun afterTextChanged(s: android.text.Editable?) {
+                populateRegionChips(s?.toString() ?: "")
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
 
         fetchPreparers()
     }
@@ -256,24 +263,13 @@ class QuickDraftActivity : AppCompatActivity() {
                             layoutStep2.visibility = View.VISIBLE
                             
                             val suggestedArray = jsonRes.optJSONArray("suggestedRegions")
-                            chipGroupRegions.removeAllViews()
                             if (suggestedArray != null) {
-                                val displayMetrics = resources.displayMetrics
-                                val horizontalInset = (88 * displayMetrics.density).toInt()
-                                val chipSpacing = (8 * displayMetrics.density).toInt()
-                                val availableWidth = displayMetrics.widthPixels - horizontalInset
-                                val chipWidth = (availableWidth - chipSpacing) / 2
-
+                                val list = mutableListOf<Region>()
                                 for (i in 0 until suggestedArray.length()) {
                                     val item = suggestedArray.getJSONObject(i)
-                                    val chip = com.google.android.material.chip.Chip(this@QuickDraftActivity)
-                                    chip.text = item.getString("name")
-                                    chip.tag = item.getString("id")
-                                    chip.isCheckable = true
-                                    chip.layoutParams = android.view.ViewGroup.LayoutParams(chipWidth, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
-                                    chip.textAlignment = View.TEXT_ALIGNMENT_CENTER
-                                    chipGroupRegions.addView(chip)
+                                    list.add(Region(item.getString("id"), item.getString("name")))
                                 }
+                                suggestedRegionsList = list
                             }
                             
                             val allArray = jsonRes.optJSONArray("allRegions")
@@ -284,8 +280,10 @@ class QuickDraftActivity : AppCompatActivity() {
                                     list.add(Region(item.getString("id"), item.getString("name")))
                                 }
                                 allRegionsList = list
-                                val adapter = ArrayAdapter(this@QuickDraftActivity, android.R.layout.simple_dropdown_item_1line, allRegionsList)
-                                autoCompleteRegions.setAdapter(adapter)
+                            }
+
+                            runOnUiThread {
+                                populateRegionChips(autoCompleteRegions.text.toString())
                             }
                             
                             if (!isFinalStep) {
@@ -306,7 +304,6 @@ class QuickDraftActivity : AppCompatActivity() {
     private fun showLoading(show: Boolean) {
         progressBar.visibility = if (show) View.VISIBLE else View.GONE
         btnNext.isEnabled = !show
-        btnSubmitFinal.isEnabled = !show
         btnCancel1.isEnabled = !show
         btnBack.isEnabled = !show
         for (i in 0 until chipGroupPreparers.childCount) {
@@ -314,6 +311,38 @@ class QuickDraftActivity : AppCompatActivity() {
         }
         for (i in 0 until chipGroupRegions.childCount) {
             chipGroupRegions.getChildAt(i).isEnabled = !show
+        }
+    }
+
+    private fun populateRegionChips(query: String) {
+        chipGroupRegions.removeAllViews()
+        val displayMetrics = resources.displayMetrics
+        val horizontalInset = (88 * displayMetrics.density).toInt()
+        val chipSpacing = (8 * displayMetrics.density).toInt()
+        val availableWidth = displayMetrics.widthPixels - horizontalInset
+        val chipWidth = (availableWidth - chipSpacing) / 2
+
+        val listToUse = if (query.trim().isEmpty()) {
+            suggestedRegionsList
+        } else {
+            allRegionsList.filter { it.name.contains(query.trim(), ignoreCase = true) }
+        }
+
+        for (region in listToUse) {
+            val chip = com.google.android.material.chip.Chip(this)
+            chip.text = region.name
+            chip.tag = region.id
+            chip.isCheckable = true
+            chip.layoutParams = android.view.ViewGroup.LayoutParams(chipWidth, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+            chip.textAlignment = View.TEXT_ALIGNMENT_CENTER
+            
+            chip.setOnCheckedChangeListener { _, isChecked ->
+                if (isChecked) {
+                    submitDraft(true)
+                }
+            }
+            
+            chipGroupRegions.addView(chip)
         }
     }
 }
