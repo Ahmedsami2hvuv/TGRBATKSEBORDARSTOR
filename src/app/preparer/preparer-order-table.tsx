@@ -255,7 +255,7 @@ export function PreparerOrderTable({
                   <input type="hidden" name="s" value={auth.s} />
                   <input type="hidden" name="orderIds" value={assignOrder.id} />
 
-                  <div className="grid grid-cols-1 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {couriers.map((c) => (
                       <button
                         key={c.id}
