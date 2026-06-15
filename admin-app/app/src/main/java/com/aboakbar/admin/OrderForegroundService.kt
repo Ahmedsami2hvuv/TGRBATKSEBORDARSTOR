@@ -188,8 +188,11 @@ class OrderForegroundService : Service() {
         val title = "$shopName — $regionName"
         val body = "⏰ $orderTime | 📦 $orderType | 💵 ${formatNumber(subtotal)} د.ع"
 
+        val largeIcon = android.graphics.BitmapFactory.decodeResource(resources, R.drawable.ic_notification_logo)
+
         val notification = NotificationCompat.Builder(this, ORDER_NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_notify_chat)
+            .setSmallIcon(R.drawable.ic_notification_logo)
+            .setLargeIcon(largeIcon)
             .setContentTitle(title)
             .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -243,7 +246,7 @@ class OrderForegroundService : Service() {
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setContentTitle("مراقبة الطلبات نشطة")
             .setContentText("يتم فحص الطلبات الجديدة تلقائياً بالخلفية كل 15 ثانية...")
-            .setSmallIcon(android.R.drawable.ic_popup_sync)
+            .setSmallIcon(R.drawable.ic_notification_logo)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)

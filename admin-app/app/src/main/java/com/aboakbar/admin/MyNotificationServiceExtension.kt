@@ -61,8 +61,11 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 val title = "🔔 طلب جديد: $shopName — $regionName"
                 val body = "⏰ $orderTime | 📦 $orderType | 💵 ${formatNumber(subtotal)} د.ع"
 
+                val largeIcon = android.graphics.BitmapFactory.decodeResource(context.resources, R.drawable.ic_notification_logo)
+
                 val builder = NotificationCompat.Builder(context, channelId)
-                    .setSmallIcon(android.R.drawable.stat_notify_chat)
+                    .setSmallIcon(R.drawable.ic_notification_logo)
+                    .setLargeIcon(largeIcon)
                     .setContentTitle(title)
                     .setContentText(body)
                     .setPriority(NotificationCompat.PRIORITY_MAX)
