@@ -191,7 +191,7 @@ class OrderForegroundService : Service() {
         val largeIcon = android.graphics.BitmapFactory.decodeResource(resources, R.drawable.ic_notification_logo)
 
         val notification = NotificationCompat.Builder(this, ORDER_NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification_logo)
+            .setSmallIcon(android.R.drawable.stat_notify_chat)
             .setLargeIcon(largeIcon)
             .setContentTitle(title)
             .setContentText(body)
@@ -246,7 +246,7 @@ class OrderForegroundService : Service() {
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setContentTitle("مراقبة الطلبات نشطة")
             .setContentText("يتم فحص الطلبات الجديدة تلقائياً بالخلفية كل 15 ثانية...")
-            .setSmallIcon(R.drawable.ic_notification_logo)
+            .setSmallIcon(android.R.drawable.ic_popup_sync)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
