@@ -4,7 +4,7 @@ import * as OneSignal from "onesignal-node";
  * مدير إرسال إشعارات OneSignal من السيرفر.
  */
 
-const ONESIGNAL_APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID || "aa21547a-4853-4ced-8823-6fd8c778b7b1";
+const ONESIGNAL_APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID || "5c2acf6f-f2c0-40f2-830d-138f8a9e8c0a";
 const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
 
 let client: OneSignal.Client | null = null;

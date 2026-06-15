@@ -74,7 +74,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // تهيئة OneSignal للإشعارات الفورية
-        OneSignal.initWithContext(this, "aa21547a-4853-4ced-8823-6fd8c778b7b1")
+        OneSignal.initWithContext(this, "5c2acf6f-f2c0-40f2-830d-138f8a9e8c0a")
 
         // طلب إذن الإشعارات من وان سيجنال لتسجيل الجهاز بشكل صحيح في خوادمهم
         CoroutineScope(Dispatchers.IO).launch {

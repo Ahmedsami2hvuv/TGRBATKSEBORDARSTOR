@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
-  const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID || "aa21547a-4853-4ced-8823-6fd8c778b7b1";
+  const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID || "5c2acf6f-f2c0-40f2-830d-138f8a9e8c0a";
   const apiKey = process.env.ONESIGNAL_REST_API_KEY;
 
   if (!apiKey) {
