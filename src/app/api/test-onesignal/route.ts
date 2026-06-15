@@ -59,6 +59,15 @@ export async function GET(request: NextRequest) {
     userDetails = { error: err.message || err };
   }
 
+  // 1.2 جلب إعدادات الإشعارات الحالية من قاعدة البيانات
+  let notificationSettings = null;
+  try {
+    const { getOrCreateNotificationSettings } = await import("@/lib/notification-settings");
+    notificationSettings = await getOrCreateNotificationSettings();
+  } catch (err: any) {
+    notificationSettings = { error: err.message || err };
+  }
+
   try {
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
@@ -75,6 +84,7 @@ export async function GET(request: NextRequest) {
       status: response.status,
       oneSignalResponse: data,
       adminGlobalUser: userDetails,
+      notificationSettings,
       appId,
       apiKeyLength: apiKey.length,
       apiKeySnippet: apiKey.length > 8 ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}` : "too_short",
@@ -84,6 +94,7 @@ export async function GET(request: NextRequest) {
       success: false,
       error: err.message || err,
       adminGlobalUser: userDetails,
+      notificationSettings,
       appId,
     });
   }
