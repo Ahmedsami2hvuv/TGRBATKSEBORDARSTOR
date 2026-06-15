@@ -166,7 +166,7 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
   try {
     const orders = await db.order.findMany({
       where: {
-        status: "delivered",
+        status: { notIn: ["draft", "priced", "cancelled"] },
         preparerShoppingJson: { not: null }
       },
       include: {
@@ -175,42 +175,97 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
       }
     });
 
-    for (const order of orders) {
-      let products: any[] = [];
+    const cbPartner = await db.creditBookPartner.findUnique({
+      where: {
+        type_externalId: {
+          type: "supplier",
+          externalId: supplierId
+        }
+      }
+    });
+
+    if (cbPartner) {
+      // 1. تنظيف المعاملات القديمة التي ألغيت طلباتها أو تغير موردها
       try {
-        const parsed = typeof order.preparerShoppingJson === "string"
-          ? JSON.parse(order.preparerShoppingJson)
-          : order.preparerShoppingJson;
-        products = (parsed as any)?.products || [];
-      } catch {
-        continue;
-      }
+        const allSupplierTxs = await db.creditBookTransaction.findMany({
+          where: {
+            partnerId: cbPartner.id,
+            note: { contains: "طلب رقم: #" }
+          }
+        });
 
-      const supplierProducts = products.filter(
-        (p: any) => typeof p.assignedPreparerId === "string" && p.assignedPreparerId.trim() === supplierId
-      );
+        for (const tx of allSupplierTxs) {
+          const match = tx.note?.match(/طلب رقم:\s*#(\d+)/);
+          if (!match) continue;
+          const orderNum = parseInt(match[1], 10);
 
-      if (supplierProducts.length === 0) continue;
+          const order = await db.order.findFirst({
+            where: { orderNumber: orderNum },
+            select: { id: true, status: true, preparerShoppingJson: true }
+          });
 
-      let totalBuyAlf = 0;
-      const productLines: string[] = [];
-      for (const p of supplierProducts) {
-        totalBuyAlf += Number(p.buyAlf || 0);
-        productLines.push(`${p.line} (${Number(p.buyAlf || 0).toLocaleString()} ألف)`);
-      }
+          let shouldDelete = false;
 
-      const totalBuyDinar = totalBuyAlf * 1000;
+          if (!order) {
+            shouldDelete = true;
+          } else if (["draft", "priced", "cancelled"].includes(order.status)) {
+            shouldDelete = true;
+          } else {
+            let products: any[] = [];
+            try {
+              const parsed = typeof order.preparerShoppingJson === "string"
+                ? JSON.parse(order.preparerShoppingJson)
+                : order.preparerShoppingJson;
+              products = (parsed as any)?.products || [];
+            } catch {
+              products = [];
+            }
 
-      const cbPartner = await db.creditBookPartner.findUnique({
-        where: {
-          type_externalId: {
-            type: "supplier",
-            externalId: supplierId
+            const isStillSupplier = products.some(
+              (p: any) => typeof p.assignedPreparerId === "string" && p.assignedPreparerId.trim() === supplierId
+            );
+
+            if (!isStillSupplier) {
+              shouldDelete = true;
+            }
+          }
+
+          if (shouldDelete) {
+            await db.creditBookTransaction.delete({
+              where: { id: tx.id }
+            });
           }
         }
-      });
+      } catch (cleanupErr) {
+        console.error("Cleanup failed in syncSupplierTransactions:", cleanupErr);
+      }
 
-      if (cbPartner) {
+      // 2. مزامنة وإضافة المعاملات الجديدة
+      for (const order of orders) {
+        let products: any[] = [];
+        try {
+          const parsed = typeof order.preparerShoppingJson === "string"
+            ? JSON.parse(order.preparerShoppingJson)
+            : order.preparerShoppingJson;
+          products = (parsed as any)?.products || [];
+        } catch {
+          continue;
+        }
+
+        const supplierProducts = products.filter(
+          (p: any) => typeof p.assignedPreparerId === "string" && p.assignedPreparerId.trim() === supplierId
+        );
+
+        if (supplierProducts.length === 0) continue;
+
+        let totalBuyAlf = 0;
+        const productLines: string[] = [];
+        for (const p of supplierProducts) {
+          totalBuyAlf += Number(p.buyAlf || 0);
+          productLines.push(`${p.line} (${Number(p.buyAlf || 0).toLocaleString()} ألف)`);
+        }
+
+        const totalBuyDinar = totalBuyAlf * 1000;
         const regionName = order.customerRegion?.name || "غير محدد";
         const orderNumber = order.orderNumber;
         const productsText = productLines.join("، ");
