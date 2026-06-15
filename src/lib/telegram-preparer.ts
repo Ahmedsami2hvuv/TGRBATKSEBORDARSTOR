@@ -290,7 +290,7 @@ async function createPreparerOrder(
 
   await syncPhoneProfileFromOrder(order.id).catch(() => {});
   await notifyTelegramNewOrder(order.id).catch(() => {});
-  void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+  await pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
   revalidatePath("/preparer");
 
   await sendTelegramMessageWithKeyboardToChat(chatId,

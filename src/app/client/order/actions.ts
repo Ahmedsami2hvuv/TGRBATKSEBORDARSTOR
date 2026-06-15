@@ -397,7 +397,7 @@ export async function submitOrder(
     // تنبيهات (بشكل غير متزامن)
     if (!existingOrder) {
       void notifyTelegramNewOrder(order.id).catch(() => null);
-      void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => null);
+      await pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => null);
     }
 
     // جلب أسماء المناطق والمحلات للرسالة

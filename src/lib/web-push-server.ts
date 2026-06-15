@@ -122,18 +122,21 @@ async function sendToSubscriptions(
   externalIds?: string[],
   customData?: any,
 ): Promise<void> {
-  // 1. الإرسال عبر وان سيجنال (النظام الجديد) - نطلقه فوراً ولا ننتظره لكي لا نعطل العملية
+  // 1. الإرسال عبر وان سيجنال (النظام الجديد) - ننتظره لضمان عدم تجميد العملية في خوادم Vercel
   if (externalIds && externalIds.length > 0) {
     console.log("OneSignal: Initiating send to", externalIds);
-    // لا ننتظر (await) لكي لا يتأخر الرد، وان سيجنال سيعالج الأمر في الخلفية
-    void sendOneSignalNotification({
-      title: payload.title,
-      body: payload.body,
-      url: payload.url,
-      externalIds: externalIds,
-      sound: payload.sound,
-      data: customData,
-    }).catch(err => console.error("OneSignal Background Send Error:", err));
+    try {
+      await sendOneSignalNotification({
+        title: payload.title,
+        body: payload.body,
+        url: payload.url,
+        externalIds: externalIds,
+        sound: payload.sound,
+        data: customData,
+      });
+    } catch (err) {
+      console.error("OneSignal Send Error:", err);
+    }
   }
 
   // 2. الطريقة القديمة (Web Push) - سنبقيها فقط كاحتياط للأدمن حالياً

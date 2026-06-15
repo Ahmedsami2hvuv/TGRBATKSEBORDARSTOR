@@ -812,7 +812,7 @@ export async function submitPreparerOrder(
 
     await syncPhoneProfileFromOrder(order.id);
     void notifyTelegramNewOrder(order.id);
-    void pushNotifyAdminsNewPendingOrder(order.orderNumber);
+    await pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
     revalidatePath("/preparer");
     void notifyTelegramNewPreparerShoppingOrder(order.id);

@@ -946,7 +946,7 @@ export async function handleShopTelegramCallback(
         await clearShopSession(telegramUserId);
         revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
         await notifyTelegramNewOrder(order.id).catch(() => {});
-        void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+        await pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
         const waMsg = [
           "مرحباً، لقد قمت برفع طلب جديد عبر التليجرام:",

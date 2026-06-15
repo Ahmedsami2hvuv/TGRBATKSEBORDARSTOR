@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
     await prisma.telegramBotSession.delete({ where: { telegramUserId } });
     revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
     await notifyTelegramNewOrder(order.id).catch(() => {});
-    void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+    await pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
     // 5. تحديث رسالة التليجرام لتظهر أنها "تمت"
     if (session.chatId) {

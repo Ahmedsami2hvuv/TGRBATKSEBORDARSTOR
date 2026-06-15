@@ -402,10 +402,10 @@ export async function createAdminOrder(
   if (routeMode === "double") await syncSecondPhoneProfileFromOrder(order.id);
 
   if (assignedCourierId) {
-    void pushNotifyCourierNewAssignment(assignedCourierId, order.orderNumber, order.id);
+    await pushNotifyCourierNewAssignment(assignedCourierId, order.orderNumber, order.id).catch(() => {});
   }
   void notifyTelegramNewOrder(order.id);
-  void pushNotifyAdminsNewPendingOrder(order.orderNumber);
+  await pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);

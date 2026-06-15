@@ -1254,7 +1254,7 @@ export async function handleTelegramAdminCallback(
         });
 
         await notifyTelegramNewOrder(order.id, botToken).catch(() => {});
-        void pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
+        await pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
         await editTelegramMessage(chatId, messageId, `✅ تم إنشاء الطلب السريع بنجاح!\n\nرقم الطلب: <b>#${order.orderNumber}</b>`, {
           inline_keyboard: [[{ text: "📦 تفاصيل الطلب", callback_data: `det${order.orderNumber}` }], [{ text: "🏠 الرئيسية", callback_data: "main" }]]
