@@ -991,7 +991,8 @@ export async function getPartnerDetails(partnerId: string) {
             updatedAt: o.updatedAt,
             isAuto: true,
             isPaid: isSettled,
-            remainingAmount: Math.max(0, subtotal - pickupPaid)
+            remainingAmount: Math.max(0, subtotal - pickupPaid),
+            orderId: o.id
           });
 
           // 2. إضافة حركات الدفع (صادر) كحركات تسديد (gave)
@@ -1028,15 +1029,15 @@ export async function getPartnerDetails(partnerId: string) {
       }
     }
 
-    // جلب أرقام طلبات المورد المدفوعة بكفاءة لتجنب N+1 query
-    const paidOrderNumbers = new Set<number>();
+    // جلب أرقام ومعرفات طلبات المورد بكفاءة لتجنب N+1 query
+    const supplierOrdersMap = new Map<number, { orderId: string; isPaid: boolean }>();
     if (partner.type === "supplier" && partner.externalId) {
       try {
         const supplierOrders = await prisma.order.findMany({
           where: {
             preparerShoppingJson: { not: null }
           },
-          select: { orderNumber: true, preparerShoppingJson: true }
+          select: { id: true, orderNumber: true, preparerShoppingJson: true }
         });
         for (const order of supplierOrders) {
           let json: any = {};
@@ -1047,12 +1048,13 @@ export async function getPartnerDetails(partnerId: string) {
           } catch {
             json = {};
           }
-          if (json.supplierPaid) {
-            paidOrderNumbers.add(order.orderNumber);
-          }
+          supplierOrdersMap.set(order.orderNumber, {
+            orderId: order.id,
+            isPaid: !!json.supplierPaid
+          });
         }
       } catch (err) {
-        console.error("Failed to fetch supplier orders for payment status:", err);
+        console.error("Failed to fetch supplier orders for mapping:", err);
       }
     }
 
@@ -1066,12 +1068,15 @@ export async function getPartnerDetails(partnerId: string) {
       }
 
       let isPaid = false;
+      let orderId: string | undefined = undefined;
       if (partner.type === "supplier" && t.kind === "took" && t.note) {
         const match = t.note.match(/طلب رقم:\s*#(\d+)/);
         if (match) {
           const orderNum = parseInt(match[1], 10);
-          if (paidOrderNumbers.has(orderNum)) {
-            isPaid = true;
+          const orderInfo = supplierOrdersMap.get(orderNum);
+          if (orderInfo) {
+            isPaid = orderInfo.isPaid;
+            orderId = orderInfo.orderId;
           }
         }
       }
@@ -1080,7 +1085,8 @@ export async function getPartnerDetails(partnerId: string) {
         ...t,
         amount: amt,
         isAuto: false,
-        isPaid
+        isPaid,
+        orderId
       };
     });
 
