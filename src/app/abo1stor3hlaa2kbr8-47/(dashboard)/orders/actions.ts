@@ -952,7 +952,7 @@ export async function bulkDeleteOrdersPermanently(
       if (groupIds.length > 0) {
           const relatedDrafts = await prisma.$queryRaw<{ id: string }[]>`
               SELECT id FROM "CompanyPreparerShoppingDraft" 
-              WHERE data->>'groupId' IN (${prisma.join(groupIds)})
+              WHERE data->>'groupId' IN (${Prisma.join(groupIds)})
           `;
           relatedDrafts.forEach(d => allDraftIdsToDelete.add(d.id));
       }
