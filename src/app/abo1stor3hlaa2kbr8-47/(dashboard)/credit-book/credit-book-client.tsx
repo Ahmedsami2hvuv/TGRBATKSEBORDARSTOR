@@ -237,42 +237,53 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
 
   return (
     <div className="space-y-8" dir="rtl">
-      {/* صناديق ملخص الأرصدة */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white border border-emerald-100 p-6 rounded-3xl shadow-sm text-right flex flex-col justify-between">
-          <div>
-            <span className="text-xs font-black text-emerald-500 uppercase tracking-wider">مطلوبات لنا (نطلبهم)</span>
-            <h3 className="text-2xl font-black text-emerald-600 mt-2 tabular-nums">
-              {formatDinarAsAlfWithUnit(totalWeOwed)}
-            </h3>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-4 font-bold">إجمالي الديون المستحقة لنا عند الآخرين</p>
-        </div>
-
-        <div className="bg-white border border-rose-100 p-6 rounded-3xl shadow-sm text-right flex flex-col justify-between">
-          <div>
-            <span className="text-xs font-black text-rose-500 uppercase tracking-wider">مطلوب منا (يطلبوننا)</span>
-            <h3 className="text-2xl font-black text-rose-600 mt-2 tabular-nums">
-              {formatDinarAsAlfWithUnit(totalWeOwe)}
-            </h3>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-4 font-bold">إجمالي المبالغ المستحقة للآخرين علينا</p>
-        </div>
-
-        <div className={`border p-6 rounded-3xl shadow-sm text-right flex flex-col justify-between ${
+      {/* البلوك الموحد لملخص الأرصدة والديون */}
+      <div className="bg-white border border-slate-100 rounded-[2rem] shadow-sm overflow-hidden text-right flex flex-col">
+        {/* الجزء العلوي: صافي رصيد الدفتر (تدرج لوني تفاعلي) */}
+        <div className={`p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-50 ${
           netBalance >= 0 
-            ? "bg-emerald-50/50 border-emerald-200 text-emerald-900" 
-            : "bg-rose-50/50 border-rose-200 text-rose-900"
+            ? "bg-gradient-to-br from-emerald-50/70 via-emerald-50/30 to-white" 
+            : "bg-gradient-to-br from-rose-50/70 via-rose-50/30 to-white"
         }`}>
           <div>
-            <span className="text-xs font-black uppercase tracking-wider">صافي رصيد الدفتر</span>
-            <h3 className={`text-2xl font-black mt-2 tabular-nums ${netBalance >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+            <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider block">صافي رصيد الدفتر الكلي</span>
+            <h3 className={`text-3xl sm:text-4xl font-black mt-1 tabular-nums ${netBalance >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
               {netBalance >= 0 ? "+" : ""}{formatDinarAsAlfWithUnit(netBalance)}
             </h3>
           </div>
-          <p className="text-[11px] mt-4 font-bold opacity-75">
-            {netBalance >= 0 ? "الدفتر في حالة فائض إيجابي لصالحك" : "الدفتر في حالة عجز مالي لصالح الآخرين"}
-          </p>
+          <div className={`px-4 py-2 rounded-2xl text-xs font-black flex items-center gap-2 border ${
+            netBalance >= 0 
+              ? "bg-emerald-100/60 text-emerald-800 border-emerald-200/50" 
+              : "bg-rose-100/60 text-rose-800 border-rose-200/50"
+          }`}>
+            <span>{netBalance >= 0 ? "🟢" : "🔴"}</span>
+            <span>{netBalance >= 0 ? "الدفتر في حالة فائض إيجابي لصالحك" : "الدفتر في حالة عجز مالي لصالح الآخرين"}</span>
+          </div>
+        </div>
+
+        {/* الجزء السفلي: المديونيات الفرعية جنباً إلى جنب */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-slate-100">
+          {/* مطلوبات لنا */}
+          <div className="p-6 flex flex-col justify-between">
+            <div>
+              <span className="text-xs font-black text-emerald-500 uppercase tracking-wider block">مطلوبات لنا (نطلبهم)</span>
+              <h4 className="text-xl sm:text-2xl font-black text-emerald-600 mt-1 tabular-nums">
+                {formatDinarAsAlfWithUnit(totalWeOwed)}
+              </h4>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-2 font-bold">إجمالي الديون المستحقة لنا عند الآخرين</p>
+          </div>
+
+          {/* مطلوب منا */}
+          <div className="p-6 flex flex-col justify-between">
+            <div>
+              <span className="text-xs font-black text-rose-500 uppercase tracking-wider block">مطلوب منا (يطلبوننا)</span>
+              <h4 className="text-xl sm:text-2xl font-black text-rose-600 mt-1 tabular-nums">
+                {formatDinarAsAlfWithUnit(totalWeOwe)}
+              </h4>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-2 font-bold">إجمالي المبالغ المستحقة للآخرين علينا</p>
+          </div>
         </div>
       </div>
 
