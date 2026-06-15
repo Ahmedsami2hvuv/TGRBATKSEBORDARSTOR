@@ -80,7 +80,6 @@ class OrderAlertActivity : Activity() {
         findViewById<Button>(R.id.btnOpenApp).setOnClickListener {
             val mainIntent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                putExtra("target_url", "https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/orders/pending")
             }
             startActivity(mainIntent)
             finish()
@@ -90,20 +89,9 @@ class OrderAlertActivity : Activity() {
             finish()
         }
 
-        findViewById<Button>(R.id.btnRejectOrder).setOnClickListener {
-            sendOrderAction("reject", null)
-        }
-
-        findViewById<Button>(R.id.btnAssignOrder).setOnClickListener {
-            layoutMainButtons.visibility = View.GONE
-            layoutAssign.visibility = View.VISIBLE
-        }
-
-        findViewById<Button>(R.id.btnCancelAssign).setOnClickListener {
-            layoutMainButtons.visibility = View.VISIBLE
-            layoutAssign.visibility = View.GONE
-        }
-
+        findViewById<Button>(R.id.btnRejectOrder).visibility = View.GONE
+        findViewById<Button>(R.id.btnAssignOrder).visibility = View.GONE
+        findViewById<Button>(R.id.btnCancelAssign).visibility = View.GONE
         findViewById<Button>(R.id.btnConfirmAssign).visibility = View.GONE
     }
 
