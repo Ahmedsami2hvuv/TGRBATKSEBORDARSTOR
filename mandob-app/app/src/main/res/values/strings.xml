@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">أبو الأكبر للإدارة</string>
+    <string name="app_name">مندوب أبو الأكبر</string>
     <string name="title_admin">لوحة الإدارة</string>
     <string name="enter_passcode">ادخل رمز المرور السري للدخول</string>
     <string name="biometric_title">تسجيل الدخول بالبصمة</string>
