@@ -898,7 +898,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
 
             return (
               <div className="space-y-3 max-h-[800px] overflow-y-auto pr-1">
-                {filteredTxs.map((tx) => {
+                {filteredTxs.map((tx, index) => {
                   const notesLower = tx.note?.toLowerCase() || "";
                   const isSalary = notesLower.includes("[راتب]") || notesLower.includes("راتب");
                   const isTransfer = notesLower.includes("تحويل");
@@ -928,13 +928,35 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                     tagClasses = "bg-rose-600 text-white border-rose-600 dark:bg-rose-700 dark:border-rose-700 font-black shadow-sm";
                   }
 
+                  const d1 = new Date(tx.createdAt).toDateString();
+                  const prevD = index > 0 ? new Date(filteredTxs[index - 1].createdAt).toDateString() : null;
+                  const showDaySeparator = index === 0 || d1 !== prevD;
+
                   return (
-                    <div 
-                      key={tx.id} 
-                      className={`p-4 rounded-2xl transition flex flex-col gap-3 shadow-sm ${containerClasses}`}
-                    >
-                      {/* السطر الأول: أزرار الحالة، التاريخ، الباقي، وإجراءات التحكم */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 w-full" dir="rtl">
+                    <React.Fragment key={tx.id}>
+                      {showDaySeparator && (
+                        <div className="flex items-center gap-3 my-5 py-1 select-none">
+                          <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent to-slate-200 dark:to-slate-800/80"></div>
+                          <span className="text-[10px] md:text-xs font-black px-4 py-1.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-100/60 dark:border-indigo-900/40 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+                            📅 {(() => {
+                              const d = new Date(tx.createdAt);
+                              return d.toLocaleDateString("ar-EG", {
+                                weekday: "long",
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric"
+                              });
+                            })()}
+                          </span>
+                          <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent to-slate-200 dark:to-slate-800/80"></div>
+                        </div>
+                      )}
+
+                      <div 
+                        className={`p-4 rounded-2xl transition flex flex-col gap-3 shadow-sm ${containerClasses}`}
+                      >
+                        {/* السطر الأول: أزرار الحالة، التاريخ، الباقي، وإجراءات التحكم */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 w-full" dir="rtl">
                         
                         {/* الجهة اليمنى: زر أخذت/أعطيت + التاريخ والوقت + الرصيد المتبقي (الباقي) */}
                         <div className="flex flex-wrap items-center gap-2.5">
@@ -1127,10 +1149,10 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                           </div>
                         )}
                       </div>
-
                     </div>
-                  );
-                })}
+                  </React.Fragment>
+                );
+              })}
               </div>
             );
           })()
