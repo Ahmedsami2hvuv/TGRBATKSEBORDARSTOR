@@ -72,27 +72,27 @@ function matchesWalletQuery(line: MandoubWalletLedgerLine, query: string) {
 
 const EPS = 0.01;
 
-/** علامة تحت زر المسح: مطابق / أقل / أعلى من المطلوب */
+/** علامة تحت زر المسح أو في يسار الحركة: مطابق / أقل / أعلى من المطلوب */
 function PaymentAmountMark({ line }: { line: MandoubWalletLedgerLine }) {
   if (line.source !== "order" || line.expectedDinar == null) return null;
   const d = line.amountDinar - line.expectedDinar;
   if (Math.abs(d) < EPS) {
     return (
-      <span className="text-base leading-none" title="المبلغ مطابق للمطلوب">
+      <span className="text-lg leading-none drop-shadow-sm" title="المبلغ مطابق للمطلوب">
         ✅
       </span>
     );
   }
   if (d < -EPS) {
     return (
-      <span className="text-lg font-black leading-none text-sky-800 dark:text-sky-200" title="أقل من المطلوب">
-        {"<"}
+      <span className="text-xl font-black leading-none drop-shadow-sm" title="أقل من المطلوب">
+        ⬇️
       </span>
     );
   }
   return (
-    <span className="text-lg font-black leading-none text-amber-800 dark:text-amber-200" title="أعلى من المطلوب">
-      {">"}
+    <span className="text-xl font-black leading-none drop-shadow-sm" title="أعلى من المطلوب">
+      ⬆️
     </span>
   );
 }
@@ -178,6 +178,9 @@ export function PreparerWalletClient({
             !(line.source === "misc" && line.miscLabel?.startsWith("تحويل من ") && !line.miscLabel?.includes("مجهز") && !line.miscLabel?.includes("الإدارة")) &&
             hoursPassed <= 4;
 
+          const hasPaymentMark = line.source === "order" && line.expectedDinar != null;
+          const showLeftActions = showDelete || hasPaymentMark;
+
           const isSalary = line.miscLabel?.includes("[راتب]");
           const isDebt = line.miscLabel?.includes("دين") || (line.orderNotes && line.orderNotes.includes("دين"));
 
@@ -192,7 +195,7 @@ export function PreparerWalletClient({
                 isOutPick ? "border-emerald-600 bg-emerald-100/95 dark:bg-emerald-900/40 dark:border-emerald-800" :
                 "border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800"
               }`}>
-                <div className={`flex min-w-0 flex-col ${showDelete ? "pl-12 sm:pl-14" : ""}`}>
+                <div className={`flex min-w-0 flex-col ${showLeftActions ? "pl-12 sm:pl-14" : ""}`}>
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <p className={`text-base font-black sm:text-lg ${!deleted ? "text-slate-950 dark:text-white" : "text-slate-500"}`}>{dirLabel} · {formatDinarAsAlfWithUnit(line.amountDinar)}</p>
                     <span className={`text-[10px] font-bold ${!deleted ? "text-slate-600 dark:text-slate-400" : "text-slate-400"}`}>({dateStr})</span>
@@ -204,21 +207,23 @@ export function PreparerWalletClient({
                     </div>
                   )}
                 </div>
-                {showDelete ? (
+                {showLeftActions ? (
                   <div
-                    className="absolute left-2 top-1/2 z-10 flex -translate-y-1/2 flex-col items-center gap-0.5"
+                    className="absolute left-2 top-1/2 z-10 flex -translate-y-1/2 flex-col items-center gap-1"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <form
-                      action={line.source === "order" ? deleteAction : deleteMiscAction}
-                      className="m-0"
-                      onSubmit={(e) => {
-                        if (!window.confirm(`تأكيد مسح هذه الحركة؟`)) e.preventDefault();
-                      }}
-                    >
-                      <input type="hidden" name="p" value={preparerDeleteAuth!.p} /><input type="hidden" name="exp" value={preparerDeleteAuth!.exp} /><input type="hidden" name="s" value={preparerDeleteAuth!.s} /><input type="hidden" name={line.source === "order" ? "eventId" : "miscEntryId"} value={line.id} /><input type="hidden" name="next" value={preparerDeleteNextUrl} />
-                      <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-rose-500 bg-white text-sm shadow-md transition-transform hover:scale-105 dark:bg-slate-800">🗑️</button>
-                    </form>
+                    {showDelete ? (
+                      <form
+                        action={line.source === "order" ? deleteAction : deleteMiscAction}
+                        className="m-0"
+                        onSubmit={(e) => {
+                          if (!window.confirm(`تأكيد مسح هذه الحركة؟`)) e.preventDefault();
+                        }}
+                      >
+                        <input type="hidden" name="p" value={preparerDeleteAuth!.p} /><input type="hidden" name="exp" value={preparerDeleteAuth!.exp} /><input type="hidden" name="s" value={preparerDeleteAuth!.s} /><input type="hidden" name={line.source === "order" ? "eventId" : "miscEntryId"} value={line.id} /><input type="hidden" name="next" value={preparerDeleteNextUrl} />
+                        <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-rose-500 bg-white text-sm shadow-md transition-transform hover:scale-105 dark:bg-slate-800">🗑️</button>
+                      </form>
+                    ) : null}
                     <PaymentAmountMark line={line} />
                   </div>
                 ) : null}
