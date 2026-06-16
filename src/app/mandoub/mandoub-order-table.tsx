@@ -364,7 +364,6 @@ export function MandoubOrderTable({
     () => displayRows.map((r) => buildOrderDetailHref(auth, tab, qSearch, r.id)),
     [displayRows, auth, tab, qSearch],
   );
-  const allSelected = rowIds.length > 0 && rowIds.every((id) => selectedIds.has(id));
 
   useEffect(() => {
     if (bulkState.ok) {
@@ -500,7 +499,6 @@ export function MandoubOrderTable({
         selectedAriaPrefix="تحديد الطلب"
         showStatusDotInSelectCol={false}
         renderOrderIdBadge={(o) => {
-          if (o.isGroupHeader) return null;
           if (!isSortingMode || o.orderStatus === "delivered") return null;
           return (
             <div className="flex flex-col items-center gap-1.5 py-1.5" onClick={e => e.stopPropagation()}>
@@ -539,7 +537,6 @@ export function MandoubOrderTable({
           );
         }}
         renderBelowOrderId={(o) => {
-          if (o.isGroupHeader) return null;
           if (isSortingMode) return null;
           if (o.orderStatus === "assigned") {
             return (
@@ -611,7 +608,7 @@ export function MandoubOrderTable({
                   pickupOrder.orderSubtotalDinar != null ? pickupOrder.orderSubtotalDinar - (pickupOrder.pickupSumDinar || 0) : null
                 }
                 pickupSumDinar={pickupOrder.pickupSumDinar || 0}
-                orderSubtotalDinar={pickupOrder.orderSubtotalDinar}
+                orderSubtotalDinar={pickupOrder.orderSubtotalDinar ?? null}
                 formAction={(fd) => pickupAction(fd)}
                 pending={pickupPending || localPending}
                 error={pickupState.error}
@@ -651,7 +648,7 @@ export function MandoubOrderTable({
                   deliveryOrder.totalAmountDinar != null ? deliveryOrder.totalAmountDinar - (deliveryOrder.deliverySumDinar || 0) : null
                 }
                 deliverySumDinar={deliveryOrder.deliverySumDinar || 0}
-                totalAmountDinar={deliveryOrder.totalAmountDinar}
+                totalAmountDinar={deliveryOrder.totalAmountDinar ?? null}
                 formAction={(fd) => deliveryAction(fd)}
                 pending={deliveryPending || localPending}
                 error={deliveryState.error}
