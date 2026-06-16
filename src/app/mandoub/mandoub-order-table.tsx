@@ -397,6 +397,35 @@ export function MandoubOrderTable({
     setDeliveryOrder(null);
   }, [deliveryPending, deliveryState.ok, deliveryOrder]);
 
+  const allSelected = useMemo(() => rowIds.length > 0 && rowIds.every((id) => selectedIds.has(id)), [rowIds, selectedIds]);
+
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (rowIds.includes(id)) next.add(id);
+      }
+      return next;
+    });
+  }, [rowIds]);
+
+  function toggleOne(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(rowIds));
+    }
+  }
+
   return (
     <div>
       {bulkState.error ? (
