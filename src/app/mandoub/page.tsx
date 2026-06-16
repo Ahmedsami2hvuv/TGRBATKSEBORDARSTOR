@@ -31,12 +31,10 @@ import { haversineMeters } from "@/lib/geo-distance";
 import type { MandoubOrderSearchFields } from "@/lib/mandoub-order-smart-filter";
 import { MandoubMoneySummarySection } from "./mandoub-money-summary-section";
 import { MandoubOrdersSection } from "./mandoub-orders-client";
-import { MandoubSettingsDropdown } from "./mandoub-settings-dropdown";
 import { MandoubWebPushBanner } from "./mandoub-web-push-banner";
 import type { MandoubRow } from "./mandoub-order-table";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons } from "@/lib/icon-settings";
-import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 import { mandoubOrdersStampSig } from "@/lib/mandoub-order-stamps";
 import { randomBytes } from "crypto";
 import { fetchWalletInOutDisplayForCourier, resolvePartyDisplayName } from "@/lib/wallet-peer-transfer";
@@ -864,28 +862,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       <div dir="rtl" lang="ar" className="kse-app-bg min-h-screen text-base leading-relaxed text-slate-800">
         <div className="kse-app-inner mx-auto max-w-6xl px-2 py-2 pb-24 sm:px-4 sm:py-4 sm:text-lg">
           <PortalAuthCookieSetter auth={baseAuth} />
-          <header className="kse-glass-dark mb-3 flex items-center justify-between gap-2 border border-sky-200/90 px-3 py-2.5 shadow-sm">
-            <div className="flex items-center gap-2">
-              <MandoubSettingsDropdown
-                auth={baseAuth}
-                availableForAssignment={courier.availableForAssignment}
-                telegramLink={telegramLink}
-                baseQueryString={baseQuery.toString()}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <FullscreenWalletLauncher
-                href={`/mandoub/wallet?${baseQuery.toString()}`}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-violet-500 bg-violet-600 px-3 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 sm:px-4 sm:text-base h-10"
-                title="محفظة المندوب"
-              >
-                <span>المحفظة</span>
-                <span className="rounded-lg bg-violet-500 px-2 py-0.5 text-xs font-black text-white">
-                  {cashInHandStr}
-                </span>
-              </FullscreenWalletLauncher>
-            </div>
-          </header>
+          {/* تم نقل الهيدر إلى المكون العميل MandoubOrdersSection تفاعلياً */}
 
           <MandoubWebPushBanner auth={baseAuth} />
           <MandoubMoneySummarySection
@@ -945,6 +922,9 @@ export default async function MandoubPage({ searchParams }: Props) {
               listOrdersStampSig={listOrdersStampSig}
               walletData={walletData}
               courierName={courier.name}
+              availableForAssignment={courier.availableForAssignment}
+              telegramLink={telegramLink}
+              cashInHandStr={cashInHandStr}
             />
           </section>
         </div>

@@ -148,6 +148,12 @@ export function MandoubOrderTable({
   listOrdersStampSig,
   walletData,
   courierName,
+  showQuickSelect,
+  setShowQuickSelect,
+  isSortingMode,
+  setIsSortingMode,
+  showSearch,
+  setShowSearch,
 }: {
   rows: MandoubRow[];
   auth: { c: string; exp: string; s: string };
@@ -157,11 +163,15 @@ export function MandoubOrderTable({
   listOrdersStampSig: string;
   walletData: any;
   courierName: string;
+  showQuickSelect: boolean;
+  setShowQuickSelect: (v: boolean) => void;
+  isSortingMode: boolean;
+  setIsSortingMode: (v: boolean) => void;
+  showSearch: boolean;
+  setShowSearch: (v: boolean) => void;
 }) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [showQuickSelect, setShowQuickSelect] = useState(false);
-  const [showSearch, setShowSearch] = useState(!!qSearch);
   const searchParams = useSearchParams();
   const activeOrderParam = searchParams.get("activeOrderId");
   const [activeOrderId, setActiveOrderId] = useState<string | null>(activeOrderParam || null);
@@ -190,11 +200,7 @@ export function MandoubOrderTable({
     initialCash,
   );
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
-  const [isSortingMode, setIsSortingMode] = useState(false);
   const [customSortIds, setCustomSortIds] = useState<string[]>([]);
-
-  const [localMergeEnabled, setLocalMergeEnabled] = useState(true);
-  const [expandedRegions, setExpandedRegions] = useState<Record<string, boolean>>({});
 
   // تحميل الترتيب المخصص من التخزين المحلي
   useEffect(() => {
@@ -203,11 +209,6 @@ export function MandoubOrderTable({
       try {
         setCustomSortIds(JSON.parse(saved));
       } catch (e) {}
-    }
-
-    const savedMerge = localStorage.getItem(`mandoub_enable_order_merging_${auth.c}`);
-    if (savedMerge !== null) {
-      setLocalMergeEnabled(savedMerge === "true");
     }
   }, [auth.c]);
 
@@ -339,70 +340,7 @@ export function MandoubOrderTable({
     return [...sortedActive, ...delivered];
   }, [rows, rowStatusOverrides, customSortIds]);
 
-  // إعادة هيكلة الصفوف لتشمل الحزم والطلبات بداخلها في جدول واحد
-  const tableRowsToRender = useMemo(() => {
-    console.log("[Merge System] localMergeEnabled:", localMergeEnabled);
-    if (!localMergeEnabled) return displayRows;
-
-    // نفصل الطلبات النشطة عن المسلمة
-    const activeRows = displayRows.filter(r => r.orderStatus !== "delivered");
-    const deliveredRows = displayRows.filter(r => r.orderStatus === "delivered");
-
-    // نحسب عدد الطلبات في كل منطقة للطلبات النشطة (مع تطهير المسافات)
-    const regionCounts: Record<string, number> = {};
-    activeRows.forEach(r => {
-      const region = (r.regionLine || "منطقة غير محددة").trim().replace(/\s+/g, ' ');
-      regionCounts[region] = (regionCounts[region] || 0) + 1;
-    });
-
-    const finalRows: any[] = [];
-    const processedRegions = new Set<string>();
-
-    activeRows.forEach(r => {
-      const region = (r.regionLine || "منطقة غير محددة").trim().replace(/\s+/g, ' ');
-      if (regionCounts[region] >= 2) {
-        if (!processedRegions.has(region)) {
-          processedRegions.add(region);
-          const isExpanded = !!expandedRegions[region];
-          // نضيف صف رأس الحزمة
-          finalRows.push({
-            id: `group-header-${region}`,
-            isGroupHeader: true,
-            regionLine: region,
-            groupCount: regionCounts[region],
-            isExpanded,
-            onToggleExpand: () => toggleRegionExpand(region)
-          });
-          
-          // إذا كانت الحزمة موسعة، نضيف الطلبات التابعة لها مباشرة
-          if (isExpanded) {
-            const children = activeRows.filter(c => (c.regionLine || "منطقة غير محددة").trim().replace(/\s+/g, ' ') === region);
-            finalRows.push(...children);
-          }
-        }
-      } else {
-        finalRows.push(r);
-      }
-    });
-
-    console.log("[Merge System] Render rows count:", finalRows.length + deliveredRows.length);
-
-    return [...finalRows, ...deliveredRows];
-  }, [displayRows, localMergeEnabled, expandedRegions]);
-
-  const toggleRegionExpand = (region: string) => {
-    setExpandedRegions(prev => ({
-      ...prev,
-      [region]: !prev[region]
-    }));
-  };
-
-  const toggleMergeEnabled = () => {
-    const newValue = !localMergeEnabled;
-    setLocalMergeEnabled(newValue);
-    localStorage.setItem(`mandoub_enable_order_merging_${auth.c}`, String(newValue));
-    toast.success(newValue ? "تم تفعيل نظام الدمج الذكي" : "تم إلغاء تفعيل نظام الدمج الذكي");
-  };
+  const tableRowsToRender = displayRows;
 
   const rowIds = useMemo(() => displayRows.map((r) => r.id), [displayRows]);
 
@@ -459,65 +397,6 @@ export function MandoubOrderTable({
     setDeliveryOrder(null);
   }, [deliveryPending, deliveryState.ok, deliveryOrder]);
 
-  /** نحدّث القائمة فقط عند تغيّر هوية الطلبات (دخول/خروج طلب من القائمة). */
-  useEffect(() => {
-    if (!listOrdersStampSig) return;
-    let cancelled = false;
-    const id = window.setInterval(async () => {
-      // Background polling disabled to improve performance
-      /*
-      const p = new URLSearchParams();
-      if (auth.c) p.set("c", auth.c);
-      if (auth.exp) p.set("exp", auth.exp);
-      if (auth.s) p.set("s", auth.s);
-      try {
-        const res = await fetch(`/api/mandoub/active-orders-stamps?${p.toString()}`, {
-          cache: "no-store",
-        });
-        if (!res.ok || cancelled) return;
-        const j = (await res.json()) as { stampSig?: string };
-        if (j.stampSig && j.stampSig !== listOrdersStampSig) {
-          router.refresh();
-        }
-      } catch {
-      }
-      */
-    }, 18_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
-  }, [listOrdersStampSig, auth.c, auth.exp, auth.s, router]);
-
-  useEffect(() => {
-    setSelectedIds((prev) => {
-      const next = new Set<string>();
-      for (const id of prev) {
-        if (rowIds.includes(id)) next.add(id);
-      }
-      return next;
-    });
-  }, [rowIds]);
-
-  function toggleOne(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleAll() {
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(rowIds));
-    }
-  }
-
-
-
   return (
     <div>
       {bulkState.error ? (
@@ -526,126 +405,52 @@ export function MandoubOrderTable({
         </div>
       ) : null}
 
-      <div className="px-2 py-2 sm:px-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {rowIds.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowQuickSelect((v) => !v)}
-              className={`flex items-center justify-center h-[40px] px-3 rounded-xl border transition-all ${
-                showQuickSelect
-                  ? "bg-red-600 border-red-700 text-white shadow-inner"
-                  : "bg-red-50 border-red-200 text-red-900 hover:bg-red-100"
-              }`}
-              title="تحديد سريع"
-            >
-              <DynamicIcon iconKey="ui_success" config={icons} className="w-5 h-5" fallback="✅" />
-            </button>
-          )}
-
-          {rowIds.length > 1 && (
-            <button
-              type="button"
-              onClick={toggleMergeEnabled}
-              className={`flex items-center justify-center h-[40px] px-3 rounded-xl border transition-all ${
-                localMergeEnabled
-                  ? "bg-amber-600 border-amber-700 text-white shadow-inner"
-                  : "bg-amber-50 border-amber-200 text-amber-900 hover:bg-amber-100"
-              }`}
-              title={localMergeEnabled ? "إيقاف دمج الطلبات" : "تفعيل دمج الطلبات"}
-            >
-              <span className="text-base mr-0.5">📦</span>
-              <span className="text-xs font-black mr-1">
-                {localMergeEnabled ? "فك الدمج" : "دمج المناطق"}
-              </span>
-            </button>
-          )}
-
-          {rowIds.length > 1 && (
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setIsSortingMode((v) => !v)}
-                className={`flex items-center justify-center h-[40px] px-3 rounded-xl border transition-all ${
-                  isSortingMode
-                    ? "bg-indigo-600 border-indigo-700 text-white shadow-inner"
-                    : "bg-indigo-50 border-indigo-200 text-indigo-900 hover:bg-indigo-100"
-                }`}
-                title="ترتيب المسار"
-              >
-                <DynamicIcon iconKey="ui_sort" config={icons} className="w-5 h-5" fallback="⇅" />
-              </button>
-
-              {isSortingMode && (
-                <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-right-2">
-                  <button
-                    type="button"
-                    onClick={smartSortByRegion}
-                    className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-100"
-                  >
-                    <DynamicIcon iconKey="ui_flash" config={icons} className="w-3.5 h-3.5 text-emerald-600" fallback="✨" />
-                    ترتيب ذكي
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetSortOrder}
-                    className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                  >
-                    <DynamicIcon iconKey="ui_refresh" config={icons} className="w-3.5 h-3.5 text-slate-500" fallback="🔄" />
-                    الترتيب الأصلي
-                  </button>
-                </div>
-              )}
+      {showSearch && (
+        <div className="px-2 py-2 sm:px-3 mb-2 animate-in fade-in slide-in-from-top-2">
+          <div className="relative">
+            <input
+              type="search"
+              value={qSearch}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="بحث — محل، رقم، هاتف…"
+              className="h-[42px] w-full rounded-xl border border-sky-200 bg-white pl-10 pr-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 shadow-sm"
+              dir="rtl"
+              autoComplete="off"
+              enterKeyHint="search"
+            />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-400 pointer-events-none">
+              <DynamicIcon icon={icons?.ui_search} fallback="🔍" width={18} height={18} />
             </div>
-          )}
-
-          {rowIds.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowSearch((v) => !v)}
-              className={`flex items-center justify-center h-[40px] px-3 rounded-xl border transition-all ${
-                showSearch
-                  ? "bg-sky-600 border-sky-700 text-white shadow-inner"
-                  : "bg-sky-50 border-sky-200 text-sky-900 hover:bg-sky-100 dark:border-sky-800/40 dark:bg-sky-950/40 dark:text-sky-200"
-              }`}
-              title="البحث"
-            >
-              <DynamicIcon iconKey="ui_search" config={icons} className="w-5 h-5" fallback="🔍" />
-            </button>
-          )}
-
-          <div className="flex items-center gap-1.5 px-3 bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 rounded-xl h-[40px] text-sm font-black text-slate-800 dark:text-[#00f3ff]">
-            <DynamicIcon iconKey="ui_user" config={icons} className="w-4 h-4 text-sky-600" fallback="" />
-            <span className="truncate max-w-[120px]">{courierName}</span>
           </div>
-
-          {showSearch && (
-            <div className="min-w-0 flex-1 relative animate-in fade-in slide-in-from-right-2">
-              <input
-                type="search"
-                value={qSearch}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="بحث — محل، رقم، هاتف…"
-                className="h-[40px] w-full rounded-xl border border-sky-200 bg-white pl-10 pr-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                dir="rtl"
-                autoComplete="off"
-                enterKeyHint="search"
-              />
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-400 pointer-events-none">
-                <DynamicIcon icon={icons?.ui_search} fallback="🔍" width={18} height={18} />
-              </div>
-            </div>
-          )}
         </div>
+      )}
 
-
-      </div>
+      {isSortingMode && rowIds.length > 1 && (
+        <div className="px-2 py-2 sm:px-3 mb-2 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <button
+            type="button"
+            onClick={smartSortByRegion}
+            className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-100 shadow-sm"
+          >
+            <DynamicIcon iconKey="ui_flash" config={icons} className="w-3.5 h-3.5 text-emerald-600" fallback="✨" />
+            ترتيب ذكي للمسار
+          </button>
+          <button
+            type="button"
+            onClick={resetSortOrder}
+            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-sm"
+          >
+            <DynamicIcon iconKey="ui_refresh" config={icons} className="w-3.5 h-3.5 text-slate-500" fallback="🔄" />
+            الترتيب الأصلي
+          </button>
+        </div>
+      )}
 
       <UnifiedOrderListTable
         rows={tableRowsToRender}
         colCount={9}
         showSelectColumn={showQuickSelect}
-        isRowSelectable={(r) => !r.isGroupHeader}
+        isRowSelectable={() => true}
         isSelected={(id) => selectedIds.has(id)}
         allSelected={allSelected}
         onToggleAll={toggleAll}
@@ -658,8 +463,8 @@ export function MandoubOrderTable({
           window.history.pushState({ orderId: id }, "", `?${p.toString()}`);
         }}
         onRowReorder={isSortingMode ? handleRowReorder : undefined}
-        canDragRow={(o) => o.orderStatus !== "delivered" && !o.isGroupHeader}
-        canDropOnRow={(o) => o.orderStatus !== "delivered" && !o.isGroupHeader}
+        canDragRow={(o) => o.orderStatus !== "delivered"}
+        canDropOnRow={(o) => o.orderStatus !== "delivered"}
         selectAllTitle="تحديد الكل"
         selectAllAriaLabel="تحديد كل الطلبات الظاهرة"
         selectedTitle="تحديد"

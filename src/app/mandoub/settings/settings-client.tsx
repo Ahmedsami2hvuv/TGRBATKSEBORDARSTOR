@@ -39,8 +39,7 @@ export default function CourierSettingsClient({
   const [currentBgId, setCurrentBgId] = useState<string | null>(null);
   const [showBgSelector, setShowBgSelector] = useState(false);
   const [showFontSizeCustomizer, setShowFontSizeCustomizer] = useState(false);
-  const [enableOrderMerging, setEnableOrderMerging] = useState(true);
-  const [mergingSavingState, setMergingSavingState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
 
   useEffect(() => {
     // جلب الخلفيات المفعلة من السيرفر
@@ -55,12 +54,6 @@ export default function CourierSettingsClient({
         setCurrentBgId(data?.defaultBackgroundId || "default-gradient");
       }
     }).catch(err => console.error("Failed to load active backgrounds", err));
-
-    // جلب خيار دمج الطلبات
-    const savedMerging = localStorage.getItem(`mandoub_enable_order_merging_${auth.c}`);
-    if (savedMerging !== null) {
-      setEnableOrderMerging(savedMerging === "true");
-    }
   }, [auth.c]);
 
   const handleSelectBackground = (id: string) => {
@@ -106,24 +99,7 @@ export default function CourierSettingsClient({
     }
   }
 
-  const handleToggleOrderMerging = (currentValue: boolean) => {
-    const newValue = !currentValue;
-    setMergingSavingState("saving");
-    setEnableOrderMerging(newValue);
-    try {
-      localStorage.setItem(`mandoub_enable_order_merging_${auth.c}`, String(newValue));
-      setMergingSavingState("saved");
-      setTimeout(() => {
-        setMergingSavingState("idle");
-      }, 1500);
-    } catch (e) {
-      setEnableOrderMerging(currentValue);
-      setMergingSavingState("error");
-      setTimeout(() => {
-        setMergingSavingState("idle");
-      }, 3000);
-    }
-  };
+
 
   const items = [
     {
@@ -344,48 +320,7 @@ export default function CourierSettingsClient({
           </div>
         </section>
 
-        {/* نظام دمج الطلبات */}
-        <section className="kse-glass-dark border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm mt-6 animate-in fade-in slide-in-from-bottom-2">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="text-xl">📦</span>
-            <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">نظام دمج الطلبات الذكي</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">تجميع ودمج الطلبات التي تنتمي لنفس المنطقة في حزمة واحدة</p>
-            </div>
-          </div>
 
-          <div className="flex items-center justify-between py-2 gap-4">
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">تفعيل نظام الدمج</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal mt-0.5">
-                عند التفعيل، سيتم تجميع كافة الطلبات التي تنتمي لنفس المنطقة في كتلة (بلوك) واحدة قابلة للفتح والغلق بنقرة واحدة لتبسيط العرض.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 shrink-0">
-              {mergingSavingState === "saving" && (
-                <span className="size-4 rounded-full border-2 border-sky-500 border-t-transparent animate-spin"></span>
-              )}
-              {mergingSavingState === "saved" && (
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 animate-pulse">✓ تم الحفظ</span>
-              )}
-              {mergingSavingState === "error" && (
-                <span className="text-xs font-bold text-rose-600 dark:text-rose-400">⚠️ فشل!</span>
-              )}
-
-              <label className="relative inline-flex items-center cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={enableOrderMerging}
-                  disabled={mergingSavingState === "saving"}
-                  onChange={() => handleToggleOrderMerging(enableOrderMerging)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-focus:ring-2 peer-focus:ring-sky-500/20 dark:peer-focus:ring-sky-400/20 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 dark:after:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500 dark:peer-checked:bg-[#00f3ff]/80"></div>
-              </label>
-            </div>
-          </div>
-        </section>
       </div>
     </div>
   );
