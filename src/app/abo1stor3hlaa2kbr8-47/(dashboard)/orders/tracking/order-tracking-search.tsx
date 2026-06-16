@@ -21,10 +21,6 @@ export function OrderTrackingSearch({
   const qFromUrl = searchParams.get("q") ?? "";
   const [value, setValue] = useState(initialQ);
 
-  useEffect(() => {
-    setValue(qFromUrl);
-  }, [qFromUrl]);
-
   const pushQuery = useCallback(
     (q: string) => {
       const p = new URLSearchParams();
@@ -47,7 +43,7 @@ export function OrderTrackingSearch({
 
     const id = window.setTimeout(() => {
       pushQuery(value);
-    }, 180);
+    }, 500);
     return () => window.clearTimeout(id);
   }, [value, qFromUrl, pushQuery]);
 
