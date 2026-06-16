@@ -22,6 +22,26 @@ export async function syncOrderCourierMoneyExpectations(
   });
   if (!order) return;
 
+  if (order.status === "delivered" && (order.assignedCourierId || order.courierEarningForCourierId)) {
+    const hasDelivery = order.moneyEvents.some((e) => e.kind === MONEY_KIND_DELIVERY);
+    if (!hasDelivery) {
+      const cid = order.courierEarningForCourierId || order.assignedCourierId;
+      if (cid) {
+        const newEv = await tx.orderCourierMoneyEvent.create({
+          data: {
+            orderId: order.id,
+            courierId: cid,
+            kind: MONEY_KIND_DELIVERY,
+            amountDinar: order.courierEarningDinar ?? new Decimal(0),
+            expectedDinar: order.deliveryPrice ?? new Decimal(0),
+            matchesExpected: true,
+          }
+        });
+        order.moneyEvents.push(newEv as any);
+      }
+    }
+  }
+
   const pickupExpected =
     order.orderSubtotal != null ? order.orderSubtotal : null;
   const deliveryExpected =

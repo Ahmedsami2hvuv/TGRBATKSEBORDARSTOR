@@ -82,6 +82,11 @@ export async function bulkUpdateOrdersStatus(
         where: { id: orderId },
         data: updateData,
       });
+
+      if (targetStatus === "delivered" || targetStatus === "pending" || targetStatus === "cancelled") {
+        const { syncOrderCourierMoneyExpectations } = await import("@/lib/order-courier-money-sync");
+        await syncOrderCourierMoneyExpectations(tx, orderId);
+      }
     }
   });
 
