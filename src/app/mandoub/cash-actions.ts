@@ -307,6 +307,20 @@ export async function submitMandoubDeliveryMoney(
           earningFor = earning != null ? earningCourierId : null;
         }
       }
+      
+      if (!deliveryEv && earningCourierId) {
+        await tx.orderCourierMoneyEvent.create({
+          data: {
+            orderId,
+            courierId: earningCourierId,
+            kind: MONEY_KIND_DELIVERY,
+            amountDinar: earning ?? new Decimal(0),
+            expectedDinar: order.deliveryPrice ?? new Decimal(0),
+            matchesExpected: true
+          }
+        });
+      }
+
       await tx.order.update({
         where: { id: orderId },
         data: {
