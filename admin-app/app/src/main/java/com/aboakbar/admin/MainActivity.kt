@@ -305,7 +305,7 @@ class MainActivity : AppCompatActivity() {
                     try {
                         photoFile = createImageFile()
                     } catch (ex: IOException) {
-                        // Error occurred
+                        photoFile = null
                     }
                     if (photoFile != null) {
                         val photoURI: Uri = FileProvider.getUriForFile(
@@ -314,6 +314,7 @@ class MainActivity : AppCompatActivity() {
                             photoFile
                         )
                         takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
+                        takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
                     } else {
                         takePictureIntent = null
                     }
@@ -321,9 +322,9 @@ class MainActivity : AppCompatActivity() {
                     takePictureIntent = null
                 }
 
-                val contentSelectionIntent = fileChooserParams?.createIntent() ?: Intent(Intent.ACTION_GET_CONTENT).apply {
+                val contentSelectionIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "*/*"
+                    type = "image/*"
                 }
                 
                 val intentArray: Array<Intent> = if (takePictureIntent != null) arrayOf(takePictureIntent) else emptyArray()
@@ -336,7 +337,8 @@ class MainActivity : AppCompatActivity() {
 
                 try {
                     startActivityForResult(chooserIntent, FILECHOOSER_RESULTCODE)
-                } catch (e: ActivityNotFoundException) {
+                } catch (e: Exception) {
+                    uploadMessage?.onReceiveValue(null)
                     uploadMessage = null
                     return false
                 }
@@ -617,11 +619,13 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         webView.saveState(outState)
+        cameraImagePath?.let { outState.putString("cameraImagePath", it) }
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         webView.restoreState(savedInstanceState)
+        cameraImagePath = savedInstanceState.getString("cameraImagePath")
     }
 
     override fun onNewIntent(intent: Intent?) {

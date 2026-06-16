@@ -99,6 +99,16 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         webView.saveState(outState)
+        cameraPhotoUri?.let { outState.putString("cameraPhotoUri", it.toString()) }
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        webView.restoreState(savedInstanceState)
+        val uriStr = savedInstanceState.getString("cameraPhotoUri")
+        if (uriStr != null) {
+            cameraPhotoUri = Uri.parse(uriStr)
+        }
     }
 
     private fun requestAppPermissions() {
@@ -226,30 +236,47 @@ class MainActivity : AppCompatActivity() {
             ): Boolean {
                 uploadMessage?.onReceiveValue(null)
                 uploadMessage = filePathCallback
-                val defaultIntent = fileChooserParams?.createIntent() ?: return false
                 
                 var cameraIntent: Intent? = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
-                try {
-                    val photoFile = java.io.File.createTempFile("IMG_", ".jpg", getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES))
-                    cameraPhotoUri = androidx.core.content.FileProvider.getUriForFile(
-                        this@MainActivity,
-                        "$packageName.fileprovider",
-                        photoFile
-                    )
-                    cameraIntent?.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, cameraPhotoUri)
-                } catch (e: Exception) {
+                if (cameraIntent?.resolveActivity(packageManager) != null) {
+                    var photoFile: java.io.File? = null
+                    try {
+                        photoFile = java.io.File.createTempFile("IMG_", ".jpg", getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES))
+                        cameraPhotoUri = androidx.core.content.FileProvider.getUriForFile(
+                            this@MainActivity,
+                            "$packageName.fileprovider",
+                            photoFile
+                        )
+                    } catch (e: Exception) {
+                        photoFile = null
+                    }
+                    if (photoFile != null) {
+                        cameraIntent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, cameraPhotoUri)
+                        cameraIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                    } else {
+                        cameraIntent = null
+                    }
+                } else {
                     cameraIntent = null
                 }
 
-                val chooserIntent = Intent(Intent.ACTION_CHOOSER)
-                chooserIntent.putExtra(Intent.EXTRA_INTENT, defaultIntent)
-                if (cameraIntent != null) {
-                    chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(cameraIntent))
+                val contentSelectionIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "image/*"
+                }
+
+                val chooserIntent = Intent(Intent.ACTION_CHOOSER).apply {
+                    putExtra(Intent.EXTRA_INTENT, contentSelectionIntent)
+                    putExtra(Intent.EXTRA_TITLE, "التقاط صورة أو اختيار من المعرض")
+                    if (cameraIntent != null) {
+                        putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(cameraIntent))
+                    }
                 }
                 
                 try {
                     startActivityForResult(chooserIntent, FILECHOOSER_RESULTCODE)
                 } catch (e: Exception) {
+                    uploadMessage?.onReceiveValue(null)
                     uploadMessage = null
                     return false
                 }
