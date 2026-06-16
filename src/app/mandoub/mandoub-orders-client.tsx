@@ -150,11 +150,10 @@ export function MandoubOrdersSection({
         <div className="flex items-center gap-2">
           <FullscreenWalletLauncher
             href={`/mandoub/wallet?${baseQuery.toString()}`}
-            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border-2 border-violet-500 bg-violet-600 px-2.5 py-2 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 h-10"
+            className="inline-flex shrink-0 items-center justify-center rounded-xl border-2 border-violet-500 bg-violet-600 px-2 py-1.5 text-center text-sm font-black text-white shadow-sm hover:bg-violet-700 h-10 min-w-[60px]"
             title="محفظة المندوب"
           >
-            <DynamicIcon iconKey="ui_wallet" config={icons} fallback="💰" className="w-5 h-5" />
-            <span className="rounded-lg bg-violet-500 px-2 py-0.5 text-xs font-black text-white" dir="ltr">
+            <span className="text-sm font-black text-white" dir="ltr">
               {cashInHandStr}
             </span>
           </FullscreenWalletLauncher>
