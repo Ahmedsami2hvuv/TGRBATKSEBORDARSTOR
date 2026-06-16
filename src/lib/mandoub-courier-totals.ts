@@ -9,6 +9,7 @@ export interface DecimalMathPlusLike {
 /** لحساب «أرباحي» وحالات الطلبات الحالية — أموال الصادر/الوارد تُحسب من `fetchMandoubMoneySumsForCourier` / `computeMoneySumsFromCourierEvents` */
 export type MandoubOrderTotalsInput = {
   status: string;
+  createdAt: Date;
   updatedAt: Date;
   courierEarningDinar: Decimal | null;
   courierEarningForCourierId: string | null;
@@ -87,7 +88,7 @@ export function computeMandoubTotalsForCourier(
     let skipForBaseline = false;
     if (baseline) {
       if (deliveryEv) skipForBaseline = deliveryEv.createdAt <= baseline;
-      else skipForBaseline = o.updatedAt <= baseline;
+      else skipForBaseline = o.createdAt <= baseline;
     }
 
     if (!skipForBaseline) {
