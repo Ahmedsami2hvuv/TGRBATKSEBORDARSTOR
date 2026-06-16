@@ -80,7 +80,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         // منع نظام الأندرويد من إنشاء نسخة جديدة من التطبيق إذا كان مفتوحاً بالفعل
-        if (!isTaskRoot) {
+        if (!isTaskRoot && intent.hasCategory(Intent.CATEGORY_LAUNCHER) && intent.action != null && intent.action == Intent.ACTION_MAIN) {
             finish()
             return
         }
@@ -110,6 +110,7 @@ class MainActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
 
         setupWebView()
+        registerForContextMenu(webView)
         setupPasswordToggle()
         setupBiometrics()
 
@@ -160,6 +161,9 @@ class MainActivity : AppCompatActivity() {
         lastSeenOrderNumber = sharedPreferences.getInt("last_seen_order_number", 0)
 
         requestAppPermissions()
+        
+        // تسجيل القائمة المنسدلة (النقر المطول) للمتصفح
+        registerForContextMenu(webView)
     }
 
     private fun requestAppPermissions() {
@@ -611,7 +615,8 @@ class MainActivity : AppCompatActivity() {
         if (webView.visibility == View.VISIBLE && webView.canGoBack()) {
             webView.goBack()
         } else {
-            super.onBackPressed()
+            // بدلاً من إنهاء التطبيق بالكامل، نضعه في الخلفية لضمان عودته بشكل فوري
+            moveTaskToBack(true)
         }
     }
 
@@ -638,9 +643,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        try {
-            webView.onResume()
-        } catch (e: Exception) {}
+        // تم إزالة webView.onResume() لمنع إعادة التحميل والشاشة البيضاء عند العودة للتطبيق
 
         // التحقق التدريجي من الصلاحيات الإضافية عند العودة للتطبيق
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -651,10 +654,75 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onPause() {
-        try {
-            webView.onPause()
-        } catch (e: Exception) {}
         super.onPause()
+        // تم إزالة webView.onPause() للحفاظ على استقرار التطبيق في الخلفية
+    }
+    
+    override fun onCreateContextMenu(menu: android.view.ContextMenu?, v: View?, menuInfo: android.view.ContextMenu.ContextMenuInfo?) {
+        super.onCreateContextMenu(menu, v, menuInfo)
+        val hitTestResult = webView.hitTestResult
+        
+        when (hitTestResult.type) {
+            WebView.HitTestResult.IMAGE_TYPE,
+            WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE -> {
+                val imageUrl = hitTestResult.extra
+                if (imageUrl != null) {
+                    menu?.setHeaderTitle("خيارات الصورة")
+                    if (imageUrl.startsWith("http")) {
+                        menu?.add(0, 1, 0, "حفظ الصورة")?.setOnMenuItemClickListener {
+                            downloadImage(imageUrl)
+                            true
+                        }
+                    }
+                    menu?.add(0, 2, 0, "مشاركة الصورة")?.setOnMenuItemClickListener {
+                        shareLink(imageUrl, "مشاركة الصورة عبر")
+                        true
+                    }
+                }
+            }
+            WebView.HitTestResult.SRC_ANCHOR_TYPE -> {
+                val linkUrl = hitTestResult.extra
+                if (linkUrl != null) {
+                    menu?.setHeaderTitle("خيارات الرابط")
+                    menu?.add(0, 3, 0, "نسخ الرابط")?.setOnMenuItemClickListener {
+                        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        val clip = android.content.ClipData.newPlainText("URL", linkUrl)
+                        clipboard.setPrimaryClip(clip)
+                        Toast.makeText(this@MainActivity, "تم نسخ الرابط", Toast.LENGTH_SHORT).show()
+                        true
+                    }
+                    menu?.add(0, 4, 0, "فتح في المتصفح")?.setOnMenuItemClickListener {
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(linkUrl))
+                            startActivity(intent)
+                        } catch (e: Exception) {}
+                        true
+                    }
+                }
+            }
+        }
+    }
+    
+    private fun downloadImage(url: String) {
+        try {
+            val request = android.app.DownloadManager.Request(Uri.parse(url))
+            request.allowScanningByMediaScanner()
+            request.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            val fileName = android.webkit.URLUtil.guessFileName(url, null, "image/*")
+            request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, fileName)
+            val dm = getSystemService(Context.DOWNLOAD_SERVICE) as android.app.DownloadManager
+            dm.enqueue(request)
+            Toast.makeText(this, "جاري تنزيل الصورة...", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "فشل التنزيل", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun shareLink(url: String, title: String) {
+        val shareIntent = Intent(Intent.ACTION_SEND)
+        shareIntent.type = "text/plain"
+        shareIntent.putExtra(Intent.EXTRA_TEXT, url)
+        startActivity(Intent.createChooser(shareIntent, title))
     }
 
     private fun checkBatteryOptimizations() {
@@ -736,6 +804,103 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun onCreateContextMenu(
+        menu: android.view.ContextMenu,
+        v: View,
+        menuInfo: android.view.ContextMenu.ContextMenuInfo?
+    ) {
+        super.onCreateContextMenu(menu, v, menuInfo)
+        
+        val hitTestResult = webView.hitTestResult
+        
+        when (hitTestResult.type) {
+            WebView.HitTestResult.IMAGE_TYPE,
+            WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE -> {
+                menu.setHeaderTitle("خيارات الصورة")
+                menu.add(0, 1, 0, "حفظ الصورة")
+                menu.add(0, 2, 0, "مشاركة رابط الصورة")
+                if (hitTestResult.type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
+                    menu.add(0, 3, 0, "فتح الرابط في متصفح خارجي")
+                    menu.add(0, 4, 0, "نسخ الرابط")
+                }
+            }
+            WebView.HitTestResult.SRC_ANCHOR_TYPE -> {
+                menu.setHeaderTitle("خيارات الرابط")
+                menu.add(0, 3, 0, "فتح في متصفح خارجي")
+                menu.add(0, 4, 0, "نسخ الرابط")
+            }
+        }
+    }
+
+    override fun onContextItemSelected(item: android.view.MenuItem): Boolean {
+        val hitTestResult = webView.hitTestResult
+        val url = hitTestResult.extra
+        
+        when (item.itemId) {
+            1 -> { // حفظ الصورة
+                if (url != null) {
+                    downloadImage(url)
+                }
+                return true
+            }
+            2 -> { // مشاركة الصورة
+                if (url != null) {
+                    shareImage(url)
+                }
+                return true
+            }
+            3 -> { // فتح في المتصفح
+                if (url != null) {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    startActivity(intent)
+                }
+                return true
+            }
+            4 -> { // نسخ الرابط
+                if (url != null) {
+                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    val clip = android.content.ClipData.newPlainText("URL", url)
+                    clipboard.setPrimaryClip(clip)
+                    Toast.makeText(this, "تم نسخ الرابط", Toast.LENGTH_SHORT).show()
+                }
+                return true
+            }
+        }
+        return super.onContextItemSelected(item)
+    }
+
+    private fun downloadImage(url: String) {
+        try {
+            if (url.startsWith("data:image")) {
+                Toast.makeText(this, "لا يمكن تنزيل هذه الصورة لأنها مدمجة بالصفحة", Toast.LENGTH_SHORT).show()
+                return
+            }
+            val request = android.app.DownloadManager.Request(Uri.parse(url))
+            request.allowScanningByMediaScanner()
+            request.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            
+            var fileName = android.webkit.URLUtil.guessFileName(url, null, null)
+            if (!fileName.contains(".")) {
+                fileName += ".jpg"
+            }
+            
+            request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, "AboAkbar/$fileName")
+            
+            val dm = getSystemService(Context.DOWNLOAD_SERVICE) as android.app.DownloadManager
+            dm.enqueue(request)
+            Toast.makeText(this, "جاري تنزيل الصورة إلى مجلد التنزيلات...", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "حدث خطأ أثناء التنزيل: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun shareImage(url: String) {
+        val intent = Intent(Intent.ACTION_SEND)
+        intent.type = "text/plain"
+        intent.putExtra(Intent.EXTRA_TEXT, url)
+        startActivity(Intent.createChooser(intent, "مشاركة الرابط"))
     }
 
     override fun onDestroy() {
