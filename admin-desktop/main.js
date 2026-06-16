@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, net, Notification, session } = require('electron');
 const path = require('path');
 
 function createWindow (urlToLoad = 'https://aboakbr.com/abo1stor3hlaa2kbr8-47') {
@@ -73,6 +73,68 @@ app.whenReady().then(async () => {
   });
 
   createWindow();
+
+  // --- إعداد إشعارات فحص الطلبات بالخلفية ---
+  let lastSeenOrderNumber = 0;
+  
+  setInterval(async () => {
+    try {
+      // جلب الكوكيز لتطبيق الإدارة لمعرفة إذا كان المدير مسجلاً دخوله
+      const cookies = await session.defaultSession.cookies.get({ url: 'https://aboakbr.com' });
+      const tokenCookie = cookies.find(c => c.name === 'admin_token');
+      
+      if (!tokenCookie) return; // غير مسجل الدخول، لا نفعل شيئاً
+      
+      const token = tokenCookie.value;
+      
+      const request = net.request({
+        method: 'GET',
+        url: `https://aboakbr.com/api/notifications/admin-pending?token=${token}`,
+        useSessionCookies: true
+      });
+
+      request.on('response', (response) => {
+        let data = '';
+        response.on('data', (chunk) => {
+          data += chunk;
+        });
+        response.on('end', () => {
+          if (response.statusCode === 200) {
+            try {
+              const json = JSON.parse(data);
+              const latestOrderNumber = json.latestOrderNumber || 0;
+              const details = json.latestOrderDetails || {};
+              
+              if (latestOrderNumber > 0 && lastSeenOrderNumber > 0 && latestOrderNumber > lastSeenOrderNumber) {
+                lastSeenOrderNumber = latestOrderNumber;
+                
+                const shopName = details.shopName || '—';
+                const regionName = details.regionName || '—';
+                const orderType = details.orderType || '—';
+                const subtotal = details.subtotal || 0;
+                
+                // عرض الإشعار على نظام ويندوز
+                new Notification({
+                  title: `${shopName} — ${regionName}`,
+                  body: `طلب جديد: ${orderType} | المجموع: ${subtotal} د.ع`,
+                  icon: path.join(__dirname, 'build/icon.ico')
+                }).show();
+                
+              } else if (latestOrderNumber > 0 && lastSeenOrderNumber === 0) {
+                // أول مرة نقرأ فيها الرقم، لا نعرض إشعار للطلبات القديمة
+                lastSeenOrderNumber = latestOrderNumber;
+              }
+            } catch (err) {}
+          }
+        });
+      });
+      
+      request.end();
+    } catch (error) {
+      // صمت الأخطاء
+    }
+  }, 15000); // فحص كل 15 ثانية
+  // ----------------------------------------
 
   app.on('activate', () => {
     // على macOS من المعتاد إعادة إنشاء نافذة في التطبيق عندما
