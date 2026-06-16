@@ -1,6 +1,6 @@
 const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
-const contextMenu = require('electron-context-menu');
+
 function createWindow (urlToLoad = 'https://aboakbr.com/abo1stor3hlaa2kbr8-47') {
   // إنشاء نافذة المتصفح
   const win = new BrowserWindow({
@@ -36,42 +36,42 @@ function createWindow (urlToLoad = 'https://aboakbr.com/abo1stor3hlaa2kbr8-47') 
 
   // تحميل رابط لوحة التحكم
   win.loadURL(urlToLoad);
-  
-  // يمكنك فتح أدوات المطور إذا أردت بتفعيل السطر التالي:
-  // win.webContents.openDevTools();
 }
 
-// تفعيل قائمة الكليك الأيمن (النسخ، اللصق، إلخ) وتعريبها
-contextMenu({
-  showSaveImageAs: true,
-  showCopyImage: true,
-  showInspectElement: false,
-  labels: {
-    copy: 'نسخ',
-    paste: 'لصق',
-    cut: 'قص',
-    copyImage: 'نسخ الصورة',
-    saveImageAs: 'حفظ الصورة كـ...',
-    copyLink: 'نسخ الرابط',
-    selectAll: 'تحديد الكل',
-    learnSpelling: 'تعلم التهجئة',
-    lookUpSelection: 'البحث عن التحديد',
-    searchWithGoogle: 'البحث في جوجل',
-    services: 'الخدمات'
-  },
-  append: (defaultActions, parameters, browserWindow) => [
-    {
-      label: 'فتح الرابط في نافذة جديدة',
-      visible: parameters.linkURL.trim().length > 0,
-      click: () => {
-        createWindow(parameters.linkURL);
-      }
-    }
-  ]
-});
-
 // سيتم استدعاء هذه الطريقة عندما تنتهي Electron من التهيئة
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // استخدام Dynamic Import لأن electron-context-menu هي إضافة بصيغة ES Module
+  const contextMenu = (await import('electron-context-menu')).default;
+
+  // تفعيل قائمة الكليك الأيمن (النسخ، اللصق، إلخ) وتعريبها
+  contextMenu({
+    showSaveImageAs: true,
+    showCopyImage: true,
+    showInspectElement: false,
+    labels: {
+      copy: 'نسخ',
+      paste: 'لصق',
+      cut: 'قص',
+      copyImage: 'نسخ الصورة',
+      saveImageAs: 'حفظ الصورة كـ...',
+      copyLink: 'نسخ الرابط',
+      selectAll: 'تحديد الكل',
+      learnSpelling: 'تعلم التهجئة',
+      lookUpSelection: 'البحث عن التحديد',
+      searchWithGoogle: 'البحث في جوجل',
+      services: 'الخدمات'
+    },
+    append: (defaultActions, parameters, browserWindow) => [
+      {
+        label: 'فتح الرابط في نافذة جديدة',
+        visible: parameters.linkURL.trim().length > 0,
+        click: () => {
+          createWindow(parameters.linkURL);
+        }
+      }
+    ]
+  });
+
   createWindow();
 
   app.on('activate', () => {
