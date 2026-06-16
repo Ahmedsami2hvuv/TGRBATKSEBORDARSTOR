@@ -667,6 +667,7 @@ export async function getPartnerDetails(partnerId: string) {
           include: {
             order: {
               select: {
+                id: true,
                 orderNumber: true,
                 orderType: true,
                 customerRegion: { select: { name: true } }
@@ -689,7 +690,8 @@ export async function getPartnerDetails(partnerId: string) {
               note: `طلب توصيل #${me.order?.orderNumber || "—"} | استلام مبلغ من الزبون (المنطقة: ${me.order?.customerRegion?.name || "—"})`,
               createdAt: me.createdAt,
               updatedAt: me.createdAt,
-              isAuto: true
+              isAuto: true,
+              orderId: me.order?.id
             });
           } else if (me.kind === MONEY_KIND_PICKUP) { // صادر من المندوب للمحل
             autoTransactions.push({
@@ -700,7 +702,8 @@ export async function getPartnerDetails(partnerId: string) {
               note: `طلب #${me.order?.orderNumber || "—"} | تسليم مبلغ للمجهز/المحل`,
               createdAt: me.createdAt,
               updatedAt: me.createdAt,
-              isAuto: true
+              isAuto: true,
+              orderId: me.order?.id
             });
           }
         }
@@ -783,7 +786,8 @@ export async function getPartnerDetails(partnerId: string) {
             note: `أرباح التوصيل للطلب #${o.orderNumber}`,
             createdAt: o.deliveredAt || o.createdAt,
             updatedAt: o.deliveredAt || o.createdAt,
-            isAuto: true
+            isAuto: true,
+            orderId: o.id
           });
         }
       } catch (e) {
@@ -818,6 +822,7 @@ export async function getPartnerDetails(partnerId: string) {
               include: {
                 order: {
                   select: {
+                    id: true,
                     orderNumber: true
                   }
                 }
@@ -838,7 +843,8 @@ export async function getPartnerDetails(partnerId: string) {
                   note: `طلب #${me.order?.orderNumber || "—"} | استلام دفعة من المندوب/الزبون`,
                   createdAt: me.createdAt,
                   updatedAt: me.createdAt,
-                  isAuto: true
+                  isAuto: true,
+                  orderId: me.order?.id
                 });
               } else if (me.kind === MONEY_KIND_PICKUP) { // صادر من المجهز للمحل
                 autoTransactions.push({
@@ -849,7 +855,8 @@ export async function getPartnerDetails(partnerId: string) {
                   note: `طلب #${me.order?.orderNumber || "—"} | تسليم مبلغ للمحل`,
                   createdAt: me.createdAt,
                   updatedAt: me.createdAt,
-                  isAuto: true
+                  isAuto: true,
+                  orderId: me.order?.id
                 });
               }
             }
@@ -1018,7 +1025,8 @@ export async function getPartnerDetails(partnerId: string) {
               createdAt: me.createdAt,
               updatedAt: me.createdAt,
               isAuto: true,
-              isAdminPayment: !me.courierId && !me.recordedByCompanyPreparerId
+              isAdminPayment: !me.courierId && !me.recordedByCompanyPreparerId,
+              orderId: o.id
             });
           }
         }
@@ -1029,32 +1037,50 @@ export async function getPartnerDetails(partnerId: string) {
       }
     }
 
-    // جلب أرقام ومعرفات طلبات المورد بكفاءة لتجنب N+1 query
-    const supplierOrdersMap = new Map<number, { orderId: string; isPaid: boolean }>();
-    if (partner.type === "supplier" && partner.externalId) {
+    // استخلاص أرقام الطلبيات المذكورة في ملاحظات المعاملات اليدوية للربط الذكي
+    const orderNumbers = new Set<number>();
+    partner.transactions.forEach(t => {
+      if (t.note) {
+        const matches = t.note.match(/(?:#|طلب\s*رقم\s*|طلب\s*#?\s*|طلبية\s*#?\s*)(\d+)/g);
+        if (matches) {
+          matches.forEach(m => {
+            const numMatch = m.match(/\d+/);
+            if (numMatch) {
+              orderNumbers.add(parseInt(numMatch[0], 10));
+            }
+          });
+        }
+      }
+    });
+
+    const ordersMap = new Map<number, { id: string, isPaidForSupplier: boolean }>();
+    if (orderNumbers.size > 0 || (partner.type === "supplier" && partner.externalId)) {
       try {
-        const supplierOrders = await prisma.order.findMany({
+        const foundOrders = await prisma.order.findMany({
           where: {
-            preparerShoppingJson: { not: null }
+            OR: [
+              orderNumbers.size > 0 ? { orderNumber: { in: Array.from(orderNumbers) } } : {},
+              partner.type === "supplier" ? { preparerShoppingJson: { not: null } } : {}
+            ].filter(cond => Object.keys(cond).length > 0)
           },
           select: { id: true, orderNumber: true, preparerShoppingJson: true }
         });
-        for (const order of supplierOrders) {
+        for (const o of foundOrders) {
           let json: any = {};
           try {
-            json = typeof order.preparerShoppingJson === "string"
-              ? JSON.parse(order.preparerShoppingJson)
-              : order.preparerShoppingJson || {};
+            json = typeof o.preparerShoppingJson === "string"
+              ? JSON.parse(o.preparerShoppingJson)
+              : o.preparerShoppingJson || {};
           } catch {
             json = {};
           }
-          supplierOrdersMap.set(order.orderNumber, {
-            orderId: order.id,
-            isPaid: !!json.supplierPaid
+          ordersMap.set(o.orderNumber, {
+            id: o.id,
+            isPaidForSupplier: !!json.supplierPaid
           });
         }
       } catch (err) {
-        console.error("Failed to fetch supplier orders for mapping:", err);
+        console.error("Failed to fetch matching orders for notes:", err);
       }
     }
 
@@ -1069,14 +1095,17 @@ export async function getPartnerDetails(partnerId: string) {
 
       let isPaid = false;
       let orderId: string | undefined = undefined;
-      if (partner.type === "supplier" && t.kind === "took" && t.note) {
-        const match = t.note.match(/طلب رقم:\s*#(\d+)/);
+      
+      if (t.note) {
+        const match = t.note.match(/(?:#|طلب\s*رقم\s*|طلب\s*#?\s*|طلبية\s*#?\s*)(\d+)/);
         if (match) {
           const orderNum = parseInt(match[1], 10);
-          const orderInfo = supplierOrdersMap.get(orderNum);
+          const orderInfo = ordersMap.get(orderNum);
           if (orderInfo) {
-            isPaid = orderInfo.isPaid;
-            orderId = orderInfo.orderId;
+            orderId = orderInfo.id;
+            if (partner.type === "supplier") {
+              isPaid = orderInfo.isPaidForSupplier;
+            }
           }
         }
       }
