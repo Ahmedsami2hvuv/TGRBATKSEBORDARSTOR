@@ -19,9 +19,7 @@ const PwaRoutePreserver = dynamic(
 const GlobalAIAssistant = dynamic(() => import("@/components/GlobalAIAssistant"), {
   ssr: false,
 });
-const PortalChatWidget = dynamic(() => import("@/components/PortalChatWidget"), {
-  ssr: false,
-});
+
 const OneSignalInitializer = dynamic(
   () => import("@/components/OneSignalInitializer").then((m) => m.OneSignalInitializer),
   { ssr: false },
@@ -56,11 +54,7 @@ export function ClientRuntime({
         preparerFeatures={preparerFeatures}
         storeFeatures={storeFeatures}
       />
-      <PortalChatWidget
-        mandoubFeatures={mandoubFeatures}
-        preparerFeatures={preparerFeatures}
-        globalEnabled={chatEnabled}
-      />
+
       <PwaRoutePreserver />
       <PwaServiceWorkerRegister />
       {children}
