@@ -1040,14 +1040,17 @@ export async function getPartnerDetails(partnerId: string) {
             shopId: partner.externalId,
             shopCostPaidAt: null,
             status: { in: ["delivered", "archived"] },
-            orderSubtotal: { gt: 0 }
+            OR: [
+              { orderSubtotal: { gt: 0 } },
+              { prepaidAll: true }
+            ]
           },
           include: {
             customerRegion: { select: { name: true } },
             courier: { select: { name: true } },
             moneyEvents: {
               where: {
-                kind: "pickup_out",
+                kind: { in: ["pickup_out", "delivery_in"] },
                 deletedAt: null
               },
               select: {
@@ -1057,6 +1060,7 @@ export async function getPartnerDetails(partnerId: string) {
                 courierId: true,
                 recordedByCompanyPreparerId: true,
                 mismatchNote: true,
+                kind: true,
                 courier: { select: { name: true } },
                 recordedByCompanyPreparer: { select: { name: true } }
               }
@@ -1071,27 +1075,32 @@ export async function getPartnerDetails(partnerId: string) {
 
         for (const o of orders) {
           const subtotal = Number(o.orderSubtotal || 0);
-          const pickupPaid = o.moneyEvents.reduce((acc, me) => acc + Number(me.amountDinar || 0), 0);
+          const pickupPaid = o.moneyEvents
+            .filter(me => me.kind === "pickup_out")
+            .reduce((acc, me) => acc + Number(me.amountDinar || 0), 0);
           const isSettled = o.shopCostPaidAt !== null || pickupPaid >= subtotal;
 
           // 1. إضافة قيد الطلب كدين علينا (took)
-          autoTook += subtotal;
-          autoTransactions.push({
-            id: `auto-order-${o.id}`,
-            partnerId: partner.id,
-            amount: subtotal,
-            kind: "took", // أخذت = يطلبنا
-            note: `طلب رقم #${o.orderNumber} | نوع الطلب: ${o.orderType || "—"} | المنطقة: ${o.customerRegion?.name || "—"} | المندوب: ${o.courier?.name || "—"}${isSettled ? " (مسدد)" : ""}`,
-            createdAt: o.createdAt,
-            updatedAt: o.updatedAt,
-            isAuto: true,
-            isPaid: isSettled,
-            remainingAmount: Math.max(0, subtotal - pickupPaid),
-            orderId: o.id
-          });
+          if (subtotal > 0) {
+            autoTook += subtotal;
+            autoTransactions.push({
+              id: `auto-order-${o.id}`,
+              partnerId: partner.id,
+              amount: subtotal,
+              kind: "took", // أخذت = يطلبنا
+              note: `طلب رقم #${o.orderNumber} | نوع الطلب: ${o.orderType || "—"} | المنطقة: ${o.customerRegion?.name || "—"} | المندوب: ${o.courier?.name || "—"}${isSettled ? " (مسدد)" : ""}`,
+              createdAt: o.createdAt,
+              updatedAt: o.updatedAt,
+              isAuto: true,
+              isPaid: isSettled,
+              remainingAmount: Math.max(0, subtotal - pickupPaid),
+              orderId: o.id
+            });
+          }
 
           // 2. إضافة حركات الدفع (صادر) كحركات تسديد (gave)
-          for (const me of o.moneyEvents) {
+          const pickupEvents = o.moneyEvents.filter(me => me.kind === "pickup_out");
+          for (const me of pickupEvents) {
             const amt = Number(me.amountDinar || 0);
             autoGave += amt;
             
@@ -1116,6 +1125,30 @@ export async function getPartnerDetails(partnerId: string) {
               isAdminPayment: !me.courierId && !me.recordedByCompanyPreparerId,
               orderId: o.id
             });
+          }
+
+          // 3. إضافة استقطاع أجور التوصيل للطلبيات "كل شيء واصل" (prepaidAll) إذا لم يكن بها وارد توصيل كاش
+          if (o.prepaidAll && Number(o.deliveryPrice || 0) > 0) {
+            const delPrice = Number(o.deliveryPrice);
+            // نتحقق مما إذا كان هناك حركة وارد توصيل (delivery_in) بقيمة تطابق delPrice
+            const hasMatchingDeliveryIn = o.moneyEvents.some(
+              me => me.kind === "delivery_in" && Number(me.amountDinar || 0) === delPrice
+            );
+
+            if (!hasMatchingDeliveryIn) {
+              autoGave += delPrice;
+              autoTransactions.push({
+                id: `auto-delivery-deduct-${o.id}`,
+                partnerId: partner.id,
+                amount: delPrice,
+                kind: "gave", // أعطيت
+                note: `أجور توصيل مستقطعة للطلب #${o.orderNumber} (كل شيء واصل)`,
+                createdAt: o.createdAt,
+                updatedAt: o.updatedAt,
+                isAuto: true,
+                orderId: o.id
+              });
+            }
           }
         }
         
