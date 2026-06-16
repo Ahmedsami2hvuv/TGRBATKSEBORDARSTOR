@@ -35,6 +35,12 @@ import android.os.SystemClock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import android.provider.MediaStore
+import androidx.core.content.FileProvider
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -53,6 +59,7 @@ class MainActivity : AppCompatActivity() {
     private val KEY_PASSWORD = "admin_password" // Cached locally for biometric verification
     private val FILECHOOSER_RESULTCODE = 1
     private var uploadMessage: ValueCallback<Array<Uri>>? = null
+    private var cameraImagePath: String? = null
 
     private var isPasswordVisible = false
     private lateinit var executor: Executor
@@ -71,6 +78,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // منع نظام الأندرويد من إنشاء نسخة جديدة من التطبيق إذا كان مفتوحاً بالفعل
+        if (!isTaskRoot) {
+            finish()
+            return
+        }
+        
         setContentView(R.layout.activity_main)
 
         // تهيئة OneSignal للإشعارات الفورية
@@ -119,15 +133,26 @@ class MainActivity : AppCompatActivity() {
         val savedToken = sharedPreferences.getString(KEY_TOKEN, null)
         val savedPassword = sharedPreferences.getString(KEY_PASSWORD, null)
 
-        if (!savedToken.isNullOrEmpty()) {
-            // دخول تلقائي مباشر دون إظهار نافذة البصمة المزعجة
-            checkExistingToken(savedToken)
+        if (savedInstanceState != null) {
+            webView.restoreState(savedInstanceState)
+            // نتحقق من الرمز فقط لضمان بقائه في الخلفية
+            if (savedToken.isNullOrEmpty()) {
+                showLoginLayout()
+            } else {
+                loginLayout.visibility = View.GONE
+                webView.visibility = View.VISIBLE
+            }
         } else {
-            showLoginLayout()
-            // إظهار البصمة التلقائية فقط إذا كان المستخدم في شاشة تسجيل الدخول ولديه بيانات مخزنة
-            if (!savedPassword.isNullOrEmpty() && isBiometricAvailable()) {
-                btnBiometric.visibility = View.VISIBLE
-                biometricPrompt.authenticate(promptInfo)
+            if (!savedToken.isNullOrEmpty()) {
+                // دخول تلقائي مباشر دون إظهار نافذة البصمة المزعجة
+                checkExistingToken(savedToken)
+            } else {
+                showLoginLayout()
+                // إظهار البصمة التلقائية فقط إذا كان المستخدم في شاشة تسجيل الدخول ولديه بيانات مخزنة
+                if (!savedPassword.isNullOrEmpty() && isBiometricAvailable()) {
+                    btnBiometric.visibility = View.VISIBLE
+                    biometricPrompt.authenticate(promptInfo)
+                }
             }
         }
 
@@ -273,9 +298,44 @@ class MainActivity : AppCompatActivity() {
             ): Boolean {
                 uploadMessage?.onReceiveValue(null)
                 uploadMessage = filePathCallback
-                val intent = fileChooserParams?.createIntent() ?: return false
+                
+                var takePictureIntent: Intent? = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                if (takePictureIntent?.resolveActivity(packageManager) != null) {
+                    var photoFile: File? = null
+                    try {
+                        photoFile = createImageFile()
+                    } catch (ex: IOException) {
+                        // Error occurred
+                    }
+                    if (photoFile != null) {
+                        val photoURI: Uri = FileProvider.getUriForFile(
+                            this@MainActivity,
+                            "${packageName}.fileprovider",
+                            photoFile
+                        )
+                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
+                    } else {
+                        takePictureIntent = null
+                    }
+                } else {
+                    takePictureIntent = null
+                }
+
+                val contentSelectionIntent = fileChooserParams?.createIntent() ?: Intent(Intent.ACTION_GET_CONTENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
+                }
+                
+                val intentArray: Array<Intent> = if (takePictureIntent != null) arrayOf(takePictureIntent) else emptyArray()
+                
+                val chooserIntent = Intent(Intent.ACTION_CHOOSER).apply {
+                    putExtra(Intent.EXTRA_INTENT, contentSelectionIntent)
+                    putExtra(Intent.EXTRA_TITLE, "التقاط صورة أو اختيار من المعرض")
+                    putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray)
+                }
+
                 try {
-                    startActivityForResult(intent, FILECHOOSER_RESULTCODE)
+                    startActivityForResult(chooserIntent, FILECHOOSER_RESULTCODE)
                 } catch (e: ActivityNotFoundException) {
                     uploadMessage = null
                     return false
@@ -300,8 +360,33 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == FILECHOOSER_RESULTCODE) {
             if (uploadMessage == null) return
-            uploadMessage?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
+            
+            var results: Array<Uri>? = null
+            if (resultCode == RESULT_OK) {
+                if (data == null || data.data == null) {
+                    // إذا لم يكن هناك بيانات فهذا يعني أن المستخدم التقط صورة من الكاميرا
+                    if (cameraImagePath != null) {
+                        results = arrayOf(Uri.fromFile(File(cameraImagePath)))
+                    }
+                } else {
+                    // المستخدم اختار صورة من المعرض
+                    val dataString = data.dataString
+                    if (dataString != null) {
+                        results = arrayOf(Uri.parse(dataString))
+                    }
+                }
+            }
+            uploadMessage?.onReceiveValue(results)
             uploadMessage = null
+        }
+    }
+
+    @Throws(IOException::class)
+    private fun createImageFile(): File {
+        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val storageDir: File? = getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+        return File.createTempFile("JPEG_${timeStamp}_", ".jpg", storageDir).apply {
+            cameraImagePath = absolutePath
         }
     }
 
@@ -527,6 +612,16 @@ class MainActivity : AppCompatActivity() {
         } else {
             super.onBackPressed()
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        webView.saveState(outState)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        webView.restoreState(savedInstanceState)
     }
 
     override fun onNewIntent(intent: Intent?) {
