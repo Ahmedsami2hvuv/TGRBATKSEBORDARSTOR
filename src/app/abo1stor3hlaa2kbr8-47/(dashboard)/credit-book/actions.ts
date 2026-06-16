@@ -836,6 +836,27 @@ export async function getPartnerDetails(partnerId: string) {
             orderId: o.id
           });
         }
+
+        // حساب الفارق بين الرصيد الفعلي التلقائي وصافي الحركات التلقائية المجلوبة لإجراء تسوية تطابق الرصيد التراكمي
+        let courierAutoSum = 0;
+        autoTransactions.forEach(tx => {
+          if (tx.kind === "gave") courierAutoSum += tx.amount;
+          else if (tx.kind === "took") courierAutoSum -= tx.amount;
+        });
+
+        const courierDiff = autoBalance - courierAutoSum;
+        if (Math.abs(courierDiff) > 0.001) {
+          autoTransactions.push({
+            id: `auto-courier-adjust-${partner.id}`,
+            partnerId: partner.id,
+            amount: Math.abs(courierDiff),
+            kind: courierDiff > 0 ? "gave" : "took",
+            note: `تسويات وتصفية أرباح ومحفظة المندوب النشطة`,
+            createdAt: resetAt || partner.createdAt,
+            updatedAt: resetAt || partner.createdAt,
+            isAuto: true
+          });
+        }
       } catch (e) {
         console.error("Error fetching courier auto transactions:", e);
       }
@@ -986,6 +1007,27 @@ export async function getPartnerDetails(partnerId: string) {
               });
             }
           }
+        }
+
+        // حساب الفارق بين الرصيد الفعلي التلقائي وصافي الحركات التلقائية المجلوبة للمجهز لإجراء تسوية تطابق الرصيد التراكمي
+        let prepAutoSum = 0;
+        autoTransactions.forEach(tx => {
+          if (tx.kind === "gave") prepAutoSum += tx.amount;
+          else if (tx.kind === "took") prepAutoSum -= tx.amount;
+        });
+
+        const prepDiff = autoBalance - prepAutoSum;
+        if (Math.abs(prepDiff) > 0.001) {
+          autoTransactions.push({
+            id: `auto-preparer-adjust-${partner.id}`,
+            partnerId: partner.id,
+            amount: Math.abs(prepDiff),
+            kind: prepDiff > 0 ? "gave" : "took",
+            note: `تسويات وتصفية أرباح ومحفظة المجهز النشطة`,
+            createdAt: partner.createdAt,
+            updatedAt: partner.createdAt,
+            isAuto: true
+          });
         }
       } catch (e) {
         console.error("Error fetching preparer auto transactions:", e);
