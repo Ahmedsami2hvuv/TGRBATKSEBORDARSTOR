@@ -12,7 +12,7 @@ import { PreparerOrdersSection } from "./preparer-orders-client";
 import { PreparerSearchTrigger } from "./preparer-search-trigger";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
-import { PreparerNotificationPoller } from "./preparer-notification-poller";
+
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { PortalAuthCookieSetter } from "@/components/portal-auth-cookie-setter";
@@ -268,7 +268,6 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           </FullscreenWalletLauncher>
         </div>
       </header>
-      <PreparerNotificationPoller auth={baseAuth} openUrl={preparationHref} />
       <section className="kse-glass-dark overflow-hidden border border-sky-200 shadow-sm dark:border-slate-800">
         <PreparerOrdersSection
           allRows={safeTableRows}

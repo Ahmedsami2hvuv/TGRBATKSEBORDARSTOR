@@ -32,7 +32,7 @@ import type { MandoubOrderSearchFields } from "@/lib/mandoub-order-smart-filter"
 import { MandoubMoneySummarySection } from "./mandoub-money-summary-section";
 import { MandoubOrdersSection } from "./mandoub-orders-client";
 import { MandoubPresenceToggle } from "./mandoub-presence-toggle";
-import { MandoubAssignmentPoller } from "./mandoub-assignment-poller";
+
 import { MandoubWebPushBanner } from "./mandoub-web-push-banner";
 import { MandoubNotificationsDiagnostics } from "./mandoub-notifications-diagnostics";
 import type { MandoubRow } from "./mandoub-order-table";
@@ -906,7 +906,6 @@ export default async function MandoubPage({ searchParams }: Props) {
           </header>
 
           <MandoubWebPushBanner auth={baseAuth} />
-          <MandoubAssignmentPoller auth={baseAuth} />
           <MandoubMoneySummarySection
             totalsBaseline={totalsBaseline}
             sumDeliveryInDinar={Number(sumDeliveryIn)}
