@@ -1434,6 +1434,26 @@ export async function deletePartner(partnerId: string) {
     if (partner && partner.externalId) {
       // إذا كان مرتبطاً بالنظام، نقوم بحذفه ناعماً بتغيير نوعه وتحديث تاريخ التعديل
       const newType = partner.type.startsWith("deleted_") ? partner.type : `deleted_${partner.type}`;
+      
+      // لتفادي تعارض القيد الفريد [type, externalId] إذا كان الشريك محذوفاً سابقاً
+      if (!partner.type.startsWith("deleted_")) {
+        const conflictPartner = await prisma.creditBookPartner.findFirst({
+          where: {
+            type: newType,
+            externalId: partner.externalId
+          }
+        });
+        if (conflictPartner) {
+          // حذف الشريك القديم المتعارض مع كافة معاملاته لتنظيف الحسابات
+          await prisma.creditBookTransaction.deleteMany({
+            where: { partnerId: conflictPartner.id }
+          });
+          await prisma.creditBookPartner.delete({
+            where: { id: conflictPartner.id }
+          });
+        }
+      }
+
       await prisma.creditBookPartner.update({
         where: { id: partnerId },
         data: {
@@ -1480,6 +1500,26 @@ export async function deletePartnersBatch(partnerIds: string[]) {
       // تحديث الأطراف المرتبطة بالنظام بشكل ناعم
       for (const p of externalLinked) {
         const newType = p.type.startsWith("deleted_") ? p.type : `deleted_${p.type}`;
+        
+        // لتفادي تعارض القيد الفريد [type, externalId] إذا كان الشريك محذوفاً سابقاً
+        if (!p.type.startsWith("deleted_")) {
+          const conflictPartner = await prisma.creditBookPartner.findFirst({
+            where: {
+              type: newType,
+              externalId: p.externalId
+            }
+          });
+          if (conflictPartner) {
+            // حذف الشريك القديم المتعارض مع كافة معاملاته لتنظيف الحسابات
+            await prisma.creditBookTransaction.deleteMany({
+              where: { partnerId: conflictPartner.id }
+            });
+            await prisma.creditBookPartner.delete({
+              where: { id: conflictPartner.id }
+            });
+          }
+        }
+
         await prisma.creditBookPartner.update({
           where: { id: p.id },
           data: {
