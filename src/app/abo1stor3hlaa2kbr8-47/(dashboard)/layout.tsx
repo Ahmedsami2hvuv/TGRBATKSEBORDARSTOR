@@ -3,7 +3,6 @@ import { AdminShell } from "./admin-shell";
 /** لا نُولّد الصفحات ثابتاً أثناء `next build` — Prisma/قاعدة البيانات غير متاحة في بيئة بناء Docker (مثل Railway). */
 export const dynamic = "force-dynamic";
 
-import { PortalLocationHeartbeat } from "@/components/portal-location-heartbeat";
 
 import { getCurrentSessionIsAccountant } from "@/lib/admin-session";
 

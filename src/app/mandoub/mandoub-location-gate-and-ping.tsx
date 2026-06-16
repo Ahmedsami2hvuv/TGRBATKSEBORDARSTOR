@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { PortalLocationHeartbeat } from "@/components/portal-location-heartbeat";
+
 import { OneSignalInitializer } from "@/components/OneSignalInitializer";
 import { useEffect, useState } from "react";
 
@@ -52,9 +52,9 @@ export function MandoubLocationGateAndPing({ children }: { children: React.React
   }
 
   return (
-    <PortalLocationHeartbeat variant="mandoub" c={c} exp={exp} s={s} globalEnabled={globalTracking}>
+    <>
       {oneSignalComponent}
       {children}
-    </PortalLocationHeartbeat>
+    </>
   );
 }

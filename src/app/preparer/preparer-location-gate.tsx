@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { PortalLocationHeartbeat } from "@/components/portal-location-heartbeat";
+
 import { OneSignalInitializer } from "@/components/OneSignalInitializer";
 import { useEffect, useState } from "react";
 
@@ -50,9 +50,9 @@ export function PreparerLocationGate({ children }: { children: React.ReactNode }
   }
 
   return (
-    <PortalLocationHeartbeat variant="preparer" p={p} exp={exp} s={s} globalEnabled={globalTracking}>
+    <>
       {oneSignalComponent}
       {children}
-    </PortalLocationHeartbeat>
+    </>
   );
 }
