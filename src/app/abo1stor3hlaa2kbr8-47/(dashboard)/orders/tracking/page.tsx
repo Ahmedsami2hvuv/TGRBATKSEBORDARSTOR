@@ -107,6 +107,9 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
         { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
         { customer: { name: { contains: q, mode: "insensitive" } } },
         { orderNoteTime: { contains: q, mode: "insensitive" } },
+        { customerLandmark: { contains: q, mode: "insensitive" } },
+        { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
+        { summary: { contains: q, mode: "insensitive" } },
       ];
       if (numExact) {
         or.unshift({ orderNumber: asNum });
@@ -136,6 +139,9 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
         { shop: { region: { name: { contains: q, mode: "insensitive" } } } },
         { customer: { name: { contains: q, mode: "insensitive" } } },
         { orderNoteTime: { contains: q, mode: "insensitive" } },
+        { customerLandmark: { contains: q, mode: "insensitive" } },
+        { secondCustomerLandmark: { contains: q, mode: "insensitive" } },
+        { summary: { contains: q, mode: "insensitive" } },
       ];
       if (numExact) {
         or.unshift({ orderNumber: asNum });
