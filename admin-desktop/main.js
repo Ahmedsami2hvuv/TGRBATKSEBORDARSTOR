@@ -1,5 +1,26 @@
 const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
+const contextMenu = require('electron-context-menu');
+
+// تفعيل قائمة الكليك الأيمن (النسخ، اللصق، إلخ) وتعريبها
+contextMenu({
+  showSaveImageAs: true,
+  showCopyImage: true,
+  showInspectElement: false,
+  labels: {
+    copy: 'نسخ',
+    paste: 'لصق',
+    cut: 'قص',
+    copyImage: 'نسخ الصورة',
+    saveImageAs: 'حفظ الصورة كـ...',
+    copyLink: 'نسخ الرابط',
+    selectAll: 'تحديد الكل',
+    learnSpelling: 'تعلم التهجئة',
+    lookUpSelection: 'البحث عن التحديد',
+    searchWithGoogle: 'البحث في جوجل',
+    services: 'الخدمات'
+  }
+});
 
 function createWindow () {
   // إنشاء نافذة المتصفح
