@@ -33,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private val KEY_MANDOB_ID = "mandob_id"
     private val FILECHOOSER_RESULTCODE = 1
     private var uploadMessage: ValueCallback<Array<Uri>>? = null
+    private var cameraPhotoUri: Uri? = null
 
     // التطبيق الخاص بالمندوبين
     private val ONESIGNAL_APP_ID = "628d3268-9fda-405d-8d07-12d026810b84"
@@ -78,12 +79,26 @@ class MainActivity : AppCompatActivity() {
         val savedId = sharedPreferences.getString(KEY_MANDOB_ID, null)
 
         if (!savedUrl.isNullOrEmpty() && !savedId.isNullOrEmpty()) {
-            launchDashboard(savedUrl, savedId)
+            OneSignal.login(savedId)
+            OneSignal.User.addTag("role", "mandob")
+            if (savedInstanceState != null) {
+                webView.visibility = View.VISIBLE
+                loginLayout.visibility = View.GONE
+                webView.restoreState(savedInstanceState)
+                checkAutoStartPermission()
+            } else {
+                launchDashboard(savedUrl, savedId)
+            }
         } else {
             showLoginLayout()
         }
 
         requestAppPermissions()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        webView.saveState(outState)
     }
 
     private fun requestAppPermissions() {
@@ -211,10 +226,30 @@ class MainActivity : AppCompatActivity() {
             ): Boolean {
                 uploadMessage?.onReceiveValue(null)
                 uploadMessage = filePathCallback
-                val intent = fileChooserParams?.createIntent() ?: return false
+                val defaultIntent = fileChooserParams?.createIntent() ?: return false
+                
+                var cameraIntent: Intent? = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
                 try {
-                    startActivityForResult(intent, FILECHOOSER_RESULTCODE)
-                } catch (e: ActivityNotFoundException) {
+                    val photoFile = java.io.File.createTempFile("IMG_", ".jpg", getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES))
+                    cameraPhotoUri = androidx.core.content.FileProvider.getUriForFile(
+                        this@MainActivity,
+                        "$packageName.fileprovider",
+                        photoFile
+                    )
+                    cameraIntent?.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, cameraPhotoUri)
+                } catch (e: Exception) {
+                    cameraIntent = null
+                }
+
+                val chooserIntent = Intent(Intent.ACTION_CHOOSER)
+                chooserIntent.putExtra(Intent.EXTRA_INTENT, defaultIntent)
+                if (cameraIntent != null) {
+                    chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(cameraIntent))
+                }
+                
+                try {
+                    startActivityForResult(chooserIntent, FILECHOOSER_RESULTCODE)
+                } catch (e: Exception) {
                     uploadMessage = null
                     return false
                 }
@@ -238,7 +273,20 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == FILECHOOSER_RESULTCODE) {
             if (uploadMessage == null) return
-            uploadMessage?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
+            
+            var result: Array<Uri>? = null
+            if (resultCode == android.app.Activity.RESULT_OK) {
+                if (data == null || data.data == null) {
+                    // من المحتمل أنه استخدم الكاميرا
+                    if (cameraPhotoUri != null) {
+                        result = arrayOf(cameraPhotoUri!!)
+                    }
+                } else {
+                    // استخدم المعرض
+                    result = WebChromeClient.FileChooserParams.parseResult(resultCode, data)
+                }
+            }
+            uploadMessage?.onReceiveValue(result)
             uploadMessage = null
         }
     }
