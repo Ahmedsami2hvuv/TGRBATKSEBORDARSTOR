@@ -1436,22 +1436,26 @@ export async function deletePartner(partnerId: string) {
       const newType = partner.type.startsWith("deleted_") ? partner.type : `deleted_${partner.type}`;
       
       // لتفادي تعارض القيد الفريد [type, externalId] إذا كان الشريك محذوفاً سابقاً
-      if (!partner.type.startsWith("deleted_")) {
-        const conflictPartner = await prisma.creditBookPartner.findFirst({
+      if (partner.externalId) {
+        // أولاً: حذف كافة معاملات الشركاء المتعارضين لتجنب قيود المفتاح الأجنبي
+        await prisma.creditBookTransaction.deleteMany({
           where: {
-            type: newType,
-            externalId: partner.externalId
+            partner: {
+              type: newType,
+              externalId: partner.externalId,
+              id: { not: partnerId }
+            }
           }
         });
-        if (conflictPartner) {
-          // حذف الشريك القديم المتعارض مع كافة معاملاته لتنظيف الحسابات
-          await prisma.creditBookTransaction.deleteMany({
-            where: { partnerId: conflictPartner.id }
-          });
-          await prisma.creditBookPartner.delete({
-            where: { id: conflictPartner.id }
-          });
-        }
+
+        // ثانياً: حذف الشركاء المتعارضين أنفسهم
+        await prisma.creditBookPartner.deleteMany({
+          where: {
+            type: newType,
+            externalId: partner.externalId,
+            id: { not: partnerId }
+          }
+        });
       }
 
       await prisma.creditBookPartner.update({
@@ -1502,22 +1506,26 @@ export async function deletePartnersBatch(partnerIds: string[]) {
         const newType = p.type.startsWith("deleted_") ? p.type : `deleted_${p.type}`;
         
         // لتفادي تعارض القيد الفريد [type, externalId] إذا كان الشريك محذوفاً سابقاً
-        if (!p.type.startsWith("deleted_")) {
-          const conflictPartner = await prisma.creditBookPartner.findFirst({
+        if (p.externalId) {
+          // أولاً: حذف كافة معاملات الشركاء المتعارضين لتجنب قيود المفتاح الأجنبي
+          await prisma.creditBookTransaction.deleteMany({
             where: {
-              type: newType,
-              externalId: p.externalId
+              partner: {
+                type: newType,
+                externalId: p.externalId,
+                id: { not: p.id }
+              }
             }
           });
-          if (conflictPartner) {
-            // حذف الشريك القديم المتعارض مع كافة معاملاته لتنظيف الحسابات
-            await prisma.creditBookTransaction.deleteMany({
-              where: { partnerId: conflictPartner.id }
-            });
-            await prisma.creditBookPartner.delete({
-              where: { id: conflictPartner.id }
-            });
-          }
+
+          // ثانياً: حذف الشركاء المتعارضين أنفسهم
+          await prisma.creditBookPartner.deleteMany({
+            where: {
+              type: newType,
+              externalId: p.externalId,
+              id: { not: p.id }
+            }
+          });
         }
 
         await prisma.creditBookPartner.update({
