@@ -58,10 +58,6 @@ export async function sendOneSignalNotification(options: {
       external_id: options.externalIds,
     };
     notification.include_external_user_ids = options.externalIds;
-    // إضافة فلتر إضافي لضمان الوصول للمندوبين
-    notification.filters = [
-      { field: "tag", key: "role", relation: "=", value: "mandob" }
-    ];
   }
 
   try {
