@@ -314,7 +314,7 @@ export async function submitMandoubDeliveryMoney(
             orderId,
             courierId: earningCourierId,
             kind: MONEY_KIND_DELIVERY,
-            amountDinar: earning ?? new Decimal(0),
+            amountDinar: new Decimal(0),
             expectedDinar: order.deliveryPrice ?? new Decimal(0),
             matchesExpected: true
           }

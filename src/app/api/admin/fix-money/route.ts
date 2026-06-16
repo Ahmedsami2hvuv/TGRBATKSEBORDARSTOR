@@ -41,7 +41,7 @@ export async function GET() {
           orderId: o.id,
           courierId: c.id,
           kind: MONEY_KIND_DELIVERY,
-          amountDinar: earning,
+          amountDinar: new Decimal(0),
           expectedDinar: expected,
           matchesExpected: true,
           createdAt: evDate,

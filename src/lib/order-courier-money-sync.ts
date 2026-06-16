@@ -32,7 +32,7 @@ export async function syncOrderCourierMoneyExpectations(
             orderId: order.id,
             courierId: cid,
             kind: MONEY_KIND_DELIVERY,
-            amountDinar: order.courierEarningDinar ?? new Decimal(0),
+            amountDinar: new Decimal(0),
             expectedDinar: order.deliveryPrice ?? new Decimal(0),
             matchesExpected: true,
           }
