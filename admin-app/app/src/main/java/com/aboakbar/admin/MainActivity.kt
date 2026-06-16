@@ -299,27 +299,34 @@ class MainActivity : AppCompatActivity() {
                 uploadMessage?.onReceiveValue(null)
                 uploadMessage = filePathCallback
                 
-                var takePictureIntent: Intent? = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-                if (takePictureIntent?.resolveActivity(packageManager) != null) {
-                    var photoFile: File? = null
-                    try {
-                        photoFile = createImageFile()
-                    } catch (ex: IOException) {
-                        photoFile = null
+                val isCapture = fileChooserParams?.isCaptureEnabled ?: false
+
+                if (isCapture) {
+                    val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                    if (takePictureIntent.resolveActivity(packageManager) != null) {
+                        var photoURI: Uri? = null
+                        try {
+                            val photoFile = createImageFile()
+                            photoURI = FileProvider.getUriForFile(
+                                this@MainActivity,
+                                "${packageName}.fileprovider",
+                                photoFile
+                            )
+                        } catch (e: Exception) {
+                            photoURI = null
+                        }
+                        
+                        if (photoURI != null) {
+                            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
+                            takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                            try {
+                                startActivityForResult(takePictureIntent, FILECHOOSER_RESULTCODE)
+                                return true
+                            } catch (e: Exception) {
+                                // fallback
+                            }
+                        }
                     }
-                    if (photoFile != null) {
-                        val photoURI: Uri = FileProvider.getUriForFile(
-                            this@MainActivity,
-                            "${packageName}.fileprovider",
-                            photoFile
-                        )
-                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
-                        takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                    } else {
-                        takePictureIntent = null
-                    }
-                } else {
-                    takePictureIntent = null
                 }
 
                 val contentSelectionIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
@@ -327,16 +334,8 @@ class MainActivity : AppCompatActivity() {
                     type = "image/*"
                 }
                 
-                val intentArray: Array<Intent> = if (takePictureIntent != null) arrayOf(takePictureIntent) else emptyArray()
-                
-                val chooserIntent = Intent(Intent.ACTION_CHOOSER).apply {
-                    putExtra(Intent.EXTRA_INTENT, contentSelectionIntent)
-                    putExtra(Intent.EXTRA_TITLE, "التقاط صورة أو اختيار من المعرض")
-                    putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray)
-                }
-
                 try {
-                    startActivityForResult(chooserIntent, FILECHOOSER_RESULTCODE)
+                    startActivityForResult(contentSelectionIntent, FILECHOOSER_RESULTCODE)
                 } catch (e: Exception) {
                     uploadMessage?.onReceiveValue(null)
                     uploadMessage = null

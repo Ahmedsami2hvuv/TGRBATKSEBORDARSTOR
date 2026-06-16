@@ -113,7 +113,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun requestAppPermissions() {
         val permissions = mutableListOf(
-            Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
@@ -237,27 +236,33 @@ class MainActivity : AppCompatActivity() {
                 uploadMessage?.onReceiveValue(null)
                 uploadMessage = filePathCallback
                 
-                var cameraIntent: Intent? = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
-                if (cameraIntent?.resolveActivity(packageManager) != null) {
-                    var photoFile: java.io.File? = null
-                    try {
-                        photoFile = java.io.File.createTempFile("IMG_", ".jpg", getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES))
-                        cameraPhotoUri = androidx.core.content.FileProvider.getUriForFile(
-                            this@MainActivity,
-                            "$packageName.fileprovider",
-                            photoFile
-                        )
-                    } catch (e: Exception) {
-                        photoFile = null
+                val isCapture = fileChooserParams?.isCaptureEnabled ?: false
+
+                if (isCapture) {
+                    val cameraIntent = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+                    if (cameraIntent.resolveActivity(packageManager) != null) {
+                        var photoFile: java.io.File? = null
+                        try {
+                            photoFile = java.io.File.createTempFile("IMG_", ".jpg", getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES))
+                            cameraPhotoUri = androidx.core.content.FileProvider.getUriForFile(
+                                this@MainActivity,
+                                "$packageName.fileprovider",
+                                photoFile
+                            )
+                        } catch (e: Exception) {
+                            photoFile = null
+                        }
+                        if (photoFile != null) {
+                            cameraIntent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, cameraPhotoUri)
+                            cameraIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                            try {
+                                startActivityForResult(cameraIntent, FILECHOOSER_RESULTCODE)
+                                return true
+                            } catch (e: Exception) {
+                                // fallback
+                            }
+                        }
                     }
-                    if (photoFile != null) {
-                        cameraIntent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, cameraPhotoUri)
-                        cameraIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                    } else {
-                        cameraIntent = null
-                    }
-                } else {
-                    cameraIntent = null
                 }
 
                 val contentSelectionIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
@@ -265,16 +270,8 @@ class MainActivity : AppCompatActivity() {
                     type = "image/*"
                 }
 
-                val chooserIntent = Intent(Intent.ACTION_CHOOSER).apply {
-                    putExtra(Intent.EXTRA_INTENT, contentSelectionIntent)
-                    putExtra(Intent.EXTRA_TITLE, "التقاط صورة أو اختيار من المعرض")
-                    if (cameraIntent != null) {
-                        putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(cameraIntent))
-                    }
-                }
-                
                 try {
-                    startActivityForResult(chooserIntent, FILECHOOSER_RESULTCODE)
+                    startActivityForResult(contentSelectionIntent, FILECHOOSER_RESULTCODE)
                 } catch (e: Exception) {
                     uploadMessage?.onReceiveValue(null)
                     uploadMessage = null
