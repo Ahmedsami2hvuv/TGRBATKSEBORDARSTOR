@@ -1174,7 +1174,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                               className={`max-h-16 rounded-xl object-contain shadow-sm cursor-zoom-in border ${
                                 isTransfer ? "border-white/10" : "border-slate-250 dark:border-slate-800"
                               }`}
-                              onClick={() => window.open(tx.imageUrl!, "_blank")}
+                              onClick={(e) => { e.stopPropagation(); window.open(tx.imageUrl!, "_blank"); }}
                             />
                           </div>
                         )}

@@ -1041,7 +1041,7 @@ export async function getPartnerDetails(partnerId: string) {
     const orderNumbers = new Set<number>();
     partner.transactions.forEach(t => {
       if (t.note) {
-        const matches = t.note.match(/(?:#|طلب\s*رقم\s*|طلب\s*#?\s*|طلبية\s*#?\s*)(\d+)/g);
+        const matches = t.note.match(/(?:#|طلب(?:ة|ية)?(?:\s*رقم)?|وصل(?:\s*رقم)?|فاتورة|رقم|معامل(?:ة|ه))(?:\s*[:#\-\s]\s*)*(\d+)/g);
         if (matches) {
           matches.forEach(m => {
             const numMatch = m.match(/\d+/);
@@ -1097,7 +1097,7 @@ export async function getPartnerDetails(partnerId: string) {
       let orderId: string | undefined = undefined;
       
       if (t.note) {
-        const match = t.note.match(/(?:#|طلب\s*رقم\s*|طلب\s*#?\s*|طلبية\s*#?\s*)(\d+)/);
+        const match = t.note.match(/(?:#|طلب(?:ة|ية)?(?:\s*رقم)?|وصل(?:\s*رقم)?|فاتورة|رقم|معامل(?:ة|ه))(?:\s*[:#\-\s]\s*)*(\d+)/);
         if (match) {
           const orderNum = parseInt(match[1], 10);
           const orderInfo = ordersMap.get(orderNum);
