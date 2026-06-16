@@ -10,12 +10,13 @@ import {
   renderNotificationTemplate,
   type NotificationSettingsPayload,
 } from "@/lib/notification-template";
+import { supabaseClient } from "@/lib/supabase-client";
 
 type Auth = { c: string; exp?: string; s: string };
 
 /**
- * يستطلع إسناد طلبات جديدة للمندوب ويشغّل صوتاً عند زيادة عدد الطلبات المسندة.
- * يعمل فقط عندما تكون الصفحة مفتوحة ومرئية في المتصفح لتقليل الضغط على السيرفر.
+ * يستقبل تحديثات لحظية (Realtime) للطلبات المسندة للمندوب ويشغّل صوتاً.
+ * لا يتم السؤال المستمر للسيرفر، بل يتم التحديث فقط عند تغيير في جدول Order.
  */
 export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
   const lastAssignedRef = useRef<number | null>(null);
@@ -24,7 +25,8 @@ export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
 
   useEffect(() => {
     let cancelled = false;
-    const tick = async () => {
+
+    const fetchLatestData = async () => {
       if (document.visibilityState !== "visible") return;
       try {
         const q = new URLSearchParams();
@@ -123,15 +125,29 @@ export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
       }
     };
 
-    void tick();
-    const id = window.setInterval(tick, 30000); // زيادة الوقت إلى 30 ثانية لتقليل استهلاك الباندويث
+    // جلب البيانات لمرة واحدة عند تحميل الصفحة
+    void fetchLatestData();
+
+    // الاشتراك في التحديثات اللحظية لجدول Order
+    const channel = supabaseClient
+      .channel("mandoub_orders_channel")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "Order" },
+        (payload) => {
+          void fetchLatestData();
+        }
+      )
+      .subscribe();
+
     const onVisibility = () => {
-      if (document.visibilityState === "visible") void tick();
+      if (document.visibilityState === "visible") void fetchLatestData();
     };
     document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       cancelled = true;
-      window.clearInterval(id);
+      supabaseClient.removeChannel(channel);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [auth.c, auth.exp, auth.s]);

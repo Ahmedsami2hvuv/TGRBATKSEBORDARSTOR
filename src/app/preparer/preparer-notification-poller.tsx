@@ -15,6 +15,7 @@ import {
   type NotificationSettingsPayload,
 } from "@/lib/notification-template";
 import { preparerPath } from "@/lib/preparer-portal-nav";
+import { supabaseClient } from "@/lib/supabase-client";
 
 type Auth = { p: string; exp?: string; s: string };
 
@@ -28,7 +29,7 @@ export function PreparerNotificationPoller({
   const [perm, setPerm] = useState<NotificationPermission>(() =>
     typeof window === "undefined" || !("Notification" in window) ? "denied" : Notification.permission,
   );
-  const lastCountRef = useRef<number | null>(null);
+  const lastPendingRef = useRef<number | null>(null);
   const seenNoticeRef = useRef<string>("");
   const seenOrderRef = useRef<string>("");
   const initializedRef = useRef(false);
@@ -43,17 +44,19 @@ export function PreparerNotificationPoller({
 
   useEffect(() => {
     let cancelled = false;
-    const tick = async () => {
+    
+    const fetchLatestData = async () => {
       if (document.visibilityState !== "visible") return;
       try {
         const q = new URLSearchParams();
-        q.set("p", auth.p);
+        if (auth.p) q.set("p", auth.p);
         if (auth.exp) q.set("exp", auth.exp);
-        q.set("s", auth.s);
+        if (auth.s) q.set("s", auth.s);
         const res = await fetch(`/api/notifications/preparer-notices?${q.toString()}`, {
           cache: "no-store",
         });
         if (!res.ok || cancelled) return;
+
         const data = (await res.json()) as {
           noticesCount?: number;
           latestTitle?: string;
@@ -68,28 +71,28 @@ export function PreparerNotificationPoller({
           latestShopOrderTime?: string;
           settings?: NotificationSettingsPayload;
         };
+
         const count = Number(data.noticesCount ?? 0);
         const settings = data.settings ?? DEFAULT_PREPARER_NOTIFICATION_PAYLOAD;
+
         if (!initializedRef.current) {
+          lastPendingRef.current = count;
           seenNoticeRef.current = data.latestNoticeId ?? "";
           seenOrderRef.current = data.latestShopOrderId ?? "";
           initializedRef.current = true;
         }
 
         const latestNoticeId = data.latestNoticeId ?? "";
-        // نعتمد على تغيير الـ ID فقط لضمان وصول كل إشعار جديد
         if (settings.enabled && latestNoticeId && seenNoticeRef.current !== latestNoticeId) {
           seenNoticeRef.current = latestNoticeId;
 
           const rawTitle = data.latestTitle ?? "";
           const rawBody = data.latestBody ?? "";
 
-          // هل هذا إشعار إسناد طلب (غالباً من الموقع)؟
           const isAssignment = rawTitle.includes("إسناد") || rawBody.includes("إسناد") || /\d{8,}/.test(rawTitle) || /\d{8,}/.test(rawBody);
 
           let body = "";
           if (isAssignment && settings.templateWebsite) {
-            // استخدام قالب الموقع الجديد
             const orderNumMatch = (rawTitle + rawBody).match(/#(\d+)/);
             const orderNumber = orderNumMatch ? parseInt(orderNumMatch[1]) : 0;
 
@@ -102,7 +105,6 @@ export function PreparerNotificationPoller({
               orderTime: data.latestShopOrderTime ?? "فوري",
             });
           } else {
-            // القالب العادي
             body = renderNotificationTemplate(settings.templateSingle, {
               count: 1,
               orderNumber: 0,
@@ -170,20 +172,35 @@ export function PreparerNotificationPoller({
             });
           }
         }
-        lastCountRef.current = count;
+        lastPendingRef.current = count;
       } catch {
         // ignore temporary network failures
       }
     };
-    void tick();
-    const id = window.setInterval(tick, 45000); // زيادة الوقت لـ 45 ثانية لتقليل استهلاك الباندويث
+
+    // جلب البيانات مرة واحدة عند تحميل الصفحة
+    void fetchLatestData();
+
+    // الاشتراك في التحديثات اللحظية بدلاً من Polling
+    const channel = supabaseClient
+      .channel("preparer_orders_channel")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "Order" },
+        (payload) => {
+          void fetchLatestData();
+        }
+      )
+      .subscribe();
+
     const onVisibility = () => {
-      if (document.visibilityState === "visible") void tick();
+      if (document.visibilityState === "visible") void fetchLatestData();
     };
     document.addEventListener("visibilitychange", onVisibility);
+    
     return () => {
       cancelled = true;
-      window.clearInterval(id);
+      supabaseClient.removeChannel(channel);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [auth.p, auth.exp, auth.s, openUrl, perm]);
@@ -191,7 +208,6 @@ export function PreparerNotificationPoller({
   async function enableNotifications() {
     ensureNotificationAudioContext()?.resume().catch(() => {});
     
-    // تفعيل إشعارات OneSignal فقط للمجهز لتفادي تعليق ملفات الخدمة والصراع
     const OneSignal = (window as any).OneSignal;
     if (OneSignal) {
       try {
