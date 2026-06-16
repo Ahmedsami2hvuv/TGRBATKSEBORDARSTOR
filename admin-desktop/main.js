@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
+const contextMenu = require('electron-context-menu');
 function createWindow (urlToLoad = 'https://aboakbr.com/abo1stor3hlaa2kbr8-47') {
   // إنشاء نافذة المتصفح
   const win = new BrowserWindow({
