@@ -1152,26 +1152,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                                 <span className="text-[10px] font-normal px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100/50 dark:border-indigo-900/30">
                                   🔗 تفاصيل الطلب
                                 </span>
-                                : "text-rose-700 dark:text-rose-400"
-                        }`}>
-                          ملاحظة: {tx.orderId ? (
-                            <Link
-                              href={`/abo1stor3hlaa2kbr8-47/orders/${tx.orderId}`}
-                              className={`font-black hover:underline cursor-pointer transition flex-wrap items-center gap-1 inline-flex ${
-                                isTransfer 
-                                  ? "text-white/95 hover:text-white" 
-                                  : isSalary 
-                                    ? "text-[#4f46e5] hover:text-[#6366f1] dark:text-[#a5b4fc]" 
-                                    : tx.kind === "gave"
-                                      ? "text-emerald-700 hover:text-emerald-500 dark:text-emerald-400"
-                                      : "text-indigo-650 hover:text-indigo-500 dark:text-indigo-400"
-                              }`}
-                            >
-                              <span>{tx.note || "بدون بيان وملاحظات"}</span>
-                              <span className="text-[10px] font-normal px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100/50 dark:border-indigo-900/30">
-                                🔗 تفاصيل الطلب
-                              </span>
-                            </Link>
+                              </Link>
                           ) : (
                             <span className={`font-bold ${
                               isTransfer 
