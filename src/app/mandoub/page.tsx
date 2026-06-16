@@ -877,25 +877,7 @@ export default async function MandoubPage({ searchParams }: Props) {
             showAdminBox={false}
           />
 
-          <div className="mb-4 flex flex-col gap-3">
-            <nav className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              <Link href={`/mandoub?tab=all&${baseQuery.toString()}`} className={tabBtnClass(tab === "all")}>الكل</Link>
-              <Link href={`/mandoub?tab=assigned&${baseQuery.toString()}`} className={tabBtnClass(tab === "assigned")}>لم يتم الاستلام</Link>
-              <Link href={`/mandoub?tab=delivering&${baseQuery.toString()}`} className={tabBtnClass(tab === "delivering")}>تم الاستلام</Link>
-              <Link href={`/mandoub?tab=delivered&${baseQuery.toString()}`} className={tabBtnClass(tab === "delivered")}>تم التسليم</Link>
-              <Link href={`/mandoub?tab=check&${baseQuery.toString()}`} className={`${tabBtnClass(isChecking)} flex items-center gap-2`}>
-                الفحص
-                <DynamicIcon config={icons.ui_search} fallback="🔍" className="w-4 h-4" />
-              </Link>
-            </nav>
-
-            {isChecking && (
-              <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-white/60 p-2 border border-sky-100 shadow-sm animate-in fade-in slide-in-from-top-1">
-                <Link href={`/mandoub?tab=checkSader&${baseQuery.toString()}`} className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${tab === "checkSader" ? "bg-emerald-600 text-white ring-2 ring-emerald-300" : "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"}`}>فحص الصادر</Link>
-                <Link href={`/mandoub?tab=checkWard&${baseQuery.toString()}`} className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${tab === "checkWard" ? "bg-rose-600 text-white ring-2 ring-rose-300" : "bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100"}`}>فحص الوارد</Link>
-              </div>
-            )}
-          </div>
+          {/* أزرار الفلترة محذوفة بناءً على طلب المستخدم */}
 
           {tab === "checkSader" && (
             <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-white/50 p-2 border border-emerald-100 animate-in fade-in slide-in-from-right-2">
