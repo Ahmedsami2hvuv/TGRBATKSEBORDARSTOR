@@ -188,7 +188,9 @@ export async function updateOrderAdmin(
 
   const orderType = withReversePickupPrefix(orderTypeRaw, reversePickup);
 
-  if (!orderNoteTime) return { error: "وقت الطلب إجباري" };
+  if (!orderNoteTime) {
+    // لم نعد نجبر وقت الطلب لكي لا يفشل التحديث، يمكن تركه فارغاً.
+  }
 
   const sub = parseOptionalAlfInputToDinar(String(formData.get("orderSubtotal") ?? ""));
   const del = parseOptionalAlfInputToDinar(String(formData.get("deliveryPrice") ?? ""));

@@ -88,7 +88,14 @@ export function computeMandoubTotalsForCourier(
     let skipForBaseline = false;
     if (baseline) {
       if (deliveryEv) skipForBaseline = deliveryEv.createdAt <= baseline;
-      else skipForBaseline = o.createdAt <= baseline;
+      else {
+        const oldThreshold = new Date(baseline.getTime() - 2 * 24 * 60 * 60 * 1000);
+        if (o.createdAt <= oldThreshold) {
+          skipForBaseline = true;
+        } else {
+          skipForBaseline = o.updatedAt <= baseline;
+        }
+      }
     }
 
     if (!skipForBaseline) {
