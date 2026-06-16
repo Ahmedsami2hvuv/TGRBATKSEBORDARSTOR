@@ -40,33 +40,55 @@ async function getShopAutoDebt(shopId: string): Promise<number> {
       shopId,
       shopCostPaidAt: null,
       status: { in: ["delivered", "archived"] },
-      orderSubtotal: { gt: 0 }
+      OR: [
+        { orderSubtotal: { gt: 0 } },
+        { prepaidAll: true }
+      ]
     },
     select: {
       orderSubtotal: true,
+      prepaidAll: true,
+      deliveryPrice: true,
       moneyEvents: {
         where: {
-          kind: "pickup_out",
+          kind: { in: ["pickup_out", "delivery_in"] },
           deletedAt: null
         },
         select: {
-          amountDinar: true
+          amountDinar: true,
+          kind: true
         }
       }
     }
   });
   
-  let totalSubtotals = 0;
-  let totalPayments = 0;
+  let autoGave = 0;
+  let autoTook = 0;
 
   for (const o of orders) {
-    totalSubtotals += Number(o.orderSubtotal || 0);
-    for (const me of o.moneyEvents) {
-      totalPayments += Number(me.amountDinar || 0);
+    const subtotal = Number(o.orderSubtotal || 0);
+    if (subtotal > 0) {
+      autoTook += subtotal;
+    }
+
+    const pickupPaid = o.moneyEvents
+      .filter(me => me.kind === "pickup_out")
+      .reduce((acc, me) => acc + Number(me.amountDinar || 0), 0);
+    autoGave += pickupPaid;
+
+    if (o.prepaidAll && Number(o.deliveryPrice || 0) > 0) {
+      const delPrice = Number(o.deliveryPrice);
+      const hasMatchingDeliveryIn = o.moneyEvents.some(
+        me => me.kind === "delivery_in" && Number(me.amountDinar || 0) === delPrice
+      );
+
+      if (!hasMatchingDeliveryIn) {
+        autoGave += delPrice;
+      }
     }
   }
 
-  return totalSubtotals - totalPayments;
+  return autoTook - autoGave;
 }
 
 // دالة لتطهير الحسابات التالفة بسبب تكرار بادئات الحذف
@@ -172,7 +194,10 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
           where: {
             shopCostPaidAt: null,
             status: { in: ["delivered", "archived"] },
-            orderSubtotal: { gt: 0 }
+            OR: [
+              { orderSubtotal: { gt: 0 } },
+              { prepaidAll: true }
+            ]
           },
           select: { shopId: true },
           distinct: ["shopId"]
@@ -201,7 +226,10 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
                     shopId: s.id,
                     shopCostPaidAt: null,
                     status: { notIn: ["cancelled"] },
-                    orderSubtotal: { gt: 0 },
+                    OR: [
+                      { orderSubtotal: { gt: 0 } },
+                      { prepaidAll: true }
+                    ],
                     createdAt: { gt: deletedAt }
                   },
                   select: { id: true }
