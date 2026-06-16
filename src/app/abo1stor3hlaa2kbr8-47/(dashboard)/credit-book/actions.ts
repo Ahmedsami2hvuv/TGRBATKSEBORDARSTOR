@@ -654,15 +654,42 @@ export async function getPartnerDetails(partnerId: string) {
         const adminTotal = await computeMandoubAdminTotalAllTimeDinar(partner.externalId);
         autoBalance = adminTotal.toNumber();
         
-        const walletRem = await computeMandoubWalletRemainAllTimeDinar(partner.externalId);
-        walletRemain = walletRem.toNumber();
+        // جلب تفاصيل المندوب لمعرفة تاريخ التصفير والمبلغ المدور
+        const courier = await prisma.courier.findUnique({
+          where: { id: partner.externalId },
+          select: {
+            mandoubTotalsResetAt: true,
+            mandoubWalletCarryOverDinar: true
+          }
+        });
 
-        // 1. جلب حركات أموال الطلبات للمندوب
+        const resetAt = courier?.mandoubTotalsResetAt || null;
+        const carryOver = Number(courier?.mandoubWalletCarryOverDinar || 0);
+
+        // متبقي المحفظة للإدارة هو نفسه ذمة المندوب الحالية للتلقائي لتجنب التعارض في الواجهة
+        walletRemain = autoBalance;
+
+        // إضافة معاملة الرصيد المدور الافتتاحية إن وجدت
+        if (carryOver !== 0 && resetAt) {
+          autoTransactions.push({
+            id: `auto-courier-carryover-${partner.id}`,
+            partnerId: partner.id,
+            amount: Math.abs(carryOver),
+            kind: carryOver > 0 ? "gave" : "took", 
+            note: `رصيد مدور (مرحل) من الفترة السابقة لتصفير المحفظة`,
+            createdAt: resetAt,
+            updatedAt: resetAt,
+            isAuto: true
+          });
+        }
+
+        // 1. جلب حركات أموال الطلبات للمندوب منذ تاريخ التصفير
         const orderMoneyEvents = await prisma.orderCourierMoneyEvent.findMany({
           where: {
             courierId: partner.externalId,
             deletedAt: null,
-            recordedByCompanyPreparerId: null
+            recordedByCompanyPreparerId: null,
+            createdAt: resetAt ? { gt: resetAt } : undefined
           },
           include: {
             order: {
@@ -708,11 +735,12 @@ export async function getPartnerDetails(partnerId: string) {
           }
         }
 
-        // 2. جلب قيود المحفظة اليدوية للمندوب
+        // 2. جلب قيود المحفظة اليدوية للمندوب منذ تاريخ التصفير
         const courierMiscEntries = await prisma.courierWalletMiscEntry.findMany({
           where: {
             courierId: partner.externalId,
-            deletedAt: null
+            deletedAt: null,
+            createdAt: resetAt ? { gt: resetAt } : undefined
           },
           orderBy: { createdAt: "desc" }
         });
@@ -733,12 +761,13 @@ export async function getPartnerDetails(partnerId: string) {
           });
         }
 
-        // 3. جلب التحويلات المقبولة للإدارة
+        // 3. جلب التحويلات المقبولة للإدارة منذ تاريخ التصفير
         const adminTransfers = await prisma.walletPeerTransfer.findMany({
           where: {
             fromCourierId: partner.externalId,
             toKind: WalletPeerPartyKind.admin,
-            status: "accepted"
+            status: "accepted",
+            createdAt: resetAt ? { gt: resetAt } : undefined
           },
           orderBy: { createdAt: "desc" }
         });
@@ -759,12 +788,29 @@ export async function getPartnerDetails(partnerId: string) {
           });
         }
 
-        // 4. أرباح التوصيل للطلبات المكتملة والمؤرشفة
+        // 4. أرباح التوصيل للطلبات المكتملة والمؤرشفة منذ تاريخ التصفير
         const ordersWithEarnings = await prisma.order.findMany({
           where: {
-            courierEarningForCourierId: partner.externalId,
-            status: { in: ["delivered", "archived"] },
-            courierEarningDinar: { gt: 0 }
+            AND: [
+              {
+                OR: [
+                  { courierEarningForCourierId: partner.externalId },
+                  { courierId: partner.externalId }
+                ]
+              },
+              {
+                status: { in: ["delivered", "archived"] }
+              },
+              {
+                courierEarningDinar: { gt: 0 }
+              },
+              resetAt ? {
+                OR: [
+                  { deliveredAt: { gt: resetAt } },
+                  { deliveredAt: null, createdAt: { gt: resetAt } }
+                ]
+              } : {}
+            ].filter(cond => Object.keys(cond).length > 0) as any
           },
           select: {
             id: true,
