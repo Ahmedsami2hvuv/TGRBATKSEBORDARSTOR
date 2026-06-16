@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const SEND_INTERVAL_MS = 20_000;
+const SEND_INTERVAL_MS = 60_000;
 const STALE_AFTER_MS = 3 * 60_000;
 const STALENESS_CHECK_MS = 1_000;
 

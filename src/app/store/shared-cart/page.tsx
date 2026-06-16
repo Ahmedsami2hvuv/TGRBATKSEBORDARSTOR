@@ -70,8 +70,8 @@ function SharedCartContent() {
 
     fetchCart();
 
-    // تحديث البيانات كل 4 ثوانٍ
-    const interval = setInterval(fetchCart, 4000);
+    // تحديث البيانات كل 15 ثانية لتخفيف الضغط
+    const interval = setInterval(fetchCart, 15000);
 
     return () => {
       isSubscribed = false;

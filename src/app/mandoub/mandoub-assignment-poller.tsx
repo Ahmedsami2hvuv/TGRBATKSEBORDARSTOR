@@ -124,7 +124,7 @@ export function MandoubAssignmentPoller({ auth }: { auth: Auth }) {
     };
 
     void tick();
-    const id = window.setInterval(tick, 7000); // تقليل وقت الاستعلام إلى 7 ثوانٍ لوصول فوري للإشعار ودون تأخير
+    const id = window.setInterval(tick, 30000); // زيادة الوقت إلى 30 ثانية لتقليل استهلاك الباندويث
     const onVisibility = () => {
       if (document.visibilityState === "visible") void tick();
     };

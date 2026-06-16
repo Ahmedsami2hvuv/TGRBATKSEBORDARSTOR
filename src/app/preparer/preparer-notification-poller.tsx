@@ -176,7 +176,7 @@ export function PreparerNotificationPoller({
       }
     };
     void tick();
-    const id = window.setInterval(tick, 20000); // زيادة الوقت لـ 20 ثانية لتقليل الطلبات
+    const id = window.setInterval(tick, 45000); // زيادة الوقت لـ 45 ثانية لتقليل استهلاك الباندويث
     const onVisibility = () => {
       if (document.visibilityState === "visible") void tick();
     };
