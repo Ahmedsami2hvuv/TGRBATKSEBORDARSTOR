@@ -420,7 +420,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // تم إزالة webView.onResume() لمنع إعادة التحميل والشاشة البيضاء عند العودة للتطبيق
+        try {
+            webView.onResume()
+        } catch (e: Exception) {}
+        // تم إبقاء webView.onPause() محذوفاً ولكن أعدنا onResume لفك خنق الأداء
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (android.provider.Settings.canDrawOverlays(this)) {

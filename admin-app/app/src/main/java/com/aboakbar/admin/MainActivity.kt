@@ -162,8 +162,7 @@ class MainActivity : AppCompatActivity() {
 
         requestAppPermissions()
         
-        // تسجيل القائمة المنسدلة (النقر المطول) للمتصفح
-        registerForContextMenu(webView)
+        setupLongPressMenu()
     }
 
     private fun requestAppPermissions() {
@@ -226,6 +225,9 @@ class MainActivity : AppCompatActivity() {
         settings.cacheMode = WebSettings.LOAD_DEFAULT
         settings.textZoom = 100
         settings.mediaPlaybackRequiresUserGesture = false
+
+        // تفعيل التسريع العتادي لضمان سلاسة السحب (Scrolling) بدون ثقل
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
 
         // Enable cookie manager
         val cookieManager = CookieManager.getInstance()
@@ -643,7 +645,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // تم إزالة webView.onResume() لمنع إعادة التحميل والشاشة البيضاء عند العودة للتطبيق
+        try {
+            webView.onResume()
+        } catch (e: Exception) {}
+        // تم إبقاء webView.onPause() محذوفاً ولكن أعدنا onResume لفك خنق الأداء
 
         // التحقق التدريجي من الصلاحيات الإضافية عند العودة للتطبيق
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -740,69 +745,70 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onCreateContextMenu(
-        menu: android.view.ContextMenu,
-        v: View,
-        menuInfo: android.view.ContextMenu.ContextMenuInfo?
-    ) {
-        super.onCreateContextMenu(menu, v, menuInfo)
-        
-        val hitTestResult = webView.hitTestResult
-        
-        when (hitTestResult.type) {
-            WebView.HitTestResult.IMAGE_TYPE,
-            WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE -> {
-                menu.setHeaderTitle("خيارات الصورة")
-                menu.add(0, 1, 0, "حفظ الصورة")
-                menu.add(0, 2, 0, "مشاركة رابط الصورة")
-                if (hitTestResult.type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
-                    menu.add(0, 3, 0, "فتح الرابط في متصفح خارجي")
-                    menu.add(0, 4, 0, "نسخ الرابط")
-                }
-            }
-            WebView.HitTestResult.SRC_ANCHOR_TYPE -> {
-                menu.setHeaderTitle("خيارات الرابط")
-                menu.add(0, 3, 0, "فتح في متصفح خارجي")
-                menu.add(0, 4, 0, "نسخ الرابط")
-            }
-        }
-    }
+    private fun setupLongPressMenu() {
+        webView.setOnLongClickListener {
+            val hitTestResult = webView.hitTestResult
+            val url = hitTestResult.extra
 
-    override fun onContextItemSelected(item: android.view.MenuItem): Boolean {
-        val hitTestResult = webView.hitTestResult
-        val url = hitTestResult.extra
-        
-        when (item.itemId) {
-            1 -> { // حفظ الصورة
-                if (url != null) {
-                    downloadImage(url)
+            if (url == null) return@setOnLongClickListener false
+
+            val options = mutableListOf<String>()
+            val actions = mutableListOf<() -> Unit>()
+
+            when (hitTestResult.type) {
+                WebView.HitTestResult.IMAGE_TYPE,
+                WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE -> {
+                    options.add("حفظ الصورة")
+                    actions.add { downloadImage(url) }
+
+                    options.add("مشاركة رابط الصورة")
+                    actions.add { shareImage(url) }
+
+                    if (hitTestResult.type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
+                        options.add("فتح الرابط في متصفح خارجي")
+                        actions.add {
+                            try {
+                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                            } catch (e: Exception) {}
+                        }
+
+                        options.add("نسخ الرابط")
+                        actions.add {
+                            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("URL", url))
+                            Toast.makeText(this@MainActivity, "تم نسخ الرابط", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
-                return true
-            }
-            2 -> { // مشاركة الصورة
-                if (url != null) {
-                    shareImage(url)
+                WebView.HitTestResult.SRC_ANCHOR_TYPE -> {
+                    options.add("فتح في متصفح خارجي")
+                    actions.add {
+                        try {
+                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        } catch (e: Exception) {}
+                    }
+
+                    options.add("نسخ الرابط")
+                    actions.add {
+                        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("URL", url))
+                        Toast.makeText(this@MainActivity, "تم نسخ الرابط", Toast.LENGTH_SHORT).show()
+                    }
                 }
-                return true
+                else -> return@setOnLongClickListener false
             }
-            3 -> { // فتح في المتصفح
-                if (url != null) {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    startActivity(intent)
-                }
-                return true
+
+            if (options.isNotEmpty()) {
+                android.app.AlertDialog.Builder(this)
+                    .setItems(options.toTypedArray()) { _, which ->
+                        actions[which].invoke()
+                    }
+                    .show()
+                return@setOnLongClickListener true
             }
-            4 -> { // نسخ الرابط
-                if (url != null) {
-                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                    val clip = android.content.ClipData.newPlainText("URL", url)
-                    clipboard.setPrimaryClip(clip)
-                    Toast.makeText(this, "تم نسخ الرابط", Toast.LENGTH_SHORT).show()
-                }
-                return true
-            }
+
+            false
         }
-        return super.onContextItemSelected(item)
     }
 
     private fun downloadImage(url: String) {
