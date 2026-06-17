@@ -350,14 +350,19 @@ class MainActivity : AppCompatActivity() {
         }
 
         try {
-            // استخراج معرف المندوب من الرابط
+            // استخراج معرف المجهز من الرابط
             val uri = Uri.parse(url)
             var preparerId: String? = null
 
-            // المحاولة الأولى: استخراج المعرف من المتغير c في الرابط (مثل ?c=ID)
-            preparerId = uri.getQueryParameter("c")
+            // المحاولة الأولى: استخراج المعرف من المتغير p في الرابط (مثل ?p=ID)
+            preparerId = uri.getQueryParameter("p")
 
-            // المحاولة الثانية: استخراج المعرف من مسار الرابط (مثل /preparer/ID)
+            // المحاولة الثانية: استخراج المعرف من المتغير c في الرابط (للاحتياط) (مثل ?c=ID)
+            if (preparerId.isNullOrEmpty()) {
+                preparerId = uri.getQueryParameter("c")
+            }
+
+            // المحاولة الثالثة: استخراج المعرف من مسار الرابط (مثل /preparer/ID)
             if (preparerId.isNullOrEmpty()) {
                 val segments = uri.pathSegments
                 val preparerIndex = segments.indexOf("preparer")
