@@ -399,6 +399,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
               deliveryAlf,
               preparerInvoices,
               noProfit,
+              staffId: draftData?.data && typeof draftData.data === "object" ? (draftData.data as any).fromStaffEmployeeId || null : null,
               customerInvoiceText: buildCustomerInvoiceText({
                 brandLabel: "أبو الأكبر للتوصيل",
                 orderNumberLabel: `#(جديد)`,

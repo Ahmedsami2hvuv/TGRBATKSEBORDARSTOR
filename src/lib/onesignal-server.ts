@@ -11,6 +11,9 @@ const ONESIGNAL_MANDOB_REST_API_KEY = process.env.ONESIGNAL_MANDOB_REST_API_KEY;
 const ONESIGNAL_PREPARER_APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_PREPARER_APP_ID || process.env.ONESIGNAL_PREPARER_APP_ID || "TODO_ENTER_PREPARER_APP_ID";
 const ONESIGNAL_PREPARER_REST_API_KEY = process.env.ONESIGNAL_PREPARER_REST_API_KEY;
 
+const ONESIGNAL_EMPLOYEE_APP_ID = process.env.ONESIGNAL_EMPLOYEE_APP_ID || "5487c703-2ecb-487c-8a99-1af4eb7f945b";
+const ONESIGNAL_EMPLOYEE_REST_API_KEY = process.env.ONESIGNAL_EMPLOYEE_REST_API_KEY || "os_v2_app_ksd4oazoznehzcuzdl2ow74ulo47l5ivtozek3fckxhta6tii3kb3rr2risxyicphxsizhnh2f6a77pley4pq7tivmuwavfz5okpcaa";
+
 export async function sendOneSignalNotification(options: {
   title: string;
   body: string;
@@ -18,10 +21,11 @@ export async function sendOneSignalNotification(options: {
   externalIds: string[];
   sound?: string;
   data?: any;
-  targetApp?: "admin" | "mandob" | "preparer";
+  targetApp?: "admin" | "mandob" | "preparer" | "employee";
 }): Promise<boolean> {
   const isAdmin = options.externalIds.includes("admin_global") || options.targetApp === "admin";
   const isPreparer = options.targetApp === "preparer";
+  const isEmployee = options.targetApp === "employee";
   
   let targetAppId = ONESIGNAL_MANDOB_APP_ID;
   let targetApiKey = ONESIGNAL_MANDOB_REST_API_KEY;
@@ -32,10 +36,13 @@ export async function sendOneSignalNotification(options: {
   } else if (isPreparer) {
     targetAppId = ONESIGNAL_PREPARER_APP_ID;
     targetApiKey = ONESIGNAL_PREPARER_REST_API_KEY;
+  } else if (isEmployee) {
+    targetAppId = ONESIGNAL_EMPLOYEE_APP_ID;
+    targetApiKey = ONESIGNAL_EMPLOYEE_REST_API_KEY;
   }
 
   if (!targetApiKey) {
-    console.warn(`[OneSignal] REST API Key is not configured for ${isAdmin ? 'Admin' : 'Mandob'}.`);
+    console.warn(`[OneSignal] REST API Key is not configured for ${isAdmin ? 'Admin' : isPreparer ? 'Preparer' : isEmployee ? 'Employee' : 'Mandob'}.`);
     return false;
   }
 
@@ -153,3 +160,81 @@ export async function notifyOneSignalPreparerAssignment(input: {
     targetApp: "preparer"
   });
 }
+
+export async function notifyStaffEmployeeOrderStatusChange(orderId: string, newStatus: string) {
+  const { prisma } = await import("@/lib/prisma");
+  const { getPublicAppUrl } = await import("@/lib/app-url");
+  const { buildStaffEmployeePortalUrl } = await import("@/lib/staff-employee-portal-link");
+
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        customerRegion: { select: { name: true } }
+      }
+    });
+
+    if (!order) return;
+
+    let staffId: string | null = null;
+
+    // 1. فحص preparerShoppingJson في الطلب
+    const json = order.preparerShoppingJson as any;
+    if (json && typeof json === "object") {
+      staffId = json.staffId || null;
+    }
+
+    // 2. إذا لم يكن موجوداً، نبحث في المسودات المرتبطة
+    if (!staffId) {
+      const draft = await prisma.companyPreparerShoppingDraft.findFirst({
+        where: { sentOrderId: orderId },
+        select: { data: true }
+      });
+      if (draft && draft.data && typeof draft.data === "object") {
+        staffId = (draft.data as any).fromStaffEmployeeId || null;
+      }
+    }
+
+    if (!staffId) return; // غير مرتبط بموظف
+
+    const staff = await prisma.staffEmployee.findUnique({
+      where: { id: staffId },
+      select: { id: true, portalToken: true, active: true }
+    });
+
+    if (!staff || !staff.active) return;
+
+    // تحديد محتوى الإشعار بناء على الحالة الجديدة
+    let title = "";
+    let body = "";
+
+    if (newStatus === "delivering") {
+      title = `تم استلام الطلب #${order.orderNumber}`;
+      body = `المندوب استلم الطلب وهو الآن في الطريق إلى الزبون (${order.customerRegion?.name || ""})`;
+    } else if (newStatus === "delivered") {
+      title = `تم تسليم الطلب #${order.orderNumber} 🎉`;
+      body = `تم تسليم الطلب بنجاح إلى الزبون. تم تسجيل أرباحك في رصيدك.`;
+    } else if (newStatus === "canceled") {
+      title = `تم إلغاء الطلب #${order.orderNumber} ❌`;
+      body = `نأسف، تم إلغاء الطلب من قبل الإدارة أو المندوب.`;
+    } else {
+      return; // لا نرسل للحالات الأخرى
+    }
+
+    const baseUrl = getPublicAppUrl();
+    const portalUrl = buildStaffEmployeePortalUrl(staff.id, staff.portalToken, baseUrl);
+    const finalUrl = `${portalUrl.replace("/staff/portal", "/staff/portal/submitted")}`;
+
+    await sendOneSignalNotification({
+      title,
+      body,
+      url: finalUrl,
+      externalIds: [staff.id],
+      targetApp: "employee"
+    });
+    console.log(`[OneSignal] Sent status change notification to staff ${staff.id} for order #${order.orderNumber}`);
+  } catch (err) {
+    console.error("Failed to send status change notification to staff:", err);
+  }
+}
+

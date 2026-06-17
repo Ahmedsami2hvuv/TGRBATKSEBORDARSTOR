@@ -640,33 +640,34 @@ export async function assignPendingOrderToCourier(
               totalAmount: totalDinar,
               summary: summaryCombined,
               ...(reservedOrderNumber ? { orderNumber: reservedOrderNumber } : {}),
-              preparerShoppingJson: {
-                version: 1,
-                products: enrichedProducts,
+            preparerShoppingJson: {
+              version: 1,
+              products: enrichedProducts,
+              placesCount: draft.placesCount || 1,
+              sumSellAlf,
+              extraAlf,
+              deliveryAlf,
+              preparerInvoices: [
+                {
+                  preparerId: null,
+                  preparerName: "تجهيز الإدارة 🏛️",
+                  products: enrichedProducts,
+                  totalBuyAlf: 0,
+                  invoiceText: buildPreparerPurchaseSummaryText(enrichedProducts)
+                }
+              ],
+              noProfit: !!draftDataObj.noProfit,
+              staffId: draftDataObj.fromStaffEmployeeId || null,
+              customerInvoiceText: buildCustomerInvoiceText({
+                brandLabel: "أبو الأكبر للتوصيل",
+                orderNumberLabel: `#(جديد)`,
+                regionTitle: draft.titleLine,
+                phone: draft.customerPhone,
+                lines: enrichedProducts,
                 placesCount: draft.placesCount || 1,
-                sumSellAlf,
-                extraAlf,
                 deliveryAlf,
-                preparerInvoices: [
-                  {
-                    preparerId: null,
-                    preparerName: "تجهيز الإدارة 🏛️",
-                    products: enrichedProducts,
-                    totalBuyAlf: 0,
-                    invoiceText: buildPreparerPurchaseSummaryText(enrichedProducts)
-                  }
-                ],
-                noProfit: !!draftDataObj.noProfit,
-                customerInvoiceText: buildCustomerInvoiceText({
-                  brandLabel: "أبو الأكبر للتوصيل",
-                  orderNumberLabel: `#(جديد)`,
-                  regionTitle: draft.titleLine,
-                  phone: draft.customerPhone,
-                  lines: enrichedProducts,
-                  placesCount: draft.placesCount || 1,
-                  deliveryAlf,
-                })
-              }
+              })
+            }
             }
           });
           finalOrderId = newOrder.id;

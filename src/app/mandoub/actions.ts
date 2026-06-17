@@ -73,6 +73,14 @@ async function updateOrderWithMandoubStatusReconcile(
       await tx.order.update({ where: { id: orderId }, data });
     });
     revalidateAdminTrackingForStatusChange();
+    
+    // إرسال إشعار للموظف إذا كان مرتبطاً بالطلب
+    try {
+      const { notifyStaffEmployeeOrderStatusChange } = await import("@/lib/onesignal-server");
+      void notifyStaffEmployeeOrderStatusChange(orderId, nextStatus);
+    } catch (e) {
+      console.error("Failed to notify staff on status change:", e);
+    }
   } else {
     await prisma.order.update({ where: { id: orderId }, data });
   }
@@ -117,6 +125,14 @@ export async function markOrderDelivered(formData: FormData) {
     data: { status: "delivered" },
   });
 
+  // إرسال إشعار للموظف
+  try {
+    const { notifyStaffEmployeeOrderStatusChange } = await import("@/lib/onesignal-server");
+    void notifyStaffEmployeeOrderStatusChange(orderId, "delivered");
+  } catch (e) {
+    console.error("Failed to notify staff on status change:", e);
+  }
+
   try {
     const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
     await handleOrderDelivered(orderId);
@@ -156,6 +172,14 @@ export async function markOrderPickedUp(formData: FormData) {
     where: { id: orderId },
     data: { status: "delivering" },
   });
+
+  // إرسال إشعار للموظف
+  try {
+    const { notifyStaffEmployeeOrderStatusChange } = await import("@/lib/onesignal-server");
+    void notifyStaffEmployeeOrderStatusChange(orderId, "delivering");
+  } catch (e) {
+    console.error("Failed to notify staff on status change:", e);
+  }
 
   revalidateAdminTrackingForStatusChange();
   revalidateMandoubPaths(nextRaw);
