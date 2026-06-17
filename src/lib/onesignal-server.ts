@@ -8,6 +8,9 @@ const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
 const ONESIGNAL_MANDOB_APP_ID = process.env.ONESIGNAL_MANDOB_APP_ID || "628d3268-9fda-405d-8d07-12d026810b84";
 const ONESIGNAL_MANDOB_REST_API_KEY = process.env.ONESIGNAL_MANDOB_REST_API_KEY;
 
+const ONESIGNAL_PREPARER_APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_PREPARER_APP_ID || process.env.ONESIGNAL_PREPARER_APP_ID || "TODO_ENTER_PREPARER_APP_ID";
+const ONESIGNAL_PREPARER_REST_API_KEY = process.env.ONESIGNAL_PREPARER_REST_API_KEY;
+
 export async function sendOneSignalNotification(options: {
   title: string;
   body: string;
@@ -15,11 +18,21 @@ export async function sendOneSignalNotification(options: {
   externalIds: string[];
   sound?: string;
   data?: any;
+  targetApp?: "admin" | "mandob" | "preparer";
 }): Promise<boolean> {
-  const isAdmin = options.externalIds.includes("admin_global");
+  const isAdmin = options.externalIds.includes("admin_global") || options.targetApp === "admin";
+  const isPreparer = options.targetApp === "preparer";
   
-  const targetAppId = isAdmin ? ONESIGNAL_APP_ID : ONESIGNAL_MANDOB_APP_ID;
-  const targetApiKey = isAdmin ? ONESIGNAL_REST_API_KEY : ONESIGNAL_MANDOB_REST_API_KEY;
+  let targetAppId = ONESIGNAL_MANDOB_APP_ID;
+  let targetApiKey = ONESIGNAL_MANDOB_REST_API_KEY;
+
+  if (isAdmin) {
+    targetAppId = ONESIGNAL_APP_ID;
+    targetApiKey = ONESIGNAL_REST_API_KEY;
+  } else if (isPreparer) {
+    targetAppId = ONESIGNAL_PREPARER_APP_ID;
+    targetApiKey = ONESIGNAL_PREPARER_REST_API_KEY;
+  }
 
   if (!targetApiKey) {
     console.warn(`[OneSignal] REST API Key is not configured for ${isAdmin ? 'Admin' : 'Mandob'}.`);
@@ -137,5 +150,6 @@ export async function notifyOneSignalPreparerAssignment(input: {
     body: bodyText,
     url: finalUrl,
     externalIds: [preparer.id],
+    targetApp: "preparer"
   });
 }
