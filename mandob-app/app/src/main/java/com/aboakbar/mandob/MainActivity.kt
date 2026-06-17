@@ -173,8 +173,10 @@ class MainActivity : AppCompatActivity() {
         settings.textZoom = 100
         settings.mediaPlaybackRequiresUserGesture = false
 
-        // تفعيل التسريع العتادي لضمان سلاسة السحب (Scrolling) بدون ثقل
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        // تعطيل الزوم برمجياً لمنع تأخير اللمس بمقدار 300ms (Double-tap to zoom delay)
+        settings.setSupportZoom(false)
+        settings.builtInZoomControls = false
+        settings.displayZoomControls = false
 
         // Enable cookie manager
         val cookieManager = CookieManager.getInstance()
@@ -628,15 +630,27 @@ class MainActivity : AppCompatActivity() {
             * {
                 backdrop-filter: none !important;
                 -webkit-backdrop-filter: none !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
+                transition: none !important;
+                animation: none !important;
             }
-            .kse-glass-card, [class*="glass"] {
-                background-color: rgba(255, 255, 255, 0.98) !important;
+            .kse-glass-card, [class*="glass"], [class*="card"] {
+                background-color: #ffffff !important;
+                border-color: #e2e8f0 !important;
             }
-            .dark .kse-glass-card, .dark [class*="glass"] {
-                background-color: rgba(19, 20, 24, 0.98) !important;
+            .dark .kse-glass-card, .dark [class*="glass"], .dark [class*="card"] {
+                background-color: #09090b !important;
+                border-color: #27272a !important;
             }
             .kse-app-bg::before, .kse-app-bg::after {
                 display: none !important;
+            }
+            body {
+                background-color: #ffffff !important;
+            }
+            .dark body {
+                background-color: #09090b !important;
             }
         """.trimIndent().replace("\n", " ")
 
