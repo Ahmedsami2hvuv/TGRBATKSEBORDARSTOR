@@ -73,6 +73,8 @@ class MainActivity : AppCompatActivity() {
     private val CHANNEL_ID = "aboakbar_admin_notifications"
     private var isPollingActive = false
     private var currentToken: String? = null
+    private var lastCssInjectionTime = 0L
+    private var lastTokenSyncTime = 0L
 
     private val BACKEND_URL = "https://aboakbar.vercel.app"
     private val ADMIN_DASHBOARD_URL = "$BACKEND_URL/abo1stor3hlaa2kbr8-47"
@@ -864,6 +866,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun injectPerformanceCss(view: WebView?) {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastCssInjectionTime < 3000) {
+            return
+        }
+        lastCssInjectionTime = currentTime
+
         val css = """
             * {
                 backdrop-filter: none !important;
@@ -905,38 +913,46 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun syncTokenFromCookies() {
-        try {
-            val cookieManager = CookieManager.getInstance()
-            val urls = arrayOf("https://aboakbr.com", "https://aboakbar.vercel.app")
-            var token: String? = null
-            for (url in urls) {
-                val cookies = cookieManager.getCookie(url)
-                if (!cookies.isNullOrEmpty()) {
-                    val cookieArray = cookies.split(";")
-                    for (cookie in cookieArray) {
-                        val parts = cookie.trim().split("=")
-                        if (parts.size >= 2 && parts[0] == "admin_token") {
-                            val extractedToken = parts[1]
-                            if (extractedToken.isNotEmpty()) {
-                                token = extractedToken
-                                break
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastTokenSyncTime < 5000) {
+            return
+        }
+        lastTokenSyncTime = currentTime
+
+        Thread {
+            try {
+                val cookieManager = CookieManager.getInstance()
+                val urls = arrayOf("https://aboakbr.com", "https://aboakbar.vercel.app")
+                var token: String? = null
+                for (url in urls) {
+                    val cookies = cookieManager.getCookie(url)
+                    if (!cookies.isNullOrEmpty()) {
+                        val cookieArray = cookies.split(";")
+                        for (cookie in cookieArray) {
+                            val parts = cookie.trim().split("=")
+                            if (parts.size >= 2 && parts[0] == "admin_token") {
+                                val extractedToken = parts[1]
+                                if (extractedToken.isNotEmpty()) {
+                                    token = extractedToken
+                                    break
+                                }
                             }
                         }
                     }
+                    if (token != null) break
                 }
-                if (token != null) break
-            }
 
-            if (!token.isNullOrEmpty()) {
-                val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                val savedToken = sharedPreferences.getString(KEY_TOKEN, null)
-                if (savedToken != token) {
-                    sharedPreferences.edit().putString(KEY_TOKEN, token).apply()
+                if (!token.isNullOrEmpty()) {
+                    val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                    val savedToken = sharedPreferences.getString(KEY_TOKEN, null)
+                    if (savedToken != token) {
+                        sharedPreferences.edit().putString(KEY_TOKEN, token).apply()
+                    }
                 }
+            } catch (e: Exception) {
+                // تجاهل
             }
-        } catch (e: Exception) {
-            // تجاهل
-        }
+        }.start()
     }
 
     override fun onDestroy() {

@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private val FILECHOOSER_RESULTCODE = 1
     private var uploadMessage: ValueCallback<Array<Uri>>? = null
     private var cameraPhotoUri: Uri? = null
+    private var lastCssInjectionTime = 0L
 
     // التطبيق الخاص بالمندوبين
     private val ONESIGNAL_APP_ID = "628d3268-9fda-405d-8d07-12d026810b84"
@@ -636,6 +637,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun injectPerformanceCss(view: WebView?) {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastCssInjectionTime < 3000) {
+            return
+        }
+        lastCssInjectionTime = currentTime
+
         val css = """
             * {
                 backdrop-filter: none !important;
