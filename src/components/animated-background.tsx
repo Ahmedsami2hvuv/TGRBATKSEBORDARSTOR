@@ -11,31 +11,15 @@ export function AnimatedBackground() {
   const { theme } = useTheme();
   const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [forceRerun, setForceRerun] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
 
-  // 1. جلب قائمة الخلفيات المتاحة من السيرفر مرة واحدة عند التحميل وفحص الجوال
+  // 1. جلب قائمة الخلفيات المتاحة من السيرفر مرة واحدة عند التحميل
   useEffect(() => {
     setMounted(true);
-    const checkMobile = () => {
-      const ua = navigator.userAgent;
-      const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-      const isMobileUA = mobileRegex.test(ua);
-      const isSmallScreen = window.innerWidth < 1024;
-      setIsMobile(isMobileUA || isSmallScreen);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-
     getBackgroundsConfigAction()
       .then((data) => {
         setConfig(data);
       })
       .catch((err) => console.error("فشل جلب الخلفيات:", err));
-
-    return () => {
-      window.removeEventListener("resize", checkMobile);
-    };
   }, []);
 
   // 2. تحديث الوضع الداكن ومراقبة تغييراته
@@ -112,161 +96,6 @@ export function AnimatedBackground() {
   const url = activeBg ? (isDark ? activeBg.darkUrl : activeBg.lightUrl) : "";
   const type = activeBg ? (isDark ? activeBg.darkType : activeBg.lightType) : "image";
 
-  // تشغيل وتنظيف الأكواد المخصصة (JavaScript/Canvas)
-  useEffect(() => {
-    if (!mounted || !activeBg) return;
-
-    const currentUrl = isDark ? activeBg.darkUrl : activeBg.lightUrl;
-    const currentType = isDark ? activeBg.darkType : activeBg.lightType;
-
-    if (isMobile || currentType !== "code" || !currentUrl) {
-      return;
-    }
-
-    // الانتظار للتأكد من رندرة الـ Canvas بالـ DOM
-    const timer = setTimeout(() => {
-      try {
-        const addedListeners: { target: EventTarget; type: string; listener: EventListenerOrEventListenerObject; options?: boolean | AddEventListenerOptions }[] = [];
-        const addedIntervals: number[] = [];
-        const addedTimeouts: number[] = [];
-        
-        const originalWindowAdd = window.addEventListener;
-        const originalDocAdd = document.addEventListener;
-        const originalSetInterval = window.setInterval;
-        const originalSetTimeout = window.setTimeout;
-
-        window.addEventListener = function(type, listener, options) {
-          addedListeners.push({ target: window, type, listener, options });
-          return originalWindowAdd.call(window, type, listener, options);
-        };
-
-        document.addEventListener = function(type, listener, options) {
-          addedListeners.push({ target: document, type, listener, options });
-          return originalDocAdd.call(document, type, listener, options);
-        };
-
-        window.setInterval = function(handler, delay, ...args) {
-          const id = originalSetInterval(handler, delay, ...args);
-          addedIntervals.push(id as any);
-          return id;
-        } as any;
-
-        window.setTimeout = function(handler, delay, ...args) {
-          const id = originalSetTimeout(handler, delay, ...args);
-          addedTimeouts.push(id as any);
-          return id;
-        } as any;
-
-        // استبدال requestAnimationFrame لمنع تشغيل اللوب بعد مسح الكانفاس أو عند بدء تشغيل سكريبت أحدث
-        const originalRAF = window.requestAnimationFrame;
-        const activeRunId = Date.now();
-        (window as any).__currentBgRunId = activeRunId;
-
-        window.requestAnimationFrame = function(cb) {
-          return originalRAF(function(time) {
-            if (activeRunId !== (window as any).__currentBgRunId || !document.getElementById("custom-bg-canvas")) {
-              return; // إيقاف التنفيذ فوراً في حال تحديث الخلفية أو مسح الكانفاس لمنع تكدس اللوبات
-            }
-            cb(time);
-          });
-        };
-
-        (window as any).isDarkMode = isDark;
-        (window as any).isDark = isDark;
-
-        const scriptId = "custom-bg-script";
-        const oldScript = document.getElementById(scriptId);
-        if (oldScript) oldScript.remove();
-
-        const cleanedCode = currentUrl
-          .replace(/<script[^>]*>/gi, "")
-          .replace(/<\/script>/gi, "");
-
-        const script = document.createElement("script");
-        script.id = scriptId;
-        
-        script.textContent = `
-          (function() {
-            try {
-              ${cleanedCode}
-            } catch (err) {
-              console.error("خطأ أثناء تشغيل الخلفية البرمجية المخصصة:", err);
-            }
-          })();
-        `;
-        
-        document.body.appendChild(script);
-
-        window.addEventListener = originalWindowAdd;
-        document.addEventListener = originalDocAdd;
-        window.setInterval = originalSetInterval;
-        window.setTimeout = originalSetTimeout;
-
-        (window as any).__cleanupCustomBg = () => {
-          window.addEventListener = originalWindowAdd;
-          document.addEventListener = originalDocAdd;
-          window.requestAnimationFrame = originalRAF;
-          window.setInterval = originalSetInterval;
-          window.setTimeout = originalSetTimeout;
-
-          // إلغاء صلاحية هذا التشغيل فوراً لإيقاف اللوب عن العمل بالخلفية
-          if ((window as any).__currentBgRunId === activeRunId) {
-            (window as any).__currentBgRunId = null;
-          }
-
-          // مسح جميع التايمرات والإنترفالات النشطة للسكريبت الممسوح
-          addedIntervals.forEach(id => clearInterval(id));
-          addedTimeouts.forEach(id => clearTimeout(id));
-
-          addedListeners.forEach(({ target, type, listener, options }) => {
-            target.removeEventListener(type, listener, options);
-          });
-
-          const s = document.getElementById(scriptId);
-          if (s) s.remove();
-          
-          if (typeof (window as any).setBgTheme === "function") {
-            delete (window as any).setBgTheme;
-          }
-          delete (window as any).isDarkMode;
-          delete (window as any).isDark;
-        };
-
-      } catch (err) {
-        console.error("فشل إعداد وحقن الخلفية البرمجية:", err);
-      }
-    }, 100);
-
-    return () => {
-      clearTimeout(timer);
-      if (typeof (window as any).__cleanupCustomBg === "function") {
-        (window as any).__cleanupCustomBg();
-        delete (window as any).__cleanupCustomBg;
-      }
-    };
-  }, [activeBg?.id, url, forceRerun, mounted]);
-
-  // استدعاء تغير المظهر للسكريبت في حال تغير الثيم
-  useEffect(() => {
-    if (!mounted || !activeBg) return;
-
-    const currentType = isDark ? activeBg.darkType : activeBg.lightType;
-    if (currentType !== "code") return;
-
-    (window as any).isDarkMode = isDark;
-    (window as any).isDark = isDark;
-
-    if (typeof (window as any).setBgTheme === "function") {
-      try {
-        (window as any).setBgTheme(isDark);
-      } catch (e) {
-        console.error("خطأ أثناء استدعاء setBgTheme للثيم الحركي:", e);
-      }
-    } else {
-      setForceRerun((prev) => prev + 1);
-    }
-  }, [isDark, mounted, activeBg?.id]);
-
   if (!mounted || !activeBg) return null;
 
   // الشفافية والضبابية
@@ -280,32 +109,7 @@ export function AnimatedBackground() {
       className="fixed inset-0 w-full h-full -z-50 pointer-events-none overflow-hidden select-none transition-all duration-700 bg-transparent"
       style={style}
     >
-      {!isMobile && type === "code" && url ? (
-        <div id="custom-canvas-container" className="w-full h-full block bg-transparent">
-          <canvas id="custom-bg-canvas" className="w-full h-full block bg-transparent" />
-        </div>
-      ) : !isMobile && type === "video" && url ? (
-        <video
-          src={url}
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover"
-        />
-      ) : !isMobile && type === "lottie" && url ? (
-        <div className="w-full h-full flex items-center justify-center scale-110">
-          {/* @ts-ignore */}
-          <lottie-player
-            src={url}
-            autoplay
-            loop
-            speed="1"
-            style={{ width: "100%", height: "100%" }}
-            background="transparent"
-          />
-        </div>
-      ) : type === "image" && url ? (
+      {type === "image" && url ? (
         <img
           src={url}
           alt=""

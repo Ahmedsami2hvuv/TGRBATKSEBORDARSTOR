@@ -70,11 +70,7 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
     saveConfig(nextConfig);
   };
 
-  const smartDetectType = (url: string): "image" | "video" | "lottie" => {
-    if (!url) return "image";
-    const lowerUrl = url.toLowerCase().trim();
-    if (lowerUrl.endsWith(".mp4") || lowerUrl.endsWith(".webm") || lowerUrl.includes("video")) return "video";
-    if (lowerUrl.endsWith(".json") || lowerUrl.includes("lottie") || lowerUrl.endsWith(".lottie")) return "lottie";
+  const smartDetectType = (url: string): "image" => {
     return "image";
   };
 
@@ -231,53 +227,27 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                   </h4>
                   <div className="grid grid-cols-1 gap-3">
                     <label className="text-[11px] font-bold text-slate-600">النوع:</label>
-                    <select
-                      value={item.lightType}
-                      onChange={(e) => handleUpdateItem(item.id, "lightType", e.target.value)}
+                    <div className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-slate-100 text-slate-600">
+                      صورة ثابتة / متحركة (WebP / GIF / PNG / JPG)
+                    </div>
+
+                    <label className="text-[11px] font-bold text-slate-600">رابط الصورة أو الرفع:</label>
+                    <input
+                      value={item.lightUrl}
+                      onChange={(e) => handleUpdateItem(item.id, "lightUrl", e.target.value)}
+                      placeholder="رابط مباشر للصورة أو ارفع من جهازك"
                       className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white outline-none focus:border-sky-500"
-                    >
-                      <option value="image">صورة ثابتة / متحركة (WebP / GIF)</option>
-                      <option value="video">فيديو حركي متكرر (MP4 / WebM)</option>
-                      <option value="lottie">رسومات متحركة لوتي (JSON)</option>
-                      <option value="code">كود برمجي تفاعلي (JavaScript / Canvas)</option>
-                    </select>
+                    />
 
-                    {item.lightType === "code" ? (
-                      <>
-                        <label className="text-[11px] font-bold text-slate-600">الكود البرمجي (JavaScript):</label>
-                        <textarea
-                          value={item.lightUrl}
-                          onChange={(e) => handleUpdateItem(item.id, "lightUrl", e.target.value)}
-                          placeholder="// اكتب كود الجافا سكريبت هنا. 
-// الكود سيعمل داخل حاوية الخلفية الحية.
-// يمكنك استخدام Canvas بالمعرف التالي:
-// const canvas = document.getElementById('custom-bg-canvas');"
-                          rows={8}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono bg-white outline-none focus:border-sky-500 text-left font-normal"
-                          style={{ direction: "ltr" }}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <label className="text-[11px] font-bold text-slate-600">رابط الملف أو الرفع:</label>
-                        <input
-                          value={item.lightUrl}
-                          onChange={(e) => handleUpdateItem(item.id, "lightUrl", e.target.value)}
-                          placeholder="رابط مباشر للملف أو ارفع من جازك"
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white outline-none focus:border-sky-500"
-                        />
-
-                        <label className="cursor-pointer bg-sky-50 text-sky-700 border border-sky-100 rounded-xl px-4 py-2.5 text-xs font-black hover:bg-sky-100 transition-all text-center flex items-center justify-center gap-2">
-                          <span>{isUploadingLight ? "جاري الرفع إلى R2..." : "📤 رفع ملف الوضع المضيء"}</span>
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*,video/*,application/json"
-                            onChange={(e) => handleFileChange(item.id, "lightUrl", e)}
-                          />
-                        </label>
-                      </>
-                    )}
+                    <label className="cursor-pointer bg-sky-50 text-sky-700 border border-sky-100 rounded-xl px-4 py-2.5 text-xs font-black hover:bg-sky-100 transition-all text-center flex items-center justify-center gap-2">
+                      <span>{isUploadingLight ? "جاري الرفع إلى R2..." : "📤 رفع صورة الوضع المضيء"}</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => handleFileChange(item.id, "lightUrl", e)}
+                      />
+                    </label>
                   </div>
                 </div>
 
@@ -288,53 +258,27 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                   </h4>
                   <div className="grid grid-cols-1 gap-3">
                     <label className="text-[11px] font-bold text-slate-400">النوع:</label>
-                    <select
-                      value={item.darkType}
-                      onChange={(e) => handleUpdateItem(item.id, "darkType", e.target.value)}
+                    <div className="w-full px-3 py-2 rounded-xl border border-slate-700 text-xs font-bold bg-slate-800 text-slate-400">
+                      صورة ثابتة / متحركة (WebP / GIF / PNG / JPG)
+                    </div>
+
+                    <label className="text-[11px] font-bold text-slate-400">رابط الصورة أو الرفع:</label>
+                    <input
+                      value={item.darkUrl}
+                      onChange={(e) => handleUpdateItem(item.id, "darkUrl", e.target.value)}
+                      placeholder="رابط مباشر للصورة أو ارفع من جهازك"
                       className="w-full px-3 py-2 rounded-xl border border-slate-700 text-xs font-bold bg-slate-800 outline-none focus:border-sky-500 text-white"
-                    >
-                      <option value="image">صورة ثابتة / متحركة (WebP / GIF)</option>
-                      <option value="video">فيديو حركي متكرر (MP4 / WebM)</option>
-                      <option value="lottie">رسومات متحركة لوتي (JSON)</option>
-                      <option value="code">كود برمجي تفاعلي (JavaScript / Canvas)</option>
-                    </select>
+                    />
 
-                    {item.darkType === "code" ? (
-                      <>
-                        <label className="text-[11px] font-bold text-slate-400">الكود البرمجي (JavaScript):</label>
-                        <textarea
-                          value={item.darkUrl}
-                          onChange={(e) => handleUpdateItem(item.id, "darkUrl", e.target.value)}
-                          placeholder="// اكتب كود الجافا سكريبت هنا للوضع المظلم.
-// الكود سيعمل داخل حاوية الخلفية الحية.
-// يمكنك استخدام Canvas بالمعرف التالي:
-// const canvas = document.getElementById('custom-bg-canvas');"
-                          rows={8}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-700 text-xs font-mono bg-slate-800 outline-none focus:border-sky-500 text-white text-left font-normal"
-                          style={{ direction: "ltr" }}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <label className="text-[11px] font-bold text-slate-400">رابط الملف أو الرفع:</label>
-                        <input
-                          value={item.darkUrl}
-                          onChange={(e) => handleUpdateItem(item.id, "darkUrl", e.target.value)}
-                          placeholder="رابط مباشر للملف أو ارفع من جازك"
-                          className="w-full px-3 py-2 rounded-xl border border-slate-700 text-xs font-bold bg-slate-800 outline-none focus:border-sky-500 text-white"
-                        />
-
-                        <label className="cursor-pointer bg-slate-800 text-sky-400 border border-slate-700 rounded-xl px-4 py-2.5 text-xs font-black hover:bg-slate-750 transition-all text-center flex items-center justify-center gap-2">
-                          <span>{isUploadingDark ? "جاري الرفع إلى R2..." : "📤 رفع ملف الوضع المظلم"}</span>
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*,video/*,application/json"
-                            onChange={(e) => handleFileChange(item.id, "darkUrl", e)}
-                          />
-                        </label>
-                      </>
-                    )}
+                    <label className="cursor-pointer bg-slate-800 text-sky-400 border border-slate-700 rounded-xl px-4 py-2.5 text-xs font-black hover:bg-slate-750 transition-all text-center flex items-center justify-center gap-2">
+                      <span>{isUploadingDark ? "جاري الرفع إلى R2..." : "📤 رفع صورة الوضع المظلم"}</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => handleFileChange(item.id, "darkUrl", e)}
+                      />
+                    </label>
                   </div>
                 </div>
               </div>
@@ -455,57 +399,18 @@ export function BackgroundSettingsForm({ initial }: { initial: BackgroundsConfig
                       filter: item.blur > 0 ? `blur(${item.blur}px)` : "none",
                     };
 
-                    if (currentType === "code") {
-                      return (
-                        <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-4 bg-slate-900/10 dark:bg-black/40 text-center select-none pointer-events-none">
-                          <span className="text-xl">💻</span>
-                          <span className="text-[10px] font-black text-slate-700 dark:text-slate-200 mt-1">
-                            كود برمجي تفاعلي (JavaScript / Canvas)
-                          </span>
-                          <span className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 max-w-[80%] leading-relaxed">
-                            لتجربة ورؤية الكود يعمل في الخلفية مباشرة، اضغط على زر "تطبيق وتجربة على حسابي الآن".
-                          </span>
-                        </div>
-                      );
-                    }
-
                     if (!currentUrl) {
                       return <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">لا يوجد رابط للخلفية في هذا الوضع</span>;
                     }
 
                     return (
                       <div className="absolute inset-0 w-full h-full transition-all duration-300 pointer-events-none" style={previewStyle}>
-                        {currentType === "video" ? (
-                          <video
-                            src={currentUrl}
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            className="w-full h-full object-cover"
-                            key={currentUrl} // لإعادة التحميل عند تغيير الرابط
-                          />
-                        ) : currentType === "lottie" ? (
-                          <div className="w-full h-full flex items-center justify-center scale-110">
-                            {/* @ts-ignore */}
-                            <lottie-player
-                              src={currentUrl}
-                              autoplay
-                              loop
-                              speed="1"
-                              style={{ width: "100%", height: "100%" }}
-                              background="transparent"
-                              key={currentUrl}
-                            />
-                          </div>
-                        ) : (
-                          <img
-                            src={currentUrl}
-                            alt=""
-                            className="w-full h-full object-cover"
-                            key={currentUrl}
-                          />
-                        )}
+                        <img
+                          src={currentUrl}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          key={currentUrl}
+                        />
                       </div>
                     );
                   })()}
