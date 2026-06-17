@@ -237,12 +237,10 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 CookieManager.getInstance().flush()
-                injectPerformanceCss(view)
             }
 
             override fun onPageCommitVisible(view: WebView?, url: String?) {
                 super.onPageCommitVisible(view, url)
-                injectPerformanceCss(view)
             }
         }
 
@@ -636,50 +634,5 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun injectPerformanceCss(view: WebView?) {
-        val currentTime = System.currentTimeMillis()
-        if (currentTime - lastCssInjectionTime < 3000) {
-            return
-        }
-        lastCssInjectionTime = currentTime
-
-        val css = """
-            * {
-                backdrop-filter: none !important;
-                -webkit-backdrop-filter: none !important;
-                box-shadow: none !important;
-                text-shadow: none !important;
-                transition: none !important;
-                animation: none !important;
-            }
-            .kse-glass-card, [class*="glass"], [class*="card"] {
-                background-color: #ffffff !important;
-                border-color: #e2e8f0 !important;
-            }
-            .dark .kse-glass-card, .dark [class*="glass"], .dark [class*="card"] {
-                background-color: #09090b !important;
-                border-color: #27272a !important;
-            }
-            .kse-app-bg::before, .kse-app-bg::after {
-                display: none !important;
-            }
-            body {
-                background-color: #ffffff !important;
-            }
-            .dark body {
-                background-color: #09090b !important;
-            }
-        """.trimIndent().replace("\n", " ")
-
-        val js = "javascript:(function() {" +
-                "var parent = document.getElementsByTagName('head').item(0);" +
-                "var style = document.createElement('style');" +
-                "style.type = 'text/css';" +
-                "style.innerHTML = '$css';" +
-                "parent.appendChild(style);" +
-                "})()"
-        view?.post {
-            view.loadUrl(js)
-        }
-    }
+    
 }
