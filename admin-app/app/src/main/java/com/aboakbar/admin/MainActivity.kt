@@ -290,12 +290,15 @@ class MainActivity : AppCompatActivity() {
                 super.onPageFinished(view, url)
                 // Force sync cookies
                 CookieManager.getInstance().flush()
+                // مزامنة التوكن من الكوكيز إلى SharedPreferences
+                syncTokenFromCookies()
                 // حقن CSS لتحسين الأداء الفائق وتسهيل التمرير
                 injectPerformanceCss(view)
             }
 
             override fun onPageCommitVisible(view: WebView?, url: String?) {
                 super.onPageCommitVisible(view, url)
+                syncTokenFromCookies()
                 injectPerformanceCss(view)
             }
 
@@ -898,6 +901,41 @@ class MainActivity : AppCompatActivity() {
                 "})()"
         view?.post {
             view.loadUrl(js)
+        }
+    }
+
+    private fun syncTokenFromCookies() {
+        try {
+            val cookieManager = CookieManager.getInstance()
+            val urls = arrayOf("https://aboakbr.com", "https://aboakbar.vercel.app")
+            var token: String? = null
+            for (url in urls) {
+                val cookies = cookieManager.getCookie(url)
+                if (!cookies.isNullOrEmpty()) {
+                    val cookieArray = cookies.split(";")
+                    for (cookie in cookieArray) {
+                        val parts = cookie.trim().split("=")
+                        if (parts.size >= 2 && parts[0] == "admin_token") {
+                            val extractedToken = parts[1]
+                            if (extractedToken.isNotEmpty()) {
+                                token = extractedToken
+                                break
+                            }
+                        }
+                    }
+                }
+                if (token != null) break
+            }
+
+            if (!token.isNullOrEmpty()) {
+                val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val savedToken = sharedPreferences.getString(KEY_TOKEN, null)
+                if (savedToken != token) {
+                    sharedPreferences.edit().putString(KEY_TOKEN, token).apply()
+                }
+            }
+        } catch (e: Exception) {
+            // تجاهل
         }
     }
 

@@ -352,21 +352,25 @@ class QuickDraftActivity : AppCompatActivity() {
         if (token.isNullOrEmpty()) {
             try {
                 val cookieManager = CookieManager.getInstance()
-                val cookies = cookieManager.getCookie(BACKEND_URL)
-                if (!cookies.isNullOrEmpty()) {
-                    val cookieArray = cookies.split(";")
-                    for (cookie in cookieArray) {
-                        val parts = cookie.trim().split("=")
-                        if (parts.size >= 2 && parts[0] == "admin_token") {
-                            val extractedToken = parts[1]
-                            if (extractedToken.isNotEmpty()) {
-                                token = extractedToken
-                                // حفظ التوكن في SharedPreferences للمرات القادمة
-                                sharedPreferences.edit().putString(KEY_TOKEN, token).apply()
-                                break
+                val urls = arrayOf("https://aboakbr.com", "https://aboakbar.vercel.app", "http://aboakbr.com", "http://aboakbar.vercel.app")
+                for (url in urls) {
+                    val cookies = cookieManager.getCookie(url)
+                    if (!cookies.isNullOrEmpty()) {
+                        val cookieArray = cookies.split(";")
+                        for (cookie in cookieArray) {
+                            val parts = cookie.trim().split("=")
+                            if (parts.size >= 2 && parts[0] == "admin_token") {
+                                val extractedToken = parts[1]
+                                if (extractedToken.isNotEmpty()) {
+                                    token = extractedToken
+                                    // حفظ التوكن في SharedPreferences للمرات القادمة
+                                    sharedPreferences.edit().putString(KEY_TOKEN, token).apply()
+                                    break
+                                }
                             }
                         }
                     }
+                    if (!token.isNullOrEmpty()) break
                 }
             } catch (e: Exception) {
                 // تجاهل
