@@ -23,6 +23,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var loginLayout: View
+    private lateinit var mainLayout: View
     private lateinit var etPassword: EditText
     private lateinit var tvError: TextView
     private lateinit var btnSubmit: Button
@@ -56,6 +57,7 @@ class MainActivity : AppCompatActivity() {
         // Initialize Views
         webView = findViewById(R.id.webView)
         loginLayout = findViewById(R.id.loginLayout)
+        mainLayout = findViewById(R.id.mainLayout)
         etPassword = findViewById(R.id.etPassword)
         tvError = findViewById(R.id.tvError)
         btnSubmit = findViewById(R.id.btnSubmit)
@@ -83,8 +85,7 @@ class MainActivity : AppCompatActivity() {
             OneSignal.login(savedId)
             OneSignal.User.addTag("role", "mandob")
             if (savedInstanceState != null) {
-                webView.visibility = View.VISIBLE
-                loginLayout.visibility = View.GONE
+                showWebViewLayout()
                 webView.restoreState(savedInstanceState)
                 checkAutoStartPermission()
             } else {
@@ -228,6 +229,7 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 CookieManager.getInstance().flush()
+                injectPerformanceCss(view)
             }
         }
 
@@ -375,8 +377,7 @@ class MainActivity : AppCompatActivity() {
         OneSignal.login(mandobId)
         OneSignal.User.addTag("role", "mandob")
 
-        loginLayout.visibility = View.GONE
-        webView.visibility = View.VISIBLE
+        showWebViewLayout()
 
         val targetUrl = intent.getStringExtra("target_url") ?: url
         webView.loadUrl(targetUrl)
@@ -384,9 +385,16 @@ class MainActivity : AppCompatActivity() {
         checkAutoStartPermission()
     }
 
+    private fun showWebViewLayout() {
+        loginLayout.visibility = View.GONE
+        webView.visibility = View.VISIBLE
+        mainLayout.background = null
+    }
+
     private fun showLoginLayout() {
         webView.visibility = View.GONE
         loginLayout.visibility = View.VISIBLE
+        mainLayout.setBackgroundResource(R.drawable.gradient_bg)
     }
 
     private fun showLoading(show: Boolean) {
@@ -612,6 +620,35 @@ class MainActivity : AppCompatActivity() {
                     // تجاهل
                 }
             }
+        }
+    }
+
+    private fun injectPerformanceCss(view: WebView?) {
+        val css = """
+            * {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+            }
+            .kse-glass-card, [class*="glass"] {
+                background-color: rgba(255, 255, 255, 0.98) !important;
+            }
+            .dark .kse-glass-card, .dark [class*="glass"] {
+                background-color: rgba(19, 20, 24, 0.98) !important;
+            }
+            .kse-app-bg::before, .kse-app-bg::after {
+                display: none !important;
+            }
+        """.trimIndent().replace("\n", " ")
+
+        val js = "javascript:(function() {" +
+                "var parent = document.getElementsByTagName('head').item(0);" +
+                "var style = document.createElement('style');" +
+                "style.type = 'text/css';" +
+                "style.innerHTML = '$css';" +
+                "parent.appendChild(style);" +
+                "})()"
+        view?.post {
+            view.loadUrl(js)
         }
     }
 }

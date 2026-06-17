@@ -46,6 +46,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var loginLayout: View
+    private lateinit var mainLayout: View
     private lateinit var etPassword: EditText
     private lateinit var btnToggleVisibility: ImageView
     private lateinit var tvError: TextView
@@ -102,6 +103,7 @@ class MainActivity : AppCompatActivity() {
         // Initialize Views
         webView = findViewById(R.id.webView)
         loginLayout = findViewById(R.id.loginLayout)
+        mainLayout = findViewById(R.id.mainLayout)
         etPassword = findViewById(R.id.etPassword)
         btnToggleVisibility = findViewById(R.id.btnToggleVisibility)
         tvError = findViewById(R.id.tvError)
@@ -110,7 +112,6 @@ class MainActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
 
         setupWebView()
-        registerForContextMenu(webView)
         setupPasswordToggle()
         setupBiometrics()
 
@@ -140,8 +141,7 @@ class MainActivity : AppCompatActivity() {
             if (savedToken.isNullOrEmpty()) {
                 showLoginLayout()
             } else {
-                loginLayout.visibility = View.GONE
-                webView.visibility = View.VISIBLE
+                showWebViewLayout()
             }
         } else {
             if (!savedToken.isNullOrEmpty()) {
@@ -283,6 +283,8 @@ class MainActivity : AppCompatActivity() {
                 super.onPageFinished(view, url)
                 // Force sync cookies
                 CookieManager.getInstance().flush()
+                // حقن CSS لتحسين الأداء الفائق وتسهيل التمرير
+                injectPerformanceCss(view)
             }
 
             override fun onReceivedError(
@@ -582,8 +584,7 @@ class MainActivity : AppCompatActivity() {
         cookieManager.flush()
 
         // Hide Login and show WebView
-        loginLayout.visibility = View.GONE
-        webView.visibility = View.VISIBLE
+        showWebViewLayout()
 
         val targetUrl = intent.getStringExtra("target_url") ?: ADMIN_DASHBOARD_URL
         webView.loadUrl(targetUrl)
@@ -592,9 +593,16 @@ class MainActivity : AppCompatActivity() {
         checkAutoStartPermission()
     }
 
+    private fun showWebViewLayout() {
+        loginLayout.visibility = View.GONE
+        webView.visibility = View.VISIBLE
+        mainLayout.background = null
+    }
+
     private fun showLoginLayout() {
         webView.visibility = View.GONE
         loginLayout.visibility = View.VISIBLE
+        mainLayout.setBackgroundResource(R.drawable.gradient_bg)
     }
 
     private fun showLoading(show: Boolean) {
@@ -838,6 +846,35 @@ class MainActivity : AppCompatActivity() {
         intent.type = "text/plain"
         intent.putExtra(Intent.EXTRA_TEXT, url)
         startActivity(Intent.createChooser(intent, "مشاركة الرابط"))
+    }
+
+    private fun injectPerformanceCss(view: WebView?) {
+        val css = """
+            * {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+            }
+            .kse-glass-card, [class*="glass"] {
+                background-color: rgba(255, 255, 255, 0.98) !important;
+            }
+            .dark .kse-glass-card, .dark [class*="glass"] {
+                background-color: rgba(19, 20, 24, 0.98) !important;
+            }
+            .kse-app-bg::before, .kse-app-bg::after {
+                display: none !important;
+            }
+        """.trimIndent().replace("\n", " ")
+
+        val js = "javascript:(function() {" +
+                "var parent = document.getElementsByTagName('head').item(0);" +
+                "var style = document.createElement('style');" +
+                "style.type = 'text/css';" +
+                "style.innerHTML = '$css';" +
+                "parent.appendChild(style);" +
+                "})()"
+        view?.post {
+            view.loadUrl(js)
+        }
     }
 
     override fun onDestroy() {

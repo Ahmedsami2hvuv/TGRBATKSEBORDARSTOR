@@ -65,3 +65,4 @@ captures/
 
 # Exception: keep root APK tracked
 !/AboAkbarAdmin.apk
+!/AboAkbarMandob.apk
