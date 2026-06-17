@@ -16,6 +16,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
+import android.webkit.CookieManager
 
 class QuickDraftActivity : AppCompatActivity() {
 
@@ -102,8 +103,7 @@ class QuickDraftActivity : AppCompatActivity() {
     }
 
     private fun fetchPreparers() {
-        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val token = sharedPreferences.getString(KEY_TOKEN, null)
+        val token = getAdminToken()
 
         if (token.isNullOrEmpty()) {
             Toast.makeText(this, "يجب تسجيل الدخول كآدمن أولاً", Toast.LENGTH_LONG).show()
@@ -186,8 +186,7 @@ class QuickDraftActivity : AppCompatActivity() {
             return
         }
 
-        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val token = sharedPreferences.getString(KEY_TOKEN, null)
+        val token = getAdminToken()
 
         if (token.isNullOrEmpty()) {
             Toast.makeText(this, "يجب تسجيل الدخول كآدمن أولاً", Toast.LENGTH_LONG).show()
@@ -344,5 +343,35 @@ class QuickDraftActivity : AppCompatActivity() {
             
             chipGroupRegions.addView(chip)
         }
+    }
+
+    private fun getAdminToken(): String? {
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        var token = sharedPreferences.getString(KEY_TOKEN, null)
+
+        if (token.isNullOrEmpty()) {
+            try {
+                val cookieManager = CookieManager.getInstance()
+                val cookies = cookieManager.getCookie(BACKEND_URL)
+                if (!cookies.isNullOrEmpty()) {
+                    val cookieArray = cookies.split(";")
+                    for (cookie in cookieArray) {
+                        val parts = cookie.trim().split("=")
+                        if (parts.size >= 2 && parts[0] == "admin_token") {
+                            val extractedToken = parts[1]
+                            if (extractedToken.isNotEmpty()) {
+                                token = extractedToken
+                                // حفظ التوكن في SharedPreferences للمرات القادمة
+                                sharedPreferences.edit().putString(KEY_TOKEN, token).apply()
+                                break
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // تجاهل
+            }
+        }
+        return token
     }
 }
