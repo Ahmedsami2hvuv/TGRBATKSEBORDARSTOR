@@ -120,6 +120,12 @@ export async function notifyOneSignalPreparerAssignment(input: {
   let titleLine = "";
   let productsData: any[] = [];
   let draftIdForUrl = "";
+  let shopName = "مجهز";
+  let regionName = "—";
+  let orderTime = "فوري";
+  let orderType = "تجهيز";
+  let subtotal = 0;
+  let orderNumber = 0;
 
   if (input.isDraft) {
     const draft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: input.orderId } });
@@ -127,12 +133,26 @@ export async function notifyOneSignalPreparerAssignment(input: {
     titleLine = draft.titleLine;
     productsData = (draft.data as any)?.products || [];
     draftIdForUrl = draft.id;
+    shopName = draft.titleLine.split(" - ")[0] || "مسودة طلب";
+    orderNumber = parseInt(draft.id.replace(/[^0-9]/g, "").slice(0, 6)) || 0;
   } else {
-    const order = await prisma.order.findUnique({ where: { id: input.orderId } });
+    const order = await prisma.order.findUnique({
+      where: { id: input.orderId },
+      include: {
+        shop: { select: { name: true } },
+        customerRegion: { select: { name: true } }
+      }
+    });
     if (!order) return;
     titleLine = `طلب #${order.orderNumber} - ${order.orderType}`;
     productsData = (order.preparerShoppingJson as any)?.products || [];
-    draftIdForUrl = order.id; // Or handle order url
+    draftIdForUrl = order.id;
+    shopName = order.shop?.name || "المحل";
+    regionName = order.customerRegion?.name || "—";
+    orderTime = order.orderNoteTime || "فوري";
+    orderType = order.orderType || "توصيل";
+    subtotal = Number(order.orderSubtotal || 0);
+    orderNumber = order.orderNumber;
   }
 
   // بناء محتوى الإشعار وإخفاء رقم الزبون
@@ -157,7 +177,16 @@ export async function notifyOneSignalPreparerAssignment(input: {
     body: bodyText,
     url: finalUrl,
     externalIds: [preparer.id],
-    targetApp: "preparer"
+    targetApp: "preparer",
+    data: {
+      type: "new_order",
+      orderNumber: orderNumber,
+      shopName: shopName,
+      regionName: regionName,
+      orderTime: orderTime,
+      orderType: orderType,
+      subtotal: subtotal
+    }
   });
 }
 
