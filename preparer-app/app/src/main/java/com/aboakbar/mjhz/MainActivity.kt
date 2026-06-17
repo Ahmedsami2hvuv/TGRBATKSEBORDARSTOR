@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
     private var cameraPhotoUri: Uri? = null
 
     // التطبيق الخاص بالمجهزين (يجب تغيير هذا المعرف بعد إنشاء التطبيق في OneSignal)
-    private val ONESIGNAL_APP_ID = "TODO_ENTER_PREPARER_APP_ID"
+    private val ONESIGNAL_APP_ID = "55661893-9b93-4b63-b0e9-03b250fc3667"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
