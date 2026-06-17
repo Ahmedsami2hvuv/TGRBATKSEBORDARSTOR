@@ -30,6 +30,7 @@ class OrderAlertActivity : Activity() {
     private val BASE_URL = "https://aboakbar.vercel.app/api/admin"
     private var adminToken: String? = null
     private var currentOrderNumber: Int = 0
+    private var isStaffAlert: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,8 +51,66 @@ class OrderAlertActivity : Activity() {
         setFinishOnTouchOutside(false)
 
         val prefs = getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
-        adminToken = prefs.getString("admin_token", null)
+        adminToken = prefs.getString("admin_token", null) // سيمثل رابط بوابة الموظف بالكامل في حال كان الحساب موظف
 
+        isStaffAlert = intent.getBooleanExtra("isStaffAlert", false)
+
+        if (isStaffAlert) {
+            setupStaffLayout()
+        } else {
+            setupAdminLayout()
+        }
+
+        playNotificationEffects()
+    }
+
+    // تهيئة الواجهة العائمة المخصصة للموظف (إشعار حالة الطلب)
+    private fun setupStaffLayout() {
+        val title = intent.getStringExtra("title") ?: "تحديث حالة الطلب"
+        val body = intent.getStringExtra("body") ?: ""
+        currentOrderNumber = intent.getIntExtra("orderNumber", 0)
+
+        findViewById<TextView>(R.id.tvAlertHeader).text = "🔔 تحديث حالة طلبك"
+        findViewById<TextView>(R.id.tvAlertHeader).setTextColor(android.graphics.Color.parseColor("#03A9F4"))
+        
+        findViewById<TextView>(R.id.tvAlertTitle).text = title
+        findViewById<TextView>(R.id.tvOrderNumber).text = "طلب رقم: #$currentOrderNumber"
+        findViewById<TextView>(R.id.tvOrderDetails).text = body
+
+        val layoutMainButtons = findViewById<LinearLayout>(R.id.layoutMainButtons)
+        val layoutAssign = findViewById<LinearLayout>(R.id.layoutAssign)
+
+        // إخفاء حاوية الإسناد والرفض تماماً للموظف
+        layoutAssign.visibility = View.GONE
+        findViewById<Button>(R.id.btnRejectOrder).visibility = View.GONE
+        findViewById<Button>(R.id.btnAssignOrder).visibility = View.GONE
+
+        val btnCloseAlert = findViewById<Button>(R.id.btnCloseAlert)
+        btnCloseAlert.text = "حسناً"
+        btnCloseAlert.setOnClickListener {
+            finish()
+        }
+
+        val btnOpenApp = findViewById<Button>(R.id.btnOpenApp)
+        btnOpenApp.text = "فتح البوابة"
+        btnOpenApp.setOnClickListener {
+            val sharedPreferences = getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
+            val savedPortalUrl = sharedPreferences.getString("admin_token", null) // رابط البوابة الكامل
+
+            val mainIntent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                if (!savedPortalUrl.isNullOrEmpty()) {
+                    // فتح التبويب الخاص بالطلبات المرفوعة للموظف مباشرة
+                    putExtra("target_url", "${savedPortalUrl.replace(Regex("/portal.*"), "/portal/submitted")}")
+                }
+            }
+            startActivity(mainIntent)
+            finish()
+        }
+    }
+
+    // تهيئة واجهة التنبيه الكلاسيكية الخاصة بمدير الإدارة (الطلبات الجديدة وإسنادها)
+    private fun setupAdminLayout() {
         val shopName = intent.getStringExtra("shopName") ?: "—"
         val regionName = intent.getStringExtra("regionName") ?: "—"
         val orderTime = intent.getStringExtra("orderTime") ?: "فوري"
@@ -65,15 +124,9 @@ class OrderAlertActivity : Activity() {
         findViewById<TextView>(R.id.tvOrderDetails).text = 
             "⏰ الوقت: $orderTime\n" +
             "📦 النوع: $orderType\n" +
-            "💵 السعر بدون توصيل: ${formatNumber(subtotal)} د.ع\n" +
+            "💵 السعر: ${formatNumber(subtotal)} د.ع\n" +
             "🔔 إجمالي الطلبات المعلقة: $pendingCount"
 
-        setupButtons()
-        playNotificationEffects()
-        fetchCouriers()
-    }
-
-    private fun setupButtons() {
         val layoutMainButtons = findViewById<LinearLayout>(R.id.layoutMainButtons)
         val layoutAssign = findViewById<LinearLayout>(R.id.layoutAssign)
 
@@ -105,6 +158,8 @@ class OrderAlertActivity : Activity() {
         }
 
         findViewById<Button>(R.id.btnConfirmAssign).visibility = View.GONE
+
+        fetchCouriers()
     }
 
     private fun fetchCouriers() {
@@ -187,11 +242,10 @@ class OrderAlertActivity : Activity() {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val responseData = response.body?.string()
                 runOnUiThread {
                     if (response.isSuccessful) {
                         Toast.makeText(this@OrderAlertActivity, "تم التنفيذ بنجاح", Toast.LENGTH_SHORT).show()
-                        finish() // إغلاق التنبيه
+                        finish()
                     } else {
                         Toast.makeText(this@OrderAlertActivity, "خطأ: ${response.code}", Toast.LENGTH_SHORT).show()
                     }

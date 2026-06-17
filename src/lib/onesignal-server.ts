@@ -230,7 +230,14 @@ export async function notifyStaffEmployeeOrderStatusChange(orderId: string, newS
       body,
       url: finalUrl,
       externalIds: [staff.id],
-      targetApp: "employee"
+      targetApp: "employee",
+      data: {
+        type: "staff_order_status",
+        orderNumber: order.orderNumber,
+        status: newStatus,
+        title: title,
+        body: body
+      }
     });
     console.log(`[OneSignal] Sent status change notification to staff ${staff.id} for order #${order.orderNumber}`);
   } catch (err) {
