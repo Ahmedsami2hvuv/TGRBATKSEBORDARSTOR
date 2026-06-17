@@ -1,4 +1,4 @@
-package com.aboakbar.preparer
+package com.aboakbar.mjhz
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -16,7 +16,7 @@ class OrderPollingReceiver : BroadcastReceiver() {
         if (action == Intent.ACTION_BOOT_COMPLETED || 
             action == "android.intent.action.QUICKBOOT_POWERON" || 
             action == Intent.ACTION_MY_PACKAGE_REPLACED ||
-            action == "com.aboakbar.preparer.ACTION_CHECK_ORDERS") {
+            action == "com.aboakbar.mjhz.ACTION_CHECK_ORDERS") {
             
             val sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val token = sharedPreferences.getString(KEY_TOKEN, null)

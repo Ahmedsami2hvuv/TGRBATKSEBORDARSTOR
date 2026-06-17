@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.aboakbar.preparer"
+    namespace = "com.aboakbar.mjhz"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.aboakbar.preparer"
+        applicationId = "com.aboakbar.mjhz"
         minSdk = 24
         targetSdk = 35
         versionCode = 1

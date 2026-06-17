@@ -54,7 +54,7 @@
         android:theme="@style/Theme.AboAkbarAdmin"
         android:hardwareAccelerated="true">
         <activity
-            android:name="com.aboakbar.preparer.MainActivity"
+            android:name="com.aboakbar.mjhz.MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize"
@@ -66,7 +66,7 @@
         </activity>
 
         <activity
-            android:name="com.aboakbar.preparer.OrderAlertActivity"
+            android:name="com.aboakbar.mjhz.OrderAlertActivity"
             android:theme="@style/Theme.Material3.DayNight.Dialog"
             android:excludeFromRecents="true"
             android:launchMode="singleInstance"
@@ -74,7 +74,7 @@
             android:exported="false" />
 
         <activity
-            android:name="com.aboakbar.preparer.QuickDraftActivity"
+            android:name="com.aboakbar.mjhz.QuickDraftActivity"
             android:theme="@style/Theme.Material3.DayNight.Dialog"
             android:label="إضافة طلب"
             android:exported="true">
@@ -86,7 +86,7 @@
         </activity>
 
         <receiver
-            android:name="com.aboakbar.preparer.OrderPollingReceiver"
+            android:name="com.aboakbar.mjhz.OrderPollingReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
@@ -97,7 +97,7 @@
         </receiver>
 
         <service
-            android:name="com.aboakbar.preparer.OrderForegroundService"
+            android:name="com.aboakbar.mjhz.OrderForegroundService"
             android:foregroundServiceType="dataSync"
             android:enabled="true"
             android:exported="false" />
@@ -114,7 +114,7 @@
 
         <meta-data
             android:name="com.onesignal.NotificationServiceExtension"
-            android:value="com.aboakbar.preparer.MyNotificationServiceExtension" />
+            android:value="com.aboakbar.mjhz.MyNotificationServiceExtension" />
     </application>
 
 </manifest>

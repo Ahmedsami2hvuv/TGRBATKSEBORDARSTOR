@@ -1,4 +1,4 @@
-package com.aboakbar.preparer
+package com.aboakbar.mjhz
 
 import android.content.Context
 import android.content.Intent

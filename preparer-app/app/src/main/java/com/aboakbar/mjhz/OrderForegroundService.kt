@@ -1,4 +1,4 @@
-package com.aboakbar.preparer
+package com.aboakbar.mjhz
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -289,7 +289,7 @@ class OrderForegroundService : Service() {
     private fun scheduleNextAlarm() {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
         val intent = Intent(this, OrderPollingReceiver::class.java).apply {
-            action = "com.aboakbar.preparer.ACTION_CHECK_ORDERS"
+            action = "com.aboakbar.mjhz.ACTION_CHECK_ORDERS"
         }
         val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -325,7 +325,7 @@ class OrderForegroundService : Service() {
         try {
             val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
             val intent = Intent(this, OrderPollingReceiver::class.java).apply {
-                action = "com.aboakbar.preparer.ACTION_CHECK_ORDERS"
+                action = "com.aboakbar.mjhz.ACTION_CHECK_ORDERS"
             }
             val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
