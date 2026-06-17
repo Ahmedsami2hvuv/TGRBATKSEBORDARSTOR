@@ -226,8 +226,10 @@ class MainActivity : AppCompatActivity() {
         settings.textZoom = 100
         settings.mediaPlaybackRequiresUserGesture = false
 
-        // تفعيل التسريع العتادي لضمان سلاسة السحب (Scrolling) بدون ثقل
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        // تفعيل التسريع العتادي المتقدم لمنع الثقل عند التمرير
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_BOUND, true)
+        }
 
         // Enable cookie manager
         val cookieManager = CookieManager.getInstance()
@@ -645,10 +647,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        try {
-            webView.onResume()
-        } catch (e: Exception) {}
-        // تم إبقاء webView.onPause() محذوفاً ولكن أعدنا onResume لفك خنق الأداء
+        try { webView.onResume() } catch (e: Exception) {}
 
         // التحقق التدريجي من الصلاحيات الإضافية عند العودة للتطبيق
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -660,7 +659,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        // تم إزالة webView.onPause() للحفاظ على استقرار التطبيق في الخلفية
+        try { webView.onPause() } catch (e: Exception) {}
     }
     
 

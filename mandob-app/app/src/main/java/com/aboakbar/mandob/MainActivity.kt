@@ -172,6 +172,10 @@ class MainActivity : AppCompatActivity() {
         settings.textZoom = 100
         settings.mediaPlaybackRequiresUserGesture = false
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_BOUND, true)
+        }
+
         // Enable cookie manager
         val cookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(true)
@@ -420,10 +424,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        try {
-            webView.onResume()
-        } catch (e: Exception) {}
-        // تم إبقاء webView.onPause() محذوفاً ولكن أعدنا onResume لفك خنق الأداء
+        try { webView.onResume() } catch (e: Exception) {}
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (android.provider.Settings.canDrawOverlays(this)) {
@@ -434,7 +435,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        // تم إزالة webView.onPause() للحفاظ على استقرار التطبيق في الخلفية
+        try { webView.onPause() } catch (e: Exception) {}
     }
 
     override fun onCreateContextMenu(menu: android.view.ContextMenu?, v: View?, menuInfo: android.view.ContextMenu.ContextMenuInfo?) {
