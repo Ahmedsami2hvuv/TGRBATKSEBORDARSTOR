@@ -178,6 +178,11 @@ class MainActivity : AppCompatActivity() {
         settings.builtInZoomControls = false
         settings.displayZoomControls = false
 
+        // تحسين أداء اللمس والتمرير الفوري
+        webView.overScrollMode = View.OVER_SCROLL_NEVER
+        webView.isVerticalFadingEdgeEnabled = false
+        webView.isHorizontalFadingEdgeEnabled = false
+
         // Enable cookie manager
         val cookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(true)
