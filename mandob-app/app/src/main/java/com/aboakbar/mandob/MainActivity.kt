@@ -233,6 +233,11 @@ class MainActivity : AppCompatActivity() {
                 CookieManager.getInstance().flush()
                 injectPerformanceCss(view)
             }
+
+            override fun onPageCommitVisible(view: WebView?, url: String?) {
+                super.onPageCommitVisible(view, url)
+                injectPerformanceCss(view)
+            }
         }
 
         webView.webChromeClient = object : WebChromeClient() {

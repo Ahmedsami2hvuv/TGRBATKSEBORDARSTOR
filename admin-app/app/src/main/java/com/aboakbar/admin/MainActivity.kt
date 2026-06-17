@@ -289,6 +289,11 @@ class MainActivity : AppCompatActivity() {
                 injectPerformanceCss(view)
             }
 
+            override fun onPageCommitVisible(view: WebView?, url: String?) {
+                super.onPageCommitVisible(view, url)
+                injectPerformanceCss(view)
+            }
+
             override fun onReceivedError(
                 view: WebView?,
                 request: WebResourceRequest?,
