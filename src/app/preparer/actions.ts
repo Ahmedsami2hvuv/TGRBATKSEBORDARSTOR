@@ -24,6 +24,7 @@ import { pushNotifyAdminsNewPendingOrder } from "@/lib/web-push-server";
 import { ADMIN_OFFICE_LABEL, ADMIN_SHOP_NAMES } from "@/lib/admin-order-from-admin-constants";
 import { getBotTokenByPurpose } from "@/lib/telegram-bots";
 import { escapeTelegramHtml, sendTelegramHtmlToChat, sendTelegramMessage } from "@/lib/telegram";
+import { notifyOneSignalPreparerAssignment } from "@/lib/onesignal-server";
 import { getPreparerMoneyTotals } from "@/lib/preparer-combined-wallet-totals";
 import { 
   ensurePreparerSalaryConfigColumnsIfMissing,
@@ -685,6 +686,14 @@ export async function createPreparerShoppingDraftFromAnalysis(
                 }
             }
         });
+        
+        // إرسال إشعار OneSignal للمجهز عند إنشائه لطلب جديد من حسابه
+        void notifyOneSignalPreparerAssignment({
+          preparerId: v.preparerId,
+          orderId: draft.id,
+          isDraft: true,
+        }).catch((e) => console.error("OneSignal notify error (create):", e));
+
         return { ok: true, draftId: draft.id };
     } catch (e) {
         console.error(e);

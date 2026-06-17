@@ -1,0 +1,29 @@
+﻿{
+  "project_info": {
+    "project_number": "737595723181",
+    "project_id": "abo-akbar-mandob",
+    "storage_bucket": "abo-akbar-mandob.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:737595723181:android:622d4c5760cec7b4c52524",
+        "android_client_info": {
+          "package_name": "com.aboakbar.mandob"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2U76eexxvbDaafKMNumGWdHs5ymt609o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

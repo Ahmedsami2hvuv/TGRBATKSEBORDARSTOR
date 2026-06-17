@@ -10,6 +10,7 @@ import {
 import { syncPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
 import { pushNotifyCourierNewAssignment, pushNotifyPreparerNewNotice } from "@/lib/web-push-server";
 import { notifyTelegramPreparerManualAssignment } from "@/lib/telegram-notify";
+import { notifyOneSignalPreparerAssignment } from "@/lib/onesignal-server";
 import { revalidatePath } from "next/cache";
 import { Decimal } from "@prisma/client/runtime/library";
 import { ALF_PER_DINAR } from "@/lib/money-alf";
@@ -270,6 +271,13 @@ export async function assignOrderToPreparer(
       orderId: unassignedDraftToUse || (isDraft ? orderId : (sentOrderId || orderId)),
       isDraft: isDraft || !!unassignedDraftToUse,
     }).catch((e) => console.error("Telegram notify error:", e));
+
+    // إرسال إشعار OneSignal للمجهز
+    void notifyOneSignalPreparerAssignment({
+      preparerId,
+      orderId: unassignedDraftToUse || (isDraft ? orderId : (sentOrderId || orderId)),
+      isDraft: isDraft || !!unassignedDraftToUse,
+    }).catch((e) => console.error("OneSignal notify error:", e));
   }
 
   // تحديث الطلب الأصلي ليعكس أول مجهز تم إسناده (للعرض في لوحة التحكم)

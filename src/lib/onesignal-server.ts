@@ -84,3 +84,58 @@ export async function sendOneSignalNotification(options: {
     return false;
   }
 }
+
+export async function notifyOneSignalPreparerAssignment(input: {
+  preparerId: string;
+  orderId: string;
+  isDraft: boolean;
+}) {
+  const { prisma } = await import("@/lib/prisma");
+  const { getPublicAppUrl } = await import("@/lib/app-url");
+  const { buildCompanyPreparerPortalUrl } = await import("@/lib/company-preparer-portal-link");
+
+  const preparer = await prisma.companyPreparer.findUnique({ where: { id: input.preparerId } });
+  if (!preparer) return;
+
+  let titleLine = "";
+  let productsData: any[] = [];
+  let draftIdForUrl = "";
+
+  if (input.isDraft) {
+    const draft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: input.orderId } });
+    if (!draft) return;
+    titleLine = draft.titleLine;
+    productsData = (draft.data as any)?.products || [];
+    draftIdForUrl = draft.id;
+  } else {
+    const order = await prisma.order.findUnique({ where: { id: input.orderId } });
+    if (!order) return;
+    titleLine = `طلب #${order.orderNumber} - ${order.orderType}`;
+    productsData = (order.preparerShoppingJson as any)?.products || [];
+    draftIdForUrl = order.id; // Or handle order url
+  }
+
+  // بناء محتوى الإشعار وإخفاء رقم الزبون
+  let bodyLines: string[] = [];
+  productsData.forEach((p: any) => {
+    let line = `• ${p.line || "منتج"} (${p.qty || 1})`;
+    // تحديد المنتجات المسندة لمجهز آخر
+    if (p.assignedPreparerId && p.assignedPreparerId !== input.preparerId && p.assignedPreparerName) {
+      line += ` [مسند لمجهز آخر: ${p.assignedPreparerName}]`;
+    }
+    bodyLines.push(line);
+  });
+
+  const bodyText = bodyLines.length > 0 ? bodyLines.join("\n") : titleLine;
+
+  const baseUrl = getPublicAppUrl();
+  const preparerUrl = buildCompanyPreparerPortalUrl(preparer.id, preparer.portalToken, baseUrl);
+  const finalUrl = input.isDraft ? `${preparerUrl.replace("/preparer", `/preparer/preparation/draft/${draftIdForUrl}`)}` : `${preparerUrl.replace("/preparer", `/preparer/order/${draftIdForUrl}`)}`;
+
+  await sendOneSignalNotification({
+    title: `طلب تجهيز: ${titleLine}`,
+    body: bodyText,
+    url: finalUrl,
+    externalIds: [preparer.id],
+  });
+}
