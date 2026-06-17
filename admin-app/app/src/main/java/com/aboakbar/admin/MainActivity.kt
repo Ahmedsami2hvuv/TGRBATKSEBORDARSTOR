@@ -300,7 +300,6 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageCommitVisible(view: WebView?, url: String?) {
                 super.onPageCommitVisible(view, url)
-                syncTokenFromCookies()
                 injectPerformanceCss(view)
             }
 
@@ -914,45 +913,43 @@ class MainActivity : AppCompatActivity() {
 
     private fun syncTokenFromCookies() {
         val currentTime = System.currentTimeMillis()
-        if (currentTime - lastTokenSyncTime < 5000) {
+        if (currentTime - lastTokenSyncTime < 15000) {
             return
         }
         lastTokenSyncTime = currentTime
 
-        Thread {
-            try {
-                val cookieManager = CookieManager.getInstance()
-                val urls = arrayOf("https://aboakbr.com", "https://aboakbar.vercel.app")
-                var token: String? = null
-                for (url in urls) {
-                    val cookies = cookieManager.getCookie(url)
-                    if (!cookies.isNullOrEmpty()) {
-                        val cookieArray = cookies.split(";")
-                        for (cookie in cookieArray) {
-                            val parts = cookie.trim().split("=")
-                            if (parts.size >= 2 && parts[0] == "admin_token") {
-                                val extractedToken = parts[1]
-                                if (extractedToken.isNotEmpty()) {
-                                    token = extractedToken
-                                    break
-                                }
+        try {
+            val cookieManager = CookieManager.getInstance()
+            val urls = arrayOf("https://aboakbr.com", "https://aboakbar.vercel.app")
+            var token: String? = null
+            for (url in urls) {
+                val cookies = cookieManager.getCookie(url)
+                if (!cookies.isNullOrEmpty()) {
+                    val cookieArray = cookies.split(";")
+                    for (cookie in cookieArray) {
+                        val parts = cookie.trim().split("=")
+                        if (parts.size >= 2 && parts[0] == "admin_token") {
+                            val extractedToken = parts[1]
+                            if (extractedToken.isNotEmpty()) {
+                                token = extractedToken
+                                break
                             }
                         }
                     }
-                    if (token != null) break
                 }
-
-                if (!token.isNullOrEmpty()) {
-                    val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                    val savedToken = sharedPreferences.getString(KEY_TOKEN, null)
-                    if (savedToken != token) {
-                        sharedPreferences.edit().putString(KEY_TOKEN, token).apply()
-                    }
-                }
-            } catch (e: Exception) {
-                // تجاهل
+                if (token != null) break
             }
-        }.start()
+
+            if (!token.isNullOrEmpty()) {
+                val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val savedToken = sharedPreferences.getString(KEY_TOKEN, null)
+                if (savedToken != token) {
+                    sharedPreferences.edit().putString(KEY_TOKEN, token).apply()
+                }
+            }
+        } catch (e: Exception) {
+            // تجاهل
+        }
     }
 
     override fun onDestroy() {
