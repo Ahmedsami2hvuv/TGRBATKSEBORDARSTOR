@@ -12,15 +12,30 @@ export function AnimatedBackground() {
   const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [forceRerun, setForceRerun] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // 1. جلب قائمة الخلفيات المتاحة من السيرفر مرة واحدة عند التحميل
+  // 1. جلب قائمة الخلفيات المتاحة من السيرفر مرة واحدة عند التحميل وفحص الجوال
   useEffect(() => {
     setMounted(true);
+    const checkMobile = () => {
+      const ua = navigator.userAgent;
+      const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+      const isMobileUA = mobileRegex.test(ua);
+      const isSmallScreen = window.innerWidth < 1024;
+      setIsMobile(isMobileUA || isSmallScreen);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
     getBackgroundsConfigAction()
       .then((data) => {
         setConfig(data);
       })
       .catch((err) => console.error("فشل جلب الخلفيات:", err));
+
+    return () => {
+      window.removeEventListener("resize", checkMobile);
+    };
   }, []);
 
   // 2. تحديث الوضع الداكن ومراقبة تغييراته
@@ -104,7 +119,7 @@ export function AnimatedBackground() {
     const currentUrl = isDark ? activeBg.darkUrl : activeBg.lightUrl;
     const currentType = isDark ? activeBg.darkType : activeBg.lightType;
 
-    if (currentType !== "code" || !currentUrl) {
+    if (isMobile || currentType !== "code" || !currentUrl) {
       return;
     }
 
@@ -265,11 +280,11 @@ export function AnimatedBackground() {
       className="fixed inset-0 w-full h-full -z-50 pointer-events-none overflow-hidden select-none transition-all duration-700 bg-transparent"
       style={style}
     >
-      {type === "code" && url ? (
+      {!isMobile && type === "code" && url ? (
         <div id="custom-canvas-container" className="w-full h-full block bg-transparent">
           <canvas id="custom-bg-canvas" className="w-full h-full block bg-transparent" />
         </div>
-      ) : type === "video" && url ? (
+      ) : !isMobile && type === "video" && url ? (
         <video
           src={url}
           autoPlay
@@ -278,7 +293,7 @@ export function AnimatedBackground() {
           playsInline
           className="w-full h-full object-cover"
         />
-      ) : type === "lottie" && url ? (
+      ) : !isMobile && type === "lottie" && url ? (
         <div className="w-full h-full flex items-center justify-center scale-110">
           {/* @ts-ignore */}
           <lottie-player
@@ -290,7 +305,7 @@ export function AnimatedBackground() {
             background="transparent"
           />
         </div>
-      ) : url ? (
+      ) : type === "image" && url ? (
         <img
           src={url}
           alt=""
