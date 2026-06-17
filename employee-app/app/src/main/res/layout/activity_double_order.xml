@@ -280,7 +280,7 @@
                     android:layout_width="36dp"
                     android:layout_height="36dp"
                     android:layout_gravity="center"
-                    android:indeterminateIndeterminate="true"
+                    android:indeterminate="true"
                     android:indeterminateTint="@color/sky_200"
                     android:visibility="gone"
                     android:layout_marginBottom="12dp" />
