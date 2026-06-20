@@ -30,6 +30,7 @@ function NeonBox({ t, colorClass, sizeClass, icons }: { t: AdminTile | undefined
   return (
     <Link
       href={tileHref(t)}
+      prefetch={false}
       className={`neon-box ${colorClass} ${sizeClass ?? ''} p-5 md:p-6 flex flex-col justify-center items-center text-center group`}
     >
       {/* حجز حجم ثابت للأيقونة لمنع انزياح العناصر CLS أثناء التحميل */}
@@ -48,7 +49,7 @@ function NeonPill({ t, colorClass, icons, isFullWidthOnMobile = false }: { t: Ad
       {/* Connector line simulating graphic tree - pointing physically to the right (dashboard center) */}
       <div className={`hidden lg:block absolute top-1/2 w-[40px] h-[2px] -right-[40px] bg-gradient-to-r opacity-60 ${colorClass.includes('orange') ? 'from-[#ff9100]' : (colorClass.includes('purple') ? 'from-[#e028ff]' : 'from-[#00f3ff]')} to-transparent rounded-full`} />
       
-      <Link href={tileHref(t)} className={`neon-pill ${colorClass} w-full p-3 pl-6 pr-4 flex justify-between items-center z-10 hover:scale-105`}>
+      <Link href={tileHref(t)} prefetch={false} className={`neon-pill ${colorClass} w-full p-3 pl-6 pr-4 flex justify-between items-center z-10 hover:scale-105`}>
         <span className="font-bold text-slate-800 dark:text-slate-200 text-[15px]">{t.label}</span>
         {/* حجز حجم ثابت للأيقونة لمنع انزياح العناصر CLS */}
         <div className="w-8 h-8 flex items-center justify-center text-3xl drop-shadow-sm group-hover:scale-110 transition-transform" aria-hidden>
@@ -112,7 +113,7 @@ export function AdminHubDashboard() {
                  <h3 className="text-sky-700 dark:text-[#00f3ff] text-xs font-bold tracking-widest pl-2 opacity-50 mb-4">الأقسام الإضافية</h3>
                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                    {leftover.map(t => (
-                      <Link key={t.slug} href={tileHref(t)} className="neon-box neon-box-cyan p-3 lg:p-4 flex flex-col items-center justify-center gap-2">
+                      <Link key={t.slug} href={tileHref(t)} prefetch={false} className="neon-box neon-box-cyan p-3 lg:p-4 flex flex-col items-center justify-center gap-2">
                          {/* حجز مساحة الأيقونة الإضافية لمنع انزياح العناصر CLS */}
                          <div className="w-6 h-6 flex items-center justify-center text-2xl">
                            <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-full h-full" />

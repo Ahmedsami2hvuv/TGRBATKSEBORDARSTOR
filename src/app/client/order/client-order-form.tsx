@@ -366,6 +366,7 @@ function ClientOrderFormInner({
             </button>
             <Link
               href={historyHrefNav}
+              prefetch={false}
               className="flex w-full items-center justify-center rounded-xl border-2 border-sky-500 bg-sky-50 px-4 py-3.5 text-sm font-bold text-sky-900 shadow-sm transition hover:bg-sky-100"
             >
               سجل الطلبات
@@ -511,10 +512,10 @@ function ClientOrderFormInner({
             </div>
 
             <div className="mt-8 grid grid-cols-2 gap-4">
-              <Link href={accountHrefNav} className="flex items-center justify-center gap-2 rounded-2xl bg-white border border-emerald-100 py-3.5 text-sm font-black text-emerald-700 shadow-sm transition hover:bg-emerald-50 active:scale-95">
+              <Link href={accountHrefNav} prefetch={false} className="flex items-center justify-center gap-2 rounded-2xl bg-white border border-emerald-100 py-3.5 text-sm font-black text-emerald-700 shadow-sm transition hover:bg-emerald-50 active:scale-95">
                 <span>📊</span> إحصائياتك
               </Link>
-              <Link href={historyHrefNav} className="flex items-center justify-center gap-2 rounded-2xl bg-white border border-sky-100 py-3.5 text-sm font-black text-sky-700 shadow-sm transition hover:bg-sky-50 active:scale-95">
+              <Link href={historyHrefNav} prefetch={false} className="flex items-center justify-center gap-2 rounded-2xl bg-white border border-sky-100 py-3.5 text-sm font-black text-sky-700 shadow-sm transition hover:bg-sky-50 active:scale-95">
                 <span>📜</span> السجل
               </Link>
             </div>
