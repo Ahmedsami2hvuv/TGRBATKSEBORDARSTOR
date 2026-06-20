@@ -267,7 +267,15 @@ export function PreparerSiteOrderPrepEditClient({
     <div className="mx-auto max-w-lg space-y-6 pb-24">
       <section className="kse-glass-dark overflow-hidden border border-violet-200/50 shadow-xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/70">
         <div className="bg-violet-600/5 px-4 py-3 border-b border-violet-100 dark:border-white/5 flex items-center justify-between">
-           <h2 className="text-sm font-black text-violet-950 dark:text-violet-200">تعديل طلب #{orderNumber}</h2>
+           <div className="flex items-center gap-3">
+             <Link
+               href={prepHref}
+               className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-95 dark:border-white/10 dark:bg-slate-800 dark:text-slate-200"
+             >
+               ✕ إغلاق
+             </Link>
+             <h2 className="text-sm font-black text-violet-950 dark:text-violet-200">تعديل طلب #{orderNumber}</h2>
+           </div>
            <p className="text-[10px] font-bold text-violet-600/70 dark:text-violet-400/70">المجهز: {preparerName.trim() || "—"}</p>
         </div>
         <div className="p-4 space-y-4">

@@ -2,6 +2,7 @@
 // v4-bulletproof-fix: ضمان الحفظ الفوري ومنع التضارب + الخروج التلقائي عند النجاح + دعم الملكية للمجهز
 
 import { useActionState, useMemo, useRef, useState, useTransition, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { submitPreparerShoppingDraft, updatePreparerShoppingDraft, reportUnavailableProductsAction, type PreparerActionState } from "@/app/preparer/actions";
 import { suggestFixedPrices } from "@/lib/fixed-prices";
@@ -738,7 +739,15 @@ export function PreparerShoppingDraftEditClient({
   return (
     <div className="space-y-4" dir="rtl">
       <section className="kse-glass-dark flex items-center justify-between rounded-2xl border border-violet-200 p-4 shadow-sm">
-        <h1 className="text-base font-black text-violet-950">تجهيز مشترك: {initialDraft.customerRegion?.name}</h1>
+        <div className="flex items-center gap-3">
+          <Link
+            href={preparerPath("/preparer/preparation", auth)}
+            className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-95 dark:border-white/10 dark:bg-slate-800 dark:text-slate-200"
+          >
+            ✕ إغلاق
+          </Link>
+          <h1 className="text-base font-black text-violet-950">تجهيز مشترك: {initialDraft.customerRegion?.name}</h1>
+        </div>
         <div className="flex flex-col items-end">
             {isAutoSaving || isDirtyRef.current ? (
                 <p className="text-[10px] text-amber-600 font-bold animate-pulse">⏳ جاري الحفظ...</p>
