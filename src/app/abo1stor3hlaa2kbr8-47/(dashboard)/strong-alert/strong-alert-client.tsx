@@ -12,9 +12,10 @@ interface StrongAlertClientProps {
   couriers: UserItem[];
   preparers: UserItem[];
   employees: UserItem[];
+  adminToken: string;
 }
 
-export function StrongAlertClient({ couriers, preparers, employees }: StrongAlertClientProps) {
+export function StrongAlertClient({ couriers, preparers, employees, adminToken }: StrongAlertClientProps) {
   const [activeTab, setActiveTab] = useState<"mandob" | "preparer" | "employee">("mandob");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -127,27 +128,7 @@ export function StrongAlertClient({ couriers, preparers, employees }: StrongAler
     setSuccessMessage(null);
 
     try {
-      // الحصول على التوكن من التخزين المحلي
-      const prefsString = localStorage.getItem("AboAkbarPrefs") || sessionStorage.getItem("AboAkbarPrefs");
-      let token = "";
-      if (prefsString) {
-        try {
-          const parsed = JSON.parse(prefsString);
-          token = parsed.admin_token || "";
-        } catch {
-          // محاولة استخراجه كنص عادي
-          token = prefsString;
-        }
-      }
-
-      if (!token) {
-        // محاولة القراءة من الكوكيز
-        const cookies = document.cookie.split(";");
-        const adminCookie = cookies.find((c) => c.trim().startsWith("admin_token="));
-        if (adminCookie) {
-          token = adminCookie.split("=")[1] || "";
-        }
-      }
+      const token = adminToken;
 
       const response = await fetch("/api/admin/strong-alert", {
         method: "POST",

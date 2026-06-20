@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
 import { serializePrisma } from "@/lib/serialize-prisma";
 import { StrongAlertClient } from "./strong-alert-client";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons } from "@/lib/icon-settings";
+import { adminCookieName } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,9 @@ const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
 export default async function AdminStrongAlertPage() {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(adminCookieName)?.value || "";
+
     const [couriersRaw, preparersRaw, employeesRaw, iconsRaw] = await Promise.all([
       prisma.courier.findMany({
         where: { hiddenFromReports: false },
@@ -59,6 +64,7 @@ export default async function AdminStrongAlertPage() {
           couriers={couriers} 
           preparers={preparers} 
           employees={employees} 
+          adminToken={token}
         />
       </div>
     );
