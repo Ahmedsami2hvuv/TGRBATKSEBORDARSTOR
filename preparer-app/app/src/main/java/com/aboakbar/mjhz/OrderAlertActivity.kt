@@ -58,15 +58,26 @@ class OrderAlertActivity : Activity() {
         val orderType = intent.getStringExtra("orderType") ?: "—"
         val subtotal = intent.getDoubleExtra("subtotal", 0.0)
         val pendingCount = intent.getIntExtra("pendingCount", 0)
+        val productsText = intent.getStringExtra("productsText") ?: ""
         currentOrderNumber = intent.getIntExtra("orderNumber", 0)
 
+        findViewById<TextView>(R.id.tvAlertHeader).text = "🚨 طلب تجهيز جديد"
         findViewById<TextView>(R.id.tvAlertTitle).text = "$shopName — $regionName"
         findViewById<TextView>(R.id.tvOrderNumber).text = "طلب رقم: #$currentOrderNumber"
-        findViewById<TextView>(R.id.tvOrderDetails).text = 
-            "⏰ الوقت: $orderTime\n" +
-            "📦 النوع: $orderType\n" +
-            "💵 السعر بدون توصيل: ${formatNumber(subtotal)} د.ع\n" +
-            "🔔 إجمالي الطلبات المعلقة: $pendingCount"
+
+        val detailsText = java.lang.StringBuilder()
+        detailsText.append("⏰ الوقت: $orderTime\n")
+        detailsText.append("📦 النوع: $orderType\n")
+        if (subtotal > 0) {
+            detailsText.append("💵 السعر بدون توصيل: ${formatNumber(subtotal)} د.ع\n")
+        }
+        if (productsText.isNotEmpty()) {
+            detailsText.append("\n📦 المنتجات:\n$productsText\n")
+        }
+        if (pendingCount > 1) {
+            detailsText.append("\n🔔 إجمالي الطلبات المعلقة: $pendingCount")
+        }
+        findViewById<TextView>(R.id.tvOrderDetails).text = detailsText.toString()
 
         setupButtons()
         playNotificationEffects()
