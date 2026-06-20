@@ -463,6 +463,15 @@ export function OrderPricingPanel({
               </div>
 
               <div className="flex items-center gap-1.5">
+                {onSuccess && (
+                  <button
+                    type="button"
+                    onClick={onSuccess}
+                    className="h-10 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-[11px] font-black text-white shadow-lg active:scale-95 transition-all flex items-center gap-1.5"
+                  >
+                    ✕ إغلاق
+                  </button>
+                )}
                 {isDraft ? (
                   <div className="flex gap-1.5 flex-wrap">
                     {couriers && (

@@ -219,15 +219,23 @@ export function OrderTrackingTableBody({ rows }: { rows: TrackingTableRow[] }) {
             </tr>
             {pricingOpen && (
               <tr onClick={(e) => e.stopPropagation()}>
-                <td colSpan={11} className="p-4 bg-amber-50/30">
-                  <div className="max-w-3xl mx-auto">
-                    <AdminPricingPanel
-                      orderId={o.id}
-                      initialData={o.preparerShoppingJson}
-                      orderSummary={o.summary}
-                      icons={icons}
-                      onSuccess={() => setPricingOpenId(null)}
-                    />
+                <td colSpan={11} className="p-0">
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-2 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="w-full max-w-4xl h-[90vh] sm:h-[85vh] bg-white rounded-3xl shadow-2xl overflow-hidden border-2 border-amber-400 flex flex-col text-right" dir="rtl">
+                      <div className="flex flex-shrink-0 items-center justify-between bg-amber-50 px-4 py-3 sm:px-6 sm:py-4 border-b border-amber-200">
+                        <h3 className="text-sm sm:text-lg font-black text-amber-900 flex items-center gap-2"><span>💰</span> لوحة تسعير الطلب #{o.orderNumber}</h3>
+                        <button onClick={() => setPricingOpenId(null)} className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-xl bg-red-600 text-white font-bold shadow-sm hover:bg-red-700 transition-colors">✕</button>
+                      </div>
+                      <div className="flex-1 p-2 sm:p-6 overflow-hidden flex flex-col min-h-0">
+                        <AdminPricingPanel
+                          orderId={o.id}
+                          initialData={o.preparerShoppingJson}
+                          orderSummary={o.summary}
+                          icons={icons}
+                          onSuccess={() => setPricingOpenId(null)}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </td>
               </tr>

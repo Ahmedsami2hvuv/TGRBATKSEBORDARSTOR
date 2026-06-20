@@ -143,62 +143,41 @@ export function OrderViewContent({
   }, [order.customerPhone]);
 
   return (
-    <div className={`kse-glass-dark relative mt-4 border p-4 pb-24 text-base leading-relaxed sm:p-5 sm:pb-32 ${orderStatusStartStripeClass(order.status)} ${order.prepaidAll ? "border-emerald-300 bg-gradient-to-b from-emerald-50 to-teal-50" : isReversePickup ? "border-violet-400 bg-violet-100" : isDoubleRoute ? "border-fuchsia-300 bg-gradient-to-b from-fuchsia-50 to-violet-50" : `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}`}`} dir="rtl">
+    <>
+      <div className={`kse-glass-dark relative mt-4 border p-4 pb-24 text-base leading-relaxed sm:p-5 sm:pb-32 ${orderStatusStartStripeClass(order.status)} ${order.prepaidAll ? "border-emerald-300 bg-gradient-to-b from-emerald-50 to-teal-50" : isReversePickup ? "border-violet-400 bg-violet-100" : isDoubleRoute ? "border-fuchsia-300 bg-gradient-to-b from-fuchsia-50 to-violet-50" : `border-sky-200 ${orderStatusDetailSurfaceClass(order.status)}`}`} dir="rtl">
 
-      {customerDebt !== null && customerDebt > 0 && (
-        <div className="mb-4 rounded-2xl border-4 border-amber-500 bg-amber-50 p-4 text-right shadow-md animate-pulse">
-          <p className="text-base font-black text-amber-900 flex items-center gap-2">
-            <span>⚠️ تنبيه مالي للزبون:</span>
-            نطلب هذا الزبون مبلغاً معلقاً بذمته وقدره: ({formatDinarAsAlfWithUnit(customerDebt)}) في دفتر الديون.
-          </p>
-        </div>
-      )}
-
-      {order.isBlocked && (
-        <div
-          className="mb-4 animate-pulse rounded-2xl border-4 border-red-600 bg-red-100 p-4 text-center text-xl font-black text-red-900 shadow-xl"
-          role="alert"
-        >
-          🛑 تنبيه: هذا الزبون محظور من التوصيل (Blocklist)
-        </div>
-      )}
-
-      {/* بصمات الصوت في بداية الصفحة بتنسيق مرتب */}
-      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {voiceSrc && (
-          <div className="rounded-2xl border-2 border-amber-100 bg-white p-3 shadow-sm">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-black text-amber-600 flex items-center gap-1"><span>🗣️</span> بصمة الزبون (المحل)</span>
-            </div>
-            <VoiceNoteAudio src={voiceSrc} streamKey={`${order.id}-voice`} className="w-full" />
+        {customerDebt !== null && customerDebt > 0 && (
+          <div className="mb-4 rounded-2xl border-4 border-amber-500 bg-amber-50 p-4 text-right shadow-md animate-pulse">
+            <p className="text-base font-black text-amber-900 flex items-center gap-2">
+              <span>⚠️ تنبيه مالي للزبون:</span>
+              نطلب هذا الزبون مبلغاً معلقاً بذمته وقدره: ({formatDinarAsAlfWithUnit(customerDebt)}) في دفتر الديون.
+            </p>
           </div>
         )}
-        <div className={voiceSrc ? "" : "sm:col-span-2"}>
-          <AdminVoiceNoteSection variant="standalone" orderId={order.id} defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl} />
-        </div>
-      </div>
 
-      {pricingOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border-2 border-amber-400">
-            <div className="flex items-center justify-between bg-amber-50 px-6 py-4 border-b border-amber-200">
-              <h3 className="text-lg font-black text-amber-900 flex items-center gap-2"><span>💰</span> لوحة تسعير الطلب #{order.orderNumber}</h3>
-              <button onClick={() => setPricingOpen(false)} className="h-10 w-10 flex items-center justify-center rounded-xl bg-red-600 text-white font-bold shadow-sm hover:bg-red-700 transition-colors">✕</button>
+        {order.isBlocked && (
+          <div
+            className="mb-4 animate-pulse rounded-2xl border-4 border-red-600 bg-red-100 p-4 text-center text-xl font-black text-red-900 shadow-xl"
+            role="alert"
+          >
+            🛑 تنبيه: هذا الزبون محظور من التوصيل (Blocklist)
+          </div>
+        )}
+
+        {/* بصمات الصوت في بداية الصفحة بتنسيق مرتب */}
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {voiceSrc && (
+            <div className="rounded-2xl border-2 border-amber-100 bg-white p-3 shadow-sm">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-black text-amber-600 flex items-center gap-1"><span>🗣️</span> بصمة الزبون (المحل)</span>
+              </div>
+              <VoiceNoteAudio src={voiceSrc} streamKey={`${order.id}-voice`} className="w-full" />
             </div>
-            <div className="p-6 overflow-y-auto max-h-[80vh]">
-              <AdminPricingPanel
-                orderId={order.id}
-                initialData={parsedShoppingJson}
-                orderSummary={order.summary}
-                shops={[]}
-                preparers={preparers}
-                rawDeliveryPriceDinar={order.deliveryPrice != null ? Number(order.deliveryPrice) : null}
-                onSuccess={() => { setPricingOpen(false); window.location.reload(); }}
-              />
-            </div>
+          )}
+          <div className={voiceSrc ? "" : "sm:col-span-2"}>
+            <AdminVoiceNoteSection variant="standalone" orderId={order.id} defaultAdminVoiceNoteUrl={order.adminVoiceNoteUrl} />
           </div>
         </div>
-      )}
 
       {isReversePickup && <div className="mb-4 rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-bold text-violet-950">تنبيه طلب عكسي</div>}
       {isDoubleRoute && (
@@ -512,5 +491,28 @@ export function OrderViewContent({
         isDoubleRoute={isDoubleRoute}
       />
     </div>
+
+      {pricingOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-2 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl h-[90vh] sm:h-[85vh] bg-white rounded-3xl shadow-2xl overflow-hidden border-2 border-amber-400 flex flex-col">
+            <div className="flex flex-shrink-0 items-center justify-between bg-amber-50 px-4 py-3 sm:px-6 sm:py-4 border-b border-amber-200">
+              <h3 className="text-sm sm:text-lg font-black text-amber-900 flex items-center gap-2"><span>💰</span> لوحة تسعير الطلب #{order.orderNumber}</h3>
+              <button onClick={() => setPricingOpen(false)} className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-xl bg-red-600 text-white font-bold shadow-sm hover:bg-red-700 transition-colors">✕</button>
+            </div>
+            <div className="flex-1 p-2 sm:p-6 overflow-hidden flex flex-col min-h-0">
+              <AdminPricingPanel
+                orderId={order.id}
+                initialData={parsedShoppingJson}
+                orderSummary={order.summary}
+                shops={[]}
+                preparers={preparers}
+                rawDeliveryPriceDinar={order.deliveryPrice != null ? Number(order.deliveryPrice) : null}
+                onSuccess={() => { setPricingOpen(false); window.location.reload(); }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
