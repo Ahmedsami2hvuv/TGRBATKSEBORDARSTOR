@@ -37,8 +37,14 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
 
         // التحقق من أن الإشعار يخص طلب جديد
         if (additionalData != null && additionalData.has("type") && additionalData.getString("type") == "new_order") {
+            // منع إشعار OneSignal التلقائي فوراً لتجنب التكرار
+            event.preventDefault()
             try {
                 val orderNumber = additionalData.optInt("orderNumber", 0)
+                
+                // تحديث رقم الطلب الأخير المشاهد في الإعدادات المشتركة لمنع تكراره من الخدمة الخلفية
+                val prefs = context.getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
+                prefs.edit().putInt("last_seen_order_number", orderNumber).apply()
                 val shopName = additionalData.optString("shopName", "—")
                 val regionName = additionalData.optString("regionName", "—")
                 val orderTime = additionalData.optString("orderTime", "فوري")
@@ -118,7 +124,6 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 builder.setVibrate(pattern)
 
                 notificationManager.notify(orderNumber, builder.build())
-                event.preventDefault()
 
                 // 2. تشغيل الشاشة المنبثقة الإجبارية مباشرة فوق كل التطبيقات
                 context.startActivity(alertIntent)

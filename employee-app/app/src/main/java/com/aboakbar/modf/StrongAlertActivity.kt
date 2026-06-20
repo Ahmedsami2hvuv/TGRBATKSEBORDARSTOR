@@ -78,14 +78,22 @@ class StrongAlertActivity : Activity() {
         // 2. تشغيل التأثيرات (الصوت والاهتزاز)
         startAlertEffects()
 
-        // 3. زر كتم التنبيه محلياً
+        // 3. زر كتم التنبيه محلياً والتوجيه للواتساب
         findViewById<Button>(R.id.btnDismissStrongAlert).setOnClickListener {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW)
+                intent.data = Uri.parse("https://api.whatsapp.com/send?phone=9647733921468&text=" + Uri.encode("جيتك من التنبيه"))
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                startActivity(intent)
+            } catch (e: Exception) {
+                // تجاهل
+            }
             finish()
         }
 
         // 4. تسجيل مستقبل البث لإشارة الإيقاف من السيرفر
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(stopReceiver, IntentFilter("com.aboakbar.modf.ACTION_STOP_STRONG_ALERT"), Context.RECEIVER_NOT_EXPORTED)
+            registerReceiver(stopReceiver, IntentFilter("com.aboakbar.modf.ACTION_STOP_STRONG_ALERT"), Context.RECEIVER_EXPORTED)
         } else {
             registerReceiver(stopReceiver, IntentFilter("com.aboakbar.modf.ACTION_STOP_STRONG_ALERT"))
         }
