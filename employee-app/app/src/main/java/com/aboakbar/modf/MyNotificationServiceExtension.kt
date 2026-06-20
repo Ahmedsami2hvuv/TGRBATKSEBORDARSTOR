@@ -49,12 +49,18 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 return
             }
             
-            // 1. تنبيهات الإدارة بالطلبات الجديدة
             if (type == "new_order") {
                 // منع إشعار OneSignal التلقائي فوراً لتجنب التكرار
                 event.preventDefault()
                 try {
                     val orderNumber = additionalData.optInt("orderNumber", 0)
+                    if (orderNumber > 0) {
+                        val prefs = context.getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
+                        val dismissedSet = prefs.getStringSet("dismissed_order_numbers", null)
+                        if (dismissedSet != null && dismissedSet.contains(orderNumber.toString())) {
+                            return
+                        }
+                    }
                     
                     // تحديث رقم الطلب الأخير المشاهد في الإعدادات المشتركة لمنع تكراره من الخدمة الخلفية
                     val prefs = context.getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)

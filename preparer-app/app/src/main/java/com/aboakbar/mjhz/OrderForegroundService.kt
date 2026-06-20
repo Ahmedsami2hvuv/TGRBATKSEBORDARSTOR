@@ -121,16 +121,20 @@ class OrderForegroundService : Service() {
                             var lastSeenOrderNumber = sharedPreferences.getInt("last_seen_order_number", 0)
 
                             if (latestOrderNumber > 0 && lastSeenOrderNumber > 0 && latestOrderNumber > lastSeenOrderNumber) {
-                                // تحديث آخر رقم طلب تم مشاهدته
-                                sharedPreferences.edit().putInt("last_seen_order_number", latestOrderNumber).apply()
+                                 val dismissedSet = sharedPreferences.getStringSet("dismissed_order_numbers", null)
+                                 val isDismissed = dismissedSet != null && dismissedSet.contains(latestOrderNumber.toString())
 
-                                // عرض الإشعار بالنظام
-                                showNotification(latestOrderNumber, pendingCount, shopName, regionName, orderTime, orderType, subtotal)
+                                 if (!isDismissed) {
+                                     // تحديث آخر رقم طلب تم مشاهدته
+                                     sharedPreferences.edit().putInt("last_seen_order_number", latestOrderNumber).apply()
 
-                                // تشغيل النافذة المنبثقة الإجبارية
-                                triggerPopupActivity(shopName, regionName, orderTime, orderType, subtotal, pendingCount, latestOrderNumber)
+                                     // عرض الإشعار بالنظام
+                                     showNotification(latestOrderNumber, pendingCount, shopName, regionName, orderTime, orderType, subtotal)
 
-                            } else if (latestOrderNumber > 0 && lastSeenOrderNumber == 0) {
+                                     // تشغيل النافذة المنبثقة الإجبارية
+                                     triggerPopupActivity(shopName, regionName, orderTime, orderType, subtotal, pendingCount, latestOrderNumber)
+                                 }
+                             } else if (latestOrderNumber > 0 && lastSeenOrderNumber == 0) {
                                 sharedPreferences.edit().putInt("last_seen_order_number", latestOrderNumber).apply()
                             }
                         }

@@ -20,6 +20,14 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
             if (type == "new_order") {
                 try {
                     val orderNumber = additionalData.optInt("orderNumber", 0)
+                    if (orderNumber > 0) {
+                        val prefs = context.getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
+                        val dismissedSet = prefs.getStringSet("dismissed_order_numbers", null)
+                        if (dismissedSet != null && dismissedSet.contains(orderNumber.toString())) {
+                            event.preventDefault()
+                            return
+                        }
+                    }
                     val shopName = additionalData.optString("shopName", "—")
                     val regionName = additionalData.optString("regionName", "—")
                     val orderTime = additionalData.optString("orderTime", "فوري")

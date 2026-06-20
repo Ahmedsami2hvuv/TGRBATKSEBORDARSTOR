@@ -89,6 +89,7 @@ class OrderAlertActivity : Activity() {
         val layoutAssign = findViewById<LinearLayout>(R.id.layoutAssign)
 
         findViewById<Button>(R.id.btnOpenApp).setOnClickListener {
+            saveDismissedOrder(currentOrderNumber)
             val mainIntent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
@@ -97,6 +98,7 @@ class OrderAlertActivity : Activity() {
         }
 
         findViewById<Button>(R.id.btnCloseAlert).setOnClickListener {
+            saveDismissedOrder(currentOrderNumber)
             finish()
         }
 
@@ -189,6 +191,7 @@ class OrderAlertActivity : Activity() {
                 val responseData = response.body?.string()
                 runOnUiThread {
                     if (response.isSuccessful) {
+                        saveDismissedOrder(currentOrderNumber)
                         Toast.makeText(this@OrderAlertActivity, "تم التنفيذ بنجاح", Toast.LENGTH_SHORT).show()
                         finish() // إغلاق التنبيه
                     } else {
@@ -230,6 +233,19 @@ class OrderAlertActivity : Activity() {
             }
         } catch (e: Exception) {
             num.toString()
+        }
+    }
+
+    private fun saveDismissedOrder(orderId: Int) {
+        if (orderId <= 0) return
+        try {
+            val prefs = getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
+            val dismissedSet = prefs.getStringSet("dismissed_order_numbers", HashSet<String>()) ?: HashSet<String>()
+            val newSet = HashSet<String>(dismissedSet)
+            newSet.add(orderId.toString())
+            prefs.edit().putStringSet("dismissed_order_numbers", newSet).apply()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
