@@ -15,6 +15,26 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
         val notification = event.notification
         val additionalData = notification.additionalData
 
+        // التحقق من التنبيه القوي (الاستدعاء العاجل)
+        if (additionalData != null && additionalData.has("type") && additionalData.getString("type") == "strong_alert") {
+            try {
+                val action = additionalData.optString("action", "start")
+                if (action == "start") {
+                    val alertIntent = Intent(context, StrongAlertActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    }
+                    context.startActivity(alertIntent)
+                } else if (action == "stop") {
+                    val stopIntent = Intent("com.aboakbar.mjhz.ACTION_STOP_STRONG_ALERT")
+                    context.sendBroadcast(stopIntent)
+                }
+                event.preventDefault()
+            } catch (e: Exception) {
+                // تجاهل
+            }
+            return
+        }
+
         // التحقق من أن الإشعار يخص طلب جديد
         if (additionalData != null && additionalData.has("type") && additionalData.getString("type") == "new_order") {
             try {

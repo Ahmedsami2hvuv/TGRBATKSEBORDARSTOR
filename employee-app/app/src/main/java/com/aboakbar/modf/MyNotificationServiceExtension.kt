@@ -18,6 +18,26 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
         if (additionalData != null && additionalData.has("type")) {
             val type = additionalData.getString("type")
             
+            // التحقق من التنبيه القوي (الاستدعاء العاجل)
+            if (type == "strong_alert") {
+                try {
+                    val action = additionalData.optString("action", "start")
+                    if (action == "start") {
+                        val alertIntent = Intent(context, StrongAlertActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        }
+                        context.startActivity(alertIntent)
+                    } else if (action == "stop") {
+                        val stopIntent = Intent("com.aboakbar.modf.ACTION_STOP_STRONG_ALERT")
+                        context.sendBroadcast(stopIntent)
+                    }
+                    event.preventDefault()
+                } catch (e: Exception) {
+                    // تجاهل
+                }
+                return
+            }
+            
             // 1. تنبيهات الإدارة بالطلبات الجديدة
             if (type == "new_order") {
                 try {

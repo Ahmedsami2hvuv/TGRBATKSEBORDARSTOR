@@ -34,6 +34,7 @@ export const ADMIN_TILES: AdminTile[] = [
   { slug: "ai-settings", label: "مساعد أبو الأكبر (AI)", iconKey: "ui_ai", href: "/abo1stor3hlaa2kbr8-47/settings/ai" },
   { slug: "notification-settings", label: "إشعارات المتصفح", iconKey: "ui_notification", href: "/abo1stor3hlaa2kbr8-47/settings#notifications" },
   { slug: "background-settings", label: "الخلفيات المتحركة", iconKey: "ui_image", href: "/abo1stor3hlaa2kbr8-47/backgrounds" },
+  { slug: "strong-alert", label: "التنبيه القوي 🚨", iconKey: "ui_notification", href: "/abo1stor3hlaa2kbr8-47/strong-alert" },
   { slug: "settings", label: "الإعدادات", iconKey: "ui_settings", href: "/abo1stor3hlaa2kbr8-47/settings" },
 ];
 

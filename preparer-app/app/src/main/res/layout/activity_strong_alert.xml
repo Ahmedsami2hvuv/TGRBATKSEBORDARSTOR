@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#1a0505"
+    android:gravity="center"
+    android:layout_gravity="center">
+
+    <!-- أيقونة الجرس النابضة -->
+    <TextView
+        android:id="@+id/tvAlertIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🚨"
+        android:textSize="64sp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- عنوان رئيسي -->
+    <TextView
+        android:id="@+id/tvStrongAlertTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="استدعاء عاجل من الإدارة!"
+        android:textColor="#ff4444"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <!-- تفاصيل التنبيه -->
+    <TextView
+        android:id="@+id/tvStrongAlertMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="يرجى الانتباه فوراً، هناك أمر طارئ يتطلب استجابتك!"
+        android:textColor="#ffaaaa"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <!-- عداد تنازلي للمدة -->
+    <TextView
+        android:id="@+id/tvStrongAlertTimer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="سيتوقف التنبيه تلقائياً بعد: 60 ثانية"
+        android:textColor="#ffcc00"
+        android:textSize="12sp"
+        android:layout_marginBottom="24dp"
+        android:fontFamily="sans-serif-condensed" />
+
+    <!-- زر كتم التنبيه محلياً -->
+    <Button
+        android:id="@+id/btnDismissStrongAlert"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="فهمت / إيقاف الصوت ⏹️"
+        android:textColor="#ffffff"
+        android:backgroundTint="#d32f2f"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:insetTop="0dp"
+        android:insetBottom="0dp" />
+
+</LinearLayout>
