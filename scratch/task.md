@@ -1,0 +1,21 @@
+- [x] إنشاء زر إعادة التحميل العائم `src/components/floating-reload-button.tsx`
+- [x] حقن الزر في شل الإدارة `src/app/abo1stor3hlaa2kbr8-47/(dashboard)/admin-shell.tsx`
+- [x] حقن الزر في تخطيط المجهز `src/app/preparer/layout.tsx`
+- [x] تعديل كود تكرار الإشعار في تطبيق الإدارة (`admin-app`):
+  - [x] تحديث `OrderAlertActivity.kt` لحفظ أرقام الطلبات المغلقة.
+  - [x] تحديث `MyNotificationServiceExtension.kt` للتحقق من أرقام الطلبات المغلقة.
+  - [x] تحديث `OrderForegroundService.kt` للتحقق من أرقام الطلبات المغلقة.
+- [x] تعديل كود تكرار الإشعار في تطبيق المندوب (`mandob-app`):
+  - [x] تحديث `OrderAlertActivity.kt` لحفظ أرقام الطلبات المغلقة.
+  - [x] تحديث `MyNotificationServiceExtension.kt` للتحقق من أرقام الطلبات المغلقة.
+  - [x] تحديث `OrderForegroundService.kt` للتحقق من أرقام الطلبات المغلقة.
+- [x] تعديل كود تكرار الإشعار في تطبيق المجهز (`preparer-app`):
+  - [x] تحديث `OrderAlertActivity.kt` لحفظ أرقام الطلبات المغلقة.
+  - [x] تحديث `MyNotificationServiceExtension.kt` للتحقق من أرقام الطلبات المغلقة.
+  - [x] تحديث `OrderForegroundService.kt` للتحقق من أرقام الطلبات المغلقة.
+- [x] تعديل كود تكرار الإشعار في تطبيق الموظف (`employee-app`):
+  - [x] تحديث `OrderAlertActivity.kt` لحفظ أرقام الطلبات المغلقة.
+  - [x] تحديث `MyNotificationServiceExtension.kt` للتحقق من أرقام الطلبات المغلقة.
+  - [x] تحديث `OrderForegroundService.kt` للتحقق من أرقام الطلبات المغلقة.
+- [/] بناء التطبيقات الأربعة للتأكد من نجاح العملية.
+- [ ] إجراء كومت وبوش تلقائياً للمستودع بوصف عربي.
