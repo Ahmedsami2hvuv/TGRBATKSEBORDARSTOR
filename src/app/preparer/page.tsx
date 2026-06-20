@@ -190,7 +190,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
       <PortalAuthCookieSetter auth={baseAuth} />
       <header className="kse-glass-dark mb-2 flex flex-wrap items-center gap-2 border border-emerald-200/90 px-3 py-2.5 shadow-sm sm:mb-3 sm:px-4">
         <div className="min-w-0 flex-1 flex items-center gap-3">
-          <Link
+          <Link prefetch={false}
             href={preparerPath("/preparer/settings", baseAuth)}
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-[rgba(255,255,255,0.05)] border border-slate-200 dark:border-[#00f3ff]/30 text-lg shadow-sm transition hover:scale-105"
             title="إعدادات الخلفية والمظهر"
@@ -201,7 +201,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
           <div className="mr-auto flex items-center gap-2">
             <PreparerSearchTrigger icons={safeIcons} />
             {canSubmitAny && canPriceStore && (
-              <Link
+              <Link prefetch={false}
                 href={preparerPath("/preparer/store-pricing", baseAuth)}
                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100 hover:text-emerald-900 dark:border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-250 dark:hover:bg-emerald-900/50"
                 title="تسعير المتجر"
@@ -213,7 +213,7 @@ export default async function PreparerHomePage({ searchParams }: Props) {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 w-full mt-2">
           {/* زر استلام الراتب */}
-          <Link
+          <Link prefetch={false}
             href={preparerPath("/preparer/salary", baseAuth)}
             className="flex-1 min-w-[4.5rem] h-11 flex items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-sky-50 text-sky-650 shadow-sm transition hover:bg-sky-100 hover:scale-105 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-800"
             title="استلام الراتب"

@@ -24,9 +24,10 @@ export default async function AdminCouriersMapPage() {
     select: { id: true, name: true, phone: true, lastPreparerLat: true, lastPreparerLng: true, lastPreparerLocationAt: true }
   });
 
-  const employees = await prisma.employee.findMany({
+  const staffEmployees = await prisma.staffEmployee.findMany({
+    where: { active: true },
     orderBy: { name: "asc" },
-    select: { id: true, name: true, phone: true, lastEmployeeLat: true, lastEmployeeLng: true, lastEmployeeLocationAt: true }
+    select: { id: true, name: true, phone: true, lastStaffLat: true, lastStaffLng: true, lastStaffLocationAt: true }
   });
 
   let points: CourierMapPoint[] = couriers
@@ -43,17 +44,17 @@ export default async function AdminCouriersMapPage() {
       updatedAt: p.lastPreparerLocationAt?.toISOString() ?? null, type: "preparer"
     })));
 
-  points = points.concat(employees
-    .filter((e) => e.lastEmployeeLat != null && e.lastEmployeeLng != null && Number.isFinite(e.lastEmployeeLat) && Number.isFinite(e.lastEmployeeLng))
-    .map((e) => ({
-      id: e.id, name: e.name, phone: e.phone, lat: e.lastEmployeeLat as number, lng: e.lastEmployeeLng as number,
-      updatedAt: e.lastEmployeeLocationAt?.toISOString() ?? null, type: "employee"
+  points = points.concat(staffEmployees
+    .filter((s) => s.lastStaffLat != null && s.lastStaffLng != null && Number.isFinite(s.lastStaffLat) && Number.isFinite(s.lastStaffLng))
+    .map((s) => ({
+      id: s.id, name: s.name, phone: s.phone, lat: s.lastStaffLat as number, lng: s.lastStaffLng as number,
+      updatedAt: s.lastStaffLocationAt?.toISOString() ?? null, type: "employee"
     })));
 
   const withoutLoc: WithoutLoc[] = [
     ...couriers.filter(c => c.lastCourierLat == null || c.lastCourierLng == null).map(c => ({ id: c.id, name: c.name, phone: c.phone, typeName: "مندوب", type: "courier" as const })),
     ...preparers.filter(p => p.lastPreparerLat == null || p.lastPreparerLng == null).map(p => ({ id: p.id, name: p.name, phone: p.phone, typeName: "مجهز", type: "preparer" as const })),
-    ...employees.filter(e => e.lastEmployeeLat == null || e.lastEmployeeLng == null).map(e => ({ id: e.id, name: e.name, phone: e.phone, typeName: "موظف", type: "employee" as const })),
+    ...staffEmployees.filter(s => s.lastStaffLat == null || s.lastStaffLng == null).map(s => ({ id: s.id, name: s.name, phone: s.phone, typeName: "موظف", type: "employee" as const })),
   ];
 
   return (

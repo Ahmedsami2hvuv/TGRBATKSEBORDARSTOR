@@ -41,8 +41,8 @@ export async function POST(req: Request) {
       userName = user.name;
     } else if (userType === "employee") {
       targetApp = "employee";
-      const user = await prisma.employee.findUnique({ where: { id: userId }, select: { name: true } });
-      if (!user) return NextResponse.json({ error: "Employee not found" }, { status: 404 });
+      const user = await prisma.staffEmployee.findUnique({ where: { id: userId }, select: { name: true } });
+      if (!user) return NextResponse.json({ error: "Staff Employee not found" }, { status: 404 });
       userName = user.name;
     } else {
       return NextResponse.json({ error: "Invalid userType" }, { status: 400 });

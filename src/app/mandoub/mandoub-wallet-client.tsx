@@ -276,13 +276,13 @@ export function MandoubWalletClient({
       case "wallet_in_out":
         return (
           <div key="in_out" className="grid grid-cols-2 gap-2 sm:gap-3">
-            <Link href={walletLedgerHrefs.sader} className={`kse-glass-dark flex items-center justify-between rounded-xl border px-3 py-2 shadow-sm transition ${ledgerFilter === "sader" ? "border-slate-500 bg-slate-100 dark:bg-slate-800" : "border-slate-300 bg-white dark:bg-slate-900/50 dark:border-slate-800"}`}>
+            <Link prefetch={false} href={walletLedgerHrefs.sader} className={`kse-glass-dark flex items-center justify-between rounded-xl border px-3 py-2 shadow-sm transition ${ledgerFilter === "sader" ? "border-slate-500 bg-slate-100 dark:bg-slate-800" : "border-slate-300 bg-white dark:bg-slate-900/50 dark:border-slate-800"}`}>
               <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm">
                 <DynamicIcon icon={icons?.wallet_out} fallback="📤" width={16} height={16} /> صادر
               </p>
               <p className="text-lg font-black tabular-nums text-slate-900 sm:text-xl dark:text-slate-100">{walletOutFromWalletStr}</p>
             </Link>
-            <Link href={walletLedgerHrefs.ward} className={`kse-glass-dark flex items-center justify-between rounded-xl border px-3 py-2 shadow-sm transition ${ledgerFilter === "ward" ? "border-slate-500 bg-slate-100 dark:bg-slate-800" : "border-slate-300 bg-white dark:bg-slate-900/50 dark:border-slate-800"}`}>
+            <Link prefetch={false} href={walletLedgerHrefs.ward} className={`kse-glass-dark flex items-center justify-between rounded-xl border px-3 py-2 shadow-sm transition ${ledgerFilter === "ward" ? "border-slate-500 bg-slate-100 dark:bg-slate-800" : "border-slate-300 bg-white dark:bg-slate-900/50 dark:border-slate-800"}`}>
               <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm">
                 <DynamicIcon icon={icons?.wallet_in} fallback="📥" width={16} height={16} /> وارد
               </p>
@@ -310,7 +310,7 @@ export function MandoubWalletClient({
       case "site_and_remain":
         return (
           <div key="site_remain" className="grid grid-cols-2 gap-2 sm:gap-3">
-            <Link href={walletLedgerHrefs.site} className={`kse-glass-dark flex items-center justify-between rounded-xl border px-3 py-2 shadow-sm transition ${ledgerFilter === "site" ? "border-slate-500 bg-slate-100 dark:bg-slate-800" : "border-slate-300 bg-white dark:bg-slate-900/50 dark:border-slate-800"}`}>
+            <Link prefetch={false} href={walletLedgerHrefs.site} className={`kse-glass-dark flex items-center justify-between rounded-xl border px-3 py-2 shadow-sm transition ${ledgerFilter === "site" ? "border-slate-500 bg-slate-100 dark:bg-slate-800" : "border-slate-300 bg-white dark:bg-slate-900/50 dark:border-slate-800"}`}>
               <p className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-400 sm:text-sm">
                 <DynamicIcon icon={icons?.ui_package} fallback="📦" width={16} height={16} /> الطلبات
               </p>

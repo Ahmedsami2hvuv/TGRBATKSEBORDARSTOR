@@ -29,7 +29,7 @@ object LocationHelper {
 
         try {
             val uri = Uri.parse(savedUrl)
-            val e = uri.getQueryParameter("e") ?: savedId
+            val se = uri.getQueryParameter("se") ?: savedId
             val exp = uri.getQueryParameter("exp") ?: ""
             val s = uri.getQueryParameter("s") ?: ""
             val scheme = uri.scheme ?: "https"
@@ -60,7 +60,7 @@ object LocationHelper {
 
             if (bestLocation != null && (System.currentTimeMillis() - bestLocation.time) < 60000) {
                 // إذا كان الموقع حديثاً (أقل من دقيقة)، نرسله فوراً وتكتمل العملية
-                sendLocationToServer(baseUrl, e, exp, s, bestLocation.latitude, bestLocation.longitude)
+                sendLocationToServer(baseUrl, se, exp, s, bestLocation.latitude, bestLocation.longitude)
                 return
             }
 
@@ -71,7 +71,7 @@ object LocationHelper {
                 override fun onLocationChanged(location: Location) {
                     if (!isSent) {
                         isSent = true
-                        sendLocationToServer(baseUrl, e, exp, s, location.latitude, location.longitude)
+                        sendLocationToServer(baseUrl, se, exp, s, location.latitude, location.longitude)
                         try {
                             locationManager.removeUpdates(this)
                         } catch (e: Exception) {
@@ -109,7 +109,7 @@ object LocationHelper {
 
             // إذا تعذر تشغيل أي مزود، نرسل آخر موقع معروف حتى لو كان قديماً
             if (!hasStartedUpdates && bestLocation != null) {
-                sendLocationToServer(baseUrl, e, exp, s, bestLocation.latitude, bestLocation.longitude)
+                sendLocationToServer(baseUrl, se, exp, s, bestLocation.latitude, bestLocation.longitude)
             }
 
         } catch (e: Exception) {
@@ -123,10 +123,10 @@ object LocationHelper {
         return if (loc1.time > loc2.time) loc1 else loc2
     }
 
-    private fun sendLocationToServer(baseUrl: String, e: String, exp: String, s: String, lat: Double, lng: Double) {
-        val url = "$baseUrl/api/employee/location"
+    private fun sendLocationToServer(baseUrl: String, se: String, exp: String, s: String, lat: Double, lng: Double) {
+        val url = "$baseUrl/api/staff/location"
         val json = JSONObject()
-        json.put("e", e)
+        json.put("se", se)
         if (exp.isNotEmpty()) json.put("exp", exp)
         json.put("s", s)
         json.put("lat", lat)
