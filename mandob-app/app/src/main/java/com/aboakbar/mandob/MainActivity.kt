@@ -179,6 +179,10 @@ class MainActivity : AppCompatActivity() {
         settings.builtInZoomControls = false
         settings.displayZoomControls = false
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_BOUND, true)
+        }
+
         // تحسين أداء اللمس والتمرير الفوري
         webView.overScrollMode = View.OVER_SCROLL_NEVER
         webView.isVerticalFadingEdgeEnabled = false
@@ -442,7 +446,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // تم تعطيل webView.onResume() لمنع الشاشة البيضاء عند العودة
+        try { webView.onResume() } catch (e: Exception) {}
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (android.provider.Settings.canDrawOverlays(this)) {
@@ -453,7 +457,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        // تم تعطيل webView.onPause() للحفاظ على استقرار التطبيق في الخلفية وجاهزيته الفورية
+        try { webView.onPause() } catch (e: Exception) {}
     }
 
     private fun setupLongPressMenu() {
