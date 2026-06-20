@@ -24,6 +24,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 val orderTime = additionalData.optString("orderTime", "فوري")
                 val orderType = additionalData.optString("orderType", "توصيل")
                 val subtotal = additionalData.optDouble("subtotal", 0.0)
+                val productsText = additionalData.optString("productsText", "")
 
                 // 1. بناء وعرض إشعار نظام يدوي فوراً في البردة ذو أولوية قصوى لضمان ظهوره في الخلفية
                 val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
@@ -73,8 +74,8 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 }
                 val alertPendingIntent = android.app.PendingIntent.getActivity(context, orderNumber, alertIntent, alertFlags)
 
-                val title = "🔔 طلب جديد: $shopName — $regionName"
-                val body = "⏰ $orderTime | 📦 $orderType | 💵 ${formatNumber(subtotal)} د.ع"
+                val title = "🔔 طلب تجهيز جديد: $shopName"
+                val body = "📍 المنطقة: $regionName\n⏰ الوقت: $orderTime\n$productsText"
 
                 val largeIconBitmap = android.graphics.BitmapFactory.decodeResource(context.resources, R.drawable.ic_notification_large)
 
@@ -82,7 +83,8 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     .setSmallIcon(R.drawable.ic_stat_onesignal_default)
                     .setLargeIcon(largeIconBitmap)
                     .setContentTitle(title)
-                    .setContentText(body)
+                    .setContentText("📍 $regionName | ⏰ $orderTime")
+                    .setStyle(NotificationCompat.BigTextStyle().bigText(body))
                     .setPriority(NotificationCompat.PRIORITY_MAX)
                     .setCategory(NotificationCompat.CATEGORY_CALL)
                     .setDefaults(NotificationCompat.DEFAULT_ALL)

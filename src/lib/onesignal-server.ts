@@ -185,7 +185,8 @@ export async function notifyOneSignalPreparerAssignment(input: {
       regionName: regionName,
       orderTime: orderTime,
       orderType: orderType,
-      subtotal: subtotal
+      subtotal: subtotal,
+      productsText: bodyText
     }
   });
 }
