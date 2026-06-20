@@ -81,6 +81,8 @@ export async function updateCourier(id: string, state: CourierFormState, formDat
   const showNotesBtn = formData.get("showNotesBtn") === "on";
   const showVoiceNotesBtn = formData.get("showVoiceNotesBtn") === "on";
   const zeroEarning = formData.get("zeroEarning") === "on";
+  const hiddenFromReports = formData.get("hiddenFromReports") === "on";
+  const blocked = formData.get("blocked") === "on";
 
   try {
     await prisma.courier.update({
@@ -97,6 +99,8 @@ export async function updateCourier(id: string, state: CourierFormState, formDat
         showNotesBtn,
         showVoiceNotesBtn,
         zeroEarning,
+        hiddenFromReports,
+        blocked,
       },
     });
     revalidatePath(`${SECRET_ADMIN_PATH}/couriers`);
