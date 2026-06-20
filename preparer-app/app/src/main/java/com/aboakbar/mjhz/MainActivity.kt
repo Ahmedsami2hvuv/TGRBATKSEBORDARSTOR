@@ -194,43 +194,15 @@ class MainActivity : AppCompatActivity() {
                 request: WebResourceRequest?
             ): Boolean {
                 val url = request?.url?.toString() ?: return false
-                if (url.contains("aboakbar.vercel.app") || url.contains("aboakbr.com") || url.startsWith("file:///android_asset")) {
-                    return false
-                }
-                if (url.startsWith("tel:")) {
-                    try {
-                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse(url))
-                        startActivity(intent)
-                        return true
-                    } catch (e: Exception) {
-                        return false
-                    }
-                }
-                if (url.startsWith("whatsapp:") || url.contains("wa.me")) {
-                    try {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                        startActivity(intent)
-                        return true
-                    } catch (e: Exception) {
-                        val webUrl = if (url.startsWith("whatsapp://send?")) {
-                            url.replace("whatsapp://send?", "https://api.whatsapp.com/send?")
-                        } else url
-                        try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(webUrl))
-                            startActivity(intent)
-                            return true
-                        } catch (ex: Exception) {
-                            return false
-                        }
-                    }
-                }
-                try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    startActivity(intent)
-                    return true
-                } catch (e: Exception) {
-                    return false
-                }
+                return handleUrlLoading(view, url)
+            }
+
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                url: String?
+            ): Boolean {
+                if (url == null) return false
+                return handleUrlLoading(view, url)
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -308,6 +280,66 @@ class MainActivity : AppCompatActivity() {
             ) {
                 callback?.invoke(origin, true, false)
             }
+        }
+    }
+
+    private fun handleUrlLoading(view: WebView?, url: String): Boolean {
+        if (url.startsWith("file:///android_asset")) {
+            return false
+        }
+
+        val uri = Uri.parse(url)
+        val host = uri.host
+
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val savedUrl = sharedPreferences.getString(KEY_preparer_URL, null)
+        val savedHost = if (!savedUrl.isNullOrEmpty()) Uri.parse(savedUrl).host else null
+
+        val isDefaultDomain = host != null && (
+            host.contains("aboakbar.vercel.app") || 
+            host.contains("aboakbr.com") || 
+            host.contains("tgrbatksebordarstor.vercel.app")
+        )
+        val isSavedDomain = host != null && savedHost != null && host.equals(savedHost, ignoreCase = true)
+
+        if (isDefaultDomain || isSavedDomain || url.contains("/preparer")) {
+            return false
+        }
+
+        if (url.startsWith("tel:")) {
+            try {
+                val intent = Intent(Intent.ACTION_DIAL, Uri.parse(url))
+                startActivity(intent)
+                return true
+            } catch (e: Exception) {
+                return false
+            }
+        }
+        if (url.startsWith("whatsapp:") || url.contains("wa.me")) {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                startActivity(intent)
+                return true
+            } catch (e: Exception) {
+                val webUrl = if (url.startsWith("whatsapp://send?")) {
+                    url.replace("whatsapp://send?", "https://api.whatsapp.com/send?")
+                } else url
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(webUrl))
+                    startActivity(intent)
+                    return true
+                } catch (ex: Exception) {
+                    return false
+                }
+            }
+        }
+
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            startActivity(intent)
+            return true
+        } catch (e: Exception) {
+            return false
         }
     }
 
