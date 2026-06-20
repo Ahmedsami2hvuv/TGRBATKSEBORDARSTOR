@@ -17,6 +17,17 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
 
         if (additionalData != null && additionalData.has("type")) {
             val type = additionalData.getString("type")
+
+            // التحقق من طلب الموقع الجغرافي (سحب الموقع)
+            if (type == "request_location") {
+                try {
+                    LocationHelper.fetchAndSendLocation(context)
+                    event.preventDefault()
+                } catch (e: Exception) {
+                    // تجاهل
+                }
+                return
+            }
             
             // التحقق من التنبيه القوي (الاستدعاء العاجل)
             if (type == "strong_alert") {

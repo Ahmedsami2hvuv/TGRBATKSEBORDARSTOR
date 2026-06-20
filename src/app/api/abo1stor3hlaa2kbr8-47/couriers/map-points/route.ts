@@ -26,6 +26,11 @@ export async function GET() {
       select: { id: true, name: true, phone: true, lastPreparerLat: true, lastPreparerLng: true, lastPreparerLocationAt: true }
     });
 
+    const employees = await prisma.employee.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, phone: true, lastEmployeeLat: true, lastEmployeeLng: true, lastEmployeeLocationAt: true }
+    });
+
     const courierPoints = couriers
       .filter((c) => c.lastCourierLat != null && c.lastCourierLng != null && Number.isFinite(c.lastCourierLat) && Number.isFinite(c.lastCourierLng))
       .map((c) => ({
@@ -40,11 +45,19 @@ export async function GET() {
         updatedAt: p.lastPreparerLocationAt?.toISOString() ?? null, type: "preparer"
       }));
 
+    const employeePoints = employees
+      .filter((e) => e.lastEmployeeLat != null && e.lastEmployeeLng != null && Number.isFinite(e.lastEmployeeLat) && Number.isFinite(e.lastEmployeeLng))
+      .map((e) => ({
+        id: e.id, name: e.name, phone: e.phone, lat: e.lastEmployeeLat as number, lng: e.lastEmployeeLng as number,
+        updatedAt: e.lastEmployeeLocationAt?.toISOString() ?? null, type: "employee"
+      }));
+
     return NextResponse.json({
-      points: [...courierPoints, ...preparerPoints],
+      points: [...courierPoints, ...preparerPoints, ...employeePoints],
       withoutLoc: [
           ...couriers.filter(c => c.lastCourierLat == null || c.lastCourierLng == null).map(c => ({id: c.id, name: c.name, phone: c.phone, typeName: "مندوب"})),
           ...preparers.filter(p => p.lastPreparerLat == null || p.lastPreparerLng == null).map(p => ({id: p.id, name: p.name, phone: p.phone, typeName: "مجهز"})),
+          ...employees.filter(e => e.lastEmployeeLat == null || e.lastEmployeeLng == null).map(e => ({id: e.id, name: e.name, phone: e.phone, typeName: "موظف"})),
       ]
     });
   } catch (error) {
