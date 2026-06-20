@@ -11,6 +11,7 @@ import { saveOrderImageUploaded } from "@/lib/order-image";
 import { MAX_VOICE_NOTE_BYTES, saveVoiceNoteUploaded } from "@/lib/voice-note";
 import { getBotTokenByPurpose } from "@/lib/telegram-bots";
 import { sendTelegramMessage } from "@/lib/telegram";
+import { syncPhoneProfileFromOrder, syncSecondPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
 
 export type StaffPrepState = { error?: string; ok?: boolean; draftId?: string; preparerName?: string };
 
@@ -268,9 +269,29 @@ export async function submitStaffDoubleOrder(
 
     if (!doubleShop) return { error: "لا يوجد محل معرف في النظام لاستقبال الطلب." };
 
+    const sellerCustomerRow = await upsertCustomerByPhone({
+      shopId: doubleShop.id,
+      phone: sPhone,
+      regionId: sellerRegionId,
+      locationUrl: finalSellerLoc,
+      landmark: finalSellerLandmark,
+      doorPhotoUrl: finalSellerPhoto,
+      alternatePhone: finalSellerAltPhone,
+    });
+
+    await upsertCustomerByPhone({
+      shopId: doubleShop.id,
+      phone: bPhone,
+      regionId: buyerRegionId,
+      locationUrl: finalBuyerLoc,
+      landmark: finalBuyerLandmark,
+      doorPhotoUrl: finalBuyerPhoto,
+    });
+
     const order = await prisma.order.create({
       data: {
         shop: { connect: { id: doubleShop.id } },
+        customer: sellerCustomerRow.id ? { connect: { id: sellerCustomerRow.id } } : undefined,
         routeMode: "double",
         orderType: orderType,
         status: "pending",
@@ -302,6 +323,9 @@ export async function submitStaffDoubleOrder(
         }
       }
     });
+
+    await syncPhoneProfileFromOrder(order.id);
+    await syncSecondPhoneProfileFromOrder(order.id);
 
     // إشعار الإدارة بطلب جديد
     void notifyTelegramNewOrder(order.id).catch(err => console.error("Telegram notify failed:", err));
@@ -685,4 +709,46 @@ export async function cancelStaffPreparationDraft(
   revalidatePath("/preparer/preparation");
 
   return { ok: true };
+}
+
+async function upsertCustomerByPhone(opts: {
+  shopId: string;
+  phone: string;
+  regionId: string | null;
+  locationUrl?: string;
+  landmark?: string;
+  doorPhotoUrl?: string | null;
+  alternatePhone?: string | null;
+}): Promise<{ id: string }> {
+  const { shopId, phone, regionId, locationUrl, landmark, doorPhotoUrl, alternatePhone } = opts;
+
+  const existing = await prisma.customer.findFirst({
+    where: { shopId, phone },
+  });
+
+  const data = {
+    customerRegion: regionId ? { connect: { id: regionId } } : { disconnect: true },
+    customerLocationUrl: locationUrl ?? "",
+    customerLandmark: landmark ?? "",
+    customerDoorPhotoUrl: doorPhotoUrl ?? null,
+    alternatePhone: alternatePhone || null,
+  };
+
+  if (existing) {
+    return prisma.customer.update({
+      where: { id: existing.id },
+      data,
+      select: { id: true },
+    });
+  }
+
+  return prisma.customer.create({
+    data: {
+      shop: { connect: { id: shopId } },
+      phone,
+      name: "",
+      ...data,
+    },
+    select: { id: true },
+  });
 }

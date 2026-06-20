@@ -462,14 +462,15 @@ export async function setMandoubCustomerLocationFromGeolocation(
     return { error: "الطلب غير موجود أو غير مسند لك" };
   }
 
+  const currentLocToCheck = isSecond ? order.secondCustomerLocationUrl : order.customerLocationUrl;
   if (
     !replace &&
     hasCustomerLocationUrl(
-      order.customerLocationUrl,
+      currentLocToCheck,
       undefined,
     )
   ) {
-    return { error: "يوجد لوكيشن للزبون مسبقاً. استخدم تعديل الطلب لتغييره." };
+    return { error: isSecond ? "يوجد لوكيشن للمستلم مسبقاً. استخدم تعديل الطلب لتغييره." : "يوجد لوكيشن للمرسل مسبقاً. استخدم تعديل الطلب لتغييره." };
   }
 
   const uploadedBy = await courierUploaderLabel(v.courierId);
@@ -487,7 +488,11 @@ export async function setMandoubCustomerLocationFromGeolocation(
     },
   });
 
-  await syncPhoneProfileFromOrder(orderId);
+  if (isSecond) {
+    await syncSecondPhoneProfileFromOrder(orderId);
+  } else {
+    await syncPhoneProfileFromOrder(orderId);
+  }
   revalidateMandoubPaths(nextRaw);
   return { ok: true, flash: "saved" as const };
 }

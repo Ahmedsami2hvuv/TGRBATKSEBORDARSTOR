@@ -46,6 +46,7 @@ import {
 import { buildDelegatePortalUrl, verifyDelegatePortalQuery } from "./delegate-link";
 import { getBotTokenByPurpose } from "./telegram-bots";
 import { normalizeIraqMobileLocal11, telHref, whatsappMeUrl } from "@/lib/whatsapp";
+import { syncPhoneProfileFromOrder, syncSecondPhoneProfileFromOrder } from "@/lib/customer-phone-profile-sync";
 
 type CourierMainKeyboardKind = "main" | "orders" | "wallet";
 
@@ -138,6 +139,7 @@ type CourierCallback =
   | { kind: "order_call_dial"; orderNumber: number; who: "s" | "c" | "2" | "a" }
   | { kind: "order_loc_menu"; orderNumber: number }
   | { kind: "order_loc_gps"; orderNumber: number }
+  | { kind: "order_loc_gps_second"; orderNumber: number }
   | { kind: "order_photo_one"; orderNumber: number; slot: "shop" | "order" | "cust" }
   | { kind: "order_photos"; orderNumber: number }
   | { kind: "order_edit_menu"; orderNumber: number }
@@ -213,6 +215,9 @@ function parseCourierCallbackData(raw: string): CourierCallback | null {
 
   const locGps = /^co_lg_(\d+)$/.exec(t);
   if (locGps) return { kind: "order_loc_gps", orderNumber: Number(locGps[1]) };
+
+  const locGps2 = /^co_l2_(\d+)$/.exec(t);
+  if (locGps2) return { kind: "order_loc_gps_second", orderNumber: Number(locGps2[1]) };
 
   const callgo = /^co_callgo_(\d+)_(s|c|2|a)$/.exec(t);
   if (callgo) return { kind: "order_call_dial", orderNumber: Number(callgo[1]), who: callgo[2] as "s" | "c" | "2" | "a" };
@@ -1348,8 +1353,12 @@ export async function handleCourierCallback({
     }
 
     // سطر المستلم (في حالة الوجهتين)
-    if (isDouble && secondLoc) {
-      rows.push([{ text: "📍 لكيشن المستلم", url: secondLoc }]);
+    if (isDouble) {
+      if (secondLoc) {
+        rows.push([{ text: "📍 لكيشن المستلم", url: secondLoc }]);
+      } else {
+        rows.push([{ text: `➕ إضافة لكيشن المستلم (GPS)`, callback_data: `co_l2_${on}` }]);
+      }
     }
 
     const keyboard: TelegramInlineKeyboard = {
@@ -1477,6 +1486,22 @@ export async function handleCourierCallback({
       chatId,
       `<b>📍 موقع الزبون — طلب #${order.orderNumber}</b>\n` +
         `اضغط الزر لإرسال موقعك (GPS). سيُحفظ كموقع الزبون.`,
+      botToken,
+    ).catch(() => {});
+    return;
+  }
+
+  if (parsed.kind === "order_loc_gps_second") {
+    const order = await loadCourierOrderDetailForTelegram(courier.id, parsed.orderNumber);
+    if (!order) {
+      await answerCallbackQuery(cq.id, "الطلب غير موجود", true, botToken).catch(() => {});
+      return;
+    }
+    await upsertCourierSession(telegramUserId, chatId, "courier_await_gps_second", order.orderNumber, "{}");
+    await sendTelegramLocationRequestKeyboard(
+      chatId,
+      `<b>📍 موقع المستلم — طلب #${order.orderNumber}</b>\n` +
+        `اضغط الزر لإرسال موقعك (GPS). سيُحفظ كموقع المستلم.`,
       botToken,
     ).catch(() => {});
     return;
@@ -1775,7 +1800,7 @@ export async function processCourierTelegramSessionMessage(
   if (!session?.step.startsWith("courier_")) return false;
 
   const gpsLoc = (message as { location?: { latitude: number; longitude: number } }).location;
-  if (session.step === "courier_await_gps" && gpsLoc) {
+  if ((session.step === "courier_await_gps" || session.step === "courier_await_gps_second") && gpsLoc) {
     const orderNumber = session.orderNumber;
     if (orderNumber == null) return false;
     const order = await loadCourierOrderDetailForTelegram(courier.id, orderNumber);
@@ -1787,27 +1812,39 @@ export async function processCourierTelegramSessionMessage(
     const lng = gpsLoc.longitude;
     const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
     const label = courier.name.trim() || "مندوب";
+    const isSecond = session.step === "courier_await_gps_second";
     await prisma.$transaction(async (tx) => {
       await tx.order.update({
         where: { id: order.id },
-        data: {
+        data: isSecond ? {
+          secondCustomerLocationUrl: mapsUrl,
+          customerLocationSetByCourierAt: new Date(),
+          customerLocationUploadedByName: label,
+        } : {
           customerLocationUrl: mapsUrl,
           customerLocationSetByCourierAt: new Date(),
           customerLocationUploadedByName: label,
         },
       });
-      if (order.customerId) {
+      if (!isSecond && order.customerId) {
         await tx.customer.update({
           where: { id: order.customerId },
           data: { customerLocationUrl: mapsUrl },
         });
       }
     });
+    if (isSecond) {
+      await syncSecondPhoneProfileFromOrder(order.id);
+    } else {
+      await syncPhoneProfileFromOrder(order.id);
+    }
     revalidateCourierOrder(order.id);
     await clearCourierSession(telegramUserId);
     await sendTelegramMessageRemoveKeyboard(
       chatId,
-      `تم حفظ موقع الزبون لطلب <b>#${order.orderNumber}</b>.`,
+      isSecond
+        ? `تم حفظ موقع المستلم لطلب <b>#${order.orderNumber}</b>.`
+        : `تم حفظ موقع الزبون لطلب <b>#${order.orderNumber}</b>.`,
       botToken,
     ).catch(() => {});
     return true;
