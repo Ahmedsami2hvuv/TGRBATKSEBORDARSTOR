@@ -57,13 +57,11 @@ export function StrongAlertClient({ couriers, preparers, employees }: StrongAler
 
   // عند تغيير التبويب، قم بإعادة تعيين التحديد والبحث
   useEffect(() => {
-    if (!alertingState.isAlerting) {
-      setSelectedIds([]);
-      setSearchQuery("");
-      setError(null);
-      setSuccessMessage(null);
-    }
-  }, [activeTab, alertingState.isAlerting]);
+    setSelectedIds([]);
+    setSearchQuery("");
+    setError(null);
+    setSuccessMessage(null);
+  }, [activeTab]);
 
   // إدارة المؤقت التنازلي لإيقاف التنبيه تلقائياً بعد دقيقة
   useEffect(() => {
@@ -322,8 +320,9 @@ export function StrongAlertClient({ couriers, preparers, employees }: StrongAler
               {filteredUsers.map((user) => {
                 const isSelected = selectedIds.includes(user.id);
                 return (
-                  <label
+                  <div
                     key={user.id}
+                    onClick={() => handleSelectUser(user.id)}
                     className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-gray-900/30 transition-colors ${
                       isSelected ? "bg-red-950/10" : ""
                     }`}
@@ -331,15 +330,15 @@ export function StrongAlertClient({ couriers, preparers, employees }: StrongAler
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      onChange={() => handleSelectUser(user.id)}
-                      className="rounded border-gray-700 text-red-600 focus:ring-red-500 focus:ring-offset-gray-900 w-4.5 h-4.5"
+                      readOnly
+                      className="pointer-events-none rounded border-gray-700 text-red-600 focus:ring-red-500 focus:ring-offset-gray-900 w-4.5 h-4.5"
                     />
                     <div className="flex-1">
                       <span className={`font-semibold text-sm transition-colors ${isSelected ? "text-red-400" : "text-gray-200"}`}>
                         {user.name}
                       </span>
                     </div>
-                  </label>
+                  </div>
                 );
               })}
             </div>
