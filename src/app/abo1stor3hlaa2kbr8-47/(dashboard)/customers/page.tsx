@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
-import { ImportCustomersButton } from "./import-customers-button";
 import Link from "next/link";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
@@ -9,7 +8,7 @@ import { resolvePublicAssetSrc } from "@/lib/image-url";
 
 import { CustomerSearchInput } from "./customer-search-input";
 import { CustomerBlockActions } from "./customer-block-actions";
-import { PhotoCleanupButton } from "./photo-cleanup-button";
+import { CustomersMaintenancePanel } from "./customers-maintenance-panel";
 export const dynamic = "force-dynamic";
 export const revalidate = 0; // منع الكاش نهائياً
 
@@ -181,7 +180,7 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
             الرئيسية
           </Link>
         </p>
-        <div className="flex justify-between items-end">
+        <div className="flex justify-between items-end flex-wrap gap-4">
            <div>
               <h1 className="text-3xl font-black text-gray-800">بيانات الزبائن</h1>
               <div className="flex gap-2 items-center">
@@ -190,47 +189,49 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
                 <p className="text-gray-500 text-sm">المعروض حالياً: <span className="text-green-600 font-bold">{profiles.length} (صفحة {pageSafe} من {totalPages})</span></p>
               </div>
            </div>
-           <div className="flex flex-col items-end gap-2">
-             <ImportCustomersButton icons={icons} />
-             <PhotoCleanupButton />
+            <div className="flex flex-col items-end gap-2 w-full md:w-auto">
+              <CustomersMaintenancePanel icons={icons} />
+            </div>
+         </div>
+       </div>
+
+
+       <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center bg-white p-4 rounded-3xl shadow-sm border border-blue-50/50 w-full">
+           {/* حقل البحث التلقائي */}
+           <div className="flex-1 w-full">
+               <CustomerSearchInput defaultValue={q} source={source} icons={icons} />
            </div>
-        </div>
-      </div>
 
+           {/* التصفية والفرز وإضافة زبون مرجعي */}
+           <div className="flex flex-wrap items-center gap-2 justify-between lg:justify-end">
+               <form method="get" className="flex items-center gap-2 flex-1 sm:flex-initial">
+                 <input type="hidden" name="q" value={q} />
+                 <select
+                   name="source"
+                   defaultValue={source}
+                   onChange={(e) => {
+                     e.currentTarget.form?.submit();
+                   }}
+                   className="bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-400 outline-none cursor-pointer flex-1 sm:flex-initial text-right"
+                   dir="rtl"
+                 >
+                   <option value="all">كل المصادر</option>
+                   <option value="blocked">🔴 المحظورين ({blockedCount})</option>
+                   <option value="railway">قادمين من ريلوي</option>
+                   <option value="orders">قادمين من طلبات الموقع</option>
+                   <option value="reference">مضافين مرجعياً</option>
+                 </select>
+                 <button type="submit" className="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm">
+                   فرز
+                 </button>
+               </form>
 
-      <div className="flex gap-2 items-center bg-white p-4 rounded-2xl shadow-sm border border-blue-50">
-          <Link href={`${SECRET_ADMIN_PATH}/customers/add`} className="bg-cyan-500 text-white px-6 py-2 rounded-xl font-bold shadow-md hover:bg-cyan-600 transition-all text-sm flex items-center gap-2">
-            <DynamicIcon iconKey="ui_plus" config={icons} fallback="+" className="w-4 h-4" />
-            إضافة زبون مرجعي
-          </Link>
-          <form method="get" className="flex items-center gap-2">
-            <input type="hidden" name="q" value={q} />
-            <select
-              name="source"
-              defaultValue={source}
-              className="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-xl text-sm font-bold"
-            >
-              <option value="all">كل المصادر</option>
-              <option value="blocked">🔴 المحظورين ({blockedCount})</option>
-              <option value="railway">قادمين من ريلوي</option>
-              <option value="orders">قادمين من طلبات الموقع</option>
-              <option value="reference">مضافين مرجعياً</option>
-            </select>
-            <button type="submit" className="bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-bold">
-              فرز
-            </button>
-          </form>
-          <div className="flex-1 flex gap-2 relative">
-              <CustomerSearchInput defaultValue={q} source={source} />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-5 h-5" />
-              </div>
-              <button type="button" className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-md flex items-center gap-2">
-                <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-4 h-4" />
-                بحث
-              </button>
-          </div>
-      </div>
+               <Link href={`${SECRET_ADMIN_PATH}/customers/add`} className="bg-cyan-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-cyan-600 transition-all text-xs flex items-center gap-2 select-none">
+                 <DynamicIcon iconKey="ui_plus" config={icons} fallback="+" className="w-3.5 h-3.5" />
+                 إضافة زبون مرجعي
+               </Link>
+           </div>
+       </div>
 
       <div className="grid grid-cols-1 gap-4">
         {/* أزرار التنقل بين الصفحات - أعلى النتائج */}

@@ -235,8 +235,8 @@ export function ImportCustomersButton({ icons }: { icons: GlobalIconsConfig | nu
   }
 
   return (
-    <div className="flex flex-col gap-2 items-end">
-      <div className="flex gap-2">
+    <div className="flex flex-col gap-2 items-end w-full">
+      <div className="flex flex-wrap gap-2 justify-end w-full">
         <button onClick={handleReset} className="bg-red-100 text-red-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-red-200 transition-colors flex items-center gap-1">
           <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-3.5 h-3.5" /> مسح
         </button>
