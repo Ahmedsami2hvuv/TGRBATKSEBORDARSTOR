@@ -14,6 +14,36 @@ import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 type RegionHit = { id: string; name: string; deliveryPrice: string };
 
 const initial: PreparerActionState = {};
+
+function sanitizePhone(value: string): string {
+  const arabicDigits = /[٠١٢٣٤٥٦٧٨٩]/g;
+  const persianDigits = /[۰۱۲۳۴۵۶٧٨٩]/g;
+  let clean = value
+    .replace(arabicDigits, (d) => String(d.charCodeAt(0) - 1632))
+    .replace(persianDigits, (d) => String(d.charCodeAt(0) - 1776));
+  return clean.replace(/\D/g, "");
+}
+
+function handlePhoneBlur(value: string, setter: (v: string) => void) {
+  let clean = sanitizePhone(value);
+  while (clean.startsWith("00")) {
+    clean = clean.slice(2);
+  }
+  if (clean.startsWith("964")) {
+    clean = clean.slice(3);
+  }
+  while (clean.startsWith("0")) {
+    clean = clean.slice(1);
+  }
+  if (clean.length === 10 && clean.startsWith("7")) {
+    setter(`0${clean}`);
+  } else if (clean.length === 11 && clean.startsWith("07")) {
+    setter(clean);
+  } else {
+    setter(clean);
+  }
+}
+
 const inputClass =
   "w-full rounded-xl border border-sky-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200";
 
@@ -321,7 +351,7 @@ export function PreparerSiteOrderDraftClient({
               <div className="grid grid-cols-2 gap-3">
                  <label className="flex flex-col gap-1.5">
                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400">رقم الزبون *</span>
-                   <input value={customerPhone} onChange={(ev) => setCustomerPhone(ev.target.value)} className={`${inputClass} font-mono dark:bg-slate-950/50 dark:border-white/10`} />
+                   <input value={customerPhone} onChange={(ev) => setCustomerPhone(sanitizePhone(ev.target.value))} onBlur={(ev) => handlePhoneBlur(ev.target.value, setCustomerPhone)} className={`${inputClass} font-mono dark:bg-slate-950/50 dark:border-white/10`} />
                  </label>
                  <label className="flex flex-col gap-1.5">
                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400">وقت الطلب *</span>

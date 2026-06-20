@@ -78,19 +78,40 @@ export function normalizeIraqMobileLocal11(raw: string | null | undefined): stri
   const t = raw.toString().trim();
   if (!t) return null;
 
-  const normalized = normalizePhoneDigits(t);
-  if (normalized.startsWith("964") && normalized.length === 13) {
-    const rest = normalized.slice(3);
-    if (rest.length === 10 && rest.startsWith("7")) {
-      return `0${rest}`;
-    }
-    return null;
+  // تنظيف الأرقام وتحويل الأرقام العربية/الفارسية إلى إنجليزية
+  let d = digitsOnly(t);
+  
+  // إزالة الأصفار الدولية البادئة
+  while (d.startsWith("00")) {
+    d = d.slice(2);
+  }
+  
+  // إزالة كود العراق الدولي إذا كان موجوداً
+  if (d.startsWith("964")) {
+    d = d.slice(3);
+  }
+  
+  // إزالة الصفر البادئ للحصول على الرقم الوطني الصافي
+  while (d.startsWith("0")) {
+    d = d.slice(1);
   }
 
-  let d = digitsOnly(t);
-  while (d.startsWith("00")) d = d.slice(2);
-  if (d.length === 11 && d.startsWith("07")) return d;
-  if (d.length === 10 && d.startsWith("7")) return `0${d}`;
+  // إذا كان الطول المتبقي 10 أرقام ويبدأ بـ 7، نضيف الصفر البادئ
+  if (d.length === 10 && d.startsWith("7")) {
+    return `0${d}`;
+  }
+
+  // إذا كان الرقم المدخل مطهراً بالفعل (11 رقماً ويبدأ بـ 07)
+  if (d.length === 11 && d.startsWith("07")) {
+    return d;
+  }
+
+  // للسلامة والاحتياط، إذا تم تمرير رقم صحيح من 11 خانة يبدأ بـ 7 بعد إزالة الصفر، نعيده بالصفر البادئ
+  const cleanStr = digitsOnly(t);
+  if (cleanStr.length === 11 && cleanStr.startsWith("07")) {
+    return cleanStr;
+  }
+
   return null;
 }
 

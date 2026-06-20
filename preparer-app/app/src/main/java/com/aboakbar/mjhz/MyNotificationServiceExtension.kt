@@ -65,6 +65,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     putExtra("subtotal", subtotal)
                     putExtra("pendingCount", additionalData.optInt("pendingCount", 1))
                     putExtra("orderNumber", orderNumber)
+                    putExtra("productsText", productsText)
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 }
                 val alertFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

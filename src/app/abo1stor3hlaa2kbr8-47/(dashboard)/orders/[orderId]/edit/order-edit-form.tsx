@@ -39,6 +39,36 @@ const STATUS_OPTIONS = [
 const initial: OrderEditState = {};
 
 type ShopOpt = { id: string; name: string; regionDeliveryPrice: string };
+
+function sanitizePhone(value: string): string {
+  const arabicDigits = /[٠١٢٣٤٥٦٧٨٩]/g;
+  const persianDigits = /[۰۱۲۳۴۵۶۷۸۹]/g;
+  let clean = value
+    .replace(arabicDigits, (d) => String(d.charCodeAt(0) - 1632))
+    .replace(persianDigits, (d) => String(d.charCodeAt(0) - 1776));
+  return clean.replace(/\D/g, "");
+}
+
+function handlePhoneBlur(value: string, setter: (v: string) => void) {
+  let clean = sanitizePhone(value);
+  while (clean.startsWith("00")) {
+    clean = clean.slice(2);
+  }
+  if (clean.startsWith("964")) {
+    clean = clean.slice(3);
+  }
+  while (clean.startsWith("0")) {
+    clean = clean.slice(1);
+  }
+  if (clean.length === 10 && clean.startsWith("7")) {
+    setter(`0${clean}`);
+  } else if (clean.length === 11 && clean.startsWith("07")) {
+    setter(clean);
+  } else {
+    setter(clean);
+  }
+}
+
 type RegionOpt = { id: string; name: string; deliveryPrice: string };
 type CourierOpt = { id: string; name: string };
 
@@ -776,7 +806,8 @@ export function OrderEditForm({
             <input
               name="customerPhone"
               value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
+              onChange={(e) => setCustomerPhone(sanitizePhone(e.target.value))}
+              onBlur={(e) => handlePhoneBlur(e.target.value, setCustomerPhone)}
               className={ad.input}
               dir="ltr"
             />
@@ -792,7 +823,8 @@ export function OrderEditForm({
           <input
             name="alternatePhone"
             value={alternatePhone}
-            onChange={(e) => setAlternatePhone(e.target.value)}
+            onChange={(e) => setAlternatePhone(sanitizePhone(e.target.value))}
+            onBlur={(e) => handlePhoneBlur(e.target.value, setAlternatePhone)}
             className={ad.input}
             dir="ltr"
           />
@@ -940,7 +972,8 @@ export function OrderEditForm({
                 <input
                   name="secondCustomerPhone"
                   value={secondCustomerPhone}
-                  onChange={(e) => setSecondCustomerPhone(e.target.value)}
+                  onChange={(e) => setSecondCustomerPhone(sanitizePhone(e.target.value))}
+                  onBlur={(e) => handlePhoneBlur(e.target.value, setSecondCustomerPhone)}
                   className={ad.input}
                   dir="ltr"
                 />
@@ -956,7 +989,8 @@ export function OrderEditForm({
               <input
                 name="secondCustomerAlternatePhone"
                 value={secondAlternatePhone}
-                onChange={(e) => setSecondAlternatePhone(e.target.value)}
+                onChange={(e) => setSecondAlternatePhone(sanitizePhone(e.target.value))}
+                onBlur={(e) => handlePhoneBlur(e.target.value, setSecondAlternatePhone)}
                 className={ad.input}
                 dir="ltr"
               />

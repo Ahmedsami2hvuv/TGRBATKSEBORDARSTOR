@@ -25,6 +25,36 @@ import { GlobalIconsConfig } from "@/lib/icon-settings";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
+function sanitizePhone(value: string): string {
+  const arabicDigits = /[٠١٢٣٤٥٦٧٨٩]/g;
+  const persianDigits = /[۰۱۲۳۴۵۶۷۸۹]/g;
+  let clean = value
+    .replace(arabicDigits, (d) => String(d.charCodeAt(0) - 1632))
+    .replace(persianDigits, (d) => String(d.charCodeAt(0) - 1776));
+  return clean.replace(/\D/g, "");
+}
+
+function handlePhoneBlur(value: string, setter: (v: string) => void) {
+  let clean = sanitizePhone(value);
+  while (clean.startsWith("00")) {
+    clean = clean.slice(2);
+  }
+  if (clean.startsWith("964")) {
+    clean = clean.slice(3);
+  }
+  while (clean.startsWith("0")) {
+    clean = clean.slice(1);
+  }
+  if (clean.length === 10 && clean.startsWith("7")) {
+    setter(`0${clean}`);
+  } else if (clean.length === 11 && clean.startsWith("07")) {
+    setter(clean);
+  } else {
+    setter(clean);
+  }
+}
+
+
 type ShopOpt = { id: string; name: string; regionId: string; locationUrl: string; regionDeliveryPrice?: any };
 type RegionOpt = { id: string; name: string; deliveryPrice: any };
 type EmployeeOpt = ShopEmployeeRow;
@@ -643,7 +673,7 @@ export function AdminCreateOrderForm({
  <div className="flex flex-col gap-4">
  <label className="flex flex-col gap-1">
  <span className={ad.label}>رقم الزبون</span>
- <input name="prepCustomerPhone" value={prepCustomerPhone} onChange={(e) => setPrepCustomerPhone(e.target.value)} className={ad.input} required />
+  <input name="prepCustomerPhone" value={prepCustomerPhone} onChange={(e) => setPrepCustomerPhone(sanitizePhone(e.target.value))} onBlur={(e) => handlePhoneBlur(e.target.value, setPrepCustomerPhone)} className={ad.input} required />
  </label>
 
  <div className="relative flex flex-col gap-1">
@@ -725,12 +755,13 @@ export function AdminCreateOrderForm({
  <input
  name="firstCustomerPhone"
  className={ad.input}
- value={firstPhone}
- onChange={(e) => setFirstPhone(e.target.value)}
- inputMode="numeric"
- autoComplete="tel"
- placeholder="اكتب أو الصق الرقم أولاً"
- required
+  value={firstPhone}
+  onChange={(e) => setFirstPhone(sanitizePhone(e.target.value))}
+  onBlur={(e) => handlePhoneBlur(e.target.value, setFirstPhone)}
+  inputMode="numeric"
+  autoComplete="tel"
+  placeholder="اكتب أو الصق الرقم أولاً"
+  required
  />
  </label>
  )}
@@ -773,12 +804,13 @@ export function AdminCreateOrderForm({
  <input
  name="firstCustomerPhone"
  className={ad.input}
- value={firstPhone}
- onChange={(e) => setFirstPhone(e.target.value)}
- inputMode="numeric"
- autoComplete="tel"
- placeholder="اكتب أو الصق الرقم"
- required
+  value={firstPhone}
+  onChange={(e) => setFirstPhone(sanitizePhone(e.target.value))}
+  onBlur={(e) => handlePhoneBlur(e.target.value, setFirstPhone)}
+  inputMode="numeric"
+  autoComplete="tel"
+  placeholder="اكتب أو الصق الرقم"
+  required
  />
  </label>
  )}
@@ -979,10 +1011,11 @@ export function AdminCreateOrderForm({
  <input
  name="firstCustomerAlternatePhone"
  className={ad.input}
- value={firstAlternatePhone}
- onChange={(e) => setFirstAlternatePhone(e.target.value)}
- inputMode="numeric"
- placeholder="رقم إضافي..."
+  value={firstAlternatePhone}
+  onChange={(e) => setFirstAlternatePhone(sanitizePhone(e.target.value))}
+  onBlur={(e) => handlePhoneBlur(e.target.value, setFirstAlternatePhone)}
+  inputMode="numeric"
+  placeholder="رقم إضافي..."
  />
  </label>
 
@@ -1004,10 +1037,11 @@ export function AdminCreateOrderForm({
  <input
  name="firstCustomerPhone"
  className={ad.input}
- value={firstPhone}
- onChange={(e) => setFirstPhone(e.target.value)}
- inputMode="numeric"
- required
+  value={firstPhone}
+  onChange={(e) => setFirstPhone(sanitizePhone(e.target.value))}
+  onBlur={(e) => handlePhoneBlur(e.target.value, setFirstPhone)}
+  inputMode="numeric"
+  required
  />
  </label>
 
@@ -1016,9 +1050,10 @@ export function AdminCreateOrderForm({
  <input
  name="secondCustomerPhone"
  className={ad.input}
- value={secondPhone}
- onChange={(e) => setSecondPhone(e.target.value)}
- required
+  value={secondPhone}
+  onChange={(e) => setSecondPhone(sanitizePhone(e.target.value))}
+  onBlur={(e) => handlePhoneBlur(e.target.value, setSecondPhone)}
+  required
  />
  </label>
 
@@ -1103,7 +1138,7 @@ export function AdminCreateOrderForm({
 
  {secondSavedDoorPhotoUrl && (
   <div className="rounded-xl border border-sky-300 bg-sky-50/50 p-3 flex items-center gap-3 animate-in fade-in duration-300">
-    <img src={secondSavedDoorPhotoUrl} className="h-16 w-16 rounded-lg object-cover border border-sky-300 shadow-sm" alt="صورة الباب الثاني" />
+    <img src={secondSavedDoorPhotoUrl} className="h-16 w-16 rounded-lg object-cover border border-sky-300 shadow-sm" alt="صورة باب المستلم الثاني" />
     <div className="flex-1 text-right">
       <p className="text-xs font-black text-sky-800">📸 تم تطبيق صورة باب المستلم بنجاح</p>
       <p className="text-[10px] text-slate-500 mt-0.5">سيتم إرفاق هذه الصورة تلقائياً مع الطلب للمندوب.</p>
@@ -1273,9 +1308,10 @@ export function AdminCreateOrderForm({
  <input
  name="firstCustomerAlternatePhone"
  className={ad.input}
- value={firstAlternatePhone}
- onChange={(e) => setFirstAlternatePhone(e.target.value)}
- inputMode="numeric"
+  value={firstAlternatePhone}
+  onChange={(e) => setFirstAlternatePhone(sanitizePhone(e.target.value))}
+  onBlur={(e) => handlePhoneBlur(e.target.value, setFirstAlternatePhone)}
+  inputMode="numeric"
  />
  </label>
 
@@ -1285,9 +1321,10 @@ export function AdminCreateOrderForm({
  <input
  name="secondCustomerAlternatePhone"
  className={ad.input}
- value={secondAlternatePhone}
- onChange={(e) => setSecondAlternatePhone(e.target.value)}
- inputMode="numeric"
+  value={secondAlternatePhone}
+  onChange={(e) => setSecondAlternatePhone(sanitizePhone(e.target.value))}
+  onBlur={(e) => handlePhoneBlur(e.target.value, setSecondAlternatePhone)}
+  inputMode="numeric"
  />
  </label>
 

@@ -21,6 +21,36 @@ type RegionHit = { id: string; name: string; deliveryPrice: string };
 const initial: ClientOrderState = {};
 const OWNER_WHATSAPP_PHONE = "+9647733921468";
 
+function sanitizePhone(value: string): string {
+  const arabicDigits = /[٠١٢٣٤٥٦٧٨٩]/g;
+  const persianDigits = /[۰۱۲۳۴۵۶۷٨٩]/g;
+  let clean = value
+    .replace(arabicDigits, (d) => String(d.charCodeAt(0) - 1632))
+    .replace(persianDigits, (d) => String(d.charCodeAt(0) - 1776));
+  return clean.replace(/\D/g, "");
+}
+
+function handlePhoneBlur(value: string, setter: (v: string) => void) {
+  let clean = sanitizePhone(value);
+  while (clean.startsWith("00")) {
+    clean = clean.slice(2);
+  }
+  if (clean.startsWith("964")) {
+    clean = clean.slice(3);
+  }
+  while (clean.startsWith("0")) {
+    clean = clean.slice(1);
+  }
+  if (clean.length === 10 && clean.startsWith("7")) {
+    setter(`0${clean}`);
+  } else if (clean.length === 11 && clean.startsWith("07")) {
+    setter(clean);
+  } else {
+    setter(clean);
+  }
+}
+
+
 function buildCustomerCheckoutMessage(productsText: string): string {
   const productLines = productsText
     .split(/\r?\n/)
@@ -487,7 +517,7 @@ function ClientOrderFormInner({
             <div className="space-y-5">
               <label className="flex flex-col gap-1.5">
                 <span className="text-sm font-bold text-slate-600 px-1">رقم الزبون (المستلم) *</span>
-                <input ref={customerPhoneRef} name="customerPhone" required autoFocus={!initialOrder} value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} inputMode="numeric" className={`${inputClass} font-mono tabular-nums text-lg font-black ${isPhoneErr ? inputErrorClass : ""}`} placeholder="07XXXXXXXXX" />
+                <input ref={customerPhoneRef} name="customerPhone" required autoFocus={!initialOrder} value={customerPhone} onChange={(e) => setCustomerPhone(sanitizePhone(e.target.value))} onBlur={(e) => handlePhoneBlur(e.target.value, setCustomerPhone)} inputMode="numeric" className={`${inputClass} font-mono tabular-nums text-lg font-black ${isPhoneErr ? inputErrorClass : ""}`} placeholder="07XXXXXXXXX" />
               </label>
 
               <label className="flex flex-col gap-1.5">
@@ -721,7 +751,8 @@ function ClientOrderFormInner({
                     ref={customerPhoneRef}
                     autoFocus
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(e) => setCustomerPhone(sanitizePhone(e.target.value))}
+                    onBlur={(e) => handlePhoneBlur(e.target.value, setCustomerPhone)}
                     inputMode="numeric"
                     className="w-full rounded-2xl border-2 border-emerald-200 bg-white px-4 py-4 text-center font-mono text-2xl font-black text-emerald-900 shadow-sm focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition"
                     placeholder="07XXXXXXXXX"

@@ -18,6 +18,35 @@ import { calculateAutoSellPrice } from "@/lib/auto-pricing";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 
+function sanitizePhone(value: string): string {
+  const arabicDigits = /[٠١٢٣٤٥٦٧٨٩]/g;
+  const persianDigits = /[۰۱۲۳۴۵۶٧٨٩]/g;
+  let clean = value
+    .replace(arabicDigits, (d) => String(d.charCodeAt(0) - 1632))
+    .replace(persianDigits, (d) => String(d.charCodeAt(0) - 1776));
+  return clean.replace(/\D/g, "");
+}
+
+function handlePhoneBlur(value: string, setter: (v: string) => void) {
+  let clean = sanitizePhone(value);
+  while (clean.startsWith("00")) {
+    clean = clean.slice(2);
+  }
+  if (clean.startsWith("964")) {
+    clean = clean.slice(3);
+  }
+  while (clean.startsWith("0")) {
+    clean = clean.slice(1);
+  }
+  if (clean.length === 10 && clean.startsWith("7")) {
+    setter(`0${clean}`);
+  } else if (clean.length === 11 && clean.startsWith("07")) {
+    setter(clean);
+  } else {
+    setter(clean);
+  }
+}
+
 function parseTwoLinePricing(line: string, raw: string, noProfit?: boolean): { buy: string; sell: string } | null {
   const lines = raw.split(/\r?\n/).map((l) => l.replace(/,/g, ".").trim());
   const nonEmpty = lines.filter((l) => l.length > 0);
@@ -818,7 +847,8 @@ export function PreparerSiteOrderPrepClient({ auth, preparerName, shops, homeHre
                   name="customerPhone"
                   required
                   value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  onChange={(e) => setCustomerPhone(sanitizePhone(e.target.value))}
+                  onBlur={(e) => handlePhoneBlur(e.target.value, setCustomerPhone)}
                   className={`${inputClass} font-mono tabular-nums dark:bg-slate-950/50 dark:border-white/10 dark:text-white`}
                   inputMode="numeric"
                 />
