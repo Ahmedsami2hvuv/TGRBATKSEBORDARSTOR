@@ -144,11 +144,13 @@ class MainActivity : AppCompatActivity() {
                 showLoginLayout()
             } else {
                 showWebViewLayout()
+                checkExistingTokenSilent(savedToken)
             }
         } else {
             if (!savedToken.isNullOrEmpty()) {
-                // دخول تلقائي مباشر دون إظهار نافذة البصمة المزعجة
-                checkExistingToken(savedToken)
+                // دخول تلقائي مباشر وفوري دون تجميد الشاشة أو إظهار شاشة تحميل للإنترنت
+                launchDashboard(savedToken)
+                checkExistingTokenSilent(savedToken)
             } else {
                 showLoginLayout()
                 // إظهار البصمة التلقائية فقط إذا كان المستخدم في شاشة تسجيل الدخول ولديه بيانات مخزنة
@@ -294,6 +296,12 @@ class MainActivity : AppCompatActivity() {
                 CookieManager.getInstance().flush()
                 // مزامنة التوكن من الكوكيز إلى SharedPreferences
                 syncTokenFromCookies()
+
+                // حفظ آخر رابط تمت زيارته بنجاح للحفاظ على موضع المستخدم عند الخروج والعودة
+                if (!url.isNullOrEmpty() && (url.startsWith(BACKEND_URL) || url.contains("aboakbr.com") || url.contains("aboakbar.vercel.app"))) {
+                    val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                    sharedPreferences.edit().putString("last_visited_url", url).apply()
+                }
             }
 
             override fun onPageCommitVisible(view: WebView?, url: String?) {
@@ -568,23 +576,53 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    private fun checkExistingTokenSilent(token: String) {
+        val request = Request.Builder()
+            .url("$BACKEND_URL/api/admin-login?token=$token")
+            .get()
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                // فشل الاتصال، لا نفعل شيئاً ونترك المستخدم يتصفح
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val responseBody = response.body?.string() ?: ""
+                runOnUiThread {
+                    var isValid = false
+                    try {
+                        val jsonRes = JSONObject(responseBody)
+                        isValid = jsonRes.getBoolean("valid")
+                    } catch (e: Exception) {
+                        isValid = true // نفترض الصلاحية عند حدوث خطأ خادم عابر لتجنب طرد المستخدم دون داعٍ
+                    }
+
+                    if (!isValid) {
+                        // التوكن غير صالح! نقوم بتسجيل الخروج وإظهار شاشة الدخول
+                        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                        sharedPreferences.edit()
+                            .remove(KEY_TOKEN)
+                            .remove("last_visited_url") // نمسح الرابط الأخير أيضاً لكي لا يحاول العودة إليه
+                            .apply()
+
+                        try {
+                            val serviceIntent = Intent(this@MainActivity, OrderForegroundService::class.java)
+                            stopService(serviceIntent)
+                        } catch (e: Exception) {
+                            // تجاهل
+                        }
+
+                        showLoginLayout()
+                        Toast.makeText(this@MainActivity, "انتهت صلاحية الجلسة، يرجى تسجيل الدخول مجدداً", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        })
+    }
+
     private fun launchDashboard(token: String) {
         currentToken = token
-
-        // تم إلغاء تشغيل الخدمة الخلفية (الفحص الدوري كل 15 ثانية) لتقليل استهلاك زيارات Vercel
-        // وتجنب استنزاف الموارد، والاعتماد بالكامل على إشعارات OneSignal الفورية.
-        /*
-        try {
-            val serviceIntent = Intent(this, OrderForegroundService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent)
-            } else {
-                startService(serviceIntent)
-            }
-        } catch (e: Exception) {
-            // تجاهل
-        }
-        */
 
         // ربط هوية الجهاز بـ admin_global لتلقي إشعارات الإدارة الفورية
         OneSignal.login("admin_global")
@@ -594,13 +632,25 @@ class MainActivity : AppCompatActivity() {
         val cookieManager = CookieManager.getInstance()
         val cookieString = "admin_token=$token; Domain=aboakbar.vercel.app; Path=/; Secure; SameSite=Lax"
         cookieManager.setCookie(BACKEND_URL, cookieString)
+        
+        // دعم النطاق المخصص أيضاً لتجنب مشاكل تسجيل الدخول
+        val customDomainCookie = "admin_token=$token; Domain=aboakbr.com; Path=/; Secure; SameSite=Lax"
+        cookieManager.setCookie("https://aboakbr.com", customDomainCookie)
+        
         cookieManager.flush()
 
         // Hide Login and show WebView
         showWebViewLayout()
 
-        val targetUrl = intent.getStringExtra("target_url") ?: ADMIN_DASHBOARD_URL
-        webView.loadUrl(targetUrl)
+        // استرجاع آخر رابط تمت زيارته لضمان الحفاظ على موضع المستخدم
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val savedLastUrl = sharedPreferences.getString("last_visited_url", null)
+        val targetUrl = intent.getStringExtra("target_url") ?: savedLastUrl ?: ADMIN_DASHBOARD_URL
+        
+        // تحميل الصفحة فقط إذا لم تكن محملة بالفعل
+        if (webView.url != targetUrl) {
+            webView.loadUrl(targetUrl)
+        }
 
         // التحقق من صلاحية التشغيل التلقائي (Auto-start) للهواتف التي تتطلب ذلك لضمان وصول الإشعارات فوراً
         checkAutoStartPermission()
