@@ -114,6 +114,15 @@ export async function createShop(
           customerLocationUrl: url,
         },
       });
+
+      // إنشاء الموظف الأول للمحل (صاحب الرابط) تلقائياً ليظهر في قائمة العملاء
+      await tx.employee.create({
+        data: {
+          shopId: shop.id,
+          phone: customerPhone,
+          name: customerName || "العميل الأول",
+        },
+      });
     });
 
     revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
