@@ -407,6 +407,10 @@ export async function createAdminOrder(
   void notifyTelegramNewOrder(order.id);
   await pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => {});
 
+  // إشعار المجهزين المسند إليهم هذا المحل
+  const { notifyOneSignalPreparersForShopOrder } = await import("@/lib/onesignal-server");
+  void notifyOneSignalPreparersForShopOrder(targetShopId, order.id).catch(() => null);
+
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/pending`);
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/tracking`);
   return { ok: true };

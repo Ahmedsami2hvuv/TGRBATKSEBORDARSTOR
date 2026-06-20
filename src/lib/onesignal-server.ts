@@ -274,3 +274,26 @@ export async function notifyStaffEmployeeOrderStatusChange(orderId: string, newS
   }
 }
 
+export async function notifyOneSignalPreparersForShopOrder(shopId: string, orderId: string) {
+  const { prisma } = await import("@/lib/prisma");
+  try {
+    const preparerLinks = await prisma.preparerShop.findMany({
+      where: { shopId },
+      select: { preparerId: true }
+    });
+
+    if (preparerLinks.length === 0) return;
+
+    console.log(`[OneSignal] Found ${preparerLinks.length} preparer(s) for shop ${shopId}. Sending notifications...`);
+    for (const link of preparerLinks) {
+      void notifyOneSignalPreparerAssignment({
+        preparerId: link.preparerId,
+        orderId,
+        isDraft: false
+      }).catch((e) => console.error("Error sending order notification to preparer:", e));
+    }
+  } catch (err) {
+    console.error("Failed to notify preparers for shop order:", err);
+  }
+}
+

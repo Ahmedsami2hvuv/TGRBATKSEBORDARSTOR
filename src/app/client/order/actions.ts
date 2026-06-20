@@ -398,6 +398,9 @@ export async function submitOrder(
     if (!existingOrder) {
       void notifyTelegramNewOrder(order.id).catch(() => null);
       await pushNotifyAdminsNewPendingOrder(order.orderNumber).catch(() => null);
+      // إشعار المجهزين المسند إليهم هذا المحل
+      const { notifyOneSignalPreparersForShopOrder } = await import("@/lib/onesignal-server");
+      void notifyOneSignalPreparersForShopOrder(submitter.shopId, order.id).catch(() => null);
     }
 
     // جلب أسماء المناطق والمحلات للرسالة
