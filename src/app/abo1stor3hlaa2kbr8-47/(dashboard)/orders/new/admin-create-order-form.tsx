@@ -85,17 +85,19 @@ function doorPhotoUrlForDisplay(url: string | null | undefined): string | null {
 }
 
 export function AdminCreateOrderForm({
- shops,
- regions,
- preparers,
- couriers,
- icons,
+  shops,
+  regions,
+  preparers,
+  couriers,
+  icons,
+  systemShopId = "",
 }: {
- shops: ShopOpt[];
- regions: RegionOpt[];
- preparers: Array<{ id: string; name: string; availableForAssignment: boolean }>;
- couriers: Array<{ id: string; name: string }>;
- icons?: GlobalIconsConfig;
+  shops: ShopOpt[];
+  regions: RegionOpt[];
+  preparers: Array<{ id: string; name: string; availableForAssignment: boolean }>;
+  couriers: Array<{ id: string; name: string }>;
+  icons?: GlobalIconsConfig;
+  systemShopId?: string;
 }) {
  const [state, formAction, pending] = useActionState(createAdminOrder, initialState);
 
@@ -164,6 +166,41 @@ export function AdminCreateOrderForm({
  const regionSearchRef = useRef<HTMLInputElement>(null);
 
  const [blockedPhone, setBlockedPhone] = useState<string | null>(null);
+
+ const [suggestions, setSuggestions] = useState<{ types: string[], subtotals: string[], times: string[] }>({ types: [], subtotals: [], times: [] });
+
+ useEffect(() => {
+   const activeShopId = submissionMode === "from_shop" ? shopId : systemShopId;
+   if (!activeShopId) {
+     setSuggestions({ types: [], subtotals: [], times: [] });
+     return;
+   }
+
+   let active = true;
+   void (async () => {
+     try {
+       const res = await fetch(`/api/shops/${activeShopId}/suggestions`);
+       if (!res.ok) throw new Error("Failed to fetch suggestions");
+       const data = await res.json();
+       if (active) {
+         setSuggestions({
+           types: data.types || [],
+           subtotals: data.subtotals || [],
+           times: data.times || [],
+         });
+       }
+     } catch (err) {
+       console.error("Error fetching suggestions:", err);
+       if (active) {
+         setSuggestions({ types: [], subtotals: [], times: [] });
+       }
+     }
+   })();
+
+   return () => {
+     active = false;
+   };
+ }, [shopId, submissionMode, systemShopId]);
 
  const togglePreparer = (id: string) => {
  setSelectedPreparerIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -884,6 +921,20 @@ export function AdminCreateOrderForm({
 
  <label className="flex flex-col gap-1 text-sm">
  <span className={ad.label}>نوع الطلب</span>
+ {suggestions.types.length > 0 && (
+   <div className="flex flex-wrap gap-1.5 mb-1 px-1">
+     {suggestions.types.map((type, idx) => (
+       <button
+         key={idx}
+         type="button"
+         onClick={() => setOrderType(type)}
+         className="px-2.5 py-1 text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg border border-sky-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+       >
+         {type}
+       </button>
+     ))}
+   </div>
+ )}
  <input
  name="orderType"
  required
@@ -897,6 +948,20 @@ export function AdminCreateOrderForm({
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <label className="flex flex-col gap-1 text-sm">
                      <span className={ad.label}>سعر الطلب</span>
+                     {suggestions.subtotals.length > 0 && (
+                       <div className="flex flex-wrap gap-1.5 mb-1 px-1">
+                         {suggestions.subtotals.map((sub, idx) => (
+                           <button
+                             key={idx}
+                             type="button"
+                             onClick={() => setOrderSubtotal(sub)}
+                             className="px-2.5 py-1 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                           >
+                             {sub}
+                           </button>
+                         ))}
+                       </div>
+                     )}
                      <input
                        name="orderSubtotal"
                        required
@@ -967,6 +1032,20 @@ export function AdminCreateOrderForm({
 
                  <label className="flex flex-col gap-1 text-sm">
                    <span className={ad.label}>وقت الطلب (إجباري)</span>
+                   {suggestions.times.length > 0 && (
+                     <div className="flex flex-wrap gap-1.5 mb-1 px-1">
+                       {suggestions.times.map((time, idx) => (
+                         <button
+                           key={idx}
+                           type="button"
+                           onClick={() => setOrderNoteTime(time)}
+                           className="px-2.5 py-1 text-xs bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                         >
+                           {time}
+                         </button>
+                       ))}
+                     </div>
+                   )}
                    <input
                      name="orderNoteTime"
                      required
@@ -1159,7 +1238,21 @@ export function AdminCreateOrderForm({
 
                  {/* نوع الطلب */}
                  <label className="flex flex-col gap-1 text-sm">
-                   <span className={ad.label}>نوع الطلب</span>
+                    <span className={ad.label}>نوع الطلب</span>
+                    {suggestions.types.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-1 px-1">
+                        {suggestions.types.map((type, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setOrderType(type)}
+                            className="px-2.5 py-1 text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg border border-sky-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                          >
+                            {type}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                    <input
                      name="orderType"
                      required
@@ -1174,6 +1267,20 @@ export function AdminCreateOrderForm({
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <label className="flex flex-col gap-1 text-sm">
                      <span className={ad.label}>سعر الطلب</span>
+                      {suggestions.subtotals.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-1 px-1">
+                          {suggestions.subtotals.map((sub, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setOrderSubtotal(sub)}
+                              className="px-2.5 py-1 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                            >
+                              {sub}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                      <input
                        name="orderSubtotal"
                        required
@@ -1244,6 +1351,20 @@ export function AdminCreateOrderForm({
                  {/* وقت الطلب */}
                  <label className="flex flex-col gap-1 text-sm">
                    <span className={ad.label}>وقت الطلب (إجباري)</span>
+                    {suggestions.times.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-1 px-1">
+                        {suggestions.times.map((time, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setOrderNoteTime(time)}
+                            className="px-2.5 py-1 text-xs bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                    <input
                      name="orderNoteTime"
                      required

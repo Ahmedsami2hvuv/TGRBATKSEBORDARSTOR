@@ -214,6 +214,37 @@ function ClientOrderFormInner({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [blockedPhone, setBlockedPhone] = useState<string | null>(null);
 
+  const [suggestions, setSuggestions] = useState<{ types: string[], subtotals: string[], times: string[] }>({ types: [], subtotals: [], times: [] });
+
+  useEffect(() => {
+    if (!shopId) return;
+
+    let active = true;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/shops/${shopId}/suggestions`);
+        if (!res.ok) throw new Error("Failed to fetch suggestions");
+        const data = await res.json();
+        if (active) {
+          setSuggestions({
+            types: data.types || [],
+            subtotals: data.subtotals || [],
+            times: data.times || [],
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching suggestions:", err);
+        if (active) {
+          setSuggestions({ types: [], subtotals: [], times: [] });
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [shopId]);
+
   useEffect(() => {
     if (state.error && state.error.includes("محظور")) {
       setBlockedPhone(customerPhone);
@@ -522,11 +553,39 @@ function ClientOrderFormInner({
 
               <label className="flex flex-col gap-1.5">
                 <span className="text-sm font-bold text-slate-600 px-1">نوع الطلب *</span>
+                {suggestions.types.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-1 mb-1 px-1">
+                    {suggestions.types.map((type, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setOrderType(type)}
+                        className="px-2.5 py-1 text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg border border-sky-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <input ref={orderTypeRef} name="orderType" required value={orderType} onChange={(e) => setOrderType(e.target.value)} className={`${inputClass} ${isOrderTypeErr ? inputErrorClass : ""}`} placeholder="مثال: بضاعة، طعام، …" />
               </label>
 
               <label className="flex flex-col gap-1.5">
                 <span className="text-sm font-bold text-slate-600 px-1">سعر الطلب </span>
+                {suggestions.subtotals.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-1 mb-1 px-1">
+                    {suggestions.subtotals.map((sub, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setOrderPrice(sub)}
+                        className="px-2.5 py-1 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                      >
+                        {sub}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <input ref={orderPriceRef} name="orderSubtotal" inputMode="decimal" value={orderPrice} onChange={(e) => setOrderPrice(e.target.value)} className={`${inputClass} font-mono tabular-nums text-lg font-black animate-placeholder ${isPriceErr ? inputErrorClass : ""}`} placeholder="اكتب السعر هنا" />
               </label>
 
@@ -570,6 +629,20 @@ function ClientOrderFormInner({
 
               <label className="flex flex-col gap-1.5">
                 <span className="text-sm font-bold text-slate-600 px-1">وقت التوصيل المفضل *</span>
+                {suggestions.times.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-1 mb-1 px-1">
+                    {suggestions.times.map((time, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setOrderTime(time)}
+                        className="px-2.5 py-1 text-xs bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                      >
+                        {time}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <input ref={orderTimeRef} name="orderTime" required value={orderTime} onChange={(e) => setOrderTime(e.target.value)} className={`${inputClass} ${isTimeErr ? inputErrorClass : ""}`} placeholder="مثال: بعد الظهر، الساعة 4، …" />
               </label>
 
@@ -766,6 +839,20 @@ function ClientOrderFormInner({
               <div className="kse-glass-dark rounded-3xl border border-sky-200 p-8 text-center animate-in slide-in-from-left duration-300">
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-sky-50 text-4xl shadow-sm">📦</div>
                 <h3 className="text-xl font-black text-slate-900">نوع الطلب</h3>
+                {suggestions.types.length > 0 && (
+                  <div className="flex flex-wrap justify-center gap-1.5 mt-4 mb-2 px-1">
+                    {suggestions.types.map((type, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setOrderType(type)}
+                        className="px-3 py-1.5 text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-xl border border-sky-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <p className="mt-2 text-sm font-bold text-slate-500 leading-relaxed">
                   عليك أن تكتب نوع الطلب لكي نعلم ما هي المركبة المناسبة لطلبيتك.
                   <br/>
@@ -789,6 +876,20 @@ function ClientOrderFormInner({
               <div className="kse-glass-dark rounded-3xl border border-amber-200 p-8 text-center animate-in slide-in-from-left duration-300">
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-amber-50 text-4xl shadow-sm">💰</div>
                 <h3 className="text-xl font-black text-slate-900">سعر الطلب</h3>
+                {suggestions.subtotals.length > 0 && (
+                  <div className="flex flex-wrap justify-center gap-1.5 mt-4 mb-2 px-1">
+                    {suggestions.subtotals.map((sub, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setOrderPrice(sub)}
+                        className="px-3 py-1.5 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl border border-emerald-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                      >
+                        {sub}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <p className="mt-2 text-sm font-bold text-slate-500 leading-relaxed">
                   اكتب السعر هنا، لكن انتبه: إذا كان طلبك 10 آلاف اكتب <b>10</b> فقط.
                   <br/>
@@ -873,6 +974,20 @@ function ClientOrderFormInner({
               <div className="kse-glass-dark rounded-3xl border border-rose-200 p-8 text-center animate-in slide-in-from-left duration-300">
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-rose-50 text-4xl shadow-sm">⏰</div>
                 <h3 className="text-xl font-black text-slate-900">وقت التوصيل</h3>
+                {suggestions.times.length > 0 && (
+                  <div className="flex flex-wrap justify-center gap-1.5 mt-4 mb-2 px-1">
+                    {suggestions.times.map((time, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setOrderTime(time)}
+                        className="px-3 py-1.5 text-xs bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-xl border border-slate-100 transition duration-150 font-medium active:scale-95 animate-in fade-in"
+                      >
+                        {time}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <p className="mt-2 text-sm font-bold text-slate-500 leading-relaxed">
                   متى تحب أن يأتي المندوب؟
                   <br/>

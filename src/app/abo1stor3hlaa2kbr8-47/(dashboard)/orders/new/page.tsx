@@ -7,6 +7,7 @@ import { headers } from "next/headers";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { courierAssignableWhere } from "@/lib/courier-assignable";
 import { serializePrisma } from "@/lib/serialize-prisma";
+import { getOrCreateSystemAdminShop } from "../pending/pricing-actions";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -23,8 +24,8 @@ export default async function AdminCreateOrderPage() {
     const protocol = host.includes("localhost") ? "http" : "https";
     const baseUrl = `${protocol}://${host}`;
 
-    // جلب المحلات، المناطق، الزبائن (للملء التلقائي)، والموظفين (كأزرار سريعة)، والمجهزين (لطلبات التجهيز)
-    const [shopsRaw, regionsRaw, preparersRaw, couriersRaw, iconsRaw] = await Promise.all([
+    // جلب المحلات، المناطق، الزبائن (للملء التلقائي)، والموظفين (كأزرار سريعة)، والمجهزين (لطلبات التجهيز)، ومحل النظام
+    const [shopsRaw, regionsRaw, preparersRaw, couriersRaw, iconsRaw, systemShop] = await Promise.all([
       prisma.shop.findMany({
         orderBy: { name: "asc" },
         include: { region: true },
@@ -44,6 +45,7 @@ export default async function AdminCreateOrderPage() {
         select: { id: true, name: true },
       }),
       getGlobalIcons(),
+      getOrCreateSystemAdminShop(),
     ]);
 
     // تأمين البيانات للنقل إلى Client Components
@@ -78,6 +80,7 @@ export default async function AdminCreateOrderPage() {
           preparers={preparers}
           couriers={couriers}
           icons={icons}
+          systemShopId={systemShop.id}
         />
       </div>
     );
