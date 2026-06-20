@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { CourierMapPoint } from "./couriers-map-client";
+import type { CourierMapPoint, WithoutLoc } from "./couriers-map-client";
 
 const CouriersMapClient = dynamic(
   () => import("./couriers-map-client").then((m) => m.CouriersMapClient),
@@ -13,6 +13,6 @@ const CouriersMapClient = dynamic(
   },
 );
 
-export function CouriersMapDynamic({ points, trackingEnabled }: { points: CourierMapPoint[], trackingEnabled: boolean }) {
-  return <CouriersMapClient points={points} trackingEnabled={trackingEnabled} />;
+export function CouriersMapDynamic({ points, initialWithoutLoc, trackingEnabled }: { points: CourierMapPoint[], initialWithoutLoc: WithoutLoc[], trackingEnabled: boolean }) {
+  return <CouriersMapClient points={points} initialWithoutLoc={initialWithoutLoc} trackingEnabled={trackingEnabled} />;
 }

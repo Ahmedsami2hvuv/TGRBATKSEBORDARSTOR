@@ -55,9 +55,9 @@ export async function GET() {
     return NextResponse.json({
       points: [...courierPoints, ...preparerPoints, ...employeePoints],
       withoutLoc: [
-          ...couriers.filter(c => c.lastCourierLat == null || c.lastCourierLng == null).map(c => ({id: c.id, name: c.name, phone: c.phone, typeName: "مندوب"})),
-          ...preparers.filter(p => p.lastPreparerLat == null || p.lastPreparerLng == null).map(p => ({id: p.id, name: p.name, phone: p.phone, typeName: "مجهز"})),
-          ...employees.filter(e => e.lastEmployeeLat == null || e.lastEmployeeLng == null).map(e => ({id: e.id, name: e.name, phone: e.phone, typeName: "موظف"})),
+          ...couriers.filter(c => c.lastCourierLat == null || c.lastCourierLng == null).map(c => ({id: c.id, name: c.name, phone: c.phone, typeName: "مندوب", type: "courier"})),
+          ...preparers.filter(p => p.lastPreparerLat == null || p.lastPreparerLng == null).map(p => ({id: p.id, name: p.name, phone: p.phone, typeName: "مجهز", type: "preparer"})),
+          ...employees.filter(e => e.lastEmployeeLat == null || e.lastEmployeeLng == null).map(e => ({id: e.id, name: e.name, phone: e.phone, typeName: "موظف", type: "employee"})),
       ]
     });
   } catch (error) {

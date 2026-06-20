@@ -57,7 +57,7 @@ export async function POST(req: Request) {
       url: "",
       externalIds: [userId],
       targetApp: targetApp,
-      sound: undefined,
+      isSilent: true,
       data: {
         type: "request_location"
       }

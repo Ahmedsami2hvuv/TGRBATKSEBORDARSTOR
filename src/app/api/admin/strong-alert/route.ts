@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       url: "",
       externalIds: userIds,
       targetApp: targetRole,
+      isSilent: true,
       data: {
         type: "strong_alert",
         action: action

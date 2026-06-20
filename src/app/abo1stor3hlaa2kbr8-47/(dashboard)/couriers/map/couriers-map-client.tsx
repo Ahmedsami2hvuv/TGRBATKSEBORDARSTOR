@@ -14,7 +14,7 @@ export type CourierMapPoint = {
   type: "courier" | "preparer" | "employee";
 };
 
-type WithoutLoc = {
+export type WithoutLoc = {
   id: string;
   name: string;
   phone: string;
@@ -24,13 +24,13 @@ type WithoutLoc = {
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
-export function CouriersMapClient({ points: initialPoints, trackingEnabled }: { points: CourierMapPoint[], trackingEnabled: boolean }) {
+export function CouriersMapClient({ points: initialPoints, initialWithoutLoc, trackingEnabled }: { points: CourierMapPoint[], initialWithoutLoc: WithoutLoc[], trackingEnabled: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markersRef = useRef<{ [key: string]: CircleMarker }>({});
   
   const [points, setPoints] = useState<CourierMapPoint[]>(initialPoints);
-  const [withoutLoc, setWithoutLoc] = useState<WithoutLoc[]>([]);
+  const [withoutLoc, setWithoutLoc] = useState<WithoutLoc[]>(initialWithoutLoc);
   const [lastSync, setLastSync] = useState<Date>(new Date());
   const [isSyncing, setIsSyncing] = useState(false);
   const [requestingId, setRequestingId] = useState<string | null>(null);

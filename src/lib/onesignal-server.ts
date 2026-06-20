@@ -22,6 +22,7 @@ export async function sendOneSignalNotification(options: {
   sound?: string;
   data?: any;
   targetApp?: "admin" | "mandob" | "preparer" | "employee";
+  isSilent?: boolean;
 }): Promise<boolean> {
   const isAdmin = options.externalIds.includes("admin_global") || options.targetApp === "admin";
   const isPreparer = options.targetApp === "preparer";
@@ -48,26 +49,33 @@ export async function sendOneSignalNotification(options: {
 
   const notification: any = {
     app_id: targetAppId,
-    contents: {
-      ar: options.body,
-      en: options.body,
-    },
-    headings: {
-      ar: options.title,
-      en: options.title,
-    },
     target_channel: "push",
     url: options.url,
     data: options.data,
-    android_sound: options.sound,
-    ios_sound: options.sound ? `${options.sound}.wav` : undefined,
     android_visibility: 1,
     priority: 10,
     huawei_priority: 10,
     web_push_priority: "high",
-    android_accent_color: "4f46e5",
-    small_icon: "ic_stat_onesignal_default",
   };
+
+  if (options.isSilent) {
+    notification.content_available = true;
+  } else {
+    notification.contents = {
+      ar: options.body,
+      en: options.body,
+    };
+    notification.headings = {
+      ar: options.title,
+      en: options.title,
+    };
+    if (options.sound) {
+      notification.android_sound = options.sound;
+      notification.ios_sound = `${options.sound}.wav`;
+    }
+    notification.android_accent_color = "4f46e5";
+    notification.small_icon = "ic_stat_onesignal_default";
+  }
 
   if (isAdmin) {
     notification.filters = [
