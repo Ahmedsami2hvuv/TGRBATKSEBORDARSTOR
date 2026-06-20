@@ -2364,6 +2364,28 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
       if (preparerBotToken && preparer.telegramUserId) {
         await sendTelegramHtmlToChat(preparer.telegramUserId, `✅ <b>تم استلام راتبك بنجاح!</b>\n\n${msg}`, preparerBotToken);
       }
+
+      // 4. إرسال إشعار OneSignal للأدمن كإشعار عائم منبثق على الهاتف
+      try {
+        const { sendOneSignalNotification } = await import("@/lib/onesignal-server");
+        await sendOneSignalNotification({
+          title: `💵 طلب تسوية حساب مجهز`,
+          body: `المجهز: ${preparer.name} قام بسحب ${amountStr}. المتبقي: ${remainStr}`,
+          url: `https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/credit-book`,
+          externalIds: ["admin_global"],
+          targetApp: "admin",
+          data: {
+            type: "preparer_withdrawal",
+            preparerName: preparer.name,
+            amount: amountStr,
+            remain: remainStr,
+            time: new Date().toLocaleString("ar-IQ")
+          }
+        });
+        console.log(`[OneSignal] Sent salary withdrawal notification to admin for preparer ${preparer.name}`);
+      } catch (osErr) {
+        console.error("OneSignal notification for preparer salary withdrawal failed:", osErr);
+      }
     } catch (notifErr) {
       console.error("Telegram notification for salary withdrawal failed:", notifErr);
     }

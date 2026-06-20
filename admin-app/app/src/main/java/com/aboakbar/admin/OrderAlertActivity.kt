@@ -52,25 +52,70 @@ class OrderAlertActivity : Activity() {
         val prefs = getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
         adminToken = prefs.getString("admin_token", null)
 
-        val shopName = intent.getStringExtra("shopName") ?: "—"
-        val regionName = intent.getStringExtra("regionName") ?: "—"
-        val orderTime = intent.getStringExtra("orderTime") ?: "فوري"
-        val orderType = intent.getStringExtra("orderType") ?: "—"
-        val subtotal = intent.getDoubleExtra("subtotal", 0.0)
-        val pendingCount = intent.getIntExtra("pendingCount", 0)
-        currentOrderNumber = intent.getIntExtra("orderNumber", 0)
+        val type = intent.getStringExtra("type") ?: "new_order"
 
-        findViewById<TextView>(R.id.tvAlertTitle).text = "$shopName — $regionName"
-        findViewById<TextView>(R.id.tvOrderNumber).text = "طلب رقم: #$currentOrderNumber"
-        findViewById<TextView>(R.id.tvOrderDetails).text = 
-            "⏰ الوقت: $orderTime\n" +
-            "📦 النوع: $orderType\n" +
-            "💵 السعر بدون توصيل: ${formatNumber(subtotal)} د.ع\n" +
-            "🔔 إجمالي الطلبات المعلقة: $pendingCount"
+        if (type == "preparer_withdrawal") {
+            val preparerName = intent.getStringExtra("preparerName") ?: "—"
+            val amount = intent.getStringExtra("amount") ?: "0"
+            val remain = intent.getStringExtra("remain") ?: "0"
+            val time = intent.getStringExtra("time") ?: "—"
 
-        setupButtons()
+            findViewById<TextView>(R.id.tvAlertHeader).text = "💵 طلب تسوية حساب مجهز"
+            findViewById<TextView>(R.id.tvAlertTitle).text = preparerName
+            findViewById<TextView>(R.id.tvOrderNumber).text = "عملية سحب وتصفية مالية"
+            findViewById<TextView>(R.id.tvOrderDetails).text = 
+                "💰 المبلغ المسحوب: $amount\n" +
+                "💼 المتبقي بالمحفظة: $remain\n" +
+                "⏰ الوقت: $time"
+
+            setupWithdrawalButtons()
+        } else {
+            val shopName = intent.getStringExtra("shopName") ?: "—"
+            val regionName = intent.getStringExtra("regionName") ?: "—"
+            val orderTime = intent.getStringExtra("orderTime") ?: "فوري"
+            val orderType = intent.getStringExtra("orderType") ?: "—"
+            val subtotal = intent.getDoubleExtra("subtotal", 0.0)
+            val pendingCount = intent.getIntExtra("pendingCount", 0)
+            currentOrderNumber = intent.getIntExtra("orderNumber", 0)
+
+            findViewById<TextView>(R.id.tvAlertTitle).text = "$shopName — $regionName"
+            findViewById<TextView>(R.id.tvOrderNumber).text = "طلب رقم: #$currentOrderNumber"
+            findViewById<TextView>(R.id.tvOrderDetails).text = 
+                "⏰ الوقت: $orderTime\n" +
+                "📦 النوع: $orderType\n" +
+                "💵 السعر بدون توصيل: ${formatNumber(subtotal)} د.ع\n" +
+                "🔔 إجمالي الطلبات المعلقة: $pendingCount"
+
+            setupButtons()
+            fetchCouriers()
+        }
+
         playNotificationEffects()
-        fetchCouriers()
+    }
+
+    private fun setupWithdrawalButtons() {
+        val btnOpenApp = findViewById<Button>(R.id.btnOpenApp)
+        val btnCloseAlert = findViewById<Button>(R.id.btnCloseAlert)
+        val btnRejectOrder = findViewById<Button>(R.id.btnRejectOrder)
+        val btnAssignOrder = findViewById<Button>(R.id.btnAssignOrder)
+
+        btnOpenApp.text = "فتح دفتر الديون"
+        btnOpenApp.setOnClickListener {
+            val mainIntent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("target_url", "https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/credit-book")
+            }
+            startActivity(mainIntent)
+            finish()
+        }
+
+        btnCloseAlert.setOnClickListener {
+            finish()
+        }
+
+        // إخفاء أزرار الرفض والإسناد لأنها عملية مالية وليست طلباً للتوصيل
+        btnRejectOrder.visibility = View.GONE
+        btnAssignOrder.visibility = View.GONE
     }
 
     private fun setupButtons() {
