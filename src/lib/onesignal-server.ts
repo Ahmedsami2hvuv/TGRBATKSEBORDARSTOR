@@ -128,13 +128,22 @@ export async function notifyOneSignalPreparerAssignment(input: {
   let orderNumber = 0;
 
   if (input.isDraft) {
-    const draft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: input.orderId } });
+    const draft = await prisma.companyPreparerShoppingDraft.findUnique({
+      where: { id: input.orderId },
+      include: {
+        customerRegion: { select: { name: true } }
+      }
+    });
     if (!draft) return;
     titleLine = draft.titleLine;
     productsData = (draft.data as any)?.products || [];
     draftIdForUrl = draft.id;
     shopName = draft.titleLine.split(" - ")[0] || "مسودة طلب";
     orderNumber = parseInt(draft.id.replace(/[^0-9]/g, "").slice(0, 6)) || 0;
+    regionName = draft.customerRegion?.name || "—";
+    orderTime = draft.orderTime || "فوري";
+    orderType = (draft.data as any)?.orderType || "تجهيز";
+    subtotal = Number((draft.data as any)?.orderSubtotalAlf || 0);
   } else {
     const order = await prisma.order.findUnique({
       where: { id: input.orderId },
