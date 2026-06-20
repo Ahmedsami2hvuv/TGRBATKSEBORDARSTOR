@@ -354,7 +354,7 @@ export function StrongAlertClient({ couriers, preparers, employees }: StrongAler
             disabled={loading || selectedIds.length === 0}
             className={`relative px-12 py-5 rounded-xl font-extrabold text-lg text-white shadow-2xl transition-all duration-300 transform ${
               selectedIds.length > 0
-                ? "bg-red-600 hover:bg-red-500 cursor-pointer hover:scale-105 active:scale-95 shadow-red-600/30"
+                ? "bg-red-600 hover:bg-red-500 cursor-pointer hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(239,68,68,0.6)] animate-pulse"
                 : "bg-gray-800 text-gray-500 cursor-not-allowed"
             }`}
           >
@@ -365,10 +365,6 @@ export function StrongAlertClient({ couriers, preparers, employees }: StrongAler
                 <span>إطلاق التنبيه القوي</span>
                 <span>🚨</span>
               </span>
-            )}
-            {/* تأثير وميض خارجي نابض إذا تم تحديد أشخاص */}
-            {selectedIds.length > 0 && (
-              <span className="absolute inset-0 rounded-xl border border-red-500 animate-ping opacity-75"></span>
             )}
           </button>
         </div>
