@@ -55,16 +55,40 @@ export default async function LargeImagesPage() {
 
       if (contents.length > 0) {
         // 1. تصفية وحساب المساحات وتجميع مفاتيح الصور الكبيرة أولاً
-        const largeKeys: string[] = [];
+        const allLargeObjects: {
+          key: string;
+          sizeKb: number;
+          sizeMb: string;
+          size: number;
+          lastModified?: Date;
+        }[] = [];
+
         contents.forEach(obj => {
           const size = obj.Size ?? 0;
           totalBucketSize += size;
 
           if (size > 500 * 1024) {
             totalLargeSize += size;
-            largeKeys.push(obj.Key ?? "");
+            const key = obj.Key ?? "";
+            const sizeKb = Math.round(size / 1024);
+            const sizeMb = (size / (1024 * 1024)).toFixed(2);
+
+            allLargeObjects.push({
+              key,
+              sizeKb,
+              sizeMb,
+              size,
+              lastModified: obj.LastModified,
+            });
           }
         });
+
+        // ترتيب تنازلي حسب الحجم لاختيار الأكبر أولاً
+        allLargeObjects.sort((a, b) => b.size - a.size);
+
+        // اختيار أكبر 100 صورة فقط للاستعلام عن استخداماتها وعرضها لتفادي خطأ Postgres (حد المتغيرات 32767)
+        const itemsToDisplay = allLargeObjects.slice(0, 100);
+        const largeKeys = itemsToDisplay.map(item => item.key);
 
         // 2. البحث الموجه والتسلسلي في قاعدة البيانات فقط عن الروابط الخاصة بالصور الكبيرة لمنع استهلاك الـ connection pool
         const usageMap = new Map<string, string[]>();
@@ -142,30 +166,21 @@ export default async function LargeImagesPage() {
           profiles.forEach(p => addUsage(p.photoUrl, `بروفايل زبون: ${p.phone}`));
         }
 
-        // 3. بناء قائمة الكائنات الكبيرة مع استخداماتها
-        contents.forEach(obj => {
-          const size = obj.Size ?? 0;
-          if (size > 500 * 1024) {
-            const key = obj.Key ?? "";
-            const sizeKb = Math.round(size / 1024);
-            const sizeMb = (size / (1024 * 1024)).toFixed(2);
-            const usages = usageMap.get(key) || [];
-            if (usages.length === 0) orphanedCount++;
+        // 3. بناء قائمة الكائنات الكبيرة المختارة فقط لعرضها في الواجهة
+        itemsToDisplay.forEach(obj => {
+          const usages = usageMap.get(obj.key) || [];
+          if (usages.length === 0) orphanedCount++;
 
-            largeObjects.push({
-              key,
-              sizeKb,
-              sizeMb,
-              size,
-              lastModified: obj.LastModified,
-              usages: usages.length > 0 ? usages : ["صورة يتيمة / غير مستخدمة 🗑️"],
-              url: `/uploads/${key}`,
-            });
-          }
+          largeObjects.push({
+            key: obj.key,
+            sizeKb: obj.sizeKb,
+            sizeMb: obj.sizeMb,
+            size: obj.size,
+            lastModified: obj.lastModified,
+            usages: usages.length > 0 ? usages : ["صورة يتيمة / غير مستخدمة 🗑️"],
+            url: `/uploads/${obj.key}`,
+          });
         });
-
-        // ترتيب تنازلي حسب الحجم
-        largeObjects.sort((a, b) => b.size - a.size);
       }
     }
   } catch (e: any) {

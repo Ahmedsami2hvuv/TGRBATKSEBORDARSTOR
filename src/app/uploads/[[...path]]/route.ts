@@ -114,10 +114,34 @@ export async function GET(
       return new NextResponse("File Not Found", { status: 404 });
     }
 
-    const r2Domain = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || process.env.R2_BUCKET_DOMAIN || "https://pub-2f7b4947937d4575971a8f949826a575.r2.dev";
-    const cleanDomain = r2Domain.replace(/\/$/, "");
+    // جلب الملف مباشرة من R2 كـ Buffer وإرجاعه للمتصفح لتفادي مشاكل الـ 401 مع الروابط العامة لـ R2
+    try {
+      const { GetObjectCommand } = await import("@aws-sdk/client-s3");
+      const res = await r2Client.send(new GetObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: foundCandidate,
+      }));
 
-    return NextResponse.redirect(`${cleanDomain}/${foundCandidate}`, 307);
+      if (!res.Body) {
+        return new NextResponse("File Empty", { status: 404 });
+      }
+
+      const fileBytes = await res.Body.transformToByteArray();
+      const fileBuffer = Buffer.from(fileBytes);
+      const contentType = res.ContentType || "image/jpeg";
+
+      return new NextResponse(fileBuffer, {
+        headers: {
+          "Content-Type": contentType,
+          "Cache-Control": "public, max-age=31536000, immutable",
+        },
+      });
+    } catch (s3Err) {
+      console.error("Failed to stream file from R2 directly, trying fallback redirect:", s3Err);
+      const r2Domain = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || process.env.R2_BUCKET_DOMAIN || "https://pub-2f7b4947937d4575971a8f949826a575.r2.dev";
+      const cleanDomain = r2Domain.replace(/\/$/, "");
+      return NextResponse.redirect(`${cleanDomain}/${foundCandidate}`, 307);
+    }
   } catch (error) {
     console.error("Error fetching or redirecting file from R2:", error);
     return new NextResponse("Image Not Found", { status: 404 });
