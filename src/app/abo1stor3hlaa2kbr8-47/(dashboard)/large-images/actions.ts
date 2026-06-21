@@ -16,7 +16,7 @@ export async function compressR2ImageAction(key: string) {
       return { ok: false, error: "تعذر قراءة الصورة من R2" };
     }
 
-    // تقليص أبعاد الصورة لـ 1200 بكسل كحد أقصى للضلع وضغط جودة JPEG لـ 70%
+    // تقليص أبعاد الصورة لـ 1200 بكسل كحد أقصى للضلع وضغط الجودة
     const pipeline = sharp(buffer)
       .rotate() // الحفاظ على اتجاه الصورة الصحيح
       .resize({
@@ -30,22 +30,21 @@ export async function compressR2ImageAction(key: string) {
     let compressedBuffer: Buffer;
     
     if (key.toLowerCase().endsWith(".png")) {
-      compressedBuffer = await pipeline.png({ quality: 80, compressionLevel: 9 }).toBuffer();
+      compressedBuffer = await pipeline.png({ palette: true, compressionLevel: 6 }).toBuffer();
       contentType = "image/png";
     } else if (key.toLowerCase().endsWith(".webp")) {
-      compressedBuffer = await pipeline.webp({ quality: 70 }).toBuffer();
+      compressedBuffer = await pipeline.webp({ quality: 75 }).toBuffer();
       contentType = "image/webp";
     } else {
-      compressedBuffer = await pipeline.jpeg({ quality: 70, mozjpeg: true }).toBuffer();
+      compressedBuffer = await pipeline.jpeg({ quality: 75 }).toBuffer();
       contentType = "image/jpeg";
     }
 
-    const uploadedKey = await uploadToR2(compressedBuffer, key, contentType);
+    const uploadedKey = await uploadToR2(compressedBuffer, key, contentType, true);
     if (!uploadedKey) {
       return { ok: false, error: "تعذر إعادة رفع الصورة المصغرة" };
     }
 
-    revalidatePath(`${SECRET_ADMIN_PATH}/large-images`);
     return { ok: true };
   } catch (e: any) {
     console.error("Image compression failed:", e);

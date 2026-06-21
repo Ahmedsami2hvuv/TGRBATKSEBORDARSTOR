@@ -19,7 +19,7 @@ export async function getS3Client() {
   return null;
 }
 
-export async function uploadToR2(buffer: Buffer, key: string, contentType: string) {
+export async function uploadToR2(buffer: Buffer, key: string, contentType: string, skipCompress = false) {
   if (!BUCKET_NAME) {
     console.error("R2_BUCKET_NAME is not defined");
     return null;
@@ -30,11 +30,11 @@ export async function uploadToR2(buffer: Buffer, key: string, contentType: strin
   let finalBuffer = buffer;
   let finalContentType = contentType;
 
-  // التحقق مما إذا كان الملف صورة وحجمه أكبر من 150 كيلوبايت
+  // التحقق مما إذا كان الملف صورة وحجمه أكبر من 150 كيلوبايت ومطلوب ضغطه
   const isImage = (contentType && contentType.startsWith("image/")) || 
                   /\.(jpg|jpeg|png|webp)$/i.test(key);
 
-  if (isImage && buffer.length > 150 * 1024) {
+  if (!skipCompress && isImage && buffer.length > 150 * 1024) {
     try {
       const sharp = (await import("sharp")).default;
       const pipeline = sharp(buffer)
@@ -47,13 +47,13 @@ export async function uploadToR2(buffer: Buffer, key: string, contentType: strin
         });
 
       if (key.toLowerCase().endsWith(".png") || contentType === "image/png") {
-        finalBuffer = await pipeline.png({ quality: 80, compressionLevel: 9 }).toBuffer();
+        finalBuffer = await pipeline.png({ palette: true, compressionLevel: 6 }).toBuffer();
         finalContentType = "image/png";
       } else if (key.toLowerCase().endsWith(".webp") || contentType === "image/webp") {
-        finalBuffer = await pipeline.webp({ quality: 70 }).toBuffer();
+        finalBuffer = await pipeline.webp({ quality: 75 }).toBuffer();
         finalContentType = "image/webp";
       } else {
-        finalBuffer = await pipeline.jpeg({ quality: 70, mozjpeg: true }).toBuffer();
+        finalBuffer = await pipeline.jpeg({ quality: 75 }).toBuffer();
         finalContentType = "image/jpeg";
       }
       console.log(`[R2 Auto-Compress] Compressed ${key} from ${(buffer.length / 1024).toFixed(1)}KB to ${(finalBuffer.length / 1024).toFixed(1)}KB (Saved ${((1 - finalBuffer.length / buffer.length) * 100).toFixed(1)}%)`);
