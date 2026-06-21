@@ -85,98 +85,15 @@ export default async function LargeImagesPage() {
         // ترتيب تنازلي حسب الحجم لاختيار الأكبر أولاً
         allLargeObjects.sort((a, b) => b.size - a.size);
 
-        // اختيار أكبر 100 صورة فقط للاستعلام عن استخداماتها وعرضها لتفادي خطأ Postgres (حد المتغيرات 32767)
-        const itemsToDisplay = allLargeObjects.slice(0, 100);
-        const largeKeys = itemsToDisplay.map(item => item.key);
-
-        // 2. البحث الموجه والتسلسلي في قاعدة البيانات فقط عن الروابط الخاصة بالصور الكبيرة لمنع استهلاك الـ connection pool
-        const usageMap = new Map<string, string[]>();
-        const addUsage = (url: string | null | undefined, description: string) => {
-          if (!url) return;
-          const trimmed = url.trim();
-          const parts = trimmed.split("/uploads/");
-          const key = parts.length > 1 ? parts[parts.length - 1] : trimmed;
-          if (!usageMap.has(key)) usageMap.set(key, []);
-          usageMap.get(key)!.push(description);
-        };
-
-        if (largeKeys.length > 0) {
-          const searchUrls = largeKeys.flatMap(key => [
-            key,
-            `/uploads/${key}`,
-            `https://aboakbr.com/uploads/${key}`
-          ]);
-
-          // الاستعلامات تتم بشكل تسلسلي (Sequential) لتجنب استهلاك اتصالات الـ pool المحدودة بـ 2
-          const orders = await prisma.order.findMany({
-            where: {
-              OR: [
-                { imageUrl: { in: searchUrls } },
-                { shopDoorPhotoUrl: { in: searchUrls } },
-                { customerDoorPhotoUrl: { in: searchUrls } },
-                { secondCustomerDoorPhotoUrl: { in: searchUrls } }
-              ]
-            },
-            select: { id: true, imageUrl: true, shopDoorPhotoUrl: true, customerDoorPhotoUrl: true, secondCustomerDoorPhotoUrl: true }
-          });
-
-          const shops = await prisma.shop.findMany({
-            where: { photoUrl: { in: searchUrls } },
-            select: { name: true, photoUrl: true }
-          });
-
-          const customers = await prisma.customer.findMany({
-            where: { customerDoorPhotoUrl: { in: searchUrls } },
-            select: { name: true, customerDoorPhotoUrl: true }
-          });
-
-          const products = await prisma.storeProduct.findMany({
-            where: { photoUrls: { hasSome: searchUrls } },
-            select: { name: true, photoUrls: true }
-          });
-
-          const categories = await prisma.storeCategory.findMany({
-            where: { photoUrl: { in: searchUrls } },
-            select: { name: true, photoUrl: true }
-          });
-
-          const branches = await prisma.storeBranch.findMany({
-            where: { photoUrl: { in: searchUrls } },
-            select: { name: true, photoUrl: true }
-          });
-
-          const profiles = await prisma.customerPhoneProfile.findMany({
-            where: { photoUrl: { in: searchUrls } },
-            select: { phone: true, photoUrl: true }
-          });
-
-          // ربط الاستخدامات ببعضها
-          orders.forEach(o => {
-            addUsage(o.imageUrl, `طلب #${o.id}`);
-            addUsage(o.shopDoorPhotoUrl, `باب محل لطلب #${o.id}`);
-            addUsage(o.customerDoorPhotoUrl, `باب زبون لطلب #${o.id}`);
-            addUsage(o.secondCustomerDoorPhotoUrl, `باب زبون ثاني لطلب #${o.id}`);
-          });
-          shops.forEach(s => addUsage(s.photoUrl, `محل: ${s.name}`));
-          customers.forEach(c => addUsage(c.customerDoorPhotoUrl, `زبون: ${c.name}`));
-          products.forEach(p => p.photoUrls.forEach(url => addUsage(url, `منتج: ${p.name}`)));
-          categories.forEach(c => addUsage(c.photoUrl, `قسم: ${c.name}`));
-          branches.forEach(b => addUsage(b.photoUrl, `فرع: ${b.name}`));
-          profiles.forEach(p => addUsage(p.photoUrl, `بروفايل زبون: ${p.phone}`));
-        }
-
-        // 3. بناء قائمة الكائنات الكبيرة المختارة فقط لعرضها في الواجهة
-        itemsToDisplay.forEach(obj => {
-          const usages = usageMap.get(obj.key) || [];
-          if (usages.length === 0) orphanedCount++;
-
+        // بناء قائمة الكائنات الكبيرة بدون استخدامات لتمريرها للكلاينت مباشرة (سيتم تحميل الاستخدامات تفاعلياً)
+        allLargeObjects.forEach(obj => {
           largeObjects.push({
             key: obj.key,
             sizeKb: obj.sizeKb,
             sizeMb: obj.sizeMb,
             size: obj.size,
             lastModified: obj.lastModified,
-            usages: usages.length > 0 ? usages : ["صورة يتيمة / غير مستخدمة 🗑️"],
+            usages: [], // سيتم تحميلها في الخلفية بالكلاينت
             url: `/uploads/${obj.key}`,
           });
         });

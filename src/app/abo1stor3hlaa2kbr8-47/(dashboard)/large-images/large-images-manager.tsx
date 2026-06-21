@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
-import { compressR2ImageAction, deleteR2ImageAction, fetchNextLargeImagesAction } from "./actions";
+import { useState, useTransition, useRef, useEffect } from "react";
+import { compressR2ImageAction, deleteR2ImageAction, fetchNextLargeImagesAction, fetchImagesUsagesAction } from "./actions";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { toast } from "sonner";
@@ -46,6 +46,55 @@ export function LargeImagesManager({
       return next;
     });
   };
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [usagesMap, setUsagesMap] = useState<{ [key: string]: string[] }>({});
+  const [loadingKeys, setLoadingKeys] = useState<Set<string>>(new Set());
+
+  const itemsPerPage = 100;
+  const totalPages = Math.ceil(images.length / itemsPerPage);
+
+  // الكائنات المعروضة في الصفحة الحالية
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const displayedImages = images.slice(startIndex, startIndex + itemsPerPage);
+
+  // جلب الاستخدامات للصور المعروضة في الصفحة الحالية عند الحاجة
+  useEffect(() => {
+    if (displayedImages.length === 0) return;
+
+    // تحديد المفاتيح التي لا تحتوي على استخدامات بعد في usagesMap وليست قيد التحميل حالياً
+    const keysToFetch = displayedImages
+      .map(img => img.key)
+      .filter(key => usagesMap[key] === undefined && !loadingKeys.has(key));
+
+    if (keysToFetch.length === 0) return;
+
+    // إضافة المفاتيح لقائمة الجاري تحميلها
+    setLoadingKeys((prev) => {
+      const next = new Set(prev);
+      keysToFetch.forEach(k => next.add(k));
+      return next;
+    });
+
+    const fetchUsages = async () => {
+      const res = await fetchImagesUsagesAction(keysToFetch);
+      if (res.ok && res.usages) {
+        setUsagesMap((prev) => ({
+          ...prev,
+          ...res.usages
+        }));
+      }
+
+      // إزالة المفاتيح من قائمة الجاري تحميلها
+      setLoadingKeys((prev) => {
+        const next = new Set(prev);
+        keysToFetch.forEach(k => next.delete(k));
+        return next;
+      });
+    };
+
+    fetchUsages();
+  }, [currentPage, images, usagesMap]);
 
   // حالات التقليص الجماعي
   const [isBatchRunning, setIsBatchRunning] = useState(false);
@@ -93,7 +142,8 @@ export function LargeImagesManager({
         // تحديث الحسابات محلياً
         setTotalLargeSizeMb((prev) => Math.max(0, parseFloat((prev - img.size / (1024 * 1024)).toFixed(2))));
         setTotalBucketSizeMb((prev) => Math.max(0, parseFloat((prev - savedMb).toFixed(1))));
-        if (img.usages.includes("صورة يتيمة / غير مستخدمة 🗑️")) {
+        const imgUsages = usagesMap[key] || [];
+        if (imgUsages.length === 0) {
           setOrphanedCount((prev) => Math.max(0, prev - 1));
         }
 
@@ -239,7 +289,8 @@ export function LargeImagesManager({
         if (img) {
           setTotalLargeSizeMb((prev) => Math.max(0, parseFloat((prev - img.size / (1024 * 1024)).toFixed(2))));
           setTotalBucketSizeMb((prev) => Math.max(0, parseFloat((prev - img.size / (1024 * 1024)).toFixed(1))));
-          if (img.usages.includes("صورة يتيمة / غير مستخدمة 🗑️")) {
+          const imgUsages = usagesMap[key] || [];
+          if (imgUsages.length === 0) {
             setOrphanedCount((prev) => Math.max(0, prev - 1));
           }
           updateImagesState((prev) => prev.filter((i) => i.key !== key));
@@ -350,8 +401,64 @@ export function LargeImagesManager({
           <p className="text-sm text-gray-400 mt-1">لا توجد أي صور يتجاوز حجمها 500 كيلوبايت في حساب R2 حالياً.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in duration-500">
-          <div className="overflow-x-auto">
+        <div className="space-y-4">
+          {/* ترقيم الصفحات بالأعلى */}
+          {totalPages > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm animate-in fade-in duration-300">
+              <div className="text-xs font-bold text-gray-500 select-none">
+                عرض صفحة <span className="text-amber-600">{currentPage}</span> من أصل <span className="text-gray-700">{totalPages}</span> صفحات ({images.length} صورة)
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5" dir="ltr">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1 || isBatchRunning}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-50 hover:bg-gray-100 disabled:opacity-40 transition-all select-none cursor-pointer border border-gray-100"
+                >
+                  Prev
+                </button>
+                
+                {Array.from({ length: totalPages }).map((_, index) => {
+                  const pageNum = index + 1;
+                  if (totalPages > 8) {
+                    const isNearCurrent = Math.abs(currentPage - pageNum) <= 2;
+                    const isFirstOrLast = pageNum === 1 || pageNum === totalPages;
+                    if (!isNearCurrent && !isFirstOrLast) {
+                      if (pageNum === 2 || pageNum === totalPages - 1) {
+                        return <span key={pageNum} className="text-gray-400 text-xs px-1 select-none">...</span>;
+                      }
+                      return null;
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      disabled={isBatchRunning}
+                      className={`w-8 h-8 rounded-xl text-xs font-bold transition-all select-none cursor-pointer border ${
+                        currentPage === pageNum
+                          ? "bg-amber-500 text-white border-amber-500 shadow-sm"
+                          : "bg-gray-50 hover:bg-gray-100 text-gray-600 border-gray-100"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages || isBatchRunning}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-50 hover:bg-gray-100 disabled:opacity-40 transition-all select-none cursor-pointer border border-gray-100"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in duration-500">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm text-right">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100 text-gray-400 text-xs font-bold">
@@ -363,8 +470,10 @@ export function LargeImagesManager({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-gray-700">
-                {images.map((obj) => {
-                  const isOrphaned = obj.usages.includes("صورة يتيمة / غير مستخدمة 🗑️");
+                {displayedImages.map((obj) => {
+                  const usages = usagesMap[obj.key];
+                  const isLoading = usages === undefined;
+                  const isOrphaned = !isLoading && usages.length === 0;
                   const isProcessing = processingKeys.has(obj.key);
                   const isFailed = failedKeys.has(obj.key);
 
@@ -400,18 +509,25 @@ export function LargeImagesManager({
                       </td>
                       <td className="p-4 text-xs font-bold">
                         <div className="flex flex-wrap gap-1">
-                          {obj.usages.map((use, idx) => (
-                            <span 
-                              key={idx} 
-                              className={`px-2 py-1 rounded-lg border ${
-                                isOrphaned 
-                                  ? "bg-red-50 text-red-700 border-red-100" 
-                                  : "bg-blue-50 text-blue-700 border-blue-100"
-                              }`}
-                            >
-                              {use}
+                          {isLoading ? (
+                            <span className="text-gray-400 animate-pulse flex items-center gap-1 select-none font-normal">
+                              <span className="w-3 h-3 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></span>
+                              جاري التحميل...
                             </span>
-                          ))}
+                          ) : usages.length === 0 ? (
+                            <span className="px-2 py-1 rounded-lg border bg-red-50 text-red-700 border-red-100">
+                              صورة يتيمة / غير مستخدمة 🗑️
+                            </span>
+                          ) : (
+                            usages.map((use, idx) => (
+                              <span 
+                                key={idx} 
+                                className="px-2 py-1 rounded-lg border bg-blue-50 text-blue-700 border-blue-100"
+                              >
+                                {use}
+                              </span>
+                            ))
+                          )}
                         </div>
                       </td>
                       <td className="p-4 text-center">
@@ -445,6 +561,7 @@ export function LargeImagesManager({
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}

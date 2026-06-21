@@ -220,3 +220,89 @@ export async function fetchNextLargeImagesAction() {
     return { ok: false, error: error.message || "حدث خطأ أثناء جلب الدفعة التالية" };
   }
 }
+
+/**
+ * جلب استخدامات قائمة معينة من مفاتيح الصور (100 كحد أقصى) من قاعدة البيانات
+ */
+export async function fetchImagesUsagesAction(keys: string[]) {
+  try {
+    const usageMap: { [key: string]: string[] } = {};
+    const addUsage = (url: string | null | undefined, description: string) => {
+      if (!url) return;
+      const trimmed = url.trim();
+      const parts = trimmed.split("/uploads/");
+      const key = parts.length > 1 ? parts[parts.length - 1] : trimmed;
+      if (!usageMap[key]) usageMap[key] = [];
+      usageMap[key].push(description);
+    };
+
+    if (keys.length > 0) {
+      const searchUrls = keys.flatMap(key => [
+        key,
+        `/uploads/${key}`,
+        `https://aboakbr.com/uploads/${key}`
+      ]);
+
+      // الاستعلامات تتم بشكل تسلسلي لتجنب إجهاد قاعدة البيانات واستنفاد pool الاتصالات
+      const orders = await prisma.order.findMany({
+        where: {
+          OR: [
+            { imageUrl: { in: searchUrls } },
+            { shopDoorPhotoUrl: { in: searchUrls } },
+            { customerDoorPhotoUrl: { in: searchUrls } },
+            { secondCustomerDoorPhotoUrl: { in: searchUrls } }
+          ]
+        },
+        select: { id: true, imageUrl: true, shopDoorPhotoUrl: true, customerDoorPhotoUrl: true, secondCustomerDoorPhotoUrl: true }
+      });
+
+      const shops = await prisma.shop.findMany({
+        where: { photoUrl: { in: searchUrls } },
+        select: { name: true, photoUrl: true }
+      });
+
+      const customers = await prisma.customer.findMany({
+        where: { customerDoorPhotoUrl: { in: searchUrls } },
+        select: { name: true, customerDoorPhotoUrl: true }
+      });
+
+      const products = await prisma.storeProduct.findMany({
+        where: { photoUrls: { hasSome: searchUrls } },
+        select: { name: true, photoUrls: true }
+      });
+
+      const categories = await prisma.storeCategory.findMany({
+        where: { photoUrl: { in: searchUrls } },
+        select: { name: true, photoUrl: true }
+      });
+
+      const branches = await prisma.storeBranch.findMany({
+        where: { photoUrl: { in: searchUrls } },
+        select: { name: true, photoUrl: true }
+      });
+
+      const profiles = await prisma.customerPhoneProfile.findMany({
+        where: { photoUrl: { in: searchUrls } },
+        select: { phone: true, photoUrl: true }
+      });
+
+      orders.forEach(o => {
+        addUsage(o.imageUrl, `طلب #${o.id}`);
+        addUsage(o.shopDoorPhotoUrl, `باب محل لطلب #${o.id}`);
+        addUsage(o.customerDoorPhotoUrl, `باب زبون لطلب #${o.id}`);
+        addUsage(o.secondCustomerDoorPhotoUrl, `باب زبون ثاني لطلب #${o.id}`);
+      });
+      shops.forEach(s => addUsage(s.photoUrl, `محل: ${s.name}`));
+      customers.forEach(c => addUsage(c.customerDoorPhotoUrl, `زبون: ${c.name}`));
+      products.forEach(p => p.photoUrls.forEach(url => addUsage(url, `منتج: ${p.name}`)));
+      categories.forEach(c => addUsage(c.photoUrl, `قسم: ${c.name}`));
+      branches.forEach(b => addUsage(b.photoUrl, `فرع: ${b.name}`));
+      profiles.forEach(p => addUsage(p.photoUrl, `بروفايل زبون: ${p.phone}`));
+    }
+
+    return { ok: true, usages: usageMap };
+  } catch (error: any) {
+    console.error("Failed to fetch image usages:", error);
+    return { ok: false, error: error.message || "فشل جلب استخدامات الصور الكبيرة" };
+  }
+}
