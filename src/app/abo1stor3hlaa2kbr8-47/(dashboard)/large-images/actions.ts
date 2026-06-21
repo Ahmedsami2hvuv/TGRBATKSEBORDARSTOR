@@ -17,6 +17,9 @@ export async function compressR2ImageAction(key: string) {
       return { ok: false, error: "تعذر قراءة الصورة من R2" };
     }
 
+    // تعطيل كاش sharp لتجنب تراكم استهلاك الذاكرة في بيئة Serverless
+    sharp.cache(false);
+
     // تقليص أبعاد الصورة لـ 1200 بكسل كحد أقصى للضلع وضغط الجودة
     const pipeline = sharp(buffer)
       .rotate() // الحفاظ على اتجاه الصورة الصحيح

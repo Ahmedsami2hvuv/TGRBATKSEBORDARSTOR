@@ -37,6 +37,9 @@ export async function uploadToR2(buffer: Buffer, key: string, contentType: strin
   if (!skipCompress && isImage && buffer.length > 150 * 1024) {
     try {
       const sharp = (await import("sharp")).default;
+      // تعطيل كاش sharp لتجنب تراكم استهلاك الذاكرة في بيئة Serverless
+      sharp.cache(false);
+      
       const pipeline = sharp(buffer)
         .rotate() // الحفاظ على اتجاه الصورة الصحيح
         .resize({
