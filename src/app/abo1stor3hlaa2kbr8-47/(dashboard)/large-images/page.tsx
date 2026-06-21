@@ -54,56 +54,98 @@ export default async function LargeImagesPage() {
       }
 
       if (contents.length > 0) {
-        // 2. جلب كل روابط الاستخدام من قاعدة البيانات
-        const [
-          orders,
-          shops,
-          customers,
-          products,
-          categories,
-          branches,
-          profiles
-        ] = await Promise.all([
-          prisma.order.findMany({ select: { id: true, imageUrl: true, shopDoorPhotoUrl: true, customerDoorPhotoUrl: true, secondCustomerDoorPhotoUrl: true } }),
-          prisma.shop.findMany({ select: { name: true, photoUrl: true } }),
-          prisma.customer.findMany({ select: { name: true, customerDoorPhotoUrl: true } }),
-          prisma.storeProduct.findMany({ select: { name: true, photoUrls: true } }),
-          prisma.storeCategory.findMany({ select: { name: true, photoUrl: true } }),
-          prisma.storeBranch.findMany({ select: { name: true, photoUrl: true } }),
-          prisma.customerPhoneProfile.findMany({ select: { phone: true, photoUrl: true } }),
-        ]);
-
-        const usageMap = new Map<string, string[]>();
-        const addUsage = (url: string | null | undefined, description: string) => {
-          if (!url) return;
-          const trimmed = url.trim();
-          // استخراج المفتاح
-          const parts = trimmed.split("/uploads/");
-          const key = parts.length > 1 ? parts[parts.length - 1] : trimmed;
-          if (!usageMap.has(key)) usageMap.set(key, []);
-          usageMap.get(key)!.push(description);
-        };
-
-        orders.forEach(o => {
-          addUsage(o.imageUrl, `طلب #${o.id}`);
-          addUsage(o.shopDoorPhotoUrl, `باب محل لطلب #${o.id}`);
-          addUsage(o.customerDoorPhotoUrl, `باب زبون لطلب #${o.id}`);
-          addUsage(o.secondCustomerDoorPhotoUrl, `باب زبون ثاني لطلب #${o.id}`);
-        });
-        shops.forEach(s => addUsage(s.photoUrl, `محل: ${s.name}`));
-        customers.forEach(c => addUsage(c.customerDoorPhotoUrl, `زبون: ${c.name}`));
-        products.forEach(p => p.photoUrls.forEach(url => addUsage(url, `منتج: ${p.name}`)));
-        categories.forEach(c => addUsage(c.photoUrl, `قسم: ${c.name}`));
-        branches.forEach(b => addUsage(b.photoUrl, `فرع: ${b.name}`));
-        profiles.forEach(p => addUsage(p.photoUrl, `بروفايل زبون: ${p.phone}`));
-
-        // 3. تصفية الملفات التي تتجاوز 500 كيلوبايت وحساب الأحجام
+        // 1. تصفية وحساب المساحات وتجميع مفاتيح الصور الكبيرة أولاً
+        const largeKeys: string[] = [];
         contents.forEach(obj => {
           const size = obj.Size ?? 0;
           totalBucketSize += size;
 
           if (size > 500 * 1024) {
             totalLargeSize += size;
+            largeKeys.push(obj.Key ?? "");
+          }
+        });
+
+        // 2. البحث الموجه والتسلسلي في قاعدة البيانات فقط عن الروابط الخاصة بالصور الكبيرة لمنع استهلاك الـ connection pool
+        const usageMap = new Map<string, string[]>();
+        const addUsage = (url: string | null | undefined, description: string) => {
+          if (!url) return;
+          const trimmed = url.trim();
+          const parts = trimmed.split("/uploads/");
+          const key = parts.length > 1 ? parts[parts.length - 1] : trimmed;
+          if (!usageMap.has(key)) usageMap.set(key, []);
+          usageMap.get(key)!.push(description);
+        };
+
+        if (largeKeys.length > 0) {
+          const searchUrls = largeKeys.flatMap(key => [
+            key,
+            `/uploads/${key}`,
+            `https://aboakbr.com/uploads/${key}`
+          ]);
+
+          // الاستعلامات تتم بشكل تسلسلي (Sequential) لتجنب استهلاك اتصالات الـ pool المحدودة بـ 2
+          const orders = await prisma.order.findMany({
+            where: {
+              OR: [
+                { imageUrl: { in: searchUrls } },
+                { shopDoorPhotoUrl: { in: searchUrls } },
+                { customerDoorPhotoUrl: { in: searchUrls } },
+                { secondCustomerDoorPhotoUrl: { in: searchUrls } }
+              ]
+            },
+            select: { id: true, imageUrl: true, shopDoorPhotoUrl: true, customerDoorPhotoUrl: true, secondCustomerDoorPhotoUrl: true }
+          });
+
+          const shops = await prisma.shop.findMany({
+            where: { photoUrl: { in: searchUrls } },
+            select: { name: true, photoUrl: true }
+          });
+
+          const customers = await prisma.customer.findMany({
+            where: { customerDoorPhotoUrl: { in: searchUrls } },
+            select: { name: true, customerDoorPhotoUrl: true }
+          });
+
+          const products = await prisma.storeProduct.findMany({
+            where: { photoUrls: { hasSome: searchUrls } },
+            select: { name: true, photoUrls: true }
+          });
+
+          const categories = await prisma.storeCategory.findMany({
+            where: { photoUrl: { in: searchUrls } },
+            select: { name: true, photoUrl: true }
+          });
+
+          const branches = await prisma.storeBranch.findMany({
+            where: { photoUrl: { in: searchUrls } },
+            select: { name: true, photoUrl: true }
+          });
+
+          const profiles = await prisma.customerPhoneProfile.findMany({
+            where: { photoUrl: { in: searchUrls } },
+            select: { phone: true, photoUrl: true }
+          });
+
+          // ربط الاستخدامات ببعضها
+          orders.forEach(o => {
+            addUsage(o.imageUrl, `طلب #${o.id}`);
+            addUsage(o.shopDoorPhotoUrl, `باب محل لطلب #${o.id}`);
+            addUsage(o.customerDoorPhotoUrl, `باب زبون لطلب #${o.id}`);
+            addUsage(o.secondCustomerDoorPhotoUrl, `باب زبون ثاني لطلب #${o.id}`);
+          });
+          shops.forEach(s => addUsage(s.photoUrl, `محل: ${s.name}`));
+          customers.forEach(c => addUsage(c.customerDoorPhotoUrl, `زبون: ${c.name}`));
+          products.forEach(p => p.photoUrls.forEach(url => addUsage(url, `منتج: ${p.name}`)));
+          categories.forEach(c => addUsage(c.photoUrl, `قسم: ${c.name}`));
+          branches.forEach(b => addUsage(b.photoUrl, `فرع: ${b.name}`));
+          profiles.forEach(p => addUsage(p.photoUrl, `بروفايل زبون: ${p.phone}`));
+        }
+
+        // 3. بناء قائمة الكائنات الكبيرة مع استخداماتها
+        contents.forEach(obj => {
+          const size = obj.Size ?? 0;
+          if (size > 500 * 1024) {
             const key = obj.Key ?? "";
             const sizeKb = Math.round(size / 1024);
             const sizeMb = (size / (1024 * 1024)).toFixed(2);
