@@ -9,6 +9,7 @@ import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { CustomerSearchInput } from "./customer-search-input";
 import { CustomerBlockActions } from "./customer-block-actions";
 import { CustomersMaintenancePanel } from "./customers-maintenance-panel";
+import { CustomerSourceFilter } from "./customer-source-filter";
 export const dynamic = "force-dynamic";
 export const revalidate = 0; // منع الكاش نهائياً
 
@@ -204,27 +205,7 @@ export default async function AdminCustomersPage(props: { searchParams: Promise<
 
            {/* التصفية والفرز وإضافة زبون مرجعي */}
            <div className="flex flex-wrap items-center gap-2 justify-between lg:justify-end">
-               <form method="get" className="flex items-center gap-2 flex-1 sm:flex-initial">
-                 <input type="hidden" name="q" value={q} />
-                 <select
-                   name="source"
-                   defaultValue={source}
-                   onChange={(e) => {
-                     e.currentTarget.form?.submit();
-                   }}
-                   className="bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-400 outline-none cursor-pointer flex-1 sm:flex-initial text-right"
-                   dir="rtl"
-                 >
-                   <option value="all">كل المصادر</option>
-                   <option value="blocked">🔴 المحظورين ({blockedCount})</option>
-                   <option value="railway">قادمين من ريلوي</option>
-                   <option value="orders">قادمين من طلبات الموقع</option>
-                   <option value="reference">مضافين مرجعياً</option>
-                 </select>
-                 <button type="submit" className="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm">
-                   فرز
-                 </button>
-               </form>
+               <CustomerSourceFilter source={source} blockedCount={blockedCount} q={q} />
 
                <Link href={`${SECRET_ADMIN_PATH}/customers/add`} className="bg-cyan-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-cyan-600 transition-all text-xs flex items-center gap-2 select-none">
                  <DynamicIcon iconKey="ui_plus" config={icons} fallback="+" className="w-3.5 h-3.5" />
