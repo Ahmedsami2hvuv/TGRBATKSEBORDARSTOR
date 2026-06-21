@@ -54,7 +54,18 @@ export function LargeImagesManager({
   const [totalToProcess, setTotalToProcess] = useState(0);
   const [processingKeys, setProcessingKeys] = useState<Set<string>>(new Set());
   const [failedKeys, setFailedKeys] = useState<Set<string>>(new Set());
+  const failedKeysRef = useRef<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // تحديث متزامن للـ failedKeys والـ ref
+  const updateFailedKeysState = (key: string) => {
+    setFailedKeys((prev) => {
+      const next = new Set(prev);
+      next.add(key);
+      failedKeysRef.current = next;
+      return next;
+    });
+  };
   
   const [isActionPending, startTransition] = useTransition();
 
@@ -96,11 +107,7 @@ export function LargeImagesManager({
         toast.success("تم تقليص حجم الصورة بنجاح بنسبة تتجاوز 95% واختفت من الجدول!");
       }
     } else {
-      setFailedKeys((prev) => {
-        const next = new Set(prev);
-        next.add(key);
-        return next;
-      });
+      updateFailedKeysState(key);
       if (!isBatch) {
         toast.error(res.error || "فشل تقليص الصورة");
       }
@@ -129,6 +136,7 @@ export function LargeImagesManager({
     isBatchRunningRef.current = true;
     setIsBatchRunning(true);
     setFailedKeys(new Set());
+    failedKeysRef.current = new Set();
 
     toast.loading("بدء عملية تقليص جميع الصور تلقائياً بالتتالي...", { id: "batch-toast" });
 
@@ -137,8 +145,11 @@ export function LargeImagesManager({
     while (isBatchRunningRef.current) {
       let currentImages = [...imagesRef.current];
 
-      // إذا فرغت الدفعة الحالية، نحاول جلب الدفعة التالية تلقائياً
-      if (currentImages.length === 0) {
+      // تصفية الصور التي لم تفشل بعد في هذه المحاولة
+      const remainingUnfailed = currentImages.filter(img => !failedKeysRef.current.has(img.key));
+
+      // إذا لم يتبق أي صور صالحة غير معالجة في الدفعة الحالية، نحاول جلب الدفعة التالية تلقائياً
+      if (remainingUnfailed.length === 0) {
         toast.loading("جاري جلب الدفعة التالية من الصور الكبيرة من R2...", { id: "batch-toast" });
         const res = await fetchNextLargeImagesAction();
         
@@ -155,18 +166,20 @@ export function LargeImagesManager({
         }
       }
 
-      setTotalToProcess(currentImages.length);
+      // سنقوم بمعالجة الصور غير الفاشلة فقط في الدفعة الحالية
+      const targetImages = currentImages.filter(img => !failedKeysRef.current.has(img.key));
+      setTotalToProcess(targetImages.length);
       let batchFinished = true;
 
-      for (let i = 0; i < currentImages.length; i++) {
+      for (let i = 0; i < targetImages.length; i++) {
         if (!isBatchRunningRef.current) {
           batchFinished = false;
           break;
         }
 
-        const img = currentImages[i];
+        const img = targetImages[i];
         setCurrentProgressIndex(i);
-        toast.loading(`جاري تقليص صورة ${i + 1} من أصل ${currentImages.length}: ${img.key.substring(0, 20)}...`, { id: "batch-toast" });
+        toast.loading(`جاري تقليص صورة ${i + 1} من أصل ${targetImages.length}: ${img.key.substring(0, 20)}...`, { id: "batch-toast" });
         
         const success = await compressSingleImage(img.key, true);
         if (success) {
