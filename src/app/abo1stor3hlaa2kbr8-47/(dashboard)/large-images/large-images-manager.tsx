@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
-import { compressR2ImageAction, deleteR2ImageAction } from "./actions";
+import { compressR2ImageAction, deleteR2ImageAction, fetchNextLargeImagesAction } from "./actions";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { toast } from "sonner";
@@ -32,10 +32,20 @@ export function LargeImagesManager({
   icons: GlobalIconsConfig | null;
 }) {
   const [images, setImages] = useState<LargeImage[]>(initialObjects);
+  const imagesRef = useRef<LargeImage[]>(initialObjects);
   const [totalBucketSizeMb, setTotalBucketSizeMb] = useState<number>(parseFloat(initialTotalBucketSizeMb));
   const [totalLargeSizeMb, setTotalLargeSizeMb] = useState<number>(parseFloat(initialTotalLargeSizeMb));
   const [orphanedCount, setOrphanedCount] = useState<number>(initialOrphanedCount);
   const [totalLargeCount, setTotalLargeCount] = useState<number>(initialTotalLargeCount);
+
+  // تحديث متزامن للـ state والـ ref
+  const updateImagesState = (newImages: LargeImage[] | ((prev: LargeImage[]) => LargeImage[])) => {
+    setImages((prev) => {
+      const next = typeof newImages === "function" ? newImages(prev) : newImages;
+      imagesRef.current = next;
+      return next;
+    });
+  };
 
   // حالات التقليص الجماعي
   const [isBatchRunning, setIsBatchRunning] = useState(false);
@@ -44,6 +54,7 @@ export function LargeImagesManager({
   const [totalToProcess, setTotalToProcess] = useState(0);
   const [processingKeys, setProcessingKeys] = useState<Set<string>>(new Set());
   const [failedKeys, setFailedKeys] = useState<Set<string>>(new Set());
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const [isActionPending, startTransition] = useTransition();
 
@@ -76,7 +87,7 @@ export function LargeImagesManager({
         }
 
         // إزالة الصورة من الجدول
-        setImages((prev) => prev.filter((i) => i.key !== key));
+        updateImagesState((prev) => prev.filter((i) => i.key !== key));
         // إنقاص العدد الكلي الفعلي للصور الكبيرة المتبقية
         setTotalLargeCount((prev) => Math.max(0, prev - 1));
       }
@@ -105,13 +116,8 @@ export function LargeImagesManager({
     return res.ok;
   };
 
-  // تقليص جميع الصور تلقائياً بالتتالي
+  // تقليص جميع الصور تلقائياً بالتتالي وبشكل مستمر بين الدفعات
   const handleBatchCompress = async () => {
-    if (images.length === 0) {
-      toast.info("لا توجد صور لتقليصها!");
-      return;
-    }
-
     if (isBatchRunningRef.current) {
       // إيقاف مؤقت
       isBatchRunningRef.current = false;
@@ -122,33 +128,91 @@ export function LargeImagesManager({
 
     isBatchRunningRef.current = true;
     setIsBatchRunning(true);
-    const targetImages = [...images];
-    setTotalToProcess(targetImages.length);
-    setCurrentProgressIndex(0);
     setFailedKeys(new Set());
 
     toast.loading("بدء عملية تقليص جميع الصور تلقائياً بالتتالي...", { id: "batch-toast" });
 
-    let processedCount = 0;
-    for (let i = 0; i < targetImages.length; i++) {
-      // التحقق المتزامن والمباشر من المرجع useRef لتفادي مشاكل الـ async state في React
-      if (!isBatchRunningRef.current) {
-        break;
+    let totalProcessedCount = 0;
+
+    while (isBatchRunningRef.current) {
+      let currentImages = [...imagesRef.current];
+
+      // إذا فرغت الدفعة الحالية، نحاول جلب الدفعة التالية تلقائياً
+      if (currentImages.length === 0) {
+        toast.loading("جاري جلب الدفعة التالية من الصور الكبيرة من R2...", { id: "batch-toast" });
+        const res = await fetchNextLargeImagesAction();
+        
+        if (res.ok && res.objects && res.objects.length > 0) {
+          updateImagesState(res.objects);
+          setTotalLargeCount(res.totalCount);
+          currentImages = [...res.objects];
+        } else {
+          // لم يعد هناك صور كبيرة أو حدث خطأ
+          if (res.error) {
+            toast.error(res.error, { id: "batch-toast" });
+          }
+          break;
+        }
       }
 
-      const img = targetImages[i];
-      setCurrentProgressIndex(i);
-      
-      toast.loading(`جاري تقليص صورة ${i + 1} من أصل ${targetImages.length}: ${img.key.substring(0, 20)}...`, { id: "batch-toast" });
-      
-      await compressSingleImage(img.key, true);
-      processedCount++;
+      setTotalToProcess(currentImages.length);
+      let batchFinished = true;
+
+      for (let i = 0; i < currentImages.length; i++) {
+        if (!isBatchRunningRef.current) {
+          batchFinished = false;
+          break;
+        }
+
+        const img = currentImages[i];
+        setCurrentProgressIndex(i);
+        toast.loading(`جاري تقليص صورة ${i + 1} من أصل ${currentImages.length}: ${img.key.substring(0, 20)}...`, { id: "batch-toast" });
+        
+        const success = await compressSingleImage(img.key, true);
+        if (success) {
+          totalProcessedCount++;
+        }
+      }
+
+      // إذا توقفت العملية يدوياً أثناء الدفعة، نخرج من الحلقة
+      if (!batchFinished) {
+        break;
+      }
     }
 
     isBatchRunningRef.current = false;
     setIsBatchRunning(false);
     toast.dismiss("batch-toast");
-    toast.success(`اكتملت عملية التقليص الجماعي! تم معالجة ${processedCount} صورة.`);
+    toast.success(`اكتملت عملية التقليص الجماعي! تم معالجة ${totalProcessedCount} صورة بنجاح.`);
+  };
+
+  // تحديث وجلب الدفعة التالية يدوياً دون ريفريش كامل للصفحة
+  const handleManualRefresh = async () => {
+    if (isRefreshing || isBatchRunning) return;
+    setIsRefreshing(true);
+    toast.loading("جاري تحديث القائمة وجلب صور R2 الكبيرة...", { id: "refresh-toast" });
+    
+    const res = await fetchNextLargeImagesAction();
+    setIsRefreshing(false);
+    toast.dismiss("refresh-toast");
+
+    if (res.ok && res.objects) {
+      updateImagesState(res.objects);
+      setTotalLargeCount(res.totalCount);
+      
+      // حساب الإحصائيات النسبية التقريبية
+      let newOrphaned = 0;
+      res.objects.forEach(img => {
+        if (img.usages.includes("صورة يتيمة / غير مستخدمة 🗑️")) {
+          newOrphaned++;
+        }
+      });
+      setOrphanedCount(newOrphaned);
+      
+      toast.success(`تم تحديث القائمة بنجاح! تم العثور على ${res.totalCount} صورة متبقية.`);
+    } else {
+      toast.error(res.error || "فشل تحديث القائمة");
+    }
   };
 
   // حذف صورة وتحديث البيانات محلياً
@@ -165,7 +229,7 @@ export function LargeImagesManager({
           if (img.usages.includes("صورة يتيمة / غير مستخدمة 🗑️")) {
             setOrphanedCount((prev) => Math.max(0, prev - 1));
           }
-          setImages((prev) => prev.filter((i) => i.key !== key));
+          updateImagesState((prev) => prev.filter((i) => i.key !== key));
           setTotalLargeCount((prev) => Math.max(0, prev - 1));
         }
         toast.success("تم حذف الصورة من R2 بنجاح!");
@@ -208,25 +272,44 @@ export function LargeImagesManager({
               <p className="text-xs text-gray-400 mt-1">يمكنك تقليص كافة الصور الكبيرة دفعة واحدة بالتتالي لتوفير المساحة وتجنب الضغط على الخادم.</p>
             </div>
             
-            <button
-              onClick={handleBatchCompress}
-              className={`px-5 py-3 rounded-2xl font-bold text-sm shadow-sm transition-all flex items-center gap-2 select-none cursor-pointer ${
-                isBatchRunning 
-                  ? "bg-red-500 hover:bg-red-600 text-white" 
-                  : "bg-gradient-to-l from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-              }`}
-            >
-              {isBatchRunning ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  <span>🛑 إيقاف مؤقت</span>
-                </>
-              ) : (
-                <>
-                  <span>⚡ تقليص جميع الصور تلقائياً ({images.length})</span>
-                </>
-              )}
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={handleManualRefresh}
+                disabled={isBatchRunning || isRefreshing}
+                className="px-5 py-3 rounded-2xl font-bold text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 transition-all flex items-center gap-2 select-none cursor-pointer disabled:opacity-50"
+              >
+                {isRefreshing ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></span>
+                    <span>جاري التحديث...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>🔄 تحديث وجلب الدفعة التالية ({totalLargeCount})</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleBatchCompress}
+                className={`px-5 py-3 rounded-2xl font-bold text-sm shadow-sm transition-all flex items-center gap-2 select-none cursor-pointer ${
+                  isBatchRunning 
+                    ? "bg-red-500 hover:bg-red-600 text-white" 
+                    : "bg-gradient-to-l from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                }`}
+              >
+                {isBatchRunning ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>🛑 إيقاف مؤقت</span>
+                  </>
+                ) : (
+                  <>
+                    <span>⚡ تقليص جميع الصور تلقائياً ({images.length})</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* شريط التقدم التفاعلي */}
