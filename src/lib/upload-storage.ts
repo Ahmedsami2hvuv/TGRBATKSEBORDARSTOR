@@ -27,13 +27,48 @@ export async function uploadToR2(buffer: Buffer, key: string, contentType: strin
   const r2Client = await getS3Client();
   if (!r2Client) return null;
 
+  let finalBuffer = buffer;
+  let finalContentType = contentType;
+
+  // التحقق مما إذا كان الملف صورة وحجمه أكبر من 150 كيلوبايت
+  const isImage = (contentType && contentType.startsWith("image/")) || 
+                  /\.(jpg|jpeg|png|webp)$/i.test(key);
+
+  if (isImage && buffer.length > 150 * 1024) {
+    try {
+      const sharp = (await import("sharp")).default;
+      const pipeline = sharp(buffer)
+        .rotate() // الحفاظ على اتجاه الصورة الصحيح
+        .resize({
+          width: 1200,
+          height: 1200,
+          fit: "inside",
+          withoutEnlargement: true,
+        });
+
+      if (key.toLowerCase().endsWith(".png") || contentType === "image/png") {
+        finalBuffer = await pipeline.png({ quality: 80, compressionLevel: 9 }).toBuffer();
+        finalContentType = "image/png";
+      } else if (key.toLowerCase().endsWith(".webp") || contentType === "image/webp") {
+        finalBuffer = await pipeline.webp({ quality: 70 }).toBuffer();
+        finalContentType = "image/webp";
+      } else {
+        finalBuffer = await pipeline.jpeg({ quality: 70, mozjpeg: true }).toBuffer();
+        finalContentType = "image/jpeg";
+      }
+      console.log(`[R2 Auto-Compress] Compressed ${key} from ${(buffer.length / 1024).toFixed(1)}KB to ${(finalBuffer.length / 1024).toFixed(1)}KB (Saved ${((1 - finalBuffer.length / buffer.length) * 100).toFixed(1)}%)`);
+    } catch (sharpError) {
+      console.error("Failed to auto-compress image in uploadToR2:", sharpError);
+    }
+  }
+
   try {
     const { PutObjectCommand } = await import("@aws-sdk/client-s3");
     await r2Client.send(new PutObjectCommand({
       Bucket: BUCKET_NAME,
       Key: key,
-      Body: buffer,
-      ContentType: contentType,
+      Body: finalBuffer,
+      ContentType: finalContentType,
     }));
     return key;
   } catch (error) {

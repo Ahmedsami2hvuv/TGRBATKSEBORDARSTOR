@@ -1,29 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { ad } from "@/lib/admin-ui";
-import { getS3Client, BUCKET_NAME, deleteFromR2 } from "@/lib/upload-storage";
+import { getS3Client, BUCKET_NAME } from "@/lib/upload-storage";
 import Link from "next/link";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { revalidatePath } from "next/cache";
+import { ImageActionButtons } from "./image-action-buttons";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
-
-// Server Action لحذف الصورة مباشرة من R2
-async function deleteImageAction(formData: FormData) {
-  "use server";
-  const key = String(formData.get("key") ?? "").trim();
-  if (key) {
-    try {
-      await deleteFromR2(key);
-      revalidatePath(`${SECRET_ADMIN_PATH}/large-images`);
-    } catch (e) {
-      console.error("Failed to delete object from R2:", e);
-    }
-  }
-}
 
 export default async function LargeImagesPage() {
   const icons = await getGlobalIcons();
@@ -246,13 +232,7 @@ export default async function LargeImagesPage() {
                         </div>
                       </td>
                       <td className="p-4 text-center">
-                        <form action={deleteImageAction}>
-                          <input type="hidden" name="key" value={obj.key} />
-                          <button type="submit" className="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 mx-auto shadow-sm">
-                            <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-3.5 h-3.5" />
-                            حذف
-                          </button>
-                        </form>
+                        <ImageActionButtons imageKey={obj.key} icons={icons} />
                       </td>
                     </tr>
                   );
