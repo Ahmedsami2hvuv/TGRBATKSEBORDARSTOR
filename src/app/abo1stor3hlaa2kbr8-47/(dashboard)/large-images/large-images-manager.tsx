@@ -469,7 +469,6 @@ export function LargeImagesManager({
             <table className="w-full text-sm text-right">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100 text-gray-400 text-xs font-bold">
-                  <th className="p-4 w-24 text-center">المعاينة</th>
                   <th className="p-4">اسم الصورة ومسارها في R2</th>
                   <th className="p-4 w-28 text-center">الحجم الحالي</th>
                   <th className="p-4">مكان الاستخدام</th>
@@ -495,20 +494,19 @@ export function LargeImagesManager({
                             : "hover:bg-gray-50/50"
                       }`}
                     >
-                      <td className="p-4">
-                        <a 
-                          href={obj.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="block relative w-16 h-16 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 hover:opacity-85 transition-opacity shadow-sm mx-auto" 
-                          title="انقر للمعاينة الكاملة"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={obj.url} alt="معاينة" className="w-full h-full object-cover" />
-                        </a>
-                      </td>
-                      <td className="p-4 font-mono text-[11px] max-w-xs break-all text-left" dir="ltr">
-                        {obj.key}
+                      <td className="p-4 font-mono text-[11px] max-w-sm break-all text-left" dir="ltr">
+                        <div className="flex items-center gap-2">
+                          <a 
+                            href={obj.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-amber-500 hover:text-amber-600 font-bold underline flex items-center gap-0.5 whitespace-nowrap"
+                            title="فتح الصورة في علامة تبويب جديدة"
+                          >
+                            🔗 فتح
+                          </a>
+                          <span>{obj.key}</span>
+                        </div>
                       </td>
                       <td className="p-4 text-center font-bold">
                         <span className="text-red-600">{obj.sizeMb} MB</span>
