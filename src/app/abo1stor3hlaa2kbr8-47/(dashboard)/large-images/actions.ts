@@ -230,13 +230,20 @@ export async function fetchNextLargeImagesAction() {
 export async function fetchImagesUsagesAction(keys: string[]) {
   try {
     const usageMap: { [key: string]: string[] } = {};
+    
+    // تهيئة كل المفاتيح المستعلم عنها بمصفوفة فارغة لضمان إعادتها للكلاينت حتى لو كانت يتيمة
+    keys.forEach(k => {
+      usageMap[k] = [];
+    });
+
     const addUsage = (url: string | null | undefined, description: string) => {
       if (!url) return;
       const trimmed = url.trim();
       const parts = trimmed.split("/uploads/");
       const key = parts.length > 1 ? parts[parts.length - 1] : trimmed;
-      if (!usageMap[key]) usageMap[key] = [];
-      usageMap[key].push(description);
+      if (usageMap[key]) {
+        usageMap[key].push(description);
+      }
     };
 
     if (keys.length > 0) {

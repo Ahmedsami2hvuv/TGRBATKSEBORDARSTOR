@@ -50,6 +50,7 @@ export function LargeImagesManager({
   const [currentPage, setCurrentPage] = useState(1);
   const [usagesMap, setUsagesMap] = useState<{ [key: string]: string[] }>({});
   const [loadingKeys, setLoadingKeys] = useState<Set<string>>(new Set());
+  const fetchingKeysRef = useRef<Set<string>>(new Set());
 
   const itemsPerPage = 100;
   const totalPages = Math.ceil(images.length / itemsPerPage);
@@ -65,9 +66,12 @@ export function LargeImagesManager({
     // تحديد المفاتيح التي لا تحتوي على استخدامات بعد في usagesMap وليست قيد التحميل حالياً
     const keysToFetch = displayedImages
       .map(img => img.key)
-      .filter(key => usagesMap[key] === undefined && !loadingKeys.has(key));
+      .filter(key => usagesMap[key] === undefined && !fetchingKeysRef.current.has(key));
 
     if (keysToFetch.length === 0) return;
+
+    // قفل المفاتيح لمنع إعادة طلبها متوازياً في الرندرات الفرعية القادمة
+    keysToFetch.forEach(k => fetchingKeysRef.current.add(k));
 
     // إضافة المفاتيح لقائمة الجاري تحميلها
     setLoadingKeys((prev) => {
@@ -91,10 +95,13 @@ export function LargeImagesManager({
         keysToFetch.forEach(k => next.delete(k));
         return next;
       });
+
+      // إزالة القفل
+      keysToFetch.forEach(k => fetchingKeysRef.current.delete(k));
     };
 
     fetchUsages();
-  }, [currentPage, images, usagesMap]);
+  }, [currentPage, images]);
 
   // حالات التقليص الجماعي
   const [isBatchRunning, setIsBatchRunning] = useState(false);
