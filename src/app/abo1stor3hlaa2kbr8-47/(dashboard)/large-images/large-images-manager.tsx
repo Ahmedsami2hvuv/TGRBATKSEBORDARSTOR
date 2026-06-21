@@ -38,11 +38,31 @@ export function LargeImagesManager({
   const [orphanedCount, setOrphanedCount] = useState<number>(initialOrphanedCount);
   const [totalLargeCount, setTotalLargeCount] = useState<number>(initialTotalLargeCount);
 
+  // حالات التقليص الجماعي (تم تحريكها للأعلى لتجنب خطأ التأسيس)
+  const [isBatchRunning, setIsBatchRunning] = useState(false);
+  const isBatchRunningRef = useRef(false);
+  const [currentProgressIndex, setCurrentProgressIndex] = useState(0);
+  const [totalToProcess, setTotalToProcess] = useState(0);
+  const [processingKeys, setProcessingKeys] = useState<Set<string>>(new Set());
+  const [failedKeys, setFailedKeys] = useState<Set<string>>(new Set());
+  const failedKeysRef = useRef<Set<string>>(new Set());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   // تحديث متزامن للـ state والـ ref
   const updateImagesState = (newImages: LargeImage[] | ((prev: LargeImage[]) => LargeImage[])) => {
     setImages((prev) => {
       const next = typeof newImages === "function" ? newImages(prev) : newImages;
       imagesRef.current = next;
+      return next;
+    });
+  };
+
+  // تحديث متزامن للـ failedKeys والـ ref
+  const updateFailedKeysState = (key: string) => {
+    setFailedKeys((prev) => {
+      const next = new Set(prev);
+      next.add(key);
+      failedKeysRef.current = next;
       return next;
     });
   };
@@ -102,26 +122,6 @@ export function LargeImagesManager({
 
     fetchUsages();
   }, [currentPage, images, isBatchRunning]);
-
-  // حالات التقليص الجماعي
-  const [isBatchRunning, setIsBatchRunning] = useState(false);
-  const isBatchRunningRef = useRef(false);
-  const [currentProgressIndex, setCurrentProgressIndex] = useState(0);
-  const [totalToProcess, setTotalToProcess] = useState(0);
-  const [processingKeys, setProcessingKeys] = useState<Set<string>>(new Set());
-  const [failedKeys, setFailedKeys] = useState<Set<string>>(new Set());
-  const failedKeysRef = useRef<Set<string>>(new Set());
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // تحديث متزامن للـ failedKeys والـ ref
-  const updateFailedKeysState = (key: string) => {
-    setFailedKeys((prev) => {
-      const next = new Set(prev);
-      next.add(key);
-      failedKeysRef.current = next;
-      return next;
-    });
-  };
   
   const [isActionPending, startTransition] = useTransition();
 
