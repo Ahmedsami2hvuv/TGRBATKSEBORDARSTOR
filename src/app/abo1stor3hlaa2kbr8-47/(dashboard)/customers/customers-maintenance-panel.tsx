@@ -5,6 +5,7 @@ import { ImportCustomersButton } from "./import-customers-button";
 import { PhotoCleanupButton } from "./photo-cleanup-button";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import Link from "next/link";
 
 export function CustomersMaintenancePanel({ icons }: { icons: GlobalIconsConfig | null }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -34,12 +35,20 @@ export function CustomersMaintenancePanel({ icons }: { icons: GlobalIconsConfig 
               <ImportCustomersButton icons={icons} />
             </div>
           </div>
-          <div className="border-t md:border-t-0 md:border-r border-slate-100 pt-4 md:pt-0 md:pr-5 flex flex-col md:w-[260px]">
-            <h4 className="text-xs font-bold text-slate-400 mb-3 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
+          <div className="border-t md:border-t-0 md:border-r border-slate-100 pt-4 md:pt-0 md:pr-5 flex flex-col md:w-[260px] gap-2">
+            <h4 className="text-xs font-bold text-slate-400 mb-1 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
               <span>📷</span> صيانة وتصغير الصور
             </h4>
-            <div className="flex justify-end">
+            <div className="flex flex-col gap-2 w-full">
               <PhotoCleanupButton />
+              
+              <Link 
+                href="/abo1stor3hlaa2kbr8-47/large-images"
+                className="bg-amber-50 hover:bg-amber-100 text-amber-800 text-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all border border-amber-200/60 shadow-sm flex items-center justify-center gap-1 w-full select-none"
+              >
+                <DynamicIcon iconKey="ui_search" config={icons} fallback="🔍" className="w-3.5 h-3.5" />
+                عرض الصور الكبيرة (&gt;500KB)
+              </Link>
             </div>
           </div>
         </div>
