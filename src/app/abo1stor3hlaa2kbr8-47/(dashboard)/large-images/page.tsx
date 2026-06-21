@@ -190,6 +190,7 @@ export default async function LargeImagesPage() {
 
   const totalBucketSizeMb = (totalBucketSize / (1024 * 1024)).toFixed(1);
   const totalLargeSizeMb = (totalLargeSize / (1024 * 1024)).toFixed(1);
+  const totalLargeCount = allLargeObjects.length;
 
   return (
     <div className="space-y-6 pb-20 text-right animate-in fade-in duration-300" dir="rtl">
@@ -222,6 +223,7 @@ export default async function LargeImagesPage() {
           initialTotalBucketSizeMb={totalBucketSizeMb}
           initialTotalLargeSizeMb={totalLargeSizeMb}
           initialOrphanedCount={orphanedCount}
+          initialTotalLargeCount={totalLargeCount}
           icons={icons}
         />
       )}

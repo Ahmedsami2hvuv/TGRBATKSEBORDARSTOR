@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { compressR2ImageAction, deleteR2ImageAction } from "./actions";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig } from "@/lib/icon-settings";
@@ -21,21 +21,25 @@ export function LargeImagesManager({
   initialTotalBucketSizeMb,
   initialTotalLargeSizeMb,
   initialOrphanedCount,
+  initialTotalLargeCount,
   icons,
 }: {
   initialObjects: LargeImage[];
   initialTotalBucketSizeMb: string;
   initialTotalLargeSizeMb: string;
   initialOrphanedCount: number;
+  initialTotalLargeCount: number;
   icons: GlobalIconsConfig | null;
 }) {
   const [images, setImages] = useState<LargeImage[]>(initialObjects);
   const [totalBucketSizeMb, setTotalBucketSizeMb] = useState<number>(parseFloat(initialTotalBucketSizeMb));
   const [totalLargeSizeMb, setTotalLargeSizeMb] = useState<number>(parseFloat(initialTotalLargeSizeMb));
   const [orphanedCount, setOrphanedCount] = useState<number>(initialOrphanedCount);
+  const [totalLargeCount, setTotalLargeCount] = useState<number>(initialTotalLargeCount);
 
   // حالات التقليص الجماعي
   const [isBatchRunning, setIsBatchRunning] = useState(false);
+  const isBatchRunningRef = useRef(false);
   const [currentProgressIndex, setCurrentProgressIndex] = useState(0);
   const [totalToProcess, setTotalToProcess] = useState(0);
   const [processingKeys, setProcessingKeys] = useState<Set<string>>(new Set());
@@ -73,6 +77,8 @@ export function LargeImagesManager({
 
         // إزالة الصورة من الجدول
         setImages((prev) => prev.filter((i) => i.key !== key));
+        // إنقاص العدد الكلي الفعلي للصور الكبيرة المتبقية
+        setTotalLargeCount((prev) => Math.max(0, prev - 1));
       }
       
       if (!isBatch) {
@@ -106,13 +112,15 @@ export function LargeImagesManager({
       return;
     }
 
-    if (isBatchRunning) {
+    if (isBatchRunningRef.current) {
       // إيقاف مؤقت
+      isBatchRunningRef.current = false;
       setIsBatchRunning(false);
       toast.info("تم إيقاف عملية التقليص الجماعي مؤقتاً.");
       return;
     }
 
+    isBatchRunningRef.current = true;
     setIsBatchRunning(true);
     const targetImages = [...images];
     setTotalToProcess(targetImages.length);
@@ -123,14 +131,8 @@ export function LargeImagesManager({
 
     let processedCount = 0;
     for (let i = 0; i < targetImages.length; i++) {
-      // التحقق من حالة الإيقاف المؤقت قبل كل صورة
-      // نستخدم متغير حالة محدث عبر الإغلاق أو الدوران الآمن
-      let shouldContinue = false;
-      setIsBatchRunning((curr) => {
-        shouldContinue = curr;
-        return curr;
-      });
-      if (!shouldContinue) {
+      // التحقق المتزامن والمباشر من المرجع useRef لتفادي مشاكل الـ async state في React
+      if (!isBatchRunningRef.current) {
         break;
       }
 
@@ -143,6 +145,7 @@ export function LargeImagesManager({
       processedCount++;
     }
 
+    isBatchRunningRef.current = false;
     setIsBatchRunning(false);
     toast.dismiss("batch-toast");
     toast.success(`اكتملت عملية التقليص الجماعي! تم معالجة ${processedCount} صورة.`);
@@ -163,6 +166,7 @@ export function LargeImagesManager({
             setOrphanedCount((prev) => Math.max(0, prev - 1));
           }
           setImages((prev) => prev.filter((i) => i.key !== key));
+          setTotalLargeCount((prev) => Math.max(0, prev - 1));
         }
         toast.success("تم حذف الصورة من R2 بنجاح!");
       } else {
@@ -179,7 +183,7 @@ export function LargeImagesManager({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
           <p className="text-xs text-gray-400 font-bold">الصور الكبيرة المتبقية</p>
-          <p className="text-2xl font-black text-red-600 mt-1">{images.length} صورة</p>
+          <p className="text-2xl font-black text-red-600 mt-1">{totalLargeCount} صورة</p>
         </div>
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
           <p className="text-xs text-gray-400 font-bold">حجم الصور الكبيرة الإجمالي</p>
