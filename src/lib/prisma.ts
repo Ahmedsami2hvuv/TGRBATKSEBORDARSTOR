@@ -7,9 +7,12 @@ let datasourceUrl = process.env.DATABASE_URL;
 if (datasourceUrl && process.env.NODE_ENV === "production") {
   try {
     const url = new URL(datasourceUrl);
-    // Limit connections per lambda to 2 to prevent pool exhaustion (ECHECKOUTTIMEOUT)
+    // Limit connections per lambda to 5 to prevent pool exhaustion while allowing concurrent queries
     if (!url.searchParams.has("connection_limit")) {
-      url.searchParams.set("connection_limit", "2");
+      url.searchParams.set("connection_limit", "5");
+    }
+    if (!url.searchParams.has("pool_timeout")) {
+      url.searchParams.set("pool_timeout", "20");
     }
     // Enable pgbouncer mode if using the Supabase transaction pooler (port 6543)
     if (url.port === "6543" && !url.searchParams.has("pgbouncer")) {
