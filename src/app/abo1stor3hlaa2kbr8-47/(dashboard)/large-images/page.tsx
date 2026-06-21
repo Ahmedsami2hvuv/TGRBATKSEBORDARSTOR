@@ -4,7 +4,7 @@ import { getS3Client, BUCKET_NAME } from "@/lib/upload-storage";
 import Link from "next/link";
 import { getGlobalIcons } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { ImageActionButtons } from "./image-action-buttons";
+import { LargeImagesManager } from "./large-images-manager";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -154,93 +154,19 @@ export default async function LargeImagesPage() {
         </div>
       </div>
 
-      {/* لوحة الإحصائيات */}
-      {!errorMsg && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-xs text-gray-400 font-bold">الصور الكبيرة (فوق 500KB)</p>
-            <p className="text-2xl font-black text-red-600 mt-1">{largeObjects.length} صورة</p>
-          </div>
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-xs text-gray-400 font-bold">حجم الصور الكبيرة الإجمالي</p>
-            <p className="text-2xl font-black text-amber-600 mt-1">{totalLargeSizeMb} ميجابايت</p>
-          </div>
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-xs text-gray-400 font-bold">إجمالي حجم R2 بالكامل</p>
-            <p className="text-2xl font-black text-blue-600 mt-1">{totalBucketSizeMb} ميجابايت</p>
-          </div>
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-xs text-gray-400 font-bold">الصور الكبيرة اليتيمة</p>
-            <p className="text-2xl font-black text-emerald-600 mt-1">{orphanedCount} صورة</p>
-          </div>
-        </div>
-      )}
-
       {errorMsg ? (
         <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-3xl text-center">
           <p className="text-lg font-bold">⚠️ خطأ في الاتصال</p>
           <p className="text-sm mt-1">{errorMsg}</p>
         </div>
-      ) : largeObjects.length === 0 ? (
-        <div className="bg-white p-20 text-center rounded-3xl border border-gray-100 shadow-sm">
-          <div className="text-5xl mb-4">🎉</div>
-          <h3 className="text-xl font-bold text-emerald-600">كل الصور سليمة!</h3>
-          <p className="text-sm text-gray-400 mt-1">لا توجد أي صور يتجاوز حجمها 500 كيلوبايت في حساب R2 حالياً.</p>
-        </div>
       ) : (
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-right">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100 text-gray-400 text-xs font-bold">
-                  <th className="p-4 w-24">المعاينة</th>
-                  <th className="p-4">اسم الصورة ومسارها في R2</th>
-                  <th className="p-4 w-28 text-center">الحجم</th>
-                  <th className="p-4">مكان الاستخدام في قاعدة البيانات</th>
-                  <th className="p-4 w-28 text-center">الإجراء</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-gray-700">
-                {largeObjects.map((obj) => {
-                  const isOrphaned = obj.usages.includes("صورة يتيمة / غير مستخدمة 🗑️");
-                  return (
-                    <tr key={obj.key} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="p-4">
-                        <a href={obj.url} target="_blank" rel="noopener noreferrer" className="block relative w-16 h-16 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 hover:opacity-85 transition-opacity shadow-sm" title="انقر للمعاينة الكاملة">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={obj.url} alt="معاينة" className="w-full h-full object-cover" />
-                        </a>
-                      </td>
-                      <td className="p-4 font-mono text-xs max-w-xs break-all text-left" dir="ltr">
-                        {obj.key}
-                      </td>
-                      <td className="p-4 text-center font-bold">
-                        <span className="text-red-600">{obj.sizeMb} MB</span>
-                        <span className="block text-[10px] text-gray-400 font-normal mt-0.5">{obj.sizeKb.toLocaleString()} KB</span>
-                      </td>
-                      <td className="p-4 text-xs font-bold">
-                        <div className="flex flex-wrap gap-1">
-                          {obj.usages.map((use, idx) => (
-                            <span key={idx} className={`px-2 py-1 rounded-lg border ${
-                              isOrphaned 
-                                ? "bg-red-50 text-red-700 border-red-100" 
-                                : "bg-blue-50 text-blue-700 border-blue-100"
-                            }`}>
-                              {use}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="p-4 text-center">
-                        <ImageActionButtons imageKey={obj.key} icons={icons} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <LargeImagesManager
+          initialObjects={largeObjects}
+          initialTotalBucketSizeMb={totalBucketSizeMb}
+          initialTotalLargeSizeMb={totalLargeSizeMb}
+          initialOrphanedCount={orphanedCount}
+          icons={icons}
+        />
       )}
     </div>
   );
