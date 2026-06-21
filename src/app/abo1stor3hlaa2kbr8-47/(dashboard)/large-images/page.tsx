@@ -24,6 +24,13 @@ export default async function LargeImagesPage() {
     usages: string[];
     url: string;
   }[] = [];
+  let allLargeObjects: {
+    key: string;
+    sizeKb: number;
+    sizeMb: string;
+    size: number;
+    lastModified?: Date;
+  }[] = [];
   let errorMsg = "";
   let totalBucketSize = 0;
   let totalLargeSize = 0;
@@ -55,14 +62,6 @@ export default async function LargeImagesPage() {
 
       if (contents.length > 0) {
         // 1. تصفية وحساب المساحات وتجميع مفاتيح الصور الكبيرة أولاً
-        const allLargeObjects: {
-          key: string;
-          sizeKb: number;
-          sizeMb: string;
-          size: number;
-          lastModified?: Date;
-        }[] = [];
-
         contents.forEach(obj => {
           const size = obj.Size ?? 0;
           totalBucketSize += size;
