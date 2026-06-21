@@ -716,7 +716,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // تم تعطيل webView.onResume() لمنع الشاشة البيضاء عند العودة
+        try {
+            webView.onResume()
+            webView.resumeTimers()
+            webView.requestFocus(View.FOCUS_DOWN)
+            webView.requestFocusFromTouch()
+            webView.post { webView.invalidate() }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
         // التحقق التدريجي من الصلاحيات الإضافية عند العودة للتطبيق
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -728,7 +736,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        // تم تعطيل webView.onPause() للحفاظ على استقرار التطبيق في الخلفية وجاهزيته الفورية
+        try {
+            webView.onPause()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
     
 

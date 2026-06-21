@@ -555,10 +555,29 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        try {
+            webView.onResume()
+            webView.resumeTimers()
+            webView.requestFocus(View.FOCUS_DOWN)
+            webView.requestFocusFromTouch()
+            webView.post { webView.invalidate() }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (android.provider.Settings.canDrawOverlays(this)) {
                 checkBatteryOptimizations()
             }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        try {
+            webView.onPause()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
