@@ -49,12 +49,25 @@ export default async function LargeImagesPage() {
       errorMsg = "إعدادات الاتصال بـ Cloudflare R2 غير متوفرة في البيئة (.env)";
     } else {
       const { ListObjectsV2Command } = await import("@aws-sdk/client-s3");
-      const listCommand = new ListObjectsV2Command({
-        Bucket: BUCKET_NAME,
-      });
-      const r2Objects = await s3Client.send(listCommand);
+      
+      let isTruncated = true;
+      let continuationToken: string | undefined = undefined;
+      const contents: any[] = [];
 
-      if (r2Objects.Contents && r2Objects.Contents.length > 0) {
+      while (isTruncated) {
+        const listCommand = new ListObjectsV2Command({
+          Bucket: BUCKET_NAME,
+          ContinuationToken: continuationToken,
+        });
+        const r2Objects = await s3Client.send(listCommand);
+        if (r2Objects.Contents) {
+          contents.push(...r2Objects.Contents);
+        }
+        isTruncated = !!r2Objects.IsTruncated;
+        continuationToken = r2Objects.NextContinuationToken;
+      }
+
+      if (contents.length > 0) {
         // 2. جلب كل روابط الاستخدام من قاعدة البيانات
         const [
           orders,
@@ -99,7 +112,7 @@ export default async function LargeImagesPage() {
         profiles.forEach(p => addUsage(p.photoUrl, `بروفايل زبون: ${p.phone}`));
 
         // 3. تصفية الملفات التي تتجاوز 500 كيلوبايت وحساب الأحجام
-        r2Objects.Contents.forEach(obj => {
+        contents.forEach(obj => {
           const size = obj.Size ?? 0;
           totalBucketSize += size;
 
