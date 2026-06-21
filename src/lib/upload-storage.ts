@@ -157,6 +157,31 @@ export async function getR2ObjectBuffer(urlOrKey: string): Promise<Buffer | null
   let key = urlOrKey;
   if (urlOrKey.startsWith("/uploads/")) key = urlOrKey.slice(9);
 
+  // محاولة الجلب السريع عبر CDN الخاص بـ R2 أولاً لتسريع العملية بشكل هائل
+  try {
+    const r2Domain = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || process.env.R2_BUCKET_DOMAIN || "https://pub-2f7b4947937d4575971a8f949826a575.r2.dev";
+    const cleanDomain = r2Domain.replace(/\/$/, "");
+    const fileUrl = `${cleanDomain}/${key}`;
+    
+    console.log(`[R2 Fetch Quick] Attempting to fetch from CDN: ${fileUrl}`);
+    const res = await fetch(fileUrl, {
+      next: { revalidate: 3600 }
+    });
+    
+    if (res.ok) {
+      const bytes = await res.arrayBuffer();
+      const buf = Buffer.from(bytes);
+      if (buf.length > 0) {
+        console.log(`[R2 Fetch Quick] Success! Fetched ${(buf.length / 1024).toFixed(1)}KB from CDN`);
+        return buf;
+      }
+    }
+    console.warn(`[R2 Fetch Quick] CDN returned status ${res.status}, falling back to S3 GetObjectCommand`);
+  } catch (fetchErr) {
+    console.error(`[R2 Fetch Quick] Failed fetching from CDN, falling back to S3 GetObjectCommand:`, fetchErr);
+  }
+
+  // الاحتياط الآمن عبر S3 Client الأصلي
   try {
     const { GetObjectCommand } = await import("@aws-sdk/client-s3");
     const res = await r2Client.send(new GetObjectCommand({
@@ -167,7 +192,7 @@ export async function getR2ObjectBuffer(urlOrKey: string): Promise<Buffer | null
     const bytes = await res.Body.transformToByteArray();
     return Buffer.from(bytes);
   } catch (error) {
-    console.error("Error getting object from R2:", error);
+    console.error("Error getting object from R2 via S3 client:", error);
     return null;
   }
 }

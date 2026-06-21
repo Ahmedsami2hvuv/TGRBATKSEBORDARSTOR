@@ -61,7 +61,7 @@ export function LargeImagesManager({
 
   // جلب الاستخدامات للصور المعروضة في الصفحة الحالية عند الحاجة
   useEffect(() => {
-    if (displayedImages.length === 0) return;
+    if (displayedImages.length === 0 || isBatchRunning) return;
 
     // تحديد المفاتيح التي لا تحتوي على استخدامات بعد في usagesMap وليست قيد التحميل حالياً
     const keysToFetch = displayedImages
@@ -101,7 +101,7 @@ export function LargeImagesManager({
     };
 
     fetchUsages();
-  }, [currentPage, images]);
+  }, [currentPage, images, isBatchRunning]);
 
   // حالات التقليص الجماعي
   const [isBatchRunning, setIsBatchRunning] = useState(false);
