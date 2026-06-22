@@ -572,7 +572,7 @@ export default async function MandoubPage({ searchParams }: Props) {
 
   const phoneProfiles = await prisma.customerPhoneProfile.findMany({
     where: { phone: { in: customerPhones } },
-    select: { phone: true, regionId: true, locationUrl: true, photoUrl: true, landmark: true, alternatePhone: true }
+    select: { id: true, phone: true, regionId: true, locationUrl: true, photoUrl: true, landmark: true, alternatePhone: true }
   });
 
   const allRegions = await prisma.region.findMany({
