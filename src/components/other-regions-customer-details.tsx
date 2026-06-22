@@ -74,7 +74,7 @@ export function OtherRegionsCustomerDetails({
         }}
       >
         <span style={{ fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined }}>
-          ⚠️ تفاصيل أخرى ({profiles.length})
+          تفاصيل أخرى{profiles.length}
         </span>
       </button>
 
