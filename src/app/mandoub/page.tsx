@@ -572,20 +572,16 @@ export default async function MandoubPage({ searchParams }: Props) {
 
   const phoneProfiles = await prisma.customerPhoneProfile.findMany({
     where: { phone: { in: customerPhones } },
-    select: {
-      phone: true,
-      regionId: true,
-      locationUrl: true,
-      photoUrl: true,
-      landmark: true,
-      alternatePhone: true,
-      region: {
-        select: {
-          name: true,
-        },
-      },
-    },
+    select: { phone: true, regionId: true, locationUrl: true, photoUrl: true, landmark: true, alternatePhone: true }
   });
+
+  const allRegions = await prisma.region.findMany({
+    select: { id: true, name: true }
+  });
+  const regionsMap = new Map<string, string>();
+  for (const r of allRegions) {
+    regionsMap.set(r.id, r.name);
+  }
 
   const activeOrderMetrics = computeMandoubTotalsForCourier(activeOrdersNorm, courier.id, totalsBaseline);
   const activeCashInHand = new Decimal(activeOrderMetrics.sumEarnings).plus(handToAdmin);
@@ -847,7 +843,7 @@ export default async function MandoubPage({ searchParams }: Props) {
         landmark: p.landmark,
         photoUrl: p.photoUrl,
         alternatePhone: p.alternatePhone,
-        region: p.region ? { name: p.region.name } : null
+        region: p.regionId ? { name: regionsMap.get(p.regionId) || "منطقة غير معروفة" } : null
       })),
       secondOtherProfiles: secondOtherProfiles.map(p => ({
         id: p.id,
@@ -855,7 +851,7 @@ export default async function MandoubPage({ searchParams }: Props) {
         landmark: p.landmark,
         photoUrl: p.photoUrl,
         alternatePhone: p.alternatePhone,
-        region: p.region ? { name: p.region.name } : null
+        region: p.regionId ? { name: regionsMap.get(p.regionId) || "منطقة غير معروفة" } : null
       })),
     };
   });
