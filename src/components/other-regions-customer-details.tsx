@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getCustomerOtherRegionsDetails } from "@/app/actions/customer-other-regions";
 import { createPortal } from "react-dom";
 import { DynamicIcon } from "@/components/dynamic-icon";
+import { resolvePublicAssetSrc } from "@/lib/image-url";
 
 export function OtherRegionsCustomerDetails({
   phone,
@@ -117,7 +118,7 @@ export function OtherRegionsCustomerDetails({
                         <div className="flex flex-col gap-1 items-center">
                           <span className="text-[10px] font-bold text-slate-400">صورة الباب</span>
                           <div className="aspect-square w-full sm:w-28 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-black shadow-sm">
-                            <img src={p.photoUrl.startsWith('http') ? p.photoUrl : `/${p.photoUrl}`} alt="صورة الباب" className="w-full h-full object-contain" />
+                            <img src={resolvePublicAssetSrc(p.photoUrl) || ""} alt="صورة الباب" className="w-full h-full object-contain" />
                           </div>
                         </div>
                       )}
