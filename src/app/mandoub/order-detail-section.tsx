@@ -451,7 +451,7 @@ export function OrderDetailSection({
                       )}
 
                     </div>
-
+                    <div className="pt-1.5">
                       {courierSettings?.showLocationBtn !== false && (
                         <div className="max-w-full">
                           {secondLocMerged ? (
