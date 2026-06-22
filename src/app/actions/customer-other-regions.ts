@@ -31,7 +31,12 @@ export async function getCustomerOtherRegionsDetails(phone: string, currentRegio
   return profiles;
 }
 
-export async function pullCustomerProfileDetails(phone: string, fromRegionId: string, toRegionId: string) {
+export async function pullCustomerProfileDetails(
+  phone: string, 
+  fromRegionId: string, 
+  toRegionId: string,
+  field?: "locationUrl" | "photoUrl" | "notes" | "landmark" | "alternatePhone"
+) {
   if (!phone || !fromRegionId || !toRegionId) return { success: false, message: "Missing required fields" };
 
   try {
@@ -46,27 +51,44 @@ export async function pullCustomerProfileDetails(phone: string, fromRegionId: st
     });
 
     if (toProfile) {
+      const dataToUpdate: any = {};
+      if (field) {
+        dataToUpdate[field] = fromProfile[field] || toProfile[field];
+      } else {
+        dataToUpdate.locationUrl = toProfile.locationUrl || fromProfile.locationUrl;
+        dataToUpdate.photoUrl = toProfile.photoUrl || fromProfile.photoUrl;
+        dataToUpdate.notes = toProfile.notes || fromProfile.notes;
+        dataToUpdate.landmark = toProfile.landmark || fromProfile.landmark;
+        dataToUpdate.alternatePhone = toProfile.alternatePhone || fromProfile.alternatePhone;
+      }
+      
       await prisma.customerPhoneProfile.update({
         where: { id: toProfile.id },
-        data: {
-          locationUrl: toProfile.locationUrl || fromProfile.locationUrl,
-          photoUrl: toProfile.photoUrl || fromProfile.photoUrl,
-          notes: toProfile.notes || fromProfile.notes,
-          landmark: toProfile.landmark || fromProfile.landmark,
-          alternatePhone: toProfile.alternatePhone || fromProfile.alternatePhone,
-        },
+        data: dataToUpdate,
       });
     } else {
+      const dataToCreate: any = {
+        phone,
+        regionId: toRegionId,
+        locationUrl: "",
+        photoUrl: "",
+        notes: "",
+        landmark: "",
+        alternatePhone: null,
+      };
+      
+      if (field) {
+        dataToCreate[field] = fromProfile[field];
+      } else {
+        dataToCreate.locationUrl = fromProfile.locationUrl;
+        dataToCreate.photoUrl = fromProfile.photoUrl;
+        dataToCreate.notes = fromProfile.notes;
+        dataToCreate.landmark = fromProfile.landmark;
+        dataToCreate.alternatePhone = fromProfile.alternatePhone;
+      }
+      
       await prisma.customerPhoneProfile.create({
-        data: {
-          phone,
-          regionId: toRegionId,
-          locationUrl: fromProfile.locationUrl,
-          photoUrl: fromProfile.photoUrl,
-          notes: fromProfile.notes,
-          landmark: fromProfile.landmark,
-          alternatePhone: fromProfile.alternatePhone,
-        },
+        data: dataToCreate,
       });
     }
 

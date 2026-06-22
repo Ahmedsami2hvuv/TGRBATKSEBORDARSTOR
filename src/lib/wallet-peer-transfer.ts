@@ -25,14 +25,15 @@ export async function fetchWalletInOutDisplayForCourier(
   courierId: string,
   baseline: Date | null,
 ): Promise<{ walletIn: Decimal; walletOut: Decimal; pendingIncoming: Decimal; pendingOutgoing: Decimal }> {
-  const [miscRows, pendingIncomingAgg, pendingOutgoingAgg, acceptedTransfers] = await Promise.all([
-    prisma.courierWalletMiscEntry.findMany({
+  const [miscAgg, pendingIncomingAgg, pendingOutgoingAgg, acceptedTransfers] = await Promise.all([
+    prisma.courierWalletMiscEntry.groupBy({
+      by: ['direction'],
       where: {
         courierId,
         deletedAt: null,
         ...(baseline ? { createdAt: { gt: baseline } } : {}),
       },
-      select: { direction: true, amountDinar: true },
+      _sum: { amountDinar: true },
     }),
     prisma.walletPeerTransfer.aggregate({
       where: {
@@ -58,15 +59,16 @@ export async function fetchWalletInOutDisplayForCourier(
     }),
   ]);
 
-  let take = new Decimal(0);
-  let give = new Decimal(0);
+  let walletIn = new Decimal(0);
+  let walletOut = new Decimal(0);
 
-  // القيود اليدوية
-  for (const r of miscRows) {
-    if (r.direction === CourierWalletMiscDirection.take) {
-      take = take.plus(r.amountDinar);
-    } else {
-      give = give.plus(r.amountDinar);
+  // Miscellaneous entries (give = walletOut, take = walletIn)
+  for (const group of miscAgg) {
+    const val = group._sum.amountDinar ?? new Decimal(0);
+    if (group.direction === "give") {
+      walletOut = walletOut.plus(val);
+    } else if (group.direction === "take") {
+      walletIn = walletIn.plus(val);
     }
   }
 

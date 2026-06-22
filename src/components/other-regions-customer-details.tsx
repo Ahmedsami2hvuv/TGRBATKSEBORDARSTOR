@@ -26,11 +26,11 @@ export function OtherRegionsCustomerDetails({
   const [showModal, setShowModal] = useState(false);
   const [pullingId, setPullingId] = useState<string | null>(null);
 
-  const handlePull = async (fromRegionId: string) => {
+  const handlePull = async (fromRegionId: string, field?: "locationUrl" | "photoUrl" | "notes" | "landmark" | "alternatePhone") => {
     if (!phone || !currentRegionId) return;
-    setPullingId(fromRegionId);
+    setPullingId(`${fromRegionId}-${field || 'all'}`);
     try {
-      const res = await pullCustomerProfileDetails(phone, fromRegionId, currentRegionId);
+      const res = await pullCustomerProfileDetails(phone, fromRegionId, currentRegionId, field);
       if (res.success) {
         window.location.reload();
       } else {
@@ -112,56 +112,87 @@ export function OtherRegionsCustomerDetails({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="flex flex-col gap-2">
                         {p.alternatePhone && (
-                          <div className="flex items-center gap-1.5 text-xs">
+                          <div className="flex items-center gap-1.5 text-xs group">
                             <span className="font-bold text-slate-500">رقم بديل:</span>
                             <span className="font-mono font-black text-slate-800 dark:text-slate-200" dir="ltr">{p.alternatePhone}</span>
+                            {currentRegionId && (
+                              <button onClick={() => handlePull(p.regionId, "alternatePhone")} disabled={pullingId !== null} className="mr-auto opacity-70 hover:opacity-100 disabled:opacity-30 text-sky-600 bg-sky-100 p-1 rounded-md" title="سحب الرقم البديل">
+                                {pullingId === `${p.regionId}-alternatePhone` ? <span className="animate-spin text-xs inline-block">↻</span> : "📥"}
+                              </button>
+                            )}
                           </div>
                         )}
                         {p.landmark && (
                           <div className="flex flex-col gap-1 text-xs">
-                            <span className="font-bold text-slate-500">أقرب نقطة دالة:</span>
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-slate-500">أقرب نقطة دالة:</span>
+                              {currentRegionId && (
+                                <button onClick={() => handlePull(p.regionId, "landmark")} disabled={pullingId !== null} className="opacity-70 hover:opacity-100 disabled:opacity-30 text-sky-600 bg-sky-100 p-1 rounded-md" title="سحب الدالة">
+                                  {pullingId === `${p.regionId}-landmark` ? <span className="animate-spin text-xs inline-block">↻</span> : "📥"}
+                                </button>
+                              )}
+                            </div>
                             <span className="font-black text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 p-1.5 rounded">{p.landmark}</span>
                           </div>
                         )}
                         {p.notes && (
                           <div className="flex flex-col gap-1 text-xs">
-                            <span className="font-bold text-slate-500">ملاحظات:</span>
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-slate-500">ملاحظات:</span>
+                              {currentRegionId && (
+                                <button onClick={() => handlePull(p.regionId, "notes")} disabled={pullingId !== null} className="opacity-70 hover:opacity-100 disabled:opacity-30 text-sky-600 bg-sky-100 p-1 rounded-md" title="سحب الملاحظات">
+                                  {pullingId === `${p.regionId}-notes` ? <span className="animate-spin text-xs inline-block">↻</span> : "📥"}
+                                </button>
+                              )}
+                            </div>
                             <span className="font-black text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 p-1.5 rounded whitespace-pre-wrap">{p.notes}</span>
                           </div>
                         )}
                         {p.locationUrl && (
-                          <div className="mt-1">
-                            <a href={p.locationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition">
+                          <div className="mt-1 flex items-center gap-1.5">
+                            <a href={p.locationUrl} target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition">
                               <span>📍</span> فتح موقع الزبون
                             </a>
+                            {currentRegionId && (
+                              <button onClick={() => handlePull(p.regionId, "locationUrl")} disabled={pullingId !== null} className="h-[32px] w-[32px] flex items-center justify-center opacity-70 hover:opacity-100 disabled:opacity-30 text-sky-600 bg-sky-100 rounded-lg shrink-0" title="سحب الموقع">
+                                {pullingId === `${p.regionId}-locationUrl` ? <span className="animate-spin text-sm inline-block">↻</span> : "📥"}
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
                       
                       {p.photoUrl && (
-                        <div className="flex flex-col gap-1 items-center">
+                        <div className="flex flex-col gap-1 items-center relative">
                           <span className="text-[10px] font-bold text-slate-400">صورة الباب</span>
-                          <div className="aspect-square w-full sm:w-28 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-black shadow-sm">
+                          <div className="aspect-square w-full sm:w-28 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-black shadow-sm relative group">
                             <img src={resolvePublicAssetSrc(p.photoUrl) || ""} alt="صورة الباب" className="w-full h-full object-contain" />
+                            {currentRegionId && (
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                <button onClick={() => handlePull(p.regionId, "photoUrl")} disabled={pullingId !== null} className="bg-sky-600 text-white rounded-full p-2 hover:bg-sky-500 disabled:opacity-50" title="سحب الصورة">
+                                  {pullingId === `${p.regionId}-photoUrl` ? <span className="animate-spin text-sm inline-block">↻</span> : "📥"}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
                     </div>
 
                     {currentRegionId && (
-                      <div className="mt-2 pt-2 border-t border-sky-100 dark:border-sky-900/30">
+                      <div className="mt-2 pt-2 border-t border-sky-100 dark:border-sky-900/30 flex justify-end">
                         <button
                           type="button"
                           disabled={pullingId !== null}
                           onClick={() => handlePull(p.regionId)}
-                          className="flex w-full items-center justify-center gap-2 rounded-lg bg-sky-600 hover:bg-sky-700 disabled:opacity-50 px-4 py-2 text-sm font-bold text-white transition shadow-sm"
+                          className="flex items-center gap-1.5 rounded text-sky-600 bg-sky-50 hover:bg-sky-100 disabled:opacity-50 px-2.5 py-1 text-[10px] font-bold transition border border-sky-100"
                         >
-                          {pullingId === p.regionId ? (
-                            <span className="animate-spin text-lg leading-none">↻</span>
+                          {pullingId === `${p.regionId}-all` ? (
+                            <span className="animate-spin text-xs leading-none">↻</span>
                           ) : (
-                            <span className="text-lg leading-none">📥</span>
+                            <span className="text-xs leading-none">📥</span>
                           )}
-                          <span>سحب المعلومات إلى هذه المنطقة</span>
+                          <span>سحب كل التفاصيل</span>
                         </button>
                       </div>
                     )}

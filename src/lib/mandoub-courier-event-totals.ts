@@ -144,21 +144,40 @@ export async function fetchOrderOnlyMoneySumsForCourier(
   courierId: string,
   baseline: Date | null,
 ): Promise<MandoubMoneySums> {
-  const orderEvents = await prisma.orderCourierMoneyEvent.findMany({
+  const aggregations = await prisma.orderCourierMoneyEvent.groupBy({
+    by: ['kind'],
     where: {
       courierId,
       deletedAt: null,
       recordedByCompanyPreparerId: null, // استثناء حركات المجهز
       ...(baseline ? { createdAt: { gt: baseline } } : {}),
     },
-    select: {
-      courierId: true,
-      kind: true,
-      amountDinar: true,
-      createdAt: true,
-      recordedByCompanyPreparerId: true,
-    },
+    _sum: { amountDinar: true },
+    _count: { id: true },
   });
 
-  return computeMoneySumsFromCourierEvents(orderEvents, courierId, baseline);
+  let sumDeliveryIn = 0;
+  let sumPickupOut = 0;
+  let pickupEventsAfter = 0;
+  let deliveryEventsAfter = 0;
+
+  for (const agg of aggregations) {
+    const val = Number(agg._sum.amountDinar ?? 0);
+    const count = agg._count.id;
+    if (agg.kind === MONEY_KIND_DELIVERY) {
+      sumDeliveryIn += val;
+      deliveryEventsAfter += count;
+    } else if (agg.kind === MONEY_KIND_PICKUP) {
+      sumPickupOut += val;
+      pickupEventsAfter += count;
+    }
+  }
+
+  return {
+    sumDeliveryIn,
+    sumPickupOut,
+    remainingNet: sumDeliveryIn - sumPickupOut,
+    pickupEventsAfter,
+    deliveryEventsAfter,
+  };
 }
