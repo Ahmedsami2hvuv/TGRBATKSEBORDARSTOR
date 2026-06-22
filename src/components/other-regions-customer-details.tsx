@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getCustomerOtherRegionsDetails } from "@/app/actions/customer-other-regions";
+import { getCustomerOtherRegionsDetails, pullCustomerProfileDetails } from "@/app/actions/customer-other-regions";
 import { createPortal } from "react-dom";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
@@ -24,6 +24,25 @@ export function OtherRegionsCustomerDetails({
   const [profiles, setProfiles] = useState<any[]>(prefetchedProfiles || []);
   const [loading, setLoading] = useState(!prefetchedProfiles);
   const [showModal, setShowModal] = useState(false);
+  const [pullingId, setPullingId] = useState<string | null>(null);
+
+  const handlePull = async (fromRegionId: string) => {
+    if (!phone || !currentRegionId) return;
+    setPullingId(fromRegionId);
+    try {
+      const res = await pullCustomerProfileDetails(phone, fromRegionId, currentRegionId);
+      if (res.success) {
+        window.location.reload();
+      } else {
+        alert(res.message || "فشل سحب المعلومات");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("حدث خطأ أثناء سحب المعلومات");
+    } finally {
+      setPullingId(null);
+    }
+  };
 
   useEffect(() => {
     if (prefetchedProfiles) return;
@@ -128,6 +147,24 @@ export function OtherRegionsCustomerDetails({
                         </div>
                       )}
                     </div>
+
+                    {currentRegionId && (
+                      <div className="mt-2 pt-2 border-t border-sky-100 dark:border-sky-900/30">
+                        <button
+                          type="button"
+                          disabled={pullingId !== null}
+                          onClick={() => handlePull(p.regionId)}
+                          className="flex w-full items-center justify-center gap-2 rounded-lg bg-sky-600 hover:bg-sky-700 disabled:opacity-50 px-4 py-2 text-sm font-bold text-white transition shadow-sm"
+                        >
+                          {pullingId === p.regionId ? (
+                            <span className="animate-spin text-lg leading-none">↻</span>
+                          ) : (
+                            <span className="text-lg leading-none">📥</span>
+                          )}
+                          <span>سحب المعلومات إلى هذه المنطقة</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
