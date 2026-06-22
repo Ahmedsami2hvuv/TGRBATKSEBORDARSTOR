@@ -31,13 +31,13 @@ function NeonBox({ t, colorClass, sizeClass, icons }: { t: AdminTile | undefined
     <Link
       href={tileHref(t)}
       prefetch={false}
-      className={`neon-box ${colorClass} ${sizeClass ?? ''} p-5 md:p-6 flex flex-col justify-center items-center text-center group`}
+      className={`neon-box ${colorClass} ${sizeClass ?? ''} p-3 sm:p-5 md:p-6 flex flex-col justify-center items-center text-center group`}
     >
       {/* حجز حجم ثابت للأيقونة لمنع انزياح العناصر CLS أثناء التحميل */}
-      <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center text-4xl md:text-5xl drop-shadow-md transition-transform group-hover:scale-110 mb-3" aria-hidden>
+      <div className="w-8 h-8 sm:w-12 sm:h-12 md:w-16 md:h-16 flex items-center justify-center text-2xl sm:text-4xl md:text-5xl drop-shadow-md transition-transform group-hover:scale-110 mb-1.5 sm:mb-3" aria-hidden>
         <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-full h-full" />
       </div>
-      <span className="text-base md:text-lg font-bold text-slate-800 dark:text-[#eef2f6] tracking-wide">{t.label}</span>
+      <span className="text-xs sm:text-base md:text-lg font-bold text-slate-800 dark:text-[#eef2f6] tracking-wide">{t.label}</span>
     </Link>
   );
 }
@@ -45,14 +45,14 @@ function NeonBox({ t, colorClass, sizeClass, icons }: { t: AdminTile | undefined
 function NeonPill({ t, colorClass, icons, isFullWidthOnMobile = false }: { t: AdminTile | undefined; colorClass: string; icons: GlobalIconsConfig | null; isFullWidthOnMobile?: boolean }) {
   if (!t) return null;
   return (
-    <div className={`relative group w-full lg:w-[280px] ${isFullWidthOnMobile ? 'col-span-2 md:col-span-1 mx-auto max-w-[280px] lg:max-w-none' : ''} flex justify-end items-center mb-2 lg:mb-5`}>
+    <div className={`relative group w-full lg:w-[280px] ${isFullWidthOnMobile ? 'col-span-2 md:col-span-1 mx-auto max-w-[280px] lg:max-w-none' : ''} flex justify-end items-center mb-1.5 lg:mb-5`}>
       {/* Connector line simulating graphic tree - pointing physically to the right (dashboard center) */}
       <div className={`hidden lg:block absolute top-1/2 w-[40px] h-[2px] -right-[40px] bg-gradient-to-r opacity-60 ${colorClass.includes('orange') ? 'from-[#ff9100]' : (colorClass.includes('purple') ? 'from-[#e028ff]' : 'from-[#00f3ff]')} to-transparent rounded-full`} />
       
-      <Link href={tileHref(t)} prefetch={false} className={`neon-pill ${colorClass} w-full p-3 pl-6 pr-4 flex justify-between items-center z-10 hover:scale-105`}>
-        <span className="font-bold text-slate-800 dark:text-slate-200 text-[15px]">{t.label}</span>
+      <Link href={tileHref(t)} prefetch={false} className={`neon-pill ${colorClass} w-full p-2 sm:p-3 pl-4 pr-3 sm:pl-6 sm:pr-4 flex justify-between items-center z-10 hover:scale-105`}>
+        <span className="font-bold text-slate-800 dark:text-slate-200 text-xs sm:text-[15px]">{t.label}</span>
         {/* حجز حجم ثابت للأيقونة لمنع انزياح العناصر CLS */}
-        <div className="w-8 h-8 flex items-center justify-center text-3xl drop-shadow-sm group-hover:scale-110 transition-transform" aria-hidden>
+        <div className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xl sm:text-3xl drop-shadow-sm group-hover:scale-110 transition-transform" aria-hidden>
           <DynamicIcon iconKey={t.iconKey} config={icons} fallback="" className="w-full h-full" />
         </div>
       </Link>
@@ -85,26 +85,26 @@ export function AdminHubDashboard() {
         <div className="flex-1 flex flex-col gap-6 lg:gap-8 min-w-0">
           
           {/* Top Row: Huge Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8 xl:h-[220px]">
+          <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-6 lg:gap-8 xl:h-[220px]">
             {/* الطلبات الجديدة - Giant Cyan */}
-            <NeonBox t={bySlug["new-orders"]} colorClass="neon-box-cyan" sizeClass="h-full py-8 xl:py-4" icons={icons} />
+            <NeonBox t={bySlug["new-orders"]} colorClass="neon-box-cyan" sizeClass="h-full py-4 sm:py-8 xl:py-4" icons={icons} />
             
             {/* تتبع الطلبات - Giant Purple */}
-            <NeonBox t={bySlug["order-tracking"]} colorClass="neon-box-purple" sizeClass="h-full py-8 xl:py-4" icons={icons} />
+            <NeonBox t={bySlug["order-tracking"]} colorClass="neon-box-purple" sizeClass="h-full py-4 sm:py-8 xl:py-4" icons={icons} />
           </div>
 
           {/* Bottom Row: 3 Columns */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-8 xl:h-[240px]">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-6 lg:gap-8 xl:h-[240px]">
             
             {/* Col 1: Small Stacked Cards */}
-            <div className="flex flex-col gap-6 lg:gap-8 h-full">
-              <NeonBox t={bySlug["archived-orders"]} colorClass="neon-box-cyan" sizeClass="flex-1 min-h-[100px]" icons={icons} />
-              <NeonBox t={bySlug["rejected-orders"]} colorClass="neon-box-orange" sizeClass="flex-1 min-h-[100px]" icons={icons} />
+            <div className="flex flex-col gap-3 sm:gap-6 lg:gap-8 h-full">
+              <NeonBox t={bySlug["archived-orders"]} colorClass="neon-box-cyan" sizeClass="flex-1 min-h-[70px] sm:min-h-[100px]" icons={icons} />
+              <NeonBox t={bySlug["rejected-orders"]} colorClass="neon-box-orange" sizeClass="flex-1 min-h-[70px] sm:min-h-[100px]" icons={icons} />
             </div>
 
-            <NeonBox t={bySlug["store"]} colorClass="neon-box-cyan" sizeClass="h-full min-h-[220px]" icons={icons} />
+            <NeonBox t={bySlug["store"]} colorClass="neon-box-cyan" sizeClass="h-full min-h-[150px] sm:min-h-[220px]" icons={icons} />
 
-            <NeonBox t={bySlug["reports"]} colorClass="neon-box-purple" sizeClass="h-full min-h-[220px]" icons={icons} />
+            <NeonBox t={bySlug["reports"]} colorClass="neon-box-purple" sizeClass="h-full min-h-[150px] sm:min-h-[220px] col-span-2 sm:col-span-1" icons={icons} />
           </div>
           
           {/* Generic grid for remaining tiles not in mockup */}
