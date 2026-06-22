@@ -19,6 +19,11 @@ export function MandoubCustomerEditForm({
   defaultCustomerLocationUrl,
   defaultCustomerLandmark,
   defaultAlternatePhone,
+  isDoubleRoute,
+  defaultSecondCustomerPhone,
+  defaultSecondCustomerLocationUrl,
+  defaultSecondCustomerLandmark,
+  defaultSecondAlternatePhone,
   auth,
   nextUrl,
 }: {
@@ -28,6 +33,11 @@ export function MandoubCustomerEditForm({
   defaultCustomerLocationUrl: string;
   defaultCustomerLandmark: string;
   defaultAlternatePhone: string;
+  isDoubleRoute?: boolean;
+  defaultSecondCustomerPhone?: string;
+  defaultSecondCustomerLocationUrl?: string;
+  defaultSecondCustomerLandmark?: string;
+  defaultSecondAlternatePhone?: string;
   auth: { c: string; exp: string; s: string };
   nextUrl: string;
 }) {
@@ -96,6 +106,7 @@ export function MandoubCustomerEditForm({
             <input type="hidden" name="c" value={auth.c} />
             <input type="hidden" name="exp" value={auth.exp} />
             <input type="hidden" name="s" value={auth.s} />
+            {isDoubleRoute && <input type="hidden" name="isDoubleRoute" value="true" />}
 
             <OrderStatusRadioGroup
               name="status"
@@ -114,8 +125,10 @@ export function MandoubCustomerEditForm({
                 : "يمكنك إرجاع الحالة (مثلاً من «تم التسليم» إلى «تم الاستلام») ثم الضغط على تحديث."}
             </p>
 
-            <label className="flex flex-col gap-1.5">
-              <span className="font-bold text-slate-800">رقم الزبون</span>
+            <label className="flex flex-col gap-1.5 mt-2">
+              <span className="font-bold text-slate-800">
+                {isDoubleRoute ? "رقم المرسل" : "رقم الزبون"}
+              </span>
               <span className="text-xs text-slate-600">
                 أي صيغة: 07… أو +964… أو مع مسافات — يُطبَّع تلقائياً.
               </span>
@@ -130,7 +143,9 @@ export function MandoubCustomerEditForm({
               />
             </label>
             <div className="flex flex-col gap-1.5">
-              <span className="font-bold text-slate-800">رابط لوكيشن الزبون</span>
+              <span className="font-bold text-slate-800">
+                {isDoubleRoute ? "رابط لوكيشن المرسل" : "رابط لوكيشن الزبون"}
+              </span>
               {defaultCustomerLocationUrl.trim() ? (
                 <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] text-sky-900/90">
                   الحالي في الطلب:{" "}
@@ -174,6 +189,80 @@ export function MandoubCustomerEditForm({
                 placeholder="اتركه فارغاً إن لم يوجد"
               />
             </label>
+
+            {isDoubleRoute && (
+              <div className="mt-6 mb-4 border-t-2 border-violet-200/60 pt-6">
+                <div className="mb-4 flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700">👥</div>
+                  <p className="text-lg font-bold text-violet-900">تعديل المستلم (الوجهة الثانية)</p>
+                </div>
+                
+                <div className="space-y-4">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="font-bold text-slate-800">رقم المستلم</span>
+                    <span className="text-xs text-slate-600">
+                      أي صيغة: 07… أو +964… أو مع مسافات — يُطبَّع تلقائياً.
+                    </span>
+                    <input
+                      name="secondCustomerPhone"
+                      inputMode="numeric"
+                      defaultValue={defaultSecondCustomerPhone}
+                      className={`${inputClass} font-mono tabular-nums`}
+                      dir="ltr"
+                    />
+                  </label>
+                  
+                  <div className="flex flex-col gap-1.5">
+                    <span className="font-bold text-slate-800">رابط لوكيشن المستلم</span>
+                    {defaultSecondCustomerLocationUrl?.trim() ? (
+                      <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] text-sky-900/90">
+                        الحالي في الطلب:{" "}
+                        <span className="font-mono tabular-nums">{defaultSecondCustomerLocationUrl}</span>
+                      </p>
+                    ) : null}
+                    <textarea
+                      name="secondCustomerLocationUrl"
+                      rows={3}
+                      defaultValue={defaultSecondCustomerLocationUrl}
+                      placeholder="الصق رابط خرائط جوجل أو أي رابط لوكيشن"
+                      className={`${inputClass} resize-y font-mono text-sm sm:text-base`}
+                      dir="ltr"
+                    />
+                    {defaultSecondCustomerLocationUrl?.trim() ? (
+                      <div className="mt-2">
+                        <MandoubLocationManageButtons
+                          orderId={orderId}
+                          auth={auth}
+                          nextUrl={nextUrl}
+                          target="second"
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                  
+                  <label className="flex flex-col gap-1.5">
+                    <span className="font-bold text-slate-800">أقرب نقطة دالة للمستلم</span>
+                    <input
+                      name="secondCustomerLandmark"
+                      defaultValue={defaultSecondCustomerLandmark}
+                      className={inputClass}
+                    />
+                  </label>
+                  
+                  <label className="flex flex-col gap-1.5">
+                    <span className="font-bold text-slate-800">رقم مستلم ثانٍ (اختياري)</span>
+                    <input
+                      name="secondAlternatePhone"
+                      inputMode="numeric"
+                      defaultValue={defaultSecondAlternatePhone}
+                      className={`${inputClass} font-mono tabular-nums`}
+                      dir="ltr"
+                      placeholder="اتركه فارغاً إن لم يوجد"
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
 
             {editState.error ? (
               <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">

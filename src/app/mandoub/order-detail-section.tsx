@@ -769,7 +769,21 @@ export function OrderDetailSection({
           </div>
         </div>
 
-        <MandoubCustomerEditForm orderId={order.id} defaultOrderStatus={order.status} defaultCustomerPhone={order.customerPhone} defaultCustomerLocationUrl={mergedCustomerLocationUrl} defaultCustomerLandmark={mergedLandmark} defaultAlternatePhone={mergedAlternate} auth={auth} nextUrl={nextUrl} />
+        <MandoubCustomerEditForm 
+          orderId={order.id} 
+          defaultOrderStatus={order.status} 
+          defaultCustomerPhone={order.customerPhone} 
+          defaultCustomerLocationUrl={mergedCustomerLocationUrl} 
+          defaultCustomerLandmark={mergedLandmark} 
+          defaultAlternatePhone={mergedAlternate} 
+          isDoubleRoute={isDoubleRoute}
+          defaultSecondCustomerPhone={order.secondCustomerPhone || ""}
+          defaultSecondCustomerLocationUrl={secondLocMerged || ""}
+          defaultSecondCustomerLandmark={secondLandmarkMerged || ""}
+          defaultSecondAlternatePhone={mergedSecondAlternate || ""}
+          auth={auth} 
+          nextUrl={nextUrl} 
+        />
 
         <div className="mt-5 space-y-6">
           {layout.map((blockId) => renderBlock(blockId))}

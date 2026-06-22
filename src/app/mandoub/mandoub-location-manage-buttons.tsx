@@ -24,6 +24,7 @@ export function MandoubLocationManageButtons({
   orderId: string;
   auth: { c: string; exp: string; s: string };
   nextUrl: string;
+  target?: "first" | "second";
 }) {
   const [clearState, clearAction, clearPending] = useActionState(
     clearMandoubCustomerLocation,
@@ -93,6 +94,7 @@ export function MandoubLocationManageButtons({
     fd.set("c", auth.c);
     fd.set("exp", auth.exp);
     fd.set("s", auth.s);
+    if (target === "second") fd.set("target", target);
     clearAction(fd);
   };
 
@@ -124,6 +126,7 @@ export function MandoubLocationManageButtons({
         fd.set("lat", lat);
         fd.set("lng", lng);
         fd.set("replace", "1");
+        if (target === "second") fd.set("target", target);
         gpsAction(fd);
       },
       (err) => {

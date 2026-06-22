@@ -273,6 +273,14 @@ export async function updateMandoubCustomerDetails(
   const alternateRaw = formData.get("alternatePhone")?.toString().trim() || "";
   const statusRaw = formData.get("status")?.toString().trim() || "";
 
+  const isDoubleRouteRaw = formData.get("isDoubleRoute")?.toString().trim();
+  const isDoubleRoute = isDoubleRouteRaw === "true";
+
+  const secondCustomerPhoneRaw = formData.get("secondCustomerPhone")?.toString().trim() || "";
+  const secondCustomerLocationUrl = formData.get("secondCustomerLocationUrl")?.toString().trim() || "";
+  const secondCustomerLandmark = formData.get("secondCustomerLandmark")?.toString().trim() || "";
+  const secondAlternateRaw = formData.get("secondAlternatePhone")?.toString().trim() || "";
+
   const v = await verifyDelegateAllowed(c, exp, s);
   if (!v.ok) {
     return { error: "الرابط غير صالح." };
@@ -296,6 +304,26 @@ export async function updateMandoubCustomerDetails(
       return { error: "الرقم الثاني يجب أن يختلف عن رقم الزبون الأساسي." };
     }
     alternateDigits = alt;
+  }
+
+  let secondPhone = "";
+  if (isDoubleRoute && secondCustomerPhoneRaw) {
+    secondPhone = normalizeIraqMobileLocal11(secondCustomerPhoneRaw) || "";
+    if (!secondPhone) {
+      return { error: "رقم المستلم غير صالح. جرّب أي صيغة شائعة." };
+    }
+  }
+
+  let secondAlternateDigits: string | null = null;
+  if (isDoubleRoute && secondAlternateRaw) {
+    const alt = normalizeIraqMobileLocal11(secondAlternateRaw);
+    if (!alt) {
+      return { error: "رقم المستلم الثاني غير صالح أو اتركه فارغاً." };
+    }
+    if (alt === secondPhone) {
+      return { error: "الرقم الثاني للمستلم يجب أن يختلف عن رقمه الأساسي." };
+    }
+    secondAlternateDigits = alt;
   }
 
   const order = await prisma.order.findFirst({
@@ -327,6 +355,56 @@ export async function updateMandoubCustomerDetails(
       return { error: "حالة الطلب غير صالحة" };
     }
     statusPatch = { status: statusRaw };
+  }
+
+  let secondCustomerPatch: any = {};
+  if (isDoubleRoute) {
+    secondCustomerPatch = {
+      secondCustomerPhone: secondPhone,
+      secondCustomerLocationUrl: secondCustomerLocationUrl,
+      secondCustomerLandmark: secondCustomerLandmark,
+    };
+    
+    if (order.secondCustomerId) {
+      await prisma.customer.update({
+        where: { id: order.secondCustomerId },
+        data: {
+          phone: secondPhone,
+          customerLocationUrl: secondCustomerLocationUrl,
+          customerLandmark: secondCustomerLandmark,
+          alternatePhone: secondAlternateDigits,
+        }
+      });
+    } else if (secondPhone) {
+       const existingSecond = await prisma.customer.findFirst({
+         where: { shopId: order.shopId, phone: secondPhone }
+       });
+       if (existingSecond) {
+         await prisma.customer.update({
+           where: { id: existingSecond.id },
+           data: {
+             customerLocationUrl: secondCustomerLocationUrl,
+             customerLandmark: secondCustomerLandmark,
+             alternatePhone: secondAlternateDigits,
+           }
+         });
+         secondCustomerPatch.secondCustomer = { connect: { id: existingSecond.id } };
+       } else {
+         const createdSecond = await prisma.customer.create({
+           data: {
+             shopId: order.shopId,
+             phone: secondPhone,
+             name: "",
+             customerRegionId: order.secondCustomerRegionId,
+             customerLocationUrl: secondCustomerLocationUrl,
+             customerLandmark: secondCustomerLandmark,
+             alternatePhone: secondAlternateDigits,
+             customerDoorPhotoUrl: null,
+           }
+         });
+         secondCustomerPatch.secondCustomer = { connect: { id: createdSecond.id } };
+       }
+    }
   }
 
   if (order.customerId) {
@@ -361,8 +439,10 @@ export async function updateMandoubCustomerDetails(
         alternatePhone: alternateDigits,
         ...statusPatch,
         ...clearCourierGpsFlag,
+        ...secondCustomerPatch,
       });
       await syncPhoneProfileFromOrder(orderId);
+      if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId);
       revalidateMandoubPaths(nextRaw, orderId);
       redirect(safeMandoubReturn(nextRaw));
     }
@@ -386,8 +466,10 @@ export async function updateMandoubCustomerDetails(
       alternatePhone: alternateDigits,
       ...statusPatch,
       ...clearCourierGpsFlag,
+      ...secondCustomerPatch,
     });
     await syncPhoneProfileFromOrder(orderId);
+    if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId);
     revalidateMandoubPaths(nextRaw, orderId);
     redirect(safeMandoubReturn(nextRaw));
   }
@@ -399,9 +481,11 @@ export async function updateMandoubCustomerDetails(
     alternatePhone: alternateDigits,
     ...statusPatch,
     ...clearCourierGpsFlag,
+    ...secondCustomerPatch,
   });
 
   await syncPhoneProfileFromOrder(orderId);
+  if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId);
   revalidateMandoubPaths(nextRaw, orderId);
   redirect(safeMandoubReturn(nextRaw));
 }
@@ -507,6 +591,8 @@ export async function clearMandoubCustomerLocation(
   const s = String(formData.get("s") ?? "");
   const orderId = String(formData.get("orderId") ?? "").trim();
   const nextRaw = String(formData.get("next") ?? "/mandoub");
+  const targetRaw = String(formData.get("target") ?? "first");
+  const isSecond = targetRaw === "second";
 
   const v = await verifyDelegateAllowed(c, exp, s);
   if (!v.ok) {
@@ -525,21 +611,34 @@ export async function clearMandoubCustomerLocation(
 
   await prisma.order.update({
     where: { id: orderId },
-    data: {
+    data: isSecond ? {
+      secondCustomerLocationUrl: "",
+      customerLocationSetByCourierAt: null,
+      customerLocationUploadedByName: null,
+    } : {
       customerLocationUrl: "",
       customerLocationSetByCourierAt: null,
       customerLocationUploadedByName: null,
     },
   });
 
-  if (order.customerId) {
+  if (isSecond && order.secondCustomerId) {
+    await prisma.customer.update({
+      where: { id: order.secondCustomerId },
+      data: { customerLocationUrl: "" },
+    });
+  } else if (!isSecond && order.customerId) {
     await prisma.customer.update({
       where: { id: order.customerId },
       data: { customerLocationUrl: "" },
     });
   }
 
-  await syncPhoneProfileFromOrder(orderId, { forceClearLocation: true } as any);
+  if (isSecond) {
+    await syncSecondPhoneProfileFromOrder(orderId, { forceClearLocation: true } as any);
+  } else {
+    await syncPhoneProfileFromOrder(orderId, { forceClearLocation: true } as any);
+  }
   revalidateMandoubPaths(nextRaw);
   return { ok: true, flash: "cleared" as const };
 }
