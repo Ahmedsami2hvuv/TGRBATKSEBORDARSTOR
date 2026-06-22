@@ -146,7 +146,6 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
 
   const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
   let customerPhoneProfile = null;
-  let otherProfiles: any[] = [];
   if (customerPhoneNorm) {
     if (order.customerRegionId) {
       customerPhoneProfile = await prisma.customerPhoneProfile.findUnique({
@@ -178,38 +177,12 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
         },
       });
     }
-
-    otherProfiles = await prisma.customerPhoneProfile.findMany({
-      where: {
-        phone: customerPhoneNorm,
-        regionId: { not: order.customerRegionId || undefined },
-        OR: [
-          { locationUrl: { not: "" } },
-          { photoUrl: { not: "" } },
-          { landmark: { not: "" } },
-          { alternatePhone: { not: null } },
-        ],
-      },
-      select: {
-        id: true,
-        photoUrl: true,
-        locationUrl: true,
-        landmark: true,
-        alternatePhone: true,
-        region: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    });
   }
 
   const secondPhoneNorm = order.secondCustomerPhone
     ? normalizeIraqMobileLocal11(order.secondCustomerPhone)
     : null;
   let secondPhoneProfile = null;
-  let secondOtherProfiles: any[] = [];
   if (secondPhoneNorm) {
     if (order.secondCustomerRegionId) {
       secondPhoneProfile = await prisma.customerPhoneProfile.findUnique({
@@ -241,31 +214,6 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
         },
       });
     }
-
-    secondOtherProfiles = await prisma.customerPhoneProfile.findMany({
-      where: {
-        phone: secondPhoneNorm,
-        regionId: { not: order.secondCustomerRegionId || undefined },
-        OR: [
-          { locationUrl: { not: "" } },
-          { photoUrl: { not: "" } },
-          { landmark: { not: "" } },
-          { alternatePhone: { not: null } },
-        ],
-      },
-      select: {
-        id: true,
-        photoUrl: true,
-        locationUrl: true,
-        landmark: true,
-        alternatePhone: true,
-        region: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    });
   }
 
   const [smartHintLine, secondSmartHintLine] = await Promise.all([
@@ -375,8 +323,6 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
             viewerCourierId={v.courierId}
             phoneProfile={customerPhoneProfile ?? undefined}
             secondPhoneProfile={secondPhoneProfile ?? undefined}
-            otherProfiles={JSON.parse(JSON.stringify(otherProfiles))}
-            secondOtherProfiles={JSON.parse(JSON.stringify(secondOtherProfiles))}
             smartHintLine={smartHintLine || "—"}
             secondSmartHintLine={secondSmartHintLine || "—"}
             uiSettings={uiSettings}

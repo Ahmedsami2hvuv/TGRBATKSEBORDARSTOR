@@ -118,8 +118,6 @@ export type MandoubRow = {
   submissionSource?: string | null;
   phoneProfile?: any;
   secondPhoneProfile?: any;
-  otherProfiles?: any[];
-  secondOtherProfiles?: any[];
 };
 
 
@@ -722,8 +720,6 @@ export function MandoubOrderTable({
                 viewerCourierId={auth.c}
                 phoneProfile={activeOrderData.phoneProfile}
                 secondPhoneProfile={activeOrderData.secondPhoneProfile}
-                otherProfiles={activeOrderData.otherProfiles}
-                secondOtherProfiles={activeOrderData.secondOtherProfiles}
                 smartHintLine={activeOrderData.smartHintLine}
                 secondSmartHintLine={activeOrderData.secondSmartHintLine}
                 icons={icons}

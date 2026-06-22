@@ -572,19 +572,7 @@ export default async function MandoubPage({ searchParams }: Props) {
 
   const phoneProfiles = await prisma.customerPhoneProfile.findMany({
     where: { phone: { in: customerPhones } },
-    select: {
-      phone: true,
-      regionId: true,
-      locationUrl: true,
-      photoUrl: true,
-      landmark: true,
-      alternatePhone: true,
-      region: {
-        select: {
-          name: true,
-        },
-      },
-    },
+    select: { phone: true, regionId: true, locationUrl: true, photoUrl: true, landmark: true, alternatePhone: true }
   });
 
   const activeOrderMetrics = computeMandoubTotalsForCourier(activeOrdersNorm, courier.id, totalsBaseline);
@@ -658,15 +646,10 @@ export default async function MandoubPage({ searchParams }: Props) {
 
   const phoneProfilesByKey = new Map<string, (typeof phoneProfiles)[number]>();
   const phoneProfilesByPhone = new Map<string, (typeof phoneProfiles)[number]>();
-  const phoneProfilesByPhoneAll = new Map<string, typeof phoneProfiles>();
   for (const profile of phoneProfiles) {
     const key = `${profile.phone}::${profile.regionId ?? ""}`;
     if (!phoneProfilesByKey.has(key)) phoneProfilesByKey.set(key, profile);
     if (!phoneProfilesByPhone.has(profile.phone)) phoneProfilesByPhone.set(profile.phone, profile);
-
-    const arr = phoneProfilesByPhoneAll.get(profile.phone) ?? [];
-    arr.push(profile);
-    phoneProfilesByPhoneAll.set(profile.phone, arr);
   }
 
   const smartHintByOrderId = new Map<string, string | null>();
@@ -714,18 +697,6 @@ export default async function MandoubPage({ searchParams }: Props) {
       phoneProfilesByPhone.get(o.customerPhone); // fallback to first matching phone if region doesn't match
 
     const sProfile = o.secondCustomerPhone ? (phoneProfilesByKey.get(`${o.secondCustomerPhone}::${o.secondCustomerRegionId ?? ""}`) ?? phoneProfilesByPhone.get(o.secondCustomerPhone)) : null;
-
-    const customerPhoneNorm = normalizeIraqMobileLocal11(o.customerPhone);
-    const allProfilesForPhone = customerPhoneNorm ? (phoneProfilesByPhoneAll.get(customerPhoneNorm) ?? []) : [];
-    const otherProfiles = allProfilesForPhone.filter(
-      p => p.regionId !== o.customerRegionId && (p.locationUrl || p.photoUrl || p.landmark || p.alternatePhone)
-    );
-
-    const secondPhoneNorm = o.secondCustomerPhone ? normalizeIraqMobileLocal11(o.secondCustomerPhone) : null;
-    const allProfilesForSecondPhone = secondPhoneNorm ? (phoneProfilesByPhoneAll.get(secondPhoneNorm) ?? []) : [];
-    const secondOtherProfiles = allProfilesForSecondPhone.filter(
-      p => p.regionId !== o.secondCustomerRegionId && (p.locationUrl || p.photoUrl || p.landmark || p.alternatePhone)
-    );
 
     const mergedCustomerLocation =
       o.customerLocationUrl || o.customer?.customerLocationUrl || profile?.locationUrl || "";
@@ -841,22 +812,6 @@ export default async function MandoubPage({ searchParams }: Props) {
         photoUrl: sProfile.photoUrl,
         alternatePhone: sProfile.alternatePhone,
       } : null,
-      otherProfiles: otherProfiles.map(p => ({
-        id: p.id,
-        locationUrl: p.locationUrl,
-        landmark: p.landmark,
-        photoUrl: p.photoUrl,
-        alternatePhone: p.alternatePhone,
-        region: p.region ? { name: p.region.name } : null
-      })),
-      secondOtherProfiles: secondOtherProfiles.map(p => ({
-        id: p.id,
-        locationUrl: p.locationUrl,
-        landmark: p.landmark,
-        photoUrl: p.photoUrl,
-        alternatePhone: p.alternatePhone,
-        region: p.region ? { name: p.region.name } : null
-      })),
     };
   });
 
