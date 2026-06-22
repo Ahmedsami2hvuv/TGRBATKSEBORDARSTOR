@@ -231,6 +231,11 @@ export function OrderViewContent({
                     </div>
                   )}
                 </div>
+                <OtherRegionsCustomerDetails 
+                  phone={order.customerPhone} 
+                  currentRegionId={order.customerRegionId} 
+                  currentRegionName={order.customerRegion?.name}
+                />
                 <InlineLandmarkEditor
                   orderId={order.id}
                   initialLandmark={order.customerLandmark}
@@ -300,6 +305,11 @@ export function OrderViewContent({
                     <span className={compactPhoneText}>{order.secondCustomerPhone || "—"}</span>
                   </div>
                 </div>
+                <OtherRegionsCustomerDetails 
+                  phone={order.secondCustomerPhone || order.customerPhone} 
+                  currentRegionId={order.secondCustomerRegionId} 
+                  currentRegionName={order.secondCustomerRegion?.name}
+                />
                 <InlineLandmarkEditor
                   orderId={order.id}
                   initialLandmark={order.secondCustomerLandmark}

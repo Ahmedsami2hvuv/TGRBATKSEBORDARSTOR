@@ -452,7 +452,6 @@ export function OrderDetailSection({
 
                     </div>
 
-                    <div className="pt-1.5">
                       {courierSettings?.showLocationBtn !== false && (
                         <div className="max-w-full">
                           {secondLocMerged ? (
@@ -473,6 +472,15 @@ export function OrderDetailSection({
                           )}
                         </div>
                       )}
+                      
+                      <OtherRegionsCustomerDetails 
+                        phone={order.secondCustomerPhone!} 
+                        currentRegionId={order.secondCustomerRegionId}
+                        currentRegionName={order.secondCustomerRegionName}
+                        icons={icons} 
+                        fontSizeConfig={activeConfig} 
+                        prefetchedProfiles={(order as any).secondOtherRegionsProfiles}
+                      />
                     </div>
                   </div>
 

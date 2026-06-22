@@ -80,13 +80,13 @@ export async function fetchWalletInOutDisplayForCourier(
       continue;
     }
     if (t.fromCourierId === courierId && t.toKind === WalletPeerPartyKind.admin) {
-      give = give.plus(t.amountDinar);
+      walletOut = walletOut.plus(t.amountDinar);
     }
   }
 
   return {
-    walletIn: take,
-    walletOut: give,
+    walletIn,
+    walletOut,
     pendingIncoming: pendingIncomingAgg._sum.amountDinar ?? new Decimal(0),
     pendingOutgoing: pendingOutgoingAgg._sum.amountDinar ?? new Decimal(0),
   };
