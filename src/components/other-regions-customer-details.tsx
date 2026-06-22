@@ -111,7 +111,22 @@ export function OtherRegionsCustomerDetails({
                   <div key={p.id} className="rounded-xl border border-sky-100 dark:border-sky-900/30 bg-sky-50/50 dark:bg-sky-950/20 p-4 flex flex-col gap-3">
                     <div className="flex items-center gap-2 border-b border-sky-100 dark:border-sky-900/30 pb-2">
                       <span className="text-lg">📍</span>
-                      <h4 className="font-black text-sky-900 dark:text-sky-300 text-sm">منطقة: {p.region?.name || "غير محدد"}</h4>
+                      <h4 className="font-black text-sky-900 dark:text-sky-300 text-sm shrink-0">منطقة: {p.region?.name || "غير محدد"}</h4>
+                      {(currentRegionId || orderId) && (
+                        <button
+                          type="button"
+                          disabled={pullingId !== null}
+                          onClick={() => handlePull(p.regionId)}
+                          className="mr-auto flex items-center gap-1 rounded text-sky-600 bg-sky-50 hover:bg-sky-100 disabled:opacity-50 px-2 py-1 text-[10px] font-bold transition border border-sky-100"
+                        >
+                          {pullingId === `${p.regionId}-all` ? (
+                            <span className="animate-spin text-xs leading-none">↻</span>
+                          ) : (
+                            <span className="text-xs leading-none">📥</span>
+                          )}
+                          <span>سحب الكل</span>
+                        </button>
+                      )}
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -169,38 +184,20 @@ export function OtherRegionsCustomerDetails({
                       
                       {p.photoUrl && (
                         <div className="flex flex-col gap-1 items-center relative">
-                          <span className="text-[10px] font-bold text-slate-400">صورة الباب</span>
-                          <div className="aspect-square w-full sm:w-28 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-black shadow-sm relative group">
-                            <img src={resolvePublicAssetSrc(p.photoUrl) || ""} alt="صورة الباب" className="w-full h-full object-contain" />
+                          <div className="flex items-center justify-between w-full sm:w-28 px-1">
+                            <span className="text-[10px] font-bold text-slate-400">صورة الباب</span>
                             {(currentRegionId || orderId) && (
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                                <button onClick={() => handlePull(p.regionId, "photoUrl")} disabled={pullingId !== null} className="bg-sky-600 text-white rounded-full p-2 hover:bg-sky-500 disabled:opacity-50" title="سحب الصورة">
-                                  {pullingId === `${p.regionId}-photoUrl` ? <span className="animate-spin text-sm inline-block">↻</span> : "📥"}
-                                </button>
-                              </div>
+                              <button onClick={() => handlePull(p.regionId, "photoUrl")} disabled={pullingId !== null} className="opacity-70 hover:opacity-100 disabled:opacity-30 text-sky-600 bg-sky-100 p-1 rounded-md shrink-0" title="سحب الصورة">
+                                {pullingId === `${p.regionId}-photoUrl` ? <span className="animate-spin text-xs inline-block">↻</span> : "📥"}
+                              </button>
                             )}
+                          </div>
+                          <div className="aspect-square w-full sm:w-28 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-black shadow-sm relative">
+                            <img src={resolvePublicAssetSrc(p.photoUrl) || ""} alt="صورة الباب" className="w-full h-full object-contain" />
                           </div>
                         </div>
                       )}
                     </div>
-
-                    {(currentRegionId || orderId) && (
-                      <div className="mt-2 pt-2 border-t border-sky-100 dark:border-sky-900/30 flex justify-end">
-                        <button
-                          type="button"
-                          disabled={pullingId !== null}
-                          onClick={() => handlePull(p.regionId)}
-                          className="flex items-center gap-1.5 rounded text-sky-600 bg-sky-50 hover:bg-sky-100 disabled:opacity-50 px-2.5 py-1 text-[10px] font-bold transition border border-sky-100"
-                        >
-                          {pullingId === `${p.regionId}-all` ? (
-                            <span className="animate-spin text-xs leading-none">↻</span>
-                          ) : (
-                            <span className="text-xs leading-none">📥</span>
-                          )}
-                          <span>سحب كل التفاصيل</span>
-                        </button>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
