@@ -345,6 +345,7 @@ export function OrderViewContent({
                 <OtherRegionsCustomerDetails 
                   phone={order.customerPhone} 
                   currentRegionId={order.customerRegionId} 
+                  currentRegionName={order.customerRegion?.name}
                 />
                 <InlineLandmarkEditor
                   orderId={order.id}

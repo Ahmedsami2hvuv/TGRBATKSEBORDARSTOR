@@ -713,7 +713,12 @@ export default async function MandoubPage({ searchParams }: Props) {
     const secondLandmarkLine = secondMergedLandmarkByOrderId.get(o.id) || null;
 
     const currentCustomerProfiles = allProfilesByPhone.get(o.customerPhone) || [];
-    const otherRegionsProfiles = currentCustomerProfiles.filter(p => p.regionId !== o.customerRegionId && (p.locationUrl || p.photoUrl || p.notes || p.landmark || p.alternatePhone));
+    const otherRegionsProfiles = currentCustomerProfiles.filter(p => {
+      const isDifferentId = p.regionId !== o.customerRegionId;
+      const isDifferentName = p.region?.name?.trim() !== o.customerRegion?.name?.trim();
+      const hasDetails = Boolean(p.locationUrl || p.photoUrl || p.notes || p.landmark || p.alternatePhone);
+      return isDifferentId && isDifferentName && hasDetails;
+    });
 
     return {
       id: o.id,

@@ -9,12 +9,14 @@ import { resolvePublicAssetSrc } from "@/lib/image-url";
 export function OtherRegionsCustomerDetails({
   phone,
   currentRegionId,
+  currentRegionName,
   icons,
   fontSizeConfig,
   prefetchedProfiles,
 }: {
   phone?: string | null;
   currentRegionId?: string | null;
+  currentRegionName?: string | null;
   icons?: any;
   fontSizeConfig?: any;
   prefetchedProfiles?: any[];
@@ -29,11 +31,11 @@ export function OtherRegionsCustomerDetails({
       setLoading(false);
       return;
     }
-    getCustomerOtherRegionsDetails(phone, currentRegionId)
+    getCustomerOtherRegionsDetails(phone, currentRegionId, currentRegionName)
       .then((data) => setProfiles(data))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
-  }, [phone, currentRegionId, prefetchedProfiles]);
+  }, [phone, currentRegionId, currentRegionName, prefetchedProfiles]);
 
   if (loading || profiles.length === 0) return null;
 

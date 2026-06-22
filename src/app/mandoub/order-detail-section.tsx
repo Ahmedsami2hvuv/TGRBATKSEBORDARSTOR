@@ -330,6 +330,7 @@ export function OrderDetailSection({
                     <OtherRegionsCustomerDetails 
                       phone={order.customerPhone} 
                       currentRegionId={order.customerRegionId} 
+                      currentRegionName={order.customerRegion?.name}
                       icons={icons} 
                       fontSizeConfig={activeConfig} 
                       prefetchedProfiles={(order as any).otherRegionsProfiles}
