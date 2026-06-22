@@ -235,6 +235,8 @@ export function OrderViewContent({
                   phone={order.customerPhone} 
                   currentRegionId={order.customerRegionId} 
                   currentRegionName={order.customerRegion?.name}
+                  orderId={order.id}
+                  isSecondDestination={false}
                 />
                 <InlineLandmarkEditor
                   orderId={order.id}
@@ -309,6 +311,8 @@ export function OrderViewContent({
                   phone={order.secondCustomerPhone || order.customerPhone} 
                   currentRegionId={order.secondCustomerRegionId} 
                   currentRegionName={order.secondCustomerRegion?.name}
+                  orderId={order.id}
+                  isSecondDestination={true}
                 />
                 <InlineLandmarkEditor
                   orderId={order.id}
@@ -356,6 +360,8 @@ export function OrderViewContent({
                   phone={order.customerPhone} 
                   currentRegionId={order.customerRegionId} 
                   currentRegionName={order.customerRegion?.name}
+                  orderId={order.id}
+                  isSecondDestination={false}
                 />
                 <InlineLandmarkEditor
                   orderId={order.id}

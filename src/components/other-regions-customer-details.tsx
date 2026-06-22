@@ -13,6 +13,8 @@ export function OtherRegionsCustomerDetails({
   icons,
   fontSizeConfig,
   prefetchedProfiles,
+  orderId,
+  isSecondDestination,
 }: {
   phone?: string | null;
   currentRegionId?: string | null;
@@ -20,6 +22,8 @@ export function OtherRegionsCustomerDetails({
   icons?: any;
   fontSizeConfig?: any;
   prefetchedProfiles?: any[];
+  orderId?: string | null;
+  isSecondDestination?: boolean;
 }) {
   const [profiles, setProfiles] = useState<any[]>(prefetchedProfiles || []);
   const [loading, setLoading] = useState(!prefetchedProfiles);
@@ -27,10 +31,10 @@ export function OtherRegionsCustomerDetails({
   const [pullingId, setPullingId] = useState<string | null>(null);
 
   const handlePull = async (fromRegionId: string, field?: "locationUrl" | "photoUrl" | "notes" | "landmark" | "alternatePhone") => {
-    if (!phone || !currentRegionId) return;
+    if (!phone) return;
     setPullingId(`${fromRegionId}-${field || 'all'}`);
     try {
-      const res = await pullCustomerProfileDetails(phone, fromRegionId, currentRegionId, field);
+      const res = await pullCustomerProfileDetails(phone, fromRegionId, currentRegionId, field, orderId, isSecondDestination);
       if (res.success) {
         window.location.reload();
       } else {
@@ -116,7 +120,7 @@ export function OtherRegionsCustomerDetails({
                           <div className="flex items-center gap-1.5 text-xs group">
                             <span className="font-bold text-slate-500">رقم بديل:</span>
                             <span className="font-mono font-black text-slate-800 dark:text-slate-200" dir="ltr">{p.alternatePhone}</span>
-                            {currentRegionId && (
+                            {(currentRegionId || orderId) && (
                               <button onClick={() => handlePull(p.regionId, "alternatePhone")} disabled={pullingId !== null} className="mr-auto opacity-70 hover:opacity-100 disabled:opacity-30 text-sky-600 bg-sky-100 p-1 rounded-md" title="سحب الرقم البديل">
                                 {pullingId === `${p.regionId}-alternatePhone` ? <span className="animate-spin text-xs inline-block">↻</span> : "📥"}
                               </button>
@@ -127,7 +131,7 @@ export function OtherRegionsCustomerDetails({
                           <div className="flex flex-col gap-1 text-xs">
                             <div className="flex items-center justify-between">
                               <span className="font-bold text-slate-500">أقرب نقطة دالة:</span>
-                              {currentRegionId && (
+                              {(currentRegionId || orderId) && (
                                 <button onClick={() => handlePull(p.regionId, "landmark")} disabled={pullingId !== null} className="opacity-70 hover:opacity-100 disabled:opacity-30 text-sky-600 bg-sky-100 p-1 rounded-md" title="سحب الدالة">
                                   {pullingId === `${p.regionId}-landmark` ? <span className="animate-spin text-xs inline-block">↻</span> : "📥"}
                                 </button>
@@ -140,7 +144,7 @@ export function OtherRegionsCustomerDetails({
                           <div className="flex flex-col gap-1 text-xs">
                             <div className="flex items-center justify-between">
                               <span className="font-bold text-slate-500">ملاحظات:</span>
-                              {currentRegionId && (
+                              {(currentRegionId || orderId) && (
                                 <button onClick={() => handlePull(p.regionId, "notes")} disabled={pullingId !== null} className="opacity-70 hover:opacity-100 disabled:opacity-30 text-sky-600 bg-sky-100 p-1 rounded-md" title="سحب الملاحظات">
                                   {pullingId === `${p.regionId}-notes` ? <span className="animate-spin text-xs inline-block">↻</span> : "📥"}
                                 </button>
@@ -154,7 +158,7 @@ export function OtherRegionsCustomerDetails({
                             <a href={p.locationUrl} target="_blank" rel="noopener noreferrer" className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition">
                               <span>📍</span> فتح موقع الزبون
                             </a>
-                            {currentRegionId && (
+                            {(currentRegionId || orderId) && (
                               <button onClick={() => handlePull(p.regionId, "locationUrl")} disabled={pullingId !== null} className="h-[32px] w-[32px] flex items-center justify-center opacity-70 hover:opacity-100 disabled:opacity-30 text-sky-600 bg-sky-100 rounded-lg shrink-0" title="سحب الموقع">
                                 {pullingId === `${p.regionId}-locationUrl` ? <span className="animate-spin text-sm inline-block">↻</span> : "📥"}
                               </button>
@@ -168,7 +172,7 @@ export function OtherRegionsCustomerDetails({
                           <span className="text-[10px] font-bold text-slate-400">صورة الباب</span>
                           <div className="aspect-square w-full sm:w-28 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-black shadow-sm relative group">
                             <img src={resolvePublicAssetSrc(p.photoUrl) || ""} alt="صورة الباب" className="w-full h-full object-contain" />
-                            {currentRegionId && (
+                            {(currentRegionId || orderId) && (
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                                 <button onClick={() => handlePull(p.regionId, "photoUrl")} disabled={pullingId !== null} className="bg-sky-600 text-white rounded-full p-2 hover:bg-sky-500 disabled:opacity-50" title="سحب الصورة">
                                   {pullingId === `${p.regionId}-photoUrl` ? <span className="animate-spin text-sm inline-block">↻</span> : "📥"}
@@ -180,7 +184,7 @@ export function OtherRegionsCustomerDetails({
                       )}
                     </div>
 
-                    {currentRegionId && (
+                    {(currentRegionId || orderId) && (
                       <div className="mt-2 pt-2 border-t border-sky-100 dark:border-sky-900/30 flex justify-end">
                         <button
                           type="button"

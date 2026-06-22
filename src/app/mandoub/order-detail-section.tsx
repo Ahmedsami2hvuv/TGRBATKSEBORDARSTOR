@@ -356,10 +356,12 @@ export function OrderDetailSection({
                         <OtherRegionsCustomerDetails 
                           phone={order.customerPhone} 
                           currentRegionId={order.customerRegionId} 
-                          currentRegionName={order.customerRegion?.name}
+                          currentRegionName={order.regionLine}
                           icons={icons} 
                           fontSizeConfig={activeConfig} 
                           prefetchedProfiles={(order as any).otherRegionsProfiles}
+                          orderId={order.id}
+                          isSecondDestination={false}
                         />
                       </div>
                       {courierSettings?.showLocationBtn !== false && mergedCustomerLocationUrl && order.customerLocationUploadedByName?.trim() && (
@@ -480,6 +482,8 @@ export function OrderDetailSection({
                         icons={icons} 
                         fontSizeConfig={activeConfig} 
                         prefetchedProfiles={(order as any).secondOtherRegionsProfiles}
+                        orderId={order.id}
+                        isSecondDestination={true}
                       />
                     </div>
                   </div>
