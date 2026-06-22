@@ -318,7 +318,7 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
     resolvedOrderType = resolveDynamicOrderType(enrichedProducts, resolvedOrderType);
   }
 
-  return await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     let finalOrderId: string;
     let finalOrderNumber: number;
 
@@ -530,10 +530,38 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
       }
     }
 
-    revalidatePath("/abo1stor3hlaa2kbr8-47/orders/pending");
-    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${finalOrderId}`);
-    return { ok: true };
+    return { ok: true, finalOrderId };
   });
+
+  if (result.ok && result.finalOrderId) {
+    // مزامنة معاملات الموردين في الدفتر لتحديث الأرصدة تلقائياً
+    try {
+      const oldSuppIds = Array.from(new Set(
+        oldProducts
+          .map(p => typeof p.assignedPreparerId === "string" ? p.assignedPreparerId.trim() : null)
+          .filter(Boolean)
+      )) as string[];
+
+      const newSuppIds = Array.from(new Set(
+        enrichedProducts
+          .map(p => typeof p.assignedPreparerId === "string" ? p.assignedPreparerId.trim() : null)
+          .filter(Boolean)
+      )) as string[];
+
+      const uniqueSuppIdsToSync = Array.from(new Set([...oldSuppIds, ...newSuppIds]));
+
+      const { syncSupplierTransactions } = await import("@/lib/order-delivery-hook");
+      for (const suppId of uniqueSuppIdsToSync) {
+        await syncSupplierTransactions(suppId);
+      }
+    } catch (syncErr) {
+      console.error("Failed to sync supplier transactions after admin pricing update:", syncErr);
+    }
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/orders/pending");
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/orders/${result.finalOrderId}`);
+    return { ok: true };
+  }
   } catch (error) {
     console.error("Admin pricing action error:", {
       orderId,

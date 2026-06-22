@@ -101,8 +101,8 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
 
       const totalBuyDinar = totalBuyAlf * 1000;
 
-      // Check if this supplier has a credit book partner account
-      const cbPartner = await db.creditBookPartner.findUnique({
+      // Check if this supplier has a credit book partner account, if not, create one!
+      let cbPartner = await db.creditBookPartner.findUnique({
         where: {
           type_externalId: {
             type: "supplier",
@@ -110,6 +110,22 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
           }
         }
       });
+
+      if (!cbPartner) {
+        try {
+          cbPartner = await db.creditBookPartner.create({
+            data: {
+              name: `${supplier.name} (مورد)`,
+              phone: supplier.phone || null,
+              type: "supplier",
+              externalId: supplier.id,
+              updatedAt: new Date()
+            }
+          });
+        } catch (createPartnerErr) {
+          console.error(`Failed to auto-create CreditBookPartner for supplier ${supplier.name} on delivery:`, createPartnerErr);
+        }
+      }
 
       if (cbPartner) {
         const regionName = order.customerRegion?.name || "غير محدد";
@@ -175,7 +191,7 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
       }
     });
 
-    const cbPartner = await db.creditBookPartner.findUnique({
+    let cbPartner = await db.creditBookPartner.findUnique({
       where: {
         type_externalId: {
           type: "supplier",
@@ -183,6 +199,25 @@ export async function syncSupplierTransactions(supplierId: string, customTx?: an
         }
       }
     });
+
+    if (!cbPartner) {
+      try {
+        const supplier = await db.storeSupplier.findUnique({ where: { id: supplierId } });
+        if (supplier) {
+          cbPartner = await db.creditBookPartner.create({
+            data: {
+              name: `${supplier.name} (مورد)`,
+              phone: supplier.phone || null,
+              type: "supplier",
+              externalId: supplierId,
+              updatedAt: new Date()
+            }
+          });
+        }
+      } catch (createPartnerErr) {
+        console.error(`Failed to auto-create CreditBookPartner for supplierId ${supplierId} on sync:`, createPartnerErr);
+      }
+    }
 
     if (cbPartner) {
       // 1. تنظيف المعاملات القديمة التي ألغيت طلباتها أو تغير موردها

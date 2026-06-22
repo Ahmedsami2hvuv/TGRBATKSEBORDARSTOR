@@ -38,6 +38,25 @@ export async function createStoreSupplier(_prev: SupplierFormState, formData: Fo
       }
     }).catch(err => console.error("Failed to auto-create CompanyPreparer for supplier:", err));
 
+    await prisma.creditBookPartner.upsert({
+      where: {
+        type_externalId: {
+          type: "supplier",
+          externalId: supplier.id
+        }
+      },
+      create: {
+        name: `${supplier.name} (مورد)`,
+        phone: supplier.phone || null,
+        type: "supplier",
+        externalId: supplier.id,
+      },
+      update: {
+        name: `${supplier.name} (مورد)`,
+        phone: supplier.phone || null,
+      }
+    }).catch(err => console.error("Failed to auto-create CreditBookPartner for supplier:", err));
+
     revalidatePath(`${SECRET_ADMIN_PATH}/suppliers`);
     return { ok: true };
   } catch (e) {
@@ -81,6 +100,25 @@ export async function updateStoreSupplier(_prev: SupplierFormState, formData: Fo
         active
       }
     }).catch(err => console.error("Failed to auto-update/upsert CompanyPreparer for supplier:", err));
+
+    await prisma.creditBookPartner.upsert({
+      where: {
+        type_externalId: {
+          type: "supplier",
+          externalId: id
+        }
+      },
+      create: {
+        name: `${name} (مورد)`,
+        phone: phone || null,
+        type: "supplier",
+        externalId: id,
+      },
+      update: {
+        name: `${name} (مورد)`,
+        phone: phone || null,
+      }
+    }).catch(err => console.error("Failed to auto-update CreditBookPartner for supplier:", err));
 
     revalidatePath(`${SECRET_ADMIN_PATH}/suppliers`);
     return { ok: true };
