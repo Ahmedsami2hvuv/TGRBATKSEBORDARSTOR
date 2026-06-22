@@ -309,7 +309,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       orderSubtotal: adjustedSubtotal,
       moneyEvents: o.moneyEvents.map((e) => ({
         ...e,
-        courierId: e.courierId ?? null,
+        courierId: e.courierId ?? undefined,
       })),
     };
   });
@@ -559,7 +559,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       orderSubtotal: adjustedSubtotal,
       moneyEvents: o.moneyEvents.map((e) => ({
         ...e,
-        courierId: e.courierId ?? null,
+        courierId: e.courierId ?? undefined,
       })),
     };
   });
@@ -837,22 +837,22 @@ export default async function MandoubPage({ searchParams }: Props) {
         photoUrl: sProfile.photoUrl,
         alternatePhone: sProfile.alternatePhone,
       } : null,
-      otherProfiles: JSON.parse(JSON.stringify(otherProfiles.map(p => ({
+      otherProfiles: otherProfiles.map(p => ({
         id: p.id,
         locationUrl: p.locationUrl,
         landmark: p.landmark,
         photoUrl: p.photoUrl,
         alternatePhone: p.alternatePhone,
         region: p.regionId ? { name: regionsMap.get(p.regionId) || "منطقة غير معروفة" } : null
-      })))),
-      secondOtherProfiles: JSON.parse(JSON.stringify(secondOtherProfiles.map(p => ({
+      })),
+      secondOtherProfiles: secondOtherProfiles.map(p => ({
         id: p.id,
         locationUrl: p.locationUrl,
         landmark: p.landmark,
         photoUrl: p.photoUrl,
         alternatePhone: p.alternatePhone,
         region: p.regionId ? { name: regionsMap.get(p.regionId) || "منطقة غير معروفة" } : null
-      })))),
+      })),
     };
   });
 
