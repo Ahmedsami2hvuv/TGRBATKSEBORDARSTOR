@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import { InlineLandmarkEditor } from "@/components/inline-landmark-editor";
+import { OtherRegionsCustomerDetails } from "@/components/other-regions-customer-details";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -341,6 +342,10 @@ export function OrderViewContent({
                     </div>
                   )}
                 </div>
+                <OtherRegionsCustomerDetails 
+                  phone={order.customerPhone} 
+                  currentRegionId={order.customerRegionId} 
+                />
                 <InlineLandmarkEditor
                   orderId={order.id}
                   initialLandmark={order.customerLandmark}

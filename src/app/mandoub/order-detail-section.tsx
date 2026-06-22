@@ -35,6 +35,7 @@ import { GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { FontSizeContext } from "@/components/font-size-provider";
 import { InlineLandmarkEditor } from "@/components/inline-landmark-editor";
+import { OtherRegionsCustomerDetails } from "@/components/other-regions-customer-details";
 
 const STATUS_AR: Record<string, string> = {
   assigned: "بانتظار المندوب",
@@ -325,6 +326,13 @@ export function OrderDetailSection({
                         <span className="font-mono font-black text-amber-900 dark:text-amber-100 ml-1">{mergedAlternate}</span>
                       </div>
                     )}
+                    
+                    <OtherRegionsCustomerDetails 
+                      phone={order.customerPhone} 
+                      currentRegionId={order.customerRegionId} 
+                      icons={icons} 
+                      fontSizeConfig={activeConfig} 
+                    />
 
                     <div className="flex flex-col gap-1 mt-1">
                       <InlineLandmarkEditor
