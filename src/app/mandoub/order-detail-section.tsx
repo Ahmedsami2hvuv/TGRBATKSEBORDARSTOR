@@ -336,31 +336,6 @@ export function OrderDetailSection({
                       prefetchedProfiles={(order as any).otherRegionsProfiles}
                     />
 
-                    <div className="flex flex-col gap-1 mt-1">
-                      <InlineLandmarkEditor
-                        orderId={order.id}
-                        initialLandmark={mergedLandmark}
-                        isSecondDestination={false}
-                        fontSizeConfig={activeConfig}
-                        isFromProfile={isFromProfileLandmark}
-                        label="📍 دالة:"
-                      />
-                    </div>
-
-                    <div className="mt-1">
-                      <div className="flex flex-col gap-0.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 p-1.5 border border-emerald-100/50 dark:border-emerald-900/20 kse-smart-hint-text">
-                        <span 
-                          className="text-[9px] font-black text-emerald-600 dark:text-emerald-400"
-                          style={{ fontSize: activeConfig ? `${Math.max(9, activeConfig.smartHintFontSize - 3)}px` : undefined }}
-                        >💡 الاستدلال الذكي:</span>
-                        <span 
-                          className="text-[11px] font-black text-emerald-800 dark:text-emerald-350"
-                          style={{ fontSize: activeConfig ? `${activeConfig.smartHintFontSize}px` : undefined }}
-                        >
-                          {isSmartHintValid(smartHintLine) ? smartHintLine!.trim() : "—"}
-                        </span>
-                      </div>
-                    </div>
                   </div>
 
                   <div className="pt-1.5">
@@ -416,6 +391,32 @@ export function OrderDetailSection({
                   )}
                 </div>
               </div>
+
+              <div className="mt-3 space-y-2">
+                <div className="flex flex-col gap-1">
+                  <InlineLandmarkEditor
+                    orderId={order.id}
+                    initialLandmark={mergedLandmark}
+                    isSecondDestination={false}
+                    fontSizeConfig={activeConfig}
+                    isFromProfile={isFromProfileLandmark}
+                    label="📍 دالة:"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-0.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 p-1.5 border border-emerald-100/50 dark:border-emerald-900/20 kse-smart-hint-text">
+                  <span 
+                    className="text-[9px] font-black text-emerald-600 dark:text-emerald-400"
+                    style={{ fontSize: activeConfig ? `${Math.max(9, activeConfig.smartHintFontSize - 3)}px` : undefined }}
+                  >💡 الاستدلال الذكي:</span>
+                  <span 
+                    className="text-[11px] font-black text-emerald-800 dark:text-emerald-350"
+                    style={{ fontSize: activeConfig ? `${activeConfig.smartHintFontSize}px` : undefined }}
+                  >
+                    {isSmartHintValid(smartHintLine) ? smartHintLine!.trim() : "—"}
+                  </span>
+                </div>
+              </div>
             </div>
 
             {order.routeMode === "double" && (
@@ -449,31 +450,6 @@ export function OrderDetailSection({
                         </div>
                       )}
 
-                      <div className="flex flex-col gap-1 mt-1">
-                        <InlineLandmarkEditor
-                          orderId={order.id}
-                          initialLandmark={secondLandmarkMerged}
-                          isSecondDestination={true}
-                          fontSizeConfig={activeConfig}
-                          isFromProfile={isFromSecondProfileLandmark}
-                          label="📍 دالة:"
-                        />
-                      </div>
-
-                      <div className="mt-1">
-                        <div className="flex flex-col gap-0.5 rounded-lg bg-violet-50/50 dark:bg-violet-950/10 p-1.5 border border-violet-100/50 dark:border-violet-900/20 kse-smart-hint-text">
-                          <span 
-                            className="text-[9px] font-black text-violet-600 dark:text-violet-400"
-                            style={{ fontSize: activeConfig ? `${Math.max(9, activeConfig.smartHintFontSize - 3)}px` : undefined }}
-                          >💡 الاستدلال الذكي:</span>
-                          <span 
-                            className="text-[11px] font-black text-violet-800 dark:text-violet-350"
-                            style={{ fontSize: activeConfig ? `${activeConfig.smartHintFontSize}px` : undefined }}
-                          >
-                            {isSmartHintValid(secondSmartHintLine) ? secondSmartHintLine!.trim() : "—"}
-                          </span>
-                        </div>
-                      </div>
                     </div>
 
                     <div className="pt-1.5">
@@ -522,6 +498,32 @@ export function OrderDetailSection({
                         <MandoubQuickDoorSecondCapture orderId={order.id} nextUrl={nextUrl} auth={auth} />
                       </div>
                     )}
+                  </div>
+                </div>
+
+                <div className="mt-3 space-y-2">
+                  <div className="flex flex-col gap-1">
+                    <InlineLandmarkEditor
+                      orderId={order.id}
+                      initialLandmark={secondLandmarkMerged}
+                      isSecondDestination={true}
+                      fontSizeConfig={activeConfig}
+                      isFromProfile={isFromSecondProfileLandmark}
+                      label="📍 دالة:"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-0.5 rounded-lg bg-violet-50/50 dark:bg-violet-950/10 p-1.5 border border-violet-100/50 dark:border-violet-900/20 kse-smart-hint-text">
+                    <span 
+                      className="text-[9px] font-black text-violet-600 dark:text-violet-400"
+                      style={{ fontSize: activeConfig ? `${Math.max(9, activeConfig.smartHintFontSize - 3)}px` : undefined }}
+                    >💡 الاستدلال الذكي:</span>
+                    <span 
+                      className="text-[11px] font-black text-violet-800 dark:text-violet-350"
+                      style={{ fontSize: activeConfig ? `${activeConfig.smartHintFontSize}px` : undefined }}
+                    >
+                      {isSmartHintValid(secondSmartHintLine) ? secondSmartHintLine!.trim() : "—"}
+                    </span>
                   </div>
                 </div>
               </div>
