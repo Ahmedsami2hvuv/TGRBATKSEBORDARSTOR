@@ -67,13 +67,14 @@ export function OtherRegionsCustomerDetails({
           e.stopPropagation();
           setShowModal(true);
         }}
-        className="mt-2 flex w-full items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-right transition-colors hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/30 dark:hover:bg-amber-900/40"
+        className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-amber-300 bg-amber-100/90 hover:bg-amber-200 dark:border-amber-900/50 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 px-2.5 text-[11px] font-black text-amber-900 dark:text-amber-200 transition-all shadow-sm"
+        style={{
+          fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined,
+          height: fontSizeConfig ? `${Math.max(32, fontSizeConfig.locationBtnSize + 16)}px` : undefined
+        }}
       >
-        <span className="text-xs font-black text-amber-900 dark:text-amber-200" style={{ fontSize: fontSizeConfig ? `${fontSizeConfig.smartHintFontSize}px` : undefined }}>
-          ⚠️ الزبون لديه تفاصيل في {profiles.length} منطقة أخرى
-        </span>
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-200 text-amber-800 dark:bg-amber-800 dark:text-amber-100 shrink-0">
-          <DynamicIcon iconKey="ui_chevron_left" config={icons} fallback="‹" className="w-4 h-4" />
+        <span style={{ fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined }}>
+          ⚠️ تفاصيل أخرى ({profiles.length})
         </span>
       </button>
 

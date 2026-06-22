@@ -12,7 +12,7 @@ const initial: MandoubEditCustomerState = {};
 
 function IconMapPin() {
   return (
-    <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
     </svg>
   );
@@ -26,11 +26,13 @@ export function MandoubUploadLocationInline({
   auth,
   nextUrl,
   target = "first",
+  fontSizeConfig,
 }: {
   orderId: string;
   auth: { c: string; exp: string; s: string };
   nextUrl: string;
   target?: "first" | "second";
+  fontSizeConfig?: any;
 }) {
   const [state, formAction, pending] = useActionState(
     setMandoubCustomerLocationFromGeolocation,
@@ -140,15 +142,21 @@ export function MandoubUploadLocationInline({
         onClick={onUploadLocation}
         disabled={pending || locating}
         aria-busy={pending || locating}
-        className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-500 to-orange-600 px-4 py-2.5 text-sm font-black text-white shadow-md ring-2 ring-white/30 transition hover:from-amber-600 hover:to-orange-700 disabled:cursor-wait disabled:opacity-70"
+        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 px-3 text-[11px] font-black text-white hover:from-amber-600 hover:to-orange-700 transition-all shadow-sm disabled:cursor-wait disabled:opacity-70"
+        style={{
+          fontSize: fontSizeConfig ? `${fontSizeConfig.locationBtnSize}px` : undefined,
+          height: fontSizeConfig ? `${Math.max(32, fontSizeConfig.locationBtnSize + 16)}px` : undefined
+        }}
         title="رفع موقعك الحالي كلوكيشن للزبون — يظهر طلب إذن الموقع من المتصفح"
       >
         <IconMapPin />
-        {locating
-          ? "جارٍ جلب الموقع…"
-          : pending
-            ? "جارٍ الحفظ…"
-            : "رفع لوكيشن (GPS)"}
+        <span>
+          {locating
+            ? "جلب الموقع…"
+            : pending
+              ? "جاري الحفظ…"
+              : "رفع لوكيشن"}
+        </span>
       </button>
     </div>
   );

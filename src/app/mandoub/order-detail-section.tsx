@@ -327,45 +327,45 @@ export function OrderDetailSection({
                       </div>
                     )}
                     
-                    <OtherRegionsCustomerDetails 
-                      phone={order.customerPhone} 
-                      currentRegionId={order.customerRegionId} 
-                      currentRegionName={order.customerRegion?.name}
-                      icons={icons} 
-                      fontSizeConfig={activeConfig} 
-                      prefetchedProfiles={(order as any).otherRegionsProfiles}
-                    />
 
                   </div>
 
                   <div className="pt-1.5">
-                    {courierSettings?.showLocationBtn !== false && (
-                      <div className="max-w-full">
-                        {mergedCustomerLocationUrl ? (
-                          <div className="flex flex-col items-start gap-1">
-                            <a 
-                              href={mergedCustomerLocationUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm kse-location-btn"
-                              style={{
-                                fontSize: activeConfig ? `${activeConfig.locationBtnSize}px` : undefined,
-                                height: activeConfig ? `${Math.max(32, activeConfig.locationBtnSize + 16)}px` : undefined
-                              }}
-                            >
-                              📍 موقع الزبون {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
-                            </a>
-                            {order.customerLocationUploadedByName?.trim() ? (
-                              <div className="mt-0.5"><ImageUploaderCaption name={order.customerLocationUploadedByName} /></div>
-                            ) : null}
-                          </div>
-                        ) : (
-                          <div className="p-1 rounded-xl bg-slate-50 dark:bg-black/10 border border-slate-100 dark:border-white/5 transform scale-90 origin-right">
-                            <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} />
-                          </div>
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {courierSettings?.showLocationBtn !== false && (
+                          <>
+                            {mergedCustomerLocationUrl ? (
+                              <a 
+                                href={mergedCustomerLocationUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition-all gap-1 shadow-sm kse-location-btn"
+                                style={{
+                                  fontSize: activeConfig ? `${activeConfig.locationBtnSize}px` : undefined,
+                                  height: activeConfig ? `${Math.max(32, activeConfig.locationBtnSize + 16)}px` : undefined
+                                }}
+                              >
+                                📍 موقع الزبون {isFromProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
+                              </a>
+                            ) : (
+                              <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} fontSizeConfig={activeConfig} />
+                            )}
+                          </>
                         )}
+                        <OtherRegionsCustomerDetails 
+                          phone={order.customerPhone} 
+                          currentRegionId={order.customerRegionId} 
+                          currentRegionName={order.customerRegion?.name}
+                          icons={icons} 
+                          fontSizeConfig={activeConfig} 
+                          prefetchedProfiles={(order as any).otherRegionsProfiles}
+                        />
                       </div>
-                    )}
+                      {courierSettings?.showLocationBtn !== false && mergedCustomerLocationUrl && order.customerLocationUploadedByName?.trim() && (
+                        <div className="mt-0.5"><ImageUploaderCaption name={order.customerLocationUploadedByName} /></div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -469,9 +469,7 @@ export function OrderDetailSection({
                               📍 موقع المستلم {isFromSecondProfileLocation && "(أرشيف)"} <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
                             </a>
                           ) : (
-                            <div className="p-1 rounded-xl bg-slate-50 dark:bg-black/10 border border-slate-100 dark:border-white/5 transform scale-90 origin-right">
-                              <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" />
-                            </div>
+                            <MandoubUploadLocationInline orderId={order.id} auth={auth} nextUrl={nextUrl} target="second" fontSizeConfig={activeConfig} />
                           )}
                         </div>
                       )}
