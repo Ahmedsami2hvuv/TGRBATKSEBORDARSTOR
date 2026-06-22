@@ -196,7 +196,11 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
         locationUrl: true,
         landmark: true,
         alternatePhone: true,
-        regionId: true,
+        region: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
   }
@@ -255,36 +259,14 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
         locationUrl: true,
         landmark: true,
         alternatePhone: true,
-        regionId: true,
+        region: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
   }
-
-  const allRegions = await prisma.region.findMany({
-    select: { id: true, name: true }
-  });
-  const regionsMap = new Map<string, string>();
-  for (const r of allRegions) {
-    regionsMap.set(r.id, r.name);
-  }
-
-  const otherProfilesWithRegionName = otherProfiles.map(p => ({
-    id: p.id,
-    locationUrl: p.locationUrl,
-    landmark: p.landmark,
-    photoUrl: p.photoUrl,
-    alternatePhone: p.alternatePhone,
-    region: p.regionId ? { name: regionsMap.get(p.regionId) || "منطقة غير معروفة" } : null
-  }));
-
-  const secondOtherProfilesWithRegionName = secondOtherProfiles.map(p => ({
-    id: p.id,
-    locationUrl: p.locationUrl,
-    landmark: p.landmark,
-    photoUrl: p.photoUrl,
-    alternatePhone: p.alternatePhone,
-    region: p.regionId ? { name: regionsMap.get(p.regionId) || "منطقة غير معروفة" } : null
-  }));
 
   const [smartHintLine, secondSmartHintLine] = await Promise.all([
     computeSmartHint(order.id, "primary"),
@@ -393,8 +375,8 @@ export default async function MandoubOrderDetailPage({ params, searchParams }: P
             viewerCourierId={v.courierId}
             phoneProfile={customerPhoneProfile ?? undefined}
             secondPhoneProfile={secondPhoneProfile ?? undefined}
-            otherProfiles={JSON.parse(JSON.stringify(otherProfilesWithRegionName))}
-            secondOtherProfiles={JSON.parse(JSON.stringify(secondOtherProfilesWithRegionName))}
+            otherProfiles={JSON.parse(JSON.stringify(otherProfiles))}
+            secondOtherProfiles={JSON.parse(JSON.stringify(secondOtherProfiles))}
             smartHintLine={smartHintLine || "—"}
             secondSmartHintLine={secondSmartHintLine || "—"}
             uiSettings={uiSettings}
