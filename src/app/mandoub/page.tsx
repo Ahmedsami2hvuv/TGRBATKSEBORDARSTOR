@@ -790,6 +790,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       summary: o.summary,
       shopPhone: o.shop.phone || o.submittedBy?.phone || o.submittedByCompanyPreparer?.phone,
       alternatePhone: o.alternatePhone,
+      customerRegionId: o.customerRegionId,
       secondCustomerPhone: o.secondCustomerPhone,
       secondCustomerRegionName: o.secondCustomerRegion?.name,
       secondCustomerRegionId: o.secondCustomerRegionId,

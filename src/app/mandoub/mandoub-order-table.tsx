@@ -98,6 +98,7 @@ export type MandoubRow = {
   customerDoorPhotoUrl?: string | null;
   secondCustomerDoorPhotoUrl?: string | null;
   routeMode?: "single" | "double";
+  customerRegionId?: string | null;
   secondCustomerRegionName?: string | null;
   secondCustomerRegionId?: string | null;
   secondCustomerLandmark?: string | null;
