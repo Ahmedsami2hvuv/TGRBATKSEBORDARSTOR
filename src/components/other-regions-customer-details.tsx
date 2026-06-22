@@ -11,17 +11,20 @@ export function OtherRegionsCustomerDetails({
   currentRegionId,
   icons,
   fontSizeConfig,
+  prefetchedProfiles,
 }: {
   phone?: string | null;
   currentRegionId?: string | null;
   icons?: any;
   fontSizeConfig?: any;
+  prefetchedProfiles?: any[];
 }) {
-  const [profiles, setProfiles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [profiles, setProfiles] = useState<any[]>(prefetchedProfiles || []);
+  const [loading, setLoading] = useState(!prefetchedProfiles);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
+    if (prefetchedProfiles) return;
     if (!phone) {
       setLoading(false);
       return;
@@ -30,7 +33,7 @@ export function OtherRegionsCustomerDetails({
       .then((data) => setProfiles(data))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
-  }, [phone, currentRegionId]);
+  }, [phone, currentRegionId, prefetchedProfiles]);
 
   if (loading || profiles.length === 0) return null;
 

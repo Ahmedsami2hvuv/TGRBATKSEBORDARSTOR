@@ -118,6 +118,7 @@ export type MandoubRow = {
   submissionSource?: string | null;
   phoneProfile?: any;
   secondPhoneProfile?: any;
+  otherRegionsProfiles?: any[];
 };
 
 
@@ -713,6 +714,7 @@ export function MandoubOrderTable({
                   routeMode: activeOrderData.routeMode,
                   submissionSource: activeOrderData.submissionSource,
                   secondCustomerPhone: activeOrderData.secondCustomerPhone,
+                  otherRegionsProfiles: activeOrderData.otherRegionsProfiles,
                 }}
                 auth={auth}
                 closeHref="#"

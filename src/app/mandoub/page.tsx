@@ -572,7 +572,7 @@ export default async function MandoubPage({ searchParams }: Props) {
 
   const phoneProfiles = await prisma.customerPhoneProfile.findMany({
     where: { phone: { in: customerPhones } },
-    select: { phone: true, regionId: true, locationUrl: true, photoUrl: true, landmark: true, alternatePhone: true }
+    select: { id: true, phone: true, regionId: true, locationUrl: true, photoUrl: true, landmark: true, alternatePhone: true, notes: true, region: { select: { name: true } } }
   });
 
   const activeOrderMetrics = computeMandoubTotalsForCourier(activeOrdersNorm, courier.id, totalsBaseline);
@@ -646,10 +646,17 @@ export default async function MandoubPage({ searchParams }: Props) {
 
   const phoneProfilesByKey = new Map<string, (typeof phoneProfiles)[number]>();
   const phoneProfilesByPhone = new Map<string, (typeof phoneProfiles)[number]>();
+  const allProfilesByPhone = new Map<string, (typeof phoneProfiles)>();
+
   for (const profile of phoneProfiles) {
     const key = `${profile.phone}::${profile.regionId ?? ""}`;
     if (!phoneProfilesByKey.has(key)) phoneProfilesByKey.set(key, profile);
     if (!phoneProfilesByPhone.has(profile.phone)) phoneProfilesByPhone.set(profile.phone, profile);
+    
+    if (!allProfilesByPhone.has(profile.phone)) {
+      allProfilesByPhone.set(profile.phone, []);
+    }
+    allProfilesByPhone.get(profile.phone)!.push(profile);
   }
 
   const smartHintByOrderId = new Map<string, string | null>();
@@ -704,6 +711,9 @@ export default async function MandoubPage({ searchParams }: Props) {
     const secondSmartHintLine = secondSmartHintByOrderId.get(o.id) ?? "—";
     const landmarkLine = mergedLandmarkByOrderId.get(o.id) || null;
     const secondLandmarkLine = secondMergedLandmarkByOrderId.get(o.id) || null;
+
+    const currentCustomerProfiles = allProfilesByPhone.get(o.customerPhone) || [];
+    const otherRegionsProfiles = currentCustomerProfiles.filter(p => p.regionId !== o.customerRegionId && (p.locationUrl || p.photoUrl || p.notes || p.landmark || p.alternatePhone));
 
     return {
       id: o.id,
@@ -800,6 +810,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       showNotesBtn: courier.showNotesBtn,
       showVoiceNotesBtn: courier.showVoiceNotesBtn,
       showMoneyBoxes: courier.showMoneyBoxes,
+      otherRegionsProfiles,
       phoneProfile: profile ? {
         locationUrl: profile.locationUrl,
         landmark: profile.landmark,

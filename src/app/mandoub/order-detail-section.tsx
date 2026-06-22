@@ -332,6 +332,7 @@ export function OrderDetailSection({
                       currentRegionId={order.customerRegionId} 
                       icons={icons} 
                       fontSizeConfig={activeConfig} 
+                      prefetchedProfiles={(order as any).otherRegionsProfiles}
                     />
 
                     <div className="flex flex-col gap-1 mt-1">
