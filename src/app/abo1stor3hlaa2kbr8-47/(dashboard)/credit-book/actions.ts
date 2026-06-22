@@ -692,32 +692,16 @@ export async function getPartnerDetails(partnerId: string) {
         });
 
         const resetAt = courier?.mandoubTotalsResetAt || null;
-        const carryOver = Number(courier?.mandoubWalletCarryOverDinar || 0);
 
         // متبقي المحفظة للإدارة هو نفسه ذمة المندوب الحالية للتلقائي لتجنب التعارض في الواجهة
         walletRemain = autoBalance;
 
-        // إضافة معاملة الرصيد المدور الافتتاحية إن وجدت
-        if (carryOver !== 0 && resetAt) {
-          autoTransactions.push({
-            id: `auto-courier-carryover-${partner.id}`,
-            partnerId: partner.id,
-            amount: Math.abs(carryOver),
-            kind: carryOver > 0 ? "gave" : "took", 
-            note: `رصيد مدور (مرحل) من الفترة السابقة لتصفير المحفظة`,
-            createdAt: resetAt,
-            updatedAt: resetAt,
-            isAuto: true
-          });
-        }
-
-        // 1. جلب حركات أموال الطلبات للمندوب منذ تاريخ التصفير
+        // 1. جلب حركات أموال الطلبات للمندوب بالكامل تاريخياً
         const orderMoneyEvents = await prisma.orderCourierMoneyEvent.findMany({
           where: {
             courierId: partner.externalId,
             deletedAt: null,
-            recordedByCompanyPreparerId: null,
-            createdAt: resetAt ? { gt: resetAt } : undefined
+            recordedByCompanyPreparerId: null
           },
           include: {
             order: {
@@ -763,12 +747,11 @@ export async function getPartnerDetails(partnerId: string) {
           }
         }
 
-        // 2. جلب قيود المحفظة اليدوية للمندوب منذ تاريخ التصفير
+        // 2. جلب قيود المحفظة اليدوية للمندوب بالكامل تاريخياً
         const courierMiscEntries = await prisma.courierWalletMiscEntry.findMany({
           where: {
             courierId: partner.externalId,
-            deletedAt: null,
-            createdAt: resetAt ? { gt: resetAt } : undefined
+            deletedAt: null
           },
           orderBy: { createdAt: "desc" }
         });
@@ -789,13 +772,12 @@ export async function getPartnerDetails(partnerId: string) {
           });
         }
 
-        // 3. جلب التحويلات المقبولة للإدارة منذ تاريخ التصفير
+        // 3. جلب التحويلات المقبولة للإدارة للمندوب بالكامل تاريخياً
         const adminTransfers = await prisma.walletPeerTransfer.findMany({
           where: {
             fromCourierId: partner.externalId,
             toKind: WalletPeerPartyKind.admin,
-            status: "accepted",
-            createdAt: resetAt ? { gt: resetAt } : undefined
+            status: "accepted"
           },
           orderBy: { createdAt: "desc" }
         });
@@ -816,7 +798,7 @@ export async function getPartnerDetails(partnerId: string) {
           });
         }
 
-        // 4. أرباح التوصيل للطلبات المكتملة والمؤرشفة منذ تاريخ التصفير
+        // 4. أرباح التوصيل للطلبات المكتملة والمؤرشفة للمندوب بالكامل تاريخياً
         const ordersWithEarnings = await prisma.order.findMany({
           where: {
             AND: [
@@ -831,14 +813,8 @@ export async function getPartnerDetails(partnerId: string) {
               },
               {
                 courierEarningDinar: { gt: 0 }
-              },
-              resetAt ? {
-                OR: [
-                  { deliveredAt: { gt: resetAt } },
-                  { deliveredAt: null, createdAt: { gt: resetAt } }
-                ]
-              } : {}
-            ].filter(cond => Object.keys(cond).length > 0) as any
+              }
+            ]
           },
           select: {
             id: true,
