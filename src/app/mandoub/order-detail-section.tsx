@@ -90,6 +90,8 @@ export function OrderDetailSection({
   viewerCourierId,
   phoneProfile,
   secondPhoneProfile,
+  otherProfiles = [],
+  secondOtherProfiles = [],
   smartHintLine,
   secondSmartHintLine,
   uiSettings,
@@ -103,6 +105,8 @@ export function OrderDetailSection({
   viewerCourierId?: string;
   phoneProfile?: any;
   secondPhoneProfile?: PhoneProfileFallback;
+  otherProfiles?: any[];
+  secondOtherProfiles?: any[];
   smartHintLine?: string | null;
   secondSmartHintLine?: string | null;
   uiSettings?: UISectionConfig | null;
@@ -127,6 +131,8 @@ export function OrderDetailSection({
   const activeConfig = isMounted ? fontSizeConfig : null;
 
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [showOtherDetailsModal, setShowOtherDetailsModal] = useState(false);
+  const [selectedOtherProfile, setSelectedOtherProfile] = useState<any | null>(null);
 
   const shopImageUrl = order.shop.photoUrl?.trim() || order.shopDoorPhotoUrl?.trim() || "";
   const isAdminPortal = order.submissionSource === "admin_portal";
@@ -181,6 +187,12 @@ export function OrderDetailSection({
   const isFromSecondProfileLandmark = !getCleanValue(order.secondCustomerLandmark) && !!getCleanValue(secondPhoneProfile?.landmark);
   const isFromSecondProfileLocation = !getCleanValue(order.secondCustomerLocationUrl) && !!getCleanValue(secondPhoneProfile?.locationUrl);
   const isFromSecondProfilePhoto = !getCleanValue(order.secondCustomerDoorPhotoUrl) && !!getCleanValue(secondPhoneProfile?.photoUrl);
+
+  const customerHasMissingDetails = !customerDoorDisplay || !mergedCustomerLocationUrl || !mergedLandmark || !mergedAlternate;
+  const showOtherProfilesBtn = customerHasMissingDetails && otherProfiles && otherProfiles.length > 0;
+
+  const secondCustomerHasMissingDetails = !secondDoorMerged || !secondLocMerged || !secondLandmarkMerged || !mergedSecondAlternate;
+  const showSecondOtherProfilesBtn = secondCustomerHasMissingDetails && secondOtherProfiles && secondOtherProfiles.length > 0;
 
   const isSmartHintValid = (s: string | null | undefined) => {
     if (!s) return false;
@@ -308,6 +320,19 @@ export function OrderDetailSection({
                     </div>
                   </div>
 
+                  {showOtherProfilesBtn && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedOtherProfile(otherProfiles);
+                        setShowOtherDetailsModal(true);
+                      }}
+                      className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-800 shadow-sm hover:bg-amber-100 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-300 transition duration-200"
+                    >
+                      🔍 يا مندوب، هذا الزبون عنده تفاصيل بمنطقة أخرى، تحب تطلع عليها؟
+                    </button>
+                  )}
+
                   <div className="space-y-2 text-xs">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-bold text-slate-400 text-sm" title="منطقة الزبون">📍</span>
@@ -420,6 +445,19 @@ export function OrderDetailSection({
                         <h3 className="text-sm font-black text-violet-850 dark:text-violet-400">المستلم (الوجهة الثانية)</h3>
                       </div>
                     </div>
+
+                    {showSecondOtherProfilesBtn && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedOtherProfile(secondOtherProfiles);
+                          setShowOtherDetailsModal(true);
+                        }}
+                        className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-800 shadow-sm hover:bg-amber-100 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-300 transition duration-200"
+                      >
+                        🔍 يا مندوب، هذا المستلم عنده تفاصيل بمنطقة أخرى، تحب تطلع عليها؟
+                      </button>
+                    )}
 
                     <div className="space-y-2 text-xs">
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -800,6 +838,159 @@ export function OrderDetailSection({
                 className="max-w-full max-h-[72vh] object-contain rounded-xl"
               />
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* مودال عرض تفاصيل الزبون البديلة في المناطق الأخرى */}
+      {showOtherDetailsModal && selectedOtherProfile && typeof document !== "undefined" && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md transition-all duration-300 animate-fade-in"
+          onClick={() => {
+            setShowOtherDetailsModal(false);
+            setSelectedOtherProfile(null);
+          }}
+        >
+          <div 
+            className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl border border-sky-200/40 bg-white/95 dark:bg-slate-900/95 p-6 shadow-2xl text-right animate-in zoom-in-95 duration-200" 
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            
+            {/* رأس النافذة */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-4 mb-4">
+              <h3 className="text-base font-black text-slate-950 dark:text-white flex items-center gap-2">
+                <span>📋 التفاصيل المتوفرة في المناطق الأخرى</span>
+              </h3>
+              <button
+                onClick={() => {
+                  setShowOtherDetailsModal(false);
+                  setSelectedOtherProfile(null);
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-205 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* محتوى النافذة */}
+            <div className="space-y-4">
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                تم العثور على التفاصيل التالية المحفوظة لهذا الرقم في مناطق أخرى. يمكنك الاستعانة بها لتوصيل الطلب:
+              </p>
+
+              <div className="space-y-3">
+                {selectedOtherProfile.map((prof: any) => {
+                  const hasLoc = prof.locationUrl && prof.locationUrl.trim() !== "";
+                  const hasPhoto = prof.photoUrl && prof.photoUrl.trim() !== "";
+                  const hasLandmark = prof.landmark && prof.landmark.trim() !== "";
+                  const hasAlt = prof.alternatePhone && prof.alternatePhone.trim() !== "";
+
+                  return (
+                    <div 
+                      key={prof.id} 
+                      className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-slate-800/40 p-4 space-y-3 transition hover:border-sky-300"
+                    >
+                      {/* اسم المنطقة */}
+                      <div className="flex items-center gap-1.5 border-b border-dashed border-slate-200 dark:border-white/5 pb-1.5">
+                        <span className="text-sm">📍</span>
+                        <span className="text-sm font-black text-slate-900 dark:text-white">
+                          المنطقة: {prof.region?.name || "منطقة غير محددة"}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-[1fr_auto] gap-3 items-start">
+                        
+                        {/* معلومات النص */}
+                        <div className="space-y-2 text-xs">
+                          
+                          {/* أقرب نقطة دالة */}
+                          {hasLandmark && (
+                            <div className="flex items-start gap-1">
+                              <span className="font-bold text-slate-400 shrink-0">دالة:</span>
+                              <span className="font-black text-slate-800 dark:text-slate-200">{prof.landmark}</span>
+                            </div>
+                          )}
+
+                          {/* الرقم البديل */}
+                          {hasAlt && (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <span className="font-bold text-slate-400 shrink-0">رقم بديل:</span>
+                              <span className="font-mono font-black text-slate-800 dark:text-slate-200">{prof.alternatePhone}</span>
+                              <div className="flex gap-1 mr-2">
+                                <a 
+                                  href={`tel:${prof.alternatePhone}`} 
+                                  className="p-1 bg-sky-100 hover:bg-sky-200 dark:bg-sky-950/50 dark:hover:bg-sky-900 text-sky-700 dark:text-sky-300 rounded text-[10px]"
+                                  title="اتصال مباشر"
+                                >
+                                  📞 اتصل
+                                </a>
+                                <a 
+                                  href={whatsappMeUrl(prof.alternatePhone)} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="p-1 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950/50 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 rounded text-[10px] flex items-center gap-0.5"
+                                  title="مراسلة واتساب"
+                                >
+                                  💬 واتساب
+                                </a>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* اللوكيشن */}
+                          {hasLoc && (
+                            <div className="pt-1">
+                              <a 
+                                href={prof.locationUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 text-[11px] font-black text-white hover:bg-emerald-700 transition gap-1 shadow-sm"
+                              >
+                                📍 فتح الموقع في خرائط جوجل <DynamicIcon icon={icons?.ui_external_link} fallback="↗" width={10} height={10} />
+                              </a>
+                            </div>
+                          )}
+
+                        </div>
+
+                        {/* صورة الباب */}
+                        {hasPhoto && (
+                          <div className="w-[80px] flex flex-col items-center justify-start shrink-0">
+                            <span className="text-[9px] font-bold text-slate-400 mb-1">صورة الباب</span>
+                            <div className="aspect-square w-full overflow-hidden rounded-xl border border-sky-200 dark:border-white/10 shadow-sm">
+                              <img 
+                                src={imgSrc(prof.photoUrl)!} 
+                                alt="صورة الباب" 
+                                className="h-full w-full object-cover cursor-zoom-in hover:scale-105 transition duration-300"
+                                onClick={() => setPreviewImageUrl(imgSrc(prof.photoUrl))}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* تذييل النافذة */}
+            <div className="mt-6 pt-4 border-t border-slate-100 dark:border-white/5 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowOtherDetailsModal(false);
+                  setSelectedOtherProfile(null);
+                }}
+                className="rounded-xl bg-slate-100 dark:bg-slate-800 px-4 py-2 text-xs font-black text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition"
+              >
+                إغلاق النافذة
+              </button>
+            </div>
+
           </div>
         </div>,
         document.body
