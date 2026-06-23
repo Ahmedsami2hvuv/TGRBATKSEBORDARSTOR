@@ -34,10 +34,16 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 try {
                     val action = additionalData.optString("action", "start")
                     if (action == "start") {
-                        val alertIntent = Intent(context, StrongAlertActivity::class.java).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        val prefs = context.getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
+                        val lastAlertTime = prefs.getLong("last_strong_alert_time", 0)
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime - lastAlertTime > 60000) { // منع التكرار خلال 60 ثانية
+                            prefs.edit().putLong("last_strong_alert_time", currentTime).apply()
+                            val alertIntent = Intent(context, StrongAlertActivity::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            }
+                            context.startActivity(alertIntent)
                         }
-                        context.startActivity(alertIntent)
                     } else if (action == "stop") {
                         val stopIntent = Intent("com.aboakbar.modf.ACTION_STOP_STRONG_ALERT")
                         context.sendBroadcast(stopIntent)
