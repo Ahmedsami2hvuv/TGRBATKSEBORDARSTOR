@@ -192,8 +192,7 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
           { toCourierId: courier.id }
         ]
       },
-      orderBy: { createdAt: "desc" },
-      take: 20
+      orderBy: { createdAt: "desc" } // Remove 'take: 20' to get full history for running balance
     }),
     prisma.courierTip.findMany({
       where: { courierId: courier.id },
@@ -307,6 +306,7 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
           deletedReason: e.deletedReason as any,
           deletedByDisplayName: null,
           expectedDinar: e.kind === MONEY_KIND_DELIVERY ? (o.totalAmount as any)?.toNumber?.() ?? Number(o.totalAmount) : (o.orderSubtotal as any)?.toNumber?.() ?? Number(o.orderSubtotal),
+          earningDinar: o.courierEarningForCourierId === courier.id && ["delivered", "archived"].includes(o.status) ? ((o.courierEarningDinar as any)?.toNumber?.() ?? Number(o.courierEarningDinar)) : 0,
         }))
     ),
 
@@ -325,25 +325,49 @@ export default async function MandoubWalletPage({ searchParams }: Props) {
       deletedByDisplayName: null,
     })),
     ...recentTransfers
-      .filter(t => t.status === "pending" || t.status === "rejected")
+      .filter(t => t.status === "pending" || t.status === "rejected" || (t.status === "accepted" && t.toKind === "admin" && t.fromCourierId === courier.id))
       .map(t => ({
-        source: t.status === "rejected" ? "transfer_rejected" as const : "transfer_pending" as const,
+        source: t.status === "accepted" ? "transfer_accepted" as const : t.status === "rejected" ? "transfer_rejected" as const : "transfer_pending" as const,
         id: t.id,
         kind: t.fromCourierId === courier.id
-          ? (t.status === "rejected" ? "transfer_rejected_out" : LEDGER_KIND_TRANSFER_PENDING_OUT)
+          ? (t.status === "accepted" ? "transfer_accepted_out" : t.status === "rejected" ? "transfer_rejected_out" : LEDGER_KIND_TRANSFER_PENDING_OUT)
           : (t.status === "rejected" ? "transfer_rejected_in" : LEDGER_KIND_TRANSFER_PENDING_IN),
         amountDinar: (t.amountDinar as any).toNumber ? (t.amountDinar as any).toNumber() : Number(t.amountDinar),
         createdAt: t.createdAt.toISOString(),
         orderId: "",
         orderNumber: 0,
         shopName: "",
-        miscLabel: t.handoverLocation,
+        miscLabel: t.handoverLocation || (t.status === "accepted" ? "تحويل للإدارة (مقبول)" : ""),
         deletedAt: null,
         deletedReason: null,
         deletedByDisplayName: null,
       }))
 
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  // حساب الرصيد التراكمي (المطلوب للإدارة) من الأحدث للأقدم
+  let currentAdminBalance = handToAdmin.toNumber();
+  let currentWalletRemain = walletRemain.toNumber();
+
+  for (const line of ledger) {
+    line.balanceAdmin = currentAdminBalance;
+    line.balanceAfter = currentWalletRemain;
+
+    if (line.deletedAt == null) { // We only reverse the effect if the line is NOT deleted
+      if (line.kind === MONEY_KIND_DELIVERY || line.kind === MISC_LEDGER_KIND_TAKE) {
+        currentWalletRemain -= line.amountDinar;
+        currentAdminBalance -= line.amountDinar;
+        if (line.earningDinar && line.source === "order") {
+          currentAdminBalance += line.earningDinar; // أرباح التوصيل تخفض المطلوب للإدارة
+        }
+      } else if (line.kind === MONEY_KIND_PICKUP || line.kind === MISC_LEDGER_KIND_GIVE) {
+        currentWalletRemain += line.amountDinar;
+        currentAdminBalance += line.amountDinar;
+      } else if (line.kind === "transfer_accepted_out") {
+        currentAdminBalance += line.amountDinar; // التحويل للإدارة المقبول يخفض المطلوب
+      }
+    }
+  }
 
   // تحويل البيانات إلى JSON لضمان التوافق مع Next.js 15 (Serialization safety)
   const safeLedger = JSON.parse(JSON.stringify(ledger)) as typeof ledger;

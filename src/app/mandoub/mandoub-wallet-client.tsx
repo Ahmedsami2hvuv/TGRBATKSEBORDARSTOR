@@ -520,7 +520,7 @@ export function MandoubWalletClient({
       </div>
 
       <ul className="space-y-3 pb-8">
-        {filteredLedger.map((line) => {
+        {filteredLedger.map((line, index) => {
           const deleted = line.deletedAt != null;
           const isRejected = line.source === "transfer_rejected";
           const isTransfer = line.source === "transfer_pending" || line.source === "transfer_rejected" || line.miscLabel?.includes("تحويل") || line.kind === LEDGER_KIND_TRANSFER_PENDING_IN || line.kind === LEDGER_KIND_TRANSFER_PENDING_OUT || line.kind === "transfer_rejected_in" || line.kind === "transfer_rejected_out";
@@ -578,19 +578,6 @@ export function MandoubWalletClient({
                     </>
                   ) : (line.miscLabel ?? "—")}
                 </p>
-                {line.balanceAfter !== undefined && !deleted && (
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] font-black bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-800 dark:text-emerald-300">
-                      عندي كاش: {formatDinarAsAlf(cashBalance)}
-                    </span>
-                    <span className="text-[10px] font-black bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded text-sky-800 dark:text-sky-300">
-                      أرباحي: {formatDinarAsAlf(line.balanceEarnings ?? 0)}
-                    </span>
-                    <span className="text-[10px] font-black bg-slate-900/10 dark:bg-white/10 border border-slate-300/20 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-300">
-                      للإدارة: {formatDinarAsAlf(line.balanceAdmin ?? 0)}
-                    </span>
-                  </div>
-                )}
               </div>
 
               {!deleted && !isRejected && line.source !== "transfer_pending" && (() => {
@@ -612,8 +599,56 @@ export function MandoubWalletClient({
             </div>
           );
 
+          const d1 = new Date(line.createdAt).toDateString();
+          const prevD = index > 0 ? new Date(filteredLedger[index - 1].createdAt).toDateString() : null;
+          const showDaySeparator = index === 0 || d1 !== prevD;
+
           return (
             <li key={`${line.source}-${line.id}`}>
+              {showDaySeparator && (
+                <div className="flex items-center gap-3 my-5 py-1 select-none">
+                  <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent to-slate-200 dark:to-slate-800/80"></div>
+                  <span className="text-[10px] md:text-xs font-black px-4 py-1.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-100/60 dark:border-indigo-900/40 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+                    📅 {(() => {
+                      const d = new Date(line.createdAt);
+                      return d.toLocaleDateString("ar-EG", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric"
+                      });
+                    })()}
+                  </span>
+                  <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent to-slate-200 dark:to-slate-800/80"></div>
+                </div>
+              )}
+
+              {line.balanceAdmin !== undefined && !deleted && (
+                <div className="flex flex-col items-center justify-center pt-2 pb-1">
+                  <div className={`px-5 py-2.5 rounded-2xl shadow-sm border-2 flex items-center gap-3 ${
+                     line.balanceAdmin === 0 
+                       ? "bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                       : line.balanceAdmin > 0
+                         ? "bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-800 dark:text-red-300"
+                         : "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300"
+                  }`}>
+                    <div className="flex flex-col items-center">
+                      <span className="text-[11px] font-bold opacity-80 mb-0.5">الرصيد الكلي بعد المعاملة</span>
+                      <span className="text-base font-black flex items-center gap-1.5" dir="ltr">
+                        {line.balanceAdmin === 0 ? "مصفر 0" : (
+                          <>
+                            {formatDinarAsAlf(Math.abs(line.balanceAdmin))}
+                            <span className="text-[10px] font-bold">
+                              {line.balanceAdmin > 0 ? "بذمتي للإدارة" : "أطلب الإدارة"}
+                            </span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {orderHref ? (
                 <Link
                   href={orderHref}
