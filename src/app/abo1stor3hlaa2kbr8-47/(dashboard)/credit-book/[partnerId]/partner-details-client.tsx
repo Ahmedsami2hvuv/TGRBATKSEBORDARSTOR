@@ -885,7 +885,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
           (() => {
             // حساب الرصيد التراكمي لكل حركة من الأحدث (الأعلى) إلى الأقدم (الأسفل)
             // نبدأ بالرصيد الحالي ونعكس العمليات رجوعاً بالزمن
-            let currentRunning = partner.remaining || 0;
+            let currentRunning = partner.balance || 0;
             const txsWithRunningBalance = [...partner.transactions].map((tx) => {
               const balanceAfter = currentRunning;
               const amt = tx.amount;
