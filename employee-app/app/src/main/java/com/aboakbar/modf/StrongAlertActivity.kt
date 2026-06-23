@@ -92,6 +92,7 @@ class StrongAlertActivity : Activity() {
                         val conn = url.openConnection() as java.net.HttpURLConnection
                         conn.requestMethod = "POST"
                         conn.setRequestProperty("Content-Type", "application/json")
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile)")
                         conn.doOutput = true
                         
                         val jsonInputString = "{\"alertId\": \"$alertId\", \"role\": \"$role\", \"userId\": \"$userId\"}"
