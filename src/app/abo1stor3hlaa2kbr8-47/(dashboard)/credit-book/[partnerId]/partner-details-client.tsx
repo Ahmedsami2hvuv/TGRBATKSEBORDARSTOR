@@ -883,23 +883,23 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
           <div className="py-20 text-center text-slate-400 font-bold">لا يوجد أي معاملات مالية مسجلة لهذا الحساب.</div>
         ) : (
           (() => {
-            // حساب الرصيد التراكمي لكل حركة من الأقدم للأحدث ثم إعادة الترتيب للأحدث
-            let currentRunning = 0;
-            const txsWithRunningBalance = [...partner.transactions]
-              .reverse()
-              .map((tx) => {
-                const amt = tx.amount;
-                if (tx.kind === "gave") {
-                  currentRunning += amt;
-                } else if (tx.kind === "took") {
-                  currentRunning -= amt;
-                }
-                return {
-                  ...tx,
-                  runningBalance: currentRunning
-                };
-              })
-              .reverse();
+            // حساب الرصيد التراكمي لكل حركة من الأحدث (الأعلى) إلى الأقدم (الأسفل)
+            // نبدأ بالرصيد الحالي ونعكس العمليات رجوعاً بالزمن
+            let currentRunning = partner.remaining || 0;
+            const txsWithRunningBalance = [...partner.transactions].map((tx) => {
+              const balanceAfter = currentRunning;
+              const amt = tx.amount;
+              // نعكس العملية لنحصل على الرصيد قبل هذه المعاملة
+              if (tx.kind === "gave") {
+                currentRunning -= amt; // كانت إضافة للرصيد، فنطرحها
+              } else if (tx.kind === "took") {
+                currentRunning += amt; // كانت خصماً من الرصيد، فنجمعها
+              }
+              return {
+                ...tx,
+                runningBalance: balanceAfter
+              };
+            });
 
             const filteredTxs = txsWithRunningBalance.filter(tx => fuzzyMatchTx(tx, searchQuery));
 
@@ -963,23 +963,7 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                         </div>
                       )}
 
-                      {/* بلوك الرصيد التراكمي العريض (يظهر فوق كل معاملة ليوضح الرصيد المستمر) */}
-                      <div className="flex flex-col items-center justify-center pt-2 pb-1">
-                        <div className={`px-5 py-2.5 rounded-2xl shadow-sm border-2 flex items-center gap-3 ${
-                           tx.runningBalance === 0 
-                             ? "bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
-                             : tx.runningBalance > 0 
-                               ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-300"
-                               : "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-300"
-                        }`}>
-                          <span className="text-xs md:text-sm font-bold opacity-80">الرصيد الكلي بعد المعاملة:</span>
-                          <span className="text-base md:text-lg font-black tabular-nums" dir="ltr">
-                            {formatDinarAsAlfWithUnit(tx.runningBalance)}
-                          </span>
-                        </div>
-                        {/* خط موصل للعملية */}
-                        <div className="w-1 h-3 bg-slate-200 dark:bg-slate-800 mt-1 rounded-full"></div>
-                      </div>
+
 
                       <div 
                         className={`p-4 rounded-2xl transition flex flex-col gap-3 shadow-sm border-2 ${containerClasses} ${
