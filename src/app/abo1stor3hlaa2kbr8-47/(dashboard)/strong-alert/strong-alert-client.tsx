@@ -37,6 +37,15 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const [respondedName, setRespondedName] = useState<string | null>(null);
+  const [respondedRole, setRespondedRole] = useState<string | null>(null);
+
+  // مرجع للاحتفاظ بأحدث حالة للتنبيه لاستخدامها داخل الـ useEffect دون التسبب في إعادة الاشتراك
+  const alertingStateRef = React.useRef(alertingState);
+  useEffect(() => {
+    alertingStateRef.current = alertingState;
+  }, [alertingState]);
+
   // احصل على قائمة المستخدمين بناء على التبويب النشط
   const getCurrentUsers = () => {
     switch (activeTab) {
@@ -84,6 +93,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
             // note format: strong_alert_ack:alertId:role:userId:timestamp
             const parts = newRow.note.split(":");
             if (parts.length >= 4) {
+              const alertId = parts[1];
               const role = parts[2];
               const userId = parts[3];
               
@@ -93,7 +103,11 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
               const foundUser = allUsers.find(u => u.id === userId);
               if (foundUser) userName = foundUser.name;
 
-              // إيقاف الشاشة الحمراء الوامضة فوراً
+              // تحديث حالة الاستجابة لتظهر في واجهة المستخدم بوضوح
+              setRespondedName(userName);
+              setRespondedRole(role);
+
+              // إيقاف الشاشة الحمراء الوامضة محلياً
               setAlertingState({
                 isAlerting: false,
                 activeRole: null,
@@ -101,8 +115,23 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                 timeLeft: 0,
               });
 
-              // عرض رسالة النجاح التي طلبها العميل
-              setSuccessMessage(`استجاب ${role === "mandob" ? "المندوب" : role === "preparer" ? "المجهز" : "الموظف"} ${userName} للتنبيه وسيرسلك رسالة عبر الواتس اب`);
+              // إرسال إشارة إيقاف (action = stop) تلقائياً لبقية الهواتف التي تم تنبيهها
+              const currentAlerting = alertingStateRef.current;
+              if (currentAlerting.isAlerting && currentAlerting.activeUserIds.length > 0) {
+                fetch("/api/admin/strong-alert", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${adminToken}`,
+                  },
+                  body: JSON.stringify({
+                    action: "stop",
+                    targetRole: currentAlerting.activeRole,
+                    userIds: currentAlerting.activeUserIds,
+                    alertId: alertId || "stop_alert"
+                  }),
+                }).catch(err => console.error("Error auto stopping alert:", err));
+              }
 
               // تشغيل صوت تنبيه خفيف في الإدارة (اختياري، لكنه مفيد)
               try {
@@ -118,7 +147,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
     return () => {
       supabaseClient.removeChannel(channel);
     };
-  }, [couriers, preparers, employees]);
+  }, [couriers, preparers, employees, adminToken]);
 
   // إدارة المؤقت التنازلي لإيقاف التنبيه تلقائياً بعد دقيقة
   useEffect(() => {
@@ -209,6 +238,8 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
       }
 
       if (action === "start") {
+        setRespondedName(null);
+        setRespondedRole(null);
         setAlertingState({
           isAlerting: true,
           activeRole: targetRole,
@@ -217,6 +248,8 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
         });
         setSuccessMessage(`تم إرسال التنبيه القوي بنجاح! سيستمر رنين الهواتف لمدة دقيقة أو حتى تضغط على زر الإيقاف.`);
       } else {
+        setRespondedName(null);
+        setRespondedRole(null);
         setAlertingState({
           isAlerting: false,
           activeRole: null,
@@ -274,8 +307,36 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
         </div>
       )}
 
+      {/* شاشة استجابة المستخدم الناجحة */}
+      {respondedName && (
+        <div className="p-8 bg-emerald-950/30 border border-emerald-500/40 rounded-xl flex flex-col items-center justify-center text-center space-y-4 shadow-lg shadow-emerald-950/50">
+          <div className="relative">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-2xl shadow-lg shadow-emerald-600/50 animate-bounce">
+              ✓
+            </span>
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-emerald-400">تمت الاستجابة للتنبيه!</h3>
+            <p className="text-base text-gray-200 mt-2 font-semibold">
+              لقد استجاب {respondedRole === "mandob" ? "المندوب" : respondedRole === "preparer" ? "المجهز" : "الموظف"} <span className="text-emerald-400 underline font-bold">{respondedName}</span> للاشعار وسوف يقوم بمراسلتك عبر الواتساب
+            </p>
+          </div>
+
+          <button
+            onClick={() => {
+              setRespondedName(null);
+              setRespondedRole(null);
+              setSuccessMessage(null);
+            }}
+            className="px-8 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-lg border border-emerald-500 hover:scale-105 active:scale-95 transition-all duration-200"
+          >
+            العودة للوحة التحكم
+          </button>
+        </div>
+      )}
+
       {/* أزرار التحكم والتصنيف */}
-      {!alertingState.isAlerting && (
+      {!alertingState.isAlerting && !respondedName && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* تبويبات الفئات */}
           <div className="md:col-span-2 flex border-b border-gray-800">
@@ -333,7 +394,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
       )}
 
       {/* قائمة الأسماء */}
-      {!alertingState.isAlerting && (
+      {!alertingState.isAlerting && !respondedName && (
         <div className="border border-gray-850 rounded-xl bg-gray-950/20 overflow-hidden">
           {/* رأس القائمة */}
           <div className="flex items-center justify-between px-4 py-3 bg-gray-950/60 border-b border-gray-850">
@@ -387,7 +448,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
       )}
 
       {/* زر التنبيه القوي */}
-      {!alertingState.isAlerting && (
+      {!alertingState.isAlerting && !respondedName && (
         <div className="flex justify-center pt-4">
           <button
             onClick={() => handleTriggerAlert("start")}

@@ -108,6 +108,13 @@ class StrongAlertActivity : Activity() {
             }
 
             try {
+                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                notificationManager.cancel(9999)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            try {
                 val waIntent = Intent(Intent.ACTION_VIEW)
                 waIntent.data = Uri.parse("https://api.whatsapp.com/send?phone=9647733921468&text=" + Uri.encode("جيتك من التنبيه"))
                 waIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK

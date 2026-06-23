@@ -31,9 +31,14 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
             
             // التحقق من التنبيه القوي (الاستدعاء العاجل)
             if (type == "strong_alert") {
+                // منع إشعار OneSignal التلقائي وتأكيد استلام الإشعار فوراً لتجنب التكرار من السيرفر
+                event.preventDefault()
+                
                 try {
                     val action = additionalData.optString("action", "start")
                     val alertId = additionalData.optString("alertId", "")
+                    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                    val strongAlertNotificationId = 9999
                     
                     if (action == "start") {
                         val prefs = context.getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
@@ -41,7 +46,6 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                         
                         // منع التكرار بناءً على المعرف الفريد
                         if (alertId.isNotEmpty() && alertId == lastAlertId) {
-                            event.preventDefault()
                             return
                         }
                         
@@ -49,19 +53,74 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                             prefs.edit().putString("last_strong_alert_id", alertId).apply()
                         }
                         
+                        // 1. بناء نية التنبيه
                         val alertIntent = Intent(context, StrongAlertActivity::class.java).apply {
                             putExtra("alertId", alertId)
                             putExtra("role", "employee")
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                         }
-                        context.startActivity(alertIntent)
+                        
+                        // 2. محاولة تشغيل الشاشة مباشرة (في حال كان التطبيق في المقدمة أو مسموحاً له)
+                        try {
+                            context.startActivity(alertIntent)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                        
+                        // 3. بناء وإرسال إشعار نظام ذو أولوية قصوى (fullScreenIntent) لفتح الشاشة حتى لو كان الهاتف مغلقاً
+                        val channelId = "aboakbar_strong_alert_channel"
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            val channelName = "التنبيهات العاجلة"
+                            val channel = android.app.NotificationChannel(
+                                channelId,
+                                channelName,
+                                android.app.NotificationManager.IMPORTANCE_HIGH
+                            ).apply {
+                                description = "قناة الاستدعاءات العاجلة"
+                                enableLights(true)
+                                enableVibration(true)
+                                vibrationPattern = longArrayOf(0, 1000, 250, 1000, 250)
+                                setSound(null, null) // نتحكم بالصوت يدوياً في Activity
+                            }
+                            notificationManager.createNotificationChannel(channel)
+                        }
+                        
+                        val alertFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_MUTABLE
+                        } else {
+                            android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                        }
+                        val alertPendingIntent = android.app.PendingIntent.getActivity(context, strongAlertNotificationId, alertIntent, alertFlags)
+                        
+                        val title = "🚨 استدعاء عاجل من الإدارة! 🚨"
+                        val body = "يرجى فتح التطبيق فوراً، هناك أمر طارئ!"
+                        
+                        val builder = NotificationCompat.Builder(context, channelId)
+                            .setSmallIcon(R.drawable.ic_stat_onesignal_default)
+                            .setContentTitle(title)
+                            .setContentText(body)
+                            .setPriority(NotificationCompat.PRIORITY_MAX)
+                            .setCategory(NotificationCompat.CATEGORY_CALL)
+                            .setAutoCancel(false)
+                            .setOngoing(true) // لا يمكن للمستخدم إزالته بالسحب
+                            .setFullScreenIntent(alertPendingIntent, true)
+                        
+                        notificationManager.notify(strongAlertNotificationId, builder.build())
+                        
                     } else if (action == "stop") {
+                        // إيقاف التنبيه
                         val stopIntent = Intent("com.aboakbar.modf.ACTION_STOP_STRONG_ALERT")
                         context.sendBroadcast(stopIntent)
+                        
+                        // إلغاء إشعار النظام
+                        try {
+                            notificationManager.cancel(strongAlertNotificationId)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
-                    event.preventDefault()
                 } catch (e: Exception) {
-                    // تجاهل
+                    e.printStackTrace()
                 }
                 return
             }
