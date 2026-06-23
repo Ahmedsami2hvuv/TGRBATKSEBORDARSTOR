@@ -162,17 +162,115 @@ export async function deleteCourierAction(
 
 export async function resetCourierMandoubTotals(id: string) {
   try {
-    await prisma.courier.update({
+    const courier = await prisma.courier.findUnique({
       where: { id },
-      data: { 
-        mandoubWalletCarryOverDinar: 0,
-        mandoubTotalsResetAt: new Date()
+      select: { mandoubTotalsResetAt: true, createdAt: true, mandoubWalletCarryOverDinar: true },
+    });
+    if (!courier) return { error: "المندوب غير موجود" };
+
+    const resetAt = courier.mandoubTotalsResetAt;
+    const periodStartAt = resetAt ?? courier.createdAt;
+    const periodEndAt = new Date();
+
+    const orders = await prisma.order.findMany({
+      where: {
+        assignedCourierId: id,
+        status: { in: ["assigned", "delivering", "delivered", "archived"] },
+      },
+      select: {
+        assignedCourierId: true,
+        status: true,
+        updatedAt: true,
+        createdAt: true,
+        courierEarningDinar: true,
+        courierEarningForCourierId: true,
+        deliveryPrice: true,
+        courierVehicleType: true,
+        courier: { select: { vehicleType: true } },
+        moneyEvents: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            kind: true,
+            amountDinar: true,
+            deletedAt: true,
+            createdAt: true,
+            courierId: true,
+          },
+        },
+      },
+    });
+
+    const listNorm = orders.map((o) => ({
+      ...o,
+      moneyEvents: o.moneyEvents.map((e) => ({
+        ...e,
+        courierId: e.courierId ?? undefined,
+      })),
+    }));
+
+    const { computeMandoubTotalsForCourier } = await import("@/lib/mandoub-courier-totals");
+    const metrics = computeMandoubTotalsForCourier(listNorm as any, id, resetAt, true);
+
+    const allEvents = await prisma.orderCourierMoneyEvent.findMany({
+      where: { deletedAt: null, courierId: id },
+      select: { courierId: true, kind: true, amountDinar: true, createdAt: true },
+    });
+
+    const allMisc = await prisma.courierWalletMiscEntry.findMany({
+      where: { deletedAt: null, courierId: id },
+      select: { courierId: true, direction: true, amountDinar: true, createdAt: true, label: true },
+    });
+
+    let tipSum = 0;
+    for (const m of allMisc) {
+      if (m.label.includes("[إكرامية]") && (!resetAt || m.createdAt > resetAt)) {
+        tipSum += Number(m.amountDinar);
       }
+    }
+
+    const { computeMoneySumsFromCourierEvents, mergeMiscWalletIntoSums } = await import("@/lib/mandoub-courier-event-totals");
+    
+    const money = mergeMiscWalletIntoSums(
+      computeMoneySumsFromCourierEvents(allEvents, id, resetAt),
+      allMisc,
+      resetAt
+    );
+
+    const oldCarryOver = typeof courier.mandoubWalletCarryOverDinar.toNumber === "function" 
+      ? courier.mandoubWalletCarryOverDinar.toNumber() 
+      : Number(courier.mandoubWalletCarryOverDinar);
+      
+    const newCarryOver = oldCarryOver + money.remainingNet;
+    const totalProfitDinar = metrics.sumEarnings + tipSum;
+    const totalOrders = metrics.ordersDelivered;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.courierProfitHistory.create({
+        data: {
+          courierId: id,
+          periodStartAt,
+          periodEndAt,
+          totalOrders,
+          totalProfitDinar,
+        },
+      });
+
+      await tx.courier.update({
+        where: { id },
+        data: { 
+          mandoubWalletCarryOverDinar: newCarryOver,
+          mandoubTotalsResetAt: periodEndAt
+        }
+      });
     });
 
     revalidatePath(`${SECRET_ADMIN_PATH}/couriers`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/reports`);
+    revalidatePath(`${SECRET_ADMIN_PATH}/reports/couriers-history`);
+    
     return { success: true };
-  } catch (e) {
+  } catch (e: any) {
+    console.error("Reset courier error:", e);
     return { error: "فشل تصفير الحساب" };
   }
 }
