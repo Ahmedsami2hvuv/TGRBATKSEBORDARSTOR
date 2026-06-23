@@ -88,18 +88,16 @@ class StrongAlertActivity : Activity() {
             if (alertId.isNotEmpty()) {
                 Thread {
                     try {
-                        val url = java.net.URL("https://aboakbr.com/api/admin/strong-alert/ack")
-                        val conn = url.openConnection() as java.net.HttpURLConnection
-                        conn.requestMethod = "POST"
-                        conn.setRequestProperty("Content-Type", "application/json")
-                        conn.doOutput = true
-                        
-                        val jsonInputString = "{\"alertId\": \"$alertId\", \"role\": \"$role\", \"userId\": \"$userId\"}"
-                        conn.outputStream.use { os ->
-                            val input = jsonInputString.toByteArray(Charsets.UTF_8)
-                            os.write(input, 0, input.size)
+                        val client = okhttp3.OkHttpClient()
+                        val json = "{\"alertId\": \"$alertId\", \"role\": \"$role\", \"userId\": \"$userId\"}"
+                        val body = okhttp3.RequestBody.create(okhttp3.MediaType.Companion.parse("application/json; charset=utf-8"), json)
+                        val request = okhttp3.Request.Builder()
+                            .url("https://aboakbar.vercel.app/api/admin/strong-alert/ack")
+                            .post(body)
+                            .build()
+                        client.newCall(request).execute().use { response ->
+                            // تم الإرسال بنجاح
                         }
-                        conn.responseCode
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
