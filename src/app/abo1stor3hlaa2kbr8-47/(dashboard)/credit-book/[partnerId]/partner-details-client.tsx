@@ -209,6 +209,9 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
   const [editAdminPaymentAmount, setEditAdminPaymentAmount] = useState("");
   const [isEditingAdminPayment, setIsEditingAdminPayment] = useState(false);
 
+  // نظام فحص الأخطاء والتسويات (Audit)
+  const [showAuditModal, setShowAuditModal] = useState(false);
+
   const handleStartEditAdminPayment = (tx: Transaction) => {
     setEditAdminPaymentId(tx.id.replace("auto-payment-", ""));
     setEditAdminPaymentAmount(tx.amount.toString());
@@ -568,6 +571,13 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                 🧹 تصفير الحساب
               </button>
             )}
+            {/* زر كشف الأخطاء والتسويات المخفية */}
+            <button
+              onClick={() => setShowAuditModal(true)}
+              className="flex-1 py-2 px-3 text-xs font-black text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-300 rounded-xl transition text-center flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              🔍 تحليل الأخطاء والتسويات
+            </button>
           </div>
         </div>
       </div>
@@ -952,6 +962,24 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
                           <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent to-slate-200 dark:to-slate-800/80"></div>
                         </div>
                       )}
+
+                      {/* بلوك الرصيد التراكمي العريض (يظهر فوق كل معاملة ليوضح الرصيد المستمر) */}
+                      <div className="flex flex-col items-center justify-center pt-2 pb-1">
+                        <div className={`px-5 py-2.5 rounded-2xl shadow-sm border-2 flex items-center gap-3 ${
+                           tx.runningBalance === 0 
+                             ? "bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                             : tx.runningBalance > 0 
+                               ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-300"
+                               : "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-300"
+                        }`}>
+                          <span className="text-xs md:text-sm font-bold opacity-80">الرصيد الكلي بعد المعاملة:</span>
+                          <span className="text-base md:text-lg font-black tabular-nums" dir="ltr">
+                            {formatDinarAsAlfWithUnit(tx.runningBalance)}
+                          </span>
+                        </div>
+                        {/* خط موصل للعملية */}
+                        <div className="w-1 h-3 bg-slate-200 dark:bg-slate-800 mt-1 rounded-full"></div>
+                      </div>
 
                       <div 
                         className={`p-4 rounded-2xl transition flex flex-col gap-3 shadow-sm border-2 ${containerClasses} ${
@@ -1466,6 +1494,83 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
           </div>
         </div>
       )}
+      {/* نافذة فحص الأخطاء والتسويات (Audit Modal) */}
+      {showAuditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" dir="rtl">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
+                🔍 تحليل الأخطاء الحسابية والتسويات المخفية
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAuditModal(false)}
+                className="text-slate-400 hover:text-rose-600 transition p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/30"
+              >
+                ❌
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-4">
+              <p className="text-sm font-bold text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
+                هذا النظام يقوم بتحليل المحفظة واكتشاف أي قيود تسوية تمت بشكل تلقائي لمعالجة فروقات مخفية بين الحساب التراكمي للإدارة والحركات الظاهرة للمندوب.
+              </p>
+              
+              {partner.transactions.filter(tx => tx.isAuto && (tx.id.includes('auto-courier-adjust') || tx.id.includes('tip-offset') || tx.note?.includes('تسوية'))).length === 0 ? (
+                <div className="p-8 text-center bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30 rounded-2xl">
+                  <span className="text-4xl mb-3 block">✅</span>
+                  <h4 className="font-black text-emerald-800 dark:text-emerald-400 text-lg mt-2">الحساب سليم 100%</h4>
+                  <p className="text-emerald-600 dark:text-emerald-500 text-sm mt-2 font-bold">لا توجد أي أخطاء أو قيود تسوية عشوائية في حساب هذا المندوب.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <h4 className="font-black text-slate-800 dark:text-slate-200 mb-2">قائمة التسويات والفروقات التي تمت:</h4>
+                  {partner.transactions
+                    .filter(tx => tx.isAuto && (tx.id.includes('auto-courier-adjust') || tx.id.includes('tip-offset') || tx.note?.includes('تسوية')))
+                    .map(tx => (
+                    <div key={tx.id} className="p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-2xl flex flex-col gap-2 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-1.5 h-full bg-amber-400 dark:bg-amber-600"></div>
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-400 px-2 py-1 rounded-lg">
+                            {tx.kind === 'took' ? 'أخذت (نقصان دين)' : 'أعطيت (زيادة دين)'}
+                          </span>
+                          <span className="text-sm font-black tabular-nums text-slate-700 dark:text-slate-200">
+                            {formatDinarAsAlfWithUnit(tx.amount)}
+                          </span>
+                        </div>
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                          {new Date(tx.createdAt).toLocaleDateString('ar-EG')}
+                        </span>
+                      </div>
+                      
+                      <p className="text-xs font-bold text-slate-600 dark:text-slate-400 mt-1">
+                        <span className="text-slate-800 dark:text-slate-300">السبب برمجياً: </span>
+                        {tx.id.includes('tip-offset') 
+                          ? "إكرامية استلمها المندوب من الزبون (أعطيت)، وتم عمل هذه التسوية العكسية (أخذت) لكي تُخصم من ذمته للإدارة لأنها من حقه الصافي." 
+                          : tx.note?.includes('تصفير')
+                            ? "قيد تم إنشاؤه تلقائياً لتصفير الحساب ومطابقته عند قيام الإدارة بالضغط على زر تصفير الحساب."
+                            : "قيد تسوية أرباح أو فرق ناتج عن عمليات تم حذفها أو تعديلها في النظام ولم تتزامن مع سجل الحركات بشكل مباشر، فقام النظام بتعديلها كفرق إجمالي."}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowAuditModal(false)}
+                className="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-black rounded-xl transition shadow-sm"
+              >
+                حسناً، فهمت
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

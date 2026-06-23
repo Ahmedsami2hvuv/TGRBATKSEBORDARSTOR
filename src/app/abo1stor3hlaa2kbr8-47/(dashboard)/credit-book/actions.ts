@@ -770,6 +770,20 @@ export async function getPartnerDetails(partnerId: string) {
             updatedAt: me.createdAt,
             isAuto: true
           });
+
+          // إضافة تسوية عكسية للإكراميات لأنها من حق المندوب (فتخصم من ذمته للإدارة)
+          if (me.direction === "take" && me.label?.includes("[إكرامية]")) {
+            autoTransactions.push({
+              id: `auto-courier-misc-tip-offset-${me.id}`,
+              partnerId: partner.id,
+              amount: amt,
+              kind: "took",
+              note: `تسوية (إكرامية) لصالح المندوب`,
+              createdAt: me.createdAt,
+              updatedAt: me.createdAt,
+              isAuto: true
+            });
+          }
         }
 
         // 3. جلب التحويلات المقبولة للإدارة للمندوب بالكامل تاريخياً
