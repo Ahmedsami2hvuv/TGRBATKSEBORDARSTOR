@@ -700,8 +700,7 @@ export async function getPartnerDetails(partnerId: string) {
         const orderMoneyEvents = await prisma.orderCourierMoneyEvent.findMany({
           where: {
             courierId: partner.externalId,
-            deletedAt: null,
-            recordedByCompanyPreparerId: null
+            deletedAt: null
           },
           include: {
             order: {
@@ -720,13 +719,15 @@ export async function getPartnerDetails(partnerId: string) {
           const amt = Number(me.amountDinar || 0);
           if (amt <= 0) continue;
           
+          const prepLabel = me.recordedByCompanyPreparerId ? " [سجلها المجهز]" : "";
+
           if (me.kind === MONEY_KIND_DELIVERY) { // وارد للمندوب
             autoTransactions.push({
               id: `auto-courier-money-event-in-${me.id}`,
               partnerId: partner.id,
               amount: amt,
               kind: "gave", // أعطيت = زيادة الذمة/نطلبه
-              note: `طلب توصيل #${me.order?.orderNumber || "—"} | استلام مبلغ من الزبون (المنطقة: ${me.order?.customerRegion?.name || "—"})`,
+              note: `طلب توصيل #${me.order?.orderNumber || "—"} | استلام مبلغ من الزبون (المنطقة: ${me.order?.customerRegion?.name || "—"})${prepLabel}`,
               createdAt: me.createdAt,
               updatedAt: me.createdAt,
               isAuto: true,
@@ -738,7 +739,7 @@ export async function getPartnerDetails(partnerId: string) {
               partnerId: partner.id,
               amount: amt,
               kind: "took", // أخذت = تسديد للذمة
-              note: `طلب #${me.order?.orderNumber || "—"} | تسليم مبلغ للمجهز/المحل`,
+              note: `طلب #${me.order?.orderNumber || "—"} | تسليم مبلغ للمجهز/المحل${prepLabel}`,
               createdAt: me.createdAt,
               updatedAt: me.createdAt,
               isAuto: true,
@@ -787,29 +788,85 @@ export async function getPartnerDetails(partnerId: string) {
         }
 
         // 3. جلب التحويلات المقبولة للإدارة للمندوب بالكامل تاريخياً
-        const adminTransfers = await prisma.walletPeerTransfer.findMany({
+        // 3. جلب كافة تحويلات الأقران للمندوب بجميع حالاتها (مقبول، معلق، مرفوض)
+        const courierTransfers = await prisma.walletPeerTransfer.findMany({
           where: {
-            fromCourierId: partner.externalId,
-            toKind: WalletPeerPartyKind.admin,
-            status: "accepted"
+            OR: [
+              { fromCourierId: partner.externalId },
+              { toCourierId: partner.externalId }
+            ]
           },
           orderBy: { createdAt: "desc" }
         });
 
-        for (const t of adminTransfers) {
+        for (const t of courierTransfers) {
           const amt = Number(t.amountDinar || 0);
           if (amt <= 0) continue;
 
-          autoTransactions.push({
-            id: `auto-courier-transfer-admin-${t.id}`,
-            partnerId: partner.id,
-            amount: amt,
-            kind: "took", // أخذت = تسديد للذمة
-            note: `تحويل للإدارة (مقبول) | ${t.handoverLocation || "—"}${t.notes ? ` (${t.notes})` : ""}`,
-            createdAt: t.createdAt,
-            updatedAt: t.createdAt,
-            isAuto: true
-          });
+          const isToAdmin = t.toKind === WalletPeerPartyKind.admin;
+          const isFromCourier = t.fromCourierId === partner.externalId;
+          const isToCourier = t.toCourierId === partner.externalId;
+
+          if (t.status === "accepted" && isToAdmin && isFromCourier) {
+            autoTransactions.push({
+              id: `auto-courier-transfer-admin-accepted-${t.id}`,
+              partnerId: partner.id,
+              amount: amt,
+              kind: "took", // أخذت = تسديد للذمة
+              note: `تحويل للإدارة (مقبول) | ${t.handoverLocation || "—"}${t.notes ? ` (${t.notes})` : ""}`,
+              createdAt: t.createdAt,
+              updatedAt: t.createdAt,
+              isAuto: true
+            });
+          } else if (t.status === "pending") {
+            if (isFromCourier) {
+              autoTransactions.push({
+                id: `auto-courier-transfer-pending-out-${t.id}`,
+                partnerId: partner.id,
+                amount: amt,
+                kind: "took", // أخذت = معلق صادر يخصم من رصيد الكاش
+                note: `تحويل صادر معلق | ${t.handoverLocation || "—"}${t.notes ? ` (${t.notes})` : ""}`,
+                createdAt: t.createdAt,
+                updatedAt: t.createdAt,
+                isAuto: true
+              });
+            } else if (isToCourier) {
+              autoTransactions.push({
+                id: `auto-courier-transfer-pending-in-${t.id}`,
+                partnerId: partner.id,
+                amount: amt,
+                kind: "gave", // أعطيت = معلق وارد
+                note: `تحويل وارد معلق | ${t.handoverLocation || "—"}${t.notes ? ` (${t.notes})` : ""}`,
+                createdAt: t.createdAt,
+                updatedAt: t.createdAt,
+                isAuto: true
+              });
+            }
+          } else if (t.status === "rejected") {
+            if (isFromCourier) {
+              autoTransactions.push({
+                id: `auto-courier-transfer-rejected-out-${t.id}`,
+                partnerId: partner.id,
+                amount: amt,
+                kind: "took",
+                note: `تحويل صادر مرفوض ❌ | ${t.handoverLocation || "—"}${t.notes ? ` (السبب: ${t.notes})` : ""}`,
+                createdAt: t.createdAt,
+                updatedAt: t.createdAt,
+                isAuto: true
+              });
+              // إضافة تسوية عكسية للتحويل المرفوض لئلا يؤثر على رصيد المطلوب الفعلي للإدارة
+              autoTransactions.push({
+                id: `auto-courier-transfer-rejected-out-offset-${t.id}`,
+                partnerId: partner.id,
+                amount: amt,
+                kind: "gave",
+                note: `إلغاء أثر تحويل صادر مرفوض`,
+                createdAt: t.createdAt,
+                updatedAt: t.createdAt,
+                isAuto: true
+              });
+            }
+          }
         }
 
         // 4. أرباح التوصيل للطلبات المكتملة والمؤرشفة للمندوب بالكامل تاريخياً
