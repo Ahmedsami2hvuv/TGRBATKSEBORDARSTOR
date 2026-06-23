@@ -37,7 +37,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                         val prefs = context.getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
                         val lastAlertTime = prefs.getLong("last_strong_alert_time", 0)
                         val currentTime = System.currentTimeMillis()
-                        if (currentTime - lastAlertTime > 60000) { // منع التكرار خلال 60 ثانية
+                        if (currentTime - lastAlertTime > 3000) { // منع التكرار اللحظي خلال 3 ثواني
                             prefs.edit().putLong("last_strong_alert_time", currentTime).apply()
                             val alertIntent = Intent(context, StrongAlertActivity::class.java).apply {
                                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
