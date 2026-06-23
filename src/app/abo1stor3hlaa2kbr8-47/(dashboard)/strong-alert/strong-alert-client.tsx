@@ -66,37 +66,53 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
     setSuccessMessage(null);
   }, [activeTab]);
 
-  // الاستماع لاستجابات المستخدمين عبر Supabase Realtime
+  // الاستماع لاستجابات المستخدمين عبر Supabase Realtime (قاعدة البيانات بدلاً من Broadcast)
   useEffect(() => {
     const channel = supabaseClient
-      .channel("strong-alert-events")
-      .on("broadcast", { event: "strong-alert-ack" }, (payload) => {
-        console.log("استجابة جديدة:", payload);
-        const { userId, role, timestamp } = payload.payload;
-        
-        // البحث عن اسم المستخدم
-        let userName = "مستخدم";
-        const allUsers = [...couriers, ...preparers, ...employees];
-        const foundUser = allUsers.find(u => u.id === userId);
-        if (foundUser) userName = foundUser.name;
+      .channel("schema-placeholder-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "SchemaPlaceholder",
+        },
+        (payload) => {
+          const newRow = payload.new as any;
+          if (newRow && newRow.note && newRow.note.startsWith("strong_alert_ack:")) {
+            console.log("استجابة جديدة (DB):", newRow.note);
+            // note format: strong_alert_ack:alertId:role:userId:timestamp
+            const parts = newRow.note.split(":");
+            if (parts.length >= 4) {
+              const role = parts[2];
+              const userId = parts[3];
+              
+              // البحث عن اسم المستخدم
+              let userName = "مستخدم";
+              const allUsers = [...couriers, ...preparers, ...employees];
+              const foundUser = allUsers.find(u => u.id === userId);
+              if (foundUser) userName = foundUser.name;
 
-        // إيقاف الشاشة الحمراء الوامضة فوراً
-        setAlertingState({
-          isAlerting: false,
-          activeRole: null,
-          activeUserIds: [],
-          timeLeft: 0,
-        });
+              // إيقاف الشاشة الحمراء الوامضة فوراً
+              setAlertingState({
+                isAlerting: false,
+                activeRole: null,
+                activeUserIds: [],
+                timeLeft: 0,
+              });
 
-        // عرض رسالة النجاح التي طلبها العميل
-        setSuccessMessage(`استجاب ${role === "mandob" ? "المندوب" : role === "preparer" ? "المجهز" : "الموظف"} ${userName} للتنبيه وسيرسلك رسالة عبر الواتس اب`);
+              // عرض رسالة النجاح التي طلبها العميل
+              setSuccessMessage(`استجاب ${role === "mandob" ? "المندوب" : role === "preparer" ? "المجهز" : "الموظف"} ${userName} للتنبيه وسيرسلك رسالة عبر الواتس اب`);
 
-        // تشغيل صوت تنبيه خفيف في الإدارة (اختياري، لكنه مفيد)
-        try {
-          const audio = new Audio('/success-sound.mp3'); // إذا كان موجوداً
-          audio.play().catch(() => {});
-        } catch (e) {}
-      })
+              // تشغيل صوت تنبيه خفيف في الإدارة (اختياري، لكنه مفيد)
+              try {
+                const audio = new Audio('/success-sound.mp3'); // إذا كان موجوداً
+                audio.play().catch(() => {});
+              } catch (e) {}
+            }
+          }
+        }
+      )
       .subscribe();
 
     return () => {

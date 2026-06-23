@@ -10,35 +10,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "معرف التنبيه مفقود" }, { status: 400 });
     }
 
-    // إرسال رسالة بث (Broadcast) إلى لوحة التحكم بطريقة متوافقة مع Serverless
-    const channel = supabaseClient.channel('strong-alert-events');
+    // الاعتماد على قاعدة البيانات بدلاً من البث المباشر (Broadcast) لضمان الوصول 100%
+    const { prisma } = await import('@/lib/prisma');
     
-    await new Promise<void>((resolve, reject) => {
-      let timeout = setTimeout(() => {
-        supabaseClient.removeChannel(channel);
-        resolve(); // لا تفشل العملية لكن تجاوز
-      }, 5000);
-
-      channel.subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          try {
-            await channel.send({
-              type: 'broadcast',
-              event: 'strong-alert-ack',
-              payload: {
-                alertId,
-                role,
-                userId,
-                timestamp: new Date().toISOString()
-              }
-            });
-          } finally {
-            clearTimeout(timeout);
-            await supabaseClient.removeChannel(channel);
-            resolve();
-          }
-        }
-      });
+    await prisma.schemaPlaceholder.create({
+      data: {
+        note: `strong_alert_ack:${alertId}:${role}:${userId}:${new Date().getTime()}`
+      }
     });
 
     return NextResponse.json({ success: true });
