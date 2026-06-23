@@ -578,6 +578,17 @@ export function MandoubWalletClient({
                     </>
                   ) : (line.miscLabel ?? "—")}
                 </p>
+                {line.balanceAdmin !== undefined && !deleted && (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md border ${
+                      line.balanceAdmin === 0 ? "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700" :
+                      line.balanceAdmin > 0 ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800" :
+                      "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800"
+                    }`}>
+                      المتبقي: {formatDinarAsAlf(Math.abs(line.balanceAdmin))} {line.balanceAdmin === 0 ? "" : line.balanceAdmin > 0 ? "(بذمتي)" : "(أطلبه)"}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {!deleted && !isRejected && line.source !== "transfer_pending" && (() => {
@@ -623,31 +634,7 @@ export function MandoubWalletClient({
                 </div>
               )}
 
-              {line.balanceAdmin !== undefined && !deleted && (
-                <div className="flex flex-col items-center justify-center pt-2 pb-1">
-                  <div className={`px-5 py-2.5 rounded-2xl shadow-sm border-2 flex items-center gap-3 ${
-                     line.balanceAdmin === 0 
-                       ? "bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
-                       : line.balanceAdmin > 0
-                         ? "bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-800 dark:text-red-300"
-                         : "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300"
-                  }`}>
-                    <div className="flex flex-col items-center">
-                      <span className="text-[11px] font-bold opacity-80 mb-0.5">الرصيد الكلي بعد المعاملة</span>
-                      <span className="text-base font-black flex items-center gap-1.5" dir="ltr">
-                        {line.balanceAdmin === 0 ? "مصفر 0" : (
-                          <>
-                            {formatDinarAsAlf(Math.abs(line.balanceAdmin))}
-                            <span className="text-[10px] font-bold">
-                              {line.balanceAdmin > 0 ? "بذمتي للإدارة" : "أطلب الإدارة"}
-                            </span>
-                          </>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
+
 
               {orderHref ? (
                 <Link
