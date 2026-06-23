@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { ad } from "@/lib/admin-ui";
+import { supabaseClient } from "@/lib/supabase-client";
+import { toast } from "sonner";
 
 type UserItem = {
   id: string;
@@ -63,6 +65,32 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
     setError(null);
     setSuccessMessage(null);
   }, [activeTab]);
+
+  // الاستماع لاستجابات المستخدمين عبر Supabase Realtime
+  useEffect(() => {
+    const channel = supabaseClient
+      .channel("strong-alert-events")
+      .on("broadcast", { event: "strong-alert-ack" }, (payload) => {
+        console.log("استجابة جديدة:", payload);
+        const { userId, role, timestamp } = payload.payload;
+        
+        // البحث عن اسم المستخدم
+        let userName = "مستخدم";
+        const allUsers = [...couriers, ...preparers, ...employees];
+        const foundUser = allUsers.find(u => u.id === userId);
+        if (foundUser) userName = foundUser.name;
+
+        toast.success(`تم الاستجابة للتنبيه من قبل: ${userName}`, {
+          duration: 5000,
+          position: "top-center"
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabaseClient.removeChannel(channel);
+    };
+  }, [couriers, preparers, employees]);
 
   // إدارة المؤقت التنازلي لإيقاف التنبيه تلقائياً بعد دقيقة
   useEffect(() => {
@@ -130,6 +158,8 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
     try {
       const token = adminToken;
 
+      const alertId = "alert_" + Date.now().toString() + "_" + Math.random().toString(36).substring(7);
+
       const response = await fetch("/api/admin/strong-alert", {
         method: "POST",
         headers: {
@@ -140,6 +170,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
           action,
           targetRole,
           userIds: targetIds,
+          alertId
         }),
       });
 

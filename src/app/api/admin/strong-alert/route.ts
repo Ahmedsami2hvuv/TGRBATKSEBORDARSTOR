@@ -12,9 +12,9 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { action, targetRole, userIds } = body;
+    const { action, targetRole, userIds, alertId } = body;
 
-    if (!action || !targetRole || !userIds || !Array.isArray(userIds) || userIds.length === 0) {
+    if (!action || !targetRole || !userIds || !Array.isArray(userIds) || userIds.length === 0 || !alertId) {
       return NextResponse.json({ error: "المعطيات غير مكتملة" }, { status: 400 });
     }
 
@@ -39,7 +39,8 @@ export async function POST(request: Request) {
       isSilent: true,
       data: {
         type: "strong_alert",
-        action: action
+        action: action,
+        alertId: alertId
       }
     });
 

@@ -78,13 +78,39 @@ class StrongAlertActivity : Activity() {
         // 2. تشغيل التأثيرات (الصوت والاهتزاز)
         startAlertEffects()
 
-        // 3. زر كتم التنبيه محلياً والتوجيه للواتساب
+        // 3. زر كتم التنبيه محلياً والتوجيه للواتساب وإرسال إشعار للإدارة
         findViewById<Button>(R.id.btnDismissStrongAlert).setOnClickListener {
+            val alertId = intent.getStringExtra("alertId") ?: ""
+            val role = intent.getStringExtra("role") ?: "employee"
+            val prefs = getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
+            val userId = prefs.getString("staff_id", "") ?: ""
+            
+            if (alertId.isNotEmpty()) {
+                Thread {
+                    try {
+                        val url = java.net.URL("https://aboakbr.com/api/admin/strong-alert/ack")
+                        val conn = url.openConnection() as java.net.HttpURLConnection
+                        conn.requestMethod = "POST"
+                        conn.setRequestProperty("Content-Type", "application/json")
+                        conn.doOutput = true
+                        
+                        val jsonInputString = "{\"alertId\": \"$alertId\", \"role\": \"$role\", \"userId\": \"$userId\"}"
+                        conn.outputStream.use { os ->
+                            val input = jsonInputString.toByteArray(Charsets.UTF_8)
+                            os.write(input, 0, input.size)
+                        }
+                        conn.responseCode
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }.start()
+            }
+
             try {
-                val intent = Intent(Intent.ACTION_VIEW)
-                intent.data = Uri.parse("https://api.whatsapp.com/send?phone=9647733921468&text=" + Uri.encode("جيتك من التنبيه"))
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                startActivity(intent)
+                val waIntent = Intent(Intent.ACTION_VIEW)
+                waIntent.data = Uri.parse("https://api.whatsapp.com/send?phone=9647733921468&text=" + Uri.encode("جيتك من التنبيه"))
+                waIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                startActivity(waIntent)
             } catch (e: Exception) {
                 // تجاهل
             }

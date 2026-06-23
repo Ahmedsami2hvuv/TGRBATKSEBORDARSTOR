@@ -30,17 +30,28 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
         if (additionalData != null && additionalData.has("type") && additionalData.getString("type") == "strong_alert") {
             try {
                 val action = additionalData.optString("action", "start")
+                val alertId = additionalData.optString("alertId", "")
+                
                 if (action == "start") {
                     val prefs = context.getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
-                    val lastAlertTime = prefs.getLong("last_strong_alert_time", 0)
-                    val currentTime = System.currentTimeMillis()
-                    if (currentTime - lastAlertTime > 3000) { // منع التكرار اللحظي خلال 3 ثواني
-                        prefs.edit().putLong("last_strong_alert_time", currentTime).apply()
-                        val alertIntent = Intent(context, StrongAlertActivity::class.java).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                        }
-                        context.startActivity(alertIntent)
+                    val lastAlertId = prefs.getString("last_strong_alert_id", "")
+                    
+                    // منع التكرار بناءً على المعرف الفريد
+                    if (alertId.isNotEmpty() && alertId == lastAlertId) {
+                        event.preventDefault()
+                        return
                     }
+                    
+                    if (alertId.isNotEmpty()) {
+                        prefs.edit().putString("last_strong_alert_id", alertId).apply()
+                    }
+                    
+                    val alertIntent = Intent(context, StrongAlertActivity::class.java).apply {
+                        putExtra("alertId", alertId)
+                        putExtra("role", "preparer")
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    }
+                    context.startActivity(alertIntent)
                 } else if (action == "stop") {
                     val stopIntent = Intent("com.aboakbar.mjhz.ACTION_STOP_STRONG_ALERT")
                     context.sendBroadcast(stopIntent)
