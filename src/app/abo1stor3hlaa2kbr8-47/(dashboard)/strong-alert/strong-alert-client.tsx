@@ -80,10 +80,22 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
         const foundUser = allUsers.find(u => u.id === userId);
         if (foundUser) userName = foundUser.name;
 
-        toast.success(`تم الاستجابة للتنبيه من قبل: ${userName}`, {
-          duration: 5000,
-          position: "top-center"
+        // إيقاف الشاشة الحمراء الوامضة فوراً
+        setAlertingState({
+          isAlerting: false,
+          activeRole: null,
+          activeUserIds: [],
+          timeLeft: 0,
         });
+
+        // عرض رسالة النجاح التي طلبها العميل
+        setSuccessMessage(`استجاب ${role === "mandob" ? "المندوب" : role === "preparer" ? "المجهز" : "الموظف"} ${userName} للتنبيه وسيرسلك رسالة عبر الواتس اب`);
+
+        // تشغيل صوت تنبيه خفيف في الإدارة (اختياري، لكنه مفيد)
+        try {
+          const audio = new Audio('/success-sound.mp3'); // إذا كان موجوداً
+          audio.play().catch(() => {});
+        } catch (e) {}
       })
       .subscribe();
 
