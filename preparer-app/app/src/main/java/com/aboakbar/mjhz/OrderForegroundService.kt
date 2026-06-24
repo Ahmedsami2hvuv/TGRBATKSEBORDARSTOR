@@ -22,7 +22,7 @@ class OrderForegroundService : Service() {
     private val client = OkHttpClient()
     private val PREFS_NAME = "AboAkbarPrefs"
     private val KEY_TOKEN = "admin_token"
-    private val BACKEND_URL = "https://aboakbar.vercel.app"
+    private val BACKEND_URL = "https://aboakbr.com"
     
     private val NOTIFICATION_CHANNEL_ID = "aboakbar_foreground_service"
     private val ORDER_NOTIFICATION_CHANNEL_ID = "aboakbar_admin_notifications"
@@ -159,7 +159,7 @@ class OrderForegroundService : Service() {
 
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            putExtra("target_url", "https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/orders/pending")
+            putExtra("target_url", "https://aboakbr.com/abo1stor3hlaa2kbr8-47/orders/pending")
         }
 
         val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

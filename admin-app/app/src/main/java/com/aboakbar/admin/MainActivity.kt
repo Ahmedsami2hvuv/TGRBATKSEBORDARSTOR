@@ -76,7 +76,7 @@ class MainActivity : AppCompatActivity() {
     private var lastCssInjectionTime = 0L
     private var lastTokenSyncTime = 0L
 
-    private val BACKEND_URL = "https://aboakbar.vercel.app"
+    private val BACKEND_URL = "https://aboakbr.com"
     private val ADMIN_DASHBOARD_URL = "$BACKEND_URL/abo1stor3hlaa2kbr8-47"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -630,7 +630,7 @@ class MainActivity : AppCompatActivity() {
 
         // Programmatically inject cookie
         val cookieManager = CookieManager.getInstance()
-        val cookieString = "admin_token=$token; Domain=aboakbar.vercel.app; Path=/; Secure; SameSite=Lax"
+        val cookieString = "admin_token=$token; Domain=aboakbr.com; Path=/; Secure; SameSite=Lax"
         cookieManager.setCookie(BACKEND_URL, cookieString)
         
         // دعم النطاق المخصص أيضاً لتجنب مشاكل تسجيل الدخول

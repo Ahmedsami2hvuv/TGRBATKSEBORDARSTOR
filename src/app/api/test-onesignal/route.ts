@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       en: "🔔 فحص تجريبي فوري",
     },
     target_channel: "push",
-    url: "https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/orders/pending",
+    url: "https://aboakbr.com/abo1stor3hlaa2kbr8-47/orders/pending",
   };
 
   if (mode === "tag") {

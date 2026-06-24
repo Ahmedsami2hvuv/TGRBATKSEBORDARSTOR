@@ -26,11 +26,13 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
     activeRole: "mandob" | "preparer" | "employee" | null;
     activeUserIds: string[];
     timeLeft: number;
+    alertId: string | null;
   }>({
     isAlerting: false,
     activeRole: null,
     activeUserIds: [],
     timeLeft: 0,
+    alertId: null,
   });
 
   const [loading, setLoading] = useState(false);
@@ -93,10 +95,18 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
             // note format: strong_alert_ack:alertId:role:userId:timestamp
             const parts = newRow.note.split(":");
             if (parts.length >= 4) {
-              const alertId = parts[1];
+              const alertIdFromAck = parts[1];
               const role = parts[2];
               const userId = parts[3];
               
+              const currentAlerting = alertingStateRef.current;
+              
+              // التحقق من أن هذا الـ ACK يخص التنبيه النشط حالياً لمنع التداخل مع تنبيهات قديمة
+              if (!currentAlerting.isAlerting || currentAlerting.alertId !== alertIdFromAck) {
+                console.log("تم تجاهل ACK قديم أو غير مطابق للتنبيه الحالي:", alertIdFromAck);
+                return;
+              }
+
               // البحث عن اسم المستخدم
               let userName = "مستخدم";
               const allUsers = [...couriers, ...preparers, ...employees];
@@ -113,11 +123,13 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                 activeRole: null,
                 activeUserIds: [],
                 timeLeft: 0,
+                alertId: null,
               });
 
               // إرسال إشارة إيقاف (action = stop) تلقائياً لبقية الهواتف التي تم تنبيهها
-              const currentAlerting = alertingStateRef.current;
-              if (currentAlerting.isAlerting && currentAlerting.activeUserIds.length > 0) {
+              // نرسلها فقط لبقية المستخدمين الذين لم يستجيبوا، ونستبعد الشخص المستجيب
+              const remainingUserIds = currentAlerting.activeUserIds.filter(id => id !== userId);
+              if (remainingUserIds.length > 0) {
                 fetch("/api/admin/strong-alert", {
                   method: "POST",
                   headers: {
@@ -127,8 +139,8 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                   body: JSON.stringify({
                     action: "stop",
                     targetRole: currentAlerting.activeRole,
-                    userIds: currentAlerting.activeUserIds,
-                    alertId: alertId || "stop_alert"
+                    userIds: remainingUserIds,
+                    alertId: alertIdFromAck || "stop_alert"
                   }),
                 }).catch(err => console.error("Error auto stopping alert:", err));
               }
@@ -159,6 +171,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
           activeRole: null,
           activeUserIds: [],
           timeLeft: 0,
+          alertId: null,
         });
         setSuccessMessage("انتهى وقت التنبيه التلقائي (60 ثانية).");
       }
@@ -245,6 +258,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
           activeRole: targetRole,
           activeUserIds: targetIds,
           timeLeft: 60,
+          alertId: alertId,
         });
         setSuccessMessage(`تم إرسال التنبيه القوي بنجاح! سيستمر رنين الهواتف لمدة دقيقة أو حتى تضغط على زر الإيقاف.`);
       } else {
@@ -255,6 +269,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
           activeRole: null,
           activeUserIds: [],
           timeLeft: 0,
+          alertId: null,
         });
         setSuccessMessage("تم إرسال إشارة إيقاف التنبيه لجميع الهواتف المحددة.");
       }

@@ -32,7 +32,7 @@ class DoubleOrderActivity : AppCompatActivity() {
 
     private val client = OkHttpClient()
     private val PREFS_NAME = "AboAkbarPrefs"
-    private val BACKEND_URL = "https://aboakbar.vercel.app"
+    private val BACKEND_URL = "https://aboakbr.com"
 
     private var selectedText: String = ""
     private var regionsList: List<Region> = emptyList()

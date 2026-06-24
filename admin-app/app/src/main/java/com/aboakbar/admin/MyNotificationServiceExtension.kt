@@ -56,7 +56,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     // إعداد نية فتح التطبيق على صفحة الطلبات المعلقة مباشرة
                     val openIntent = Intent(context, MainActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                        putExtra("target_url", "https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/orders/pending")
+                        putExtra("target_url", "https://aboakbr.com/abo1stor3hlaa2kbr8-47/orders/pending")
                     }
                     val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
@@ -141,7 +141,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     // إعداد نية فتح التطبيق على صفحة دفتر الديون مباشرة
                     val openIntent = Intent(context, MainActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                        putExtra("target_url", "https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/credit-book")
+                        putExtra("target_url", "https://aboakbr.com/abo1stor3hlaa2kbr8-47/credit-book")
                     }
                     val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE

@@ -27,7 +27,7 @@ class OrderAlertActivity : Activity() {
 
     private var vibrator: Vibrator? = null
     private val client = OkHttpClient()
-    private val BASE_URL = "https://aboakbar.vercel.app/api/admin"
+    private val BASE_URL = "https://aboakbr.com/api/admin"
     private var adminToken: String? = null
     private var currentOrderNumber: Int = 0
     private var isStaffAlert: Boolean = false
@@ -136,7 +136,7 @@ class OrderAlertActivity : Activity() {
             saveDismissedOrder(currentOrderNumber)
             val mainIntent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                putExtra("target_url", "https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/orders/pending")
+                putExtra("target_url", "https://aboakbr.com/abo1stor3hlaa2kbr8-47/orders/pending")
             }
             startActivity(mainIntent)
             finish()

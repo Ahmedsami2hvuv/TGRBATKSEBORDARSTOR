@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
 
     private var currentToken: String? = null
 
-    private val BACKEND_URL = "https://aboakbar.vercel.app"
+    private val BACKEND_URL = "https://aboakbr.com"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

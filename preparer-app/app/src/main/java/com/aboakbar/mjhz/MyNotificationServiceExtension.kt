@@ -32,7 +32,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
             event.preventDefault()
             
             try {
-                val action = additionalData.optString("action", "start")
+                val action = additionalData.optString("action", "stop")
                 val alertId = additionalData.optString("alertId", "")
                 val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
                 val strongAlertNotificationId = 9999

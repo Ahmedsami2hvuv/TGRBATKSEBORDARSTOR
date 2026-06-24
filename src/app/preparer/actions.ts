@@ -2371,7 +2371,7 @@ export async function withdrawPreparerSalary(_prev: any, formData: FormData): Pr
         await sendOneSignalNotification({
           title: `💵 طلب تسوية حساب مجهز`,
           body: `المجهز: ${preparer.name} قام بسحب ${amountStr}. المتبقي: ${remainStr}`,
-          url: `https://aboakbar.vercel.app/abo1stor3hlaa2kbr8-47/credit-book`,
+          url: `https://aboakbr.com/abo1stor3hlaa2kbr8-47/credit-book`,
           externalIds: ["admin_global"],
           targetApp: "admin",
           data: {

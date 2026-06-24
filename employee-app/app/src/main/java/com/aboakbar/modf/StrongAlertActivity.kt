@@ -88,7 +88,7 @@ class StrongAlertActivity : Activity() {
             if (alertId.isNotEmpty()) {
                 Thread {
                     try {
-                        val url = java.net.URL("https://aboakbar.vercel.app/api/admin/strong-alert/ack")
+                        val url = java.net.URL("https://aboakbr.com/api/admin/strong-alert/ack")
                         val conn = url.openConnection() as java.net.HttpURLConnection
                         conn.requestMethod = "POST"
                         conn.setRequestProperty("Content-Type", "application/json")

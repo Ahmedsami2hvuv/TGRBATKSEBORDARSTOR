@@ -27,7 +27,7 @@ class OrderAlertActivity : Activity() {
 
     private var vibrator: Vibrator? = null
     private val client = OkHttpClient()
-    private val BASE_URL = "https://aboakbar.vercel.app/api/admin"
+    private val BASE_URL = "https://aboakbr.com/api/admin"
     private var adminToken: String? = null
     private var currentOrderNumber: Int = 0
 
