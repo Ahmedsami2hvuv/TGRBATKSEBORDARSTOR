@@ -66,6 +66,9 @@ captures/
 # Exception: keep root APK tracked
 !/AboAkbarAdmin.apk
 !/AboAkbarMandob.apk
+!/AboAkbarModf.apk
+!/AboAkbarPreparer.apk
+!/تطبيقات_جاهزة_للنقل/*.apk
 
 # Firebase & Google Cloud Keys
 **/google-services.json
