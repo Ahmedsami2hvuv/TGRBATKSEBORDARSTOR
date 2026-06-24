@@ -31,7 +31,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
             
             // التحقق من التنبيه القوي (الاستدعاء العاجل)
             if (type == "strong_alert") {
-                // منع إشعار OneSignal التلقائي وتأكيد استلام الإشعار فوراً لتجنب التكرار من السيرفر
+                // منع إشعار OneSignal التلقائي فوراً
                 event.preventDefault()
                 
                 try {
@@ -44,7 +44,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                         val prefs = context.getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
                         val lastAlertId = prefs.getString("last_strong_alert_id", "")
                         
-                        // منع التكرار بناءً على المعرف الفريد
+                        // منع التكرار بناءً على المعرف الفريد للتنبيه
                         if (alertId.isNotEmpty() && alertId == lastAlertId) {
                             return
                         }

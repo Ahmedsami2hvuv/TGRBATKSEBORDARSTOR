@@ -28,7 +28,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
 
         // التحقق من التنبيه القوي (الاستدعاء العاجل)
         if (additionalData != null && additionalData.has("type") && additionalData.getString("type") == "strong_alert") {
-            // منع إشعار OneSignal التلقائي وتأكيد استلام الإشعار فوراً لتجنب التكرار من السيرفر
+            // منع إشعار OneSignal التلقائي فوراً
             event.preventDefault()
             
             try {
