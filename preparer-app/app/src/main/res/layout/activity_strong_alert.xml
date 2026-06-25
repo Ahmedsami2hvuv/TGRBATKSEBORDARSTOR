@@ -71,7 +71,7 @@
         android:id="@+id/btnOpenWhatsappAlert"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:text="مراسلة الإدارة عبر الواتساب 💬"
+        android:text="إيقاف ومراسلة"
         android:textColor="#ffffff"
         android:backgroundTint="#2e7d32"
         android:textSize="16sp"
