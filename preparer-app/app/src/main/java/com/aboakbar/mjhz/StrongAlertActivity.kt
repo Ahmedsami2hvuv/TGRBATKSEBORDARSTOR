@@ -78,6 +78,14 @@ class StrongAlertActivity : Activity() {
         // 2. تشغيل التأثيرات (الصوت والاهتزاز)
         startAlertEffects()
 
+        // إلغاء إشعار النظام رقم 9999 فوراً لتجنب قيام أندرويد بإعادة تشغيل الشاشة المنبثقة عند شحن الهاتف أو استقبال إشعارات أخرى
+        try {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            notificationManager.cancel(9999)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         // 3. زر كتم التنبيه محلياً والتوجيه للواتساب وإرسال إشعار للإدارة
         findViewById<Button>(R.id.btnDismissStrongAlert).setOnClickListener {
             val alertId = intent.getStringExtra("alertId") ?: ""
