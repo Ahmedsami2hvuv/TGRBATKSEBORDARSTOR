@@ -335,9 +335,9 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
             </span>
           </div>
           <div>
-            <h3 className="text-xl font-bold text-emerald-400">تمت الاستجابة للتنبيه!</h3>
+            <h3 className="text-xl font-bold text-emerald-400">تم إيقاف التنبيه بنجاح! 🎉</h3>
             <p className="text-base text-gray-200 mt-2 font-semibold">
-              لقد استجاب {respondedRole === "mandob" ? "المندوب" : respondedRole === "preparer" ? "المجهز" : "الموظف"} <span className="text-emerald-400 underline font-bold">{respondedName}</span> للاشعار وسوف يقوم بمراسلتك عبر الواتساب
+              قام {respondedRole === "mandob" ? "المندوب" : respondedRole === "preparer" ? "المجهز" : "الموظف"} <span className="text-emerald-400 underline font-bold">{respondedName}</span> باستقبال التنبيه وايقافه وسوف يحدثك عبر الواتس اب
             </p>
           </div>
 
