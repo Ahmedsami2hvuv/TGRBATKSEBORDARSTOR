@@ -165,6 +165,90 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
     };
   }, [couriers, preparers, employees, adminToken]);
 
+  // فحص دوري للاستعلام عن استجابة المجهز (Polling) كحل بديل ومساند
+  useEffect(() => {
+    if (!alertingState.isAlerting || !alertingState.alertId) {
+      return;
+    }
+
+    const intervalId = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/admin/strong-alert?alertId=${alertingState.alertId}`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (data.responded) {
+          console.log("تم استلام الاستجابة عبر الفحص الدوري (Polling):", data);
+          
+          const role = data.role;
+          const userId = data.userId;
+
+          // البحث عن اسم المستخدم
+          let userName = "";
+          const allUsers = [...couriers, ...preparers, ...employees];
+          const foundUser = allUsers.find(u => u.id === userId);
+          if (foundUser) {
+            userName = foundUser.name;
+          } else {
+            userName = role === "preparer" ? "المجهز" : role === "mandob" ? "المندوب" : "الموظف";
+          }
+
+          // تحديث حالة الاستجابة لتظهر في الواجهة
+          setRespondedName(userName);
+          setRespondedRole(role);
+
+          // إيقاف التنبيه محلياً
+          setAlertingState({
+            isAlerting: false,
+            activeRole: null,
+            activeUserIds: [],
+            timeLeft: 0,
+            alertId: null,
+          });
+
+          // إرسال إشارة إيقاف (action = stop) تلقائياً لبقية الهواتف التي تم تنبيهها
+          const remainingUserIds = alertingState.activeUserIds.filter(id => id !== userId);
+          if (remainingUserIds.length > 0) {
+            fetch("/api/admin/strong-alert", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${adminToken}`,
+              },
+              body: JSON.stringify({
+                action: "stop",
+                targetRole: alertingState.activeRole,
+                userIds: remainingUserIds,
+                alertId: alertingState.alertId || "stop_alert"
+              }),
+            }).catch(err => console.error("Error auto stopping alert in polling:", err));
+          }
+
+          // تشغيل صوت تنبيه خفيف في الإدارة
+          try {
+            const audio = new Audio('/success-sound.mp3');
+            audio.play().catch(() => {});
+          } catch (e) {}
+        }
+      } catch (error) {
+        console.error("خطأ أثناء الفحص الدوري لحالة التنبيه القوي:", error);
+      }
+    }, 2000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [
+    alertingState.isAlerting,
+    alertingState.alertId,
+    alertingState.activeUserIds,
+    alertingState.activeRole,
+    couriers,
+    preparers,
+    employees,
+    adminToken
+  ]);
+
   // إدارة المؤقت التنازلي لإيقاف التنبيه تلقائياً بعد دقيقة
   useEffect(() => {
     if (!alertingState.isAlerting || alertingState.timeLeft <= 0) {

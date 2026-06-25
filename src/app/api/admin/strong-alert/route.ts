@@ -53,3 +53,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const alertId = searchParams.get("alertId");
+
+    if (!alertId) {
+      return NextResponse.json({ error: "معرف التنبيه مفقود" }, { status: 400 });
+    }
+
+    const { prisma } = await import('@/lib/prisma');
+    
+    // البحث عن ملاحظة الاستلام في قاعدة البيانات
+    const ackRecord = await prisma.schemaPlaceholder.findFirst({
+      where: {
+        note: {
+          startsWith: `strong_alert_ack:${alertId}:`
+        }
+      }
+    });
+
+    if (ackRecord) {
+      // استخراج البيانات من الملاحظة
+      // note format: strong_alert_ack:alertId:role:userId:timestamp
+      const parts = ackRecord.note.split(":");
+      const role = parts[2] || "preparer";
+      const userId = parts[3] || "";
+      
+      return NextResponse.json({ responded: true, role, userId });
+    }
+
+    return NextResponse.json({ responded: false });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
