@@ -965,7 +965,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                     onChange={(e) => setShowWhatsapp(e.target.checked)}
                     className="rounded border-slate-700 text-red-600 focus:ring-red-500 focus:ring-offset-slate-900 w-4.5 h-4.5"
                   />
-                  <span className="text-xs text-gray-300 font-semibold">إظهار زر مراسلة الواتساب (راسل واتس اب)</span>
+                  <span className="text-xs text-gray-300 font-semibold">إظهار زر مراسلة الواتساب (راسل الاداره)</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -1289,7 +1289,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                     onChange={(e) => setSchedShowWhatsapp(e.target.checked)}
                     className="rounded border-slate-700 text-cyan-600 focus:ring-cyan-500 focus:ring-offset-slate-900 w-4.5 h-4.5"
                   />
-                  <span className="text-xs text-gray-300 font-semibold">إظهار زر مراسلة الواتساب (راسل واتس اب)</span>
+                  <span className="text-xs text-gray-300 font-semibold">إظهار زر مراسلة الواتساب (راسل الاداره)</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -1415,7 +1415,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                                 )}
                                 {alert.showWhatsapp && (
                                   <span className="bg-emerald-950/15 px-1.5 py-0.5 rounded text-[10px] text-emerald-400 border border-emerald-900/30">
-                                    راسل واتس اب
+                                    راسل الاداره
                                   </span>
                                 )}
                                 {alert.showOpenApp && (

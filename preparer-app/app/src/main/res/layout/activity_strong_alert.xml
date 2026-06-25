@@ -71,7 +71,7 @@
         android:id="@+id/btnOpenWhatsappAlert"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:text="راسل واتس اب"
+        android:text="راسل الاداره"
         android:textColor="#ffffff"
         android:backgroundTint="#2e7d32"
         android:textSize="16sp"
