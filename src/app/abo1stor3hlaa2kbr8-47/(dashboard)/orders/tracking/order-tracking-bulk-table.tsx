@@ -51,7 +51,7 @@ export function OrderTrackingBulkTable({
 
   const selectedCount = selected.size;
   const allSelected = selectedCount > 0 && visibleIds.every((id) => selected.has(id));
-  const showSelectColumn = true;
+  const showSelectColumn = showQuickSelect;
 
   const [bulkState, bulkAction, bulkPending] = useActionState(
     bulkUpdateOrdersStatus,
