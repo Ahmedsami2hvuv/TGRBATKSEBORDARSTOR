@@ -217,11 +217,6 @@ export async function resetCourierMandoubTotals(id: string, _prevState?: Courier
     const { computeMandoubTotalsForCourier } = await import("@/lib/mandoub-courier-totals");
     const metrics = computeMandoubTotalsForCourier(listNorm as any, id, resetAt, true);
 
-    const allEvents = await prisma.orderCourierMoneyEvent.findMany({
-      where: { deletedAt: null, courierId: id },
-      select: { courierId: true, kind: true, amountDinar: true, createdAt: true },
-    });
-
     const allMisc = await prisma.courierWalletMiscEntry.findMany({
       where: { deletedAt: null, courierId: id },
       select: { courierId: true, direction: true, amountDinar: true, createdAt: true, label: true },
@@ -229,22 +224,14 @@ export async function resetCourierMandoubTotals(id: string, _prevState?: Courier
 
     let tipSum = 0;
     for (const m of allMisc) {
-      if (m.label.includes("[إكرامية]") && (!resetAt || m.createdAt > resetAt)) {
-        tipSum += Number(m.amountDinar);
+      if ((m.label || "").includes("[إكرامية]") && (!resetAt || m.createdAt > resetAt)) {
+        tipSum += Number(m.amountDinar) || 0;
       }
     }
 
-    const { computeMoneySumsFromCourierEvents, mergeMiscWalletIntoSums } = await import("@/lib/mandoub-courier-event-totals");
-    
-    const money = mergeMiscWalletIntoSums(
-      computeMoneySumsFromCourierEvents(allEvents, id, resetAt),
-      allMisc,
-      resetAt
-    );
-
     const newCarryOver = 0;
-    const totalProfitDinar = metrics.sumEarnings + tipSum;
-    const totalOrders = metrics.ordersDelivered;
+    const totalProfitDinar = (metrics.sumEarnings + tipSum) || 0;
+    const totalOrders = metrics.ordersDelivered || 0;
 
     await prisma.$transaction(async (tx) => {
       await tx.courierProfitHistory.create({
@@ -269,11 +256,13 @@ export async function resetCourierMandoubTotals(id: string, _prevState?: Courier
     revalidatePath(`${SECRET_ADMIN_PATH}/couriers`);
     revalidatePath(`${SECRET_ADMIN_PATH}/reports`);
     revalidatePath(`${SECRET_ADMIN_PATH}/reports/couriers-history`);
+    revalidatePath('/mandoub');
+    revalidatePath('/mandoub/wallet');
     
     return { success: true, ok: true };
   } catch (e: any) {
     console.error("Reset courier error:", e);
-    return { error: "فشل تصفير الحساب", ok: false };
+    return { error: e.message || "فشل تصفير الحساب", ok: false };
   }
 }
 
