@@ -20,6 +20,7 @@ export function MandoubLocationManageButtons({
   orderId,
   auth,
   nextUrl,
+  target,
 }: {
   orderId: string;
   auth: { c: string; exp: string; s: string };
