@@ -21,6 +21,10 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
   const [activeTab, setActiveTab] = useState<"mandob" | "preparer" | "employee">("mandob");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [customTitle, setCustomTitle] = useState("");
+  const [customBody, setCustomBody] = useState("");
+  const [showWhatsapp, setShowWhatsapp] = useState(false);
+  const [showOpenApp, setShowOpenApp] = useState(false);
   const [alertingState, setAlertingState] = useState<{
     isAlerting: boolean;
     activeRole: "mandob" | "preparer" | "employee" | null;
@@ -328,7 +332,11 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
           action,
           targetRole,
           userIds: targetIds,
-          alertId
+          alertId,
+          customTitle: action === "start" ? customTitle : undefined,
+          customBody: action === "start" ? customBody : undefined,
+          showWhatsapp: action === "start" ? showWhatsapp : undefined,
+          showOpenApp: action === "start" ? showOpenApp : undefined,
         }),
       });
 
@@ -547,6 +555,69 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* تخصيص نصوص وأزرار التنبيه القوي */}
+      {!alertingState.isAlerting && !respondedName && (
+        <div className="p-5 border border-gray-850 rounded-xl bg-gray-950/40 space-y-4">
+          <h3 className="text-sm font-bold text-gray-300 flex items-center gap-2 border-b border-gray-850 pb-2">
+            ⚙️ تخصيص نصوص وأزرار التنبيه القوي (اختياري)
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs text-gray-400 font-semibold">عنوان التنبيه المخصص (إذا ترك فارغاً فلن يظهر أي نص):</label>
+              <input
+                type="text"
+                placeholder="مثال: أذكار الصباح، تنبيه إداري..."
+                value={customTitle}
+                onChange={(e) => setCustomTitle(e.target.value)}
+                className="w-full px-4.5 py-2.5 bg-gray-900 border border-gray-850 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-red-500 transition-colors"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-gray-400 font-semibold">نص الرسالة المخصص (إذا ترك فارغاً فلن يظهر أي نص):</label>
+              <input
+                type="text"
+                placeholder="مثال: يرجى قراءة أذكار الصباح..."
+                value={customBody}
+                onChange={(e) => setCustomBody(e.target.value)}
+                className="w-full px-4.5 py-2.5 bg-gray-900 border border-gray-850 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-red-500 transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-6 pt-2">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={true}
+                disabled
+                className="rounded border-gray-700 text-red-600 focus:ring-red-500 focus:ring-offset-gray-900 w-4.5 h-4.5 opacity-60"
+              />
+              <span className="text-xs text-gray-400 font-medium">إغلاق التنبيه وكتم الصوت (مفعل دائماً)</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showWhatsapp}
+                onChange={(e) => setShowWhatsapp(e.target.checked)}
+                className="rounded border-gray-700 text-red-600 focus:ring-red-500 focus:ring-offset-gray-900 w-4.5 h-4.5"
+              />
+              <span className="text-xs text-gray-300 font-semibold">إظهار زر مراسلة الواتساب (اختياري)</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showOpenApp}
+                onChange={(e) => setShowOpenApp(e.target.checked)}
+                className="rounded border-gray-700 text-red-600 focus:ring-red-500 focus:ring-offset-gray-900 w-4.5 h-4.5"
+              />
+              <span className="text-xs text-gray-300 font-semibold">إظهار زر فتح التطبيق (اختياري)</span>
+            </label>
+          </div>
         </div>
       )}
 

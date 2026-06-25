@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { action, targetRole, userIds, alertId } = body;
+    const { action, targetRole, userIds, alertId, customTitle, customBody, showWhatsapp, showOpenApp } = body;
 
     if (!action || !targetRole || !userIds || !Array.isArray(userIds) || userIds.length === 0 || !alertId) {
       return NextResponse.json({ error: "المعطيات غير مكتملة" }, { status: 400 });
@@ -27,12 +27,17 @@ export async function POST(request: Request) {
     }
 
     // إرسال الإشعار عبر ون سجنل
-    const title = action === "start" ? "🚨 استدعاء عاجل من الإدارة! 🚨" : "⏹️ إلغاء الاستدعاء القوي";
-    const message = action === "start" ? "يرجى فتح التطبيق فوراً، هناك أمر طارئ!" : "تم إلغاء التنبيه من قبل الإدارة.";
+    const title = action === "start"
+      ? (typeof customTitle === "string" ? customTitle : "🚨 استدعاء عاجل من الإدارة! 🚨")
+      : "⏹️ إلغاء الاستدعاء القوي";
+
+    const message = action === "start"
+      ? (typeof customBody === "string" ? customBody : "يرجى فتح التطبيق فوراً، هناك أمر طارئ!")
+      : "تم إلغاء التنبيه من قبل الإدارة.";
 
     const result = await sendOneSignalNotification({
-      title,
-      body: message,
+      title: title || " ", // نضع مسافة فارغة إذا كان فارغاً لكي لا يظهر نص
+      body: message || " ", // نضع مسافة فارغة إذا كان فارغاً
       url: "",
       externalIds: userIds,
       targetApp: targetRole,
@@ -40,7 +45,11 @@ export async function POST(request: Request) {
       data: {
         type: "strong_alert",
         action: action,
-        alertId: alertId
+        alertId: alertId,
+        customTitle: typeof customTitle === "string" ? customTitle : "",
+        customBody: typeof customBody === "string" ? customBody : "",
+        showWhatsapp: showWhatsapp === true ? "true" : "false",
+        showOpenApp: showOpenApp === true ? "true" : "false"
       }
     });
 

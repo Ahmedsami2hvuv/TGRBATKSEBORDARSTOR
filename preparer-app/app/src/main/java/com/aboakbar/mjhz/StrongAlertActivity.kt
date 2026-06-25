@@ -51,6 +51,30 @@ class StrongAlertActivity : Activity() {
         }
     }
 
+    private fun sendAck(alertId: String, role: String, userId: String) {
+        if (alertId.isNotEmpty()) {
+            Thread {
+                try {
+                    val url = java.net.URL("https://aboakbr.com/api/admin/strong-alert/ack")
+                    val conn = url.openConnection() as java.net.HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile)")
+                    conn.doOutput = true
+                    
+                    val jsonInputString = "{\"alertId\": \"$alertId\", \"role\": \"$role\", \"userId\": \"$userId\"}"
+                    conn.outputStream.use { os ->
+                        val input = jsonInputString.toByteArray(Charsets.UTF_8)
+                        os.write(input, 0, input.size)
+                    }
+                    conn.responseCode
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }.start()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -70,6 +94,32 @@ class StrongAlertActivity : Activity() {
         setContentView(R.layout.activity_strong_alert)
         setFinishOnTouchOutside(false)
 
+        // جلب النصوص المخصصة وخيارات الأزرار
+        val customTitle = intent.getStringExtra("customTitle") ?: ""
+        val customBody = intent.getStringExtra("customBody") ?: ""
+        val showWhatsapp = intent.getStringExtra("showWhatsapp") ?: "false"
+        val showOpenApp = intent.getStringExtra("showOpenApp") ?: "false"
+
+        val tvTitle = findViewById<TextView>(R.id.tvStrongAlertTitle)
+        val tvMessage = findViewById<TextView>(R.id.tvStrongAlertMessage)
+        val tvIcon = findViewById<TextView>(R.id.tvAlertIcon)
+
+        if (customTitle.trim().isEmpty()) {
+            tvTitle.visibility = android.view.View.GONE
+            tvIcon.visibility = android.view.View.GONE
+        } else {
+            tvTitle.text = customTitle
+            tvTitle.visibility = android.view.View.VISIBLE
+            tvIcon.visibility = android.view.View.VISIBLE
+        }
+
+        if (customBody.trim().isEmpty()) {
+            tvMessage.visibility = android.view.View.GONE
+        } else {
+            tvMessage.text = customBody
+            tvMessage.visibility = android.view.View.VISIBLE
+        }
+
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         
         // 1. تشغيل المؤقت التنازلي
@@ -86,51 +136,69 @@ class StrongAlertActivity : Activity() {
             e.printStackTrace()
         }
 
-        // 3. زر كتم التنبيه محلياً والتوجيه للواتساب وإرسال إشعار للإدارة
-        findViewById<Button>(R.id.btnDismissStrongAlert).setOnClickListener {
-            val alertId = intent.getStringExtra("alertId") ?: ""
-            val role = intent.getStringExtra("role") ?: "preparer"
-            val prefs = getSharedPreferences("AboAkbarpreparerPrefs", Context.MODE_PRIVATE)
-            val userId = prefs.getString("preparer_id", "") ?: ""
-            
-            if (alertId.isNotEmpty()) {
-                Thread {
-                    try {
-                        val url = java.net.URL("https://aboakbr.com/api/admin/strong-alert/ack")
-                        val conn = url.openConnection() as java.net.HttpURLConnection
-                        conn.requestMethod = "POST"
-                        conn.setRequestProperty("Content-Type", "application/json")
-                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile)")
-                        conn.doOutput = true
-                        
-                        val jsonInputString = "{\"alertId\": \"$alertId\", \"role\": \"$role\", \"userId\": \"$userId\"}"
-                        conn.outputStream.use { os ->
-                            val input = jsonInputString.toByteArray(Charsets.UTF_8)
-                            os.write(input, 0, input.size)
-                        }
-                        conn.responseCode
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }.start()
-            }
+        // 3. إدارة كتم التنبيه محلياً مع الأزرار الديناميكية المخصصة
+        val alertId = intent.getStringExtra("alertId") ?: ""
+        val role = intent.getStringExtra("role") ?: "preparer"
+        val prefs = getSharedPreferences("AboAkbarpreparerPrefs", Context.MODE_PRIVATE)
+        val userId = prefs.getString("preparer_id", "") ?: ""
 
+        val cancelNotification = {
             try {
                 val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
                 notificationManager.cancel(9999)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
 
-            try {
-                val waIntent = Intent(Intent.ACTION_VIEW)
-                waIntent.data = Uri.parse("https://api.whatsapp.com/send?phone=9647733921468&text=" + Uri.encode("جيتك من التنبيه"))
-                waIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                startActivity(waIntent)
-            } catch (e: Exception) {
-                // تجاهل
-            }
+        // أ. زر الإغلاق وكتم التنبيه فقط (يظهر دائماً)
+        findViewById<Button>(R.id.btnDismissStrongAlert).setOnClickListener {
+            sendAck(alertId, role, userId)
+            cancelNotification()
             finish()
+        }
+
+        // ب. زر مراسلة الواتساب (اختياري)
+        val btnWhatsapp = findViewById<Button>(R.id.btnOpenWhatsappAlert)
+        if (showWhatsapp == "true") {
+            btnWhatsapp.visibility = android.view.View.VISIBLE
+            btnWhatsapp.setOnClickListener {
+                sendAck(alertId, role, userId)
+                cancelNotification()
+                try {
+                    val waIntent = Intent(Intent.ACTION_VIEW)
+                    waIntent.data = Uri.parse("https://api.whatsapp.com/send?phone=9647733921468&text=" + Uri.encode("جيتك من التنبيه"))
+                    waIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    startActivity(waIntent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                finish()
+            }
+        } else {
+            btnWhatsapp.visibility = android.view.View.GONE
+        }
+
+        // ج. زر فتح التطبيق (اختياري)
+        val btnOpenApp = findViewById<Button>(R.id.btnOpenAppAlert)
+        if (showOpenApp == "true") {
+            btnOpenApp.visibility = android.view.View.VISIBLE
+            btnOpenApp.setOnClickListener {
+                sendAck(alertId, role, userId)
+                cancelNotification()
+                try {
+                    val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+                    launchIntent?.let {
+                        it.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+                        startActivity(it)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                finish()
+            }
+        } else {
+            btnOpenApp.visibility = android.view.View.GONE
         }
 
         // 4. تسجيل مستقبل البث لإشارة الإيقاف من السيرفر

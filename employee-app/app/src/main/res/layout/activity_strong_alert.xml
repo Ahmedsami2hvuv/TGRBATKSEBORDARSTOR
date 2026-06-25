@@ -56,12 +56,42 @@
         android:id="@+id/btnDismissStrongAlert"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:text="فهمت / إيقاف الصوت ⏹️"
+        android:text="إغلاق التنبيه ⏹️"
         android:textColor="#ffffff"
         android:backgroundTint="#d32f2f"
         android:textSize="16sp"
         android:textStyle="bold"
         android:insetTop="0dp"
-        android:insetBottom="0dp" />
+        android:insetBottom="0dp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- زر مراسلة الواتساب (اختياري) -->
+    <Button
+        android:id="@+id/btnOpenWhatsappAlert"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="مراسلة الإدارة عبر الواتساب 💬"
+        android:textColor="#ffffff"
+        android:backgroundTint="#2e7d32"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:visibility="gone"
+        android:layout_marginBottom="12dp" />
+
+    <!-- زر فتح التطبيق (اختياري) -->
+    <Button
+        android:id="@+id/btnOpenAppAlert"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="فتح التطبيق 📱"
+        android:textColor="#ffffff"
+        android:backgroundTint="#1565c0"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:visibility="gone" />
 
 </LinearLayout>

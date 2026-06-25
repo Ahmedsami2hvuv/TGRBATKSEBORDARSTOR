@@ -53,10 +53,20 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                             prefs.edit().putString("last_strong_alert_id", alertId).apply()
                         }
                         
-                        // 1. بناء نية التنبيه
+                        // استخراج المتغيرات المخصصة من ون سجنل
+                        val customTitle = additionalData.optString("customTitle", "")
+                        val customBody = additionalData.optString("customBody", "")
+                        val showWhatsapp = additionalData.optString("showWhatsapp", "false")
+                        val showOpenApp = additionalData.optString("showOpenApp", "false")
+
+                        // 1. بناء نية التنبيه وتمرير البيانات المخصصة
                         val alertIntent = Intent(context, StrongAlertActivity::class.java).apply {
                             putExtra("alertId", alertId)
                             putExtra("role", "employee")
+                            putExtra("customTitle", customTitle)
+                            putExtra("customBody", customBody)
+                            putExtra("showWhatsapp", showWhatsapp)
+                            putExtra("showOpenApp", showOpenApp)
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                         }
                         
@@ -92,13 +102,10 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                         }
                         val alertPendingIntent = android.app.PendingIntent.getActivity(context, strongAlertNotificationId, alertIntent, alertFlags)
                         
-                        val title = "🚨 استدعاء عاجل من الإدارة! 🚨"
-                        val body = "يرجى فتح التطبيق فوراً، هناك أمر طارئ!"
-                        
                         val builder = NotificationCompat.Builder(context, channelId)
                             .setSmallIcon(R.drawable.ic_stat_onesignal_default)
-                            .setContentTitle(title)
-                            .setContentText(body)
+                            .setContentTitle(customTitle)
+                            .setContentText(customBody)
                             .setPriority(NotificationCompat.PRIORITY_MAX)
                             .setCategory(NotificationCompat.CATEGORY_CALL)
                             .setAutoCancel(false)
