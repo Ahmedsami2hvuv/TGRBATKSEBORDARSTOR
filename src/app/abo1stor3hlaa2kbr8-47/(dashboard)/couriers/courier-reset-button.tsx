@@ -17,8 +17,10 @@ export function CourierResetButton({ courierId }: { courierId: string }) {
   useEffect(() => {
     if (resetState.success) {
       router.refresh();
+    } else if (resetState.error) {
+      alert("خطأ أثناء التصفير: " + resetState.error);
     }
-  }, [resetState.success, router]);
+  }, [resetState, router]);
 
   return (
     <form
