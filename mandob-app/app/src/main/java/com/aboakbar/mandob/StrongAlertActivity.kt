@@ -27,26 +27,12 @@ class StrongAlertActivity : Activity() {
     private var audioManager: AudioManager? = null
     private var originalVolume: Int = 0
     private var handler = Handler(Looper.getMainLooper())
-    private var secondsLeft = 60
 
     // مستقبل بث لإيقاف التنبيه من السيرفر يدوياً
     private val stopReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == "com.aboakbar.mandob.ACTION_STOP_STRONG_ALERT") {
                 finish()
-            }
-        }
-    }
-
-    private val countdownRunnable = object : Runnable {
-        override fun run() {
-            secondsLeft--
-            val tvTimer = findViewById<TextView>(R.id.tvStrongAlertTimer)
-            if (secondsLeft > 0) {
-                tvTimer.text = "سيتوقف التنبيه تلقائياً بعد: $secondsLeft ثانية"
-                handler.postDelayed(this, 1000)
-            } else {
-                finish() // الإغلاق التلقائي بعد انتهاء الدقيقة
             }
         }
     }
@@ -197,8 +183,8 @@ class StrongAlertActivity : Activity() {
 
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         
-        // 1. تشغيل المؤقت التنازلي
-        handler.postDelayed(countdownRunnable, 1000)
+        // 1. إعداد نص التوجيه لزر الكتم (التنبيه مستمر حتى الاستجابة)
+        findViewById<TextView>(R.id.tvStrongAlertTimer).text = "يرجى اختيار أحد الإجراءات أدناه لإيقاف التنبيه"
 
         // 2. تشغيل التأثيرات (الصوت والاهتزاز)
         startAlertEffects()
@@ -353,7 +339,6 @@ class StrongAlertActivity : Activity() {
     }
 
     override fun onDestroy() {
-        handler.removeCallbacks(countdownRunnable)
         stopAlertEffects()
         try {
             unregisterReceiver(stopReceiver)
@@ -361,5 +346,9 @@ class StrongAlertActivity : Activity() {
             // تجاهل إذا لم يكن مسجلاً
         }
         super.onDestroy()
+    }
+
+    override fun onBackPressed() {
+        // حظر زر الرجوع بالهاتف لمنع إغلاق المنبه القوي كلياً
     }
 }
