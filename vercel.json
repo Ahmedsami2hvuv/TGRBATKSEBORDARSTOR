@@ -1,8 +1,1 @@
-{
-  "crons": [
-    {
-      "path": "/api/admin/cron/check-scheduled-alerts",
-      "schedule": "* * * * *"
-    }
-  ]
-}
+{}

@@ -46,7 +46,8 @@ export async function sendOneSignalNotification(options: {
   data?: any;
   targetApp?: "admin" | "mandob" | "preparer" | "employee";
   isSilent?: boolean;
-}): Promise<{ success: boolean; error?: string }> {
+  sendAfter?: string; // الجدولة المباشرة في ون سجنل
+}): Promise<{ success: boolean; id?: string; error?: string }> {
   const isAdmin = options.externalIds.includes("admin_global") || options.targetApp === "admin";
   const isPreparer = options.targetApp === "preparer";
   const isEmployee = options.targetApp === "employee";
@@ -81,6 +82,11 @@ export async function sendOneSignalNotification(options: {
     huawei_priority: 10,
     web_push_priority: "high",
   };
+
+  // تطبيق الجدولة المباشرة إذا كانت محددة
+  if (options.sendAfter) {
+    notification.send_after = options.sendAfter;
+  }
 
   if (options.isSilent) {
     notification.content_available = true;
@@ -136,7 +142,7 @@ export async function sendOneSignalNotification(options: {
           error: `OneSignal Warning: ${responseData.errors.join(", ")}` 
         };
       }
-      return { success: true };
+      return { success: true, id: responseData.id };
     } else {
       console.error(`[OneSignal] API responded with error for ${targetAppName}:`, response.status, responseData);
       return { 
@@ -147,6 +153,53 @@ export async function sendOneSignalNotification(options: {
   } catch (e: any) {
     console.error("[OneSignal] Fetch exception occurred:", e);
     return { success: false, error: e.message || "Unknown network error" };
+  }
+}
+
+export async function cancelOneSignalNotification(options: {
+  notificationId: string;
+  targetApp?: "admin" | "mandob" | "preparer" | "employee";
+}): Promise<{ success: boolean; error?: string }> {
+  const isPreparer = options.targetApp === "preparer";
+  const isEmployee = options.targetApp === "employee";
+  const isAdmin = options.targetApp === "admin" || options.targetApp === undefined;
+
+  let targetAppId = ONESIGNAL_MANDOB_APP_ID;
+  let targetApiKey = ONESIGNAL_MANDOB_REST_API_KEY;
+
+  if (isAdmin) {
+    targetAppId = ONESIGNAL_APP_ID;
+    targetApiKey = ONESIGNAL_REST_API_KEY;
+  } else if (isPreparer) {
+    targetAppId = ONESIGNAL_PREPARER_APP_ID;
+    targetApiKey = ONESIGNAL_PREPARER_REST_API_KEY;
+  } else if (isEmployee) {
+    targetAppId = ONESIGNAL_EMPLOYEE_APP_ID;
+    targetApiKey = ONESIGNAL_EMPLOYEE_REST_API_KEY;
+  }
+
+  try {
+    console.log(`[OneSignal] Canceling notification ${options.notificationId} on App: ${options.targetApp || "mandob"}...`);
+    const response = await fetch(`https://onesignal.com/api/v1/notifications/${options.notificationId}?app_id=${targetAppId}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Key ${targetApiKey.trim()}`,
+      },
+    });
+
+    const isOk = response.ok;
+    const responseData = isOk ? await response.json() : await response.text();
+
+    if (isOk) {
+      console.log(`[OneSignal] Notification canceled successfully:`, responseData);
+      return { success: true };
+    } else {
+      console.error(`[OneSignal] API responded with error on cancel:`, response.status, responseData);
+      return { success: false, error: `OneSignal Error ${response.status}: ${responseData}` };
+    }
+  } catch (e: any) {
+    console.error("[OneSignal] Exception on cancel:", e);
+    return { success: false, error: e.message || "Unknown error" };
   }
 }
 
