@@ -8,51 +8,33 @@ import { prisma } from "@/lib/prisma";
  * المعادلة: (إجمالي الوارد) - (إجمالي الصادر) - (الأرباح المستحقة) - (التحويلات المقبولة للإدارة).
  */
 export async function computeMandoubAdminTotalAllTimeDinar(courierId: string): Promise<Decimal> {
-  const courier = await prisma.courier.findUnique({
-    where: { id: courierId },
-    select: { mandoubTotalsResetAt: true, mandoubWalletCarryOverDinar: true }
-  });
-
-  const baseline = courier?.mandoubTotalsResetAt || null;
-  const carryOver = courier?.mandoubWalletCarryOverDinar ?? new Decimal(0);
-
-  const [orderSums, miscGroups, sumTransfersToAdmin, tipsTakeRes] = await Promise.all([
+  const [orderSums, miscGroups, earnings, sumTransfersToAdmin, tipsTakeRes] = await Promise.all([
     prisma.orderCourierMoneyEvent.groupBy({
       by: ['kind'],
       where: {
         courierId,
         deletedAt: null,
-        recordedByCompanyPreparerId: null,
-        ...(baseline ? { createdAt: { gt: baseline } } : {})
+        recordedByCompanyPreparerId: null
       },
       _sum: { amountDinar: true },
     }),
     prisma.courierWalletMiscEntry.groupBy({
       by: ['direction'],
-      where: {
-        courierId,
-        deletedAt: null,
-        ...(baseline ? { createdAt: { gt: baseline } } : {})
-      },
+      where: { courierId, deletedAt: null },
       _sum: { amountDinar: true },
     }),
+    computeMandoubEarningsAllTimeDinar(courierId),
+    // جلب مجموع التحويلات المقبولة التي أرسلها المندوب للإدارة
     prisma.walletPeerTransfer.aggregate({
       where: {
         fromCourierId: courierId,
         toKind: WalletPeerPartyKind.admin,
-        status: "accepted",
-        ...(baseline ? { respondedAt: { gt: baseline } } : {})
+        status: "accepted"
       },
       _sum: { amountDinar: true }
     }),
     prisma.courierWalletMiscEntry.aggregate({
-      where: {
-        courierId,
-        deletedAt: null,
-        direction: CourierWalletMiscDirection.take,
-        label: { contains: "[إكرامية]" },
-        ...(baseline ? { createdAt: { gt: baseline } } : {})
-      },
+      where: { courierId, deletedAt: null, direction: CourierWalletMiscDirection.take, label: { contains: "[إكرامية]" } },
       _sum: { amountDinar: true }
     })
   ]);
@@ -69,43 +51,8 @@ export async function computeMandoubAdminTotalAllTimeDinar(courierId: string): P
 
   const tipsTakeDinar = tipsTakeRes._sum.amountDinar ?? new Decimal(0);
 
-  // حساب الأرباح المستحقة للمندوب بعد تاريخ التصفير فقط
-  const activeOrders = await prisma.order.findMany({
-    where: {
-      courierEarningForCourierId: courierId,
-      status: { in: ["delivered", "archived"] },
-      ...(baseline ? { updatedAt: { gt: baseline } } : {})
-    },
-    select: {
-      createdAt: true,
-      courierEarningDinar: true,
-      moneyEvents: {
-        where: { kind: MONEY_KIND_DELIVERY, deletedAt: null },
-        select: { createdAt: true }
-      }
-    }
-  });
-
-  let periodEarnings = new Decimal(0);
-  for (const o of activeOrders) {
-    const deliveryEv = o.moneyEvents[0];
-    let skipForBaseline = false;
-    if (baseline) {
-      if (deliveryEv) {
-        skipForBaseline = deliveryEv.createdAt <= baseline;
-      } else {
-        skipForBaseline = o.createdAt <= baseline;
-      }
-    }
-    if (!skipForBaseline && o.courierEarningDinar != null) {
-      periodEarnings = periodEarnings.plus(o.courierEarningDinar);
-    }
-  }
-
-  const periodDebt = ward.minus(sader).minus(periodEarnings).minus(tipsTakeDinar).minus(transfers);
-
-  // الرصيد النهائي المطلوب للإدارة هو الرصيد المحمول + ذمة الفترة الحالية
-  return carryOver.plus(periodDebt);
+  // الخصم يتم من ذمة الإدارة هنا: نخصم الأرباح (التوصيل) ونخصم الإكراميات التي نوعها take لأنها تزيد الوارد. أما give فمخصومة مسبقاً من الصادر.
+  return ward.minus(sader).minus(earnings).minus(tipsTakeDinar).minus(transfers);
 }
 
 /** متبقي المحفظة (الكاش الفعلي من الطلبات) - لا يتأثر بالتحويلات للإدارة */

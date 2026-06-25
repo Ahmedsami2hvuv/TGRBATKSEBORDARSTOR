@@ -242,24 +242,11 @@ export async function resetCourierMandoubTotals(id: string, _prevState?: Courier
       resetAt
     );
 
-    // جلب مجموع التحويلات المقبولة للإدارة للفترة الحالية لخصمها من الرصيد المحمول الجديد
-    const transfersToAdmin = await prisma.walletPeerTransfer.aggregate({
-      where: {
-        fromCourierId: id,
-        toKind: "admin",
-        status: "accepted",
-        ...(resetAt ? { respondedAt: { gt: resetAt } } : {})
-      },
-      _sum: { amountDinar: true }
-    });
-    const transfersToAdminDinar = Number(transfersToAdmin._sum.amountDinar ?? 0);
-
     const oldCarryOver = typeof courier.mandoubWalletCarryOverDinar.toNumber === "function" 
       ? courier.mandoubWalletCarryOverDinar.toNumber() 
       : Number(courier.mandoubWalletCarryOverDinar);
       
-    // الرصيد المحمول الجديد = الرصيد القديم + صافي حركات المحفظة - أرباح التوصيل - الإكراميات - تحويلات الإدارة المقبولة
-    const newCarryOver = oldCarryOver + money.remainingNet - metrics.sumEarnings - tipSum - transfersToAdminDinar;
+    const newCarryOver = oldCarryOver + money.remainingNet;
     const totalProfitDinar = metrics.sumEarnings + tipSum;
     const totalOrders = metrics.ordersDelivered;
 
