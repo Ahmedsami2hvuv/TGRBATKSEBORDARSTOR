@@ -17,7 +17,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "غير مصرح لك" }, { status: 401 });
     }
 
-    // جلب الصفوف التي تبدأ بـ scheduled_alert:
     const records = await prisma.schemaPlaceholder.findMany({
       where: {
         note: {
@@ -29,13 +28,12 @@ export async function GET(request: Request) {
       },
     });
 
-    // فك ترميز الـ JSON لكل تنبيه مجدول
     const scheduledAlerts = records.map((rec) => {
       try {
         const jsonStr = rec.note.substring("scheduled_alert:".length);
         const data = JSON.parse(jsonStr);
         return {
-          recordId: rec.id, // معرف الصف في قاعدة البيانات
+          recordId: rec.id, 
           createdAt: rec.createdAt,
           ...data,
         };
@@ -59,19 +57,19 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const {
-      id, // معرف فريد للتنبيه للتتبع
+      id,
       targetRole,
-      targetIds, // "all" أو معرفات مفصولة بفواصل
+      targetIds,
       customTitle,
       customBody,
       showWhatsapp,
       showOpenApp,
       showDismiss,
       theme,
-      alertType, // "once" | "recurring"
-      scheduledTime, // "HH:mm" بتوقيت العراق
-      scheduledDate, // "YYYY-MM-DD"
-      daysOfWeek, // "0,1,2,3,4,5,6"
+      alertType,
+      scheduledTime,
+      scheduledDate,
+      daysOfWeek,
     } = body;
 
     if (!targetRole || !targetIds || !alertType || !scheduledTime) {
@@ -119,7 +117,7 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT: تعديل حالة التنبيه المجدول (تفعيل/تعطيل أو تحديث البيانات)
+// PUT: تعديل التنبيه المجدول (تحديث البيانات بالكامل أو تغيير الحالة)
 export async function PUT(request: Request) {
   try {
     if (!(await checkAuth(request))) {
@@ -127,13 +125,28 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { recordId, isActive, lastSentAt } = body;
+    const { 
+      recordId, 
+      isActive, 
+      lastSentAt,
+      targetRole,
+      targetIds,
+      customTitle,
+      customBody,
+      showWhatsapp,
+      showOpenApp,
+      showDismiss,
+      theme,
+      alertType,
+      scheduledTime,
+      scheduledDate,
+      daysOfWeek
+    } = body;
 
     if (!recordId) {
       return NextResponse.json({ error: "معرف السجل مفقود" }, { status: 400 });
     }
 
-    // جلب السجل الحالي
     const record = await prisma.schemaPlaceholder.findUnique({
       where: { id: recordId },
     });
@@ -145,9 +158,22 @@ export async function PUT(request: Request) {
     const jsonStr = record.note.substring("scheduled_alert:".length);
     const data = JSON.parse(jsonStr);
 
-    // تحديث الحقول المطلوبة
+    // تحديث الحقول المطلوبة (دعم التعديل الكامل وتحديث الحالة السريع)
     if (isActive !== undefined) data.isActive = !!isActive;
     if (lastSentAt !== undefined) data.lastSentAt = lastSentAt;
+    
+    if (targetRole !== undefined) data.targetRole = targetRole;
+    if (targetIds !== undefined) data.targetIds = targetIds;
+    if (customTitle !== undefined) data.customTitle = customTitle;
+    if (customBody !== undefined) data.customBody = customBody;
+    if (showWhatsapp !== undefined) data.showWhatsapp = !!showWhatsapp;
+    if (showOpenApp !== undefined) data.showOpenApp = !!showOpenApp;
+    if (showDismiss !== undefined) data.showDismiss = showDismiss !== false;
+    if (theme !== undefined) data.theme = theme;
+    if (alertType !== undefined) data.alertType = alertType;
+    if (scheduledTime !== undefined) data.scheduledTime = scheduledTime;
+    if (scheduledDate !== undefined) data.scheduledDate = scheduledDate;
+    if (daysOfWeek !== undefined) data.daysOfWeek = daysOfWeek;
 
     // حفظ التحديث
     const updatedRecord = await prisma.schemaPlaceholder.update({
@@ -184,7 +210,6 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "معرف السجل مفقود" }, { status: 400 });
     }
 
-    // التحقق من وجود السجل
     const record = await prisma.schemaPlaceholder.findUnique({
       where: { id: recordId },
     });
@@ -193,7 +218,6 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "التنبيه المجدول غير موجود" }, { status: 404 });
     }
 
-    // حذف السجل
     await prisma.schemaPlaceholder.delete({
       where: { id: recordId },
     });

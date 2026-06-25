@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ad } from "@/lib/admin-ui";
 import { supabaseClient } from "@/lib/supabase-client";
 import { toast } from "sonner";
 
@@ -53,6 +52,8 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
 
   // حالات التنبيه المجدول/المؤقت
   const [scheduledAlerts, setScheduledAlerts] = useState<any[]>([]);
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null); // معرف التنبيه الجاري تعديله
+
   const [schedRole, setSchedRole] = useState<"mandob" | "preparer" | "employee">("mandob");
   const [schedTargetType, setSchedTargetType] = useState<"all" | "custom">("all");
   const [schedSelectedUserIds, setSchedSelectedUserIds] = useState<string[]>([]);
@@ -431,7 +432,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
     }
   };
 
-  // التحكم في التنبيهات المجدولة (حفظ، تفعيل/تعطيل، حذف)
+  // التحكم في التنبيهات المجدولة (حفظ أو تعديل)
   const handleSaveScheduledAlert = async () => {
     let targetIdsStr = "all";
     if (schedTargetType === "custom") {
@@ -464,26 +465,34 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
 
     setLoading(true);
     try {
-      const response = await fetch("/api/admin/strong-alert/scheduled", {
-        method: "POST",
+      const url = "/api/admin/strong-alert/scheduled";
+      const method = editingRecordId ? "PUT" : "POST";
+      const payload: any = {
+        targetRole: schedRole,
+        targetIds: targetIdsStr,
+        customTitle: schedTitle,
+        customBody: schedBody,
+        showWhatsapp: schedShowWhatsapp,
+        showOpenApp: schedShowOpenApp,
+        showDismiss: schedShowDismiss,
+        theme: schedTheme,
+        alertType: schedType,
+        scheduledTime: schedTime,
+        scheduledDate: schedType === "once" ? schedDate : null,
+        daysOfWeek: schedType === "recurring" ? schedDays.join(",") : "",
+      };
+
+      if (editingRecordId) {
+        payload.recordId = editingRecordId;
+      }
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${adminToken}`,
         },
-        body: JSON.stringify({
-          targetRole: schedRole,
-          targetIds: targetIdsStr,
-          customTitle: schedTitle,
-          customBody: schedBody,
-          showWhatsapp: schedShowWhatsapp,
-          showOpenApp: schedShowOpenApp,
-          showDismiss: schedShowDismiss,
-          theme: schedTheme,
-          alertType: schedType,
-          scheduledTime: schedTime,
-          scheduledDate: schedType === "once" ? schedDate : null,
-          daysOfWeek: schedType === "recurring" ? schedDays.join(",") : "",
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -491,18 +500,63 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
         throw new Error(data.error || "فشل الاتصال بالسيرفر");
       }
 
-      toast.success("تمت جدولة التنبيه بنجاح!");
+      toast.success(editingRecordId ? "تم تحديث وحفظ التعديلات بنجاح!" : "تمت جدولة التنبيه بنجاح!");
       fetchScheduledAlerts();
-      // إعادة تعيين النموذج
-      setSchedTitle("");
-      setSchedBody("");
-      setSchedSelectedUserIds([]);
-      setSchedTargetType("all");
+      
+      // إعادة تعيين النموذج وإنهاء التعديل
+      resetForm();
     } catch (e: any) {
       toast.error(e.message || "حدث خطأ غير متوقع");
     } finally {
       setLoading(false);
     }
+  };
+
+  // تعبئة البيانات في النموذج لبدء التعديل
+  const handleStartEdit = (alert: any) => {
+    setEditingRecordId(alert.recordId);
+    setSchedRole(alert.targetRole);
+    setSchedTargetType(alert.targetIds === "all" ? "all" : "custom");
+    if (alert.targetIds !== "all") {
+      setSchedSelectedUserIds(alert.targetIds.split(",").map((s: string) => s.trim()));
+    } else {
+      setSchedSelectedUserIds([]);
+    }
+    setSchedTime(alert.scheduledTime);
+    setSchedType(alert.alertType);
+    if (alert.alertType === "once") {
+      setSchedDate(alert.scheduledDate || "");
+      setSchedDays([]);
+    } else {
+      setSchedDate("");
+      setSchedDays(alert.daysOfWeek ? alert.daysOfWeek.split(",") : []);
+    }
+    setSchedTitle(alert.customTitle || "");
+    setSchedBody(alert.customBody || "");
+    setSchedShowWhatsapp(!!alert.showWhatsapp);
+    setSchedShowOpenApp(!!alert.showOpenApp);
+    setSchedShowDismiss(!!alert.showDismiss);
+    setSchedTheme(alert.theme || "red");
+    
+    // سحب الواجهة للأعلى للوصول للنموذج
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast.info(`أنت الآن تقوم بتعديل التنبيه المجدول لـ ${alert.targetRole === "mandob" ? "المندوب" : alert.targetRole === "preparer" ? "المجهز" : "الموظف"}`);
+  };
+
+  const resetForm = () => {
+    setEditingRecordId(null);
+    setSchedTitle("");
+    setSchedBody("");
+    setSchedSelectedUserIds([]);
+    setSchedTargetType("all");
+    setSchedTime("08:00");
+    setSchedType("recurring");
+    setSchedDays(["0", "1", "2", "3", "4", "5", "6"]);
+    setSchedDate("");
+    setSchedTheme("red");
+    setSchedShowDismiss(true);
+    setSchedShowWhatsapp(false);
+    setSchedShowOpenApp(false);
   };
 
   const handleToggleScheduledAlert = async (recordId: string, currentActive: boolean) => {
@@ -543,6 +597,9 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
 
       if (response.ok) {
         toast.success("تم حذف التنبيه المجدول بنجاح");
+        if (editingRecordId === recordId) {
+          resetForm();
+        }
         fetchScheduledAlerts();
       } else {
         toast.error("فشل حذف التنبيه");
@@ -600,70 +657,74 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
   };
 
   return (
-    <div className="space-y-6">
-      {/* التبويبات الرئيسية العلوية ذات الجمالية الراقية */}
-      <div className="flex border-b border-gray-800 bg-gray-950/40 p-1.5 rounded-xl gap-2">
+    <div className="space-y-6 text-gray-200">
+      
+      {/* التبويبات الرئيسية العلوية: ستايل مستقبلي نيون */}
+      <div className="flex bg-slate-950/80 p-1.5 rounded-2xl gap-2 border border-slate-800/80 shadow-[0_0_20px_rgba(59,130,246,0.15)] backdrop-blur-md">
         <button
           onClick={() => setMainTab("instant")}
-          className={`flex-1 py-3.5 text-center font-extrabold text-sm rounded-lg transition-all flex items-center justify-center gap-2 ${
+          className={`flex-1 py-4 text-center font-black text-sm rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] cursor-pointer ${
             mainTab === "instant"
-              ? "bg-red-950/60 text-red-400 border border-red-900/60 shadow-lg shadow-red-950/20"
-              : "text-gray-400 hover:text-gray-200"
+              ? "bg-gradient-to-r from-red-950/80 to-rose-900/60 text-red-400 border border-red-500/40 shadow-[0_0_15px_rgba(239,68,68,0.25)]"
+              : "text-gray-400 hover:text-gray-200 hover:bg-slate-900/30"
           }`}
         >
-          <span>تنبيه فوري عاجل</span>
-          <span>🚨</span>
+          <span className="text-base">🚨</span>
+          <span className="tracking-wide">نظام البث الفوري</span>
+          <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-mono border border-red-500/30 animate-pulse">LIVE</span>
         </button>
         <button
           onClick={() => setMainTab("scheduled")}
-          className={`flex-1 py-3.5 text-center font-extrabold text-sm rounded-lg transition-all flex items-center justify-center gap-2 ${
+          className={`flex-1 py-4 text-center font-black text-sm rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] cursor-pointer ${
             mainTab === "scheduled"
-              ? "bg-blue-950/60 text-blue-400 border border-blue-900/60 shadow-lg shadow-blue-950/20"
-              : "text-gray-400 hover:text-gray-200"
+              ? "bg-gradient-to-r from-blue-950/80 to-cyan-900/60 text-cyan-400 border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.25)]"
+              : "text-gray-400 hover:text-gray-200 hover:bg-slate-900/30"
           }`}
         >
-          <span>تنبيه مؤقت / مجدول</span>
-          <span>📅</span>
+          <span className="text-base">📅</span>
+          <span className="tracking-wide">التنبيه المؤقت المجدول</span>
+          <span className="text-xs px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-mono border border-cyan-500/30">SYS-AUTO</span>
         </button>
       </div>
 
       {mainTab === "instant" ? (
-        // واجهة التنبيه الفوري الحالية
-        <div className="space-y-6">
+        // واجهة البث الفوري بلمسات مستقبلية
+        <div className="space-y-6 animate-fadeIn">
           {error && (
-            <div className="p-4 bg-red-950/40 border border-red-800 text-red-400 rounded-lg text-sm font-semibold">
-              ⚠️ {error}
+            <div className="p-4 bg-red-950/40 border border-red-800/80 text-red-400 rounded-xl text-sm font-semibold shadow-[0_0_15px_rgba(239,68,68,0.1)]">
+              ⚠️ [SYS-ERR]: {error}
             </div>
           )}
 
           {successMessage && (
-            <div className="p-4 bg-emerald-950/40 border border-emerald-800 text-emerald-400 rounded-lg text-sm font-semibold">
-              ✅ {successMessage}
+            <div className="p-4 bg-emerald-950/40 border border-emerald-800/80 text-emerald-400 rounded-xl text-sm font-semibold shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+              ✓ [SYS-SUCCESS]: {successMessage}
             </div>
           )}
 
           {/* شاشة حالة التنبيه النشطة */}
           {alertingState.isAlerting && (
-            <div className="p-6 bg-red-950/30 border border-red-500/40 rounded-xl flex flex-col items-center justify-center text-center space-y-4 shadow-lg shadow-red-950/50 animate-pulse">
-              <div className="relative">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-red-600 text-white font-bold text-xl shadow-lg shadow-red-600/50">
+            <div className="p-8 bg-gradient-to-b from-red-950/40 to-slate-950/60 border border-red-500/50 rounded-2xl flex flex-col items-center justify-center text-center space-y-5 shadow-2xl shadow-red-950/60 animate-pulse">
+              <div className="relative flex items-center justify-center">
+                <span className="absolute inline-flex h-20 w-20 rounded-full bg-red-600/30 animate-ping"></span>
+                <span className="relative flex h-16 w-16 items-center justify-center rounded-full bg-red-600 text-white font-bold text-2xl shadow-[0_0_25px_rgba(220,38,38,0.8)] border border-red-500">
                   🚨
                 </span>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-red-500">جاري التنبيه الآن... 🚨</h3>
-                <p className="text-sm text-red-400/80 mt-1 font-semibold">
-                  جاري التنبيه وسوف يعمل صوت هاتف المجهز بأعلى صوت، وبمجرد نقره على زر فهمت ستتغير هذه الشاشة لتؤكد لك الاستلام فوراً.
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-red-500 tracking-wider">[جاري إرسال واستقبال التنبيه...]</h3>
+                <p className="text-sm text-red-400/90 max-w-lg font-semibold leading-relaxed">
+                  تم إطلاق التنبيه الصوتي المستمر واهتزاز الأجهزة. ننتظر الآن استجابة أحد المستخدمين لكتم الرنين.
                 </p>
-                <p className="text-xs text-amber-500 mt-2 font-mono">
-                  الوقت المتبقي للإيقاف التلقائي: {alertingState.timeLeft} ثانية
-                </p>
+                <div className="inline-block px-4 py-1.5 bg-slate-900 border border-red-900/60 rounded-full text-xs text-amber-500 font-mono mt-2">
+                  COUNTDOWN: {alertingState.timeLeft}s
+                </div>
               </div>
 
               <button
                 onClick={() => handleTriggerAlert("stop")}
                 disabled={loading}
-                className="px-8 py-3 bg-white hover:bg-gray-100 text-red-700 font-bold rounded-lg shadow-lg border border-red-300 hover:scale-105 active:scale-95 transition-all duration-200"
+                className="px-10 py-3.5 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-extrabold rounded-xl shadow-lg shadow-red-900/40 hover:scale-105 active:scale-95 transition-all duration-300 border border-red-500/30 cursor-pointer"
               >
                 {loading ? "جاري الإيقاف..." : "⏹️ إيقاف التنبيه الآن"}
               </button>
@@ -672,16 +733,17 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
 
           {/* شاشة استجابة المستخدم الناجحة */}
           {respondedName && (
-            <div className="p-8 bg-emerald-950/30 border border-emerald-500/40 rounded-xl flex flex-col items-center justify-center text-center space-y-4 shadow-lg shadow-emerald-950/50">
+            <div className="p-8 bg-gradient-to-b from-emerald-950/40 to-slate-950/60 border border-emerald-500/50 rounded-2xl flex flex-col items-center justify-center text-center space-y-5 shadow-2xl shadow-emerald-950/60">
               <div className="relative">
-                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-2xl shadow-lg shadow-emerald-600/50 animate-bounce">
+                <span className="absolute inline-flex h-24 w-24 rounded-full bg-emerald-600/20 animate-ping"></span>
+                <span className="relative flex h-16 w-16 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-3xl shadow-[0_0_25px_rgba(16,185,129,0.8)] border border-emerald-500">
                   ✓
                 </span>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-emerald-400">تم إيقاف التنبيه بنجاح! 🎉</h3>
-                <p className="text-base text-gray-200 mt-2 font-semibold">
-                  قام {respondedRole === "mandob" ? "المندوب" : respondedRole === "preparer" ? "المجهز" : "الموظف"} <span className="text-emerald-400 underline font-bold">{respondedName}</span> باستقبال التنبيه وايقافه وسوف يحدثك عبر الواتس اب
+              <div className="space-y-2">
+                <h3 className="text-2xl font-black text-emerald-400">[تمت الاستجابة وتأكيد الكتم]</h3>
+                <p className="text-base text-gray-200 max-w-lg leading-relaxed font-semibold">
+                  قام {respondedRole === "mandob" ? "المندوب" : respondedRole === "preparer" ? "المجهز" : "الموظف"} <span className="text-emerald-400 underline font-bold">{respondedName}</span> بفتح التنبيه وتأكيد استلامه، وجاري توجيهه لمراسلتك عبر الواتساب.
                 </p>
               </div>
 
@@ -691,61 +753,61 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                   setRespondedRole(null);
                   setSuccessMessage(null);
                 }}
-                className="px-8 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-lg border border-emerald-500 hover:scale-105 active:scale-95 transition-all duration-200"
+                className="px-10 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg border border-emerald-500/40 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
               >
                 العودة للوحة التحكم
               </button>
             </div>
           )}
 
-          {/* أزرار التحكم والتصنيف */}
+          {/* تصنيف الفئات والبحث بلمسة مستقبلية */}
           {!alertingState.isAlerting && !respondedName && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2 flex border-b border-gray-800">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-950/40 p-3 rounded-2xl border border-slate-800/40 shadow-inner">
+              <div className="md:col-span-2 flex gap-1 p-1 bg-slate-900/80 rounded-xl border border-slate-800">
                 <button
                   onClick={() => setActiveTab("mandob")}
-                  className={`flex-1 py-3 text-center font-bold text-sm border-b-2 transition-all ${
+                  className={`flex-1 py-2.5 text-center font-bold text-xs rounded-lg transition-all cursor-pointer ${
                     activeTab === "mandob"
-                      ? "border-red-500 text-red-500"
-                      : "border-transparent text-gray-400 hover:text-gray-200"
+                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                      : "text-gray-400 hover:text-gray-200"
                   }`}
                 >
                   🛵 المندوبين ({couriers.length})
                 </button>
                 <button
                   onClick={() => setActiveTab("preparer")}
-                  className={`flex-1 py-3 text-center font-bold text-sm border-b-2 transition-all ${
+                  className={`flex-1 py-2.5 text-center font-bold text-xs rounded-lg transition-all cursor-pointer ${
                     activeTab === "preparer"
-                      ? "border-red-500 text-red-500"
-                      : "border-transparent text-gray-400 hover:text-gray-200"
+                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                      : "text-gray-400 hover:text-gray-200"
                   }`}
                 >
                   📦 المجهزين ({preparers.length})
                 </button>
                 <button
                   onClick={() => setActiveTab("employee")}
-                  className={`flex-1 py-3 text-center font-bold text-sm border-b-2 transition-all ${
+                  className={`flex-1 py-2.5 text-center font-bold text-xs rounded-lg transition-all cursor-pointer ${
                     activeTab === "employee"
-                      ? "border-red-500 text-red-500"
-                      : "border-transparent text-gray-400 hover:text-gray-200"
+                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                      : "text-gray-400 hover:text-gray-200"
                   }`}
                 >
                   💼 الموظفين ({employees.length})
                 </button>
               </div>
 
-              <div className="relative">
+              <div className="relative flex items-center">
                 <input
                   type="text"
                   placeholder="البحث عن اسم..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-red-500 transition-colors"
+                  className="w-full px-4.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/30 transition-all font-semibold"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-300"
+                    className="absolute right-3.5 text-gray-500 hover:text-gray-300"
                   >
                     ✕
                   </button>
@@ -754,47 +816,47 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
             </div>
           )}
 
-          {/* قائمة الأسماء */}
+          {/* قائمة الأسماء المستهدفة */}
           {!alertingState.isAlerting && !respondedName && (
-            <div className="border border-gray-850 rounded-xl bg-gray-950/20 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-950/60 border-b border-gray-850">
+            <div className="border border-slate-850 rounded-2xl bg-slate-950/20 overflow-hidden shadow-lg shadow-slate-950/50 backdrop-blur-sm">
+              <div className="flex items-center justify-between px-5 py-4 bg-slate-950/60 border-b border-slate-850">
                 <button
                   onClick={handleSelectAll}
-                  className="text-xs text-red-500 hover:text-red-400 font-bold transition-colors"
+                  className="text-xs text-red-400 hover:text-red-300 font-bold transition-colors cursor-pointer"
                 >
                   {filteredUsers.length > 0 && filteredUsers.every((u) => selectedIds.includes(u.id))
-                    ? "إلغاء تحديد الكل"
-                    : "تحديد كل الأسماء المفلترة"}
+                    ? "✕ إلغاء تحديد الكل"
+                    : "✓ تحديد جميع الأسماء المفلترة"}
                 </button>
-                <span className="text-xs text-gray-400">
-                  المحدد حالياً: {selectedIds.length} من أصل {filteredUsers.length}
+                <span className="text-xs text-gray-400 font-mono">
+                  SELECTED: {selectedIds.length} / {filteredUsers.length}
                 </span>
               </div>
 
               {filteredUsers.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 text-sm">
+                <div className="p-10 text-center text-gray-500 text-sm">
                   لا توجد أسماء مطابقة لعملية البحث.
                 </div>
               ) : (
-                <div className="max-h-96 overflow-y-auto divide-y divide-gray-850/60">
+                <div className="max-h-80 overflow-y-auto divide-y divide-slate-850/60">
                   {filteredUsers.map((user) => {
                     const isSelected = selectedIds.includes(user.id);
                     return (
                       <div
                         key={user.id}
                         onClick={() => handleSelectUser(user.id)}
-                        className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-gray-900/30 transition-colors ${
-                          isSelected ? "bg-red-950/10" : ""
+                        className={`flex items-center gap-3.5 px-5 py-3.5 cursor-pointer hover:bg-slate-900/30 transition-colors ${
+                          isSelected ? "bg-red-500/5" : ""
                         }`}
                       >
                         <input
                           type="checkbox"
                           checked={isSelected}
                           readOnly
-                          className="pointer-events-none rounded border-gray-700 text-red-600 focus:ring-red-500 focus:ring-offset-gray-900 w-4.5 h-4.5"
+                          className="pointer-events-none rounded border-slate-700 text-red-600 focus:ring-red-500 focus:ring-offset-slate-900 w-4.5 h-4.5"
                         />
                         <div className="flex-1">
-                          <span className={`font-semibold text-sm transition-colors ${isSelected ? "text-red-400" : "text-gray-200"}`}>
+                          <span className={`font-semibold text-sm transition-colors ${isSelected ? "text-red-400" : "text-gray-300"}`}>
                             {user.name}
                           </span>
                         </div>
@@ -806,39 +868,39 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
             </div>
           )}
 
-          {/* تخصيص نصوص وأزرار التنبيه القوي */}
+          {/* تخصيص التنبيه الفوري */}
           {!alertingState.isAlerting && !respondedName && (
-            <div className="p-5 border border-gray-850 rounded-xl bg-gray-950/40 space-y-4">
-              <h3 className="text-sm font-bold text-gray-300 flex items-center gap-2 border-b border-gray-850 pb-2">
-                ⚙️ تخصيص نصوص وأزرار ومظهر التنبيه القوي (اختياري)
+            <div className="p-6 border border-slate-850 rounded-2xl bg-slate-950/40 space-y-5 shadow-lg">
+              <h3 className="text-sm font-bold text-gray-300 flex items-center gap-2 border-b border-slate-850 pb-2.5">
+                ⚙️ تخصيص نصوص وأزرار ومظهر التنبيه
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-semibold">عنوان التنبيه المخصص (إذا ترك فارغاً فلن يظهر أي نص):</label>
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-400 font-semibold block">العنوان المخصص (أو اتركه فارغاً للتمويه):</label>
                   <input
                     type="text"
-                    placeholder="مثال: أذكار الصباح، تنبيه إداري..."
+                    placeholder="مثال: أذكار الصباح..."
                     value={customTitle}
                     onChange={(e) => setCustomTitle(e.target.value)}
-                    className="w-full px-4.5 py-2.5 bg-gray-900 border border-gray-850 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-red-500 transition-colors"
+                    className="w-full px-4 py-2.5 bg-slate-900 border border-slate-850 rounded-xl text-sm focus:outline-none focus:border-red-500 transition-colors text-gray-200"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-semibold">نص الرسالة المخصص (إذا ترك فارغاً فلن يظهر أي نص):</label>
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-400 font-semibold block">نص التنبيه المخصص (أو اتركه فارغاً للتمويه):</label>
                   <input
                     type="text"
                     placeholder="مثال: يرجى قراءة أذكار الصباح..."
                     value={customBody}
                     onChange={(e) => setCustomBody(e.target.value)}
-                    className="w-full px-4.5 py-2.5 bg-gray-900 border border-gray-850 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-red-500 transition-colors"
+                    className="w-full px-4 py-2.5 bg-slate-900 border border-slate-850 rounded-xl text-sm focus:outline-none focus:border-red-500 transition-colors text-gray-200"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-semibold">ستايل الشاشة (المظهر):</label>
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-400 font-semibold block">ستايل التنبيه (المظهر):</label>
                   <select
                     value={theme}
                     onChange={(e) => setTheme(e.target.value)}
-                    className="w-full px-4.5 py-2.5 bg-gray-900 border border-gray-850 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-red-500 transition-colors cursor-pointer"
+                    className="w-full px-4 py-2.5 bg-slate-900 border border-slate-850 rounded-xl text-sm focus:outline-none focus:border-red-500 cursor-pointer text-gray-200"
                   >
                     <option value="red">🚨 تنبيه أحمر كلاسيكي (محسّن)</option>
                     <option value="islamic">🕌 أذكار / إسلامي (أخضر وذهبي)</option>
@@ -848,13 +910,13 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-6 pt-2">
+              <div className="flex flex-wrap gap-6 pt-2 border-t border-slate-850/60 pt-3">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={showDismiss}
                     onChange={(e) => setShowDismiss(e.target.checked)}
-                    className="rounded border-gray-700 text-red-600 focus:ring-red-500 focus:ring-offset-gray-900 w-4.5 h-4.5"
+                    className="rounded border-slate-700 text-red-600 focus:ring-red-500 focus:ring-offset-slate-900 w-4.5 h-4.5"
                   />
                   <span className="text-xs text-gray-300 font-semibold">إظهار زر إغلاق التنبيه المعتاد</span>
                 </label>
@@ -864,9 +926,9 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                     type="checkbox"
                     checked={showWhatsapp}
                     onChange={(e) => setShowWhatsapp(e.target.checked)}
-                    className="rounded border-gray-700 text-red-600 focus:ring-red-500 focus:ring-offset-gray-900 w-4.5 h-4.5"
+                    className="rounded border-slate-700 text-red-600 focus:ring-red-500 focus:ring-offset-slate-900 w-4.5 h-4.5"
                   />
-                  <span className="text-xs text-gray-300 font-semibold">إظهار زر مراسلة الواتساب (اختياري)</span>
+                  <span className="text-xs text-gray-300 font-semibold">إظهار زر مراسلة الواتساب (إيقاف ومراسلة)</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -874,7 +936,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                     type="checkbox"
                     checked={showOpenApp}
                     onChange={(e) => setShowOpenApp(e.target.checked)}
-                    className="rounded border-gray-700 text-red-600 focus:ring-red-500 focus:ring-offset-gray-900 w-4.5 h-4.5"
+                    className="rounded border-slate-700 text-red-600 focus:ring-red-500 focus:ring-offset-slate-900 w-4.5 h-4.5"
                   />
                   <span className="text-xs text-gray-300 font-semibold">إظهار زر فتح التطبيق (اختياري)</span>
                 </label>
@@ -882,23 +944,23 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
             </div>
           )}
 
-          {/* زر التنبيه القوي */}
+          {/* إطلاق التنبيه */}
           {!alertingState.isAlerting && !respondedName && (
             <div className="flex justify-center pt-4">
               <button
                 onClick={() => handleTriggerAlert("start")}
                 disabled={loading || selectedIds.length === 0}
-                className={`relative px-12 py-5 rounded-xl font-extrabold text-lg text-white shadow-2xl transition-all duration-300 transform ${
+                className={`relative px-16 py-5 rounded-2xl font-black text-lg text-white shadow-2xl transition-all duration-300 transform border cursor-pointer hover:scale-105 active:scale-[0.98] ${
                   selectedIds.length > 0
-                    ? "bg-red-600 hover:bg-red-500 cursor-pointer hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(239,68,68,0.6)] animate-pulse"
-                    : "bg-gray-800 text-gray-500 cursor-not-allowed"
+                    ? "bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 border-red-400 shadow-[0_0_30px_rgba(220,38,38,0.4)] animate-pulse"
+                    : "bg-slate-900 text-gray-600 border-slate-800 cursor-not-allowed shadow-none"
                 }`}
               >
                 {loading ? (
-                  "جاري إرسال الإشعار..."
+                  "جاري إرسال البث..."
                 ) : (
                   <span className="flex items-center gap-2">
-                    <span>إطلاق التنبيه القوي</span>
+                    <span>إطلاق البث الفوري الآن</span>
                     <span>🚨</span>
                   </span>
                 )}
@@ -907,24 +969,39 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
           )}
         </div>
       ) : (
-        // واجهة التنبيه المؤقت المجدول
+        // واجهة التنبيه المجدول المزدانة بستايل مستقبلي تكنولوجي
         <div className="space-y-8 animate-fadeIn">
-          {/* قسم إعداد وضبط تنبيه مجدول جديد */}
-          <div className="p-6 border border-gray-850 rounded-2xl bg-gray-950/40 space-y-6">
-            <h3 className="text-base font-bold text-blue-400 flex items-center gap-2 border-b border-gray-850 pb-3">
-              📅 ضبط وجدولة تنبيه مؤقت جديد (بتوقيت العراق المحلي)
-            </h3>
+          
+          {/* قسم إعداد التنبيه المجدول */}
+          <div className="p-6 border border-slate-800 rounded-2xl bg-slate-950/70 space-y-6 shadow-xl shadow-slate-950/60 backdrop-blur-md relative overflow-hidden">
+            {/* شريط زينة نيون في الأعلى */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500"></div>
+
+            <div className="flex items-center justify-between border-b border-slate-850 pb-3">
+              <h3 className="text-base font-black text-cyan-400 flex items-center gap-2">
+                <span>[⚙️ SYSTEM-SCHEDULER]</span>
+                <span>{editingRecordId ? "تعديل التنبيه المجدول الحالي" : "جدولة وضبط تنبيه مؤقت جديد"}</span>
+              </h3>
+              {editingRecordId && (
+                <button
+                  onClick={resetForm}
+                  className="px-3 py-1 bg-red-950/40 hover:bg-red-900/30 border border-red-900 text-red-400 text-xs font-bold rounded-lg transition-all cursor-pointer"
+                >
+                  ✕ إلغاء التعديل
+                </button>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* اختيار الفئة المستهدفة */}
-              <div className="space-y-2">
-                <label className="text-xs text-gray-400 font-bold block">1. الفئة المستهدفة:</label>
-                <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-800">
+              {/* 1. الفئة المستهدفة */}
+              <div className="space-y-2.5">
+                <label className="text-xs text-cyan-400/80 font-mono tracking-wider block font-bold">01 // TARGET_ROLE</label>
+                <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-850">
                   <button
                     type="button"
                     onClick={() => setSchedRole("mandob")}
-                    className={`flex-1 py-2 text-center text-xs font-bold rounded-md transition-all ${
-                      schedRole === "mandob" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-gray-200"
+                    className={`flex-1 py-2.5 text-center text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                      schedRole === "mandob" ? "bg-cyan-600 text-white shadow-md shadow-cyan-900/40" : "text-gray-400 hover:text-gray-200"
                     }`}
                   >
                     🛵 مندوب
@@ -932,8 +1009,8 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                   <button
                     type="button"
                     onClick={() => setSchedRole("preparer")}
-                    className={`flex-1 py-2 text-center text-xs font-bold rounded-md transition-all ${
-                      schedRole === "preparer" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-gray-200"
+                    className={`flex-1 py-2.5 text-center text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                      schedRole === "preparer" ? "bg-cyan-600 text-white shadow-md shadow-cyan-900/40" : "text-gray-400 hover:text-gray-200"
                     }`}
                   >
                     📦 مجهز
@@ -941,8 +1018,8 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                   <button
                     type="button"
                     onClick={() => setSchedRole("employee")}
-                    className={`flex-1 py-2 text-center text-xs font-bold rounded-md transition-all ${
-                      schedRole === "employee" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-gray-200"
+                    className={`flex-1 py-2.5 text-center text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                      schedRole === "employee" ? "bg-cyan-600 text-white shadow-md shadow-cyan-900/40" : "text-gray-400 hover:text-gray-200"
                     }`}
                   >
                     💼 موظف
@@ -950,15 +1027,15 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                 </div>
               </div>
 
-              {/* اختيار نوع الاستهداف (الكل أو مخصص) */}
-              <div className="space-y-2">
-                <label className="text-xs text-gray-400 font-bold block">2. تحديد الأسماء:</label>
-                <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-800">
+              {/* 2. اختيار الأسماء */}
+              <div className="space-y-2.5">
+                <label className="text-xs text-cyan-400/80 font-mono tracking-wider block font-bold">02 // USER_SCOPE</label>
+                <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-850">
                   <button
                     type="button"
                     onClick={() => setSchedTargetType("all")}
-                    className={`flex-1 py-2 text-center text-xs font-bold rounded-md transition-all ${
-                      schedTargetType === "all" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-gray-200"
+                    className={`flex-1 py-2.5 text-center text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                      schedTargetType === "all" ? "bg-cyan-600 text-white shadow-md shadow-cyan-900/40" : "text-gray-400 hover:text-gray-200"
                     }`}
                   >
                     📢 جميع الفئة
@@ -966,81 +1043,79 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                   <button
                     type="button"
                     onClick={() => setSchedTargetType("custom")}
-                    className={`flex-1 py-2 text-center text-xs font-bold rounded-md transition-all ${
-                      schedTargetType === "custom" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-gray-200"
+                    className={`flex-1 py-2.5 text-center text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                      schedTargetType === "custom" ? "bg-cyan-600 text-white shadow-md shadow-cyan-900/40" : "text-gray-400 hover:text-gray-200"
                     }`}
                   >
-                    🎯 أشخاص محددين
+                    🎯 تحديد أسماء
                   </button>
                 </div>
               </div>
 
-              {/* تحديد وقت التنبيه */}
-              <div className="space-y-2">
-                <label className="text-xs text-gray-400 font-bold block">3. وقت التنبيه (توقيت العراق):</label>
-                <div className="relative">
-                  <input
-                    type="time"
-                    value={schedTime}
-                    onChange={(e) => setSchedTime(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-900 border border-gray-850 rounded-lg text-sm text-gray-200 font-bold font-mono focus:outline-none focus:border-blue-500 transition-colors"
-                  />
-                </div>
+              {/* 3. وقت التنبيه */}
+              <div className="space-y-2.5">
+                <label className="text-xs text-cyan-400/80 font-mono tracking-wider block font-bold">03 // TRIGGER_TIME (Baghdad)</label>
+                <input
+                  type="time"
+                  value={schedTime}
+                  onChange={(e) => setSchedTime(e.target.value)}
+                  className="w-full px-4.5 py-2.5 bg-slate-900 border border-slate-850 rounded-xl text-sm text-cyan-400 font-black font-mono focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+                />
               </div>
             </div>
 
-            {/* قائمة اختيار الأسماء المحددة في حال الاستهداف المخصص */}
+            {/* سياق اختيار الأسماء المحددة */}
             {schedTargetType === "custom" && (
-              <div className="space-y-2 border border-gray-850 p-4 rounded-xl bg-gray-950/20">
-                <div className="flex items-center justify-between gap-4 pb-2 border-b border-gray-850">
-                  <span className="text-xs text-gray-400 font-semibold">تحديد أسماء من الفئة:</span>
+              <div className="space-y-2 border border-slate-850 p-4.5 rounded-2xl bg-slate-950/30 backdrop-blur-sm animate-fadeIn">
+                <div className="flex items-center justify-between gap-4 pb-2 border-b border-slate-800">
+                  <span className="text-xs text-gray-400 font-semibold">تحديد مستخدمين من الفئة المذكورة:</span>
                   <div className="relative max-w-xs flex-1">
                     <input
                       type="text"
                       placeholder="البحث عن اسم..."
                       value={schedSearchQuery}
                       onChange={(e) => setSchedSearchQuery(e.target.value)}
-                      className="w-full px-3 py-1.5 bg-gray-900 border border-gray-850 rounded-md text-xs focus:outline-none focus:border-blue-500 transition-colors"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-850 rounded-lg text-xs focus:outline-none focus:border-cyan-500 text-gray-200"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between py-1 text-xs text-gray-400">
+                <div className="flex items-center justify-between py-1.5 text-xs text-gray-400">
                   <button
                     type="button"
                     onClick={handleSelectAllSched}
-                    className="text-blue-500 hover:text-blue-400 font-bold"
+                    className="text-cyan-400 hover:text-cyan-300 font-bold cursor-pointer"
                   >
                     {filteredSchedUsers.length > 0 && filteredSchedUsers.every((u) => schedSelectedUserIds.includes(u.id))
-                      ? "إلغاء تحديد الكل"
-                      : "تحديد الكل المفلتر"}
+                      ? "✕ إلغاء تحديد الكل"
+                      : "✓ تحديد الكل المفلتر"}
                   </button>
-                  <span>المحدد: {schedSelectedUserIds.length} من {filteredSchedUsers.length}</span>
+                  <span className="font-mono">SELECTED: {schedSelectedUserIds.length} / {filteredSchedUsers.length}</span>
                 </div>
 
                 {filteredSchedUsers.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500 text-xs">
-                    لا توجد أسماء مطابقة للبحث.
+                  <div className="p-6 text-center text-gray-500 text-xs">
+                    لا توجد أسماء مطابقة لعملية البحث.
                   </div>
                 ) : (
-                  <div className="max-h-48 overflow-y-auto divide-y divide-gray-850/40 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 p-1">
+                  <div className="max-h-48 overflow-y-auto divide-y divide-slate-850/30 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 p-1">
                     {filteredSchedUsers.map((user) => {
                       const isSelected = schedSelectedUserIds.includes(user.id);
                       return (
                         <div
                           key={user.id}
                           onClick={() => handleSelectSchedUser(user.id)}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-900/40 transition-colors border ${
-                            isSelected ? "bg-blue-950/10 border-blue-900/40" : "border-transparent"
+                          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-slate-900/50 transition-all border ${
+                            isSelected ? "bg-cyan-950/10 border-cyan-800/40" : "border-transparent"
                           }`}
                         >
                           <input
                             type="checkbox"
                             checked={isSelected}
                             readOnly
-                            className="pointer-events-none rounded border-gray-700 text-blue-600 focus:ring-blue-500 focus:ring-offset-gray-900 w-4 h-4"
+                            className="pointer-events-none rounded border-slate-700 text-cyan-600 focus:ring-cyan-500 focus:ring-offset-slate-900 w-4 h-4"
                           />
-                          <span className={`text-xs font-semibold ${isSelected ? "text-blue-400" : "text-gray-300"}`}>
+                          <span className={`text-xs font-semibold ${isSelected ? "text-cyan-400" : "text-gray-300"}`}>
                             {user.name}
                           </span>
                         </div>
@@ -1051,46 +1126,46 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
               </div>
             )}
 
-            {/* الجدولة الزمنية (تكرار / لمرة واحدة) */}
-            <div className="p-4 border border-gray-850 rounded-xl bg-gray-900/30 space-y-4">
-              <div className="flex items-center gap-6 border-b border-gray-850 pb-3">
-                <span className="text-xs text-gray-400 font-bold">4. جدولة التنبيه:</span>
-                <label className="flex items-center gap-2 cursor-pointer">
+            {/* الجدولة والتكرار */}
+            <div className="p-5 border border-slate-850 rounded-2xl bg-slate-900/30 space-y-4">
+              <div className="flex items-center gap-8 border-b border-slate-850 pb-3">
+                <span className="text-xs text-cyan-400/80 font-mono tracking-wider font-bold block">04 // SCHEDULING_TYPE</span>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="radio"
                     name="schedType"
                     checked={schedType === "recurring"}
                     onChange={() => setSchedType("recurring")}
-                    className="text-blue-600 focus:ring-blue-500 focus:ring-offset-gray-900 w-4 h-4"
+                    className="text-cyan-600 focus:ring-cyan-500 focus:ring-offset-slate-900 w-4.5 h-4.5"
                   />
                   <span className="text-xs text-gray-200 font-bold">تكرار أسبوعي</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="radio"
                     name="schedType"
                     checked={schedType === "once"}
                     onChange={() => setSchedType("once")}
-                    className="text-blue-600 focus:ring-blue-500 focus:ring-offset-gray-900 w-4 h-4"
+                    className="text-cyan-600 focus:ring-cyan-500 focus:ring-offset-slate-900 w-4.5 h-4.5"
                   />
                   <span className="text-xs text-gray-200 font-bold">مرة واحدة فقط</span>
                 </label>
               </div>
 
               {schedType === "once" ? (
-                <div className="space-y-1.5 max-w-xs">
+                <div className="space-y-2 max-w-xs animate-fadeIn">
                   <label className="text-xs text-gray-400 font-semibold">اختر تاريخ التنبيه:</label>
                   <input
                     type="date"
                     value={schedDate}
                     onChange={(e) => setSchedDate(e.target.value)}
                     min={new Date().toISOString().split("T")[0]}
-                    className="w-full px-4 py-2 bg-gray-900 border border-gray-850 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full px-4 py-2.5 bg-slate-900 border border-slate-850 rounded-xl text-sm focus:outline-none focus:border-cyan-500 transition-colors text-gray-200"
                   />
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <label className="text-xs text-gray-400 font-semibold block">اختر أيام التكرار الأسبوعية:</label>
+                <div className="space-y-3 animate-fadeIn">
+                  <label className="text-xs text-gray-400 font-semibold block">حدد أيام الأسبوع لتكرار البث:</label>
                   <div className="flex flex-wrap gap-2">
                     {["0", "1", "2", "3", "4", "5", "6"].map((day) => {
                       const isSelected = schedDays.includes(day);
@@ -1105,10 +1180,10 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                                 : [...prev, day]
                             );
                           }}
-                          className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${
+                          className={`px-4.5 py-2 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer ${
                             isSelected
-                              ? "bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-900/30"
-                              : "bg-gray-900 border-gray-850 text-gray-400 hover:border-gray-700"
+                              ? "bg-cyan-600 border-cyan-500 text-white shadow-md shadow-cyan-900/30 scale-[1.03]"
+                              : "bg-slate-900 border-slate-850 text-gray-400 hover:border-slate-700"
                           }`}
                         >
                           {daysLabels[day]}
@@ -1120,36 +1195,36 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
               )}
             </div>
 
-            {/* تخصيص نصوص ومظهر التنبيه المجدول */}
-            <div className="p-4 border border-gray-850 rounded-xl bg-gray-900/30 space-y-4">
-              <span className="text-xs text-gray-400 font-bold block">5. رسالة ومظهر التنبيه:</span>
+            {/* نصوص وتصميم التنبيه */}
+            <div className="p-5 border border-slate-850 rounded-2xl bg-slate-900/30 space-y-4">
+              <span className="text-xs text-cyan-400/80 font-mono tracking-wider font-bold block">05 // ALERT_PROPERTIES</span>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-semibold">عنوان التنبيه المخصص (إذا ترك فارغاً فلن يظهر أي نص):</label>
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-400 font-semibold block">العنوان المخصص (أو اتركه فارغاً للتمويه):</label>
                   <input
                     type="text"
                     placeholder="مثال: أذكار الصباح..."
                     value={schedTitle}
                     onChange={(e) => setSchedTitle(e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-900 border border-gray-850 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full px-4 py-2.5 bg-slate-900 border border-slate-850 rounded-xl text-sm focus:outline-none focus:border-cyan-500 transition-colors text-gray-200"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-semibold">نص التنبيه المخصص (إذا ترك فارغاً فلن يظهر أي نص):</label>
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-400 font-semibold block">نص التنبيه المخصص (أو اتركه فارغاً للتمويه):</label>
                   <input
                     type="text"
                     placeholder="مثال: حان الآن وقت الأذكار..."
                     value={schedBody}
                     onChange={(e) => setSchedBody(e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-900 border border-gray-850 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full px-4 py-2.5 bg-slate-900 border border-slate-850 rounded-xl text-sm focus:outline-none focus:border-cyan-500 transition-colors text-gray-200"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-semibold">ستايل الشاشة (المظهر):</label>
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-400 font-semibold block">ستايل التنبيه (المظهر):</label>
                   <select
                     value={schedTheme}
                     onChange={(e) => setSchedTheme(e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-900 border border-gray-850 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-blue-500 cursor-pointer"
+                    className="w-full px-4 py-2.5 bg-slate-900 border border-slate-850 rounded-xl text-sm focus:outline-none focus:border-cyan-500 cursor-pointer text-gray-200"
                   >
                     <option value="red">🚨 تنبيه أحمر كلاسيكي (محسّن)</option>
                     <option value="islamic">🕌 أذكار / إسلامي (أخضر وذهبي)</option>
@@ -1159,14 +1234,14 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                 </div>
               </div>
 
-              {/* أزرار التحكم بالتنبيه */}
-              <div className="flex flex-wrap gap-6 pt-2">
+              {/* أزرار تفاعل التنبيه */}
+              <div className="flex flex-wrap gap-6 pt-3 border-t border-slate-850/60">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={schedShowDismiss}
                     onChange={(e) => setSchedShowDismiss(e.target.checked)}
-                    className="rounded border-gray-700 text-blue-600 focus:ring-blue-500 focus:ring-offset-gray-900 w-4.5 h-4.5"
+                    className="rounded border-slate-700 text-cyan-600 focus:ring-cyan-500 focus:ring-offset-slate-900 w-4.5 h-4.5"
                   />
                   <span className="text-xs text-gray-300 font-semibold">إظهار زر إغلاق التنبيه المعتاد</span>
                 </label>
@@ -1176,7 +1251,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                     type="checkbox"
                     checked={schedShowWhatsapp}
                     onChange={(e) => setSchedShowWhatsapp(e.target.checked)}
-                    className="rounded border-gray-700 text-blue-600 focus:ring-blue-500 focus:ring-offset-gray-900 w-4.5 h-4.5"
+                    className="rounded border-slate-700 text-cyan-600 focus:ring-cyan-500 focus:ring-offset-slate-900 w-4.5 h-4.5"
                   />
                   <span className="text-xs text-gray-300 font-semibold">إظهار زر مراسلة الواتساب (إيقاف ومراسلة)</span>
                 </label>
@@ -1186,145 +1261,182 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                     type="checkbox"
                     checked={schedShowOpenApp}
                     onChange={(e) => setSchedShowOpenApp(e.target.checked)}
-                    className="rounded border-gray-700 text-blue-600 focus:ring-blue-500 focus:ring-offset-gray-900 w-4.5 h-4.5"
+                    className="rounded border-slate-700 text-cyan-600 focus:ring-cyan-500 focus:ring-offset-slate-900 w-4.5 h-4.5"
                   />
                   <span className="text-xs text-gray-300 font-semibold">إظهار زر فتح التطبيق (اختياري)</span>
                 </label>
               </div>
             </div>
 
-            {/* زر الحفظ */}
+            {/* أزرار الحفظ أو تحديث الحفظ */}
             <div className="flex justify-center pt-2">
               <button
                 type="button"
                 onClick={handleSaveScheduledAlert}
                 disabled={loading}
-                className="px-10 py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 text-white font-extrabold text-sm rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 flex items-center gap-2 cursor-pointer"
+                className={`px-12 py-4 rounded-xl font-black text-sm text-white shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+                  editingRecordId
+                    ? "bg-gradient-to-r from-amber-600 to-orange-700 hover:from-amber-500 hover:to-orange-600 border border-orange-500/30 shadow-orange-950/20"
+                    : "bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 border border-cyan-500/30 shadow-cyan-950/20"
+                }`}
               >
-                {loading ? "جاري الحفظ..." : "💾 حفظ وجدولة التنبيه"}
+                {loading ? (
+                  "جاري المعالجة..."
+                ) : (
+                  <>
+                    <span>{editingRecordId ? "💾 تحديث وحفظ التعديلات" : "💾 جدولة وحفظ التنبيه"}</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
 
-          {/* قسم عرض التنبيهات المجدولة حالياً */}
+          {/* قائمة التنبيهات المجدولة */}
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-gray-200 flex items-center gap-2">
-              📋 التنبيهات المجدولة الحالية ({scheduledAlerts.length})
-            </h3>
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h3 className="text-base font-bold text-gray-200 flex items-center gap-2">
+                <span>📋 قائمة التنبيهات المجدولة والنشطة</span>
+                <span className="px-2 py-0.5 text-xs rounded bg-slate-900 border border-slate-850 font-mono text-cyan-400">{scheduledAlerts.length}</span>
+              </h3>
+            </div>
 
             {scheduledAlerts.length === 0 ? (
-              <div className="p-8 border border-gray-850 rounded-2xl bg-gray-950/20 text-center text-gray-500 text-sm">
-                لا توجد أي تنبيهات مجدولة حالياً.
+              <div className="p-10 border border-slate-850 rounded-2xl bg-slate-950/20 text-center text-gray-500 text-sm">
+                لا توجد أي تنبيهات مؤقتة مجدولة حالياً.
               </div>
             ) : (
-              <div className="overflow-x-auto border border-gray-850 rounded-2xl bg-gray-950/20">
-                <table className="w-full text-right text-sm">
-                  <thead>
-                    <tr className="bg-gray-950/80 text-gray-400 border-b border-gray-850 font-bold">
-                      <th className="px-4 py-3">الفئة المستهدفة</th>
-                      <th className="px-4 py-3">الوقت (العراق)</th>
-                      <th className="px-4 py-3">التكرار</th>
-                      <th className="px-4 py-3">تفاصيل التنبيه</th>
-                      <th className="px-4 py-3">الحالة</th>
-                      <th className="px-4 py-3 text-center">إجراءات</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-850/40">
-                    {scheduledAlerts.map((alert) => {
-                      const roleLabel =
-                        alert.targetRole === "mandob"
-                          ? "🛵 مندوب"
-                          : alert.targetRole === "preparer"
-                          ? "📦 مجهز"
-                          : "💼 موظف";
-                      
-                      const targetLabel =
-                        alert.targetIds === "all"
-                          ? "جميع الأسماء"
-                          : `محدد (${alert.targetIds.split(",").length} شخص)`;
+              <div className="overflow-hidden border border-slate-800 rounded-2xl bg-slate-950/50 shadow-xl backdrop-blur-md">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-right text-sm">
+                    <thead>
+                      <tr className="bg-slate-950/90 text-gray-400 border-b border-slate-800 font-bold">
+                        <th className="px-5 py-3.5">المستهدفون</th>
+                        <th className="px-5 py-3.5">الوقت (العراق)</th>
+                        <th className="px-5 py-3.5">الجدولة والتكرار</th>
+                        <th className="px-5 py-3.5">مواصفات الشاشة</th>
+                        <th className="px-5 py-3.5">الحالة</th>
+                        <th className="px-5 py-3.5 text-center">إجراءات التحكم</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-850/60">
+                      {scheduledAlerts.map((alert) => {
+                        const roleLabel =
+                          alert.targetRole === "mandob"
+                            ? "🛵 مندوب"
+                            : alert.targetRole === "preparer"
+                            ? "📦 مجهز"
+                            : "💼 موظف";
+                        
+                        const targetLabel =
+                          alert.targetIds === "all"
+                            ? "جميع الأسماء"
+                            : `محدد (${alert.targetIds.split(",").length} شخص)`;
 
-                      return (
-                        <tr key={alert.recordId} className="hover:bg-gray-900/10 transition-colors">
-                          {/* الفئة */}
-                          <td className="px-4 py-4">
-                            <div className="font-bold text-gray-200">{roleLabel}</div>
-                            <div className="text-xs text-gray-400 mt-0.5">{targetLabel}</div>
-                          </td>
-                          {/* الوقت */}
-                          <td className="px-4 py-4 font-mono font-bold text-blue-400">
-                            {formatTime12Hr(alert.scheduledTime)}
-                          </td>
-                          {/* التكرار */}
-                          <td className="px-4 py-4 text-xs font-semibold">
-                            {alert.alertType === "once" ? (
-                              <span className="text-amber-500 bg-amber-950/20 px-2 py-1 rounded border border-amber-900/40">
-                                لمرة واحدة: {alert.scheduledDate}
-                              </span>
-                            ) : (
-                              <span className="text-emerald-500 bg-emerald-950/20 px-2 py-1 rounded border border-emerald-900/40">
-                                مكرر أسبوعياً: {formatDays(alert.daysOfWeek)}
-                              </span>
-                            )}
-                          </td>
-                          {/* تفاصيل */}
-                          <td className="px-4 py-4 text-xs">
-                            <div className="font-bold text-gray-300">
-                              العنوان: {alert.customTitle || <span className="text-gray-500 italic">فارغ (مموه)</span>}
-                            </div>
-                            <div className="text-gray-400 mt-1">
-                              النص: {alert.customBody || <span className="text-gray-500 italic">فارغ (مموه)</span>}
-                            </div>
-                            <div className="flex gap-2 mt-1.5 flex-wrap">
-                              <span className="bg-gray-900 px-1.5 py-0.5 rounded text-[10px] text-gray-400 border border-gray-800">
-                                ستايل: {alert.theme === "red" ? "أحمر" : alert.theme === "islamic" ? "إسلامي" : alert.theme === "official" ? "رسمي" : "رياضي"}
-                              </span>
-                              {alert.showDismiss && (
-                                <span className="bg-red-950/10 px-1.5 py-0.5 rounded text-[10px] text-red-400 border border-red-900/30">
-                                  زر الإغلاق
+                        const isBeingEdited = editingRecordId === alert.recordId;
+
+                        return (
+                          <tr 
+                            key={alert.recordId} 
+                            className={`hover:bg-slate-900/10 transition-colors ${
+                              isBeingEdited ? "bg-cyan-950/10 border-y border-cyan-800/30" : ""
+                            }`}
+                          >
+                            {/* المستهدف */}
+                            <td className="px-5 py-4">
+                              <div className="font-bold text-gray-200">{roleLabel}</div>
+                              <div className="text-xs text-gray-400 mt-1 font-mono">{targetLabel}</div>
+                            </td>
+                            {/* الوقت */}
+                            <td className="px-5 py-4 font-mono font-black text-cyan-400 text-sm">
+                              {formatTime12Hr(alert.scheduledTime)}
+                            </td>
+                            {/* الجدولة */}
+                            <td className="px-5 py-4 text-xs font-semibold">
+                              {alert.alertType === "once" ? (
+                                <span className="text-amber-400 bg-amber-950/30 px-2.5 py-1.5 rounded-lg border border-amber-900/40">
+                                  مرة واحدة: {alert.scheduledDate}
+                                </span>
+                              ) : (
+                                <span className="text-emerald-400 bg-emerald-950/30 px-2.5 py-1.5 rounded-lg border border-emerald-900/40 block leading-relaxed max-w-[200px]">
+                                  تكرار: {formatDays(alert.daysOfWeek)}
                                 </span>
                               )}
-                              {alert.showWhatsapp && (
-                                <span className="bg-emerald-950/10 px-1.5 py-0.5 rounded text-[10px] text-emerald-400 border border-emerald-900/30">
-                                  إيقاف ومراسلة
+                            </td>
+                            {/* التفاصيل */}
+                            <td className="px-5 py-4 text-xs space-y-1.5">
+                              <div className="font-bold text-gray-300">
+                                العنوان: {alert.customTitle || <span className="text-gray-500 italic">فارغ (مموه)</span>}
+                              </div>
+                              <div className="text-gray-455">
+                                النص: {alert.customBody || <span className="text-gray-500 italic">فارغ (مموه)</span>}
+                              </div>
+                              <div className="flex gap-1.5 flex-wrap pt-0.5">
+                                <span className="bg-slate-900 px-1.5 py-0.5 rounded text-[10px] text-gray-400 border border-slate-800">
+                                  ستايل: {alert.theme === "red" ? "أحمر" : alert.theme === "islamic" ? "إسلامي" : alert.theme === "official" ? "رسمي" : "رياضي"}
                                 </span>
-                              )}
-                              {alert.showOpenApp && (
-                                <span className="bg-blue-950/10 px-1.5 py-0.5 rounded text-[10px] text-blue-400 border border-blue-900/30">
-                                  زر التطبيق
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          {/* الحالة */}
-                          <td className="px-4 py-4">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleScheduledAlert(alert.recordId, alert.isActive)}
-                              className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${
-                                alert.isActive
-                                  ? "bg-emerald-950/40 text-emerald-400 border-emerald-800/60 hover:bg-emerald-900/20"
-                                  : "bg-red-950/40 text-red-400 border-red-800/60 hover:bg-red-900/20"
-                              }`}
-                            >
-                              {alert.isActive ? "● نشط ومفعّل" : "○ معطّل مؤقتاً"}
-                            </button>
-                          </td>
-                          {/* إجراءات */}
-                          <td className="px-4 py-4 text-center">
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteScheduledAlert(alert.recordId)}
-                              className="p-2 bg-red-950/20 hover:bg-red-900/30 text-red-400 rounded-lg border border-red-900/50 hover:scale-105 active:scale-95 transition-all"
-                              title="حذف الجدولة"
-                            >
-                              🗑️ حذف
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                                {alert.showDismiss && (
+                                  <span className="bg-red-950/15 px-1.5 py-0.5 rounded text-[10px] text-red-400 border border-red-900/30">
+                                    زر الإغلاق
+                                  </span>
+                                )}
+                                {alert.showWhatsapp && (
+                                  <span className="bg-emerald-950/15 px-1.5 py-0.5 rounded text-[10px] text-emerald-400 border border-emerald-900/30">
+                                    إيقاف ومراسلة
+                                  </span>
+                                )}
+                                {alert.showOpenApp && (
+                                  <span className="bg-blue-950/15 px-1.5 py-0.5 rounded text-[10px] text-blue-400 border border-blue-900/30">
+                                    زر التطبيق
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            {/* الحالة */}
+                            <td className="px-5 py-4">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleScheduledAlert(alert.recordId, alert.isActive)}
+                                className={`px-3.5 py-1.5 rounded-full text-xs font-black border transition-all duration-200 cursor-pointer ${
+                                  alert.isActive
+                                    ? "bg-emerald-950/30 text-emerald-400 border-emerald-800/60 hover:bg-emerald-900/20"
+                                    : "bg-red-950/30 text-red-400 border-red-800/60 hover:bg-red-900/20"
+                                }`}
+                              >
+                                {alert.isActive ? "● مفعّل ونشط" : "○ معطّل مؤقتاً"}
+                              </button>
+                            </td>
+                            {/* الإجراءات */}
+                            <td className="px-5 py-4 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEdit(alert)}
+                                  disabled={isBeingEdited}
+                                  className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all duration-150 flex items-center gap-1 cursor-pointer ${
+                                    isBeingEdited
+                                      ? "bg-slate-900 border-slate-800 text-gray-500 cursor-not-allowed"
+                                      : "bg-amber-950/20 hover:bg-amber-900/30 border-amber-900/50 text-amber-400 hover:scale-105 active:scale-95"
+                                  }`}
+                                  title="تعديل الجدولة"
+                                >
+                                  ✏️ تعديل
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteScheduledAlert(alert.recordId)}
+                                  className="px-3 py-2 bg-red-950/20 hover:bg-red-900/30 border border-red-900/50 text-red-400 text-xs font-bold rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                                  title="حذف الجدولة"
+                                >
+                                  🗑️ حذف
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>
