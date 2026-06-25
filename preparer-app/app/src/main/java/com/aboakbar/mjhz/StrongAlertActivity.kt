@@ -82,7 +82,7 @@ class StrongAlertActivity : Activity() {
         findViewById<Button>(R.id.btnDismissStrongAlert).setOnClickListener {
             val alertId = intent.getStringExtra("alertId") ?: ""
             val role = intent.getStringExtra("role") ?: "preparer"
-            val prefs = getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
+            val prefs = getSharedPreferences("AboAkbarpreparerPrefs", Context.MODE_PRIVATE)
             val userId = prefs.getString("preparer_id", "") ?: ""
             
             if (alertId.isNotEmpty()) {

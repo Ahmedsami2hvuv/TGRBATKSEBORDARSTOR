@@ -38,7 +38,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 val strongAlertNotificationId = 9999
                 
                 if (action == "start") {
-                    val prefs = context.getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
+                    val prefs = context.getSharedPreferences("AboAkbarpreparerPrefs", Context.MODE_PRIVATE)
                     val lastAlertId = prefs.getString("last_strong_alert_id", "")
                     
                     // منع التكرار بناءً على المعرف الفريد
@@ -129,7 +129,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
             try {
                 val orderNumber = additionalData.optInt("orderNumber", 0)
                 if (orderNumber > 0) {
-                    val prefs = context.getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
+                    val prefs = context.getSharedPreferences("AboAkbarpreparerPrefs", Context.MODE_PRIVATE)
                     val dismissedSet = prefs.getStringSet("dismissed_order_numbers", null)
                     if (dismissedSet != null && dismissedSet.contains(orderNumber.toString())) {
                         return
@@ -137,7 +137,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 }
                 
                 // تحديث رقم الطلب الأخير المشاهد في الإعدادات المشتركة لمنع تكراره من الخدمة الخلفية
-                val prefs = context.getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
+                val prefs = context.getSharedPreferences("AboAkbarpreparerPrefs", Context.MODE_PRIVATE)
                 prefs.edit().putInt("last_seen_order_number", orderNumber).apply()
                 val shopName = additionalData.optString("shopName", "—")
                 val regionName = additionalData.optString("regionName", "—")

@@ -108,10 +108,14 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
               }
 
               // البحث عن اسم المستخدم
-              let userName = "مستخدم";
+              let userName = "";
               const allUsers = [...couriers, ...preparers, ...employees];
               const foundUser = allUsers.find(u => u.id === userId);
-              if (foundUser) userName = foundUser.name;
+              if (foundUser) {
+                userName = foundUser.name;
+              } else {
+                userName = role === "preparer" ? "المجهز" : role === "mandob" ? "المندوب" : "الموظف";
+              }
 
               // تحديث حالة الاستجابة لتظهر في واجهة المستخدم بوضوح
               setRespondedName(userName);
@@ -303,9 +307,9 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
             </span>
           </div>
           <div>
-            <h3 className="text-lg font-bold text-red-500">تنبيه قوي نشط حالياً!</h3>
-            <p className="text-sm text-red-400/80 mt-1">
-              يتم الآن إطلاق صوت إنذار مستمر واهتزاز قوي على هواتف المستخدمين المحددين.
+            <h3 className="text-lg font-bold text-red-500">جاري التنبيه الآن... 🚨</h3>
+            <p className="text-sm text-red-400/80 mt-1 font-semibold">
+              جاري التنبيه وسوف يعمل صوت هاتف المجهز بأعلى صوت، وبمجرد نقره على زر فهمت ستتغير هذه الشاشة لتؤكد لك الاستلام فوراً.
             </p>
             <p className="text-xs text-amber-500 mt-2 font-mono">
               الوقت المتبقي للإيقاف التلقائي: {alertingState.timeLeft} ثانية

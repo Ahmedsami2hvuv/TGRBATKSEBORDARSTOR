@@ -23,7 +23,7 @@ object LocationHelper {
     private val client = OkHttpClient()
 
     fun fetchAndSendLocation(context: Context) {
-        val sharedPreferences = context.getSharedPreferences("AboAkbarPrefs", Context.MODE_PRIVATE)
+        val sharedPreferences = context.getSharedPreferences("AboAkbarpreparerPrefs", Context.MODE_PRIVATE)
         val savedUrl = sharedPreferences.getString("preparer_url", null) ?: return
         val savedId = sharedPreferences.getString("preparer_id", null) ?: return
 
