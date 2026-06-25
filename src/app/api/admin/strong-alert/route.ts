@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const title = action === "start" ? "🚨 استدعاء عاجل من الإدارة! 🚨" : "⏹️ إلغاء الاستدعاء القوي";
     const message = action === "start" ? "يرجى فتح التطبيق فوراً، هناك أمر طارئ!" : "تم إلغاء التنبيه من قبل الإدارة.";
 
-    const success = await sendOneSignalNotification({
+    const result = await sendOneSignalNotification({
       title,
       body: message,
       url: "",
@@ -44,10 +44,10 @@ export async function POST(request: Request) {
       }
     });
 
-    if (success) {
+    if (result.success) {
       return NextResponse.json({ success: true });
     } else {
-      return NextResponse.json({ error: "فشل إرسال الإشعار عبر ون سجنل" }, { status: 500 });
+      return NextResponse.json({ error: result.error || "فشل إرسال الإشعار عبر ون سجنل" }, { status: 500 });
     }
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

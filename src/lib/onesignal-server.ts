@@ -23,7 +23,7 @@ export async function sendOneSignalNotification(options: {
   data?: any;
   targetApp?: "admin" | "mandob" | "preparer" | "employee";
   isSilent?: boolean;
-}): Promise<boolean> {
+}): Promise<{ success: boolean; error?: string }> {
   const isAdmin = options.externalIds.includes("admin_global") || options.targetApp === "admin";
   const isPreparer = options.targetApp === "preparer";
   const isEmployee = options.targetApp === "employee";
@@ -43,8 +43,9 @@ export async function sendOneSignalNotification(options: {
   }
 
   if (!targetApiKey) {
-    console.warn(`[OneSignal] REST API Key is not configured for ${isAdmin ? 'Admin' : isPreparer ? 'Preparer' : isEmployee ? 'Employee' : 'Mandob'}.`);
-    return false;
+    const errorMsg = `REST API Key is not configured for ${isAdmin ? 'Admin' : isPreparer ? 'Preparer' : isEmployee ? 'Employee' : 'Mandob'}`;
+    console.warn(`[OneSignal] ${errorMsg}.`);
+    return { success: false, error: errorMsg };
   }
 
   const notification: any = {
@@ -89,7 +90,8 @@ export async function sendOneSignalNotification(options: {
   }
 
   try {
-    console.log(`[OneSignal] Sending notification to OneSignal API (${isAdmin ? 'Admin' : 'Mandob'})...`);
+    const targetAppName = isAdmin ? 'Admin' : isPreparer ? 'Preparer' : isEmployee ? 'Employee' : 'Mandob';
+    console.log(`[OneSignal] Sending notification to OneSignal API (${targetAppName})...`);
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
       headers: {
@@ -99,17 +101,28 @@ export async function sendOneSignalNotification(options: {
       body: JSON.stringify(notification),
     });
 
-    const data = await response.ok ? await response.json() : await response.text();
-    if (response.ok) {
-      console.log(`[OneSignal] Notification successfully sent to ${isAdmin ? 'Admin' : 'Mandob'}:`, data);
-      return true;
+    const isOk = response.ok;
+    const responseData = isOk ? await response.json() : await response.text();
+    
+    if (isOk) {
+      console.log(`[OneSignal] Notification successfully sent to ${targetAppName}:`, responseData);
+      if (responseData && responseData.errors && responseData.errors.length > 0) {
+        return { 
+          success: false, 
+          error: `OneSignal Warning: ${responseData.errors.join(", ")}` 
+        };
+      }
+      return { success: true };
     } else {
-      console.error("[OneSignal] API responded with error:", response.status, data);
-      return false;
+      console.error(`[OneSignal] API responded with error for ${targetAppName}:`, response.status, responseData);
+      return { 
+        success: false, 
+        error: `OneSignal Error (Status ${response.status}): ${typeof responseData === "string" ? responseData : JSON.stringify(responseData)}` 
+      };
     }
-  } catch (e) {
+  } catch (e: any) {
     console.error("[OneSignal] Fetch exception occurred:", e);
-    return false;
+    return { success: false, error: e.message || "Unknown network error" };
   }
 }
 

@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     console.log(`[Admin Request Location] Requesting location for ${userType} (${userName}) with ID: ${userId}`);
 
     // إرسال إشعار صامت عبر OneSignal
-    const success = await sendOneSignalNotification({
+    const result = await sendOneSignalNotification({
       title: "تحديث الموقع",
       body: "جلب الموقع الجغرافي الحالي",
       url: "",
@@ -63,10 +63,10 @@ export async function POST(req: Request) {
       }
     });
 
-    if (success) {
+    if (result.success) {
       return NextResponse.json({ ok: true, message: `تم إرسال طلب الموقع بنجاح إلى ${userName}` });
     } else {
-      return NextResponse.json({ error: "Failed to send notification via OneSignal" }, { status: 500 });
+      return NextResponse.json({ error: result.error || "Failed to send notification via OneSignal" }, { status: 500 });
     }
   } catch (error: any) {
     console.error("Error in request-location API:", error);
