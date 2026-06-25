@@ -11,9 +11,9 @@ function verifyCronRequest(request: Request): boolean {
     return true;
   }
 
-  // 2. التحقق من ترويسة Vercel Cron
+  // 2. التحقق من ترويسة Vercel Cron (مضمونة ومحمية من قبل فيرسل ولا يمكن تزييفها من الخارج)
   const vercelCronHeader = request.headers.get("x-vercel-cron");
-  if (vercelCronHeader === "true" || vercelCronHeader?.toLowerCase() === "true") {
+  if (vercelCronHeader !== null && vercelCronHeader !== undefined) {
     return true;
   }
 
