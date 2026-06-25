@@ -191,7 +191,6 @@ export async function resetCourierMandoubTotals(id: string, _prevState?: Courier
         courierEarningDinar: true,
         courierEarningForCourierId: true,
         deliveryPrice: true,
-        courierVehicleType: true,
         courier: { select: { vehicleType: true } },
         moneyEvents: {
           orderBy: { createdAt: "asc" },
