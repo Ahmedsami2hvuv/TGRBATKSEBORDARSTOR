@@ -242,11 +242,7 @@ export async function resetCourierMandoubTotals(id: string, _prevState?: Courier
       resetAt
     );
 
-    const oldCarryOver = typeof courier.mandoubWalletCarryOverDinar.toNumber === "function" 
-      ? courier.mandoubWalletCarryOverDinar.toNumber() 
-      : Number(courier.mandoubWalletCarryOverDinar);
-      
-    const newCarryOver = oldCarryOver + money.remainingNet;
+    const newCarryOver = 0;
     const totalProfitDinar = metrics.sumEarnings + tipSum;
     const totalOrders = metrics.ordersDelivered;
 
