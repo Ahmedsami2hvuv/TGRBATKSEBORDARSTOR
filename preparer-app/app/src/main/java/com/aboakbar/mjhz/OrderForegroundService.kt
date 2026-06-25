@@ -82,68 +82,10 @@ class OrderForegroundService : Service() {
         return START_STICKY
     }
 
+
     private fun checkPendingOrders() {
-        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val token = sharedPreferences.getString(KEY_TOKEN, null)
-
-        if (token.isNullOrEmpty()) {
-            stopSelf()
-            return
-        }
-
-        val request = Request.Builder()
-            .url("$BACKEND_URL/api/notifications/admin-pending?token=$token")
-            .addHeader("Cookie", "admin_token=$token")
-            .get()
-            .build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                // فشل شبكة مؤقت، سنحاول مجدداً في الدورة القادمة
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                try {
-                    if (response.isSuccessful) {
-                        val responseBody = response.body?.string()
-                        if (responseBody != null) {
-                            val json = JSONObject(responseBody)
-                            val pendingCount = json.optInt("pendingCount", 0)
-                            val latestOrderNumber = json.optInt("latestOrderNumber", 0)
-                            val details = json.optJSONObject("latestOrderDetails")
-
-                            val shopName = details?.optString("shopName", "—") ?: "—"
-                            val regionName = details?.optString("regionName", "—") ?: "—"
-                            val orderTime = details?.optString("orderTime", "فوري") ?: "فوري"
-                            val orderType = details?.optString("orderType", "—") ?: "—"
-                            val subtotal = details?.optInt("subtotal", 0) ?: 0
-
-                            var lastSeenOrderNumber = sharedPreferences.getInt("last_seen_order_number", 0)
-
-                            if (latestOrderNumber > 0 && lastSeenOrderNumber > 0 && latestOrderNumber > lastSeenOrderNumber) {
-                                 val dismissedSet = sharedPreferences.getStringSet("dismissed_order_numbers", null)
-                                 val isDismissed = dismissedSet != null && dismissedSet.contains(latestOrderNumber.toString())
-
-                                 if (!isDismissed) {
-                                     // تحديث آخر رقم طلب تم مشاهدته
-                                     sharedPreferences.edit().putInt("last_seen_order_number", latestOrderNumber).apply()
-
-                                     // عرض الإشعار بالنظام
-                                     showNotification(latestOrderNumber, pendingCount, shopName, regionName, orderTime, orderType, subtotal)
-
-                                     // تشغيل النافذة المنبثقة الإجبارية
-                                     triggerPopupActivity(shopName, regionName, orderTime, orderType, subtotal, pendingCount, latestOrderNumber)
-                                 }
-                             } else if (latestOrderNumber > 0 && lastSeenOrderNumber == 0) {
-                                sharedPreferences.edit().putInt("last_seen_order_number", latestOrderNumber).apply()
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    // تجاهل
-                }
-            }
-        })
+        // تم إيقاف خدمة الفحص الدوري بالكامل لمنع التكرار المزعج والاعتماد كلياً على وان سجنل
+        stopSelf()
     }
 
     private fun showNotification(
