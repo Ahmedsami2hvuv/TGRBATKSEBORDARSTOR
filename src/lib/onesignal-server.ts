@@ -122,6 +122,7 @@ export async function sendOneSignalNotification(options: {
         "Authorization": `Key ${targetApiKey.trim()}`,
       },
       body: JSON.stringify(notification),
+      signal: AbortSignal.timeout(6000),
     });
 
     const isOk = response.ok;

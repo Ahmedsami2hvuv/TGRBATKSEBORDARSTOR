@@ -86,9 +86,22 @@ async function handleCron(request: Request) {
         continue;
       }
 
-      // مقارنة الوقت المجدول (صيغة HH:mm) مع الوقت الحالي
-      if (data.scheduledTime !== currentTimeStr) {
-        continue; // ليس وقت هذا التنبيه
+      // مقارنة الوقت المجدول (صيغة HH:mm) مع الوقت الحالي بنافذة مرنة قدرها 9 دقائق
+      const [schedHStr, schedMStr] = data.scheduledTime.split(":");
+      const schedH = parseInt(schedHStr, 10);
+      const schedM = parseInt(schedMStr, 10);
+      
+      const currentTotalMinutes = currentHour * 60 + currentMinute;
+      const schedTotalMinutes = schedH * 60 + schedM;
+      
+      // حساب الفرق بالدقائق
+      const diffMinutes = currentTotalMinutes - schedTotalMinutes;
+      
+      // إذا كان الوقت الحالي يقع في نفس دقيقة التنبيه أو بعدها بـ 9 دقائق كحد أقصى
+      const isWithinTimeWindow = diffMinutes >= 0 && diffMinutes <= 9;
+      
+      if (!isWithinTimeWindow) {
+        continue; // ليس وقت هذا التنبيه أو انتهت نافذة تشغيله
       }
 
       // التحقق من التكرار أو التاريخ
