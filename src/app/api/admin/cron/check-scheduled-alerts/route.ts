@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendOneSignalNotification } from "@/lib/onesignal-server";
 
+export const dynamic = "force-dynamic";
+
 // التحقق من الحماية للـ Cron Job
 function verifyCronRequest(request: Request): boolean {
   // 1. السماح في بيئة التطوير محلياً دون قيود للتجربة
