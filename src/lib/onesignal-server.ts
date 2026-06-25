@@ -2,27 +2,40 @@
  * مدير إرسال إشعارات OneSignal من السيرفر باستخدام fetch المباشر.
  */
 
-function cleanEnvValue(value: string | undefined, defaultValue: string): string {
+function cleanAppId(value: string | undefined, defaultValue: string): string {
   if (!value) return defaultValue;
-  // إزالة أي علامات اقتباس مفردة أو مزدوجة أو مسافات فارغة أو أحرف رجوع للسطر
   const cleaned = value.replace(/['"\r\n\s]/g, "").trim();
-  if (!cleaned || cleaned === "undefined" || cleaned === "null" || cleaned.length < 5) {
+  // التحقق من UUID صالح (36 حرفاً من أرقام وحروف وشرطات)
+  const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  if (!uuidRegex.test(cleaned)) {
+    console.warn(`[OneSignal] Provided App ID "${cleaned}" is not a valid UUID. Using default: "${defaultValue}"`);
     return defaultValue;
   }
   return cleaned;
 }
 
-const ONESIGNAL_APP_ID = cleanEnvValue(process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID, "5c2acf6f-f2c0-40f2-830d-138f8a9e8c0a");
-const ONESIGNAL_REST_API_KEY = cleanEnvValue(process.env.ONESIGNAL_REST_API_KEY, "os_v2_app_mkgte2e73jaf3dihclicnailqqjep2tkhmqenbvhxwic6b4giwfe3nbgxf27rt36y6i2ggjenzvgkfkueiwp5if4yhxcbisqnzryofy");
+function cleanApiKey(value: string | undefined, defaultValue: string): string {
+  if (!value) return defaultValue;
+  const cleaned = value.replace(/['"\r\n\s]/g, "").trim();
+  // مفتاح ون سجنل يبدأ دائماً بـ os_v2_app_
+  if (!cleaned.startsWith("os_v2_app_") || cleaned.length < 50) {
+    console.warn(`[OneSignal] Provided API Key is not valid. Using default.`);
+    return defaultValue;
+  }
+  return cleaned;
+}
 
-const ONESIGNAL_MANDOB_APP_ID = cleanEnvValue(process.env.ONESIGNAL_MANDOB_APP_ID, "628d3268-9fda-405d-8d07-12d026810b84");
-const ONESIGNAL_MANDOB_REST_API_KEY = cleanEnvValue(process.env.ONESIGNAL_MANDOB_REST_API_KEY, "os_v2_app_mkgte2e73jaf3dihclicnailqqjep2tkhmqenbvhxwic6b4giwfe3nbgxf27rt36y6i2ggjenzvgkfkueiwp5if4yhxcbisqnzryofy");
+const ONESIGNAL_APP_ID = cleanAppId(process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID, "5c2acf6f-f2c0-40f2-830d-138f8a9e8c0a");
+const ONESIGNAL_REST_API_KEY = cleanApiKey(process.env.ONESIGNAL_REST_API_KEY, "os_v2_app_mkgte2e73jaf3dihclicnailqqjep2tkhmqenbvhxwic6b4giwfe3nbgxf27rt36y6i2ggjenzvgkfkueiwp5if4yhxcbisqnzryofy");
 
-const ONESIGNAL_PREPARER_APP_ID = cleanEnvValue(process.env.NEXT_PUBLIC_ONESIGNAL_PREPARER_APP_ID || process.env.ONESIGNAL_PREPARER_APP_ID, "55661893-9b93-4b63-b0e9-03b250fc3667");
-const ONESIGNAL_PREPARER_REST_API_KEY = cleanEnvValue(process.env.ONESIGNAL_PREPARER_REST_API_KEY, "os_v2_app_kvtbre43snfwhmhjaozfb7bwm73kfy57wwtusb5y46f3kh5vdfqyud4z4gkrgvchs5rvupjsuma5ndrs7dzksohznw477atu2pco6sq");
+const ONESIGNAL_MANDOB_APP_ID = cleanAppId(process.env.ONESIGNAL_MANDOB_APP_ID, "628d3268-9fda-405d-8d07-12d026810b84");
+const ONESIGNAL_MANDOB_REST_API_KEY = cleanApiKey(process.env.ONESIGNAL_MANDOB_REST_API_KEY, "os_v2_app_mkgte2e73jaf3dihclicnailqqjep2tkhmqenbvhxwic6b4giwfe3nbgxf27rt36y6i2ggjenzvgkfkueiwp5if4yhxcbisqnzryofy");
 
-const ONESIGNAL_EMPLOYEE_APP_ID = cleanEnvValue(process.env.ONESIGNAL_EMPLOYEE_APP_ID, "5487c703-2ecb-487c-8a99-1af4eb7f945b");
-const ONESIGNAL_EMPLOYEE_REST_API_KEY = cleanEnvValue(process.env.ONESIGNAL_EMPLOYEE_REST_API_KEY, "os_v2_app_ksd4oazoznehzcuzdl2ow74ulo47l5ivtozek3fckxhta6tii3kb3rr2risxyicphxsizhnh2f6a77pley4pq7tivmuwavfz5okpcaa");
+const ONESIGNAL_PREPARER_APP_ID = cleanAppId(process.env.NEXT_PUBLIC_ONESIGNAL_PREPARER_APP_ID || process.env.ONESIGNAL_PREPARER_APP_ID, "55661893-9b93-4b63-b0e9-03b250fc3667");
+const ONESIGNAL_PREPARER_REST_API_KEY = cleanApiKey(process.env.ONESIGNAL_PREPARER_REST_API_KEY, "os_v2_app_kvtbre43snfwhmhjaozfb7bwm73kfy57wwtusb5y46f3kh5vdfqyud4z4gkrgvchs5rvupjsuma5ndrs7dzksohznw477atu2pco6sq");
+
+const ONESIGNAL_EMPLOYEE_APP_ID = cleanAppId(process.env.ONESIGNAL_EMPLOYEE_APP_ID, "5487c703-2ecb-487c-8a99-1af4eb7f945b");
+const ONESIGNAL_EMPLOYEE_REST_API_KEY = cleanApiKey(process.env.ONESIGNAL_EMPLOYEE_REST_API_KEY, "os_v2_app_ksd4oazoznehzcuzdl2ow74ulo47l5ivtozek3fckxhta6tii3kb3rr2risxyicphxsizhnh2f6a77pley4pq7tivmuwavfz5okpcaa");
 
 export async function sendOneSignalNotification(options: {
   title: string;
