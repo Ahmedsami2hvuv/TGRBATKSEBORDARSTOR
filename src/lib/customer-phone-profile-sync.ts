@@ -111,7 +111,10 @@ export async function syncPhoneProfileFromOrder(
 }
 
 /** وجهة ثانية في طلب double — نفس المنطق بمرجع (رقم الوجهة الثانية + منطقتها). */
-export async function syncSecondPhoneProfileFromOrder(orderId: string): Promise<void> {
+export async function syncSecondPhoneProfileFromOrder(
+  orderId: string,
+  options?: { forceClearLocation?: boolean; forceClearLandmark?: boolean },
+): Promise<void> {
   const o = await prisma.order.findUnique({
     where: { id: orderId },
   });
@@ -126,6 +129,8 @@ export async function syncSecondPhoneProfileFromOrder(orderId: string): Promise<
     landmark: o.secondCustomerLandmark?.trim() ?? "",
     doorPhotoUrl: o.secondCustomerDoorPhotoUrl?.trim() ?? "",
     alternatePhone: null,
+    forceClearLocation: options?.forceClearLocation,
+    forceClearLandmark: options?.forceClearLandmark,
   });
 
   const door = o.secondCustomerDoorPhotoUrl?.trim() || "";

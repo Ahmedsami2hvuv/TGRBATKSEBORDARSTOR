@@ -401,8 +401,8 @@ export async function updateMandoubCustomerDetails(
         ...clearCourierGpsFlag,
         ...secondCustomerPatch,
       });
-      await syncPhoneProfileFromOrder(orderId);
-      if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId);
+      await syncPhoneProfileFromOrder(orderId, { forceClearLocation: !customerLocationUrlMerged } as any);
+      if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId, { forceClearLocation: !secondCustomerLocationUrl });
       revalidateMandoubPaths(nextRaw, orderId);
       redirect(safeMandoubReturn(nextRaw));
     }
@@ -428,8 +428,8 @@ export async function updateMandoubCustomerDetails(
       ...clearCourierGpsFlag,
       ...secondCustomerPatch,
     });
-    await syncPhoneProfileFromOrder(orderId);
-    if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId);
+    await syncPhoneProfileFromOrder(orderId, { forceClearLocation: !customerLocationUrlMerged } as any);
+    if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId, { forceClearLocation: !secondCustomerLocationUrl });
     revalidateMandoubPaths(nextRaw, orderId);
     redirect(safeMandoubReturn(nextRaw));
   }
@@ -444,8 +444,8 @@ export async function updateMandoubCustomerDetails(
     ...secondCustomerPatch,
   });
 
-  await syncPhoneProfileFromOrder(orderId);
-  if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId);
+  await syncPhoneProfileFromOrder(orderId, { forceClearLocation: !customerLocationUrlMerged } as any);
+  if (isDoubleRoute) await syncSecondPhoneProfileFromOrder(orderId, { forceClearLocation: !secondCustomerLocationUrl });
   revalidateMandoubPaths(nextRaw, orderId);
   redirect(safeMandoubReturn(nextRaw));
 }
@@ -582,12 +582,7 @@ export async function clearMandoubCustomerLocation(
     },
   });
 
-  if (isSecond && order.secondCustomerId) {
-    await prisma.customer.update({
-      where: { id: order.secondCustomerId },
-      data: { customerLocationUrl: "" },
-    });
-  } else if (!isSecond && order.customerId) {
+  if (!isSecond && order.customerId) {
     await prisma.customer.update({
       where: { id: order.customerId },
       data: { customerLocationUrl: "" },
