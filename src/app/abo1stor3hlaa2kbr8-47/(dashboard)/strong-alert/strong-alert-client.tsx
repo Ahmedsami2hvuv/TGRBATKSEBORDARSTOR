@@ -25,6 +25,8 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
   const [customBody, setCustomBody] = useState("");
   const [showWhatsapp, setShowWhatsapp] = useState(false);
   const [showOpenApp, setShowOpenApp] = useState(false);
+  const [showDismiss, setShowDismiss] = useState(true);
+  const [theme, setTheme] = useState("red");
   const [alertingState, setAlertingState] = useState<{
     isAlerting: boolean;
     activeRole: "mandob" | "preparer" | "employee" | null;
@@ -311,6 +313,11 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
       return;
     }
 
+    if (action === "start" && !showDismiss && !showWhatsapp && !showOpenApp) {
+      setError("يجب تفعيل خيار زر واحد على الأقل ليتمكن المستخدم من كتم التنبيه (زر الإغلاق، زر الواتساب، أو زر التطبيق)!");
+      return;
+    }
+
     if (!targetRole) return;
 
     setLoading(true);
@@ -337,6 +344,8 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
           customBody: action === "start" ? customBody : undefined,
           showWhatsapp: action === "start" ? showWhatsapp : undefined,
           showOpenApp: action === "start" ? showOpenApp : undefined,
+          showDismiss: action === "start" ? showDismiss : undefined,
+          theme: action === "start" ? theme : undefined,
         }),
       });
 
@@ -562,9 +571,9 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
       {!alertingState.isAlerting && !respondedName && (
         <div className="p-5 border border-gray-850 rounded-xl bg-gray-950/40 space-y-4">
           <h3 className="text-sm font-bold text-gray-300 flex items-center gap-2 border-b border-gray-850 pb-2">
-            ⚙️ تخصيص نصوص وأزرار التنبيه القوي (اختياري)
+            ⚙️ تخصيص نصوص وأزرار ومظهر التنبيه القوي (اختياري)
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs text-gray-400 font-semibold">عنوان التنبيه المخصص (إذا ترك فارغاً فلن يظهر أي نص):</label>
               <input
@@ -585,17 +594,30 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                 className="w-full px-4.5 py-2.5 bg-gray-900 border border-gray-850 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-red-500 transition-colors"
               />
             </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-gray-400 font-semibold">ستايل الشاشة (المظهر):</label>
+              <select
+                value={theme}
+                onChange={(e) => setTheme(e.target.value)}
+                className="w-full px-4.5 py-2.5 bg-gray-900 border border-gray-850 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-red-500 transition-colors cursor-pointer"
+              >
+                <option value="red">🚨 تنبيه أحمر كلاسيكي (محسّن)</option>
+                <option value="islamic">🕌 أذكار / إسلامي (أخضر وذهبي)</option>
+                <option value="official">💼 رسمي / إداري (كحلي ملكي)</option>
+                <option value="sport">⚡ نشاط / رياضي (برتقالي دافئ)</option>
+              </select>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-6 pt-2">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
-                checked={true}
-                disabled
-                className="rounded border-gray-700 text-red-600 focus:ring-red-500 focus:ring-offset-gray-900 w-4.5 h-4.5 opacity-60"
+                checked={showDismiss}
+                onChange={(e) => setShowDismiss(e.target.checked)}
+                className="rounded border-gray-700 text-red-600 focus:ring-red-500 focus:ring-offset-gray-900 w-4.5 h-4.5"
               />
-              <span className="text-xs text-gray-400 font-medium">إغلاق التنبيه وكتم الصوت (مفعل دائماً)</span>
+              <span className="text-xs text-gray-300 font-semibold">إظهار زر إغلاق التنبيه المعتاد</span>
             </label>
 
             <label className="flex items-center gap-2 cursor-pointer select-none">

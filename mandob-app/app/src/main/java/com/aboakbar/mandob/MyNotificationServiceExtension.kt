@@ -55,6 +55,8 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     val customBody = additionalData.optString("customBody", "")
                     val showWhatsapp = additionalData.optString("showWhatsapp", "false")
                     val showOpenApp = additionalData.optString("showOpenApp", "false")
+                    val showDismiss = additionalData.optString("showDismiss", "true")
+                    val theme = additionalData.optString("theme", "red")
 
                     // 1. بناء نية التنبيه وتمرير البيانات المخصصة
                     val alertIntent = Intent(context, StrongAlertActivity::class.java).apply {
@@ -64,6 +66,8 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                         putExtra("customBody", customBody)
                         putExtra("showWhatsapp", showWhatsapp)
                         putExtra("showOpenApp", showOpenApp)
+                        putExtra("showDismiss", showDismiss)
+                        putExtra("theme", theme)
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                     }
                     

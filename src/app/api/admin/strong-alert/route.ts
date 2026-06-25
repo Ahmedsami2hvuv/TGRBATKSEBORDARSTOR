@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { action, targetRole, userIds, alertId, customTitle, customBody, showWhatsapp, showOpenApp } = body;
+    const { action, targetRole, userIds, alertId, customTitle, customBody, showWhatsapp, showOpenApp, showDismiss, theme } = body;
 
     if (!action || !targetRole || !userIds || !Array.isArray(userIds) || userIds.length === 0 || !alertId) {
       return NextResponse.json({ error: "المعطيات غير مكتملة" }, { status: 400 });
@@ -49,7 +49,9 @@ export async function POST(request: Request) {
         customTitle: typeof customTitle === "string" ? customTitle : "",
         customBody: typeof customBody === "string" ? customBody : "",
         showWhatsapp: showWhatsapp === true ? "true" : "false",
-        showOpenApp: showOpenApp === true ? "true" : "false"
+        showOpenApp: showOpenApp === true ? "true" : "false",
+        showDismiss: showDismiss === false ? "false" : "true",
+        theme: typeof theme === "string" ? theme : "red"
       }
     });
 
