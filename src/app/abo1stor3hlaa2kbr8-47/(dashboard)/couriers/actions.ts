@@ -11,6 +11,12 @@ export type CourierFormState = {
   message?: string;
 };
 
+export type CourierMandoubResetState = {
+  error?: string;
+  success?: boolean;
+  ok?: boolean;
+};
+
 export async function createCourier(state: CourierFormState, formData: FormData): Promise<CourierFormState> {
   const name = formData.get("name") as string;
   const phone = formData.get("phone") as string;
@@ -160,7 +166,7 @@ export async function deleteCourierAction(
   }
 }
 
-export async function resetCourierMandoubTotals(id: string) {
+export async function resetCourierMandoubTotals(id: string, _prevState?: CourierMandoubResetState): Promise<CourierMandoubResetState> {
   try {
     const courier = await prisma.courier.findUnique({
       where: { id },
@@ -268,10 +274,10 @@ export async function resetCourierMandoubTotals(id: string) {
     revalidatePath(`${SECRET_ADMIN_PATH}/reports`);
     revalidatePath(`${SECRET_ADMIN_PATH}/reports/couriers-history`);
     
-    return { success: true };
+    return { success: true, ok: true };
   } catch (e: any) {
     console.error("Reset courier error:", e);
-    return { error: "فشل تصفير الحساب" };
+    return { error: "فشل تصفير الحساب", ok: false };
   }
 }
 

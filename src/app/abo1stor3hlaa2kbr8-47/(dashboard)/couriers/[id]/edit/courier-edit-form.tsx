@@ -59,10 +59,10 @@ export function CourierEditForm({
   const router = useRouter();
 
   useEffect(() => {
-    if (resetState.ok) {
+    if (resetState.success) {
       router.refresh();
     }
-  }, [resetState.ok, router]);
+  }, [resetState.success, router]);
 
   return (
     <Fragment>
@@ -224,7 +224,7 @@ export function CourierEditForm({
             {resetState.error}
           </p>
         ) : null}
-        {resetState.ok ? (
+        {resetState.success ? (
           <p className={ad.success}>
             تم التصفير. الأرقام تبدأ فترة جديدة مع الإبقاء على متبقي المحفظة في الرصيد المحمول.
           </p>

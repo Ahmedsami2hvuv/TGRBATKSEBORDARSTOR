@@ -784,14 +784,14 @@ export async function buildCourierWalletTelegramText(
   const orderMetrics = computeMandoubTotalsForCourier(ordersNorm, courier.id, baseline);
 
   const walletRemain = await computeMandoubWalletRemainAllTimeDinar(courier.id);
-  const handToAdmin = mandoubHandToAdminDinar(walletRemain, orderMetrics.sumEarnings);
+  const handToAdmin = mandoubHandToAdminDinar(walletRemain, new Decimal(orderMetrics.sumEarnings));
 
   const walletInValue = formatDinarAsAlf(walletInOutDisplay.walletIn);
   const walletOutValue = formatDinarAsAlf(walletInOutDisplay.walletOut);
   const walletNetValue = formatDinarAsAlf(walletInOutDisplay.walletIn.minus(walletInOutDisplay.walletOut));
 
-  const orderSumOutValue = formatDinarAsAlf(orderOnlySums.sumOut);
-  const orderSumInValue = formatDinarAsAlf(orderOnlySums.sumIn);
+  const orderSumOutValue = formatDinarAsAlf(orderOnlySums.sumPickupOut);
+  const orderSumInValue = formatDinarAsAlf(orderOnlySums.sumDeliveryIn);
 
   const earningsValue = formatDinarAsAlf(orderMetrics.sumEarnings);
   const walletRemainValue = formatDinarAsAlf(walletRemain);
