@@ -15,13 +15,10 @@ export function CourierResetButton({ courierId }: { courierId: string }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (resetState.ok) {
-      if (resetState.ok) {
-        // Option 1: show a simple toast or alert if needed
-      }
+    if (resetState.success) {
       router.refresh();
     }
-  }, [resetState.ok, router]);
+  }, [resetState.success, router]);
 
   return (
     <form
