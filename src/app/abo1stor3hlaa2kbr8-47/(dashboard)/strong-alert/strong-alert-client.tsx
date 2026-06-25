@@ -502,8 +502,6 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
 
       toast.success(editingRecordId ? "تم تحديث وحفظ التعديلات بنجاح!" : "تمت جدولة التنبيه بنجاح!");
       fetchScheduledAlerts();
-      
-      // إعادة تعيين النموذج وإنهاء التعديل
       resetForm();
     } catch (e: any) {
       toast.error(e.message || "حدث خطأ غير متوقع");
@@ -538,9 +536,8 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
     setSchedShowDismiss(!!alert.showDismiss);
     setSchedTheme(alert.theme || "red");
     
-    // سحب الواجهة للأعلى للوصول للنموذج
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    toast.info(`أنت الآن تقوم بتعديل التنبيه المجدول لـ ${alert.targetRole === "mandob" ? "المندوب" : alert.targetRole === "preparer" ? "المجهز" : "الموظف"}`);
+    toast.info(`تعديل التنبيه المجدول لـ ${alert.targetRole === "mandob" ? "المندوب" : alert.targetRole === "preparer" ? "المجهز" : "الموظف"}`);
   };
 
   const resetForm = () => {
@@ -629,6 +626,18 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
     }
   };
 
+  // دالة لجلب أسماء الأشخاص المحددين بدقة لعرضها للأدمن
+  const getTargetNames = (targetRole: string, targetIds: string) => {
+    if (targetIds === "all") return "جميع أسماء الفئة";
+    const ids = targetIds.split(",").map(id => id.trim()).filter(Boolean);
+    const allUsers = [...couriers, ...preparers, ...employees];
+    const names = ids.map(id => {
+      const user = allUsers.find(u => u.id === id);
+      return user ? user.name : "مستخدم غير معروف";
+    });
+    return names.join("، ");
+  };
+
   const daysLabels: { [key: string]: string } = {
     "0": "الأحد",
     "1": "الإثنين",
@@ -657,10 +666,38 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
   };
 
   return (
-    <div className="space-y-6 text-gray-200">
+    // الخلفية بأكملها تم تغييرها لتصبح داكنة جداً ومستقبلية نيون لتغطي كامل الصفحة بنجاح!
+    <div className="min-h-screen bg-[#030712] text-gray-100 p-6 md:p-8 rounded-3xl border border-slate-800/80 shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden space-y-6">
       
+      {/* شبكة نيون خلفية مستقبلية تكنولوجية */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20 pointer-events-none"></div>
+      
+      {/* زينة نيون علوية */}
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-red-500 via-purple-600 via-blue-500 to-cyan-400"></div>
+
+      {/* الهيدر المستقبلي للمنظومة */}
+      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+        <div>
+          <h2 className="text-xl md:text-2xl font-black tracking-wider text-red-500 flex items-center gap-2">
+            <span>[🚨 COMMAND_CENTER // ALERT_SYSTEM]</span>
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+          </h2>
+          <p className="text-xs text-gray-400 font-mono mt-1.5">
+            لوحة تحكم إرسال الاستدعاءات العاجلة والجدولة الزمنية التلقائية بتوقيت العراق المحلي.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="px-3.5 py-1.5 bg-slate-900/80 border border-slate-800 rounded-lg text-xs font-mono text-cyan-400">
+            SYS_STATUS: ONLINE
+          </div>
+          <div className="px-3.5 py-1.5 bg-slate-900/80 border border-slate-800 rounded-lg text-xs font-mono text-amber-500">
+            TZ: ASIA/BAGHDAD (GMT+3)
+          </div>
+        </div>
+      </div>
+
       {/* التبويبات الرئيسية العلوية: ستايل مستقبلي نيون */}
-      <div className="flex bg-slate-950/80 p-1.5 rounded-2xl gap-2 border border-slate-800/80 shadow-[0_0_20px_rgba(59,130,246,0.15)] backdrop-blur-md">
+      <div className="relative z-10 flex bg-slate-950/80 p-1.5 rounded-2xl gap-2 border border-slate-800/80 shadow-[0_0_25px_rgba(59,130,246,0.1)] backdrop-blur-md">
         <button
           onClick={() => setMainTab("instant")}
           className={`flex-1 py-4 text-center font-black text-sm rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] cursor-pointer ${
@@ -688,8 +725,8 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
       </div>
 
       {mainTab === "instant" ? (
-        // واجهة البث الفوري بلمسات مستقبلية
-        <div className="space-y-6 animate-fadeIn">
+        // واجهة البث الفوري
+        <div className="relative z-10 space-y-6 animate-fadeIn">
           {error && (
             <div className="p-4 bg-red-950/40 border border-red-800/80 text-red-400 rounded-xl text-sm font-semibold shadow-[0_0_15px_rgba(239,68,68,0.1)]">
               ⚠️ [SYS-ERR]: {error}
@@ -760,7 +797,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
             </div>
           )}
 
-          {/* تصنيف الفئات والبحث بلمسة مستقبلية */}
+          {/* تصنيف الفئات والبحث */}
           {!alertingState.isAlerting && !respondedName && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-950/40 p-3 rounded-2xl border border-slate-800/40 shadow-inner">
               <div className="md:col-span-2 flex gap-1 p-1 bg-slate-900/80 rounded-xl border border-slate-800">
@@ -910,7 +947,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-6 pt-2 border-t border-slate-850/60 pt-3">
+              <div className="flex flex-wrap gap-6 pt-3 border-t border-slate-850/60">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -928,7 +965,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                     onChange={(e) => setShowWhatsapp(e.target.checked)}
                     className="rounded border-slate-700 text-red-600 focus:ring-red-500 focus:ring-offset-slate-900 w-4.5 h-4.5"
                   />
-                  <span className="text-xs text-gray-300 font-semibold">إظهار زر مراسلة الواتساب (إيقاف ومراسلة)</span>
+                  <span className="text-xs text-gray-300 font-semibold">إظهار زر مراسلة الواتساب (راسل واتس اب)</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -944,7 +981,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
             </div>
           )}
 
-          {/* إطلاق التنبيه */}
+          {/* زر إطلاق البث */}
           {!alertingState.isAlerting && !respondedName && (
             <div className="flex justify-center pt-4">
               <button
@@ -969,12 +1006,11 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
           )}
         </div>
       ) : (
-        // واجهة التنبيه المجدول المزدانة بستايل مستقبلي تكنولوجي
-        <div className="space-y-8 animate-fadeIn">
+        // واجهة التنبيه المؤقت المجدول
+        <div className="relative z-10 space-y-8 animate-fadeIn">
           
           {/* قسم إعداد التنبيه المجدول */}
           <div className="p-6 border border-slate-800 rounded-2xl bg-slate-950/70 space-y-6 shadow-xl shadow-slate-950/60 backdrop-blur-md relative overflow-hidden">
-            {/* شريط زينة نيون في الأعلى */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500"></div>
 
             <div className="flex items-center justify-between border-b border-slate-850 pb-3">
@@ -1064,7 +1100,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
               </div>
             </div>
 
-            {/* سياق اختيار الأسماء المحددة */}
+            {/* اختيار الأسماء */}
             {schedTargetType === "custom" && (
               <div className="space-y-2 border border-slate-850 p-4.5 rounded-2xl bg-slate-950/30 backdrop-blur-sm animate-fadeIn">
                 <div className="flex items-center justify-between gap-4 pb-2 border-b border-slate-800">
@@ -1234,7 +1270,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                 </div>
               </div>
 
-              {/* أزرار تفاعل التنبيه */}
+              {/* أزرار التفاعل */}
               <div className="flex flex-wrap gap-6 pt-3 border-t border-slate-850/60">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
@@ -1253,7 +1289,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                     onChange={(e) => setSchedShowWhatsapp(e.target.checked)}
                     className="rounded border-slate-700 text-cyan-600 focus:ring-cyan-500 focus:ring-offset-slate-900 w-4.5 h-4.5"
                   />
-                  <span className="text-xs text-gray-300 font-semibold">إظهار زر مراسلة الواتساب (إيقاف ومراسلة)</span>
+                  <span className="text-xs text-gray-300 font-semibold">إظهار زر مراسلة الواتساب (راسل واتس اب)</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -1268,7 +1304,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
               </div>
             </div>
 
-            {/* أزرار الحفظ أو تحديث الحفظ */}
+            {/* الحفظ والتعديل */}
             <div className="flex justify-center pt-2">
               <button
                 type="button"
@@ -1291,7 +1327,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
             </div>
           </div>
 
-          {/* قائمة التنبيهات المجدولة */}
+          {/* جدول التنبيهات المجدولة */}
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <h3 className="text-base font-bold text-gray-200 flex items-center gap-2">
@@ -1326,11 +1362,6 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                             : alert.targetRole === "preparer"
                             ? "📦 مجهز"
                             : "💼 موظف";
-                        
-                        const targetLabel =
-                          alert.targetIds === "all"
-                            ? "جميع الأسماء"
-                            : `محدد (${alert.targetIds.split(",").length} شخص)`;
 
                         const isBeingEdited = editingRecordId === alert.recordId;
 
@@ -1344,7 +1375,10 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                             {/* المستهدف */}
                             <td className="px-5 py-4">
                               <div className="font-bold text-gray-200">{roleLabel}</div>
-                              <div className="text-xs text-gray-400 mt-1 font-mono">{targetLabel}</div>
+                              {/* هنا نعرض أسماء الأشخاص الفعليين بدقة بدلاً من محدد (1 شخص)! */}
+                              <div className="text-xs text-gray-400 mt-1 font-sans break-words max-w-[200px]">
+                                {getTargetNames(alert.targetRole, alert.targetIds)}
+                              </div>
                             </td>
                             {/* الوقت */}
                             <td className="px-5 py-4 font-mono font-black text-cyan-400 text-sm">
@@ -1381,7 +1415,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                                 )}
                                 {alert.showWhatsapp && (
                                   <span className="bg-emerald-950/15 px-1.5 py-0.5 rounded text-[10px] text-emerald-400 border border-emerald-900/30">
-                                    إيقاف ومراسلة
+                                    راسل واتس اب
                                   </span>
                                 )}
                                 {alert.showOpenApp && (
