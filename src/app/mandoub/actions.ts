@@ -363,48 +363,8 @@ export async function updateMandoubCustomerDetails(
       secondCustomerPhone: secondPhone,
       secondCustomerLocationUrl: secondCustomerLocationUrl,
       secondCustomerLandmark: secondCustomerLandmark,
+      secondCustomerAlternatePhone: secondAlternateDigits,
     };
-    
-    if (order.secondCustomerId) {
-      await prisma.customer.update({
-        where: { id: order.secondCustomerId },
-        data: {
-          phone: secondPhone,
-          customerLocationUrl: secondCustomerLocationUrl,
-          customerLandmark: secondCustomerLandmark,
-          alternatePhone: secondAlternateDigits,
-        }
-      });
-    } else if (secondPhone) {
-       const existingSecond = await prisma.customer.findFirst({
-         where: { shopId: order.shopId, phone: secondPhone }
-       });
-       if (existingSecond) {
-         await prisma.customer.update({
-           where: { id: existingSecond.id },
-           data: {
-             customerLocationUrl: secondCustomerLocationUrl,
-             customerLandmark: secondCustomerLandmark,
-             alternatePhone: secondAlternateDigits,
-           }
-         });
-         secondCustomerPatch.secondCustomer = { connect: { id: existingSecond.id } };
-       } else {
-         const createdSecond = await prisma.customer.create({
-           data: {
-             shopId: order.shopId,
-             phone: secondPhone,
-             name: "",
-             customerRegionId: order.secondCustomerRegionId,
-             customerLocationUrl: secondCustomerLocationUrl,
-             customerLandmark: secondCustomerLandmark,
-             alternatePhone: secondAlternateDigits,
-             customerDoorPhotoUrl: null,
-           }
-         });
-         secondCustomerPatch.secondCustomer = { connect: { id: createdSecond.id } };
-       }
-    }
   }
 
   if (order.customerId) {
