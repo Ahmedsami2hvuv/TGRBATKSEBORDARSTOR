@@ -11,7 +11,7 @@ function verifyCronRequest(request: Request): boolean {
 
   // 2. التحقق من ترويسة Vercel Cron
   const vercelCronHeader = request.headers.get("x-vercel-cron");
-  if (vercelCronHeader === "true") {
+  if (vercelCronHeader === "true" || vercelCronHeader?.toLowerCase() === "true") {
     return true;
   }
 
@@ -187,6 +187,16 @@ async function handleCron(request: Request) {
           if (result.success) {
             console.log(`[Cron] Scheduled alert ${data.id} sent successfully to ${userIds.length} users.`);
             sentAlertsInfo.push(`تم إرسال التنبيه "${title}" بنجاح لـ ${userIds.length} مستخدم.`);
+            
+            // تحديث تاريخ ووقت آخر إرسال فقط عند النجاح لمنع ضياع التنبيه في حال فشل OneSignal المؤقت
+            data.lastSentAt = new Date().toISOString();
+            
+            await prisma.schemaPlaceholder.update({
+              where: { id: rec.id },
+              data: {
+                note: "scheduled_alert:" + JSON.stringify(data),
+              },
+            });
           } else {
             console.error(`[Cron] Failed to send scheduled alert ${data.id}:`, result.error);
             sentAlertsInfo.push(`فشل إرسال التنبيه "${title}": ${result.error}`);
@@ -195,16 +205,6 @@ async function handleCron(request: Request) {
           console.warn(`[Cron] No active users found for scheduled alert ${data.id}`);
           sentAlertsInfo.push(`لم يتم العثور على مستخدمين نشطين للتنبيه "${data.customTitle}".`);
         }
-
-        // تحديث تاريخ ووقت آخر إرسال لمنع التكرار
-        data.lastSentAt = new Date().toISOString();
-        
-        await prisma.schemaPlaceholder.update({
-          where: { id: rec.id },
-          data: {
-            note: "scheduled_alert:" + JSON.stringify(data),
-          },
-        });
       }
     }
 
