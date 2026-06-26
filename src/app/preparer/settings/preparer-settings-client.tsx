@@ -28,6 +28,74 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
   const [showDisableForm, setShowDisableForm] = useState(false);
   const [showChangeForm, setShowChangeForm] = useState(false);
 
+  // إعدادات إيماءات الأصابع
+  const [gestures, setGestures] = useState<{
+    long_press_3: string;
+    long_press_4: string;
+    swipe_3_right: string;
+    swipe_3_left: string;
+    swipe_3_up: string;
+    swipe_3_down: string;
+  }>({
+    long_press_3: "none",
+    long_press_4: "none",
+    swipe_3_right: "none",
+    swipe_3_left: "none",
+    swipe_3_up: "none",
+    swipe_3_down: "none",
+  });
+
+  useEffect(() => {
+    const keys = ["long_press_3", "long_press_4", "swipe_3_right", "swipe_3_left", "swipe_3_up", "swipe_3_down"] as const;
+    const loadedGestures = {
+      long_press_3: "none",
+      long_press_4: "none",
+      swipe_3_right: "none",
+      swipe_3_left: "none",
+      swipe_3_up: "none",
+      swipe_3_down: "none",
+    };
+    
+    keys.forEach((key) => {
+      const val = localStorage.getItem(`gesture_${key}`);
+      if (val) {
+        loadedGestures[key] = val;
+      }
+    });
+    
+    setGestures(loadedGestures);
+  }, []);
+
+  const handleGestureChange = (key: "long_press_3" | "long_press_4" | "swipe_3_right" | "swipe_3_left" | "swipe_3_up" | "swipe_3_down", val: string) => {
+    localStorage.setItem(`gesture_${key}`, val);
+    setGestures((prev) => ({
+      ...prev,
+      [key]: val,
+    }));
+
+    // مزامنة الإعدادات فوراً مع تطبيق الأندرويد
+    if (typeof window !== "undefined" && (window as any).AndroidGestures?.saveGestureAction) {
+      try {
+        (window as any).AndroidGestures.saveGestureAction(key, val);
+      } catch (e) {
+        console.error("Failed to sync gesture with Android", e);
+      }
+    }
+  };
+
+  // مزامنة تلقائية للإيماءات مع الأندرويد عند تحميل الصفحة للتأكيد
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).AndroidGestures?.saveGestureAction) {
+      const keys = ["long_press_3", "long_press_4", "swipe_3_right", "swipe_3_left", "swipe_3_up", "swipe_3_down"] as const;
+      keys.forEach((key) => {
+        const val = localStorage.getItem(`gesture_${key}`) || "none";
+        try {
+          (window as any).AndroidGestures.saveGestureAction(key, val);
+        } catch (e) {}
+      });
+    }
+  }, [gestures]);
+
   const baseQuery = new URLSearchParams();
   baseQuery.set("p", auth.p);
   if (auth.exp) baseQuery.set("exp", auth.exp);
@@ -351,6 +419,50 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
                 </button>
               );
             })}
+          </div>
+        </section>
+
+        {/* قسم تخصيص إيماءات الأصابع */}
+        <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <span className="text-xl">🖐️</span>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">إيماءات وحركات الأصابع</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">خصص حركات أصابعك على الشاشة لتنفيذ إجراءات سريعة فورية</p>
+            </div>
+          </div>
+
+          <div className="space-y-4 bg-slate-100/50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200/60 dark:border-slate-850">
+            {[
+              { key: "long_press_3", label: "النقر المطول بـ 3 أصابع (ثانيتين)" },
+              { key: "long_press_4", label: "النقر المطول بـ 4 أصابع (ثانيتين)" },
+              { key: "swipe_3_right", label: "السحب بـ 3 أصابع لليمين ➡️" },
+              { key: "swipe_3_left", label: "السحب بـ 3 أصابع لليسار ⬅️" },
+              { key: "swipe_3_up", label: "السحب بـ 3 أصابع للأعلى ⬆️" },
+              { key: "swipe_3_down", label: "السحب بـ 3 أصابع للأسفل ⬇️" },
+            ].map((gesture) => (
+              <div key={gesture.key} className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-350">{gesture.label}</label>
+                <select
+                  value={gestures[gesture.key as keyof typeof gestures]}
+                  onChange={(e) => handleGestureChange(gesture.key as any, e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-850 dark:border-slate-800 dark:bg-slate-950 dark:text-white outline-none focus:border-sky-500 dark:focus:border-[#00f3ff] transition"
+                >
+                  <option value="none">🚫 لا شيء (تعطيل الحركة)</option>
+                  <option value="create_order">➕ إنشاء طلب يدوي</option>
+                  <option value="debts_list">💸 فتح قائمة الديون</option>
+                  <option value="latest_order">📦 فتح أحدث طلب تجهيز</option>
+                  <option value="open_whatsapp">💬 فتح واتس اب الإدارة</option>
+                  <option value="open_telegram">✈️ فتح تليجرام الإدارة</option>
+                  <option value="open_camera">📷 فتح الكاميرا فوراً</option>
+                  <option value="mute_alert">🔇 كتم وإيقاف التنبيه القوي</option>
+                  <option value="privacy_mode">👁️ وضع الخصوصية (إخفاء المبالغ المالية)</option>
+                  <option value="reload_page">🔄 تحديث الصفحة</option>
+                  <option value="text_zoom_in">🔍 تكبير نصوص الصفحة</option>
+                  <option value="text_zoom_out">📉 تصغير نصوص الصفحة</option>
+                </select>
+              </div>
+            ))}
           </div>
         </section>
 

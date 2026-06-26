@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { PreparerLocationGate } from "./preparer-location-gate";
 import { PreparerStickyMoneyStrip } from "./preparer-sticky-money-strip";
+import { GestureHandler } from "./gesture-handler";
 
 export default function PreparerLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,6 +18,7 @@ export default function PreparerLayout({ children }: { children: React.ReactNode
           {children}
         </PreparerLocationGate>
       </Suspense>
+      <GestureHandler />
     </div>
   );
 }
