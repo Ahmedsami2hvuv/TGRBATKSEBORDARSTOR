@@ -112,11 +112,21 @@ export function DynamicIcon({
   }
 
   if (resolvedIcon.type === 'svg') {
+    let cleanHtml = iconUrl;
+    if (typeof window !== 'undefined') {
+      try {
+        const DOMPurify = require('dompurify');
+        cleanHtml = DOMPurify.sanitize(iconUrl);
+      } catch (e) {
+        console.error("DOMPurify not loaded yet", e);
+      }
+    }
+
     return (
       <div
         className={className}
         style={{ width: fillOrConfiguredWidth, height: fillOrConfiguredHeight }}
-        dangerouslySetInnerHTML={{ __html: iconUrl }}
+        dangerouslySetInnerHTML={{ __html: cleanHtml }}
       />
     );
   }
