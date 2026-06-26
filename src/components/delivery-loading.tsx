@@ -117,20 +117,16 @@ export function DeliveryLoading({
               allowFullScreen
             />
           ) : playerLoaded ? (
-            <div
-              className="w-full h-full flex items-center justify-center relative z-10"
-              key={iconUrl}
-              dangerouslySetInnerHTML={{
-                __html: `<lottie-player
-                  src="${iconUrl}"
-                  background="transparent"
-                  speed="1"
-                  loop
-                  autoplay
-                  style="width: 100%; height: 100%; display: block;"
-                ></lottie-player>`
-              }}
-            />
+            <div className="w-full h-full flex items-center justify-center relative z-10" key={iconUrl}>
+               {React.createElement("lottie-player", {
+                 src: iconUrl,
+                 background: "transparent",
+                 speed: "1",
+                 loop: true,
+                 autoplay: true,
+                 style: { width: "100%", height: "100%", display: "block" }
+               })}
+            </div>
           ) : null}
 
           {/* طبقة تحميل احتياطية تظهر خلف الأنيميشن أو مكانه - تظهر فقط في حالة الـ Lottie البطيء */}
