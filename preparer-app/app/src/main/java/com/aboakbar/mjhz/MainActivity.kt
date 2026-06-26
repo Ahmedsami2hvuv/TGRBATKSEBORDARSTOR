@@ -780,17 +780,18 @@ class MainActivity : AppCompatActivity() {
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
                 activePointerCount = ev.pointerCount
-                if (activePointerCount >= 3) {
+                if (activePointerCount >= 2 && activePointerCount <= 5) {
                     isMultiTouchDetected = true
                     touchDownX = ev.getX(0)
                     touchDownY = ev.getY(0)
                     
-                    // بدء مؤقت النقر المطول بـ 3 أو 4 أصابع
+                    // بدء مؤقت النقر المطول بـ 2 أو 3 أو 4 أو 5 أصابع
                     startLongPressTimer(activePointerCount)
                 }
             }
             MotionEvent.ACTION_MOVE -> {
-                if (isMultiTouchDetected && !isGestureExecuted && ev.pointerCount >= 3) {
+                val fingers = ev.pointerCount
+                if (isMultiTouchDetected && !isGestureExecuted && fingers >= 2 && fingers <= 5) {
                     val currentX = ev.getX(0)
                     val currentY = ev.getY(0)
                     val deltaX = currentX - touchDownX
@@ -805,12 +806,13 @@ class MainActivity : AppCompatActivity() {
                         isGestureExecuted = true
                         
                         // تحديد اتجاه السحب
-                        val gestureKey = if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                            if (deltaX > 0) "swipe_3_right" else "swipe_3_left"
+                        val dir = if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                            if (deltaX > 0) "right" else "left"
                         } else {
-                            if (deltaY > 0) "swipe_3_down" else "swipe_3_up"
+                            if (deltaY > 0) "down" else "up"
                         }
                         
+                        val gestureKey = "swipe_${fingers}_$dir"
                         executeGestureAction(gestureKey)
                     }
                 }
@@ -840,8 +842,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun startLongPressTimer(pointerCount: Int) {
         cancelLongPressTimer()
+        if (pointerCount < 2 || pointerCount > 5) return
         
-        val gestureKey = if (pointerCount == 3) "long_press_3" else if (pointerCount >= 4) "long_press_4" else return
+        val gestureKey = "long_press_$pointerCount"
         
         longPressRunnable = Runnable {
             isGestureExecuted = true
