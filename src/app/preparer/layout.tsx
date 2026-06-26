@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { PreparerLocationGate } from "./preparer-location-gate";
 import { PreparerStickyMoneyStrip } from "./preparer-sticky-money-strip";
-import { FloatingReloadButton } from "@/components/floating-reload-button";
 
 export default function PreparerLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -18,7 +17,6 @@ export default function PreparerLayout({ children }: { children: React.ReactNode
           {children}
         </PreparerLocationGate>
       </Suspense>
-      <FloatingReloadButton />
     </div>
   );
 }

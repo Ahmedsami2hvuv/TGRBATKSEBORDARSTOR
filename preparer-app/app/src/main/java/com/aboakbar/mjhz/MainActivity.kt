@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private lateinit var swipeRefreshLayout: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
     private lateinit var loginLayout: View
     private lateinit var mainLayout: View
     private lateinit var etPassword: EditText
@@ -56,6 +57,7 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize Views
         webView = findViewById(R.id.webView)
+        swipeRefreshLayout = findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.swipeRefreshLayout)
         loginLayout = findViewById(R.id.loginLayout)
         mainLayout = findViewById(R.id.mainLayout)
         etPassword = findViewById(R.id.etPassword)
@@ -179,9 +181,25 @@ class MainActivity : AppCompatActivity() {
         settings.displayZoomControls = false
 
         // تحسين أداء اللمس والتمرير الفوري
-        webView.overScrollMode = View.OVER_SCROLL_NEVER
+        webView.overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
         webView.isVerticalFadingEdgeEnabled = false
         webView.isHorizontalFadingEdgeEnabled = false
+
+        // إعداد السحب للتحديث
+        swipeRefreshLayout.setOnRefreshListener {
+            webView.reload()
+        }
+
+        // تفعيل SwipeRefreshLayout فقط عندما يكون WebView في الأعلى تماماً لمنع التداخل أثناء التمرير
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            webView.setOnScrollChangeListener { _, _, scrollY, _, _ ->
+                swipeRefreshLayout.isEnabled = (scrollY == 0)
+            }
+        } else {
+            webView.viewTreeObserver.addOnScrollChangedListener {
+                swipeRefreshLayout.isEnabled = (webView.scrollY == 0)
+            }
+        }
 
         // Enable cookie manager
         val cookieManager = CookieManager.getInstance()
@@ -209,11 +227,13 @@ class MainActivity : AppCompatActivity() {
                 super.onPageFinished(view, url)
                 CookieManager.getInstance().flush()
                 injectPerformanceCss(view)
+                swipeRefreshLayout.isRefreshing = false // إيقاف مؤشر التحميل
             }
 
             override fun onPageCommitVisible(view: WebView?, url: String?) {
                 super.onPageCommitVisible(view, url)
                 injectPerformanceCss(view)
+                swipeRefreshLayout.isRefreshing = false // إيقاف مؤشر التحميل للاحتياط
             }
         }
 
@@ -436,12 +456,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun showWebViewLayout() {
         loginLayout.visibility = View.GONE
-        webView.visibility = View.VISIBLE
+        swipeRefreshLayout.visibility = View.VISIBLE
         mainLayout.background = null
     }
 
     private fun showLoginLayout() {
-        webView.visibility = View.GONE
+        swipeRefreshLayout.visibility = View.GONE
         loginLayout.visibility = View.VISIBLE
         mainLayout.setBackgroundResource(R.drawable.gradient_bg)
     }
@@ -462,7 +482,7 @@ class MainActivity : AppCompatActivity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (webView.visibility == View.VISIBLE && webView.canGoBack()) {
+        if (swipeRefreshLayout.visibility == View.VISIBLE && webView.canGoBack()) {
             webView.goBack()
         } else {
             super.onBackPressed()
@@ -473,7 +493,7 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         val targetUrl = intent?.getStringExtra("target_url")
-        if (!targetUrl.isNullOrEmpty() && webView.visibility == View.VISIBLE) {
+        if (!targetUrl.isNullOrEmpty() && swipeRefreshLayout.visibility == View.VISIBLE) {
             webView.loadUrl(targetUrl)
         }
     }

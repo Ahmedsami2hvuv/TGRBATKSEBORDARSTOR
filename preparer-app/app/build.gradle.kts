@@ -11,8 +11,8 @@ android {
         applicationId = "com.aboakbar.mjhz"
         minSdk = 24
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -36,6 +36,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
     implementation("androidx.appcompat:appcompat:1.6.1")

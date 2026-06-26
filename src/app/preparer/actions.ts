@@ -2423,4 +2423,48 @@ export async function verifyPreparerSalaryPinCode(_prev: any, formData: FormData
   }
 }
 
+/** حذف مسودات التجهيز المكتملة أو المؤرشفة (فردياً أو جماعياً) */
+export async function deletePreparerShoppingDraftsAction(
+  _prev: any,
+  formData: FormData
+): Promise<PreparerActionState> {
+  try {
+    const v = readPortal(formData);
+    if (!v.ok) return { error: "الرابط غير صالح." };
+
+    const draftIdsStr = String(formData.get("draftIds") ?? "").trim();
+    if (!draftIdsStr) return { error: "المعرفات ناقصة." };
+
+    const draftIds = draftIdsStr.split(",").map(id => id.trim()).filter(Boolean);
+    if (draftIds.length === 0) return { error: "لم يتم تحديد أي مسودات للحذف." };
+
+    // التحقق من أن المسودات تخص هذا المجهز وأن حالتها sent أو archived لزيادة الأمان
+    const drafts = await prisma.companyPreparerShoppingDraft.findMany({
+      where: {
+        id: { in: draftIds },
+        preparerId: v.preparerId,
+        status: { in: ["sent", "archived"] }
+      },
+      select: { id: true }
+    });
+
+    const validIds = drafts.map(d => d.id);
+    if (validIds.length === 0) {
+      return { error: "لا توجد مسودات مكتملة صالحة للحذف." };
+    }
+
+    await prisma.companyPreparerShoppingDraft.deleteMany({
+      where: { id: { in: validIds } }
+    });
+
+    const { revalidatePath } = await import("next/cache");
+    revalidatePath("/preparer/preparation");
+    revalidatePath("/preparer/preparation/completed");
+    return { ok: true };
+  } catch (e) {
+    console.error("Delete Drafts Error:", e);
+    return { error: "فشل حذف المسودات المحددة." };
+  }
+}
+
 

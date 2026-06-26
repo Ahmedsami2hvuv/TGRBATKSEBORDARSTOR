@@ -1,14 +1,9 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { verifyCompanyPreparerPortalQuery } from "@/lib/company-preparer-portal-link";
-import { preparerCourierAssignWhere } from "@/lib/courier-assignable";
-import { ALF_PER_DINAR } from "@/lib/money-alf";
 import { preparerPath } from "@/lib/preparer-portal-nav";
-import { loadPreparerPortalOrderTableData } from "@/lib/preparer-portal-order-table-data";
 import { serializePrisma } from "@/lib/serialize-prisma";
-import { PreparerOrdersSection } from "../preparer-orders-client";
 import { PreparerSiteOrderDraftClient } from "./preparer-site-order-draft-client";
-import { whatsappMeUrl } from "@/lib/whatsapp";
 import { FullscreenWalletLauncher } from "@/components/fullscreen-wallet-launcher";
 import { ModalAwareNavButton } from "@/components/modal-aware-nav-button";
 
@@ -33,13 +28,10 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
 
   if (!v.ok) return <div className="p-8 text-center font-bold">الرابط غير صالح.</div>;
 
-  const [preparerRaw, icons] = await Promise.all([
-    prisma.companyPreparer.findFirst({
-      where: { id: v.preparerId, active: true },
-      include: { shopLinks: { where: { canSubmitOrders: true }, include: { shop: { include: { region: true } } } } },
-    }),
-    import("@/lib/icon-settings").then(m => m.getGlobalIcons())
-  ]);
+  const preparerRaw = await prisma.companyPreparer.findFirst({
+    where: { id: v.preparerId, active: true },
+    include: { shopLinks: { where: { canSubmitOrders: true }, include: { shop: { include: { region: true } } } } },
+  });
 
   if (!preparerRaw) return <div className="p-8 text-center font-bold">الحساب غير متاح.</div>;
 
@@ -47,13 +39,8 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
   const auth = { p: p!, exp: exp!, s: s! };
   const homeHref = preparerPath("/preparer", auth);
   const shopIds = (preparerRaw.shopLinks || []).map((l: any) => l.shopId);
-  const orderListResetAt = preparerRaw.orderListResetAt;
 
-  const [couriers, webStorePending, drafts] = await Promise.all([
-    prisma.courier.findMany({
-      where: preparerCourierAssignWhere,
-      select: { id: true, name: true }
-    }),
+  const [webStorePending, drafts] = await Promise.all([
     prisma.order.findMany({
       where: {
         shopId: { in: shopIds },
@@ -79,25 +66,10 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
     }),
   ]);
 
-  const orderTable = await loadPreparerPortalOrderTableData({
-    preparerId,
-    shopIds,
-    orderListResetAt,
-    tab: "all",
-    wardFilter: "lower",
-    saderFilter: "lower",
-    prepFilter: null,
-    onlySubmittedByThisPreparer: true,
-  });
-
   // Serialization for Next.js 15
   const safePreparer = serializePrisma(preparerRaw);
-  const safeIcons = serializePrisma(icons);
   const safeWebStore = serializePrisma(webStorePending);
   const safeDrafts = serializePrisma(drafts);
-  const safeOrderTableRows = serializePrisma(orderTable?.rows || []);
-  const safeSearchFields = serializePrisma(orderTable?.searchFields || []);
-  const safeCouriers = serializePrisma(couriers);
 
   return (
     <div className="kse-app-inner mx-auto max-w-6xl px-3 py-4 pb-24 sm:px-4">
@@ -109,6 +81,9 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
           <FullscreenWalletLauncher href={preparerPath("/preparer/order/new", auth)} className="inline-flex items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100" title="طلب يدوي">
             ➕ طلب يدوي
           </FullscreenWalletLauncher>
+          <ModalAwareNavButton href={preparerPath("/preparer/preparation/completed", auth)} className="inline-flex items-center justify-center rounded-xl border border-violet-300 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-900 shadow-sm transition hover:bg-violet-100">
+            📁 الطلبات المكتملة
+          </ModalAwareNavButton>
         </div>
       </div>
 
@@ -172,13 +147,6 @@ export default async function PreparerPreparationPage({ searchParams }: Props) {
       <div className="mx-auto max-w-lg">
         <PreparerSiteOrderDraftClient auth={auth} preparerName={safePreparer.name} homeHref={homeHref} />
       </div>
-
-      <section className="kse-glass-dark mt-8 overflow-hidden border border-sky-200 shadow-sm dark:border-slate-800">
-        <div className="p-3 border-b border-sky-100 dark:border-slate-800">
-          <h3 className="text-sm font-bold text-sky-900 dark:text-sky-400">الطلبات المرفوعة</h3>
-        </div>
-        <PreparerOrdersSection allRows={safeOrderTableRows} searchFields={safeSearchFields} auth={auth} tab="all" initialQuery={sp.q || ""} couriersForBulkAssign={safeCouriers} />
-      </section>
     </div>
   );
 }
