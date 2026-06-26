@@ -8,12 +8,19 @@
     android:background="@drawable/gradient_bg"
     android:fitsSystemWindows="true">
 
-    <!-- Fullscreen WebView -->
-    <WebView
-        android:id="@+id/webView"
+    <!-- Fullscreen SwipeRefreshLayout for Pull-to-refresh -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone" />
+        android:visibility="gone">
+
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <!-- Glassmorphic Login Form Container -->
     <androidx.constraintlayout.widget.ConstraintLayout

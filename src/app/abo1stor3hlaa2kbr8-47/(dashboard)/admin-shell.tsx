@@ -11,7 +11,6 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig, getGlobalIcons } from "@/lib/icon-settings";
 import { OneSignalInitializer } from "@/components/OneSignalInitializer";
 import { FloatingAdminMenu } from "@/components/floating-admin-menu";
-import { FloatingReloadButton } from "@/components/floating-reload-button";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -618,7 +617,6 @@ export function AdminShell({
             </div>
           </div>
         </main>
-        <FloatingReloadButton />
       </div>
     </div>
   );

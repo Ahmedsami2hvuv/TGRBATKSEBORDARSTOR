@@ -20,6 +20,7 @@ import android.webkit.*
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.biometric.BiometricPrompt
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -45,6 +46,7 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var loginLayout: View
     private lateinit var mainLayout: View
     private lateinit var etPassword: EditText
@@ -104,7 +106,18 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize Views
         webView = findViewById(R.id.webView)
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         loginLayout = findViewById(R.id.loginLayout)
+
+        // إعداد السحب للتحديث
+        swipeRefreshLayout.setOnRefreshListener {
+            webView.reload()
+        }
+
+        // تفعيل السحب للتحديث فقط عندما يكون المستخدم في بداية الصفحة (ScrollY == 0)
+        webView.viewTreeObserver.addOnScrollChangedListener {
+            swipeRefreshLayout.isEnabled = webView.scrollY == 0
+        }
         mainLayout = findViewById(R.id.mainLayout)
         etPassword = findViewById(R.id.etPassword)
         btnToggleVisibility = findViewById(R.id.btnToggleVisibility)
@@ -292,6 +305,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
+                swipeRefreshLayout.isRefreshing = false
                 // Force sync cookies
                 CookieManager.getInstance().flush()
                 // مزامنة التوكن من الكوكيز إلى SharedPreferences
@@ -658,11 +672,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun showWebViewLayout() {
         loginLayout.visibility = View.GONE
+        swipeRefreshLayout.visibility = View.VISIBLE
         webView.visibility = View.VISIBLE
         mainLayout.background = null
     }
 
     private fun showLoginLayout() {
+        swipeRefreshLayout.visibility = View.GONE
         webView.visibility = View.GONE
         loginLayout.visibility = View.VISIBLE
         mainLayout.setBackgroundResource(R.drawable.gradient_bg)

@@ -42,9 +42,9 @@ export function GestureHandler() {
       const currentZoomStr = document.body.style.zoom || "100%";
       let currentZoom = parseInt(currentZoomStr) || 100;
       if (zoomIn) {
-        currentZoom = Math.min(currentZoom + 10, 160);
+        currentZoom = Math.min(currentZoom + 1, 160);
       } else {
-        currentZoom = Math.max(currentZoom - 10, 80);
+        currentZoom = Math.max(currentZoom - 1, 80);
       }
       document.body.style.zoom = `${currentZoom}%`;
       localStorage.setItem("kse_gesture_zoom", `${currentZoom}%`);
