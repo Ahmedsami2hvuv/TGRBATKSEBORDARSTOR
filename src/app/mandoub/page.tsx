@@ -622,25 +622,28 @@ export default async function MandoubPage({ searchParams }: Props) {
     const customerLoc = extractLatLngFromLocationInput(params.locationUrl);
     if (!customerLoc) return fallback ? `قريب من (${fallback})` : "—";
 
-    let nearest: { name: string; regionName: string; distanceM: number } | null = null;
-    for (const wp of allWaypoints) {
-      const distanceM = haversineMeters(
-        customerLoc.latitude,
-        customerLoc.longitude,
-        wp.latitude,
-        wp.longitude,
-      );
-      if (!nearest || distanceM < nearest.distanceM) {
-        nearest = {
+    const validWaypoints = allWaypoints
+      .map((wp) => {
+        const distanceM = haversineMeters(
+          customerLoc.latitude,
+          customerLoc.longitude,
+          wp.latitude,
+          wp.longitude
+        );
+        return {
           name: wp.name?.trim() || "مدخل",
           regionName: wp.region?.name?.trim() || "منطقة غير معروفة",
           distanceM,
         };
-      }
-    }
-    if (!nearest || nearest.distanceM > 300) {
+      })
+      .filter((wp) => wp.distanceM <= 300)
+      .sort((a, b) => a.distanceM - b.distanceM);
+
+    if (validWaypoints.length === 0) {
       return fallback ? `قريب من (${fallback})` : "—";
     }
+
+    const nearest = validWaypoints[0];
     return `قريب من (${nearest.name})`;
   }
 

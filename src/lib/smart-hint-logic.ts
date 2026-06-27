@@ -66,25 +66,25 @@ export async function computeSmartHint(
   const customerLoc = await extractLatLngFromLocationInputSmart(locationUrl);
   if (!customerLoc) return "—";
 
-  let nearest: { name: string; regionName: string; distanceM: number } | null = null;
-  for (const point of allWaypoints) {
-    const distanceM = haversineMeters(
-      customerLoc.latitude,
-      customerLoc.longitude,
-      point.latitude,
-      point.longitude
-    );
-    if (!nearest || distanceM < nearest.distanceM) {
-      nearest = {
-        name: point.name?.trim() || "مدخل",
-        regionName: point.region?.name?.trim() || "منطقة غير معروفة",
+  const validWaypoints = allWaypoints
+    .map((wp) => {
+      const distanceM = haversineMeters(
+        customerLoc.latitude,
+        customerLoc.longitude,
+        wp.latitude,
+        wp.longitude
+      );
+      return {
+        name: wp.name?.trim() || "مدخل",
+        regionName: wp.region?.name?.trim() || "منطقة غير معروفة",
         distanceM,
       };
-    }
-  }
+    })
+    .filter((wp) => wp.distanceM <= 300)
+    .sort((a, b) => a.distanceM - b.distanceM);
 
-  if (!nearest) return "—";
-  if (nearest.distanceM > 300) return "—";
+  if (validWaypoints.length === 0) return "—";
 
+  const nearest = validWaypoints[0];
   return `قريب من (${nearest.name})`;
 }

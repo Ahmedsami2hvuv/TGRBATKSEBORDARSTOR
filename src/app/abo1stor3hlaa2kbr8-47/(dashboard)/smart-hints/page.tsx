@@ -83,24 +83,23 @@ export default async function SmartHintsPage() {
         };
       }
 
-      let nearest: { name: string; regionName: string; distanceM: number } | null = null;
-      for (const wp of allWaypoints) {
-        const dist = haversineMeters(
-          customerLoc.latitude,
-          customerLoc.longitude,
-          wp.latitude,
-          wp.longitude
-        );
-        if (!nearest || dist < nearest.distanceM) {
-          nearest = {
+      const validWaypoints = allWaypoints
+        .map((wp) => {
+          const dist = haversineMeters(
+            customerLoc.latitude,
+            customerLoc.longitude,
+            wp.latitude,
+            wp.longitude
+          );
+          return {
             name: wp.name || "مدخل",
             regionName: wp.region?.name || "منطقة غير معروفة",
             distanceM: dist,
           };
-        }
-      }
+        })
+        .sort((a, b) => a.distanceM - b.distanceM);
 
-      if (!nearest) {
+      if (validWaypoints.length === 0) {
         return {
           ...order,
           hasLocation: true,
@@ -110,6 +109,8 @@ export default async function SmartHintsPage() {
           hintText: "—",
         };
       }
+
+      const nearest = validWaypoints[0];
 
       if (nearest.distanceM > 300) {
         return {
