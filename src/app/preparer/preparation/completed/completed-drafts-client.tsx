@@ -268,12 +268,6 @@ export function CompletedDraftsClient({ initialDrafts, auth, backHref, preparerN
                       <div className="rounded-lg bg-slate-100 px-2.5 py-1.5 dark:bg-slate-800">
                         شراء كلي: <span className="text-slate-900 dark:text-white">{formatDinarAsAlfWithUnit(d.totalBuyAlf)}</span>
                       </div>
-                      <div className="rounded-lg bg-violet-50 px-2.5 py-1.5 text-violet-700 dark:bg-violet-950/30 dark:text-violet-400">
-                        بيع كلي: <span className="font-black text-violet-950 dark:text-violet-200">{formatDinarAsAlfWithUnit(d.totalSellAlf)}</span>
-                      </div>
-                      <div className="rounded-lg bg-emerald-50 px-2.5 py-1.5 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
-                        صافي الربح: <span className="font-black text-emerald-950 dark:text-emerald-200">{formatDinarAsAlfWithUnit(d.totalProfitAlf)}</span>
-                      </div>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -281,9 +275,7 @@ export function CompletedDraftsClient({ initialDrafts, auth, backHref, preparerN
                         <thead>
                           <tr className="border-b border-slate-200 text-slate-400 dark:border-slate-800">
                             <th className="pb-2 pt-1 font-bold">اسم المادة</th>
-                            <th className="pb-2 pt-1 text-center font-bold">سعر الشراء</th>
-                            <th className="pb-2 pt-1 text-center font-bold">سعر البيع</th>
-                            <th className="pb-2 pt-1 text-left font-bold">الربح</th>
+                            <th className="pb-2 pt-1 text-left font-bold">سعر الشراء</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -295,14 +287,8 @@ export function CompletedDraftsClient({ initialDrafts, auth, backHref, preparerN
                             return (
                               <tr key={idx} className="text-slate-700 dark:text-slate-300">
                                 <td className="py-2.5 font-medium">{p.line}</td>
-                                <td className="py-2.5 text-center text-slate-500">
+                                <td className="py-2.5 text-left text-slate-500">
                                   {p.buyAlf !== "" ? formatDinarAsAlfWithUnit(p.buyAlf) : "—"}
-                                </td>
-                                <td className="py-2.5 text-center font-bold text-violet-700 dark:text-violet-400">
-                                  {p.sellAlf !== "" ? formatDinarAsAlfWithUnit(p.sellAlf) : "—"}
-                                </td>
-                                <td className="py-2.5 text-left font-bold text-emerald-600 dark:text-emerald-400">
-                                  {pProfit > 0 ? `+${formatDinarAsAlfWithUnit(pProfit)}` : formatDinarAsAlfWithUnit(pProfit)}
                                 </td>
                               </tr>
                             );
