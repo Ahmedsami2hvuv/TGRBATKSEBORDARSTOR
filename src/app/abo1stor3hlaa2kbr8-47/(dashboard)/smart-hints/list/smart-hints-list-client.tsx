@@ -169,8 +169,8 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
       scrollWheelZoom: true
     }).setView([lat, lng], 15);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; OpenStreetMap contributors'
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
     }).addTo(map);
 
     const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
