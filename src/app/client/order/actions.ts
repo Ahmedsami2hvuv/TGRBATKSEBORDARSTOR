@@ -507,3 +507,65 @@ export async function cancelClientOrder(formData: FormData): Promise<{ ok?: bool
     return { error: "فشل إلغاء الطلب: " + (err.message || "خطأ داخلي") };
   }
 }
+
+export async function sendNoCarsAlertTelegram(formData: FormData): Promise<{ ok?: boolean; error?: string }> {
+  try {
+    const customerPhone = String(formData.get("customerPhone") ?? "").trim();
+    const customerName = String(formData.get("customerName") ?? "زبون").trim();
+    const shopName = String(formData.get("shopName") ?? "المحل").trim();
+    const noCarsMode = String(formData.get("noCarsMode") ?? "all_day").trim();
+
+    if (!customerPhone) {
+      return { error: "رقم الهاتف مطلوب لإرسال الإشعار." };
+    }
+
+    const phoneLocal = normalizeIraqMobileLocal11(customerPhone);
+    if (!phoneLocal) {
+      return { error: "رقم الهاتف غير صالح." };
+    }
+
+    // تحديد النص المماثل لوضعية عدم وجود السيارات
+    let modeText = "اليوم بأكمله";
+    if (noCarsMode === "morning") modeText = "صباحاً";
+    if (noCarsMode === "evening") modeText = "مساءً";
+
+    // صياغة الرسالة المطلوبة
+    const text = [
+      `⚠️ <b>امتناع عن رفع طلب بسبب السيارات</b>`,
+      `👤 <b>العميل:</b> ${customerName}`,
+      `📞 <b>الهاتف:</b> <code>${phoneLocal}</code>`,
+      `🏢 <b>من محل:</b> ${shopName}`,
+      `-------------------------`,
+      `مرحبا قام <b>${customerName}</b>`,
+      `من <b>${shopName}</b>`,
+      `بالامتناع عن رفع الطلب لان طلبه يحتاج سياره هل تريد التحدث اليه`,
+      `-------------------------`,
+      `وضعية التفعيل: ${modeText}`
+    ].join("\n");
+
+    // إنشاء رابط الواتساب لمراسلة العميل
+    const waUrl = whatsappMeUrl(phoneLocal, `مرحباً ${customerName}، هل واجهتك مشكلة في توصيل طلبك من محل ${shopName}؟`);
+
+    const replyMarkup = {
+      inline_keyboard: [
+        [
+          {
+            text: "💬 مراسلة العميل عبر الواتساب",
+            url: waUrl
+          }
+        ]
+      ]
+    };
+
+    const { getBotTokenByPurpose } = await import("@/lib/telegram-bots");
+    const { sendTelegramMessageWithKeyboard } = await import("@/lib/telegram");
+
+    const notificationBotToken = await getBotTokenByPurpose("notification");
+    await sendTelegramMessageWithKeyboard(text, replyMarkup, notificationBotToken);
+
+    return { ok: true };
+  } catch (err: any) {
+    console.error("sendNoCarsAlertTelegram error:", err);
+    return { error: err?.message || "فشل إرسال الإشعار" };
+  }
+}

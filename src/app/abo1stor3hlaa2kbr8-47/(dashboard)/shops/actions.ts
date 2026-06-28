@@ -257,4 +257,22 @@ export async function toggleGlobalPause(formData: FormData) {
   revalidatePath(`/client/order`);
 }
 
+export async function updateGlobalCarStatus(formData: FormData) {
+  const mode = String(formData.get("noCarsMode") ?? "off").trim();
+
+  await prisma.globalSettings.upsert({
+    where: { id: "system" },
+    update: {
+      noCarsMode: mode,
+    },
+    create: {
+      id: "system",
+      noCarsMode: mode,
+    },
+  });
+
+  revalidatePath(`${SECRET_ADMIN_PATH}/shops`);
+  revalidatePath(`/client/order`);
+}
+
 

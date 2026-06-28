@@ -91,6 +91,7 @@ model GlobalSettings {
   pauseMessage    String   @default("")
   profitMargin    Decimal  @default(0) @db.Decimal(10, 2)
   updatedAt       DateTime @updatedAt
+  noCarsMode      String   @default("off")
 }
 
 model Shop {

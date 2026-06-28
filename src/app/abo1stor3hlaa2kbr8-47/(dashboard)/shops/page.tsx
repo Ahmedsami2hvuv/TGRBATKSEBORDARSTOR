@@ -7,6 +7,7 @@ import { getGlobalIcons } from "@/lib/icon-settings";
 import { serializePrisma } from "@/lib/serialize-prisma";
 
 import { GlobalPauseButton } from "./global-pause-button";
+import { GlobalCarStatusButton } from "./global-car-status-button";
 
 export const dynamic = "force-dynamic";
 
@@ -83,6 +84,10 @@ export default async function ShopsPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <GlobalCarStatusButton
+            noCarsMode={globalSettings?.noCarsMode || "off"}
+            icons={icons}
+          />
           <GlobalPauseButton
             isPaused={!!globalSettings?.allOrdersPaused}
             pauseMessage={globalSettings?.pauseMessage || ""}

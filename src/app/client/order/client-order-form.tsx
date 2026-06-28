@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, type FormEvent } from "react";
+import { toast } from "sonner";
 import { resolvePublicImageSrc } from "@/lib/image-url";
 import { ALF_PER_DINAR, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { ClientVoiceNoteField } from "./client-voice-note-field";
 import "leaflet/dist/leaflet.css";
-import { submitOrder, updateCustomerUiMode, type ClientOrderState } from "./actions";
+import { submitOrder, updateCustomerUiMode, sendNoCarsAlertTelegram, type ClientOrderState } from "./actions";
 import { clientOrderAccountPath } from "@/lib/client-order-portal-nav";
 import { withoutReversePickupPrefix, isReversePickupOrderType } from "@/lib/order-type-flags";
 import { whatsappMeUrl } from "@/lib/whatsapp";
@@ -84,6 +85,7 @@ type PropsInner = {
   portalUrl?: string;
   botStartParam?: string;
   shopId: string;
+  noCarsMode?: string;
   initialOrder: {
     orderNumber: number;
     customerPhone: string;
@@ -120,6 +122,7 @@ function ClientOrderFormInner({
   portalUrl,
   botStartParam,
   shopId,
+  noCarsMode = "off",
   initialOrder,
   onResetForNewOrder,
   initialUiMode = "learn",
@@ -213,6 +216,97 @@ function ClientOrderFormInner({
   const [allowNoPriceSubmit, setAllowNoPriceSubmit] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [blockedPhone, setBlockedPhone] = useState<string | null>(null);
+
+  // قراءة الهاتف والاسم من التخزين المحلي في البداية لتسهيل ملء البيانات
+  useEffect(() => {
+    if (typeof window !== "undefined" && !customerPhone) {
+      const storedPhone = localStorage.getItem("kse_customer_phone");
+      if (storedPhone) setCustomerPhone(storedPhone);
+    }
+  }, [customerPhone]);
+
+  // حالة التحكم في الـ Modal لتنبيه عدم وجود سيارات
+  const [showCarAlert, setShowCarAlert] = useState(() => {
+    // تفعيل التنبيه إذا كانت وضعية السيارات مفعلة وليست off
+    return noCarsMode !== "off";
+  });
+  const [alertStep, setAlertStep] = useState(1);
+  const [alertPhone, setAlertPhone] = useState("");
+  const [alertName, setAlertName] = useState("");
+  const [alertSending, setAlertSending] = useState(false);
+
+  // تحديد صياغة رسالة التنبيه بناءً على الإعداد
+  const getCarAlertMessage = () => {
+    let timeText = "اليوم بأكمله";
+    if (noCarsMode === "morning") timeText = "صباحاً";
+    if (noCarsMode === "evening") timeText = "مساءً";
+    return `اليوم ليس لدينا سيارات (${timeText})`;
+  };
+
+  const handleCarAlertYes = () => {
+    setShowCarAlert(false);
+  };
+
+  const handleCarAlertNo = async () => {
+    const activePhone = alertPhone.trim() || customerPhone.trim();
+    const activeName = alertName.trim() || customerName.trim() || "زبون";
+
+    if (activePhone) {
+      setAlertSending(true);
+      try {
+        const fd = new FormData();
+        fd.append("customerPhone", activePhone);
+        fd.append("customerName", activeName);
+        fd.append("shopName", shopName);
+        fd.append("noCarsMode", noCarsMode);
+        await sendNoCarsAlertTelegram(fd);
+        toast.success("تم إرسال الإشعار للإدارة بنجاح");
+      } catch (err) {
+        console.error("Failed to send no-cars telegram alert:", err);
+        toast.error("حدث خطأ في إرسال الإشعار");
+      } finally {
+        setAlertSending(false);
+        setShowCarAlert(false);
+      }
+    } else {
+      // إذا لم يكن الهاتف متوفراً بعد، ننتقل لخطوة طلب البيانات
+      setAlertStep(2);
+    }
+  };
+
+  const handleAlertSubmit = async () => {
+    const cleanPhone = sanitizePhone(alertPhone);
+    if (!cleanPhone || cleanPhone.length < 10) {
+      toast.error("يرجى إدخال رقم هاتف صحيح");
+      return;
+    }
+
+    setAlertSending(true);
+    try {
+      setCustomerPhone(cleanPhone);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("kse_customer_phone", cleanPhone);
+        if (alertName.trim()) {
+          localStorage.setItem("kse_customer_name", alertName.trim());
+        }
+      }
+
+      const activeName = alertName.trim() || "زبون جديد";
+      const fd = new FormData();
+      fd.append("customerPhone", cleanPhone);
+      fd.append("customerName", activeName);
+      fd.append("shopName", shopName);
+      fd.append("noCarsMode", noCarsMode);
+      await sendNoCarsAlertTelegram(fd);
+      toast.success("تم إرسال الإشعار للإدارة بنجاح");
+    } catch (err) {
+      console.error("Failed to send no-cars telegram alert:", err);
+      toast.error("حدث خطأ في إرسال الإشعار");
+    } finally {
+      setAlertSending(false);
+      setShowCarAlert(false);
+    }
+  };
 
   const [suggestions, setSuggestions] = useState<{ types: string[], subtotals: string[], times: string[] }>({ types: [], subtotals: [], times: [] });
 
@@ -399,7 +493,100 @@ function ClientOrderFormInner({
   };
 
   return (
-    <div className="mx-auto max-w-lg text-slate-800">
+    <>
+      {showCarAlert && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200" dir="rtl">
+          <div className="relative bg-white dark:bg-[#09090b] rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl p-6 sm:p-8 max-w-md w-full text-center space-y-6 animate-in zoom-in-95 duration-200">
+            {alertStep === 1 ? (
+              <>
+                <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-rose-50 dark:bg-rose-950/30 text-5xl animate-bounce">
+                  🚫
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-black text-rose-600 dark:text-rose-400">تنبيه بخصوص التوصيل</h3>
+                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                    مرحباً بك عزيزنا العميل
+                  </p>
+                </div>
+                <div className="bg-rose-50/50 dark:bg-rose-950/10 rounded-2xl p-4 border border-rose-100/50 dark:border-rose-900/20 text-slate-700 dark:text-slate-300 font-bold text-sm leading-relaxed">
+                  اليوم ليس لدينا سيارات للتوصيل
+                  {noCarsMode === "morning" && " (الفترة الصباحية)"}
+                  {noCarsMode === "evening" && " (الفترة المسائية)"}
+                  <br />
+                  <span className="text-xs font-semibold text-slate-400 mt-1 block">هل تود توصيل طلبك بالدراجة النارية بدلاً من السيارة؟</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleCarAlertYes}
+                    disabled={alertSending}
+                    className="w-full rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white py-4 font-black text-base shadow-lg shadow-emerald-100 dark:shadow-none active:scale-[0.98] transition-all disabled:opacity-50"
+                  >
+                    👍 نعم، بالدراجة
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCarAlertNo}
+                    disabled={alertSending}
+                    className="w-full rounded-2xl bg-rose-600 hover:bg-rose-700 text-white py-4 font-black text-base shadow-lg shadow-rose-100 dark:shadow-none active:scale-[0.98] transition-all disabled:opacity-50"
+                  >
+                    👎 لا، أحتاج سيارة
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-sky-50 dark:bg-sky-950/30 text-4xl">
+                  📞
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-black text-sky-700 dark:text-sky-400">يرجى تأكيد بياناتك</h3>
+                  <p className="text-xs font-bold text-slate-400 leading-relaxed">
+                    يرجى إدخال اسمك ورقم هاتفك لكي نتمكن من التواصل معك مباشرة لتنسيق وتأمين طلبك:
+                  </p>
+                </div>
+                
+                <div className="space-y-3 text-right">
+                  <label className="block space-y-1">
+                    <span className="text-xs font-bold text-slate-500">اسم العميل</span>
+                    <input
+                      type="text"
+                      placeholder="اكتب اسمك هنا"
+                      value={alertName}
+                      onChange={(e) => setAlertName(e.target.value)}
+                      className={inputClass}
+                    />
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="text-xs font-bold text-slate-500">رقم الهاتف (مطلوب)</span>
+                    <input
+                      type="tel"
+                      placeholder="07XXXXXXXXX"
+                      value={alertPhone}
+                      onChange={(e) => setAlertPhone(sanitizePhone(e.target.value))}
+                      className={`${inputClass} font-mono text-center text-lg font-bold`}
+                    />
+                  </label>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleAlertSubmit}
+                    disabled={alertSending || !alertPhone.trim()}
+                    className="w-full rounded-2xl bg-sky-600 hover:bg-sky-700 text-white py-4 font-black text-base shadow-lg shadow-sky-100 dark:shadow-none active:scale-[0.98] transition-all disabled:opacity-50"
+                  >
+                    {alertSending ? "جاري الإرسال..." : "إرسال وتصفح الصفحة"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="mx-auto max-w-lg text-slate-800">
       {/* settings button & dropdown */}
       <div className="absolute top-4 right-4 z-50" ref={settingsRef}>
         <button 
@@ -1220,5 +1407,6 @@ function ClientOrderFormInner({
         </div>
       )}
     </div>
-  );
+  </>
+);
 }

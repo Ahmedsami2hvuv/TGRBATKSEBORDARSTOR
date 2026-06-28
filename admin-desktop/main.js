@@ -34,6 +34,22 @@ function createWindow (urlToLoad = 'https://aboakbr.com/abo1stor3hlaa2kbr8-47') 
     return { action: 'deny' };
   });
 
+  // تفعيل التحديث عند سحب عتلة الماوس للأعلى وهو في بداية الصفحة
+  win.webContents.on('did-finish-load', () => {
+    win.webContents.executeJavaScript(`
+      if (!window.hasMouseWheelReloadListener) {
+        window.hasMouseWheelReloadListener = true;
+        window.addEventListener('wheel', (e) => {
+          const mainEl = document.querySelector('main');
+          const isAtTop = (!mainEl || mainEl.scrollTop <= 5) && window.scrollY === 0;
+          if (isAtTop && e.deltaY < -50) {
+            window.location.reload();
+          }
+        }, { passive: true });
+      }
+    `).catch(err => console.log('Error injecting reload script:', err));
+  });
+
   // تحميل رابط لوحة التحكم
   win.loadURL(urlToLoad);
 }

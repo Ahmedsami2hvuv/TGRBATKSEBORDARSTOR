@@ -288,6 +288,7 @@ export default async function ClientOrderPage(props: Props) {
             botUsername={botUsername}
             portalUrl={portalUrl}
             botStartParam={botStartParam}
+            noCarsMode={globalSettings?.noCarsMode || "off"}
           />
         </div>
       </div>
