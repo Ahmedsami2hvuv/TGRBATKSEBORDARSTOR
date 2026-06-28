@@ -483,6 +483,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       name: true,
       latitude: true,
       longitude: true,
+      radiusMeters: true,
       region: {
         select: {
           name: true,
@@ -634,9 +635,10 @@ export default async function MandoubPage({ searchParams }: Props) {
           name: wp.name?.trim() || "مدخل",
           regionName: wp.region?.name?.trim() || "منطقة غير معروفة",
           distanceM,
+          radiusMeters: wp.radiusMeters,
         };
       })
-      .filter((wp) => wp.distanceM <= 100)
+      .filter((wp) => wp.distanceM <= wp.radiusMeters)
       .sort((a, b) => a.distanceM - b.distanceM);
 
     if (validWaypoints.length === 0) {

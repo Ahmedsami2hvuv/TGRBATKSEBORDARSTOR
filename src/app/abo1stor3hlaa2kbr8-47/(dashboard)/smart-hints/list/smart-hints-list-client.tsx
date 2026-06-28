@@ -9,6 +9,7 @@ interface Waypoint {
   name: string;
   latitude: number;
   longitude: number;
+  radiusMeters: number;
   region?: {
     name: string;
   } | null;
@@ -18,29 +19,100 @@ interface SmartHintsListClientProps {
   allWaypoints: Waypoint[];
 }
 
+let leafletPromise: Promise<any> | null = null;
+
+function loadLeaflet(): Promise<any> {
+  if (leafletPromise) return leafletPromise;
+
+  leafletPromise = new Promise((resolve) => {
+    if (typeof window === "undefined") {
+      resolve(null);
+      return;
+    }
+
+    if ((window as any).L) {
+      resolve((window as any).L);
+      return;
+    }
+
+    // تحميل الـ CSS
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    document.head.appendChild(link);
+
+    // تحميل الـ JS
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    script.onload = () => {
+      const L = (window as any).L;
+      delete L.Icon.Default.prototype._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+      });
+      resolve(L);
+    };
+    script.onerror = () => {
+      resolve(null);
+    };
+    document.head.appendChild(script);
+  });
+
+  return leafletPromise;
+}
+
+function parseLatLngLocal(input: string): { latitude: number; longitude: number } | null {
+  const clean = input.replace(/[()]/g, "").trim();
+  const parts = clean.split(/[,\s]+/);
+  if (parts.length >= 2) {
+    const lat = parseFloat(parts[0]);
+    const lng = parseFloat(parts[1]);
+    if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+      return { latitude: lat, longitude: lng };
+    }
+  }
+  return null;
+}
+
 export default function SmartHintsListClient({ allWaypoints: initialWaypoints }: SmartHintsListClientProps) {
   const [allWaypoints, setAllWaypoints] = useState<Waypoint[]>(initialWaypoints);
   const [searchTerm, setSearchTerm] = useState("");
   
-  // لحالة التعديل
+  // -----------------------------------------
+  // حالة ونشاط الخرائط للتعديل
+  // -----------------------------------------
   const [editingWaypoint, setEditingWaypoint] = useState<Waypoint | null>(null);
   const [editName, setEditName] = useState("");
   const [editCoords, setEditCoords] = useState("");
+  const [editMapRadius, setEditMapRadius] = useState(100);
   const [errorMsg, setErrorMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const editNameInputRef = useRef<HTMLInputElement>(null);
   const editCoordsInputRef = useRef<HTMLInputElement>(null);
 
-  // لحالة الإضافة
+  const editMapRef = useRef<any>(null);
+  const editMarkerRef = useRef<any>(null);
+  const editCircleRef = useRef<any>(null);
+
+  // -----------------------------------------
+  // حالة ونشاط الخرائط للإضافة
+  // -----------------------------------------
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newCoords, setNewCoords] = useState("");
+  const [addMapRadius, setAddMapRadius] = useState(100);
   const [addErrorMsg, setAddErrorMsg] = useState("");
   const [isAddingSubmitting, setIsAddingSubmitting] = useState(false);
 
   const addNameInputRef = useRef<HTMLInputElement>(null);
   const addCoordsInputRef = useRef<HTMLInputElement>(null);
+
+  const addMapRef = useRef<any>(null);
+  const addMarkerRef = useRef<any>(null);
+  const addCircleRef = useRef<any>(null);
 
   // مزامنة النقاط المحدثة من السيرفر
   useEffect(() => {
@@ -60,6 +132,160 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
       setTimeout(() => addNameInputRef.current?.focus(), 150);
     }
   }, [isAddOpen]);
+
+  // -----------------------------------------
+  // دوال الخرائط التفاعلية
+  // -----------------------------------------
+  const initMap = async (
+    elementId: string,
+    lat: number,
+    lng: number,
+    radius: number,
+    isEdit: boolean,
+    onCoordsChange: (lat: number, lng: number) => void
+  ) => {
+    const L = await loadLeaflet();
+    if (!L) return;
+
+    // تنظيف المرجع السابق
+    const currentMapRef = isEdit ? editMapRef : addMapRef;
+    if (currentMapRef.current) {
+      currentMapRef.current.remove();
+      currentMapRef.current = null;
+      if (isEdit) {
+        editMarkerRef.current = null;
+        editCircleRef.current = null;
+      } else {
+        addMarkerRef.current = null;
+        addCircleRef.current = null;
+      }
+    }
+
+    const container = document.getElementById(elementId);
+    if (!container) return;
+
+    const map = L.map(elementId, {
+      zoomControl: true,
+      scrollWheelZoom: true
+    }).setView([lat, lng], 15);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+    const circle = L.circle([lat, lng], {
+      color: "#2563eb",
+      fillColor: "#3b82f6",
+      fillOpacity: 0.15,
+      radius: radius
+    }).addTo(map);
+
+    marker.on("dragend", () => {
+      const position = marker.getLatLng();
+      circle.setLatLng(position);
+      onCoordsChange(position.lat, position.lng);
+    });
+
+    if (isEdit) {
+      editMapRef.current = map;
+      editMarkerRef.current = marker;
+      editCircleRef.current = circle;
+    } else {
+      addMapRef.current = map;
+      addMarkerRef.current = marker;
+      addCircleRef.current = circle;
+    }
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+  };
+
+  const updateMapRadius = (radius: number, isEdit: boolean) => {
+    const circle = isEdit ? editCircleRef.current : addCircleRef.current;
+    if (circle) {
+      circle.setRadius(radius);
+    }
+  };
+
+  const updateMapPosition = (lat: number, lng: number, isEdit: boolean) => {
+    const map = isEdit ? editMapRef.current : addMapRef.current;
+    const marker = isEdit ? editMarkerRef.current : addMarkerRef.current;
+    const circle = isEdit ? editCircleRef.current : addCircleRef.current;
+
+    if (map && marker && circle) {
+      const pos = [lat, lng];
+      map.setView(pos, map.getZoom());
+      marker.setLatLng(pos);
+      circle.setLatLng(pos);
+    }
+  };
+
+  // -----------------------------------------
+  // مراقبة حالات الإحداثيات وتحديث الخرائط
+  // -----------------------------------------
+  const addCoordsParsed = parseLatLngLocal(newCoords);
+  const editCoordsParsed = parseLatLngLocal(editCoords);
+
+  // خريطة الإضافة
+  useEffect(() => {
+    if (isAddOpen && addCoordsParsed) {
+      initMap("add-list-map", addCoordsParsed.latitude, addCoordsParsed.longitude, addMapRadius, false, (lat, lng) => {
+        setNewCoords(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+      });
+    }
+    return () => {
+      if (addMapRef.current) {
+        addMapRef.current.remove();
+        addMapRef.current = null;
+        addMarkerRef.current = null;
+        addCircleRef.current = null;
+      }
+    };
+  }, [isAddOpen, !!addCoordsParsed]);
+
+  useEffect(() => {
+    if (isAddOpen && addCoordsParsed && addMapRef.current) {
+      updateMapPosition(addCoordsParsed.latitude, addCoordsParsed.longitude, false);
+    }
+  }, [newCoords]);
+
+  useEffect(() => {
+    if (isAddOpen && addMapRef.current) {
+      updateMapRadius(addMapRadius, false);
+    }
+  }, [addMapRadius]);
+
+  // خريطة التعديل
+  useEffect(() => {
+    if (editingWaypoint && editCoordsParsed) {
+      initMap("edit-list-map", editCoordsParsed.latitude, editCoordsParsed.longitude, editMapRadius, true, (lat, lng) => {
+        setEditCoords(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+      });
+    }
+    return () => {
+      if (editMapRef.current) {
+        editMapRef.current.remove();
+        editMapRef.current = null;
+        editMarkerRef.current = null;
+        editCircleRef.current = null;
+      }
+    };
+  }, [!!editingWaypoint, !!editCoordsParsed]);
+
+  useEffect(() => {
+    if (editingWaypoint && editCoordsParsed && editMapRef.current) {
+      updateMapPosition(editCoordsParsed.latitude, editCoordsParsed.longitude, true);
+    }
+  }, [editCoords]);
+
+  useEffect(() => {
+    if (editingWaypoint && editMapRef.current) {
+      updateMapRadius(editMapRadius, true);
+    }
+  }, [editMapRadius]);
 
   // حذف الاستدلال
   const handleDelete = async (id: string, name: string) => {
@@ -82,6 +308,7 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
     setEditingWaypoint(wp);
     setEditName(wp.name);
     setEditCoords(`${wp.latitude.toFixed(6)}, ${wp.longitude.toFixed(6)}`);
+    setEditMapRadius(wp.radiusMeters || 100);
     setErrorMsg("");
   };
 
@@ -97,7 +324,7 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
     setErrorMsg("");
 
     try {
-      const res = await updateSmartHintAction(editingWaypoint.id, editName, editCoords);
+      const res = await updateSmartHintAction(editingWaypoint.id, editName, editCoords, editMapRadius);
       if (res.success) {
         // تحديث البيانات محلياً
         const cleanCoords = editCoords.replace(/[()]/g, "").trim();
@@ -108,7 +335,7 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
         setAllWaypoints((prev) =>
           prev.map((wp) =>
             wp.id === editingWaypoint.id
-              ? { ...wp, name: editName.trim(), latitude: lat, longitude: lng }
+              ? { ...wp, name: editName.trim(), latitude: lat, longitude: lng, radiusMeters: editMapRadius }
               : wp
           )
         );
@@ -132,13 +359,14 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
     setAddErrorMsg("");
 
     try {
-      const res = await addSmartHintAction(newName, newCoords);
+      const res = await addSmartHintAction(newName, newCoords, addMapRadius);
       if (res.success && res.waypoint) {
         // إضافة الاستدلال للحالة المحلية
         setAllWaypoints((prev) => [res.waypoint as Waypoint, ...prev]);
         setNewName("");
         setNewCoords("");
         setAddErrorMsg("");
+        setAddMapRadius(100);
         // إبقاء النافذة مفتوحة مع إعادة التركيز على حقل الاسم
         setTimeout(() => addNameInputRef.current?.focus(), 50);
       }
@@ -226,6 +454,7 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold bg-slate-50/50 dark:bg-slate-900/10">
                   <th className="p-3 text-start">الاسم</th>
                   <th className="p-3 text-start">المنطقة الأصلية</th>
+                  <th className="p-3 text-start">نطاق التغطية</th>
                   <th className="p-3 text-start">خط العرض (Lat)</th>
                   <th className="p-3 text-start">خط الطول (Lng)</th>
                   <th className="p-3 text-center">إجراءات</th>
@@ -239,6 +468,7 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
                   >
                     <td className="p-3 font-bold text-slate-800 dark:text-slate-200">{wp.name}</td>
                     <td className="p-3 text-slate-500">{wp.region?.name || "عامة (غير محددة)"}</td>
+                    <td className="p-3 font-bold text-sky-600 dark:text-sky-400">{wp.radiusMeters} متر</td>
                     <td className="p-3 font-mono text-slate-600 dark:text-slate-400">{wp.latitude.toFixed(6)}</td>
                     <td className="p-3 font-mono text-slate-600 dark:text-slate-400">{wp.longitude.toFixed(6)}</td>
                     <td className="p-3 text-center">
@@ -267,8 +497,8 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
 
       {/* نافذة التعديل المنبثقة */}
       {editingWaypoint && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 p-6 shadow-2xl animate-in zoom-in-95 duration-200 my-8">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
                 ✏️ تعديل الاستدلال الذكي
@@ -304,13 +534,44 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
                 <input
                   ref={editCoordsInputRef}
                   type="text"
-                  placeholder="الصق الإحداثية"
+                  placeholder="الصق الإحداثية لتظهر الخريطة"
                   value={editCoords}
                   onChange={(e) => setEditCoords(e.target.value)}
                   disabled={isSubmitting}
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-2.5 text-sm outline-none focus:border-sky-500"
                 />
               </div>
+
+              {editCoordsParsed && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1 flex justify-between">
+                      <span>📏 مسافة التغطية: {editMapRadius} متر</span>
+                      <span className="text-slate-400"> اسحب لتغيير الحجم</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="10"
+                      max="500"
+                      step="5"
+                      value={editMapRadius}
+                      onChange={(e) => setEditMapRadius(parseInt(e.target.value))}
+                      disabled={isSubmitting}
+                      className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">
+                      🗺️ تموضع الاستدلال على الخريطة (اسحب الدبوس للتعديل)
+                    </label>
+                    <div
+                      id="edit-list-map"
+                      className="h-60 w-full rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-inner z-10"
+                    ></div>
+                  </div>
+                </div>
+              )}
 
               {errorMsg && (
                 <div className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/20 p-2.5 rounded-lg">
@@ -341,8 +602,8 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
 
       {/* نافذة إضافة استدلال جديد */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 p-6 shadow-2xl animate-in zoom-in-95 duration-200 my-8">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
                 ➕ إضافة استدلال جديد
@@ -379,7 +640,7 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
                 <input
                   ref={addCoordsInputRef}
                   type="text"
-                  placeholder="الصق الإحداثية واضغط Enter للحفظ مباشرة"
+                  placeholder="الصق الإحداثية لتظهر الخريطة فوراً"
                   value={newCoords}
                   onChange={(e) => setNewCoords(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAddSubmit()}
@@ -387,6 +648,37 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-2.5 text-sm outline-none focus:border-sky-500"
                 />
               </div>
+
+              {addCoordsParsed && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1 flex justify-between">
+                      <span>📏 مسافة التغطية: {addMapRadius} متر</span>
+                      <span className="text-slate-400"> اسحب لتغيير الحجم</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="10"
+                      max="500"
+                      step="5"
+                      value={addMapRadius}
+                      onChange={(e) => setAddMapRadius(parseInt(e.target.value))}
+                      disabled={isAddingSubmitting}
+                      className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">
+                      🗺️ تموضع الاستدلال على الخريطة (اسحب الدبوس للتعديل)
+                    </label>
+                    <div
+                      id="add-list-map"
+                      className="h-60 w-full rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-inner z-10"
+                    ></div>
+                  </div>
+                </div>
+              )}
 
               {addErrorMsg && (
                 <div className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/20 p-2.5 rounded-lg">

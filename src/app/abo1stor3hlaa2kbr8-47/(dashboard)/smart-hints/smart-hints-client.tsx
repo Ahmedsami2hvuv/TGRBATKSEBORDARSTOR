@@ -41,6 +41,63 @@ interface SmartHintsClientProps {
   };
 }
 
+let leafletPromise: Promise<any> | null = null;
+
+function loadLeaflet(): Promise<any> {
+  if (leafletPromise) return leafletPromise;
+
+  leafletPromise = new Promise((resolve) => {
+    if (typeof window === "undefined") {
+      resolve(null);
+      return;
+    }
+
+    if ((window as any).L) {
+      resolve((window as any).L);
+      return;
+    }
+
+    // تحميل الـ CSS
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    document.head.appendChild(link);
+
+    // تحميل الـ JS
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    script.onload = () => {
+      const L = (window as any).L;
+      delete L.Icon.Default.prototype._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+      });
+      resolve(L);
+    };
+    script.onerror = () => {
+      resolve(null);
+    };
+    document.head.appendChild(script);
+  });
+
+  return leafletPromise;
+}
+
+function parseLatLngLocal(input: string): { latitude: number; longitude: number } | null {
+  const clean = input.replace(/[()]/g, "").trim();
+  const parts = clean.split(/[,\s]+/);
+  if (parts.length >= 2) {
+    const lat = parseFloat(parts[0]);
+    const lng = parseFloat(parts[1]);
+    if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+      return { latitude: lat, longitude: lng };
+    }
+  }
+  return null;
+}
+
 export default function SmartHintsClient({
   allWaypoints: initialWaypoints,
   processedOrders,
@@ -62,6 +119,12 @@ export default function SmartHintsClient({
   const nameInputRef = useRef<HTMLInputElement>(null);
   const coordsInputRef = useRef<HTMLInputElement>(null);
 
+  // الخرائط ونصف القطر
+  const [mapRadius, setMapRadius] = useState(100);
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const circleRef = useRef<any>(null);
+
   // مزامنة النقاط المحدثة من السيرفر
   useEffect(() => {
     setAllWaypoints(initialWaypoints);
@@ -73,6 +136,99 @@ export default function SmartHintsClient({
       setTimeout(() => nameInputRef.current?.focus(), 150);
     }
   }, [isAddOpen]);
+
+  // تهيئة الخريطة وتحديثها
+  const initMap = async (elementId: string, lat: number, lng: number, radius: number, onCoordsChange: (lat: number, lng: number) => void) => {
+    const L = await loadLeaflet();
+    if (!L) return;
+
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+      circleRef.current = null;
+    }
+
+    const container = document.getElementById(elementId);
+    if (!container) return;
+
+    const map = L.map(elementId, {
+      zoomControl: true,
+      scrollWheelZoom: true
+    }).setView([lat, lng], 15);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+    const circle = L.circle([lat, lng], {
+      color: "#2563eb",
+      fillColor: "#3b82f6",
+      fillOpacity: 0.15,
+      radius: radius
+    }).addTo(map);
+
+    marker.on("dragend", () => {
+      const position = marker.getLatLng();
+      circle.setLatLng(position);
+      onCoordsChange(position.lat, position.lng);
+    });
+
+    mapRef.current = map;
+    markerRef.current = marker;
+    circleRef.current = circle;
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+  };
+
+  const updateMapRadius = (radius: number) => {
+    if (circleRef.current) {
+      circleRef.current.setRadius(radius);
+    }
+  };
+
+  const updateMapPosition = (lat: number, lng: number) => {
+    if (mapRef.current && markerRef.current && circleRef.current) {
+      const pos = [lat, lng];
+      mapRef.current.setView(pos, mapRef.current.getZoom());
+      markerRef.current.setLatLng(pos);
+      circleRef.current.setLatLng(pos);
+    }
+  };
+
+  const coordsParsed = parseLatLngLocal(newCoords);
+
+  useEffect(() => {
+    if (isAddOpen && coordsParsed) {
+      initMap("add-map", coordsParsed.latitude, coordsParsed.longitude, mapRadius, (lat, lng) => {
+        setNewCoords(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+      });
+    }
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        markerRef.current = null;
+        circleRef.current = null;
+      }
+    };
+  }, [isAddOpen, !!coordsParsed]);
+
+  useEffect(() => {
+    if (isAddOpen && coordsParsed && mapRef.current) {
+      updateMapPosition(coordsParsed.latitude, coordsParsed.longitude);
+    }
+  }, [newCoords]);
+
+  useEffect(() => {
+    if (isAddOpen && mapRef.current) {
+      updateMapRadius(mapRadius);
+    }
+  }, [mapRadius]);
 
   // الضغط على Enter في حقل الاسم
   const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -101,12 +257,13 @@ export default function SmartHintsClient({
     setErrorMsg("");
 
     try {
-      const res = await addSmartHintAction(newName, newCoords);
+      const res = await addSmartHintAction(newName, newCoords, mapRadius);
       if (res.success) {
         // تفريغ المدخلات وإبقاء النافذة مفتوحة لإضافة المزيد
         setNewName("");
         setNewCoords("");
         setErrorMsg("");
+        setMapRadius(100);
         setTimeout(() => nameInputRef.current?.focus(), 50);
       }
     } catch (err: any) {
@@ -118,7 +275,7 @@ export default function SmartHintsClient({
 
   // حذف الاستدلال
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`هل أنت متأكد من رغبتك في حذف النقطة الدالة (${name})؟`)) {
+    if (!confirm(`هل أنت متأكد من حذف النقطة (${name})؟`)) {
       return;
     }
 
@@ -128,23 +285,32 @@ export default function SmartHintsClient({
         setAllWaypoints((prev) => prev.filter((wp) => wp.id !== id));
       }
     } catch (err: any) {
-      alert(err.message || "فشل حذف النقطة");
+      alert(err.message || "حدث خطأ أثناء الحذف");
     }
   };
 
   // تصفية الطلبات المعروضة
-  const filteredOrders = processedOrders.filter((o) => {
-    const matchesSearch =
-      o.orderNumber.toString().includes(searchTerm) ||
-      (o.shop?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (o.customerRegion?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.hintText.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredOrders = processedOrders.filter((order) => {
+    // 1. تصفية بفلتر الحالة
+    if (statusFilter === "success") {
+      if (order.statusText.includes("خارج النطاق") || order.statusText === "—") return false;
+    } else if (statusFilter === "out_of_range") {
+      if (!order.statusText.includes("خارج النطاق")) return false;
+    } else if (statusFilter === "no_location") {
+      if (order.statusText !== "—") return false;
+    }
 
-    if (statusFilter === "all") return matchesSearch;
-    if (statusFilter === "success") return matchesSearch && o.statusText === "مستدل بنجاح";
-    if (statusFilter === "out_of_range") return matchesSearch && o.statusText.startsWith("خارج النطاق");
-    if (statusFilter === "no_location") return matchesSearch && !o.hasLocation;
-    return matchesSearch;
+    // 2. تصفية بكلمة البحث
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      order.orderNumber.toString().includes(term) ||
+      (order.customerLandmark || "").toLowerCase().includes(term) ||
+      (order.customerRegion?.name || "").toLowerCase().includes(term) ||
+      (order.shop?.name || "").toLowerCase().includes(term) ||
+      order.statusText.toLowerCase().includes(term) ||
+      order.hintText.toLowerCase().includes(term)
+    );
   });
 
   return (
@@ -217,49 +383,47 @@ export default function SmartHintsClient({
         </button>
       </div>
 
-      {/* قسم البحث والتصفية */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center">
-        <div className="relative w-full sm:flex-1">
+      {/* البحث والتصفية للطلبات */}
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white dark:bg-[#0f1115] rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+        <div className="relative w-full md:max-w-md">
           <input
             type="text"
-            placeholder="ابحث برقم الطلب، المحل، المنطقة، أو نص الاستدلال..."
+            placeholder="البحث برقم الطلب، المتجر، أو حالة الاستدلال..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-2.5 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+            className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-2.5 text-sm outline-none focus:border-sky-500"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm("")}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"
             >
-              ✕ مسح
+              ✕
             </button>
           )}
         </div>
 
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-full sm:w-[200px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-3 py-2.5 text-sm outline-none focus:border-sky-500"
-        >
-          <option value="all">كل الحالات الحسابية</option>
-          <option value="success">مستدل بنجاح</option>
-          <option value="out_of_range">خارج النطاق</option>
-          <option value="no_location">بدون لوكيشن</option>
-        </select>
-      </div>
-
-      {/* جدول الطلبات */}
-      <div className="bg-white dark:bg-[#09090b] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/30">
-          <span className="text-sm font-black text-slate-700 dark:text-slate-300">
-            الطلبات الحالية ({filteredOrders.length} طلب معروض)
+        <div className="flex gap-2 w-full md:w-auto">
+          {statusFilter !== "all" && (
+            <button
+              onClick={() => setStatusFilter("all")}
+              className="px-4 py-2 text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl"
+            >
+              عرض الكل ✕
+            </button>
+          )}
+          <span className="text-xs text-slate-400 self-center font-bold">
+            عدد الصفوف المصفاة: {filteredOrders.length}
           </span>
         </div>
+      </div>
+
+      {/* جدول الطلبات واستدلالاتها */}
+      <div className="bg-white dark:bg-[#0f1115] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           {filteredOrders.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 dark:text-slate-500 font-bold">
-              لا توجد طلبات تطابق معايير البحث والفلترة الحالية.
+            <div className="p-12 text-center text-slate-400 font-bold">
+              لا توجد طلبات تطابق الفلاتر المحددة حالياً.
             </div>
           ) : (
             <table className="w-full text-start border-collapse text-sm">
@@ -267,86 +431,75 @@ export default function SmartHintsClient({
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold bg-slate-50/50 dark:bg-slate-900/10">
                   <th className="p-3 text-start">رقم الطلب</th>
                   <th className="p-3 text-start">المحل</th>
-                  <th className="p-3 text-start">المنطقة المحددة</th>
-                  <th className="p-3 text-start">اللوكيشن الأصلي</th>
-                  <th className="p-3 text-start">أقرب نقطة دالة في النظام</th>
-                  <th className="p-3 text-start">الاستدلال الذكي الناتج</th>
-                  <th className="p-3 text-start">الحالة الحسابية</th>
+                  <th className="p-3 text-start">المنطقة الأصلية للزبون</th>
+                  <th className="p-3 text-start">حالة إحداثيات الطلب</th>
+                  <th className="p-3 text-start">الاستدلال المحسوب (الأقرب)</th>
+                  <th className="p-3 text-start">النتيجة النهائية للاستدلال</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map((o) => (
-                  <tr
-                    key={o.id}
-                    className="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-colors"
-                  >
-                    <td className="p-3">
-                      <Link
-                        href={`/abo1stor3hlaa2kbr8-47/orders/${o.id}`}
-                        className="text-sky-600 dark:text-[#00f3ff] hover:underline font-bold"
-                      >
-                        #{o.orderNumber}
-                      </Link>
-                    </td>
-                    <td className="p-3 font-semibold">{o.shop?.name || "—"}</td>
-                    <td className="p-3 text-slate-500">{o.customerRegion?.name || "—"}</td>
-                    <td className="p-3">
-                      {o.customerLocationUrl ? (
-                        <a
-                          href={o.customerLocationUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-2 py-1 rounded-lg border border-sky-200 dark:border-sky-900/40"
-                        >
-                          📍 فتح الرابط
-                        </a>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      {o.nearestWaypoint ? (
-                        <div className="flex flex-col">
-                          <span className="font-bold text-slate-700 dark:text-slate-300">
-                            {o.nearestWaypoint.name}
+                {filteredOrders.map((order) => {
+                  const isSuccess =
+                    order.statusText !== "—" && !order.statusText.includes("خارج النطاق");
+                  const isOutOfRange = order.statusText.includes("خارج النطاق");
+
+                  return (
+                    <tr
+                      key={order.id}
+                      className="border-b border-slate-100 dark:border-slate-800/40 hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
+                    >
+                      <td className="p-3 font-bold text-slate-800 dark:text-slate-200">
+                        #{order.orderNumber}
+                      </td>
+                      <td className="p-3 text-slate-600 dark:text-slate-300 font-bold">
+                        {order.shop?.name || "—"}
+                      </td>
+                      <td className="p-3 text-slate-500">
+                        {order.customerRegion?.name || "—"}
+                      </td>
+                      <td className="p-3">
+                        {isSuccess ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-1 rounded-lg">
+                            🟢 مستدل بنجاح ({Math.round(order.distanceM ?? 0)}م)
                           </span>
-                          <span className="text-xs text-slate-400">
-                            بمنطقة: {o.nearestWaypoint.regionName} ({Math.round(o.nearestWaypoint.distanceM)}م)
+                        ) : isOutOfRange ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/10 px-2 py-1 rounded-lg">
+                            🟡 خارج النطاق ({Math.round(order.distanceM ?? 0)}م)
                           </span>
-                        </div>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="p-3 font-bold text-slate-800 dark:text-slate-200">{o.hintText}</td>
-                    <td className="p-3">
-                      <span
-                        className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          o.statusText === "مستدل بنجاح"
-                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
-                            : o.statusText?.startsWith("خارج النطاق")
-                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
-                            : "bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-400"
-                        }`}
-                      >
-                        {o.statusText}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/10 px-2 py-1 rounded-lg">
+                            🔴 لا توجد إحداثيات
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3 font-mono text-slate-600 dark:text-slate-400 font-bold">
+                        {order.nearestWaypoint ? (
+                          <span className="text-slate-800 dark:text-slate-200">
+                            {order.nearestWaypoint.name}{" "}
+                            <span className="text-xs text-slate-400">
+                              ({order.nearestWaypoint.regionName})
+                            </span>
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="p-3 font-bold text-indigo-600 dark:text-indigo-400">
+                        {order.hintText}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
         </div>
       </div>
 
-      {/* نافذة إضافة استدلال جديد (منبثقة من الأسفل) */}
+      {/* نافذة إضافة استدلال جديد */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/60 backdrop-blur-sm transition-opacity">
-          <div className="relative w-full max-w-lg rounded-t-3xl bg-white dark:bg-[#0f1115] border-t border-slate-200 dark:border-slate-800 p-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
-            {/* مقبض السحب الشكلي */}
-            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700" />
-
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 p-6 shadow-2xl animate-in zoom-in-95 duration-200 my-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
                 ➕ إضافة نقطة استدلال ذكي جديدة
@@ -360,7 +513,7 @@ export default function SmartHintsClient({
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 leading-relaxed">
-              💡 ضيف أكثر من نقطة للمنطقة (خط العرض/خط الطول)، والفرز الذكي يختار الأقرب للمندوب.
+              💡 أضف نقاط الاستدلال لتبسيط توجيه المناديب، وسيتم استخدام نصف قطر التغطية لتحديد النطاق الفعلي.
             </p>
 
             <div className="space-y-4">
@@ -387,7 +540,7 @@ export default function SmartHintsClient({
                 <input
                   ref={coordsInputRef}
                   type="text"
-                  placeholder="الصق الإحداثية واضغط Enter للحفظ مباشرة"
+                  placeholder="الصق الإحداثية لتظهر الخريطة فوراً"
                   value={newCoords}
                   onChange={(e) => setNewCoords(e.target.value)}
                   onKeyDown={handleCoordsKeyDown}
@@ -395,6 +548,37 @@ export default function SmartHintsClient({
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-2.5 text-sm outline-none focus:border-sky-500"
                 />
               </div>
+
+              {coordsParsed && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1 flex justify-between">
+                      <span>📏 مسافة التغطية: {mapRadius} متر</span>
+                      <span className="text-slate-400"> اسحب لتغيير الحجم</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="10"
+                      max="500"
+                      step="5"
+                      value={mapRadius}
+                      onChange={(e) => setMapRadius(parseInt(e.target.value))}
+                      disabled={isSubmitting}
+                      className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">
+                      🗺️ تموضع الاستدلال على الخريطة (اسحب الدبوس للتعديل)
+                    </label>
+                    <div
+                      id="add-map"
+                      className="h-60 w-full rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-inner z-10"
+                    ></div>
+                  </div>
+                </div>
+              )}
 
               {errorMsg && (
                 <div className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/20 p-2.5 rounded-lg">

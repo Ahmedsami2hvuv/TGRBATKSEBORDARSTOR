@@ -19,7 +19,7 @@ function parseLatLng(input: string): { latitude: number; longitude: number } | n
   return null;
 }
 
-export async function addSmartHintAction(name: string, locationStr: string) {
+export async function addSmartHintAction(name: string, locationStr: string, radiusMeters?: number) {
   if (!name.trim()) {
     throw new Error("اسم المدخل مطلوب");
   }
@@ -59,12 +59,14 @@ export async function addSmartHintAction(name: string, locationStr: string) {
       latitude: coords.latitude,
       longitude: coords.longitude,
       sortOrder: nextSort,
+      radiusMeters: radiusMeters ?? 100,
     },
     select: {
       id: true,
       name: true,
       latitude: true,
       longitude: true,
+      radiusMeters: true,
       region: {
         select: {
           name: true,
@@ -90,7 +92,7 @@ export async function deleteSmartHintAction(waypointId: string) {
   return { success: true };
 }
 
-export async function updateSmartHintAction(waypointId: string, name: string, locationStr: string) {
+export async function updateSmartHintAction(waypointId: string, name: string, locationStr: string, radiusMeters?: number) {
   if (!waypointId) {
     throw new Error("معرّف النقطة مطلوب");
   }
@@ -109,6 +111,7 @@ export async function updateSmartHintAction(waypointId: string, name: string, lo
       name: name.trim(),
       latitude: coords.latitude,
       longitude: coords.longitude,
+      ...(radiusMeters !== undefined ? { radiusMeters } : {}),
     },
   });
 
