@@ -5,8 +5,26 @@ import SmartHintsClient from "./smart-hints-client";
 
 export const dynamic = "force-dynamic";
 
+// خوارزمية Ray Casting للتحقق من وقوع الإحداثية داخل المربع السكني (المضلع)
+function isPointInPolygon(
+  point: { latitude: number; longitude: number },
+  polygon: Array<{ latitude: number; longitude: number }>
+): boolean {
+  const x = point.latitude;
+  const y = point.longitude;
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].latitude, yi = polygon[i].longitude;
+    const xj = polygon[j].latitude, yj = polygon[j].longitude;
+    const intersect = ((yi > y) !== (yj > y))
+        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
 export default async function SmartHintsPage() {
-  // 1. جلب جميع النقاط الدالة في النظام مع منطقتها
+  // 1. جلب جميع النقاط الدالة في النظام مع منطقتها وحقول النطاق والمضلع
   const allWaypoints = await prisma.regionWaypoint.findMany({
     orderBy: {
       name: "asc",
@@ -16,6 +34,8 @@ export default async function SmartHintsPage() {
       name: true,
       latitude: true,
       longitude: true,
+      radiusMeters: true,
+      polygonCoords: true,
       region: {
         select: {
           name: true,
@@ -83,23 +103,44 @@ export default async function SmartHintsPage() {
         };
       }
 
-      const validWaypoints = allWaypoints
-        .map((wp) => {
-          const dist = haversineMeters(
-            customerLoc.latitude,
-            customerLoc.longitude,
-            wp.latitude,
-            wp.longitude
-          );
-          return {
-            name: wp.name || "مدخل",
-            regionName: wp.region?.name || "منطقة غير معروفة",
-            distanceM: dist,
-          };
-        })
-        .sort((a, b) => a.distanceM - b.distanceM);
+      let nearestWp: any = null;
+      let minDistance = Infinity;
+      let matchedByPolygon = false;
 
-      if (validWaypoints.length === 0) {
+      // أ. فحص المربعات السكنية (المضلعات)
+      for (const wp of allWaypoints) {
+        const isPoly = wp.polygonCoords && Array.isArray(wp.polygonCoords) && wp.polygonCoords.length >= 3;
+        if (isPoly) {
+          const inside = isPointInPolygon(customerLoc, wp.polygonCoords as any);
+          if (inside) {
+            nearestWp = wp;
+            minDistance = 0;
+            matchedByPolygon = true;
+            break;
+          }
+        }
+      }
+
+      // ب. إذا لم يطابق مضلع، نبحث عن أقرب دائرة أو نقطة دالة عامة
+      if (!matchedByPolygon) {
+        for (const wp of allWaypoints) {
+          const isPoly = wp.polygonCoords && Array.isArray(wp.polygonCoords) && wp.polygonCoords.length >= 3;
+          if (!isPoly) {
+            const dist = haversineMeters(
+              customerLoc.latitude,
+              customerLoc.longitude,
+              wp.latitude,
+              wp.longitude
+            );
+            if (dist < minDistance) {
+              minDistance = dist;
+              nearestWp = wp;
+            }
+          }
+        }
+      }
+
+      if (!nearestWp) {
         return {
           ...order,
           hasLocation: true,
@@ -110,15 +151,21 @@ export default async function SmartHintsPage() {
         };
       }
 
-      const nearest = validWaypoints[0];
+      // حساب حالة الاستدلال بناءً على نوع المطابقة والمسافة المحددة
+      const limit = nearestWp.radiusMeters;
+      const isOutOfRange = !matchedByPolygon && minDistance > limit;
 
-      if (nearest.distanceM > 100) {
+      if (isOutOfRange) {
         return {
           ...order,
           hasLocation: true,
-          statusText: `خارج النطاق (${Math.round(nearest.distanceM)} متر)`,
-          nearestWaypoint: nearest,
-          distanceM: nearest.distanceM,
+          statusText: `خارج النطاق (${Math.round(minDistance)} متر)`,
+          nearestWaypoint: {
+            name: nearestWp.name || "مدخل",
+            regionName: nearestWp.region?.name || "منطقة غير معروفة",
+            distanceM: minDistance,
+          },
+          distanceM: minDistance,
           hintText: fallback ? `قريب من (${fallback}) [حسب العلامة الدالة]` : "—",
         };
       }
@@ -127,9 +174,13 @@ export default async function SmartHintsPage() {
         ...order,
         hasLocation: true,
         statusText: "مستدل بنجاح",
-        nearestWaypoint: nearest,
-        distanceM: nearest.distanceM,
-        hintText: `قريب من (${nearest.name})`,
+        nearestWaypoint: {
+          name: nearestWp.name || "مدخل",
+          regionName: nearestWp.region?.name || "منطقة غير معروفة",
+          distanceM: minDistance,
+        },
+        distanceM: minDistance,
+        hintText: matchedByPolygon ? `قريب من (${nearestWp.name}) [مربع سكني]` : `قريب من (${nearestWp.name})`,
       };
     })
   );
@@ -150,7 +201,7 @@ export default async function SmartHintsPage() {
   return (
     <SmartHintsClient
       allWaypoints={allWaypoints}
-      processedOrders={processedOrders}
+      processedOrders={processedOrders as any}
       stats={stats}
     />
   );
