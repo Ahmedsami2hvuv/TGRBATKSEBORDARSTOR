@@ -169,6 +169,21 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
       renderPolygon(L, map, initialPoints);
     }
 
+    map.on("click", (e: any) => {
+      if (hintType !== "polygon") return;
+      const clickLat = e.latlng.lat;
+      const clickLng = e.latlng.lng;
+
+      const confirmAdd = confirm("هل تريد إضافة زاوية جديدة هنا؟");
+      if (confirmAdd) {
+        const current = activePointsRef.current;
+        const updated = [...current, { latitude: clickLat, longitude: clickLng }];
+        setPolygonCoords(updated);
+        activePointsRef.current = updated;
+        renderPolygon(L, map, updated);
+      }
+    });
+
     setTimeout(() => {
       map.invalidateSize();
     }, 200);
@@ -215,6 +230,23 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
         const pos = marker.getLatLng();
         activePointsRef.current[index] = { latitude: pos.lat, longitude: pos.lng };
         setPolygonCoords([...activePointsRef.current]);
+      });
+
+      marker.on("click", (e: any) => {
+        L.DomEvent.stopPropagation(e);
+        const current = activePointsRef.current;
+        if (current.length <= 3) {
+          alert("لا يمكن أن يقل المضلع السكني عن 3 زوايا!");
+          return;
+        }
+
+        const confirmDelete = confirm(`هل تريد إزالة هذه الزاوية رقم (${index + 1})؟`);
+        if (confirmDelete) {
+          const updated = current.filter((_, i) => i !== index);
+          setPolygonCoords(updated);
+          activePointsRef.current = updated;
+          renderPolygon(L, map, updated);
+        }
       });
 
       polyMarkersRef.current.push(marker);
