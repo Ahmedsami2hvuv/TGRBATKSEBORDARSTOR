@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { deleteSmartHintAction, updateSmartHintAction } from "../actions";
+import { deleteSmartHintAction, updateSmartHintAction, addSmartHintAction } from "../actions";
 
 interface Waypoint {
   id: string;
@@ -32,6 +32,16 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
   const editNameInputRef = useRef<HTMLInputElement>(null);
   const editCoordsInputRef = useRef<HTMLInputElement>(null);
 
+  // لحالة الإضافة
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newCoords, setNewCoords] = useState("");
+  const [addErrorMsg, setAddErrorMsg] = useState("");
+  const [isAddingSubmitting, setIsAddingSubmitting] = useState(false);
+
+  const addNameInputRef = useRef<HTMLInputElement>(null);
+  const addCoordsInputRef = useRef<HTMLInputElement>(null);
+
   // مزامنة النقاط المحدثة من السيرفر
   useEffect(() => {
     setAllWaypoints(initialWaypoints);
@@ -43,6 +53,13 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
       setTimeout(() => editNameInputRef.current?.focus(), 150);
     }
   }, [editingWaypoint]);
+
+  // التركيز التلقائي عند فتح نافذة الإضافة
+  useEffect(() => {
+    if (isAddOpen) {
+      setTimeout(() => addNameInputRef.current?.focus(), 150);
+    }
+  }, [isAddOpen]);
 
   // حذف الاستدلال
   const handleDelete = async (id: string, name: string) => {
@@ -104,6 +121,33 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
     }
   };
 
+  // حفظ الاستدلال الجديد
+  const handleAddSubmit = async () => {
+    if (!newName.trim() || !newCoords.trim()) {
+      setAddErrorMsg("يرجى ملء جميع الحقول المطلوبة");
+      return;
+    }
+
+    setIsAddingSubmitting(true);
+    setAddErrorMsg("");
+
+    try {
+      const res = await addSmartHintAction(newName, newCoords);
+      if (res.success && res.waypoint) {
+        // إضافة الاستدلال للحالة المحلية
+        setAllWaypoints((prev) => [res.waypoint as Waypoint, ...prev]);
+        setNewName("");
+        setNewCoords("");
+        setAddErrorMsg("");
+        setIsAddOpen(false);
+      }
+    } catch (err: any) {
+      setAddErrorMsg(err.message || "حدث خطأ غير متوقع أثناء الحفظ");
+    } finally {
+      setIsAddingSubmitting(false);
+    }
+  };
+
   // تصفية الاستدلالات بالبحث
   const filteredWaypoints = allWaypoints.filter((wp) => {
     const term = searchTerm.toLowerCase();
@@ -128,12 +172,20 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
           </p>
         </div>
 
-        <Link
-          href="/abo1stor3hlaa2kbr8-47/smart-hints"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131418] text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-900 transition active:scale-95 text-sm shadow-sm"
-        >
-          🔙 العودة للوحة الاستدلالات
-        </Link>
+        <div className="flex gap-2 w-full md:w-auto">
+          <button
+            onClick={() => setIsAddOpen(true)}
+            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 text-white font-bold hover:shadow-lg hover:shadow-sky-500/20 transition active:scale-95 text-sm"
+          >
+            ➕ إضافة استدلال جديد
+          </button>
+          <Link
+            href="/abo1stor3hlaa2kbr8-47/smart-hints"
+            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131418] text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-900 transition active:scale-95 text-sm shadow-sm"
+          >
+            🔙 العودة للوحة الاستدلالات
+          </Link>
+        </div>
       </div>
 
       {/* شريط البحث */}
@@ -276,6 +328,82 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
                 <button
                   onClick={() => setEditingWaypoint(null)}
                   disabled={isSubmitting}
+                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131418] py-3 text-sm font-bold text-slate-700 dark:text-slate-200 transition active:scale-95"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة إضافة استدلال جديد */}
+      {isAddOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
+                ➕ إضافة استدلال جديد
+              </h3>
+              <button
+                onClick={() => setIsAddOpen(false)}
+                className="rounded-full bg-slate-100 dark:bg-slate-800 p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">
+                  اسم المدخل الجديد (مثال: جسر ابو فلوس)
+                </label>
+                <input
+                  ref={addNameInputRef}
+                  type="text"
+                  placeholder="اكتب اسم المدخل واضغط Enter"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addCoordsInputRef.current?.focus()}
+                  disabled={isAddingSubmitting}
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-2.5 text-sm outline-none focus:border-sky-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">
+                  الصق الإحداثية (مثال: 30.4410, 48.0137)
+                </label>
+                <input
+                  ref={addCoordsInputRef}
+                  type="text"
+                  placeholder="الصق الإحداثية واضغط Enter للحفظ مباشرة"
+                  value={newCoords}
+                  onChange={(e) => setNewCoords(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddSubmit()}
+                  disabled={isAddingSubmitting}
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-2.5 text-sm outline-none focus:border-sky-500"
+                />
+              </div>
+
+              {addErrorMsg && (
+                <div className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/20 p-2.5 rounded-lg">
+                  ⚠️ {addErrorMsg}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={handleAddSubmit}
+                  disabled={isAddingSubmitting}
+                  className="flex-1 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 py-3 text-sm font-bold text-white transition hover:shadow-lg active:scale-95 disabled:opacity-50"
+                >
+                  {isAddingSubmitting ? "جاري الحفظ..." : "حفظ النقطة"}
+                </button>
+                <button
+                  onClick={() => setIsAddOpen(false)}
+                  disabled={isAddingSubmitting}
                   className="flex-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131418] py-3 text-sm font-bold text-slate-700 dark:text-slate-200 transition active:scale-95"
                 >
                   إلغاء

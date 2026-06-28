@@ -52,7 +52,7 @@ export async function addSmartHintAction(name: string, locationStr: string) {
   const nextSort = (maxSort?.sortOrder ?? 0) + 1;
 
   // 3. إضافة النقطة الدالة
-  await prisma.regionWaypoint.create({
+  const newWaypoint = await prisma.regionWaypoint.create({
     data: {
       regionId: generalRegion.id,
       name: name.trim(),
@@ -60,10 +60,21 @@ export async function addSmartHintAction(name: string, locationStr: string) {
       longitude: coords.longitude,
       sortOrder: nextSort,
     },
+    select: {
+      id: true,
+      name: true,
+      latitude: true,
+      longitude: true,
+      region: {
+        select: {
+          name: true,
+        },
+      },
+    },
   });
 
   revalidatePath("/abo1stor3hlaa2kbr8-47/smart-hints");
-  return { success: true };
+  return { success: true, waypoint: newWaypoint };
 }
 
 export async function deleteSmartHintAction(waypointId: string) {
