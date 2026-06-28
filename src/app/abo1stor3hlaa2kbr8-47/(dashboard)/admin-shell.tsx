@@ -317,6 +317,20 @@ export function AdminShell({
     };
   }, []);
 
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      const mainEl = document.querySelector('main');
+      if (mainEl && mainEl.scrollTop === 0 && e.deltaY < -120) {
+        window.location.reload();
+      }
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: true });
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
+    };
+  }, []);
+
   const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
   const handleResizePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
