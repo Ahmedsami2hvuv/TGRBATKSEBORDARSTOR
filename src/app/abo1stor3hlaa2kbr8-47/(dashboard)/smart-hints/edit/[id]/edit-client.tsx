@@ -71,6 +71,72 @@ function parseLatLngLocal(input: string): { latitude: number; longitude: number 
   return null;
 }
 
+function getDistanceToSegment(
+  p: { latitude: number; longitude: number },
+  a: { latitude: number; longitude: number },
+  b: { latitude: number; longitude: number }
+): number {
+  const x = p.latitude;
+  const y = p.longitude;
+  const x1 = a.latitude;
+  const y1 = a.longitude;
+  const x2 = b.latitude;
+  const y2 = b.longitude;
+
+  const A = x - x1;
+  const B = y - y1;
+  const C = x2 - x1;
+  const D = y2 - y1;
+
+  const dot = A * C + B * D;
+  const lenSq = C * C + D * D;
+  let param = -1;
+  
+  if (lenSq !== 0) {
+    param = dot / lenSq;
+  }
+
+  let xx, yy;
+
+  if (param < 0) {
+    xx = x1;
+    yy = y1;
+  } else if (param > 1) {
+    xx = x2;
+    yy = y2;
+  } else {
+    xx = x1 + param * C;
+    yy = y1 + param * D;
+  }
+
+  const dx = x - xx;
+  const dy = y - yy;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function findBestInsertIndex(
+  clickPt: { latitude: number; longitude: number },
+  points: Array<{ latitude: number; longitude: number }>
+): number {
+  if (points.length < 3) return points.length;
+
+  let minDistance = Infinity;
+  let bestInsertIndex = points.length;
+
+  for (let i = 0; i < points.length; i++) {
+    const p1 = points[i];
+    const p2 = points[(i + 1) % points.length];
+
+    const dist = getDistanceToSegment(clickPt, p1, p2);
+    if (dist < minDistance) {
+      minDistance = dist;
+      bestInsertIndex = i + 1;
+    }
+  }
+
+  return bestInsertIndex;
+}
+
 export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }) {
   const router = useRouter();
 
@@ -175,14 +241,43 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
       const clickLat = e.latlng.lat;
       const clickLng = e.latlng.lng;
 
-      const confirmAdd = confirm("هل تريد إضافة زاوية جديدة هنا؟");
-      if (confirmAdd) {
-        const current = activePointsRef.current;
-        const updated = [...current, { latitude: clickLat, longitude: clickLng }];
-        setPolygonCoords(updated);
-        activePointsRef.current = updated;
-        renderPolygon(L, map, updated);
-      }
+      const popupContent = document.createElement("div");
+      popupContent.className = "p-2 text-center space-y-2 dark:text-slate-200";
+      popupContent.dir = "rtl";
+      popupContent.innerHTML = `
+        <p class="text-xs font-bold text-slate-700 dark:text-slate-350">هل تريد إضافة زاوية جديدة هنا؟</p>
+        <div class="flex gap-2 justify-center mt-1">
+          <button id="leaflet-add-btn" class="bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition active:scale-95">نعم، أضف</button>
+          <button id="leaflet-close-btn" class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold px-3 py-1.5 rounded-lg transition active:scale-95">إلغاء</button>
+        </div>
+      `;
+
+      L.popup()
+        .setLatLng([clickLat, clickLng])
+        .setContent(popupContent)
+        .openOn(map);
+
+      setTimeout(() => {
+        const addBtn = document.getElementById("leaflet-add-btn");
+        const closeBtn = document.getElementById("leaflet-close-btn");
+
+        addBtn?.addEventListener("click", () => {
+          const current = activePointsRef.current;
+          const insertIndex = findBestInsertIndex({ latitude: clickLat, longitude: clickLng }, current);
+          
+          const updated = [...current];
+          updated.splice(insertIndex, 0, { latitude: clickLat, longitude: clickLng });
+
+          setPolygonCoords(updated);
+          activePointsRef.current = updated;
+          renderPolygon(L, map, updated);
+          map.closePopup();
+        });
+
+        closeBtn?.addEventListener("click", () => {
+          map.closePopup();
+        });
+      }, 50);
     });
 
     setTimeout(() => {
@@ -242,13 +337,38 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
           return;
         }
 
-        const confirmDelete = confirm(`هل تريد إزالة هذه الزاوية رقم (${index + 1})؟`);
-        if (confirmDelete) {
-          const updated = current.filter((_, i) => i !== index);
-          setPolygonCoords(updated);
-          activePointsRef.current = updated;
-          renderPolygon(L, map, updated);
-        }
+        const popupDelContent = document.createElement("div");
+        popupDelContent.className = "p-2 text-center space-y-2 dark:text-slate-200";
+        popupDelContent.dir = "rtl";
+        popupDelContent.innerHTML = `
+          <p class="text-xs font-bold text-slate-700 dark:text-slate-350">هل تريد إزالة هذه الزاوية؟</p>
+          <div class="flex gap-2 justify-center mt-1">
+            <button id="leaflet-del-btn" class="bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition active:scale-95">نعم، احذف</button>
+            <button id="leaflet-del-close-btn" class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold px-3 py-1.5 rounded-lg transition active:scale-95">إلغاء</button>
+          </div>
+        `;
+
+        L.popup()
+          .setLatLng(marker.getLatLng())
+          .setContent(popupDelContent)
+          .openOn(map);
+
+        setTimeout(() => {
+          const delBtn = document.getElementById("leaflet-del-btn");
+          const delCloseBtn = document.getElementById("leaflet-del-close-btn");
+
+          delBtn?.addEventListener("click", () => {
+            const updated = activePointsRef.current.filter((_, i) => i !== index);
+            setPolygonCoords(updated);
+            activePointsRef.current = updated;
+            renderPolygon(L, map, updated);
+            map.closePopup();
+          });
+
+          delCloseBtn?.addEventListener("click", () => {
+            map.closePopup();
+          });
+        }, 50);
       });
 
       polyMarkersRef.current.push(marker);
