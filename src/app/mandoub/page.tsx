@@ -636,7 +636,7 @@ export default async function MandoubPage({ searchParams }: Props) {
           distanceM,
         };
       })
-      .filter((wp) => wp.distanceM <= 300)
+      .filter((wp) => wp.distanceM <= 100)
       .sort((a, b) => a.distanceM - b.distanceM);
 
     if (validWaypoints.length === 0) {

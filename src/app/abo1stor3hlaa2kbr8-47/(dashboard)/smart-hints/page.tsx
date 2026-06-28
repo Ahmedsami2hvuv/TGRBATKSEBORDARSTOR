@@ -112,7 +112,7 @@ export default async function SmartHintsPage() {
 
       const nearest = validWaypoints[0];
 
-      if (nearest.distanceM > 300) {
+      if (nearest.distanceM > 100) {
         return {
           ...order,
           hasLocation: true,

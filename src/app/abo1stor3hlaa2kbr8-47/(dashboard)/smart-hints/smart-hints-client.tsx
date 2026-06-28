@@ -156,7 +156,7 @@ export default function SmartHintsClient({
             💡 لوحة الاستدلال الذكي للطلبات
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            مراقبة وتحليل الاستدلال الذكي التلقائي للطلبات في محيط 300 متر مستقل عن المنطقة
+            مراقبة وتحليل الاستدلال الذكي التلقائي للطلبات في محيط 100 متر مستقل عن المنطقة
           </p>
         </div>
 
@@ -190,7 +190,7 @@ export default function SmartHintsClient({
           onClick={() => setStatusFilter("success")}
           className="text-start bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 rounded-2xl p-4 shadow-sm hover:scale-[1.02] transition"
         >
-          <div className="text-sm font-bold text-emerald-700 dark:text-emerald-400">مستدل بنجاح (≤ 300م)</div>
+          <div className="text-sm font-bold text-emerald-700 dark:text-emerald-400">مستدل بنجاح (≤ 100م)</div>
           <div className="text-2xl font-black text-emerald-800 dark:text-emerald-300 mt-1">
             {stats.successfullyInferred}
           </div>
@@ -200,7 +200,7 @@ export default function SmartHintsClient({
           onClick={() => setStatusFilter("out_of_range")}
           className="text-start bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-2xl p-4 shadow-sm hover:scale-[1.02] transition"
         >
-          <div className="text-sm font-bold text-amber-700 dark:text-amber-400">خارج النطاق (&gt; 300م)</div>
+          <div className="text-sm font-bold text-amber-700 dark:text-amber-400">خارج النطاق (&gt; 100م)</div>
           <div className="text-2xl font-black text-amber-800 dark:text-amber-300 mt-1">
             {stats.outOfRange}
           </div>
