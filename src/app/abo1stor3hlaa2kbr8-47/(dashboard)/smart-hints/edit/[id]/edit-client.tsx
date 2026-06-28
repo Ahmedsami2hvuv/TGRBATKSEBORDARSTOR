@@ -562,6 +562,11 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
     activePointsRef.current = updated;
     renderPolygon(L, mapRef.current, updated);
     setCoords(polygonCoordsToString(updated));
+
+    // إعادة التركيز لحقل الاسم فوراً لمنع تعليق الكتابة
+    setTimeout(() => {
+      nameInputRef.current?.focus();
+    }, 50);
   };
 
   // تقليل زاوية
@@ -580,6 +585,11 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
     activePointsRef.current = updated;
     renderPolygon(L, mapRef.current, updated);
     setCoords(polygonCoordsToString(updated));
+
+    // إعادة التركيز لحقل الاسم فوراً لمنع تعليق الكتابة
+    setTimeout(() => {
+      nameInputRef.current?.focus();
+    }, 50);
   };
 
   const updateMapRadius = (radius: number) => {
