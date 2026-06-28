@@ -239,17 +239,31 @@ export async function togglePauseOrders(formData: FormData) {
 export async function toggleGlobalPause(formData: FormData) {
   const pauseMessage = String(formData.get("pauseMessage") ?? "").trim();
   const shouldPause = formData.get("shouldPause") === "true";
+  const rawUntil = formData.get("allOrdersPausedUntil");
+
+  let allOrdersPausedUntil: Date | null = null;
+  if (shouldPause && rawUntil) {
+    const untilStr = String(rawUntil).trim();
+    if (untilStr) {
+      allOrdersPausedUntil = new Date(untilStr);
+      if (isNaN(allOrdersPausedUntil.getTime())) {
+        allOrdersPausedUntil = null;
+      }
+    }
+  }
 
   await prisma.globalSettings.upsert({
     where: { id: "system" },
     update: {
       allOrdersPaused: shouldPause,
       pauseMessage: shouldPause ? pauseMessage : "",
+      allOrdersPausedUntil: shouldPause ? allOrdersPausedUntil : null,
     },
     create: {
       id: "system",
       allOrdersPaused: shouldPause,
       pauseMessage: shouldPause ? pauseMessage : "",
+      allOrdersPausedUntil: shouldPause ? allOrdersPausedUntil : null,
     },
   });
 

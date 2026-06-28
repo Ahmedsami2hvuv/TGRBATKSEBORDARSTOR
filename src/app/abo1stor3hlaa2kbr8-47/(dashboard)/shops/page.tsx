@@ -92,6 +92,7 @@ export default async function ShopsPage() {
           <GlobalPauseButton
             isPaused={!!globalSettings?.allOrdersPaused}
             pauseMessage={globalSettings?.pauseMessage || ""}
+            allOrdersPausedUntil={globalSettings?.allOrdersPausedUntil || null}
             icons={icons}
           />
           <ImportShopsButton />

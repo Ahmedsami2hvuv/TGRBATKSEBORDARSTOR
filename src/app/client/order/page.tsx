@@ -111,7 +111,10 @@ export default async function ClientOrderPage(props: Props) {
     // جلب الإعدادات العامة أولاً
     const globalSettings = await prisma.globalSettings.findUnique({ where: { id: "system" } }).catch(() => null);
 
-    if (globalSettings?.allOrdersPaused && sp.force !== "true") {
+    const isPaused = globalSettings?.allOrdersPaused && 
+      (!globalSettings?.allOrdersPausedUntil || new Date() < new Date(globalSettings.allOrdersPausedUntil));
+
+    if (isPaused && sp.force !== "true") {
       return (
         <PausedOverlay
           title="توقف التوصيل حاليا"
