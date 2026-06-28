@@ -75,8 +75,10 @@ export default function SmartHintsClient({
       (order.customerLandmark || "").toLowerCase().includes(term) ||
       (order.customerRegion?.name || "").toLowerCase().includes(term) ||
       (order.shop?.name || "").toLowerCase().includes(term) ||
-      order.statusText.toLowerCase().includes(term) ||
-      order.hintText.toLowerCase().includes(term)
+      (order.statusText || "").toLowerCase().includes(term) ||
+      (order.hintText || "").toLowerCase().includes(term) ||
+      (order.nearestWaypoint?.name || "").toLowerCase().includes(term) ||
+      (order.nearestWaypoint?.regionName || "").toLowerCase().includes(term)
     );
   });
 
