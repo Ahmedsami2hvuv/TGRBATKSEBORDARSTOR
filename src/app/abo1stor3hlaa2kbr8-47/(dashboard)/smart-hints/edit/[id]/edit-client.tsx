@@ -321,6 +321,7 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
         const pos = marker.getLatLng();
         activePointsRef.current[index] = { latitude: pos.lat, longitude: pos.lng };
         polygon.setLatLngs(activePointsRef.current.map((p) => [p.latitude, p.longitude]));
+        setPolygonCoords([...activePointsRef.current]);
       });
 
       marker.on("dragend", () => {
@@ -656,6 +657,34 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
                     >
                       ➖ حذف آخر زاوية للمربع
                     </button>
+                  </div>
+                )}
+
+                {/* كروت عرض الإحداثيات الحية */}
+                {hintType === "polygon" && polygonCoords.length > 0 && (
+                  <div className="mt-4 border-t border-slate-100 dark:border-slate-800/60 pt-4 space-y-3">
+                    <label className="block text-xs font-bold text-slate-500">
+                      📍 إحداثيات زوايا المربع السكني الحالي (تتحرك حياً ومباشرة أثناء تحريك الدبوس)
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {polygonCoords.map((pt, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-slate-50 dark:bg-[#0c0d10] border border-slate-200 dark:border-slate-850 rounded-xl p-3 flex items-center justify-between shadow-sm"
+                        >
+                          <div className="space-y-1">
+                            <div className="text-[10px] font-black text-slate-400">الزاوية رقم {idx + 1}</div>
+                            <div className="font-mono text-xs text-slate-700 dark:text-slate-355 font-bold space-y-0.5">
+                              <div>خط العرض: {pt.latitude.toFixed(6)}</div>
+                              <div>خط الطول: {pt.longitude.toFixed(6)}</div>
+                            </div>
+                          </div>
+                          <span className="w-6 h-6 rounded-full bg-amber-500/10 text-amber-500 text-xs font-black flex items-center justify-center border border-amber-500/20">
+                            {idx + 1}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
