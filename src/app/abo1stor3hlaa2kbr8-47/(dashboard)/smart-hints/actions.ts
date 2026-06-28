@@ -29,7 +29,13 @@ export async function addSmartHintAction(
     throw new Error("اسم المدخل مطلوب");
   }
 
-  const coords = parseLatLng(locationStr);
+  let coords: { latitude: number; longitude: number } | null = null;
+  if (polygonCoords && polygonCoords.length >= 3) {
+    coords = polygonCoords[0];
+  } else {
+    coords = parseLatLng(locationStr);
+  }
+
   if (!coords) {
     throw new Error("تنسيق الإحداثيات غير صحيح. يرجى إدخال قيمتين مفصولتين بفاصلة أو مسافة (مثال: 30.4410, 48.0137)");
   }
@@ -113,7 +119,13 @@ export async function updateSmartHintAction(
     throw new Error("اسم المدخل مطلوب");
   }
 
-  const coords = parseLatLng(locationStr);
+  let coords: { latitude: number; longitude: number } | null = null;
+  if (polygonCoords && polygonCoords.length >= 3) {
+    coords = polygonCoords[0];
+  } else {
+    coords = parseLatLng(locationStr);
+  }
+
   if (!coords) {
     throw new Error("تنسيق الإحداثيات غير صحيح. يرجى إدخال قيمتين مفصولتين بفاصلة أو مسافة (مثال: 30.4410, 48.0137)");
   }

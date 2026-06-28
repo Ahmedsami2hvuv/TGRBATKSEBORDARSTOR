@@ -77,6 +77,29 @@ function parseLatLngLocal(input: string): { latitude: number; longitude: number 
   return null;
 }
 
+function polygonCoordsToString(coords: Array<{ latitude: number; longitude: number }>): string {
+  if (!coords || !Array.isArray(coords)) return "";
+  return coords.map(c => `${c.latitude.toFixed(6)}, ${c.longitude.toFixed(6)}`).join("\n");
+}
+
+function parsePolygonCoordsString(str: string): Array<{ latitude: number; longitude: number }> {
+  const lines = str.split(/[\n;]+/);
+  const parsed: Array<{ latitude: number; longitude: number }> = [];
+  for (const line of lines) {
+    const clean = line.trim();
+    if (!clean) continue;
+    const parts = clean.split(/[,\s]+/);
+    if (parts.length >= 2) {
+      const lat = parseFloat(parts[0]);
+      const lng = parseFloat(parts[1]);
+      if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        parsed.push({ latitude: lat, longitude: lng });
+      }
+    }
+  }
+  return parsed;
+}
+
 export default function SmartHintsListClient({ allWaypoints: initialWaypoints }: SmartHintsListClientProps) {
   const [allWaypoints, setAllWaypoints] = useState<Waypoint[]>(initialWaypoints);
   const [searchTerm, setSearchTerm] = useState("");
@@ -145,6 +168,42 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
       setTimeout(() => addNameInputRef.current?.focus(), 150);
     }
   }, [isAddOpen]);
+
+  // توليد مضلع تلقائي للتعديل عند تبديل النوع إلى polygon
+  useEffect(() => {
+    if (editHintType === "polygon" && editPolygonCoords.length === 0) {
+      const center = parseLatLngLocal(editCoords);
+      if (center) {
+        const offset = 0.0005; // حوالي 50 متر
+        const defaultPoly = [
+          { latitude: center.latitude + offset, longitude: center.longitude - offset }, // أعلى اليسار
+          { latitude: center.latitude + offset, longitude: center.longitude + offset }, // أعلى اليمين
+          { latitude: center.latitude - offset, longitude: center.longitude + offset }, // أسفل اليمين
+          { latitude: center.latitude - offset, longitude: center.longitude - offset }, // أسفل اليسار
+        ];
+        setEditPolygonCoords(defaultPoly);
+        editPolyPointsRef.current = defaultPoly;
+        setEditCoords(polygonCoordsToString(defaultPoly));
+      }
+    }
+  }, [editHintType]);
+
+  // توليد مضلع تلقائي للإضافة عند تبديل النوع إلى polygon
+  useEffect(() => {
+    if (addHintType === "polygon" && addPolygonCoords.length === 0) {
+      const center = parseLatLngLocal(newCoords) || { latitude: 30.4410, longitude: 48.0137 };
+      const offset = 0.0005; // حوالي 50 متر
+      const defaultPoly = [
+        { latitude: center.latitude + offset, longitude: center.longitude - offset },
+        { latitude: center.latitude + offset, longitude: center.longitude + offset },
+        { latitude: center.latitude - offset, longitude: center.longitude + offset },
+        { latitude: center.latitude - offset, longitude: center.longitude - offset },
+      ];
+      setAddPolygonCoords(defaultPoly);
+      addPolyPointsRef.current = defaultPoly;
+      setNewCoords(polygonCoordsToString(defaultPoly));
+    }
+  }, [addHintType]);
 
   // -----------------------------------------
   // دوال الخرائط التفاعلية
@@ -307,8 +366,10 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
         ref.current[index] = { latitude: pos.lat, longitude: pos.lng };
         if (isEdit) {
           setEditPolygonCoords([...ref.current]);
+          setEditCoords(polygonCoordsToString(ref.current));
         } else {
           setAddPolygonCoords([...ref.current]);
+          setNewCoords(polygonCoordsToString(ref.current));
         }
       });
 
@@ -336,8 +397,10 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
 
     if (isEdit) {
       setEditPolygonCoords(updated);
+      setEditCoords(polygonCoordsToString(updated));
     } else {
       setAddPolygonCoords(updated);
+      setNewCoords(polygonCoordsToString(updated));
     }
     ref.current = updated;
     renderPolygon(L, map, updated, isEdit);
@@ -359,8 +422,10 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
     const updated = current.slice(0, -1);
     if (isEdit) {
       setEditPolygonCoords(updated);
+      setEditCoords(polygonCoordsToString(updated));
     } else {
       setAddPolygonCoords(updated);
+      setNewCoords(polygonCoordsToString(updated));
     }
     ref.current = updated;
     renderPolygon(L, map, updated, isEdit);
@@ -389,14 +454,16 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
   // -----------------------------------------
   // مراقبة حالات الإحداثيات وتحديث الخرائط
   // -----------------------------------------
-  const addCoordsParsed = parseLatLngLocal(newCoords);
-  const editCoordsParsed = parseLatLngLocal(editCoords);
+  const addCoordsParsed = parseLatLngLocal(newCoords) || (addPolygonCoords.length > 0 ? addPolygonCoords[0] : null);
+  const editCoordsParsed = parseLatLngLocal(editCoords) || (editPolygonCoords.length > 0 ? editPolygonCoords[0] : null);
 
   // خريطة الإضافة
   useEffect(() => {
     if (isAddOpen && addCoordsParsed) {
       initMap("add-list-map", addCoordsParsed.latitude, addCoordsParsed.longitude, false, (lat, lng) => {
-        setNewCoords(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        if (addHintType === "circle") {
+          setNewCoords(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        }
       });
     }
     return () => {
@@ -427,7 +494,9 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
   useEffect(() => {
     if (editingWaypoint && editCoordsParsed) {
       initMap("edit-list-map", editCoordsParsed.latitude, editCoordsParsed.longitude, true, (lat, lng) => {
-        setEditCoords(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        if (editHintType === "circle") {
+          setEditCoords(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        }
       });
     }
     return () => {
@@ -474,7 +543,6 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
   const startEdit = (wp: Waypoint) => {
     setEditingWaypoint(wp);
     setEditName(wp.name);
-    setEditCoords(`${wp.latitude.toFixed(6)}, ${wp.longitude.toFixed(6)}`);
     setEditMapRadius(wp.radiusMeters || 100);
     setErrorMsg("");
 
@@ -483,10 +551,12 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
       setEditHintType("polygon");
       setEditPolygonCoords(wp.polygonCoords);
       editPolyPointsRef.current = wp.polygonCoords;
+      setEditCoords(polygonCoordsToString(wp.polygonCoords));
     } else {
       setEditHintType("circle");
       setEditPolygonCoords([]);
       editPolyPointsRef.current = [];
+      setEditCoords(`${wp.latitude.toFixed(6)}, ${wp.longitude.toFixed(6)}`);
     }
   };
 
@@ -505,10 +575,17 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
       const polyToSend = editHintType === "polygon" ? editPolygonCoords : null;
       const res = await updateSmartHintAction(editingWaypoint.id, editName, editCoords, editMapRadius, polyToSend);
       if (res.success) {
-        const cleanCoords = editCoords.replace(/[()]/g, "").trim();
-        const parts = cleanCoords.split(/[,\s]+/);
-        const lat = parseFloat(parts[0]);
-        const lng = parseFloat(parts[1]);
+        let lat = 0;
+        let lng = 0;
+        if (editHintType === "polygon" && editPolygonCoords.length > 0) {
+          lat = editPolygonCoords[0].latitude;
+          lng = editPolygonCoords[0].longitude;
+        } else {
+          const cleanCoords = editCoords.replace(/[()]/g, "").trim();
+          const parts = cleanCoords.split(/[,\s]+/);
+          lat = parseFloat(parts[0]);
+          lng = parseFloat(parts[1]);
+        }
 
         setAllWaypoints((prev) =>
           prev.map((wp) =>
@@ -764,17 +841,43 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
 
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">
-                      الصق الإحداثية لتحديد المركز (مثال: 30.4410, 48.0137)
+                      {editHintType === "polygon" 
+                        ? "📍 إحداثيات زوايا المربع السكني الحالي (كل سطر: خط العرض, خط الطول)" 
+                        : "📍 الصق الإحداثية لتحديد المركز (مثال: 30.4410, 48.0137)"}
                     </label>
-                    <input
-                      ref={editCoordsInputRef}
-                      type="text"
-                      placeholder="الصق الإحداثية لتظهر الخريطة"
-                      value={editCoords}
-                      onChange={(e) => setEditCoords(e.target.value)}
-                      disabled={isSubmitting}
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-3 text-sm outline-none focus:border-sky-500"
-                    />
+                    {editHintType === "polygon" ? (
+                      <textarea
+                        rows={5}
+                        placeholder={"30.4410, 48.0137\n30.4420, 48.0138\n..."}
+                        value={editCoords}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditCoords(val);
+                          const parsed = parsePolygonCoordsString(val);
+                          if (parsed.length >= 3) {
+                            setEditPolygonCoords(parsed);
+                            editPolyPointsRef.current = parsed;
+                            const map = editMapRef.current;
+                            const L = (window as any).L;
+                            if (map && L) {
+                              renderPolygon(L, map, parsed, true);
+                            }
+                          }
+                        }}
+                        disabled={isSubmitting}
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-3 text-xs outline-none focus:border-sky-500 font-mono"
+                      />
+                    ) : (
+                      <input
+                        ref={editCoordsInputRef}
+                        type="text"
+                        placeholder="الصق الإحداثية لتظهر الخريطة"
+                        value={editCoords}
+                        onChange={(e) => setEditCoords(e.target.value)}
+                        disabled={isSubmitting}
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-3 text-sm outline-none focus:border-sky-500"
+                      />
+                    )}
                   </div>
 
                   {editCoordsParsed && editHintType === "circle" && (
@@ -946,18 +1049,44 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
 
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">
-                      الصق الإحداثية لتحديد المركز (مثال: 30.4410, 48.0137)
+                      {addHintType === "polygon" 
+                        ? "📍 إحداثيات زوايا المربع السكني الجديد (كل سطر: خط العرض, خط الطول)" 
+                        : "📍 الصق الإحداثية لتحديد المركز (مثال: 30.4410, 48.0137)"}
                     </label>
-                    <input
-                      ref={addCoordsInputRef}
-                      type="text"
-                      placeholder="الصق الإحداثية لتظهر الخريطة فوراً"
-                      value={newCoords}
-                      onChange={(e) => setNewCoords(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleAddSubmit()}
-                      disabled={isAddingSubmitting}
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-3 text-sm outline-none focus:border-sky-500"
-                    />
+                    {addHintType === "polygon" ? (
+                      <textarea
+                        rows={5}
+                        placeholder={"30.4410, 48.0137\n30.4420, 48.0138\n..."}
+                        value={newCoords}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setNewCoords(val);
+                          const parsed = parsePolygonCoordsString(val);
+                          if (parsed.length >= 3) {
+                            setAddPolygonCoords(parsed);
+                            addPolyPointsRef.current = parsed;
+                            const map = addMapRef.current;
+                            const L = (window as any).L;
+                            if (map && L) {
+                              renderPolygon(L, map, parsed, false);
+                            }
+                          }
+                        }}
+                        disabled={isAddingSubmitting}
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-3 text-xs outline-none focus:border-sky-500 font-mono"
+                      />
+                    ) : (
+                      <input
+                        ref={addCoordsInputRef}
+                        type="text"
+                        placeholder="الصق الإحداثية لتظهر الخريطة فوراً"
+                        value={newCoords}
+                        onChange={(e) => setNewCoords(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddSubmit()}
+                        disabled={isAddingSubmitting}
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-3 text-sm outline-none focus:border-sky-500"
+                      />
+                    )}
                   </div>
 
                   {addCoordsParsed && addHintType === "circle" && (
