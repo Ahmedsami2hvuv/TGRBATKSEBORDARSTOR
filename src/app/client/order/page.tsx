@@ -130,6 +130,7 @@ export default async function ClientOrderPage(props: Props) {
       select: {
         id: true,
         name: true,
+        phone: true,
         orderPortalToken: true,
         uiMode: true,
         shop: {
@@ -289,6 +290,7 @@ export default async function ClientOrderPage(props: Props) {
             portalUrl={portalUrl}
             botStartParam={botStartParam}
             noCarsMode={globalSettings?.noCarsMode || "off"}
+            employeePhone={employee.phone}
           />
         </div>
       </div>
