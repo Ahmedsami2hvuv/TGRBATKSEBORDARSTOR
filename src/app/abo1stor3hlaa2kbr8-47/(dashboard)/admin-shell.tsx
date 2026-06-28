@@ -320,7 +320,8 @@ export function AdminShell({
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       const mainEl = document.querySelector('main');
-      if (mainEl && mainEl.scrollTop === 0 && e.deltaY < -120) {
+      const isAtTop = (!mainEl || mainEl.scrollTop <= 5) && window.scrollY === 0;
+      if (isAtTop && e.deltaY < -50) {
         window.location.reload();
       }
     };
