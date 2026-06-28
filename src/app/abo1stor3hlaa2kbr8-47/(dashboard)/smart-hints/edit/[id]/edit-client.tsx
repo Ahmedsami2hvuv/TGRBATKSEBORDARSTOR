@@ -169,6 +169,7 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
       renderPolygon(L, map, initialPoints);
     }
 
+    map.off("click");
     map.on("click", (e: any) => {
       if (hintType !== "polygon") return;
       const clickLat = e.latlng.lat;
@@ -202,7 +203,8 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
       color: "#f59e0b",
       fillColor: "#fbbf24",
       fillOpacity: 0.25,
-      weight: 3
+      weight: 3,
+      interactive: false
     }).addTo(map);
 
     polyRef.current = polygon;

@@ -151,6 +151,7 @@ export default function AddSmartHintPage() {
       renderPolygon(L, map, polyPoints);
     }
 
+    map.off("click");
     map.on("click", (e: any) => {
       if (hintType !== "polygon") return;
       const clickLat = e.latlng.lat;
@@ -184,7 +185,8 @@ export default function AddSmartHintPage() {
       color: "#f59e0b",
       fillColor: "#fbbf24",
       fillOpacity: 0.25,
-      weight: 3
+      weight: 3,
+      interactive: false
     }).addTo(map);
 
     polyRef.current = polygon;
