@@ -168,6 +168,11 @@ export function AdminShell({
   // لأنّ النافذة الأمّ تعرضهما أصلاً ولا داعي لتكرارهما داخل الـ iframe
   const isModalView = searchParams?.get("view") === "modal";
 
+  const [pullProgress, setPullProgress] = useState(0);
+  const [showIndicator, setShowIndicator] = useState(false);
+  const pullTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const accumulatedDeltaRef = useRef(0);
+
   const sidebarMinWidth = 240;
   const dragThreshold = 7; // px
   const mobileDefaultOpenWidth = Math.min(420, Math.max(320, viewportWidth || 420));
@@ -321,14 +326,36 @@ export function AdminShell({
     const handleWheel = (e: WheelEvent) => {
       const mainEl = document.querySelector('main');
       const isAtTop = (!mainEl || mainEl.scrollTop <= 5) && window.scrollY === 0;
-      if (isAtTop && e.deltaY < -50) {
-        window.location.reload();
+      
+      if (isAtTop && e.deltaY < 0) {
+        if (pullTimeoutRef.current) {
+          clearTimeout(pullTimeoutRef.current);
+        }
+
+        accumulatedDeltaRef.current += Math.abs(e.deltaY);
+        
+        const threshold = 220;
+        const progress = Math.min(100, (accumulatedDeltaRef.current / threshold) * 100);
+        
+        setPullProgress(progress);
+        setShowIndicator(true);
+
+        if (accumulatedDeltaRef.current >= threshold) {
+          window.location.reload();
+        } else {
+          pullTimeoutRef.current = setTimeout(() => {
+            setShowIndicator(false);
+            setPullProgress(0);
+            accumulatedDeltaRef.current = 0;
+          }, 800);
+        }
       }
     };
 
     window.addEventListener("wheel", handleWheel, { passive: true });
     return () => {
       window.removeEventListener("wheel", handleWheel);
+      if (pullTimeoutRef.current) clearTimeout(pullTimeoutRef.current);
     };
   }, []);
 
@@ -390,6 +417,36 @@ export function AdminShell({
   if (isModalView) {
     return (
       <div className="kse-app-bg min-h-screen flex text-slate-900 dark:text-slate-100 flex-col">
+        {showIndicator && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/95 dark:bg-[#131418]/95 backdrop-blur-md shadow-lg border border-slate-200/50 dark:border-slate-800/50 transition-all duration-300 transform translate-y-0 scale-100">
+            <div className="flex items-center gap-2.5">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2.5}
+                stroke="currentColor"
+                className="w-5 h-5 text-sky-500 dark:text-[#00f3ff] transition-transform duration-100"
+                style={{ transform: `rotate(${pullProgress * 3.6}deg)` }}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
+                />
+              </svg>
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                {pullProgress >= 100 ? "جاري تحديث الصفحة..." : "اسحب للأعلى للتحديث..."}
+              </span>
+            </div>
+            <div className="w-40 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-[#00f3ff] to-[#e028ff] transition-all duration-100"
+                style={{ width: `${pullProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
         <main className="w-full flex-1 px-2 py-4 sm:p-6 overflow-y-auto">
           <div className="mx-auto w-full max-w-[1400px]">
             <div className="relative z-10 w-full h-full">
@@ -443,6 +500,36 @@ export function AdminShell({
         !isLg && navOpen ? "overflow-hidden" : ""
       } lg:overflow-visible`}
     >
+      {showIndicator && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/95 dark:bg-[#131418]/95 backdrop-blur-md shadow-lg border border-slate-200/50 dark:border-slate-800/50 transition-all duration-300 transform translate-y-0 scale-100">
+          <div className="flex items-center gap-2.5">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2.5}
+              stroke="currentColor"
+              className="w-5 h-5 text-sky-500 dark:text-[#00f3ff] transition-transform duration-100"
+              style={{ transform: `rotate(${pullProgress * 3.6}deg)` }}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
+              />
+            </svg>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+              {pullProgress >= 100 ? "جاري تحديث الصفحة..." : "اسحب للأعلى للتحديث..."}
+            </span>
+          </div>
+          <div className="w-40 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#00f3ff] to-[#e028ff] transition-all duration-100"
+              style={{ width: `${pullProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
       <OneSignalInitializer externalId="admin_global" />
       <FloatingAdminMenu />
       <button
