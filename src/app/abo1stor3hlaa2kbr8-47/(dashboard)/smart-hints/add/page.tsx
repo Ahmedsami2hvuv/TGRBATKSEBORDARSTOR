@@ -785,12 +785,7 @@ export default function AddSmartHintPage() {
               </div>
             )}
 
-            {coordsParsed && hintType === "polygon" && (
-              <div className="text-xs text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/20 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30 space-y-2">
-                <div>💡 يمكنك سحب الدبابيس البرتقالية المرقمة على خريطة القمر الصناعي لتعديل ورسم حدود المنطقة السكنية بدقة.</div>
-                <div>استخدم الأزرار الموجودة بالأسفل لإضافة زوايا أو إنقاصها للتحكم الكامل بشكل المنطقة.</div>
-              </div>
-            )}
+
 
             {errorMsg && (
               <div className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/20 p-3.5 rounded-xl border border-rose-100 dark:border-rose-900/30">
