@@ -71,6 +71,46 @@ function parseLatLngLocal(input: string): { latitude: number; longitude: number 
   return null;
 }
 
+function polygonCoordsToString(coords: Array<{ latitude: number; longitude: number }>): string {
+  if (!coords || !Array.isArray(coords)) return "";
+  return coords.map(c => `${c.latitude.toFixed(6)}, ${c.longitude.toFixed(6)}`).join("\n");
+}
+
+function parsePolygonCoordsString(str: string): Array<{ latitude: number; longitude: number }> {
+  const lines = str.split(/[\n;]+/);
+  const parsed: Array<{ latitude: number; longitude: number }> = [];
+  for (const line of lines) {
+    const clean = line.trim();
+    if (!clean) continue;
+    const parts = clean.split(/[,\s]+/);
+    if (parts.length >= 2) {
+      const lat = parseFloat(parts[0]);
+      const lng = parseFloat(parts[1]);
+      if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        parsed.push({ latitude: lat, longitude: lng });
+      }
+    }
+  }
+  return parsed;
+}
+
+function getDefaultMapCenter(): { latitude: number; longitude: number } {
+  if (typeof window !== "undefined") {
+    try {
+      const saved = localStorage.getItem("last_map_center");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed.latitude === "number" && typeof parsed.longitude === "number") {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  return { latitude: 30.5082, longitude: 47.7835 };
+}
+
 function getDistanceToSegment(
   p: { latitude: number; longitude: number },
   a: { latitude: number; longitude: number },
@@ -142,11 +182,13 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
 
   // جلب البيانات الأولية للاستدلال
   const [name, setName] = useState(waypoint.name);
-  const [coords, setCoords] = useState(`${waypoint.latitude.toFixed(6)}, ${waypoint.longitude.toFixed(6)}`);
-  const [radiusMeters, setRadiusMeters] = useState(waypoint.radiusMeters || 100);
-  
-  // تحديد نوع الاستدلال المخزن
   const isInitialPolygon = waypoint.polygonCoords && Array.isArray(waypoint.polygonCoords) && waypoint.polygonCoords.length >= 3;
+  const [coords, setCoords] = useState(
+    isInitialPolygon && waypoint.polygonCoords
+      ? polygonCoordsToString(waypoint.polygonCoords as any[])
+      : `${waypoint.latitude.toFixed(6)}, ${waypoint.longitude.toFixed(6)}`
+  );
+  const [radiusMeters, setRadiusMeters] = useState(waypoint.radiusMeters || 100);
   const [hintType, setHintType] = useState<"circle" | "polygon">(isInitialPolygon ? "polygon" : "circle");
   const [polygonCoords, setPolygonCoords] = useState<Array<{ latitude: number; longitude: number }>>(
     isInitialPolygon ? (waypoint.polygonCoords as any[]) : []
@@ -198,9 +240,65 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
       attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS'
     }).addTo(map);
 
+    // حفظ آخر موقع خريطة تم الوصول إليه
+    map.on("moveend", () => {
+      const center = map.getCenter();
+      try {
+        localStorage.setItem("last_map_center", JSON.stringify({ latitude: center.lat, longitude: center.lng }));
+      } catch (e) {
+        console.error(e);
+      }
+    });
+
     mapRef.current = map;
 
-    // وضع الدائرة
+    // مستمع نقر الخريطة لوضع وتحديث المواقع تلقائياً
+    map.on("click", (e: any) => {
+      const clickedLat = e.latlng.lat;
+      const clickedLng = e.latlng.lng;
+
+      if (hintType === "circle") {
+        setCoords(`${clickedLat.toFixed(6)}, ${clickedLng.toFixed(6)}`);
+        const marker = markerRef.current;
+        const circle = circleRef.current;
+
+        if (marker && circle) {
+          marker.setLatLng([clickedLat, clickedLng]);
+          circle.setLatLng([clickedLat, clickedLng]);
+        } else {
+          const newMarker = L.marker([clickedLat, clickedLng], { draggable: true }).addTo(map);
+          const newCircle = L.circle([clickedLat, clickedLng], {
+            color: "#2563eb",
+            fillColor: "#3b82f6",
+            fillOpacity: 0.15,
+            radius: radiusMeters
+          }).addTo(map);
+
+          newMarker.on("dragend", () => {
+            const position = newMarker.getLatLng();
+            newCircle.setLatLng(position);
+            setCoords(`${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`);
+          });
+
+          markerRef.current = newMarker;
+          circleRef.current = newCircle;
+        }
+      } else {
+        const offset = 0.0004;
+        const newPoints = [
+          { latitude: clickedLat + offset, longitude: clickedLng - offset },
+          { latitude: clickedLat + offset, longitude: clickedLng + offset },
+          { latitude: clickedLat - offset, longitude: clickedLng + offset },
+          { latitude: clickedLat - offset, longitude: clickedLng - offset },
+        ];
+        setPolygonCoords(newPoints);
+        activePointsRef.current = newPoints;
+        renderPolygon(L, map, newPoints);
+        setCoords(polygonCoordsToString(newPoints));
+      }
+    });
+
+    // وضع الدائرة الابتدائي
     if (hintType === "circle") {
       const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
       const circle = L.circle([lat, lng], {
@@ -219,7 +317,7 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
       markerRef.current = marker;
       circleRef.current = circle;
     } 
-    // وضع المضلعات
+    // وضع المضلع الابتدائي
     else {
       const initialPoints = polygonCoords.length >= 3 
         ? polygonCoords
@@ -234,51 +332,6 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
       activePointsRef.current = initialPoints;
       renderPolygon(L, map, initialPoints);
     }
-
-    map.off("click");
-    map.on("click", (e: any) => {
-      if (hintType !== "polygon") return;
-      const clickLat = e.latlng.lat;
-      const clickLng = e.latlng.lng;
-
-      const popupContent = document.createElement("div");
-      popupContent.className = "p-2 text-center space-y-2 dark:text-slate-200";
-      popupContent.dir = "rtl";
-      popupContent.innerHTML = `
-        <p class="text-xs font-bold text-slate-700 dark:text-slate-350">هل تريد إضافة زاوية جديدة هنا؟</p>
-        <div class="flex gap-2 justify-center mt-1">
-          <button id="leaflet-add-btn" class="bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition active:scale-95">نعم، أضف</button>
-          <button id="leaflet-close-btn" class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold px-3 py-1.5 rounded-lg transition active:scale-95">إلغاء</button>
-        </div>
-      `;
-
-      L.popup()
-        .setLatLng([clickLat, clickLng])
-        .setContent(popupContent)
-        .openOn(map);
-
-      setTimeout(() => {
-        const addBtn = document.getElementById("leaflet-add-btn");
-        const closeBtn = document.getElementById("leaflet-close-btn");
-
-        addBtn?.addEventListener("click", () => {
-          const current = activePointsRef.current;
-          const insertIndex = findBestInsertIndex({ latitude: clickLat, longitude: clickLng }, current);
-          
-          const updated = [...current];
-          updated.splice(insertIndex, 0, { latitude: clickLat, longitude: clickLng });
-
-          setPolygonCoords(updated);
-          activePointsRef.current = updated;
-          renderPolygon(L, map, updated);
-          map.closePopup();
-        });
-
-        closeBtn?.addEventListener("click", () => {
-          map.closePopup();
-        });
-      }, 50);
-    });
 
     setTimeout(() => {
       map.invalidateSize();
@@ -328,6 +381,7 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
         const pos = marker.getLatLng();
         activePointsRef.current[index] = { latitude: pos.lat, longitude: pos.lng };
         setPolygonCoords([...activePointsRef.current]);
+        setCoords(polygonCoordsToString(activePointsRef.current));
       });
 
       marker.on("click", (e: any) => {
@@ -363,6 +417,7 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
             setPolygonCoords(updated);
             activePointsRef.current = updated;
             renderPolygon(L, map, updated);
+            setCoords(polygonCoordsToString(updated));
             map.closePopup();
           });
 
@@ -391,6 +446,7 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
     setPolygonCoords(updated);
     activePointsRef.current = updated;
     renderPolygon(L, mapRef.current, updated);
+    setCoords(polygonCoordsToString(updated));
   };
 
   // تقليل زاوية
@@ -408,6 +464,7 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
     setPolygonCoords(updated);
     activePointsRef.current = updated;
     renderPolygon(L, mapRef.current, updated);
+    setCoords(polygonCoordsToString(updated));
   };
 
   const updateMapRadius = (radius: number) => {
@@ -425,12 +482,28 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
     }
   };
 
-  const coordsParsed = parseLatLngLocal(coords);
+  const coordsParsed = parseLatLngLocal(coords) || (polygonCoords.length > 0 ? polygonCoords[0] : null);
+
+  // توليد مضلع تلقائي للتعديل عند تبديل النوع إلى polygon
+  useEffect(() => {
+    if (hintType === "polygon" && polygonCoords.length === 0) {
+      const center = parseLatLngLocal(coords) || { latitude: 30.5082, longitude: 47.7835 };
+      const offset = 0.0005; // حوالي 50 متر
+      const defaultPoly = [
+        { latitude: center.latitude + offset, longitude: center.longitude - offset },
+        { latitude: center.latitude + offset, longitude: center.longitude + offset },
+        { latitude: center.latitude - offset, longitude: center.longitude + offset },
+        { latitude: center.latitude - offset, longitude: center.longitude - offset },
+      ];
+      setPolygonCoords(defaultPoly);
+      activePointsRef.current = defaultPoly;
+      setCoords(polygonCoordsToString(defaultPoly));
+    }
+  }, [hintType]);
 
   useEffect(() => {
-    if (coordsParsed) {
-      initMap("edit-full-map", coordsParsed.latitude, coordsParsed.longitude);
-    }
+    const center = coordsParsed || getDefaultMapCenter();
+    initMap("edit-full-map", center.latitude, center.longitude);
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
@@ -441,7 +514,7 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
         polyMarkersRef.current = [];
       }
     };
-  }, [!!coordsParsed, hintType]);
+  }, [hintType]);
 
   useEffect(() => {
     if (coordsParsed && mapRef.current && hintType === "circle") {
@@ -558,18 +631,43 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
 
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1.5">
-                الصق الإحداثية لتحديث الموضع (مثال: 30.4410, 48.0137)
+                {hintType === "polygon" 
+                  ? "📍 إحداثيات زوايا المربع السكني (كل سطر: خط العرض, خط الطول)" 
+                  : "📍 الصق الإحداثية لتحديث الموضع (مثال: 30.4410, 48.0137)"}
               </label>
-              <input
-                ref={coordsInputRef}
-                type="text"
-                placeholder="الصق الإحداثية لتحديث الخريطة"
-                value={coords}
-                onChange={(e) => setCoords(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                disabled={isSubmitting}
-                className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-3 text-sm outline-none focus:border-sky-500"
-              />
+              {hintType === "polygon" ? (
+                <textarea
+                  rows={5}
+                  placeholder={"30.4410, 48.0137\n30.4420, 48.0138\n..."}
+                  value={coords}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCoords(val);
+                    const parsed = parsePolygonCoordsString(val);
+                    if (parsed.length >= 3) {
+                      setPolygonCoords(parsed);
+                      activePointsRef.current = parsed;
+                      const L = (window as any).L;
+                      if (mapRef.current && L) {
+                        renderPolygon(L, mapRef.current, parsed);
+                      }
+                    }
+                  }}
+                  disabled={isSubmitting}
+                  className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-3 text-xs outline-none focus:border-sky-500 font-mono"
+                />
+              ) : (
+                <input
+                  ref={coordsInputRef}
+                  type="text"
+                  placeholder="الصق الإحداثية لتحديث الخريطة"
+                  value={coords}
+                  onChange={(e) => setCoords(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  disabled={isSubmitting}
+                  className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-3 text-sm outline-none focus:border-sky-500"
+                />
+              )}
             </div>
 
             {coordsParsed && hintType === "circle" && (
@@ -623,76 +721,70 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
 
           {/* الأيسر: الخريطة القمرية */}
           <div className="w-full lg:w-8/12 bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col space-y-4">
-            {coordsParsed ? (
-              <div className="flex flex-col h-full justify-between">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 flex justify-between items-center">
-                    <span>🗺️ خريطة القمر الصناعي التفاعلية للبيوت والمباني</span>
-                    {hintType === "polygon" && (
-                      <span className="text-amber-500 text-xs font-black">عدد الزوايا الحالية: {polygonCoords.length}</span>
-                    )}
-                  </label>
-                  <div
-                    id="edit-full-map"
-                    className="h-[550px] w-full rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-inner z-10"
-                  ></div>
+            <div className="flex flex-col h-full justify-between">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-2 flex justify-between items-center">
+                  <span>🗺️ خريطة القمر الصناعي التفاعلية للبيوت والمباني</span>
+                  {hintType === "polygon" && (
+                    <span className="text-amber-500 text-xs font-black">عدد الزوايا الحالية: {polygonCoords.length}</span>
+                  )}
+                </label>
+                <div
+                  id="edit-full-map"
+                  className="h-[550px] w-full rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-inner z-10"
+                ></div>
+              </div>
+
+              {/* أزرار زيادة وتقليل النقاط */}
+              {hintType === "polygon" && (
+                <div className="flex gap-4 justify-center mt-4">
+                  <button
+                    type="button"
+                    onClick={addPoint}
+                    disabled={isSubmitting}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md transition active:scale-95 disabled:opacity-50"
+                  >
+                    ➕ إضافة زاوية جديدة للمربع
+                  </button>
+                  <button
+                    type="button"
+                    onClick={removePoint}
+                    disabled={isSubmitting}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-md transition active:scale-95 disabled:opacity-50"
+                  >
+                    ➖ حذف آخر زاوية للمربع
+                  </button>
                 </div>
+              )}
 
-                {/* أزرار زيادة وتقليل النقاط */}
-                {hintType === "polygon" && (
-                  <div className="flex gap-4 justify-center mt-4">
-                    <button
-                      type="button"
-                      onClick={addPoint}
-                      disabled={isSubmitting}
-                      className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md transition active:scale-95 disabled:opacity-50"
-                    >
-                      ➕ إضافة زاوية جديدة للمربع
-                    </button>
-                    <button
-                      type="button"
-                      onClick={removePoint}
-                      disabled={isSubmitting}
-                      className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-md transition active:scale-95 disabled:opacity-50"
-                    >
-                      ➖ حذف آخر زاوية للمربع
-                    </button>
-                  </div>
-                )}
-
-                {/* كروت عرض الإحداثيات الحية */}
-                {hintType === "polygon" && polygonCoords.length > 0 && (
-                  <div className="mt-4 border-t border-slate-100 dark:border-slate-800/60 pt-4 space-y-3">
-                    <label className="block text-xs font-bold text-slate-500">
-                      📍 إحداثيات زوايا المربع السكني الحالي (تتحرك حياً ومباشرة أثناء تحريك الدبوس)
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      {polygonCoords.map((pt, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-slate-50 dark:bg-[#0c0d10] border border-slate-200 dark:border-slate-850 rounded-xl p-3 flex items-center justify-between shadow-sm"
-                        >
-                          <div className="space-y-1">
-                            <div className="text-[10px] font-black text-slate-400">الزاوية رقم {idx + 1}</div>
-                            <div className="font-mono text-xs text-slate-700 dark:text-slate-355 font-bold space-y-0.5">
-                              <div>خط العرض: {pt.latitude.toFixed(6)}</div>
-                              <div>خط الطول: {pt.longitude.toFixed(6)}</div>
-                            </div>
+              {/* كروت عرض الإحداثيات الحية */}
+              {hintType === "polygon" && polygonCoords.length > 0 && (
+                <div className="mt-4 border-t border-slate-100 dark:border-slate-800/60 pt-4 space-y-3">
+                  <label className="block text-xs font-bold text-slate-500">
+                    📍 إحداثيات زوايا المربع السكني الحالي (تتحرك حياً ومباشرة أثناء تحريك الدبوس)
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {polygonCoords.map((pt, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-slate-50 dark:bg-[#0c0d10] border border-slate-200 dark:border-slate-850 rounded-xl p-3 flex items-center justify-between shadow-sm"
+                      >
+                        <div className="space-y-1">
+                          <div className="text-[10px] font-black text-slate-400">الزاوية رقم {idx + 1}</div>
+                          <div className="font-mono text-xs text-slate-700 dark:text-slate-355 font-bold space-y-0.5">
+                            <div>خط العرض: {pt.latitude.toFixed(6)}</div>
+                            <div>خط الطول: {pt.longitude.toFixed(6)}</div>
                           </div>
-                          <span className="w-6 h-6 rounded-full bg-amber-500/10 text-amber-500 text-xs font-black flex items-center justify-center border border-amber-500/20">
-                            {idx + 1}
-                          </span>
                         </div>
-                      ))}
-                    </div>
+                        <span className="w-6 h-6 rounded-full bg-amber-500/10 text-amber-500 text-xs font-black flex items-center justify-center border border-amber-500/20">
+                          {idx + 1}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="h-[550px] w-full rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-850 flex items-center justify-center text-slate-400 font-bold text-sm bg-slate-50/50 dark:bg-slate-900/10">
-                يرجى إدخال إحداثيات صالحة لعرض الخريطة.
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
 
         </div>
