@@ -473,6 +473,17 @@ export default function AddSmartHintPage() {
         activePointsRef.current[index] = { latitude: pos.lat, longitude: pos.lng };
         polygon.setLatLngs(activePointsRef.current.map((p) => [p.latitude, p.longitude]));
         setPolygonCoords([...activePointsRef.current]);
+
+        // تحديث موضع الدبوس المركزي (🎯) حياً ومباشرة أثناء السحب
+        if (centerMarkerRef.current) {
+          const sumLat = activePointsRef.current.reduce((sum, p) => sum + p.latitude, 0);
+          const sumLng = activePointsRef.current.reduce((sum, p) => sum + p.longitude, 0);
+          const centerLat = sumLat / activePointsRef.current.length;
+          const centerLng = sumLng / activePointsRef.current.length;
+          centerMarkerRef.current.setLatLng([centerLat, centerLng]);
+          oldLat = centerLat;
+          oldLng = centerLng;
+        }
       });
 
       marker.on("dragend", () => {
@@ -480,6 +491,17 @@ export default function AddSmartHintPage() {
         activePointsRef.current[index] = { latitude: pos.lat, longitude: pos.lng };
         setPolygonCoords([...activePointsRef.current]);
         setCoords(polygonCoordsToString(activePointsRef.current));
+
+        // تحديث موضع الدبوس المركزي (🎯) وتأكيد إحداثياته
+        if (centerMarkerRef.current) {
+          const sumLat = activePointsRef.current.reduce((sum, p) => sum + p.latitude, 0);
+          const sumLng = activePointsRef.current.reduce((sum, p) => sum + p.longitude, 0);
+          const centerLat = sumLat / activePointsRef.current.length;
+          const centerLng = sumLng / activePointsRef.current.length;
+          centerMarkerRef.current.setLatLng([centerLat, centerLng]);
+          oldLat = centerLat;
+          oldLng = centerLng;
+        }
       });
 
       marker.on("click", (e: any) => {
