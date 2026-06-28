@@ -187,6 +187,7 @@ export default function AddSmartHintPage() {
   const circleRef = useRef<any>(null);
   const polyRef = useRef<any>(null);
   const polyMarkersRef = useRef<any[]>([]);
+  const centerMarkerRef = useRef<any>(null);
 
   // مرجع لتخزين أحدث نقاط المضلع لتفادي مشكلة ثبات الخطوط عند السحب
   const activePointsRef = useRef<Array<{ latitude: number; longitude: number }>>([]);
@@ -208,6 +209,7 @@ export default function AddSmartHintPage() {
       circleRef.current = null;
       polyRef.current = null;
       polyMarkersRef.current = [];
+      centerMarkerRef.current = null;
     }
 
     const container = document.getElementById(elementId);
@@ -267,17 +269,58 @@ export default function AddSmartHintPage() {
           circleRef.current = newCircle;
         }
       } else {
-        const offset = 0.0004;
-        const newPoints = [
-          { latitude: clickedLat + offset, longitude: clickedLng - offset },
-          { latitude: clickedLat + offset, longitude: clickedLng + offset },
-          { latitude: clickedLat - offset, longitude: clickedLng + offset },
-          { latitude: clickedLat - offset, longitude: clickedLng - offset },
-        ];
-        setPolygonCoords(newPoints);
-        activePointsRef.current = newPoints;
-        renderPolygon(L, map, newPoints);
-        setCoords(polygonCoordsToString(newPoints));
+        const currentPoints = activePointsRef.current;
+        if (currentPoints.length >= 3) {
+          const popupContent = document.createElement("div");
+          popupContent.className = "p-2 text-center space-y-2 dark:text-slate-200";
+          popupContent.dir = "rtl";
+          popupContent.innerHTML = `
+            <p class="text-xs font-bold text-slate-700 dark:text-slate-350">هل تريد إضافة زاوية جديدة للمربع السكني هنا؟</p>
+            <div class="flex gap-2 justify-center mt-1">
+              <button id="leaflet-add-btn" class="bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition active:scale-95">نعم، أضف</button>
+              <button id="leaflet-close-btn" class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold px-3 py-1.5 rounded-lg transition active:scale-95">إلغاء</button>
+            </div>
+          `;
+
+          L.popup()
+            .setLatLng([clickedLat, clickedLng])
+            .setContent(popupContent)
+            .openOn(map);
+
+          setTimeout(() => {
+            const addBtn = document.getElementById("leaflet-add-btn");
+            const closeBtn = document.getElementById("leaflet-close-btn");
+
+            addBtn?.addEventListener("click", () => {
+              const insertIndex = findBestInsertIndex({ latitude: clickedLat, longitude: clickedLng }, currentPoints);
+              
+              const updated = [...currentPoints];
+              updated.splice(insertIndex, 0, { latitude: clickedLat, longitude: clickedLng });
+
+              setPolygonCoords(updated);
+              activePointsRef.current = updated;
+              renderPolygon(L, map, updated);
+              setCoords(polygonCoordsToString(updated));
+              map.closePopup();
+            });
+
+            closeBtn?.addEventListener("click", () => {
+              map.closePopup();
+            });
+          }, 50);
+        } else {
+          const offset = 0.0004;
+          const newPoints = [
+            { latitude: clickedLat + offset, longitude: clickedLng - offset },
+            { latitude: clickedLat + offset, longitude: clickedLng + offset },
+            { latitude: clickedLat - offset, longitude: clickedLng + offset },
+            { latitude: clickedLat - offset, longitude: clickedLng - offset },
+          ];
+          setPolygonCoords(newPoints);
+          activePointsRef.current = newPoints;
+          renderPolygon(L, map, newPoints);
+          setCoords(polygonCoordsToString(newPoints));
+        }
       }
     });
 
@@ -327,6 +370,11 @@ export default function AddSmartHintPage() {
     polyMarkersRef.current.forEach((m) => map.removeLayer(m));
     polyMarkersRef.current = [];
 
+    if (centerMarkerRef.current) {
+      map.removeLayer(centerMarkerRef.current);
+      centerMarkerRef.current = null;
+    }
+
     activePointsRef.current = points;
     const latLngs = points.map((p) => [p.latitude, p.longitude]);
 
@@ -339,6 +387,70 @@ export default function AddSmartHintPage() {
     }).addTo(map);
 
     polyRef.current = polygon;
+
+    // إضافة زر التحريك المركزي
+    if (points.length >= 3) {
+      const getPolygonCenter = (pts: Array<{ latitude: number; longitude: number }>) => {
+        const sumLat = pts.reduce((sum, p) => sum + p.latitude, 0);
+        const sumLng = pts.reduce((sum, p) => sum + p.longitude, 0);
+        return { latitude: sumLat / pts.length, longitude: sumLng / pts.length };
+      };
+      const center = getPolygonCenter(points);
+
+      const centerIcon = L.divIcon({
+        className: "bg-indigo-600 border-2 border-white rounded-full w-8 h-8 shadow-2xl cursor-grab flex items-center justify-center text-xs text-white font-black animate-pulse",
+        html: "🎯",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+
+      let oldLat = center.latitude;
+      let oldLng = center.longitude;
+
+      const centerMarker = L.marker([center.latitude, center.longitude], {
+        draggable: true,
+        icon: centerIcon
+      }).addTo(map);
+
+      centerMarker.bindTooltip("🎯 اسحب لتحريك المربع السكني بالكامل", {
+        permanent: false,
+        direction: "top"
+      });
+
+      centerMarker.on("drag", (e: any) => {
+        const newPos = centerMarker.getLatLng();
+        const latDiff = newPos.lat - oldLat;
+        const lngDiff = newPos.lng - oldLng;
+
+        const currentPts = activePointsRef.current;
+        const updated = currentPts.map((p) => ({
+          latitude: p.latitude + latDiff,
+          longitude: p.longitude + lngDiff
+        }));
+
+        polygon.setLatLngs(updated.map((p) => [p.latitude, p.longitude]));
+
+        polyMarkersRef.current.forEach((m, idx) => {
+          if (updated[idx]) {
+            m.setLatLng([updated[idx].latitude, updated[idx].longitude]);
+          }
+        });
+
+        activePointsRef.current = updated;
+        setPolygonCoords([...updated]);
+
+        oldLat = newPos.lat;
+        oldLng = newPos.lng;
+      });
+
+      centerMarker.on("dragend", () => {
+        const currentPts = activePointsRef.current;
+        setCoords(polygonCoordsToString(currentPts));
+        renderPolygon(L, map, currentPts);
+      });
+
+      centerMarkerRef.current = centerMarker;
+    }
 
     points.forEach((pt, index) => {
       const icon = L.divIcon({
