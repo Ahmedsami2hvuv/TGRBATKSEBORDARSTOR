@@ -484,6 +484,7 @@ export default async function MandoubPage({ searchParams }: Props) {
       latitude: true,
       longitude: true,
       radiusMeters: true,
+      polygonCoords: true,
       region: {
         select: {
           name: true,
@@ -611,6 +612,28 @@ export default async function MandoubPage({ searchParams }: Props) {
     }
   }
 
+  function isPointInPolygonLocal(
+    point: { latitude: number; longitude: number },
+    polygon: Array<{ latitude: number; longitude: number }>
+  ): boolean {
+    const x = point.latitude;
+    const y = point.longitude;
+    let inside = false;
+
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i].latitude;
+      const yi = polygon[i].longitude;
+      const xj = polygon[j].latitude;
+      const yj = polygon[j].longitude;
+
+      const intersect = ((yi > y) !== (yj > y))
+          && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+
+    return inside;
+  }
+
   function computeSmartHint(params: {
     locationUrl: string;
     fallbackLandmark?: string | null;
@@ -625,6 +648,22 @@ export default async function MandoubPage({ searchParams }: Props) {
 
     const validWaypoints = allWaypoints
       .map((wp) => {
+        // التحقق أولاً من المضلع السكني إذا كان متوفراً وصالحاً
+        if (wp.polygonCoords && Array.isArray(wp.polygonCoords) && wp.polygonCoords.length >= 3) {
+          const poly = wp.polygonCoords as Array<{ latitude: number; longitude: number }>;
+          const isInside = isPointInPolygonLocal(customerLoc, poly);
+          
+          if (isInside) {
+            return {
+              name: wp.name?.trim() || "مدخل",
+              regionName: wp.region?.name?.trim() || "منطقة غير معروفة",
+              distanceM: 0,
+              radiusMeters: 10,
+              isInPolygon: true,
+            };
+          }
+        }
+
         const distanceM = haversineMeters(
           customerLoc.latitude,
           customerLoc.longitude,
@@ -636,9 +675,10 @@ export default async function MandoubPage({ searchParams }: Props) {
           regionName: wp.region?.name?.trim() || "منطقة غير معروفة",
           distanceM,
           radiusMeters: wp.radiusMeters,
+          isInPolygon: false,
         };
       })
-      .filter((wp) => wp.distanceM <= wp.radiusMeters)
+      .filter((wp) => wp.isInPolygon || wp.distanceM <= wp.radiusMeters)
       .sort((a, b) => a.distanceM - b.distanceM);
 
     if (validWaypoints.length === 0) {

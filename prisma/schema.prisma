@@ -31,16 +31,17 @@ model Region {
 }
 
 model RegionWaypoint {
-  id           String   @id @default(cuid())
-  regionId     String
-  name         String   @default("")
-  latitude     Float
-  longitude    Float
-  sortOrder    Int      @default(0)
-  radiusMeters Int      @default(100)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  region       Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  regionId      String
+  name          String   @default("")
+  latitude      Float
+  longitude     Float
+  sortOrder     Int      @default(0)
+  radiusMeters  Int      @default(100)
+  polygonCoords Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  region        Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
 
   @@index([regionId, sortOrder])
 }

@@ -19,7 +19,12 @@ function parseLatLng(input: string): { latitude: number; longitude: number } | n
   return null;
 }
 
-export async function addSmartHintAction(name: string, locationStr: string, radiusMeters?: number) {
+export async function addSmartHintAction(
+  name: string,
+  locationStr: string,
+  radiusMeters?: number,
+  polygonCoords?: Array<{ latitude: number; longitude: number }> | null
+) {
   if (!name.trim()) {
     throw new Error("اسم المدخل مطلوب");
   }
@@ -60,6 +65,7 @@ export async function addSmartHintAction(name: string, locationStr: string, radi
       longitude: coords.longitude,
       sortOrder: nextSort,
       radiusMeters: radiusMeters ?? 100,
+      polygonCoords: polygonCoords ? JSON.parse(JSON.stringify(polygonCoords)) : null,
     },
     select: {
       id: true,
@@ -67,6 +73,7 @@ export async function addSmartHintAction(name: string, locationStr: string, radi
       latitude: true,
       longitude: true,
       radiusMeters: true,
+      polygonCoords: true,
       region: {
         select: {
           name: true,
@@ -92,7 +99,13 @@ export async function deleteSmartHintAction(waypointId: string) {
   return { success: true };
 }
 
-export async function updateSmartHintAction(waypointId: string, name: string, locationStr: string, radiusMeters?: number) {
+export async function updateSmartHintAction(
+  waypointId: string,
+  name: string,
+  locationStr: string,
+  radiusMeters?: number,
+  polygonCoords?: Array<{ latitude: number; longitude: number }> | null
+) {
   if (!waypointId) {
     throw new Error("معرّف النقطة مطلوب");
   }
@@ -112,6 +125,7 @@ export async function updateSmartHintAction(waypointId: string, name: string, lo
       latitude: coords.latitude,
       longitude: coords.longitude,
       ...(radiusMeters !== undefined ? { radiusMeters } : {}),
+      ...(polygonCoords !== undefined ? { polygonCoords: polygonCoords ? JSON.parse(JSON.stringify(polygonCoords)) : null } : {}),
     },
   });
 

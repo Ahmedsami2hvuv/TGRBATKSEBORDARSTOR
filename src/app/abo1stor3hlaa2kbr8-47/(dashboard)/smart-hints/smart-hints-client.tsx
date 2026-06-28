@@ -9,6 +9,8 @@ interface Waypoint {
   name: string;
   latitude: number;
   longitude: number;
+  radiusMeters: number;
+  polygonCoords?: any;
   region?: {
     name: string;
   } | null;
@@ -112,6 +114,10 @@ export default function SmartHintsClient({
   const [errorMsg, setErrorMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // نوع الاستدلال الجديد: دائري أو مضلع
+  const [hintType, setHintType] = useState<"circle" | "polygon">("circle");
+  const [polygonCoords, setPolygonCoords] = useState<Array<{ latitude: number; longitude: number }>>([]);
+
   // للبحث والفلترة
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -119,11 +125,14 @@ export default function SmartHintsClient({
   const nameInputRef = useRef<HTMLInputElement>(null);
   const coordsInputRef = useRef<HTMLInputElement>(null);
 
-  // الخرائط ونصف القطر
+  // الخرائط
   const [mapRadius, setMapRadius] = useState(100);
   const mapRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
-  const circleRef = useRef<any>(null);
+  const markerRef = useRef<any>(null); // الدبوس الفردي (للدائري)
+  const circleRef = useRef<any>(null); // الدائرة (للدائري)
+  
+  const polyRef = useRef<any>(null); // المضلع (للمربعات السكنية)
+  const polyMarkersRef = useRef<any[]>([]); // الدبابيس الفرعية لزوايا المضلع
 
   // مزامنة النقاط المحدثة من السيرفر
   useEffect(() => {
@@ -138,15 +147,18 @@ export default function SmartHintsClient({
   }, [isAddOpen]);
 
   // تهيئة الخريطة وتحديثها
-  const initMap = async (elementId: string, lat: number, lng: number, radius: number, onCoordsChange: (lat: number, lng: number) => void) => {
+  const initMap = async (elementId: string, lat: number, lng: number) => {
     const L = await loadLeaflet();
     if (!L) return;
 
+    // تنظيف تام للخريطة وأي عناصر سابقة
     if (mapRef.current) {
       mapRef.current.remove();
       mapRef.current = null;
       markerRef.current = null;
       circleRef.current = null;
+      polyRef.current = null;
+      polyMarkersRef.current = [];
     }
 
     const container = document.getElementById(elementId);
@@ -155,34 +167,102 @@ export default function SmartHintsClient({
     const map = L.map(elementId, {
       zoomControl: true,
       scrollWheelZoom: true
-    }).setView([lat, lng], 15);
+    }).setView([lat, lng], 16);
 
+    // تحميل قمر صناعي Esri
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS'
     }).addTo(map);
-
-    const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-
-    const circle = L.circle([lat, lng], {
-      color: "#2563eb",
-      fillColor: "#3b82f6",
-      fillOpacity: 0.15,
-      radius: radius
-    }).addTo(map);
-
-    marker.on("dragend", () => {
-      const position = marker.getLatLng();
-      circle.setLatLng(position);
-      onCoordsChange(position.lat, position.lng);
-    });
 
     mapRef.current = map;
-    markerRef.current = marker;
-    circleRef.current = circle;
+
+    // وضع الدائرة (النظام الدائري)
+    if (hintType === "circle") {
+      const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+      const circle = L.circle([lat, lng], {
+        color: "#2563eb",
+        fillColor: "#3b82f6",
+        fillOpacity: 0.15,
+        radius: mapRadius
+      }).addTo(map);
+
+      marker.on("dragend", () => {
+        const position = marker.getLatLng();
+        circle.setLatLng(position);
+        setNewCoords(`${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`);
+      });
+
+      markerRef.current = marker;
+      circleRef.current = circle;
+    } 
+    // وضع المربعات والمضلعات السكنية
+    else {
+      // إعداد المضلع الأولي بالاعتماد على النقطة الأساسية كنواة مركزية
+      const polyPoints = [
+        { latitude: lat + 0.0006, longitude: lng - 0.0006 },
+        { latitude: lat + 0.0006, longitude: lng + 0.0006 },
+        { latitude: lat - 0.0006, longitude: lng + 0.0006 },
+        { latitude: lat - 0.0006, longitude: lng - 0.0006 },
+      ];
+      setPolygonCoords(polyPoints);
+      renderPolygon(L, map, polyPoints);
+    }
 
     setTimeout(() => {
       map.invalidateSize();
     }, 200);
+  };
+
+  // رندرة ورسم المضلع وزواياه
+  const renderPolygon = (L: any, map: any, points: Array<{ latitude: number; longitude: number }>) => {
+    // إزالة المضلع والدبابيس السابقة
+    if (polyRef.current) map.removeLayer(polyRef.current);
+    polyMarkersRef.current.forEach((m) => map.removeLayer(m));
+    polyMarkersRef.current = [];
+
+    const latLngs = points.map((p) => [p.latitude, p.longitude]);
+
+    // رسم المضلع باللون الأزرق الشفاف
+    const polygon = L.polygon(latLngs, {
+      color: "#f59e0b", // لون برتقالي جذاب للتمييز
+      fillColor: "#fbbf24",
+      fillOpacity: 0.25,
+      weight: 3
+    }).addTo(map);
+
+    polyRef.current = polygon;
+
+    // إضافة دبابيس صغيرة قابلة للسحب عند كل زاوية لتعديلها يدوياً
+    points.forEach((pt, index) => {
+      // استخدام أيقونة دبابيس زرقاء دائرية
+      const icon = L.divIcon({
+        className: "bg-amber-500 border-2 border-white rounded-full w-4 h-4 shadow-md cursor-pointer",
+        iconSize: [16, 16]
+      });
+
+      const marker = L.marker([pt.latitude, pt.longitude], {
+        draggable: true,
+        icon: icon
+      }).addTo(map);
+
+      marker.on("drag", () => {
+        const pos = marker.getLatLng();
+        const updated = [...points];
+        updated[index] = { latitude: pos.lat, longitude: pos.lng };
+        
+        // تحديث إحداثيات المضلع على الخريطة لحظياً أثناء السحب
+        polygon.setLatLngs(updated.map((p) => [p.latitude, p.longitude]));
+      });
+
+      marker.on("dragend", () => {
+        const pos = marker.getLatLng();
+        const updated = [...points];
+        updated[index] = { latitude: pos.lat, longitude: pos.lng };
+        setPolygonCoords(updated);
+      });
+
+      polyMarkersRef.current.push(marker);
+    });
   };
 
   const updateMapRadius = (radius: number) => {
@@ -192,7 +272,7 @@ export default function SmartHintsClient({
   };
 
   const updateMapPosition = (lat: number, lng: number) => {
-    if (mapRef.current && markerRef.current && circleRef.current) {
+    if (mapRef.current && hintType === "circle" && markerRef.current && circleRef.current) {
       const pos = [lat, lng];
       mapRef.current.setView(pos, mapRef.current.getZoom());
       markerRef.current.setLatLng(pos);
@@ -204,9 +284,7 @@ export default function SmartHintsClient({
 
   useEffect(() => {
     if (isAddOpen && coordsParsed) {
-      initMap("add-map", coordsParsed.latitude, coordsParsed.longitude, mapRadius, (lat, lng) => {
-        setNewCoords(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-      });
+      initMap("add-map", coordsParsed.latitude, coordsParsed.longitude);
     }
     return () => {
       if (mapRef.current) {
@@ -214,18 +292,20 @@ export default function SmartHintsClient({
         mapRef.current = null;
         markerRef.current = null;
         circleRef.current = null;
+        polyRef.current = null;
+        polyMarkersRef.current = [];
       }
     };
-  }, [isAddOpen, !!coordsParsed]);
+  }, [isAddOpen, !!coordsParsed, hintType]);
 
   useEffect(() => {
-    if (isAddOpen && coordsParsed && mapRef.current) {
+    if (isAddOpen && coordsParsed && mapRef.current && hintType === "circle") {
       updateMapPosition(coordsParsed.latitude, coordsParsed.longitude);
     }
   }, [newCoords]);
 
   useEffect(() => {
-    if (isAddOpen && mapRef.current) {
+    if (isAddOpen && mapRef.current && hintType === "circle") {
       updateMapRadius(mapRadius);
     }
   }, [mapRadius]);
@@ -257,13 +337,15 @@ export default function SmartHintsClient({
     setErrorMsg("");
 
     try {
-      const res = await addSmartHintAction(newName, newCoords, mapRadius);
+      // تمرير المضلع السكني كمعامل رابع إذا كان المود مضلع
+      const polyToSend = hintType === "polygon" ? polygonCoords : null;
+      const res = await addSmartHintAction(newName, newCoords, mapRadius, polyToSend);
       if (res.success) {
-        // تفريغ المدخلات وإبقاء النافذة مفتوحة لإضافة المزيد
         setNewName("");
         setNewCoords("");
         setErrorMsg("");
         setMapRadius(100);
+        setPolygonCoords([]);
         setTimeout(() => nameInputRef.current?.focus(), 50);
       }
     } catch (err: any) {
@@ -291,7 +373,6 @@ export default function SmartHintsClient({
 
   // تصفية الطلبات المعروضة
   const filteredOrders = processedOrders.filter((order) => {
-    // 1. تصفية بفلتر الحالة
     if (statusFilter === "success") {
       if (order.statusText.includes("خارج النطاق") || order.statusText === "—") return false;
     } else if (statusFilter === "out_of_range") {
@@ -300,7 +381,6 @@ export default function SmartHintsClient({
       if (order.statusText !== "—") return false;
     }
 
-    // 2. تصفية بكلمة البحث
     if (!searchTerm.trim()) return true;
     const term = searchTerm.toLowerCase();
     return (
@@ -502,7 +582,7 @@ export default function SmartHintsClient({
           <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 p-6 shadow-2xl animate-in zoom-in-95 duration-200 my-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
-                ➕ إضافة نقطة استدلال ذكي جديدة
+                ➕ إضافة نقطة استدلال جديدة
               </h3>
               <button
                 onClick={() => setIsAddOpen(false)}
@@ -512,14 +592,36 @@ export default function SmartHintsClient({
               </button>
             </div>
 
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 leading-relaxed">
-              💡 أضف نقاط الاستدلال لتبسيط توجيه المناديب، وسيتم استخدام نصف قطر التغطية لتحديد النطاق الفعلي.
-            </p>
-
             <div className="space-y-4">
+              {/* اختيار نوع النطاق الجغرافي */}
+              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setHintType("circle")}
+                  className={`py-2 text-xs font-bold rounded-lg transition ${
+                    hintType === "circle"
+                      ? "bg-white dark:bg-[#18181b] text-sky-600 shadow-sm"
+                      : "text-slate-500"
+                  }`}
+                >
+                  📍 نطاق دائري (دبوس)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHintType("polygon")}
+                  className={`py-2 text-xs font-bold rounded-lg transition ${
+                    hintType === "polygon"
+                      ? "bg-white dark:bg-[#18181b] text-amber-600 shadow-sm"
+                      : "text-slate-500"
+                  }`}
+                >
+                  🟩 مربع سكني (مضلع)
+                </button>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">
-                  اسم المدخل الجديد (مثال: جسر ابو فلوس)
+                  اسم المدخل الجديد (مثال: جسر ابو فلوس أو بلوك 4)
                 </label>
                 <input
                   ref={nameInputRef}
@@ -535,7 +637,7 @@ export default function SmartHintsClient({
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">
-                  الصق الإحداثية (مثال: 30.4410, 48.0137)
+                  الصق الإحداثية لتحديد المركز (مثال: 30.4410, 48.0137)
                 </label>
                 <input
                   ref={coordsInputRef}
@@ -551,26 +653,32 @@ export default function SmartHintsClient({
 
               {coordsParsed && (
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1 flex justify-between">
-                      <span>📏 مسافة التغطية: {mapRadius} متر</span>
-                      <span className="text-slate-400"> اسحب لتغيير الحجم</span>
-                    </label>
-                    <input
-                      type="range"
-                      min="10"
-                      max="500"
-                      step="5"
-                      value={mapRadius}
-                      onChange={(e) => setMapRadius(parseInt(e.target.value))}
-                      disabled={isSubmitting}
-                      className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-600"
-                    />
-                  </div>
+                  {hintType === "circle" ? (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1 flex justify-between">
+                        <span>📏 مسافة التغطية: {mapRadius} متر</span>
+                        <span className="text-slate-400"> اسحب لتغيير الحجم</span>
+                      </label>
+                      <input
+                        type="range"
+                        min="10"
+                        max="500"
+                        step="5"
+                        value={mapRadius}
+                        onChange={(e) => setMapRadius(parseInt(e.target.value))}
+                        disabled={isSubmitting}
+                        className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-600"
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-xs text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/20 p-2.5 rounded-xl border border-amber-100 dark:border-amber-900/30">
+                      💡 اسحب الدوائر البرتقالية الصغيرة على خريطة القمر الصناعي لتشكيل وتعديل حدود المربع السكني بدقة حول البيوت.
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">
-                      🗺️ تموضع الاستدلال على الخريطة (اسحب الدبوس للتعديل)
+                      🗺️ تموضع الاستدلال على الخريطة
                     </label>
                     <div
                       id="add-map"

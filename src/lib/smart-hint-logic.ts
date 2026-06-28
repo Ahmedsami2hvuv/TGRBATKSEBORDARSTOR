@@ -4,7 +4,32 @@ import { extractLatLngFromLocationInputSmart } from "@/lib/order-location";
 import { normalizeIraqMobileLocal11 } from "@/lib/whatsapp";
 
 /**
- * يحسب "الاستدلال الذكي" لطلب معين بناءً على إحداثيات اللوكيشن وأقرب نقطة دالة في المنطقة.
+ * خوارزمية Ray-casting للتحقق مما إذا كانت نقطة جغرافية تقع داخل مضلع جغرافي مغلق
+ */
+function isPointInPolygon(
+  point: { latitude: number; longitude: number },
+  polygon: Array<{ latitude: number; longitude: number }>
+): boolean {
+  const x = point.latitude;
+  const y = point.longitude;
+  let inside = false;
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].latitude;
+    const yi = polygon[i].longitude;
+    const xj = polygon[j].latitude;
+    const yj = polygon[j].longitude;
+
+    const intersect = ((yi > y) !== (yj > y))
+        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+
+  return inside;
+}
+
+/**
+ * يحسب "الاستدلال الذكي" لطلب معين بناءً على إحداثيات اللوكيشن والمربعات السكنية أو أقرب نقطة دالة.
  */
 export async function computeSmartHint(
   orderId: string,
@@ -26,7 +51,7 @@ export async function computeSmartHint(
 
   let locationUrl = type === "primary" ? order.customerLocationUrl : order.secondCustomerLocationUrl;
 
-  // إذا كان اللوكيشن فارغاً في الطلب (حالة طلب جديد مثلاً)، نبحث عنه في بروفايل هاتف الزبون المرجعي
+  // إذا كان اللوكيشن فارغاً في الطلب، نبحث عنه في بروفايل هاتف الزبون المرجعي
   if (!locationUrl?.trim()) {
     const phone = type === "primary" ? order.customerPhone : order.secondCustomerPhone;
     const regionId = type === "primary" ? order.customerRegionId : order.secondCustomerRegionId;
@@ -54,6 +79,7 @@ export async function computeSmartHint(
       latitude: true,
       longitude: true,
       radiusMeters: true,
+      polygonCoords: true,
       region: {
         select: {
           name: true,
@@ -69,6 +95,24 @@ export async function computeSmartHint(
 
   const validWaypoints = allWaypoints
     .map((wp) => {
+      // التحقق أولاً من المضلع السكني إذا كان متوفراً وصالحاً
+      if (wp.polygonCoords && Array.isArray(wp.polygonCoords) && wp.polygonCoords.length >= 3) {
+        const poly = wp.polygonCoords as Array<{ latitude: number; longitude: number }>;
+        const isInside = isPointInPolygon(customerLoc, poly);
+        
+        if (isInside) {
+          // إذا كان داخل المربع السكني، نعتبر المسافة صفرم ليعطي أولوية قصوى للاستدلال
+          return {
+            name: wp.name?.trim() || "مدخل",
+            regionName: wp.region?.name?.trim() || "منطقة غير معروفة",
+            distanceM: 0,
+            radiusMeters: 10,
+            isInPolygon: true,
+          };
+        }
+      }
+
+      // إذا لم يكن هناك مضلع أو كان موقع الزبون خارجه، نعتمد على الحساب الدائري المعتاد
       const distanceM = haversineMeters(
         customerLoc.latitude,
         customerLoc.longitude,
@@ -80,9 +124,12 @@ export async function computeSmartHint(
         regionName: wp.region?.name?.trim() || "منطقة غير معروفة",
         distanceM,
         radiusMeters: wp.radiusMeters,
+        isInPolygon: false,
       };
     })
-    .filter((wp) => wp.distanceM <= wp.radiusMeters)
+    // التصفية: إما أنه يقع داخل المضلع، أو يقع ضمن نصف القطر للمنطقة الدائرية
+    .filter((wp) => wp.isInPolygon || wp.distanceM <= wp.radiusMeters)
+    // الفرز: إعطاء الأولوية للنقاط داخل المضلع (مسافة 0)، ثم للمسافات الدائرية الأقرب
     .sort((a, b) => a.distanceM - b.distanceM);
 
   if (validWaypoints.length === 0) return "—";
