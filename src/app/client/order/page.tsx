@@ -268,6 +268,15 @@ export default async function ClientOrderPage(props: Props) {
       }
     }
 
+    // حساب وضعية السيارات بناءً على المؤقت
+    let currentNoCarsMode = globalSettings?.noCarsMode || "off";
+    if (currentNoCarsMode !== "off" && globalSettings?.noCarsUntil) {
+      const untilDate = new Date(globalSettings.noCarsUntil);
+      if (new Date() > untilDate) {
+        currentNoCarsMode = "off";
+      }
+    }
+
     return (
       <div className="kse-app-bg relative min-h-screen px-4 py-8 pb-16 text-slate-800">
         <div className="absolute top-4 left-4 z-50">
@@ -289,7 +298,7 @@ export default async function ClientOrderPage(props: Props) {
             botUsername={botUsername}
             portalUrl={portalUrl}
             botStartParam={botStartParam}
-            noCarsMode={globalSettings?.noCarsMode || "off"}
+            noCarsMode={currentNoCarsMode}
             employeePhone={employee.phone}
           />
         </div>

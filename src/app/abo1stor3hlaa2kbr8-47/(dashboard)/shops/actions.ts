@@ -259,15 +259,29 @@ export async function toggleGlobalPause(formData: FormData) {
 
 export async function updateGlobalCarStatus(formData: FormData) {
   const mode = String(formData.get("noCarsMode") ?? "off").trim();
+  const rawUntil = formData.get("noCarsUntil");
+  
+  let noCarsUntil: Date | null = null;
+  if (mode !== "off" && rawUntil) {
+    const untilStr = String(rawUntil).trim();
+    if (untilStr) {
+      noCarsUntil = new Date(untilStr);
+      if (isNaN(noCarsUntil.getTime())) {
+        noCarsUntil = null;
+      }
+    }
+  }
 
   await prisma.globalSettings.upsert({
     where: { id: "system" },
     update: {
       noCarsMode: mode,
+      noCarsUntil: noCarsUntil,
     },
     create: {
       id: "system",
       noCarsMode: mode,
+      noCarsUntil: noCarsUntil,
     },
   });
 

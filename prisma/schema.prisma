@@ -91,9 +91,11 @@ model GlobalSettings {
   id              String   @id @default("system")
   allOrdersPaused Boolean  @default(false)
   pauseMessage    String   @default("")
+  allOrdersPausedUntil DateTime?
   profitMargin    Decimal  @default(0) @db.Decimal(10, 2)
   updatedAt       DateTime @updatedAt
   noCarsMode      String   @default("off")
+  noCarsUntil     DateTime?
 }
 
 model Shop {

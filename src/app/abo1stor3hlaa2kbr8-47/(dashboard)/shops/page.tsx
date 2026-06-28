@@ -86,6 +86,7 @@ export default async function ShopsPage() {
         <div className="flex flex-wrap items-center gap-3">
           <GlobalCarStatusButton
             noCarsMode={globalSettings?.noCarsMode || "off"}
+            noCarsUntil={globalSettings?.noCarsUntil || null}
             icons={icons}
           />
           <GlobalPauseButton
