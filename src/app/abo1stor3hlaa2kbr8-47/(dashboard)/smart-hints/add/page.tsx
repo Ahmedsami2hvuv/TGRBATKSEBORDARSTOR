@@ -729,13 +729,41 @@ export default function AddSmartHintPage() {
               <input
                 ref={nameInputRef}
                 type="text"
-                placeholder="اكتب اسم المدخل واضغط Enter"
+                placeholder="اكتب اسم المدخل واضغط Enter للحفظ"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && coordsInputRef.current?.focus()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                }}
                 disabled={isSubmitting}
                 className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-3 text-sm outline-none focus:border-sky-500"
               />
+            </div>
+
+            {errorMsg && (
+              <div className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/20 p-3.5 rounded-xl border border-rose-100 dark:border-rose-900/30">
+                ⚠️ {errorMsg}
+              </div>
+            )}
+
+            {successMsg && (
+              <div className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 p-3.5 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+                ✅ {successMsg}
+              </div>
+            )}
+
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="w-full rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 py-3.5 text-sm font-bold text-white transition hover:shadow-lg active:scale-95 disabled:opacity-50"
+              >
+                {isSubmitting ? "جاري الحفظ..." : "حفظ الاستدلال بنجاح"}
+              </button>
             </div>
 
             <div>
@@ -772,7 +800,12 @@ export default function AddSmartHintPage() {
                   placeholder="الصق الإحداثية لتظهر الخريطة فوراً"
                   value={coords}
                   onChange={(e) => setCoords(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSubmit();
+                    }
+                  }}
                   disabled={isSubmitting}
                   className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#09090b] px-4 py-3 text-sm outline-none focus:border-sky-500"
                 />
@@ -797,30 +830,6 @@ export default function AddSmartHintPage() {
                 />
               </div>
             )}
-
-
-
-            {errorMsg && (
-              <div className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/20 p-3.5 rounded-xl border border-rose-100 dark:border-rose-900/30">
-                ⚠️ {errorMsg}
-              </div>
-            )}
-
-            {successMsg && (
-              <div className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 p-3.5 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
-                ✅ {successMsg}
-              </div>
-            )}
-
-            <div className="pt-2">
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="w-full rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 py-3.5 text-sm font-bold text-white transition hover:shadow-lg active:scale-95 disabled:opacity-50"
-              >
-                {isSubmitting ? "جاري الحفظ..." : "حفظ الاستدلال بنجاح"}
-              </button>
-            </div>
           </div>
 
           {/* العمود الأيسر: خريطة القمر الصناعي الكاملة الضخمة مع أزرار التحكم بالنقاط */}
