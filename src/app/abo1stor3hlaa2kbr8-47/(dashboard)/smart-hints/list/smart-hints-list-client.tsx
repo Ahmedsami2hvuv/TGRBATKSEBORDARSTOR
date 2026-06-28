@@ -139,7 +139,8 @@ export default function SmartHintsListClient({ allWaypoints: initialWaypoints }:
         setNewName("");
         setNewCoords("");
         setAddErrorMsg("");
-        setIsAddOpen(false);
+        // إبقاء النافذة مفتوحة مع إعادة التركيز على حقل الاسم
+        setTimeout(() => addNameInputRef.current?.focus(), 50);
       }
     } catch (err: any) {
       setAddErrorMsg(err.message || "حدث خطأ غير متوقع أثناء الحفظ");
