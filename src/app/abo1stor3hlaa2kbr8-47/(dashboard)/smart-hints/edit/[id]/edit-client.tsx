@@ -234,12 +234,15 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
 
     const map = L.map(elementId, {
       zoomControl: true,
-      scrollWheelZoom: true
-    }).setView([lat, lng], 17);
+      scrollWheelZoom: true,
+      maxZoom: 21
+    }).setView([lat, lng], 19);
 
     // قمر صناعي
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS'
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS',
+      maxZoom: 21,
+      maxNativeZoom: 19
     }).addTo(map);
 
     // حفظ آخر موقع خريطة تم الوصول إليه
