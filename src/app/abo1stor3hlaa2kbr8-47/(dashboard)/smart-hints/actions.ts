@@ -78,3 +78,29 @@ export async function deleteSmartHintAction(waypointId: string) {
   revalidatePath("/abo1stor3hlaa2kbr8-47/smart-hints");
   return { success: true };
 }
+
+export async function updateSmartHintAction(waypointId: string, name: string, locationStr: string) {
+  if (!waypointId) {
+    throw new Error("معرّف النقطة مطلوب");
+  }
+  if (!name.trim()) {
+    throw new Error("اسم المدخل مطلوب");
+  }
+
+  const coords = parseLatLng(locationStr);
+  if (!coords) {
+    throw new Error("تنسيق الإحداثيات غير صحيح. يرجى إدخال قيمتين مفصولتين بفاصلة أو مسافة (مثال: 30.4410, 48.0137)");
+  }
+
+  await prisma.regionWaypoint.update({
+    where: { id: waypointId },
+    data: {
+      name: name.trim(),
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+    },
+  });
+
+  revalidatePath("/abo1stor3hlaa2kbr8-47/smart-hints");
+  return { success: true };
+}

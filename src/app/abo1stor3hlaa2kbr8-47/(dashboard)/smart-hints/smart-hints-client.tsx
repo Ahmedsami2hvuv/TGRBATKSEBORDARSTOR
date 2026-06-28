@@ -48,7 +48,6 @@ export default function SmartHintsClient({
 }: SmartHintsClientProps) {
   const [allWaypoints, setAllWaypoints] = useState<Waypoint[]>(initialWaypoints);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isListOpen, setIsListOpen] = useState(false);
 
   // حقول النموذج الجديد
   const [newName, setNewName] = useState("");
@@ -163,12 +162,12 @@ export default function SmartHintsClient({
 
         {/* أزرار التحكم الفوقية */}
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
-          <button
-            onClick={() => setIsListOpen(true)}
+          <Link
+            href="/abo1stor3hlaa2kbr8-47/smart-hints/list"
             className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131418] text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-900 transition active:scale-95 text-sm"
           >
             🧭 عرض كل الاستدلالات ({allWaypoints.length})
-          </button>
+          </Link>
           <button
             onClick={() => setIsAddOpen(true)}
             className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 text-white font-bold hover:shadow-lg hover:shadow-sky-500/20 transition active:scale-95 text-sm"
@@ -419,70 +418,6 @@ export default function SmartHintsClient({
                   إلغاء
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* نافذة عرض كل الاستدلالات المخزنة */}
-      {isListOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-2xl rounded-2xl bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 p-6 shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
-                🧭 كل النقاط الدالة (الاستدلالات) المخزنة في النظام ({allWaypoints.length})
-              </h3>
-              <button
-                onClick={() => setIsListOpen(false)}
-                className="rounded-full bg-slate-100 dark:bg-slate-800 p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto min-h-0">
-              <table className="w-full text-start border-collapse text-xs sm:text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold bg-slate-50/50 dark:bg-slate-900/10">
-                    <th className="p-2.5 text-start">الاسم</th>
-                    <th className="p-2.5 text-start">المنطقة الأصلية</th>
-                    <th className="p-2.5 text-start">خط العرض (Lat)</th>
-                    <th className="p-2.5 text-start">خط الطول (Lng)</th>
-                    <th className="p-2.5 text-center">إجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allWaypoints.map((wp) => (
-                    <tr
-                      key={wp.id}
-                      className="border-b border-slate-100 dark:border-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-900/20"
-                    >
-                      <td className="p-2.5 font-bold">{wp.name}</td>
-                      <td className="p-2.5 text-slate-500">{wp.region?.name || "عامة (غير محددة)"}</td>
-                      <td className="p-2.5 font-mono text-slate-600 dark:text-slate-400">{wp.latitude.toFixed(6)}</td>
-                      <td className="p-2.5 font-mono text-slate-600 dark:text-slate-400">{wp.longitude.toFixed(6)}</td>
-                      <td className="p-2.5 text-center">
-                        <button
-                          onClick={() => handleDelete(wp.id, wp.name)}
-                          className="rounded-lg bg-rose-50 dark:bg-rose-950/20 p-1.5 text-rose-600 hover:bg-rose-100 hover:text-rose-800 transition"
-                          title="حذف الاستدلال"
-                        >
-                          🗑️ حذف
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-              <button
-                onClick={() => setIsListOpen(false)}
-                className="px-6 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131418] text-sm font-bold text-slate-700 dark:text-slate-200 transition active:scale-95"
-              >
-                إغلاق النافذة
-              </button>
             </div>
           </div>
         </div>
