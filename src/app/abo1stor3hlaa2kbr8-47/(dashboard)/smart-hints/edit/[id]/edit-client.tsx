@@ -880,33 +880,37 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
                     <span className="text-amber-500 text-xs font-black">عدد الزوايا الحالية: {polygonCoords.length}</span>
                   )}
                 </label>
-                <div
-                  id="edit-full-map"
-                  className="h-[550px] w-full rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-inner z-10"
-                ></div>
-              </div>
+                <div className="relative">
+                  <div
+                    id="edit-full-map"
+                    className="h-[550px] w-full rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-inner z-10"
+                  ></div>
 
-              {/* أزرار زيادة وتقليل النقاط */}
-              {hintType === "polygon" && (
-                <div className="flex gap-4 justify-center mt-4">
-                  <button
-                    type="button"
-                    onClick={addPoint}
-                    disabled={isSubmitting}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md transition active:scale-95 disabled:opacity-50"
-                  >
-                    ➕ إضافة زاوية جديدة للمربع
-                  </button>
-                  <button
-                    type="button"
-                    onClick={removePoint}
-                    disabled={isSubmitting}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-md transition active:scale-95 disabled:opacity-50"
-                  >
-                    ➖ حذف آخر زاوية للمربع
-                  </button>
+                  {/* أزرار إضافة وتقليل النقاط عائمة تحت أزرار الزووم بالخريطة */}
+                  {hintType === "polygon" && (
+                    <div className="absolute top-[82px] left-[10px] z-[1000] flex flex-col gap-1.5">
+                      <button
+                        type="button"
+                        onClick={addPoint}
+                        disabled={isSubmitting}
+                        title="إضافة زاوية جديدة للمربع"
+                        className="w-[30px] h-[30px] bg-white dark:bg-[#18181b] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-lg shadow-md border border-slate-300 dark:border-slate-700 flex items-center justify-center font-bold text-base transition active:scale-95 disabled:opacity-50 cursor-pointer"
+                      >
+                        ➕
+                      </button>
+                      <button
+                        type="button"
+                        onClick={removePoint}
+                        disabled={isSubmitting}
+                        title="حذف آخر زاوية للمربع"
+                        className="w-[30px] h-[30px] bg-white dark:bg-[#18181b] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-lg shadow-md border border-slate-300 dark:border-slate-700 flex items-center justify-center font-bold text-base transition active:scale-95 disabled:opacity-50 cursor-pointer"
+                      >
+                        ➖
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
 
               {/* كروت عرض الإحداثيات الحية */}
               {hintType === "polygon" && polygonCoords.length > 0 && (
