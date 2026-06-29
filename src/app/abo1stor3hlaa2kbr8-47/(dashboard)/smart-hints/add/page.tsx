@@ -688,32 +688,32 @@ export default function AddSmartHintPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#09090b] p-6 flex flex-col justify-between" dir="rtl">
-      <div className="space-y-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#09090b] p-3 md:p-4 flex flex-col justify-between" dir="rtl">
+      <div className="space-y-3">
         
-        {/* رأس الصفحة */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 p-5 rounded-3xl shadow-sm">
+        {/* رأس الصفحة المدمج الفائق التوفير للمساحة */}
+        <div className="flex justify-between items-center gap-4 bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 p-3 px-4 rounded-2xl shadow-sm">
           <div>
-            <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <h1 className="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
               ➕ إضافة استدلال ذكي جديد
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              صفحة كاملة مخصصة لرسم المربعات السكنية وتحديد نقاط الاستدلال بدقة
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+              رسم المربعات السكنية وتحديد نقاط الاستدلال بدقة
             </p>
           </div>
           <Link
             href="/abo1stor3hlaa2kbr8-47/smart-hints"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131418] text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-900 transition active:scale-95 text-sm shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131418] text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-900 transition active:scale-95 text-xs shadow-sm"
           >
-            🔙 العودة للوحة الرئيسية
+            🔙 لوحة الاستدلالات
           </Link>
         </div>
 
         {/* الواجهة المقسمة لعمودين بنسبة عرض ممتازة */}
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col lg:flex-row gap-4">
           
           {/* العمود الأيمن: إدخال البيانات والتحكم والتعليمات */}
-          <div className="w-full lg:w-4/12 bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5">
+          <div className="w-full lg:w-4/12 bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3.5">
             
             {/* اختيار نوع النطاق الجغرافي */}
             <div>
@@ -854,11 +854,11 @@ export default function AddSmartHintPage() {
             )}
           </div>
 
-          {/* العمود الأيسر: خريطة القمر الصناعي الكاملة الضخمة مع أزرار التحكم بالنقاط */}
-          <div className="w-full lg:w-8/12 bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col space-y-4">
+          {/* العمود الأيسر: خريطة القمر الصناعي الكاملة التفاعلية */}
+          <div className="w-full lg:w-8/12 bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col space-y-3">
             <div className="flex flex-col h-full justify-between">
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-2 flex justify-between items-center">
+                <label className="block text-xs font-bold text-slate-500 mb-1.5 flex justify-between items-center">
                   <span>🗺️ خريطة القمر الصناعي التفاعلية للبيوت والمباني</span>
                   {hintType === "polygon" && (
                     <span className="text-amber-500 text-xs font-black">عدد الزوايا الحالية: {polygonCoords.length}</span>
@@ -867,7 +867,7 @@ export default function AddSmartHintPage() {
                 <div className="relative">
                   <div
                     id="add-full-map"
-                    className="h-[550px] w-full rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-inner z-10"
+                    className="h-[480px] w-full rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-inner z-10"
                   ></div>
 
                 {/* أزرار إضافة وتقليل النقاط عائمة تحت أزرار الزووم بالخريطة */}
