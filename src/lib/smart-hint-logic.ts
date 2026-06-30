@@ -135,5 +135,5 @@ export async function computeSmartHint(
   if (validWaypoints.length === 0) return "—";
 
   const nearest = validWaypoints[0];
-  return `قريب من (${nearest.name})`;
+  return `في أو داخل (${nearest.name})`;
 }

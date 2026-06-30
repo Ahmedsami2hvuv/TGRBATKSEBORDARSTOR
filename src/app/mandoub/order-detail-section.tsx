@@ -406,16 +406,12 @@ export function OrderDetailSection({
                   />
                 </div>
 
-                <div className="flex flex-col gap-0.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 p-1.5 border border-emerald-100/50 dark:border-emerald-900/20 kse-smart-hint-text">
-                  <span 
-                    className="text-[9px] font-black text-emerald-600 dark:text-emerald-400"
-                    style={{ fontSize: activeConfig ? `${Math.max(9, activeConfig.smartHintFontSize - 3)}px` : undefined }}
-                  >💡 الاستدلال الذكي:</span>
+                <div className="flex flex-row items-center gap-1.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 p-1.5 border border-emerald-100/50 dark:border-emerald-900/20 kse-smart-hint-text">
                   <span 
                     className="text-[11px] font-black text-emerald-800 dark:text-emerald-350"
                     style={{ fontSize: activeConfig ? `${activeConfig.smartHintFontSize}px` : undefined }}
                   >
-                    {isSmartHintValid(smartHintLine) ? smartHintLine!.trim() : "—"}
+                    💡 {isSmartHintValid(smartHintLine) ? smartHintLine!.trim() : "—"}
                   </span>
                 </div>
               </div>
@@ -523,16 +519,12 @@ export function OrderDetailSection({
                     />
                   </div>
 
-                  <div className="flex flex-col gap-0.5 rounded-lg bg-violet-50/50 dark:bg-violet-950/10 p-1.5 border border-violet-100/50 dark:border-violet-900/20 kse-smart-hint-text">
-                    <span 
-                      className="text-[9px] font-black text-violet-600 dark:text-violet-400"
-                      style={{ fontSize: activeConfig ? `${Math.max(9, activeConfig.smartHintFontSize - 3)}px` : undefined }}
-                    >💡 الاستدلال الذكي:</span>
+                  <div className="flex flex-row items-center gap-1.5 rounded-lg bg-violet-50/50 dark:bg-violet-950/10 p-1.5 border border-violet-100/50 dark:border-violet-900/20 kse-smart-hint-text">
                     <span 
                       className="text-[11px] font-black text-violet-800 dark:text-violet-350"
                       style={{ fontSize: activeConfig ? `${activeConfig.smartHintFontSize}px` : undefined }}
                     >
-                      {isSmartHintValid(secondSmartHintLine) ? secondSmartHintLine!.trim() : "—"}
+                      💡 {isSmartHintValid(secondSmartHintLine) ? secondSmartHintLine!.trim() : "—"}
                     </span>
                   </div>
                 </div>

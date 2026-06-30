@@ -289,9 +289,8 @@ export function PreparerOrderDetailSection({
               </div>
 
               <div className="flex items-center gap-1.5">
-                <span className="text-[13px] font-black text-emerald-800">💡 الاستدلال الذكي:</span>
                 <span className="text-[13px] font-black text-emerald-900">
-                  {isSmartHintValid(smartHintLine) ? smartHintLine!.trim() : "—"}
+                  💡 {isSmartHintValid(smartHintLine) ? smartHintLine!.trim() : "—"}
                 </span>
               </div>
             </div>
@@ -308,9 +307,8 @@ export function PreparerOrderDetailSection({
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[13px] font-black text-violet-800">💡 الاستدلال الذكي:</span>
                   <span className="text-[13px] font-black text-violet-900">
-                    {isSmartHintValid(secondSmartHintLine) ? secondSmartHintLine!.trim() : "—"}
+                    💡 {isSmartHintValid(secondSmartHintLine) ? secondSmartHintLine!.trim() : "—"}
                   </span>
                 </div>
               </div>

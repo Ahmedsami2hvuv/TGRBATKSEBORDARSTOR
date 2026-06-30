@@ -180,7 +180,7 @@ export default async function SmartHintsPage() {
           distanceM: minDistance,
         },
         distanceM: minDistance,
-        hintText: matchedByPolygon ? `قريب من (${nearestWp.name}) [مربع سكني]` : `قريب من (${nearestWp.name})`,
+        hintText: matchedByPolygon ? `في أو داخل (${nearestWp.name}) [مربع سكني]` : `في أو داخل (${nearestWp.name})`,
       };
     })
   );

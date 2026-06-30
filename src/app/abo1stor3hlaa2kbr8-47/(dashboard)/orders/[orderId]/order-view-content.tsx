@@ -244,8 +244,8 @@ export function OrderViewContent({
                   isSecondDestination={false}
                   label="📍 دالة:"
                 />
-                <p className="text-sm font-bold text-emerald-800">
-                  💡 الاستدلال الذكي: {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
+                <p className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
+                  💡 {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
                 </p>
                 <div className="mt-2 space-y-2">
                   {order.customerLocationUrl?.trim() ? (
@@ -320,8 +320,8 @@ export function OrderViewContent({
                   isSecondDestination={true}
                   label="📍 دالة:"
                 />
-                <p className="text-sm font-bold text-emerald-800">
-                  💡 الاستدلال الذكي: {isSmartHintValid(order.secondSmartHintLine) ? order.secondSmartHintLine!.trim() : "—"}
+                <p className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
+                  💡 {isSmartHintValid(order.secondSmartHintLine) ? order.secondSmartHintLine!.trim() : "—"}
                 </p>
                 <div className="mt-2 space-y-2">
                   {order.secondCustomerLocationUrl?.trim() ? (
@@ -369,8 +369,8 @@ export function OrderViewContent({
                   isSecondDestination={false}
                   label="📍 دالة:"
                 />
-                <p className="text-sm font-bold text-emerald-800">
-                  💡 الاستدلال الذكي: {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
+                <p className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
+                  💡 {isSmartHintValid(order.smartHintLine) ? order.smartHintLine!.trim() : "—"}
                 </p>
                 <div className="mt-2 space-y-2">
                   {order.customerLocationUrl?.trim() ? (
