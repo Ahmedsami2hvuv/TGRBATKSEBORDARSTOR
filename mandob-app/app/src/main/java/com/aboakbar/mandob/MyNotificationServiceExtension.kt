@@ -158,10 +158,16 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
 
                 // 1. بناء وعرض إشعار نظام يدوي فوراً في البردة ذو أولوية قصوى لضمان ظهوره في الخلفية
                 val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-                val channelId = "aboakbar_admin_notifications"
+                val channelId = "aboakbar_mandob_notifications_v7"
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     val channelName = "تنبيهات الطلبات الجديدة"
+                    val soundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+                    val audioAttributes = android.media.AudioAttributes.Builder()
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                        .build()
+
                     val channel = android.app.NotificationChannel(
                         channelId,
                         channelName,
@@ -171,6 +177,8 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                         enableLights(true)
                         enableVibration(true)
                         vibrationPattern = longArrayOf(0, 400, 200, 400, 200, 400)
+                        setSound(soundUri, audioAttributes)
+                        lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
                     }
                     notificationManager.createNotificationChannel(channel)
                 }
@@ -208,6 +216,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                 val body = "⏰ $orderTime | 📦 $orderType | 💵 ${formatNumber(subtotal)} د.ع"
 
                 val largeIconBitmap = android.graphics.BitmapFactory.decodeResource(context.resources, R.drawable.ic_notification_large)
+                val soundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
 
                 val builder = NotificationCompat.Builder(context, channelId)
                     .setSmallIcon(R.drawable.ic_stat_onesignal_default)
@@ -217,6 +226,8 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                     .setPriority(NotificationCompat.PRIORITY_MAX)
                     .setCategory(NotificationCompat.CATEGORY_CALL)
                     .setDefaults(NotificationCompat.DEFAULT_ALL)
+                    .setSound(soundUri)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setAutoCancel(true)
                     .setContentIntent(pendingIntent)
                     .setFullScreenIntent(alertPendingIntent, true)

@@ -25,7 +25,7 @@ class OrderForegroundService : Service() {
     private val BACKEND_URL = "https://aboakbr.com"
     
     private val NOTIFICATION_CHANNEL_ID = "aboakbar_foreground_service"
-    private val ORDER_NOTIFICATION_CHANNEL_ID = "aboakbar_admin_notifications"
+    private val ORDER_NOTIFICATION_CHANNEL_ID = "aboakbar_mandob_notifications_v7"
     private val FOREGROUND_NOTIFICATION_ID = 9999
 
     private var wakeLock: PowerManager.WakeLock? = null
@@ -192,6 +192,7 @@ class OrderForegroundService : Service() {
         val title = "$shopName — $regionName"
         val body = "⏰ $orderTime | 📦 $orderType | 💵 ${formatNumber(subtotal)} د.ع"
 
+        val soundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
         val notification = NotificationCompat.Builder(this, ORDER_NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_chat)
             .setContentTitle(title)
@@ -199,6 +200,9 @@ class OrderForegroundService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setSound(soundUri)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setVibrate(longArrayOf(0, 400, 200, 400, 200, 400))
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setFullScreenIntent(alertPendingIntent, true)
@@ -269,6 +273,12 @@ class OrderForegroundService : Service() {
             notificationManager.createNotificationChannel(fgChannel)
 
             // 2. قناة إشعارات الطلبات الجديدة
+            val soundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+            val audioAttributes = android.media.AudioAttributes.Builder()
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                .build()
+
             val orderChannel = NotificationChannel(
                 ORDER_NOTIFICATION_CHANNEL_ID,
                 "إشعارات الطلبات",
@@ -277,6 +287,9 @@ class OrderForegroundService : Service() {
                 description = "تنبيهات عند وصول طلبات جديدة للنظام"
                 enableLights(true)
                 enableVibration(true)
+                vibrationPattern = longArrayOf(0, 400, 200, 400, 200, 400)
+                setSound(soundUri, audioAttributes)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
             notificationManager.createNotificationChannel(orderChannel)
         }
