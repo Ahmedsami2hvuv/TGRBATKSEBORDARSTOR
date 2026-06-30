@@ -8,11 +8,18 @@
     android:background="@drawable/gradient_bg"
     android:fitsSystemWindows="true">
 
-    <!-- Fullscreen WebView -->
     <WebView
         android:id="@+id/webView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <!-- Screenshot Overlay for seamless background transition -->
+    <ImageView
+        android:id="@+id/screenshotOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"
         android:visibility="gone" />
 
     <!-- Glassmorphic Login Form Container -->

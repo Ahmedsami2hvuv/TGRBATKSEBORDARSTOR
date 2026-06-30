@@ -27,6 +27,8 @@ import androidx.core.content.ContextCompat
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.Executor
@@ -46,6 +48,7 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private lateinit var screenshotOverlay: ImageView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var loginLayout: View
     private lateinit var mainLayout: View
@@ -106,6 +109,7 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize Views
         webView = findViewById(R.id.webView)
+        screenshotOverlay = findViewById(R.id.screenshotOverlay)
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         loginLayout = findViewById(R.id.loginLayout)
 
@@ -747,6 +751,19 @@ class MainActivity : AppCompatActivity() {
             e.printStackTrace()
         }
 
+        // إخفاء صورة الخلفية تدريجياً لضمان عدم حدوث وميض أسود أو أبيض عند العودة
+        if (screenshotOverlay.visibility == View.VISIBLE) {
+            screenshotOverlay.animate()
+                .alpha(0f)
+                .setDuration(400)
+                .withEndAction {
+                    screenshotOverlay.visibility = View.GONE
+                    screenshotOverlay.alpha = 1f
+                    screenshotOverlay.setImageBitmap(null)
+                }
+                .start()
+        }
+
         // التحقق التدريجي من الصلاحيات الإضافية عند العودة للتطبيق
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (android.provider.Settings.canDrawOverlays(this)) {
@@ -756,6 +773,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onPause() {
+        try {
+            // التقاط لقطة شاشة سريعة للصفحة الحالية لحفظ حالة التطبيق البصرية قبل الذهاب للخلفية
+            if (webView.visibility == View.VISIBLE && webView.width > 0 && webView.height > 0) {
+                val bitmap = Bitmap.createBitmap(webView.width, webView.height, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                webView.draw(canvas)
+                screenshotOverlay.setImageBitmap(bitmap)
+                screenshotOverlay.visibility = View.VISIBLE
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         super.onPause()
         try {
             webView.onPause()
