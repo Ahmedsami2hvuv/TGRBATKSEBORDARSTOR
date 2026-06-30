@@ -686,7 +686,7 @@ export default async function MandoubPage({ searchParams }: Props) {
     }
 
     const nearest = validWaypoints[0];
-    return `في أو داخل (${nearest.name})`;
+    return `في (${nearest.name})`;
   }
 
   const phoneProfilesByKey = new Map<string, (typeof phoneProfiles)[number]>();
