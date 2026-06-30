@@ -252,6 +252,11 @@ class MainActivity : AppCompatActivity() {
         webView.overScrollMode = View.OVER_SCROLL_NEVER
         webView.isVerticalFadingEdgeEnabled = false
         webView.isHorizontalFadingEdgeEnabled = false
+        webView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_BOUND, true)
+        }
 
         // Enable cookie manager
         val cookieManager = CookieManager.getInstance()
@@ -674,7 +679,7 @@ class MainActivity : AppCompatActivity() {
         loginLayout.visibility = View.GONE
         swipeRefreshLayout.visibility = View.VISIBLE
         webView.visibility = View.VISIBLE
-        mainLayout.background = null
+        mainLayout.setBackgroundColor(android.graphics.Color.parseColor("#09090b"))
     }
 
     private fun showLoginLayout() {
