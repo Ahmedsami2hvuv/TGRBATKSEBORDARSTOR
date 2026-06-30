@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     private var uploadMessage: ValueCallback<Array<Uri>>? = null
     private var cameraPhotoUri: Uri? = null
     private var lastCssInjectionTime = 0L
+    private var fadeOutRunnable: Runnable? = null
 
     // التطبيق الخاص بالمندوبين
     private val ONESIGNAL_APP_ID = "628d3268-9fda-405d-8d07-12d026810b84"
@@ -461,17 +462,21 @@ class MainActivity : AppCompatActivity() {
             e.printStackTrace()
         }
 
-        // إخفاء صورة الخلفية تدريجياً لضمان عدم حدوث وميض أسود أو أبيض عند العودة
+        // إخفاء صورة الخلفية تدريجياً بعد تأخير بسيط للتأكد من اكتمال رسم الصفحة تحتها
         if (screenshotOverlay.visibility == View.VISIBLE) {
-            screenshotOverlay.animate()
-                .alpha(0f)
-                .setDuration(400)
-                .withEndAction {
-                    screenshotOverlay.visibility = View.GONE
-                    screenshotOverlay.alpha = 1f
-                    screenshotOverlay.setImageBitmap(null)
-                }
-                .start()
+            fadeOutRunnable?.let { screenshotOverlay.removeCallbacks(it) }
+            fadeOutRunnable = Runnable {
+                screenshotOverlay.animate()
+                    .alpha(0f)
+                    .setDuration(350)
+                    .withEndAction {
+                        screenshotOverlay.visibility = View.GONE
+                        screenshotOverlay.alpha = 1f
+                        screenshotOverlay.setImageBitmap(null)
+                    }
+                    .start()
+            }
+            screenshotOverlay.postDelayed(fadeOutRunnable, 500)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -482,6 +487,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onPause() {
+        // إلغاء التلاشي المؤجل لتجنب أي تداخل
+        fadeOutRunnable?.let { screenshotOverlay.removeCallbacks(it) }
+        screenshotOverlay.animate().cancel()
+        
         try {
             // التقاط لقطة شاشة سريعة للصفحة الحالية لحفظ حالة التطبيق البصرية قبل الذهاب للخلفية
             if (webView.visibility == View.VISIBLE && webView.width > 0 && webView.height > 0) {
