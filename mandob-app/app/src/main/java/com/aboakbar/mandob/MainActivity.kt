@@ -16,6 +16,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.onesignal.OneSignal
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,7 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var screenshotOverlay: ImageView
     private lateinit var loginLayout: View
     private lateinit var mainLayout: View
@@ -61,6 +63,7 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize Views
         webView = findViewById(R.id.webView)
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         screenshotOverlay = findViewById(R.id.screenshotOverlay)
         loginLayout = findViewById(R.id.loginLayout)
         mainLayout = findViewById(R.id.mainLayout)
@@ -68,6 +71,16 @@ class MainActivity : AppCompatActivity() {
         tvError = findViewById(R.id.tvError)
         btnSubmit = findViewById(R.id.btnSubmit)
         progressBar = findViewById(R.id.progressBar)
+
+        // إعداد السحب للتحديث
+        swipeRefreshLayout.setOnRefreshListener {
+            webView.reload()
+        }
+
+        // تفعيل السحب للتحديث فقط عندما يكون المستخدم في بداية الصفحة (ScrollY == 0)
+        webView.viewTreeObserver.addOnScrollChangedListener {
+            swipeRefreshLayout.isEnabled = webView.scrollY == 0
+        }
 
         setupWebView()
         setupLongPressMenu()
@@ -247,6 +260,7 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 CookieManager.getInstance().flush()
+                swipeRefreshLayout.isRefreshing = false
             }
 
             override fun onPageCommitVisible(view: WebView?, url: String?) {
@@ -408,12 +422,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun showWebViewLayout() {
         loginLayout.visibility = View.GONE
+        swipeRefreshLayout.visibility = View.VISIBLE
         webView.visibility = View.VISIBLE
         mainLayout.setBackgroundColor(android.graphics.Color.parseColor("#09090b"))
     }
 
     private fun showLoginLayout() {
         webView.visibility = View.GONE
+        swipeRefreshLayout.visibility = View.GONE
         loginLayout.visibility = View.VISIBLE
         mainLayout.setBackgroundResource(R.drawable.gradient_bg)
     }
