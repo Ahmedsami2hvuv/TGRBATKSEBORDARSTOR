@@ -67,8 +67,8 @@ export function DebtListContainer({
 
   const handleAddDebtSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!shopName.trim() || !amountAlf.trim()) {
-      alert("يرجى إدخال اسم المحل والمبلغ.");
+    if (!amountAlf.trim()) {
+      alert("يرجى إدخال المبلغ.");
       return;
     }
 
@@ -129,10 +129,9 @@ export function DebtListContainer({
             
             <form onSubmit={handleAddDebtSubmit} className="space-y-4">
               <div className="relative">
-                <label className="block text-xs font-black text-slate-500 mb-1.5 mr-1">اسم المحل</label>
+                <label className="block text-xs font-black text-slate-500 mb-1.5 mr-1">اسم المحل (اختياري - اتركه فارغاً لدين عام)</label>
                 <input
                   type="text"
-                  required
                   placeholder="مثال: أسواق النور"
                   value={shopName}
                   onChange={(e) => {

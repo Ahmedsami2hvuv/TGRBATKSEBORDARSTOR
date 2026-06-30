@@ -1816,7 +1816,7 @@ export async function createPreparerDebtAction(
     const shopName = String(formData.get("shopName") ?? "").trim();
     const amountAlf = String(formData.get("amountAlf") ?? "").trim();
 
-    if (!shopName || !amountAlf) return { error: "يرجى ملء كافة الحقول." };
+    if (!amountAlf) return { error: "يرجى ملء حقل المبلغ." };
 
     const amountDinar = new Decimal(amountAlf).mul(ALF_PER_DINAR);
     if (amountDinar.lte(0)) return { error: "المبلغ يجب أن يكون أكبر من صفر." };
@@ -1831,82 +1831,119 @@ export async function createPreparerDebtAction(
       return { error: "المحفظة غير مفعلة لحسابك حالياً. يرجى مراجعة الإدارة." };
     }
 
-    // البحث عن المحل بالاسم
-    let shop = await prisma.shop.findFirst({
-      where: { name: { equals: shopName, mode: "insensitive" } }
-    });
+    if (shopName) {
+      // البحث عن المحل بالاسم
+      let shop = await prisma.shop.findFirst({
+        where: { name: { equals: shopName, mode: "insensitive" } }
+      });
 
-    // إذا لم يكن موجوداً، نقوم بإنشائه
-    if (!shop) {
-      const firstRegion = await prisma.region.findFirst();
-      if (!firstRegion) return { error: "يجب إضافة منطقة واحدة على الأقل في النظام." };
+      // إذا لم يكن موجوداً، نقوم بإنشائه
+      if (!shop) {
+        const firstRegion = await prisma.region.findFirst();
+        if (!firstRegion) return { error: "يجب إضافة منطقة واحدة على الأقل في النظام." };
 
-      shop = await prisma.shop.create({
+        shop = await prisma.shop.create({
+          data: {
+            name: shopName,
+            locationUrl: "",
+            regionId: firstRegion.id,
+          }
+        });
+      }
+
+      // ربط المجهز بالمحل إذا لم يكن مرتبطاً
+      await prisma.preparerShop.upsert({
+        where: { preparerId_shopId: { preparerId: preparer.id, shopId: shop.id } },
+        create: { preparerId: preparer.id, shopId: shop.id, canSubmitOrders: true },
+        update: {}
+      });
+
+      // إنشاء طلبية الدين بحالة delivered لتفادي ظهورها كطلب معلق للتحضير
+      const order = await prisma.order.create({
         data: {
-          name: shopName,
-          locationUrl: "",
-          regionId: firstRegion.id,
+          shopId: shop.id,
+          status: "delivered",
+          orderType: "دين",
+          orderSubtotal: amountDinar,
+          deliveryPrice: new Decimal(0),
+          totalAmount: amountDinar,
+          submissionSource: "company_preparer",
+          submittedByCompanyPreparerId: preparer.id,
+          summary: `دين تم تسجيله بواسطة المجهز ${preparer.name}`,
         }
       });
-    }
 
-    // ربط المجهز بالمحل إذا لم يكن مرتبطاً
-    await prisma.preparerShop.upsert({
-      where: { preparerId_shopId: { preparerId: preparer.id, shopId: shop.id } },
-      create: { preparerId: preparer.id, shopId: shop.id, canSubmitOrders: true },
-      update: {}
-    });
+      // إنشاء قيد "أخذت" (take) في محفظة المجهز
+      await prisma.employeeWalletMiscEntry.create({
+        data: {
+          employeeId: preparer.walletEmployeeId,
+          direction: "take",
+          amountDinar: amountDinar,
+          label: `دين مستقطع من محل ${shop.name} (طلب #${order.orderNumber})`,
+        }
+      });
 
-    // إنشاء طلبية الدين
-    const order = await prisma.order.create({
-      data: {
-        shopId: shop.id,
-        status: "pending",
-        orderType: "دين",
-        orderSubtotal: amountDinar,
-        deliveryPrice: new Decimal(0),
-        totalAmount: amountDinar,
-        submissionSource: "company_preparer",
-        submittedByCompanyPreparerId: preparer.id,
-        summary: `دين تم تسجيله بواسطة المجهز ${preparer.name}`,
+      // إرسال إشعارات تيليجرام لدين المحل
+      try {
+        const escapedShopName = escapeTelegramHtml(shop.name);
+        const escapedPreparerName = escapeTelegramHtml(preparer.name);
+
+        const msg = [
+          `🚨 <b>تسجيل دين جديد (ذمم مجهز - محل)</b>`,
+          `<b>المحل:</b> ${escapedShopName}`,
+          `<b>المجهز:</b> ${escapedPreparerName}`,
+          `<b>المبلغ:</b> ${formatDinarAsAlfWithUnit(amountDinar)}`,
+          `<b>رقم الطلب:</b> #${order.orderNumber}`,
+          `<b>التاريخ:</b> \u200E${new Date().toLocaleString("ar-IQ")}\u200E`,
+        ].join("\n");
+
+        const notificationBotToken = await getBotTokenByPurpose("notification");
+        const managementBotToken = await getBotTokenByPurpose("management");
+
+        if (notificationBotToken) {
+          await sendTelegramMessage(msg, { botToken: notificationBotToken });
+        }
+        if (managementBotToken && managementBotToken !== notificationBotToken) {
+          await sendTelegramMessage(msg, { botToken: managementBotToken });
+        }
+      } catch (notifError) {
+        console.error("Failed to send telegram notification for new debt:", notifError);
       }
-    });
+    } else {
+      // تسجيل دين عام (بدون محل) في محفظة المجهز مباشرة
+      const miscEntry = await prisma.employeeWalletMiscEntry.create({
+        data: {
+          employeeId: preparer.walletEmployeeId,
+          direction: "take",
+          amountDinar: amountDinar,
+          label: `دين عام مستقطع (سحب مالي يدوي للمجهز)`,
+        }
+      });
 
-    // إنشاء قيد "أخذت" (take) في محفظة المجهز
-    await prisma.employeeWalletMiscEntry.create({
-      data: {
-        employeeId: preparer.walletEmployeeId,
-        direction: "take",
-        amountDinar: amountDinar,
-        label: `دين مستقطع من محل ${shop.name} (طلب #${order.orderNumber})`,
+      // إرسال إشعارات تيليجرام للدين العام
+      try {
+        const escapedPreparerName = escapeTelegramHtml(preparer.name);
+
+        const msg = [
+          `🚨 <b>تسجيل دين جديد (ذمم مجهز - عام)</b>`,
+          `<b>المجهز:</b> ${escapedPreparerName}`,
+          `<b>المبلغ:</b> ${formatDinarAsAlfWithUnit(amountDinar)}`,
+          `<b>الوصف:</b> دين عام مستقطع بدون تحديد محل`,
+          `<b>التاريخ:</b> \u200E${new Date().toLocaleString("ar-IQ")}\u200E`,
+        ].join("\n");
+
+        const notificationBotToken = await getBotTokenByPurpose("notification");
+        const managementBotToken = await getBotTokenByPurpose("management");
+
+        if (notificationBotToken) {
+          await sendTelegramMessage(msg, { botToken: notificationBotToken });
+        }
+        if (managementBotToken && managementBotToken !== notificationBotToken) {
+          await sendTelegramMessage(msg, { botToken: managementBotToken });
+        }
+      } catch (notifError) {
+        console.error("Failed to send telegram notification for new general debt:", notifError);
       }
-    });
-
-    // إرسال إشعارات تيليجرام
-    try {
-      const escapedShopName = escapeTelegramHtml(shop.name);
-      const escapedPreparerName = escapeTelegramHtml(preparer.name);
-
-      const msg = [
-        `🚨 <b>تسجيل دين جديد (ذمم مجهز)</b>`,
-        `<b>المحل:</b> ${escapedShopName}`,
-        `<b>المجهز:</b> ${escapedPreparerName}`,
-        `<b>المبلغ:</b> ${formatDinarAsAlfWithUnit(amountDinar)}`,
-        `<b>رقم الطلب:</b> #${order.orderNumber}`,
-        `<b>التاريخ:</b> \u200E${new Date().toLocaleString("ar-IQ")}\u200E`,
-      ].join("\n");
-
-      const notificationBotToken = await getBotTokenByPurpose("notification");
-      const managementBotToken = await getBotTokenByPurpose("management");
-
-      if (notificationBotToken) {
-        await sendTelegramMessage(msg, { botToken: notificationBotToken });
-      }
-      if (managementBotToken && managementBotToken !== notificationBotToken) {
-        await sendTelegramMessage(msg, { botToken: managementBotToken });
-      }
-    } catch (notifError) {
-      console.error("Failed to send telegram notification for new debt:", notifError);
     }
 
     revalidatePath("/preparer/debts");
