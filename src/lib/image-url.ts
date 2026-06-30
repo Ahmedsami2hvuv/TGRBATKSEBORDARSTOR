@@ -13,15 +13,18 @@ export function resolvePublicAssetSrc(url: string | null | undefined): string | 
   let raw = trimmed.replace(/^['"]+|['"]+$/g, "").replace(/\\/g, "/");
   if (raw.startsWith("//")) raw = `https:${raw}`;
 
-  // إذا كان الرابط من Cloudflare R2، نقوم بتحويله ليمر عبر البروكسي المحلي لتجنب الـ 401
+  // تحديد رابط R2 العام
+  const r2Domain = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "https://pub-2f7b4947937d4575971a8f949826a575.r2.dev";
+  const cleanDomain = r2Domain.replace(/\/$/, "");
+
+  // إذا كان الرابط من Cloudflare R2، نقوم بإرجاعه بالنطاق العام المباشر
   if (raw.includes("r2.dev") || raw.includes("cloudflare")) {
     try {
       const urlObj = new URL(raw);
-      // استخراج المسار بعد النطاق (مثلاً customers/image.jpg)
       const path = urlObj.pathname.startsWith("/") ? urlObj.pathname.slice(1) : urlObj.pathname;
-      return `/uploads/${path}${urlObj.search}`;
+      return `${cleanDomain}/${path}${urlObj.search}`;
     } catch {
-      // إذا فشل التحليل، نرجعه كما هو
+      return raw;
     }
   }
 
@@ -34,21 +37,28 @@ export function resolvePublicAssetSrc(url: string | null | undefined): string | 
       const urlObj = new URL(raw);
       const path = decodeURIComponent(urlObj.pathname);
       const uploadsIdx = path.toLowerCase().indexOf("/uploads/");
-      if (uploadsIdx >= 0) return path.slice(uploadsIdx) + urlObj.search;
+      if (uploadsIdx >= 0) {
+        const cleanPath = path.slice(uploadsIdx + 9).replace(/^\/+/, "");
+        return `${cleanDomain}/${cleanPath}${urlObj.search}`;
+      }
 
       const cleanPath = path.startsWith("/") ? path.slice(1) : path;
-      return `/uploads/${cleanPath}${urlObj.search}`;
+      return `${cleanDomain}/${cleanPath}${urlObj.search}`;
     } catch {
       return raw;
     }
   }
 
   // الروابط النسبية
-  if (raw.toLowerCase().startsWith("/uploads/")) return raw;
-  if (raw.toLowerCase().startsWith("uploads/")) return `/${raw}`;
+  let relativePath = raw;
+  if (relativePath.toLowerCase().startsWith("/uploads/")) {
+    relativePath = relativePath.slice(9);
+  } else if (relativePath.toLowerCase().startsWith("uploads/")) {
+    relativePath = relativePath.slice(8);
+  }
 
-  const finalPath = raw.startsWith("/") ? raw.slice(1) : raw;
-  return `/uploads/${finalPath}`;
+  const finalPath = relativePath.startsWith("/") ? relativePath.slice(1) : relativePath;
+  return `${cleanDomain}/${finalPath}`;
 }
 
 export function resolvePublicImageSrc(url: string | null | undefined): string | null {
