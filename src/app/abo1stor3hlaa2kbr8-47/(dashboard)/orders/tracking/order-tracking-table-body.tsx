@@ -39,6 +39,7 @@ export type TrackingTableRow = {
   preparerPickupSumDinar?: number | null;
   adminPickupSumDinar?: number | null;
   deliverySumDinar?: number | null;
+  preparerDeliverySumDinar?: number | null;
   // تنبيهات مالية
   wardMismatchType?: "excess" | "deficit" | null;
   saderMismatchType?: "excess" | "deficit" | null;

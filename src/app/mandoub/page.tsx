@@ -820,9 +820,26 @@ export default async function MandoubPage({ searchParams }: Props) {
           return sum + (Number.isNaN(val) ? 0 : val);
         }, 0);
       })(),
-      deliverySumDinar: sumDeliveryInFromOrderMoneyEvents(o.moneyEvents) != null
-        ? Number(sumDeliveryInFromOrderMoneyEvents(o.moneyEvents))
-        : 0,
+      deliverySumDinar: (() => {
+        const courierDeliveryEvents = o.moneyEvents.filter(
+          (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId == null
+        );
+        if (courierDeliveryEvents.length === 0) return 0;
+        return courierDeliveryEvents.reduce((sum, e) => {
+          const val = typeof e.amountDinar === 'object' && e.amountDinar !== null && 'toNumber' in e.amountDinar ? e.amountDinar.toNumber() : Number(e.amountDinar);
+          return sum + (Number.isNaN(val) ? 0 : val);
+        }, 0);
+      })(),
+      preparerDeliverySumDinar: (() => {
+        const preparerDeliveryEvents = o.moneyEvents.filter(
+          (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId != null
+        );
+        if (preparerDeliveryEvents.length === 0) return 0;
+        return preparerDeliveryEvents.reduce((sum, e) => {
+          const val = typeof e.amountDinar === 'object' && e.amountDinar !== null && 'toNumber' in e.amountDinar ? e.amountDinar.toNumber() : Number(e.amountDinar);
+          return sum + (Number.isNaN(val) ? 0 : val);
+        }, 0);
+      })(),
       orderSubtotalDinar: o.orderSubtotal != null ? Number(o.orderSubtotal) : null,
       deliveryPriceDinar: o.deliveryPrice != null ? Number(o.deliveryPrice) : null,
       totalAmountDinar: o.totalAmount != null ? Number(o.totalAmount) : null,

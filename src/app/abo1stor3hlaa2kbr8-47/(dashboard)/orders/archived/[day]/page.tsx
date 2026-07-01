@@ -96,7 +96,16 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
     const courierPickup = sumCourierPickupOut(o.moneyEvents);
     const preparerPickup = sumPreparerPickupOut(o.moneyEvents);
     const adminPickup = sumAdminPickupOut(o.moneyEvents);
-    const deliverySum = sumDeliveryInFromOrderMoneyEvents(o.moneyEvents);
+    
+    const courierDeliveryEvents = o.moneyEvents.filter(
+      (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId == null
+    );
+    const courierDelivery = courierDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
+
+    const preparerDeliveryEvents = o.moneyEvents.filter(
+      (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId != null
+    );
+    const preparerDelivery = preparerDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
     
     return {
       id: o.id,
@@ -122,7 +131,8 @@ export default async function ArchivedOrdersDayPage({ params, searchParams }: Pr
       pickupSumDinar: courierPickup > 0 ? courierPickup : null,
       preparerPickupSumDinar: preparerPickup > 0 ? preparerPickup : null,
       adminPickupSumDinar: adminPickup > 0 ? adminPickup : null,
-      deliverySumDinar: deliverySum != null ? Number(deliverySum) : null,
+      deliverySumDinar: courierDelivery > 0 ? courierDelivery : null,
+      preparerDeliverySumDinar: preparerDelivery > 0 ? preparerDelivery : null,
       wardMismatchType: isWardMismatch(
         o.status,
         o.totalAmount,

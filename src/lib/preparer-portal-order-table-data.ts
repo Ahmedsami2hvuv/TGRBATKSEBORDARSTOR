@@ -213,6 +213,16 @@ export async function loadPreparerPortalOrderTableData(args: {
     );
     const adminPickup = adminPickupEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
 
+    const courierDeliveryEvents = o.moneyEvents.filter(
+      (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId == null
+    );
+    const courierDelivery = courierDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
+
+    const preparerDeliveryEvents = o.moneyEvents.filter(
+      (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId != null
+    );
+    const preparerDelivery = preparerDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
+
     const pickupSumDinar = courierPickup;
     const preparerPickupSumDinar = preparerPickup;
     const adminPickupSumDinar = adminPickup;
@@ -273,6 +283,8 @@ export async function loadPreparerPortalOrderTableData(args: {
       pickupSumDinar,
       preparerPickupSumDinar,
       adminPickupSumDinar,
+      deliverySumDinar: courierDelivery,
+      preparerDeliverySumDinar: preparerDelivery,
 
       // Unified fast-access fields - Safe access
       audioUrl: safeStringTrim((o as any).voiceNoteUrl) || null,

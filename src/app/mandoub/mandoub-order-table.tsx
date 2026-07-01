@@ -76,6 +76,8 @@ export type MandoubRow = {
   adminPickupSumDinar?: number | null;
   /** مجموع ما تم استلامه من الزبون بالدينار */
   deliverySumDinar?: number;
+  /** مجموع ما تم استلامه من الزبون بواسطة المجهز بالدينار */
+  preparerDeliverySumDinar?: number | null;
   /** تنبيهات مالية */
   wardMismatchType?: "excess" | "deficit" | null;
   saderMismatchType?: "excess" | "deficit" | null;

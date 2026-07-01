@@ -266,7 +266,16 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       const courierPickup = sumCourierPickupOut(o.moneyEvents);
       const preparerPickup = sumPreparerPickupOut(o.moneyEvents);
       const adminPickup = sumAdminPickupOut(o.moneyEvents);
-      const deliverySum = sumDeliveryInFromOrderMoneyEvents(o.moneyEvents);
+
+      const courierDeliveryEvents = o.moneyEvents.filter(
+        (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId == null
+      );
+      const courierDelivery = courierDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
+
+      const preparerDeliveryEvents = o.moneyEvents.filter(
+        (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null && e.recordedByCompanyPreparerId != null
+      );
+      const preparerDelivery = preparerDeliveryEvents.reduce((acc, e) => acc + Number(e.amountDinar), 0);
 
       return {
         id: o.id,
@@ -298,7 +307,8 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
         pickupSumDinar: courierPickup > 0 ? courierPickup : null,
         preparerPickupSumDinar: preparerPickup > 0 ? preparerPickup : null,
         adminPickupSumDinar: adminPickup > 0 ? adminPickup : null,
-        deliverySumDinar: deliverySum != null ? Number(deliverySum) : null,
+        deliverySumDinar: courierDelivery > 0 ? courierDelivery : null,
+        preparerDeliverySumDinar: preparerDelivery > 0 ? preparerDelivery : null,
         createdAt: o.createdAt,
         // بيانات الوصول السريع
         audioUrl: resolvePublicAssetSrc(o.voiceNoteUrl?.startsWith("data:") ? `/api/image/order/${o.id}/voice` : (o.voiceNoteUrl || null)),

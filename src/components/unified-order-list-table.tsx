@@ -88,14 +88,16 @@ function MoneyMiniBadges({ row }: { row: MandoubRow }) {
   const preparerPickup = row.preparerPickupSumDinar ?? null; // صادر المجهز
   const adminPickup = row.adminPickupSumDinar ?? null; // صادر الإدارة
   const delivery = row.deliverySumDinar ?? null; // وارد المندوب
+  const preparerDelivery = row.preparerDeliverySumDinar ?? null; // وارد المجهز
 
   const showPickup = pickup != null && Number.isFinite(pickup) && pickup > 0;
   const showPreparerPickup = preparerPickup != null && Number.isFinite(preparerPickup) && preparerPickup > 0;
   const showAdminPickup = adminPickup != null && Number.isFinite(adminPickup) && adminPickup > 0;
   const showDelivery = delivery != null && Number.isFinite(delivery) && delivery > 0;
+  const showPreparerDelivery = preparerDelivery != null && Number.isFinite(preparerDelivery) && preparerDelivery > 0;
 
   // لا نعرض أي رقم إذا لم توجد حركة فعلية
-  if (!showPickup && !showPreparerPickup && !showAdminPickup && !showDelivery) return null;
+  if (!showPickup && !showPreparerPickup && !showAdminPickup && !showDelivery && !showPreparerDelivery) return null;
 
   const pillBase =
     "inline-flex items-center justify-center rounded px-1 py-0.5 text-[10px] font-black leading-none tabular-nums ring-1 shadow-sm";
@@ -112,7 +114,7 @@ function MoneyMiniBadges({ row }: { row: MandoubRow }) {
       ) : null}
       {showPreparerPickup ? (
         <span
-          className={`${pillBase} bg-purple-50 text-purple-700 ring-purple-200`}
+          className={`${pillBase} bg-yellow-600 text-white ring-yellow-700`}
           title="صادر المجهز"
         >
           {formatDinarAsAlf(preparerPickup)}
@@ -132,6 +134,14 @@ function MoneyMiniBadges({ row }: { row: MandoubRow }) {
           title="وارد المندوب"
         >
           {formatDinarAsAlf(delivery)}
+        </span>
+      ) : null}
+      {showPreparerDelivery ? (
+        <span
+          className={`${pillBase} bg-purple-50 text-purple-700 ring-purple-200`}
+          title="وارد المجهز"
+        >
+          {formatDinarAsAlf(preparerDelivery)}
         </span>
       ) : null}
     </div>
