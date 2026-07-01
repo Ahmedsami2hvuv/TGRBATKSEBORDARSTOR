@@ -521,8 +521,8 @@ export default function AddSmartHintPage() {
         const centerLng = sumLng / pts.length;
 
         const centerIcon = L.divIcon({
-          className: "bg-indigo-600 border-2 border-white rounded-full w-8 h-8 shadow-2xl cursor-grab flex items-center justify-center text-xs text-white font-black animate-pulse",
-          html: "🎯",
+          className: "bg-indigo-600 border-2 border-white rounded-full w-8 h-8 shadow-2xl cursor-grab flex items-center justify-center text-[13px] text-white font-black animate-pulse",
+          html: `${index + 1}`,
           iconSize: [32, 32],
           iconAnchor: [16, 16]
         });
