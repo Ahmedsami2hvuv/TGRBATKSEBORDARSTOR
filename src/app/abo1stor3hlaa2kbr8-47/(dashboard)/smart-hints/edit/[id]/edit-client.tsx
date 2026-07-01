@@ -514,8 +514,8 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
         const centerLng = sumLng / pts.length;
 
         const centerIcon = L.divIcon({
-          className: "bg-indigo-600 border-2 border-white rounded-full w-8 h-8 shadow-2xl cursor-grab flex items-center justify-center text-[13px] text-white font-black animate-pulse",
-          html: `${index + 1}`,
+          className: "",
+          html: `<div class="bg-indigo-600 border-2 border-white rounded-full shadow-2xl cursor-grab flex items-center justify-center text-xs text-white font-black text-center" style="line-height: 28px; width: 32px; height: 32px;">${index + 1}</div>`,
           iconSize: [32, 32],
           iconAnchor: [16, 16]
         });
@@ -586,8 +586,8 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
         const cornerMarkers: any[] = [];
         pts.forEach((pt, cornerIdx) => {
           const icon = L.divIcon({
-            className: "bg-amber-500 border-2 border-white rounded-full w-5 h-5 shadow-lg cursor-pointer flex items-center justify-center text-[10px] text-white font-bold",
-            html: `${cornerIdx + 1}`,
+            className: "",
+            html: `<div class="bg-amber-500 border-2 border-white rounded-full shadow-lg cursor-pointer flex items-center justify-center text-[10px] text-white font-bold text-center" style="line-height: 16px; width: 20px; height: 20px;">${cornerIdx + 1}</div>`,
             iconSize: [20, 20],
             iconAnchor: [10, 10]
           });
