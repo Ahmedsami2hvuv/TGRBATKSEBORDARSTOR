@@ -11,6 +11,7 @@ export type MandoubOrderTotalsInput = {
   status: string;
   createdAt: Date;
   updatedAt: Date;
+  customerPaymentReceivedAt?: Date | null;
   courierEarningDinar: Decimal | null;
   courierEarningForCourierId: string | null;
   /** اختيارياً — يُستخدم كبديل عند غياب courierEarningForCourierId */
@@ -87,8 +88,12 @@ export function computeMandoubTotalsForCourier(
 
     let skipForBaseline = false;
     if (baseline) {
-      if (deliveryEv) skipForBaseline = deliveryEv.createdAt <= baseline;
-      else skipForBaseline = o.createdAt <= baseline;
+      if (deliveryEv) {
+        skipForBaseline = deliveryEv.createdAt <= baseline;
+      } else {
+        const refDate = o.customerPaymentReceivedAt ?? o.updatedAt ?? o.createdAt;
+        skipForBaseline = refDate <= baseline;
+      }
     }
 
     if (!skipForBaseline) {

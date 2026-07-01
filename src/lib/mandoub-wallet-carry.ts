@@ -2,6 +2,7 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { CourierWalletMiscDirection, WalletPeerPartyKind } from "@prisma/client";
 import { MONEY_KIND_DELIVERY, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
 import { prisma } from "@/lib/prisma";
+import { computeCourierDeliveryEarningDinar } from "@/lib/courier-earnings";
 
 /**
  * حساب "مربع الإدارة" (ما بذمة المندوب للشركة).
@@ -115,9 +116,50 @@ export async function computeMandoubTipsAllTimeDinar(courierId: string): Promise
 }
 
 export async function computeMandoubEarningsAllTimeDinar(courierId: string): Promise<Decimal> {
-  const res = await prisma.order.aggregate({
-    where: { courierEarningForCourierId: courierId, status: { in: ["delivered", "archived"] } },
-    _sum: { courierEarningDinar: true },
+  const orders = await prisma.order.findMany({
+    where: {
+      status: { in: ["delivered", "archived"] },
+      OR: [
+        { courierEarningForCourierId: courierId },
+        { assignedCourierId: courierId },
+        { moneyEvents: { some: { courierId, kind: MONEY_KIND_DELIVERY, deletedAt: null } } }
+      ]
+    },
+    include: {
+      moneyEvents: {
+        where: { deletedAt: null }
+      },
+      courier: { select: { vehicleType: true } }
+    }
   });
-  return res._sum.courierEarningDinar ?? new Decimal(0);
+
+  let sum = new Decimal(0);
+  for (const o of orders) {
+    const deliveryEv = o.moneyEvents.find(
+      (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null,
+    );
+
+    const earningOwner =
+      o.courierEarningForCourierId ??
+      deliveryEv?.courierId ??
+      o.assignedCourierId ??
+      null;
+    if (earningOwner !== courierId) continue;
+
+    let earning: any = o.courierEarningDinar ?? null;
+    if (earning == null) {
+      const vehicleType = o.courier?.vehicleType ?? null;
+      const deliveryPrice = o.deliveryPrice ?? null;
+      if (vehicleType && deliveryPrice != null) {
+        earning = computeCourierDeliveryEarningDinar(
+          vehicleType as any,
+          deliveryPrice as any,
+        );
+      }
+    }
+    if (earning == null) continue;
+    sum = sum.plus(earning);
+  }
+
+  return sum;
 }
