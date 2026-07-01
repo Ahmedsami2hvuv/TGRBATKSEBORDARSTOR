@@ -1,4 +1,4 @@
-import { normalizeDigits } from "@/lib/money-alf";
+import { normalizeDigits, normalizeNumerals } from "@/lib/money-alf";
 import { routeModeOrFromQuery } from "@/lib/admin-super-search";
 import { generateDateSearchTokens } from "@/lib/order-date-search";
 
@@ -105,11 +105,11 @@ export function mandoubOrderMatchesSmartQuery(
   ];
 
   const hay = hayElements.join(" ").toLowerCase();
-  const hayNormalized = normalizeDigits(hay).toLowerCase();
+  const hayNormalized = normalizeNumerals(hay).toLowerCase();
 
   // يجب أن تتطابق كل كلمة مفتاحية مع جزء من بيانات الطلب
   for (const token of searchTokens) {
-    const tokenNormalized = normalizeDigits(token).toLowerCase();
+    const tokenNormalized = normalizeNumerals(token).toLowerCase();
     
     // التحقق من مطابقة الكلمة المفتاحية (سواء بالنص الأصلي أو الموحد الأرقام)
     let matched = hay.includes(token) || hayNormalized.includes(tokenNormalized);
