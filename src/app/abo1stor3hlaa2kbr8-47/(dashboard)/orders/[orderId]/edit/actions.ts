@@ -207,10 +207,6 @@ export async function updateOrderAdmin(
   const existing = await prisma.order.findUnique({ where: { id: orderId } });
   if (!existing) return { error: "الطلب غير موجود" };
 
-  if ((existing.status === "delivered" || existing.status === "archived") && status === "cancelled") {
-    return { error: "لا يمكن تحويل الطلب المسلّم أو المؤرشف إلى مرفوض مباشرة. يجب إرجاع حالته إلى 'جديد' أولاً ثم رفضه." };
-  }
-
   const shop = await prisma.shop.findUnique({ where: { id: shopId } });
   if (!shop) return { error: "المحل غير موجود" };
 

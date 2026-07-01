@@ -42,17 +42,28 @@ export async function bulkUpdateOrdersStatus(
     return { error: "حالة الهدف غير صالحة." };
   }
 
+  const selectedOrders = await prisma.order.findMany({
+    where: { id: { in: orderIds } },
+    include: { shop: { select: { name: true } } }
+  });
+
+  let finalOrderIds = [...orderIds];
+  let skippedText = "";
+
   if (targetStatus === "cancelled") {
-    const deliveredOrArchivedOrders = await prisma.order.findMany({
-      where: {
-        id: { in: orderIds },
-        status: { in: ["delivered", "archived"] },
-      },
-      select: { orderNumber: true },
-    });
-    if (deliveredOrArchivedOrders.length > 0) {
-      const numbers = deliveredOrArchivedOrders.map((o) => `#${o.orderNumber}`).join("، ");
-      return { error: `لا يمكن رفض الطلبات المسلّمة أو المؤرشفة مباشرة (${numbers}). يجب إرجاع حالتها إلى 'جديد' أولاً ثم رفضها.` };
+    const deliveredOrArchived = selectedOrders.filter(o => o.status === "delivered" || o.status === "archived");
+    if (deliveredOrArchived.length > 0) {
+      const skippedIds = new Set(deliveredOrArchived.map(o => o.id));
+      finalOrderIds = orderIds.filter(id => !skippedIds.has(id));
+      
+      const listText = deliveredOrArchived
+        .map(o => `الطلب #${o.orderNumber} من محل (${o.shop?.name || "محل"})`)
+        .join("، ");
+      skippedText = `ولكن لم يتم رفض [ ${listText} ] لأن حالتها 'تم التسليم' أو 'مؤرشفة' (يجب إرجاعها إلى 'جديد' أولاً).`;
+
+      if (finalOrderIds.length === 0) {
+        return { error: `لا يمكن رفض الطلبات المحددة لأن حالتها 'تم التسليم' أو 'مؤرشفة'. ${skippedText}` };
+      }
     }
   }
 
@@ -81,7 +92,7 @@ export async function bulkUpdateOrdersStatus(
   };
 
   await prisma.$transaction(async (tx) => {
-    for (const orderId of orderIds) {
+    for (const orderId of finalOrderIds) {
       const updateData = { ...baseData };
 
       if (targetStatus !== "archived") {
@@ -106,7 +117,7 @@ export async function bulkUpdateOrdersStatus(
 
   if (targetStatus === "assigned" && courierId) {
     const updatedOrders = await prisma.order.findMany({
-      where: { id: { in: orderIds } },
+      where: { id: { in: finalOrderIds } },
       select: { id: true, orderNumber: true }
     });
     for (const o of updatedOrders) {
@@ -120,6 +131,10 @@ export async function bulkUpdateOrdersStatus(
   revalidatePath(`${SECRET_ADMIN_PATH}/orders/archived`);
   revalidatePath(`${SECRET_ADMIN_PATH}/couriers`);
   revalidatePath("/mandoub");
+
+  if (skippedText) {
+    return { error: `تم تحويل بقية الطلبات المحددة بنجاح، ${skippedText}` };
+  }
 
   return { ok: true };
 }
