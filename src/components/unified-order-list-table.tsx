@@ -112,7 +112,7 @@ function MoneyMiniBadges({ row }: { row: MandoubRow }) {
       ) : null}
       {showPreparerPickup ? (
         <span
-          className={`${pillBase} bg-yellow-600 text-white ring-yellow-700`}
+          className={`${pillBase} bg-purple-50 text-purple-700 ring-purple-200`}
           title="صادر المجهز"
         >
           {formatDinarAsAlf(preparerPickup)}
