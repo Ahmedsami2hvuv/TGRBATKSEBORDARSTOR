@@ -42,6 +42,20 @@ export async function bulkUpdateOrdersStatus(
     return { error: "حالة الهدف غير صالحة." };
   }
 
+  if (targetStatus === "cancelled") {
+    const deliveredOrArchivedOrders = await prisma.order.findMany({
+      where: {
+        id: { in: orderIds },
+        status: { in: ["delivered", "archived"] },
+      },
+      select: { orderNumber: true },
+    });
+    if (deliveredOrArchivedOrders.length > 0) {
+      const numbers = deliveredOrArchivedOrders.map((o) => `#${o.orderNumber}`).join("، ");
+      return { error: `لا يمكن رفض الطلبات المسلّمة أو المؤرشفة مباشرة (${numbers}). يجب إرجاع حالتها إلى 'جديد' أولاً ثم رفضها.` };
+    }
+  }
+
   const needsCourier =
     targetStatus === "assigned" ||
     targetStatus === "delivering" ||
