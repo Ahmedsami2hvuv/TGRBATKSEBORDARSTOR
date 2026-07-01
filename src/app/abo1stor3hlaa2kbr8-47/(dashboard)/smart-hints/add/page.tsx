@@ -65,6 +65,72 @@ function getDefaultMapCenter(): { latitude: number; longitude: number } {
   return { latitude: 30.5082, longitude: 47.7835 };
 }
 
+function getDistanceToSegment(
+  p: { latitude: number; longitude: number },
+  a: { latitude: number; longitude: number },
+  b: { latitude: number; longitude: number }
+): number {
+  const x = p.latitude;
+  const y = p.longitude;
+  const x1 = a.latitude;
+  const y1 = a.longitude;
+  const x2 = b.latitude;
+  const y2 = b.longitude;
+
+  const A = x - x1;
+  const B = y - y1;
+  const C = x2 - x1;
+  const D = y2 - y1;
+
+  const dot = A * C + B * D;
+  const lenSq = C * C + D * D;
+  let param = -1;
+  
+  if (lenSq !== 0) {
+    param = dot / lenSq;
+  }
+
+  let xx, yy;
+
+  if (param < 0) {
+    xx = x1;
+    yy = y1;
+  } else if (param > 1) {
+    xx = x2;
+    yy = y2;
+  } else {
+    xx = x1 + param * C;
+    yy = y1 + param * D;
+  }
+
+  const dx = x - xx;
+  const dy = y - yy;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function findBestInsertIndex(
+  clickPt: { latitude: number; longitude: number },
+  points: Array<{ latitude: number; longitude: number }>
+): number {
+  if (points.length < 3) return points.length;
+
+  let minDistance = Infinity;
+  let bestInsertIndex = points.length;
+
+  for (let i = 0; i < points.length; i++) {
+    const p1 = points[i];
+    const p2 = points[(i + 1) % points.length];
+
+    const dist = getDistanceToSegment(clickPt, p1, p2);
+    if (dist < minDistance) {
+      minDistance = dist;
+      bestInsertIndex = i + 1;
+    }
+  }
+
+  return bestInsertIndex;
+}
+
 interface ShapeCircle {
   id: string;
   type: "circle";
@@ -170,39 +236,70 @@ export default function AddSmartHintPage() {
         }
       });
 
-      // نقر الخريطة لإضافة شكل إضافي
+      // نقر الخريطة لإضافة زاوية للمربع السكني الأقرب
       map.on("click", (e: any) => {
         const clickedLat = e.latlng.lat;
         const clickedLng = e.latlng.lng;
-        const newId = "shape_" + Date.now();
+        
+        const polygons = shapesRef.current.filter((s) => s.type === "polygon") as ShapePolygon[];
 
-        if (shapesRef.current.length >= 10) {
-          alert("الحد الأقصى هو 10 أشكال للاستدلال الواحد!");
-          return;
-        }
+        if (polygons.length > 0) {
+          // البحث عن المضلع الأقرب
+          let closestPolygon: ShapePolygon | null = null;
+          let minDistance = Infinity;
+          
+          polygons.forEach((poly) => {
+            const pts = poly.coords;
+            for (let i = 0; i < pts.length; i++) {
+              const p1 = pts[i];
+              const p2 = pts[(i + 1) % pts.length];
+              const dist = getDistanceToSegment({ latitude: clickedLat, longitude: clickedLng }, p1, p2);
+              if (dist < minDistance) {
+                minDistance = dist;
+                closestPolygon = poly;
+              }
+            }
+          });
 
-        if (hintType === "circle") {
-          const newCircle: ShapeCircle = {
-            id: newId,
-            type: "circle",
-            latitude: clickedLat,
-            longitude: clickedLng,
-            radiusMeters: 100
-          };
-          setShapes((prev) => [...prev, newCircle]);
-        } else {
-          const offset = 0.0004;
-          const newPoly: ShapePolygon = {
-            id: newId,
-            type: "polygon",
-            coords: [
-              { latitude: clickedLat + offset, longitude: clickedLng - offset },
-              { latitude: clickedLat + offset, longitude: clickedLng + offset },
-              { latitude: clickedLat - offset, longitude: clickedLng + offset },
-              { latitude: clickedLat - offset, longitude: clickedLng - offset },
-            ]
-          };
-          setShapes((prev) => [...prev, newPoly]);
+          if (closestPolygon) {
+            const targetPoly = closestPolygon as ShapePolygon;
+            const polyIndexInShapes = shapesRef.current.findIndex((s) => s.id === targetPoly.id);
+            const indexLabel = polyIndexInShapes !== -1 ? polyIndexInShapes + 1 : 1;
+
+            const popupContent = document.createElement("div");
+            popupContent.className = "p-2 text-center space-y-2 dark:text-slate-200";
+            popupContent.dir = "rtl";
+            popupContent.innerHTML = `
+              <p class="text-xs font-bold text-slate-700 dark:text-slate-355">هل تريد إضافة زاوية جديدة للمربع رقم ${indexLabel} هنا؟</p>
+              <div class="flex gap-2 justify-center mt-1">
+                <button id="leaflet-add-corner-btn" class="bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition active:scale-95 cursor-pointer">نعم، أضف</button>
+                <button id="leaflet-close-popup-btn" class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-355 text-[11px] font-bold px-3 py-1.5 rounded-lg transition active:scale-95 cursor-pointer">إلغاء</button>
+              </div>
+            `;
+
+            L.popup()
+              .setLatLng([clickedLat, clickedLng])
+              .setContent(popupContent)
+              .openOn(map);
+
+            setTimeout(() => {
+              const addBtn = document.getElementById("leaflet-add-corner-btn");
+              const closeBtn = document.getElementById("leaflet-close-popup-btn");
+
+              addBtn?.addEventListener("click", () => {
+                const updatedCoords = [...targetPoly.coords];
+                const insertIndex = findBestInsertIndex({ latitude: clickedLat, longitude: clickedLng }, targetPoly.coords);
+                updatedCoords.splice(insertIndex, 0, { latitude: clickedLat, longitude: clickedLng });
+
+                handleUpdatePolygonCoords(targetPoly.id, updatedCoords);
+                map.closePopup();
+              });
+
+              closeBtn?.addEventListener("click", () => {
+                map.closePopup();
+              });
+            }, 50);
+          }
         }
       });
 
