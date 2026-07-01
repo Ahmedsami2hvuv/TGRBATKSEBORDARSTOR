@@ -420,8 +420,8 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
           iconAnchor: [16, 16]
         });
 
-        let oldLat = centerLat;
-        let oldLng = centerLng;
+        let startLat = centerLat;
+        let startLng = centerLng;
 
         const centerMarker = L.marker([centerLat, centerLng], {
           draggable: true,
@@ -445,10 +445,16 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
           });
         });
 
+        centerMarker.on("dragstart", () => {
+          const pos = centerMarker.getLatLng();
+          startLat = pos.lat;
+          startLng = pos.lng;
+        });
+
         centerMarker.on("drag", () => {
           const newPos = centerMarker.getLatLng();
-          const latDiff = newPos.lat - oldLat;
-          const lngDiff = newPos.lng - oldLng;
+          const latDiff = newPos.lat - startLat;
+          const lngDiff = newPos.lng - startLng;
 
           const updated = pts.map((p) => ({
             latitude: p.latitude + latDiff,
@@ -462,15 +468,12 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
               m.setLatLng([updated[idx].latitude, updated[idx].longitude]);
             }
           });
-
-          oldLat = newPos.lat;
-          oldLng = newPos.lng;
         });
 
         centerMarker.on("dragend", () => {
           const newPos = centerMarker.getLatLng();
-          const latDiff = newPos.lat - oldLat;
-          const lngDiff = newPos.lng - oldLng;
+          const latDiff = newPos.lat - startLat;
+          const lngDiff = newPos.lng - startLng;
 
           const updated = pts.map((p) => ({
             latitude: p.latitude + latDiff,

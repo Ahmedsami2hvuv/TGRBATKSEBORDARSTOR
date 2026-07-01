@@ -430,8 +430,8 @@ export default function AddSmartHintPage() {
           iconAnchor: [16, 16]
         });
 
-        let oldLat = centerLat;
-        let oldLng = centerLng;
+        let startLat = centerLat;
+        let startLng = centerLng;
 
         const centerMarker = L.marker([centerLat, centerLng], {
           draggable: true,
@@ -442,7 +442,7 @@ export default function AddSmartHintPage() {
         popupContent.className = "p-2 text-center space-y-1.5 dark:text-slate-200";
         popupContent.dir = "rtl";
         popupContent.innerHTML = `
-          <p class="text-xs font-bold text-slate-700 dark:text-slate-350">🟩 المربع السكني رقم ${index + 1}</p>
+          <p class="text-xs font-bold text-slate-700 dark:text-slate-355">🟩 المربع السكني رقم ${index + 1}</p>
           <button id="del-shape-${shape.id}" class="bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm transition active:scale-95 cursor-pointer">❌ حذف هذا المربع</button>
         `;
         centerMarker.bindPopup(popupContent);
@@ -455,10 +455,16 @@ export default function AddSmartHintPage() {
           });
         });
 
+        centerMarker.on("dragstart", () => {
+          const pos = centerMarker.getLatLng();
+          startLat = pos.lat;
+          startLng = pos.lng;
+        });
+
         centerMarker.on("drag", () => {
           const newPos = centerMarker.getLatLng();
-          const latDiff = newPos.lat - oldLat;
-          const lngDiff = newPos.lng - oldLng;
+          const latDiff = newPos.lat - startLat;
+          const lngDiff = newPos.lng - startLng;
 
           const updated = pts.map((p) => ({
             latitude: p.latitude + latDiff,
@@ -472,15 +478,12 @@ export default function AddSmartHintPage() {
               m.setLatLng([updated[idx].latitude, updated[idx].longitude]);
             }
           });
-
-          oldLat = newPos.lat;
-          oldLng = newPos.lng;
         });
 
         centerMarker.on("dragend", () => {
           const newPos = centerMarker.getLatLng();
-          const latDiff = newPos.lat - oldLat;
-          const lngDiff = newPos.lng - oldLng;
+          const latDiff = newPos.lat - startLat;
+          const lngDiff = newPos.lng - startLng;
 
           const updated = pts.map((p) => ({
             latitude: p.latitude + latDiff,
