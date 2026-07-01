@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<paths>
-    <external-path name="my_images" path="Android/data/com.aboakbar.modf/files/Pictures" />
-    <external-files-path name="my_images" path="Pictures" />
-    <cache-path name="my_images" path="/" />
-    <external-cache-path name="my_images" path="/" />
-    <root-path name="root" path="." />
-</paths>

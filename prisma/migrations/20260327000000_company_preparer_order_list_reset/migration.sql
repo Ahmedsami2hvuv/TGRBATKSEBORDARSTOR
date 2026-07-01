@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "CompanyPreparer" ADD COLUMN "orderListResetAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
