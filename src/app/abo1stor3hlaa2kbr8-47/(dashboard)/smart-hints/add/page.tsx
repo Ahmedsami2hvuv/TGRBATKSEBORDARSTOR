@@ -305,6 +305,9 @@ export default function AddSmartHintPage() {
 
       mapRef.current = map;
       
+      // رسم مبدئي للأشكال الجغرافية فوراً بعد تهيئة الخريطة
+      renderAllShapes(L, map, shapesRef.current);
+
       // رسم مبدئي
       setTimeout(() => {
         map.invalidateSize();
