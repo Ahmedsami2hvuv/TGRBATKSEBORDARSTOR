@@ -6,11 +6,3 @@ node_modules
 .DS_Store
 .gradle
 build
-*.apk
-android_extracted
-تطبيقات_جاهزة_للنقل
-admin-app
-employee-app
-mandob-app
-preparer-app
-admin-desktop
