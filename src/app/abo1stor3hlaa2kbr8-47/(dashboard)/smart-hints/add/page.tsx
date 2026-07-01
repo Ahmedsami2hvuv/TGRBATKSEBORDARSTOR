@@ -236,6 +236,11 @@ export default function AddSmartHintPage() {
         }
       });
 
+      // إغلاق أي نافذة منبثقة مفتوحة فوراً عند بدء سحب الخريطة
+      map.on("dragstart", () => {
+        map.closePopup();
+      });
+
       // نقر الخريطة لإضافة زاوية للمربع السكني الأقرب
       map.on("click", (e: any) => {
         const clickedLat = e.latlng.lat;
@@ -267,7 +272,8 @@ export default function AddSmartHintPage() {
             const indexLabel = polyIndexInShapes !== -1 ? polyIndexInShapes + 1 : 1;
 
             const popupContent = document.createElement("div");
-            popupContent.className = "p-2 text-center space-y-2 dark:text-slate-200";
+            popupContent.className = "p-2 text-center space-y-2 dark:text-slate-200 notranslate";
+            popupContent.setAttribute("translate", "no");
             popupContent.dir = "rtl";
             popupContent.innerHTML = `
               <p class="text-xs font-bold text-slate-700 dark:text-slate-355">هل تريد إضافة زاوية جديدة للمربع رقم ${indexLabel} هنا؟</p>
