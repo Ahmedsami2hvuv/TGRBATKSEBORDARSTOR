@@ -787,7 +787,7 @@ export default function AddSmartHintPage() {
             </p>
           </div>
           <Link
-            href="/abo1stor3hlaa2kbr8-47/smart-hints"
+            href="/abo1stor3hlaa2kbr8-47/smart-hints/list"
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131418] text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-900 transition active:scale-95 text-xs shadow-sm"
           >
             🔙 لوحة الاستدلالات
