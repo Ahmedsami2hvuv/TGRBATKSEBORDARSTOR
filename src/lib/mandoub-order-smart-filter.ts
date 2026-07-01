@@ -19,6 +19,8 @@ export type MandoubOrderSearchFields = {
   customerPhone: string;
   alternatePhone: string | null;
   secondCustomerPhone: string | null;
+  secondCustomerAlternatePhone?: string | null;
+  customerName?: string | null;
   summary: string;
   customerLandmark: string;
   secondCustomerLandmark: string;
@@ -49,7 +51,7 @@ function digitsOnly(s: string): string {
   return normalizeDigits(s);
 }
 
-/** يعيد true إذا كان النص يطابق الطلب (بحث فوري). */
+/** يعيد true إذا كان النص يطابق الطلب (بحث فوري متعدد الكلمات). */
 export function mandoubOrderMatchesSmartQuery(
   qRaw: string,
   f: MandoubOrderSearchFields,
@@ -57,6 +59,7 @@ export function mandoubOrderMatchesSmartQuery(
   const q = qRaw.trim();
   if (!q) return true;
 
+  // إذا تطابق الإدخال بالكامل مع رقم الطلب
   const n = parseOrderNumberCandidate(q);
   if (n != null && f.orderNumber === n) return true;
 
@@ -64,9 +67,12 @@ export function mandoubOrderMatchesSmartQuery(
     if (f.routeMode === r.routeMode) return true;
   }
 
-  const t = q.toLowerCase();
+  // تقسيم نص البحث إلى كلمات مفتاحية منفصلة
+  const searchTokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+  if (searchTokens.length === 0) return true;
+
   const dateTokens = generateDateSearchTokens(f.createdAtIso, f.orderNoteTime);
-  const hay = [
+  const hayElements = [
     f.id,
     String(f.orderNumber),
     f.orderType,
@@ -75,6 +81,8 @@ export function mandoubOrderMatchesSmartQuery(
     f.customerPhone,
     f.alternatePhone ?? "",
     f.secondCustomerPhone ?? "",
+    f.secondCustomerAlternatePhone ?? "",
+    f.customerName ?? "",
     f.summary,
     f.customerLandmark,
     f.secondCustomerLandmark,
@@ -94,22 +102,41 @@ export function mandoubOrderMatchesSmartQuery(
     f.secondRegionName,
     f.courierName,
     dateTokens,
-  ]
-    .join(" ")
-    .toLowerCase();
+  ];
 
-  if (hay.includes(t)) return true;
-  // مقارنة الأرقام (بعد توحيد الأرقام العربية إلى لاتينية) لكشف أنماط التاريخ التي يكتبها المستخدم بأرقام عربية
-  const tDigits = normalizeDigits(q).toLowerCase();
-  if (tDigits !== t && hay.includes(tDigits)) return true;
+  const hay = hayElements.join(" ").toLowerCase();
+  const hayNormalized = normalizeDigits(hay).toLowerCase();
 
-  const qDigits = digitsOnly(q);
-  if (qDigits.length >= 6) {
-    const phones = [f.customerPhone, f.alternatePhone, f.secondCustomerPhone]
-      .filter(Boolean)
-      .join(" ");
-    if (digitsOnly(phones).includes(qDigits)) return true;
+  // يجب أن تتطابق كل كلمة مفتاحية مع جزء من بيانات الطلب
+  for (const token of searchTokens) {
+    const tokenNormalized = normalizeDigits(token).toLowerCase();
+    
+    // التحقق من مطابقة الكلمة المفتاحية (سواء بالنص الأصلي أو الموحد الأرقام)
+    let matched = hay.includes(token) || hayNormalized.includes(tokenNormalized);
+
+    // إذا لم تتطابق، وكان التوكن عبارة عن أرقام فقط (مثال: جزء من رقم هاتف)، نقارن الأرقام فقط
+    if (!matched) {
+      const qDigits = digitsOnly(token);
+      if (qDigits.length >= 4) {
+        const phones = [
+          f.customerPhone,
+          f.alternatePhone,
+          f.secondCustomerPhone,
+          f.secondCustomerAlternatePhone
+        ]
+          .filter(Boolean)
+          .join(" ");
+        if (digitsOnly(phones).includes(qDigits)) {
+          matched = true;
+        }
+      }
+    }
+
+    // إذا لم تتطابق أي كلمة من الكلمات، يعتبر الطلب غير مطابق للبحث
+    if (!matched) {
+      return false;
+    }
   }
 
-  return false;
+  return true;
 }

@@ -296,6 +296,8 @@ export async function loadPreparerPortalOrderTableData(args: {
     customerPhone: "",
     alternatePhone: "",
     secondCustomerPhone: "",
+    secondCustomerAlternatePhone: "",
+    customerName: o.customer?.name ?? "",
     summary: safeString(o.summary),
     customerLandmark: safeString(o.customerLandmark),
     secondCustomerLandmark: safeString(o.secondCustomerLandmark),
