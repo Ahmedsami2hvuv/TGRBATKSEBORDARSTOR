@@ -69,7 +69,7 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
       return (
         <div className="text-center py-20" dir="rtl">
           <h2 className="text-xl font-bold text-slate-900">الفرع غير موجود أو غير نشط</h2>
-          <Link href="/store" className="text-violet-600 underline mt-4 block font-bold">العودة للمتجر</Link>
+          <Link href="/store" prefetch={false} className="text-violet-600 underline mt-4 block font-bold">العودة للمتجر</Link>
         </div>
       );
     }
@@ -129,11 +129,11 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
       <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700" dir="rtl">
         <header className="space-y-4">
           <nav className="flex items-center gap-2 text-sm font-bold text-slate-400">
-            <Link href="/store" className="hover:text-violet-600 transition">🏠 المتجر</Link>
+            <Link href="/store" prefetch={false} className="hover:text-violet-600 transition">🏠 المتجر</Link>
             <span>/</span>
             {branch.category && (
               <>
-                <Link href={`/store/c/${branch.category.id}`} className="hover:text-violet-600 transition">
+                <Link href={`/store/c/${branch.category.id}`} prefetch={false} className="hover:text-violet-600 transition">
                   {branch.category.name}
                 </Link>
                 <span>/</span>
@@ -172,6 +172,7 @@ export default async function BranchPage(props: { params: Promise<{ id: string }
                 <Link
                   key={child.id}
                   href={`/store/b/${child.id}`}
+                  prefetch={false}
                   className="bg-white dark:bg-slate-900 p-4 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all text-center group"
                 >
                   <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center text-xl group-hover:scale-110 transition-transform overflow-hidden">

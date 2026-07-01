@@ -168,12 +168,12 @@ export function SearchContainer({ initialProducts, categories, branches }: Searc
           {query && (matchedCategories.length > 0 || matchedBranches.length > 0) && (
             <div className="flex flex-wrap gap-2 mb-4">
               {matchedCategories.map(c => (
-                <Link key={c.id} href={`/store/c/${c.id}`} className="px-4 py-2 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full text-xs font-black border border-violet-200 dark:border-violet-800">
+                <Link key={c.id} href={`/store/c/${c.id}`} prefetch={false} className="px-4 py-2 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full text-xs font-black border border-violet-200 dark:border-violet-800">
                   قسم: {c.name}
                 </Link>
               ))}
               {matchedBranches.map(b => (
-                <Link key={b.id} href={`/store/b/${b.id}`} className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-black border border-indigo-200 dark:border-indigo-800">
+                <Link key={b.id} href={`/store/b/${b.id}`} prefetch={false} className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-black border border-indigo-200 dark:border-indigo-800">
                   فرع: {b.name}
                 </Link>
               ))}

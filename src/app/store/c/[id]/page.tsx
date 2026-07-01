@@ -34,7 +34,7 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
         return (
           <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100" dir="rtl">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">القسم المطلوب غير موجود</h2>
-            <Link href="/store" className="text-violet-600 underline mt-4 block font-bold">العودة للمتجر الرئيسي</Link>
+            <Link href="/store" prefetch={false} className="text-violet-600 underline mt-4 block font-bold">العودة للمتجر الرئيسي</Link>
           </div>
         );
     }
@@ -73,7 +73,7 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
         {/* Header Section */}
         <header className="space-y-4">
           <nav className="flex items-center gap-2 text-sm font-bold text-slate-400">
-            <Link href="/store" className="hover:text-violet-600 transition">🏠 المتجر</Link>
+            <Link href="/store" prefetch={false} className="hover:text-violet-600 transition">🏠 المتجر</Link>
             <span>/</span>
             <span className="text-slate-900 dark:text-white">{category.name}</span>
           </nav>
@@ -112,6 +112,7 @@ export default async function CategoryPage(props: { params: Promise<{ id: string
                 <Link
                   key={branch.id}
                   href={`/store/b/${branch.id}`}
+                  prefetch={false}
                   className="group block bg-white dark:bg-slate-900 rounded-[2rem] p-4 border border-slate-100 dark:border-slate-800 shadow-md hover:shadow-violet-200/40 hover:-translate-y-2 transition-all duration-300"
                 >
                   <div className="relative aspect-video mb-4 overflow-hidden rounded-2xl bg-slate-50 dark:bg-slate-800">
