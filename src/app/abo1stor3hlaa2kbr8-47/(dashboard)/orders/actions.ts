@@ -759,6 +759,12 @@ export async function rejectPendingOrder(
   const orderId = String(formData.get("orderId") ?? "").trim();
   if (!orderId) return { error: "المعرف مفقود" };
   try {
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) return { error: "الطلب غير موجود" };
+    if (order.status === "delivered" || order.status === "archived") {
+      return { error: "لا يمكن رفض طلب تم تسليمه أو أرشفته بالفعل." };
+    }
+
     await prisma.order.update({
       where: { id: orderId },
       data: { status: "cancelled" },
@@ -807,10 +813,13 @@ export async function rejectPreparerDraft(
 
     // إذا كانت المسودة مرتبطة بطلب (مثل طلب المتجر)، نقوم بإلغاء الطلب أيضاً
     if (sentOrderId) {
-      await prisma.order.update({
-        where: { id: sentOrderId },
-        data: { status: "cancelled" }
-      });
+      const order = await prisma.order.findUnique({ where: { id: sentOrderId } });
+      if (order && order.status !== "delivered" && order.status !== "archived") {
+        await prisma.order.update({
+          where: { id: sentOrderId },
+          data: { status: "cancelled" }
+        });
+      }
       // أرشفة بقية المسودات المرتبطة بنفس الطلب
       await prisma.companyPreparerShoppingDraft.updateMany({
         where: { sentOrderId, status: { not: "archived" } },
@@ -975,10 +984,13 @@ export async function bulkDeleteOrdersPermanently(
         }
 
         if (draft.sentOrderId) {
-          await prisma.order.update({
-            where: { id: draft.sentOrderId },
-            data: { status: "cancelled" }
-          });
+          const order = await prisma.order.findUnique({ where: { id: draft.sentOrderId } });
+          if (order && order.status !== "delivered" && order.status !== "archived") {
+            await prisma.order.update({
+              where: { id: draft.sentOrderId },
+              data: { status: "cancelled" }
+            });
+          }
           await prisma.companyPreparerShoppingDraft.updateMany({
             where: { sentOrderId: draft.sentOrderId, status: { not: "archived" } },
             data: { status: "archived" }

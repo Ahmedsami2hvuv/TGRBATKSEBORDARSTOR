@@ -1185,10 +1185,13 @@ export async function archivePreparerShoppingDraftAction(
     // إذا كانت المسودة مرتبطة بطلب (مثل طلب المتجر)، نقوم بإلغاء الطلب أيضاً
     const sentOrderId = draft.sentOrderId;
     if (sentOrderId) {
-      await prisma.order.update({
-        where: { id: sentOrderId },
-        data: { status: "cancelled" }
-      });
+      const order = await prisma.order.findUnique({ where: { id: sentOrderId } });
+      if (order && order.status !== "delivered" && order.status !== "archived") {
+        await prisma.order.update({
+          where: { id: sentOrderId },
+          data: { status: "cancelled" }
+        });
+      }
       // أرشفة بقية المسودات المرتبطة بنفس الطلب إذا وجدت
       await prisma.companyPreparerShoppingDraft.updateMany({
         where: { sentOrderId, status: { not: "archived" } },
@@ -1218,6 +1221,11 @@ export async function rejectOrderFromPreparerAction(
 
     const gate = await assertPreparerLinkedToOrderShop(v.preparerId, orderId);
     if (!gate.ok) return { error: gate.error };
+
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (order && (order.status === "delivered" || order.status === "archived")) {
+      return { error: "عذراً، تم تسليم الطلب بالفعل ولا يمكن إلغاؤه." };
+    }
 
     await prisma.order.update({
       where: { id: orderId },
