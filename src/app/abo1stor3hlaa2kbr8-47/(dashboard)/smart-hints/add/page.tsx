@@ -283,6 +283,42 @@ export default function AddSmartHintPage() {
     );
   };
 
+  const handleResetToSquare = (shapeId: string) => {
+    setShapes((prev) =>
+      prev.map((s) => {
+        if (s.id === shapeId && s.type === "polygon") {
+          const pts = s.coords;
+          if (pts.length === 0) return s;
+
+          const sumLat = pts.reduce((sum, p) => sum + p.latitude, 0);
+          const sumLng = pts.reduce((sum, p) => sum + p.longitude, 0);
+          const centerLat = sumLat / pts.length;
+          const centerLng = sumLng / pts.length;
+
+          const offset = 0.0004;
+          return {
+            ...s,
+            coords: [
+              { latitude: centerLat + offset, longitude: centerLng - offset },
+              { latitude: centerLat + offset, longitude: centerLng + offset },
+              { latitude: centerLat - offset, longitude: centerLng + offset },
+              { latitude: centerLat - offset, longitude: centerLng - offset },
+            ]
+          };
+        }
+        return s;
+      })
+    );
+  };
+
+  const handleResetFirstPolygon = () => {
+    const target = shapes.find((s) => s.type === "polygon");
+    if (target) {
+      handleResetToSquare(target.id);
+    }
+  };
+
+
   const handleAddNewShape = (type: "circle" | "polygon") => {
     const L = (window as any).L;
     if (!L || !mapRef.current) return;
@@ -760,22 +796,30 @@ export default function AddSmartHintPage() {
                         />
                       </div>
                     ) : (
-                      <div className="flex justify-between items-center text-[10px] text-slate-400">
+                       <div className="flex justify-between items-center text-[10px] text-slate-400">
                         <span>📐 زوايا المربع السكني: {shape.coords.length} زوايا</span>
                         <div className="flex gap-1">
                           <button
                             type="button"
                             onClick={() => handleAddPolygonCorner(shape.id)}
-                            className="bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded text-slate-700 dark:text-slate-350 font-black cursor-pointer"
+                            className="bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded text-slate-700 dark:text-slate-350 font-black cursor-pointer hover:bg-slate-300"
                           >
                             ➕ زاوية
                           </button>
                           <button
                             type="button"
                             onClick={() => handleRemovePolygonCorner(shape.id)}
-                            className="bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded text-slate-700 dark:text-slate-350 font-black cursor-pointer"
+                            className="bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded text-slate-700 dark:text-slate-350 font-black cursor-pointer hover:bg-slate-300"
                           >
                             ➖ زاوية
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleResetToSquare(shape.id)}
+                            className="bg-rose-500/10 text-rose-500 px-2 py-1 rounded font-bold cursor-pointer hover:bg-rose-500/20"
+                            title="إعادة ضبط لـ 4 زوايا"
+                          >
+                            🔄 4 زوايا
                           </button>
                         </div>
                       </div>
@@ -852,6 +896,17 @@ export default function AddSmartHintPage() {
                     >
                       🟩
                     </button>
+                    {hintType === "polygon" && shapes.some((s) => s.type === "polygon") && (
+                      <button
+                        type="button"
+                        onClick={handleResetFirstPolygon}
+                        disabled={isSubmitting}
+                        title="إعادة ضبط المربع السكني لـ 4 زوايا"
+                        className="w-[34px] h-[34px] bg-white dark:bg-[#18181b] hover:bg-slate-50 dark:hover:bg-slate-800 text-rose-500 rounded-lg shadow-md border border-slate-300 dark:border-slate-700 flex items-center justify-center font-bold text-lg transition active:scale-95 disabled:opacity-50 cursor-pointer"
+                      >
+                        🔄
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

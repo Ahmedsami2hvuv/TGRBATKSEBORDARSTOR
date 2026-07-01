@@ -274,6 +274,41 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
     );
   };
 
+  const handleResetToSquare = (shapeId: string) => {
+    setShapes((prev) =>
+      prev.map((s) => {
+        if (s.id === shapeId && s.type === "polygon") {
+          const pts = s.coords;
+          if (pts.length === 0) return s;
+
+          const sumLat = pts.reduce((sum, p) => sum + p.latitude, 0);
+          const sumLng = pts.reduce((sum, p) => sum + p.longitude, 0);
+          const centerLat = sumLat / pts.length;
+          const centerLng = sumLng / pts.length;
+
+          const offset = 0.0004;
+          return {
+            ...s,
+            coords: [
+              { latitude: centerLat + offset, longitude: centerLng - offset },
+              { latitude: centerLat + offset, longitude: centerLng + offset },
+              { latitude: centerLat - offset, longitude: centerLng + offset },
+              { latitude: centerLat - offset, longitude: centerLng - offset },
+            ]
+          };
+        }
+        return s;
+      })
+    );
+  };
+
+  const handleResetFirstPolygon = () => {
+    const target = shapes.find((s) => s.type === "polygon");
+    if (target) {
+      handleResetToSquare(target.id);
+    }
+  };
+
   const handleAddNewShape = (type: "circle" | "polygon") => {
     const L = (window as any).L;
     if (!L || !mapRef.current) return;
@@ -335,7 +370,7 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
         popupContent.className = "p-2 text-center space-y-1.5 dark:text-slate-200";
         popupContent.dir = "rtl";
         popupContent.innerHTML = `
-          <p class="text-xs font-bold text-slate-700 dark:text-slate-350">📍 الدائرة رقم ${index + 1}</p>
+          <p class="text-xs font-bold text-slate-700 dark:text-slate-355">📍 الدائرة رقم ${index + 1}</p>
           <p class="text-[10px] text-slate-400">التغطية: ${shape.radiusMeters} متر</p>
           <button id="del-shape-${shape.id}" class="bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm transition active:scale-95 cursor-pointer">❌ حذف هذه الدائرة</button>
         `;
@@ -704,7 +739,7 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
                     {shape.type === "circle" ? (
                       <div className="space-y-1">
                         <div className="flex justify-between text-[10px] text-slate-400">
-                          <span>📏 مسافة التغطية: {shape.radiusMeters} متر</span>
+                          <span>📏 مسافة التغطية: {shape.radiusMeters} meter</span>
                         </div>
                         <input
                           type="range"
@@ -723,16 +758,24 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
                           <button
                             type="button"
                             onClick={() => handleAddPolygonCorner(shape.id)}
-                            className="bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded text-slate-700 dark:text-slate-350 font-black cursor-pointer"
+                            className="bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded text-slate-700 dark:text-slate-350 font-black cursor-pointer hover:bg-slate-300"
                           >
                             ➕ زاوية
                           </button>
                           <button
                             type="button"
                             onClick={() => handleRemovePolygonCorner(shape.id)}
-                            className="bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded text-slate-700 dark:text-slate-350 font-black cursor-pointer"
+                            className="bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded text-slate-700 dark:text-slate-350 font-black cursor-pointer hover:bg-slate-300"
                           >
                             ➖ زاوية
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleResetToSquare(shape.id)}
+                            className="bg-rose-500/10 text-rose-500 px-2 py-1 rounded font-bold cursor-pointer hover:bg-rose-500/20"
+                            title="إعادة ضبط لـ 4 زوايا"
+                          >
+                            🔄 4 زوايا
                           </button>
                         </div>
                       </div>
@@ -809,6 +852,17 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
                     >
                       🟩
                     </button>
+                    {hintType === "polygon" && shapes.some((s) => s.type === "polygon") && (
+                      <button
+                        type="button"
+                        onClick={handleResetFirstPolygon}
+                        disabled={isSubmitting}
+                        title="إعادة ضبط المربع السكني لـ 4 زوايا"
+                        className="w-[34px] h-[34px] bg-white dark:bg-[#18181b] hover:bg-slate-50 dark:hover:bg-slate-800 text-rose-500 rounded-lg shadow-md border border-slate-300 dark:border-slate-700 flex items-center justify-center font-bold text-lg transition active:scale-95 disabled:opacity-50 cursor-pointer"
+                      >
+                        🔄
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
