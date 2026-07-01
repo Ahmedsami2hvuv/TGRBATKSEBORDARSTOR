@@ -811,7 +811,16 @@ export function DeliveryMoneyForm({
     if (isSkip && amountRef.current) {
       amountRef.current.removeAttribute("required");
     }
-    formRef.current?.requestSubmit();
+    if (isSkip) {
+      const skipBtn = formRef.current?.querySelector('button[data-mandoub-action="skip-no-amount"]') as HTMLButtonElement | null;
+      if (skipBtn) {
+        formRef.current?.requestSubmit(skipBtn);
+      } else {
+        formRef.current?.requestSubmit();
+      }
+    } else {
+      formRef.current?.requestSubmit(mainSubmitRef.current ?? undefined);
+    }
     if (isSkip && amountRef.current) {
       amountRef.current.setAttribute("required", "");
     }

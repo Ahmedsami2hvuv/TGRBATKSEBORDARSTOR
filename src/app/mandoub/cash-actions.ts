@@ -121,7 +121,6 @@ export async function submitMandoubPickupMoney(
       orderId,
       kind: MONEY_KIND_PICKUP,
       deletedAt: null,
-      recordedByCompanyPreparerId: null,
     },
     _sum: { amountDinar: true },
   });
@@ -274,7 +273,6 @@ export async function submitMandoubDeliveryMoney(
       orderId,
       kind: MONEY_KIND_DELIVERY,
       deletedAt: null,
-      recordedByCompanyPreparerId: null,
     },
     _sum: { amountDinar: true },
   });
