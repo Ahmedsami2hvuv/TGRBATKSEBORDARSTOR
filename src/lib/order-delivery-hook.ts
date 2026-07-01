@@ -7,11 +7,31 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
       where: { id: orderId },
       include: {
         customerRegion: { select: { name: true } },
-        courier: { select: { name: true } },
+        courier: { select: { name: true, vehicleType: true, zeroEarning: true } },
       }
     });
 
     if (!order) return;
+
+    // حساب وتخزين أرباح المندوب تلقائياً في قاعدة البيانات إذا لم تكن مخزنة سابقاً
+    if (order.assignedCourierId && order.courier && order.courierEarningForCourierId == null) {
+      const { computeCourierDeliveryEarningDinar } = await import("./courier-earnings");
+      const earning = order.deliveryPrice != null
+        ? computeCourierDeliveryEarningDinar(
+            order.courier.vehicleType,
+            order.deliveryPrice,
+            order.courier.zeroEarning
+          )
+        : null;
+
+      await db.order.update({
+        where: { id: orderId },
+        data: {
+          courierEarningDinar: earning,
+          courierEarningForCourierId: earning != null ? order.assignedCourierId : null,
+        }
+      });
+    }
 
     // أتمتة فتح/استعادة حساب المحل تلقائياً في دفتر الديون إذا كان لديه طلب مسلّم غير مسدّد
     try {
