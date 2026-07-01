@@ -95,40 +95,88 @@ export async function computeSmartHint(
 
   const validWaypoints = allWaypoints
     .map((wp) => {
-      // التحقق أولاً من المضلع السكني إذا كان متوفراً وصالحاً
+      // التحقق من بنية البيانات الجديدة للأشكال المتعددة
+      if (wp.polygonCoords && typeof wp.polygonCoords === "object" && !Array.isArray(wp.polygonCoords)) {
+        const data = wp.polygonCoords as any;
+        if (data.version === 2 && Array.isArray(data.shapes)) {
+          let bestMatch: { distanceM: number; radiusMeters: number; matched: boolean; isPolygon: boolean } | null = null;
+          
+          for (const shape of data.shapes) {
+            if (shape.type === "polygon" && Array.isArray(shape.coords) && shape.coords.length >= 3) {
+              const poly = shape.coords as Array<{ latitude: number; longitude: number }>;
+              if (isPointInPolygon(customerLoc, poly)) {
+                // إذا وقع داخل أي مضلع، نعتبر المسافة صفرم فوراً كأولوية قصوى
+                bestMatch = { distanceM: 0, radiusMeters: 10, matched: true, isPolygon: true };
+                break; // نكتفي بوجود تطابق للمضلع
+              }
+            } else if (shape.type === "circle") {
+              const dist = haversineMeters(
+                customerLoc.latitude,
+                customerLoc.longitude,
+                Number(shape.latitude),
+                Number(shape.longitude)
+              );
+              const radius = Number(shape.radiusMeters);
+              if (dist <= radius) {
+                // نأخذ التطابق الأقرب مسافة
+                if (!bestMatch || dist < bestMatch.distanceM) {
+                  bestMatch = { distanceM: dist, radiusMeters: radius, matched: true, isPolygon: false };
+                }
+              }
+            }
+          }
+          
+          if (bestMatch && bestMatch.matched) {
+            return {
+              name: wp.name?.trim() || "مدخل",
+              regionName: wp.region?.name?.trim() || "منطقة غير معروفة",
+              distanceM: bestMatch.distanceM,
+              radiusMeters: bestMatch.radiusMeters,
+              isInPolygon: bestMatch.isPolygon,
+              matched: true,
+            };
+          }
+        }
+      }
+
+      // التحقق القديم للمضلع السكني الفردي
       if (wp.polygonCoords && Array.isArray(wp.polygonCoords) && wp.polygonCoords.length >= 3) {
         const poly = wp.polygonCoords as Array<{ latitude: number; longitude: number }>;
         const isInside = isPointInPolygon(customerLoc, poly);
         
         if (isInside) {
-          // إذا كان داخل المربع السكني، نعتبر المسافة صفرم ليعطي أولوية قصوى للاستدلال
           return {
             name: wp.name?.trim() || "مدخل",
             regionName: wp.region?.name?.trim() || "منطقة غير معروفة",
             distanceM: 0,
             radiusMeters: 10,
             isInPolygon: true,
+            matched: true,
           };
         }
       }
 
-      // إذا لم يكن هناك مضلع أو كان موقع الزبون خارجه، نعتمد على الحساب الدائري المعتاد
+      // الحساب القديم للدائرة الفردية
       const distanceM = haversineMeters(
         customerLoc.latitude,
         customerLoc.longitude,
         wp.latitude,
         wp.longitude
       );
+      
+      const isInsideCircle = distanceM <= wp.radiusMeters;
+      
       return {
         name: wp.name?.trim() || "مدخل",
         regionName: wp.region?.name?.trim() || "منطقة غير معروفة",
         distanceM,
         radiusMeters: wp.radiusMeters,
         isInPolygon: false,
+        matched: isInsideCircle,
       };
     })
     // التصفية: إما أنه يقع داخل المضلع، أو يقع ضمن نصف القطر للمنطقة الدائرية
-    .filter((wp) => wp.isInPolygon || wp.distanceM <= wp.radiusMeters)
+    .filter((wp) => wp.matched)
     // الفرز: إعطاء الأولوية للنقاط داخل المضلع (مسافة 0)، ثم للمسافات الدائرية الأقرب
     .sort((a, b) => a.distanceM - b.distanceM);
 
