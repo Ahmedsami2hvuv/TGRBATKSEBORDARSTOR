@@ -157,7 +157,6 @@ export default async function OrderTrackingPage({ searchParams }: Props) {
       prisma.order.findMany({
         where,
         orderBy: { createdAt: "desc" },
-        take: 50,
         include: {
           shop: {
             select: { id: true, name: true, photoUrl: true, region: true, phone: true, locationUrl: true }
