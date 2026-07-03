@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { logout } from "./actions";
 import { AdminLiveSearchInput } from "./live-search-input";
-import { adminSidebarTiles, tileHref } from "@/lib/admin-nav";
+import { adminSidebarTiles, tileHref, type AdminTile } from "@/lib/admin-nav";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig, getGlobalIcons } from "@/lib/icon-settings";
@@ -167,6 +167,48 @@ export function AdminShell({
   // عند فتح صفحة كنافذة منبثقة (?view=modal) نُخفي الشريط الجانبي وشريط البحث
   // لأنّ النافذة الأمّ تعرضهما أصلاً ولا داعي لتكرارهما داخل الـ iframe
   const isModalView = searchParams?.get("view") === "modal";
+
+  const [orderedTiles, setOrderedTiles] = useState<AdminTile[]>(adminSidebarTiles());
+
+  useEffect(() => {
+    const tiles = adminSidebarTiles();
+    try {
+      const usageRaw = window.localStorage.getItem("kse:admin:sidebarUsage");
+      if (usageRaw) {
+        const usage = JSON.parse(usageRaw) as Record<string, number>;
+        const sorted = [...tiles].sort((a, b) => {
+          const countA = usage[a.slug] || 0;
+          const countB = usage[b.slug] || 0;
+          return countB - countA;
+        });
+        setOrderedTiles(sorted);
+        return;
+      }
+    } catch (e) {
+      console.error("Error loading sidebar usage statistics", e);
+    }
+    setOrderedTiles(tiles);
+  }, []);
+
+  const handleTileClick = (slug: string) => {
+    try {
+      const usageRaw = window.localStorage.getItem("kse:admin:sidebarUsage") || "{}";
+      const usage = JSON.parse(usageRaw) as Record<string, number>;
+      usage[slug] = (usage[slug] || 0) + 1;
+      window.localStorage.setItem("kse:admin:sidebarUsage", JSON.stringify(usage));
+      
+      const tiles = adminSidebarTiles();
+      const sorted = [...tiles].sort((a, b) => {
+        const countA = usage[a.slug] || 0;
+        const countB = usage[b.slug] || 0;
+        return countB - countA;
+      });
+      setOrderedTiles(sorted);
+    } catch (e) {
+      console.error("Error saving sidebar usage statistic", e);
+    }
+    handleLinkClick();
+  };
 
   const [pullProgress, setPullProgress] = useState(0);
   const [showIndicator, setShowIndicator] = useState(false);
@@ -544,17 +586,6 @@ export function AdminShell({
         <span className="hidden md:inline text-xs font-bold">{navOpen ? "إخفاء" : "القائمة"}</span>
       </button>
 
-      {navOpen ? (
-        <button
-          type="button"
-          onClick={() => setNavOpen(false)}
-          className="fixed start-4 top-16 z-[170] hidden h-8 items-center justify-center rounded-lg border border-slate-300 bg-white/90 px-2 text-xs font-bold text-slate-700 shadow-sm dark:border-white/20 dark:bg-[#0f1115]/90 dark:text-slate-200 lg:flex"
-          title="إخفاء القائمة"
-        >
-          إخفاء
-        </button>
-      ) : null}
-
       {/* Mobile overlay backdrop (closes on click) */}
       {!isLg && navOpen ? (
         <div
@@ -608,7 +639,7 @@ export function AdminShell({
                 الأقسام
               </p>
             )}
-            {adminSidebarTiles().map((tile) => {
+            {orderedTiles.map((tile) => {
               const href = tileHref(tile);
               const active = navItemActive(pathname, href);
               const showPendingBadge = tile.slug === "new-orders" && pendingCount > 0;
@@ -618,7 +649,7 @@ export function AdminShell({
                   href={href}
                   prefetch={false}
                   title={tile.label}
-                  onClick={handleLinkClick}
+                  onClick={() => handleTileClick(tile.slug)}
                   className={getTileClasses(tile.slug, active, isCompact)}
                   style={{ height: 36 * itemScale, fontSize: 12 * itemScale }}
                 >
