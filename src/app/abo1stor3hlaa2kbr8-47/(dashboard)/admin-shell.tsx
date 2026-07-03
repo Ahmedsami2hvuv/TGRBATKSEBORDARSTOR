@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import { logout } from "./actions";
+import { logout, getSidebarUsageAction, saveSidebarUsageAction } from "./actions";
 import { AdminLiveSearchInput } from "./live-search-input";
 import { adminSidebarTiles, tileHref, type AdminTile } from "@/lib/admin-nav";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -172,41 +172,77 @@ export function AdminShell({
 
   useEffect(() => {
     const tiles = adminSidebarTiles();
+    
+    // 1. تحميل سريع من localStorage لتفادي التجميد أو التأخير
+    let localUsage: Record<string, number> = {};
     try {
       const usageRaw = window.localStorage.getItem("kse:admin:sidebarUsage");
       if (usageRaw) {
-        const usage = JSON.parse(usageRaw) as Record<string, number>;
+        localUsage = JSON.parse(usageRaw) as Record<string, number>;
         const sorted = [...tiles].sort((a, b) => {
-          const countA = usage[a.slug] || 0;
-          const countB = usage[b.slug] || 0;
+          const countA = localUsage[a.slug] || 0;
+          const countB = localUsage[b.slug] || 0;
           return countB - countA;
         });
         setOrderedTiles(sorted);
-        return;
       }
     } catch (e) {
-      console.error("Error loading sidebar usage statistics", e);
+      console.error("Error loading sidebar usage statistics from localStorage", e);
     }
-    setOrderedTiles(tiles);
+
+    // 2. مزامنة مع قاعدة البيانات في الخلفية
+    getSidebarUsageAction().then((dbUsage) => {
+      if (dbUsage && Object.keys(dbUsage).length > 0) {
+        // دمج البيانات بالاعتماد على القيمة الأكبر
+        const mergedUsage = { ...dbUsage };
+        for (const [slug, count] of Object.entries(localUsage)) {
+          if (!mergedUsage[slug] || mergedUsage[slug] < count) {
+            mergedUsage[slug] = count;
+          }
+        }
+
+        try {
+          window.localStorage.setItem("kse:admin:sidebarUsage", JSON.stringify(mergedUsage));
+        } catch {}
+        
+        const sorted = [...tiles].sort((a, b) => {
+          const countA = mergedUsage[a.slug] || 0;
+          const countB = mergedUsage[b.slug] || 0;
+          return countB - countA;
+        });
+        setOrderedTiles(sorted);
+
+        // رفع البيانات المدمجة لضمان المزامنة
+        void saveSidebarUsageAction(mergedUsage);
+      }
+    }).catch((err) => {
+      console.error("Error fetching sidebar usage from database", err);
+    });
+
   }, []);
 
   const handleTileClick = (slug: string) => {
+    let newUsage: Record<string, number> = {};
     try {
       const usageRaw = window.localStorage.getItem("kse:admin:sidebarUsage") || "{}";
-      const usage = JSON.parse(usageRaw) as Record<string, number>;
-      usage[slug] = (usage[slug] || 0) + 1;
-      window.localStorage.setItem("kse:admin:sidebarUsage", JSON.stringify(usage));
+      newUsage = JSON.parse(usageRaw) as Record<string, number>;
+      newUsage[slug] = (newUsage[slug] || 0) + 1;
+      window.localStorage.setItem("kse:admin:sidebarUsage", JSON.stringify(newUsage));
       
       const tiles = adminSidebarTiles();
       const sorted = [...tiles].sort((a, b) => {
-        const countA = usage[a.slug] || 0;
-        const countB = usage[b.slug] || 0;
+        const countA = newUsage[a.slug] || 0;
+        const countB = newUsage[b.slug] || 0;
         return countB - countA;
       });
       setOrderedTiles(sorted);
     } catch (e) {
       console.error("Error saving sidebar usage statistic", e);
     }
+
+    // مزامنة مع قاعدة البيانات في الخلفية
+    void saveSidebarUsageAction(newUsage);
+    
     handleLinkClick();
   };
 
