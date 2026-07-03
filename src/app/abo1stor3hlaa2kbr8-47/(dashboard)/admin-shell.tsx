@@ -610,10 +610,10 @@ export function AdminShell({
         <div className="flex h-16 w-full items-center justify-between px-4 border-b border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] shrink-0">
           <div className="flex items-center gap-2 ms-12">
             <div className="flex w-8 h-8 rounded-full bg-gradient-to-br from-[#00f3ff] to-[#e028ff] items-center justify-center shadow-[0_0_10px_rgba(224,40,255,0.5)]">
-              <span className="text-black font-black text-xs">OR</span>
+              <span className="text-black font-black text-xs">AK</span>
             </div>
-            <span className="text-[10px] font-black tracking-widest text-slate-400 dark:text-slate-600 uppercase">
-              Admin Portal
+            <span className="text-xs font-black text-slate-600 dark:text-slate-400">
+              أبو الأكبر للتوصيل
             </span>
           </div>
         </div>

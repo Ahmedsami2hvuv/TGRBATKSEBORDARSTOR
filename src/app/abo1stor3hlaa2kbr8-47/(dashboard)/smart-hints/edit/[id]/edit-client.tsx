@@ -79,14 +79,29 @@ const parseInitialShapes = (waypoint: Waypoint): Shape[] => {
   if (waypoint.polygonCoords && typeof waypoint.polygonCoords === "object") {
     const data = waypoint.polygonCoords as any;
     if (data.version === 2 && Array.isArray(data.shapes)) {
-      return data.shapes;
+      return data.shapes.map((s: any) => {
+        if (s.type === "polygon" && Array.isArray(s.coords)) {
+          return {
+            ...s,
+            coords: s.coords.map((c: any, idx: number) => ({
+              ...c,
+              id: c.id || `corner_${idx}_${Date.now()}`
+            }))
+          };
+        }
+        return s;
+      });
     }
     if (Array.isArray(waypoint.polygonCoords) && waypoint.polygonCoords.length >= 3) {
       return [
         {
           id: "initial_poly",
           type: "polygon",
-          coords: waypoint.polygonCoords as any[]
+          coords: (waypoint.polygonCoords as any[]).map((c: any, idx: number) => ({
+            latitude: c.latitude,
+            longitude: c.longitude,
+            id: c.id || `corner_${idx}_${Date.now()}`
+          }))
         }
       ];
     }
@@ -178,6 +193,7 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
     initialShapes.length > 0 && initialShapes[0].type === "polygon" ? "polygon" : "circle"
   );
   const [shapes, setShapes] = useState<Shape[]>(initialShapes);
+  const [additionOrder, setAdditionOrder] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -286,8 +302,10 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
               addBtn?.addEventListener("click", () => {
                 const updatedCoords = [...targetPoly.coords];
                 const insertIndex = findBestInsertIndex({ latitude: clickedLat, longitude: clickedLng }, targetPoly.coords);
-                updatedCoords.splice(insertIndex, 0, { latitude: clickedLat, longitude: clickedLng });
+                const cornerId = "corner_" + Math.random().toString();
+                updatedCoords.splice(insertIndex, 0, { latitude: clickedLat, longitude: clickedLng, id: cornerId });
 
+                setAdditionOrder((prev) => [...prev, cornerId]);
                 handleUpdatePolygonCoords(targetPoly.id, updatedCoords);
                 map.closePopup();
               });
@@ -381,6 +399,7 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
   };
 
   const handleResetToSquare = (shapeId: string) => {
+    setAdditionOrder([]);
     setShapes((prev) =>
       prev.map((s) => {
         if (s.id === shapeId && s.type === "polygon") {
@@ -396,10 +415,10 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
           return {
             ...s,
             coords: [
-              { latitude: centerLat + offset, longitude: centerLng - offset },
-              { latitude: centerLat + offset, longitude: centerLng + offset },
-              { latitude: centerLat - offset, longitude: centerLng + offset },
-              { latitude: centerLat - offset, longitude: centerLng - offset },
+              { latitude: centerLat + offset, longitude: centerLng - offset, id: "corner_1_" + Date.now() },
+              { latitude: centerLat + offset, longitude: centerLng + offset, id: "corner_2_" + Date.now() },
+              { latitude: centerLat - offset, longitude: centerLng + offset, id: "corner_3_" + Date.now() },
+              { latitude: centerLat - offset, longitude: centerLng - offset, id: "corner_4_" + Date.now() },
             ]
           };
         }
@@ -442,10 +461,10 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
         id: newId,
         type: "polygon",
         coords: [
-          { latitude: center.lat + offset, longitude: center.lng - offset },
-          { latitude: center.lat + offset, longitude: center.lng + offset },
-          { latitude: center.lat - offset, longitude: center.lng + offset },
-          { latitude: center.lat - offset, longitude: center.lng - offset },
+          { latitude: center.lat + offset, longitude: center.lng - offset, id: "corner_1_" + Date.now() },
+          { latitude: center.lat + offset, longitude: center.lng + offset, id: "corner_2_" + Date.now() },
+          { latitude: center.lat - offset, longitude: center.lng + offset, id: "corner_3_" + Date.now() },
+          { latitude: center.lat - offset, longitude: center.lng - offset, id: "corner_4_" + Date.now() },
         ]
       };
     }
@@ -670,13 +689,15 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
     if (current.length === 0) return;
 
     const last = current[current.length - 1];
-    const newPt = { latitude: last.latitude + 0.0002, longitude: last.longitude + 0.0002 };
+    const cornerId = "corner_" + Math.random().toString();
+    const newPt = { latitude: last.latitude + 0.0002, longitude: last.longitude + 0.0002, id: cornerId };
     const updated = [...current, newPt];
 
+    setAdditionOrder((prev) => [...prev, cornerId]);
     handleUpdatePolygonCoords(shapeId, updated);
   };
 
-  // دالة لحذف آخر زاوية للمربع
+  // دالة لحذف آخر زاوية للمربع بالترتيب العكسي
   const handleRemovePolygonCorner = (shapeId: string) => {
     const target = shapes.find((s) => s.id === shapeId);
     if (!target || target.type !== "polygon") return;
@@ -687,7 +708,20 @@ export default function EditSmartHintClient({ waypoint }: { waypoint: Waypoint }
       return;
     }
 
-    const updated = current.slice(0, -1);
+    let updated = [...current];
+    if (additionOrder.length > 0) {
+      const lastAddedId = additionOrder[additionOrder.length - 1];
+      const exists = current.some((pt) => pt.id === lastAddedId);
+      if (exists) {
+        updated = current.filter((pt) => pt.id !== lastAddedId);
+        setAdditionOrder((prev) => prev.slice(0, -1));
+      } else {
+        updated = current.slice(0, -1);
+      }
+    } else {
+      updated = current.slice(0, -1);
+    }
+
     handleUpdatePolygonCoords(shapeId, updated);
   };
 

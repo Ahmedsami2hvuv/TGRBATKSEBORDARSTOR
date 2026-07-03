@@ -151,6 +151,7 @@ export default function AddSmartHintPage() {
   const [name, setName] = useState("");
   const [hintType, setHintType] = useState<"circle" | "polygon">("circle");
   const [shapes, setShapes] = useState<Shape[]>([]);
+  const [additionOrder, setAdditionOrder] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -191,10 +192,10 @@ export default function AddSmartHintPage() {
             id: firstId,
             type: "polygon",
             coords: [
-              { latitude: center.latitude + offset, longitude: center.longitude - offset },
-              { latitude: center.latitude + offset, longitude: center.longitude + offset },
-              { latitude: center.latitude - offset, longitude: center.longitude + offset },
-              { latitude: center.latitude - offset, longitude: center.longitude - offset },
+              { latitude: center.latitude + offset, longitude: center.longitude - offset, id: "corner_1_" + Date.now() },
+              { latitude: center.latitude + offset, longitude: center.longitude + offset, id: "corner_2_" + Date.now() },
+              { latitude: center.latitude - offset, longitude: center.longitude + offset, id: "corner_3_" + Date.now() },
+              { latitude: center.latitude - offset, longitude: center.longitude - offset, id: "corner_4_" + Date.now() },
             ]
           }
         ]);
@@ -295,8 +296,10 @@ export default function AddSmartHintPage() {
               addBtn?.addEventListener("click", () => {
                 const updatedCoords = [...targetPoly.coords];
                 const insertIndex = findBestInsertIndex({ latitude: clickedLat, longitude: clickedLng }, targetPoly.coords);
-                updatedCoords.splice(insertIndex, 0, { latitude: clickedLat, longitude: clickedLng });
+                const cornerId = "corner_" + Math.random().toString();
+                updatedCoords.splice(insertIndex, 0, { latitude: clickedLat, longitude: clickedLng, id: cornerId });
 
+                setAdditionOrder((prev) => [...prev, cornerId]);
                 handleUpdatePolygonCoords(targetPoly.id, updatedCoords);
                 map.closePopup();
               });
@@ -359,10 +362,10 @@ export default function AddSmartHintPage() {
             id: firstId,
             type: "polygon",
             coords: [
-              { latitude: center.latitude + offset, longitude: center.longitude - offset },
-              { latitude: center.latitude + offset, longitude: center.longitude + offset },
-              { latitude: center.latitude - offset, longitude: center.longitude + offset },
-              { latitude: center.latitude - offset, longitude: center.longitude - offset },
+              { latitude: center.latitude + offset, longitude: center.longitude - offset, id: "corner_1_" + Date.now() },
+              { latitude: center.latitude + offset, longitude: center.longitude + offset, id: "corner_2_" + Date.now() },
+              { latitude: center.latitude - offset, longitude: center.longitude + offset, id: "corner_3_" + Date.now() },
+              { latitude: center.latitude - offset, longitude: center.longitude - offset, id: "corner_4_" + Date.now() },
             ]
           } as Shape];
         }
@@ -390,6 +393,7 @@ export default function AddSmartHintPage() {
   };
 
   const handleResetToSquare = (shapeId: string) => {
+    setAdditionOrder([]);
     setShapes((prev) =>
       prev.map((s) => {
         if (s.id === shapeId && s.type === "polygon") {
@@ -405,10 +409,10 @@ export default function AddSmartHintPage() {
           return {
             ...s,
             coords: [
-              { latitude: centerLat + offset, longitude: centerLng - offset },
-              { latitude: centerLat + offset, longitude: centerLng + offset },
-              { latitude: centerLat - offset, longitude: centerLng + offset },
-              { latitude: centerLat - offset, longitude: centerLng - offset },
+              { latitude: centerLat + offset, longitude: centerLng - offset, id: "corner_1_" + Date.now() },
+              { latitude: centerLat + offset, longitude: centerLng + offset, id: "corner_2_" + Date.now() },
+              { latitude: centerLat - offset, longitude: centerLng + offset, id: "corner_3_" + Date.now() },
+              { latitude: centerLat - offset, longitude: centerLng - offset, id: "corner_4_" + Date.now() },
             ]
           };
         }
@@ -452,10 +456,10 @@ export default function AddSmartHintPage() {
         id: newId,
         type: "polygon",
         coords: [
-          { latitude: center.lat + offset, longitude: center.lng - offset },
-          { latitude: center.lat + offset, longitude: center.lng + offset },
-          { latitude: center.lat - offset, longitude: center.lng + offset },
-          { latitude: center.lat - offset, longitude: center.lng - offset },
+          { latitude: center.lat + offset, longitude: center.lng - offset, id: "corner_1_" + Date.now() },
+          { latitude: center.lat + offset, longitude: center.lng + offset, id: "corner_2_" + Date.now() },
+          { latitude: center.lat - offset, longitude: center.lng + offset, id: "corner_3_" + Date.now() },
+          { latitude: center.lat - offset, longitude: center.lng - offset, id: "corner_4_" + Date.now() },
         ]
       };
     }
@@ -680,13 +684,15 @@ export default function AddSmartHintPage() {
     if (current.length === 0) return;
 
     const last = current[current.length - 1];
-    const newPt = { latitude: last.latitude + 0.0002, longitude: last.longitude + 0.0002 };
+    const cornerId = "corner_" + Math.random().toString();
+    const newPt = { latitude: last.latitude + 0.0002, longitude: last.longitude + 0.0002, id: cornerId };
     const updated = [...current, newPt];
 
+    setAdditionOrder((prev) => [...prev, cornerId]);
     handleUpdatePolygonCoords(shapeId, updated);
   };
 
-  // دالة لحذف آخر زاوية
+  // دالة لحذف آخر زاوية مضافة بالترتيب العكسي
   const handleRemovePolygonCorner = (shapeId: string) => {
     const target = shapes.find((s) => s.id === shapeId);
     if (!target || target.type !== "polygon") return;
@@ -697,7 +703,20 @@ export default function AddSmartHintPage() {
       return;
     }
 
-    const updated = current.slice(0, -1);
+    let updated = [...current];
+    if (additionOrder.length > 0) {
+      const lastAddedId = additionOrder[additionOrder.length - 1];
+      const exists = current.some((pt) => pt.id === lastAddedId);
+      if (exists) {
+        updated = current.filter((pt) => pt.id !== lastAddedId);
+        setAdditionOrder((prev) => prev.slice(0, -1));
+      } else {
+        updated = current.slice(0, -1);
+      }
+    } else {
+      updated = current.slice(0, -1);
+    }
+
     handleUpdatePolygonCoords(shapeId, updated);
   };
 
