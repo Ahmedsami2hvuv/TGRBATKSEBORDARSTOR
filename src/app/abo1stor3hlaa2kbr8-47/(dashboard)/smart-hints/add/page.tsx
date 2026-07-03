@@ -577,6 +577,7 @@ export default function AddSmartHintPage() {
           const lngDiff = newPos.lng - startLng;
 
           const updated = pts.map((p) => ({
+            ...p,
             latitude: p.latitude + latDiff,
             longitude: p.longitude + lngDiff
           }));
@@ -596,6 +597,7 @@ export default function AddSmartHintPage() {
           const lngDiff = newPos.lng - startLng;
 
           const updated = pts.map((p) => ({
+            ...p,
             latitude: p.latitude + latDiff,
             longitude: p.longitude + lngDiff
           }));
@@ -620,7 +622,11 @@ export default function AddSmartHintPage() {
           marker.on("drag", () => {
             const pos = marker.getLatLng();
             const updatedCoords = [...pts];
-            updatedCoords[cornerIdx] = { latitude: pos.lat, longitude: pos.lng };
+            updatedCoords[cornerIdx] = { 
+              ...pts[cornerIdx],
+              latitude: pos.lat, 
+              longitude: pos.lng 
+            };
             polygon.setLatLngs(updatedCoords.map((p) => [p.latitude, p.longitude]));
 
             const sumLat = updatedCoords.reduce((sum, p) => sum + p.latitude, 0);
@@ -635,7 +641,11 @@ export default function AddSmartHintPage() {
           marker.on("dragend", () => {
             const pos = marker.getLatLng();
             const updatedCoords = [...pts];
-            updatedCoords[cornerIdx] = { latitude: pos.lat, longitude: pos.lng };
+            updatedCoords[cornerIdx] = { 
+              ...pts[cornerIdx],
+              latitude: pos.lat, 
+              longitude: pos.lng 
+            };
             handleUpdatePolygonCoords(shape.id, updatedCoords);
           });
 
