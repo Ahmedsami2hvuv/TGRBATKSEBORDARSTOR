@@ -124,13 +124,19 @@ export async function loadPreparerPortalOrderTableData(args: {
       : await prisma.order.findMany({
           where: {
             shopId: { in: shopIds },
-            status: { in: ["pending", "assigned", "delivering"] },
             orderType: { not: "دين" },
             ...(onlySubmittedByThisPreparer
               ? { submittedByCompanyPreparerId: preparerId }
               : {}),
-            // تحسين: جلب الطلبات الحديثة فقط لتقليل الضغط
-            createdAt: { gte: Number.isNaN(normalizedOrderListResetAt.valueOf()) ? new Date(0) : normalizedOrderListResetAt },
+            OR: [
+              {
+                status: { in: ["pending", "assigned", "delivering"] },
+                createdAt: { gte: Number.isNaN(normalizedOrderListResetAt.valueOf()) ? new Date(0) : normalizedOrderListResetAt },
+              },
+              {
+                status: { in: ["assigned", "delivering"] }
+              }
+            ]
           },
           include: mandoubOrderListInclude,
           orderBy: { createdAt: "desc" },
