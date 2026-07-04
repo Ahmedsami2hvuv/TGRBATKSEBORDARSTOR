@@ -117,6 +117,9 @@ export default async function StaffArchivedDayPage({
     };
   });
 
+  // تصفية الطلبات ليظهر فقط ما ليس به موقع أو موقعه مرفوع من المندوب
+  const filteredRows = rows.filter(r => !r.hasCustomerLocation || r.hasCourierUploadedLocation);
+
   return (
     <div className="kse-app-bg min-h-screen px-2 py-6 sm:px-4" dir="rtl">
       <div className="mx-auto max-w-6xl">
@@ -125,13 +128,13 @@ export default async function StaffArchivedDayPage({
         <header className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">{formatBaghdadDateLabel(day)}</h1>
           <p className="text-sm font-bold text-slate-500 mt-2 leading-relaxed">
-            اضغط على أي طلب لعرض تفاصيله بالكامل. تظهر في النافذة أزرار الواتساب المخصصة للموظفين.
+            اضغط على أي طلب لفتح رابط الواتساب لطلب التقييم مباشرة. الطلبات التي تم النقر عليها ستظهر عليها علامة <span className="text-emerald-700">✅ تم طلب التقييم</span> لكي لا تنسى أين وصلت.
           </p>
         </header>
 
         {/* تمرير الأزرار الديناميكية للمكون */}
         <StaffArchivedClient
-          rows={deepSanitize(rows)}
+          rows={deepSanitize(filteredRows)}
           dynamicWaButtons={deepSanitize(waButtons)}
         />
       </div>

@@ -13,6 +13,19 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
   const [q, setQ] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
 
+  // حالة لتخزين معرفات الطلبات التي تم النقر عليها (أُرِسل تقييمها)
+  const [clickedIds, setClickedIds] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("staff_archived_clicked_ids");
+        return saved ? JSON.parse(saved) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+
   const filtered = useMemo(() => {
     if (!q.trim()) return rows;
     const t = q.toLowerCase();
@@ -23,6 +36,32 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
       (r.regionLine || "").toLowerCase().includes(t)
     );
   }, [q, rows]);
+
+  // دالة التعامل مع النقر على السطر لفتح الواتساب مباشرة وتأشير الطلب
+  const handleOrderClick = (id: string) => {
+    const order = filtered.find(r => r.id === id);
+    if (!order) return;
+
+    const waLinks = generateWaLinksForOrder(order);
+    if (waLinks.length > 0) {
+      // البحث عن زر يحتوي على كلمة "تقييم" أو استخدام أول زر متاح
+      const ratingBtn = waLinks.find(btn => btn.label.includes("تقييم")) || waLinks[0];
+      window.open(ratingBtn.url, "_blank");
+
+      // تأشير الطلب وحفظه في الذاكرة المحلية
+      setClickedIds(prev => {
+        if (prev.includes(id)) return prev;
+        const next = [...prev, id];
+        if (typeof window !== "undefined") {
+          localStorage.setItem("staff_archived_clicked_ids", JSON.stringify(next));
+        }
+        return next;
+      });
+    } else {
+      // إذا لم يكن هناك زر متوفر، نفتح التفاصيل كاحتياط
+      setSelectedOrder(order);
+    }
+  };
 
   // استخراج الأزرار المخصصة للموظف والتي تطابق حالة الطلب
   const generateWaLinksForOrder = (order: any) => {
@@ -89,8 +128,7 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
           onToggleAll={() => {}}
           onToggleOne={() => {}}
           onOpenRow={(id) => {
-            const order = filtered.find(r => r.id === id);
-            if (order) setSelectedOrder(order);
+            handleOrderClick(id);
           }} 
           selectAllTitle=""
           selectAllAriaLabel=""
@@ -99,6 +137,17 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
           showStatusDotInSelectCol={false}
           renderOrderIdBadge={() => null}
           renderSelectActions={() => null} // لا نعرض أزرار هنا لأنها ستعرض داخل النافذة المنبثقة
+          renderInShopNameCol={(row) => {
+            const isClicked = clickedIds.includes(row.id);
+            if (isClicked) {
+              return (
+                <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800 border border-emerald-200 shadow-sm">
+                  ✅ تم التقييم
+                </span>
+              );
+            }
+            return null;
+          }}
         />
       </div>
 
