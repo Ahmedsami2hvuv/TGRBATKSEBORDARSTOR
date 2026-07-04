@@ -4,7 +4,7 @@ import {
   deliveredWardMismatch,
   sumDeliveryInFromOrderMoneyEvents,
 } from "@/lib/mandoub-money";
-import { isManualDeletionReason, MONEY_KIND_PICKUP } from "@/lib/mandoub-money-events";
+import { isManualDeletionReason, MONEY_KIND_PICKUP, MONEY_KIND_DELIVERY } from "@/lib/mandoub-money-events";
 import { mandoubOrderListInclude } from "@/lib/mandoub-order-queries";
 import type { MandoubOrderSearchFields } from "@/lib/mandoub-order-smart-filter";
 import { hasCustomerLocationUrl } from "@/lib/order-location";
