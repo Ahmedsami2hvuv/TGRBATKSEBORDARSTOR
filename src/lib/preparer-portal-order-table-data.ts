@@ -101,22 +101,8 @@ export async function loadPreparerPortalOrderTableData(args: {
     onlySubmittedByThisPreparer,
   } = args;
 
-  const normalizedOrderListResetAt =
-    orderListResetAt instanceof Date
-      ? orderListResetAt
-      : new Date(String(orderListResetAt ?? ""));
-
-  if (Number.isNaN(normalizedOrderListResetAt.valueOf())) {
-    console.warn("loadPreparerPortalOrderTableData: invalid orderListResetAt", orderListResetAt);
-  }
-
-  function passesDailyOrderListReset(o: { createdAt: Date; status: string }): boolean {
-    if (tab === "all") return true;
-    if (tab === "checkSader" || tab === "checkWard") return true;
-    const st = o.status;
-    if (st === "assigned" || st === "delivering") return true;
-    return o.createdAt >= (Number.isNaN(normalizedOrderListResetAt.valueOf()) ? new Date(0) : normalizedOrderListResetAt);
-  }
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
   const activeOrdersRaw =
     shopIds.length === 0
@@ -130,8 +116,8 @@ export async function loadPreparerPortalOrderTableData(args: {
               : {}),
             OR: [
               {
-                status: { in: ["pending", "assigned", "delivering"] },
-                createdAt: { gte: Number.isNaN(normalizedOrderListResetAt.valueOf()) ? new Date(0) : normalizedOrderListResetAt },
+                status: "pending",
+                createdAt: { gte: thirtyDaysAgo },
               },
               {
                 status: { in: ["assigned", "delivering"] }
