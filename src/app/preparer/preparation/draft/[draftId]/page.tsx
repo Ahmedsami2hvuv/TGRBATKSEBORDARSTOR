@@ -126,17 +126,6 @@ export default async function PreparerShoppingDraftPage({ params, searchParams }
     let match = matches.find(m => m.branch?.name?.includes("خضروات") || m.branch?.name?.includes("فواكه")) || matches[0];
 
     if (match) {
-      let url = "";
-      if (match.photoUrls && Array.isArray(match.photoUrls) && match.photoUrls.length > 0) {
-        url = match.photoUrls[0];
-      } else if (typeof match.photoUrls === 'string' && match.photoUrls) {
-        url = match.photoUrls;
-      }
-
-      if (url) {
-        productImagesMap[lineKey] = url;
-        if (match.id) productImagesMap[match.id] = url;
-      }
       if (match.branch?.name) {
         productBranchMap[lineKey] = match.branch.name;
         if (match.id) productBranchMap[match.id] = match.branch.name;

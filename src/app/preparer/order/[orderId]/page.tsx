@@ -147,6 +147,7 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
     }
   }) : [];
 
+  const isWebStoreOrder = orderRaw.submissionSource === "web_store";
   const productImagesMap: Record<string, string> = {};
   const productBranchMap: Record<string, string> = {};
 
@@ -163,10 +164,12 @@ export default async function PreparerOrderDetailPage({ params, searchParams }: 
     let match = matches.find(m => m.branch?.name?.includes("خضروات") || m.branch?.name?.includes("فواكه")) || matches[0];
 
     if (match) {
-      if (match.photoUrls && Array.isArray(match.photoUrls) && match.photoUrls.length > 0) {
-        productImagesMap[lineKey] = match.photoUrls[0];
-      } else if (typeof match.photoUrls === 'string' && match.photoUrls) {
-        productImagesMap[lineKey] = match.photoUrls;
+      if (isWebStoreOrder) {
+        if (match.photoUrls && Array.isArray(match.photoUrls) && match.photoUrls.length > 0) {
+          productImagesMap[lineKey] = match.photoUrls[0];
+        } else if (typeof match.photoUrls === 'string' && match.photoUrls) {
+          productImagesMap[lineKey] = match.photoUrls;
+        }
       }
       if (match.branch?.name) {
         productBranchMap[lineKey] = match.branch.name;
