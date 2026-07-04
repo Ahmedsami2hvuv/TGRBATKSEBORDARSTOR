@@ -644,7 +644,7 @@ export function AdminShell({
         style={{ width: navWidth }}
       >
         <div className="flex h-16 w-full items-center justify-between px-4 border-b border-[rgba(0,0,0,0.05)] dark:border-[rgba(255,255,255,0.1)] shrink-0">
-          <div className="flex items-center gap-2 ms-12">
+          <div className="flex items-center gap-2 ms-28">
             <div className="flex w-8 h-8 rounded-full bg-gradient-to-br from-[#00f3ff] to-[#e028ff] items-center justify-center shadow-[0_0_10px_rgba(224,40,255,0.5)]">
               <span className="text-black font-black text-xs">AK</span>
             </div>
