@@ -752,3 +752,37 @@ async function upsertCustomerByPhone(opts: {
     select: { id: true },
   });
 }
+
+/**
+ * تأشير الطلب بأنه تم طلب التقييم له وحفظ ذلك في قاعدة البيانات
+ * باستخدام حقل adminOrderCode لضمان مشاركتها فورياً بين جميع الأجهزة
+ */
+export async function markOrderRatingRequested(orderId: string): Promise<{ ok?: boolean; error?: string }> {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { adminOrderCode: true }
+    });
+    if (!order) return { error: "الطلب غير موجود." };
+
+    const currentCode = order.adminOrderCode || "";
+    if (currentCode.endsWith("__RATING_REQUESTED") || currentCode === "RATING_REQUESTED") {
+      return { ok: true };
+    }
+
+    const newCode = currentCode ? `${currentCode}__RATING_REQUESTED` : "RATING_REQUESTED";
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        adminOrderCode: newCode
+      }
+    });
+
+    return { ok: true };
+  } catch (err: any) {
+    console.error("Failed to mark rating requested:", err);
+    return { error: err.message };
+  }
+}
+

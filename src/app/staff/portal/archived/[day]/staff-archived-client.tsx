@@ -8,22 +8,29 @@ import {
   parseCustomerLocationRules,
   matchesCustomerLocationRules,
 } from "@/lib/order-location";
+import { markOrderRatingRequested } from "@/app/staff/portal/actions";
 
 export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], dynamicWaButtons: any[] }) {
   const [q, setQ] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
 
   // حالة لتخزين معرفات الطلبات التي تم النقر عليها (أُرِسل تقييمها)
+  // يتم دمج الطلبات المأشرة في قاعدة البيانات مع تلك المخزنة محلياً في المتصفح لضمان المزامنة عبر الأجهزة
   const [clickedIds, setClickedIds] = useState<string[]>(() => {
+    const dbClickedIds = rows
+      .filter(r => r.adminOrderCode?.endsWith("__RATING_REQUESTED") || r.adminOrderCode === "RATING_REQUESTED")
+      .map(r => r.id);
+
     if (typeof window !== "undefined") {
       try {
         const saved = localStorage.getItem("staff_archived_clicked_ids");
-        return saved ? JSON.parse(saved) : [];
+        const localClickedIds = saved ? JSON.parse(saved) : [];
+        return Array.from(new Set([...dbClickedIds, ...localClickedIds]));
       } catch (e) {
-        return [];
+        return dbClickedIds;
       }
     }
-    return [];
+    return dbClickedIds;
   });
 
   const filtered = useMemo(() => {
@@ -38,7 +45,7 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
   }, [q, rows]);
 
   // دالة التعامل مع النقر على السطر لفتح الواتساب مباشرة وتأشير الطلب
-  const handleOrderClick = (id: string) => {
+  const handleOrderClick = async (id: string) => {
     const order = filtered.find(r => r.id === id);
     if (!order) return;
 
@@ -48,15 +55,23 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
       const ratingBtn = waLinks.find(btn => btn.label.includes("تقييم")) || waLinks[0];
       window.open(ratingBtn.url, "_blank");
 
-      // تأشير الطلب وحفظه في الذاكرة المحلية
-      setClickedIds(prev => {
-        if (prev.includes(id)) return prev;
-        const next = [...prev, id];
-        if (typeof window !== "undefined") {
-          localStorage.setItem("staff_archived_clicked_ids", JSON.stringify(next));
+      // تأشير الطلب في قاعدة البيانات فوراً لتتم المزامنة بين جميع أجهزة الموظف
+      try {
+        const res = await markOrderRatingRequested(order.id);
+        if (res.ok) {
+          // تأشير الطلب وحفظه في الذاكرة المحلية لتحديث الواجهة فوراً
+          setClickedIds(prev => {
+            if (prev.includes(id)) return prev;
+            const next = [...prev, id];
+            if (typeof window !== "undefined") {
+              localStorage.setItem("staff_archived_clicked_ids", JSON.stringify(next));
+            }
+            return next;
+          });
         }
-        return next;
-      });
+      } catch (err) {
+        console.error("Failed to mark order as rated on db:", err);
+      }
     } else {
       // إذا لم يكن هناك زر متوفر، نفتح التفاصيل كاحتياط
       setSelectedOrder(order);

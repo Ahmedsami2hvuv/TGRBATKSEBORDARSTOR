@@ -114,6 +114,7 @@ export default async function StaffArchivedDayPage({
       customerDoorPhotoUrl: o.customer?.customerDoorPhotoUrl || o.customerDoorPhotoUrl,
       secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl,
       routeMode: o.routeMode as "single" | "double",
+      adminOrderCode: o.adminOrderCode || "",
     };
   });
 
