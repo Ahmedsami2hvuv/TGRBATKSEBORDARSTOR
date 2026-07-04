@@ -52,6 +52,7 @@ export function PreparerOrderTable({
   couriers?: { id: string; name: string }[];
   icons?: GlobalIconsConfig | null;
 }) {
+  const preparerAuth = auth;
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showQuickSelect, setShowQuickSelect] = useState(false);
@@ -293,7 +294,7 @@ export function PreparerOrderTable({
               <PickupMoneyForm
                 orderId={payOrder.id}
                 auth={auth}
-                nextUrl={`/preparer?tab=${tab}&q=${qSearch}`}
+                nextUrl={`/preparer?p=${preparerAuth.p}&exp=${preparerAuth.exp}&s=${preparerAuth.s}&tab=${tab}&q=${qSearch}`}
                 forDarkModalSurface
                 expectedAlfHint={payOrder.orderSubtotalDinar != null ? dinarDecimalToAlfInputString(payOrder.orderSubtotalDinar) : ""}
                 remainingAlfHint={
