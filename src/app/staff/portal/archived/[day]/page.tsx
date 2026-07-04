@@ -55,7 +55,7 @@ export default async function StaffArchivedDayPage({
   const archivedOrders = await prisma.order.findMany({
     where: { 
       status: "archived",
-      archivedAt: { gte: range.gte, lt: range.lt }
+      createdAt: { gte: range.gte, lt: range.lt }
     },
     orderBy: { orderNumber: "desc" },
     include: {

@@ -18,13 +18,13 @@ export default async function StaffArchivedDaysPage({ searchParams }: { searchPa
     Prisma.sql`
       SELECT
         to_char(
-          (o."archivedAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baghdad')::date,
+          (o."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baghdad')::date,
           'YYYY-MM-DD'
         ) AS day,
         COUNT(*)::bigint AS cnt
       FROM "Order" o
       WHERE o.status = 'archived'
-        AND o."archivedAt" IS NOT NULL
+        AND o."createdAt" IS NOT NULL
       GROUP BY 1
       ORDER BY 1 DESC
     `,
@@ -42,7 +42,7 @@ export default async function StaffArchivedDaysPage({ searchParams }: { searchPa
         <div>
           <h1 className="text-2xl font-black text-slate-900">الطلبات المؤرشفة</h1>
           <p className="mt-2 text-sm text-slate-600">
-            الطلبات المؤرشفة مجمعة حسب <strong className="text-sky-900">يوم الأرشفة</strong> (بتوقيت بغداد).
+            الطلبات المؤرشفة مجمعة حسب <strong className="text-sky-900">يوم الرفع</strong> (بتوقيت بغداد).
           </p>
         </div>
 
