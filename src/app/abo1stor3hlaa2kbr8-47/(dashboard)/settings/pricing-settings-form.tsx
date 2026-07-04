@@ -8,6 +8,7 @@ type PricingConfig = {
   fish_keywords: string[];
   meat_prices: Record<string, { buy: number; sell: number }>;
   store_general_profit?: number;
+  no_profit_keywords?: string[];
 };
 
 export function PricingSettingsForm() {
@@ -37,12 +38,15 @@ export function PricingSettingsForm() {
             "عظم": { buy: 13.0, sell: 16.0 },
             "فكارة": { buy: 13.0, sell: 16.0 },
             "عصفورة": { buy: 13.0, sell: 16.0 },
-          }
+          },
+          no_profit_keywords: ["خبز", "خضرة", "خضره", "خظره", "خظرة"]
         };
         setConfig({
             meat_keywords: data.meat_keywords || defaultConfig.meat_keywords,
             fish_keywords: data.fish_keywords || defaultConfig.fish_keywords,
             meat_prices: data.meat_prices || defaultConfig.meat_prices,
+            no_profit_keywords: data.no_profit_keywords || defaultConfig.no_profit_keywords,
+            store_general_profit: data.store_general_profit !== undefined ? data.store_general_profit : defaultConfig.store_general_profit || 0,
         });
         setLoading(false);
       });
@@ -102,6 +106,26 @@ export function PricingSettingsForm() {
         <p className="text-[10px] text-amber-600 font-bold bg-amber-50 p-2 rounded-lg border border-amber-100 italic">
             ⚠️ ملاحظة: عند تغيير هذا المبلغ، قد تحتاج للضغط على زر "مزامنة شاملة" في صفحة المنتجات لتحديث كافة الأسعار القديمة.
         </p>
+      </div>
+
+      {/* No Profit Products Settings */}
+      <div className="space-y-4 rounded-3xl border-2 border-rose-100 bg-rose-50/20 p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+            <h3 className="flex items-center gap-2 font-black text-rose-800 text-lg">🚫 منتجات بدون أرباح</h3>
+            <span className="px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-[10px] font-black uppercase tracking-tighter">Zero Profit</span>
+        </div>
+        <p className="text-xs text-slate-500 font-bold leading-relaxed">المنتجات التي تحتوي على أي من هذه الكلمات المفتاحية في اسمها، سيتم تسعيرها تلقائياً بدون أرباح (أي سعر البيع يساوي سعر الشراء تماماً) حتى لو كان الطلب مؤشراً به أرباح.</p>
+
+        <div className="space-y-2 bg-white p-4 rounded-2xl border border-rose-100">
+          <label className="text-xs font-bold text-slate-500">الكلمات المفتاحية للمنتجات بدون أرباح (يفصل بينها بفاصلة)</label>
+          <textarea
+            className="w-full rounded-xl border border-rose-200 p-3 text-sm font-bold outline-none focus:border-rose-500"
+            rows={3}
+            placeholder="مثال: خبز، خضرة، خضره، خظرة، خظره"
+            value={(config.no_profit_keywords || []).join(", ")}
+            onChange={(e) => setConfig({ ...config, no_profit_keywords: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
+          />
+        </div>
       </div>
 
       <div className="space-y-4 rounded-2xl border border-red-100 bg-red-50/30 p-4">

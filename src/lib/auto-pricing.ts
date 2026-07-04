@@ -65,9 +65,40 @@ export function parseQuantityFromLine(line: string): number {
   return 1;
 }
 
+let globalNoProfitKeywords: string[] = [];
+
+export function setGlobalNoProfitKeywords(keywords: string[]) {
+  globalNoProfitKeywords = Array.isArray(keywords)
+    ? keywords.map(k => k.trim()).filter(Boolean)
+    : [];
+}
+
+export function getGlobalNoProfitKeywords() {
+  return globalNoProfitKeywords;
+}
+
+// دالة تهيئة للمتصفح تلقائياً عند الاستيراد
+if (typeof window !== "undefined") {
+  fetch("/api/abo1stor3hlaa2kbr8-47/settings/pricing")
+    .then(res => res.json())
+    .then(data => {
+      if (data && Array.isArray(data.no_profit_keywords)) {
+        setGlobalNoProfitKeywords(data.no_profit_keywords);
+      }
+    })
+    .catch(() => {});
+}
+
 export function calculateAutoSellPrice(line: string | null | undefined, buyAlf: number, noProfit?: boolean): number {
-  if (noProfit) return buyAlf;
   const text = (line || "").trim();
+  
+  // فحص ما إذا كان السطر يحتوي على أي كلمة مفتاحية لمنع الأرباح
+  const hasNoProfitKeyword = globalNoProfitKeywords.some(keyword => {
+    if (!keyword || !keyword.trim()) return false;
+    return text.toLowerCase().includes(keyword.trim().toLowerCase());
+  });
+
+  if (noProfit || hasNoProfitKeyword) return buyAlf;
   if (!text || buyAlf <= 0) return buyAlf;
 
   const qty = parseQuantityFromLine(text);

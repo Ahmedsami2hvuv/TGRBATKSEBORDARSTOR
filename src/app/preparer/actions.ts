@@ -11,7 +11,7 @@ import {
   buildPreparerPurchaseSummaryText,
   resolveDynamicOrderType,
 } from "@/lib/preparation-invoice";
-import { calculateAutoSellPrice, isMeatProduct } from "@/lib/auto-pricing";
+import { calculateAutoSellPrice, isMeatProduct, setGlobalNoProfitKeywords } from "@/lib/auto-pricing";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
 import { prisma } from "@/lib/prisma";
 import { transferOrderToCourierInternal } from "@/lib/order-assign-courier";
@@ -836,6 +836,19 @@ export async function submitPreparerOrder(
 export async function submitPreparerShoppingOrder(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> { return { ok: true }; }
 export async function updatePreparerShoppingOrder(_prev: PreparerActionState, formData: FormData): Promise<PreparerActionState> {
   try {
+    // جلب كلمات منع الأرباح المفتاحية وتهيئتها في السيرفر
+    try {
+      const pricingSetting = await prisma.uISystemSetting.findUnique({
+        where: { target_section: { target: "system", section: "pricing_config" } }
+      });
+      const pricingConfig = (pricingSetting?.config as any) || {};
+      if (pricingConfig.no_profit_keywords) {
+        setGlobalNoProfitKeywords(pricingConfig.no_profit_keywords);
+      }
+    } catch (err) {
+      console.error("Failed to load no profit keywords in preparer action:", err);
+    }
+
     const v = readPortal(formData);
     if (!v.ok) return { error: "الرابط غير صالح." };
 
