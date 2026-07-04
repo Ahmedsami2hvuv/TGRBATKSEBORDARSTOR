@@ -18,6 +18,7 @@ import {
   sumPreparerPickupOut,
   sumAdminPickupOut,
 } from "@/lib/mandoub-money";
+import { MONEY_KIND_DELIVERY } from "@/lib/mandoub-money-events";
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
