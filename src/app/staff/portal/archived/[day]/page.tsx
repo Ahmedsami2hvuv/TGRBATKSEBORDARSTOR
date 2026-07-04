@@ -129,7 +129,7 @@ export default async function StaffArchivedDayPage({
         <header className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">{formatBaghdadDateLabel(day)}</h1>
           <p className="text-sm font-bold text-slate-500 mt-2 leading-relaxed">
-            اضغط على أي طلب لفتح رابط الواتساب لطلب التقييم مباشرة. الطلبات التي تم النقر عليها ستظهر عليها علامة <span className="text-emerald-700">✅ تم طلب التقييم</span> لكي لا تنسى أين وصلت.
+            اضغط على أي طلب لفتح رابط الواتساب لطلب التقييم مباشرة. الطلبات التي تم النقر عليها <span className="text-emerald-700">سيتغير لون خلفيتها بالكامل إلى اللون الأخضر</span> لكي لا تنسى أين وصلت.
           </p>
         </header>
 

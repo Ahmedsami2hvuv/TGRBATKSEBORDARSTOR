@@ -132,38 +132,56 @@ export function StaffArchivedClient({ rows, dynamicWaButtons }: { rows: any[], d
         className="w-full rounded-2xl border border-sky-200 bg-white px-4 py-3.5 text-base text-slate-800 shadow-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
       />
       
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <UnifiedOrderListTable
-          rows={filtered}
-          colCount={8}
-          showSelectColumn={true}
-          isRowSelectable={() => false}
-          isSelected={() => false}
-          allSelected={false}
-          onToggleAll={() => {}}
-          onToggleOne={() => {}}
-          onOpenRow={(id) => {
-            handleOrderClick(id);
-          }} 
-          selectAllTitle=""
-          selectAllAriaLabel=""
-          selectedTitle=""
-          selectedAriaPrefix=""
-          showStatusDotInSelectCol={false}
-          renderOrderIdBadge={() => null}
-          renderSelectActions={() => null} // لا نعرض أزرار هنا لأنها ستعرض داخل النافذة المنبثقة
-          renderInShopNameCol={(row) => {
-            const isClicked = clickedIds.includes(row.id);
-            if (isClicked) {
-              return (
-                <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800 border border-emerald-200 shadow-sm">
-                  ✅ تم التقييم
-                </span>
-              );
-            }
-            return null;
-          }}
-        />
+      {/* شبكة المستطيلات العصرية بدل الجدول */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {filtered.length === 0 ? (
+          <div className="col-span-full py-16 text-center text-slate-500 font-bold bg-white rounded-3xl border border-slate-100">
+            لا توجد طلبات مؤرشفة تطابق بحثك حالياً.
+          </div>
+        ) : (
+          filtered.map((order) => {
+            const isClicked = clickedIds.includes(order.id);
+            return (
+              <div
+                key={order.id}
+                onClick={() => handleOrderClick(order.id)}
+                className={`relative flex flex-col justify-between p-5 rounded-3xl border-2 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] select-none text-right ${
+                  isClicked
+                    ? "bg-emerald-50/70 border-emerald-300 text-emerald-950 shadow-emerald-50"
+                    : "bg-white border-slate-200 hover:border-violet-300 text-slate-800"
+                }`}
+              >
+                {/* رقم الطلب وأيقونة واتساب */}
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`text-sm font-black px-3 py-1 rounded-xl transition-colors ${
+                    isClicked ? "bg-emerald-100 text-emerald-800" : "bg-violet-50 text-violet-700"
+                  }`}>
+                    #{order.shortId}
+                  </span>
+                  <span className={`text-base p-1.5 rounded-full transition-colors ${
+                    isClicked ? "bg-emerald-100/50" : "bg-slate-50"
+                  }`}>
+                    💬
+                  </span>
+                </div>
+
+                {/* اسم المحل */}
+                <div className="mb-2">
+                  <span className="text-[10px] text-slate-400 block mb-0.5 font-bold">اسم المحل</span>
+                  <h3 className="text-lg font-black tracking-tight leading-tight">
+                    {order.shopName}
+                  </h3>
+                </div>
+
+                {/* اسم المنطقة */}
+                <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-slate-500">
+                  <span className="text-sm">📍</span>
+                  <span className="text-sm font-black truncate">{order.regionLine}</span>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* النافذة المنبثقة (Modal) */}
