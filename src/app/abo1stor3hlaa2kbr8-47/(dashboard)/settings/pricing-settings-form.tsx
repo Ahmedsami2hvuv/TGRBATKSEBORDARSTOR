@@ -15,6 +15,7 @@ export function PricingSettingsForm() {
   const [config, setConfig] = useState<PricingConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [newKeyword, setNewKeyword] = useState("");
 
   const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
 
@@ -117,14 +118,48 @@ export function PricingSettingsForm() {
         <p className="text-xs text-slate-500 font-bold leading-relaxed">المنتجات التي تحتوي على أي من هذه الكلمات المفتاحية في اسمها، سيتم تسعيرها تلقائياً بدون أرباح (أي سعر البيع يساوي سعر الشراء تماماً) حتى لو كان الطلب مؤشراً به أرباح.</p>
 
         <div className="space-y-2 bg-white p-4 rounded-2xl border border-rose-100">
-          <label className="text-xs font-bold text-slate-500">الكلمات المفتاحية للمنتجات بدون أرباح (يفصل بينها بفاصلة)</label>
-          <textarea
-            className="w-full rounded-xl border border-rose-200 p-3 text-sm font-bold outline-none focus:border-rose-500"
-            rows={3}
-            placeholder="مثال: خبز، خضرة، خضره، خظرة، خظره"
-            value={(config.no_profit_keywords || []).join(", ")}
-            onChange={(e) => setConfig({ ...config, no_profit_keywords: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
-          />
+          <label className="text-xs font-bold text-slate-500 block mb-1">الكلمات المفتاحية للمنتجات بدون أرباح</label>
+          
+          <div className="flex flex-wrap gap-2 items-center p-3 rounded-xl border border-slate-200 bg-slate-50/50 min-h-[60px]">
+            {(config.no_profit_keywords || []).map((kw, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-black px-3 py-1.5 rounded-xl shadow-sm transition hover:bg-rose-100 animate-in zoom-in-95"
+              >
+                <span>{kw}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated = (config.no_profit_keywords || []).filter((_, i) => i !== idx);
+                    setConfig({ ...config, no_profit_keywords: updated });
+                  }}
+                  className="text-rose-400 hover:text-rose-600 font-bold transition text-[10px] w-4 h-4 rounded-full bg-rose-200/50 flex items-center justify-center"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+
+            <input
+              type="text"
+              placeholder="اكتب الكلمة واضغط Enter..."
+              value={newKeyword}
+              onChange={(e) => setNewKeyword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const trimmed = newKeyword.trim();
+                  if (trimmed && !(config.no_profit_keywords || []).includes(trimmed)) {
+                    const updated = [...(config.no_profit_keywords || []), trimmed];
+                    setConfig({ ...config, no_profit_keywords: updated });
+                    setNewKeyword("");
+                  }
+                }
+              }}
+              className="flex-1 min-w-[200px] bg-transparent border-none outline-none text-xs font-bold text-slate-800 placeholder:text-slate-400 p-1.5 focus:ring-0"
+            />
+          </div>
+          <p className="text-[10px] text-slate-400 font-bold leading-normal">💡 نصيحة: اكتب الكلمة المفتاحية (مثل: خبز) ثم اضغط على مفتاح <b>Enter</b> في الكيبورد لإنشاء مربع جديد مباشرة. لحذف أي كلمة، اضغط على علامة <b>✕</b> بداخل المربع.</p>
         </div>
       </div>
 
