@@ -213,7 +213,55 @@ export function PreparerOrderDetailSection({
         );
       }
       case "preparer_site_products": {
-        return null;
+        const parsedShoppingJson = order.preparerShoppingJson as any;
+        const cartItems = parsedShoppingJson && Array.isArray(parsedShoppingJson.webStoreCart)
+          ? (parsedShoppingJson.webStoreCart as any[])
+          : (parsedShoppingJson && Array.isArray(parsedShoppingJson.products) ? parsedShoppingJson.products : []);
+        
+        if (!cartItems || cartItems.length === 0) return null;
+
+        return (
+          <div key="preparer_site_products" className="rounded-xl border-2 border-amber-200 bg-amber-50/30 p-4" style={blockStyle}>
+            <div className="mb-3 flex items-center gap-2">
+              <DynamicIcon iconKey="ui_package" config={icons} className="h-5 w-5 text-amber-800" fallback={<span>📦</span>} />
+              <h3 className="text-lg font-bold text-amber-950 sm:text-xl">مواد الطلب (المتجر الإلكتروني)</h3>
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              {cartItems.map((item: any, idx: number) => {
+                const lineName = item.name || item.line || "";
+                const lineKey = lineName.trim().toLowerCase();
+                const qty = item.quantity || item.qty || 1;
+                const img = productImagesMap?.[lineKey] || "";
+
+                return (
+                  <div key={idx} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    {img && (
+                      <div 
+                        onClick={() => setZoomImage({ url: img, title: lineName })}
+                        className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-slate-100 bg-slate-50 cursor-zoom-in active:scale-95 transition-transform"
+                      >
+                        <img src={resolvePublicAssetSrc(img)!} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-black text-slate-900 dark:text-white truncate">{lineName}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30">
+                          الكمية: x{qty}
+                        </span>
+                        {item.price && (
+                          <span className="text-xs font-mono font-bold text-slate-500">
+                            {Number(item.price).toLocaleString()} د.ع
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
       }
       case "preparer_shop_block": {
         const contactName =

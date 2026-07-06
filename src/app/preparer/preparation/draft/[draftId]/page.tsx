@@ -109,6 +109,8 @@ export default async function PreparerShoppingDraftPage({ params, searchParams }
     }
   });
 
+  const isWebStoreOrder = draft.titleLine?.includes("المتجر") || draft.titleLine?.includes("السلة") || productsList.some(p => p.isFromStore);
+
   const productImagesMap: Record<string, string> = {};
   const productBranchMap: Record<string, string> = {};
 
@@ -126,6 +128,15 @@ export default async function PreparerShoppingDraftPage({ params, searchParams }
     let match = matches.find(m => m.branch?.name?.includes("خضروات") || m.branch?.name?.includes("فواكه")) || matches[0];
 
     if (match) {
+      if (isWebStoreOrder) {
+        if (match.photoUrls && Array.isArray(match.photoUrls) && match.photoUrls.length > 0) {
+          productImagesMap[lineKey] = match.photoUrls[0];
+          if (p.productId) productImagesMap[p.productId] = match.photoUrls[0];
+        } else if (typeof match.photoUrls === 'string' && match.photoUrls) {
+          productImagesMap[lineKey] = match.photoUrls;
+          if (p.productId) productImagesMap[p.productId] = match.photoUrls;
+        }
+      }
       if (match.branch?.name) {
         productBranchMap[lineKey] = match.branch.name;
         if (match.id) productBranchMap[match.id] = match.branch.name;

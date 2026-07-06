@@ -951,7 +951,18 @@ export function PreparerShoppingDraftEditClient({
                 <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 h-full">
                     <p className={`text-[10px] font-black leading-tight line-clamp-2 pr-1 flex items-center gap-1 ${priced && !isOthers ? "text-white" : "text-slate-800"}`}>
                       {priced && <span className="shrink-0">✅</span>}
-                      <span>{p.line}</span>
+                      <span>
+                        {p.line}
+                        {p.qty && p.qty > 0 && (
+                          <span className={`font-black px-1.5 py-0.5 rounded mr-1 text-[9px] inline-block ${
+                            priced && !isOthers 
+                              ? "bg-emerald-950/60 text-emerald-300 border border-emerald-800/40" 
+                              : "bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30"
+                          }`}>
+                            x{p.qty}
+                          </span>
+                        )}
+                      </span>
                     </p>
 
                     <div className="flex items-center justify-between gap-1 mt-1">

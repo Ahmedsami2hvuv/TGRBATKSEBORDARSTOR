@@ -464,7 +464,6 @@ export function OrderViewContent({
       {(() => {
         const hasNotes = Boolean(order.summary?.trim());
         const cartItems =
-          order.submissionSource === "web_store" &&
           parsedShoppingJson &&
           Array.isArray(parsedShoppingJson.webStoreCart)
             ? (parsedShoppingJson.webStoreCart as any[])
