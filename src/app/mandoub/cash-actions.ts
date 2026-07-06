@@ -306,7 +306,7 @@ export async function submitMandoubDeliveryMoney(
         }
       }
       
-      if (!deliveryEv && earningCourierId) {
+      if (!deliveryEv && earningCourierId && !order.prepaidAll) {
         await tx.orderCourierMoneyEvent.create({
           data: {
             orderId,

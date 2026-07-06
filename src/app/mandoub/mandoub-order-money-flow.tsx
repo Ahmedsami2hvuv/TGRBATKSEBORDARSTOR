@@ -901,7 +901,7 @@ export function DeliveryMoneyForm({
             }}
             className="flex-1 py-3 px-4 rounded-xl bg-emerald-650 hover:bg-emerald-750 bg-emerald-600 hover:bg-emerald-750 text-white font-black text-center shadow active:scale-95 transition-all text-sm disabled:opacity-50"
           >
-            {pending ? "جارٍ الحفظ…" : "نعم"}
+            {pending ? "جارٍ الحفظ…" : "لا، لم آخذ"}
           </button>
           <button
             type="button"
@@ -911,7 +911,7 @@ export function DeliveryMoneyForm({
             }}
             className="flex-1 py-3 px-4 rounded-xl bg-red-650 hover:bg-red-750 bg-red-600 hover:bg-red-700 text-white font-black text-center shadow active:scale-95 transition-all text-sm disabled:opacity-50"
           >
-            لا
+            نعم، أخذت مبلغاً
           </button>
         </div>
 
