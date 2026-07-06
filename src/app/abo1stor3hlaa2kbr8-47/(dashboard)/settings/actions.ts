@@ -453,3 +453,18 @@ export async function uploadFontAction(formData: FormData) {
   }
 }
 
+import { SidebarConfig, saveSidebarConfig } from "@/lib/sidebar-settings";
+
+export async function saveSidebarConfigAction(config: SidebarConfig) {
+  if (!(await isAdminSession())) return { error: "Unauthenticated" };
+  try {
+    await saveSidebarConfig(config);
+    revalidatePath("/", "layout");
+    revalidatePath(`${SECRET_ADMIN_PATH}/settings`);
+    return { ok: true };
+  } catch (error: any) {
+    return { error: error.message || "فشل حفظ إعدادات القائمة الجانبية" };
+  }
+}
+
+

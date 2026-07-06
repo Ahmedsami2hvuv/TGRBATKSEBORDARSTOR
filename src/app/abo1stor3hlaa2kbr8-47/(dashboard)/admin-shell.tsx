@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import { logout, getSidebarUsageAction, saveSidebarUsageAction } from "./actions";
+import { logout } from "./actions";
 import { AdminLiveSearchInput } from "./live-search-input";
 import { adminSidebarTiles, tileHref, type AdminTile } from "@/lib/admin-nav";
+import { SidebarConfig, getMergedSidebarTiles, DEFAULT_SIDEBAR_CONFIG } from "@/lib/sidebar-settings";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { GlobalIconsConfig, getGlobalIcons } from "@/lib/icon-settings";
@@ -130,10 +131,13 @@ const TILE_COLORS: Record<string, {
   }
 };
 
-function getTileClasses(slug: string, active: boolean, isCompact: boolean): string {
-  const base = `inline-flex items-center ${
-    isCompact ? "gap-0 px-2 justify-center" : "gap-2 px-2.5"
-  } rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 relative`;
+function getTileClasses(slug: string, active: boolean, isCompact: boolean, buttonShape: "square" | "rectangle"): string {
+  const isSquare = buttonShape === "square" && !isCompact;
+  const base = `inline-flex ${
+    isSquare ? "flex-col justify-center items-center gap-1.5 p-2 text-center" : "items-center gap-2 px-2.5"
+  } ${
+    isCompact ? "gap-0 px-2 justify-center" : ""
+  } rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 relative w-full h-full`;
 
   const colors = TILE_COLORS[slug] || {
     active: "bg-purple-100/90 dark:bg-[#1e102a]/60 border border-purple-400 dark:border-[#e028ff] text-purple-900 dark:text-purple-150 shadow-[0_0_12px_rgba(224,40,255,0.3)]",
@@ -147,10 +151,12 @@ export function AdminShell({
   children,
   pendingInitialCount = 0,
   isAccountant = false,
+  initialSidebarConfig,
 }: {
   children: React.ReactNode;
   pendingInitialCount?: number;
   isAccountant?: boolean;
+  initialSidebarConfig?: SidebarConfig | null;
 }) {
   const [navOpen, setNavOpen] = useState(false);
   const [navOpenInitialized, setNavOpenInitialized] = useState(false);
@@ -168,7 +174,8 @@ export function AdminShell({
   // لأنّ النافذة الأمّ تعرضهما أصلاً ولا داعي لتكرارهما داخل الـ iframe
   const isModalView = searchParams?.get("view") === "modal";
 
-  const [orderedTiles, setOrderedTiles] = useState<AdminTile[]>(adminSidebarTiles());
+  const sidebarConfig = initialSidebarConfig || DEFAULT_SIDEBAR_CONFIG;
+  const [orderedTiles, setOrderedTiles] = useState<AdminTile[]>(() => getMergedSidebarTiles(sidebarConfig));
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
@@ -176,79 +183,7 @@ export function AdminShell({
     tile.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  useEffect(() => {
-    const tiles = adminSidebarTiles();
-    
-    // 1. تحميل سريع من localStorage لتفادي التجميد أو التأخير
-    let localUsage: Record<string, number> = {};
-    try {
-      const usageRaw = window.localStorage.getItem("kse:admin:sidebarUsage");
-      if (usageRaw) {
-        localUsage = JSON.parse(usageRaw) as Record<string, number>;
-        const sorted = [...tiles].sort((a, b) => {
-          const countA = localUsage[a.slug] || 0;
-          const countB = localUsage[b.slug] || 0;
-          return countB - countA;
-        });
-        setOrderedTiles(sorted);
-      }
-    } catch (e) {
-      console.error("Error loading sidebar usage statistics from localStorage", e);
-    }
-
-    // 2. مزامنة مع قاعدة البيانات في الخلفية
-    getSidebarUsageAction().then((dbUsage) => {
-      if (dbUsage && Object.keys(dbUsage).length > 0) {
-        // دمج البيانات بالاعتماد على القيمة الأكبر
-        const mergedUsage = { ...dbUsage };
-        for (const [slug, count] of Object.entries(localUsage)) {
-          if (!mergedUsage[slug] || mergedUsage[slug] < count) {
-            mergedUsage[slug] = count;
-          }
-        }
-
-        try {
-          window.localStorage.setItem("kse:admin:sidebarUsage", JSON.stringify(mergedUsage));
-        } catch {}
-        
-        const sorted = [...tiles].sort((a, b) => {
-          const countA = mergedUsage[a.slug] || 0;
-          const countB = mergedUsage[b.slug] || 0;
-          return countB - countA;
-        });
-        setOrderedTiles(sorted);
-
-        // رفع البيانات المدمجة لضمان المزامنة
-        void saveSidebarUsageAction(mergedUsage);
-      }
-    }).catch((err) => {
-      console.error("Error fetching sidebar usage from database", err);
-    });
-
-  }, []);
-
   const handleTileClick = (slug: string) => {
-    let newUsage: Record<string, number> = {};
-    try {
-      const usageRaw = window.localStorage.getItem("kse:admin:sidebarUsage") || "{}";
-      newUsage = JSON.parse(usageRaw) as Record<string, number>;
-      newUsage[slug] = (newUsage[slug] || 0) + 1;
-      window.localStorage.setItem("kse:admin:sidebarUsage", JSON.stringify(newUsage));
-      
-      const tiles = adminSidebarTiles();
-      const sorted = [...tiles].sort((a, b) => {
-        const countA = newUsage[a.slug] || 0;
-        const countB = newUsage[b.slug] || 0;
-        return countB - countA;
-      });
-      setOrderedTiles(sorted);
-    } catch (e) {
-      console.error("Error saving sidebar usage statistic", e);
-    }
-
-    // مزامنة مع قاعدة البيانات في الخلفية
-    void saveSidebarUsageAction(newUsage);
-    
     handleLinkClick();
   };
 
@@ -660,24 +595,38 @@ export function AdminShell({
           </div>
         </div>
         <nav className="flex flex-1 overflow-y-auto px-3 py-4">
-          <div className="flex w-full flex-wrap items-start content-start gap-2">
-            <div>
-              <Link
-                href={SECRET_ADMIN_PATH}
-                prefetch={false}
-                title="الرئيسية"
-                onClick={handleLinkClick}
-                className={getTileClasses("home", navItemActive(pathname, SECRET_ADMIN_PATH), isCompact)}
-                style={{ height: 36 * itemScale, fontSize: 12 * itemScale }}
-              >
-                <span className="shrink-0" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }} aria-hidden>
-                  <DynamicIcon iconKey="ui_home" config={icons} fallback="🏠" className="w-6 h-6" />
-                </span>
-                {isCompact ? null : <span className="leading-snug font-medium block whitespace-nowrap">الرئيسية</span>}
-              </Link>
-            </div>
+          <div className={`grid w-full gap-2 content-start ${
+            isCompact 
+              ? "grid-cols-1" 
+              : sidebarConfig.layoutColumns === 1 
+                ? "grid-cols-1" 
+                : sidebarConfig.layoutColumns === 2 
+                  ? "grid-cols-2" 
+                  : "grid-cols-3"
+          }`}>
+            <Link
+              href={SECRET_ADMIN_PATH}
+              prefetch={false}
+              title="الرئيسية"
+              onClick={handleLinkClick}
+              className={getTileClasses("home", navItemActive(pathname, SECRET_ADMIN_PATH), isCompact, sidebarConfig.buttonShape)}
+              style={{
+                height: isCompact 
+                  ? 36 * itemScale 
+                  : sidebarConfig.buttonShape === "square" 
+                    ? undefined 
+                    : 36 * itemScale,
+                aspectRatio: !isCompact && sidebarConfig.buttonShape === "square" ? "1/1" : undefined,
+                fontSize: (!isCompact && sidebarConfig.buttonShape === "square" ? 10 : 12) * itemScale
+              }}
+            >
+              <span className="shrink-0" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }} aria-hidden>
+                <DynamicIcon iconKey="ui_home" config={icons} fallback="🏠" className="w-6 h-6" />
+              </span>
+              {isCompact ? null : <span className="leading-snug font-medium block whitespace-nowrap">الرئيسية</span>}
+            </Link>
             {isCompact ? null : (
-              <p className="basis-full mt-2 px-1 text-[11px] font-bold tracking-wider text-sky-700 dark:text-[#00f3ff] block">
+              <p className="col-span-full mt-2 px-1 text-[11px] font-bold tracking-wider text-sky-700 dark:text-[#00f3ff] block">
                 الأقسام
               </p>
             )}
@@ -692,8 +641,16 @@ export function AdminShell({
                   prefetch={false}
                   title={tile.label}
                   onClick={() => handleTileClick(tile.slug)}
-                  className={getTileClasses(tile.slug, active, isCompact)}
-                  style={{ height: 36 * itemScale, fontSize: 12 * itemScale }}
+                  className={getTileClasses(tile.slug, active, isCompact, sidebarConfig.buttonShape)}
+                  style={{
+                    height: isCompact 
+                      ? 36 * itemScale 
+                      : sidebarConfig.buttonShape === "square" 
+                        ? undefined 
+                        : 36 * itemScale,
+                    aspectRatio: !isCompact && sidebarConfig.buttonShape === "square" ? "1/1" : undefined,
+                    fontSize: (!isCompact && sidebarConfig.buttonShape === "square" ? 10 : 12) * itemScale
+                  }}
                 >
                   <span className="shrink-0 relative flex justify-center items-center" style={{ transform: `scale(${itemScale})`, transformOrigin: 'center' }}>
                     <DynamicIcon iconKey={tile.iconKey} config={icons} fallback={tile.slug === "credit-book" ? "📘" : "📁"} className="w-6 h-6" />

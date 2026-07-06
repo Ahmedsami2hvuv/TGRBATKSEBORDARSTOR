@@ -12,6 +12,7 @@ import { isChatEnabledGlobally, isTrackingEnabledGlobally } from "@/lib/portal-c
 import { getRoleFeatures } from "@/lib/role-features-settings";
 import { getAvailableFonts, getChosenFont } from "@/lib/font-settings";
 import { getBackgroundsConfig } from "@/lib/background-settings";
+import { getSidebarConfig } from "@/lib/sidebar-settings";
 
 export const metadata = {
   title: "الإعدادات — KSEBORDARSTOR",
@@ -38,6 +39,7 @@ export default async function SettingsPage() {
       getChosenFont(),
       prisma.globalSettings.findUnique({ where: { id: "system" } }).catch(() => null),
       getBackgroundsConfig().catch(e => { console.error("Backgrounds Error:", e); return null; }),
+      getSidebarConfig().catch(e => { console.error("Sidebar Config Error:", e); return null; }),
     ]);
   } catch (e) {
     console.error("Critical Settings Page Error:", e);
@@ -60,7 +62,8 @@ export default async function SettingsPage() {
     availableFonts,
     currentFont,
     globalSettings,
-    backgroundsConfig
+    backgroundsConfig,
+    sidebarConfig,
   ] = data;
 
   // تأمين كائن الإشعارات في حال كان null
@@ -80,6 +83,7 @@ export default async function SettingsPage() {
         <SettingsBlocks
           globalIcons={icons as any}
           backgroundsConfig={backgroundsConfig as any}
+          sidebarConfig={sidebarConfig as any}
           employeeShareTemplate={employeeShareTemplate as string}
           customerOrderTemplate={customerOrderTemplate as string}
           telegramNewOrderTemplate={telegramNewOrderTemplate as string}

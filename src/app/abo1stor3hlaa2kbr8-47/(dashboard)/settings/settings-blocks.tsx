@@ -18,6 +18,8 @@ import { TelegramBotsForm } from "./telegram-bots-form";
 import { FontSettingsForm } from "./font-settings-form";
 import { FloatingMenuSettings } from "./floating-menu-settings";
 import { BackgroundsConfig } from "@/lib/background-settings";
+import { SidebarSettingsForm } from "./sidebar-settings-form";
+import { SidebarConfig, DEFAULT_SIDEBAR_CONFIG } from "@/lib/sidebar-settings";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -61,10 +63,12 @@ export function SettingsBlocks({
   currentFont,
   globalSettingsInitial,
   backgroundsConfig,
+  sidebarConfig,
 }: {
   notificationInitial: NotificationInitial;
   globalIcons: GlobalIconsConfig;
   backgroundsConfig: BackgroundsConfig | null;
+  sidebarConfig: SidebarConfig | null;
   employeeShareTemplate: string;
   customerOrderTemplate: string;
   telegramNewOrderTemplate: string;
@@ -186,6 +190,13 @@ export function SettingsBlocks({
       subtitle: "تخصيص الروابط والأقسام العائمة.",
       tone: "sky",
       content: <FloatingMenuSettings icons={globalIcons} />
+    },
+    {
+      id: "sidebar-settings",
+      title: "القائمة الجانبية 🗂️",
+      subtitle: "تخصيص تسلسل، أشكال، وتصميم أزرار الشريط الجانبي.",
+      tone: "indigo",
+      content: <SidebarSettingsForm initialConfig={sidebarConfig || DEFAULT_SIDEBAR_CONFIG} globalIcons={globalIcons} />
     },
     {
       id: "resource-management",
@@ -576,7 +587,7 @@ export function SettingsBlocks({
     newAdminName, telegramAdminsInitial, telegramAdminIds, mandoubFeatures,
     roleFeaturesSaving, preparerFeatures, globalProfitMargin, howToShopUrl,
     employeeShareTemplate, customerOrderTemplate, telegramNewOrderTemplate, newOrderAlertTemplate,
-    notificationInitial, loading
+    notificationInitial, loading, sidebarConfig
   ]);
 
   const activeBlock = useMemo(() => {

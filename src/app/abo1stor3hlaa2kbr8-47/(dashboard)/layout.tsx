@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 
 
 import { getCurrentSessionIsAccountant } from "@/lib/admin-session";
+import { getSidebarConfig } from "@/lib/sidebar-settings";
 
 export default async function AdminDashboardLayout({
   children,
@@ -12,5 +13,6 @@ export default async function AdminDashboardLayout({
   children: React.ReactNode;
 }) {
   const isAccountant = await getCurrentSessionIsAccountant();
-  return <AdminShell pendingInitialCount={0} isAccountant={isAccountant}>{children}</AdminShell>;
+  const sidebarConfig = await getSidebarConfig();
+  return <AdminShell pendingInitialCount={0} isAccountant={isAccountant} initialSidebarConfig={sidebarConfig}>{children}</AdminShell>;
 }
