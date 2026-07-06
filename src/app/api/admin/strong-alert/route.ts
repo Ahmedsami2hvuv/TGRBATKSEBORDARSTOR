@@ -56,6 +56,33 @@ export async function POST(request: Request) {
     });
 
     if (result.success) {
+      // حفظ التنبيه الفوري في السجل عند البدء بنجاح
+      if (action === "start") {
+        try {
+          const { prisma } = await import('@/lib/prisma');
+          const historyPayload = {
+            alertId,
+            targetRole,
+            targetIds: userIds.join(","),
+            customTitle: customTitle || "",
+            customBody: customBody || "",
+            showWhatsapp: showWhatsapp === true,
+            showOpenApp: showOpenApp === true,
+            showDismiss: showDismiss !== false,
+            theme: theme || "red",
+            sentAt: new Date().toISOString()
+          };
+
+          await prisma.schemaPlaceholder.create({
+            data: {
+              note: `instant_alert_history:${JSON.stringify(historyPayload)}`
+            }
+          });
+        } catch (dbErr) {
+          console.error("Error saving alert history to database:", dbErr);
+        }
+      }
+
       return NextResponse.json({ success: true });
     } else {
       return NextResponse.json({ error: result.error || "فشل إرسال الإشعار عبر ون سجنل" }, { status: 500 });
@@ -69,6 +96,46 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const alertId = searchParams.get("alertId");
+    const history = searchParams.get("history");
+
+    // جلب سجل التنبيهات الفورية
+    if (history === "true") {
+      const authHeader = request.headers.get("Authorization");
+      const token = authHeader?.split(" ")[1];
+      
+      if (!token || !(await verifyAdminToken(token))) {
+        return NextResponse.json({ error: "غير مصرح لك" }, { status: 401 });
+      }
+
+      const { prisma } = await import('@/lib/prisma');
+      const records = await prisma.schemaPlaceholder.findMany({
+        where: {
+          note: {
+            startsWith: "instant_alert_history:"
+          }
+        },
+        orderBy: {
+          createdAt: "desc"
+        },
+        take: 50
+      });
+
+      const list = records.map((rec) => {
+        try {
+          const jsonStr = rec.note.substring("instant_alert_history:".length);
+          const data = JSON.parse(jsonStr);
+          return {
+            recordId: rec.id,
+            createdAt: rec.createdAt,
+            ...data
+          };
+        } catch (e) {
+          return null;
+        }
+      }).filter(Boolean);
+
+      return NextResponse.json({ success: true, history: list });
+    }
 
     if (!alertId) {
       return NextResponse.json({ error: "معرف التنبيه مفقود" }, { status: 400 });
@@ -86,7 +153,6 @@ export async function GET(request: Request) {
     });
 
     if (ackRecord) {
-      // استخراج البيانات من الملاحظة
       // note format: strong_alert_ack:alertId:role:userId:timestamp
       const parts = ackRecord.note.split(":");
       const role = parts[2] || "preparer";
@@ -96,6 +162,42 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ responded: false });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const authHeader = request.headers.get("Authorization");
+    const token = authHeader?.split(" ")[1];
+    
+    if (!token || !(await verifyAdminToken(token))) {
+      return NextResponse.json({ error: "غير مصرح لك" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const recordId = searchParams.get("recordId");
+
+    if (!recordId) {
+      return NextResponse.json({ error: "معرف السجل مفقود" }, { status: 400 });
+    }
+
+    const { prisma } = await import('@/lib/prisma');
+    
+    const record = await prisma.schemaPlaceholder.findUnique({
+      where: { id: recordId }
+    });
+
+    if (!record || !record.note.startsWith("instant_alert_history:")) {
+      return NextResponse.json({ error: "التنبيه في السجل غير موجود" }, { status: 404 });
+    }
+
+    await prisma.schemaPlaceholder.delete({
+      where: { id: recordId }
+    });
+
+    return NextResponse.json({ success: true, message: "تم حذف التنبيه من السجل بنجاح" });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

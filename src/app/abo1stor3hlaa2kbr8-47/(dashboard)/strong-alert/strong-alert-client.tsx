@@ -54,6 +54,9 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
   const [scheduledAlerts, setScheduledAlerts] = useState<any[]>([]);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null); // معرف التنبيه الجاري تعديله
 
+  // حالات سجل التنبيهات الفورية
+  const [instantHistory, setInstantHistory] = useState<any[]>([]);
+
   const [schedRole, setSchedRole] = useState<"mandob" | "preparer" | "employee">("mandob");
   const [schedTargetType, setSchedTargetType] = useState<"all" | "custom">("all");
   const [schedSelectedUserIds, setSchedSelectedUserIds] = useState<string[]>([]);
@@ -74,12 +77,31 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
     alertingStateRef.current = alertingState;
   }, [alertingState]);
 
-  // جلب التنبيهات المجدولة عند تحميل الصفحة أو تبديل التبويب
+  // جلب التنبيهات عند تحميل الصفحة أو تبديل التبويب
   useEffect(() => {
     if (mainTab === "scheduled") {
       fetchScheduledAlerts();
+    } else {
+      fetchInstantHistory();
     }
   }, [mainTab]);
+
+  const fetchInstantHistory = async () => {
+    try {
+      const response = await fetch("/api/admin/strong-alert?history=true", {
+        headers: {
+          "Authorization": `Bearer ${adminToken}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setInstantHistory(data.history || []);
+      }
+    } catch (e) {
+      console.error("Error fetching instant alert history:", e);
+      toast.error("فشل جلب سجل التنبيهات الفورية");
+    }
+  };
 
   const fetchScheduledAlerts = async () => {
     try {
@@ -413,6 +435,7 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
           alertId: alertId,
         });
         setSuccessMessage(`تم إرسال التنبيه القوي بنجاح! سيستمر رنين الهواتف لمدة دقيقة أو حتى تضغط على زر الإيقاف.`);
+        fetchInstantHistory(); // جلب السجل بعد الإرسال الناجح
       } else {
         setRespondedName(null);
         setRespondedRole(null);
@@ -430,6 +453,99 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeleteHistoryAlert = async (recordId: string) => {
+    if (!confirm("هل أنت متأكد من رغبتك في حذف هذا التنبيه من السجل؟")) return;
+
+    try {
+      const response = await fetch(`/api/admin/strong-alert?recordId=${recordId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${adminToken}`,
+        },
+      });
+
+      if (response.ok) {
+        toast.success("تم حذف التنبيه من السجل بنجاح");
+        fetchInstantHistory();
+      } else {
+        toast.error("فشل حذف التنبيه من السجل");
+      }
+    } catch (e) {
+      toast.error("حدث خطأ أثناء حذف التنبيه");
+    }
+  };
+
+  const handleRepeatAlert = async (alert: any) => {
+    if (!confirm("هل تريد إعادة إرسال هذا التنبيه فوراً بنفس المستهدفين والإعدادات؟")) return;
+
+    setLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const alertId = "alert_" + Date.now().toString() + "_" + Math.random().toString(36).substring(7);
+      const targetIdsArray = alert.targetIds.split(",").map((id: string) => id.trim()).filter(Boolean);
+
+      const response = await fetch("/api/admin/strong-alert", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({
+          action: "start",
+          targetRole: alert.targetRole,
+          userIds: targetIdsArray,
+          alertId,
+          customTitle: alert.customTitle,
+          customBody: alert.customBody,
+          showWhatsapp: alert.showWhatsapp,
+          showOpenApp: alert.showOpenApp,
+          showDismiss: alert.showDismiss,
+          theme: alert.theme,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "فشل الاتصال بالخادم");
+      }
+
+      setRespondedName(null);
+      setRespondedRole(null);
+      setAlertingState({
+        isAlerting: true,
+        activeRole: alert.targetRole,
+        activeUserIds: targetIdsArray,
+        timeLeft: 60,
+        alertId: alertId,
+      });
+      setSuccessMessage(`تم تكرار وإرسال التنبيه القوي بنجاح!`);
+      fetchInstantHistory();
+    } catch (err: any) {
+      setError(err.message || "حدث خطأ غير متوقع");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoadAlertToForm = (alert: any) => {
+    setActiveTab(alert.targetRole);
+    setCustomTitle(alert.customTitle || "");
+    setCustomBody(alert.customBody || "");
+    setTheme(alert.theme || "red");
+    setShowDismiss(alert.showDismiss !== false);
+    setShowWhatsapp(!!alert.showWhatsapp);
+    setShowOpenApp(!!alert.showOpenApp);
+    
+    const targetIdsArray = alert.targetIds.split(",").map((id: string) => id.trim()).filter(Boolean);
+    setSelectedIds(targetIdsArray);
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast.info("تم تحميل إعدادات ومستهدفي التنبيه إلى النموذج بنجاح!");
   };
 
   // التحكم في التنبيهات المجدولة (حفظ أو تعديل)
@@ -1002,6 +1118,129 @@ export function StrongAlertClient({ couriers, preparers, employees, adminToken }
                   </span>
                 )}
               </button>
+            </div>
+          )}
+
+          {/* سجل التنبيهات الفورية */}
+          {!alertingState.isAlerting && !respondedName && (
+            <div className="space-y-4 pt-6 border-t border-slate-200">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                  <span>📋 سجل البث الفوري السابق</span>
+                  <span className="px-2 py-0.5 text-xs rounded bg-white border border-slate-200 font-mono text-rose-600 font-bold shadow-sm">
+                    {instantHistory.length}
+                  </span>
+                </h3>
+              </div>
+
+              {instantHistory.length === 0 ? (
+                <div className="p-10 border border-slate-200 rounded-2xl bg-white/40 text-center text-slate-400 text-sm">
+                  لا توجد أي تنبيهات فورية مرسلة سابقاً في السجل.
+                </div>
+              ) : (
+                <div className="overflow-hidden border border-slate-200 rounded-2xl bg-white/70 shadow-lg backdrop-blur-md">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-right text-sm">
+                      <thead>
+                        <tr className="bg-slate-50/80 text-slate-600 border-b border-slate-200 font-bold">
+                          <th className="px-5 py-3.5">المستهدفون</th>
+                          <th className="px-5 py-3.5">تاريخ الإرسال</th>
+                          <th className="px-5 py-3.5">تفاصيل ومظهر الشاشة</th>
+                          <th className="px-5 py-3.5 text-center">إجراءات التحكم</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {instantHistory.map((alert) => {
+                          const roleLabel =
+                            alert.targetRole === "mandob"
+                              ? "🛵 مندوب"
+                              : alert.targetRole === "preparer"
+                              ? "📦 مجهز"
+                              : "💼 موظف";
+
+                          return (
+                            <tr key={alert.recordId} className="hover:bg-slate-50/40 transition-colors">
+                              {/* المستهدف */}
+                              <td className="px-5 py-4">
+                                <div className="font-bold text-slate-800">{roleLabel}</div>
+                                <div className="text-xs text-slate-500 mt-1 font-sans break-words max-w-[200px] font-semibold">
+                                  {getTargetNames(alert.targetRole, alert.targetIds)}
+                                </div>
+                              </td>
+                              {/* وقت الإرسال */}
+                              <td className="px-5 py-4 font-mono text-slate-600 text-xs">
+                                {new Date(alert.createdAt || alert.sentAt).toLocaleString("ar-IQ", {
+                                  timeZone: "Asia/Baghdad",
+                                  dateStyle: "medium",
+                                  timeStyle: "short",
+                                })}
+                              </td>
+                              {/* التفاصيل */}
+                              <td className="px-5 py-4 text-xs space-y-1.5">
+                                <div className="font-bold text-slate-700">
+                                  العنوان: {alert.customTitle || <span className="text-slate-400 italic">فارغ (مموه)</span>}
+                                </div>
+                                <div className="text-slate-600 font-semibold">
+                                  النص: {alert.customBody || <span className="text-slate-400 italic">فارغ (مموه)</span>}
+                                </div>
+                                <div className="flex gap-1.5 flex-wrap pt-0.5">
+                                  <span className="bg-slate-50 px-1.5 py-0.5 rounded text-[10px] text-slate-500 border border-slate-200">
+                                    ستايل: {alert.theme === "red" ? "أحمر" : alert.theme === "islamic" ? "إسلامي" : alert.theme === "official" ? "رسمي" : "رياضي"}
+                                  </span>
+                                  {alert.showDismiss && (
+                                    <span className="bg-rose-50 px-1.5 py-0.5 rounded text-[10px] text-rose-600 border border-rose-200">
+                                      زر الإغلاق
+                                    </span>
+                                  )}
+                                  {alert.showWhatsapp && (
+                                    <span className="bg-emerald-50 px-1.5 py-0.5 rounded text-[10px] text-emerald-600 border border-emerald-250">
+                                      راسل الاداره
+                                    </span>
+                                  )}
+                                  {alert.showOpenApp && (
+                                    <span className="bg-blue-50 px-1.5 py-0.5 rounded text-[10px] text-blue-600 border border-blue-200">
+                                      زر التطبيق
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              {/* الإجراءات */}
+                              <td className="px-5 py-4 text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRepeatAlert(alert)}
+                                    className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-600 text-xs font-bold rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+                                    title="تكرار البث فوراً"
+                                  >
+                                    🔁 تكرار
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleLoadAlertToForm(alert)}
+                                    className="px-3 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 text-xs font-bold rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+                                    title="تعديل في النموذج"
+                                  >
+                                    ✏️ تعديل
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteHistoryAlert(alert.recordId)}
+                                    className="px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 text-xs font-bold rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                                    title="حذف من السجل"
+                                  >
+                                    🗑️ مسح
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
