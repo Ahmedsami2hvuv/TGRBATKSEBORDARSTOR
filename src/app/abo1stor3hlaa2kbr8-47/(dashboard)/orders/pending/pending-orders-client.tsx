@@ -344,6 +344,43 @@ export function OrderPricingPanel({
     setPricingErr("");
   };
 
+  const suggestedPrices = useMemo(() => {
+    const buyNum = parseFloat(normalizeNumerals(buyText)) || 0;
+    if (buyNum <= 0) return [];
+    let limit = 1.0;
+    if (buyNum < 2) {
+      limit = 1.0;
+    } else if (buyNum < 5) {
+      limit = 2.0;
+    } else if (buyNum < 10) {
+      limit = 3.0;
+    } else {
+      limit = 5.0;
+    }
+    const prices: number[] = [];
+    for (let offset = 0.25; offset <= limit; offset += 0.25) {
+      prices.push(parseFloat((buyNum + offset).toFixed(2)));
+    }
+    return prices;
+  }, [buyText]);
+
+  const applyPriceDirectly = (sellVal: number) => {
+    if (editingIndex === null) return;
+    const bNum = parseFloat(normalizeNumerals(buyText)) || 0;
+    if (bNum <= 0 || sellVal <= 0) return;
+    const next = [...products];
+    next[editingIndex] = {
+      ...next[editingIndex],
+      buyAlf: bNum.toString(),
+      sellAlf: sellVal.toString(),
+      isFulfilledByAdmin: isAdminFulfilled,
+      assignedPreparerId: isAdminFulfilled ? null : next[editingIndex].assignedPreparerId
+    };
+    setProducts(next);
+    setEditingIndex(null);
+    setPricingErr("");
+  };
+
   const cancelPricingPanel = () => {
     setEditingIndex(null);
     setPricingErr("");
@@ -712,29 +749,86 @@ export function OrderPricingPanel({
                     }}
                     dir="ltr"
                     inputMode="decimal"
-                    className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 py-4 text-center font-mono text-xl font-black outline-none focus:border-sky-500"
+                    className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 py-4 text-center font-mono text-xl font-black outline-none focus:border-sky-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                   />
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-sky-600 mb-1 block text-center">سعر البيع</label>
-                  <input
-                    ref={sellInputRef}
-                    value={sellText}
-                    onChange={(e) => setSellText(e.target.value)}
-                    onKeyDown={(e) => {
-                       if (e.key === 'Enter') {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          e.nativeEvent.stopImmediatePropagation();
-                          applyPricingPanel();
-                       }
-                    }}
-                    dir="ltr"
-                    inputMode="decimal"
-                    className="w-full rounded-2xl border-2 border-sky-100 bg-sky-50 py-4 text-center font-mono text-xl font-black outline-none focus:border-sky-500"
-                  />
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentSell = parseFloat(normalizeNumerals(sellText)) || 0;
+                        const nextSell = Math.max(0, currentSell - 0.25);
+                        setSellText(nextSell.toString());
+                      }}
+                      className="h-14 w-10 rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-lg font-black flex items-center justify-center border border-rose-200/50 dark:border-rose-900/50 transition active:scale-95 shrink-0 select-none shadow-sm"
+                    >
+                      -
+                    </button>
+                    <input
+                      ref={sellInputRef}
+                      value={sellText}
+                      onChange={(e) => setSellText(e.target.value)}
+                      onKeyDown={(e) => {
+                         if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.nativeEvent.stopImmediatePropagation();
+                            applyPricingPanel();
+                         }
+                      }}
+                      dir="ltr"
+                      inputMode="decimal"
+                      className="w-full flex-1 rounded-2xl border-2 border-sky-100 bg-sky-50 dark:border-sky-900/40 dark:bg-sky-950/30 py-4 text-center font-mono text-xl font-black outline-none focus:border-sky-500 text-slate-800 dark:text-slate-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentSell = parseFloat(normalizeNumerals(sellText)) || 0;
+                        setSellText((currentSell + 0.25).toString());
+                      }}
+                      className="h-14 w-10 rounded-2xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-lg font-black flex items-center justify-center border border-emerald-200/50 dark:border-emerald-900/50 transition active:scale-95 shrink-0 select-none shadow-sm"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              {/* خيارات البيع المقترحة */}
+              {(() => {
+                const buyNum = parseFloat(normalizeNumerals(buyText)) || 0;
+                if (buyNum <= 0) return null;
+                return (
+                  <div className="mt-5 border-t border-slate-100 dark:border-white/5 pt-4">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-2 block">خيارات سريعة للبيع (حفظ تلقائي بنقرة واحدة):</label>
+                    <div className="flex flex-wrap gap-2 justify-start">
+                      {/* زر بدون ربح */}
+                      <button
+                        type="button"
+                        onClick={() => applyPriceDirectly(buyNum)}
+                        className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-mono text-xs font-black border border-slate-200 dark:border-slate-700 transition active:scale-95 flex items-center gap-1.5"
+                      >
+                        <span>بدون ربح:</span>
+                        <span className="bg-white/70 dark:bg-black/30 px-1.5 py-0.5 rounded text-[10px]">{buyNum}</span>
+                      </button>
+
+                      {/* الأسعار المقترحة */}
+                      {suggestedPrices.map((price) => (
+                        <button
+                          key={price}
+                          type="button"
+                          onClick={() => applyPriceDirectly(price)}
+                          className="px-3.5 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 dark:hover:bg-sky-900/50 text-sky-700 dark:text-sky-300 font-mono text-xs font-black border border-sky-100 dark:border-sky-900/30 transition active:scale-95"
+                        >
+                          {price}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {pricingErr && <p className="mt-2 text-center text-xs font-bold text-rose-600">{pricingErr}</p>}
 
