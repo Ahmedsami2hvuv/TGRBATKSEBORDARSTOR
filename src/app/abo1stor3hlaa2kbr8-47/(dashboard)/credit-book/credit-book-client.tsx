@@ -103,6 +103,7 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
       if (selectedType !== "all" && p.type !== selectedType) return false;
 
       // 2. فحص رصيد الدفتر
+      if (balanceFilter === "all" && p.balance === 0) return false;
       if (balanceFilter === "owe_us" && p.balance <= 0) return false;
       if (balanceFilter === "we_owe" && p.balance >= 0) return false;
       if (balanceFilter === "zero" && p.balance !== 0) return false;
