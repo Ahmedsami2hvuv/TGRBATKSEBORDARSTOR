@@ -44,6 +44,10 @@ export function SidebarSettingsForm({
   const [config, setConfig] = useState<SidebarConfig>(initialConfig);
   const [saving, setSaving] = useState(false);
 
+  // تتبع حالة تعديل اسم الزر
+  const [editingSlug, setEditingSlug] = useState<string | null>(null);
+  const [editingLabel, setEditingLabel] = useState("");
+
   // حقول إضافة زر جديد
   const [newLabel, setNewLabel] = useState("");
   const [newHref, setNewHref] = useState("");
@@ -52,21 +56,40 @@ export function SidebarSettingsForm({
   // دمج الأزرار الحالية لعرضها في قائمة الترتيب
   const mergedTiles = getMergedSidebarTiles(config);
 
-  // تحديث خيار الأعمدة
+  // دالة الحفظ التلقائي في السيرفر
+  const autoSave = async (updatedConfig: SidebarConfig) => {
+    setSaving(true);
+    try {
+      const res = await saveSidebarConfigAction(updatedConfig);
+      if (res.ok) {
+        router.refresh();
+      } else {
+        console.error("Auto save failed:", res.error);
+      }
+    } catch (e) {
+      console.error("Auto save error:", e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // تحديث خيار الأعمدة تلقائياً
   const handleColumnsChange = (cols: 1 | 2 | 3) => {
-    setConfig(prev => ({ ...prev, layoutColumns: cols }));
+    const updated = { ...config, layoutColumns: cols };
+    setConfig(updated);
+    void autoSave(updated);
   };
 
-  // تحديث شكل الأزرار
+  // تحديث شكل الأزرار تلقائياً
   const handleShapeChange = (shape: "square" | "rectangle") => {
-    setConfig(prev => ({ ...prev, buttonShape: shape }));
+    const updated = { ...config, buttonShape: shape };
+    setConfig(updated);
+    void autoSave(updated);
   };
 
-  // تحريك الزر للأعلى
+  // تحريك الزر للأعلى تلقائياً
   const moveUp = (index: number) => {
     if (index === 0) return;
-    const slugs = [...config.orderedSlugs];
-    // تأمين وجود السلاغات إذا لم تكن موجودة بالكامل في orderedSlugs
     const currentTiles = getMergedSidebarTiles(config);
     const orderedSlugs = currentTiles.map(t => t.slug);
     
@@ -74,10 +97,12 @@ export function SidebarSettingsForm({
     orderedSlugs[index] = orderedSlugs[index - 1];
     orderedSlugs[index - 1] = temp;
 
-    setConfig(prev => ({ ...prev, orderedSlugs }));
+    const updated = { ...config, orderedSlugs };
+    setConfig(updated);
+    void autoSave(updated);
   };
 
-  // تحريك الزر للأسفل
+  // تحريك الزر للأسفل تلقائياً
   const moveDown = (index: number) => {
     const currentTiles = getMergedSidebarTiles(config);
     if (index === currentTiles.length - 1) return;
@@ -87,10 +112,12 @@ export function SidebarSettingsForm({
     orderedSlugs[index] = orderedSlugs[index + 1];
     orderedSlugs[index + 1] = temp;
 
-    setConfig(prev => ({ ...prev, orderedSlugs }));
+    const updated = { ...config, orderedSlugs };
+    setConfig(updated);
+    void autoSave(updated);
   };
 
-  // إضافة زر مخصص جديد
+  // إضافة زر مخصص جديد تلقائياً
   const addCustomTile = () => {
     if (!newLabel || !newHref) {
       alert("يرجى كتابة اسم الرابط ورابط التوجيه بالكامل.");
@@ -105,64 +132,107 @@ export function SidebarSettingsForm({
       iconKey: newIconKey
     };
 
-    setConfig(prev => {
-      const customTiles = [...prev.customTiles, newTile];
-      const orderedSlugs = [...prev.orderedSlugs, newSlug];
-      return { ...prev, customTiles, orderedSlugs };
-    });
+    const updated: SidebarConfig = {
+      ...config,
+      customTiles: [...config.customTiles, newTile],
+      orderedSlugs: [...config.orderedSlugs, newSlug]
+    };
+
+    setConfig(updated);
+    void autoSave(updated);
 
     setNewLabel("");
     setNewHref("");
     setNewIconKey("ui_link");
   };
 
-  // حذف زر مخصص
+  // حذف زر مخصص تلقائياً
   const removeCustomTile = (slug: string) => {
-    setConfig(prev => {
-      const customTiles = prev.customTiles.filter(t => t.slug !== slug);
-      const orderedSlugs = prev.orderedSlugs.filter(s => s !== slug);
-      return { ...prev, customTiles, orderedSlugs };
-    });
+    const updated: SidebarConfig = {
+      ...config,
+      customTiles: config.customTiles.filter(t => t.slug !== slug),
+      orderedSlugs: config.orderedSlugs.filter(s => s !== slug),
+      customLabels: { ...config.customLabels }
+    };
+    if (updated.customLabels) {
+      delete updated.customLabels[slug];
+    }
+    setConfig(updated);
+    void autoSave(updated);
   };
 
-  // حفظ التغييرات كاملة لقاعدة البيانات
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      // إرسال الترتيب الحالي المستنبط من واجهة العرض ليكون دقيقاً
-      const finalConfig: SidebarConfig = {
-        ...config,
-        orderedSlugs: getMergedSidebarTiles(config).map(t => t.slug)
-      };
+  // تفعيل التعديل على اسم الزر
+  const startEditLabel = (slug: string, currentLabel: string) => {
+    setEditingSlug(slug);
+    setEditingLabel(currentLabel);
+  };
 
-      const res = await saveSidebarConfigAction(finalConfig);
-      if (res.ok) {
-        alert("تم حفظ إعدادات القائمة الجانبية بنجاح وسيتم تطبيقها فوراً.");
-        router.refresh();
-      } else {
-        alert(`فشل الحفظ: ${res.error}`);
-      }
-    } catch (e) {
-      console.error(e);
-      alert("حدث خطأ غير متوقع أثناء الحفظ.");
-    } finally {
-      setSaving(false);
+  // إلغاء تعديل اسم الزر
+  const cancelEditLabel = () => {
+    setEditingSlug(null);
+    setEditingLabel("");
+  };
+
+  // حفظ الاسم الجديد تلقائياً
+  const saveLabel = (slug: string) => {
+    const trimmed = editingLabel.trim();
+    if (!trimmed) {
+      alert("لا يمكن ترك اسم الزر فارغاً.");
+      return;
     }
+
+    const updatedLabels = {
+      ...(config.customLabels || {}),
+      [slug]: trimmed
+    };
+
+    const updated: SidebarConfig = {
+      ...config,
+      customLabels: updatedLabels
+    };
+
+    setConfig(updated);
+    setEditingSlug(null);
+    setEditingLabel("");
+    void autoSave(updated);
   };
 
   return (
     <div className="space-y-8 bg-white dark:bg-[#09090b] p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm max-w-4xl mx-auto" dir="rtl">
       
+      {/* مؤشر الحفظ التلقائي في الأعلى */}
+      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-4">
+        <div>
+          <h1 className="text-lg font-black text-slate-850 dark:text-slate-100 flex items-center gap-2">
+            🗂️ تخصيص القائمة الجانبية
+          </h1>
+          <p className="text-xs text-slate-450 dark:text-slate-400 mt-1">
+            يتم حفظ جميع التغييرات والترتيب وتعديل الأسماء **تلقائياً وبشكل فوري** دون الحاجة لزر حفظ.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {saving ? (
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-full text-[10px] font-black animate-pulse">
+              🔄 جاري حفظ التغييرات...
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-full text-[10px] font-black">
+              ✅ تم حفظ جميع التغييرات تلقائياً
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* القسم الأول: تخطيط القائمة */}
       <div className="space-y-4">
-        <h2 className="text-base font-black text-slate-850 dark:text-slate-100 flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-          <span>📐</span> تخطيط وشكل القائمة الجانبية
+        <h2 className="text-xs font-black text-slate-500 uppercase tracking-wider block">
+          📐 تخطيط وشكل القائمة
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* خيار توزيع الأعمدة */}
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-500 block">عدد الأزرار في الصف الواحد:</label>
+            <label className="text-xs font-black text-slate-650 dark:text-slate-350 block">عدد الأزرار في الصف الواحد:</label>
             <div className="flex gap-2">
               {[1, 2, 3].map((cols) => (
                 <button
@@ -183,10 +253,10 @@ export function SidebarSettingsForm({
 
           {/* خيار شكل الأزرار */}
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-500 block">شكل وتصميم الأزرار:</label>
+            <label className="text-xs font-black text-slate-650 dark:text-slate-350 block">شكل وتصميم الأزرار:</label>
             <div className="flex gap-2">
               {[
-                { key: "rectangle", label: "مستطيل أفقي (النمط الكلاسيكي)" },
+                { key: "rectangle", label: "مستطيل أفقي (كلاسيكي)" },
                 { key: "square", label: "أزرار مربعة" }
               ].map((item) => (
                 <button
@@ -207,41 +277,92 @@ export function SidebarSettingsForm({
         </div>
       </div>
 
-      {/* القسم الثاني: إعادة ترتيب الأزرار */}
+      {/* القسم الثاني: إعادة ترتيب وتعديل مسميات الأزرار */}
       <div className="space-y-4">
-        <h2 className="text-base font-black text-slate-850 dark:text-slate-100 flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-          <span>🔄</span> إعادة ترتيب وتسلسل الأزرار
+        <h2 className="text-xs font-black text-slate-500 uppercase tracking-wider block">
+          🔄 إعادة ترتيب وتعديل مسميات الأزرار
         </h2>
-        <p className="text-[10px] text-slate-400 font-bold">
-          استخدم الأسهم (⬆️ و ⬇️) بجانب كل قسم لرفع الزر للأعلى أو تنزيله للأسفل للحصول على التسلسل المناسب لك.
-        </p>
 
-        <div className="space-y-2 max-h-[400px] overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-2xl p-4 bg-slate-50/50 dark:bg-slate-950/20">
+        <div className="space-y-2 max-h-[450px] overflow-y-auto border border-slate-150 dark:border-slate-800 rounded-2xl p-4 bg-slate-50/50 dark:bg-slate-950/20">
           {mergedTiles.map((tile, index) => {
             const isCustom = tile.slug.startsWith("custom-");
+            const isEditingThis = editingSlug === tile.slug;
             return (
               <div
                 key={tile.slug}
-                className="flex items-center justify-between bg-white dark:bg-[#131418] p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:shadow-sm transition"
+                className="flex items-center justify-between bg-white dark:bg-[#131418] p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:shadow-sm transition gap-4"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
                     <DynamicIcon iconKey={tile.iconKey} config={globalIcons} className="w-5 h-5" fallback="📁" />
                   </div>
-                  <div>
-                    <span className="text-xs font-black text-slate-800 dark:text-slate-200">
-                      {tile.label}
-                    </span>
-                    {isCustom && (
-                      <span className="block text-[8px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1 py-0.5 rounded mt-0.5 w-max">
-                        زر مخصص: {tile.href}
+                  
+                  {/* عرض التعديل أو الاسم المعتاد */}
+                  <div className="flex-1 min-w-0">
+                    {isEditingThis ? (
+                      <div className="flex items-center gap-1.5 w-full max-w-md">
+                        <input
+                          type="text"
+                          value={editingLabel}
+                          onChange={(e) => setEditingLabel(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") saveLabel(tile.slug);
+                            if (e.key === "Escape") cancelEditLabel();
+                          }}
+                          className="flex-1 px-2.5 py-1.5 text-xs font-bold bg-slate-50 dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded-lg outline-none focus:border-[#00f3ff] w-full"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => saveLabel(tile.slug)}
+                          className="px-2.5 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-black"
+                          title="حفظ الاسم"
+                        >
+                          ✔
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelEditLabel}
+                          className="px-2.5 py-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-black"
+                          title="إلغاء"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 group">
+                        <span className="text-xs font-black text-slate-800 dark:text-slate-200 truncate">
+                          {tile.label}
+                        </span>
+                        
+                        {/* زر القلم للتعديل على الاسم */}
+                        <button
+                          type="button"
+                          onClick={() => startEditLabel(tile.slug, tile.label)}
+                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition p-1"
+                          title="تعديل اسم القسم"
+                        >
+                          ✏️
+                        </button>
+                        
+                        {isCustom && (
+                          <span className="text-[8px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1 py-0.5 rounded shrink-0">
+                            مخصص
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    
+                    {isCustom && !isEditingThis && (
+                      <span className="block text-[8px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 truncate w-max max-w-full">
+                        رابط: {tile.href}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1">
-                  {/* أزرار الأسهم للتحريك */}
+                {/* أزرار الأسهم والتحكم الجانبي */}
+                <div className="flex items-center gap-1 shrink-0">
                   <button
                     type="button"
                     onClick={() => moveUp(index)}
@@ -261,7 +382,7 @@ export function SidebarSettingsForm({
                     ⬇️
                   </button>
 
-                  {/* حذف إذا كان زراً مخصصاً */}
+                  {/* زر حذف للزر المخصص */}
                   {isCustom && (
                     <button
                       type="button"
@@ -281,14 +402,14 @@ export function SidebarSettingsForm({
 
       {/* القسم الثالث: إضافة زر مخصص جديد */}
       <div className="space-y-4">
-        <h2 className="text-base font-black text-slate-850 dark:text-slate-100 flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-          <span>➕</span> إضافة زر/رابط مخصص للقائمة
+        <h2 className="text-xs font-black text-slate-500 uppercase tracking-wider block">
+          ➕ إضافة زر/رابط مخصص جديد
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/60">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50/50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/60">
           {/* اسم الزر */}
           <div className="space-y-1">
-            <label className="text-[10px] font-black text-slate-500">اسم الزر (يظهر في القائمة):</label>
+            <label className="text-[10px] font-black text-slate-550 dark:text-slate-405">اسم الزر:</label>
             <input
               type="text"
               placeholder="مثال: متجرنا الثاني"
@@ -300,7 +421,7 @@ export function SidebarSettingsForm({
 
           {/* رابط التوجيه */}
           <div className="space-y-1">
-            <label className="text-[10px] font-black text-slate-500">رابط التوجيه (Href):</label>
+            <label className="text-[10px] font-black text-slate-550 dark:text-slate-405">رابط التوجيه (Href):</label>
             <input
               type="text"
               placeholder="مثال: /abo1stor3hlaa2kbr8-47/orders"
@@ -312,7 +433,7 @@ export function SidebarSettingsForm({
 
           {/* اختيار الأيقونة */}
           <div className="space-y-1">
-            <label className="text-[10px] font-black text-slate-500">شكل الأيقونة:</label>
+            <label className="text-[10px] font-black text-slate-550 dark:text-slate-405">شكل الأيقونة:</label>
             <select
               value={newIconKey}
               onChange={(e) => setNewIconKey(e.target.value)}
@@ -331,24 +452,12 @@ export function SidebarSettingsForm({
             <button
               type="button"
               onClick={addCustomTile}
-              className="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-black font-black rounded-xl text-xs transition"
+              className="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-black font-black rounded-xl text-xs transition active:scale-95"
             >
-              إدراج الزر المخصص في القائمة
+              إدراج الزر المخصص وحفظه تلقائياً
             </button>
           </div>
         </div>
-      </div>
-
-      {/* زر الحفظ النهائي */}
-      <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-        <button
-          type="button"
-          disabled={saving}
-          onClick={handleSave}
-          className="w-full sm:w-auto px-12 py-3 bg-[#00f3ff] text-black font-black rounded-2xl text-sm shadow-md shadow-[#00f3ff]/20 active:scale-95 transition-all"
-        >
-          {saving ? "جاري حفظ التعديلات..." : "💾 حفظ كافة الإعدادات والترتيب"}
-        </button>
       </div>
 
     </div>

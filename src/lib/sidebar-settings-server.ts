@@ -28,6 +28,7 @@ export async function getSidebarConfig(): Promise<SidebarConfig> {
       layoutColumns: [1, 2, 3].includes(config?.layoutColumns) ? config.layoutColumns : DEFAULT_SIDEBAR_CONFIG.layoutColumns,
       buttonShape: ["square", "rectangle"].includes(config?.buttonShape) ? config.buttonShape : DEFAULT_SIDEBAR_CONFIG.buttonShape,
       customTiles: Array.isArray(config?.customTiles) ? config.customTiles : DEFAULT_SIDEBAR_CONFIG.customTiles,
+      customLabels: typeof config?.customLabels === "object" && config.customLabels !== null ? config.customLabels : {},
     };
   } catch (e) {
     console.error("Failed to load sidebar configuration:", e);

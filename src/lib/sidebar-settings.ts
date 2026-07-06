@@ -12,6 +12,7 @@ export type SidebarConfig = {
   layoutColumns: 1 | 2 | 3;
   buttonShape: "square" | "rectangle";
   customTiles: CustomTile[];
+  customLabels?: Record<string, string>;
 };
 
 export const DEFAULT_SIDEBAR_CONFIG: SidebarConfig = {
@@ -19,23 +20,28 @@ export const DEFAULT_SIDEBAR_CONFIG: SidebarConfig = {
   layoutColumns: 1,
   buttonShape: "rectangle",
   customTiles: [],
+  customLabels: {},
 };
 
 /** دمج الأزرار الثابتة مع الأزرار المخصصة وبترتيب مخصص */
 export function getMergedSidebarTiles(config: SidebarConfig): AdminTile[] {
   // 1. تجميع كل الأزرار المتاحة
   const allTilesMap = new Map<string, AdminTile>();
+  const customLabels = config.customLabels || {};
   
   // الأزرار الثابتة من النظام
   ADMIN_TILES.forEach(tile => {
-    allTilesMap.set(tile.slug, tile);
+    allTilesMap.set(tile.slug, {
+      ...tile,
+      label: customLabels[tile.slug] || tile.label
+    });
   });
 
   // الأزرار المخصصة التي أضافها المستخدم
   config.customTiles.forEach(tile => {
     allTilesMap.set(tile.slug, {
       slug: tile.slug,
-      label: tile.label,
+      label: customLabels[tile.slug] || tile.label,
       href: tile.href,
       iconKey: tile.iconKey || "ui_link", // أيقونة افتراضية للأزرار المخصصة
     });

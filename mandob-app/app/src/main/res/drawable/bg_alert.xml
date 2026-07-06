@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#F0F8FF" /> <!-- لون سمائي فاتح جداً -->
+    <corners android:radius="20dp" /> <!-- زوايا دائرية -->
+    <stroke android:width="2dp" android:color="#03A9F4" /> <!-- إطار أزرق فاتح -->
+</shape>
