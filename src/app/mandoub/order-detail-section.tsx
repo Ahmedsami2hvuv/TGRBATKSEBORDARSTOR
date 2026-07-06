@@ -575,7 +575,9 @@ export function OrderDetailSection({
 
                 <div className="flex flex-col items-center justify-center rounded-xl border border-violet-500/20 bg-violet-50/5 dark:bg-violet-950/10 p-2 text-center shadow-inner mt-2">
                   <p className="text-[9px] font-black text-violet-900 dark:text-violet-400 uppercase tracking-widest mb-0.5">المبلغ الكلي المطلوب</p>
-                  <p className="font-mono text-xl font-black text-violet-950 dark:text-violet-100 tabular-nums">{order.totalAmount != null ? formatDinarAsAlfWithUnit(order.totalAmount) : "—"}</p>
+                  <p className="font-mono text-xl font-black text-violet-950 dark:text-violet-100 tabular-nums">
+                    {order.prepaidAll ? "كل شي واصل" : (order.totalAmount != null ? formatDinarAsAlfWithUnit(order.totalAmount) : "—")}
+                  </p>
                 </div>
               </div>
 
@@ -665,6 +667,7 @@ export function OrderDetailSection({
             canRecordMoney={order.assignedCourierId === viewerCourierId}
             orderSubtotalDinar={order.orderSubtotal != null ? Number(order.orderSubtotal) : null}
             totalAmountDinar={order.totalAmount != null ? Number(order.totalAmount) : null}
+            prepaidAll={order.prepaidAll}
             moneyEvents={order.moneyEvents.map((e) => ({
               id: e.id,
               kind: e.kind,
@@ -737,7 +740,35 @@ export function OrderDetailSection({
       )}
       <div className="relative z-10">
         {reversePickup && <div className="mb-4 rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-bold text-violet-950">تنبيه طلب عكسي استلام من الزبون وتسليم للعميل</div>}
-        {order.prepaidAll && (<div className="relative mb-4 overflow-hidden rounded-2xl border-2 border-emerald-400/55 bg-gradient-to-br from-emerald-100/90 via-teal-50/85 to-cyan-50/75 p-4 sm:p-5 shadow-xl"><div className="relative flex flex-col items-center gap-4 sm:flex-row sm:items-start"><div className="flex size-[4rem] shrink-0 items-center justify-center rounded-2xl bg-white/95 shadow-md"><svg className="size-10 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg></div><p className="text-xl font-black text-emerald-950 sm:text-2xl text-center sm:text-right">الطلب واصل اخذ التوصيل من العميل</p></div></div>)}
+        {order.prepaidAll && (
+          <div className="relative mb-4 overflow-hidden rounded-2xl p-5 shadow-xl text-white prepaid-rgb-block">
+            <style>{`
+              @keyframes animated-gradient {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+              }
+              .prepaid-rgb-block {
+                background: linear-gradient(120deg, #059669, #0891b2, #2563eb, #7c3aed, #db2777, #059669);
+                background-size: 300% 300%;
+                animation: animated-gradient 8s ease infinite;
+              }
+            `}</style>
+            <div className="relative flex flex-col items-center gap-4 sm:flex-row sm:items-start z-10">
+              <div className="flex size-[4rem] shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md shadow-md border border-white/20">
+                <svg className="size-10 text-white animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+              </div>
+              <div className="text-center sm:text-right">
+                <p className="text-xl font-black sm:text-2xl drop-shadow-md">الطلب واصل اخذ التوصيل من العميل</p>
+                <p className="text-xs font-bold text-white/90 mt-1 drop-shadow-sm">تنبيه: لا تقبض سعر البضاعة من العميل، فقط أجور التوصيل.</p>
+              </div>
+            </div>
+            {/* لمعة زجاجية خفيفة */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
+          </div>
+        )}
 
         <Suspense fallback={null}><MandoubLocFlashBanner /></Suspense>
 

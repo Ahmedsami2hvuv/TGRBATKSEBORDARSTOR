@@ -90,6 +90,7 @@ export function MandoubOrderMoneyFlow({
   missingCustomerLocation,
   canRecordMoney = true,
   totalsBaseline,
+  prepaidAll = false,
 }: {
   orderId: string;
   orderNumber: number;
@@ -103,6 +104,7 @@ export function MandoubOrderMoneyFlow({
   missingCustomerLocation: boolean;
   canRecordMoney?: boolean;
   totalsBaseline?: string | null;
+  prepaidAll?: boolean;
 }) {
   const [pickupOpen, setPickupOpen] = useState(false);
   const [deliveryOpen, setDeliveryOpen] = useState(false);
@@ -290,6 +292,7 @@ export function MandoubOrderMoneyFlow({
             error={deliveryState.error}
             onClose={closePanels}
             missingCustomerLocation={missingCustomerLocation}
+            prepaidAll={prepaidAll}
           />
         }
       />
@@ -713,6 +716,7 @@ export function DeliveryMoneyForm({
   onClose,
   missingCustomerLocation,
   noRedirect = false,
+  prepaidAll = false,
 }: {
   orderId: string;
   auth: { c: string; exp: string; s: string };
@@ -729,6 +733,7 @@ export function DeliveryMoneyForm({
   onClose: () => void;
   missingCustomerLocation: boolean;
   noRedirect?: boolean;
+  prepaidAll?: boolean;
 }) {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -745,6 +750,10 @@ export function DeliveryMoneyForm({
   const pendingAfterLocationRef = useRef<"main" | "skip">("main");
   const mainSubmitRef = useRef<HTMLButtonElement>(null);
   const mountTimeRef = useRef(Date.now());
+
+  const [prepaidConfirmState, setPrepaidConfirmState] = useState<"ask" | "took_money" | null>(
+    prepaidAll && advanceToDelivered ? "ask" : null
+  );
 
   const parsedDinar = parseAlfInputToDinarDecimalRequired(amount);
   const projectedTotal = deliverySumDinar + (parsedDinar.ok ? parsedDinar.value : 0);
@@ -859,9 +868,117 @@ export function DeliveryMoneyForm({
     submitDeliveryAfterLocationChoice();
   }
 
+  if (prepaidConfirmState === "ask") {
+    return (
+      <div className="space-y-4 p-4 text-right bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-white/5 shadow-md">
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-600 border border-amber-200/50">
+            <svg className="size-6 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+          </div>
+          <h4 className="text-base font-black text-slate-900 dark:text-white text-center">تأكد أنك لم تأخذ أي مبلغ من الزبون</h4>
+          <p className="text-xs font-bold text-slate-500 text-center leading-relaxed">هذه الطلبية مسجلة بأنها "واصلة مسبقاً"، ويتم تحصيل أجور التوصيل فقط.</p>
+        </div>
+
+        <div className="flex gap-3 mt-2">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              if (deliverySubmitModeRef.current) {
+                deliverySubmitModeRef.current.value = "statusOnlyNoAmount";
+              }
+              if (amountRef.current) {
+                amountRef.current.removeAttribute("required");
+              }
+              const skipBtn = formRef.current?.querySelector('button[data-mandoub-action="skip-no-amount"]') as HTMLButtonElement | null;
+              if (skipBtn) {
+                formRef.current?.requestSubmit(skipBtn);
+              } else {
+                formRef.current?.requestSubmit();
+              }
+            }}
+            className="flex-1 py-3 px-4 rounded-xl bg-emerald-650 hover:bg-emerald-750 bg-emerald-600 hover:bg-emerald-750 text-white font-black text-center shadow active:scale-95 transition-all text-sm disabled:opacity-50"
+          >
+            {pending ? "جارٍ الحفظ…" : "نعم"}
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              setPrepaidConfirmState("took_money");
+            }}
+            className="flex-1 py-3 px-4 rounded-xl bg-red-650 hover:bg-red-750 bg-red-600 hover:bg-red-700 text-white font-black text-center shadow active:scale-95 transition-all text-sm disabled:opacity-50"
+          >
+            لا
+          </button>
+        </div>
+
+        <div className="flex justify-center border-t border-slate-100 dark:border-white/5 pt-3 mt-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-xs font-bold text-slate-500 hover:text-slate-800"
+            disabled={pending}
+          >
+            إلغاء والرجوع
+          </button>
+        </div>
+
+        {/* نموذج مخفي في الخلفية ليتمكن requestSubmit من إرساله */}
+        <form
+          ref={formRef}
+          action={formAction}
+          className="hidden"
+          onSubmit={(e) => {
+            const sub = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+            pendingAfterLocationRef.current =
+              sub?.dataset?.mandoubAction === "skip-no-amount" ? "skip" : "main";
+            if (missingCustomerLocation && !locationPromptDoneRef.current) {
+              e.preventDefault();
+              setGeoError("");
+              setLocationModalOpen(true);
+            }
+          }}
+        >
+          <input ref={deliverySubmitModeRef} type="hidden" name="mandoubMoneySubmitMode" value="statusOnlyNoAmount" />
+          <input type="hidden" name="c" value={auth.c} />
+          <input type="hidden" name="exp" value={auth.exp} />
+          <input type="hidden" name="s" value={auth.s} />
+          <input type="hidden" name="orderId" value={orderId} />
+          <input type="hidden" name="next" value={nextUrl} />
+          {noRedirect ? <input type="hidden" name="noRedirect" value="1" /> : null}
+          <input type="hidden" name="advanceStatus" value="delivered" />
+          <input ref={latRef} type="hidden" name="lat" value="" />
+          <input ref={lngRef} type="hidden" name="lng" value="" />
+        </form>
+
+        {portalReady && locationModalOpen && createPortal(
+          <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/55 p-4" dir="rtl">
+            <div className="max-w-md rounded-2xl border border-red-200 bg-white p-5 shadow-xl">
+              <p className="text-base font-black text-slate-900">هذا الطلب لا يحتوي على موقع للزبون</p>
+              <p className="mt-3 text-sm text-slate-600">أتممت تسليم الطلب الآن؟ هل تريد رفع موقعك الحالي كـ موقع للزبون؟</p>
+              {geoError && <p className="mt-3 text-sm font-bold text-rose-700">{geoError}</p>}
+              <div className="mt-5 flex flex-col gap-2">
+                <button type="button" onClick={onConfirmGps} className="rounded-xl bg-red-700 py-3 text-sm font-black text-white">نعم، ارفع موقعي الحالي</button>
+                <button type="button" onClick={onSkipLocation} className="rounded-xl border border-slate-200 py-3 text-sm font-black text-slate-700">لا، لا ترفع موقعي</button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      <p className="font-bold text-red-950">اكتب المبلغ الذي استلمته من الزبون </p>
+      <p className="font-bold text-red-950">
+        {prepaidConfirmState === "took_money"
+          ? "الطلب واصل حسابه لكن يبدو أنك أخذت مبلغاً، اكتب المبلغ الذي أخذته واكتب السبب"
+          : "اكتب المبلغ الذي استلمته من الزبون"}
+      </p>
       {!advanceToDelivered ? (
         <p className="text-[11px] font-medium text-red-800/90">
           تسجيل وارد فقط — دون تغيير حالة الطلب.
@@ -940,7 +1057,7 @@ export function DeliveryMoneyForm({
           )}
         </div>
         <input type="hidden" name="mismatchReason" value="" />
-        {isMismatch && (
+        {(isMismatch || prepaidConfirmState === "took_money") && (
           <textarea
             ref={noteRef}
             name="mismatchNote"
@@ -950,7 +1067,7 @@ export function DeliveryMoneyForm({
             rows={2}
             required
             className="w-full rounded-xl border-2 border-amber-400 bg-amber-50 px-3 py-2 text-sm shadow-sm transition-all"
-            placeholder="المبلغ مختلف — اكتب السبب"
+            placeholder={prepaidConfirmState === "took_money" ? "اكتب سبب أخذ المبلغ بالتفصيل (مثلاً: أخذت أجور التوصيل)" : "المبلغ مختلف — اكتب السبب"}
           />
         )}
         {error ? <p className="text-sm font-bold text-rose-700">{error}</p> : null}
