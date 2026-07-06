@@ -23,9 +23,11 @@ export async function getSidebarConfig(): Promise<SidebarConfig> {
 
     const config = setting.config as any;
 
+    const parsedLayoutColumns = config?.layoutColumns !== undefined ? Number(config.layoutColumns) : undefined;
+
     return {
       orderedSlugs: Array.isArray(config?.orderedSlugs) ? config.orderedSlugs : DEFAULT_SIDEBAR_CONFIG.orderedSlugs,
-      layoutColumns: [1, 2, 3].includes(config?.layoutColumns) ? config.layoutColumns : DEFAULT_SIDEBAR_CONFIG.layoutColumns,
+      layoutColumns: [1, 2, 3].includes(parsedLayoutColumns as any) ? (parsedLayoutColumns as 1 | 2 | 3) : DEFAULT_SIDEBAR_CONFIG.layoutColumns,
       buttonShape: ["square", "rectangle"].includes(config?.buttonShape) ? config.buttonShape : DEFAULT_SIDEBAR_CONFIG.buttonShape,
       customTiles: Array.isArray(config?.customTiles) ? config.customTiles : DEFAULT_SIDEBAR_CONFIG.customTiles,
       customLabels: typeof config?.customLabels === "object" && config.customLabels !== null ? config.customLabels : {},

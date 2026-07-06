@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarConfig, CustomTile, getMergedSidebarTiles } from "@/lib/sidebar-settings";
 import { saveSidebarConfigAction } from "./actions";
 import { useRouter } from "next/navigation";
@@ -43,6 +43,10 @@ export function SidebarSettingsForm({
   const router = useRouter();
   const [config, setConfig] = useState<SidebarConfig>(initialConfig);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setConfig(initialConfig);
+  }, [initialConfig]);
 
   // تتبع حالة تعديل اسم الزر
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
