@@ -105,6 +105,7 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
       // 2. فحص رصيد الدفتر
       if (balanceFilter === "owe_us" && p.balance <= 0) return false;
       if (balanceFilter === "we_owe" && p.balance >= 0) return false;
+      if (balanceFilter === "zero" && p.balance !== 0) return false;
 
       // 3. فحص مصطلح البحث (fuzzy match on name or phone or balance)
       if (!searchQuery.trim()) return true;
@@ -319,6 +320,7 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
             <option value="all">كل الحالات المالية</option>
             <option value="owe_us">نطلبهم (ديون لنا)</option>
             <option value="we_owe">يطلبوننا (ديون علينا)</option>
+            <option value="zero">المتصفّر (الحسابات المصفّرة)</option>
           </select>
         </div>
 

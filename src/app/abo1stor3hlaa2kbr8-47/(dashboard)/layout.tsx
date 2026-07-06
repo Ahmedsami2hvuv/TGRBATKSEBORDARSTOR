@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 
 import { getCurrentSessionIsAccountant } from "@/lib/admin-session";
-import { getSidebarConfig } from "@/lib/sidebar-settings";
+import { getSidebarConfig } from "@/lib/sidebar-settings-server";
 
 export default async function AdminDashboardLayout({
   children,

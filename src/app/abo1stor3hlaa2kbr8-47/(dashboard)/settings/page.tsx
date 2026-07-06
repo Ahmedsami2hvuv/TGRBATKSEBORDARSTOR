@@ -12,7 +12,7 @@ import { isChatEnabledGlobally, isTrackingEnabledGlobally } from "@/lib/portal-c
 import { getRoleFeatures } from "@/lib/role-features-settings";
 import { getAvailableFonts, getChosenFont } from "@/lib/font-settings";
 import { getBackgroundsConfig } from "@/lib/background-settings";
-import { getSidebarConfig } from "@/lib/sidebar-settings";
+import { getSidebarConfig } from "@/lib/sidebar-settings-server";
 
 export const metadata = {
   title: "الإعدادات — KSEBORDARSTOR",

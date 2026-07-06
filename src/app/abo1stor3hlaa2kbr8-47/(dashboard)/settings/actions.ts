@@ -453,7 +453,8 @@ export async function uploadFontAction(formData: FormData) {
   }
 }
 
-import { SidebarConfig, saveSidebarConfig } from "@/lib/sidebar-settings";
+import { SidebarConfig } from "@/lib/sidebar-settings";
+import { saveSidebarConfig } from "@/lib/sidebar-settings-server";
 
 export async function saveSidebarConfigAction(config: SidebarConfig) {
   if (!(await isAdminSession())) return { error: "Unauthenticated" };

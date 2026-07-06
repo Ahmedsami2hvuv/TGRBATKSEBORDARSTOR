@@ -629,8 +629,14 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
 
     const result = mapped.filter((item): item is PartnerWithBalance => item !== null);
 
-    // فرز النتائج: حسب تاريخ التحديث (آخر نشاط) تنازلياً لكي يصعد من يُعدل أو يضاف له بالبداية
+    // فرز النتائج: الحسابات غير المصفّرة (غير الصفرية) تسبق المصفّرة (الصفرية)
+    // مع الحفاظ على ترتيب تاريخ التحديث (آخر نشاط) تنازلياً لكل قسم.
     result.sort((a, b) => {
+      const aZero = a.balance === 0;
+      const bZero = b.balance === 0;
+      if (aZero !== bZero) {
+        return aZero ? 1 : -1;
+      }
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
 
