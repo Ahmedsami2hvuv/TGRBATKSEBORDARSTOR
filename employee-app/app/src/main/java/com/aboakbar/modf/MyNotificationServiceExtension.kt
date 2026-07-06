@@ -95,6 +95,7 @@ class MyNotificationServiceExtension : INotificationServiceExtension {
                                 enableVibration(true)
                                 vibrationPattern = longArrayOf(0, 1000, 250, 1000, 250)
                                 setSound(null, null) // نتحكم بالصوت يدوياً في Activity
+                                setBypassDnd(true) // تخطي وضع عدم الإزعاج برمجياً
                             }
                             notificationManager.createNotificationChannel(channel)
                         }

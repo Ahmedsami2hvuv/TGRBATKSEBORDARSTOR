@@ -284,10 +284,16 @@ class StrongAlertActivity : Activity() {
             val alertUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
                 ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
 
-            // إعداد وتشغيل مشغل الصوت
+            // إعداد وتشغيل مشغل الصوت مع تخطي وضع عدم الإزعاج
+            val audioAttributes = android.media.AudioAttributes.Builder()
+                .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setFlags(64) // 64 تعادل FLAG_BYPASS_INTERRUPTION_POLICY لتخطي وضع عدم الإزعاج
+                .build()
+
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(this@StrongAlertActivity, alertUri)
-                setAudioStreamType(AudioManager.STREAM_ALARM)
+                setAudioAttributes(audioAttributes)
                 isLooping = true
                 prepare()
                 start()
