@@ -421,6 +421,7 @@ export async function submitOrder(
       shopName: fullShop?.name || submitter.shopId,
       clientArea,
       customerArea,
+      orderType: withReversePickupPrefix(orderType, reversePickup),
       customerPhone: phoneLocal,
       subtotal: subtotalNum.toLocaleString(),
       delivery: delivery.toNumber().toLocaleString(),

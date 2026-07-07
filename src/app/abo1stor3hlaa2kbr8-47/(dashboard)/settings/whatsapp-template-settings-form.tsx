@@ -204,7 +204,7 @@ export function WhatsappTemplateSettingsForm({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {["{statusLabel}", "{shopName}", "{clientArea}", "{customerArea}", "{customerPhone}", "{subtotal}", "{delivery}", "{total}", "{notes}", "{orderNumber}", "{orderTime}"].map((v) => (
+          {["{statusLabel}", "{shopName}", "{clientArea}", "{customerArea}", "{orderType}", "{customerPhone}", "{subtotal}", "{delivery}", "{total}", "{notes}", "{orderNumber}", "{orderTime}"].map((v) => (
             <button
               key={v}
               type="button"
@@ -292,7 +292,7 @@ export function WhatsappTemplateSettingsForm({
         <p><strong>شرح المتغيرات:</strong></p>
         <p>{`{customerName}`} اسم العميل، {`{shopName}`} اسم المحل، {`{customerLink}`} رابط العميل، {`{shopLocation}`} موقع المحل.</p>
         <p>{`{orderItems}`} قائمة الأصناف، {`{regionName}`} اسم المنطقة، {`{orderNumber}`} رقم الطلب.</p>
-        <p>{`{statusLabel}`} نوع الحركة (رفع طلب جديد أو تعديله)، {`{clientArea}`} منطقة العميل، {`{customerArea}`} منطقة الزبون، {`{customerPhone}`} هاتف الزبون، {`{subtotal}`} السعر، {`{delivery}`} التوصيل، {`{total}`} السعر الكلي (السعر + التوصيل)، {`{notes}`} الملاحظات، {`{orderTime}`} وقت الطلب.</p>
+        <p>{`{statusLabel}`} نوع الحركة (رفع طلب جديد أو تعديله)، {`{clientArea}`} منطقة العميل، {`{customerArea}`} منطقة الزبون، {`{orderType}`} نوع الطلب، {`{customerPhone}`} هاتف الزبون، {`{subtotal}`} السعر، {`{delivery}`} التوصيل، {`{total}`} السعر الكلي (السعر + التوصيل)، {`{notes}`} الملاحظات، {`{orderTime}`} وقت الطلب.</p>
       </div>
 
       {state.error ? (

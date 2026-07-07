@@ -51,6 +51,7 @@ export function getDefaultNewOrderAlertTemplate(): string {
     "🏢 من محل: {shopName}",
     "📍 من منطقة (العميل): {clientArea}",
     "🎯 إلى منطقة (الزبون): {customerArea}",
+    "📦 نوع الطلب: {orderType}",
     "📞 رقم الزبون (المستلم): {customerPhone}",
     "💰 سعر الطلب (بدون توصيل): {subtotal}",
     "🚚 أجرة التوصيل: {delivery}",
@@ -166,6 +167,7 @@ export function renderNewOrderAlertTemplate(input: {
   shopName: string;
   clientArea: string;
   customerArea: string;
+  orderType: string;
   customerPhone: string;
   subtotal: string | number;
   delivery: string | number;
@@ -180,6 +182,7 @@ export function renderNewOrderAlertTemplate(input: {
     "{shopName}": input.shopName,
     "{clientArea}": input.clientArea,
     "{customerArea}": input.customerArea,
+    "{orderType}": input.orderType,
     "{customerPhone}": input.customerPhone,
     "{subtotal}": String(input.subtotal),
     "{delivery}": String(input.delivery),
