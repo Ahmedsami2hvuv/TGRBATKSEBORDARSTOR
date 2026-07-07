@@ -41,7 +41,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
  include: {
  submittedBy: { select: { name: true, phone: true } },
  submittedByCompanyPreparer: { select: { name: true, phone: true } },
- shop: { select: { id: true, name: true, phone: true, ownerName: true, photoUrl: true, locationUrl: true } },
+ shop: { select: { id: true, name: true, phone: true, ownerName: true, photoUrl: true, locationUrl: true, region: { select: { name: true } } } },
  customerRegion: { select: { name: true } },
  secondCustomerRegion: { select: { name: true } },
  courier: { select: { name: true, phone: true } },

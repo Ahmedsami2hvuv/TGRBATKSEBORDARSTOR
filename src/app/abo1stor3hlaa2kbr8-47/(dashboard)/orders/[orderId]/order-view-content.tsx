@@ -78,7 +78,7 @@ type OrderViewModel = {
   smartHintLine?: string;
   orderSubtotal: string | null; deliveryPrice: string | null; totalAmount: string | null;
   submissionSource: string; createdAt: string; prepaidAll: boolean; reversePickup: boolean;
-  shop: { name: string; phone: string; ownerName: string };
+  shop: { name: string; phone: string; ownerName: string; region?: { name: string } | null };
   shopPhotoUrl: string; shopLocationUrl: string; customerLocationUrl: string;
   customerLocationUploadedByName: string | null; customerRegion: { name: string } | null;
   customerRegionId: string | null;
@@ -263,6 +263,9 @@ export function OrderViewContent({
                 {isSystemAdminOrder ? <p className="text-3xl font-black text-indigo-700 tabular-nums">{SYSTEM_ADMIN_PHONE}</p> :
                   <>
                     <p className="font-bold text-slate-900">{order.shop.name}</p>
+                    {order.shop.region?.name && (
+                      <p className="text-xs font-semibold text-slate-500">{order.shop.region.name}</p>
+                    )}
                     <p className="text-sm font-medium"><span className="text-slate-500">المسؤول: </span><span className="font-bold text-sky-900">{order.submittedByCompanyPreparer?.name || order.submittedBy?.name || "—"}</span></p>
                     <div className="mt-2">{order.shopLocationUrl?.trim() ? <a href={order.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white rounded-lg">فتح لوكيشن المحل ↗</a> : <p className="text-xs font-bold text-amber-800">لا يوجد لوكيشن</p>}</div>
                   </>
