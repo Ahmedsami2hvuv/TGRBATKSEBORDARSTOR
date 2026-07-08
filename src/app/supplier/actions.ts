@@ -58,3 +58,55 @@ export async function updateSupplierProductPrice(formData: FormData) {
     return { ok: false, error: error.message };
   }
 }
+
+export async function toggleSupplierProductActive(formData: FormData) {
+  try {
+    const productId = formData.get("productId") as string;
+    const supplierId = formData.get("supplierId") as string;
+    const token = formData.get("token") as string;
+    const active = formData.get("active") === "true";
+
+    if (!productId || !supplierId || !token) {
+      throw new Error("بيانات غير مكتملة");
+    }
+
+    const supplier = await prisma.storeSupplier.findFirst({
+      where: { id: supplierId, portalToken: token, active: true },
+      select: {
+        id: true,
+        branches: { select: { id: true } }
+      }
+    });
+
+    if (!supplier) throw new Error("غير مصرح لك");
+
+    const branchIds = supplier.branches.map(b => b.id);
+
+    // التأكد من أن المنتج ينتمي لهذا المورد أو لأحد أفرعه المخولة
+    const product = await prisma.storeProduct.findFirst({
+      where: {
+        id: productId,
+        OR: [
+          { supplierId: supplier.id },
+          ...(branchIds.length > 0 ? [{ branchId: { in: branchIds } }] : [])
+        ]
+      }
+    });
+
+    if (!product) throw new Error("منتج غير مصرح");
+
+    await prisma.storeProduct.update({
+      where: { id: productId },
+      data: {
+        active: active
+      }
+    });
+
+    revalidatePath("/supplier");
+    return { ok: true };
+  } catch (error: any) {
+    console.error("Toggle Product Active Error:", error);
+    return { ok: false, error: error.message };
+  }
+}
+

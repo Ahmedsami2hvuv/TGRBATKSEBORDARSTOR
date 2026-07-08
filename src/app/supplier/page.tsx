@@ -42,7 +42,6 @@ export default async function SupplierPortalPage({ searchParams }: Props) {
 
     const productsRaw = await prisma.storeProduct.findMany({
       where: {
-        active: true,
         OR: [
           { supplierId: supplier.id },
           ...(branchIds.length > 0 ? [{ branchId: { in: branchIds } }] : [])
@@ -54,6 +53,7 @@ export default async function SupplierPortalPage({ searchParams }: Props) {
         purchasePrice: true,
         salePrice: true,
         photoUrls: true,
+        active: true,
       },
       orderBy: { sequence: "asc" }
     });
@@ -73,6 +73,7 @@ export default async function SupplierPortalPage({ searchParams }: Props) {
         salePrice: pr.salePrice ? Number(pr.salePrice) : 0,
         image: img,
         unit: "وحدة", // قيمة افتراضية
+        active: Boolean(pr.active),
       };
     });
 
