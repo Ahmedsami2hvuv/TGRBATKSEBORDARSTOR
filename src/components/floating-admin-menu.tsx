@@ -29,6 +29,12 @@ export function FloatingAdminMenu() {
   const [isActuallyDragging, setIsActuallyDragging] = useState(false);
 
   const dragStartPos = useRef({ x: 0, y: 0 });
+  const positionRef = useRef({ x: 50, y: 300 });
+  const isDraggingRef = useRef(false);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const isActuallyDraggingRef = useRef(false);
+  const isLockedRef = useRef(false);
+
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [activeLinkId, setActiveLinkId] = useState<string | null>(null);
   const [categories, setCategories] = useState<CustomCategory[]>([]);
@@ -37,6 +43,11 @@ export function FloatingAdminMenu() {
   const innerRadius = 28;
   const outerRadius = 80;
   const subRingRadius = 135;
+
+  // keep isLockedRef in sync
+  useEffect(() => {
+    isLockedRef.current = isLocked;
+  }, [isLocked]);
 
   // تحميل البيانات
   useEffect(() => {
@@ -52,17 +63,25 @@ export function FloatingAdminMenu() {
             const x = Math.max(10, Math.min(window.innerWidth - 60, parsed.x));
             const y = Math.max(10, Math.min(window.innerHeight - 60, parsed.y));
             setPosition({ x, y });
+            positionRef.current = { x, y };
           } else {
             setPosition({ x: 50, y: 300 });
+            positionRef.current = { x: 50, y: 300 };
           }
         } catch(e) {
           setPosition({ x: 50, y: 300 });
+          positionRef.current = { x: 50, y: 300 };
         }
       } else {
         setPosition({ x: 50, y: 300 });
+        positionRef.current = { x: 50, y: 300 };
       }
       const savedLocked = localStorage.getItem("kse_admin_floating_locked");
-      if (savedLocked) setIsLocked(savedLocked === "true");
+      if (savedLocked) {
+        const locked = savedLocked === "true";
+        setIsLocked(locked);
+        isLockedRef.current = locked;
+      }
       const savedScale = localStorage.getItem("kse_admin_floating_scale");
       if (savedScale) setMenuScale(parseFloat(savedScale));
       const savedFontSize = localStorage.getItem("kse_admin_floating_fontsize");
@@ -74,7 +93,10 @@ export function FloatingAdminMenu() {
       .then(res => res.json())
       .then(data => {
         if (data.categories) setCategories(data.categories);
-        if (data.isLocked !== undefined) setIsLocked(data.isLocked);
+        if (data.isLocked !== undefined) {
+          setIsLocked(data.isLocked);
+          isLockedRef.current = data.isLocked;
+        }
         if (data.menuScale !== undefined) setMenuScale(data.menuScale);
         if (data.menuFontSize !== undefined) setMenuFontSize(data.menuFontSize);
       }).catch(() => {});
@@ -83,28 +105,37 @@ export function FloatingAdminMenu() {
 
   // بدء السحب
   const onStart = (clientX: number, clientY: number) => {
+    isDraggingRef.current = true;
+    isActuallyDraggingRef.current = false;
+    dragStartPos.current = { x: clientX, y: clientY };
+    dragOffsetRef.current = { x: clientX - positionRef.current.x, y: clientY - positionRef.current.y };
+    
     setIsDragging(true);
     setIsActuallyDragging(false);
-    dragStartPos.current = { x: clientX, y: clientY };
-    setDragOffset({ x: clientX - position.x, y: clientY - position.y });
+    setDragOffset({ x: clientX - positionRef.current.x, y: clientY - positionRef.current.y });
   };
 
   // أثناء الحركة
   const onMove = useCallback((clientX: number, clientY: number) => {
-    if (!isDragging) return;
+    if (!isDraggingRef.current) return;
     const dist = Math.sqrt(Math.pow(clientX - dragStartPos.current.x, 2) + Math.pow(clientY - dragStartPos.current.y, 2));
-    if (dist > 10) setIsActuallyDragging(true);
-
-    if (isActuallyDragging && !isLocked) {
-      const nx = Math.max(btnSize/2, Math.min(window.innerWidth - btnSize/2, clientX - dragOffset.x));
-      const ny = Math.max(btnSize/2, Math.min(window.innerHeight - btnSize/2, clientY - dragOffset.y));
-      setPosition({ x: nx, y: ny });
+    if (dist > 10 && !isActuallyDraggingRef.current) {
+      isActuallyDraggingRef.current = true;
+      setIsActuallyDragging(true);
     }
-  }, [isDragging, isActuallyDragging, dragOffset, isLocked]);
+
+    if (isActuallyDraggingRef.current && !isLockedRef.current) {
+      const nx = Math.max(btnSize/2, Math.min(window.innerWidth - btnSize/2, clientX - dragOffsetRef.current.x));
+      const ny = Math.max(btnSize/2, Math.min(window.innerHeight - btnSize/2, clientY - dragOffsetRef.current.y));
+      const newPos = { x: nx, y: ny };
+      positionRef.current = newPos;
+      setPosition(newPos);
+    }
+  }, []);
 
   // عند الإفلات (القرار النهائي: نقرة أم سحب)
   const onEnd = useCallback((clientX: number, clientY: number) => {
-    if (!isDragging) return;
+    if (!isDraggingRef.current) return;
     const dist = Math.sqrt(Math.pow(clientX - dragStartPos.current.x, 2) + Math.pow(clientY - dragStartPos.current.y, 2));
 
     // إذا لم يتحرك الإصبع كثيراً، فهي نقرة
@@ -131,16 +162,18 @@ export function FloatingAdminMenu() {
       }
     }
 
+    isDraggingRef.current = false;
+    isActuallyDraggingRef.current = false;
     setIsDragging(false);
     setIsActuallyDragging(false);
-    if (dist > 10) localStorage.setItem("kse_admin_floating_pos", JSON.stringify(position));
-  }, [isDragging, isHovered, position]);
+    if (dist > 10) localStorage.setItem("kse_admin_floating_pos", JSON.stringify(positionRef.current));
+  }, [isHovered]);
 
   useEffect(() => {
     const mm = (e: MouseEvent) => onMove(e.clientX, e.clientY);
     const mu = (e: MouseEvent) => onEnd(e.clientX, e.clientY);
     const tm = (e: TouchEvent) => {
-      if (isDragging) {
+      if (isDraggingRef.current) {
         onMove(e.touches[0].clientX, e.touches[0].clientY);
         if (e.cancelable) e.preventDefault();
       }
