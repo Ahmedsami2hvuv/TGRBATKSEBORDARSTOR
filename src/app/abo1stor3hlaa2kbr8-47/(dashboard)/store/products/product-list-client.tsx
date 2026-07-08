@@ -10,6 +10,24 @@ import { DynamicIcon } from "@/components/dynamic-icon";
 
 import { QuickProfitEdit } from "../_components/quick-profit-edit";
 
+function cleanAndConvertNumbers(value: string): string {
+  const arabicNumbers = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
+  const persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
+  let cleanValue = value;
+  for (let i = 0; i < 10; i++) {
+    cleanValue = cleanValue.replace(arabicNumbers[i], String(i))
+                           .replace(persianNumbers[i], String(i));
+  }
+  // السماح بالأرقام والنقطة العشرية فقط
+  cleanValue = cleanValue.replace(/[^\d.]/g, "");
+  // التأكد من عدم وجود أكثر من نقطة عشرية واحدة
+  const parts = cleanValue.split(".");
+  if (parts.length > 2) {
+    cleanValue = parts[0] + "." + parts.slice(1).join("");
+  }
+  return cleanValue;
+}
+
 export function ProductListClient({
   initialProducts,
   branches,
@@ -52,8 +70,8 @@ export function ProductListClient({
   const [variants, setVariants] = useState<{ name: string; purchasePrice: string; salePrice: string }[]>([]);
 
   // Pricing State for non-variant products
-  const [purchasePrice, setPurchasePrice] = useState<number>(0);
-  const [salePrice, setSalePrice] = useState<number>(0);
+  const [purchasePrice, setPurchasePrice] = useState<string>("");
+  const [salePrice, setSalePrice] = useState<string>("");
   const [profitMargin, setProfitMargin] = useState(250);
 
   useEffect(() => {
@@ -65,20 +83,25 @@ export function ProductListClient({
         purchasePrice: v.purchasePrice.toString(),
         salePrice: v.salePrice.toString()
       })) || []);
-      setPurchasePrice(editing.purchasePrice || 0);
-      setSalePrice(editing.salePrice || 0);
+      setPurchasePrice(editing.purchasePrice !== undefined && editing.purchasePrice !== null ? editing.purchasePrice.toString() : "");
+      setSalePrice(editing.salePrice !== undefined && editing.salePrice !== null ? editing.salePrice.toString() : "");
     } else {
       setHasVariants(false);
       setVariants([]);
-      setPurchasePrice(0);
-      setSalePrice(0);
+      setPurchasePrice("");
+      setSalePrice("");
     }
   }, [editing]);
 
-  const handlePurchasePriceChange = (val: number) => {
+  const handlePurchasePriceChange = (val: string) => {
     setPurchasePrice(val);
-    const suggestedSale = val + profitMargin;
-    setSalePrice(suggestedSale);
+    const num = parseFloat(val);
+    if (!isNaN(num)) {
+      const suggestedSale = num + profitMargin;
+      setSalePrice(suggestedSale.toString());
+    } else {
+      setSalePrice("");
+    }
   };
 
   const filteredProducts = useMemo(() => {
@@ -176,6 +199,8 @@ export function ProductListClient({
          // إذا كان منتج جديد، لا نغلق الفورم، بل نصفره ونركز على الاسم
          form.reset();
          // إعادة تصفير قيم السعر اليدوية في الـ state إن وجدت
+         setPurchasePrice("");
+         setSalePrice("");
          const nameInput = form.querySelector('input[name="name"]') as HTMLInputElement;
          if (nameInput) nameInput.focus();
          setLoading(false);
@@ -332,12 +357,17 @@ export function ProductListClient({
     const formData = new FormData();
     formData.append("id", p.id);
     formData.append("name", p.name);
+    formData.append("description", p.description || "");
     formData.append("branchId", p.branchId);
+    formData.append("sequence", String(p.sequence || 0));
     formData.append("active", String(!p.active));
+    formData.append("currentPhotoUrls", JSON.stringify(p.photoUrls || []));
 
     // لإكمال النموذج لـ upsertProduct
     formData.append("hasVariants", String(p.hasVariants));
     formData.append("variants", JSON.stringify(p.variants || []));
+    formData.append("variantType", p.variantType || "");
+    formData.append("supplierId", p.supplierId || "");
     formData.append("purchasePrice", String(p.purchasePrice));
     formData.append("salePrice", String(p.salePrice));
 
@@ -667,10 +697,10 @@ export function ProductListClient({
                       <div className="relative">
                           <input
                               name="purchasePrice"
-                              type="number"
-                              step="0.001"
+                              type="text"
+                              inputMode="decimal"
                               value={purchasePrice}
-                              onChange={(e) => handlePurchasePriceChange(Number(e.target.value))}
+                              onChange={(e) => handlePurchasePriceChange(cleanAndConvertNumbers(e.target.value))}
                               className="w-full px-5 py-3 rounded-2xl bg-white border-2 border-transparent focus:border-emerald-500 outline-none font-black text-emerald-600 transition-all shadow-sm"
                           />
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">د.ع</span>
@@ -681,10 +711,10 @@ export function ProductListClient({
                       <div className="relative">
                           <input
                               name="salePrice"
-                              type="number"
-                              step="0.001"
+                              type="text"
+                              inputMode="decimal"
                               value={salePrice}
-                              onChange={(e) => setSalePrice(Number(e.target.value))}
+                              onChange={(e) => setSalePrice(cleanAndConvertNumbers(e.target.value))}
                               className="w-full px-5 py-3 rounded-2xl bg-white border-2 border-transparent focus:border-emerald-500 outline-none font-black text-violet-600 transition-all shadow-sm"
                           />
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">د.ع</span>
@@ -701,7 +731,8 @@ export function ProductListClient({
                           type="button"
                           onClick={() => {
                             setProfitMargin(m);
-                            setSalePrice(purchasePrice + m);
+                            const basePrice = parseFloat(purchasePrice) || 0;
+                            setSalePrice((basePrice + m).toString());
                           }}
                           className={`flex-1 min-w-[70px] py-2 text-xs font-black rounded-xl border transition-all ${profitMargin === m ? 'bg-violet-600 text-white border-violet-600 shadow-lg shadow-violet-100' : 'bg-slate-50 text-slate-500 border-transparent hover:bg-slate-100'}`}
                         >
@@ -753,10 +784,10 @@ export function ProductListClient({
                         <div className="space-y-1">
                           <label className="text-[10px] font-black text-emerald-600">كلفة الشراء</label>
                           <input
-                            type="number"
-                            step="0.001"
+                            type="text"
+                            inputMode="decimal"
                             value={v.purchasePrice}
-                            onChange={(e) => updateVariant(idx, "purchasePrice", e.target.value)}
+                            onChange={(e) => updateVariant(idx, "purchasePrice", cleanAndConvertNumbers(e.target.value))}
                             className="w-full px-4 py-2 rounded-xl bg-emerald-50 border-none font-black text-sm text-emerald-700"
                             required
                           />
@@ -764,10 +795,10 @@ export function ProductListClient({
                         <div className="space-y-1">
                           <label className="text-[10px] font-black text-violet-600">سعر البيع</label>
                           <input
-                            type="number"
-                            step="0.001"
+                            type="text"
+                            inputMode="decimal"
                             value={v.salePrice}
-                            onChange={(e) => updateVariant(idx, "salePrice", e.target.value)}
+                            onChange={(e) => updateVariant(idx, "salePrice", cleanAndConvertNumbers(e.target.value))}
                             className="w-full px-4 py-2 rounded-xl bg-violet-50 border-none font-black text-sm text-violet-700"
                             required
                           />
@@ -849,21 +880,21 @@ export function ProductListClient({
               </div>
 
               {/* Actions */}
-              <div className="mt-auto grid grid-cols-3 gap-2 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
+              <div className="mt-auto grid grid-cols-3 gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all translate-y-0 lg:translate-y-2 lg:group-hover:translate-y-0 duration-300">
                 <button
                   onClick={() => {
                     setEditing(p);
                     setShowForm(true);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="p-2 bg-sky-50 text-sky-700 rounded-xl text-[10px] font-black hover:bg-sky-100 transition-colors flex items-center justify-center"
+                  className="p-2 bg-sky-50 border border-sky-200 text-sky-700 rounded-xl text-[10px] font-black hover:bg-sky-100 hover:border-sky-300 transition-colors flex items-center justify-center shadow-sm"
                   title="تعديل"
                 >
                   <DynamicIcon iconKey="ui_edit" config={icons} fallback="✏️" className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => handleToggleActive(p)}
-                  className={`p-2 rounded-xl text-[10px] font-black transition-colors flex items-center justify-center ${p.active ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}
+                  className={`p-2 border rounded-xl text-[10px] font-black transition-colors flex items-center justify-center shadow-sm ${p.active ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 hover:border-amber-300' : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300'}`}
                   title={p.active ? "إخفاء" : "إظهار"}
                 >
                   {p.active ? (
@@ -874,7 +905,7 @@ export function ProductListClient({
                 </button>
                 <button
                   onClick={() => setConfirmDelete(p.id)}
-                  className="p-2 bg-rose-50 text-rose-700 rounded-xl text-[10px] font-black hover:bg-rose-100 transition-colors flex items-center justify-center"
+                  className="p-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-[10px] font-black hover:bg-rose-100 hover:border-rose-300 transition-colors flex items-center justify-center shadow-sm"
                   title="حذف"
                 >
                   <DynamicIcon iconKey="ui_delete" config={icons} fallback="🗑️" className="w-3.5 h-3.5" />
