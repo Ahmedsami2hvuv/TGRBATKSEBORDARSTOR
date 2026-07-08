@@ -240,6 +240,35 @@ export function OrderPricingPanel({
   const [products, setProducts] = useState<any[]>(initialData?.products || []);
   const [placesCount, setPlacesCount] = useState<number>(initialData?.placesCount || 1);
   const [noProfit, setNoProfit] = useState(!!initialData?.noProfit);
+  const [filterType, setFilterType] = useState<'all' | 'unpriced' | 'priced'>('all');
+
+  const unpricedCount = useMemo(() => {
+    return products.filter(p => !(parseFloat(normalizeNumerals((p.buyAlf || "0").toString())) > 0)).length;
+  }, [products]);
+
+  const pricedCount = useMemo(() => {
+    return products.filter(p => parseFloat(normalizeNumerals((p.buyAlf || "0").toString())) > 0).length;
+  }, [products]);
+
+  const getNextUnpricedIndex = (currentIndex: number, currentProductsList: any[]) => {
+    for (let i = currentIndex + 1; i < currentProductsList.length; i++) {
+      const priced = parseFloat(normalizeNumerals((currentProductsList[i]?.buyAlf ?? "0").toString())) > 0;
+      if (!priced) return i;
+    }
+    for (let i = 0; i < currentIndex; i++) {
+      const priced = parseFloat(normalizeNumerals((currentProductsList[i]?.buyAlf ?? "0").toString())) > 0;
+      if (!priced) return i;
+    }
+    return null;
+  };
+
+  const getNextIndex = (currentIndex: number) => {
+    return currentIndex < products.length - 1 ? currentIndex + 1 : 0;
+  };
+
+  const getPrevIndex = (currentIndex: number) => {
+    return currentIndex > 0 ? currentIndex - 1 : products.length - 1;
+  };
 
   const handleToggleNoProfit = async (newVal: boolean) => {
     setNoProfit(newVal);
@@ -276,6 +305,18 @@ export function OrderPricingPanel({
   const [showAutoCourier, setShowAutoCourier] = useState(false);
 
   const sellInputRef = useRef<HTMLInputElement>(null);
+
+  // تعبئة الحقول تلقائياً عند تغيير المنتج الذي يتم تعديله
+  useEffect(() => {
+    if (editingIndex !== null && products[editingIndex]) {
+      const p = products[editingIndex];
+      const priced = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) > 0;
+      setBuyText(priced ? p.buyAlf : "");
+      setSellText(priced ? p.sellAlf : "");
+      setIsAdminFulfilled(!!p.isFulfilledByAdmin);
+      setPricingErr("");
+    }
+  }, [editingIndex]);
 
   const bound = updateOrderPricingByAdmin.bind(null, orderId);
   const [state, formAction, pending] = useActionState(bound, { ok: false });
@@ -340,7 +381,13 @@ export function OrderPricingPanel({
       assignedPreparerId: isAdminFulfilled ? null : next[editingIndex].assignedPreparerId
     };
     setProducts(next);
-    setEditingIndex(null);
+
+    const nextUnpriced = getNextUnpricedIndex(editingIndex, next);
+    if (nextUnpriced !== null) {
+      setEditingIndex(nextUnpriced);
+    } else {
+      setEditingIndex(null);
+    }
     setPricingErr("");
   };
 
@@ -377,7 +424,13 @@ export function OrderPricingPanel({
       assignedPreparerId: isAdminFulfilled ? null : next[editingIndex].assignedPreparerId
     };
     setProducts(next);
-    setEditingIndex(null);
+
+    const nextUnpriced = getNextUnpricedIndex(editingIndex, next);
+    if (nextUnpriced !== null) {
+      setEditingIndex(nextUnpriced);
+    } else {
+      setEditingIndex(null);
+    }
     setPricingErr("");
   };
 
@@ -576,6 +629,31 @@ export function OrderPricingPanel({
           </div>
         </div>
 
+        {/* أزرار التصفية السريعة */}
+        <div className="flex items-center gap-1 mb-2 bg-slate-100 dark:bg-slate-900/40 p-1 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setFilterType('all')}
+            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all ${filterType === 'all' ? 'bg-white dark:bg-slate-800 shadow text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            الكل ({products.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterType('unpriced')}
+            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 ${filterType === 'unpriced' ? 'bg-amber-500 text-white shadow' : 'text-amber-600 dark:text-amber-400 hover:bg-amber-500/10'}`}
+          >
+            ⚠️ غير مسعر ({unpricedCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterType('priced')}
+            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 ${filterType === 'priced' ? 'bg-emerald-500 text-white shadow' : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10'}`}
+          >
+            ✅ تم التسعير ({pricedCount})
+          </button>
+        </div>
+
         {showBulkAdd && (
           <div className="mb-3 p-3 bg-white dark:bg-slate-800 rounded-[1.5rem] border border-amber-200 dark:border-amber-900/50 shadow-inner animate-in slide-in-from-top-2">
              <label className="text-[10px] font-black text-amber-600 mb-1.5 block">إضافة منتجات متعددة (كل سطر منتج)</label>
@@ -598,30 +676,36 @@ export function OrderPricingPanel({
           {showReassign && <div className="mt-2 mb-4 animate-in slide-in-from-top-2"><AssignToPreparerPanel orderId={orderId} preparers={preparers} isDraft={isDraft} initialPreparerIds={initialPreparerIds} onSuccess={() => { setShowReassign(false); }} icons={icons || undefined} hideContainer={true} /></div>}
 
           {selectedProductIndexes.length > 0 && (
-            <div className="rounded-xl bg-sky-900 p-2 shadow-lg mb-4">
-              <div className="flex flex-col gap-1.5">
-                <p className="text-[10px] font-black text-white">تخصيص {selectedProductIndexes.length} منتج لـ:</p>
-                <div className="flex gap-1">
-                  <select value={productAssigneeId} onChange={(e) => setProductAssigneeId(e.target.value)} className="flex-1 rounded-lg border-none bg-white p-1.5 text-[10px] font-black outline-none text-slate-900">
-                    <option value="">اختر المجهز</option>
-                    {preparers.map((prep) => <option key={prep.id} value={prep.id}>{prep.name}</option>)}
-                  </select>
-                  <button type="button" onClick={assignSelectedProductsToPreparer} disabled={!productAssigneeId} className="rounded-lg bg-emerald-500 px-3 text-[10px] font-black text-white">تطبيق</button>
-                  <button type="button" onClick={clearSelection} className="text-[9px] font-bold text-sky-200">إلغاء</button>
-                </div>
-              </div>
-            </div>
+             <div className="rounded-xl bg-sky-900 p-2 shadow-lg mb-4">
+               <div className="flex flex-col gap-1.5">
+                 <p className="text-[10px] font-black text-white">تخصيص {selectedProductIndexes.length} منتج لـ:</p>
+                 <div className="flex gap-1">
+                   <select value={productAssigneeId} onChange={(e) => setProductAssigneeId(e.target.value)} className="flex-1 rounded-lg border-none bg-white p-1.5 text-[10px] font-black outline-none text-slate-900">
+                     <option value="">اختر المجهز</option>
+                     {preparers.map((prep) => <option key={prep.id} value={prep.id}>{prep.name}</option>)}
+                   </select>
+                   <button type="button" onClick={assignSelectedProductsToPreparer} disabled={!productAssigneeId} className="rounded-lg bg-emerald-500 px-3 text-[10px] font-black text-white">تطبيق</button>
+                   <button type="button" onClick={clearSelection} className="text-[9px] font-bold text-sky-200">إلغاء</button>
+                 </div>
+               </div>
+             </div>
           )}
 
           <div className="space-y-0.5">
             {(() => {
               const sorted = products
                 .map((p, idx) => ({ ...p, originalIndex: idx }))
+                .filter(p => {
+                  const priced = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) > 0;
+                  if (filterType === 'unpriced') return !priced;
+                  if (filterType === 'priced') return priced;
+                  return true;
+                })
                 .sort((a, b) => {
                   const aPriced = parseFloat(normalizeNumerals((a?.buyAlf ?? "0").toString())) > 0;
                   const bPriced = parseFloat(normalizeNumerals((b?.buyAlf ?? "0").toString())) > 0;
-                  if (aPriced && !bPriced) return -1;
-                  if (!aPriced && bPriced) return 1;
+                  if (!aPriced && bPriced) return -1;
+                  if (aPriced && !bPriced) return 1;
                   return a.originalIndex - b.originalIndex;
                 });
 
@@ -641,9 +725,6 @@ export function OrderPricingPanel({
                           setProducts(products.filter((_, idx) => idx !== i));
                         } else {
                           setEditingIndex(i);
-                          setBuyText(priced ? p.buyAlf : "");
-                          setSellText(priced ? p.sellAlf : "");
-                          setIsAdminFulfilled(!!p.isFulfilledByAdmin);
                         }
                       }}>
                         <div className="flex flex-col min-w-0">
@@ -696,12 +777,36 @@ export function OrderPricingPanel({
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="absolute inset-0" onClick={cancelPricingPanel} />
           <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 animate-in zoom-in-95 duration-200">
-            <div className="bg-sky-600 p-4 text-white flex justify-between items-center">
-               <div className="min-w-0 flex-1 text-right">
-                  <p className="text-[10px] font-bold opacity-80 uppercase">تسعير المنتج:</p>
-                  <p className="truncate text-sm font-black">{products[editingIndex]?.line}</p>
+            <div className="bg-sky-600 p-3 sm:p-4 text-white flex items-center justify-between gap-3">
+               <div className="flex items-center gap-1.5 shrink-0" dir="ltr">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const prevIdx = getPrevIndex(editingIndex);
+                      setEditingIndex(prevIdx);
+                    }}
+                    className="h-8 w-8 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center font-bold text-white transition active:scale-90"
+                    title="المنتج السابق"
+                  >
+                    ◀
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextIdx = getNextIndex(editingIndex);
+                      setEditingIndex(nextIdx);
+                    }}
+                    className="h-8 w-8 rounded-xl bg-white/10 hover:bg-white/25 flex items-center justify-center font-bold text-white transition active:scale-90"
+                    title="المنتج التالي"
+                  >
+                    ▶
+                  </button>
                </div>
-               <button onClick={cancelPricingPanel} className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 transition">✕</button>
+               <div className="min-w-0 flex-1 text-right">
+                  <p className="text-[9px] font-black opacity-80">تسعير المنتج ({editingIndex + 1} من {products.length}):</p>
+                  <p className="truncate text-xs sm:text-sm font-black">{products[editingIndex]?.line}</p>
+               </div>
+               <button type="button" onClick={cancelPricingPanel} className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 transition flex items-center justify-center shrink-0">✕</button>
             </div>
 
             <div className="p-6 text-right">
