@@ -31,7 +31,13 @@ export function DynamicIcon({
 
   const resolvedIcon = icon || (iconKey && config ? config[iconKey] : (config && !iconKey ? config : null));
 
-  if (!resolvedIcon) return <>{fallback}</>;
+  if (!resolvedIcon) {
+    if (iconKey) {
+      // إذا كان المفتاح غير موجود في الإعدادات، فقد يكون رمزاً تعبيرياً مباشراً تم إدخاله من قبل المستخدم
+      return <span className={className}>{iconKey}</span>;
+    }
+    return <>{fallback}</>;
+  }
 
   const iconUrl = cleanIconUrl(resolvedIcon.url || "");
 

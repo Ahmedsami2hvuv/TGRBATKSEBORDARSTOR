@@ -48,9 +48,11 @@ export function SidebarSettingsForm({
     setConfig(initialConfig);
   }, [initialConfig]);
 
-  // تتبع حالة تعديل اسم الزر
+  // تتبع حالة تعديل الزر
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState("");
+  const [editingHref, setEditingHref] = useState("");
+  const [editingIconKey, setEditingIconKey] = useState("");
 
   // حقول إضافة زر جديد
   const [newLabel, setNewLabel] = useState("");
@@ -165,39 +167,65 @@ export function SidebarSettingsForm({
     void autoSave(updated);
   };
 
-  // تفعيل التعديل على اسم الزر
-  const startEditLabel = (slug: string, currentLabel: string) => {
-    setEditingSlug(slug);
-    setEditingLabel(currentLabel);
+  // تفعيل التعديل على الزر
+  const startEditTile = (tile: any) => {
+    setEditingSlug(tile.slug);
+    setEditingLabel(tile.label);
+    setEditingHref(tile.href || "");
+    setEditingIconKey(tile.iconKey || "");
   };
 
-  // إلغاء تعديل اسم الزر
-  const cancelEditLabel = () => {
+  // إلغاء التعديل
+  const cancelEdit = () => {
     setEditingSlug(null);
     setEditingLabel("");
+    setEditingHref("");
+    setEditingIconKey("");
   };
 
-  // حفظ الاسم الجديد تلقائياً
-  const saveLabel = (slug: string) => {
-    const trimmed = editingLabel.trim();
-    if (!trimmed) {
+  // حفظ التعديلات تلقائياً
+  const saveTile = (slug: string) => {
+    const trimmedLabel = editingLabel.trim();
+    if (!trimmedLabel) {
       alert("لا يمكن ترك اسم الزر فارغاً.");
       return;
     }
 
-    const updatedLabels = {
-      ...(config.customLabels || {}),
-      [slug]: trimmed
-    };
+    const isCustom = slug.startsWith("custom-");
+    let updated: SidebarConfig = { ...config };
 
-    const updated: SidebarConfig = {
-      ...config,
-      customLabels: updatedLabels
-    };
+    if (isCustom) {
+      // تعديل زر مخصص: نقوم بتحديث خصائصه في مصفوفة customTiles
+      updated.customTiles = config.customTiles.map((tile) => {
+        if (tile.slug === slug) {
+          return {
+            ...tile,
+            label: trimmedLabel,
+            href: editingHref.trim(),
+            iconKey: editingIconKey.trim()
+          };
+        }
+        return tile;
+      });
+
+      // كما نقوم بتحديث الاسم في customLabels لضمان المزامنة
+      updated.customLabels = {
+        ...(config.customLabels || {}),
+        [slug]: trimmedLabel
+      };
+    } else {
+      // زر نظام عادي: نقوم فقط بتحديث الاسم المخصص له
+      updated.customLabels = {
+        ...(config.customLabels || {}),
+        [slug]: trimmedLabel
+      };
+    }
 
     setConfig(updated);
     setEditingSlug(null);
     setEditingLabel("");
+    setEditingHref("");
+    setEditingIconKey("");
     void autoSave(updated);
   };
 
@@ -304,35 +332,110 @@ export function SidebarSettingsForm({
                   {/* عرض التعديل أو الاسم المعتاد */}
                   <div className="flex-1 min-w-0">
                     {isEditingThis ? (
-                      <div className="flex items-center gap-1.5 w-full max-w-md">
-                        <input
-                          type="text"
-                          value={editingLabel}
-                          onChange={(e) => setEditingLabel(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") saveLabel(tile.slug);
-                            if (e.key === "Escape") cancelEditLabel();
-                          }}
-                          className="flex-1 px-2.5 py-1.5 text-xs font-bold bg-slate-50 dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded-lg outline-none focus:border-[#00f3ff] w-full"
-                          autoFocus
-                        />
-                        <button
-                          type="button"
-                          onClick={() => saveLabel(tile.slug)}
-                          className="px-2.5 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-black"
-                          title="حفظ الاسم"
-                        >
-                          ✔
-                        </button>
-                        <button
-                          type="button"
-                          onClick={cancelEditLabel}
-                          className="px-2.5 py-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-black"
-                          title="إلغاء"
-                        >
-                          ✕
-                        </button>
-                      </div>
+                      isCustom ? (
+                        <div className="flex flex-col gap-3 w-full bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800 my-2">
+                          {/* اسم الزر */}
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-500 block">اسم الزر:</label>
+                            <input
+                              type="text"
+                              value={editingLabel}
+                              onChange={(e) => setEditingLabel(e.target.value)}
+                              className="w-full px-2.5 py-1.5 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded-lg outline-none focus:border-[#00f3ff]"
+                            />
+                          </div>
+
+                          {/* رابط التوجيه */}
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-500 block">رابط التوجيه (Href):</label>
+                            <input
+                              type="text"
+                              value={editingHref}
+                              onChange={(e) => setEditingHref(e.target.value)}
+                              className="w-full px-2.5 py-1.5 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded-lg outline-none focus:border-[#00f3ff] ltr text-left"
+                            />
+                          </div>
+
+                          {/* رمز الأيقونة */}
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-500 block">رمز الأيقونة أو الرمز التعبيري (يمكنك لصقه مباشرة):</label>
+                            <input
+                              type="text"
+                              value={editingIconKey}
+                              onChange={(e) => setEditingIconKey(e.target.value)}
+                              placeholder="مثال: ⭐ أو 🔗"
+                              className="w-full px-2.5 py-1.5 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded-lg outline-none focus:border-[#00f3ff]"
+                            />
+                            
+                            {/* أيقونات سريعة */}
+                            <div className="flex flex-wrap gap-1 mt-1.5 max-h-[60px] overflow-y-auto p-1 bg-white dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                              {AVAILABLE_ICONS.map((item) => {
+                                const emojiMatch = item.label.match(/[\u{1F300}-\u{1F9FF}]/u) || item.label.match(/[\u{2700}-\u{27BF}]/u);
+                                const quickVal = emojiMatch ? emojiMatch[0] : item.key;
+                                return (
+                                  <button
+                                    key={item.key}
+                                    type="button"
+                                    onClick={() => setEditingIconKey(quickVal)}
+                                    className="px-1.5 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded text-slate-700 dark:text-slate-300 transition font-bold"
+                                    title={item.label}
+                                  >
+                                    {item.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* أزرار الإجراءات */}
+                          <div className="flex justify-end gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
+                            <button
+                              type="button"
+                              onClick={() => saveTile(tile.slug)}
+                              className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-black transition active:scale-95"
+                            >
+                              حفظ الزر
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelEdit}
+                              className="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-black transition active:scale-95"
+                            >
+                              إلغاء
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 w-full max-w-md">
+                          <input
+                            type="text"
+                            value={editingLabel}
+                            onChange={(e) => setEditingLabel(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveTile(tile.slug);
+                              if (e.key === "Escape") cancelEdit();
+                            }}
+                            className="flex-1 px-2.5 py-1.5 text-xs font-bold bg-slate-50 dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded-lg outline-none focus:border-[#00f3ff] w-full"
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={() => saveTile(tile.slug)}
+                            className="px-2.5 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-black"
+                            title="حفظ الاسم"
+                          >
+                            ✔
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEdit}
+                            className="px-2.5 py-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-black"
+                            title="إلغاء"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )
                     ) : (
                       <div className="flex items-center gap-2 group">
                         <span className="text-xs font-black text-slate-800 dark:text-slate-200 truncate">
@@ -342,7 +445,7 @@ export function SidebarSettingsForm({
                         {/* زر القلم للتعديل على الاسم */}
                         <button
                           type="button"
-                          onClick={() => startEditLabel(tile.slug, tile.label)}
+                          onClick={() => startEditTile(tile)}
                           className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition p-1"
                           title="تعديل اسم القسم"
                         >
@@ -410,53 +513,74 @@ export function SidebarSettingsForm({
           ➕ إضافة زر/رابط مخصص جديد
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50/50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/60">
-          {/* اسم الزر */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-black text-slate-550 dark:text-slate-405">اسم الزر:</label>
-            <input
-              type="text"
-              placeholder="مثال: متجرنا الثاني"
-              value={newLabel}
-              onChange={(e) => setNewLabel(e.target.value)}
-              className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff]"
-            />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/60">
+          {/* اسم الزر ورابط التوجيه */}
+          <div className="space-y-4">
+            {/* اسم الزر */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-550 dark:text-slate-405 block">اسم الزر الجديد:</label>
+              <input
+                type="text"
+                placeholder="مثال: متجرنا الثاني"
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded-xl outline-none focus:border-[#00f3ff]"
+              />
+            </div>
 
-          {/* رابط التوجيه */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-black text-slate-550 dark:text-slate-405">رابط التوجيه (Href):</label>
-            <input
-              type="text"
-              placeholder="مثال: /abo1stor3hlaa2kbr8-47/orders"
-              value={newHref}
-              onChange={(e) => setNewHref(e.target.value)}
-              className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff] ltr text-left"
-            />
+            {/* رابط التوجيه */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-550 dark:text-slate-405 block">رابط التوجيه (Href):</label>
+              <input
+                type="text"
+                placeholder="مثال: /abo1stor3hlaa2kbr8-47/orders"
+                value={newHref}
+                onChange={(e) => setNewHref(e.target.value)}
+                className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded-xl outline-none focus:border-[#00f3ff] ltr text-left"
+              />
+            </div>
           </div>
 
           {/* اختيار الأيقونة */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-black text-slate-550 dark:text-slate-405">شكل الأيقونة:</label>
-            <select
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-550 dark:text-slate-405 block">شكل الأيقونة (أو الصق رمز تعبيري مباشرة):</label>
+            <input
+              type="text"
+              placeholder="مثال: ⭐ أو 🔗"
               value={newIconKey}
               onChange={(e) => setNewIconKey(e.target.value)}
-              className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff]"
-            >
-              {AVAILABLE_ICONS.map((item) => (
-                <option key={item.key} value={item.key}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+              className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded-xl outline-none focus:border-[#00f3ff]"
+            />
+            
+            {/* أيقونات سريعة */}
+            <div className="space-y-1">
+              <span className="text-[9px] text-slate-400 block font-bold">أيقونات شائعة سريعة (اضغط للاختيار):</span>
+              <div className="flex flex-wrap gap-1 max-h-[100px] overflow-y-auto p-2 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+                {AVAILABLE_ICONS.map((item) => {
+                  const emojiMatch = item.label.match(/[\u{1F300}-\u{1F9FF}]/u) || item.label.match(/[\u{2700}-\u{27BF}]/u);
+                  const quickVal = emojiMatch ? emojiMatch[0] : item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => setNewIconKey(quickVal)}
+                      className="px-2 py-1 text-[11px] bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 rounded-lg text-slate-700 dark:text-slate-300 transition font-bold border border-slate-100 dark:border-slate-850"
+                      title={item.label}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* زر إضافة للجدول */}
-          <div className="sm:col-span-3">
+          <div className="md:col-span-2">
             <button
               type="button"
               onClick={addCustomTile}
-              className="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-black font-black rounded-xl text-xs transition active:scale-95"
+              className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-black font-black rounded-xl text-xs transition active:scale-95"
             >
               إدراج الزر المخصص وحفظه تلقائياً
             </button>
