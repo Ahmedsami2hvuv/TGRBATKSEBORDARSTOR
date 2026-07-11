@@ -60,8 +60,9 @@ export function FloatingAdminMenu() {
         try {
           const parsed = JSON.parse(savedPos);
           if (parsed && typeof parsed.x === "number" && typeof parsed.y === "number" && !isNaN(parsed.x) && !isNaN(parsed.y)) {
-            const x = Math.max(10, Math.min(window.innerWidth - 60, parsed.x));
-            const y = Math.max(10, Math.min(window.innerHeight - 60, parsed.y));
+            const { width, height } = getViewportDims();
+            const x = Math.max(15, Math.min(width - 15, parsed.x));
+            const y = Math.max(15, Math.min(height - 15, parsed.y));
             setPosition({ x, y });
             positionRef.current = { x, y };
           } else {
@@ -125,8 +126,16 @@ export function FloatingAdminMenu() {
     }
 
     if (isActuallyDraggingRef.current && !isLockedRef.current) {
-      const nx = Math.max(btnSize/2, Math.min(window.innerWidth - btnSize/2, clientX - dragOffsetRef.current.x));
-      const ny = Math.max(btnSize/2, Math.min(window.innerHeight - btnSize/2, clientY - dragOffsetRef.current.y));
+      const { width, height } = getViewportDims();
+      
+      // السماح للزر بالخروج جزئياً (حتى يتبقى 15 بكسل منه فقط على الحواف) ليعطي حرية حركة كاملة في الهاتف
+      const minX = 15;
+      const maxX = width - 15;
+      const minY = 15;
+      const maxY = height - 15;
+
+      const nx = Math.max(minX, Math.min(maxX, clientX - dragOffsetRef.current.x));
+      const ny = Math.max(minY, Math.min(maxY, clientY - dragOffsetRef.current.y));
       const newPos = { x: nx, y: ny };
       positionRef.current = newPos;
       setPosition(newPos);
@@ -319,4 +328,11 @@ function getArcPath(sA: number, eA: number, ir: number, or: number) {
   const x4 = Math.cos(sR) * ir; const y4 = Math.sin(sR) * ir;
   const arc = eA - sA <= 180 ? "0" : "1";
   return `M ${x1} ${y1} A ${or} ${or} 0 ${arc} 1 ${x2} ${y2} L ${x3} ${y3} A ${ir} ${ir} 0 ${arc} 0 ${x4} ${y4} Z`;
+}
+
+function getViewportDims() {
+  if (typeof window === "undefined") return { width: 500, height: 800 };
+  const width = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+  const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  return { width, height };
 }
