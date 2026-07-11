@@ -491,8 +491,17 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
         } else if (p.type === "preparer" && p.externalId) {
           try {
             const prepTotals = await getPreparerMoneyTotals(p.externalId);
+            let prepAccumulatedSalary = 0;
+            try {
+              const { calculateAccumulatedSalaryInternal } = await import("@/app/preparer/actions");
+              const salaryStats = await calculateAccumulatedSalaryInternal(p.externalId);
+              prepAccumulatedSalary = salaryStats.accumulatedSalary || 0;
+            } catch (salaryErr) {
+              console.error(`Failed to get preparer salary for ${p.name}:`, salaryErr);
+            }
+
             if (prepTotals) {
-              autoBalance = prepTotals.remain.toNumber();
+              autoBalance = prepTotals.remain.toNumber() - prepAccumulatedSalary;
               walletRemain = prepTotals.remain.toNumber();
             }
           } catch (e) {
@@ -627,7 +636,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
       })
     );
 
-    const result = mapped.filter((item): item is PartnerWithBalance => item !== null);
+    const result = mapped.filter((item) => item !== null) as PartnerWithBalance[];
 
     // فرز النتائج: الحسابات غير المصفّرة (غير الصفرية) تسبق المصفّرة (الصفرية)
     // مع الحفاظ على ترتيب تاريخ التحديث (آخر نشاط) تنازلياً لكل قسم.
@@ -944,9 +953,31 @@ export async function getPartnerDetails(partnerId: string) {
     } else if (partner.type === "preparer" && partner.externalId) {
       try {
         const prepTotals = await getPreparerMoneyTotals(partner.externalId);
+        let prepAccumulatedSalary = 0;
+        try {
+          const { calculateAccumulatedSalaryInternal } = await import("@/app/preparer/actions");
+          const salaryStats = await calculateAccumulatedSalaryInternal(partner.externalId);
+          prepAccumulatedSalary = salaryStats.accumulatedSalary || 0;
+        } catch (salaryErr) {
+          console.error("Failed to fetch preparer accumulated salary in details:", salaryErr);
+        }
+
         if (prepTotals) {
-          autoBalance = prepTotals.remain.toNumber();
+          autoBalance = prepTotals.remain.toNumber() - prepAccumulatedSalary;
           walletRemain = prepTotals.remain.toNumber();
+        }
+
+        if (prepAccumulatedSalary > 0) {
+          autoTransactions.push({
+            id: `auto-preparer-accumulated-salary-${partner.id}`,
+            partnerId: partner.id,
+            amount: prepAccumulatedSalary,
+            kind: "took", // أخذت = يطلبنا
+            note: `رواتب المجهزين المتراكمه`,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isAuto: true
+          });
         }
 
         const preparer = await prisma.companyPreparer.findFirst({
