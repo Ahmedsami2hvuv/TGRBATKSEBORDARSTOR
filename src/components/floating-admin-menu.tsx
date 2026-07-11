@@ -34,6 +34,7 @@ export function FloatingAdminMenu() {
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const isActuallyDraggingRef = useRef(false);
   const isLockedRef = useRef(false);
+  const mainButtonRef = useRef<HTMLDivElement>(null);
 
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [activeLinkId, setActiveLinkId] = useState<string | null>(null);
@@ -105,7 +106,7 @@ export function FloatingAdminMenu() {
   }, []);
 
   // بدء السحب
-  const onStart = (clientX: number, clientY: number) => {
+  const onStart = useCallback((clientX: number, clientY: number) => {
     isDraggingRef.current = true;
     isActuallyDraggingRef.current = false;
     dragStartPos.current = { x: clientX, y: clientY };
@@ -114,7 +115,23 @@ export function FloatingAdminMenu() {
     setIsDragging(true);
     setIsActuallyDragging(false);
     setDragOffset({ x: clientX - positionRef.current.x, y: clientY - positionRef.current.y });
-  };
+  }, []);
+
+  // تسجيل touchstart ديناميكياً بخيار passive: false لمنع السحب للتحديث الافتراضي بالهواتف
+  useEffect(() => {
+    const btn = mainButtonRef.current;
+    if (!btn) return;
+
+    const ts = (e: TouchEvent) => {
+      onStart(e.touches[0].clientX, e.touches[0].clientY);
+      if (e.cancelable) e.preventDefault();
+    };
+
+    btn.addEventListener("touchstart", ts, { passive: false });
+    return () => {
+      btn.removeEventListener("touchstart", ts);
+    };
+  }, [onStart]);
 
   // أثناء الحركة
   const onMove = useCallback((clientX: number, clientY: number) => {
@@ -229,6 +246,7 @@ export function FloatingAdminMenu() {
       >
         {/* منطقة التفاعل - محدودة بحجم الزر فقط عند الإغلاق لعدم حجب الشاشة */}
         <div
+          ref={mainButtonRef}
           className="absolute pointer-events-auto flex items-center justify-center"
           style={{
             width: isHovered ? 400 : 70,
@@ -238,7 +256,6 @@ export function FloatingAdminMenu() {
             touchAction: "none"
           }}
           onMouseDown={(e) => onStart(e.clientX, e.clientY)}
-          onTouchStart={(e) => onStart(e.touches[0].clientX, e.touches[0].clientY)}
         >
           {/* القائمة الدائرية */}
           <div
