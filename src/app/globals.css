@@ -74,8 +74,9 @@ body {
   scrollbar-width: none;  /* Firefox */
 }
 
-html {
+html, body {
   background-color: var(--background);
+  overscroll-behavior-y: none;
 }
 
 .kse-app-bg {
@@ -83,6 +84,7 @@ html {
   min-height: 100vh;
   isolation: isolate;
   background-color: #ffffff;
+  overscroll-behavior-y: none;
 }
 
 .dark .kse-app-bg {
