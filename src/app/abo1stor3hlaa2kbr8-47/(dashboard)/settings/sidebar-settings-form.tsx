@@ -57,7 +57,7 @@ export function SidebarSettingsForm({
   // حقول إضافة زر جديد
   const [newLabel, setNewLabel] = useState("");
   const [newHref, setNewHref] = useState("");
-  const [newIconKey, setNewIconKey] = useState("ui_link");
+  const [newIconKey, setNewIconKey] = useState("");
 
   // دمج الأزرار الحالية لعرضها في قائمة الترتيب
   const mergedTiles = getMergedSidebarTiles(config);
@@ -149,7 +149,7 @@ export function SidebarSettingsForm({
 
     setNewLabel("");
     setNewHref("");
-    setNewIconKey("ui_link");
+    setNewIconKey("");
   };
 
   // حذف زر مخصص تلقائياً
@@ -365,27 +365,7 @@ export function SidebarSettingsForm({
                               onChange={(e) => setEditingIconKey(e.target.value)}
                               placeholder="مثال: ⭐ أو 🔗"
                               className="w-full px-2.5 py-1.5 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded-lg outline-none focus:border-[#00f3ff]"
-                            />
-                            
-                            {/* أيقونات سريعة */}
-                            <div className="flex flex-wrap gap-1 mt-1.5 max-h-[60px] overflow-y-auto p-1 bg-white dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
-                              {AVAILABLE_ICONS.map((item) => {
-                                const emojiMatch = item.label.match(/[\u{1F300}-\u{1F9FF}]/u) || item.label.match(/[\u{2700}-\u{27BF}]/u);
-                                const quickVal = emojiMatch ? emojiMatch[0] : item.key;
-                                return (
-                                  <button
-                                    key={item.key}
-                                    type="button"
-                                    onClick={() => setEditingIconKey(quickVal)}
-                                    className="px-1.5 py-0.5 text-[9px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded text-slate-700 dark:text-slate-300 transition font-bold"
-                                    title={item.label}
-                                  >
-                                    {item.label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
+                            />                          </div>
 
                           {/* أزرار الإجراءات */}
                           <div className="flex justify-end gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
@@ -513,9 +493,8 @@ export function SidebarSettingsForm({
           ➕ إضافة زر/رابط مخصص جديد
         </h2>
 
-        <div className="bg-slate-50/50 dark:bg-slate-900/40 p-5 rounded-3xl border border-slate-200/60 dark:border-slate-800/60 space-y-5">
-          {/* السطر الأول: الاسم والرابط بجانب بعضهما */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-slate-50/50 dark:bg-slate-900/40 p-5 rounded-3xl border border-slate-200/60 dark:border-slate-800/60 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* اسم الزر */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-black text-slate-650 dark:text-slate-350 block">اسم الزر الجديد:</label>
@@ -533,64 +512,30 @@ export function SidebarSettingsForm({
               <label className="text-[11px] font-black text-slate-650 dark:text-slate-350 block">رابط التوجيه (Href):</label>
               <input
                 type="text"
-                placeholder="مثال: /abo1stor3hlaa2kbr8-47/orders"
+                placeholder="مثال: /orders"
                 value={newHref}
                 onChange={(e) => setNewHref(e.target.value)}
                 className="w-full px-3.5 py-2.5 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff] focus:ring-1 focus:ring-[#00f3ff] transition-all ltr text-left"
               />
             </div>
-          </div>
 
-          {/* السطر الثاني: شكل الأيقونة والمعاينة والأيقونات السريعة */}
-          <div className="bg-white dark:bg-slate-950 p-4 rounded-2xl border border-slate-150 dark:border-slate-850 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              
-              {/* حقل إدخال الأيقونة مع المعاينة */}
-              <div className="space-y-1.5 shrink-0 sm:w-[260px]">
-                <label className="text-[11px] font-black text-slate-650 dark:text-slate-350 block">أيقونة الزر (أو الصق رمز تعبيري):</label>
-                <div className="flex items-center gap-2">
-                  {/* مربع المعاينة التلقائية للأيقونة النشطة */}
-                  <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-lg shadow-inner shrink-0">
-                    <DynamicIcon iconKey={newIconKey} config={globalIcons} fallback="📁" className="w-5 h-5" />
-                  </div>
-                  {/* حقل الإدخال النصي */}
-                  <input
-                    type="text"
-                    placeholder="الصق الرمز هنا (مثال: ⭐)"
-                    value={newIconKey}
-                    onChange={(e) => setNewIconKey(e.target.value)}
-                    className="flex-1 px-3 py-2 text-xs font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff] focus:ring-1 focus:ring-[#00f3ff] transition-all text-center"
-                  />
+            {/* أيقونة الزر */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-black text-slate-650 dark:text-slate-350 block">أيقونة الزر (رمز تعبيري):</label>
+              <div className="flex items-center gap-2">
+                {/* المعاينة للأيقونة */}
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-lg shadow-inner shrink-0">
+                  <DynamicIcon iconKey={newIconKey} config={globalIcons} fallback="📁" className="w-5 h-5" />
                 </div>
+                {/* حقل الإدخال النصي الفارغ */}
+                <input
+                  type="text"
+                  placeholder="الصق الرمز التعبيري هنا"
+                  value={newIconKey}
+                  onChange={(e) => setNewIconKey(e.target.value)}
+                  className="flex-1 px-3 py-2.5 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff] focus:ring-1 focus:ring-[#00f3ff] transition-all text-center"
+                />
               </div>
-
-              {/* الأيقونات السريعة للاختيار المباشر بجانبها */}
-              <div className="flex-1 space-y-1.5 min-w-0">
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-black">أيقونات النظام الشائعة (اضغط للاختيار السريع):</span>
-                <div className="flex flex-wrap gap-1.5 max-h-[85px] overflow-y-auto p-1.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-900">
-                  {AVAILABLE_ICONS.map((item) => {
-                    const emojiMatch = item.label.match(/[\u{1F300}-\u{1F9FF}]/u) || item.label.match(/[\u{2700}-\u{27BF}]/u);
-                    const quickVal = emojiMatch ? emojiMatch[0] : item.key;
-                    const isActive = newIconKey === quickVal;
-                    return (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => setNewIconKey(quickVal)}
-                        className={`px-2.5 py-1 text-[11px] rounded-lg transition-all font-bold border active:scale-95 shrink-0 ${
-                          isActive
-                            ? "bg-[#00f3ff] text-black border-[#00f3ff] shadow-[0_0_8px_rgba(0,243,255,0.25)]"
-                            : "bg-white hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-900 text-slate-750 dark:text-slate-300 border-slate-200/80 dark:border-slate-800"
-                        }`}
-                        title={item.label}
-                      >
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
             </div>
           </div>
 
