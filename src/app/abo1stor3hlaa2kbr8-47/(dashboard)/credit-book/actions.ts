@@ -426,6 +426,27 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
       }
     }
 
+    try {
+      const rootExists = await prisma.creditBookPartner.findFirst({
+        where: {
+          externalId: "accumulated_salaries_root",
+          type: "external"
+        }
+      });
+      if (!rootExists) {
+        await prisma.creditBookPartner.create({
+          data: {
+            name: "رواتب المجهزين المتراكمه",
+            phone: null,
+            type: "external",
+            externalId: "accumulated_salaries_root"
+          }
+        });
+      }
+    } catch (rootErr) {
+      console.error("Failed to ensure accumulated salaries root partner exists:", rootErr);
+    }
+
     const whereClause: any = {
       NOT: {
         type: {
@@ -491,21 +512,28 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
         } else if (p.type === "preparer" && p.externalId) {
           try {
             const prepTotals = await getPreparerMoneyTotals(p.externalId);
-            let prepAccumulatedSalary = 0;
-            try {
-              const { calculateAccumulatedSalaryInternal } = await import("@/app/preparer/actions");
-              const salaryStats = await calculateAccumulatedSalaryInternal(p.externalId);
-              prepAccumulatedSalary = salaryStats.accumulatedSalary || 0;
-            } catch (salaryErr) {
-              console.error(`Failed to get preparer salary for ${p.name}:`, salaryErr);
-            }
-
             if (prepTotals) {
-              autoBalance = prepTotals.remain.toNumber() - prepAccumulatedSalary;
+              autoBalance = prepTotals.remain.toNumber();
               walletRemain = prepTotals.remain.toNumber();
             }
           } catch (e) {
             console.error(`Failed to get preparer auto debt for ${p.name}:`, e);
+          }
+        } else if (p.type === "external" && p.externalId === "accumulated_salaries_root") {
+          try {
+            const preparers = await prisma.companyPreparer.findMany({
+              where: { active: true },
+              select: { id: true }
+            });
+            const { calculateAccumulatedSalaryInternal } = await import("@/app/preparer/actions");
+            let totalAccumulated = 0;
+            for (const prep of preparers) {
+              const salaryStats = await calculateAccumulatedSalaryInternal(prep.id);
+              totalAccumulated += salaryStats.accumulatedSalary || 0;
+            }
+            autoBalance = -totalAccumulated;
+          } catch (e) {
+            console.error("Failed to calculate total accumulated salaries for root partner:", e);
           }
         } else if (p.type === "shop" && p.externalId) {
           try {
@@ -953,31 +981,9 @@ export async function getPartnerDetails(partnerId: string) {
     } else if (partner.type === "preparer" && partner.externalId) {
       try {
         const prepTotals = await getPreparerMoneyTotals(partner.externalId);
-        let prepAccumulatedSalary = 0;
-        try {
-          const { calculateAccumulatedSalaryInternal } = await import("@/app/preparer/actions");
-          const salaryStats = await calculateAccumulatedSalaryInternal(partner.externalId);
-          prepAccumulatedSalary = salaryStats.accumulatedSalary || 0;
-        } catch (salaryErr) {
-          console.error("Failed to fetch preparer accumulated salary in details:", salaryErr);
-        }
-
         if (prepTotals) {
-          autoBalance = prepTotals.remain.toNumber() - prepAccumulatedSalary;
+          autoBalance = prepTotals.remain.toNumber();
           walletRemain = prepTotals.remain.toNumber();
-        }
-
-        if (prepAccumulatedSalary > 0) {
-          autoTransactions.push({
-            id: `auto-preparer-accumulated-salary-${partner.id}`,
-            partnerId: partner.id,
-            amount: prepAccumulatedSalary,
-            kind: "took", // أخذت = يطلبنا
-            note: `رواتب المجهزين المتراكمه`,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            isAuto: true
-          });
         }
 
         const preparer = await prisma.companyPreparer.findFirst({
@@ -1143,6 +1149,35 @@ export async function getPartnerDetails(partnerId: string) {
         }
       } catch (e) {
         console.error("Error fetching preparer auto transactions:", e);
+      }
+    } else if (partner.type === "external" && partner.externalId === "accumulated_salaries_root") {
+      try {
+        const preparers = await prisma.companyPreparer.findMany({
+          where: { active: true },
+          select: { id: true, name: true }
+        });
+        const { calculateAccumulatedSalaryInternal } = await import("@/app/preparer/actions");
+        let totalAccumulated = 0;
+        for (const prep of preparers) {
+          const salaryStats = await calculateAccumulatedSalaryInternal(prep.id);
+          const amt = salaryStats.accumulatedSalary || 0;
+          if (amt > 0) {
+            totalAccumulated += amt;
+            autoTransactions.push({
+              id: `auto-preparer-salary-root-${prep.id}`,
+              partnerId: partner.id,
+              amount: amt,
+              kind: "took", // أخذت = يطلبنا
+              note: `راتب المجهز المتراكم: ${prep.name}`,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              isAuto: true
+            });
+          }
+        }
+        autoBalance = -totalAccumulated;
+      } catch (e) {
+        console.error("Error compiling accumulated salaries for root partner:", e);
       }
     } else if (partner.type === "shop" && partner.externalId) {
       // للمحلات: جلب تفاصيل الطلبات وتوليد قيود تلقائية للديون وعمليات التسديد
@@ -1870,6 +1905,29 @@ export async function getCustomerDebtByPhone(phone: string): Promise<number> {
 export async function syncSystemPartners() {
   try {
     let importedCount = 0;
+
+    // تأمين شريك رواتب المجهزين المتراكمة العام
+    try {
+      const rootExists = await prisma.creditBookPartner.findFirst({
+        where: {
+          externalId: "accumulated_salaries_root",
+          type: "external"
+        }
+      });
+      if (!rootExists) {
+        await prisma.creditBookPartner.create({
+          data: {
+            name: "رواتب المجهزين المتراكمه",
+            phone: null,
+            type: "external",
+            externalId: "accumulated_salaries_root"
+          }
+        });
+        importedCount++;
+      }
+    } catch (rootErr) {
+      console.error("Failed to ensure accumulated salaries root partner in sync:", rootErr);
+    }
 
     // أ) استيراد المناديب
     const couriers = await prisma.courier.findMany({ where: { blocked: false } });
