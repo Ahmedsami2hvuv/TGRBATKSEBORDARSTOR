@@ -364,6 +364,14 @@ export const DEFAULT_ICONS: GlobalIconsConfig = {
   "ui_plus": {
     url: "➕",
     type: "emoji"
+  },
+  "ui_sort": {
+    url: "⇅",
+    type: "emoji"
+  },
+  "ui_payment_ledger": {
+    url: "📘",
+    type: "emoji"
   }
 };
 

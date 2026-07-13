@@ -32,8 +32,8 @@ export function DynamicIcon({
   const resolvedIcon = icon || (iconKey && config ? config[iconKey] : (config && !iconKey ? config : null));
 
   if (!resolvedIcon) {
-    if (iconKey) {
-      // إذا كان المفتاح غير موجود في الإعدادات، فقد يكون رمزاً تعبيرياً مباشراً تم إدخاله من قبل المستخدم
+    if (iconKey && !/^[a-zA-Z0-9_-]+$/.test(iconKey)) {
+      // إذا كان المفتاح غير موجود في الإعدادات، ولم يكن معرفاً إنجليزياً (مثل ui_sort) بل كان إيموجي أو نصاً مباشراً، فنعرضه
       return <span className={className}>{iconKey}</span>;
     }
     return <>{fallback}</>;
