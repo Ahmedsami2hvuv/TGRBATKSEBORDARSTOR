@@ -48,6 +48,10 @@ export function SidebarSettingsForm({
     setConfig(initialConfig);
   }, [initialConfig]);
 
+  // التحكم بنوافذ التعديل والإضافة المنبثقة
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
   // تتبع حالة تعديل الزر
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState("");
@@ -57,7 +61,7 @@ export function SidebarSettingsForm({
   // حقول إضافة زر جديد
   const [newLabel, setNewLabel] = useState("");
   const [newHref, setNewHref] = useState("");
-  const [newIconKey, setNewIconKey] = useState("");
+  const [newIconKey, setNewIconKey] = useState("ui_link");
 
   // دمج الأزرار الحالية لعرضها في قائمة الترتيب
   const mergedTiles = getMergedSidebarTiles(config);
@@ -147,13 +151,18 @@ export function SidebarSettingsForm({
     setConfig(updated);
     void autoSave(updated);
 
+    // تصفير القيم وإغلاق النافذة
     setNewLabel("");
     setNewHref("");
-    setNewIconKey("");
+    setNewIconKey("ui_link");
+    setIsAddModalOpen(false);
   };
 
   // حذف زر مخصص تلقائياً
   const removeCustomTile = (slug: string) => {
+    if (!confirm("هل أنت متأكد من رغبتك في حذف هذا الزر المخصص نهائياً؟")) {
+      return;
+    }
     const updated: SidebarConfig = {
       ...config,
       customTiles: config.customTiles.filter(t => t.slug !== slug),
@@ -167,12 +176,13 @@ export function SidebarSettingsForm({
     void autoSave(updated);
   };
 
-  // تفعيل التعديل على الزر
+  // تفعيل التعديل على الزر وفتح النافذة المنبثقة
   const startEditTile = (tile: any) => {
     setEditingSlug(tile.slug);
     setEditingLabel(tile.label);
     setEditingHref(tile.href || "");
     setEditingIconKey(tile.iconKey || "");
+    setIsEditModalOpen(true);
   };
 
   // إلغاء التعديل
@@ -181,6 +191,7 @@ export function SidebarSettingsForm({
     setEditingLabel("");
     setEditingHref("");
     setEditingIconKey("");
+    setIsEditModalOpen(false);
   };
 
   // حفظ التعديلات تلقائياً
@@ -226,82 +237,89 @@ export function SidebarSettingsForm({
     setEditingLabel("");
     setEditingHref("");
     setEditingIconKey("");
+    setIsEditModalOpen(false);
     void autoSave(updated);
   };
 
   return (
-    <div className="space-y-8 bg-white dark:bg-[#09090b] p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm max-w-4xl mx-auto" dir="rtl">
+    <div className="space-y-8 bg-slate-50 dark:bg-[#0c0d12] p-4 sm:p-8 rounded-3xl border border-slate-200/60 dark:border-slate-800/80 shadow-md max-w-4xl mx-auto" dir="rtl">
       
       {/* مؤشر الحفظ التلقائي في الأعلى */}
-      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800/80 pb-6">
         <div>
-          <h1 className="text-lg font-black text-slate-850 dark:text-slate-100 flex items-center gap-2">
-            🗂️ تخصيص القائمة الجانبية
+          <h1 className="text-xl sm:text-2xl font-black text-slate-850 dark:text-slate-100 flex items-center gap-2">
+            📂 تخصيص القائمة الجانبية
           </h1>
-          <p className="text-xs text-slate-450 dark:text-slate-400 mt-1">
-            يتم حفظ جميع التغييرات والترتيب وتعديل الأسماء **تلقائياً وبشكل فوري** دون الحاجة لزر حفظ.
+          <p className="text-xs sm:text-sm text-slate-550 dark:text-slate-400 mt-1 font-bold">
+            رتب أزرار موقعك وعدل مسمياتها وأضف روابط جديدة ليظهر للعملاء والمندوبين بالشكل المناسب.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {saving ? (
-            <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-full text-[10px] font-black animate-pulse">
-              🔄 جاري حفظ التغييرات...
+            <span className="flex items-center gap-1.5 px-4 py-2 bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl text-xs font-black animate-pulse border border-amber-500/20">
+              🔄 جاري حفظ التعديلات...
             </span>
           ) : (
-            <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-full text-[10px] font-black">
-              ✅ تم حفظ جميع التغييرات تلقائياً
+            <span className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-2xl text-xs font-black border border-emerald-500/20">
+              ✅ تم الحفظ تلقائياً
             </span>
           )}
         </div>
       </div>
 
-      {/* القسم الأول: تخطيط القائمة */}
-      <div className="space-y-4">
-        <h2 className="text-xs font-black text-slate-500 uppercase tracking-wider block">
-          📐 تخطيط وشكل القائمة
+      {/* القسم الأول: تخطيط وشكل القائمة */}
+      <div className="bg-white dark:bg-[#131520] p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 shadow-sm space-y-6">
+        <h2 className="text-sm font-black text-[#00f3ff] uppercase tracking-wider flex items-center gap-2">
+          📐 تخطيط وتصميم القائمة الجانبية
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* خيار توزيع الأعمدة */}
-          <div className="space-y-2">
-            <label className="text-xs font-black text-slate-650 dark:text-slate-350 block">عدد الأزرار في الصف الواحد:</label>
-            <div className="flex gap-2">
+          <div className="space-y-3">
+            <label className="text-xs sm:text-sm font-bold text-slate-650 dark:text-slate-350 block">عدد الأزرار في الصف الواحد:</label>
+            <div className="grid grid-cols-3 gap-2">
               {[1, 2, 3].map((cols) => (
                 <button
                   key={cols}
                   type="button"
                   onClick={() => handleColumnsChange(cols as 1 | 2 | 3)}
-                  className={`flex-1 py-2 px-3 rounded-xl border text-xs font-bold transition-all active:scale-95 ${
+                  className={`py-3 px-2 rounded-xl border text-xs font-black transition-all active:scale-95 flex flex-col items-center justify-center gap-1 ${
                     config.layoutColumns === cols
-                      ? "bg-[#00f3ff] text-black border-[#00f3ff] shadow-[0_0_10px_rgba(0,243,255,0.2)]"
-                      : "bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-350 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      ? "bg-[#00f3ff]/10 text-[#00f3ff] border-[#00f3ff] shadow-[0_0_15px_rgba(0,243,255,0.15)]"
+                      : "bg-slate-50 dark:bg-[#1a1d29] text-slate-650 dark:text-slate-400 border-slate-200/80 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800"
                   }`}
                 >
-                  {cols === 1 ? "زر واحد تحت الآخر" : cols === 2 ? "زرين بجنب بعض" : "3 أزرار بجنب بعض"}
+                  <span className="text-base sm:text-lg">
+                    {cols === 1 ? "📱" : cols === 2 ? "📱📱" : "📱📱📱"}
+                  </span>
+                  <span>
+                    {cols === 1 ? "عمود واحد" : cols === 2 ? "عمودين" : "3 أعمدة"}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
 
           {/* خيار شكل الأزرار */}
-          <div className="space-y-2">
-            <label className="text-xs font-black text-slate-650 dark:text-slate-350 block">شكل وتصميم الأزرار:</label>
-            <div className="flex gap-2">
+          <div className="space-y-3">
+            <label className="text-xs sm:text-sm font-bold text-slate-650 dark:text-slate-350 block">تصميم وشكل الزر:</label>
+            <div className="grid grid-cols-2 gap-2">
               {[
-                { key: "rectangle", label: "مستطيل أفقي (كلاسيكي)" },
-                { key: "square", label: "أزرار مربعة" }
+                { key: "rectangle", label: "مستطيل (أفقي)", icon: "➖" },
+                { key: "square", label: "أزرار مربعة", icon: "⏹️" }
               ].map((item) => (
                 <button
                   key={item.key}
                   type="button"
                   onClick={() => handleShapeChange(item.key as "square" | "rectangle")}
-                  className={`flex-1 py-2 px-3 rounded-xl border text-xs font-bold transition-all active:scale-95 ${
+                  className={`py-3 px-3 rounded-xl border text-xs font-black transition-all active:scale-95 flex flex-col items-center justify-center gap-1 ${
                     config.buttonShape === item.key
-                      ? "bg-[#00f3ff] text-black border-[#00f3ff] shadow-[0_0_10px_rgba(0,243,255,0.2)]"
-                      : "bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-350 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      ? "bg-[#00f3ff]/10 text-[#00f3ff] border-[#00f3ff] shadow-[0_0_15px_rgba(0,243,255,0.15)]"
+                      : "bg-slate-50 dark:bg-[#1a1d29] text-slate-650 dark:text-slate-400 border-slate-200/80 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800"
                   }`}
                 >
-                  {item.label}
+                  <span className="text-base sm:text-lg">{item.icon}</span>
+                  <span>{item.label}</span>
                 </button>
               ))}
             </div>
@@ -311,150 +329,76 @@ export function SidebarSettingsForm({
 
       {/* القسم الثاني: إعادة ترتيب وتعديل مسميات الأزرار */}
       <div className="space-y-4">
-        <h2 className="text-xs font-black text-slate-500 uppercase tracking-wider block">
-          🔄 إعادة ترتيب وتعديل مسميات الأزرار
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+            🔄 ترتيب الأزرار وتعديل الأسماء
+          </h2>
+          {/* زر فتح نافذة إضافة زر مخصص */}
+          <button
+            type="button"
+            onClick={() => setIsAddModalOpen(true)}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-black rounded-xl transition shadow-md flex items-center gap-1.5"
+          >
+            <span>➕</span>
+            <span>إضافة رابط مخصص</span>
+          </button>
+        </div>
 
-        <div className="space-y-2 max-h-[450px] overflow-y-auto border border-slate-150 dark:border-slate-800 rounded-2xl p-4 bg-slate-50/50 dark:bg-slate-950/20">
+        {/* عرض عناصر القائمة بطريقة البطاقات الواسعة */}
+        <div className="grid grid-cols-1 gap-3">
           {mergedTiles.map((tile, index) => {
             const isCustom = tile.slug.startsWith("custom-");
-            const isEditingThis = editingSlug === tile.slug;
             return (
               <div
                 key={tile.slug}
-                className="flex items-center justify-between bg-white dark:bg-[#131418] p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:shadow-sm transition gap-4"
+                className="flex items-center justify-between bg-white dark:bg-[#131520] p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 hover:border-slate-350 dark:hover:border-slate-700 hover:shadow-md transition duration-200 gap-4"
               >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                    <DynamicIcon iconKey={tile.iconKey} config={globalIcons} className="w-5 h-5" fallback="📁" />
+                <div className="flex items-center gap-4 min-w-0">
+                  {/* أيقونة العنصر */}
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-[#1a1d29] flex items-center justify-center shrink-0 border border-slate-200/40 dark:border-slate-800/40">
+                    <DynamicIcon iconKey={tile.iconKey} config={globalIcons} className="w-5 h-5 text-slate-750 dark:text-slate-300" fallback="📁" />
                   </div>
                   
-                  {/* عرض التعديل أو الاسم المعتاد */}
-                  <div className="flex-1 min-w-0">
-                    {isEditingThis ? (
-                      isCustom ? (
-                        <div className="flex flex-col gap-3 w-full bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800 my-2">
-                          {/* اسم الزر */}
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-500 block">اسم الزر:</label>
-                            <input
-                              type="text"
-                              value={editingLabel}
-                              onChange={(e) => setEditingLabel(e.target.value)}
-                              className="w-full px-2.5 py-1.5 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded-lg outline-none focus:border-[#00f3ff]"
-                            />
-                          </div>
-
-                          {/* رابط التوجيه */}
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-500 block">رابط التوجيه (Href):</label>
-                            <input
-                              type="text"
-                              value={editingHref}
-                              onChange={(e) => setEditingHref(e.target.value)}
-                              className="w-full px-2.5 py-1.5 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded-lg outline-none focus:border-[#00f3ff] ltr text-left"
-                            />
-                          </div>
-
-                          {/* رمز الأيقونة */}
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-black text-slate-500 block">رمز الأيقونة أو الرمز التعبيري (يمكنك لصقه مباشرة):</label>
-                            <input
-                              type="text"
-                              value={editingIconKey}
-                              onChange={(e) => setEditingIconKey(e.target.value)}
-                              placeholder="مثال: ⭐ أو 🔗"
-                              className="w-full px-2.5 py-1.5 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded-lg outline-none focus:border-[#00f3ff]"
-                            />                          </div>
-
-                          {/* أزرار الإجراءات */}
-                          <div className="flex justify-end gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
-                            <button
-                              type="button"
-                              onClick={() => saveTile(tile.slug)}
-                              className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-black transition active:scale-95"
-                            >
-                              حفظ الزر
-                            </button>
-                            <button
-                              type="button"
-                              onClick={cancelEdit}
-                              className="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-black transition active:scale-95"
-                            >
-                              إلغاء
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5 w-full max-w-md">
-                          <input
-                            type="text"
-                            value={editingLabel}
-                            onChange={(e) => setEditingLabel(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") saveTile(tile.slug);
-                              if (e.key === "Escape") cancelEdit();
-                            }}
-                            className="flex-1 px-2.5 py-1.5 text-xs font-bold bg-slate-50 dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded-lg outline-none focus:border-[#00f3ff] w-full"
-                            autoFocus
-                          />
-                          <button
-                            type="button"
-                            onClick={() => saveTile(tile.slug)}
-                            className="px-2.5 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-black"
-                            title="حفظ الاسم"
-                          >
-                            ✔
-                          </button>
-                          <button
-                            type="button"
-                            onClick={cancelEdit}
-                            className="px-2.5 py-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-black"
-                            title="إلغاء"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      )
-                    ) : (
-                      <div className="flex items-center gap-2 group">
-                        <span className="text-xs font-black text-slate-800 dark:text-slate-200 truncate">
-                          {tile.label}
+                  {/* معلومات العنصر */}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-slate-850 dark:text-slate-200 truncate">
+                        {tile.label}
+                      </span>
+                      {isCustom && (
+                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                          مخصص
                         </span>
-                        
-                        {/* زر القلم للتعديل على الاسم */}
-                        <button
-                          type="button"
-                          onClick={() => startEditTile(tile)}
-                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition p-1"
-                          title="تعديل اسم القسم"
-                        >
-                          ✏️
-                        </button>
-                        
-                        {isCustom && (
-                          <span className="text-[8px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1 py-0.5 rounded shrink-0">
-                            مخصص
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    
-                    {isCustom && !isEditingThis && (
-                      <span className="block text-[8px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 truncate w-max max-w-full">
-                        رابط: {tile.href}
+                      )}
+                    </div>
+                    {isCustom && (
+                      <span className="block text-[10px] sm:text-xs font-medium text-slate-400 dark:text-slate-500 mt-1 truncate max-w-[200px] sm:max-w-[400px]">
+                        رابط التوجيه: <code className="bg-slate-100 dark:bg-[#1a1d29] px-1 py-0.5 rounded text-amber-600 dark:text-amber-400 font-mono">{tile.href}</code>
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* أزرار الأسهم والتحكم الجانبي */}
-                <div className="flex items-center gap-1 shrink-0">
+                {/* أزرار الإجراءات والتحكم */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {/* زر التعديل (القلم) */}
+                  <button
+                    type="button"
+                    onClick={() => startEditTile(tile)}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-[#1a1d29] dark:hover:bg-slate-800 border border-slate-255/60 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:text-[#00f3ff] transition"
+                    title="تعديل تفاصيل الزر"
+                  >
+                    ✏️
+                  </button>
+
+                  <div className="h-6 w-px bg-slate-200 dark:bg-slate-850 mx-1"></div>
+
+                  {/* أسهم الترتيب */}
                   <button
                     type="button"
                     onClick={() => moveUp(index)}
                     disabled={index === 0}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-30 transition"
+                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-[#1a1d29] dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-50 dark:disabled:hover:bg-[#1a1d29] text-slate-600 dark:text-slate-400 transition"
                     title="تحريك للأعلى"
                   >
                     ⬆️
@@ -463,22 +407,25 @@ export function SidebarSettingsForm({
                     type="button"
                     onClick={() => moveDown(index)}
                     disabled={index === mergedTiles.length - 1}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-30 transition"
+                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-[#1a1d29] dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-50 dark:disabled:hover:bg-[#1a1d29] text-slate-600 dark:text-slate-400 transition"
                     title="تحريك للأسفل"
                   >
                     ⬇️
                   </button>
 
-                  {/* زر حذف للزر المخصص */}
+                  {/* زر حذف للزر المخصص فقط */}
                   {isCustom && (
-                    <button
-                      type="button"
-                      onClick={() => removeCustomTile(tile.slug)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/40 text-red-600 transition"
-                      title="حذف هذا الزر"
-                    >
-                      🗑️
-                    </button>
+                    <>
+                      <div className="h-6 w-px bg-slate-200 dark:bg-slate-850 mx-1"></div>
+                      <button
+                        type="button"
+                        onClick={() => removeCustomTile(tile.slug)}
+                        className="w-9 h-9 flex items-center justify-center rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-650 dark:text-red-400 transition"
+                        title="حذف هذا الزر"
+                      >
+                        🗑️
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -487,68 +434,218 @@ export function SidebarSettingsForm({
         </div>
       </div>
 
-      {/* القسم الثالث: إضافة زر مخصص جديد */}
-      <div className="space-y-4">
-        <h2 className="text-xs font-black text-slate-500 uppercase tracking-wider block">
-          ➕ إضافة زر/رابط مخصص جديد
-        </h2>
-
-        <div className="bg-slate-50/50 dark:bg-slate-900/40 p-5 rounded-3xl border border-slate-200/60 dark:border-slate-800/60 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* اسم الزر */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-slate-650 dark:text-slate-350 block">اسم الزر الجديد:</label>
-              <input
-                type="text"
-                placeholder="مثال: متجرنا الثاني"
-                value={newLabel}
-                onChange={(e) => setNewLabel(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff] focus:ring-1 focus:ring-[#00f3ff] transition-all"
-              />
+      {/* ======================================================== */}
+      {/* 1. نافذة تعديل الزر المنبثقة (Edit Modal) */}
+      {isEditModalOpen && editingSlug && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all duration-300 animate-in fade-in" dir="rtl">
+          <div className="bg-white dark:bg-[#131520] border border-slate-250 dark:border-slate-800 rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+            
+            {/* رأس النافذة */}
+            <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-850 pb-4">
+              <h3 className="text-lg font-black text-slate-850 dark:text-slate-100 flex items-center gap-2">
+                ⚙️ تعديل بيانات الزر
+              </h3>
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 text-slate-500 transition"
+              >
+                ✕
+              </button>
             </div>
 
-            {/* رابط التوجيه */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-slate-650 dark:text-slate-350 block">رابط التوجيه (Href):</label>
-              <input
-                type="text"
-                placeholder="مثال: /orders"
-                value={newHref}
-                onChange={(e) => setNewHref(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff] focus:ring-1 focus:ring-[#00f3ff] transition-all ltr text-left"
-              />
-            </div>
-
-            {/* أيقونة الزر */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-black text-slate-650 dark:text-slate-350 block">أيقونة الزر (رمز تعبيري):</label>
-              <div className="flex items-center gap-2">
-                {/* المعاينة للأيقونة */}
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-lg shadow-inner shrink-0">
-                  <DynamicIcon iconKey={newIconKey} config={globalIcons} fallback="📁" className="w-5 h-5" />
-                </div>
-                {/* حقل الإدخال النصي الفارغ */}
+            {/* محتوى الحقول */}
+            <div className="space-y-4">
+              {/* اسم الزر */}
+              <div className="space-y-1.5">
+                <label className="text-xs sm:text-sm font-bold text-slate-650 dark:text-slate-350 block">اسم الزر الجديد:</label>
                 <input
                   type="text"
-                  placeholder="الصق الرمز التعبيري هنا"
-                  value={newIconKey}
-                  onChange={(e) => setNewIconKey(e.target.value)}
-                  className="flex-1 px-3 py-2.5 text-xs font-bold bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff] focus:ring-1 focus:ring-[#00f3ff] transition-all text-center"
+                  value={editingLabel}
+                  onChange={(e) => setEditingLabel(e.target.value)}
+                  className="w-full px-4 py-3 text-xs sm:text-sm font-bold bg-slate-50 dark:bg-[#1a1d29] border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff] transition-all"
+                  autoFocus
                 />
               </div>
-            </div>
-          </div>
 
-          {/* زر إضافة للجدول */}
-          <button
-            type="button"
-            onClick={addCustomTile}
-            className="w-full py-3 bg-slate-900 hover:bg-slate-950 text-white dark:bg-slate-50 dark:hover:bg-white dark:text-black font-black rounded-2xl text-xs transition active:scale-95 shadow-md flex items-center justify-center gap-1.5"
-          >
-            ➕ إدراج الزر المخصص وحفظه تلقائياً
-          </button>
+              {/* حقول إضافية للزر المخصص فقط */}
+              {editingSlug.startsWith("custom-") && (
+                <>
+                  {/* رابط التوجيه */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs sm:text-sm font-bold text-slate-650 dark:text-slate-350 block">رابط التوجيه (Href):</label>
+                    <input
+                      type="text"
+                      value={editingHref}
+                      onChange={(e) => setEditingHref(e.target.value)}
+                      className="w-full px-4 py-3 text-xs sm:text-sm font-bold bg-slate-50 dark:bg-[#1a1d29] border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff] transition-all ltr text-left"
+                    />
+                  </div>
+
+                  {/* اختيار الأيقونة للزر المخصص */}
+                  <div className="space-y-2">
+                    <label className="text-xs sm:text-sm font-bold text-slate-650 dark:text-slate-350 block">تعديل الأيقونة أو الرمز التعبيري:</label>
+                    
+                    {/* قائمة الأيقونات المتاحة بشكل شبكة سهلة الاختيار */}
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-[160px] overflow-y-auto p-2 bg-slate-50 dark:bg-[#1a1d29] rounded-xl border border-slate-200 dark:border-slate-800">
+                      {AVAILABLE_ICONS.map((icon) => (
+                        <button
+                          key={icon.key}
+                          type="button"
+                          onClick={() => setEditingIconKey(icon.key)}
+                          className={`p-2 rounded-lg text-xs font-bold transition flex flex-col items-center gap-1 ${
+                            editingIconKey === icon.key
+                              ? "bg-[#00f3ff]/20 text-[#00f3ff] border border-[#00f3ff]"
+                              : "hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                          }`}
+                        >
+                          <DynamicIcon iconKey={icon.key} config={globalIcons} className="w-5 h-5" fallback="📁" />
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* حقل مخصص لكتابة رمز تعبيري يدوي */}
+                    <div className="space-y-1 mt-2">
+                      <label className="text-[10px] font-bold text-slate-450 dark:text-slate-500 block">أو اكتب رمزاً تعبيرياً يدوياً (مثل ⭐):</label>
+                      <input
+                        type="text"
+                        value={editingIconKey}
+                        onChange={(e) => setEditingIconKey(e.target.value)}
+                        placeholder="أدخل رمز تعبيري أو مفتاح أيقونة"
+                        className="w-full px-4 py-2 text-xs font-bold bg-slate-50 dark:bg-[#1a1d29] border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff] transition-all"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* أزرار التحكم */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-150 dark:border-slate-855">
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#1a1d29] dark:hover:bg-slate-800 text-slate-650 dark:text-slate-300 rounded-xl text-xs sm:text-sm font-black transition active:scale-95"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => saveTile(editingSlug)}
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-black transition active:scale-95 shadow-md shadow-emerald-500/20"
+              >
+                حفظ التغييرات
+              </button>
+            </div>
+
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* 2. نافذة إضافة زر مخصص جديد (Add Modal) */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md transition-all duration-300 animate-in fade-in" dir="rtl">
+          <div className="bg-white dark:bg-[#131520] border border-slate-250 dark:border-slate-800 rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+            
+            {/* رأس النافذة */}
+            <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-850 pb-4">
+              <h3 className="text-lg font-black text-slate-850 dark:text-slate-100 flex items-center gap-2">
+                ➕ إضافة زر مخصص جديد
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-855 dark:hover:bg-slate-800 text-slate-500 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* محتوى الحقول */}
+            <div className="space-y-4">
+              {/* اسم الزر */}
+              <div className="space-y-1.5">
+                <label className="text-xs sm:text-sm font-bold text-slate-650 dark:text-slate-350 block">اسم الزر الجديد:</label>
+                <input
+                  type="text"
+                  placeholder="مثال: متجرنا الثاني"
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  className="w-full px-4 py-3 text-xs sm:text-sm font-bold bg-slate-50 dark:bg-[#1a1d29] border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff] transition-all"
+                  autoFocus
+                />
+              </div>
+
+              {/* رابط التوجيه */}
+              <div className="space-y-1.5">
+                <label className="text-xs sm:text-sm font-bold text-slate-650 dark:text-slate-350 block">رابط التوجيه (Href):</label>
+                <input
+                  type="text"
+                  placeholder="مثال: /orders"
+                  value={newHref}
+                  onChange={(e) => setNewHref(e.target.value)}
+                  className="w-full px-4 py-3 text-xs sm:text-sm font-bold bg-slate-50 dark:bg-[#1a1d29] border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff] transition-all ltr text-left"
+                />
+              </div>
+
+              {/* اختيار الأيقونة */}
+              <div className="space-y-2">
+                <label className="text-xs sm:text-sm font-bold text-slate-650 dark:text-slate-350 block">اختر أيقونة للزر:</label>
+                
+                {/* قائمة الأيقونات المتاحة بشكل شبكة سهلة الاختيار */}
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-[160px] overflow-y-auto p-2 bg-slate-50 dark:bg-[#1a1d29] rounded-xl border border-slate-200 dark:border-slate-800">
+                  {AVAILABLE_ICONS.map((icon) => (
+                    <button
+                      key={icon.key}
+                      type="button"
+                      onClick={() => setNewIconKey(icon.key)}
+                      className={`p-2 rounded-lg text-xs font-bold transition flex flex-col items-center gap-1 ${
+                        newIconKey === icon.key
+                          ? "bg-[#00f3ff]/20 text-[#00f3ff] border border-[#00f3ff]"
+                          : "hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                      }`}
+                    >
+                      <DynamicIcon iconKey={icon.key} config={globalIcons} className="w-5 h-5" fallback="📁" />
+                    </button>
+                  ))}
+                </div>
+
+                {/* حقل مخصص لكتابة رمز تعبيري يدوي */}
+                <div className="space-y-1 mt-2">
+                  <label className="text-[10px] font-bold text-slate-450 dark:text-slate-500 block">أو اكتب رمزاً تعبيرياً يدوياً (مثل ⭐):</label>
+                  <input
+                    type="text"
+                    value={newIconKey}
+                    onChange={(e) => setNewIconKey(e.target.value)}
+                    placeholder="أدخل رمز تعبيري أو مفتاح أيقونة"
+                    className="w-full px-4 py-2 text-xs font-bold bg-slate-50 dark:bg-[#1a1d29] border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:border-[#00f3ff] transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* أزرار التحكم */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-150 dark:border-slate-855">
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#1a1d29] dark:hover:bg-slate-800 text-slate-650 dark:text-slate-300 rounded-xl text-xs sm:text-sm font-black transition active:scale-95"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={addCustomTile}
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-black transition active:scale-95 shadow-md shadow-emerald-500/20"
+              >
+                إضافة الزر وحفظه
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
