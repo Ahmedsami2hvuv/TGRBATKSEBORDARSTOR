@@ -267,7 +267,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
           >
             {isDoubleRoute ? "المستلم" : "الزبون"}
           </button>
-          <button onClick={() => setActiveMenu(null)} className="mt-1 text-xs font-bold text-white bg-slate-800/90 py-2 rounded-lg text-center shadow-lg">رجوع للخلف</button>
+          <button onClick={() => setActiveMenu(null)} className="flex h-12 w-40 items-center justify-center rounded-xl text-white bg-slate-800/90 shadow-lg font-bold text-sm active:scale-95 mt-1">رجوع للخلف</button>
         </div>
       )}
 
