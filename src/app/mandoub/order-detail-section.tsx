@@ -96,6 +96,7 @@ export function OrderDetailSection({
   uiSettings,
   icons,
   courierSettings,
+  isModal = false,
 }: {
   order: MandoubOrderDetailPayload;
   closeHref: string;
@@ -117,6 +118,7 @@ export function OrderDetailSection({
     showNotesBtn: boolean;
     showVoiceNotesBtn: boolean;
   };
+  isModal?: boolean;
 }) {
   const fontSizeContext = useContext(FontSizeContext);
   const fontSizeConfig = fontSizeContext?.config;
@@ -126,6 +128,38 @@ export function OrderDetailSection({
     setIsMounted(true);
   }, []);
   const activeConfig = isMounted ? fontSizeConfig : null;
+
+  // حل مشكلة السحب للتحديث (Pull-to-refresh) في تطبيق الأندرويد عند فتح الطلبية كـ Modal
+  useEffect(() => {
+    if (!isModal) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalMinHeight = document.documentElement.style.minHeight;
+    const originalScrollBehavior = document.documentElement.style.scrollBehavior;
+    const originalScrollY = window.scrollY;
+
+    // تعطيل التمرير السلس مؤقتاً لتجنب التأثيرات البصرية
+    document.documentElement.style.scrollBehavior = "auto";
+    
+    // جعل الصفحة أطول قليلاً لضمان عمل السكرول
+    document.documentElement.style.minHeight = "101vh";
+    
+    // تمرير الصفحة بمقدار 1 بكسل ليكون scrollY > 0 وبالتالي يتم تعطيل السحب للتحديث في الأندرويد
+    if (window.scrollY === 0) {
+      window.scrollTo(0, 1);
+    }
+
+    // تجميد تمرير الصفحة الخلفية
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      // استعادة الإعدادات الأصلية
+      document.body.style.overflow = originalOverflow;
+      document.documentElement.style.minHeight = originalMinHeight;
+      document.documentElement.style.scrollBehavior = originalScrollBehavior;
+      window.scrollTo(0, originalScrollY);
+    };
+  }, [isModal]);
 
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 

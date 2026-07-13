@@ -737,6 +737,7 @@ export function MandoubOrderTable({
                   showNotesBtn: true,
                   showVoiceNotesBtn: true,
                 }}
+                isModal={true}
               />
             </div>
           </div>,
