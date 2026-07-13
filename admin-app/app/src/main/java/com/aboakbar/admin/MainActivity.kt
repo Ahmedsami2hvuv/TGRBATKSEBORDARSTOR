@@ -119,15 +119,15 @@ class MainActivity : AppCompatActivity() {
             webView.reload()
         }
 
-        // تفعيل السحب للتحديث فقط عندما يلمس المستخدم الشاشة من الجزء العلوي جداً (أقل من 80dp)
-        // ويكون الـ WebView في بداية الصفحة (ScrollY == 0) لمنع التحديث العشوائي عند سحب النوافذ أو الكرة العائمة
-        webView.setOnTouchListener { _, event ->
-            if (event.action == android.view.MotionEvent.ACTION_DOWN) {
-                val density = resources.displayMetrics.density
-                val thresholdPx = 80 * density // حوالي 1.5 سم من حافة الشاشة العلوية
-                swipeRefreshLayout.isEnabled = (event.y <= thresholdPx && webView.scrollY == 0)
+        // تفعيل SwipeRefreshLayout فقط عندما يكون WebView في الأعلى تماماً لمنع التداخل أثناء التمرير
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            webView.setOnScrollChangeListener { _, _, scrollY, _, _ ->
+                swipeRefreshLayout.isEnabled = (scrollY == 0 || !webView.canScrollVertically(-1))
             }
-            false // إرجاع false للسماح للـ WebView بمعالجة اللمس بشكل طبيعي
+        } else {
+            webView.viewTreeObserver.addOnScrollChangedListener {
+                swipeRefreshLayout.isEnabled = (webView.scrollY == 0 || !webView.canScrollVertically(-1))
+            }
         }
         mainLayout = findViewById(R.id.mainLayout)
         etPassword = findViewById(R.id.etPassword)
