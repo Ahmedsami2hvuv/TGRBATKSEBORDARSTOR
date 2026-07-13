@@ -33,7 +33,7 @@ export async function upsertMandoubWaButton(
   const label = formString(formData, "label").trim();
   const name = formString(formData, "name").trim();
   const iconKey = formString(formData, "iconKey").trim() || "💬";
-  const recipient = formString(formData, "recipient") as Recipient;
+  const recipient = formString(formData, "recipient");
   const customerLocationRulesRaw = formData
     .getAll("customerLocationRules")
     .map((v) => (typeof v === "string" ? v.trim() : ""))
@@ -70,11 +70,19 @@ export async function upsertMandoubWaButton(
   if (!label) return { error: "اسم الزر مطلوب." };
   const internalName = name || buildAutoInternalName(label);
 
+  // تصفية جهات الاتصال المدخلة لتكون فقط من القيم المسموح بها: shop, customer, customer2
+  const allowedRecipients = recipient
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v === "shop" || v === "customer" || v === "customer2");
+
+  const recipientCsv = allowedRecipients.length > 0 ? allowedRecipients.join(",") : "customer";
+
   const dataBase = {
     name: internalName,
     label,
     iconKey,
-    recipient: recipient === "shop" || recipient === "customer2" ? recipient : "customer",
+    recipient: recipientCsv,
     statusesCsv,
     customerLocationRule,
     visibilityScope,

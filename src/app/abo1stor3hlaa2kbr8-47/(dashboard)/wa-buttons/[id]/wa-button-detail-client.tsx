@@ -33,6 +33,7 @@ type Props = {
     visibilityScope: string;
     customerLocationRule: string;
     isActive: boolean;
+    recipient: string;
   };
 };
 
@@ -53,6 +54,22 @@ export function WaButtonDetailClient({ row }: Props) {
   const [customerLocationRules, setCustomerLocationRules] = useState<CustomerLocationRule[]>(() =>
     parseLocationRulesCsv(row.customerLocationRule)
   );
+  const [recipients, setRecipients] = useState<string[]>(() => {
+    const raw = row.recipient ?? "customer";
+    return raw.split(",").map((s) => s.trim()).filter(Boolean);
+  });
+
+  const toggleRecipient = (val: string, checked: boolean) => {
+    setRecipients((prev) => {
+      let next;
+      if (checked) {
+        next = [...new Set([...prev, val])];
+      } else {
+        next = prev.filter((s) => s !== val);
+      }
+      return next.length ? next : ["customer"];
+    });
+  };
 
   const toggleVisibility = (val: VisibilityScope, checked: boolean) => {
     setVisibilityScopes((prev) => {
@@ -199,6 +216,7 @@ export function WaButtonDetailClient({ row }: Props) {
           <form action={propFormAction} className="space-y-4">
             <input type="hidden" name="id" value={row.id} />
             <input type="hidden" name="name" value={row.name} />
+            <input type="hidden" name="recipient" value={recipients.join(",")} />
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-1 text-sm">
@@ -298,6 +316,33 @@ export function WaButtonDetailClient({ row }: Props) {
                   </label>
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-sky-100 bg-sky-50/10 p-3.5">
+              <p className="text-xs font-bold text-slate-800 border-b border-sky-100/60 pb-1.5">
+                جهات الاتصال المستلمة للرسالة (Recipient)
+              </p>
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                {[
+                  { value: "shop", label: "المحل (العميل)" },
+                  { value: "customer", label: "الزبون الأول" },
+                  { value: "customer2", label: "الزبون الثاني" },
+                ].map((opt) => (
+                  <label key={opt.value} className="inline-flex items-center gap-2 text-sm cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      value={opt.value}
+                      checked={recipients.includes(opt.value)}
+                      onChange={(e) => toggleRecipient(opt.value, e.target.checked)}
+                      className="rounded border-sky-300 text-sky-600 focus:ring-sky-200"
+                    />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-[11px] text-slate-500">
+                اختر جهات الاتصال المسموح بظهورها عند نقر هذا الزر. إذا اخترت جهة واحدة، فسيتم الإرسال إليها مباشرة دون تخيير المندوب.
+              </p>
             </div>
 
             {propState.error ? <p className={ad.error}>{propState.error}</p> : null}

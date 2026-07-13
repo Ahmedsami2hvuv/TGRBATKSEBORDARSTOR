@@ -23,6 +23,19 @@ export default function NewWaButtonPage() {
   const [statuses, setStatuses] = useState<string[]>(["assigned", "delivering"]);
   const [visibilityScopes, setVisibilityScopes] = useState<VisibilityScope[]>(["all"]);
   const [customerLocationRules, setCustomerLocationRules] = useState<CustomerLocationRule[]>(["any"]);
+  const [recipients, setRecipients] = useState<string[]>(["customer"]);
+
+  const toggleRecipient = (val: string, checked: boolean) => {
+    setRecipients((prev) => {
+      let next;
+      if (checked) {
+        next = [...new Set([...prev, val])];
+      } else {
+        next = prev.filter((s) => s !== val);
+      }
+      return next.length ? next : ["customer"];
+    });
+  };
 
   useEffect(() => {
     if (state.ok) {
@@ -79,6 +92,7 @@ export default function NewWaButtonPage() {
         <form action={formAction} className="space-y-6">
           {/* We omit id for a new record */}
           <input type="hidden" name="id" value="" />
+          <input type="hidden" name="recipient" value={recipients.join(",")} />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
@@ -196,6 +210,31 @@ export default function NewWaButtonPage() {
                   </label>
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t border-sky-100/60">
+              <p className="text-xs font-bold text-slate-700">4. جهات الاتصال المستلمة للرسالة (Recipient)</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                {[
+                  { value: "shop", label: "المحل (العميل)" },
+                  { value: "customer", label: "الزبون الأول" },
+                  { value: "customer2", label: "الزبون الثاني" },
+                ].map((opt) => (
+                  <label key={opt.value} className="inline-flex items-center gap-2 text-sm cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      value={opt.value}
+                      checked={recipients.includes(opt.value)}
+                      onChange={(e) => toggleRecipient(opt.value, e.target.checked)}
+                      className="rounded border-sky-300 text-sky-600 focus:ring-sky-200"
+                    />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-[11px] text-slate-500">
+                اختر جهات الاتصال المسموح بظهورها عند نقر هذا الزر. إذا اخترت جهة واحدة، فسيتم الإرسال إليها مباشرة دون تخيير المندوب.
+              </p>
             </div>
           </div>
 

@@ -35,6 +35,7 @@ export default async function WaButtonDetailPage({
         visibilityScope: row.visibilityScope,
         customerLocationRule: row.customerLocationRule,
         isActive: row.isActive,
+        recipient: row.recipient,
       }}
     />
   );

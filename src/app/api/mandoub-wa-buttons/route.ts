@@ -14,6 +14,7 @@ export async function GET() {
         visibilityScope: true,
         statusesCsv: true,
         customerLocationRule: true,
+        recipient: true,
       },
     });
 

@@ -21,6 +21,7 @@ export type MandoubWaButtonRow = {
   visibilityScope: string | null;
   statusesCsv: string | null;
   customerLocationRule: string | null;
+  recipient: string | null;
 };
 
 /** مواضع موحّدة لكل طلبات المندوب (ليست لكل طلب على حدة) */
@@ -115,6 +116,7 @@ export function MandoubFloatingBar(props: Props) {
           label: r.label,
           iconKey: r.iconKey,
           messages,
+          recipient: r.recipient || "customer",
         },
       ];
     });

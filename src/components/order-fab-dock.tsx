@@ -57,6 +57,7 @@ export type OrderFabDockProps = {
     label: string;
     iconKey: string | null;
     messages: string[];
+    recipient?: string;
   }>;
   hideAllButtons?: boolean;
   showCallBtn?: boolean;
@@ -80,7 +81,26 @@ export function OrderFabDock(props: OrderFabDockProps) {
   const [mounted, setMounted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isConfiguring, setIsConfiguring] = useState(false);
-  const [activeMenu, setActiveMenu] = useState<null | "call" | "wa" | { type: "custom", btn: any }>(null);
+  const [activeMenu, setActiveMenu] = useState<
+    | null
+    | "call"
+    | "wa"
+    | {
+        type: "custom";
+        btn: {
+          id: string;
+          label: string;
+          iconKey: string | null;
+          messages: string[];
+          recipient?: string;
+        };
+        contacts: Array<{
+          type: "shop" | "customer" | "customer2";
+          phone: string;
+          label: string;
+        }>;
+      }
+  >(null);
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const [pos, setPos] = useState<Pos>({ left: -1, top: -1 });
   const [scale, setScale] = useState(1);
@@ -159,6 +179,69 @@ export function OrderFabDock(props: OrderFabDockProps) {
       setActiveMenu(null);
     }
     try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch (e) {}
+  };
+
+  const handleCustomWaButtonClick = (btn: {
+    id: string;
+    label: string;
+    iconKey: string | null;
+    messages: string[];
+    recipient?: string;
+  }) => {
+    const allowedRecipients = (btn.recipient || "customer")
+      .split(",")
+      .map((r) => r.trim())
+      .filter(Boolean);
+
+    const availableContacts: Array<{
+      type: "shop" | "customer" | "customer2";
+      phone: string;
+      label: string;
+    }> = [];
+
+    if (allowedRecipients.includes("shop") && shopPhone?.trim()) {
+      availableContacts.push({
+        type: "shop",
+        phone: shopPhone.trim(),
+        label: isDoubleRoute ? "المرسل" : "المحل (العميل)",
+      });
+    }
+    if (allowedRecipients.includes("customer") && customerPhone?.trim()) {
+      availableContacts.push({
+        type: "customer",
+        phone: customerPhone.trim(),
+        label: isDoubleRoute ? "المستلم" : "الزبون الأول",
+      });
+    }
+    if (allowedRecipients.includes("customer2") && customerAlternatePhone?.trim()) {
+      availableContacts.push({
+        type: "customer2",
+        phone: customerAlternatePhone.trim(),
+        label: "الزبون الثاني",
+      });
+    }
+
+    // إذا لم يتوفر أي هاتف مطابق، نضع الزبون الأول لتجنب تعطل الإرسال
+    if (availableContacts.length === 0 && customerPhone?.trim()) {
+      availableContacts.push({
+        type: "customer",
+        phone: customerPhone.trim(),
+        label: isDoubleRoute ? "المستلم" : "الزبون الأول",
+      });
+    }
+
+    if (availableContacts.length === 1) {
+      // مستلم واحد فقط -> إرسال مباشر دون سؤاله
+      openUrlFromUserGesture(whatsappMeUrl(availableContacts[0].phone, btn.messages[0] || ""));
+      closeAll();
+    } else {
+      // أكثر من مستلم -> عرض الخيارات المحددة فقط
+      setActiveMenu({
+        type: "custom",
+        btn,
+        contacts: availableContacts,
+      });
+    }
   };
 
   const closeAll = () => {
@@ -243,30 +326,51 @@ export function OrderFabDock(props: OrderFabDockProps) {
       {/* قوائم الاختيار الفرعية */}
       {isExpanded && activeMenu && (
         <div className={`absolute ${menuClass} flex flex-col gap-2 animate-in fade-in zoom-in duration-200 ${isOnLeftSide ? 'left-0' : 'right-0'}`} style={{ width: 'max-content' }}>
-          <button
-            onClick={() => {
-              const phone = isDoubleRoute ? customerPhone : shopPhone;
-              if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
-              else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
-              else if (typeof activeMenu === 'object') openUrlFromUserGesture(whatsappMeUrl(phone, activeMenu.btn.messages[0] || ""));
-              closeAll();
-            }}
-            className="flex h-12 w-40 items-center justify-center rounded-xl bg-white text-slate-800 shadow-2xl font-black border-2 border-indigo-600 active:scale-95 text-sm"
-          >
-            {isDoubleRoute ? "المرسل" : "المحل (العميل)"}
-          </button>
-          <button
-            onClick={() => {
-              const phone = isDoubleRoute ? (customerAlternatePhone || "") : customerPhone;
-              if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
-              else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
-              else if (typeof activeMenu === 'object') openUrlFromUserGesture(whatsappMeUrl(phone, activeMenu.btn.messages[0] || ""));
-              closeAll();
-            }}
-            className="flex h-12 w-40 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-2xl font-black active:scale-95 text-sm"
-          >
-            {isDoubleRoute ? "المستلم" : "الزبون"}
-          </button>
+          {typeof activeMenu === "object" && activeMenu.type === "custom" ? (
+            // عرض جهات الاتصال الخاصة بالزر المخصص فقط
+            activeMenu.contacts.map((contact) => (
+              <button
+                key={contact.type}
+                onClick={() => {
+                  openUrlFromUserGesture(whatsappMeUrl(contact.phone, activeMenu.btn.messages[0] || ""));
+                  closeAll();
+                }}
+                className={`flex h-12 w-40 items-center justify-center rounded-xl shadow-2xl font-black active:scale-95 text-sm ${
+                  contact.type === "shop"
+                    ? "bg-white text-slate-800 border-2 border-indigo-600"
+                    : "bg-indigo-600 text-white"
+                }`}
+              >
+                {contact.label}
+              </button>
+            ))
+          ) : (
+            // الاتصال ومراسلة واتساب العادية الافتراضية
+            <>
+              <button
+                onClick={() => {
+                  const phone = isDoubleRoute ? customerPhone : shopPhone;
+                  if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
+                  else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
+                  closeAll();
+                }}
+                className="flex h-12 w-40 items-center justify-center rounded-xl bg-white text-slate-800 shadow-2xl font-black border-2 border-indigo-600 active:scale-95 text-sm"
+              >
+                {isDoubleRoute ? "المرسل" : "المحل (العميل)"}
+              </button>
+              <button
+                onClick={() => {
+                  const phone = isDoubleRoute ? (customerAlternatePhone || "") : customerPhone;
+                  if (activeMenu === "call") openUrlFromUserGesture(telHref(phone));
+                  else if (activeMenu === "wa") openUrlFromUserGesture(whatsappMeUrl(phone));
+                  closeAll();
+                }}
+                className="flex h-12 w-40 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-2xl font-black active:scale-95 text-sm"
+              >
+                {isDoubleRoute ? "المستلم" : "الزبون"}
+              </button>
+            </>
+          )}
           <button onClick={() => setActiveMenu(null)} className="flex h-12 w-40 items-center justify-center rounded-xl text-white bg-slate-800/90 shadow-lg font-bold text-sm active:scale-95 mt-1">رجوع للخلف</button>
         </div>
       )}
@@ -287,7 +391,7 @@ export function OrderFabDock(props: OrderFabDockProps) {
             </button>
           )}
           {customWaButtons?.map((btn) => (
-            <button key={btn.id} onClick={() => setActiveMenu({ type: "custom", btn })} className="flex h-12 w-48 items-center justify-center gap-3 rounded-2xl bg-violet-600 text-white shadow-2xl font-bold ring-2 ring-white active:scale-95">
+            <button key={btn.id} onClick={() => handleCustomWaButtonClick(btn)} className="flex h-12 w-48 items-center justify-center gap-3 rounded-2xl bg-violet-600 text-white shadow-2xl font-bold ring-2 ring-white active:scale-95">
               <DynamicIcon iconKey={btn.iconKey || undefined} config={icons} className="h-6 w-6" />
               <span>{btn.label}</span>
             </button>
