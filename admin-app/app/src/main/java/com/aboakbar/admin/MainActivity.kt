@@ -119,15 +119,18 @@ class MainActivity : AppCompatActivity() {
             webView.reload()
         }
 
-        // تفعيل SwipeRefreshLayout فقط عندما يكون WebView في الأعلى تماماً لمنع التداخل أثناء التمرير
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            webView.setOnScrollChangeListener { _, _, scrollY, _, _ ->
-                swipeRefreshLayout.isEnabled = (scrollY == 0 || !webView.canScrollVertically(-1))
+        // تفعيل SwipeRefreshLayout فقط عندما يكون WebView في الأعلى تماماً وبدء اللمس من الثلث العلوي للشاشة (35% من الارتفاع)
+        // لمنع التحديث العشوائي عند تحريك الزر العائم أو سحب القوائم في منتصف وأسفل الشاشة
+        webView.setOnTouchListener { v, event ->
+            if (event.action == android.view.MotionEvent.ACTION_DOWN) {
+                val isAtTop = !webView.canScrollVertically(-1)
+                val touchY = event.y
+                val viewHeight = v.height
+                val threshold = viewHeight * 0.35f // 35% من الارتفاع (الثلث العلوي تقريباً)
+                
+                swipeRefreshLayout.isEnabled = (isAtTop && touchY <= threshold)
             }
-        } else {
-            webView.viewTreeObserver.addOnScrollChangedListener {
-                swipeRefreshLayout.isEnabled = (webView.scrollY == 0 || !webView.canScrollVertically(-1))
-            }
+            false // إرجاع false للسماح للـ WebView بمعالجة اللمس بشكل طبيعي
         }
         mainLayout = findViewById(R.id.mainLayout)
         etPassword = findViewById(R.id.etPassword)
