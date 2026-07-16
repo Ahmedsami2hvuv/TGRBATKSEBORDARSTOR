@@ -436,10 +436,10 @@ export function OrderPricingPanel({
     try {
       const productsText = products.map((p, index) => `${index + 1}. ${p.line}`).join("\n");
       const regionName = initialData?.customerRegionName || regions.find(r => r.id === (initialData?.customerRegionId || initialData?.regionId))?.name || "غير محددة";
-      const landmarkText = initialData?.customerLandmark ? `\n📍 أقرب نقطة دالة: ${initialData.customerLandmark}` : "";
+      const landmarkText = initialData?.customerLandmark ? `\n${initialData.customerLandmark}` : "";
       
-      const template = `📱 رقم الهاتف: ${initialData?.customerPhone || "غير محدد"}
-📍 المنطقة: ${regionName}${landmarkText}
+      const template = `${initialData?.customerPhone || "غير محدد"}
+${regionName}${landmarkText}
 ${productsText}`;
 
       navigator.clipboard.writeText(template);
