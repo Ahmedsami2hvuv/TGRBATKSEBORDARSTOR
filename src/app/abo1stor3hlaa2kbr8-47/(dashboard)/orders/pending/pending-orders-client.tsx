@@ -29,7 +29,7 @@ import { updateOrderPricingByAdmin, savePricingProgress } from "./pricing-action
 import { orderStatusPendingCardBorderBg } from "@/lib/order-status-style";
 import { OrderStatusRadioGroup } from "@/components/order-status-radio-group";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
-import { calculateAutoSellPrice } from "@/lib/auto-pricing";
+import { calculateAutoSellPrice, isMeatProduct } from "@/lib/auto-pricing";
 import { normalizeNumerals } from "@/lib/money-alf";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { VoiceNoteAudio } from "@/components/voice-note-audio";
@@ -287,6 +287,30 @@ function findStoreProductDetails(line: string, storeProducts: any[]): { salePric
   return null;
 }
 
+// دالة مساعدة للحصول على فرع وصورة المنتج من قائمة منتجات المتجر
+function findStoreProductBranchAndPhoto(line: string, storeProducts: any[]): { branchName: string | null; photoUrl: string | null } {
+  if (!line || !storeProducts || storeProducts.length === 0) return { branchName: null, photoUrl: null };
+  const cleanedLine = cleanText(line);
+  if (!cleanedLine) return { branchName: null, photoUrl: null };
+
+  for (const product of storeProducts) {
+    const cleanedName = cleanText(product.name);
+    if (cleanedName && (cleanedLine === cleanedName || cleanedLine.includes(cleanedName))) {
+      let photoUrl: string | null = null;
+      if (product.photoUrls && Array.isArray(product.photoUrls) && product.photoUrls.length > 0) {
+        photoUrl = product.photoUrls[0];
+      } else if (typeof product.photoUrls === 'string' && product.photoUrls) {
+        photoUrl = product.photoUrls;
+      }
+      return {
+        branchName: product.branch?.name || null,
+        photoUrl
+      };
+    }
+  }
+  return { branchName: null, photoUrl: null };
+}
+
 export function OrderPricingPanel({
   orderId,
   initialData,
@@ -312,10 +336,34 @@ export function OrderPricingPanel({
   icons?: GlobalIconsConfig | null;
   storeProducts?: any[];
 }) {
+  const router = useRouter();
   const [products, setProducts] = useState<any[]>(initialData?.products || []);
   const [placesCount, setPlacesCount] = useState<number>(initialData?.placesCount || 1);
   const [noProfit, setNoProfit] = useState(!!initialData?.noProfit);
   const [filterType, setFilterType] = useState<'all' | 'unpriced' | 'priced'>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeBranch, setActiveBranch] = useState<string | null>(null);
+
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [buyText, setBuyText] = useState("");
+  const [sellText, setSellText] = useState("");
+  const [isAdminFulfilled, setIsAdminFulfilled] = useState(false);
+  const [pricingErr, setPricingErr] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [showBulkAdd, setShowBulkAdd] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [showReassign, setShowReassign] = useState(false);
+  const [selectedProductIndexes, setSelectedProductIndexes] = useState<number[]>([]);
+  const [productAssigneeId, setProductAssigneeId] = useState("");
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [previewZoom, setPreviewZoom] = useState(1);
+  const [showAutoCourier, setShowAutoCourier] = useState(false);
+  const [isSorting, setIsSorting] = useState(false);
+  const [sortError, setSortError] = useState<string | null>(null);
+
+  const sellInputRef = useRef<HTMLInputElement>(null);
+  const buyInputRef = useRef<HTMLInputElement>(null);
 
   const unpricedCount = useMemo(() => {
     return products.filter(p => !(parseFloat(normalizeNumerals((p.buyAlf || "0").toString())) > 0)).length;
@@ -345,42 +393,6 @@ export function OrderPricingPanel({
     return currentIndex > 0 ? currentIndex - 1 : products.length - 1;
   };
 
-  const handleToggleNoProfit = async (newVal: boolean) => {
-    setNoProfit(newVal);
-    const updatedProducts = products.map(p => {
-      const buyNum = parseFloat(normalizeNumerals((p.buyAlf || "0").toString())) || 0;
-      if (buyNum > 0) {
-        return {
-          ...p,
-          sellAlf: calculateAutoSellPrice(p.line, buyNum, newVal).toString()
-        };
-      }
-      return p;
-    });
-    setProducts(updatedProducts);
-    setIsSaving(true);
-    await savePricingProgress(orderId, !!isDraft, updatedProducts, placesCount, newVal);
-    setIsSaving(false);
-  };
-
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [buyText, setBuyText] = useState("");
-  const [sellText, setSellText] = useState("");
-  const [isAdminFulfilled, setIsAdminFulfilled] = useState(false);
-  const [pricingErr, setPricingErr] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [deleteMode, setDeleteMode] = useState(false);
-  const [showBulkAdd, setShowBulkAdd] = useState(false);
-  const [bulkText, setBulkText] = useState("");
-  const [showReassign, setShowReassign] = useState(false);
-  const [selectedProductIndexes, setSelectedProductIndexes] = useState<number[]>([]);
-  const [productAssigneeId, setProductAssigneeId] = useState("");
-  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-  const [previewZoom, setPreviewZoom] = useState(1);
-  const [showAutoCourier, setShowAutoCourier] = useState(false);
-
-  const sellInputRef = useRef<HTMLInputElement>(null);
-
   // تعبئة الحقول تلقائياً عند تغيير المنتج الذي يتم تعديله
   useEffect(() => {
     if (editingIndex !== null && products[editingIndex]) {
@@ -390,8 +402,13 @@ export function OrderPricingPanel({
       setSellText(priced ? p.sellAlf : "");
       setIsAdminFulfilled(!!p.isFulfilledByAdmin);
       setPricingErr("");
+
+      // تمرير وتركيز تلقائي
+      setTimeout(() => {
+        buyInputRef.current?.focus();
+      }, 100);
     }
-  }, [editingIndex]);
+  }, [editingIndex, products]);
 
   const bound = updateOrderPricingByAdmin.bind(null, orderId);
   const [state, formAction, pending] = useActionState(bound, { ok: false });
@@ -421,6 +438,24 @@ export function OrderPricingPanel({
     }, 2000);
     return () => clearTimeout(timer);
   }, [products, placesCount, orderId, isDraft, noProfit]);
+
+  const handleToggleNoProfit = async (newVal: boolean) => {
+    setNoProfit(newVal);
+    const updatedProducts = products.map(p => {
+      const buyNum = parseFloat(normalizeNumerals((p.buyAlf || "0").toString())) || 0;
+      if (buyNum > 0) {
+        return {
+          ...p,
+          sellAlf: calculateAutoSellPrice(p.line, buyNum, newVal).toString()
+        };
+      }
+      return p;
+    });
+    setProducts(updatedProducts);
+    setIsSaving(true);
+    await savePricingProgress(orderId, !!isDraft, updatedProducts, placesCount, newVal);
+    setIsSaving(false);
+  };
 
   const updateProduct = (idx: number, field: string, val: any) => {
     const next = [...products];
@@ -453,7 +488,9 @@ export function OrderPricingPanel({
       buyAlf: bNum.toString(),
       sellAlf: sNum.toString(),
       isFulfilledByAdmin: isAdminFulfilled,
-      assignedPreparerId: isAdminFulfilled ? null : next[editingIndex].assignedPreparerId
+      assignedPreparerId: isAdminFulfilled ? null : next[editingIndex].assignedPreparerId,
+      assignedPreparerName: isAdminFulfilled ? "تجهيز الإدارة 🏛️" : next[editingIndex].assignedPreparerName,
+      pricedBy: "الإدارة"
     };
     setProducts(next);
 
@@ -496,7 +533,9 @@ export function OrderPricingPanel({
       buyAlf: bNum.toString(),
       sellAlf: sellVal.toString(),
       isFulfilledByAdmin: isAdminFulfilled,
-      assignedPreparerId: isAdminFulfilled ? null : next[editingIndex].assignedPreparerId
+      assignedPreparerId: isAdminFulfilled ? null : next[editingIndex].assignedPreparerId,
+      assignedPreparerName: isAdminFulfilled ? "تجهيز الإدارة 🏛️" : next[editingIndex].assignedPreparerName,
+      pricedBy: "الإدارة"
     };
     setProducts(next);
 
@@ -567,6 +606,61 @@ export function OrderPricingPanel({
     clearSelection();
   };
 
+  async function handleAiSort() {
+    if (products.length === 0) return;
+    setIsSorting(true);
+    setSortError(null);
+    try {
+      const textToSend = products.map(p => p.line).join("\n");
+      const res = await fetch("/api/ai/sort-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: textToSend })
+      });
+      const data = await res.json();
+      if (data.error) {
+        setSortError(data.error);
+      } else if (data.sortedText) {
+        const sortedLines = data.sortedText
+          .split("\n")
+          .map((l: string) => l.trim())
+          .filter(Boolean);
+
+        const newProducts: any[] = [];
+        sortedLines.forEach((line: string) => {
+          const matchedOriginal = products.find(
+            (orig) => orig.line.trim().toLowerCase() === line.toLowerCase()
+          );
+          if (matchedOriginal) {
+            newProducts.push({
+              ...matchedOriginal
+            });
+          } else {
+            newProducts.push({
+              line,
+              buyAlf: "0",
+              sellAlf: "0",
+              isFulfilledByAdmin: false
+            });
+          }
+        });
+
+        // لضمان الأمان وعدم ضياع أي منتج
+        products.forEach((orig) => {
+          if (!newProducts.some((p) => p.line.toLowerCase() === orig.line.toLowerCase())) {
+            newProducts.push(orig);
+          }
+        });
+
+        setProducts(newProducts);
+      }
+    } catch (err) {
+      setSortError("فشل الاتصال بخدمة الترتيب.");
+    } finally {
+      setIsSorting(false);
+    }
+  }
+
   const findPreparerName = (id?: string | null) => preparers.find(p => p.id === id)?.name;
 
   const allProductsPriced = products.length > 0 && products.every(p => parseFloat(normalizeNumerals((p.buyAlf || "0").toString())) > 0);
@@ -577,6 +671,70 @@ export function OrderPricingPanel({
   }, [state.ok, onSuccess]);
 
   const initialPreparerIds = initialData?.assignedPreparerIds || [];
+
+  const branches = useMemo(() => {
+    const bSet = new Set<string>();
+    products.forEach(p => {
+      const details = findStoreProductBranchAndPhoto(p.line, storeProducts);
+      const b = details.branchName || "أخرى";
+      bSet.add(b);
+    });
+    return Array.from(bSet).sort((a, b) => a.localeCompare(b, 'ar'));
+  }, [products, storeProducts]);
+
+  const stats = useMemo(() => {
+    const total = products.length;
+    const priced = products.filter(p => parseFloat(normalizeNumerals((p.buyAlf || "0").toString())) > 0).length;
+    const percent = total > 0 ? Math.round((priced / total) * 100) : 0;
+    return { total, priced, percent };
+  }, [products]);
+
+  const orderedForButtons = useMemo(() => {
+    const withIndex = products.map((p, idx) => {
+      const details = findStoreProductBranchAndPhoto(p.line, storeProducts);
+      return {
+        p,
+        idx,
+        branch: details.branchName || "أخرى",
+        photoUrl: details.photoUrl
+      };
+    });
+
+    // تطبيق فلتر البحث
+    let filtered = searchTerm.trim()
+      ? withIndex.filter(item => item.p.line.toLowerCase().includes(searchTerm.toLowerCase()))
+      : withIndex;
+
+    // تطبيق فلتر الفرع
+    if (activeBranch) {
+      filtered = filtered.filter(item => item.branch === activeBranch);
+    }
+
+    // تطبيق فلتر الحالة (الكل، غير مسعر، مسعر)
+    if (filterType === 'unpriced') {
+      filtered = filtered.filter(item => !(parseFloat(normalizeNumerals((item.p.buyAlf || "0").toString())) > 0));
+    } else if (filterType === 'priced') {
+      filtered = filtered.filter(item => parseFloat(normalizeNumerals((item.p.buyAlf || "0").toString())) > 0);
+    }
+
+    return filtered.sort((a, b) => {
+      const aPriced = parseFloat(normalizeNumerals((a.p.buyAlf || "0").toString())) > 0;
+      const bPriced = parseFloat(normalizeNumerals((b.p.buyAlf || "0").toString())) > 0;
+
+      // 1. غير المسعر يظهر أولاً
+      if (aPriced !== bPriced) {
+        return aPriced ? 1 : -1;
+      }
+
+      // 2. الترتيب حسب اسم الفرع/المحل
+      if (a.branch !== b.branch) {
+        return a.branch.localeCompare(b.branch, 'ar');
+      }
+
+      // 3. الترتيب الأصلي
+      return a.idx - b.idx;
+    });
+  }, [products, storeProducts, searchTerm, activeBranch, filterType]);
 
   return (
     <div className={hideContainer ? "relative text-right h-full flex flex-col" : "relative overflow-hidden rounded-[2.5rem] border border-white/40 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-white/20 dark:ring-white/10 text-right transition-colors h-full flex flex-col"} dir="rtl">
@@ -692,43 +850,111 @@ export function OrderPricingPanel({
         {/* Toolbar */}
         <div className="flex items-center justify-between gap-1.5 p-2 bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700/50 mb-2">
           <div className="flex items-center gap-1.5">
-             <button type="button" onClick={() => setShowBulkAdd(!showBulkAdd)} className="h-9 px-3 flex items-center gap-2 rounded-xl bg-amber-500 text-white text-[10px] font-black shadow-md active:scale-95 transition-all">
+             <button type="button" onClick={() => { setShowBulkAdd(!showBulkAdd); setDeleteMode(false); }} className="h-9 px-3 flex items-center gap-2 rounded-xl bg-amber-500 text-white text-[10px] font-black shadow-md active:scale-95 transition-all">
                 <DynamicIcon icon={icons?.ui_plus} fallback="+" width={12} height={12} /> إضافة
              </button>
              <button type="button" onClick={() => setShowReassign(!showReassign)} className="h-9 px-3 flex items-center gap-2 rounded-xl bg-slate-800 text-white text-[10px] font-black shadow-md active:scale-95 transition-all">
                 <DynamicIcon icon={icons?.ui_user} fallback="👤" width={12} height={12} /> إسناد
              </button>
-             <button type="button" onClick={() => { setDeleteMode(!deleteMode); setEditingIndex(null); }} className={`h-9 px-3 flex items-center gap-2 rounded-xl text-[10px] font-black shadow-md active:scale-95 transition-all ${deleteMode ? "bg-rose-600 text-white" : "bg-white dark:bg-slate-800 text-rose-600 border border-rose-100 dark:border-rose-900/50"}`}>
+             <button type="button" onClick={() => { setDeleteMode(!deleteMode); setShowBulkAdd(false); }} className={`h-9 px-3 flex items-center gap-2 rounded-xl text-[10px] font-black shadow-md active:scale-95 transition-all ${deleteMode ? "bg-rose-600 text-white" : "bg-white dark:bg-slate-800 text-rose-600 border border-rose-100 dark:border-rose-900/50"}`}>
                 <DynamicIcon icon={icons?.ui_trash} fallback="🗑️" width={12} height={12} /> {deleteMode ? "إيقاف الحذف" : "حذف منتج"}
+             </button>
+             <button
+                type="button"
+                disabled={isSorting}
+                onClick={handleAiSort}
+                className="h-9 px-3 flex items-center gap-2 rounded-xl bg-indigo-600 text-white text-[10px] font-black shadow-md active:scale-95 transition-all disabled:opacity-50"
+             >
+                ترتيب 🪄
              </button>
           </div>
         </div>
 
-        {/* أزرار التصفية السريعة */}
-        <div className="flex items-center gap-1 mb-2 bg-slate-100 dark:bg-slate-900/40 p-1 rounded-xl">
-          <button
-            type="button"
-            onClick={() => setFilterType('all')}
-            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all ${filterType === 'all' ? 'bg-white dark:bg-slate-800 shadow text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            الكل ({products.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterType('unpriced')}
-            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 ${filterType === 'unpriced' ? 'bg-amber-500 text-white shadow' : 'text-amber-600 dark:text-amber-400 hover:bg-amber-500/10'}`}
-          >
-            ⚠️ غير مسعر ({unpricedCount})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterType('priced')}
-            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 ${filterType === 'priced' ? 'bg-emerald-500 text-white shadow' : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10'}`}
-          >
-            ✅ تم التسعير ({pricedCount})
-          </button>
+        {/* مؤشر الإنجاز */}
+        <div className="p-3 bg-white/40 dark:bg-slate-850/40 rounded-2xl border border-slate-150 dark:border-slate-800 mb-2">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-[10px] font-black text-slate-500">مستوى الإنجاز</span>
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${stats.percent === 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>
+              {stats.priced} من {stats.total} ({stats.percent}%)
+            </span>
+          </div>
+          <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all duration-500 ${
+                stats.percent < 40 ? 'bg-rose-500' : stats.percent < 80 ? 'bg-amber-500' : 'bg-emerald-500'
+              }`}
+              style={{ width: `${stats.percent}%` }}
+            />
+          </div>
         </div>
 
+        {/* شريط البحث والتصنيفات */}
+        <div className="space-y-2 mb-3">
+          <div className="relative">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="ابحث عن مادة..."
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 pr-8 pl-3 text-xs font-bold text-slate-700 dark:text-slate-350 outline-none focus:border-indigo-400 transition-all shadow-sm"
+            />
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 rounded-full text-[8px] flex items-center justify-center"
+              >✕</button>
+            )}
+          </div>
+
+          {branches.length > 1 && (
+            <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar -mx-1 px-1">
+              <button
+                type="button"
+                onClick={() => setActiveBranch(null)}
+                className={`shrink-0 px-3 py-1 rounded-full text-[10px] font-black transition-all ${!activeBranch ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-150 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700'}`}
+              > الكل </button>
+              {branches.map(b => (
+                <button
+                  type="button"
+                  key={b}
+                  onClick={() => setActiveBranch(b === activeBranch ? null : b)}
+                  className={`shrink-0 px-3 py-1 rounded-full text-[10px] font-black transition-all ${activeBranch === b ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-150 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700'}`}
+                >
+                  {b}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* أزرار التصفية السريعة للحالة */}
+          <div className="flex items-center gap-1 bg-slate-100/50 dark:bg-slate-900/40 p-1 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setFilterType('all')}
+              className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all ${filterType === 'all' ? 'bg-white dark:bg-slate-800 shadow text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-755'}`}
+            >
+              الكل ({products.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType('unpriced')}
+              className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 ${filterType === 'unpriced' ? 'bg-amber-500 text-white shadow' : 'text-amber-600 dark:text-amber-400 hover:bg-amber-500/10'}`}
+            >
+              ⚠️ غير مسعر ({unpricedCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType('priced')}
+              className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 ${filterType === 'priced' ? 'bg-emerald-500 text-white shadow' : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10'}`}
+            >
+              ✅ تم التسعير ({pricedCount})
+            </button>
+          </div>
+        </div>
+
+        {sortError && <p className="mb-3 text-center text-xs font-bold text-rose-600 bg-rose-50 p-2 rounded-lg dark:bg-rose-950/20 dark:text-rose-400">{sortError}</p>}
         {showBulkAdd && (
           <div className="mb-3 p-3 bg-white dark:bg-slate-800 rounded-[1.5rem] border border-amber-200 dark:border-amber-900/50 shadow-inner animate-in slide-in-from-top-2">
              <label className="text-[10px] font-black text-amber-600 mb-1.5 block">إضافة منتجات متعددة (كل سطر منتج)</label>
@@ -766,95 +992,127 @@ export function OrderPricingPanel({
              </div>
           )}
 
-          <div className="space-y-0.5">
-            {(() => {
-              const sorted = products
-                .map((p, idx) => ({ ...p, originalIndex: idx }))
-                .filter(p => {
-                  const priced = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) > 0;
-                  if (filterType === 'unpriced') return !priced;
-                  if (filterType === 'priced') return priced;
-                  return true;
-                })
-                .sort((a, b) => {
-                  const aPriced = parseFloat(normalizeNumerals((a?.buyAlf ?? "0").toString())) > 0;
-                  const bPriced = parseFloat(normalizeNumerals((b?.buyAlf ?? "0").toString())) > 0;
-                  if (!aPriced && bPriced) return -1;
-                  if (aPriced && !bPriced) return 1;
-                  return a.originalIndex - b.originalIndex;
-                });
+          {/* تصميم البطاقات الشبكي للمدير */}
+          <div className="grid grid-cols-2 gap-1.5">
+            {orderedForButtons.map(({ p, idx: i, branch, photoUrl }) => {
+              const priced = parseFloat(normalizeNumerals((p.buyAlf || "0").toString())) > 0;
+              const isSelected = selectedProductIndexes.includes(i);
+              const active = i === editingIndex;
+              const prepName = findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName;
+              const isMeat = isMeatProduct(p.line);
 
-              return sorted.map((p) => {
-                const i = p.originalIndex;
-                const priced = parseFloat(normalizeNumerals((p?.buyAlf ?? "0").toString())) > 0;
-                const isSelected = selectedProductIndexes.includes(i);
-                const isEditing = editingIndex === i;
-                const prepName = findPreparerName(p?.assignedPreparerId) || p?.assignedPreparerName;
+              return (
+                <div
+                  key={`${i}-${p.line}`}
+                  className={`w-full relative flex items-center gap-2 rounded-xl border-2 p-2 text-start transition min-h-[64px] ${
+                    active ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 ring-2 ring-indigo-200" :
+                    priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm"
+                  } cursor-pointer`}
+                  onClick={() => {
+                    if (deleteMode) {
+                      setProducts(products.filter((_, idx) => idx !== i));
+                    } else {
+                      setEditingIndex(i);
+                    }
+                  }}
+                >
+                  {/* Checkbox للتحديد */}
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      toggleProductSelection(i);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute right-1 top-1 h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 z-10"
+                  />
 
-                return (
-                  <div key={i} className="relative">
-                    <div className={`w-full flex items-center gap-1.5 p-1 rounded-lg border transition-all ${isEditing ? "border-sky-500 bg-sky-50 dark:bg-sky-500/10" : deleteMode ? "border-rose-300 bg-rose-50" : priced ? "border-emerald-100 bg-emerald-50/30" : "border-slate-100 bg-white dark:bg-slate-900/50"}`}>
-                      <input type="checkbox" checked={isSelected} onChange={() => toggleProductSelection(i)} className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
-                      <div className="flex-1 min-w-0 flex items-center justify-between cursor-pointer h-7" onClick={() => {
-                        if (deleteMode) {
-                          setProducts(products.filter((_, idx) => idx !== i));
-                        } else {
-                          setEditingIndex(i);
-                        }
-                      }}>
-                        <div className="flex flex-col min-w-0">
-                          <p className={`truncate text-[10px] font-black flex items-center gap-1 ${priced ? "text-emerald-900 dark:text-emerald-100" : "text-slate-700 dark:text-slate-300"}`}>
-                            {priced && <span className="text-emerald-600 shrink-0">✅</span>}
-                            <span>{p?.line}</span>
-                            {(() => {
-                              const details = findStoreProductDetails(p?.line, storeProducts);
-                              if (!details) return null;
-                              return (
-                                <span
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const next = [...products];
-                                    next[i] = {
-                                      ...next[i],
-                                      sellAlf: details.salePrice.toString(),
-                                      buyAlf: (parseFloat(normalizeNumerals(next[i].buyAlf || "0")) > 0) ? next[i].buyAlf : details.purchasePrice.toString()
-                                    };
-                                    setProducts(next);
-                                    if (editingIndex === i) {
-                                      setSellText(details.salePrice.toString());
-                                      if (!(parseFloat(normalizeNumerals(buyText || "0")) > 0)) {
-                                        setBuyText(details.purchasePrice.toString());
-                                      }
-                                    }
-                                  }}
-                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-black bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200/50 dark:border-violet-900/30 hover:bg-violet-100 hover:text-violet-800 transition cursor-pointer shrink-0 ml-1.5"
-                                  title="انقر لاعتماده كسعر بيع بالطلبية"
-                                >
-                                  🏪 متجر: {details.salePrice}
-                                </span>
-                              );
-                            })()}
-                          </p>
-                          {prepName && (
-                            <span className={`text-[7px] font-bold flex items-center gap-0.5 ${p.isFulfilledByAdmin ? "text-amber-600" : "text-slate-400"}`}>
-                              <DynamicIcon icon={p.isFulfilledByAdmin ? (icons?.ui_flash) : (icons?.ui_user)} fallback="👤" width={7} height={7} /> {prepName}
+                  {/* صورة المنتج */}
+                  {photoUrl && (
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewImageUrl(resolvePublicAssetSrc(photoUrl)!);
+                        setPreviewZoom(1);
+                      }}
+                      className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-slate-100 bg-white/10 active:scale-90 transition-transform cursor-zoom-in mt-2"
+                    >
+                      <img
+                        src={resolvePublicAssetSrc(photoUrl)!}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 h-full mt-2">
+                    <p className={`text-[10px] font-black leading-tight line-clamp-2 pr-1 flex items-center gap-1 ${priced ? "text-white" : "text-slate-800 dark:text-slate-200"}`}>
+                      {priced && <span className="shrink-0">✅</span>}
+                      <span>
+                        {p.line}
+                        {(() => {
+                          const details = findStoreProductDetails(p.line, storeProducts);
+                          if (!details) return null;
+                          return (
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const next = [...products];
+                                next[i] = {
+                                  ...next[i],
+                                  sellAlf: details.salePrice.toString(),
+                                  buyAlf: (parseFloat(normalizeNumerals(next[i].buyAlf || "0")) > 0) ? next[i].buyAlf : details.purchasePrice.toString()
+                                };
+                                setProducts(next);
+                                if (editingIndex === i) {
+                                  setSellText(details.salePrice.toString());
+                                  if (!(parseFloat(normalizeNumerals(buyText || "0")) > 0)) {
+                                    setBuyText(details.purchasePrice.toString());
+                                  }
+                                }
+                              }}
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-black bg-violet-50/80 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200/50 dark:border-violet-900/30 hover:bg-violet-100 hover:text-violet-800 transition cursor-pointer shrink-0 mr-1 inline-block"
+                              title="انقر لاعتماده كسعر بيع بالطلبية"
+                            >
+                              🏪 متجر: {details.salePrice}
                             </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <div className="min-w-[38px] h-6 rounded bg-slate-100/50 dark:bg-black/20 border flex items-center justify-center">
-                            <span className="font-mono text-[9px] font-black text-slate-600">{priced ? p.buyAlf : "—"}</span>
-                          </div>
-                          <div className="min-w-[38px] h-6 rounded bg-emerald-100/20 border flex items-center justify-center">
-                            <span className="font-mono text-[9px] font-black text-emerald-600">{priced ? p.sellAlf : "—"}</span>
-                          </div>
-                        </div>
-                      </div>
+                          );
+                        })()}
+                      </span>
+                    </p>
+
+                    <div className="flex flex-col gap-0.5 mt-1">
+                      {branch && (
+                        <p className={`text-[7px] font-black px-1 py-0.5 rounded whitespace-nowrap self-start ${priced ? 'bg-emerald-800 text-emerald-200' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 border border-slate-100 dark:border-slate-700'}`}>
+                          📍 {branch}
+                        </p>
+                      )}
+
+                      {prepName && (
+                        <span className={`text-[7px] font-bold flex items-center gap-0.5 self-start ${p.isFulfilledByAdmin ? "text-amber-500" : priced ? "text-emerald-300" : "text-slate-400"}`}>
+                          👤 {prepName}
+                        </span>
+                      )}
                     </div>
                   </div>
-                );
-              });
-            })()}
+
+                  {/* شارة السعر */}
+                  <div className="absolute top-1 left-1 flex gap-1 items-center">
+                    {priced ? (
+                      <div className="flex gap-0.5">
+                        <span className={`font-mono text-[8px] font-black px-1 py-0.5 rounded shadow-sm ${priced ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"}`}>{p.buyAlf}</span>
+                        <span className="font-mono text-[8px] font-black px-1 py-0.5 rounded shadow-sm bg-indigo-500 text-white">{p.sellAlf}</span>
+                      </div>
+                    ) : (
+                      isMeat && (
+                        <span className="text-[7px] font-bold text-amber-600 bg-amber-50 px-1 py-0.5 rounded border border-amber-100 shadow-sm">تسعير</span>
+                      )
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </form>
@@ -875,7 +1133,7 @@ export function OrderPricingPanel({
         </div>
       )}
 
-      {/* Modal - Outside Form */}
+      {/* نافذة التسعير المنبثقة الذكية للمدير */}
       {editingIndex !== null && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="absolute inset-0" onClick={cancelPricingPanel} />
@@ -914,7 +1172,7 @@ export function OrderPricingPanel({
 
             <div className="p-6 text-right">
               <div className="mb-4">
-                <label className="text-[10px] font-black text-slate-400 mb-1 block">تعديل اسم المنتج (اختياري)</label>
+                <label className="text-[10px] font-black text-slate-500 mb-1 block">تعديل اسم المنتج (اختياري)</label>
                 <input
                   type="text"
                   value={products[editingIndex]?.line}
@@ -923,7 +1181,7 @@ export function OrderPricingPanel({
                 />
               </div>
 
-              <div className="mb-6 flex items-center gap-3 p-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 shadow-sm" onClick={() => setIsAdminFulfilled(!isAdminFulfilled)}>
+              <div className="mb-6 flex items-center gap-3 p-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 shadow-sm cursor-pointer" onClick={() => setIsAdminFulfilled(!isAdminFulfilled)}>
                  <div className={`h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-all ${isAdminFulfilled ? "bg-amber-500 border-amber-500 text-white" : "border-slate-300"}`}>
                    {isAdminFulfilled && "✓"}
                  </div>
@@ -933,11 +1191,48 @@ export function OrderPricingPanel({
                  </div>
               </div>
 
+              {/* اقتراحات الكسور الذكية للمدير (بناءً على الشراء) */}
+              <div className="mb-4">
+                {(() => {
+                  const typedValue = parseFloat(buyText);
+                  if (isNaN(typedValue) || typedValue <= 0) return null;
+
+                  const base = Math.floor(typedValue);
+                  const fractions = [0, 0.25, 0.5, 0.75];
+
+                  return (
+                    <div className="bg-indigo-50/50 dark:bg-indigo-950/20 p-3 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 mb-4 animate-in slide-in-from-top-2 duration-300">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] font-black text-indigo-900 dark:text-indigo-300">إكمال سعر الشراء لـ ({base}) :</p>
+                      </div>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {fractions.map(frac => {
+                          const total = base + frac;
+                          return (
+                            <button
+                              key={frac}
+                              type="button"
+                              onClick={() => {
+                                setBuyText(total.toString());
+                                setSellText(calculateAutoSellPrice(products[editingIndex].line, total, noProfit).toString());
+                              }}
+                              className="py-2 rounded-xl text-xs font-black bg-indigo-600 text-white active:scale-95 transition-all"
+                            >
+                              {total}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-black text-slate-500 mb-1 block text-center">سعر الشراء</label>
                   <input
-                    autoFocus
+                    ref={buyInputRef}
                     value={buyText}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -950,14 +1245,12 @@ export function OrderPricingPanel({
                     onKeyDown={(e) => {
                        if (e.key === 'Enter') {
                           e.preventDefault();
-                          e.stopPropagation();
-                          e.nativeEvent.stopImmediatePropagation();
                           sellInputRef.current?.focus();
                        }
                     }}
                     dir="ltr"
                     inputMode="decimal"
-                    className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 py-4 text-center font-mono text-xl font-black outline-none focus:border-sky-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                    className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 dark:bg-slate-800 dark:border-slate-700 py-3 text-center font-mono text-lg font-black outline-none focus:border-sky-500"
                   />
                 </div>
                 <div>
@@ -970,7 +1263,7 @@ export function OrderPricingPanel({
                         const nextSell = Math.max(0, currentSell - 0.25);
                         setSellText(nextSell.toString());
                       }}
-                      className="h-14 w-10 rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-lg font-black flex items-center justify-center border border-rose-200/50 dark:border-rose-900/50 transition active:scale-95 shrink-0 select-none shadow-sm"
+                      className="h-12 w-8 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 text-rose-600 text-sm font-black flex items-center justify-center border border-rose-200/50 transition active:scale-95 shrink-0"
                     >
                       -
                     </button>
@@ -981,14 +1274,12 @@ export function OrderPricingPanel({
                       onKeyDown={(e) => {
                          if (e.key === 'Enter') {
                             e.preventDefault();
-                            e.stopPropagation();
-                            e.nativeEvent.stopImmediatePropagation();
                             applyPricingPanel();
                          }
                       }}
                       dir="ltr"
                       inputMode="decimal"
-                      className="w-full flex-1 rounded-2xl border-2 border-sky-100 bg-sky-50 dark:border-sky-900/40 dark:bg-sky-950/30 py-4 text-center font-mono text-xl font-black outline-none focus:border-sky-500 text-slate-800 dark:text-slate-100"
+                      className="w-full flex-1 rounded-2xl border-2 border-sky-100 bg-sky-50 dark:bg-slate-800 dark:border-slate-700 py-3 text-center font-mono text-lg font-black outline-none focus:border-sky-500 text-slate-800 dark:text-white"
                     />
                     <button
                       type="button"
@@ -996,7 +1287,7 @@ export function OrderPricingPanel({
                         const currentSell = parseFloat(normalizeNumerals(sellText)) || 0;
                         setSellText((currentSell + 0.25).toString());
                       }}
-                      className="h-14 w-10 rounded-2xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-lg font-black flex items-center justify-center border border-emerald-200/50 dark:border-emerald-900/50 transition active:scale-95 shrink-0 select-none shadow-sm"
+                      className="h-12 w-8 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600 text-sm font-black flex items-center justify-center border border-emerald-200/50 transition active:scale-95 shrink-0"
                     >
                       +
                     </button>
@@ -1026,9 +1317,9 @@ export function OrderPricingPanel({
                           setBuyText(details.purchasePrice.toString());
                         }
                       }}
-                      className="px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-black transition active:scale-95 shadow-sm shadow-violet-200"
+                      className="px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-black transition active:scale-95 shadow-sm"
                     >
-                      اعتماد السعر ↩
+                      اعتماد
                     </button>
                   </div>
                 );
@@ -1039,26 +1330,23 @@ export function OrderPricingPanel({
                 const buyNum = parseFloat(normalizeNumerals(buyText)) || 0;
                 if (buyNum <= 0) return null;
                 return (
-                  <div className="mt-5 border-t border-slate-100 dark:border-white/5 pt-4">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-2 block">خيارات سريعة للبيع (حفظ تلقائي بنقرة واحدة):</label>
-                    <div className="flex flex-wrap gap-2 justify-start">
-                      {/* زر بدون ربح */}
+                  <div className="mt-4 border-t border-slate-100 dark:border-white/5 pt-3">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-2 block">خيارات سريعة للبيع:</label>
+                    <div className="flex flex-wrap gap-1.5 justify-start">
                       <button
                         type="button"
                         onClick={() => applyPriceDirectly(buyNum)}
-                        className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-mono text-xs font-black border border-slate-200 dark:border-slate-700 transition active:scale-95 flex items-center gap-1.5"
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono text-xs font-black border border-slate-200 dark:border-slate-700 transition active:scale-95"
                       >
-                        <span>بدون ربح:</span>
-                        <span className="bg-white/70 dark:bg-black/30 px-1.5 py-0.5 rounded text-[10px]">{buyNum}</span>
+                        بدون ربح: {buyNum}
                       </button>
 
-                      {/* الأسعار المقترحة */}
                       {suggestedPrices.map((price) => (
                         <button
                           key={price}
                           type="button"
                           onClick={() => applyPriceDirectly(price)}
-                          className="px-3.5 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 dark:hover:bg-sky-900/50 text-sky-700 dark:text-sky-300 font-mono text-xs font-black border border-sky-100 dark:border-sky-900/30 transition active:scale-95"
+                          className="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 font-mono text-xs font-black border border-sky-100 dark:border-sky-900/30 transition active:scale-95"
                         >
                           {price}
                         </button>
@@ -1071,8 +1359,55 @@ export function OrderPricingPanel({
               {pricingErr && <p className="mt-2 text-center text-xs font-bold text-rose-600">{pricingErr}</p>}
 
               <div className="mt-6 grid grid-cols-2 gap-3">
-                 <button type="button" onClick={() => { resetProductPricing(editingIndex); cancelPricingPanel(); }} className="rounded-2xl border border-rose-200 bg-rose-50 py-3.5 text-sm font-black text-rose-600">إلغاء التسعير</button>
-                 <button type="button" onClick={applyPricingPanel} className="rounded-2xl bg-sky-600 py-3.5 text-sm font-black text-white shadow-lg shadow-sky-200">حفظ السعر</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    applyPricingPanel();
+                  }}
+                  className="rounded-2xl bg-emerald-600 py-3 text-sm font-black text-white shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                >
+                  حفظ والتالي ⬅️
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const bNum = parseFloat(normalizeNumerals(buyText)) || 0;
+                    const sNum = parseFloat(normalizeNumerals(sellText)) || 0;
+                    if (bNum > 0 && sNum > 0) {
+                      const next = [...products];
+                      next[editingIndex] = {
+                        ...next[editingIndex],
+                        buyAlf: bNum.toString(),
+                        sellAlf: sNum.toString(),
+                        isFulfilledByAdmin: isAdminFulfilled,
+                        assignedPreparerId: isAdminFulfilled ? null : next[editingIndex].assignedPreparerId,
+                        assignedPreparerName: isAdminFulfilled ? "تجهيز الإدارة 🏛️" : next[editingIndex].assignedPreparerName,
+                        pricedBy: "الإدارة"
+                      };
+                      setProducts(next);
+                    }
+                    cancelPricingPanel();
+                  }}
+                  className="rounded-2xl bg-sky-600 py-3 text-sm font-black text-white"
+                >
+                  حفظ وإغلاق
+                </button>
+              </div>
+
+              <div className="mt-3 flex flex-col gap-2">
+                {products[editingIndex]?.buyAlf !== "0" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetProductPricing(editingIndex);
+                      cancelPricingPanel();
+                    }}
+                    className="w-full bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl py-2.5 text-xs font-black active:bg-rose-600 active:text-white transition-all"
+                  >
+                     مسح السعر الحالي
+                  </button>
+                )}
+                <button type="button" onClick={cancelPricingPanel} className="w-full bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-2xl py-2.5 text-xs font-bold">تراجع</button>
               </div>
             </div>
           </div>
