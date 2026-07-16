@@ -2569,6 +2569,7 @@ export async function syncOldCustomerDebts() {
         customer: { select: { id: true, name: true, phone: true } },
         customerRegion: { select: { name: true } },
         courier: { select: { name: true } },
+        shop: { select: { name: true } },
         moneyEvents: {
           where: {
             kind: "delivery_in",
@@ -2651,7 +2652,7 @@ export async function syncOldCustomerDebts() {
           }
 
           // 2. التحقق من عدم وجود المعاملة بالفعل لتفادي التكرار
-          const noteTextContains = `طلب رقم: #${order.orderNumber}`;
+          const noteTextContains = `#${order.orderNumber} |`;
           const exists = await prisma.creditBookTransaction.findFirst({
             where: {
               partnerId: cbPartner.id,
@@ -2664,7 +2665,8 @@ export async function syncOldCustomerDebts() {
           const regionName = order.customerRegion?.name || "غير محدد";
           const courierName = order.courier?.name || "بدون مندوب";
           const orderType = order.orderType || "غير محدد";
-          const noteText = `طلب رقم: #${order.orderNumber} | المنطقة: ${regionName} | نوع الطلب: ${orderType} | المندوب: ${courierName} | المطلوب الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
+          const shopName = order.shop?.name || "بدون محل";
+          const noteText = `#${order.orderNumber} | ${regionName} | ${shopName} | ${orderType} | ${courierName} | الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
 
           if (!exists) {
             const newTx = await prisma.creditBookTransaction.create({
@@ -2712,7 +2714,7 @@ export async function syncOldCustomerDebts() {
             }
           });
           if (cbPartner) {
-            const noteTextContains = `طلب رقم: #${order.orderNumber}`;
+            const noteTextContains = `#${order.orderNumber} |`;
             const exists = await prisma.creditBookTransaction.findFirst({
               where: {
                 partnerId: cbPartner.id,
@@ -2734,9 +2736,10 @@ export async function syncOldCustomerDebts() {
     // 3. تحديث الملاحظات للمعاملات القديمة المسجلة مسبقاً بنص قديم لتأخذ التنسيق المفصل
     const existingCustomerTxs = await prisma.creditBookTransaction.findMany({
       where: {
-        note: {
-          contains: "طلب رقم:"
-        },
+        OR: [
+          { note: { contains: "طلب رقم:" } },
+          { note: { contains: "#" } }
+        ],
         partner: {
           type: "customer"
         }
@@ -2753,6 +2756,7 @@ export async function syncOldCustomerDebts() {
           include: {
             customerRegion: { select: { name: true } },
             courier: { select: { name: true } },
+            shop: { select: { name: true } },
             moneyEvents: {
               where: {
                 kind: "delivery_in",
@@ -2770,8 +2774,9 @@ export async function syncOldCustomerDebts() {
           const regionName = order.customerRegion?.name || "غير محدد";
           const courierName = order.courier?.name || "بدون مندوب";
           const orderType = order.orderType || "غير محدد";
+          const shopName = order.shop?.name || "بدون محل";
           
-          const newNote = `طلب رقم: #${order.orderNumber} | المنطقة: ${regionName} | نوع الطلب: ${orderType} | المندوب: ${courierName} | المطلوب الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
+          const newNote = `#${order.orderNumber} | ${regionName} | ${shopName} | ${orderType} | ${courierName} | الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
 
           if (tx.note !== newNote || Number(tx.amount) !== difference) {
             await prisma.creditBookTransaction.update({
