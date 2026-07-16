@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { SupplierPricingClient } from "./supplier-pricing-client";
 import { OneSignalInitializer } from "@/components/OneSignalInitializer";
+import { UserBackgroundPicker } from "@/components/user-background-picker";
 
 export const dynamic = "force-dynamic";
 
@@ -78,9 +79,9 @@ export default async function SupplierPortalPage({ searchParams }: Props) {
     });
 
     return (
-      <div className="min-h-screen bg-slate-50 pb-20" dir="rtl">
+      <div className="kse-app-bg min-h-screen pb-20" dir="rtl">
         <OneSignalInitializer externalId={supplier.id} />
-        <header className="bg-white border-b border-slate-100 px-6 py-8 sticky top-0 z-10 shadow-sm">
+        <header className="bg-white/80 backdrop-blur border-b border-slate-100 px-6 py-8 sticky top-0 z-10 shadow-sm">
           <div className="max-w-4xl mx-auto">
              <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-[1.5rem] bg-emerald-600 flex items-center justify-center text-white text-3xl font-black">
@@ -94,7 +95,12 @@ export default async function SupplierPortalPage({ searchParams }: Props) {
           </div>
         </header>
 
-        <main className="max-w-4xl mx-auto p-4 mt-6">
+        <main className="max-w-4xl mx-auto p-4 mt-6 space-y-6">
+          {/* تخصيص الخلفية للمورد */}
+          <div className="bg-white/60 dark:bg-slate-900/60 p-6 rounded-[2.5rem] shadow-sm border border-slate-100 backdrop-blur-md">
+            <UserBackgroundPicker />
+          </div>
+
           <SupplierPricingClient
             supplierId={supplier.id}
             token={supplier.portalToken}

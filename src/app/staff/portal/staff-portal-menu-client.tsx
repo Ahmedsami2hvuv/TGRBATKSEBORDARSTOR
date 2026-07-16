@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
-
-
+import { UserBackgroundPicker } from "@/components/user-background-picker";
 
 export function StaffPortalMenuClient({
   emp,
@@ -31,7 +30,7 @@ export function StaffPortalMenuClient({
   return (
     <div className="mt-4">
       {/* التحكم في حجم القائمة */}
-      <div className="flex items-center justify-between mb-6 bg-white/50 dark:bg-slate-900/50 p-2 rounded-2xl border border-slate-200 dark:border-white/10 backdrop-blur-sm">
+      <div className="flex items-center justify-between mb-4 bg-white/50 dark:bg-slate-900/50 p-2 rounded-2xl border border-slate-200 dark:border-white/10 backdrop-blur-sm">
         <span className="text-xs font-black text-slate-500 dark:text-slate-400 mr-2">تغيير حجم الواجهة</span>
         <div className="flex gap-2">
           <button
@@ -47,6 +46,11 @@ export function StaffPortalMenuClient({
             +
           </button>
         </div>
+      </div>
+
+      {/* تخصيص الخلفية للموظف */}
+      <div className="mb-6 bg-white/55 dark:bg-slate-900/55 p-4 rounded-2xl border border-slate-200 dark:border-white/10 backdrop-blur-sm text-right">
+        <UserBackgroundPicker />
       </div>
       <div className="grid gap-3" style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
         {emp.canSubmitOrders && (

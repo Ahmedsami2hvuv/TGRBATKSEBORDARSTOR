@@ -7,6 +7,8 @@ import { PreparerPresenceToggle } from "../preparer-presence-toggle";
 import { disablePreparerSalaryPinCode, enablePreparerSalaryPinCode } from "../actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { UserBackgroundPicker } from "@/components/user-background-picker";
+
 
 type Props = {
   preparerName: string;
@@ -461,6 +463,18 @@ export default function PreparerSettingsClient({ preparerName, auth, availableFo
               );
             })}
           </div>
+        </section>
+
+        {/* Background Settings Box */}
+        <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <span className="text-xl">🖼️</span>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">خلفية التطبيق</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">تخصيص خلفية الواجهة بالصور المتاحة</p>
+            </div>
+          </div>
+          <UserBackgroundPicker />
         </section>
 
         {/* زر الانتقال لصفحة تخصيص إيماءات الأصابع كصفحة كاملة */}

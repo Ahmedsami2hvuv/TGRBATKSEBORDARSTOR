@@ -19,6 +19,7 @@ import { FontSettingsForm } from "./font-settings-form";
 import { FloatingMenuSettings } from "./floating-menu-settings";
 import { SidebarSettingsForm } from "./sidebar-settings-form";
 import { SidebarConfig, DEFAULT_SIDEBAR_CONFIG } from "@/lib/sidebar-settings";
+import { AdminBackgroundsSettings } from "./admin-backgrounds-settings";
 
 type NotificationInitial = {
   adminEnabled: boolean;
@@ -197,6 +198,14 @@ export function SettingsBlocks({
       tone: "indigo",
       content: <SidebarSettingsForm initialConfig={sidebarConfig || DEFAULT_SIDEBAR_CONFIG} globalIcons={globalIcons} />
     },
+    {
+      id: "system-backgrounds",
+      title: "الخلفيات المخصصة 🖼️",
+      subtitle: "إضافة وحذف الخلفيات للنظام وتفعيلها.",
+      tone: "amber",
+      content: <AdminBackgroundsSettings />
+    },
+
 
     {
       id: "resource-management",

@@ -911,6 +911,14 @@ model CreditBookTransaction {
   @@index([partnerId])
 }
 
+model SystemBackground {
+  id        String   @id @default(cuid())
+  name      String   @default("")
+  imageUrl  String
+  createdAt DateTime @default(now())
+}
+
+
 
 
 
