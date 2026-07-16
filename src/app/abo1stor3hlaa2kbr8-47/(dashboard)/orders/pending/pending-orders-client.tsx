@@ -107,15 +107,33 @@ export function AssignToPreparerPanel({
   hideContainer?: boolean;
 }) {
   const [selectedPreparers, setSelectedPreparers] = useState<string[]>(initialPreparerIds);
-  const bound = assignOrderToPreparer.bind(null);
-  const [state, formAction, pending] = useActionState(bound, {} as AssignOrderState);
-
-  useEffect(() => {
-    if (state.ok && onSuccess) onSuccess();
-  }, [state.ok, onSuccess]);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const togglePreparer = (id: string) => {
     setSelectedPreparers(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleAssign = async () => {
+    setPending(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("orderId", orderId);
+      fd.append("preparerIdsJson", JSON.stringify(selectedPreparers));
+      fd.append("isDraft", isDraft ? "true" : "false");
+      
+      const result = await assignOrderToPreparer({} as AssignOrderState, fd);
+      if (result.error) {
+        setError(result.error);
+      } else if (result.ok) {
+        if (onSuccess) onSuccess();
+      }
+    } catch (err: any) {
+      setError(err.message || "حدث خطأ غير متوقع أثناء الإسناد");
+    } finally {
+      setPending(false);
+    }
   };
 
   if (preparers.length === 0) return <p className="p-3 bg-amber-50 text-amber-900 rounded-lg text-xs font-bold border border-amber-200 text-center flex items-center justify-center gap-2"><DynamicIcon icon={icons?.ui_warning} fallback="⚠️" width={14} height={14} /> لا يوجد مجهزون متاحون حالياً.</p>;
@@ -153,26 +171,23 @@ export function AssignToPreparerPanel({
           })}
        </div>
 
-       <form action={formAction} className="mt-4 flex flex-col gap-2">
-          <input type="hidden" name="orderId" value={orderId} />
-          <input type="hidden" name="preparerIdsJson" value={JSON.stringify(selectedPreparers)} />
-          <input type="hidden" name="isDraft" value={isDraft ? "true" : "false"} />
+       {error && <p className="mt-2 text-xs font-bold text-rose-600 text-center bg-rose-50 dark:bg-rose-950/20 p-2 rounded-lg">{error}</p>}
 
-          <div className="flex items-center gap-2">
-             <button
-               type="submit"
-               disabled={pending}
-               className={`flex-1 h-11 text-white rounded-xl text-xs font-black shadow-lg hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 ${
-                 selectedPreparers.length === 0 ? "bg-rose-600 hover:bg-rose-700 shadow-rose-200/50" : "bg-sky-600 hover:bg-sky-700 shadow-sky-200/50"
-               }`}
-             >
-                {pending ? "جاري الحفظ..." : selectedPreparers.length === 0 ? <><DynamicIcon icon={icons?.ui_trash} fallback="✕" width={14} height={14} /> إلغاء كافة المجهزين ✕</> : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد الإسناد</>}
-             </button>
-             {onSuccess && (
-               <button type="button" onClick={onSuccess} className="h-11 px-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl text-[10px] font-black hover:bg-slate-200">إلغاء</button>
-             )}
-          </div>
-       </form>
+       <div className="mt-4 flex items-center gap-2">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={handleAssign}
+            className={`flex-1 h-11 text-white rounded-xl text-xs font-black shadow-lg hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 ${
+              selectedPreparers.length === 0 ? "bg-rose-600 hover:bg-rose-700 shadow-rose-200/50" : "bg-sky-600 hover:bg-sky-700 shadow-sky-200/50"
+            }`}
+          >
+             {pending ? "جاري الحفظ..." : selectedPreparers.length === 0 ? <><DynamicIcon icon={icons?.ui_trash} fallback="✕" width={14} height={14} /> إلغاء كافة المجهزين ✕</> : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد الإسناد</>}
+          </button>
+          {onSuccess && (
+            <button type="button" onClick={onSuccess} className="h-11 px-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl text-[10px] font-black hover:bg-slate-200">إلغاء</button>
+          )}
+       </div>
     </div>
   );
 }
@@ -370,6 +385,24 @@ export function OrderPricingPanel({
 
   const sellInputRef = useRef<HTMLInputElement>(null);
   const buyInputRef = useRef<HTMLInputElement>(null);
+  const hasChangedRef = useRef(false);
+
+  useEffect(() => {
+    if (!hasChangedRef.current) return;
+
+    setIsSaving(true);
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        await savePricingProgress(orderId, !!isDraft, products, placesCount, !!noProfit);
+      } catch (err) {
+        console.error("Auto save failed:", err);
+      } finally {
+        setIsSaving(false);
+      }
+    }, 1200);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [products, placesCount, noProfit, orderId, isDraft]);
 
   useEffect(() => {
     let touchStartClientY = 0;
@@ -506,6 +539,7 @@ export function OrderPricingPanel({
     const next = [...products];
     next[idx] = { ...next[idx], [field]: val };
     setProducts(next);
+    hasChangedRef.current = true;
   };
 
   const markAllAsAdminFulfilled = () => {
@@ -518,12 +552,14 @@ export function OrderPricingPanel({
       pricedBy: "تجهيز الإدارة 🏛️"
     }));
     setProducts(next);
+    hasChangedRef.current = true;
   };
 
   const revertAdminFullfillment = () => {
     if (preAdminProducts) {
       setProducts(preAdminProducts);
       setPreAdminProducts(null);
+      hasChangedRef.current = true;
     }
   };
 
@@ -610,6 +646,7 @@ export function OrderPricingPanel({
     const next = [...products];
     next[idx] = { ...next[idx], buyAlf: "0", sellAlf: "0", isFulfilledByAdmin: false };
     setProducts(next);
+    hasChangedRef.current = true;
   };
 
   const addBulkProducts = () => {
@@ -624,6 +661,7 @@ export function OrderPricingPanel({
     setProducts([...products, ...newItems]);
     setBulkText("");
     setShowBulkAdd(false);
+    hasChangedRef.current = true;
   };
 
   const toggleProductSelection = (idx: number) => {
@@ -657,6 +695,7 @@ export function OrderPricingPanel({
     });
     setProducts(next);
     clearSelection();
+    hasChangedRef.current = true;
   };
 
   async function handleAiSort() {
@@ -706,6 +745,7 @@ export function OrderPricingPanel({
         });
 
         setProducts(newProducts);
+        hasChangedRef.current = true;
       }
     } catch (err) {
       setSortError("فشل الاتصال بخدمة الترتيب.");
