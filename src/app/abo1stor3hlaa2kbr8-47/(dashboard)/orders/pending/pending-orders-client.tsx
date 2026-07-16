@@ -110,27 +110,33 @@ export function AssignToPreparerPanel({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const togglePreparer = (id: string) => {
-    setSelectedPreparers(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  };
-
-  const handleAssign = async () => {
+  const togglePreparer = async (id: string) => {
+    if (pending) return; // منع النقرات المزدوجة أثناء التحديث
+    
+    const nextPreparers = selectedPreparers.includes(id)
+      ? selectedPreparers.filter(i => i !== id)
+      : [...selectedPreparers, id];
+    
+    setSelectedPreparers(nextPreparers);
     setPending(true);
     setError(null);
+
     try {
       const fd = new FormData();
       fd.append("orderId", orderId);
-      fd.append("preparerIdsJson", JSON.stringify(selectedPreparers));
+      fd.append("preparerIdsJson", JSON.stringify(nextPreparers));
       fd.append("isDraft", isDraft ? "true" : "false");
       
       const result = await assignOrderToPreparer({} as AssignOrderState, fd);
       if (result.error) {
         setError(result.error);
+        setSelectedPreparers(selectedPreparers); // التراجع في حال الفشل
       } else if (result.ok) {
         if (onSuccess) onSuccess();
       }
     } catch (err: any) {
-      setError(err.message || "حدث خطأ غير متوقع أثناء الإسناد");
+      setError(err.message || "حدث خطأ غير متوقع أثناء حفظ الإسناد");
+      setSelectedPreparers(selectedPreparers); // التراجع في حال الفشل
     } finally {
       setPending(false);
     }
@@ -141,7 +147,15 @@ export function AssignToPreparerPanel({
   return (
     <div className={hideContainer ? "" : "p-4 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm"} dir="rtl">
        <div className="flex items-center justify-between mb-3">
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">إسناد الطلب للمجهزين</p>
+          <div className="flex items-center gap-2">
+             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">إسناد الطلب للمجهزين</p>
+             {pending && (
+                <span className="text-[8px] font-black text-emerald-500 animate-pulse bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded flex items-center gap-1">
+                   <span className="h-1 w-1 rounded-full bg-emerald-500 animate-ping" />
+                   جاري الحفظ...
+                </span>
+             )}
+          </div>
           <div className="flex items-center gap-1.5 bg-sky-100 dark:bg-sky-900/30 px-2 py-1 rounded-lg">
              <span className="text-[10px] font-black text-sky-700 dark:text-sky-400">{selectedPreparers.length}</span>
              <span className="text-[9px] font-bold text-sky-600/70">مختار</span>
@@ -155,8 +169,9 @@ export function AssignToPreparerPanel({
                <button
                  key={p.id}
                  type="button"
+                 disabled={pending}
                  onClick={() => togglePreparer(p.id)}
-                 className={`group relative flex items-center gap-2 p-2 rounded-xl border-2 transition-all duration-200 ${
+                 className={`group relative flex items-center gap-2 p-2 rounded-xl border-2 transition-all duration-200 disabled:opacity-85 ${
                     active
                     ? "border-sky-500 bg-sky-50 dark:bg-sky-900/20 shadow-md scale-[1.02]"
                     : "border-slate-100 dark:border-white/5 bg-white dark:bg-slate-800/40 hover:border-slate-200"
@@ -172,22 +187,6 @@ export function AssignToPreparerPanel({
        </div>
 
        {error && <p className="mt-2 text-xs font-bold text-rose-600 text-center bg-rose-50 dark:bg-rose-950/20 p-2 rounded-lg">{error}</p>}
-
-       <div className="mt-4 flex items-center gap-2">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={handleAssign}
-            className={`flex-1 h-11 text-white rounded-xl text-xs font-black shadow-lg hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 ${
-              selectedPreparers.length === 0 ? "bg-rose-600 hover:bg-rose-700 shadow-rose-200/50" : "bg-sky-600 hover:bg-sky-700 shadow-sky-200/50"
-            }`}
-          >
-             {pending ? "جاري الحفظ..." : selectedPreparers.length === 0 ? <><DynamicIcon icon={icons?.ui_trash} fallback="✕" width={14} height={14} /> إلغاء كافة المجهزين ✕</> : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد الإسناد</>}
-          </button>
-          {onSuccess && (
-            <button type="button" onClick={onSuccess} className="h-11 px-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl text-[10px] font-black hover:bg-slate-200">إلغاء</button>
-          )}
-       </div>
     </div>
   );
 }
