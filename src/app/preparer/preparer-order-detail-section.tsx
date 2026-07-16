@@ -259,7 +259,16 @@ export function PreparerOrderDetailSection({
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-black text-slate-900 dark:text-white truncate">{lineName}</p>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-black text-slate-900 dark:text-white truncate flex-1">{lineName}</p>
+                        <span className={`shrink-0 text-base font-black px-2.5 py-0.5 rounded border-2 ${
+                          qty > 1
+                            ? "text-rose-600 dark:text-rose-400 bg-rose-100/80 dark:bg-rose-950/40 border-rose-500 animate-pulse scale-105"
+                            : "text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700"
+                        }`}>
+                          ×{qty}
+                        </span>
+                      </div>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30">
                           الكمية: x{qty}

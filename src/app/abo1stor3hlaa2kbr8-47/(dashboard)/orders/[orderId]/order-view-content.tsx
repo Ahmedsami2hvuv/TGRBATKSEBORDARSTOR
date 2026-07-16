@@ -484,7 +484,14 @@ export function OrderViewContent({
                   {cartItems.map((item: any, idx: number) => (
                     <div key={idx} className="flex justify-between items-center p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
                       <div className="flex flex-col">
-                        <span className="text-sm font-black text-slate-900">{item.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-black text-slate-900">{item.name}</span>
+                          {item.quantity > 1 && (
+                            <span className="text-xs font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-300 animate-pulse">
+                              ×{item.quantity}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] font-bold text-slate-500">{item.price?.toLocaleString()} د.ع × {item.quantity}</span>
                       </div>
                       <span className="text-sm font-mono font-black text-violet-600">{(item.price * item.quantity).toLocaleString()} د.ع</span>
