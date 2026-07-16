@@ -161,10 +161,12 @@ export function AssignToPreparerPanel({
           <div className="flex items-center gap-2">
              <button
                type="submit"
-               disabled={pending || selectedPreparers.length === 0}
-               className="flex-1 h-11 bg-sky-600 text-white rounded-xl text-xs font-black shadow-lg shadow-sky-200 dark:shadow-none hover:bg-sky-700 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+               disabled={pending}
+               className={`flex-1 h-11 text-white rounded-xl text-xs font-black shadow-lg hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 ${
+                 selectedPreparers.length === 0 ? "bg-rose-600 hover:bg-rose-700 shadow-rose-200/50" : "bg-sky-600 hover:bg-sky-700 shadow-sky-200/50"
+               }`}
              >
-                {pending ? "جاري الإسناد..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد الإسناد</>}
+                {pending ? "جاري الحفظ..." : selectedPreparers.length === 0 ? <><DynamicIcon icon={icons?.ui_trash} fallback="✕" width={14} height={14} /> إلغاء كافة المجهزين ✕</> : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد الإسناد</>}
              </button>
              {onSuccess && (
                <button type="button" onClick={onSuccess} className="h-11 px-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl text-[10px] font-black hover:bg-slate-200">إلغاء</button>
@@ -362,6 +364,9 @@ export function OrderPricingPanel({
   const [isSorting, setIsSorting] = useState(false);
   const [sortError, setSortError] = useState<string | null>(null);
 
+  const [preAdminProducts, setPreAdminProducts] = useState<any[] | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+
   const sellInputRef = useRef<HTMLInputElement>(null);
   const buyInputRef = useRef<HTMLInputElement>(null);
 
@@ -503,6 +508,7 @@ export function OrderPricingPanel({
   };
 
   const markAllAsAdminFulfilled = () => {
+    setPreAdminProducts(products); // حفظ النسخة الأصلية للتراجع
     const next = products.map(p => ({
       ...p,
       isFulfilledByAdmin: true,
@@ -511,6 +517,13 @@ export function OrderPricingPanel({
       pricedBy: "تجهيز الإدارة 🏛️"
     }));
     setProducts(next);
+  };
+
+  const revertAdminFullfillment = () => {
+    if (preAdminProducts) {
+      setProducts(preAdminProducts);
+      setPreAdminProducts(null);
+    }
   };
 
   const applyPricingPanel = () => {
@@ -709,7 +722,18 @@ export function OrderPricingPanel({
     if (state.ok && onSuccess) onSuccess();
   }, [state.ok, onSuccess]);
 
-  const initialPreparerIds = initialData?.assignedPreparerIds || [];
+  const initialPreparerIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (initialData?.preparerId) {
+      ids.add(initialData.preparerId);
+    }
+    products.forEach(p => {
+      if (p.assignedPreparerId) {
+        ids.add(p.assignedPreparerId);
+      }
+    });
+    return Array.from(ids);
+  }, [products, initialData]);
 
   const branches = useMemo(() => {
     const bSet = new Set<string>();
@@ -796,68 +820,92 @@ export function OrderPricingPanel({
         {/* Master Top Bar */}
         <div className="sticky top-0 z-[100] bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur-md p-3 border-b border-white/10 -mx-1 shadow-2xl rounded-b-[1.5rem] mb-2">
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                {isSaving && (
-                  <div className="h-6 px-2 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center gap-1.5 animate-pulse">
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    <span className="text-[8px] font-black text-emerald-400">حفظ تلقائي</span>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => handleToggleNoProfit(!noProfit)}
-                  className={`h-6 px-2.5 rounded-full text-[9px] font-black shadow-md transition-all active:scale-95 ${
-                    noProfit
-                      ? "bg-rose-600 text-white animate-pulse"
-                      : "bg-white/10 border border-white/20 text-white hover:bg-white/20"
-                  }`}
-                >
-                  {noProfit ? "🚫 إيقاف الربح مفعل" : "🚫 إيقاف الربح"}
-                </button>
-                <button
-                  type="button"
-                  onClick={markAllAsAdminFulfilled}
-                  className="h-6 px-2.5 rounded-full text-[9px] font-black shadow-md bg-amber-600 text-white hover:bg-amber-700 transition-all active:scale-95 flex items-center gap-1"
-                >
-                  🏛️ تجهيز الكل من الإدارة
-                </button>
-              </div>
-
-              <div className="flex items-center gap-1.5">
+            {/* أزرار الإجراءات العلوية المرتبة والجميلة */}
+            <div className="flex flex-col gap-3 w-full p-1 text-white">
+              {/* السطر الأول: أزرار الحفظ والإغلاق */}
+              <div className="flex items-center justify-between gap-2 w-full">
                 {onSuccess && (
                   <button
                     type="button"
                     onClick={onSuccess}
-                    className="h-10 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-[11px] font-black text-white shadow-lg active:scale-95 transition-all flex items-center gap-1.5"
+                    className="h-10 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-[11px] font-black text-slate-300 border border-slate-700 active:scale-95 transition-all flex items-center gap-1"
                   >
                     ✕ إغلاق
                   </button>
                 )}
+                
                 {isDraft ? (
-                  <div className="flex gap-1.5 flex-wrap">
-                    {couriers && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAutoCourier(!showAutoCourier)}
-                        className={`h-10 px-3 rounded-xl text-[11px] font-black text-white shadow-lg active:scale-95 transition-all flex items-center gap-1.5 ${
-                          showAutoCourier ? "bg-violet-800" : "bg-violet-600 hover:bg-violet-700"
-                        }`}
-                      >
-                        <DynamicIcon icon={icons?.ui_user} fallback="👤" width={12} height={12} />
-                        إسناد تلقائي
-                      </button>
-                    )}
-                    <button type="submit" name="submitType" value="admin_approve" disabled={pending} className="h-10 px-4 rounded-xl bg-emerald-600 text-[11px] font-black text-white shadow-lg active:scale-95 transition-all flex items-center gap-2">
-                      {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> اعتماد</>}
+                  <div className="flex items-center gap-2 flex-1 justify-end">
+                    <button
+                      type="submit"
+                      name="submitType"
+                      value="admin_approve"
+                      disabled={pending}
+                      className="h-10 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-[11px] font-black text-white shadow-md active:scale-95 transition-all flex items-center gap-1"
+                    >
+                      {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="💾" width={14} height={14} /> حفظ كمسودة معتمدة</>}
                     </button>
-                    <button type="submit" name="submitType" value="final_send" disabled={pending} className="h-10 px-4 rounded-xl bg-violet-600 text-[11px] font-black text-white shadow-lg active:scale-95 transition-all flex items-center gap-2">
-                      {pending ? "..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={14} height={14} /> إرسال</>}
+                    <button
+                      type="submit"
+                      name="submitType"
+                      value="final_send"
+                      disabled={pending}
+                      className="h-10 px-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-[11px] font-black text-white shadow-md active:scale-95 transition-all flex items-center gap-1"
+                    >
+                      {pending ? "..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={14} height={14} /> إرسال نهائي للنظام</>}
                     </button>
                   </div>
                 ) : (
-                  <button type="submit" disabled={pending} className="h-10 px-5 rounded-xl bg-sky-600 text-[11px] font-black text-white shadow-lg active:scale-95 transition-all flex items-center gap-2">
-                     {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> حفظ وإرسال</>}
+                  <div className="flex-1 flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={pending}
+                      className="h-10 px-5 rounded-xl bg-sky-600 hover:bg-sky-700 text-[11px] font-black text-white shadow-md active:scale-95 transition-all flex items-center gap-1.5"
+                    >
+                      {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={14} height={14} /> حفظ وإرسال</>}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* السطر الثاني: إجراءات الإسناد وتجهيز الإدارة */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2.5">
+                <div className="flex items-center gap-2">
+                  {isSaving && (
+                    <div className="h-6 px-2 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center gap-1.5 animate-pulse">
+                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      <span className="text-[8px] font-black text-emerald-400">حفظ تلقائي</span>
+                    </div>
+                  )}
+                  {preAdminProducts ? (
+                    <button
+                      type="button"
+                      onClick={revertAdminFullfillment}
+                      className="h-7 px-3 rounded-full text-[10px] font-black bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all active:scale-95 flex items-center gap-1 animate-bounce"
+                    >
+                      ↩️ تراجع عن تجهيز الإدارة
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={markAllAsAdminFulfilled}
+                      className="h-7 px-3 rounded-full text-[10px] font-black bg-amber-600 hover:bg-amber-700 text-white shadow-sm transition-all active:scale-95 flex items-center gap-1"
+                    >
+                      🏛️ تجهيز الكل من الإدارة
+                    </button>
+                  )}
+                </div>
+
+                {isDraft && couriers && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAutoCourier(!showAutoCourier)}
+                    className={`h-7 px-3 rounded-full text-[10px] font-black text-white shadow-sm active:scale-95 transition-all flex items-center gap-1 ${
+                      showAutoCourier ? "bg-violet-800" : "bg-violet-600 hover:bg-violet-700"
+                    }`}
+                  >
+                    <DynamicIcon icon={icons?.ui_user} fallback="👤" width={11} height={11} />
+                    إسناد تلقائي
                   </button>
                 )}
               </div>
@@ -869,6 +917,17 @@ export function OrderPricingPanel({
                   {extraActions}
                </div>
                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleNoProfit(!noProfit)}
+                    className={`h-8 px-2.5 rounded-xl text-[10px] font-black shadow-md transition-all active:scale-95 ${
+                      noProfit
+                        ? "bg-rose-600 text-white animate-pulse"
+                        : "bg-white/10 border border-white/20 text-white hover:bg-white/20"
+                    }`}
+                  >
+                    {noProfit ? "🚫 إيقاف الربح مفعل" : "🚫 إيقاف الربح"}
+                  </button>
                   <div className="h-8 flex items-center gap-2 px-2.5 rounded-xl bg-white/5 border border-white/10 select-none">
                      <span className="text-[9px] font-black text-slate-400">الإجمالي الكلي:</span>
                      <span className="text-[11px] font-black font-mono text-white leading-none">
@@ -888,14 +947,29 @@ export function OrderPricingPanel({
 
         {/* Toolbar */}
         <div className="flex items-center justify-between gap-1.5 p-2 bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700/50 mb-2">
-          <div className="flex items-center gap-1.5">
-             <button type="button" onClick={() => { setShowBulkAdd(!showBulkAdd); setDeleteMode(false); }} className="h-9 px-3 flex items-center gap-2 rounded-xl bg-amber-500 text-white text-[10px] font-black shadow-md active:scale-95 transition-all">
+          <div className="flex items-center gap-1.5 flex-wrap">
+             <button
+                type="button"
+                onClick={() => {
+                  setSelectionMode(!selectionMode);
+                  setDeleteMode(false);
+                  setShowBulkAdd(false);
+                }}
+                className={`h-9 px-3 flex items-center gap-2 rounded-xl text-[10px] font-black shadow-md active:scale-95 transition-all ${
+                  selectionMode
+                    ? "bg-sky-600 text-white animate-pulse ring-2 ring-sky-300"
+                    : "bg-white dark:bg-slate-800 text-sky-600 border border-sky-100 dark:border-sky-900/50 hover:bg-sky-50"
+                }`}
+             >
+                🔘 {selectionMode ? "إيقاف التحديد" : "وضع التحديد"}
+             </button>
+             <button type="button" onClick={() => { setShowBulkAdd(!showBulkAdd); setDeleteMode(false); setSelectionMode(false); }} className="h-9 px-3 flex items-center gap-2 rounded-xl bg-amber-500 text-white text-[10px] font-black shadow-md active:scale-95 transition-all">
                 <DynamicIcon icon={icons?.ui_plus} fallback="+" width={12} height={12} /> إضافة
              </button>
-             <button type="button" onClick={() => setShowReassign(!showReassign)} className="h-9 px-3 flex items-center gap-2 rounded-xl bg-slate-800 text-white text-[10px] font-black shadow-md active:scale-95 transition-all">
+             <button type="button" onClick={() => { setShowReassign(!showReassign); }} className="h-9 px-3 flex items-center gap-2 rounded-xl bg-slate-800 text-white text-[10px] font-black shadow-md active:scale-95 transition-all">
                 <DynamicIcon icon={icons?.ui_user} fallback="👤" width={12} height={12} /> إسناد
              </button>
-             <button type="button" onClick={() => { setDeleteMode(!deleteMode); setShowBulkAdd(false); }} className={`h-9 px-3 flex items-center gap-2 rounded-xl text-[10px] font-black shadow-md active:scale-95 transition-all ${deleteMode ? "bg-rose-600 text-white" : "bg-white dark:bg-slate-800 text-rose-600 border border-rose-100 dark:border-rose-900/50"}`}>
+             <button type="button" onClick={() => { setDeleteMode(!deleteMode); setShowBulkAdd(false); setSelectionMode(false); }} className={`h-9 px-3 flex items-center gap-2 rounded-xl text-[10px] font-black shadow-md active:scale-95 transition-all ${deleteMode ? "bg-rose-600 text-white" : "bg-white dark:bg-slate-800 text-rose-600 border border-rose-100 dark:border-rose-900/50"}`}>
                 <DynamicIcon icon={icons?.ui_trash} fallback="🗑️" width={12} height={12} /> {deleteMode ? "إيقاف الحذف" : "حذف منتج"}
              </button>
              <button
@@ -1044,28 +1118,20 @@ export function OrderPricingPanel({
                 <div
                   key={`${i}-${p.line}`}
                   className={`w-full relative flex items-center gap-2 rounded-xl border-2 p-2 text-start transition min-h-[64px] ${
+                    isSelected ? "border-sky-500 bg-sky-50 dark:bg-sky-950/40 ring-2 ring-sky-250 shadow-md scale-[1.01]" :
                     active ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 ring-2 ring-indigo-200" :
                     priced ? "border-emerald-800 bg-emerald-900 text-white" : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm"
                   } cursor-pointer`}
                   onClick={() => {
-                    if (deleteMode) {
+                    if (selectionMode) {
+                      toggleProductSelection(i);
+                    } else if (deleteMode) {
                       setProducts(products.filter((_, idx) => idx !== i));
                     } else {
                       setEditingIndex(i);
                     }
                   }}
                 >
-                  {/* Checkbox للتحديد */}
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      toggleProductSelection(i);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="absolute right-1 top-1 h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 z-10"
-                  />
 
                   {/* صورة المنتج */}
                   {photoUrl && (

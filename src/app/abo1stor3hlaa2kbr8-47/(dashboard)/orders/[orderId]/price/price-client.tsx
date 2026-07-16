@@ -99,6 +99,7 @@ export function PriceClient({
                 initialData={initialData}
                 preparers={preparers}
                 couriers={couriers}
+                isDraft={false}
                 storeProducts={storeProducts}
                 icons={icons}
                 onSuccess={handleSuccess}
