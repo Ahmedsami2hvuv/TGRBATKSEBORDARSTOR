@@ -16,6 +16,16 @@ const initial: PreparerActionState = {};
 const inputClass =
   "w-full rounded-xl border border-sky-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200";
 
+type ProductRow = {
+  line: string;
+  buyAlf: number | "";
+  sellAlf: number | "";
+  pricedBy?: string | null;
+  pricedById?: string | null;
+  assignedPreparerId?: string | null;
+  assignedPreparerName?: string | null;
+};
+
 type ShopOpt = {
   id: string;
   name: string;
@@ -33,7 +43,15 @@ type Props = {
   prepHref: string;
   initialData: {
     titleLine: string;
-    products: { line: string; buyAlf: number; sellAlf: number }[];
+    products: {
+      line: string;
+      buyAlf: number;
+      sellAlf: number;
+      pricedBy?: string | null;
+      pricedById?: string | null;
+      assignedPreparerId?: string | null;
+      assignedPreparerName?: string | null;
+    }[];
     placesCount: number;
     rawListText?: string;
     shopId: string;
@@ -60,11 +78,19 @@ export function PreparerSiteOrderPrepEditClient({
   initialData,
 }: Props) {
   const [state, formAction, pending] = useActionState(updatePreparerShoppingOrder, initial);
+  const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
 
   const [titleLine, setTitleLine] = useState(initialData.titleLine);
-  const [products, setProducts] = useState(initialData.products.map((p) => p.line));
-  const [priceRows, setPriceRows] = useState(
-    initialData.products.map((p) => ({ buy: String(p.buyAlf) })),
+  const [products, setProducts] = useState<ProductRow[]>(() =>
+    initialData.products.map((p) => ({
+      line: p.line,
+      buyAlf: p.buyAlf === 0 ? "" : p.buyAlf,
+      sellAlf: p.sellAlf === 0 ? "" : p.sellAlf,
+      pricedBy: p.pricedBy || null,
+      pricedById: p.pricedById || null,
+      assignedPreparerId: p.assignedPreparerId || null,
+      assignedPreparerName: p.assignedPreparerName || null,
+    }))
   );
   const [placesCount, setPlacesCount] = useState<number | null>(initialData.placesCount);
   const [customerPhone, setCustomerPhone] = useState(initialData.customerPhone);
@@ -80,13 +106,16 @@ export function PreparerSiteOrderPrepEditClient({
   const [pricingErr, setPricingErr] = useState<string | null>(null);
   const [isSorting, setIsSorting] = useState(false);
   const [sortError, setSortError] = useState<string | null>(null);
+  
+  // معالجة فقدان الفوكس في حقل textarea الخاص بالتسعير
+  const pricingTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   async function handleAiSort() {
     if (products.length === 0) return;
     setIsSorting(true);
     setSortError(null);
     try {
-      const textToSend = products.join("\n");
+      const textToSend = products.map((p) => p.line).join("\n");
       const res = await fetch("/api/ai/sort-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -101,40 +130,39 @@ export function PreparerSiteOrderPrepEditClient({
           .map((l: string) => l.trim())
           .filter(Boolean);
 
-        // خريطة لحفظ الأسعار الحالية لكل منتج
-        const priceMap = new Map<string, string>();
-        products.forEach((p, idx) => {
-          priceMap.set(p.trim().toLowerCase(), priceRows[idx]?.buy || "");
+        const productMap = new Map<string, ProductRow>();
+        products.forEach((p) => {
+          productMap.set(p.line.trim().toLowerCase(), p);
         });
 
-        // إعادة ترتيب الأسعار بناءً على ترتيب جمناي الجديد
-        const newProducts: string[] = [];
-        const newPriceRows: { buy: string }[] = [];
+        const newProducts: ProductRow[] = [];
 
         sortedLines.forEach((line: string) => {
           const matchedOriginal = products.find(
-            (orig) => orig.trim().toLowerCase() === line.toLowerCase()
+            (orig) => orig.line.trim().toLowerCase() === line.toLowerCase()
           );
           if (matchedOriginal) {
             newProducts.push(matchedOriginal);
-            newPriceRows.push({ buy: priceMap.get(matchedOriginal.trim().toLowerCase()) || "" });
           } else {
-            // كاحتياط لو أضاف جمناي سطر مختلف طفيف
-            newProducts.push(line);
-            newPriceRows.push({ buy: "" });
+            newProducts.push({
+              line,
+              buyAlf: "",
+              sellAlf: "",
+              pricedBy: null,
+              pricedById: null,
+              assignedPreparerId: null,
+              assignedPreparerName: null,
+            });
           }
         });
 
-        // إضافة المنتجات الأصلية التي قد يكون جمناي قد أغفلها بالخطأ (لضمان عدم فقدان أي منتج)
-        products.forEach((orig, idx) => {
-          if (!newProducts.some((p) => p.toLowerCase() === orig.toLowerCase())) {
+        products.forEach((orig) => {
+          if (!newProducts.some((p) => p.line.toLowerCase() === orig.line.toLowerCase())) {
             newProducts.push(orig);
-            newPriceRows.push({ buy: priceRows[idx]?.buy || "" });
           }
         });
 
         setProducts(newProducts);
-        setPriceRows(newPriceRows);
       }
     } catch (err) {
       setSortError("فشل الاتصال بخدمة الترتيب.");
@@ -159,20 +187,25 @@ export function PreparerSiteOrderPrepEditClient({
 
   const allPriced = useMemo(() => {
     if (products.length === 0) return false;
-    return priceRows.every((r) => {
-      const bn = parseFloat(r.buy.replace(/,/g, ".").trim());
+    return products.every((p) => {
+      // السماح بتخطي تسعير المنتجات المسندة لمجهزين آخرين، ولكن المنتجات الخاصة بالمجهز الحالي يجب أن تكون مسعرة بالكامل
+      const isAssignedToOther = Boolean(p.assignedPreparerId && p.assignedPreparerId !== (auth.p ? preparerName : "")); // هنا معرف المجهز الحالي نتحقق منه من خلال pricedById أو preparerId
+      if (p.pricedById && p.pricedById !== (auth.p ? initialData.products[0]?.pricedById : "")) {
+         return true; // مسعر من غيره
+      }
+      const buyVal = String(p.buyAlf).trim();
+      if (buyVal.length === 0) return false;
+      const bn = parseFloat(buyVal.replace(/,/g, "."));
       return Number.isFinite(bn) && bn >= 0;
     });
-  }, [products.length, priceRows]);
+  }, [products, initialData.products]);
 
   const orderedProducts = useMemo(() => {
-    const list = products.map((line, idx) => {
-      const row = priceRows[idx] ?? { buy: "" };
-      const priced = row.buy.trim().length > 0;
+    const list = products.map((p, idx) => {
+      const priced = String(p.buyAlf).trim().length > 0;
       return {
-        line,
+        p,
         originalIndex: idx,
-        row,
         priced,
       };
     });
@@ -182,7 +215,7 @@ export function PreparerSiteOrderPrepEditClient({
       if (!a.priced && b.priced) return 1;
       return a.originalIndex - b.originalIndex;
     });
-  }, [products, priceRows]);
+  }, [products]);
 
 
   const previewPayload: PreparerShoppingPayloadV1 | null = useMemo(() => {
@@ -192,23 +225,28 @@ export function PreparerSiteOrderPrepEditClient({
       titleLine: titleLine.trim(),
       placesCount,
       rawListText: initialData.rawListText?.trim() || undefined,
-      products: products.map((line, i) => {
-        const row = priceRows[i]!;
-        const buyAlf = parseFloat(row.buy.replace(/,/g, ".").trim());
+      products: products.map((p) => {
+        const buyAlf = parseFloat(String(p.buyAlf).replace(/,/g, ".").trim());
         return {
-          line,
+          line: p.line,
           buyAlf,
-          sellAlf: calculateAutoSellPrice(line, buyAlf),
+          sellAlf: calculateAutoSellPrice(p.line, buyAlf),
+          pricedBy: p.pricedBy || null,
+          pricedById: p.pricedById || null,
+          assignedPreparerId: p.assignedPreparerId || null,
+          assignedPreparerName: p.assignedPreparerName || null,
         };
       }),
     };
-  }, [allPriced, initialData.rawListText, placesCount, priceRows, products, titleLine]);
+  }, [allPriced, initialData.rawListText, placesCount, products, titleLine]);
 
   const canSubmit =
     previewPayload != null &&
     customerPhone.trim().length > 0 &&
     orderTime.trim().length > 0 &&
     initialData.customerRegionId.length > 0;
+
+  const preparerId = initialData.products[0]?.pricedById || ""; // معرف المجهز الحالي مأخوذ من أول منتج أو نتحقق منه
 
   function applyPricingPanel() {
     setPricingErr(null);
@@ -227,9 +265,18 @@ export function PreparerSiteOrderPrepEditClient({
       setPricingErr("تأكد أن سعر الشراء رقم صحيح.");
       return;
     }
-    setPriceRows((prev) => {
+    setProducts((prev) => {
       const next = [...prev];
-      next[selectedPriceIndex] = { buy };
+      const target = next[selectedPriceIndex];
+      if (target) {
+        next[selectedPriceIndex] = {
+          ...target,
+          buyAlf: bn,
+          sellAlf: calculateAutoSellPrice(target.line, bn),
+          pricedBy: preparerName,
+          pricedById: preparerId,
+        };
+      }
       return next;
     });
     setSelectedPriceIndex(null);
@@ -305,37 +352,54 @@ export function PreparerSiteOrderPrepEditClient({
         <div className="p-4">
           {sortError && <p className="mb-3 text-center text-xs font-bold text-rose-600 bg-rose-50 p-2 rounded-lg dark:bg-rose-950/20 dark:text-rose-400">{sortError}</p>}
           <div className="grid grid-cols-1 gap-2.5">
-            {orderedProducts.map(({ line, originalIndex: i, row, priced }) => {
+            {orderedProducts.map(({ p, originalIndex: i, priced }) => {
+              const isAssignedToOther = Boolean(p.assignedPreparerId && p.assignedPreparerId !== preparerId);
+              const isPricedByOther = Boolean(priced && p.pricedById && p.pricedById !== preparerId && p.pricedById !== "auto");
+              const isOthers = isAssignedToOther || isPricedByOther;
+
               return (
                 <button
-                  key={`${i}-${line.slice(0, 18)}`}
+                  key={`${i}-${p.line.slice(0, 18)}`}
                   type="button"
+                  disabled={isOthers}
                   onClick={() => {
-                    const b = row.buy.trim().replace(/,/g, ".");
                     setSelectedPriceIndex(i);
                     setPricingErr(null);
-                    setPricingLinesText(b);
+                    setPricingLinesText(priced ? `${p.buyAlf}` : "");
                   }}
-                  className={`group relative flex min-h-[56px] w-full items-center justify-between gap-3 overflow-hidden rounded-2xl border-2 px-4 py-3 text-start transition-all active:scale-[0.98] ${
+                  className={`group relative flex min-h-[64px] w-full items-center justify-between gap-3 overflow-hidden rounded-2xl border-2 px-4 py-3 text-start transition-all active:scale-[0.98] ${
                     selectedPriceIndex === i
                       ? "border-sky-500 bg-sky-50 shadow-md ring-4 ring-sky-500/10 dark:bg-sky-500/10"
-                      : priced
-                        ? "border-emerald-600 bg-emerald-600 text-white"
-                        : "border-slate-100 bg-white/50 hover:border-sky-200 dark:border-white/5 dark:bg-slate-950/40"
+                      : isOthers
+                        ? "border-slate-200 bg-slate-100 opacity-60 grayscale cursor-not-allowed dark:border-white/5 dark:bg-slate-950/20"
+                        : priced
+                          ? "border-emerald-600 bg-emerald-600 text-white"
+                          : "border-slate-100 bg-white/50 hover:border-sky-200 dark:border-white/5 dark:bg-slate-950/40"
                   }`}
                 >
                   <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                     {priced ? (
+                     {priced && !isOthers ? (
                        <span className="shrink-0 text-white pr-1">✅</span>
                      ) : (
-                       <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${priced ? "bg-white" : "bg-slate-300 group-hover:bg-sky-400 dark:bg-slate-700"}`} />
+                       <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${priced && !isOthers ? "bg-white" : "bg-slate-300 group-hover:bg-sky-400 dark:bg-slate-700"}`} />
                      )}
-                     <span className={`truncate text-sm font-bold ${priced ? "text-white" : "text-slate-800 dark:text-slate-200"}`}>{line}</span>
+                     <span className={`truncate text-sm font-bold ${priced && !isOthers ? "text-white" : "text-slate-800 dark:text-slate-200"}`}>{p.line}</span>
                   </div>
                   <div className="flex flex-col items-end shrink-0">
-                    <span className={`font-mono text-sm font-black tabular-nums ${priced ? "text-white" : "text-slate-500 dark:text-slate-400"}`} dir="ltr">
-                      {row.buy.replace(/,/g, ".") || "⋯"}
+                    <span className={`font-mono text-sm font-black tabular-nums ${priced && !isOthers ? "text-white" : "text-slate-500 dark:text-slate-400"}`} dir="ltr">
+                      {String(p.buyAlf).replace(/,/g, ".") || "⋯"}
                     </span>
+                    
+                    {/* عرض شارات التخصيص للمجهزين والموردين الآخرين */}
+                    {isAssignedToOther ? (
+                      <span className="text-[9px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 mt-1 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/40">
+                        ⚠️ خاص بالمجهز: {p.assignedPreparerName || "مجهز آخر"}
+                      </span>
+                    ) : isPricedByOther ? (
+                      <span className="text-[9px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 mt-1 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/40">
+                        ⚠️ خاص بالمجهز: {p.pricedBy || "مجهز آخر"}
+                      </span>
+                    ) : null}
                   </div>
                 </button>
               );

@@ -233,8 +233,23 @@ export function PreparerOrderDetailSection({
                 const qty = item.quantity || item.qty || 1;
                 const img = productImagesMap?.[lineKey] || "";
 
+                // التحقق من المجهز أو المورد المخصص للمنتج
+                const itemPrepId = String(item.assignedPreparerId || item.pricedById || "").trim();
+                const itemPrepName = String(item.assignedPreparerName || item.pricedBy || "").trim();
+                const isAssignedToOther = Boolean(itemPrepId && itemPrepId !== preparerId);
+                const isAssignedToMe = Boolean(itemPrepId && itemPrepId === preparerId);
+
                 return (
-                  <div key={idx} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                  <div 
+                    key={idx} 
+                    className={`flex items-center gap-3 p-3 rounded-xl border shadow-sm transition-all ${
+                      isAssignedToOther
+                        ? "border-rose-100 bg-rose-50/20 opacity-60 grayscale-[20%] dark:border-rose-950/20 dark:bg-rose-950/5"
+                        : isAssignedToMe
+                          ? "border-emerald-200 bg-emerald-50/10 dark:border-emerald-900/20 dark:bg-emerald-950/5"
+                          : "border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900"
+                    }`}
+                  >
                     {img && (
                       <div 
                         onClick={() => setZoomImage({ url: img, title: lineName })}
@@ -245,7 +260,7 @@ export function PreparerOrderDetailSection({
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-black text-slate-900 dark:text-white truncate">{lineName}</p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30">
                           الكمية: x{qty}
                         </span>
@@ -254,6 +269,17 @@ export function PreparerOrderDetailSection({
                             {Number(item.price).toLocaleString()} د.ع
                           </span>
                         )}
+                        
+                        {/* عرض شارات التخصيص للمجهزين والموردين الآخرين */}
+                        {isAssignedToOther ? (
+                          <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/40">
+                            ⚠️ خاص بالمجهز: {itemPrepName || "مجهز آخر"}
+                          </span>
+                        ) : isAssignedToMe ? (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-250 dark:bg-emerald-950/30 dark:text-emerald-450 dark:border-emerald-900/40">
+                            ✅ مسند إليك
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   </div>

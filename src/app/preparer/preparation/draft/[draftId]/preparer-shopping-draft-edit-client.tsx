@@ -974,11 +974,15 @@ export function PreparerShoppingDraftEditClient({
                             )}
 
                             {isAssignedToOther ? (
-                              <p className="text-[7px] font-bold text-slate-500">مجهز آخر</p>
+                              <p className="text-[7px] font-bold text-rose-700 bg-rose-50 px-1 py-0.5 rounded border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/40">
+                                ⚠️ {p.assignedPreparerName || "مجهز آخر"}
+                              </p>
                             ) : p.assignedPreparerId === preparerId ? (
                               <p className="text-[7px] font-bold text-emerald-300">لك</p>
                             ) : priced ? (
-                              <p className={`text-[7px] font-bold ${isOthers ? "text-slate-500" : "text-emerald-300"}`}>{isPricedByOther ? "مجهز آخر" : (p.pricedById === "auto" ? "تلقائي" : "أنت")}</p>
+                              <p className={`text-[7px] font-bold ${isOthers ? "text-rose-700 bg-rose-50 px-1 py-0.5 rounded border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400" : "text-emerald-300"}`}>
+                                {isPricedByOther ? `⚠️ ${p.pricedBy || "مجهز آخر"}` : (p.pricedById === "auto" ? "تلقائي" : "أنت")}
+                              </p>
                             ) : null}
                         </div>
                     </div>

@@ -169,13 +169,7 @@ export default async function PreparerPreparationEditPage({ params, searchParams
       const line = String(row.line ?? "").trim();
       const buyAlf = Number(row.buyAlf);
       const sellAlf = Number(row.sellAlf);
-      const pricedById = String(row.pricedById || row.assignedPreparerId || "").trim();
       if (!line || !Number.isFinite(buyAlf) || !Number.isFinite(sellAlf) || buyAlf < 0 || sellAlf < 0) {
-        return null;
-      }
-
-      // السماح فقط بالمنتجات التي تخص هذا المجهز أو غير المسندة لأحد
-      if (pricedById && pricedById !== v.preparerId) {
         return null;
       }
 
