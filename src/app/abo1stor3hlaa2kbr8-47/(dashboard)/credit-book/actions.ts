@@ -2845,9 +2845,10 @@ export async function syncOldCustomerDebts() {
       
       const expectedDinar = Number(order.totalAmount || 0);
       const receivedDinar = order.moneyEvents.reduce((sum, ev) => sum + Number(ev.amountDinar || 0), 0);
+      const isPaidAll = order.prepaidAll || order.customerPaymentReceivedAt !== null;
 
-      // إذا كان المستلم أقل من المطلوب
-      if (expectedDinar > receivedDinar) {
+      // إذا كان المستلم أقل من المطلوب وليس واصل الحساب
+      if (expectedDinar > receivedDinar && !isPaidAll) {
         const difference = expectedDinar - receivedDinar;
 
         if (difference > 0) {
@@ -2951,6 +2952,35 @@ export async function syncOldCustomerDebts() {
                 }
               });
               updatedTxsCount++;
+            }
+          }
+        }
+      } else {
+        // إذا كان واصلاً بالكامل أو تلاشى الفرق
+        // نبحث عن أي معاملة قديمة لهذا الطلب ونحذفها لتصفير الدين تلقائياً
+        if (order.customerId) {
+          let cbPartner = await prisma.creditBookPartner.findUnique({
+            where: {
+              type_externalId: {
+                type: "customer",
+                externalId: order.customerId
+              }
+            }
+          });
+          if (cbPartner) {
+            const noteTextContains = `طلب رقم: #${order.orderNumber}`;
+            const exists = await prisma.creditBookTransaction.findFirst({
+              where: {
+                partnerId: cbPartner.id,
+                note: {
+                  contains: noteTextContains
+                }
+              }
+            });
+            if (exists) {
+              await prisma.creditBookTransaction.delete({
+                where: { id: exists.id }
+              });
             }
           }
         }

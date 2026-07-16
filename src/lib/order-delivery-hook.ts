@@ -101,10 +101,9 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
             },
             _sum: { amountDinar: true },
           });
-          const expectedDinar = Number(order.totalAmount || 0);
-          const receivedDinar = Number(agg._sum.amountDinar || 0);
+          const isPaidAll = order.prepaidAll || order.customerPaymentReceivedAt !== null;
 
-          if (expectedDinar > receivedDinar) {
+          if (expectedDinar > receivedDinar && !isPaidAll) {
             const difference = expectedDinar - receivedDinar;
 
             if (difference > 0) {
