@@ -1,7 +1,10 @@
 import { cookies } from "next/headers";
-import { verifyDelegatePortalQuery } from "@/lib/delegate-link";
+import { verifyDelegatePortalQuery, buildDelegatePortalUrl } from "@/lib/delegate-link";
 import { prisma } from "@/lib/prisma";
 import CourierSettingsClient from "./settings-client";
+import { getPublicAppUrl } from "@/lib/app-url";
+import { getBotTokenByPurpose } from "@/lib/telegram-bots";
+import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +64,7 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
         name: true,
         phone: true,
         blocked: true,
+        availableForAssignment: true,
         showLocationBtn: true,
         showDoorBtn: true,
         showCallBtn: true,
@@ -102,12 +106,36 @@ export default async function MandoubSettingsPage({ searchParams }: Props) {
       s: s!,
     };
 
+    // جلب وحساب رابط بوت التليجرام
+    const botToken = await getBotTokenByPurpose("courier");
+    const botInfo = botToken ? await fetch(`https://api.telegram.org/bot${botToken}/getMe`).then(r => r.json()).catch(() => null) : null;
+    const botUsername = botInfo?.result?.username;
+    const portalUrl = buildDelegatePortalUrl(courier.id, getPublicAppUrl());
+
+    let telegramLink = null;
+    if (botUsername) {
+      const botStartParam = `pl_${randomBytes(8).toString("hex")}`;
+      try {
+        await prisma.schemaPlaceholder.create({
+          data: {
+            id: botStartParam,
+            note: portalUrl,
+          },
+        });
+      } catch (err) {
+        console.error("[MandoubSettingsPage] Failed to create telegram placeholder", err);
+      }
+      telegramLink = `https://t.me/${botUsername}?start=${botStartParam}`;
+    }
+
     return (
       <CourierSettingsClient
         courierName={courier.name}
         courierPhone={courier.phone}
         initialSettings={initialSettings}
         auth={auth}
+        availableForAssignment={courier.availableForAssignment}
+        telegramLink={telegramLink}
       />
     );
   } catch (error) {

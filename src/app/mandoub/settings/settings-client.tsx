@@ -6,8 +6,8 @@ import { useTheme } from "@/components/theme-provider";
 import { updateCourierSetting } from "./actions";
 import FontSizeCustomizer from "./font-size-customizer";
 import { UserBackgroundPicker } from "@/components/user-background-picker";
-
-
+import { MandoubPresenceToggle } from "../mandoub-presence-toggle";
+import { MandoubNotificationsDiagnostics } from "../mandoub-notifications-diagnostics";
 
 type CourierSettings = {
   showLocationBtn: boolean;
@@ -25,6 +25,8 @@ type Props = {
   courierPhone: string;
   initialSettings: CourierSettings;
   auth: { c: string; exp: string; s: string };
+  availableForAssignment: boolean;
+  telegramLink: string | null;
 };
 
 export default function CourierSettingsClient({
@@ -32,6 +34,8 @@ export default function CourierSettingsClient({
   courierPhone,
   initialSettings,
   auth,
+  availableForAssignment,
+  telegramLink,
 }: Props) {
   const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<CourierSettings>(initialSettings);
@@ -146,6 +150,79 @@ export default function CourierSettingsClient({
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400">تخصيص واجهة المندوب: {courierName}</p>
           </div>
         </header>
+
+        {/* قسم الحالة والتنبيهات */}
+        <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <span className="text-xl">⚡</span>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">الحالة والتنبيهات</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">إدارة استقبال الطلبات واختبار جودة الاتصال</p>
+            </div>
+          </div>
+
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {/* جاهز للإسناد */}
+            <div className="flex items-center justify-between py-4 first:pt-0 gap-4">
+              <div className="flex gap-3 min-w-0">
+                <span className="text-2xl mt-0.5 shrink-0 select-none">
+                  {availableForAssignment ? "🟢" : "⚪"}
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">جاهز للإسناد</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal mt-0.5">
+                    تفعيل أو إيقاف استقبال طلبات جديدة من لوحة التحكم
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0 scale-95 origin-left">
+                <MandoubPresenceToggle auth={auth} availableForAssignment={availableForAssignment} />
+              </div>
+            </div>
+
+            {/* فحص الإشعارات */}
+            <div className="flex items-center justify-between py-4 gap-4">
+              <div className="flex gap-3 min-w-0">
+                <span className="text-2xl mt-0.5 shrink-0 select-none">📢</span>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">فحص الإشعارات الفورية</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal mt-0.5">
+                    اختبار استلام الإشعارات وتفعيل التنبيهات على المتصفح أو الهاتف
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0 scale-95 origin-left">
+                <MandoubNotificationsDiagnostics auth={auth} />
+              </div>
+            </div>
+
+            {/* بوت التليجرام */}
+            {telegramLink && (
+              <div className="flex items-center justify-between py-4 last:pb-0 gap-4">
+                <div className="flex gap-3 min-w-0">
+                  <span className="text-2xl mt-0.5 shrink-0 select-none">💬</span>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">ربط بوت التليجرام</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal mt-0.5">
+                      ربط حسابك ببوت التليجرام لتلقي إشعارات سريعة وتحديثات فورية
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href={telegramLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-9 px-4 items-center justify-center gap-1.5 rounded-xl bg-[#229ED9] hover:bg-[#1e8cc2] text-white text-xs font-bold shadow-sm transition hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.11.02-1.93 1.23-5.46 3.62-.51.35-.98.52-1.4.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.45-.42-1.39-.88.03-.24.36-.48.99-.73 3.88-1.69 6.47-2.8 7.77-3.33 3.7-1.51 4.47-1.77 4.97-1.78.11 0 .36.03.52.16.14.12.18.28.19.45.01.06.01.12 0 .19z" />
+                  </svg>
+                  تفعيل البوت
+                </a>
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* Theme Settings Box */}
         <section className="kse-glass-dark mb-6 border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm">
