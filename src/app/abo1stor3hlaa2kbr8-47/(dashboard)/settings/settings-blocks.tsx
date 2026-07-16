@@ -17,9 +17,9 @@ import { CourierButtonsSettings } from "./courier-buttons-settings";
 import { TelegramBotsForm } from "./telegram-bots-form";
 import { FontSettingsForm } from "./font-settings-form";
 import { FloatingMenuSettings } from "./floating-menu-settings";
-import { BackgroundsConfig } from "@/lib/background-settings";
-import { SiteBackgroundsForm } from "./site-backgrounds-form";
 import { SidebarSettingsForm } from "./sidebar-settings-form";
+import { StaticBackgroundsConfig } from "@/lib/site-backgrounds";
+import { SiteBackgroundsForm } from "./site-backgrounds-form";
 import { SidebarConfig, DEFAULT_SIDEBAR_CONFIG } from "@/lib/sidebar-settings";
 
 type NotificationInitial = {
@@ -68,7 +68,7 @@ export function SettingsBlocks({
 }: {
   notificationInitial: NotificationInitial;
   globalIcons: GlobalIconsConfig;
-  backgroundsConfig: BackgroundsConfig | null;
+  backgroundsConfig: StaticBackgroundsConfig | null;
   sidebarConfig: SidebarConfig | null;
   employeeShareTemplate: string;
   customerOrderTemplate: string;
@@ -206,6 +206,7 @@ export function SettingsBlocks({
       tone: "sky",
       content: backgroundsConfig ? <SiteBackgroundsForm initial={backgroundsConfig} /> : <div className="text-xs text-red-500 font-bold">فشل تحميل إعدادات الخلفيات.</div>
     },
+
     {
       id: "resource-management",
       title: "إدارة الموارد 🔋",

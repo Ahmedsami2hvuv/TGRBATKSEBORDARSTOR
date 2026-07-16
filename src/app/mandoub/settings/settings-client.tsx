@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "@/components/theme-provider";
 import { updateCourierSetting } from "./actions";
-import { getSiteBackgroundsConfigAction } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/site-background-actions";
-import { BackgroundItem } from "@/lib/background-settings";
 import FontSizeCustomizer from "./font-size-customizer";
+import { getStaticBackgroundsConfigAction } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/site-backgrounds-actions";
+import { StaticBackgroundItem } from "@/lib/site-backgrounds";
 
 type CourierSettings = {
   showLocationBtn: boolean;
@@ -35,17 +35,16 @@ export default function CourierSettingsClient({
   const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<CourierSettings>(initialSettings);
   const [savingState, setSavingState] = useState<Record<string, "idle" | "saving" | "saved" | "error">>({});
-  const [availableBgs, setAvailableBgs] = useState<BackgroundItem[]>([]);
+  const [showFontSizeCustomizer, setShowFontSizeCustomizer] = useState(false);
+  const [availableBgs, setAvailableBgs] = useState<StaticBackgroundItem[]>([]);
   const [currentBgId, setCurrentBgId] = useState<string | null>(null);
   const [showBgSelector, setShowBgSelector] = useState(false);
-  const [showFontSizeCustomizer, setShowFontSizeCustomizer] = useState(false);
-
 
   useEffect(() => {
     const handleData = (data: any) => {
       const activeItems = data?.items?.filter((item: any) => item.isActive) || [];
       setAvailableBgs(activeItems);
-      
+
       const savedBg = localStorage.getItem("kse_user_background");
       if (savedBg) {
         setCurrentBgId(savedBg);
@@ -54,26 +53,27 @@ export default function CourierSettingsClient({
       }
     };
 
-    // 1. تحميل التكوين من الكاش فوراً للسرعة
     const cached = localStorage.getItem("kse_backgrounds_config_cache");
     if (cached) {
-      handleData(JSON.parse(cached));
+      try {
+        handleData(JSON.parse(cached));
+      } catch (e) {}
     }
 
-    // 2. تحديث التكوين من السيرفر في الخلفية وحفظه بالكاش
-    getSiteBackgroundsConfigAction().then((data: any) => {
-      if (data) {
-        handleData(data);
-        localStorage.setItem("kse_backgrounds_config_cache", JSON.stringify(data));
-      }
-    }).catch(err => console.error("Failed to load active backgrounds", err));
+    getStaticBackgroundsConfigAction()
+      .then((data: any) => {
+        if (data) {
+          handleData(data);
+          localStorage.setItem("kse_backgrounds_config_cache", JSON.stringify(data));
+        }
+      })
+      .catch((err) => console.error("Failed to load active backgrounds", err));
   }, [auth.c]);
 
   const handleSelectBackground = (id: string) => {
     localStorage.setItem("kse_user_background", id);
     setCurrentBgId(id);
-    // إرسال حدث مخصص للمزامنة اللحظية في نفس التبويب
-    window.dispatchEvent(new Event("kse_bg_changed"));
+    window.dispatchEvent(new CustomEvent("kse_static_bg_changed", { detail: { id } }));
   };
 
   const baseQuery = new URLSearchParams();
@@ -219,24 +219,23 @@ export default function CourierSettingsClient({
             })}
           </div>
         </section>
-
-        {/* الخلفيات الحية التفاعلية */}
+        {/* الخلفيات الثابتة */}
         {availableBgs.length > 0 && (
-          <div className="mb-6">
+          <div className="mb-6 w-full">
             <button
               type="button"
               onClick={() => setShowBgSelector(!showBgSelector)}
               className="w-full py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-sm text-slate-800 dark:text-slate-200 shadow-sm transition-all active:scale-98 flex items-center justify-between px-5 outline-none"
             >
-              <span>تغيير خلفية الحساب</span>
+              <span>🎆 تغيير خلفية الحساب</span>
               <span className="text-xs text-slate-400 font-bold">{showBgSelector ? "▲ إخفاء" : "▼ عرض"}</span>
             </button>
 
             {showBgSelector && (
-              <section className="kse-glass-dark mt-3 border border-slate-200 dark:border-[#00f3ff]/20 rounded-2xl p-5 shadow-sm transition-all duration-300">
+              <section className="kse-glass-dark mt-3 border border-slate-200 dark:border-slate-850 rounded-2xl p-5 shadow-sm transition-all duration-300">
                 <div className="mb-4">
                   <h2 className="text-base font-bold text-slate-900 dark:text-white">اختر خلفية حسابك</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">اختر خلفية حية متحركة لتزيين واجهة حسابك</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">اختر خلفية ثابتة لتزيين واجهة حسابك ومريحة لعينيك</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2.5">
@@ -249,12 +248,12 @@ export default function CourierSettingsClient({
                         onClick={() => handleSelectBackground(bg.id)}
                         className={`flex items-center justify-between px-4 py-3 rounded-xl border text-sm font-black transition-all ${
                           active
-                            ? "bg-sky-500 border-sky-600 text-white dark:bg-[#00f3ff] dark:border-[#00f3ff] dark:text-black shadow-md scale-[1.02]"
+                            ? "bg-sky-500 border-sky-600 text-white dark:bg-sky-400 dark:border-sky-400 dark:text-black shadow-md scale-[1.02]"
                             : "border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850"
                         }`}
                       >
                         <span className="truncate">{bg.name}</span>
-                        {active && <span className="text-[10px] font-black bg-white/20 dark:bg-black/10 px-1.5 py-0.5 rounded-full">✓ نشط</span>}
+                        {active && <span className="text-[10px] font-black bg-white/20 dark:bg-black/10 px-1.5 py-0.5 rounded-full">✓</span>}
                       </button>
                     );
                   })}
@@ -262,9 +261,7 @@ export default function CourierSettingsClient({
               </section>
             )}
           </div>
-        )}
-
-        {/* إعدادات حجم الخط والأزرار */}
+        )}        {/* إعدادات حجم الخط والأزرار */}
         <div className="mb-6">
           <Link
             href={`/mandoub/settings/font-size?${baseQuery.toString()}`}

@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getGlobalIcons, GlobalIconsConfig } from "@/lib/icon-settings";
 import { DynamicIcon } from "@/components/dynamic-icon";
-import { getSiteBackgroundsConfigAction } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/site-background-actions";
-import { BackgroundItem } from "@/lib/background-settings";
+import { getStaticBackgroundsConfigAction } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/settings/site-backgrounds-actions";
+import { StaticBackgroundItem } from "@/lib/site-backgrounds";
+
 
 export function StaffPortalMenuClient({
   emp,
@@ -16,7 +17,7 @@ export function StaffPortalMenuClient({
 }) {
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(null);
   const [scale, setScale] = useState(1);
-  const [availableBgs, setAvailableBgs] = useState<BackgroundItem[]>([]);
+  const [availableBgs, setAvailableBgs] = useState<StaticBackgroundItem[]>([]);
   const [currentBgId, setCurrentBgId] = useState<string | null>(null);
   const [showBgSelector, setShowBgSelector] = useState(false);
 
@@ -37,18 +38,14 @@ export function StaffPortalMenuClient({
       }
     };
 
-    // 1. تحميل التكوين من الكاش فوراً للسرعة في الهاتف
     const cached = localStorage.getItem("kse_backgrounds_config_cache");
     if (cached) {
       try {
         handleData(JSON.parse(cached));
-      } catch (e) {
-        console.error("فشل قراءة كاش الخلفيات:", e);
-      }
+      } catch (e) {}
     }
 
-    // 2. تحديث التكوين من السيرفر في الخلفية وحفظه بالكاش
-    getSiteBackgroundsConfigAction()
+    getStaticBackgroundsConfigAction()
       .then((data: any) => {
         if (data) {
           handleData(data);
@@ -61,8 +58,9 @@ export function StaffPortalMenuClient({
   const handleSelectBackground = (id: string) => {
     localStorage.setItem("kse_user_background", id);
     setCurrentBgId(id);
-    window.dispatchEvent(new Event("kse_bg_changed"));
+    window.dispatchEvent(new CustomEvent("kse_static_bg_changed", { detail: { id } }));
   };
+
 
   useEffect(() => {
     localStorage.setItem("kse:staff:scale", scale.toString());
@@ -88,8 +86,7 @@ export function StaffPortalMenuClient({
           </button>
         </div>
       </div>
-
-      {/* الخلفيات المتاحة للموظف */}
+      {/* الخلفيات الثابتة للموظف */}
       {availableBgs.length > 0 && (
         <div className="mb-6">
           <button
@@ -105,7 +102,7 @@ export function StaffPortalMenuClient({
             <div className="kse-glass-dark mt-3 border border-slate-200 dark:border-white/10 rounded-2xl p-5 shadow-sm transition-all duration-300">
               <div className="mb-4">
                 <h2 className="text-sm font-black text-slate-900 dark:text-white">اختر خلفية النظام</h2>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">اختر خلفية لتزيين واجهة حسابك ومريحة لعينيك</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">اختر خلفية ثابتة لتزيين واجهة حسابك ومريحة لعينيك</p>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
@@ -132,7 +129,6 @@ export function StaffPortalMenuClient({
           )}
         </div>
       )}
-
       <div className="grid gap-3" style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
         {emp.canSubmitOrders && (
         <>
