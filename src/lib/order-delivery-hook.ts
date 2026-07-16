@@ -101,8 +101,8 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
             },
             _sum: { amountDinar: true },
           });
-          const receivedDinar = Number(agg._sum.amountDinar || 0);
           const expectedDinar = Number(order.totalAmount || 0);
+          const receivedDinar = Number(agg._sum.amountDinar || 0);
 
           if (expectedDinar > receivedDinar) {
             const difference = expectedDinar - receivedDinar;
@@ -137,7 +137,7 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
                 });
               }
 
-              // 2. التحقق من وجود المعاملة بالفعل لتفادي التكرار
+              // 2. التحقق من وجود المعاملة بالفعل
               const noteTextContains = `طلب رقم: #${order.orderNumber}`;
               const exists = await db.creditBookTransaction.findFirst({
                 where: {
@@ -148,18 +148,29 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
                 }
               });
 
-              if (!exists) {
-                const regionName = order.customerRegion?.name || "غير محدد";
-                const courierName = order.courier?.name || "بدون مندوب";
-                const orderType = order.orderType || "غير محدد";
-                const noteText = `طلب رقم: #${order.orderNumber} | المنطقة: ${regionName} | نوع الطلب: ${orderType} | المندوب: ${courierName} | المطلوب الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
-                
+              const regionName = order.customerRegion?.name || "غير محدد";
+              const courierName = order.courier?.name || "بدون مندوب";
+              const orderType = order.orderType || "غير محدد";
+              const noteText = `طلب رقم: #${order.orderNumber} | المنطقة: ${regionName} | نوع الطلب: ${orderType} | المندوب: ${courierName} | المطلوب الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
+
+              if (exists) {
+                // تحديث المعاملة الحالية بالمبلغ والملاحظة الجديدة
+                await db.creditBookTransaction.update({
+                  where: { id: exists.id },
+                  data: {
+                    amount: difference,
+                    note: noteText,
+                  }
+                });
+              } else {
+                // إنشاء معاملة جديدة
                 const newTx = await db.creditBookTransaction.create({
                   data: {
                     partnerId: cbPartner.id,
                     amount: difference,
                     kind: "gave", // أعطيت = نطلبه
                     note: noteText,
+                    createdAt: order.createdAt
                   }
                 });
 
@@ -170,6 +181,33 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
                 } catch (logErr) {
                   console.error("Failed to log transaction creator as System:", logErr);
                 }
+              }
+            }
+          } else {
+            // إذا لم يكن هناك فرق (أو تلاشى النقص المالي)
+            // نبحث عن أي معاملة قديمة لهذا الطلب ونحذفها لتصفير الدين
+            let cbPartner = await db.creditBookPartner.findUnique({
+              where: {
+                type_externalId: {
+                  type: "customer",
+                  externalId: order.customerId
+                }
+              }
+            });
+            if (cbPartner) {
+              const noteTextContains = `طلب رقم: #${order.orderNumber}`;
+              const exists = await db.creditBookTransaction.findFirst({
+                where: {
+                  partnerId: cbPartner.id,
+                  note: {
+                    contains: noteTextContains
+                  }
+                }
+              });
+              if (exists) {
+                await db.creditBookTransaction.delete({
+                  where: { id: exists.id }
+                });
               }
             }
           }
