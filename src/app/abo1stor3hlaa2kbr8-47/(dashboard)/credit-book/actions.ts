@@ -2923,6 +2923,61 @@ export async function syncOldCustomerDebts() {
       }
     }
 
+    // 3. تحديث الملاحظات للمعاملات القديمة المسجلة مسبقاً بنص قديم لتأخذ التنسيق المفصل
+    const existingCustomerTxs = await prisma.creditBookTransaction.findMany({
+      where: {
+        note: {
+          contains: "طلب رقم:"
+        },
+        partner: {
+          type: "customer"
+        }
+      }
+    });
+
+    let updatedTxsCount = 0;
+
+    for (const tx of existingCustomerTxs) {
+      const match = tx.note?.match(/#(\d+)/);
+      if (match && match[1]) {
+        const orderNumber = parseInt(match[1]);
+        
+        const order = await prisma.order.findFirst({
+          where: { orderNumber },
+          include: {
+            customerRegion: { select: { name: true } },
+            courier: { select: { name: true } },
+            moneyEvents: {
+              where: {
+                kind: "delivery_in",
+                deletedAt: null
+              }
+            }
+          }
+        });
+
+        if (order) {
+          const expectedDinar = Number(order.totalAmount || 0);
+          const receivedDinar = order.moneyEvents.reduce((sum, ev) => sum + Number(ev.amountDinar || 0), 0);
+          const difference = expectedDinar - receivedDinar;
+
+          const regionName = order.customerRegion?.name || "غير محدد";
+          const courierName = order.courier?.name || "بدون مندوب";
+          const orderType = order.orderType || "غير محدد";
+          
+          const newNote = `طلب رقم: #${order.orderNumber} | المنطقة: ${regionName} | نوع الطلب: ${orderType} | المندوب: ${courierName} | المطلوب الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
+
+          if (tx.note !== newNote) {
+            await prisma.creditBookTransaction.update({
+              where: { id: tx.id },
+              data: { note: newNote }
+            });
+            updatedTxsCount++;
+          }
+        }
+      }
+    }
+
     revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
     
     return {
@@ -2930,6 +2985,7 @@ export async function syncOldCustomerDebts() {
       checkedCount,
       createdPartnersCount,
       createdTransactionsCount,
+      updatedTxsCount,
       totalDebtAmount
     };
 

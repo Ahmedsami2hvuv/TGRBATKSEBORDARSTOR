@@ -207,7 +207,7 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
     startTransition(async () => {
       const res = await syncOldCustomerDebts();
       if (res.success) {
-        alert(`اكتملت المزامنة التاريخية بنجاح!\n---------------------------------\nعدد الطلبات المفحوصة: ${res.checkedCount}\nحسابات الزبائن الجديدة: ${res.createdPartnersCount}\nحركات الديون الجديدة: ${res.createdTransactionsCount}\nإجمالي الديون المسجلة: ${res.totalDebtAmount?.toLocaleString() || 0} د.ع`);
+        alert(`اكتملت المزامنة التاريخية بنجاح!\n---------------------------------\nعدد الطلبات المفحوصة: ${res.checkedCount}\nحسابات الزبائن الجديدة: ${res.createdPartnersCount}\nحركات الديون الجديدة: ${res.createdTransactionsCount}\nملاحظات الديون القديمة المحدثة: ${res.updatedTxsCount || 0}\nإجمالي الديون المسجلة: ${res.totalDebtAmount?.toLocaleString() || 0} د.ع`);
         refreshList();
       } else {
         alert(res.error || "فشلت المزامنة التاريخية للزبائن");
