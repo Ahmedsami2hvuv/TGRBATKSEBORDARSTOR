@@ -931,6 +931,7 @@ ${productsText}`;
   return (
     <div className={hideContainer ? "relative text-right h-full flex flex-col" : "relative overflow-hidden rounded-[2.5rem] border border-white/40 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-white/20 dark:ring-white/10 text-right transition-colors h-full flex flex-col"} dir="rtl">
       <form
+        id="order-pricing-form"
         action={formAction}
         className={hideContainer ? "flex-1 flex flex-col overflow-hidden relative" : "flex-1 flex flex-col overflow-hidden relative p-3 sm:p-5"}
         onKeyDown={(e) => {
@@ -991,7 +992,7 @@ ${productsText}`;
                   ⚙️ الخيارات
                 </button>
 
-                {showOptionsMenu && (
+                {false && showOptionsMenu && (
                   <>
                     <div className="fixed inset-0 z-[1900]" onClick={() => setShowOptionsMenu(false)} />
                     <div className="fixed left-3 top-[4.5rem] w-72 bg-slate-900/98 dark:bg-slate-950/98 backdrop-blur-2xl border border-slate-800 rounded-3xl p-4 shadow-2xl z-[2000] text-right space-y-3 animate-in fade-in slide-in-from-top-2 duration-200" dir="rtl">
@@ -1931,6 +1932,7 @@ ${productsText}`;
                 <div className="grid grid-cols-2 gap-1.5">
                   <button
                     type="submit"
+                    form="order-pricing-form"
                     name="submitType"
                     value="admin_approve"
                     disabled={pending}
@@ -1941,6 +1943,7 @@ ${productsText}`;
                   </button>
                   <button
                     type="submit"
+                    form="order-pricing-form"
                     name="submitType"
                     value="final_send"
                     disabled={pending}
@@ -1953,6 +1956,7 @@ ${productsText}`;
               ) : (
                 <button
                   type="submit"
+                  form="order-pricing-form"
                   disabled={pending}
                   onClick={() => setShowOptionsMenu(false)}
                   className="w-full h-9 rounded-xl bg-sky-600 hover:bg-sky-700 text-[10px] font-black text-white shadow active:scale-95 transition-all flex items-center justify-center gap-1"
@@ -2071,40 +2075,34 @@ ${productsText}`;
               </button>
             </div>
 
-            {/* 6. خيارات العرض المتقدمة (سعر المتجر وعدد المحلات بجانب بعضهما) */}
-            <div className="flex flex-col gap-2 pt-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black text-slate-400">إخفاء سعر المتجر:</span>
+            {/* 6. سعر المتجر وعدد المحلات بجانب بعضهما في سطر واحد بدون نصوص توضيحية */}
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/50">
+              <button
+                type="button"
+                onClick={() => { setHideBuyPrice(!hideBuyPrice); }}
+                className={`h-8 px-3 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                  hideBuyPrice ? "bg-amber-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-amber-400"
+                }`}
+              >
+                {hideBuyPrice ? "🙈 سعر المتجر" : "👁️ سعر المتجر"}
+              </button>
+
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => { setHideBuyPrice(!hideBuyPrice); setShowOptionsMenu(false); }}
-                  className={`h-7 px-3 rounded-lg text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
-                    hideBuyPrice ? "bg-amber-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-amber-400"
-                  }`}
+                  onClick={() => setPlacesCount(Math.max(1, placesCount - 1))}
+                  className="h-7 w-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center justify-center active:scale-95 border border-slate-700"
                 >
-                  {hideBuyPrice ? "👁️ إظهار" : "🙈 إخفاء"}
+                  -
                 </button>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black text-slate-400">عدد المحلات:</span>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setPlacesCount(Math.max(1, placesCount - 1))}
-                    className="h-7 w-7 rounded-lg bg-slate-800 text-white font-black text-xs flex items-center justify-center active:scale-95"
-                  >
-                    -
-                  </button>
-                  <span className="px-3 font-mono font-black text-xs text-amber-400">{placesCount}</span>
-                  <button
-                    type="button"
-                    onClick={() => setPlacesCount(Math.min(10, placesCount + 1))}
-                    className="h-7 w-7 rounded-lg bg-slate-800 text-white font-black text-xs flex items-center justify-center active:scale-95"
-                  >
-                    +
-                  </button>
-                </div>
+                <span className="px-2.5 font-mono font-black text-xs text-amber-400">{placesCount}</span>
+                <button
+                  type="button"
+                  onClick={() => setPlacesCount(Math.min(10, placesCount + 1))}
+                  className="h-7 w-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center justify-center active:scale-95 border border-slate-700"
+                >
+                  +
+                </button>
               </div>
             </div>
 
