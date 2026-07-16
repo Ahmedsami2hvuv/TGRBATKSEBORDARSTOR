@@ -1787,11 +1787,13 @@ ${productsText}`;
         </div>
       )}
 
-      {/* مودال نسخ وتكرار الطلب الفخم */}
+      {/* مودال نسخ وتكرار الطلب الفخم الطويل بحجم الشاشة */}
       {showDuplicateModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" dir="rtl">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 overflow-hidden animate-in fade-in-50 zoom-in-95 duration-200">
-            <div className="flex items-center gap-2 mb-4">
+          <div className="w-full max-w-md h-[80vh] sm:h-[70vh] bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 flex flex-col justify-between overflow-hidden animate-in fade-in-50 zoom-in-95 duration-200">
+            
+            {/* الهيدر */}
+            <div className="flex items-center gap-2 mb-4 shrink-0">
               <span className="text-xl">👯</span>
               <div>
                 <h3 className="text-sm font-black text-slate-950 dark:text-white">نسخ وتكرار الطلب</h3>
@@ -1799,7 +1801,8 @@ ${productsText}`;
               </div>
             </div>
 
-            <div className="space-y-4">
+            {/* محتوى الاستمارة مع التمرير الداخلي لمنع التداخل */}
+            <div className="flex-1 overflow-y-auto space-y-4 pb-4 pr-0.5 scrollbar-thin">
               <div>
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 block">رقم الهاتف للطلب الجديد:</label>
                 <input
@@ -1865,33 +1868,35 @@ ${productsText}`;
                   ⚠️ {duplicateError}
                 </p>
               )}
-
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <button
-                  type="button"
-                  disabled={isDuplicating}
-                  onClick={handleDuplicateOrder}
-                  className="rounded-2xl bg-violet-650 hover:bg-violet-750 disabled:opacity-80 py-3 text-xs font-black text-white shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                >
-                  {isDuplicating ? (
-                    <>
-                      <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      جاري النسخ...
-                    </>
-                  ) : (
-                    <>👯 إتمام النسخ والتكرار</>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  disabled={isDuplicating}
-                  onClick={() => setShowDuplicateModal(false)}
-                  className="rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-650 dark:text-slate-300 py-3 text-xs font-black transition active:scale-95"
-                >
-                  تراجع
-                </button>
-              </div>
             </div>
+
+            {/* الأزرار في الأسفل دائماً */}
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
+              <button
+                type="button"
+                disabled={isDuplicating}
+                onClick={handleDuplicateOrder}
+                className="rounded-2xl bg-violet-650 hover:bg-violet-750 disabled:opacity-80 py-3 text-xs font-black text-white shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              >
+                {isDuplicating ? (
+                  <>
+                    <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    جاري النسخ...
+                  </>
+                ) : (
+                  <>👯 إتمام النسخ والتكرار</>
+                )}
+              </button>
+              <button
+                type="button"
+                disabled={isDuplicating}
+                onClick={() => setShowDuplicateModal(false)}
+                className="rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-650 dark:text-slate-300 py-3 text-xs font-black transition active:scale-95"
+              >
+                تراجع
+              </button>
+            </div>
+
           </div>
         </div>
       )}
