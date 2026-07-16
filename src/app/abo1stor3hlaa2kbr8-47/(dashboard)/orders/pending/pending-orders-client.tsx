@@ -1884,10 +1884,10 @@ ${productsText}`;
       {showOptionsMenu && (
         <>
           <div className="fixed inset-0 z-[1900]" onClick={() => setShowOptionsMenu(false)} />
-          <div className="fixed left-3 top-[4.5rem] w-72 bg-slate-900/98 dark:bg-slate-950/98 backdrop-blur-2xl border border-slate-800 rounded-3xl p-4 shadow-2xl z-[2000] text-right space-y-3 animate-in fade-in slide-in-from-top-2 duration-200" dir="rtl">
+          <div className="fixed left-3 top-[4.5rem] w-80 bg-slate-900/98 dark:bg-slate-950/98 backdrop-blur-2xl border border-slate-800 rounded-3xl p-4 shadow-2xl z-[2000] text-right space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-200" dir="rtl">
             
             {/* 1. حقل البحث مدمج هنا وجانبه زر تجهيز الإدارة */}
-            <div className="flex items-center gap-1.5 mb-1">
+            <div className="flex items-center gap-2 mb-1">
               <div className="relative flex-1">
                 <input
                   type="text"
@@ -1909,7 +1909,7 @@ ${productsText}`;
                 <button
                   type="button"
                   onClick={() => { revertAdminFullfillment(); setShowOptionsMenu(false); }}
-                  className="h-8 px-2 rounded-xl text-[9px] font-black bg-indigo-650 hover:bg-indigo-700 text-white transition-all active:scale-95 flex items-center justify-center gap-1 shrink-0 shadow-sm"
+                  className="h-8.5 px-3 rounded-xl text-[10px] font-black bg-amber-600 hover:bg-amber-500 text-white transition-all active:scale-95 flex items-center justify-center gap-1 shrink-0 shadow-sm"
                   title="تراجع عن تجهيز الإدارة"
                 >
                   🏛️ تراجع
@@ -1918,7 +1918,7 @@ ${productsText}`;
                 <button
                   type="button"
                   onClick={() => { markAllAsAdminFulfilled(); setShowOptionsMenu(false); }}
-                  className="h-8 px-2.5 rounded-xl text-[9px] font-black bg-amber-600 hover:bg-amber-700 text-white transition-all active:scale-95 flex items-center justify-center gap-1 shrink-0 shadow-sm"
+                  className="h-8.5 px-3 rounded-xl text-[10px] font-black bg-amber-600 hover:bg-amber-500 text-white transition-all active:scale-95 flex items-center justify-center gap-1 shrink-0 shadow-sm"
                   title="تجهيز الكل من الإدارة"
                 >
                   🏛️ تجهيز إدارة
@@ -1927,9 +1927,9 @@ ${productsText}`;
             </div>
 
             {/* 2. أزرار الحفظ والإرسال */}
-            <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1">
+            <div className="border-b border-slate-800/50 pb-2.5 flex flex-col gap-1">
               {isDraft ? (
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     type="submit"
                     form="order-pricing-form"
@@ -1937,9 +1937,9 @@ ${productsText}`;
                     value="admin_approve"
                     disabled={pending}
                     onClick={() => setShowOptionsMenu(false)}
-                    className="h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-[9px] font-black text-white shadow active:scale-95 transition-all flex items-center justify-center gap-1"
+                    className="h-9 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-[10px] font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1"
                   >
-                    {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="💾" width={10} height={10} /> مسودة معتمدة</>}
+                    {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="💾" width={11} height={11} /> حفظ كمسودة</>}
                   </button>
                   <button
                     type="submit"
@@ -1948,9 +1948,9 @@ ${productsText}`;
                     value="final_send"
                     disabled={pending}
                     onClick={() => setShowOptionsMenu(false)}
-                    className="h-9 rounded-xl bg-violet-650 hover:bg-violet-750 text-[9px] font-black text-white shadow active:scale-95 transition-all flex items-center justify-center gap-1"
+                    className="h-9 rounded-xl bg-violet-600 hover:bg-violet-550 text-[10px] font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1"
                   >
-                    {pending ? "..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={10} height={10} /> إرسال نهائي</>}
+                    {pending ? "..." : <><DynamicIcon icon={icons?.ui_rocket} fallback="🚀" width={11} height={11} /> إرسال نهائي</>}
                   </button>
                 </div>
               ) : (
@@ -1959,7 +1959,7 @@ ${productsText}`;
                   form="order-pricing-form"
                   disabled={pending}
                   onClick={() => setShowOptionsMenu(false)}
-                  className="w-full h-9 rounded-xl bg-sky-600 hover:bg-sky-700 text-[10px] font-black text-white shadow active:scale-95 transition-all flex items-center justify-center gap-1"
+                  className="w-full h-9 rounded-xl bg-sky-600 hover:bg-sky-500 text-[10px] font-black text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-1"
                 >
                   {pending ? "..." : <><DynamicIcon icon={icons?.ui_success} fallback="✅" width={12} height={12} /> حفظ وإرسال</>}
                 </button>
@@ -1967,25 +1967,31 @@ ${productsText}`;
             </div>
 
             {/* 3. أوامر التجهيز والإسناد */}
-            <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1">
-              <div className="grid grid-cols-2 gap-1.5">
+            <div className="border-b border-slate-800/50 pb-2.5 flex flex-col gap-1">
+              <div className="grid grid-cols-2 gap-2">
                 {isDraft && couriers ? (
                   <button
                     type="button"
                     onClick={() => { setShowAutoCourier(!showAutoCourier); setShowOptionsMenu(false); }}
-                    className={`h-8 rounded-xl text-[9px] font-black text-white active:scale-95 transition-all flex items-center justify-center gap-1 ${
-                      showAutoCourier ? "bg-violet-800" : "bg-violet-650 hover:bg-violet-750"
+                    className={`h-8.5 rounded-xl text-[10px] active:scale-95 transition-all flex items-center justify-center gap-1 ${
+                      showAutoCourier
+                        ? "bg-emerald-600 hover:bg-emerald-500 text-white font-black shadow-sm"
+                        : "bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 font-bold shadow-sm"
                     }`}
                   >
                     👤 إسناد تلقائي
                   </button>
                 ) : (
-                  <div className="h-8 rounded-xl bg-slate-800/40 text-[8px] font-bold text-slate-500 flex items-center justify-center">إسناد تلقائي مقفل</div>
+                  <div className="h-8.5 rounded-xl bg-slate-800/40 text-[9px] font-bold text-slate-500 flex items-center justify-center">إسناد تلقائي مقفل</div>
                 )}
                 <button
                   type="button"
                   onClick={() => { setShowReassign(!showReassign); setShowOptionsMenu(false); }}
-                  className="h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-[9px] font-black text-white flex items-center justify-center gap-1 transition-all active:scale-95"
+                  className={`h-8.5 rounded-xl text-[10px] active:scale-95 transition-all flex items-center justify-center gap-1 ${
+                    showReassign
+                      ? "bg-emerald-600 hover:bg-emerald-500 text-white font-black shadow-sm"
+                      : "bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 font-bold shadow-sm"
+                  }`}
                 >
                   👤 إسناد للمجهزين
                 </button>
@@ -1993,8 +1999,8 @@ ${productsText}`;
             </div>
 
             {/* 4. أوضاع التحكم السريعة */}
-            <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1.5">
-              <div className="grid grid-cols-2 gap-1.5">
+            <div className="border-b border-slate-800/50 pb-2.5 flex flex-col gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                    type="button"
                    onClick={() => {
@@ -2003,7 +2009,11 @@ ${productsText}`;
                      setSelectionMode(false);
                      setShowOptionsMenu(false);
                    }}
-                   className="h-8 rounded-xl text-[9px] font-black bg-amber-500 text-white hover:bg-amber-600 transition-all active:scale-95 flex items-center justify-center gap-1"
+                   className={`h-8.5 rounded-xl text-[10px] active:scale-95 transition-all flex items-center justify-center gap-1 ${
+                     showBulkAdd
+                       ? "bg-emerald-600 hover:bg-emerald-500 text-white font-black shadow-sm"
+                       : "bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 font-bold shadow-sm"
+                   }`}
                 >
                    ➕ إضافة منتج
                 </button>
@@ -2015,28 +2025,32 @@ ${productsText}`;
                      setSelectionMode(false);
                      setShowOptionsMenu(false);
                    }}
-                   className={`h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
-                     deleteMode ? "bg-rose-600 text-white animate-pulse" : "bg-slate-800 hover:bg-slate-700 text-rose-450"
+                   className={`h-8.5 rounded-xl text-[10px] active:scale-95 transition-all flex items-center justify-center gap-1 ${
+                     deleteMode
+                       ? "bg-emerald-600 hover:bg-emerald-500 text-white font-black shadow-sm animate-pulse"
+                       : "bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 font-bold shadow-sm"
                    }`}
                 >
                    🗑️ حذف منتج
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                    type="button"
                    disabled={isSorting}
                    onClick={() => { handleAiSort(); setShowOptionsMenu(false); }}
-                   className="h-8 rounded-xl text-[9px] font-black bg-indigo-650 text-white hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1"
+                   className="h-8.5 rounded-xl text-[10px] font-black bg-indigo-650 hover:bg-indigo-600 text-white active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-1 shadow-sm"
                 >
                    ترتيب 🪄
                 </button>
                 <button
                   type="button"
                   onClick={() => { handleToggleNoProfit(!noProfit); setShowOptionsMenu(false); }}
-                  className={`h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
-                    noProfit ? "bg-rose-600 text-white animate-pulse" : "bg-slate-800 text-rose-450"
+                  className={`h-8.5 rounded-xl text-[10px] active:scale-95 transition-all flex items-center justify-center gap-1 ${
+                    noProfit
+                      ? "bg-emerald-600 hover:bg-emerald-500 text-white font-black shadow-sm"
+                      : "bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 font-bold shadow-sm"
                   }`}
                 >
                   🚫 إيقاف الربح
@@ -2045,13 +2059,15 @@ ${productsText}`;
             </div>
 
             {/* 5. أدوات ونسخ الطلب وخيارات إخفاء الأسعار */}
-            <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1.5">
-              <div className="grid grid-cols-2 gap-1.5">
+            <div className="border-b border-slate-800/50 pb-2.5 flex flex-col gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={handleCopyTemplate}
-                  className={`h-8 rounded-xl text-[9px] font-black text-white active:scale-95 transition-all flex items-center justify-center gap-1 ${
-                    templateSuccess ? "bg-emerald-600" : "bg-teal-650 hover:bg-teal-750"
+                  className={`h-8.5 rounded-xl text-[10px] font-bold active:scale-95 transition-all flex items-center justify-center gap-1 ${
+                    templateSuccess
+                      ? "bg-emerald-600 hover:bg-emerald-500 text-white font-black shadow-sm"
+                      : "bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 shadow-sm"
                   }`}
                 >
                   {templateSuccess ? "📋 تم النسخ!" : "📝 كليشة الطلب"}
@@ -2059,31 +2075,35 @@ ${productsText}`;
                 <button
                   type="button"
                   onClick={() => { setShowDuplicateModal(true); setShowOptionsMenu(false); }}
-                  className="h-8 rounded-xl bg-violet-650 hover:bg-violet-755 text-[9px] font-black text-white flex items-center justify-center gap-1 transition-all active:scale-95"
+                  className="h-8.5 rounded-xl bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 text-[10px] font-bold flex items-center justify-center gap-1 transition-all active:scale-95 shadow-sm"
                 >
                   👯 نسخ وتكرار
                 </button>
               </div>
 
               {/* زر إخفاء سعر الشراء بجانب زر إخفاء سعر البيع */}
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => { setHideBuyPrice(!hideBuyPrice); setShowOptionsMenu(false); }}
-                  className={`h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
-                    hideBuyPrice ? "bg-amber-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-amber-400"
+                  className={`h-8.5 rounded-xl text-[9px] active:scale-95 transition-all flex items-center justify-center gap-1 shadow-sm ${
+                    hideBuyPrice
+                      ? "bg-emerald-600 hover:bg-emerald-500 text-white font-black"
+                      : "bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 font-bold"
                   }`}
                 >
-                  {hideBuyPrice ? "👁️ إظهار سعر الشراء" : "🙈 إخفاء سعر الشراء"}
+                  {hideBuyPrice ? "👁️ إظهار الشراء" : "🙈 إخفاء الشراء"}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setHideSellPrice(!hideSellPrice); setShowOptionsMenu(false); }}
-                  className={`h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
-                    hideSellPrice ? "bg-indigo-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-indigo-400"
+                  className={`h-8.5 rounded-xl text-[9px] active:scale-95 transition-all flex items-center justify-center gap-1 shadow-sm ${
+                    hideSellPrice
+                      ? "bg-emerald-600 hover:bg-emerald-500 text-white font-black"
+                      : "bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 font-bold"
                   }`}
                 >
-                  {hideSellPrice ? "👁️ إظهار سعر البيع" : "🙈 إخفاء سعر البيع"}
+                  {hideSellPrice ? "👁️ إظهار البيع" : "🙈 إخفاء البيع"}
                 </button>
               </div>
             </div>
@@ -2093,26 +2113,28 @@ ${productsText}`;
               <button
                 type="button"
                 onClick={() => { setHideBuyPrice(!hideBuyPrice); }}
-                className={`h-8 px-3 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
-                  hideBuyPrice ? "bg-amber-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-amber-400"
+                className={`h-8.5 px-4 rounded-xl text-[10px] active:scale-95 transition-all flex items-center justify-center gap-1 shadow-sm ${
+                  hideBuyPrice
+                    ? "bg-emerald-600 hover:bg-emerald-500 text-white font-black"
+                    : "bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 font-bold"
                 }`}
               >
                 {hideBuyPrice ? "🙈 سعر المتجر" : "👁️ سعر المتجر"}
               </button>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => setPlacesCount(Math.max(1, placesCount - 1))}
-                  className="h-7 w-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center justify-center active:scale-95 border border-slate-700"
+                  className="h-7.5 w-7.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center justify-center active:scale-95 border border-slate-700"
                 >
                   -
                 </button>
-                <span className="px-2.5 font-mono font-black text-xs text-amber-400">{placesCount}</span>
+                <span className="px-3 font-mono font-black text-xs text-amber-400">{placesCount}</span>
                 <button
                   type="button"
                   onClick={() => setPlacesCount(Math.min(10, placesCount + 1))}
-                  className="h-7 w-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center justify-center active:scale-95 border border-slate-700"
+                  className="h-7.5 w-7.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-black text-xs flex items-center justify-center active:scale-95 border border-slate-700"
                 >
                   +
                 </button>
