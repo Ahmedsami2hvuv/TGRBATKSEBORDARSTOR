@@ -2824,6 +2824,8 @@ export async function syncOldCustomerDebts() {
       },
       include: {
         customer: { select: { id: true, name: true, phone: true } },
+        customerRegion: { select: { name: true } },
+        courier: { select: { name: true } },
         moneyEvents: {
           where: {
             kind: "delivery_in",
@@ -2892,7 +2894,10 @@ export async function syncOldCustomerDebts() {
           });
 
           if (!exists) {
-            const noteText = `متبقي من طلب رقم: #${order.orderNumber} | المطلوب: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع`;
+            const regionName = order.customerRegion?.name || "غير محدد";
+            const courierName = order.courier?.name || "بدون مندوب";
+            const orderType = order.orderType || "غير محدد";
+            const noteText = `طلب رقم: #${order.orderNumber} | المنطقة: ${regionName} | نوع الطلب: ${orderType} | المندوب: ${courierName} | المطلوب الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
             
             const newTx = await prisma.creditBookTransaction.create({
               data: {
@@ -2933,5 +2938,46 @@ export async function syncOldCustomerDebts() {
     return { success: false, error: error.message || "حدث خطأ غير متوقع" };
   }
 }
+
+// تعديل اسم الشريك والزبون المرتبط به مباشرة
+export async function updatePartnerName(partnerId: string, newName: string) {
+  try {
+    const cleanName = newName.trim();
+    if (!cleanName) {
+      return { success: false, error: "الرجاء إدخال اسم صالح" };
+    }
+
+    const partner = await prisma.creditBookPartner.findUnique({
+      where: { id: partnerId }
+    });
+
+    if (!partner) {
+      return { success: false, error: "الشريك غير موجود" };
+    }
+
+    // 1. تحديث اسم الشريك في دفتر الديون
+    await prisma.creditBookPartner.update({
+      where: { id: partnerId },
+      data: { name: cleanName }
+    });
+
+    // 2. إذا كان الشريك زبوناً، نقوم بتحديث اسمه في جدول الزبائن أيضاً
+    if (partner.type === "customer" && partner.externalId) {
+      await prisma.customer.update({
+        where: { id: partner.externalId },
+        data: { name: cleanName }
+      });
+    }
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
+    revalidatePath(`/abo1stor3hlaa2kbr8-47/credit-book/${partnerId}`);
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error in updatePartnerName:", error);
+    return { success: false, error: error.message || "حدث خطأ أثناء تحديث الاسم" };
+  }
+}
+
 
 

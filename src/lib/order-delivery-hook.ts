@@ -149,7 +149,10 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
               });
 
               if (!exists) {
-                const noteText = `متبقي من طلب رقم: #${order.orderNumber} | المطلوب: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع`;
+                const regionName = order.customerRegion?.name || "غير محدد";
+                const courierName = order.courier?.name || "بدون مندوب";
+                const orderType = order.orderType || "غير محدد";
+                const noteText = `طلب رقم: #${order.orderNumber} | المنطقة: ${regionName} | نوع الطلب: ${orderType} | المندوب: ${courierName} | المطلوب الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
                 
                 const newTx = await db.creditBookTransaction.create({
                   data: {

@@ -17,6 +17,7 @@ import {
   getTransactionAuthorsAction,
   createPartner,
   getUnaddedSystemPartners,
+  updatePartnerName,
   type PartnerType
 } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/credit-book/actions";
 import { formatDinarAsAlfWithUnit } from "@/lib/money-alf";
@@ -105,6 +106,29 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
   const [partner, setPartner] = useState<Partner>(initialPartner);
   
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState(initialPartner.name);
+  const [isSavingName, setIsSavingName] = useState(false);
+
+  const handleSaveName = async () => {
+    const cleanName = newName.trim();
+    if (!cleanName) {
+      alert("الرجاء إدخال اسم صالح");
+      return;
+    }
+    setIsSavingName(true);
+    const res = await updatePartnerName(partner.id, cleanName);
+    setIsSavingName(false);
+    if (res.success) {
+      setPartner(prev => ({ ...prev, name: cleanName }));
+      setIsEditingName(false);
+    } else {
+      alert(res.error || "حدث خطأ أثناء تعديل الاسم");
+    }
+  };
+
+  const showQuickRename = partner.name.includes("زبون") && partner.type === "customer";
 
   // نموذج إضافة شريك جديد (للاقتراحات)
   const [showAddPartnerModal, setShowAddPartnerModal] = useState(false);
@@ -491,13 +515,56 @@ export function PartnerDetailsClient({ partner: initialPartner, allActivePartner
       <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-right flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h2 className="text-xl font-black flex flex-wrap items-center gap-3">
-            <span className={
-              partner.balance > 0 
-                ? "text-emerald-600" 
-                : partner.balance < 0 
-                  ? "text-rose-600" 
-                  : "text-slate-800"
-            }>{partner.name}</span>
+            {isEditingName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 font-bold text-slate-800"
+                  placeholder="اكتب الاسم الحقيقي للزبون..."
+                  disabled={isSavingName}
+                />
+                <button
+                  onClick={handleSaveName}
+                  disabled={isSavingName}
+                  className="px-3 py-1.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition disabled:opacity-50"
+                >
+                  {isSavingName ? "جاري الحفظ..." : "حفظ"}
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditingName(false);
+                    setNewName(partner.name);
+                  }}
+                  disabled={isSavingName}
+                  className="px-3 py-1.5 text-xs font-black text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+                >
+                  إلغاء
+                </button>
+              </div>
+            ) : (
+              <>
+                <span className={
+                  partner.balance > 0 
+                    ? "text-emerald-600" 
+                    : partner.balance < 0 
+                      ? "text-rose-600" 
+                      : "text-slate-800"
+                }>{partner.name}</span>
+                {showQuickRename && (
+                  <button
+                    onClick={() => {
+                      setIsEditingName(true);
+                      setNewName("");
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-black text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition"
+                  >
+                    ✏️ تسمية الزبون
+                  </button>
+                )}
+              </>
+            )}
           </h2>
           <div className="flex flex-wrap gap-2 mt-2">
             {getProfileLink(partner.type, partner.externalId) && (
