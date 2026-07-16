@@ -2125,7 +2125,7 @@ export default function PendingOrdersClient({
                 return;
               }
               if (isDraftMode) {
-                setActivePricingOrderId(order.id);
+                router.push(`${SECRET_ADMIN_PATH}/orders/${order.id}/price`);
               } else {
                 router.push(`${SECRET_ADMIN_PATH}/orders/${order.id}`);
               }

@@ -203,7 +203,7 @@ export function OrderViewContent({
           <div className="mt-2 flex flex-wrap gap-2">
             <Link href={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`} className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm">تعديل البيانات</Link>
             {parsedShoppingJson !== null && (
-              <button onClick={() => setPricingOpen(true)} className="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition-colors"><span>💰</span> تعديل التسعير</button>
+              <Link href={`${SECRET_ADMIN_PATH}/orders/${order.id}/price`} className="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-600 transition-colors"><span>💰</span> تعديل التسعير</Link>
             )}
             {order.status === "pending" && <Link href={`${SECRET_ADMIN_PATH}/orders/pending?assignOrder=${order.id}`} className="inline-flex items-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm">إسناد للمندوب</Link>}
           </div>
@@ -525,28 +525,6 @@ export function OrderViewContent({
       />
     </div>
 
-      {pricingOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-2 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-4xl h-[90vh] sm:h-[85vh] bg-white rounded-3xl shadow-2xl overflow-hidden border-2 border-amber-400 flex flex-col">
-            <div className="flex flex-shrink-0 items-center justify-between bg-amber-50 px-4 py-3 sm:px-6 sm:py-4 border-b border-amber-200">
-              <h3 className="text-sm sm:text-lg font-black text-amber-900 flex items-center gap-2"><span>💰</span> لوحة تسعير الطلب #{order.orderNumber}</h3>
-              <button onClick={() => setPricingOpen(false)} className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-xl bg-red-600 text-white font-bold shadow-sm hover:bg-red-700 transition-colors">✕</button>
-            </div>
-            <div className="flex-1 p-2 sm:p-6 overflow-hidden flex flex-col min-h-0">
-              <AdminPricingPanel
-                orderId={order.id}
-                initialData={parsedShoppingJson}
-                orderSummary={order.summary}
-                shops={[]}
-                preparers={preparers}
-                rawDeliveryPriceDinar={order.deliveryPrice != null ? Number(order.deliveryPrice) : null}
-                storeProducts={storeProducts}
-                onSuccess={() => { setPricingOpen(false); window.location.reload(); }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
