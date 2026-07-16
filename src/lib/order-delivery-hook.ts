@@ -82,6 +82,100 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
       console.error("Failed to auto restore/create shop credit partner on delivery:", partnerErr);
     }
 
+    // أتمتة حساب دين الزبون تلقائياً في دفتر الديون إذا كان المبلغ المستلم أقل من المطلوب
+    try {
+      if (order.customerId) {
+        // جلب معلومات الزبون
+        const customer = await db.customer.findUnique({
+          where: { id: order.customerId },
+          select: { name: true, phone: true }
+        });
+
+        if (customer) {
+          // حساب المبالغ المستلمة من المندوب للطلبية بنوع التوصيل (delivery_in)
+          const agg = await db.orderCourierMoneyEvent.aggregate({
+            where: {
+              orderId,
+              kind: "delivery_in",
+              deletedAt: null,
+            },
+            _sum: { amountDinar: true },
+          });
+          const receivedDinar = Number(agg._sum.amountDinar || 0);
+          const expectedDinar = Number(order.totalAmount || 0);
+
+          if (expectedDinar > receivedDinar) {
+            const difference = expectedDinar - receivedDinar;
+
+            if (difference > 0) {
+              // 1. البحث عن حساب دفتر الديون للزبون
+              let cbPartner = await db.creditBookPartner.findUnique({
+                where: {
+                  type_externalId: {
+                    type: "customer",
+                    externalId: order.customerId
+                  }
+                }
+              });
+
+              if (!cbPartner) {
+                // إنشاء شريك جديد
+                cbPartner = await db.creditBookPartner.create({
+                  data: {
+                    name: `${customer.name || 'زبون'} (زبون)`,
+                    phone: customer.phone || order.customerPhone || null,
+                    type: "customer",
+                    externalId: order.customerId,
+                    updatedAt: new Date()
+                  }
+                });
+              } else {
+                // تحديث تاريخ الشريك ليصعد في القائمة
+                await db.creditBookPartner.update({
+                  where: { id: cbPartner.id },
+                  data: { updatedAt: new Date() }
+                });
+              }
+
+              // 2. التحقق من وجود المعاملة بالفعل لتفادي التكرار
+              const noteTextContains = `طلب رقم: #${order.orderNumber}`;
+              const exists = await db.creditBookTransaction.findFirst({
+                where: {
+                  partnerId: cbPartner.id,
+                  note: {
+                    contains: noteTextContains
+                  }
+                }
+              });
+
+              if (!exists) {
+                const noteText = `متبقي من طلب رقم: #${order.orderNumber} | المطلوب: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع`;
+                
+                const newTx = await db.creditBookTransaction.create({
+                  data: {
+                    partnerId: cbPartner.id,
+                    amount: difference,
+                    kind: "gave", // أعطيت = نطلبه
+                    note: noteText,
+                  }
+                });
+
+                // تسجيل منشئ المعاملة بالنظام
+                try {
+                  const { logTransactionAuthor } = await import("./transaction-logger");
+                  await logTransactionAuthor(newTx.id, "create", "النظام");
+                } catch (logErr) {
+                  console.error("Failed to log transaction creator as System:", logErr);
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (customerDebtErr) {
+      console.error("Failed to auto record customer debt on delivery:", customerDebtErr);
+    }
+
     let products: any[] = [];
     if (order.preparerShoppingJson) {
       const parsed = typeof order.preparerShoppingJson === "string"

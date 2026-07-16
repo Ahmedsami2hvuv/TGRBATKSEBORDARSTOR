@@ -356,7 +356,11 @@ export async function createAdminOrder(
     delivery = delivery.plus(deliveryAdjustmentRaw);
   }
 
-  const total = new Decimal(subtotalParsed.value).plus(delivery);
+  // جلب الدين القديم للزبون تلقائياً
+  const { getCustomerOldDebt } = await import("@/lib/customer-debt-helper");
+  const oldDebt = await getCustomerOldDebt({ customerId: firstCustomerRow.id, phone: firstPhone });
+
+  const total = new Decimal(subtotalParsed.value).plus(delivery).plus(oldDebt);
 
   const submittedByEmployeeId = String(formData.get("linkedCustomerId") ?? "").trim() || null;
   const assignedCourierId = selectedCourier?.id || null;
@@ -388,6 +392,7 @@ export async function createAdminOrder(
       secondCustomerDoorPhotoUrl: routeMode === "double" ? (secondDoorUrl || null) : null,
       orderSubtotal: subtotalParsed.value,
       deliveryPrice: delivery,
+      customerOldDebt: oldDebt,
       totalAmount: total,
       prepaidAll,
       imageUrl,

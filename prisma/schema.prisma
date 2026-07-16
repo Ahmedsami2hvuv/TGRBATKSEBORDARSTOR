@@ -452,6 +452,7 @@ model Order {
   deliveryPrice                         Decimal?                 @db.Decimal(10, 2)
   orderSubtotal                         Decimal?                 @db.Decimal(10, 2)
   totalAmount                           Decimal?                 @db.Decimal(10, 2)
+  customerOldDebt                       Decimal?                 @db.Decimal(10, 2) @default(0)
   customerPhone                         String                   @default("")
   alternatePhone                        String?
   orderNoteTime                         String?

@@ -327,6 +327,9 @@ export async function submitMandoubDeliveryMoney(
           courierEarningForCourierId: earningFor,
         },
       });
+
+      const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+      await handleOrderDelivered(orderId, tx);
     });
     void notifyStaffOrderDelivered(orderId).catch(() => {});
     revalidateAdminTrackingForStatusChange();
@@ -436,6 +439,11 @@ export async function submitMandoubDeliveryMoney(
             : {}),
         },
       });
+
+      if (advanceStatus === "delivered" && order.status === "delivering") {
+        const { handleOrderDelivered } = await import("@/lib/order-delivery-hook");
+        await handleOrderDelivered(orderId, tx);
+      }
     });
   } catch (e: any) {
     return { error: "فشل الحفظ في قاعدة البيانات: " + e.message };

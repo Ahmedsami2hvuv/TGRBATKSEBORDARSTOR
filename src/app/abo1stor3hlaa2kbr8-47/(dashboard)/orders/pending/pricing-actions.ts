@@ -289,7 +289,25 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
     }
   }
 
-  const totalDinar = subtotalDinar.plus(deliveryDinar);
+  // جلب الدين القديم للزبون تلقائياً
+  const { getCustomerOldDebt } = await import("@/lib/customer-debt-helper");
+  let customerId = originalOrder?.customerId || null;
+  let phone = originalOrder?.customerPhone || draftData?.customerPhone || null;
+
+  if (!customerId && phone && shop?.id) {
+    const cust = await prisma.customer.findFirst({
+      where: {
+        shopId: shop.id,
+        phone: phone.trim()
+      }
+    });
+    if (cust) {
+      customerId = cust.id;
+    }
+  }
+
+  const oldDebt = await getCustomerOldDebt({ customerId, phone });
+  const totalDinar = subtotalDinar.plus(deliveryDinar).plus(oldDebt);
   const deliveryAlf = Number(deliveryDinar.toString()) / ALF_PER_DINAR;
 
   let existingOrderType = "تجهيز تسوق";
@@ -338,7 +356,9 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
             orderNoteTime: draftData!.orderTime,
             orderSubtotal: subtotalDinar,
             deliveryPrice: deliveryDinar,
+            customerOldDebt: oldDebt,
             totalAmount: totalDinar,
+            customer: customerId ? { connect: { id: customerId } } : undefined,
             courier: autoCourierId ? { connect: { id: autoCourierId } } : { disconnect: true },
             status: autoCourierId ? "assigned" : "pending",
             summary: summaryCombined,
@@ -387,7 +407,9 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
             courier: autoCourierId ? { connect: { id: autoCourierId } } : undefined,
             orderSubtotal: subtotalDinar,
             deliveryPrice: deliveryDinar,
+            customerOldDebt: oldDebt,
             totalAmount: totalDinar,
+            customer: customerId ? { connect: { id: customerId } } : undefined,
             summary: summaryCombined,
             ...(reservedOrderNumber ? { orderNumber: reservedOrderNumber } : {}),
             preparerShoppingJson: {
@@ -462,7 +484,9 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
           orderType: resolvedOrderType,
           orderSubtotal: subtotalDinar,
           deliveryPrice: deliveryDinar,
+          customerOldDebt: oldDebt,
           totalAmount: totalDinar,
+          customer: customerId ? { connect: { id: customerId } } : undefined,
           summary: summaryCombined,
           preparerShoppingJson: {
             ...((typeof originalOrder!.preparerShoppingJson === "object" && originalOrder!.preparerShoppingJson !== null) ? originalOrder!.preparerShoppingJson : {}),

@@ -594,11 +594,17 @@ export function OrderDetailSection({
                   </div>
 
                   {!hideSubtotalInfo && (
-                    <div className="grid grid-cols-2 gap-2 border-t border-slate-100/50 dark:border-white/5 pt-1.5">
+                    <div className={`grid ${order.customerOldDebt != null && Number(order.customerOldDebt) > 0 ? 'grid-cols-3' : 'grid-cols-2'} gap-2 border-t border-slate-100/50 dark:border-white/5 pt-1.5`}>
                       <div className="flex flex-col gap-0.5">
                         <span className="text-[10px] text-slate-400 font-bold">سعر الطلب:</span>
                         <span className="font-mono font-black text-slate-900 dark:text-white">{order.orderSubtotal != null ? `${formatDinarAsAlf(order.orderSubtotal)} الف` : "—"}</span>
                       </div>
+                      {order.customerOldDebt != null && Number(order.customerOldDebt) > 0 && (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] text-rose-500 font-bold">دين سابق:</span>
+                          <span className="font-mono font-black text-rose-600 dark:text-rose-400">{`${formatDinarAsAlf(order.customerOldDebt)} الف`}</span>
+                        </div>
+                      )}
                       <div className="flex flex-col gap-0.5">
                         <span className="text-[10px] text-slate-400 font-bold">التوصيل:</span>
                         <span className="font-mono font-black text-slate-900 dark:text-white">{order.deliveryPrice != null ? `${formatDinarAsAlf(order.deliveryPrice)} الف` : "—"}</span>
