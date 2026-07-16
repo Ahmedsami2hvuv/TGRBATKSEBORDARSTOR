@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { ad } from "@/lib/admin-ui";
 import { InlineLandmarkEditor } from "@/components/inline-landmark-editor";
@@ -107,6 +108,7 @@ export function OrderViewContent({
   storeProducts?: any[];
 }) {
   const [pricingOpen, setPricingOpen] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   const imgOrder = resolvePublicAssetSrc(order.imageUrl);
   const voiceSrc = resolvePublicAssetSrc(order.voiceNoteUrl);
@@ -278,7 +280,7 @@ export function OrderViewContent({
           <div className="self-start">
             {order.routeMode === "double" ? (
               <>
-                {imgCustDoor ? <div className={squarePhotoFrame}><img src={imgCustDoor} alt="" className={squarePhotoImg} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                {imgCustDoor ? <div className={squarePhotoFrame}><img src={imgCustDoor} alt="" className={`${squarePhotoImg} cursor-zoom-in hover:scale-105 transition duration-300`} onClick={() => setPreviewImageUrl(imgCustDoor)} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
                 <div className="mt-2 space-y-2">
                   <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.customerDoorPhotoUrl} />
                   <ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} />
@@ -287,7 +289,7 @@ export function OrderViewContent({
             ) : (
               !isSystemAdminOrder && (
                 <>
-                  {imgShopDoor ? <div className={squarePhotoFrame}><img src={imgShopDoor} alt="" className={squarePhotoImg} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                  {imgShopDoor ? <div className={squarePhotoFrame}><img src={imgShopDoor} alt="" className={`${squarePhotoImg} cursor-zoom-in hover:scale-105 transition duration-300`} onClick={() => setPreviewImageUrl(imgShopDoor)} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
                   <div className="mt-2 space-y-2">
                     <AdminOrderPhotoQuick orderId={order.id} kind="shop" hasImage={!!(order.shopPhotoUrl || order.shopDoorPhotoUrl)} />
                     <ImageUploaderCaption name={order.shopDoorPhotoUploadedByName} />
@@ -408,7 +410,7 @@ export function OrderViewContent({
           <div className="self-start">
             {order.routeMode === "double" ? (
               <>
-                {imgCustDoor2 ? <div className={squarePhotoFrame}><img src={imgCustDoor2} alt="" className={squarePhotoImg} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                 {imgCustDoor2 ? <div className={squarePhotoFrame}><img src={imgCustDoor2} alt="" className={`${squarePhotoImg} cursor-zoom-in hover:scale-105 transition duration-300`} onClick={() => setPreviewImageUrl(imgCustDoor2)} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
                 <div className="mt-2 space-y-2">
                   {/* NEED SECOND CUSTOMER DOOR PHOTO UPLOADER HERE. WE'LL LEAVE IT READ ONLY FOR NOW */}
                   <ImageUploaderCaption name={order.secondCustomerDoorPhotoUploadedByName} />
@@ -416,7 +418,7 @@ export function OrderViewContent({
               </>
             ) : (
               <>
-                {imgCustDoor ? <div className={squarePhotoFrame}><img src={imgCustDoor} alt="" className={squarePhotoImg} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+                 {imgCustDoor ? <div className={squarePhotoFrame}><img src={imgCustDoor} alt="" className={`${squarePhotoImg} cursor-zoom-in hover:scale-105 transition duration-300`} onClick={() => setPreviewImageUrl(imgCustDoor)} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
                 <div className="mt-2 space-y-2">
                   <CustomerDoorPhotoQuick orderId={order.id} hasImage={!!order.customerDoorPhotoUrl} />
                   <ImageUploaderCaption name={order.customerDoorPhotoUploadedByName} />
@@ -457,7 +459,7 @@ export function OrderViewContent({
           </div>
           <div className="self-start">
             <p className="mb-1.5 text-sm font-bold text-slate-700">صورة الطلبية</p>
-            {imgOrder ? <div className={squarePhotoFrame}><img src={imgOrder} alt="" className={squarePhotoContain} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
+            {imgOrder ? <div className={squarePhotoFrame}><img src={imgOrder} alt="" className={`${squarePhotoContain} cursor-zoom-in hover:scale-105 transition duration-300`} onClick={() => setPreviewImageUrl(imgOrder)} /></div> : <div className="aspect-square border-dashed border-2 flex items-center justify-center rounded-xl text-xs text-slate-400">لا توجد صورة</div>}
             <div className="mt-2 space-y-2">
               <AdminOrderPhotoQuick orderId={order.id} kind="order" hasImage={!!order.imageUrl} />
               <ImageUploaderCaption name={order.orderImageUploadedByName} />
@@ -523,6 +525,36 @@ export function OrderViewContent({
         editUrl={`${SECRET_ADMIN_PATH}/orders/${order.id}/edit`}
         isDoubleRoute={isDoubleRoute}
       />
+
+      {/* مودال معاينة الصور التفاعلي الأنيق في نفس الصفحة باستخدام React Portal لتجنب مشاكل التموضع */}
+      {previewImageUrl && typeof document !== "undefined" && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 transition-all duration-300 animate-fade-in"
+          onClick={() => setPreviewImageUrl(null)}
+        >
+          <div className="relative w-full max-w-lg flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            {/* زر الإغلاق الأنيق في الأعلى بمنتصف العرض تماماً للمس مريح */}
+            <button
+              onClick={() => setPreviewImageUrl(null)}
+              className="absolute -top-12 left-1/2 -translate-x-1/2 flex h-9 w-24 items-center justify-center gap-1.5 rounded-full bg-white/20 text-white hover:bg-white/35 border border-white/20 transition-all text-xs font-black shadow-xl active:scale-95"
+              title="إغلاق المعاينة"
+            >
+              ✕ إغلاق
+            </button>
+            
+            {/* إطار الصورة الفعلي */}
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 shadow-2xl p-1 max-w-[95vw] max-h-[75vh] flex items-center justify-center">
+              <img 
+                src={previewImageUrl} 
+                alt="معاينة الصورة" 
+                className="max-w-full max-h-[72vh] object-contain rounded-xl"
+              />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
     </div>
 
     </>
