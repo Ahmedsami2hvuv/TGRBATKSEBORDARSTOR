@@ -152,7 +152,7 @@ export async function handleOrderDelivered(orderId: string, customTx?: any) {
               const courierName = order.courier?.name || "بدون مندوب";
               const orderType = order.orderType || "غير محدد";
               const shopName = order.shop?.name || "بدون محل";
-              const noteText = `#${order.orderNumber} | ${regionName} | ${shopName} | ${orderType} | ${courierName} | الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
+              const noteText = `#${order.orderNumber} | ${shopName} | ${regionName} | ${orderType} | ${courierName} | الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
 
               if (exists) {
                 // تحديث المعاملة الحالية بالمبلغ والملاحظة الجديدة

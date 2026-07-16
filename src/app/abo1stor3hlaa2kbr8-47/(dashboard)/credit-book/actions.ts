@@ -167,8 +167,66 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
     } catch (cleanErr) {
       console.error("[Prisma] Clean up failed:", cleanErr);
     }
+    // تحديث صامت وتلقائي للملاحظات القديمة في قاعدة البيانات لتأخذ التنسيق والترتيب الجديد لمرة واحدة
+    try {
+      const oldNotesTxs = await prisma.creditBookTransaction.findMany({
+        where: {
+          OR: [
+            { note: { contains: "طلب رقم:" } },
+            { note: { startsWith: "#" } }
+          ],
+          partner: {
+            type: "customer"
+          }
+        },
+        take: 50 // نحدث دفعات صغيرة عند كل فتح لتفادي أي بطء!
+      });
 
+      if (oldNotesTxs.length > 0) {
+        for (const tx of oldNotesTxs) {
+          const match = tx.note?.match(/#(\d+)/);
+          if (match && match[1]) {
+            const orderNumber = parseInt(match[1]);
+            const order = await prisma.order.findFirst({
+              where: { orderNumber },
+              include: {
+                customerRegion: { select: { name: true } },
+                courier: { select: { name: true } },
+                shop: { select: { name: true } },
+                moneyEvents: {
+                  where: {
+                    kind: "delivery_in",
+                    deletedAt: null
+                  }
+                }
+              }
+            });
 
+            if (order) {
+              const expectedDinar = Number(order.totalAmount || 0);
+              const receivedDinar = order.moneyEvents.reduce((sum, ev) => sum + Number(ev.amountDinar || 0), 0);
+              const difference = expectedDinar - receivedDinar;
+
+              const regionName = order.customerRegion?.name || "غير محدد";
+              const courierName = order.courier?.name || "بدون مندوب";
+              const orderType = order.orderType || "غير محدد";
+              const shopName = order.shop?.name || "بدون محل";
+              
+              const newNote = `#${order.orderNumber} | ${shopName} | ${regionName} | ${orderType} | ${courierName} | الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | Mتبقي: ${difference.toLocaleString()} د.ع`.replace("Mتبقي", "المتبقي");
+
+              if (tx.note !== newNote) {
+                await prisma.creditBookTransaction.update({
+                  where: { id: tx.id },
+                  data: { note: newNote }
+                });
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to silently auto-update old notes layout:", err);
+    }
 
     try {
       const rootExists = await prisma.creditBookPartner.findFirst({
@@ -2573,7 +2631,7 @@ export async function syncOldCustomerDebts() {
           const courierName = order.courier?.name || "بدون مندوب";
           const orderType = order.orderType || "غير محدد";
           const shopName = order.shop?.name || "بدون محل";
-          const noteText = `#${order.orderNumber} | ${regionName} | ${shopName} | ${orderType} | ${courierName} | الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
+          const noteText = `#${order.orderNumber} | ${shopName} | ${regionName} | ${orderType} | ${courierName} | الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
 
           if (!exists) {
             const newTx = await prisma.creditBookTransaction.create({
@@ -2683,7 +2741,7 @@ export async function syncOldCustomerDebts() {
           const orderType = order.orderType || "غير محدد";
           const shopName = order.shop?.name || "بدون محل";
           
-          const newNote = `#${order.orderNumber} | ${regionName} | ${shopName} | ${orderType} | ${courierName} | الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
+          const newNote = `#${order.orderNumber} | ${shopName} | ${regionName} | ${orderType} | ${courierName} | الكلي: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع | المتبقي: ${difference.toLocaleString()} د.ع`;
 
           if (tx.note !== newNote || Number(tx.amount) !== difference) {
             await prisma.creditBookTransaction.update({
