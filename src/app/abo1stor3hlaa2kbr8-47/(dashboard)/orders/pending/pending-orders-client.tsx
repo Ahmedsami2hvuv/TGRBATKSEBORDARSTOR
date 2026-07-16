@@ -1388,7 +1388,11 @@ ${productsText}`;
                   )}
 
                   <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 h-full mt-2">
-                    <p className={`text-[10px] font-black leading-tight line-clamp-2 pr-1 flex items-center gap-1 ${priced ? "text-white" : "text-slate-800 dark:text-slate-200"}`}>
+                    <p className={`text-[10px] font-black leading-tight line-clamp-2 pr-1 flex items-center gap-1 ${
+                      isSelected ? "text-sky-900 dark:text-sky-100" :
+                      active ? "text-indigo-900 dark:text-indigo-100" :
+                      priced ? "text-white" : "text-slate-800 dark:text-slate-200"
+                    }`}>
                       {priced && <span className="shrink-0">✅</span>}
                       <span>
                         {p.line}
@@ -1425,13 +1429,22 @@ ${productsText}`;
 
                     <div className="flex flex-col gap-0.5 mt-1">
                       {branch && (
-                        <p className={`text-[7px] font-black px-1 py-0.5 rounded whitespace-nowrap self-start ${priced ? 'bg-emerald-800 text-emerald-200' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 border border-slate-100 dark:border-slate-700'}`}>
+                        <p className={`text-[7px] font-black px-1 py-0.5 rounded whitespace-nowrap self-start ${
+                          isSelected ? 'bg-sky-100/80 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300' :
+                          active ? 'bg-indigo-100/80 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300' :
+                          priced ? 'bg-emerald-800 text-emerald-200' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 border border-slate-100 dark:border-slate-700'
+                        }`}>
                           📍 {branch}
                         </p>
                       )}
 
                       {prepName && (
-                        <span className={`text-[7px] font-bold flex items-center gap-0.5 self-start ${p.isFulfilledByAdmin ? "text-amber-500" : priced ? "text-emerald-300" : "text-slate-400"}`}>
+                        <span className={`text-[7px] font-bold flex items-center gap-0.5 self-start ${
+                          p.isFulfilledByAdmin ? "text-amber-500" :
+                          isSelected ? "text-sky-700 dark:text-sky-300" :
+                          active ? "text-indigo-700 dark:text-indigo-300" :
+                          priced ? "text-emerald-300" : "text-slate-400"
+                        }`}>
                           👤 {prepName}
                         </span>
                       )}
