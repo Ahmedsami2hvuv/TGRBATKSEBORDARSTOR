@@ -19,6 +19,7 @@ type PriceClientProps = {
   rawDeliveryPriceDinar: number | null;
   orderSummary?: string | null;
   currentPreparerIds?: string[];
+  regions?: any[];
 };
 
 const SECRET_ADMIN_PATH = "/abo1stor3hlaa2kbr8-47";
@@ -35,6 +36,7 @@ export function PriceClient({
   rawDeliveryPriceDinar,
   orderSummary,
   currentPreparerIds = [],
+  regions = [],
 }: PriceClientProps) {
   const router = useRouter();
 
@@ -95,6 +97,7 @@ export function PriceClient({
                 storeProducts={storeProducts}
                 onSuccess={handleSuccess}
                 currentPreparerIds={currentPreparerIds}
+                regions={regions}
               />
             ) : (
               <AdminPricingPanel
@@ -107,6 +110,7 @@ export function PriceClient({
                 icons={icons}
                 onSuccess={handleSuccess}
                 currentPreparerIds={currentPreparerIds}
+                regions={regions}
               />
             )}
           </div>

@@ -52,7 +52,7 @@ export default async function OrderPricingPage({ params }: Props) {
   }
 
   // 3. جلب البيانات المساعدة بالتوازي
-  const [preparers, couriers, storeProducts, icons] = await Promise.all([
+  const [preparers, couriers, storeProducts, icons, regions] = await Promise.all([
     prisma.companyPreparer.findMany({
       where: { active: true },
       select: { id: true, name: true },
@@ -79,7 +79,11 @@ export default async function OrderPricingPage({ params }: Props) {
         }
       }
     }),
-    getGlobalIcons()
+    getGlobalIcons(),
+    prisma.region.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" }
+    })
   ]);
 
   // 3.5 جلب المجهزين المسندين حالياً للطلب أو المسودة لضمان مزامنة الواجهة بعد الريفريش
@@ -118,6 +122,7 @@ export default async function OrderPricingPage({ params }: Props) {
   const safeCouriers = serializePrisma(couriers);
   const safeStoreProducts = serializePrisma(storeProducts);
   const safeIcons = serializePrisma(icons);
+  const safeRegions = serializePrisma(regions);
 
   return (
     <PriceClient
@@ -132,6 +137,7 @@ export default async function OrderPricingPage({ params }: Props) {
       rawDeliveryPriceDinar={rawDeliveryPriceDinar}
       orderSummary={orderSummary}
       currentPreparerIds={currentPreparerIds}
+      regions={safeRegions}
     />
   );
 }

@@ -567,7 +567,126 @@ export async function updateOrderPricingByAdmin(orderId: string, _prev: any, for
       orderId,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
+      
     });
     return { error: "حدث خطأ أثناء معالجة التسعير. يرجى المحاولة مرة أخرى." };
+  }
+}
+
+/** تكرار ونسخ الطلب أو المسودة الإدارية برقم ومنطقة جديدة */
+export async function duplicateOrderOrDraft(
+  originalId: string,
+  isDraft: boolean,
+  newPhone: string,
+  newRegionId: string
+): Promise<{ ok?: boolean; error?: string; newOrderId?: string }> {
+  try {
+    const cleanPhone = newPhone.trim();
+    if (!cleanPhone) return { error: "يرجى إدخال رقم الهاتف." };
+    if (!newRegionId) return { error: "يرجى تحديد المنطقة." };
+
+    let newId = "";
+    
+    // جلب اسم المنطقة وسعر التوصيل
+    const region = await prisma.region.findUnique({ where: { id: newRegionId } });
+    if (!region) return { error: "المنطقة المحددة غير موجودة." };
+
+    if (isDraft) {
+      const originalDraft = await prisma.companyPreparerShoppingDraft.findUnique({ where: { id: originalId } });
+      if (!originalDraft) return { error: "المسودة الأصلية غير موجودة." };
+
+      const originalData = (originalDraft.data as any) || {};
+      const originalProducts = originalData.products || [];
+
+      // توليد معرف مجموعة جديد للمسودة الجديدة لكي لا تتداخل مع القديمة
+      const newGroupId = `GRP-${Date.now()}`;
+      const nextData = {
+        ...originalData,
+        groupId: newGroupId,
+        products: originalProducts
+      };
+
+      const newDraft = await prisma.companyPreparerShoppingDraft.create({
+        data: {
+          preparerId: originalDraft.preparerId,
+          titleLine: `${originalDraft.titleLine || "مسودة"} (نسخة مكررة)`,
+          rawListText: originalDraft.rawListText,
+          customerPhone: cleanPhone,
+          customerName: cleanPhone,
+          customerRegionId: newRegionId,
+          customerLandmark: originalDraft.customerLandmark,
+          orderTime: originalDraft.orderTime,
+          sentOrderId: null,
+          placesCount: originalDraft.placesCount,
+          status: originalDraft.status,
+          data: nextData
+        }
+      });
+      newId = newDraft.id;
+
+    } else {
+      const originalOrder = await prisma.order.findUnique({ where: { id: originalId } });
+      if (!originalOrder) return { error: "الطلب الأصلي غير موجود." };
+
+      const originalProducts = (originalOrder.preparerShoppingJson as any)?.products || [];
+      const newOrderNumber = (await prisma.order.count()) + 1001;
+
+      const newOrder = await prisma.order.create({
+        data: {
+          orderNumber: newOrderNumber,
+          customerPhone: cleanPhone,
+          customerRegionId: newRegionId,
+          customerLandmark: originalOrder.customerLandmark,
+          orderNoteTime: originalOrder.orderNoteTime || "فوري",
+          orderType: originalOrder.orderType,
+          summary: originalOrder.summary,
+          submissionSource: "admin_copy",
+          submittedByCompanyPreparerId: originalOrder.submittedByCompanyPreparerId,
+          deliveryPrice: region.deliveryPrice,
+          preparerShoppingJson: {
+            version: 1,
+            products: originalProducts,
+            placesCount: (originalOrder.preparerShoppingJson as any)?.placesCount || 1,
+            noProfit: (originalOrder.preparerShoppingJson as any)?.noProfit || false
+          }
+        }
+      });
+      newId = newOrder.id;
+
+      // نسخ مسودات المجهزين المرتبطة بالطلب الحقيقي
+      const relatedDrafts = await prisma.companyPreparerShoppingDraft.findMany({
+        where: { sentOrderId: originalId }
+      });
+
+      for (const d of relatedDrafts) {
+        const dData = (d.data as any) || {};
+        await prisma.companyPreparerShoppingDraft.create({
+          data: {
+            preparerId: d.preparerId,
+            titleLine: `طلب #${newOrderNumber} - ${newOrder.orderType}`,
+            rawListText: d.rawListText,
+            customerPhone: cleanPhone,
+            customerName: cleanPhone,
+            customerRegionId: newRegionId,
+            customerLandmark: d.customerLandmark,
+            orderTime: d.orderTime,
+            sentOrderId: newOrder.id,
+            placesCount: d.placesCount,
+            status: d.status,
+            data: {
+              ...dData,
+              groupId: `GRP-${Date.now()}`,
+              products: dData.products || []
+            }
+          }
+        });
+      }
+    }
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/orders/pending");
+    return { ok: true, newOrderId: newId };
+  } catch (error: any) {
+    console.error("Duplicate Order Error:", error);
+    return { error: `فشل النسخ: ${error.message || "حدث خطأ غير متوقع"}` };
   }
 }

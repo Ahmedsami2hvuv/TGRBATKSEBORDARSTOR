@@ -25,7 +25,7 @@ import {
   bulkUpdateOrdersStatus,
   type BulkOrdersState,
 } from "../bulk-actions";
-import { updateOrderPricingByAdmin, savePricingProgress } from "./pricing-actions";
+import { updateOrderPricingByAdmin, savePricingProgress, duplicateOrderOrDraft } from "./pricing-actions";
 import { orderStatusPendingCardBorderBg } from "@/lib/order-status-style";
 import { OrderStatusRadioGroup } from "@/components/order-status-radio-group";
 import { calculateExtraAlfFromPlacesCount } from "@/lib/preparation-extra";
@@ -223,6 +223,7 @@ export function AdminPricingPanel({
   icons = null,
   storeProducts = [],
   currentPreparerIds = [],
+  regions = [],
 }: {
   orderId: string;
   initialData: any;
@@ -236,6 +237,7 @@ export function AdminPricingPanel({
   icons?: GlobalIconsConfig | null;
   storeProducts?: any[];
   currentPreparerIds?: string[];
+  regions?: { id: string; name: string }[];
 }) {
   // Alias for backward compatibility if needed elsewhere
   return <OrderPricingPanel
@@ -251,6 +253,7 @@ export function AdminPricingPanel({
     icons={icons}
     storeProducts={storeProducts}
     currentPreparerIds={currentPreparerIds}
+    regions={regions}
   />;
 }
 
@@ -361,6 +364,7 @@ export function OrderPricingPanel({
   icons = null,
   storeProducts = [],
   currentPreparerIds = [],
+  regions = [],
 }: {
   orderId: string;
   initialData: any;
@@ -374,6 +378,7 @@ export function OrderPricingPanel({
   icons?: GlobalIconsConfig | null;
   storeProducts?: any[];
   currentPreparerIds?: string[];
+  regions?: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [products, setProducts] = useState<any[]>(initialData?.products || []);
@@ -406,6 +411,49 @@ export function OrderPricingPanel({
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [hideBuyPrice, setHideBuyPrice] = useState(false);
   const [hideSellPrice, setHideSellPrice] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicatePhone, setDuplicatePhone] = useState(initialData?.customerPhone || "");
+  const [duplicateRegionId, setDuplicateRegionId] = useState(initialData?.customerRegionId || initialData?.regionId || "");
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
+  const [isDuplicating, setIsDuplicating] = useState(false);
+  const [templateSuccess, setTemplateSuccess] = useState(false);
+
+  const handleCopyTemplate = () => {
+    try {
+      const productsText = products.map((p, index) => `${index + 1}. ${p.line}`).join("\n");
+      const regionName = regions.find(r => r.id === (initialData?.customerRegionId || initialData?.regionId))?.name || "غير محددة";
+      const landmarkText = initialData?.customerLandmark ? `\n📍 أقرب نقطة دالة: ${initialData.customerLandmark}` : "";
+      
+      const template = `📱 رقم الهاتف: ${initialData?.customerPhone || "غير محدد"}
+📍 المنطقة: ${regionName}${landmarkText}
+📦 المنتجات:
+${productsText}`;
+
+      navigator.clipboard.writeText(template);
+      setTemplateSuccess(true);
+      setTimeout(() => setTemplateSuccess(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy template:", err);
+    }
+  };
+
+  const handleDuplicateOrder = async () => {
+    setIsDuplicating(true);
+    setDuplicateError(null);
+    try {
+      const result = await duplicateOrderOrDraft(orderId, !!isDraft, duplicatePhone, duplicateRegionId);
+      if (result.error) {
+        setDuplicateError(result.error);
+      } else if (result.ok && result.newOrderId) {
+        setShowDuplicateModal(false);
+        router.push(`${SECRET_ADMIN_PATH}/orders/${result.newOrderId}/price`);
+      }
+    } catch (err: any) {
+      setDuplicateError(err.message || "حدث خطأ غير متوقع أثناء نسخ الطلب");
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
 
   const sellInputRef = useRef<HTMLInputElement>(null);
   const buyInputRef = useRef<HTMLInputElement>(null);
@@ -1117,7 +1165,30 @@ export function OrderPricingPanel({
                         </div>
                       </div>
 
-                      {/* 6. عدد المحلات */}
+                      {/* 6. أدوات ونسخ الطلب 📝👯 */}
+                      <div className="border-b border-slate-800/50 pb-2.5 space-y-1.5">
+                        <p className="text-[9px] font-black text-slate-400 mb-1">أدوات ونسخ الطلب 📝👯:</p>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={handleCopyTemplate}
+                            className={`h-8 rounded-xl text-[9px] font-black text-white active:scale-95 transition-all flex items-center justify-center gap-1 ${
+                              templateSuccess ? "bg-emerald-600" : "bg-teal-650 hover:bg-teal-750"
+                            }`}
+                          >
+                            {templateSuccess ? "📋 تم النسخ!" : "📝 كليشة الطلب"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setShowDuplicateModal(true); setShowOptionsMenu(false); }}
+                            className="h-8 rounded-xl bg-violet-650 hover:bg-violet-750 text-[9px] font-black text-white flex items-center justify-center gap-1 transition-all active:scale-95"
+                          >
+                            👯 نسخ وتكرار
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 7. عدد المحلات */}
                       <div className="flex items-center justify-between pt-1">
                         <span className="text-[10px] font-black text-slate-400">عدد المحلات:</span>
                         <div className="flex items-center gap-1">
@@ -1670,6 +1741,81 @@ export function OrderPricingPanel({
                 ) : (
                   <button type="button" onClick={cancelPricingPanel} className="w-full bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-2xl py-2.5 text-xs font-bold text-center">تراجع</button>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* مودال نسخ وتكرار الطلب الفخم */}
+      {showDuplicateModal && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" dir="rtl">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 overflow-hidden animate-in fade-in-50 zoom-in-95 duration-200">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl">👯</span>
+              <div>
+                <h3 className="text-sm font-black text-slate-950 dark:text-white">نسخ وتكرار الطلب</h3>
+                <p className="text-[10px] font-bold text-slate-500">سيتم إنشاء نسخة مطابقة بنفس المواد والمجهزين المسندين</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 block">رقم الهاتف للطلب الجديد:</label>
+                <input
+                  type="text"
+                  value={duplicatePhone}
+                  onChange={(e) => setDuplicatePhone(e.target.value)}
+                  placeholder="أدخل رقم الهاتف"
+                  className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 dark:bg-slate-800 dark:border-slate-700 py-3 px-4 font-mono text-base font-black outline-none focus:border-sky-500 text-center text-slate-900 dark:text-white"
+                  dir="ltr"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 block">المنطقة للطلب الجديد:</label>
+                <select
+                  value={duplicateRegionId}
+                  onChange={(e) => setDuplicateRegionId(e.target.value)}
+                  className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 dark:bg-slate-800 dark:border-slate-700 py-3 px-4 text-xs font-black outline-none focus:border-sky-500 text-center text-slate-900 dark:text-white"
+                >
+                  <option value="">-- اختر المنطقة --</option>
+                  {regions.map(r => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {duplicateError && (
+                <p className="text-xs font-bold text-rose-600 text-center bg-rose-50 dark:bg-rose-950/20 p-2.5 rounded-xl">
+                  ⚠️ {duplicateError}
+                </p>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={isDuplicating}
+                  onClick={handleDuplicateOrder}
+                  className="rounded-2xl bg-violet-650 hover:bg-violet-750 disabled:opacity-80 py-3 text-xs font-black text-white shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                >
+                  {isDuplicating ? (
+                    <>
+                      <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      جاري النسخ...
+                    </>
+                  ) : (
+                    <>👯 إتمام النسخ والتكرار</>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  disabled={isDuplicating}
+                  onClick={() => setShowDuplicateModal(false)}
+                  className="rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-650 dark:text-slate-300 py-3 text-xs font-black transition active:scale-95"
+                >
+                  تراجع
+                </button>
               </div>
             </div>
           </div>
