@@ -55,7 +55,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
  const customerPhoneNorm = normalizeIraqMobileLocal11(order.customerPhone);
  const secondPhoneNorm = order.secondCustomerPhone ? normalizeIraqMobileLocal11(order.secondCustomerPhone) : null;
 
- const [preparers, waButtonSettings, customerProfile, secondProfile, moneyEventsRaw] = await Promise.all([
+ const [preparers, waButtonSettings, customerProfile, secondProfile, moneyEventsRaw, storeProducts] = await Promise.all([
  prisma.companyPreparer.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
  prisma.mandoubWaButtonSetting.findMany({ where: { isActive: true }, orderBy: { updatedAt: "desc" } }),
  customerPhoneNorm && order.customerRegionId ? prisma.customerPhoneProfile.findUnique({
@@ -68,6 +68,23 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
  where: { orderId, deletedAt: null },
  orderBy: { createdAt: "desc" },
  include: { courier: { select: { name: true } }, recordedByCompanyPreparer: { select: { name: true } } }
+ }),
+ prisma.storeProduct.findMany({
+   where: { active: true },
+   select: {
+     id: true,
+     name: true,
+     salePrice: true,
+     hasVariants: true,
+     variants: {
+       where: { active: true },
+       select: {
+         id: true,
+         name: true,
+         salePrice: true,
+       }
+     }
+   }
  })
  ]);
 
@@ -157,6 +174,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
  const safeMoneyEvents = JSON.parse(JSON.stringify(adminMoneyEvents));
  const safePreparers = JSON.parse(JSON.stringify(preparers));
  const safeWaButtons = JSON.parse(JSON.stringify(adminCustomWaButtons));
+ const safeStoreProducts = JSON.parse(JSON.stringify(storeProducts));
 
  return (
  <div className="space-y-4">
@@ -168,7 +186,7 @@ export default async function AdminOrderViewPage({ params, searchParams }: Props
      <h1 className={ad.h1}>عرض الطلب #{order.orderNumber}</h1>
    </>
  ) : null}
- <OrderViewContent order={safeView} preparers={safePreparers} customWaButtons={safeWaButtons} />
+ <OrderViewContent order={safeView} preparers={safePreparers} customWaButtons={safeWaButtons} storeProducts={safeStoreProducts} />
  <AdminOrderMoneyEvents orderNumber={order.orderNumber} nextPath={`${SECRET_ADMIN_PATH}/orders/${order.id}`} events={safeMoneyEvents} />
  </div>
  );

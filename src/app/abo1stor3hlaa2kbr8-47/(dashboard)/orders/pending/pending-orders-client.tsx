@@ -187,6 +187,7 @@ export function AdminPricingPanel({
   footerActions,
   extraActions,
   icons = null,
+  storeProducts = [],
 }: {
   orderId: string;
   initialData: any;
@@ -198,6 +199,7 @@ export function AdminPricingPanel({
   footerActions?: React.ReactNode;
   extraActions?: React.ReactNode;
   icons?: GlobalIconsConfig | null;
+  storeProducts?: any[];
 }) {
   // Alias for backward compatibility if needed elsewhere
   return <OrderPricingPanel
@@ -211,6 +213,7 @@ export function AdminPricingPanel({
     footerActions={footerActions}
     extraActions={extraActions}
     icons={icons}
+    storeProducts={storeProducts}
   />;
 }
 

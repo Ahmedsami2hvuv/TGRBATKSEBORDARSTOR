@@ -94,6 +94,7 @@ export function OrderViewContent({
   order,
   preparers = [],
   customWaButtons,
+  storeProducts = [],
 }: {
   order: OrderViewModel;
   preparers?: { id: string; name: string }[];
@@ -103,6 +104,7 @@ export function OrderViewContent({
     iconKey: string;
     messages: string[];
   }>;
+  storeProducts?: any[];
 }) {
   const [pricingOpen, setPricingOpen] = useState(false);
 
@@ -538,6 +540,7 @@ export function OrderViewContent({
                 shops={[]}
                 preparers={preparers}
                 rawDeliveryPriceDinar={order.deliveryPrice != null ? Number(order.deliveryPrice) : null}
+                storeProducts={storeProducts}
                 onSuccess={() => { setPricingOpen(false); window.location.reload(); }}
               />
             </div>
