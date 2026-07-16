@@ -1237,7 +1237,6 @@ export function OrderPricingPanel({
           />
         </div>
       )}
-
       {/* نافذة التسعير المنبثقة الذكية للمدير */}
       {editingIndex !== null && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -1272,7 +1271,21 @@ export function OrderPricingPanel({
                   <p className="text-[9px] font-black opacity-80">تسعير المنتج ({editingIndex + 1} من {products.length}):</p>
                   <p className="truncate text-xs sm:text-sm font-black">{products[editingIndex]?.line}</p>
                </div>
-               <button type="button" onClick={cancelPricingPanel} className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 transition flex items-center justify-center shrink-0">✕</button>
+               <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsAdminFulfilled(!isAdminFulfilled)}
+                    className={`h-8 px-2 rounded-xl text-[10px] font-black flex items-center gap-1 transition-all ${
+                      isAdminFulfilled
+                        ? "bg-amber-500 text-white shadow-inner animate-pulse ring-1 ring-amber-400"
+                        : "bg-white/10 hover:bg-white/20 text-white"
+                    }`}
+                    title="تجهيز المادة من الإدارة وتجاوز الموردين"
+                  >
+                    🏛️ {isAdminFulfilled ? "تجهيز إدارة: نعم" : "تجهيز إدارة"}
+                  </button>
+                  <button type="button" onClick={cancelPricingPanel} className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 transition flex items-center justify-center shrink-0">✕</button>
+               </div>
             </div>
 
             <div className="p-6 text-right">
@@ -1286,15 +1299,6 @@ export function OrderPricingPanel({
                 />
               </div>
 
-              <div className="mb-6 flex items-center gap-3 p-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 shadow-sm cursor-pointer" onClick={() => setIsAdminFulfilled(!isAdminFulfilled)}>
-                 <div className={`h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-all ${isAdminFulfilled ? "bg-amber-500 border-amber-500 text-white" : "border-slate-300"}`}>
-                   {isAdminFulfilled && "✓"}
-                 </div>
-                 <div className="flex flex-col">
-                    <span className="text-[11px] font-black text-amber-950 dark:text-amber-100">تجهيز من الإدارة 🏛️</span>
-                    <span className="text-[9px] font-bold text-amber-700/70">تجاوز المجهز - لا يتم استقطاع المبلغ منه</span>
-                 </div>
-              </div>
 
               {/* اقتراحات الكسور الذكية للمدير (بناءً على الشراء) */}
               <div className="mb-4">
@@ -1499,20 +1503,24 @@ export function OrderPricingPanel({
                 </button>
               </div>
 
-              <div className="mt-3 flex flex-col gap-2">
-                {products[editingIndex]?.buyAlf !== "0" && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      resetProductPricing(editingIndex);
-                      cancelPricingPanel();
-                    }}
-                    className="w-full bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl py-2.5 text-xs font-black active:bg-rose-600 active:text-white transition-all"
-                  >
-                     مسح السعر الحالي
-                  </button>
+              <div className="mt-3 flex items-center gap-2">
+                {products[editingIndex]?.buyAlf !== "0" ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetProductPricing(editingIndex);
+                        cancelPricingPanel();
+                      }}
+                      className="flex-1 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl py-2.5 text-xs font-black active:bg-rose-600 active:text-white transition-all text-center"
+                    >
+                       مسح السعر الحالي
+                    </button>
+                    <button type="button" onClick={cancelPricingPanel} className="flex-1 bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-2xl py-2.5 text-xs font-bold text-center">تراجع</button>
+                  </>
+                ) : (
+                  <button type="button" onClick={cancelPricingPanel} className="w-full bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-2xl py-2.5 text-xs font-bold text-center">تراجع</button>
                 )}
-                <button type="button" onClick={cancelPricingPanel} className="w-full bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-2xl py-2.5 text-xs font-bold">تراجع</button>
               </div>
             </div>
           </div>
