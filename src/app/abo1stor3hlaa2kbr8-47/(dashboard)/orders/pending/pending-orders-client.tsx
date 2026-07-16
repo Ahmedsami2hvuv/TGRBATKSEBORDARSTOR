@@ -365,6 +365,31 @@ export function OrderPricingPanel({
   const sellInputRef = useRef<HTMLInputElement>(null);
   const buyInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    let touchStartClientY = 0;
+    const preventPullToRefresh = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const clientY = touch.clientY;
+      if (window.scrollY === 0 && clientY > touchStartClientY) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      }
+    };
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        touchStartClientY = e.touches[0].clientY;
+      }
+    };
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", preventPullToRefresh, { passive: false });
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", preventPullToRefresh);
+    };
+  }, []);
+
   const unpricedCount = useMemo(() => {
     return products.filter(p => !(parseFloat(normalizeNumerals((p.buyAlf || "0").toString())) > 0)).length;
   }, [products]);

@@ -220,6 +220,32 @@ export function PreparerShoppingDraftEditClient({
 
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
+  // --- منع السحب للأسفل لإعادة تحميل الصفحة (pull-to-refresh) ---
+  useEffect(() => {
+    let touchStartClientY = 0;
+    const preventPullToRefresh = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const clientY = touch.clientY;
+      if (window.scrollY === 0 && clientY > touchStartClientY) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      }
+    };
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        touchStartClientY = e.touches[0].clientY;
+      }
+    };
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", preventPullToRefresh, { passive: false });
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", preventPullToRefresh);
+    };
+  }, []);
+
   // --- إجبار الكيبورد على البقاء مفتوحاً عند الانتقال بين المواد ---
   useEffect(() => {
     if (selectedPriceIndex !== null) {
