@@ -480,6 +480,7 @@ export async function assignPendingOrderToCourier(
   const secondCustomerDoorPhotoUrl = String(formData.get("secondCustomerDoorPhotoUrl") ?? "").trim();
   const directReceipt = formData.get("directReceipt") === "on";
   const doorPhotoFile = formData.get("doorPhoto") as File | null;
+  const secondDoorPhotoFile = formData.get("secondDoorPhoto") as File | null;
   const isDraft = formData.get("isDraft") === "true";
   const prepareByAdmin = formData.get("prepareByAdmin") === "on";
 
@@ -492,6 +493,14 @@ export async function assignPendingOrderToCourier(
         return { error: "صورة الباب كبيرة جداً (الحد الأقصى 5 ميجا)" };
       }
       doorPhotoUrl = await saveCustomerDoorPhotoUploaded(doorPhotoFile);
+    }
+
+    let secondDoorPhotoUrlVal: string | undefined = undefined;
+    if (secondDoorPhotoFile && secondDoorPhotoFile.size > 0) {
+      if (secondDoorPhotoFile.size > MAX_ORDER_IMAGE_BYTES) {
+        return { error: "صورة الباب الثانية كبيرة جداً (الحد الأقصى 5 ميجا)" };
+      }
+      secondDoorPhotoUrlVal = await saveCustomerDoorPhotoUploaded(secondDoorPhotoFile);
     }
 
     if (isDraft) {
@@ -622,7 +631,7 @@ export async function assignPendingOrderToCourier(
               customerDoorPhotoUrl: doorPhotoUrl || customerDoorPhotoUrl || undefined,
               secondCustomerLocationUrl: secondCustomerLocationUrl || undefined,
               secondCustomerLandmark: secondCustomerLandmark || undefined,
-              secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrl || undefined,
+              secondCustomerDoorPhotoUrl: secondDoorPhotoUrlVal || secondCustomerDoorPhotoUrl || undefined,
               summary: summaryCombined,
               preparerShoppingJson: {
                 version: 1,
@@ -676,7 +685,7 @@ export async function assignPendingOrderToCourier(
               customerDoorPhotoUrl: doorPhotoUrl || customerDoorPhotoUrl || undefined,
               secondCustomerLocationUrl: secondCustomerLocationUrl || undefined,
               secondCustomerLandmark: secondCustomerLandmark || undefined,
-              secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrl || undefined,
+              secondCustomerDoorPhotoUrl: secondDoorPhotoUrlVal || secondCustomerDoorPhotoUrl || undefined,
               orderType: resolveDynamicOrderType(enrichedProducts, "تجهيز تسوق"),
               submissionSource: "company_preparer",
               courier: { connect: { id: courierId } },
@@ -766,7 +775,7 @@ export async function assignPendingOrderToCourier(
           customerDoorPhotoUrl: doorPhotoUrl || customerDoorPhotoUrl || undefined,
           secondCustomerLocationUrl: secondCustomerLocationUrl || undefined,
           secondCustomerLandmark: secondCustomerLandmark || undefined,
-          secondCustomerDoorPhotoUrl: secondCustomerDoorPhotoUrl || undefined,
+          secondCustomerDoorPhotoUrl: secondDoorPhotoUrlVal || secondCustomerDoorPhotoUrl || undefined,
         },
       });
 

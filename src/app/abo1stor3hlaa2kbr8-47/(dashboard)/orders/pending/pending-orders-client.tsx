@@ -2040,6 +2040,23 @@ export function PendingAssignPanel({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [prepareByAdmin, setPrepareByAdmin] = useState(true);
 
+  const [doorPhotoPreview, setDoorPhotoPreview] = useState<string | null>(customerDoorPhotoUrl ? resolvePublicAssetSrc(customerDoorPhotoUrl) : null);
+  const [secondDoorPhotoPreview, setSecondDoorPhotoPreview] = useState<string | null>(secondCustomerDoorPhotoUrl ? resolvePublicAssetSrc(secondCustomerDoorPhotoUrl) : null);
+
+  const handleDoorPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setDoorPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSecondDoorPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSecondDoorPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
   useEffect(() => {
     if (state.ok && onSuccess) onSuccess();
   }, [state.ok, onSuccess]);
@@ -2115,7 +2132,7 @@ export function PendingAssignPanel({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
                 <div className="space-y-1">
                   <label className="text-[8px] font-black text-slate-400 block pr-1">أقرب نقطة دالة</label>
                   <input
@@ -2126,15 +2143,36 @@ export function PendingAssignPanel({
                     className="w-full h-8 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 px-2.5 text-[9px] font-black outline-none focus:border-emerald-400 transition-all text-right"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[8px] font-black text-slate-400 block pr-1">رابط صورة الباب</label>
-                  <input
-                    type="text"
-                    name="customerDoorPhotoUrl"
-                    defaultValue={customerDoorPhotoUrl}
-                    placeholder="رابط صورة باب البائع..."
-                    className="w-full h-8 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 px-2.5 text-[9px] font-medium outline-none focus:border-emerald-400 font-mono transition-all text-right [direction:ltr]"
-                  />
+                
+                <div className="space-y-1 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <label className="text-[8px] font-black text-slate-400 block pr-1 mb-1">صورة باب البائع</label>
+                  <input type="hidden" name="customerDoorPhotoUrl" value={customerDoorPhotoUrl} />
+                  <div className="flex items-center gap-3">
+                    {doorPhotoPreview ? (
+                      <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-emerald-400 shadow-sm shrink-0">
+                        <img
+                          src={doorPhotoPreview}
+                          alt="باب البائع"
+                          className="w-full h-full object-cover cursor-pointer"
+                          onClick={() => window.open(doorPhotoPreview, "_blank")}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center bg-white dark:bg-slate-900/30 text-[10px] text-slate-400 shrink-0">
+                        🚪
+                      </div>
+                    )}
+                    <label className="flex items-center gap-1 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-emerald-700 dark:text-emerald-400 px-2.5 py-1.5 rounded-lg text-[8px] font-black cursor-pointer border border-slate-200 dark:border-slate-700 shadow-sm active:scale-95 transition-all">
+                      <span>📸 تغيير الصورة</span>
+                      <input
+                        type="file"
+                        name="doorPhoto"
+                        accept="image/*"
+                        onChange={handleDoorPhotoChange}
+                        className="sr-only"
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2153,7 +2191,7 @@ export function PendingAssignPanel({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
                 <div className="space-y-1">
                   <label className="text-[8px] font-black text-slate-400 block pr-1">أقرب نقطة دالة</label>
                   <input
@@ -2164,15 +2202,36 @@ export function PendingAssignPanel({
                     className="w-full h-8 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 px-2.5 text-[9px] font-black outline-none focus:border-emerald-400 transition-all text-right"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[8px] font-black text-slate-400 block pr-1">رابط صورة الباب</label>
-                  <input
-                    type="text"
-                    name="secondCustomerDoorPhotoUrl"
-                    defaultValue={secondCustomerDoorPhotoUrl}
-                    placeholder="رابط صورة باب المشتري..."
-                    className="w-full h-8 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 px-2.5 text-[9px] font-medium outline-none focus:border-emerald-400 font-mono transition-all text-right [direction:ltr]"
-                  />
+                
+                <div className="space-y-1 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <label className="text-[8px] font-black text-slate-400 block pr-1 mb-1">صورة باب المشتري</label>
+                  <input type="hidden" name="secondCustomerDoorPhotoUrl" value={secondCustomerDoorPhotoUrl} />
+                  <div className="flex items-center gap-3">
+                    {secondDoorPhotoPreview ? (
+                      <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-emerald-400 shadow-sm shrink-0">
+                        <img
+                          src={secondDoorPhotoPreview}
+                          alt="باب المشتري"
+                          className="w-full h-full object-cover cursor-pointer"
+                          onClick={() => window.open(secondDoorPhotoPreview, "_blank")}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center bg-white dark:bg-slate-900/30 text-[10px] text-slate-400 shrink-0">
+                        🚪
+                      </div>
+                    )}
+                    <label className="flex items-center gap-1 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-emerald-700 dark:text-emerald-400 px-2.5 py-1.5 rounded-lg text-[8px] font-black cursor-pointer border border-slate-200 dark:border-slate-700 shadow-sm active:scale-95 transition-all">
+                      <span>📸 تغيير الصورة</span>
+                      <input
+                        type="file"
+                        name="secondDoorPhoto"
+                        accept="image/*"
+                        onChange={handleSecondDoorPhotoChange}
+                        className="sr-only"
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2180,7 +2239,7 @@ export function PendingAssignPanel({
         ) : (
           <div className="space-y-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 pr-1">رابط الموقع (Google Maps)</label>
+              <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 pr-1">رابط الموقع (Google Maps)</label>
               <textarea
                 name="customerLocationUrl"
                 defaultValue={defaultCustomerLocationUrl}
@@ -2191,7 +2250,7 @@ export function PendingAssignPanel({
             
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-500 pr-1">أقرب معلم</label>
+                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 pr-1">أقرب نقطة دالة</label>
                 <input
                   type="text"
                   name="customerLandmark"
@@ -2201,14 +2260,49 @@ export function PendingAssignPanel({
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-500 pr-1">رابط صورة الباب</label>
+                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 pr-1">هاتف بديل للزبون</label>
                 <input
                   type="text"
-                  name="customerDoorPhotoUrl"
-                  defaultValue={customerDoorPhotoUrl}
-                  placeholder="الصق رابط صورة الباب..."
-                  className="w-full h-10 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 p-2 text-[10px] font-mono outline-none focus:border-emerald-400 text-right [direction:ltr]"
+                  name="customerAlternatePhone"
+                  defaultValue={customerAlternatePhone}
+                  placeholder="رقم هاتف بديل (إن وجد)"
+                  className="w-full h-10 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 p-2 text-[10px] font-bold outline-none focus:border-emerald-400 text-right"
                 />
+              </div>
+            </div>
+
+            {/* عرض وتغيير صورة الباب */}
+            <div className="space-y-2 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
+              <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 pr-1 block">صورة باب الزبون</span>
+              <input type="hidden" name="customerDoorPhotoUrl" value={customerDoorPhotoUrl} />
+              
+              <div className="flex flex-col items-center justify-center gap-3">
+                {doorPhotoPreview ? (
+                  <div className="relative w-full max-w-[200px] h-32 rounded-xl overflow-hidden border-2 border-emerald-400 shadow-md group">
+                    <img
+                      src={doorPhotoPreview}
+                      alt="صورة باب الزبون"
+                      className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-200"
+                      onClick={() => window.open(doorPhotoPreview, "_blank")}
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full max-w-[200px] h-32 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center bg-white dark:bg-slate-900/30 text-slate-400 dark:text-slate-600 gap-1.5 p-3">
+                    <span className="text-[18px]">🚪</span>
+                    <span className="text-[9px] font-bold text-center">لا توجد صورة لباب الزبون حالياً</span>
+                  </div>
+                )}
+                
+                <label className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-4 py-2 rounded-xl text-[10px] font-black cursor-pointer border border-emerald-200 dark:border-emerald-900/30 shadow-sm active:scale-95 transition-all">
+                  <span>📸 تغيير صورة الباب (كاميرا / معرض)</span>
+                  <input
+                    type="file"
+                    name="doorPhoto"
+                    accept="image/*"
+                    onChange={handleDoorPhotoChange}
+                    className="sr-only"
+                  />
+                </label>
               </div>
             </div>
           </div>
@@ -2219,32 +2313,11 @@ export function PendingAssignPanel({
           onClick={() => setShowAdvanced(!showAdvanced)}
           className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1 hover:underline mt-1"
         >
-           {showAdvanced ? "إخفاء الخيارات المتقدمة" : "إظهار خيارات إضافية (هاتف بديل، رفع ملف، تجاوز...)"}
+           {showAdvanced ? "إخفاء الخيارات المتقدمة" : "إظهار خيارات إضافية (تجاوز الإسناد...)"}
         </button>
 
         {showAdvanced && (
           <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-200 border-t border-slate-100 dark:border-slate-800">
-             <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                   <label className="text-[9px] font-black text-slate-500 pr-1">هاتف بديل للزبون</label>
-                   <input
-                     type="text"
-                     name="customerAlternatePhone"
-                     defaultValue={customerAlternatePhone}
-                     placeholder="رقم هاتف بديل"
-                     className="w-full h-10 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 p-2 text-[10px] font-bold outline-none focus:border-emerald-400 text-right"
-                   />
-                </div>
-                <div className="space-y-1">
-                   <label className="text-[9px] font-black text-slate-500 pr-1">تحميل صورة الباب كملف</label>
-                   <input
-                     type="file"
-                     name="doorPhoto"
-                     accept="image/*"
-                     className="w-full h-10 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 p-1 text-[9px] font-black outline-none focus:border-emerald-400"
-                   />
-                </div>
-             </div>
              <label className="flex items-center gap-2 cursor-pointer group">
                 <div className="relative">
                    <input type="checkbox" name="directReceipt" className="peer sr-only" />

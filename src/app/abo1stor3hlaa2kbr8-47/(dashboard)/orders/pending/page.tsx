@@ -267,7 +267,7 @@ export default async function PendingOrdersPage({ searchParams }: PageProps) {
         submittedByName: o.submittedByCompanyPreparer?.name || o.submittedBy?.name || null,
         submissionLabel: o.submissionSource === "company_preparer" ? "مكتمل التجهيز" : o.submissionSource === "web_store" ? "طلب متجر" : o.submissionSource === "admin_on_behalf_of_employee" ? "طلب موظف (بوت)" : "طلب جديد",
         customerLocationUrl: customerLocationUrl,
-        customerLandmark: o.customerLandmark || o.customer?.customerLandmark || "",
+        customerLandmark: o.customerLandmark || o.customer?.customerLandmark || phoneProfile?.landmark || "",
         secondCustomerLocationUrl: o.secondCustomerLocationUrl || "",
         secondCustomerLandmark: o.secondCustomerLandmark || "",
         secondCustomerDoorPhotoUrl: o.secondCustomerDoorPhotoUrl || "",
