@@ -9,6 +9,7 @@ import {
   getPartners,
   deletePartnersBatch,
   getUnaddedSystemPartners,
+  syncOldCustomerDebts,
   getTransactionLogs,
   restoreDeletedTransaction,
   revertModifiedTransaction,
@@ -198,6 +199,22 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
     });
   };
 
+  // مزامنة ديون الزبائن التاريخية بأثر رجعي
+  const handleSyncOldDebts = () => {
+    if (!confirm("هل تريد فحص كافة الطلبيات القديمة المسلمة وتوليد الديون الناقصة للزبائن تلقائياً بأثر رجعي؟ قد تستغرق هذه العملية عدة ثوانٍ.")) {
+      return;
+    }
+    startTransition(async () => {
+      const res = await syncOldCustomerDebts();
+      if (res.success) {
+        alert(`اكتملت المزامنة التاريخية بنجاح!\n---------------------------------\nعدد الطلبات المفحوصة: ${res.checkedCount}\nحسابات الزبائن الجديدة: ${res.createdPartnersCount}\nحركات الديون الجديدة: ${res.createdTransactionsCount}\nإجمالي الديون المسجلة: ${res.totalDebtAmount?.toLocaleString() || 0} د.ع`);
+        refreshList();
+      } else {
+        alert(res.error || "فشلت المزامنة التاريخية للزبائن");
+      }
+    });
+  };
+
   // التحديد الجماعي
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -342,6 +359,13 @@ export function CreditBookClient({ initialPartners, isAccountant = false }: Cred
             className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-black text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-2xl transition disabled:opacity-50"
           >
             🔄 مزامنة أطراف النظام
+          </button>
+          <button
+            onClick={handleSyncOldDebts}
+            disabled={isPending}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-2xl transition disabled:opacity-50"
+          >
+            📊 مزامنة ديون الزبائن التاريخية
           </button>
           <Link
             href="/abo1stor3hlaa2kbr8-47/credit-book/logs"

@@ -2813,3 +2813,125 @@ export async function paySupplierTransaction(transactionId: string) {
   }
 }
 
+// مزامنة الديون القديمة للزبائن بأثر رجعي
+export async function syncOldCustomerDebts() {
+  try {
+    const orders = await prisma.order.findMany({
+      where: {
+        status: "delivered",
+        customerId: { not: null },
+        totalAmount: { gt: 0 }
+      },
+      include: {
+        customer: { select: { id: true, name: true, phone: true } },
+        moneyEvents: {
+          where: {
+            kind: "delivery_in",
+            deletedAt: null
+          }
+        }
+      }
+    });
+
+    let checkedCount = 0;
+    let createdPartnersCount = 0;
+    let createdTransactionsCount = 0;
+    let totalDebtAmount = 0;
+
+    for (const order of orders) {
+      checkedCount++;
+      
+      const expectedDinar = Number(order.totalAmount || 0);
+      const receivedDinar = order.moneyEvents.reduce((sum, ev) => sum + Number(ev.amountDinar || 0), 0);
+
+      // إذا كان المستلم أقل من المطلوب
+      if (expectedDinar > receivedDinar) {
+        const difference = expectedDinar - receivedDinar;
+
+        if (difference > 0) {
+          const customer = order.customer;
+          if (!customer) continue;
+
+          // 1. البحث عن حساب دفتر الديون للزبون أو إنشائه
+          let cbPartner = await prisma.creditBookPartner.findUnique({
+            where: {
+              type_externalId: {
+                type: "customer",
+                externalId: customer.id
+              }
+            }
+          });
+
+          if (!cbPartner) {
+            cbPartner = await prisma.creditBookPartner.create({
+              data: {
+                name: `${customer.name || 'زبون'} (زبون)`,
+                phone: customer.phone || order.customerPhone || null,
+                type: "customer",
+                externalId: customer.id,
+                updatedAt: new Date()
+              }
+            });
+            createdPartnersCount++;
+          } else {
+            await prisma.creditBookPartner.update({
+              where: { id: cbPartner.id },
+              data: { updatedAt: new Date() }
+            });
+          }
+
+          // 2. التحقق من عدم وجود المعاملة بالفعل لتفادي التكرار
+          const noteTextContains = `طلب رقم: #${order.orderNumber}`;
+          const exists = await prisma.creditBookTransaction.findFirst({
+            where: {
+              partnerId: cbPartner.id,
+              note: {
+                contains: noteTextContains
+              }
+            }
+          });
+
+          if (!exists) {
+            const noteText = `متبقي من طلب رقم: #${order.orderNumber} | المطلوب: ${expectedDinar.toLocaleString()} د.ع | المستلم: ${receivedDinar.toLocaleString()} د.ع`;
+            
+            const newTx = await prisma.creditBookTransaction.create({
+              data: {
+                partnerId: cbPartner.id,
+                amount: difference,
+                kind: "gave", // أعطيت = نطلبه
+                note: noteText,
+                createdAt: order.createdAt
+              }
+            });
+
+            try {
+              const { logTransactionAuthor } = await import("@/lib/transaction-logger");
+              await logTransactionAuthor(newTx.id, "create", "النظام");
+            } catch (logErr) {
+              console.error("Failed to log transaction creator as System:", logErr);
+            }
+
+            createdTransactionsCount++;
+            totalDebtAmount += difference;
+          }
+        }
+      }
+    }
+
+    revalidatePath("/abo1stor3hlaa2kbr8-47/credit-book");
+    
+    return {
+      success: true,
+      checkedCount,
+      createdPartnersCount,
+      createdTransactionsCount,
+      totalDebtAmount
+    };
+
+  } catch (error: any) {
+    console.error("Error in syncOldCustomerDebts:", error);
+    return { success: false, error: error.message || "حدث خطأ غير متوقع" };
+  }
+}
+
+
