@@ -200,9 +200,10 @@ class MainActivity : AppCompatActivity() {
             webView.reload()
         }
 
-        // تفعيل SwipeRefreshLayout عندما يكون WebView في الأعلى تماماً
-        webView.viewTreeObserver.addOnScrollChangedListener {
-            swipeRefreshLayout.isEnabled = !webView.canScrollVertically(-1)
+        // تمكين السحب للتحديث بشكل دائم واستخدام Callback للتحقق من إمكانية التمرير
+        swipeRefreshLayout.isEnabled = true
+        swipeRefreshLayout.setOnChildScrollUpCallback { parent, child ->
+            webView.canScrollVertically(-1)
         }
 
         // Enable cookie manager
