@@ -168,23 +168,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
       console.error("[Prisma] Clean up failed:", cleanErr);
     }
 
-                  updatedAt: new Date()
-                }
-              });
-            }
-          }
-        }
 
-        if (partnersToCreate.length > 0) {
-          await prisma.creditBookPartner.createMany({
-            data: partnersToCreate,
-            skipDuplicates: true
-          });
-        }
-      } catch (syncErr) {
-        console.error("Auto sync in getPartners failed:", syncErr);
-      }
-    }
 
     try {
       const rootExists = await prisma.creditBookPartner.findFirst({
