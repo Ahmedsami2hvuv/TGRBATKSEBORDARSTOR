@@ -93,30 +93,40 @@ html, body {
 }
 
 /* أنماط الخلفيات المخصصة والتأثير الزجاجي */
+body.has-custom-bg {
+  background-color: transparent !important;
+}
+
 body.has-custom-bg .kse-app-bg {
-  background-color: rgba(240, 244, 248, 0.4) !important;
+  background-color: rgba(240, 244, 248, 0.25) !important;
   backdrop-filter: blur(12px) saturate(120%);
 }
 
 body.has-custom-bg.dark .kse-app-bg {
-  background-color: rgba(9, 9, 11, 0.45) !important;
+  background-color: rgba(9, 9, 11, 0.3) !important;
   backdrop-filter: blur(12px) saturate(120%);
 }
 
-/* جعل الكروت والصناديق شفافة بنعومة لتتناسق مع الخلفية المخصصة */
+/* جعل الكروت والصناديق البيضاء والرمادية شبه شفافة بنعومة لتتناسق مع الخلفية المخصصة */
+body.has-custom-bg .bg-white,
+body.has-custom-bg .bg-slate-50,
 body.has-custom-bg .kse-glass-card,
 body.has-custom-bg .kse-glass-dark {
-  background: rgba(255, 255, 255, 0.75) !important;
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(8px) saturate(110%);
+  border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
+body.has-custom-bg.dark .bg-white,
+body.has-custom-bg.dark .bg-slate-50,
+body.has-custom-bg.dark .bg-slate-900,
 body.has-custom-bg.dark .kse-glass-card,
 body.has-custom-bg.dark .kse-glass-dark {
-  background: rgba(19, 20, 24, 0.75) !important;
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background-color: rgba(19, 20, 24, 0.7) !important;
+  backdrop-filter: blur(8px) saturate(110%);
+  border-color: rgba(255, 255, 255, 0.05) !important;
 }
+
 
 
 @media (min-width: 1024px) {
