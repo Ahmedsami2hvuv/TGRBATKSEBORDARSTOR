@@ -18,8 +18,6 @@ import { TelegramBotsForm } from "./telegram-bots-form";
 import { FontSettingsForm } from "./font-settings-form";
 import { FloatingMenuSettings } from "./floating-menu-settings";
 import { SidebarSettingsForm } from "./sidebar-settings-form";
-import { StaticBackgroundsConfig } from "@/lib/site-backgrounds";
-import { SiteBackgroundsForm } from "./site-backgrounds-form";
 import { SidebarConfig, DEFAULT_SIDEBAR_CONFIG } from "@/lib/sidebar-settings";
 
 type NotificationInitial = {
@@ -68,7 +66,7 @@ export function SettingsBlocks({
 }: {
   notificationInitial: NotificationInitial;
   globalIcons: GlobalIconsConfig;
-  backgroundsConfig: StaticBackgroundsConfig | null;
+  backgroundsConfig: any;
   sidebarConfig: SidebarConfig | null;
   employeeShareTemplate: string;
   customerOrderTemplate: string;
@@ -198,13 +196,6 @@ export function SettingsBlocks({
       subtitle: "تخصيص تسلسل، أشكال، وتصميم أزرار الشريط الجانبي.",
       tone: "indigo",
       content: <SidebarSettingsForm initialConfig={sidebarConfig || DEFAULT_SIDEBAR_CONFIG} globalIcons={globalIcons} />
-    },
-    {
-      id: "site-backgrounds",
-      title: "خلفيات الموقع 🎆",
-      subtitle: "تخصيص وإضافة الخلفيات الثابتة المتاحة لجميع مستخدمي النظام وتحديد الافتراضية.",
-      tone: "sky",
-      content: backgroundsConfig ? <SiteBackgroundsForm initial={backgroundsConfig} /> : <div className="text-xs text-red-500 font-bold">فشل تحميل إعدادات الخلفيات.</div>
     },
 
     {

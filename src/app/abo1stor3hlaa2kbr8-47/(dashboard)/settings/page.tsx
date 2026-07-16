@@ -11,7 +11,6 @@ import { getTelegramNewOrderTemplate } from "@/lib/telegram-notify";
 import { isChatEnabledGlobally, isTrackingEnabledGlobally } from "@/lib/portal-chat-settings";
 import { getRoleFeatures } from "@/lib/role-features-settings";
 import { getAvailableFonts, getChosenFont } from "@/lib/font-settings";
-import { getStaticBackgroundsConfig } from "@/lib/site-backgrounds";
 import { getSidebarConfig } from "@/lib/sidebar-settings-server";
 
 export const metadata = {
@@ -38,7 +37,7 @@ export default async function SettingsPage() {
       getAvailableFonts(),
       getChosenFont(),
       prisma.globalSettings.findUnique({ where: { id: "system" } }).catch(() => null),
-      getStaticBackgroundsConfig().catch(e => { console.error("Backgrounds Error:", e); return null; }),
+      Promise.resolve(null),
       getSidebarConfig().catch(e => { console.error("Sidebar Config Error:", e); return null; }),
     ]);
   } catch (e) {
