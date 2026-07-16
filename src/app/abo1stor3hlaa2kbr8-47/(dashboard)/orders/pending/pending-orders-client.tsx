@@ -2044,7 +2044,7 @@ ${productsText}`;
               </div>
             </div>
 
-            {/* 5. أدوات ونسخ الطلب وخيار إخفاء البيع */}
+            {/* 5. أدوات ونسخ الطلب وخيارات إخفاء الأسعار */}
             <div className="border-b border-slate-800/50 pb-2 flex flex-col gap-1.5">
               <div className="grid grid-cols-2 gap-1.5">
                 <button
@@ -2064,15 +2064,28 @@ ${productsText}`;
                   👯 نسخ وتكرار
                 </button>
               </div>
-              <button
-                type="button"
-                onClick={() => { setHideSellPrice(!hideSellPrice); setShowOptionsMenu(false); }}
-                className={`w-full h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
-                  hideSellPrice ? "bg-indigo-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-indigo-400"
-                }`}
-              >
-                {hideSellPrice ? "👁️ إظهار سعر البيع" : "🙈 إخفاء سعر البيع"}
-              </button>
+
+              {/* زر إخفاء سعر الشراء بجانب زر إخفاء سعر البيع */}
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => { setHideBuyPrice(!hideBuyPrice); setShowOptionsMenu(false); }}
+                  className={`h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                    hideBuyPrice ? "bg-amber-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-amber-400"
+                  }`}
+                >
+                  {hideBuyPrice ? "👁️ إظهار سعر الشراء" : "🙈 إخفاء سعر الشراء"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setHideSellPrice(!hideSellPrice); setShowOptionsMenu(false); }}
+                  className={`h-8 rounded-xl text-[9px] font-black transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                    hideSellPrice ? "bg-indigo-600 text-white" : "bg-slate-800 hover:bg-slate-700 text-indigo-400"
+                  }`}
+                >
+                  {hideSellPrice ? "👁️ إظهار سعر البيع" : "🙈 إخفاء سعر البيع"}
+                </button>
+              </div>
             </div>
 
             {/* 6. سعر المتجر وعدد المحلات بجانب بعضهما في سطر واحد بدون نصوص توضيحية */}
