@@ -227,7 +227,21 @@ export function PreparerShoppingDraftEditClient({
       if (e.touches.length !== 1) return;
       const touch = e.touches[0];
       const clientY = touch.clientY;
-      if (window.scrollY === 0 && clientY > touchStartClientY) {
+      
+      // التحقق من الحاويات الداخلية القابلة للتمرير
+      let target = e.target as HTMLElement | null;
+      let isAtTop = true;
+      while (target) {
+        if (target.scrollHeight > target.clientHeight) {
+          if (target.scrollTop > 0) {
+            isAtTop = false;
+            break;
+          }
+        }
+        target = target.parentElement;
+      }
+
+      if (isAtTop && window.scrollY === 0 && clientY > touchStartClientY) {
         if (e.cancelable) {
           e.preventDefault();
         }
