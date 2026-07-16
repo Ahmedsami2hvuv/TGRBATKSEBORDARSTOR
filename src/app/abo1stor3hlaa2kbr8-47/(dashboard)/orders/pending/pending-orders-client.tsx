@@ -214,6 +214,76 @@ export function AdminPricingPanel({
   />;
 }
 
+
+function cleanText(text: string): string {
+  if (!text) return "";
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "y") // لتجنب الخلط مع الياء
+    .replace(/ي/g, "y")
+    .replace(/[\u064B-\u065F]/g, "") // إزالة التشكيل
+    .replace(/[^a-zA-Z0-9\u0621-\u064A\s]/g, " ") // إزالة الرموز الخاصة
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function findStoreProductDetails(line: string, storeProducts: any[]): { salePrice: number; purchasePrice: number } | null {
+  if (!line || !storeProducts || storeProducts.length === 0) return null;
+  
+  const cleanedLine = cleanText(line);
+  if (!cleanedLine) return null;
+
+  // 1. محاولة المطابقة التامة للمنتج
+  for (const product of storeProducts) {
+    const cleanedName = cleanText(product.name);
+    if (cleanedName && cleanedLine === cleanedName) {
+      if (product.hasVariants && product.variants && product.variants.length > 0) {
+        for (const variant of product.variants) {
+          const cleanedVarName = cleanText(variant.name);
+          if (cleanedVarName && cleanedLine.includes(cleanedVarName)) {
+            return {
+              salePrice: Number(variant.salePrice),
+              purchasePrice: Number(variant.purchasePrice || product.purchasePrice || 0)
+            };
+          }
+        }
+      }
+      return {
+        salePrice: Number(product.salePrice),
+        purchasePrice: Number(product.purchasePrice || 0)
+      };
+    }
+  }
+
+  // 2. محاولة المطابقة الجزئية (الاسم الأطول أولاً لتجنب التضارب)
+  const sortedProducts = [...storeProducts].sort((a, b) => b.name.length - a.name.length);
+  for (const product of sortedProducts) {
+    const cleanedName = cleanText(product.name);
+    if (cleanedName && cleanedLine.includes(cleanedName)) {
+      if (product.hasVariants && product.variants && product.variants.length > 0) {
+        for (const variant of product.variants) {
+          const cleanedVarName = cleanText(variant.name);
+          if (cleanedVarName && cleanedLine.includes(cleanedVarName)) {
+            return {
+              salePrice: Number(variant.salePrice),
+              purchasePrice: Number(variant.purchasePrice || product.purchasePrice || 0)
+            };
+          }
+        }
+      }
+      return {
+        salePrice: Number(product.salePrice),
+        purchasePrice: Number(product.purchasePrice || 0)
+      };
+    }
+  }
+
+  return null;
+}
+
 export function OrderPricingPanel({
   orderId,
   initialData,
@@ -225,6 +295,7 @@ export function OrderPricingPanel({
   footerActions,
   extraActions,
   icons = null,
+  storeProducts = [],
 }: {
   orderId: string;
   initialData: any;
@@ -236,6 +307,7 @@ export function OrderPricingPanel({
   footerActions?: React.ReactNode;
   extraActions?: React.ReactNode;
   icons?: GlobalIconsConfig | null;
+  storeProducts?: any[];
 }) {
   const [products, setProducts] = useState<any[]>(initialData?.products || []);
   const [placesCount, setPlacesCount] = useState<number>(initialData?.placesCount || 1);
@@ -731,6 +803,34 @@ export function OrderPricingPanel({
                           <p className={`truncate text-[10px] font-black flex items-center gap-1 ${priced ? "text-emerald-900 dark:text-emerald-100" : "text-slate-700 dark:text-slate-300"}`}>
                             {priced && <span className="text-emerald-600 shrink-0">✅</span>}
                             <span>{p?.line}</span>
+                            {(() => {
+                              const details = findStoreProductDetails(p?.line, storeProducts);
+                              if (!details) return null;
+                              return (
+                                <span
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const next = [...products];
+                                    next[i] = {
+                                      ...next[i],
+                                      sellAlf: details.salePrice.toString(),
+                                      buyAlf: (parseFloat(normalizeNumerals(next[i].buyAlf || "0")) > 0) ? next[i].buyAlf : details.purchasePrice.toString()
+                                    };
+                                    setProducts(next);
+                                    if (editingIndex === i) {
+                                      setSellText(details.salePrice.toString());
+                                      if (!(parseFloat(normalizeNumerals(buyText || "0")) > 0)) {
+                                        setBuyText(details.purchasePrice.toString());
+                                      }
+                                    }
+                                  }}
+                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-black bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200/50 dark:border-violet-900/30 hover:bg-violet-100 hover:text-violet-800 transition cursor-pointer shrink-0 ml-1.5"
+                                  title="انقر لاعتماده كسعر بيع بالطلبية"
+                                >
+                                  🏪 متجر: {details.salePrice}
+                                </span>
+                              );
+                            })()}
                           </p>
                           {prepName && (
                             <span className={`text-[7px] font-bold flex items-center gap-0.5 ${p.isFulfilledByAdmin ? "text-amber-600" : "text-slate-400"}`}>
@@ -900,6 +1000,36 @@ export function OrderPricingPanel({
                   </div>
                 </div>
               </div>
+
+              {/* السعر الأصلي في المتجر */}
+              {(() => {
+                const details = findStoreProductDetails(products[editingIndex]?.line, storeProducts);
+                if (!details) return null;
+                return (
+                  <div className="mt-4 p-3 rounded-2xl bg-violet-50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/30 flex items-center justify-between gap-3 shadow-sm text-right" dir="rtl">
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-black text-violet-950 dark:text-violet-100 flex items-center gap-1">
+                        🏪 السعر الأصلي في المتجر
+                      </span>
+                      <span className="text-[9px] font-bold text-violet-700/70 dark:text-violet-400/70 leading-relaxed">
+                        سعر البيع: {details.salePrice} | الشراء: {details.purchasePrice}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSellText(details.salePrice.toString());
+                        if (details.purchasePrice > 0) {
+                          setBuyText(details.purchasePrice.toString());
+                        }
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-black transition active:scale-95 shadow-sm shadow-violet-200"
+                    >
+                      اعتماد السعر ↩
+                    </button>
+                  </div>
+                );
+              })()}
 
               {/* خيارات البيع المقترحة */}
               {(() => {
@@ -1577,6 +1707,7 @@ export default function PendingOrdersClient({
   icons: initialIcons = null,
   initialAssignOrderId = null,
   initialPricingId = null,
+  storeProducts = [],
 }: {
   orders: PendingOrderRow[];
   couriers: { id: string; name: string }[];
@@ -1586,6 +1717,7 @@ export default function PendingOrdersClient({
   icons?: GlobalIconsConfig | null;
   initialAssignOrderId?: string | null;
   initialPricingId?: string | null;
+  storeProducts?: any[];
 }) {
   const router = useRouter();
   const [icons, setIcons] = useState<GlobalIconsConfig | null>(initialIcons);
@@ -2187,6 +2319,7 @@ export default function PendingOrdersClient({
                     isDraft={isDraftMode}
                     icons={icons}
                     hideContainer={true}
+                    storeProducts={storeProducts}
                     onSuccess={() => {
                        window.location.reload();
                     }}
