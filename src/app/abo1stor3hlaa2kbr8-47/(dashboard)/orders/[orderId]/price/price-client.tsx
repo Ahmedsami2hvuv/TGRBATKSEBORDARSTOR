@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { OrderPricingPanel, AdminPricingPanel } from "../../pending/pending-orders-client";
+import { OrderPricingPanel, AdminPricingPanel } from "@/app/abo1stor3hlaa2kbr8-47/(dashboard)/orders/pending/pending-orders-client";
 import { DynamicIcon } from "@/components/dynamic-icon";
 import { type GlobalIconsConfig } from "@/lib/icon-settings";
 import Link from "next/link";
@@ -97,11 +97,10 @@ export function PriceClient({
               <AdminPricingPanel
                 orderId={orderId}
                 initialData={initialData}
-                orderSummary={orderSummary || ""}
-                shops={[]}
                 preparers={preparers}
-                rawDeliveryPriceDinar={rawDeliveryPriceDinar}
+                couriers={couriers}
                 storeProducts={storeProducts}
+                icons={icons}
                 onSuccess={handleSuccess}
               />
             )}

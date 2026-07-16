@@ -59,7 +59,6 @@ export default async function OrderPricingPage({ params }: Props) {
       orderBy: { name: "asc" }
     }),
     prisma.courier.findMany({
-      where: { active: true },
       select: { id: true, name: true },
       orderBy: { name: "asc" }
     }),

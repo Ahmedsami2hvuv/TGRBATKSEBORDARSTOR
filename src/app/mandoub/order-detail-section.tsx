@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState, useContext } from "react";
-import { createPortal } from "react-dom";
+import { ImageZoomModal } from "@/components/pinch-zoom-image";
 import { formatDinarAsAlf, formatDinarAsAlfWithUnit } from "@/lib/money-alf";
 import { resolvePublicAssetSrc } from "@/lib/image-url";
 import { extractLatLngFromLocationInput, hasCustomerLocationUrl } from "@/lib/order-location";
@@ -869,33 +869,12 @@ export function OrderDetailSection({
         </div>
       </div>
 
-      {/* مودال معاينة الصور التفاعلي الأنيق في نفس الصفحة باستخدام React Portal لتجنب مشاكل التموضع */}
-      {previewImageUrl && typeof document !== "undefined" && createPortal(
-        <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 transition-all duration-300 animate-fade-in"
-          onClick={() => setPreviewImageUrl(null)}
-        >
-          <div className="relative w-full max-w-lg flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
-            {/* زر الإغلاق الأنيق في الأعلى بمنتصف العرض تماماً للمس مريح */}
-            <button
-              onClick={() => setPreviewImageUrl(null)}
-              className="absolute -top-12 left-1/2 -translate-x-1/2 flex h-9 w-24 items-center justify-center gap-1.5 rounded-full bg-white/20 text-white hover:bg-white/35 border border-white/20 transition-all text-xs font-black shadow-xl active:scale-95"
-              title="إغلاق المعاينة"
-            >
-              ✕ إغلاق
-            </button>
-            
-            {/* إطار الصورة الفعلي */}
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 shadow-2xl p-1 max-w-[95vw] max-h-[75vh] flex items-center justify-center">
-              <img 
-                src={previewImageUrl} 
-                alt="معاينة الصورة" 
-                className="max-w-full max-h-[72vh] object-contain rounded-xl"
-              />
-            </div>
-          </div>
-        </div>,
-        document.body
+      {/* مودال معاينة الصور التفاعلي الأنيق الداعم للتكبير بالإصبعين والسحب */}
+      {previewImageUrl && (
+        <ImageZoomModal
+          imageUrl={previewImageUrl}
+          onClose={() => setPreviewImageUrl(null)}
+        />
       )}
     </section>
   );
