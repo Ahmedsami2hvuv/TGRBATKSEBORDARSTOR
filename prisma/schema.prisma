@@ -915,8 +915,10 @@ model SystemBackground {
   id        String   @id @default(cuid())
   name      String   @default("")
   imageUrl  String
+  active    Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
 
 
 
