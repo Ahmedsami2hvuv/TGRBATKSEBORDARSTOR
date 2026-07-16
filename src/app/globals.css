@@ -158,6 +158,40 @@ body.has-custom-bg [class*="absolute"] {
   }
 }
 
+/* جعل أزرار القائمة الجانبية شبه شفافة عند تفعيل الخلفية المخصصة */
+body.has-custom-bg aside a,
+body.has-custom-bg aside button {
+  backdrop-filter: blur(4px) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+body.has-custom-bg aside a:not([class*="shadow-"]):not([class*="active"]),
+body.has-custom-bg aside a:not([class*="shadow-"]):not([class*="bg-sky-100"]) {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.has-custom-bg aside a[class*="shadow-"],
+body.has-custom-bg aside a[class*="bg-sky-100"] {
+  background-color: rgba(255, 255, 255, 0.55) !important;
+  box-shadow: 0 4px 12px 0 rgba(0, 243, 255, 0.15) !important;
+}
+
+body.has-custom-bg.dark aside a,
+body.has-custom-bg.dark aside button {
+  backdrop-filter: blur(4px) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+body.has-custom-bg.dark aside a:not([class*="shadow-"]):not([class*="active"]) {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+body.has-custom-bg.dark aside a[class*="shadow-"] {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 12px 0 rgba(0, 243, 255, 0.2) !important;
+}
+
+
 body.has-custom-bg.dark [class*="fixed"],
 body.has-custom-bg.dark [class*="absolute"] {
   &.bg-white, &.bg-slate-900, &.bg-slate-900\/95, &.bg-slate-900\/90, &.bg-[#09090b]\/95, &.kse-glass-dark {
