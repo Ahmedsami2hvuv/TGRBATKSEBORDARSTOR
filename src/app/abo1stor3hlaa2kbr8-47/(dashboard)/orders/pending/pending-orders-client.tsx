@@ -993,8 +993,8 @@ ${productsText}`;
 
                 {showOptionsMenu && (
                   <>
-                    <div className="fixed inset-0 z-[190]" onClick={() => setShowOptionsMenu(false)} />
-                    <div className="absolute left-0 mt-2 w-72 bg-slate-900/98 dark:bg-slate-950/98 backdrop-blur-2xl border border-slate-800 rounded-3xl p-4 shadow-2xl z-[200] text-right space-y-3 animate-in fade-in slide-in-from-top-2 duration-200" dir="rtl">
+                    <div className="fixed inset-0 z-[1900]" onClick={() => setShowOptionsMenu(false)} />
+                    <div className="fixed left-3 top-[4.5rem] w-72 bg-slate-900/98 dark:bg-slate-950/98 backdrop-blur-2xl border border-slate-800 rounded-3xl p-4 shadow-2xl z-[2000] text-right space-y-3 animate-in fade-in slide-in-from-top-2 duration-200" dir="rtl">
                       
                       {/* 1. حقل البحث مدمج هنا وجانبه زر تجهيز الإدارة */}
                       <div className="flex items-center gap-1.5 mb-1">
