@@ -118,7 +118,6 @@ body.has-custom-bg :not(.min-h-screen).bg-slate-100,
 body.has-custom-bg .bg-white\/95,
 body.has-custom-bg .bg-white\/90,
 body.has-custom-bg .bg-white\/80,
-body.has-custom-bg aside,
 body.has-custom-bg header,
 body.has-custom-bg dialog,
 body.has-custom-bg .kse-glass-card,
@@ -136,7 +135,6 @@ body.has-custom-bg.dark :not(.min-h-screen).bg-slate-950,
 body.has-custom-bg.dark .bg-white\/95,
 body.has-custom-bg.dark .bg-white\/90,
 body.has-custom-bg.dark .bg-white\/80,
-body.has-custom-bg.dark aside,
 body.has-custom-bg.dark header,
 body.has-custom-bg.dark dialog,
 body.has-custom-bg.dark .bg-slate-900\/95,
@@ -148,6 +146,16 @@ body.has-custom-bg.dark .kse-glass-dark {
   backdrop-filter: blur(16px) saturate(125%) !important;
   border-color: rgba(255, 255, 255, 0.05) !important;
 }
+
+/* جعل القائمة الجانبية شفافة بالكامل وبدون حدود أو ظلال */
+body.has-custom-bg aside {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  border-inline-end: none !important;
+  box-shadow: none !important;
+}
+
 
 /* النوافذ العائمة المنبثقة ذات التموضع الثابت والمطلق (Modals & Overlays) */
 body.has-custom-bg [class*="fixed"],
