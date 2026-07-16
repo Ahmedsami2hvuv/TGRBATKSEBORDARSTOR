@@ -217,6 +217,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
           select: {
             amount: true,
             kind: true,
+            createdAt: true,
           },
         },
       },
@@ -228,6 +229,7 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
       partners.map(async (p) => {
         let totalGave = 0;
         let totalTook = 0;
+        let latestActivity = new Date(p.updatedAt).getTime();
 
         p.transactions.forEach((t) => {
           const amt = Number(t.amount);
@@ -235,6 +237,9 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
             totalGave += amt;
           } else if (t.kind === "took") {
             totalTook += amt;
+          }
+          if (t.createdAt) {
+            latestActivity = Math.max(latestActivity, new Date(t.createdAt).getTime());
           }
         });
 
@@ -285,104 +290,6 @@ export async function getPartners(searchQuery?: string, typeFilter?: string): Pr
             autoBalance = -shopUnpaid;
           } catch (e) {
             console.error(`Failed to get shop auto debt for ${p.name}:`, e);
-          }
-        }
-
-        let latestActivity = new Date(p.updatedAt).getTime();
-
-        // 1. أحدث معاملة يدوية للشريك في الدفتر
-        const latestTx = await prisma.creditBookTransaction.findFirst({
-          where: { partnerId: p.id },
-          orderBy: { createdAt: "desc" },
-          select: { createdAt: true }
-        });
-        if (latestTx) {
-          latestActivity = Math.max(latestActivity, new Date(latestTx.createdAt).getTime());
-        }
-
-        // 2. العمليات التلقائية بالنظام (حركات محفظة أو طلبات)
-        if (p.type === "courier" && p.externalId) {
-          const latestWallet = await prisma.courierWalletMiscEntry.findFirst({
-            where: { courierId: p.externalId, deletedAt: null },
-            orderBy: { createdAt: "desc" },
-            select: { createdAt: true }
-          });
-          if (latestWallet) {
-            latestActivity = Math.max(latestActivity, new Date(latestWallet.createdAt).getTime());
-          }
-          const latestEvent = await prisma.orderCourierMoneyEvent.findFirst({
-            where: { courierId: p.externalId, deletedAt: null },
-            orderBy: { createdAt: "desc" },
-            select: { createdAt: true }
-          });
-          if (latestEvent) {
-            latestActivity = Math.max(latestActivity, new Date(latestEvent.createdAt).getTime());
-          }
-        } else if (p.type === "preparer" && p.externalId) {
-          const prep = await prisma.companyPreparer.findFirst({
-            where: { id: p.externalId },
-            select: { walletEmployeeId: true, shopLinks: { select: { shopId: true } } }
-          });
-          if (prep) {
-            if (prep.walletEmployeeId) {
-              const latestWallet = await prisma.employeeWalletMiscEntry.findFirst({
-                where: { employeeId: prep.walletEmployeeId, deletedAt: null },
-                orderBy: { createdAt: "desc" },
-                select: { createdAt: true }
-              });
-              if (latestWallet) {
-                latestActivity = Math.max(latestActivity, new Date(latestWallet.createdAt).getTime());
-              }
-              const latestTransfer = await prisma.walletPeerTransfer.findFirst({
-                where: {
-                  OR: [
-                    { fromEmployeeId: prep.walletEmployeeId },
-                    { toEmployeeId: prep.walletEmployeeId }
-                  ]
-                },
-                orderBy: { createdAt: "desc" },
-                select: { createdAt: true }
-              });
-              if (latestTransfer) {
-                latestActivity = Math.max(latestActivity, new Date(latestTransfer.createdAt).getTime());
-              }
-            }
-            const shopIds = prep.shopLinks.map(l => l.shopId);
-            if (shopIds.length > 0) {
-              const latestOrder = await prisma.order.findFirst({
-                where: { shopId: { in: shopIds } },
-                orderBy: { createdAt: "desc" },
-                select: { createdAt: true }
-              });
-              if (latestOrder) {
-                latestActivity = Math.max(latestActivity, new Date(latestOrder.createdAt).getTime());
-              }
-              const latestEvent = await prisma.orderCourierMoneyEvent.findFirst({
-                where: { order: { shopId: { in: shopIds } }, deletedAt: null },
-                orderBy: { createdAt: "desc" },
-                select: { createdAt: true }
-              });
-              if (latestEvent) {
-                latestActivity = Math.max(latestActivity, new Date(latestEvent.createdAt).getTime());
-              }
-            }
-          }
-        } else if (p.type === "shop" && p.externalId) {
-          const latestOrder = await prisma.order.findFirst({
-            where: { shopId: p.externalId },
-            orderBy: { createdAt: "desc" },
-            select: { createdAt: true }
-          });
-          if (latestOrder) {
-            latestActivity = Math.max(latestActivity, new Date(latestOrder.createdAt).getTime());
-          }
-          const latestEvent = await prisma.orderCourierMoneyEvent.findFirst({
-            where: { order: { shopId: p.externalId }, deletedAt: null },
-            orderBy: { createdAt: "desc" },
-            select: { createdAt: true }
-          });
-          if (latestEvent) {
-            latestActivity = Math.max(latestActivity, new Date(latestEvent.createdAt).getTime());
           }
         }
 

@@ -116,50 +116,15 @@ export async function computeMandoubTipsAllTimeDinar(courierId: string): Promise
 }
 
 export async function computeMandoubEarningsAllTimeDinar(courierId: string): Promise<Decimal> {
-  const orders = await prisma.order.findMany({
+  const agg = await prisma.order.aggregate({
     where: {
       status: { in: ["delivered", "archived"] },
-      OR: [
-        { courierEarningForCourierId: courierId },
-        { assignedCourierId: courierId },
-        { moneyEvents: { some: { courierId, kind: MONEY_KIND_DELIVERY, deletedAt: null } } }
-      ]
+      courierEarningForCourierId: courierId,
+      courierEarningDinar: { not: null }
     },
-    include: {
-      moneyEvents: {
-        where: { deletedAt: null }
-      },
-      courier: { select: { vehicleType: true } }
+    _sum: {
+      courierEarningDinar: true
     }
   });
-
-  let sum = new Decimal(0);
-  for (const o of orders) {
-    const deliveryEv = o.moneyEvents.find(
-      (e) => e.kind === MONEY_KIND_DELIVERY && e.deletedAt == null,
-    );
-
-    const earningOwner =
-      o.courierEarningForCourierId ??
-      deliveryEv?.courierId ??
-      o.assignedCourierId ??
-      null;
-    if (earningOwner !== courierId) continue;
-
-    let earning: any = o.courierEarningDinar ?? null;
-    if (earning == null) {
-      const vehicleType = o.courier?.vehicleType ?? null;
-      const deliveryPrice = o.deliveryPrice ?? null;
-      if (vehicleType && deliveryPrice != null) {
-        earning = computeCourierDeliveryEarningDinar(
-          vehicleType as any,
-          deliveryPrice as any,
-        );
-      }
-    }
-    if (earning == null) continue;
-    sum = sum.plus(earning);
-  }
-
-  return sum;
+  return agg._sum.courierEarningDinar ?? new Decimal(0);
 }
